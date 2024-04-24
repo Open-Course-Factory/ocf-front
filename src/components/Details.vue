@@ -1,45 +1,51 @@
-<script setup>
+<script>
 import { ref, onMounted, onBeforeMount } from 'vue';
 import { useRoute } from 'vue-router';
 import { useCurrentUserStore } from '../store/currentUser.ts';
 import axios from 'axios'
+import { useAxios } from '../composables/useAxios.ts';
+import Disconnect from './Disconnect.vue'
 
-const route = useRoute();
 
-const currentUserStore = useCurrentUserStore();
-console.log(currentUserStore);
-
-const secretToken = route.params.secretToken;
-const userId = route.params.userId;
-let requestResult = ''
-let sshKey = ''
-let dataReady = false
-
-onBeforeMount(async function getKey () {
-    try {
-      const response = await axios.get('http://localhost:8080/api/v1/sshkeys', {
+export default {
+  components: {
+    Disconnect
+  },
+  setup() {
+    const route = useRoute();
+    const userId = route.params.userId;
+    const currentUserStore = useCurrentUserStore();
+    const { data, error, loading } = useAxios(
+      'http://localhost:8080/api/v1/sshkeys',
+      {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': currentUserStore.secretToken,
           "Access-Control-Allow-Origin": "*"
         }
-      })
-      requestResult = response;
-      console.log(requestResult);
-      sshKey = requestResult.data[0].private_key
-      console.log(sshKey);
-      dataReady = true;
-    } catch (error) {
-      console.error('Error during login:', error)
-    }
+      }
+    );
+    return {
+      data,
+      error,
+      loading,
+      userId,
+      currentUserStore
+    };
   }
-)
-
+};
 </script>
 
 <template>
-    <div>
-        <h1>Bienvenue {{ userId }}</h1>
-        <h2 v-if="dataReady">Voici votre clé SSH : {{ sshKey }}</h2>
-    </div>
+  <h1>Bienvenue {{ currentUserStore.userId }}</h1>
+  <Disconnect />
+  <div v-if="error">
+    <h2>Error: {{ error }}</h2>
+  </div>
+  <div v-if="loading">
+    <h2>Loading data...</h2>
+  </div>
+  <ul v-for="item in data" :key="item.id">
+    <li><b>Votre clé SSH : </b> {{ item.private_key }} </li>
+  </ul>
 </template>
