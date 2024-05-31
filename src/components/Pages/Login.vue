@@ -10,17 +10,17 @@ const currentUserStore = useCurrentUserStore();
 
 async function handleSubmit () {
   try {
-    const response = await axios.post('http://localhost:8080/api/v1/auth/login', {email: loginStore.email, password: loginStore.password}, {
+    const responseLogin = await axios.post('http://localhost:8080/api/v1/auth/login', {email: loginStore.email, password: loginStore.password}, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json',
         'Authorization': ''
       }
     })
-    console.log(response);
-    currentUserStore.secretToken = response.data.access_token;
-    currentUserStore.userId = response.data.user_name;
-    currentUserStore.userRoles = response.data.user_roles;
+    console.log(responseLogin);
+    currentUserStore.secretToken = responseLogin.data.access_token;
+    currentUserStore.userId = responseLogin.data.user_name;
+    currentUserStore.userRoles = responseLogin.data.user_roles;
     redirect();
   } catch (error) {
     console.error('Error during login:', error)

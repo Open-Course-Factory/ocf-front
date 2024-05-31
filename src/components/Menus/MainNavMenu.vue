@@ -4,6 +4,7 @@ import { useCurrentUserStore } from '../../store/currentUser.ts';
 
 const currentUser = useCurrentUserStore();
 
+
 </script>
 
 <template>

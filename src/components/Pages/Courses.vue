@@ -1,6 +1,30 @@
 <script setup lang="ts">
+import axios from 'axios';
 import Dashboard from '../Dashboard.vue';
 import TopMenu from '../Menus/TopMenu.vue';
+import { onBeforeMount } from 'vue';
+import { useCurrentUserStore } from '../../store/currentUser';
+// import { useCoursesStore } from '../../store/courses';
+
+const currentUser = useCurrentUserStore()
+
+onBeforeMount(() => getCourses())
+
+async function getCourses() {
+    try {
+        const responseCourses = await axios.get('http://localhost:8080/api/v1/courses/', {
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Content-Type': 'application/json',
+                'Authorization': currentUser.secretToken
+            }
+        })
+        console.log(responseCourses);
+    } catch (error) {
+        console.error('Error while getting courses:', error)
+    }
+}
+
 </script>
 
 <template>
