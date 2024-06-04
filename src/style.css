@@ -17,13 +17,6 @@ h1 a {
   margin-left: 20px;
 }
 
-p {
-  margin-left: 20px;
-  font-size: 12px;
-  font-size: 1rem;
-  text-transform: uppercase;
-}
-
 ul {
   list-style-type: none;
   margin-left: -32px;
@@ -50,4 +43,15 @@ ul li:focus {
 
 #app {
   width: 100%;
+}
+
+.wrapper {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+
+.inner-wrapper {
+  width: 100%;
+  background-color: #f7f7f7;
 }

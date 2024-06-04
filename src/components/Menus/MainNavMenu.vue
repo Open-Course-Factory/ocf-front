@@ -28,3 +28,14 @@ const currentUser = useCurrentUserStore();
         </nav>
     </div>
 </template>
+
+<style scoped>
+
+p {
+  margin-left: 20px;
+  font-size: 12px;
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+
+</style>

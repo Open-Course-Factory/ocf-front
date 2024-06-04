@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import Dashboard from '../Dashboard.vue';
+import MainNavMenu from '../Menus/MainNavMenu.vue';
+import TopMenu from '../Menus/TopMenu.vue';
+import StartSession from '../Buttons/StartSession.vue';
 </script>
 
 <template>
-    <div style="display: flex; height: 100%;">
-        <Dashboard />
-        <p>TPs</p>
+    <div class="wrapper">
+        <MainNavMenu />
+        <div class="inner-wrapper">
+            <TopMenu />
+            <StartSession />
+        </div>
     </div>
 </template>

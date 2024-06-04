@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import Dashboard from '../Dashboard.vue';
+import MainNavMenu from '../Menus/MainNavMenu.vue';
+import TopMenu from '../Menus/TopMenu.vue';
 </script>
 
 <template>
-    <div style="display: flex; height: 100%;">
-        <Dashboard />
-        <p>Schedule</p>
+    <div class="wrapper">
+        <MainNavMenu />
+        <div class="inner-wrapper">
+            <TopMenu />
+
+        </div>
     </div>
 </template>

@@ -1,36 +1,36 @@
 <script setup lang="ts">
-import axios from 'axios';
-import Dashboard from '../Dashboard.vue';
+import MainNavMenu from '../Menus/MainNavMenu.vue';
 import TopMenu from '../Menus/TopMenu.vue';
-import { onBeforeMount } from 'vue';
-import { useCurrentUserStore } from '../../store/currentUser';
-// import { useCoursesStore } from '../../store/courses';
+// import axios from 'axios';
+// import { onBeforeMount } from 'vue';
+// import { useCurrentUserStore } from '../../store/currentUser';
+// // import { useCoursesStore } from '../../store/courses';
 
-const currentUser = useCurrentUserStore()
+// const currentUser = useCurrentUserStore()
 
-onBeforeMount(() => getCourses())
+// onBeforeMount(() => getCourses())
 
-async function getCourses() {
-    try {
-        const responseCourses = await axios.get('http://localhost:8080/api/v1/courses/', {
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Content-Type': 'application/json',
-                'Authorization': currentUser.secretToken
-            }
-        })
-        console.log(responseCourses);
-    } catch (error) {
-        console.error('Error while getting courses:', error)
-    }
-}
+// async function getCourses() {
+//     try {
+//         const responseCourses = await axios.get('http://localhost:8080/api/v1/courses/', {
+//             headers: {
+//                 'Access-Control-Allow-Origin': '*',
+//                 'Content-Type': 'application/json',
+//                 'Authorization': currentUser.secretToken
+//             }
+//         })
+//         console.log(responseCourses);
+//     } catch (error) {
+//         console.error('Error while getting courses:', error)
+//     }
+// }
 
 </script>
 
 <template>
-    <div class="wrapper" style="display: flex; height: 100%; width: 100%;">
-        <Dashboard />
-        <div style="width: 100%; background-color: #f7f7f7;">
+    <div class="wrapper">
+        <MainNavMenu />
+        <div class="inner-wrapper">
             <TopMenu />
             <section class="cards-list">
                 <h2>Cours actuels</h2>
