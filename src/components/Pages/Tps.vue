@@ -2,6 +2,7 @@
 import MainNavMenu from '../Menus/MainNavMenu.vue';
 import TopMenu from '../Menus/TopMenu.vue';
 import StartSession from '../Buttons/StartSession.vue';
+import GuacConnect from '../Guacamole/GuacConnect.vue'
 </script>
 
 <template>
@@ -10,6 +11,8 @@ import StartSession from '../Buttons/StartSession.vue';
         <div class="inner-wrapper">
             <TopMenu />
             <StartSession />
+            <GuacConnect />
+
         </div>
     </div>
 </template>
