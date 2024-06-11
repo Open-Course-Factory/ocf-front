@@ -11,7 +11,7 @@ const currentUser = useCurrentUserStore();
         <div class="user-info">
             <router-link to="/user">
                 <div class="profile-picture"></div>
-                <p>{{ currentUser.userId }}</p>
+                <p>{{ currentUser.userName }}</p>
             </router-link>
         </div>
     </div>

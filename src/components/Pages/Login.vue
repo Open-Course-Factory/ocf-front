@@ -19,7 +19,8 @@ async function handleSubmit () {
     })
     console.log(responseLogin);
     currentUserStore.secretToken = responseLogin.data.access_token;
-    currentUserStore.userId = responseLogin.data.user_name;
+    currentUserStore.userName = responseLogin.data.user_name;
+    currentUserStore.userId = responseLogin.data.user_id;
     currentUserStore.userRoles = responseLogin.data.user_roles;
     redirect();
   } catch (error) {
@@ -29,7 +30,7 @@ async function handleSubmit () {
 
 function redirect() {
   if (currentUserStore.secretToken) {
-    router.push({name: "Dashboard", params: {secretToken: currentUserStore.secretToken, userId: currentUserStore.userId, userRoles: currentUserStore.userRoles}});
+    router.push({name: "Dashboard", params: {secretToken: currentUserStore.secretToken, userName: currentUserStore.userName, userId: currentUserStore.userId, userRoles: currentUserStore.userRoles}});
   }
 }
 

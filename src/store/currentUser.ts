@@ -4,6 +4,7 @@ export const useCurrentUserStore = defineStore('currentUser', {
     state() {
         return {
             secretToken: "",
+            userName: "",
             userId: "",
             userRoles: [],
         }
