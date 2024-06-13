@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { useSshKeysStore } from '../../store/sshKeys';
 
 const props = defineProps<{
   visible: boolean;
@@ -11,22 +12,42 @@ const emit = defineEmits<{
 
 const keyName = ref('');
 const sshKey = ref('');
+const errors = ref<{ keyName: string | null, sshKey: string | null }>({ keyName: null, sshKey: null });
+
+const sshKeysStore = useSshKeysStore();
+
+function validateFields() {
+  errors.value.keyName = keyName.value.trim() === '' ? 'Le nom de la clé SSH est requis.' : null;
+  errors.value.sshKey = sshKey.value.trim() === '' ? 'La clé SSH est requise.' : null;
+  
+  if (!errors.value.keyName && sshKeysStore.sshKeys.some(key => key.name === keyName.value.trim())) {
+    errors.value.keyName = 'Ce nom de clé SSH est déjà utilisé.';
+  }
+  if (!errors.value.sshKey && sshKeysStore.sshKeys.some(key => key.key === sshKey.value.trim())) {
+    errors.value.sshKey = 'Cette clé SSH est déjà utilisée.';
+  }
+  
+  return !errors.value.keyName && !errors.value.sshKey;
+}
 
 function handleAddKey() {
-  emit('add-key', keyName.value, sshKey.value);
-  keyName.value = '';
-  sshKey.value = '';
+  if (validateFields()) {
+    emit('add-key', keyName.value, sshKey.value);
+    keyName.value = '';
+    sshKey.value = '';
+    errors.value = { keyName: null, sshKey: null };
+  }
 }
 
 function closeModal() {
   emit('close');
 }
 
-// Reset the fields when the modal is shown
 watch(() => props.visible, (newVal) => {
   if (newVal) {
     keyName.value = '';
     sshKey.value = '';
+    errors.value = { keyName: null, sshKey: null };
   }
 });
 </script>
@@ -35,16 +56,35 @@ watch(() => props.visible, (newVal) => {
   <div v-if="visible" class="modal-overlay" @click.self="closeModal">
     <div class="modal-body">
       <button class="close-button" @click="closeModal">&times;</button>
-      <h2>Ajouter une nouvelle clé SSH</h2>
-      <label for="keyName">Nom de la clé SSH :</label>
-      <input id="keyName" v-model="keyName" placeholder="Nom de la clé SSH" />
-      <label for="sshKey">Clé SSH :</label>
-      <input id="sshKey" v-model="sshKey" placeholder="Clé SSH" />
-      <button @click="handleAddKey">Ajouter</button>
+      <div class="modal-content">
+        <h2>Ajouter une nouvelle clé SSH</h2>
+        <div class="form-group">
+          <label for="keyName">Nom de la clé SSH :</label>
+          <input 
+            id="keyName" 
+            v-model="keyName" 
+            :class="['form-control', { 'is-invalid': errors.keyName }]"
+          />
+          <div v-if="errors.keyName" class="invalid-feedback">
+            {{ errors.keyName }}
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="sshKey">Clé SSH :</label>
+          <textarea 
+            id="sshKey" 
+            v-model="sshKey" 
+            :class="['form-control', { 'is-invalid': errors.sshKey }]"
+          />
+          <div v-if="errors.sshKey" class="invalid-feedback">
+            {{ errors.sshKey }}
+          </div>
+        </div>
+        <button class="btn btn-primary" @click="handleAddKey">Ajouter</button>
+      </div>
     </div>
   </div>
 </template>
-  
 
 <style scoped>
 .modal-overlay {
@@ -67,8 +107,7 @@ watch(() => props.visible, (newVal) => {
   position: relative;
   width: 90%;
   max-width: 800px;
-  height: 90%;
-  max-height: 500px;
+  height: auto;
 }
 
 .close-button {
@@ -79,5 +118,32 @@ watch(() => props.visible, (newVal) => {
   border: none;
   font-size: 1.5em;
   cursor: pointer;
+  padding-left: 10px;
+  padding-right: 10px;
+  z-index: 2;
 }
+
+.modal-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-content button {
+  width: 120px;
+  margin: 0 auto;
+}
+
+h2 {
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+  height: auto;
+}
+
+textarea {
+  height: 250px;
+}
+
 </style>

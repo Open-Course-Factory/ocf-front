@@ -4,7 +4,7 @@ import { ref, onBeforeMount } from 'vue';
 import { useCurrentUserStore } from '../../store/currentUser';
 import { useSshKeysStore } from '../../store/sshKeys';
 import SshKeyModal from '../Modals/SshKeyModal.vue';
-import User from './User.vue';
+
 
 const currentUserStore = useCurrentUserStore();
 const sshKeysStore = useSshKeysStore();
