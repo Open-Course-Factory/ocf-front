@@ -8,12 +8,12 @@ const currentUser = useCurrentUserStore();
 
 <template>
     <div class="top-menu">
-        <div class="user-info">
+
             <router-link to="/user">
                 <div class="profile-picture"></div>
                 <p>{{ currentUser.userName }}</p>
             </router-link>
-        </div>
+
     </div>
 </template>
 
@@ -33,8 +33,8 @@ p {
     margin-top: 14px;
 }
 
-.user-info a {
-    width: 150px;
+.top-menu a {
+    width: 130px;
     display: flex;
     align-items: center;
     justify-content: space-around;

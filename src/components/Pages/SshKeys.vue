@@ -86,13 +86,13 @@ async function deleteSshKey(keyId: string) {
   <div class="content">
     <div class="header">
       <h2>Mes Clés SSH</h2>
-      <button @click="showModal = true">Ajouter une nouvelle clé SSH</button>
+      <button class="btn btn-primary" @click="showModal = true">Ajouter une nouvelle clé SSH</button>
     </div>
     <div v-if="sshKeysStore.sshKeys.length">
       <ul>
         <li v-for="sshKey in sshKeysStore.sshKeys" :key="sshKey.id">
           <p>{{ sshKey.name }}</p>
-          <button v-if="sshKeysStore.sshKeys.length > 1" @click="deleteSshKey(sshKey.id)">Supprimer</button>
+          <button class="btn btn-danger" v-if="sshKeysStore.sshKeys.length > 1" @click="deleteSshKey(sshKey.id)">Supprimer</button>
           <!--<button @click="editKey(sshKey)">Modifier</button>-->
         </li>
       </ul>
