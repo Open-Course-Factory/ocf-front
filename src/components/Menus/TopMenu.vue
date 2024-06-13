@@ -42,12 +42,13 @@ p {
     cursor: pointer;
     margin-right: 50px;
     color: #212529;
+    text-decoration: none;
 }
 
 .profile-picture {
     width: 40px;
     height: 40px;
-    background-color: #c93535;
+    background-color: #969696;
     border-radius: 50%;
 }
 

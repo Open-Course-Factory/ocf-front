@@ -94,6 +94,7 @@ async function deleteSshKey(keyId: string) {
           <p>{{ sshKey.name }}</p>
           <button class="btn btn-danger" v-if="sshKeysStore.sshKeys.length > 1" @click="deleteSshKey(sshKey.id)">Supprimer</button>
           <!--<button @click="editKey(sshKey)">Modifier</button>-->
+          <button class="btn btn-danger" v-else disabled>Supprimer</button>
         </li>
       </ul>
     </div>
