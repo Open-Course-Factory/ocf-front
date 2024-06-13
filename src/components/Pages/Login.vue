@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import axios from 'axios'
-// import { ref } from 'vue'
 import router from "../../router/index.ts"
 import { useLoginStore } from '../../store/login.ts';
 import { useCurrentUserStore } from '../../store/currentUser.ts';
@@ -30,36 +29,9 @@ async function handleSubmit () {
 
 function redirect() {
   if (currentUserStore.secretToken) {
-    router.push({name: "Dashboard", params: {secretToken: currentUserStore.secretToken, userName: currentUserStore.userName, userId: currentUserStore.userId, userRoles: currentUserStore.userRoles}});
+    router.push({name: "Dashboard"});
   }
 }
-
-// const postData = ref({
-//   email: '',
-//   password: ''
-// })
-
-// const secretToken = ref('')
-// const userId = ref('')
-
-// async function checkConnection() {
-//   try {
-//     const response = await axios.post('http://localhost:8080/api/v1/auth/login', postData.value, {
-//       headers: {
-//         'Access-Control-Allow-Origin': '*',
-//         'Content-Type': 'application/json',
-//         'Authorization': ''
-//       }
-//     })
-//     secretToken.value = response.data.access_token;
-//     userId.value = response.data.user_name;
-//     console.log(secretToken.value);
-//     console.log(response);
-//     redirect();
-//   } catch (error) {
-//     console.error('Error during login:', error)
-//   }
-// }
 
 </script>
 

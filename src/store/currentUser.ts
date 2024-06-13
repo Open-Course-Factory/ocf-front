@@ -8,5 +8,8 @@ export const useCurrentUserStore = defineStore('currentUser', {
             userId: "",
             userRoles: [],
         }
+    },
+    getters: {
+        isAuthenticated: (state) => !!state.secretToken,
     }
 })

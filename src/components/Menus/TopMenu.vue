@@ -1,6 +1,7 @@
 <script setup lang="ts">
 
 import { useCurrentUserStore } from '../../store/currentUser.ts';
+import Disconnect from '../Buttons/Disconnect.vue';
 
 const currentUser = useCurrentUserStore();
 
@@ -13,6 +14,7 @@ const currentUser = useCurrentUserStore();
                 <div class="profile-picture"></div>
                 <p>{{ currentUser.userName }}</p>
             </router-link>
+            <disconnect />
 
     </div>
 </template>
@@ -40,9 +42,12 @@ p {
     justify-content: space-around;
     padding: 0px 14px;
     cursor: pointer;
-    margin-right: 50px;
     color: #212529;
     text-decoration: none;
+}
+
+.top-menu button {
+    margin-right: 44px;
 }
 
 .profile-picture {
