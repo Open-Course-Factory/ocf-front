@@ -1,3 +1,4 @@
+<!-- 
 /*
  * Open Course Factory - Front
  * Copyright (C) 2023-2024 Solution Libre
@@ -18,6 +19,7 @@
  * 
  * See the LICENSE file for more information.
  */
+-->
 
 <script setup lang="ts">
 </script>

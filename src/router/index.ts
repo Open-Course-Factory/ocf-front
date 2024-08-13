@@ -19,7 +19,7 @@
  * See the LICENSE file for more information.
  */
 
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import { useCurrentUserStore } from '../store/currentUser'
 import Login from '../components/Pages/Login.vue'
 import Dashboard from '../components/Pages/Dashboard.vue'
@@ -28,19 +28,43 @@ import Tps from '../components/Pages/Tps.vue'
 import Schedule from '../components/Pages/Schedule.vue'
 import User from '../components/Pages/User.vue'
 import CourseDetails from '../components/Pages/CourseDetails.vue'
+import Node from '../components/WebSsh/Node.vue'
+import Dial from '../components/WebSsh/Dial.vue'
 
-const routes = [
+const basicRoutes = [
     { path: '/login', name: 'Login', component: Login, props: true },
     { path: '/dashboard', name: 'Dashboard', component: Dashboard, props: true, meta: { requiresAuth: true } },
     { path: '/courses', name: 'Course', component: Courses, props: true, meta: { requiresAuth: true } },
-    { path: '/tps', name: 'TPs', component: Tps, props: true, meta: { requiresAuth: true } },
+    { 
+        path: '/tps', 
+        // name: 'TPs', 
+        component: Tps, 
+        // props: true, 
+        meta: { 
+            requiresAuth: true 
+        },
+        // children: [
+        //     // 首页看板
+        //     {
+        //         path: "node",
+        //         component: Node,
+        //     },
+        //     {
+        //         path: "dial",
+        //         component: Dial,
+        //     },
+        // ],
+    },
+    { path: '/node', name: 'Node', component: Node, props: true, meta: { requiresAuth: true } },
+    { path: '/dial', name: 'Dial', component: Dial, props: true, meta: { requiresAuth: true } },
     { path: '/schedule', name: 'Schedule', component: Schedule, props: true, meta: { requiresAuth: true } },
     { path: '/user', name: 'user', component: User, props: true, meta: { requiresAuth: true } },
     { path: '/course/:id', component: CourseDetails, props: true, meta: { requiresAuth: true } }
 ]
+
 const router = createRouter({
     history: createWebHistory(),
-    routes
+    routes: basicRoutes as RouteRecordRaw[]
 })
 
 router.beforeEach((to, from, next) => {

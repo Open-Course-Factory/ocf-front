@@ -25,7 +25,7 @@
 import MainNavMenu from '../Menus/MainNavMenu.vue';
 import TopMenu from '../Menus/TopMenu.vue';
 import StartSession from '../Buttons/StartSession.vue';
-import GuacConnect from '../Guacamole/GuacConnect.vue'
+import WebSsh  from '../WebSsh/WebSsh.vue'
 </script>
 
 <template>
@@ -34,7 +34,8 @@ import GuacConnect from '../Guacamole/GuacConnect.vue'
         <div class="inner-wrapper">
             <TopMenu />
             <StartSession />
-            <GuacConnect />
+            <!-- <GuacConnect /> -->
+            <WebSsh />
 
         </div>
     </div>

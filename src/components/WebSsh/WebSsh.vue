@@ -1,3 +1,4 @@
+<!-- 
 /*
  * Open Course Factory - Front
  * Copyright (C) 2023-2024 Solution Libre
@@ -18,21 +19,13 @@
  * 
  * See the LICENSE file for more information.
  */ 
+-->
 
-import { createApp } from 'vue'
-import './style.css'
-import { createPinia } from 'pinia'
-import App from './App.vue'
-import router from './router'
-import 'element-plus/dist/index.css'
-import ElementPlus from 'element-plus'
-import { piniaPluginPersist } from './piniaPluginPersist'
+<script setup lang="ts">
 
-const pinia = createPinia()
-pinia.use(piniaPluginPersist)
 
-createApp(App)
-    .use(ElementPlus)
-    .use(router)
-    .use(pinia)
-    .mount('#app')
+</script>
+
+<template>
+    "coucou"
+</template>
