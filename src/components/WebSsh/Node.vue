@@ -5,21 +5,21 @@
            class="demo-ruleForm"
            label-position="left"
        >
-           <el-form-item label="ip地址" prop="ipaddress" required>
+           <el-form-item label="Ip address" prop="ipaddress" required>
            <el-input type="text" v-model="ruleForm.ipaddress"></el-input>
            </el-form-item>
-           <el-form-item label="用户名" prop="username" required>
+           <el-form-item label="Username" prop="username" required>
            <el-input type="text" v-model="ruleForm.username"></el-input>
            </el-form-item>
-           <el-form-item label="密码" prop="pass" required>
+           <el-form-item label="Password" prop="pass" required>
            <el-input type="password" v-model="ruleForm.password" autocomplete="off"></el-input>
            </el-form-item>
-           <el-form-item label="端口" prop="port" required>
+           <el-form-item label="Port" prop="port" required>
            <el-input v-model.number="ruleForm.port"></el-input>
            </el-form-item>
            <el-form-item>
-           <el-button type="primary" @click="connectSsh" plain>连接</el-button>
-           <el-button @click="resetForm">重置</el-button>
+           <el-button type="primary" @click="connectSsh" plain>Connect</el-button>
+           <el-button @click="resetForm">Reset</el-button>
            </el-form-item>
        </el-form>
    </div>

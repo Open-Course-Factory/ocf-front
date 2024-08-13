@@ -36,12 +36,12 @@ onMounted(() => {
     fitAddon.fit()
 
     term.write('Connection...\r\n');
-    socket = new WebSocket("ws://" + location.hostname +  ":5555/ssh")
+    socket = new WebSocket("ws://" + location.hostname +  ":8080/api/v1/ssh")
 
     socket.binaryType = "arraybuffer";
 
     socket.onopen = function () {
-        term.write('连接成功...\r\n');
+        term.write('Connected !\r\n');
         fitAddon.fit()
         term.onData(function (data) {
             socket.send(data)
