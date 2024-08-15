@@ -41,7 +41,7 @@
  const connectSsh = () => {
 
    router.push({
-       path: "/dial",
+       path: "/tps/dial",
        query: {ipaddress: ruleForm.value.ipaddress, username: ruleForm.value.username, password: ruleForm.value.password, port: ruleForm.value.port}
    })
 }

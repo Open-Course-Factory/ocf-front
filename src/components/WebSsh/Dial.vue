@@ -41,7 +41,6 @@ onMounted(() => {
     socket.binaryType = "arraybuffer";
 
     socket.onopen = function () {
-        term.write('Connected !\r\n');
         fitAddon.fit()
         term.onData(function (data) {
             socket.send(data)

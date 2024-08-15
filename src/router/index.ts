@@ -30,6 +30,7 @@ import User from '../components/Pages/User.vue'
 import CourseDetails from '../components/Pages/CourseDetails.vue'
 import Node from '../components/WebSsh/Node.vue'
 import Dial from '../components/WebSsh/Dial.vue'
+import WebSsh from '../components/WebSsh/WebSsh.vue'
 
 const basicRoutes = [
     { path: '/login', name: 'Login', component: Login, props: true },
@@ -43,19 +44,21 @@ const basicRoutes = [
         meta: { 
             requiresAuth: true 
         },
-        // children: [
-        //     // 首页看板
-        //     {
-        //         path: "node",
-        //         component: Node,
-        //     },
-        //     {
-        //         path: "dial",
-        //         component: Dial,
-        //     },
-        // ],
+        children: [
+            {
+                path: "",
+                component: WebSsh,
+            },
+            {
+                path: "node",
+                component: Node,
+            },
+            {
+                path: "dial",
+                component: Dial,
+            },
+        ],
     },
-    { path: '/node', name: 'Node', component: Node, props: true, meta: { requiresAuth: true } },
     { path: '/dial', name: 'Dial', component: Dial, props: true, meta: { requiresAuth: true } },
     { path: '/schedule', name: 'Schedule', component: Schedule, props: true, meta: { requiresAuth: true } },
     { path: '/user', name: 'user', component: User, props: true, meta: { requiresAuth: true } },

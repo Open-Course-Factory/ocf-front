@@ -24,8 +24,7 @@
 <script setup lang="ts">
 import MainNavMenu from '../Menus/MainNavMenu.vue';
 import TopMenu from '../Menus/TopMenu.vue';
-import StartSession from '../Buttons/StartSession.vue';
-import WebSsh  from '../WebSsh/WebSsh.vue'
+// import StartSession from '../Buttons/StartSession.vue';
 </script>
 
 <template>
@@ -33,10 +32,10 @@ import WebSsh  from '../WebSsh/WebSsh.vue'
         <MainNavMenu />
         <div class="inner-wrapper">
             <TopMenu />
-            <StartSession />
+            <!-- <StartSession /> -->
             <!-- <GuacConnect /> -->
-            <WebSsh />
-
+            <router-view></router-view>
+            
         </div>
     </div>
 </template>

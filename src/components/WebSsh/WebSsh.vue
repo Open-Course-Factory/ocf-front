@@ -23,9 +23,10 @@
 
 <script setup lang="ts">
 
+import StartSession from '../Buttons/StartSession.vue';
 
 </script>
 
 <template>
-    "coucou"
+    <StartSession />
 </template>

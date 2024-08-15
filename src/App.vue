@@ -26,7 +26,7 @@
 
 <template>
 
-  <Router-view></Router-view>
+  <router-view></router-view>
 </template>
 
 <style scoped>

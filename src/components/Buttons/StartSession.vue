@@ -23,9 +23,12 @@
 
 <script setup lang="ts">
 
+import { useRouter } from 'vue-router'
+const router = useRouter()
+
 function startNewSession() {
     try {
-        
+        router.push('/tps/node')
     } catch (error) {
         console.error('Error while getting creating new session:', error)
     }
