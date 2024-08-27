@@ -10,18 +10,19 @@ import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router';
+import { useCurrentUserStore } from '../../store/currentUser';
 
 let terminalBox = ref(null)
 let term
 let socket
 const router = useRouter();
 const route = useRoute();
-
 const ipaddress  = ref(route.query.ipaddress);
 const username = ref(route.query.username);
 const password = ref(route.query.password);
 const port = ref(route.query.port);
 
+const currentUser = useCurrentUserStore()
 
 onMounted(() => {
     term = new Terminal({
@@ -36,8 +37,14 @@ onMounted(() => {
     fitAddon.fit()
 
     term.write('Connection...\r\n');
-    socket = new WebSocket("ws://" + location.hostname +  ":8080/api/v1/ssh")
 
+    let protocol = "wss://"
+    if (!import.meta.env.PROD) {
+        protocol = "ws://"
+    }
+
+    socket = new WebSocket(protocol + location.hostname +  ":8080/api/v1/ssh?Authorization="+ currentUser.secretToken)
+    
     socket.binaryType = "arraybuffer";
 
     socket.onopen = function () {
@@ -45,6 +52,7 @@ onMounted(() => {
         term.onData(function (data) {
             socket.send(data)
         });
+        
         var jsonStr = `{"username":"${username.value}", "ipaddress":"${ipaddress.value}", "port":${port.value}, "password":"${password.value}"}`
         var datMsg = window.btoa(jsonStr)
         socket.send(datMsg)

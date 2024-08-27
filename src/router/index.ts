@@ -28,7 +28,6 @@ import Tps from '../components/Pages/Tps.vue'
 import Schedule from '../components/Pages/Schedule.vue'
 import User from '../components/Pages/User.vue'
 import CourseDetails from '../components/Pages/CourseDetails.vue'
-import Node from '../components/WebSsh/Node.vue'
 import Dial from '../components/WebSsh/Dial.vue'
 import WebSsh from '../components/WebSsh/WebSsh.vue'
 
@@ -50,16 +49,11 @@ const basicRoutes = [
                 component: WebSsh,
             },
             {
-                path: "node",
-                component: Node,
-            },
-            {
                 path: "dial",
                 component: Dial,
             },
         ],
     },
-    { path: '/dial', name: 'Dial', component: Dial, props: true, meta: { requiresAuth: true } },
     { path: '/schedule', name: 'Schedule', component: Schedule, props: true, meta: { requiresAuth: true } },
     { path: '/user', name: 'user', component: User, props: true, meta: { requiresAuth: true } },
     { path: '/course/:id', component: CourseDetails, props: true, meta: { requiresAuth: true } }

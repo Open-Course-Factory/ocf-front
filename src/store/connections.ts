@@ -1,4 +1,3 @@
-<!-- 
 /*
  * Open Course Factory - Front
  * Copyright (C) 2023-2024 Solution Libre
@@ -18,22 +17,19 @@
  * Copyright (c) - All Rights Reserved.
  * 
  * See the LICENSE file for more information.
- */ 
--->
+ */
 
-<script setup lang="ts">
-import MainNavMenu from '../Menus/MainNavMenu.vue';
-import TopMenu from '../Menus/TopMenu.vue';
+import { defineStore } from "pinia"
 
-</script>
-
-<template>
-    <div class="wrapper">
-        <MainNavMenu />
-        <div class="inner-wrapper">
-            <TopMenu />
-            <router-view></router-view>
-            
-        </div>
-    </div>
-</template>
+export const useConnectionsStore = defineStore('Connections', {
+    state() {
+        return {
+            connections: []
+        }
+    },
+    actions: {
+        setConnections(connections) {
+            this.connections = connections
+        }
+    }
+})

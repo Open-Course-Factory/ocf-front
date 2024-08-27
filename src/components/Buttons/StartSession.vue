@@ -24,11 +24,39 @@
 <script setup lang="ts">
 
 import { useRouter } from 'vue-router'
+import axios from 'axios';
+import { onBeforeMount } from 'vue'
+import { useCurrentUserStore } from '../../store/currentUser';
+import { useConnectionsStore } from '../../store/connections';
+
+const connectionsStore = useConnectionsStore()
+const currentUser = useCurrentUserStore()
 const router = useRouter()
+
+onBeforeMount(() => getConnections())
+
+async function getConnections() {
+    try {
+        const responseConnections = await axios.get('http://localhost:8080/api/v1/connections', {
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Content-Type': 'application/json',
+                'Authorization': currentUser.secretToken
+            }
+        })
+        console.log(responseConnections);
+        connectionsStore.setConnections(responseConnections.data)
+    } catch (error) {
+        console.error('Error while getting Connections:', error)
+    }
+}
 
 function startNewSession() {
     try {
-        router.push('/tps/node')
+        router.push({
+            path: "/tps/dial",
+            query: {ipaddress: connectionsStore.connections[0].Machine.IP, username: connectionsStore.connections[0].Username.Username, password: "", port: connectionsStore.connections[0].Machine.Port}
+        })
     } catch (error) {
         console.error('Error while getting creating new session:', error)
     }

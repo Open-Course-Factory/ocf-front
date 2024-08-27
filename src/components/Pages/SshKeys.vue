@@ -44,7 +44,13 @@ async function getSshKeys() {
         'Authorization': currentUserStore.secretToken
       }
     });
+
+    if (response.data == null) {
+      response.data = []
+    }
+
     sshKeysStore.setSshKeys(response.data);
+
     console.log("Réponse API :", response.data);
   } catch (error) {
     console.error('Error while getting SSH keys:', error);
@@ -53,7 +59,7 @@ async function getSshKeys() {
 
 async function addSshKey(keyName: string, sshKey: string) {
   try {
-    const response = await axios.post('http://localhost:8080/api/v1/sshkeys', { keyName: keyName, privateKey: sshKey, userId: currentUserStore.userId }, {
+    const response = await axios.post('http://localhost:8080/api/v1/sshkeys', { keyName: keyName, privateKey: sshKey }, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json',
