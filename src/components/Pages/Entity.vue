@@ -25,25 +25,43 @@
 import axios from 'axios';
 import { ref, onBeforeMount } from 'vue';
 import { useCurrentUserStore } from '../../store/currentUser';
-import { useSshKeysStore } from '../../store/sshKeys';
-import SshKeyModal from '../Modals/SshKeyModal.vue';
+import SshKeyModal from '../Modals/EntityModal.vue';
+
+import { useI18n } from 'vue-i18n'
+import { Store } from 'pinia';
+
+const { t } = useI18n({
+    messages: {
+      en: { entity: { 
+        title: 'SSH keys',
+        add: 'Add a key',
+    } },
+      fr: { entity: { 
+        title: 'Clés SSH',
+        add: 'Ajouter une clé',
+    } }
+    }
+  
+}) 
+
+const props = defineProps<{
+  entityName: string;
+  entityStore: Store;
+  fieldList: { name: string; label: string; type: string }[];
+}>();
 
 
 const currentUserStore = useCurrentUserStore();
-const sshKeysStore = useSshKeysStore();
 const showModal = ref(false);
 const editEntity = ref(false);
 
-const fieldList = [
-        { name: "keyName", label: "Nom de votre clé", type: "input" },
-        { name: "sshKey", label: "Valeur de votre clé", type: "textarea" },
-      ];
 
-onBeforeMount(() => getSshKeys());
 
-async function getSshKeys() {
+onBeforeMount(() => getEntities());
+
+async function getEntities() {
   try {
-    const response = await axios.get('http://localhost:8080/api/v1/sshkeys', {
+    const response = await axios.get(`http://localhost:8080/api/v1/${props.entityName}`, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json',
@@ -55,92 +73,95 @@ async function getSshKeys() {
       response.data = []
     }
 
-    sshKeysStore.setSshKeys(response.data);
+    props.entityStore.setEntity(response.data);
 
     console.log("Réponse API :", response.data);
   } catch (error) {
+    props.entityStore.setEntity([]);
     console.error('Error while getting SSH keys:', error);
   }
 }
 
-async function addSshKey(data: Map<string, string>) {
+async function addEntity(data: Map<string, string>) {
   try {
-    const response = await axios.post('http://localhost:8080/api/v1/sshkeys', { keyName: data["keyName"], privateKey: data["sshKey"] }, {
+    const response = await axios.post(`http://localhost:8080/api/v1/${props.entityName}`, data, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json',
         'Authorization': currentUserStore.secretToken
       }
     });
-    sshKeysStore.sshKeys.push(response.data);
+    props.entityStore.entities.push(response.data);
     showModal.value = false;
   } catch (error) {
     console.error('Error while adding SSH key:', error);
   }
 }
 
-async function deleteSshKey(keyId: string) {
+async function deleteEntity(keyId: string) {
   try {
-    await axios.delete(`http://localhost:8080/api/v1/sshkeys/${keyId}`, {
+    await axios.delete(`http://localhost:8080/api/v1/${props.entityName}/${keyId}`, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json',
         'Authorization': currentUserStore.secretToken
       }
     });
-    sshKeysStore.sshKeys = sshKeysStore.sshKeys.filter((key: any) => key.id !== keyId);
+    props.entityStore.entities = props.entityStore.entities.filter((key: any) => key.id !== keyId);
   } catch (error) {
     console.error('Error while deleting SSH key:', error);
   }
 }
 
-async function updateSshKey(keyId: string, newKey: string) {
+async function updateEntity(data: Map<string, string>) {
   try {
-    await axios.put(`http://localhost:8080/api/v1/sshkeys/${keyId}`, { key: newKey }, {
+    await axios.put(`http://localhost:8080/api/v1/${props.entityName}/${data["id"]}`, { data }, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json',
         'Authorization': currentUserStore.secretToken
       }
     });
-    getSshKeys(); // Refresh the SSH keys list
+    getEntities();
   } catch (error) {
     console.error('Error while updating SSH key:', error);
   }
 }
 
-async function editKey(sshKey) {
-  const newKey = prompt("Entrez la nouvelle clé SSH :", sshKey.key);
-  if (newKey && newKey !== sshKey.key) {
-    updateSshKey(sshKey.id, newKey);
-  }
-}
+// async function editKey(data: Map<string, string>) {
+//   const newKey = prompt("Entrez la nouvelle clé SSH :", sshKey.key);
+//   if (newKey && newKey !== sshKey.key) {
+//     updateEntity(data);
+//   }
+// }
 </script>
 
 <template>
   <div class="content">
     <div class="header">
-      <h2>Mes Clés SSH</h2>
-      <button class="btn btn-primary" @click="showModal = true">Ajouter une nouvelle clé SSH</button>
+      <h2>{{ t('sshkey.title') }}</h2>
+      <button class="btn btn-primary" @click="showModal = true">{{ t('sshkey.add') }}</button>
     </div>
-    <div v-if="sshKeysStore.sshKeys.length">
+    <div v-if="props.entityStore.entities.length">
       <ul>
-        <li v-for="sshKey in sshKeysStore.sshKeys" :key="sshKey.id">
-          <p>{{ sshKey.name }}</p>
+        <li v-for="entity in props.entityStore.entities" :key="entity.id">
+          <p>{{ entity.name }}</p>
           <div>
-            <button class="btn btn-danger" v-if="sshKeysStore.sshKeys.length > 1" @click="deleteSshKey(sshKey.id)">Supprimer</button>
-            <button class="btn btn-danger" v-else disabled>Supprimer</button>
-            <button class="btn btn-primary" @click="showModal = true, editEntity = true">Modifier</button>
+            <button class="btn btn-danger" v-if="props.entityStore.entities.length > 1" @click="deleteEntity(entity.id)">{{ t('delete') }}</button>
+            <button class="btn btn-danger" v-else disabled>{{ t('delete') }}</button>
+            <button class="btn btn-primary" @click="showModal = true, editEntity = true">{{ t('edit') }}</button>
           </div>  
         </li>
       </ul>
     </div>
     <div v-else>
-      <p>Aucune clé SSH disponible.</p>
+      <p>{{ t('empty') }}</p>
     </div>
-    <SshKeyModal :visible="showModal" :edit="editEntity" v-bind:fieldList=fieldList @add-key="addSshKey" @close="showModal = false" />
+    <SshKeyModal :visible="showModal" :edit="editEntity" v-bind:fieldList=fieldList @submit="addEntity" @close="showModal = false" />
   </div>
 </template>
+
+
 
 <style scoped>
 ul {

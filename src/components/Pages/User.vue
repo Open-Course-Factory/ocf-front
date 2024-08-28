@@ -25,33 +25,30 @@
 
 import TopMenu from '../Menus/TopMenu.vue';
 import MainNavMenu from '../Menus/MainNavMenu.vue';
-import SshKeys from './SshKeys.vue';
-// import axios from 'axios';
-// import { onBeforeMount } from 'vue';
-// import { useCurrentUserStore } from '../../store/currentUser';
-// import { useUserDetailsStore } from '../../store/userDetails';
+import Entity from './Entity.vue';
+import { useSshKeysStore } from '../../store/sshKeys';
+import { useI18n } from 'vue-i18n';
 
-// const currentUser = useCurrentUserStore()
-// const userDetails = useUserDetailsStore()
+const { t } = useI18n({
+    messages: {
+      en: { sshkey: { 
+        name: 'Key name',
+        value: 'Key value (PRIVATE)',
+    } },
+      fr: { sshkey: { 
+        name: 'Nom de la clé',
+        value: 'Valeur de la clé (PRIVEE)',
+    } }
+    }
+  
+}) 
 
-// onBeforeMount(() => getUserDetails())
+const sshKeysStore = useSshKeysStore();
 
-// async function getUserDetails() {
-//     try {
-//         const responseUserDetails = await axios.get('', {
-//             headers: {
-//                 'Access-Control-Allow-Origin': '*',
-//                 'Content-Type': 'application/json',
-//                 'Authorization': currentUser.secretToken
-//             }
-//         })
-//         console.log(responseUserDetails);
-//         console.log(userDetails);
-//         // Put user infos in userDetails store
-//     } catch (error) {
-//         console.error('Error while getting user infos:', error)
-//     }
-// }
+const fieldList = [
+  { name: "keyName", label: t('sshkey.name') , type: "input" },
+  { name: "sshKey", label: t('sshkey.value'), type: "textarea" },
+];
 
 </script>
 
@@ -60,7 +57,7 @@ import SshKeys from './SshKeys.vue';
         <MainNavMenu />
         <div class="inner-wrapper">
             <TopMenu />
-            <SshKeys />
+            <Entity :entity-name='"sshkeys"' :entity-store=sshKeysStore :field-list="fieldList" />
         </div>
     </div>
 </template>

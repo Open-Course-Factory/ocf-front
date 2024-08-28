@@ -24,7 +24,7 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
 import { computed } from 'vue'
-import { useMachinesStore } from '../../store/machines'
+import { useMachinesStore } from '../../store/machines.ts'
 import MainNavMenu from '../Menus/MainNavMenu.vue'
 import TopMenu from '../Menus/TopMenu.vue'
 
@@ -32,7 +32,7 @@ const route = useRoute()
 const machineStore = useMachinesStore()
 
 const machine = computed(() => {
-    return machineStore.machines.find(m => m.ID === route.params.id)
+    return machineStore.entities.find(m => m.ID === route.params.id)
 })
 </script>
 

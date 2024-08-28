@@ -20,7 +20,7 @@
  */ 
 
 import { createI18n } from 'vue-i18n'
-import { createApp } from 'vue'
+import { createApp, Ref } from 'vue'
 import './style.css'
 import { createPinia } from 'pinia'
 import App from './App.vue'
@@ -35,10 +35,35 @@ const i18n = createI18n({
     locale: 'fr',
     fallbackLocale: 'en',
     messages: {
-        en: {  },
-        fr: {  }
+        en: { 
+            empty: 'Nothing to display here',
+            add: 'Add',
+            edit: 'Edit',
+            delete: 'Delete',
+         },
+        fr: { 
+            empty: 'Rien à afficher ici',
+            add: 'Ajouter',
+            edit: 'Editer',
+            delete: 'Supprimer',
+        }
     }
 })
+
+declare module 'pinia' {
+    export interface PiniaCustomProperties {
+      // by using a setter we can allow both strings and refs
+      set setEntity(value: any | Ref<any>)
+      
+      
+  
+      // you can define simpler values too
+      entities: any
+  
+
+    }
+  }
+
 const pinia = createPinia()
 pinia.use(piniaPluginPersist)
 

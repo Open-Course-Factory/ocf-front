@@ -48,7 +48,7 @@ const props = defineProps<{
   fieldList: { name: string; label: string; type: string }[];
 }>();
 const emit = defineEmits<{
-  (e: 'add-key', data: Map<string, string>): void;
+  (e: 'submit', data: Map<string, string>): void;
   (e: 'close'): void;
 }>();
 
@@ -67,7 +67,7 @@ function validateFields() {
   });
 
   Object.keys(data).forEach((key) => {
-    if (!errors[key] && sshKeysStore.sshKeys.some(storeKey => storeKey.name === data[key].trim())) {
+    if (!errors[key] && sshKeysStore.entities.some(storeKey => storeKey.name === data[key].trim())) {
       errors[key] = 'Ce nom de clé SSH est déjà utilisé.';
     }
   });
@@ -80,9 +80,9 @@ function validateFields() {
   return res
 }
 
-function handleAddKey() {
+function handleSubmit() {
   if (validateFields()) {
-    emit('add-key', data);
+    emit('submit', data);
     Object.keys(data).forEach((key) => {
       data[key] = ''
     });
@@ -90,13 +90,8 @@ function handleAddKey() {
       console.log("vidé 1")
       errors[key] = ''
     });
-  } else {
-    console.log('Voilà les erreurs après validation :')
-    console.log(errors)
-  }
+  } 
   forceRender()
-  console.log('Voilà les erreurs après force render :')
-  console.log(errors)
 }
 
 function closeModal() {
@@ -145,7 +140,7 @@ watch(() => props.visible, (newVal) => {
         </div>
         
         <div>
-          <button class="btn btn-primary" @click="handleAddKey">Ajouter</button>
+          <button class="btn btn-primary" @click="handleSubmit">Ajouter</button>
           <button class="btn btn-danger" @click="closeModal">Annuler</button>
         </div>
 

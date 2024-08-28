@@ -24,12 +24,12 @@ import { defineStore } from "pinia"
 export const useMachinesStore = defineStore('machines', {
     state() {
         return {
-            machines: []
+            entities: []
         }
     },
     actions: {
-        setMachines(machines) {
-            this.machines = machines
+        setEntity(entities: Map<string, string>) {
+            this.entities = entities
         }
     }
 })

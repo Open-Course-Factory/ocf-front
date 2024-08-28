@@ -24,12 +24,12 @@ import { defineStore } from "pinia"
 export const useSshKeysStore = defineStore('SshKeys', {
     state() {
         return {
-            sshKeys: [],
+            entities: [],
         }
     },
     actions: {
-        setSshKeys(sshKeys) {
-            this.sshKeys = sshKeys
+        setEntity(entities: Map<string, string>) {
+            this.entities = entities
         }
     }
 })
