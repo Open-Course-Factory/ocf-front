@@ -32,6 +32,12 @@ import SshKeyModal from '../Modals/SshKeyModal.vue';
 const currentUserStore = useCurrentUserStore();
 const sshKeysStore = useSshKeysStore();
 const showModal = ref(false);
+const editEntity = ref(false);
+
+const fieldList = [
+        { name: "keyName", label: "Nom de votre clé", type: "input" },
+        { name: "sshKey", label: "Valeur de votre clé", type: "textarea" },
+      ];
 
 onBeforeMount(() => getSshKeys());
 
@@ -57,9 +63,9 @@ async function getSshKeys() {
   }
 }
 
-async function addSshKey(keyName: string, sshKey: string) {
+async function addSshKey(data: Map<string, string>) {
   try {
-    const response = await axios.post('http://localhost:8080/api/v1/sshkeys', { keyName: keyName, privateKey: sshKey }, {
+    const response = await axios.post('http://localhost:8080/api/v1/sshkeys', { keyName: data["keyName"], privateKey: data["sshKey"] }, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json',
@@ -88,27 +94,27 @@ async function deleteSshKey(keyId: string) {
   }
 }
 
-// async function updateSshKey(keyId: string, newKey: string) {
-//   try {
-//     await axios.put(`http://localhost:8080/api/v1/sshkeys/${keyId}`, { key: newKey }, {
-//       headers: {
-//         'Access-Control-Allow-Origin': '*',
-//         'Content-Type': 'application/json',
-//         'Authorization': currentUserStore.secretToken
-//       }
-//     });
-//     getSshKeys(); // Refresh the SSH keys list
-//   } catch (error) {
-//     console.error('Error while updating SSH key:', error);
-//   }
-// }
+async function updateSshKey(keyId: string, newKey: string) {
+  try {
+    await axios.put(`http://localhost:8080/api/v1/sshkeys/${keyId}`, { key: newKey }, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json',
+        'Authorization': currentUserStore.secretToken
+      }
+    });
+    getSshKeys(); // Refresh the SSH keys list
+  } catch (error) {
+    console.error('Error while updating SSH key:', error);
+  }
+}
 
-// function editKey(sshKey) {
-//   const newKey = prompt("Entrez la nouvelle clé SSH :", sshKey.key);
-//   if (newKey && newKey !== sshKey.key) {
-//     updateSshKey(sshKey.id, newKey);
-//   }
-// }
+async function editKey(sshKey) {
+  const newKey = prompt("Entrez la nouvelle clé SSH :", sshKey.key);
+  if (newKey && newKey !== sshKey.key) {
+    updateSshKey(sshKey.id, newKey);
+  }
+}
 </script>
 
 <template>
@@ -121,16 +127,18 @@ async function deleteSshKey(keyId: string) {
       <ul>
         <li v-for="sshKey in sshKeysStore.sshKeys" :key="sshKey.id">
           <p>{{ sshKey.name }}</p>
-          <button class="btn btn-danger" v-if="sshKeysStore.sshKeys.length > 1" @click="deleteSshKey(sshKey.id)">Supprimer</button>
-          <!--<button @click="editKey(sshKey)">Modifier</button>-->
-          <button class="btn btn-danger" v-else disabled>Supprimer</button>
+          <div>
+            <button class="btn btn-danger" v-if="sshKeysStore.sshKeys.length > 1" @click="deleteSshKey(sshKey.id)">Supprimer</button>
+            <button class="btn btn-danger" v-else disabled>Supprimer</button>
+            <button class="btn btn-primary" @click="showModal = true, editEntity = true">Modifier</button>
+          </div>  
         </li>
       </ul>
     </div>
     <div v-else>
       <p>Aucune clé SSH disponible.</p>
     </div>
-    <SshKeyModal :visible="showModal" @add-key="addSshKey" @close="showModal = false" />
+    <SshKeyModal :visible="showModal" :edit="editEntity" v-bind:fieldList=fieldList @add-key="addSshKey" @close="showModal = false" />
   </div>
 </template>
 

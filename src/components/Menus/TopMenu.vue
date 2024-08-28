@@ -33,12 +33,17 @@ const currentUser = useCurrentUserStore();
 <template>
     <div class="top-menu">
 
-            <router-link to="/user">
-                <div class="profile-picture"></div>
-                <p>{{ currentUser.userName }}</p>
-            </router-link>
-            <disconnect />
-
+        <div class="locale-changer">
+            <select v-model="$i18n.locale">
+            <option v-for="locale in $i18n.availableLocales" :key="`locale-${locale}`" :value="locale">{{ locale }}</option>
+            </select>
+        </div>
+        <router-link to="/user">
+            <div class="profile-picture"></div>
+            <p>{{ currentUser.userName }}</p>
+        </router-link>
+        <disconnect />
+            
     </div>
 </template>
 

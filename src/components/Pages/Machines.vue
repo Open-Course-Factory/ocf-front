@@ -28,6 +28,21 @@ import axios from 'axios';
 import { onBeforeMount } from 'vue';
 import { useCurrentUserStore } from '../../store/currentUser';
 import { useMachinesStore } from '../../store/machines';
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n({
+    messages: {
+      en: { machines: { 
+        title: 'Machine list',
+        no_machine: 'Nothing to display here'
+    } },
+      fr: { machines: { 
+        title: 'Liste des machines',
+        no_machine: 'Rien à afficher ici'
+    } }
+    }
+  
+}) 
 
 const currentUser = useCurrentUserStore()
 const machinesStore = useMachinesStore()
@@ -57,8 +72,9 @@ async function getMachines() {
         <MainNavMenu />
         <div class="inner-wrapper">
             <TopMenu />
+
             <section class="cards-list">
-                <h2>Machines</h2>
+                <h2>{{ t('machines.title') }}</h2>
                 <div class="cards-body">
                     <router-link
                         v-if="machinesStore.machines.length > 0"
@@ -70,7 +86,7 @@ async function getMachines() {
                         <p class="card-content">{{ machine.Name }}</p>
                     </router-link>
                     <div v-else>
-                        <p>Aucun cours à afficher</p>
+                        <p>{{ t('machines.no_machine') }}</p>
                     </div>
                 </div>
             </section>

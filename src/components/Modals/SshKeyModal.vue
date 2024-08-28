@@ -22,44 +22,81 @@
 -->
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { reactive, ref, watch } from 'vue';
 import { useSshKeysStore } from '../../store/sshKeys';
+
+import { nextTick } from 'vue';
+const renderComponent = ref(true);
+
+const forceRender = async () => {
+  // Here, we'll remove MyComponent
+  renderComponent.value = false;
+
+   // Then, wait for the change to get flushed to the DOM
+  await nextTick();
+
+  // Add MyComponent back in
+  renderComponent.value = true;
+};
+
+const data = reactive(new Map<string,string>)
+const errors = reactive(new Map<string,string>)
 
 const props = defineProps<{
   visible: boolean;
+  edit: boolean;
+  fieldList: { name: string; label: string; type: string }[];
 }>();
 const emit = defineEmits<{
-  (e: 'add-key', keyName: string, sshKey: string): void;
+  (e: 'add-key', data: Map<string, string>): void;
   (e: 'close'): void;
 }>();
 
-const keyName = ref('');
-const sshKey = ref('');
-const errors = ref<{ keyName: string | null, sshKey: string | null }>({ keyName: null, sshKey: null });
+
+
+for(let key of props.fieldList) {
+  data[key.name] = ''
+  errors[key.name] = ''
+}
 
 const sshKeysStore = useSshKeysStore();
 
 function validateFields() {
-  errors.value.keyName = keyName.value.trim() === '' ? 'Le nom de la clé SSH est requis.' : null;
-  errors.value.sshKey = sshKey.value.trim() === '' ? 'La clé SSH est requise.' : null;
+  Object.keys(data).forEach((key) => {
+    errors[key] = data[key].trim() === '' ? key + ' est requis.' : null
+  });
+
+  Object.keys(data).forEach((key) => {
+    if (!errors[key] && sshKeysStore.sshKeys.some(storeKey => storeKey.name === data[key].trim())) {
+      errors[key] = 'Ce nom de clé SSH est déjà utilisé.';
+    }
+  });
   
-  if (!errors.value.keyName && sshKeysStore.sshKeys.some(key => key.name === keyName.value.trim())) {
-    errors.value.keyName = 'Ce nom de clé SSH est déjà utilisé.';
-  }
-  if (!errors.value.sshKey && sshKeysStore.sshKeys.some(key => key.key === sshKey.value.trim())) {
-    errors.value.sshKey = 'Cette clé SSH est déjà utilisée.';
-  }
-  
-  return !errors.value.keyName && !errors.value.sshKey;
+  let res = true
+  Object.keys(errors).forEach((key) => {
+    res = res && !errors[key]
+  });
+
+  return res
 }
 
 function handleAddKey() {
   if (validateFields()) {
-    emit('add-key', keyName.value, sshKey.value);
-    keyName.value = '';
-    sshKey.value = '';
-    errors.value = { keyName: null, sshKey: null };
+    emit('add-key', data);
+    Object.keys(data).forEach((key) => {
+      data[key] = ''
+    });
+    Object.keys(errors).forEach((key) => {
+      console.log("vidé 1")
+      errors[key] = ''
+    });
+  } else {
+    console.log('Voilà les erreurs après validation :')
+    console.log(errors)
   }
+  forceRender()
+  console.log('Voilà les erreurs après force render :')
+  console.log(errors)
 }
 
 function closeModal() {
@@ -68,42 +105,53 @@ function closeModal() {
 
 watch(() => props.visible, (newVal) => {
   if (newVal) {
-    keyName.value = '';
-    sshKey.value = '';
-    errors.value = { keyName: null, sshKey: null };
+    Object.keys(data).forEach((key) => {
+      data[key] = ''
+    });
+    Object.keys(errors).forEach((key) => {
+      errors[key] = ''
+    });
+
   }
 });
+
 </script>
 
 <template>
-  <div v-if="visible" class="modal-overlay" @click.self="closeModal">
+  <div v-if="renderComponent && visible" class="modal-overlay">
     <div class="modal-body">
       <button class="close-button" @click="closeModal">&times;</button>
       <div class="modal-content">
-        <h2>Ajouter une nouvelle clé SSH</h2>
-        <div class="form-group">
-          <label for="keyName">Nom de la clé SSH :</label>
-          <input 
-            id="keyName" 
-            v-model="keyName" 
-            :class="['form-control', { 'is-invalid': errors.keyName }]"
+        <h2 v-if="edit">Modifier nouvelle clé SSH</h2>
+        <h2 v-else>Ajouter nouvelle clé SSH</h2>
+        <div class="checkout-form">
+          <div v-for="(field) in fieldList" class="form-group">
+          <label :for=field.name>{{ field.label }}</label>
+          <textarea
+            v-if="field.type == 'textarea'"
+            :id=field.name
+            v-model=data[field.name]
+            :class="['form-control', { 'is-invalid': errors[field.name] }]"
           />
-          <div v-if="errors.keyName" class="invalid-feedback">
-            {{ errors.keyName }}
+          <input
+            v-else-if="field.type == 'input'"
+            :id=field.name
+            v-model=data[field.name]
+            :class="['form-control', { 'is-invalid': errors[field.name] }]"
+          />
+          <div v-if="errors[field.name]" class="invalid-feedback">
+            {{ errors[field.name] }}
           </div>
         </div>
-        <div class="form-group">
-          <label for="sshKey">Clé SSH :</label>
-          <textarea 
-            id="sshKey" 
-            v-model="sshKey" 
-            :class="['form-control', { 'is-invalid': errors.sshKey }]"
-          />
-          <div v-if="errors.sshKey" class="invalid-feedback">
-            {{ errors.sshKey }}
-          </div>
+        
+        <div>
+          <button class="btn btn-primary" @click="handleAddKey">Ajouter</button>
+          <button class="btn btn-danger" @click="closeModal">Annuler</button>
         </div>
-        <button class="btn btn-primary" @click="handleAddKey">Ajouter</button>
+
+      </div>
+        
+        
       </div>
     </div>
   </div>

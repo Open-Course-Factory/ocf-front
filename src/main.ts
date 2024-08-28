@@ -19,6 +19,7 @@
  * See the LICENSE file for more information.
  */ 
 
+import { createI18n } from 'vue-i18n'
 import { createApp } from 'vue'
 import './style.css'
 import { createPinia } from 'pinia'
@@ -28,6 +29,16 @@ import 'element-plus/dist/index.css'
 import ElementPlus from 'element-plus'
 import { piniaPluginPersist } from './piniaPluginPersist'
 
+const i18n = createI18n({
+    legacy: false,
+    globalInjection: true,
+    locale: 'fr',
+    fallbackLocale: 'en',
+    messages: {
+        en: {  },
+        fr: {  }
+    }
+})
 const pinia = createPinia()
 pinia.use(piniaPluginPersist)
 
@@ -35,4 +46,5 @@ createApp(App)
     .use(ElementPlus)
     .use(router)
     .use(pinia)
+    .use(i18n)
     .mount('#app')
