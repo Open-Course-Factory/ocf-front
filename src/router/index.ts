@@ -30,6 +30,8 @@ import User from '../components/Pages/User.vue'
 import CourseDetails from '../components/Pages/CourseDetails.vue'
 import Dial from '../components/WebSsh/Dial.vue'
 import WebSsh from '../components/WebSsh/WebSsh.vue'
+import Machines from '../components/Pages/Machines.vue'
+import MachineDetails from '../components/Pages/MachineDetails.vue'
 
 const basicRoutes = [
     { path: '/login', name: 'Login', component: Login, props: true },
@@ -56,7 +58,23 @@ const basicRoutes = [
     },
     { path: '/schedule', name: 'Schedule', component: Schedule, props: true, meta: { requiresAuth: true } },
     { path: '/user', name: 'user', component: User, props: true, meta: { requiresAuth: true } },
-    { path: '/course/:id', component: CourseDetails, props: true, meta: { requiresAuth: true } }
+    { path: '/course/:id', component: CourseDetails, props: true, meta: { requiresAuth: true } },
+    { 
+        path: '/machines', 
+        meta: { 
+            requiresAuth: true 
+        },
+        children: [
+            {
+                path: "",
+                component: Machines,
+            },
+            {
+                path: ":id",
+                component: MachineDetails,
+            },
+        ],
+    },
 ]
 
 const router = createRouter({

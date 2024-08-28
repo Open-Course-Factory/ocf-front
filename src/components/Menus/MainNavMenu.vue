@@ -47,6 +47,9 @@ const currentUser = useCurrentUserStore();
                 <li>
                     <router-link to="/schedule">Emploi du temps</router-link>
                 </li>
+                <li v-if="currentUser.userRoles[0] === 'administrator'">
+                    <router-link to="/machines">Machines</router-link>
+                </li>
             </ul>
         </nav>
     </div>
