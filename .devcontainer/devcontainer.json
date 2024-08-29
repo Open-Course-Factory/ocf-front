@@ -23,7 +23,8 @@
 		"vscode": {
 			"extensions": [
 				"Vue.volar",
-				"antfu.vite"
+				"antfu.vite",
+				"ms-vsliveshare.vsliveshare"
 			]
 		}
 	}

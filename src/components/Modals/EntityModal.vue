@@ -45,7 +45,7 @@ const errors = reactive(new Map<string,string>)
 const props = defineProps<{
   visible: boolean;
   edit: boolean;
-  fieldList: { name: string; label: string; type: string }[];
+  fieldList: Map<string, any>;
 }>();
 const emit = defineEmits<{
   (e: 'submit', data: Map<string, string>): void;
@@ -53,11 +53,15 @@ const emit = defineEmits<{
 }>();
 
 
-
-for(let key of props.fieldList) {
-  data[key.name] = ''
-  errors[key.name] = ''
-}
+// hack to set map data instead of set method (that should be used)
+// mandatory to make v-model able to read and write the data
+// v-model is not compatible with the get method
+props.fieldList.forEach((value, key) => {
+  if (value.toBeSet) {
+    data[key] = ''
+    errors[key] = ''
+  }
+})
 
 const sshKeysStore = useSshKeysStore();
 
@@ -120,23 +124,25 @@ watch(() => props.visible, (newVal) => {
         <h2 v-if="edit">Modifier nouvelle clé SSH</h2>
         <h2 v-else>Ajouter nouvelle clé SSH</h2>
         <div class="checkout-form">
-          <div v-for="(field) in fieldList" class="form-group">
-          <label :for=field.name>{{ field.label }}</label>
-          <textarea
-            v-if="field.type == 'textarea'"
-            :id=field.name
-            v-model=data[field.name]
-            :class="['form-control', { 'is-invalid': errors[field.name] }]"
-          />
-          <input
-            v-else-if="field.type == 'input'"
-            :id=field.name
-            v-model=data[field.name]
-            :class="['form-control', { 'is-invalid': errors[field.name] }]"
-          />
-          <div v-if="errors[field.name]" class="invalid-feedback">
-            {{ errors[field.name] }}
-          </div>
+          <div v-for="[name, field] of fieldList" class="form-group">
+            <span v-if="field.toBeSet">
+              <label :for=name>{{ field.label }}</label>
+              <textarea
+                v-if="field.type == 'textarea'"
+                :id=name
+                v-model=data[name]
+                :class="['form-control', { 'is-invalid': errors[name] }]"
+              />
+              <input
+                v-else-if="field.type == 'input'"
+                :id=name
+                v-model=data[name]
+                :class="['form-control', { 'is-invalid': errors[name] }]"
+              />
+              <div v-if="errors[name]" class="invalid-feedback">
+                {{ errors[name] }}
+              </div>
+            </span>
         </div>
         
         <div>

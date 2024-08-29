@@ -47,15 +47,12 @@ const { t } = useI18n({
 const props = defineProps<{
   entityName: string;
   entityStore: Store;
-  fieldList: { name: string; label: string; type: string }[];
+  fieldList: Map<string, any>;
 }>();
-
 
 const currentUserStore = useCurrentUserStore();
 const showModal = ref(false);
 const editEntity = ref(false);
-
-
 
 onBeforeMount(() => getEntities());
 
@@ -145,7 +142,15 @@ async function updateEntity(data: Map<string, string>) {
     <div v-if="props.entityStore.entities.length">
       <ul>
         <li v-for="entity in props.entityStore.entities" :key="entity.id">
-          <p>{{ entity.name }}</p>
+          <ul>
+            
+            <span v-for="(entityProperty, index) in entity"  >
+              <li v-if="props.fieldList.get(index).display">
+                {{ entityProperty }}
+              </li>
+            </span>
+          </ul>
+          
           <div>
             <button class="btn btn-danger" v-if="props.entityStore.entities.length > 1" @click="deleteEntity(entity.id)">{{ t('delete') }}</button>
             <button class="btn btn-danger" v-else disabled>{{ t('delete') }}</button>
