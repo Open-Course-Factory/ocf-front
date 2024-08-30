@@ -31,7 +31,6 @@ import CourseDetails from '../components/Pages/CourseDetails.vue'
 import Dial from '../components/WebSsh/Dial.vue'
 import WebSsh from '../components/WebSsh/WebSsh.vue'
 import Machines from '../components/Pages/Machines.vue'
-import MachineDetails from '../components/Pages/MachineDetails.vue'
 import Usernames from '../components/Pages/Usernames.vue'
 import Connections from '../components/Pages/Connections.vue'
 
@@ -104,7 +103,7 @@ const router = createRouter({
     routes: basicRoutes as RouteRecordRaw[]
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
     const currentUserStore = useCurrentUserStore();
 
     if (to.matched.some(record => record.meta.requiresAuth)) {

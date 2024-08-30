@@ -110,32 +110,20 @@ async function deleteEntity(keyId: string) {
   }
 }
 
-async function updateEntity(data: Map<string, string>) {
-  try {
-    await axios.put(`http://localhost:8080/api/v1/${props.entityName}/${data["id"]}`, { data }, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json',
-        'Authorization': currentUserStore.secretToken
-      }
-    });
-    getEntities();
-  } catch (error) {
-    console.error('Error while updating SSH key:', error);
-  }
-}
-
-function isObject(any) {
-  return any instanceof Object
-}
-
-function displayObject(obj: Object) {
-  let output = ""
-  for (var property in obj) {
-    output += property + ': ' + obj[property];
-  }
-  return output
-}
+// async function updateEntity(data: Map<string, string>) {
+//   try {
+//     await axios.put(`http://localhost:8080/api/v1/${props.entityName}/${data["id"]}`, { data }, {
+//       headers: {
+//         'Access-Control-Allow-Origin': '*',
+//         'Content-Type': 'application/json',
+//         'Authorization': currentUserStore.secretToken
+//       }
+//     });
+//     getEntities();
+//   } catch (error) {
+//     console.error('Error while updating SSH key:', error);
+//   }
+// }
 
 // async function editKey(data: Map<string, string>) {
 //   const newKey = prompt("Entrez la nouvelle clé SSH :", sshKey.key);

@@ -27,11 +27,6 @@ import TopMenu from '../Menus/TopMenu.vue';
 import MainNavMenu from '../Menus/MainNavMenu.vue';
 import Entity from './Entity.vue';
 import { useMachinesStore } from '../../store/machines';
-import { useI18n } from 'vue-i18n';
-
-
-
-
 
 const entityStore = useMachinesStore();
            

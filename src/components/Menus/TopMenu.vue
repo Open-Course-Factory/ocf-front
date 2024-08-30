@@ -23,10 +23,14 @@
 
 <script setup lang="ts">
 
+import { useI18n } from 'vue-i18n';
 import { useCurrentUserStore } from '../../store/currentUser.ts';
 import Disconnect from '../Buttons/Disconnect.vue';
 
+
 const currentUser = useCurrentUserStore();
+
+const model = useI18n().locale
 
 </script>
 
@@ -34,8 +38,8 @@ const currentUser = useCurrentUserStore();
     <div class="top-menu">
 
         <div class="locale-changer">
-            <select v-model="$i18n.locale">
-            <option v-for="locale in $i18n.availableLocales" :key="`locale-${locale}`" :value="locale">{{ locale }}</option>
+            <select v-model="model">
+            <option v-for="locale in useI18n().availableLocales" :key="`locale-${locale}`" :value="locale">{{ locale }}</option>
             </select>
         </div>
         <router-link to="/user">
