@@ -53,14 +53,9 @@ const i18n = createI18n({
 declare module 'pinia' {
     export interface PiniaCustomProperties {
       // by using a setter we can allow both strings and refs
-      set setEntity(value: any | Ref<any>)
+      set setEntities(value: any | Ref<any>)
       
-      
-  
-      // you can define simpler values too
       entities: any
-  
-
     }
   }
 

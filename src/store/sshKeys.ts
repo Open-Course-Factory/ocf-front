@@ -20,6 +20,7 @@
  */
 
 import { defineStore } from "pinia"
+import { Ref } from "vue"
 
 export const useSshKeysStore = defineStore('SshKeys', {
     state() {
@@ -28,7 +29,8 @@ export const useSshKeysStore = defineStore('SshKeys', {
         }
     },
     actions: {
-        setEntity(entities: Map<string, string>) {
+        
+        setEntities(entities: any | Ref<any>) {
             this.entities = entities
         }
     }

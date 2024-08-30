@@ -29,29 +29,30 @@ import Entity from './Entity.vue';
 import { useMachinesStore } from '../../store/machines.ts';
 import { useI18n } from 'vue-i18n';
 
-const { t } = useI18n({
-    messages: {
-      en: { machine: { 
-        name: 'Machine Name',
-        ip: 'Machine IP',
-        port: 'SSH Port',
-    } },
-      fr: { machine: { 
-        name: 'Nom de la machine',
-        ip: 'IP de la machine',
-        port: 'Port SSH',
-    } }
-    }
-  
-}) 
+
+
+useI18n().mergeLocaleMessage('en', { machines : { 
+    title : "Machines list",
+    name: 'Machine Name',
+    ip: 'Machine IP',
+    port: 'SSH Port', 
+}})
+useI18n().mergeLocaleMessage('fr', { machines : { 
+    title : "Liste des machines",
+    name: 'Nom de la machine',
+    ip: 'IP de la machine',
+    port: 'Port SSH',
+ }})
+
+ const { t } = useI18n()
 
 const entityStore = useMachinesStore();
 
 const fieldList = new Map<string, any>([
-    ["id", { label: t('machine.id'), type: "input", display: false, toBeSet: false }],
-    ["name", { label: t('machine.name'), type: "input", display: true, toBeSet: true }],
-    ["ip", { label: t('machine.ip'), type: "input", display: true, toBeSet: true }],
-    ["port", { label: t('machine.port'), type: "input", display: true, toBeSet: true }],
+    ["id", { label: t('machines.id'), type: "input", display: false, toBeSet: false }],
+    ["name", { label: t('machines.name'), type: "input", display: true, toBeSet: true }],
+    ["ip", { label: t('machines.ip'), type: "input", display: true, toBeSet: true }],
+    ["port", { label: t('machines.port'), type: "input", display: true, toBeSet: true }],
 ])
 
 </script>

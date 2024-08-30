@@ -20,6 +20,7 @@
  */
 
 import { defineStore } from "pinia"
+import { Ref } from "vue"
 
 export const useMachinesStore = defineStore('machines', {
     state() {
@@ -28,7 +29,7 @@ export const useMachinesStore = defineStore('machines', {
         }
     },
     actions: {
-        setEntity(entities: Map<string, string>) {
+        setEntities(entities: any | Ref<any>) {
             this.entities = entities
         }
     }

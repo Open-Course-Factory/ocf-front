@@ -70,11 +70,11 @@ async function getEntities() {
       response.data = []
     }
 
-    props.entityStore.setEntity(response.data);
+    props.entityStore.setEntities(response.data);
 
     console.log("Réponse API :", response.data);
   } catch (error) {
-    props.entityStore.setEntity([]);
+    props.entityStore.setEntities([]);
     console.error('Error while getting SSH keys:', error);
   }
 }
@@ -136,18 +136,21 @@ async function updateEntity(data: Map<string, string>) {
 <template>
   <div class="content">
     <div class="header">
-      <h2>{{ t('sshkey.title') }}</h2>
-      <button class="btn btn-primary" @click="showModal = true">{{ t('sshkey.add') }}</button>
+      <h2>{{ t(`${props.entityName}.title`) }}</h2>
+      <button class="btn btn-primary" @click="showModal = true">{{ t('add') }}</button>
     </div>
     <div v-if="props.entityStore.entities.length">
       <ul>
         <li v-for="entity in props.entityStore.entities" :key="entity.id">
           <ul>
-            
-            <span v-for="(entityProperty, index) in entity"  >
-              <li v-if="props.fieldList.get(index).display">
+
+            <span v-for="entityProperty, index in entity"  >
+              <h3 v-if="props.fieldList.get(index.toString()).display && index.toString() == 'name'"> {{ entityProperty }} </h3>
+
+              <li v-else-if="props.fieldList.get(index.toString()).display">
                 {{ entityProperty }}
               </li>
+              
             </span>
           </ul>
           
