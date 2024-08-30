@@ -40,11 +40,12 @@ function isObject(any) {
 <template>
     <ul>
         <span v-for="entityProperty, index in entity"  >
-            <h3  v-if="props.entityStore.fieldList != undefined && props.entityStore.fieldList.get(index.toString()) != undefined && props.entityStore.fieldList.get(index.toString()).display && index.toString() == 'name'"> {{ entityProperty }} </h3>
+            <h4  v-if="props.entityStore.fieldList.get(index.toString()) != undefined && props.entityStore.fieldList.get(index.toString()).display && index.toString() == 'name'"> {{ entityProperty }} </h4>
             
 
-            <li v-else-if="props.entityStore.fieldList != undefined && props.entityStore.fieldList.get(index.toString()) != undefined && props.entityStore.fieldList.get(index.toString()).display">
+            <li v-else-if="props.entityStore.fieldList.get(index.toString()) != undefined && props.entityStore.fieldList.get(index.toString()).display">
                 <span v-if="isObject(entityProperty)">
+                    <h3>{{ index.toString() }}<br /></h3>
                     <EntityCard :entity=entityProperty :entity-store="props.entityStore.subEntitiesStores.get(index.toString())" />
                 </span>
                 <span v-else>{{ entityProperty }}</span>
