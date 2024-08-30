@@ -32,6 +32,8 @@ import Dial from '../components/WebSsh/Dial.vue'
 import WebSsh from '../components/WebSsh/WebSsh.vue'
 import Machines from '../components/Pages/Machines.vue'
 import MachineDetails from '../components/Pages/MachineDetails.vue'
+import Usernames from '../components/Pages/Usernames.vue'
+import Connections from '../components/Pages/Connections.vue'
 
 const basicRoutes = [
     { path: '/login', name: 'Login', component: Login, props: true },
@@ -69,9 +71,29 @@ const basicRoutes = [
                 path: "",
                 component: Machines,
             },
+        ],
+    },
+    { 
+        path: '/usernames', 
+        meta: { 
+            requiresAuth: true 
+        },
+        children: [
             {
-                path: ":id",
-                component: MachineDetails,
+                path: "",
+                component: Usernames,
+            },
+        ],
+    },
+    { 
+        path: '/connections', 
+        meta: { 
+            requiresAuth: true 
+        },
+        children: [
+            {
+                path: "",
+                component: Connections,
             },
         ],
     },

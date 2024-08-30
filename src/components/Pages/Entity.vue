@@ -26,6 +26,7 @@ import axios from 'axios';
 import { ref, onBeforeMount } from 'vue';
 import { useCurrentUserStore } from '../../store/currentUser';
 import SshKeyModal from '../Modals/EntityModal.vue';
+import EntityCard from '../Cards/EntityCard.vue';
 
 import { useI18n } from 'vue-i18n'
 import { Store } from 'pinia';
@@ -47,7 +48,6 @@ const { t } = useI18n({
 const props = defineProps<{
   entityName: string;
   entityStore: Store;
-  fieldList: Map<string, any>;
 }>();
 
 const currentUserStore = useCurrentUserStore();
@@ -125,6 +125,18 @@ async function updateEntity(data: Map<string, string>) {
   }
 }
 
+function isObject(any) {
+  return any instanceof Object
+}
+
+function displayObject(obj: Object) {
+  let output = ""
+  for (var property in obj) {
+    output += property + ': ' + obj[property];
+  }
+  return output
+}
+
 // async function editKey(data: Map<string, string>) {
 //   const newKey = prompt("Entrez la nouvelle clé SSH :", sshKey.key);
 //   if (newKey && newKey !== sshKey.key) {
@@ -142,30 +154,21 @@ async function updateEntity(data: Map<string, string>) {
     <div v-if="props.entityStore.entities.length">
       <ul>
         <li v-for="entity in props.entityStore.entities" :key="entity.id">
-          <ul>
 
-            <span v-for="entityProperty, index in entity"  >
-              <h3 v-if="props.fieldList.get(index.toString()).display && index.toString() == 'name'"> {{ entityProperty }} </h3>
-
-              <li v-else-if="props.fieldList.get(index.toString()).display">
-                {{ entityProperty }}
-              </li>
-              
-            </span>
-          </ul>
+          <EntityCard :entity="entity" :fieldList="props.entityStore.fieldList" :entityStore="entityStore"/>
           
           <div>
             <button class="btn btn-danger" v-if="props.entityStore.entities.length > 1" @click="deleteEntity(entity.id)">{{ t('delete') }}</button>
             <button class="btn btn-danger" v-else disabled>{{ t('delete') }}</button>
             <button class="btn btn-primary" @click="showModal = true, editEntity = true">{{ t('edit') }}</button>
-          </div>  
+          </div>
         </li>
       </ul>
     </div>
     <div v-else>
       <p>{{ t('empty') }}</p>
     </div>
-    <SshKeyModal :visible="showModal" :edit="editEntity" v-bind:fieldList=fieldList @submit="addEntity" @close="showModal = false" />
+    <SshKeyModal :visible="showModal" :edit="editEntity" v-bind:fieldList=entityStore.fieldList @submit="addEntity" @close="showModal = false" />
   </div>
 </template>
 

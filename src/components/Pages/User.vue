@@ -27,29 +27,8 @@ import TopMenu from '../Menus/TopMenu.vue';
 import MainNavMenu from '../Menus/MainNavMenu.vue';
 import Entity from './Entity.vue';
 import { useSshKeysStore } from '../../store/sshKeys';
-import { useI18n } from 'vue-i18n';
-
-useI18n().mergeLocaleMessage('en', { sshkeys : { 
-    title : "Ssh Keys list",
-    name: 'Key name',
-    value: 'Key value (PRIVATE)',
-}})
-useI18n().mergeLocaleMessage('fr', { sshkeys : { 
-    title : "Liste des clés SSH",
-    name: 'Nom de la clé',
-    value: 'Valeur de la clé (PRIVEE)',
- }})
-
- const { t } = useI18n()
 
 const sshKeysStore = useSshKeysStore();
-
-const fieldList = new Map<string, any>([
-    ["id", { label: t('sshkeys.id'), type: "input", display: false, toBeSet: false }],
-    ["name", { label: t('sshkeys.name'), type: "input", display: true, toBeSet: true }],
-    ["private_key", { label: t('sshkeys.value'), type: "textarea", display: false, toBeSet: true }],
-    ["created_at", { label: t('sshkeys.created_at'), type: "input", display: true, toBeSet: false }],
-]);
 
 </script>
 
@@ -58,7 +37,7 @@ const fieldList = new Map<string, any>([
         <MainNavMenu />
         <div class="inner-wrapper">
             <TopMenu />
-            <Entity :entity-name='"sshkeys"' :entity-store=sshKeysStore :field-list="fieldList" />
+            <Entity :entity-name='"sshkeys"' :entity-store=sshKeysStore />
         </div>
     </div>
 </template>

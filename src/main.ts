@@ -56,6 +56,8 @@ declare module 'pinia' {
       set setEntities(value: any | Ref<any>)
       
       entities: any
+      fieldList: Map<string, any>
+      subEntitiesStores: Map<string, any>
     }
   }
 
