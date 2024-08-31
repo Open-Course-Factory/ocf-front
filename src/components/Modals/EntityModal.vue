@@ -44,11 +44,12 @@ const errors = reactive(new Map<string,string>)
 
 const props = defineProps<{
   visible: boolean;
-  edit: boolean;
+  entity?: any;
   fieldList: Map<string, any>;
 }>();
 const emit = defineEmits<{
   (e: 'submit', data: Map<string, string>): void;
+  (e: 'modify', data: Map<string, string>): void;
   (e: 'close'): void;
 }>();
 
@@ -84,14 +85,14 @@ function validateFields() {
   return res
 }
 
-function handleSubmit() {
+function handleEvent(event) {
   if (validateFields()) {
-    emit('submit', data);
+    if (props.entity) { data["id"] = props.entity["id"] }
+    emit(event, data);
     Object.keys(data).forEach((key) => {
       data[key] = ''
     });
     Object.keys(errors).forEach((key) => {
-      console.log("vidé 1")
       errors[key] = ''
     });
   } 
@@ -105,7 +106,11 @@ function closeModal() {
 watch(() => props.visible, (newVal) => {
   if (newVal) {
     Object.keys(data).forEach((key) => {
-      data[key] = ''
+      if (props.entity) {
+        data[key] = props.entity[key]  
+      } else {
+        data[key] = ''
+      }
     });
     Object.keys(errors).forEach((key) => {
       errors[key] = ''
@@ -121,7 +126,7 @@ watch(() => props.visible, (newVal) => {
     <div class="modal-body">
       <button class="close-button" @click="closeModal">&times;</button>
       <div class="modal-content">
-        <h2 v-if="edit">Modifier nouvelle clé SSH</h2>
+        <h2 v-if="entity">Modifier nouvelle clé SSH</h2>
         <h2 v-else>Ajouter nouvelle clé SSH</h2>
         <div class="checkout-form">
           <div v-for="[name, field] of fieldList" class="form-group">
@@ -146,7 +151,8 @@ watch(() => props.visible, (newVal) => {
         </div>
         
         <div>
-          <button class="btn btn-primary" @click="handleSubmit">Ajouter</button>
+          <button v-if="entity" class="btn btn-primary" @click="handleEvent('modify')">Modifier</button>
+          <button v-else class="btn btn-primary" @click="handleEvent('submit')">Ajouter</button>
           <button class="btn btn-danger" @click="closeModal">Annuler</button>
         </div>
 

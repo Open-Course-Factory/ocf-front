@@ -25,7 +25,7 @@
 import axios from 'axios';
 import { ref, onBeforeMount } from 'vue';
 import { useCurrentUserStore } from '../../store/currentUser';
-import SshKeyModal from '../Modals/EntityModal.vue';
+import EntityModal from '../Modals/EntityModal.vue';
 import EntityCard from '../Cards/EntityCard.vue';
 
 import { useI18n } from 'vue-i18n'
@@ -52,7 +52,7 @@ const props = defineProps<{
 
 const currentUserStore = useCurrentUserStore();
 const showModal = ref(false);
-const editEntity = ref(false);
+const entityToEdit = ref();
 
 onBeforeMount(() => getEntities());
 
@@ -110,34 +110,28 @@ async function deleteEntity(keyId: string) {
   }
 }
 
-// async function updateEntity(data: Map<string, string>) {
-//   try {
-//     await axios.put(`http://localhost:8080/api/v1/${props.entityName}/${data["id"]}`, { data }, {
-//       headers: {
-//         'Access-Control-Allow-Origin': '*',
-//         'Content-Type': 'application/json',
-//         'Authorization': currentUserStore.secretToken
-//       }
-//     });
-//     getEntities();
-//   } catch (error) {
-//     console.error('Error while updating SSH key:', error);
-//   }
-// }
+async function updateEntity(data: Map<string, string>) {
+  try {
+    await axios.patch(`http://localhost:8080/api/v1/${props.entityName}/${data["id"]}`, { data }, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json',
+        'Authorization': currentUserStore.secretToken
+      }
+    });
+    getEntities();
+  } catch (error) {
+    console.error('Error while updating entity:', error);
+  }
+}
 
-// async function editKey(data: Map<string, string>) {
-//   const newKey = prompt("Entrez la nouvelle clé SSH :", sshKey.key);
-//   if (newKey && newKey !== sshKey.key) {
-//     updateEntity(data);
-//   }
-// }
 </script>
 
 <template>
   <div class="content">
     <div class="header">
       <h2>{{ t(`${props.entityName}.title`) }}</h2>
-      <button class="btn btn-primary" @click="showModal = true">{{ t('add') }}</button>
+      <button class="btn btn-primary" @click="showModal = true, entityToEdit = null">{{ t('add') }}</button>
     </div>
     <div v-if="props.entityStore.entities.length">
       <ul>
@@ -148,7 +142,7 @@ async function deleteEntity(keyId: string) {
           <div>
             <button class="btn btn-danger" v-if="props.entityStore.entities.length > 1" @click="deleteEntity(entity.id)">{{ t('delete') }}</button>
             <button class="btn btn-danger" v-else disabled>{{ t('delete') }}</button>
-            <button class="btn btn-primary" @click="showModal = true, editEntity = true">{{ t('edit') }}</button>
+            <button class="btn btn-primary" @click="showModal = true, entityToEdit = entity">{{ t('edit') }}</button>
           </div>
         </li>
       </ul>
@@ -156,7 +150,7 @@ async function deleteEntity(keyId: string) {
     <div v-else>
       <p>{{ t('empty') }}</p>
     </div>
-    <SshKeyModal :visible="showModal" :edit="editEntity" v-bind:fieldList=entityStore.fieldList @submit="addEntity" @close="showModal = false" />
+    <EntityModal :visible="showModal" :entity="entityToEdit" v-bind:fieldList=entityStore.fieldList @submit="addEntity" @modify="updateEntity" @close="showModal = false" />
   </div>
 </template>
 
