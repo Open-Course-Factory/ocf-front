@@ -20,7 +20,7 @@
 
 	"workspaceFolder": "/workspaces",
 
-	"postCreateCommand": "echo \"source /usr/share/bash-completion/completions/git\" >> ~/.bashrc",
+	"postCreateCommand": "echo \"\nsource /usr/share/bash-completion/completions/git\" >> ~/.bashrc",
 
 	"mounts": [
 	  "type=bind,source=${localEnv:HOME}/.ssh,target=/home/node/.ssh,readonly"
