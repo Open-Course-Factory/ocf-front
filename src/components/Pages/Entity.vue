@@ -30,6 +30,7 @@ import EntityCard from '../Cards/EntityCard.vue';
 
 import { useI18n } from 'vue-i18n'
 import { Store } from 'pinia';
+import { en } from 'element-plus/es/locales.mjs';
 
 const { t } = useI18n({
     messages: {
@@ -112,7 +113,7 @@ async function deleteEntity(keyId: string) {
 
 async function updateEntity(data: Map<string, string>) {
   try {
-    await axios.patch(`http://localhost:8080/api/v1/${props.entityName}/${data["id"]}`, { data }, {
+    await axios.patch(`http://localhost:8080/api/v1/${props.entityName}/${data["id"]}`, data, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json',
@@ -120,10 +121,22 @@ async function updateEntity(data: Map<string, string>) {
       }
     });
     getEntities();
+    showModal.value = false;
   } catch (error) {
     console.error('Error while updating entity:', error);
   }
 }
+
+function isEditable(entityStore: Store) {
+        let res = false
+        entityStore.fieldList.forEach(element => {
+            if (element.toBeEdited == true) {
+                res = true
+                return res
+            }
+        });
+        return res
+    }
 
 </script>
 
@@ -142,7 +155,7 @@ async function updateEntity(data: Map<string, string>) {
           <div>
             <button class="btn btn-danger" v-if="props.entityStore.entities.length > 1" @click="deleteEntity(entity.id)">{{ t('delete') }}</button>
             <button class="btn btn-danger" v-else disabled>{{ t('delete') }}</button>
-            <button class="btn btn-primary" @click="showModal = true, entityToEdit = entity">{{ t('edit') }}</button>
+            <button class="btn btn-primary" v-if="isEditable(props.entityStore)" @click="showModal = true, entityToEdit = entity">{{ t('edit') }}</button>
           </div>
         </li>
       </ul>
@@ -150,7 +163,7 @@ async function updateEntity(data: Map<string, string>) {
     <div v-else>
       <p>{{ t('empty') }}</p>
     </div>
-    <EntityModal :visible="showModal" :entity="entityToEdit" v-bind:fieldList=entityStore.fieldList @submit="addEntity" @modify="updateEntity" @close="showModal = false" />
+    <EntityModal :visible="showModal" :entity="entityToEdit" :entity-store="entityStore" v-bind:fieldList=entityStore.fieldList @submit="addEntity" @modify="updateEntity" @close="showModal = false" />
   </div>
 </template>
 

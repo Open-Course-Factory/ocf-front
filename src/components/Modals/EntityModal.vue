@@ -23,9 +23,9 @@
 
 <script setup lang="ts">
 import { reactive, ref, watch } from 'vue';
-import { useSshKeysStore } from '../../store/sshKeys';
 
 import { nextTick } from 'vue';
+import { Store } from 'pinia';
 const renderComponent = ref(true);
 
 const forceRender = async () => {
@@ -45,7 +45,7 @@ const errors = reactive(new Map<string,string>)
 const props = defineProps<{
   visible: boolean;
   entity?: any;
-  fieldList: Map<string, any>;
+  entityStore: Store;
 }>();
 const emit = defineEmits<{
   (e: 'submit', data: Map<string, string>): void;
@@ -57,29 +57,34 @@ const emit = defineEmits<{
 // hack to set map data instead of set method (that should be used)
 // mandatory to make v-model able to read and write the data
 // v-model is not compatible with the get method
-props.fieldList.forEach((value, key) => {
+props.entityStore.fieldList.forEach((value, key) => {
   if (value.toBeSet) {
     data[key] = ''
     errors[key] = ''
   }
 })
 
-const sshKeysStore = useSshKeysStore();
-
 function validateFields() {
   Object.keys(data).forEach((key) => {
-    errors[key] = data[key].trim() === '' ? key + ' est requis.' : null
+    errors[key] = data[key].toString().trim() === '' ? key + ' est requis.' : null
   });
 
   Object.keys(data).forEach((key) => {
-    if (!errors[key] && sshKeysStore.entities.some(storeKey => storeKey.name === data[key].trim())) {
+    if (!errors[key] && props.entityStore.entities.some(storeKey => storeKey.name === data[key].toString().trim())) {
       errors[key] = 'Ce nom de clé SSH est déjà utilisé.';
     }
   });
   
   let res = true
   Object.keys(errors).forEach((key) => {
-    res = res && !errors[key]
+    if (!props.entity) {
+      res = res && !errors[key]
+    } else {
+      if (props.entityStore.fieldList.get(key).toBeEdited) {
+        res = res && !errors[key]
+      }
+    }
+    
   });
 
   return res
@@ -87,6 +92,7 @@ function validateFields() {
 
 function handleEvent(event) {
   if (validateFields()) {
+    // Set data["id"] with current id in case of edition
     if (props.entity) { data["id"] = props.entity["id"] }
     emit(event, data);
     Object.keys(data).forEach((key) => {
@@ -129,8 +135,8 @@ watch(() => props.visible, (newVal) => {
         <h2 v-if="entity">Modifier nouvelle clé SSH</h2>
         <h2 v-else>Ajouter nouvelle clé SSH</h2>
         <div class="checkout-form">
-          <div v-for="[name, field] of fieldList" class="form-group">
-            <span v-if="field.toBeSet">
+          <div v-for="[name, field] of entityStore.fieldList" class="form-group">
+            <span v-if="(!entity && field.toBeSet) || (entity && field.toBeEdited)">
               <label :for=name>{{ field.label }}</label>
               <textarea
                 v-if="field.type == 'textarea'"

@@ -43,10 +43,10 @@ export const useMachinesStore = defineStore('machines', () => {
 
     const entities = []
     const fieldList = new Map<string, any>([
-        ["id", { label: t('machines.id'), type: "input", display: false, toBeSet: false }],
-        ["name", { label: t('machines.name'), type: "input", display: true, toBeSet: true }],
-        ["ip", { label: t('machines.ip'), type: "input", display: true, toBeSet: true }],
-        ["port", { label: t('machines.port'), type: "input", display: true, toBeSet: true }],
+        ["id", { label: t('machines.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
+        ["name", { label: t('machines.name'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["ip", { label: t('machines.ip'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["port", { label: t('machines.port'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
     ])
 
     const subEntitiesStores = new Map<string, any>([

@@ -36,8 +36,8 @@ export const useUsernamesStore = defineStore('usernames', () => {
     const entities = []
 
     const fieldList = new Map<string, any>([
-        ["Username", { label: t('usernames.name'), type: "input", display: true, toBeSet: true }],
-        ["ID", { label: t('usernames.id'), type: "input", display: false, toBeSet: false }],
+        ["Username", { label: t('usernames.name'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["ID", { label: t('usernames.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
     ])
 
     const subEntitiesStores = new Map<string, any>([

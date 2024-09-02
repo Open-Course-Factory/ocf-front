@@ -40,10 +40,10 @@ export const useSshKeysStore = defineStore('SshKeys', () => {
 
     const entities = []
     const fieldList = new Map<string, any>([
-        ["id", { label: t('sshkeys.id'), type: "input", display: false, toBeSet: false }],
-        ["name", { label: t('sshkeys.name'), type: "input", display: true, toBeSet: true }],
-        ["private_key", { label: t('sshkeys.value'), type: "textarea", display: false, toBeSet: true }],
-        ["created_at", { label: t('sshkeys.created_at'), type: "input", display: true, toBeSet: false }],
+        ["id", { label: t('sshkeys.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
+        ["name", { label: t('sshkeys.name'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["private_key", { label: t('sshkeys.value'), type: "textarea", display: false, toBeSet: true, toBeEdited: false }],
+        ["created_at", { label: t('sshkeys.created_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
     ])
         
     function setEntities(entities: any | Ref<any>) {
