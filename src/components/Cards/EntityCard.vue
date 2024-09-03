@@ -31,8 +31,15 @@ const props = defineProps<{
 }>();
 
 
-function isObject(any) {
-  return any instanceof Object
+function isSubEntity(any) {
+  let res = false;
+  if (any instanceof Object) {
+    // if the first key is 0 it means that it is only an array of strings and not an object
+    if (any[0] == 'undefined') {
+      res = true;
+    } 
+  }
+  return res
 }
 
 </script>
@@ -44,7 +51,7 @@ function isObject(any) {
             
 
             <li v-else-if="props.entityStore.fieldList.get(index.toString()) != undefined && props.entityStore.fieldList.get(index.toString()).display">
-                <span v-if="isObject(entityProperty)">
+                <span v-if="isSubEntity(entityProperty)">
                     <h3>{{ index.toString() }}<br /></h3>
                     <EntityCard :entity=entityProperty :entity-store="props.entityStore.subEntitiesStores.get(index.toString())" />
                 </span>

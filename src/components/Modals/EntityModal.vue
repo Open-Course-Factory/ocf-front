@@ -26,6 +26,9 @@ import { reactive, ref, watch } from 'vue';
 
 import { nextTick } from 'vue';
 import { Store } from 'pinia';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n({}) 
 const renderComponent = ref(true);
 
 const forceRender = async () => {
@@ -46,6 +49,7 @@ const props = defineProps<{
   visible: boolean;
   entity?: any;
   entityStore: Store;
+  entityName: string;
 }>();
 const emit = defineEmits<{
   (e: 'submit', data: Map<string, string>): void;
@@ -90,8 +94,17 @@ function validateFields() {
   return res
 }
 
+function formatFields() {
+  Object.keys(data).forEach((key) => {
+    if (props.entityStore.fieldList.get(key).type == 'advanced-textarea') {
+      data[key] = data[key].split('\n')
+    }
+  });
+}
+
 function handleEvent(event) {
   if (validateFields()) {
+    formatFields()
     // Set data["id"] with current id in case of edition
     if (props.entity) { data["id"] = props.entity["id"] }
     emit(event, data);
@@ -113,7 +126,11 @@ watch(() => props.visible, (newVal) => {
   if (newVal) {
     Object.keys(data).forEach((key) => {
       if (props.entity) {
-        data[key] = props.entity[key]  
+        if (props.entityStore.fieldList.get(key).type == 'advanced-textarea') {
+          data[key] = props.entity[key].join('\n')
+        } else {
+          data[key] = props.entity[key]
+        }
       } else {
         data[key] = ''
       }
@@ -132,14 +149,14 @@ watch(() => props.visible, (newVal) => {
     <div class="modal-body">
       <button class="close-button" @click="closeModal">&times;</button>
       <div class="modal-content">
-        <h2 v-if="entity">Modifier nouvelle clé SSH</h2>
-        <h2 v-else>Ajouter nouvelle clé SSH</h2>
+        <h2 v-if="entity">{{ t(`${props.entityName}.modify`) }}</h2>
+        <h2 v-else>{{ t(`${props.entityName}.add`) }}</h2>
         <div class="checkout-form">
           <div v-for="[name, field] of entityStore.fieldList" class="form-group">
             <span v-if="(!entity && field.toBeSet) || (entity && field.toBeEdited)">
               <label :for=name>{{ field.label }}</label>
               <textarea
-                v-if="field.type == 'textarea'"
+                v-if="(field.type == 'textarea' || field.type == 'advanced-textarea')"
                 :id=name
                 v-model=data[name]
                 :class="['form-control', { 'is-invalid': errors[name] }]"

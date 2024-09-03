@@ -33,11 +33,13 @@ import WebSsh from '../components/WebSsh/WebSsh.vue'
 import Machines from '../components/Pages/Machines.vue'
 import Usernames from '../components/Pages/Usernames.vue'
 import Connections from '../components/Pages/Connections.vue'
+import Pages from '../components/Pages/Pages.vue'
 
 const basicRoutes = [
     { path: '/login', name: 'Login', component: Login, props: true },
     { path: '/dashboard', name: 'Dashboard', component: Dashboard, props: true, meta: { requiresAuth: true } },
     { path: '/courses', name: 'Course', component: Courses, props: true, meta: { requiresAuth: true } },
+    { path: '/pages' , name: 'Page', component: Pages, props: true, meta: { requiresAuth: true } },
     { 
         path: '/tps', 
         // name: 'TPs', 

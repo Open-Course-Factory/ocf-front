@@ -28,11 +28,15 @@ export const useSshKeysStore = defineStore('SshKeys', () => {
         title : "Ssh Keys list",
         name: 'Key name',
         value: 'Key value (PRIVATE)',
+        modify: 'Modify SSH key name',
+        add: 'Add a SSH key',
     }})
     useI18n().mergeLocaleMessage('fr', { sshkeys : { 
         title : "Liste des clés SSH",
         name: 'Nom de la clé',
         value: 'Valeur de la clé (PRIVEE)',
+        modify: 'Modifier le nom de la clé SSH',
+        add: 'Ajouter une clé SSH',
      }})
     
 

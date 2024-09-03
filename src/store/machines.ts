@@ -30,13 +30,17 @@ export const useMachinesStore = defineStore('machines', () => {
         title : "Machines list",
         name: 'Machine Name',
         ip: 'Machine IP',
-        port: 'SSH Port', 
+        port: 'SSH Port',
+        modify: 'Modify the machine', 
+        add: 'Add a machine',
     }})
     useI18n().mergeLocaleMessage('fr', { machines : { 
         title : "Liste des machines",
         name: 'Nom de la machine',
         ip: 'IP de la machine',
         port: 'Port SSH',
+        modify: 'Modifier la machine', 
+        add: 'Ajouter une machine',
      }})
 
     const { t } = useI18n()

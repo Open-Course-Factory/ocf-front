@@ -30,21 +30,8 @@ import EntityCard from '../Cards/EntityCard.vue';
 
 import { useI18n } from 'vue-i18n'
 import { Store } from 'pinia';
-import { en } from 'element-plus/es/locales.mjs';
 
-const { t } = useI18n({
-    messages: {
-      en: { entity: { 
-        title: 'SSH keys',
-        add: 'Add a key',
-    } },
-      fr: { entity: { 
-        title: 'Clés SSH',
-        add: 'Ajouter une clé',
-    } }
-    }
-  
-}) 
+const { t } = useI18n({}) 
 
 const props = defineProps<{
   entityName: string;
@@ -150,7 +137,7 @@ function isEditable(entityStore: Store) {
       <ul>
         <li v-for="entity in props.entityStore.entities" :key="entity.id">
 
-          <EntityCard :entity="entity" :fieldList="props.entityStore.fieldList" :entityStore="entityStore"/>
+          <EntityCard :entity="entity" :entityStore="props.entityStore"/>
           
           <div>
             <button class="btn btn-danger" v-if="props.entityStore.entities.length > 1" @click="deleteEntity(entity.id)">{{ t('delete') }}</button>
@@ -163,7 +150,7 @@ function isEditable(entityStore: Store) {
     <div v-else>
       <p>{{ t('empty') }}</p>
     </div>
-    <EntityModal :visible="showModal" :entity="entityToEdit" :entity-store="entityStore" v-bind:fieldList=entityStore.fieldList @submit="addEntity" @modify="updateEntity" @close="showModal = false" />
+    <EntityModal :visible="showModal" :entity="entityToEdit" :entity-store="entityStore" :entity-name="entityName" v-bind:fieldList=entityStore.fieldList @submit="addEntity" @modify="updateEntity" @close="showModal = false" />
   </div>
 </template>
 
