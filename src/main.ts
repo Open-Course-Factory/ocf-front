@@ -57,17 +57,18 @@ const i18n = createI18n({
 })
 
 declare module 'pinia' {
-    export interface PiniaCustomProperties {
-      // by using a setter we can allow both strings and refs
-      set setEntities(value: any | Ref<any>)
-      
-      entities: any
-      fieldList: Map<string, any>
-      subEntitiesStores: Map<string, any>
-      getNames(): []
-      getIds(): []
-    }
+  export interface PiniaCustomProperties {
+    // by using a setter we can allow both strings and refs
+    set setEntities(value: any | Ref<any>)
+    
+    entities: any
+    fieldList: Map<string, any>
+    subEntitiesStores: Map<string, any>
+    getNames(): []
+    getIds(): []
   }
+}
+
 
 const pinia = createPinia()
 pinia.use(piniaPluginPersist)

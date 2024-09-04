@@ -20,13 +20,15 @@
  */
 
 import { defineStore } from "pinia"
-import { Ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { useMachinesStore } from "./machines"
 import { useUsernamesStore } from "./usernames"
+import { useBaseStore } from "./baseStore"
 
 
 export const useConnectionsStore = defineStore('Connections', () => {
+
+    const base = useBaseStore();
 
     useI18n().mergeLocaleMessage('en', { connections : { 
         title: 'Connections list',
@@ -46,20 +48,15 @@ export const useConnectionsStore = defineStore('Connections', () => {
 
     const { t } = useI18n()
 
-    const entities = []
     const fieldList = new Map<string, any>([
         ["Machine", { label: t('connections.machine'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
         ["Username", { label: t('connections.username'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
     ])
 
-    const subEntitiesStores = new Map<string, any>([
+    base.subEntitiesStores = new Map<string, any>([
         ["Machine", useMachinesStore()],
         ["Username", useUsernamesStore()],
     ])
-        
-    function setEntities(entities: any | Ref<any>) {
-        this.entities = entities
-    }
 
-    return {entities, fieldList, subEntitiesStores, setEntities}
+    return {...base, fieldList }
 })

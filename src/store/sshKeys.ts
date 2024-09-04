@@ -20,10 +20,14 @@
  */
 
 import { defineStore } from "pinia"
-import { Ref } from "vue"
 import { useI18n } from "vue-i18n"
+import { useBaseStore } from "./baseStore";
 
 export const useSshKeysStore = defineStore('SshKeys', () => {
+
+    const base = useBaseStore();
+    const { t } = useI18n()
+
     useI18n().mergeLocaleMessage('en', { sshkeys : { 
         title : "Ssh Keys list",
         name: 'Key name',
@@ -39,10 +43,6 @@ export const useSshKeysStore = defineStore('SshKeys', () => {
         add: 'Ajouter une clé SSH',
      }})
     
-
-    const { t } = useI18n()
-
-    const entities = []
     const fieldList = new Map<string, any>([
         ["id", { label: t('sshkeys.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
         ["name", { label: t('sshkeys.name'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
@@ -50,9 +50,5 @@ export const useSshKeysStore = defineStore('SshKeys', () => {
         ["created_at", { label: t('sshkeys.created_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
     ])
         
-    function setEntities(entities: any | Ref<any>) {
-        this.entities = entities
-    }
-
-    return {entities, fieldList, setEntities}
+    return {...base, fieldList}
 })

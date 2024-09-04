@@ -20,12 +20,15 @@
  */
 
 import { defineStore } from "pinia"
-import { Ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { usePagesStore } from "./pages"
+import { useBaseStore } from "./baseStore"
 
 
 export const useSectionsStore = defineStore('sections', () => {
+
+    const base = useBaseStore();
+    const { t } = useI18n()
 
     useI18n().mergeLocaleMessage('en', { sections : { 
         fileName : 'File name',
@@ -50,9 +53,6 @@ export const useSectionsStore = defineStore('sections', () => {
         add: 'Ajouter une page',
      }})
 
-    const { t } = useI18n()
-
-    const entities = []
     const fieldList = new Map<string, any>([
         ["id", { label: t('sections.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
         ["fileName", { label: t('sections.fileName'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
@@ -66,31 +66,9 @@ export const useSectionsStore = defineStore('sections', () => {
         ["updated_at", { label: t('sections.updated_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
     ])
 
-    const subEntitiesStores = new Map<string, any>([
+    base.subEntitiesStores = new Map<string, any>([
         ["Pages", usePagesStore()],
     ])
-    
-    function setEntities(entities: any | Ref<any>) {
-        this.entities = entities
-    }
 
-    function getNames(){
-        let res = []
-        
-        this.entities.forEach( (value) => {
-            res.push(value.name)
-        })
-        return res
-    }
-
-    function getIds(){
-        let res = []
-        
-        this.entities.forEach( (value) => {
-            res.push(value.id)
-        })
-        return res
-    }
-
-    return {entities, fieldList, subEntitiesStores, setEntities, getNames, getIds}
+    return {...base, fieldList}
 })

@@ -20,10 +20,14 @@
  */
 
 import { defineStore } from "pinia"
-import { Ref } from "vue"
 import { useI18n } from "vue-i18n"
+import { useBaseStore } from "./baseStore";
 
 export const useUsernamesStore = defineStore('usernames', () => {
+
+    const base = useBaseStore();
+    const { t } = useI18n()
+
     useI18n().mergeLocaleMessage('en', { usernames : { 
         name: 'Username',
         modify: 'Modify username',
@@ -35,40 +39,11 @@ export const useUsernamesStore = defineStore('usernames', () => {
         add: 'Ajouter un nom d\'utilisateur',
      }})
 
-    const { t } = useI18n()
-
-    const entities = []
-
     const fieldList = new Map<string, any>([
         ["Username", { label: t('usernames.name'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
         ["ID", { label: t('usernames.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
     ])
 
-    const subEntitiesStores = new Map<string, any>([
-    ])
-
-    function setEntities(entities: any | Ref<any>) {
-        this.entities = entities
-    }
-
-    function getNames(){
-        let res = []
-        
-        this.entities.forEach( (value) => {
-            res.push(value.Username)
-        })
-        return res
-    }
-
-    function getIds(){
-        let res = []
-        
-        this.entities.forEach( (value) => {
-            res.push(value.id)
-        })
-        return res
-    }
-
-    return {entities, fieldList, subEntitiesStores, setEntities, getNames, getIds}
+    return {...base, fieldList}
     
 })
