@@ -70,5 +70,23 @@ export const usePagesStore = defineStore('pages', () => {
         this.entities = entities
     }
 
-    return {entities, fieldList, subEntitiesStores, setEntities}
+    function getNames(){
+        let res = []
+        
+        this.entities.forEach( (value) => {
+            res.push(value.name)
+        })
+        return res
+    }
+
+    function getIds(){
+        let res = []
+        
+        this.entities.forEach( (value) => {
+            res.push(value.id)
+        })
+        return res
+    }
+
+    return {entities, fieldList, subEntitiesStores, setEntities, getNames, getIds}
 })

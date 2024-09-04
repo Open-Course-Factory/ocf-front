@@ -42,11 +42,16 @@ const currentUserStore = useCurrentUserStore();
 const showModal = ref(false);
 const entityToEdit = ref();
 
-onBeforeMount(() => getEntities());
+onBeforeMount(() => {
+  getEntities(props.entityName, props.entityStore)
+  props.entityStore.subEntitiesStores.forEach((key) => {
+    getEntities(key.$id, key)
+  })
+});
 
-async function getEntities() {
+async function getEntities(entityName: string, store: Store) {
   try {
-    const response = await axios.get(`http://localhost:8080/api/v1/${props.entityName}`, {
+    const response = await axios.get(`http://localhost:8080/api/v1/${entityName}`, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json',
@@ -58,11 +63,11 @@ async function getEntities() {
       response.data = []
     }
 
-    props.entityStore.setEntities(response.data);
+    store.setEntities(response.data);
 
     console.log("Réponse API :", response.data);
   } catch (error) {
-    props.entityStore.setEntities([]);
+    store.setEntities([]);
     console.error('Error while getting SSH keys:', error);
   }
 }
@@ -107,7 +112,7 @@ async function updateEntity(data: Map<string, string>) {
         'Authorization': currentUserStore.secretToken
       }
     });
-    getEntities();
+    getEntities(props.entityName, props.entityStore);
     showModal.value = false;
   } catch (error) {
     console.error('Error while updating entity:', error);

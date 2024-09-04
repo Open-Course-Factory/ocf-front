@@ -34,12 +34,14 @@ import Machines from '../components/Pages/Machines.vue'
 import Usernames from '../components/Pages/Usernames.vue'
 import Connections from '../components/Pages/Connections.vue'
 import Pages from '../components/Pages/Pages.vue'
+import Sections from '../components/Pages/Sections.vue'
 
 const basicRoutes = [
     { path: '/login', name: 'Login', component: Login, props: true },
     { path: '/dashboard', name: 'Dashboard', component: Dashboard, props: true, meta: { requiresAuth: true } },
-    { path: '/courses', name: 'Course', component: Courses, props: true, meta: { requiresAuth: true } },
-    { path: '/pages' , name: 'Page', component: Pages, props: true, meta: { requiresAuth: true } },
+    { path: '/courses', name: 'Courses', component: Courses, props: true, meta: { requiresAuth: true } },
+    { path: '/pages' , name: 'Pages', component: Pages, props: true, meta: { requiresAuth: true } },
+    { path: '/sections' , name: 'Sections', component: Sections, props: true, meta: { requiresAuth: true } },
     { 
         path: '/tps', 
         // name: 'TPs', 

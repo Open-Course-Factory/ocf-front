@@ -32,11 +32,15 @@ export const useConnectionsStore = defineStore('Connections', () => {
         title: 'Connections list',
         name: 'Connection Name',
         add: 'Add a connection',
+        machine: 'Machine',
+        username: 'Username',
     }})
     useI18n().mergeLocaleMessage('fr', { connections : { 
         title: 'Liste des connexions',
         name: 'Nom de la connexion',
         add: 'Ajouter une connexion',
+        machine: 'Machine',
+        username: 'Nom d\'utilisateur',
      }})
     
 
@@ -44,8 +48,8 @@ export const useConnectionsStore = defineStore('Connections', () => {
 
     const entities = []
     const fieldList = new Map<string, any>([
-        ["Machine", { label: t('connections.name'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["Username", { label: t('connections.id'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+        ["Machine", { label: t('connections.machine'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+        ["Username", { label: t('connections.username'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
     ])
 
     const subEntitiesStores = new Map<string, any>([

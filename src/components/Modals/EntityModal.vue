@@ -32,13 +32,13 @@ const { t } = useI18n({})
 const renderComponent = ref(true);
 
 const forceRender = async () => {
-  // Here, we'll remove MyComponent
+  // Here, we'll remove the component
   renderComponent.value = false;
 
    // Then, wait for the change to get flushed to the DOM
   await nextTick();
 
-  // Add MyComponent back in
+  // Add the component back in
   renderComponent.value = true;
 };
 
@@ -57,16 +57,7 @@ const emit = defineEmits<{
   (e: 'close'): void;
 }>();
 
-
-// hack to set map data instead of set method (that should be used)
-// mandatory to make v-model able to read and write the data
-// v-model is not compatible with the get method
-props.entityStore.fieldList.forEach((value, key) => {
-  if (value.toBeSet) {
-    data[key] = ''
-    errors[key] = ''
-  }
-})
+prepareNeededField()
 
 function validateFields() {
   Object.keys(data).forEach((key) => {
@@ -74,8 +65,8 @@ function validateFields() {
   });
 
   Object.keys(data).forEach((key) => {
-    if (!errors[key] && props.entityStore.entities.some(storeKey => storeKey.name === data[key].toString().trim())) {
-      errors[key] = 'Ce nom de clé SSH est déjà utilisé.';
+    if (!errors[key] && props.entityStore.entities.some(storeEntity => storeEntity.name === data[key].toString().trim())) {
+      errors[key] = 'Ce nom est déjà utilisé.';
     }
   });
   
@@ -108,12 +99,9 @@ function handleEvent(event) {
     // Set data["id"] with current id in case of edition
     if (props.entity) { data["id"] = props.entity["id"] }
     emit(event, data);
-    Object.keys(data).forEach((key) => {
-      data[key] = ''
-    });
-    Object.keys(errors).forEach((key) => {
-      errors[key] = ''
-    });
+
+    emptyMap(data);
+    emptyMap(errors);    
   } 
   forceRender()
 }
@@ -124,24 +112,58 @@ function closeModal() {
 
 watch(() => props.visible, (newVal) => {
   if (newVal) {
-    Object.keys(data).forEach((key) => {
-      if (props.entity) {
-        if (props.entityStore.fieldList.get(key).type == 'advanced-textarea') {
-          data[key] = props.entity[key].join('\n')
-        } else {
-          data[key] = props.entity[key]
-        }
-      } else {
-        data[key] = ''
-      }
-    });
-    Object.keys(errors).forEach((key) => {
-      errors[key] = ''
-    });
-
+    deleteExistingData();
+    prepareNeededField();
+    formatData();
+    emptyMap(errors);
   }
 });
 
+function formatData() {
+  Object.keys(data).forEach((key) => {
+    if (props.entity) {
+      if (props.entityStore.fieldList.get(key).type == 'advanced-textarea') {
+        data[key] = props.entity[key].join('\n');
+      } else {
+        data[key] = props.entity[key];
+      }
+    } else {
+      delete data[key];
+    }
+  });
+}
+
+function emptyMap(input: Map<string,string>) {
+  Object.keys(input).forEach((key) => {
+    delete input[key];
+  });
+}
+
+function deleteExistingData() {
+  Object.keys(data).forEach((key) => {
+    delete data[key];
+    delete errors[key];
+  });
+}
+
+// hack to set map data instead of set method (that should be used)
+// mandatory to make v-model able to read and write the data
+// v-model is not compatible with the get method
+function prepareNeededField() {
+  props.entityStore.fieldList.forEach((value, key) => {
+    if (value.toBeSet) {
+      data[key] = '';
+      errors[key] = '';
+    }
+    if (props.entityStore.subEntitiesStores) {
+      Object.keys(props.entityStore.subEntitiesStores).forEach( (key) => {
+        data[key] = '';
+        errors[key] = '';
+      });
+      
+    }
+  });
+}
 </script>
 
 <template>
@@ -171,6 +193,19 @@ watch(() => props.visible, (newVal) => {
                 {{ errors[name] }}
               </div>
             </span>
+        </div>
+        <div v-for="[name, store] of entityStore.subEntitiesStores" class="form-group">
+          <label :for=name>{{ name }}Id</label>
+          <v-autocomplete
+                label="Autocomplete"
+                v-model=data[name]
+                :items="store.getNames()"
+                :class="['form-control', { 'is-invalid': errors[name] }]"
+          >
+          </v-autocomplete>
+
+         
+
         </div>
         
         <div>

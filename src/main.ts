@@ -29,6 +29,12 @@ import 'element-plus/dist/index.css'
 import ElementPlus from 'element-plus'
 import { piniaPluginPersist } from './piniaPluginPersist'
 
+// Vuetify
+import 'vuetify/styles'
+import { createVuetify } from 'vuetify'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
+
 const i18n = createI18n({
     legacy: false,
     globalInjection: true,
@@ -58,15 +64,23 @@ declare module 'pinia' {
       entities: any
       fieldList: Map<string, any>
       subEntitiesStores: Map<string, any>
+      getNames(): []
+      getIds(): []
     }
   }
 
 const pinia = createPinia()
 pinia.use(piniaPluginPersist)
 
+const vuetify = createVuetify({
+    components,
+    directives,
+  })
+
 createApp(App)
     .use(ElementPlus)
     .use(router)
     .use(pinia)
     .use(i18n)
+    .use(vuetify)
     .mount('#app')
