@@ -44,6 +44,16 @@ export const useUsernamesStore = defineStore('usernames', () => {
         ["ID", { label: t('usernames.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
     ])
 
-    return {...base, fieldList}
+    //Override because there is no field "name" in that entity
+    function getNames(){
+        let res = []
+        
+        this.entities.forEach( (value) => {
+            res.push(value.Username)
+        })
+        return res
+    }
+
+    return {...base, fieldList, getNames}
     
 })
