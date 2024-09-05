@@ -195,17 +195,19 @@ function prepareNeededField() {
             </span>
           </div>
           <div v-if="entityStore.subEntitiesStores.size > 0" v-for="[name, store] of entityStore.subEntitiesStores" class="form-group">
-            <label :for=name>{{ name }}</label>
-            <v-autocomplete
-                  label="Autocomplete"
-                  v-model=data[name] 
-                  :items="store.selectDatas"
-                  item-text="text"
-                  item-value="value"
-                  item-title="text"
-                  :class="['form-control', { 'is-invalid': errors[name] }]"
-            >
-            </v-autocomplete>
+            <span v-if="entityStore.fieldList.get(name).toBeSet">
+              <label :for=name>{{ name }}</label>
+              <v-autocomplete
+                    label="Autocomplete"
+                    v-model=data[name] 
+                    :items="store.selectDatas"
+                    item-text="text"
+                    item-value="value"
+                    item-title="text"
+                    :class="['form-control', { 'is-invalid': errors[name] }]"
+              >
+              </v-autocomplete>
+          </span>
 
 
           </div>

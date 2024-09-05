@@ -31,7 +31,7 @@ export const usePagesStore = defineStore('pages', () => {
 
     useI18n().mergeLocaleMessage('en', { pages : { 
         id : "id",
-        title : 'Pages list',
+        pageTitle : 'Pages list',
         name: 'Page Name',
         number: 'Page number',
         parent_section_title: 'Parent section title',
@@ -43,7 +43,7 @@ export const usePagesStore = defineStore('pages', () => {
     }})
     useI18n().mergeLocaleMessage('fr', { pages : { 
         id : "id",
-        title : 'Liste des pages',
+        pageTitle : 'Liste des pages',
         name: 'Nom de la page',
         number: 'Numéro de la page',
         parent_section_title: 'Titre de la section parente',
@@ -61,8 +61,8 @@ export const usePagesStore = defineStore('pages', () => {
         ["toc", { label: t('pages.toc'), type: "input", display: true, toBeSet: false, toBeEdited: true }],
         ["content", { label: t('pages.content'), type: "advanced-textarea", display: true, toBeSet: true, toBeEdited: true }],
         ["hide", { label: t('pages.hide'), type: "input", display: true, toBeSet: false, toBeEdited: true }],
-        ["created_at", { label: t('pages.created_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["updated_at", { label: t('pages.updated_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+        ["created_at", { label: t('created_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+        ["updated_at", { label: t('updated_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
     ])
 
     base.subEntitiesStores = new Map<string, any>([

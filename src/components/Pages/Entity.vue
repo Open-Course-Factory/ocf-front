@@ -138,10 +138,10 @@ function isEditable(entityStore: Store) {
 <template>
   <div class="content">
     <div class="header">
-      <h2>{{ t(`${props.entityName}.title`) }}</h2>
+      <h2>{{ t(`${props.entityName}.pageTitle`) }}</h2>
       <button class="btn btn-primary" @click="showModal = true, entityToEdit = null">{{ t('add') }}</button>
     </div>
-    <div v-if="props.entityStore.entities">
+    <div v-if="props.entityStore.entities.length > 0">
       <ul>
         <li v-for="entity in props.entityStore.entities" :key="entity.id">
           <EntityCard :entity="entity" :entityStore="props.entityStore"/>

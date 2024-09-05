@@ -30,7 +30,7 @@ export const useSshKeysStore = defineStore('SshKeys', () => {
 
     useI18n().mergeLocaleMessage('en', { sshkeys : { 
         id : "id",
-        title : "Ssh Keys list",
+        pageTitle : "Ssh Keys list",
         name: 'Key name',
         value: 'Key value (PRIVATE)',
         modify: 'Modify SSH key name',
@@ -38,7 +38,7 @@ export const useSshKeysStore = defineStore('SshKeys', () => {
     }})
     useI18n().mergeLocaleMessage('fr', { sshkeys : { 
         id : "id",
-        title : "Liste des clés SSH",
+        pageTitle : "Liste des clés SSH",
         name: 'Nom de la clé',
         value: 'Valeur de la clé (PRIVEE)',
         modify: 'Modifier le nom de la clé SSH',
@@ -49,7 +49,7 @@ export const useSshKeysStore = defineStore('SshKeys', () => {
         ["id", { label: t('sshkeys.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
         ["name", { label: t('sshkeys.name'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
         ["private_key", { label: t('sshkeys.value'), type: "textarea", display: false, toBeSet: true, toBeEdited: false }],
-        ["created_at", { label: t('sshkeys.created_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+        ["created_at", { label: t('created_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
     ])
         
     return {...base, fieldList}

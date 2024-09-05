@@ -30,7 +30,7 @@ export const useMachinesStore = defineStore('machines', () => {
 
     useI18n().mergeLocaleMessage('en', { machines : { 
         id : "id",
-        title : "Machines list",
+        pageTitle : "Machines list",
         name: 'Machine Name',
         ip: 'Machine IP',
         port: 'SSH Port',
@@ -39,7 +39,7 @@ export const useMachinesStore = defineStore('machines', () => {
     }})
     useI18n().mergeLocaleMessage('fr', { machines : { 
         id : "id",
-        title : "Liste des machines",
+        pageTitle : "Liste des machines",
         name: 'Nom de la machine',
         ip: 'IP de la machine',
         port: 'Port SSH',

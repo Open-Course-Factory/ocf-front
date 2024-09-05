@@ -32,27 +32,29 @@ export const useSectionsStore = defineStore('sections', () => {
 
     useI18n().mergeLocaleMessage('en', { sections : { 
         id : "id",
+        pageTitle: 'Sections',
         fileName : 'File name',
-        title: 'Sections',
+        title: 'Section title',
         number: 'Number',
         intro: 'Introduction',
         conclusion: 'Conclusion',
         pages: 'Pages',
         hiddenPages: 'Hidden pages',
-        modify: 'Modify the page', 
-        add: 'Add a page',
+        modify: 'Modify the section', 
+        add: 'Add a section',
     }})
     useI18n().mergeLocaleMessage('fr', { sections : { 
         id : "id",
+        pageTitle: 'Sections',
         fileName : 'Nom du fichier',
-        title: 'Sections',
+        title: 'Titre de la section',
         number: 'Numero',
         intro: 'Introduction',
         conclusion: 'Conclusion',
         pages: 'Pages',
         hiddenPages: 'Pages cachées',
-        modify: 'Modifier la page', 
-        add: 'Ajouter une page',
+        modify: 'Modifier la section', 
+        add: 'Ajouter une section',
      }})
 
     const fieldList = new Map<string, any>([
@@ -62,14 +64,14 @@ export const useSectionsStore = defineStore('sections', () => {
         ["intro", { label: t('sections.intro'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
         ["conclusion", { label: t('sections.conclusion'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
         ["number", { label: t('sections.number'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["pages", { label: t('connections.pages'), type: "advanced-textarea", display: true, toBeSet: false, toBeEdited: false }],
-        ["hiddenPages", { label: t('connections.hiddenPages'), type: "advanced-textarea", display: true, toBeSet: false, toBeEdited: false }],
-        ["created_at", { label: t('sections.created_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["updated_at", { label: t('sections.updated_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+        ["pages", { label: t('sections.pages'), type: "advanced-textarea", display: true, toBeSet: false, toBeEdited: false }],
+        ["hiddenPages", { label: t('sections.hiddenPages'), type: "advanced-textarea", display: true, toBeSet: false, toBeEdited: false }],
+        ["created_at", { label: t('created_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+        ["updated_at", { label: t('updated_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
     ])
 
     base.subEntitiesStores = new Map<string, any>([
-        ["Pages", usePagesStore()],
+        ["pages", usePagesStore()],
     ])
 
     return {...base, fieldList}

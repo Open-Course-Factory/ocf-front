@@ -45,7 +45,7 @@ async function getConnections() {
             }
         })
         console.log(responseConnections);
-        connectionsStore.setConnections(responseConnections.data)
+        connectionsStore.entities = responseConnections.data
     } catch (error) {
         console.error('Error while getting Connections:', error)
     }
@@ -55,7 +55,7 @@ function startNewSession() {
     try {
         router.push({
             path: "/tps/dial",
-            query: {ipaddress: connectionsStore.connections[0].Machine.IP, username: connectionsStore.connections[0].Username.Username, password: "", port: connectionsStore.connections[0].Machine.Port}
+            query: {ipaddress: connectionsStore.entities[0].Machine.IP, username: connectionsStore.entities[0].Username.Username, password: "", port: connectionsStore.entities[0].Machine.Port}
         })
     } catch (error) {
         console.error('Error while getting creating new session:', error)
@@ -65,5 +65,5 @@ function startNewSession() {
 </script>
 
 <template>
-    <Button @click="startNewSession">Lancer une session</Button>
+    <v-btn @click="startNewSession">Lancer une session</v-btn>
 </template>

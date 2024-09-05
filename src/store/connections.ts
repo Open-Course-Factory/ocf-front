@@ -31,14 +31,14 @@ export const useConnectionsStore = defineStore('Connections', () => {
     const base = useBaseStore();
 
     useI18n().mergeLocaleMessage('en', { connections : { 
-        title: 'Connections list',
+        pageTitle: 'Connections list',
         name: 'Connection Name',
         add: 'Add a connection',
         machine: 'Machine',
         username: 'Username',
     }})
     useI18n().mergeLocaleMessage('fr', { connections : { 
-        title: 'Liste des connexions',
+        pageTitle: 'Liste des connexions',
         name: 'Nom de la connexion',
         add: 'Ajouter une connexion',
         machine: 'Machine',

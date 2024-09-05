@@ -30,14 +30,14 @@ export const useUsernamesStore = defineStore('usernames', () => {
 
     useI18n().mergeLocaleMessage('en', { usernames : { 
         id : "id",
-        title: "Usernames",
+        pageTitle: "Usernames",
         name: 'Username',
         modify: 'Modify username',
         add: 'Add a username',
     }})
     useI18n().mergeLocaleMessage('fr', { usernames : { 
         id : "id",
-        title: 'Nom d\'utilisateur',
+        pageTitle: 'Nom d\'utilisateur',
         name: 'Nom d\'utilisateur',
         modify: 'Modifier le nom d\'utilisateur',
         add: 'Ajouter un nom d\'utilisateur',

@@ -35,6 +35,7 @@ import Usernames from '../components/Pages/Usernames.vue'
 import Connections from '../components/Pages/Connections.vue'
 import Pages from '../components/Pages/Pages.vue'
 import Sections from '../components/Pages/Sections.vue'
+import Chapters from '../components/Pages/Chapters.vue'
 
 const basicRoutes = [
     { path: '/login', name: 'Login', component: Login, props: true },
@@ -42,6 +43,7 @@ const basicRoutes = [
     { path: '/courses', name: 'Courses', component: Courses, props: true, meta: { requiresAuth: true } },
     { path: '/pages' , name: 'Pages', component: Pages, props: true, meta: { requiresAuth: true } },
     { path: '/sections' , name: 'Sections', component: Sections, props: true, meta: { requiresAuth: true } },
+    { path: '/chapters' , name: 'Chapters', component: Chapters, props: true, meta: { requiresAuth: true } },
     { 
         path: '/tps', 
         // name: 'TPs', 

@@ -42,6 +42,9 @@ const currentUser = useCurrentUserStore();
                     <router-link to="/courses">Courses</router-link>
                 </li>
                 <li>
+                    <router-link to="/chapters">Chapters</router-link>
+                </li>
+                <li>
                     <router-link to="/sections">Sections</router-link>
                 </li>
                 <li>

@@ -46,21 +46,22 @@ const i18n = createI18n({
             add: 'Add',
             edit: 'Edit',
             delete: 'Delete',
+            created_at: 'Created at',
+            updated_at: 'Updated at',
          },
         fr: { 
             empty: 'Rien à afficher ici',
             add: 'Ajouter',
             edit: 'Editer',
             delete: 'Supprimer',
+            created_at: 'Date de création',
+            updated_at: 'Date de modification',
         }
     }
 })
 
 declare module 'pinia' {
   export interface PiniaCustomProperties {
-    // by using a setter we can allow both strings and refs
-    set setEntities(value: any | Ref<any>)
-    
     entities: any
     selectDatas: any
     fieldList: Map<string, any>
