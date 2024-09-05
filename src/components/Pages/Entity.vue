@@ -63,12 +63,13 @@ async function getEntities(entityName: string, store: Store) {
       response.data = []
     }
 
-    store.setEntities(response.data);
+    store.entities = response.data
+    store.selectDatas = store.getSelectDatas(store.entities)
 
-    console.log("Réponse API :", response.data);
   } catch (error) {
-    store.setEntities([]);
-    console.error('Error while getting SSH keys:', error);
+    store.entities = []
+    store.selectDatas = []
+    console.error('Error while getting '+props.entityName, error);
   }
 }
 
@@ -81,10 +82,11 @@ async function addEntity(data: Map<string, string>) {
         'Authorization': currentUserStore.secretToken
       }
     });
-    props.entityStore.entities.push(response.data);
-    showModal.value = false;
+    props.entityStore.entities.push(response.data)
+    props.entityStore.selectDatas = props.entityStore.getSelectDatas(props.entityStore.entities)
+    showModal.value = false
   } catch (error) {
-    console.error('Error while adding SSH key:', error);
+    console.error('Error while adding ' + props.entityName, error);
   }
 }
 
@@ -97,9 +99,10 @@ async function deleteEntity(keyId: string) {
         'Authorization': currentUserStore.secretToken
       }
     });
-    props.entityStore.entities = props.entityStore.entities.filter((key: any) => key.id !== keyId);
+    props.entityStore.entities = props.entityStore.entities.filter((key: any) => key.id !== keyId)
+    props.entityStore.selectDatas = props.entityStore.getSelectDatas(props.entityStore.entities)
   } catch (error) {
-    console.error('Error while deleting SSH key:', error);
+    console.error('Error while deleting ' + props.entityName, error);
   }
 }
 
@@ -115,7 +118,7 @@ async function updateEntity(data: Map<string, string>) {
     getEntities(props.entityName, props.entityStore);
     showModal.value = false;
   } catch (error) {
-    console.error('Error while updating entity:', error);
+    console.error('Error while updating ' + props.entityName, error);
   }
 }
 
@@ -138,10 +141,9 @@ function isEditable(entityStore: Store) {
       <h2>{{ t(`${props.entityName}.title`) }}</h2>
       <button class="btn btn-primary" @click="showModal = true, entityToEdit = null">{{ t('add') }}</button>
     </div>
-    <div v-if="props.entityStore.entities.length">
+    <div v-if="props.entityStore.entities">
       <ul>
         <li v-for="entity in props.entityStore.entities" :key="entity.id">
-
           <EntityCard :entity="entity" :entityStore="props.entityStore"/>
           
           <div>

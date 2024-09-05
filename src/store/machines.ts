@@ -29,6 +29,7 @@ export const useMachinesStore = defineStore('machines', () => {
     const base = useBaseStore();
 
     useI18n().mergeLocaleMessage('en', { machines : { 
+        id : "id",
         title : "Machines list",
         name: 'Machine Name',
         ip: 'Machine IP',
@@ -37,6 +38,7 @@ export const useMachinesStore = defineStore('machines', () => {
         add: 'Add a machine',
     }})
     useI18n().mergeLocaleMessage('fr', { machines : { 
+        id : "id",
         title : "Liste des machines",
         name: 'Nom de la machine',
         ip: 'IP de la machine',

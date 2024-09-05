@@ -30,6 +30,7 @@ export const usePagesStore = defineStore('pages', () => {
     const { t } = useI18n()
 
     useI18n().mergeLocaleMessage('en', { pages : { 
+        id : "id",
         title : 'Pages list',
         name: 'Page Name',
         number: 'Page number',
@@ -41,6 +42,7 @@ export const usePagesStore = defineStore('pages', () => {
         add: 'Add a page',
     }})
     useI18n().mergeLocaleMessage('fr', { pages : { 
+        id : "id",
         title : 'Liste des pages',
         name: 'Nom de la page',
         number: 'Numéro de la page',

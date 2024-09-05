@@ -29,11 +29,15 @@ export const useUsernamesStore = defineStore('usernames', () => {
     const { t } = useI18n()
 
     useI18n().mergeLocaleMessage('en', { usernames : { 
+        id : "id",
+        title: "Usernames",
         name: 'Username',
         modify: 'Modify username',
         add: 'Add a username',
     }})
     useI18n().mergeLocaleMessage('fr', { usernames : { 
+        id : "id",
+        title: 'Nom d\'utilisateur',
         name: 'Nom d\'utilisateur',
         modify: 'Modifier le nom d\'utilisateur',
         add: 'Ajouter un nom d\'utilisateur',
@@ -44,16 +48,6 @@ export const useUsernamesStore = defineStore('usernames', () => {
         ["ID", { label: t('usernames.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
     ])
 
-    //Override because there is no field "name" in that entity
-    function getNames(){
-        let res = []
-        
-        this.entities.forEach( (value) => {
-            res.push(value.Username)
-        })
-        return res
-    }
-
-    return {...base, fieldList, getNames}
+    return {...base, fieldList}
     
 })

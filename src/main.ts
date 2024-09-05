@@ -62,10 +62,10 @@ declare module 'pinia' {
     set setEntities(value: any | Ref<any>)
     
     entities: any
+    selectDatas: any
     fieldList: Map<string, any>
     subEntitiesStores: Map<string, any>
-    getNames(): []
-    getIds(): []
+    getSelectDatas(any): any
   }
 }
 

@@ -155,7 +155,7 @@ function prepareNeededField() {
       data[key] = '';
       errors[key] = '';
     }
-    if (props.entityStore.subEntitiesStores) {
+    if (props.entityStore.subEntitiesStores.size > 0) {
       Object.keys(props.entityStore.subEntitiesStores).forEach( (key) => {
         data[key] = '';
         errors[key] = '';
@@ -193,30 +193,28 @@ function prepareNeededField() {
                 {{ errors[name] }}
               </div>
             </span>
-        </div>
-        <div v-for="[name, store] of entityStore.subEntitiesStores" class="form-group">
-          <label :for=name>{{ name }}Id</label>
-          <v-autocomplete
-                label="Autocomplete"
-                v-model=data[name]
-                :items="store.getNames()"
-                :class="['form-control', { 'is-invalid': errors[name] }]"
-          >
-          </v-autocomplete>
+          </div>
+          <div v-if="entityStore.subEntitiesStores.size > 0" v-for="[name, store] of entityStore.subEntitiesStores" class="form-group">
+            <label :for=name>{{ name }}</label>
+            <v-autocomplete
+                  label="Autocomplete"
+                  v-model=data[name] 
+                  :items="store.selectDatas"
+                  item-text="text"
+                  item-value="value"
+                  item-title="text"
+                  :class="['form-control', { 'is-invalid': errors[name] }]"
+            >
+            </v-autocomplete>
 
-         
 
+          </div>
+          <div>
+            <button v-if="entity" class="btn btn-primary" @click="handleEvent('modify')">Modifier</button>
+            <button v-else class="btn btn-primary" @click="handleEvent('submit')">Ajouter</button>
+            <button class="btn btn-danger" @click="closeModal">Annuler</button>
+          </div>
         </div>
-        
-        <div>
-          <button v-if="entity" class="btn btn-primary" @click="handleEvent('modify')">Modifier</button>
-          <button v-else class="btn btn-primary" @click="handleEvent('submit')">Ajouter</button>
-          <button class="btn btn-danger" @click="closeModal">Annuler</button>
-        </div>
-
-      </div>
-        
-        
       </div>
     </div>
   </div>

@@ -31,6 +31,7 @@ export const useSectionsStore = defineStore('sections', () => {
     const { t } = useI18n()
 
     useI18n().mergeLocaleMessage('en', { sections : { 
+        id : "id",
         fileName : 'File name',
         title: 'Sections',
         number: 'Number',
@@ -42,6 +43,7 @@ export const useSectionsStore = defineStore('sections', () => {
         add: 'Add a page',
     }})
     useI18n().mergeLocaleMessage('fr', { sections : { 
+        id : "id",
         fileName : 'Nom du fichier',
         title: 'Sections',
         number: 'Numero',

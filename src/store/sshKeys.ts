@@ -29,6 +29,7 @@ export const useSshKeysStore = defineStore('SshKeys', () => {
     const { t } = useI18n()
 
     useI18n().mergeLocaleMessage('en', { sshkeys : { 
+        id : "id",
         title : "Ssh Keys list",
         name: 'Key name',
         value: 'Key value (PRIVATE)',
@@ -36,6 +37,7 @@ export const useSshKeysStore = defineStore('SshKeys', () => {
         add: 'Add a SSH key',
     }})
     useI18n().mergeLocaleMessage('fr', { sshkeys : { 
+        id : "id",
         title : "Liste des clés SSH",
         name: 'Nom de la clé',
         value: 'Valeur de la clé (PRIVEE)',

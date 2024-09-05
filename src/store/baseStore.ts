@@ -1,36 +1,33 @@
-import { Ref } from 'vue';
-import { useI18n } from 'vue-i18n';
+import { reactive, Ref } from 'vue';
 
 export const useBaseStore = () => {
-    const entities = []
-
-    const { t } = useI18n()
+    let entities = reactive([])
+    let selectDatas = reactive([])
       
-    function setEntities(entities: any | Ref<any>) {
-        this.entities = entities
+    function getEntities() {
+        return entities
     }
-  
-    function getNames(){
+
+    function getSelectDatas(inputEntities: any) {
         let res = []
+        if (inputEntities.length > 0) {
+            inputEntities.forEach( (value) => {
+                let name = ""
+                if (value.name === undefined) {
+                    name = value.Username
+                } else {
+                    name = value.name
+                }
+                res.push({ text: name, value: value.id})
+            })
+        }
         
-        this.entities.forEach( (value) => {
-            res.push(value.name)
-        })
-        return res
-    }
-  
-    function getIds(){
-        let res = []
-        
-        this.entities.forEach( (value) => {
-            res.push(value.id)
-        })
         return res
     }
 
     const subEntitiesStores = new Map<string, any>([
     ])
   
-    return { entities, subEntitiesStores, setEntities, getNames, getIds, t };
+    return { entities, getEntities, selectDatas, getSelectDatas, subEntitiesStores};
 };
   
