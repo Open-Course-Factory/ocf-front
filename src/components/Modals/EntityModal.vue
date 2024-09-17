@@ -22,25 +22,12 @@
 -->
 
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue';
+import { reactive, watch } from 'vue';
 
-import { nextTick } from 'vue';
 import { Store } from 'pinia';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n({}) 
-const renderComponent = ref(true);
-
-const forceRender = async () => {
-  // Here, we'll remove the component
-  renderComponent.value = false;
-
-   // Then, wait for the change to get flushed to the DOM
-  await nextTick();
-
-  // Add the component back in
-  renderComponent.value = true;
-};
 
 const data = reactive({});
 const errors = reactive({});
@@ -60,29 +47,28 @@ const emit = defineEmits<{
 prepareNeededField()
 
 function validateFields() {
-  Object.keys(data).forEach((key) => {
-    errors[key] = data[key].toString().trim() === '' ? key + ' est requis.' : null
-  });
+  let res = true;
 
-  Object.keys(data).forEach((key) => {
-    if (!errors[key] && props.entityStore.entities.some(storeEntity => storeEntity.name === data[key].toString().trim())) {
-      errors[key] = 'Ce nom est déjà utilisé.';
-    }
-  });
-  
-  let res = true
-  Object.keys(errors).forEach((key) => {
-    if (!props.entity) {
-      res = res && !errors[key]
-    } else {
-      if (props.entityStore.fieldList.get(key).toBeEdited) {
-        res = res && !errors[key]
+  props.entityStore.fieldList.forEach((value, key) => {
+    if ((!props.entity && value.toBeSet) || (props.entity && value.toBeEdited)) {
+      // Validate required fields
+      if (data[key]?.toString().trim() === '' || data[key] === undefined) {
+        errors[key] = `${key} est requis.`;
+        res = false;
+      } else if (
+        props.entityStore.entities.some(
+          (storeEntity) => storeEntity.name === data[key]?.toString().trim()
+        )
+      ) {
+        errors[key] = 'Ce nom est déjà utilisé.';
+        res = false;
+      } else {
+        errors[key] = null;
       }
     }
-    
   });
 
-  return res
+  return res;
 }
 
 function formatFields() {
@@ -97,13 +83,25 @@ function handleEvent(event) {
   if (validateFields()) {
     formatFields()
     // Set data["id"] with current id in case of edition
-    if (props.entity) { data["id"] = props.entity["id"] }
-    emit(event, data);
+    if (props.entity) { 
+      data["id"] = props.entity["id"] 
+    } else {
+      delete data['id']; // Ensure 'id' is not present when adding a new entity
+    }
+    emit(event, { ...data });
 
-    emptyMap(data);
-    emptyMap(errors);    
+    resetForm()  
   } 
-  forceRender()
+  
+}
+
+function resetForm() {
+  Object.keys(data).forEach((key) => {
+    delete data[key]; // Remove keys from data
+  });
+  Object.keys(errors).forEach((key) => {
+    delete errors[key]; // Remove keys from errors
+  });
 }
 
 function closeModal() {
@@ -112,62 +110,46 @@ function closeModal() {
 
 watch(() => props.visible, (newVal) => {
   if (newVal) {
-    deleteExistingData();
     prepareNeededField();
-    formatData();
-    emptyMap(errors);
+    if (props.entity) {
+      populateDataFromEntity();
+    } else {
+      resetForm();
+    }
   }
 });
 
-function formatData() {
-  Object.keys(data).forEach((key) => {
-    if (props.entity) {
-      if (props.entityStore.fieldList.get(key).type == 'advanced-textarea') {
-        data[key] = props.entity[key].join('\n');
+function populateDataFromEntity() {
+  props.entityStore.fieldList.forEach((value, key) => {
+    if (value.toBeEdited) {
+      if (value.type === 'advanced-textarea') {
+        data[key] = props.entity[key]?.join('\n') || '';
       } else {
-        data[key] = props.entity[key];
+        data[key] = props.entity[key] || '';
       }
-    } else {
-      delete data[key];
     }
   });
 }
 
-function emptyMap(input: {}) {
-  Object.keys(input).forEach((key) => {
-    delete input[key];
-  });
-}
-
-function deleteExistingData() {
-  Object.keys(data).forEach((key) => {
-    delete data[key];
-    delete errors[key];
-  });
-}
-
-// hack to set map data instead of set method (that should be used)
-// mandatory to make v-model able to read and write the data
-// v-model is not compatible with the get method
 function prepareNeededField() {
   props.entityStore.fieldList.forEach((value, key) => {
-    if (value.toBeSet) {
+    if ((!props.entity && value.toBeSet) || (props.entity && value.toBeEdited)) {
       data[key] = '';
-      errors[key] = '';
-    }
-    if (props.entityStore.subEntitiesStores.size > 0) {
-      Object.keys(props.entityStore.subEntitiesStores).forEach( (key) => {
-        data[key] = '';
-        errors[key] = '';
-      });
-      
+      errors[key] = null;
     }
   });
+
+  if (props.entityStore.subEntitiesStores.size > 0) {
+    props.entityStore.subEntitiesStores.forEach((_store, subKey) => {
+      data[subKey] = '';
+      errors[subKey] = null;
+    });
+  }
 }
 </script>
 
 <template>
-  <div v-if="renderComponent && visible" class="modal-overlay">
+  <div v-if="visible" class="modal-overlay">
     <div class="modal-body">
       <button class="close-button" @click="closeModal">&times;</button>
       <div class="modal-content">
