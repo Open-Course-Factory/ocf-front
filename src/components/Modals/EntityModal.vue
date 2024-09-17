@@ -175,7 +175,7 @@ function prepareNeededField() {
         <h2 v-else>{{ t(`${props.entityName}.add`) }}</h2>
         <div class="checkout-form">
           <div v-for="[name, field] of entityStore.fieldList" class="form-group">
-            <span v-if="(!entity && field.toBeSet) || (entity && field.toBeEdited)">
+            <span v-if="field.type != 'subentity' && ((!entity && field.toBeSet) || (entity && field.toBeEdited))">
               <label :for=name>{{ field.label }}</label>
               <textarea
                 v-if="(field.type == 'textarea' || field.type == 'advanced-textarea')"

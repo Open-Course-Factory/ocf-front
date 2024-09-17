@@ -56,9 +56,9 @@ export const useChaptersStore = defineStore('chapters', () => {
     const fieldList = new Map<string, any>([
         ["id", { label: t('chapters.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
         ["title", { label: t('chapters.title'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["introduction", { label: t('chapters.introduction'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["footer", { label: t('chapters.footer'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["number", { label: t('chapters.number'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+        ["introduction", { label: t('chapters.introduction'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["footer", { label: t('chapters.footer'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["number", { label: t('chapters.number'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
         ["sections", { label: t('chapters.sections'), type: "advanced-textarea", display: true, toBeSet: false, toBeEdited: false }],
         ["created_at", { label: t('created_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
         ["updated_at", { label: t('updated_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],

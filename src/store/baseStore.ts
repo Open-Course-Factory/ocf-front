@@ -1,4 +1,4 @@
-import { reactive, Ref } from 'vue';
+import { reactive } from 'vue';
 
 export const useBaseStore = () => {
     let entities = reactive([])

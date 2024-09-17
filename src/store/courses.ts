@@ -20,16 +20,82 @@
  */
 
 import { defineStore } from "pinia"
+import { useI18n } from "vue-i18n"
+import { useBaseStore } from "./baseStore"
+import { useChaptersStore } from "./chapters"
 
-export const useCoursesStore = defineStore('courses', {
-    state() {
-        return {
-            courses: []
-        }
-    },
-    actions: {
-        setCourses(courses) {
-            this.courses = courses
-        }
-    }
+
+export const useCoursesStore = defineStore('Courses', () => {
+
+    const base = useBaseStore();
+
+    useI18n().mergeLocaleMessage('en', { courses : { 
+        pageTitle: 'Courses list',
+        name: 'Name',
+        theme: 'Theme',
+        format: 'Format',
+        authorEmail: 'Author email',
+        category: 'Category',
+        version: 'Version',
+        title: 'Title',
+        subTitle: 'Subtitle',
+        header: 'Header',
+        footer: 'Footer',
+        logo: 'Logo file',
+        description: 'Description',
+        schedule: 'Schedule',
+        prelude: 'Prelude',
+        learningObjectives: 'Learning objectives',
+        chapters: 'Chapters',
+        add: 'Add a course',
+    }})
+    useI18n().mergeLocaleMessage('fr', { courses : { 
+        pageTitle: 'Liste des cours',
+        name: 'Nom',
+        theme: 'Theme',
+        format: 'Format',
+        authorEmail: 'Email de l\'auteur',
+        category: 'Categorie',
+        version: 'Version',
+        title: 'Titre',
+        subTitle: 'Sous-titre',
+        header: 'En-tête',
+        footer: 'Pied de page',
+        logo: 'Fichier du logo',
+        description: 'Description',
+        schedule: 'Emploi du temps',
+        prelude: 'Préambule',
+        learningObjectives: 'Objectifs pédagogiques',
+        chapters: 'Chapitres',
+        add: 'Ajouter un cours',
+     }})
+
+  
+
+    const { t } = useI18n()
+
+    const fieldList = new Map<string, any>([
+        ["name", { label: t('courses.name'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["theme", { label: t('courses.theme'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+        ["format", { label: t('courses.format'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+        ["authorEmail", { label: t('courses.authorEmail'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["category", { label: t('courses.category'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["version", { label: t('courses.version'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["title", { label: t('courses.title'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["subTitle", { label: t('courses.subTitle'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["header", { label: t('courses.header'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["footer", { label: t('courses.footer'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["logo", { label: t('courses.logo'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["description", { label: t('courses.description'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["schedule", { label: t('courses.schedule'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+        ["prelude", { label: t('courses.prelude'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["learningObjectives", { label: t('courses.learningObjectives'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["chapters", { label: t('courses.chapters'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+    ])
+
+    base.subEntitiesStores = new Map<string, any>([
+        ["chapters", useChaptersStore()],
+    ])
+
+    return {...base, fieldList }
 })

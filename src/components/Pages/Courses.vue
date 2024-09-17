@@ -21,7 +21,7 @@
  */ 
 -->
 
-<script setup lang="ts">
+<!-- <script setup lang="ts">
 import MainNavMenu from '../Menus/MainNavMenu.vue';
 import TopMenu from '../Menus/TopMenu.vue';
 import axios from 'axios';
@@ -136,4 +136,26 @@ async function getCourses() {
     justify-content: center;
 }
 
-</style>
+</style> -->
+
+
+<script setup lang="ts">
+
+import TopMenu from '../Menus/TopMenu.vue';
+import MainNavMenu from '../Menus/MainNavMenu.vue';
+import Entity from './Entity.vue';
+import { useCoursesStore } from '../../store/courses';
+
+const entityStore = useCoursesStore();
+
+</script>
+
+<template>
+    <div class="wrapper">
+        <MainNavMenu />
+        <div class="inner-wrapper">
+            <TopMenu />
+            <Entity :entity-name='"courses"' :entity-store=entityStore :field-list="entityStore.fieldList" />
+        </div>
+    </div>
+</template>

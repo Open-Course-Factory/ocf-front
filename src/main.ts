@@ -20,7 +20,7 @@
  */ 
 
 import { createI18n } from 'vue-i18n'
-import { createApp, Ref } from 'vue'
+import { createApp } from 'vue'
 import './style.css'
 import { createPinia } from 'pinia'
 import App from './App.vue'

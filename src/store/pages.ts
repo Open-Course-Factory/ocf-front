@@ -56,11 +56,11 @@ export const usePagesStore = defineStore('pages', () => {
 
     const fieldList = new Map<string, any>([
         ["id", { label: t('pages.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["number", { label: t('pages.number'), type: "input", display: true, toBeSet: false, toBeEdited: true }],
-        ["parentSectionTitle", { label: t('pages.parent_section_title'), type: "input", display: true, toBeSet: false, toBeEdited: true }],
-        ["toc", { label: t('pages.toc'), type: "input", display: true, toBeSet: false, toBeEdited: true }],
+        ["number", { label: t('pages.number'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
+        ["parentSectionTitle", { label: t('pages.parent_section_title'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
+        ["toc", { label: t('pages.toc'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
         ["content", { label: t('pages.content'), type: "advanced-textarea", display: true, toBeSet: true, toBeEdited: true }],
-        ["hide", { label: t('pages.hide'), type: "input", display: true, toBeSet: false, toBeEdited: true }],
+        ["hide", { label: t('pages.hide'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
         ["created_at", { label: t('created_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
         ["updated_at", { label: t('updated_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
     ])

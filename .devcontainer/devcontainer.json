@@ -31,7 +31,8 @@
 			"extensions": [
 				"Vue.volar",
 				"antfu.vite",
-				"ms-vsliveshare.vsliveshare"
+				"ms-vsliveshare.vsliveshare",
+				"hollowtree.vue-snippets"
 			]
 		}
 	}

@@ -49,8 +49,8 @@ export const useConnectionsStore = defineStore('Connections', () => {
     const { t } = useI18n()
 
     const fieldList = new Map<string, any>([
-        ["MachineId", { label: t('connections.machine'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["UsernameId", { label: t('connections.username'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+        ["MachineId", { label: t('connections.machine'), type: "subentity", display: true, toBeSet: true, toBeEdited: false }],
+        ["UsernameId", { label: t('connections.username'), type: "subentity", display: true, toBeSet: true, toBeEdited: false }],
     ])
 
     base.subEntitiesStores = new Map<string, any>([

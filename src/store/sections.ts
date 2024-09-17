@@ -59,20 +59,22 @@ export const useSectionsStore = defineStore('sections', () => {
 
     const fieldList = new Map<string, any>([
         ["id", { label: t('sections.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["fileName", { label: t('sections.fileName'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["fileName", { label: t('sections.fileName'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
         ["title", { label: t('sections.title'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["intro", { label: t('sections.intro'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["conclusion", { label: t('sections.conclusion'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["number", { label: t('sections.number'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["pages", { label: t('sections.pages'), type: "advanced-textarea", display: true, toBeSet: false, toBeEdited: false }],
-        ["hiddenPages", { label: t('sections.hiddenPages'), type: "advanced-textarea", display: true, toBeSet: false, toBeEdited: false }],
+        ["intro", { label: t('sections.intro'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["conclusion", { label: t('sections.conclusion'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["number", { label: t('sections.number'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
+        ["PageId", { label: t('sections.pages'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
+        ["hiddenPages", { label: t('sections.hiddenPages'), type: "advanced-textarea", display: false, toBeSet: false, toBeEdited: false }],
         ["created_at", { label: t('created_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
         ["updated_at", { label: t('updated_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
     ])
 
     base.subEntitiesStores = new Map<string, any>([
-        ["pages", usePagesStore()],
+        ["PageId", usePagesStore()],
     ])
+
+
 
     return {...base, fieldList}
 })
