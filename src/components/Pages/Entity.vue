@@ -73,7 +73,7 @@ async function getEntities(entityName: string, store: Store) {
   }
 }
 
-async function addEntity(data: Map<string, string>) {
+async function addEntity(data: Record<string, string>) {
   try {
     const response = await axios.post(`http://localhost:8080/api/v1/${props.entityName}`, data, {
       headers: {
@@ -106,7 +106,7 @@ async function deleteEntity(keyId: string) {
   }
 }
 
-async function updateEntity(data: Map<string, string>) {
+async function updateEntity(data: Record<string, string>) {
   try {
     await axios.patch(`http://localhost:8080/api/v1/${props.entityName}/${data["id"]}`, data, {
       headers: {

@@ -42,8 +42,8 @@ const forceRender = async () => {
   renderComponent.value = true;
 };
 
-const data = reactive(new Map<string,string>)
-const errors = reactive(new Map<string,string>)
+const data = reactive({});
+const errors = reactive({});
 
 const props = defineProps<{
   visible: boolean;
@@ -52,8 +52,8 @@ const props = defineProps<{
   entityName: string;
 }>();
 const emit = defineEmits<{
-  (e: 'submit', data: Map<string, string>): void;
-  (e: 'modify', data: Map<string, string>): void;
+  (e: 'submit', data: Record<string, string>): void;
+  (e: 'modify', data: Record<string, string>): void;
   (e: 'close'): void;
 }>();
 
@@ -133,7 +133,7 @@ function formatData() {
   });
 }
 
-function emptyMap(input: Map<string,string>) {
+function emptyMap(input: {}) {
   Object.keys(input).forEach((key) => {
     delete input[key];
   });
