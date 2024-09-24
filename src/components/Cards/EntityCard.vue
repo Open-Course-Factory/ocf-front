@@ -26,20 +26,20 @@ import { Store } from 'pinia';
 
 
 const props = defineProps<{
-  entity: any;
+  entity: Record<string, any>;
   entityStore: Store;
 }>();
 
 
-function isSubEntity(any) {
-  let res = false;
-  if (any instanceof Object) {
-    // if the first key is 0 it means that it is only an array of strings and not an object
-    if (any[0] == undefined) {
-      res = true;
-    } 
-  }
-  return res
+function isSubEntity(value: any) {
+  return value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function shouldDisplayProperty(key: string) {
+  const field =
+    props.entityStore.fieldList.get(key) ||
+    props.entityStore.fieldList.get(`${key}Id`);
+  return field?.display ?? false;
 }
 
 function checkDisplayParameters(index) {
@@ -50,58 +50,88 @@ function checkDisplayParameters(index) {
 
 </script>
 
-
-
 <template>
-  <ul>
-    <span v-for="entityProperty, index in entity"  >
-      <h4  v-if="props.entityStore.fieldList.get(index.toString()) != undefined && props.entityStore.fieldList.get(index.toString()).display && index.toString() == 'name'"> {{ entityProperty }} </h4>
-      <li v-else-if="checkDisplayParameters(index)">
-        <span v-if="isSubEntity(entityProperty)">
-            <h3>{{ index.toString() }}<br /></h3>
-            <EntityCard :entity=entityProperty :entity-store="props.entityStore.subEntitiesStores.get(`${index.toString()}Id`)" />
-        </span>
-        <span v-else>{{ entityProperty }}</span>
-      </li>
-    </span>
-  </ul>
+  <div class="entity-card">
+    <!-- Display the entity name prominently if available -->
+    <h2 v-if="props.entity.name" class="entity-name">{{ props.entity.name }}</h2>
+    
+    <div class="entity-properties">
+      <!-- Iterate over entity properties -->
+      <div
+        v-for="(value, key) in entity"
+        :key="key"
+        class="property"
+      >
+      <span v-if="shouldDisplayProperty(key)">
+        <!-- If the property is a sub-entity, render it recursively -->
+        <div v-if="isSubEntity(value)">
+          <h3 class="subentity-title">{{ key }}</h3>
+          <EntityCard
+            :entity="value"
+            :entity-store="props.entityStore.subEntitiesStores.get(`${key}Id`)"
+          />
+        </div>
+        <!-- Otherwise, display the property name and value -->
+        <div v-else class="property-item">
+          <span class="property-name">{{ key }}:</span>
+          <span class="property-value">{{ value }}</span>
+        </div>
+      </span>
+        
+      </div>
+    </div>
+  </div>
 </template>
 
 
 
 <style scoped>
-ul {
-  list-style-type: none;
-  padding: 0;
+.entity-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 24px;
+  background-color: #fff;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-li {
+.entity-name {
+  margin-bottom: 16px;
+  font-size: 24px;
+  color: #333;
+}
+
+.entity-properties {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+}
+
+.property {
+  margin-bottom: 12px;
+}
+
+.subentity-title {
+  font-size: 20px;
+  margin-bottom: 8px;
+  color: #555;
+}
+
+.property-item {
+  display: flex;
   align-items: center;
-  margin-bottom: 10px;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
 }
 
-button {
-  margin-left: 10px;
+.property-name {
+  font-weight: 600;
+  margin-right: 8px;
+  color: #444;
 }
 
-input {
-  margin-right: 10px;
+.property-value {
+  color: #666;
 }
 
-.header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    height: auto;
-}
-
-.content {
-    width: 95%;
-    margin: 30px 42px;
+.property-item:not(:last-child) {
+  margin-bottom: 8px;
 }
 </style>

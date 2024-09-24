@@ -25,7 +25,7 @@ import Login from '../components/Pages/Login.vue'
 import Dashboard from '../components/Pages/Dashboard.vue'
 import Courses from '../components/Pages/Courses.vue'
 import Tps from '../components/Pages/Tps.vue'
-import Schedule from '../components/Pages/Schedule.vue'
+import Schedule from '../components/Pages/Schedules.vue'
 import User from '../components/Pages/User.vue'
 import CourseDetails from '../components/Pages/CourseDetails.vue'
 import Dial from '../components/WebSsh/Dial.vue'
@@ -42,6 +42,7 @@ const basicRoutes = [
     { path: '/dashboard', name: 'Dashboard', component: Dashboard, props: true, meta: { requiresAuth: true } },
     { path: '/courses', name: 'Courses', component: Courses, props: true, meta: { requiresAuth: true } },
     { path: '/pages' , name: 'Pages', component: Pages, props: true, meta: { requiresAuth: true } },
+    { path: '/schedules' , name: 'Schedules', component: Schedule, props: true, meta: { requiresAuth: true } },
     { path: '/sections' , name: 'Sections', component: Sections, props: true, meta: { requiresAuth: true } },
     { path: '/chapters' , name: 'Chapters', component: Chapters, props: true, meta: { requiresAuth: true } },
     { 
