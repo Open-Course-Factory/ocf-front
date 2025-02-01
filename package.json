@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --port 4000 --host",
     "build": "vue-tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview --port 4000 --host"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.10.0",

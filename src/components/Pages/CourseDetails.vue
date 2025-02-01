@@ -32,7 +32,7 @@ const route = useRoute()
 const courseStore = useCoursesStore()
 
 const course = computed(() => {
-    return courseStore.courses.find(c => c.CourseID_str === route.params.id)
+    return courseStore.entities.find(c => c.CourseID_str === route.params.id)
 })
 </script>
 

@@ -42,11 +42,11 @@ function shouldDisplayProperty(key: string) {
   return field?.display ?? false;
 }
 
-function checkDisplayParameters(index) {
-  let res = props.entityStore.fieldList.get(`${index.toString()}`) != undefined && props.entityStore.fieldList.get(`${index.toString()}`).display
-  res = res || props.entityStore.fieldList.get(`${index.toString()}Id`) != undefined && props.entityStore.fieldList.get(`${index.toString()}Id`).display
-  return res
-}
+// function checkDisplayParameters(index) {
+//   let res = props.entityStore.fieldList.get(`${index.toString()}`) != undefined && props.entityStore.fieldList.get(`${index.toString()}`).display
+//   res = res || props.entityStore.fieldList.get(`${index.toString()}Id`) != undefined && props.entityStore.fieldList.get(`${index.toString()}Id`).display
+//   return res
+// }
 
 </script>
 
