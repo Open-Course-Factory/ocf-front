@@ -31,11 +31,12 @@ import { useCurrentUserStore } from '../../store/currentUser.ts';
 const loginStore = useLoginStore();
 const currentUserStore = useCurrentUserStore();
 const errorMessage = ref('');
+const apiUrl = import.meta.env.VITE_API_URL;
 
 async function handleSubmit() {
   errorMessage.value = '';
   try {
-    const responseLogin = await axios.post('http://localhost:8080/api/v1/auth/login', {
+    const responseLogin = await axios.post('http://'+apiUrl+'/api/v1/auth/login', {
       email: loginStore.email,
       password: loginStore.password
     }, {

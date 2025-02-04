@@ -32,12 +32,13 @@ import { useConnectionsStore } from '../../store/connections';
 const connectionsStore = useConnectionsStore()
 const currentUser = useCurrentUserStore()
 const router = useRouter()
+const apiUrl = import.meta.env.VITE_API_URL;
 
 onBeforeMount(() => getConnections())
 
 async function getConnections() {
     try {
-        const responseConnections = await axios.get('http://localhost:8080/api/v1/connections', {
+        const responseConnections = await axios.get('http://'+apiUrl+'/api/v1/connections', {
             headers: {
                 'Access-Control-Allow-Origin': '*',
                 'Content-Type': 'application/json',
