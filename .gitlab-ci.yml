@@ -1,0 +1,6 @@
+default:
+  tags:
+    - ocf-core
+
+include:
+  - template: Jobs/Build.gitlab-ci.yml
