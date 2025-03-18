@@ -42,6 +42,7 @@ const currentUserStore = useCurrentUserStore();
 const showModal = ref(false);
 const entityToEdit = ref();
 const apiUrl = import.meta.env.VITE_API_URL;
+const protocol = import.meta.env.VITE_PROTOCOL;
 
 onBeforeMount(() => {
   getEntities(props.entityName, props.entityStore)
@@ -52,7 +53,7 @@ onBeforeMount(() => {
 
 async function getEntities(entityName: string, store: Store) {
   try {
-    const response = await axios.get(`http://`+apiUrl+`/api/v1/${entityName}`, {
+    const response = await axios.get(`${protocol}://${apiUrl}/api/v1/${entityName}`, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json',
@@ -76,7 +77,7 @@ async function getEntities(entityName: string, store: Store) {
 
 async function addEntity(data: Record<string, string>) {
   try {
-    const response = await axios.post(`http://`+apiUrl+`/api/v1/${props.entityName}`, data, {
+    const response = await axios.post(`${protocol}://${apiUrl}/api/v1/${props.entityName}`, data, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json',
@@ -93,7 +94,7 @@ async function addEntity(data: Record<string, string>) {
 
 async function deleteEntity(keyId: string) {
   try {
-    await axios.delete(`http://`+apiUrl+`/api/v1/${props.entityName}/${keyId}`, {
+    await axios.delete(`${protocol}://${apiUrl}/api/v1/${props.entityName}/${keyId}`, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json',
@@ -109,7 +110,7 @@ async function deleteEntity(keyId: string) {
 
 async function updateEntity(data: Record<string, string>) {
   try {
-    await axios.patch(`http://`+apiUrl+`/api/v1/${props.entityName}/${data["id"]}`, data, {
+    await axios.patch(`${protocol}://${apiUrl}/api/v1/${props.entityName}/${data["id"]}`, data, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json',
