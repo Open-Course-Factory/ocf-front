@@ -77,7 +77,7 @@ async function handleSubmit() {
 
 function redirect() {
   if (currentUserStore.secretToken) {
-    router.push({ name: "Dashboard" });
+    router.push({ name: "Courses" });
   }
 }
 </script>

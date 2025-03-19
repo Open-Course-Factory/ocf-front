@@ -35,12 +35,15 @@ import WebSsh from '../components/WebSsh/WebSsh.vue';
 import Machines from '../components/Pages/Machines.vue';
 import Usernames from '../components/Pages/Usernames.vue';
 import Connections from '../components/Pages/Connections.vue';
+import LandingPage from '../components/Pages/LandingPage.vue';
 
 const basicRoutes = [
+  { path: '/', name: 'LandingPage', component: LandingPage },
   { path: '/login', name: 'Login', component: () => import('../components/Pages/Login.vue') },
   {
     path: '/',
     component: Layout,
+    meta: { requiresAuth: true },
     children: [
       //{ path: 'dashboard', name: 'Dashboard', component: Dashboard, meta: { requiresAuth: true } },
       { path: 'courses', name: 'Courses', component: Courses, meta: { requiresAuth: true } },
