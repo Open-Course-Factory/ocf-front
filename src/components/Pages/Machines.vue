@@ -23,8 +23,6 @@
 
 <script setup lang="ts">
 
-import TopMenu from '../Menus/TopMenu.vue';
-import MainNavMenu from '../Menus/MainNavMenu.vue';
 import Entity from './Entity.vue';
 import { useMachinesStore } from '../../store/machines';
 
@@ -34,10 +32,6 @@ const entityStore = useMachinesStore();
 
 <template>
     <div class="wrapper">
-        <MainNavMenu />
-        <div class="inner-wrapper">
-            <TopMenu />
-            <Entity :entity-name='"machines"' :entity-store=entityStore />
-        </div>
+        <Entity :entity-name='"machines"' :entity-store=entityStore />
     </div>
 </template>

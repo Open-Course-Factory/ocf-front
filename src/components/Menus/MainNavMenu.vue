@@ -1,113 +1,120 @@
-<!-- 
-/*
- * Open Course Factory - Front
- * Copyright (C) 2023-2024 Solution Libre
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
-
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
-
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * Copyright (c) - All Rights Reserved.
- * 
- * See the LICENSE file for more information.
- */ 
--->
-
-<script setup lang="ts">
-// import router from "../router/index.ts"
-import { useCurrentUserStore } from '../../store/currentUser.ts';
-
-const currentUser = useCurrentUserStore();
-
-
-</script>
-
 <template>
-    <div class="left-col">
+    <div class="main-menu">
+      <header class="menu-header">
         <h1>
-            <router-link to="/dashboard">COurse NEXus</router-link>
+          <router-link to="/courses">COurse NEXus</router-link>
         </h1>
-        <p>{{ currentUser.userRoles[0] }}</p>
-        <nav>
-            <ul>
-                <li>
-                    <router-link to="/courses">Courses</router-link>
-                </li>
-                <li>
-                    <router-link to="/chapters">Chapters</router-link>
-                </li>
-                <li>
-                    <router-link to="/sections">Sections</router-link>
-                </li>
-                <li>
-                    <router-link to="/pages">Pages</router-link>
-                </li>
-                <li>
-                    <router-link to="/schedules">Schedules</router-link>
-                </li>
-                <li>
-                    <router-link to="/tps">TPs</router-link>
-                </li>
-                <li>
-                    <router-link to="/schedule">Emploi du temps</router-link>
-                </li>
-                <li v-if="currentUser.userRoles[0] === 'administrator'">
-                    <router-link to="/usernames">Noms d'utilisateurs</router-link>
-                </li>
-                <li v-if="currentUser.userRoles[0] === 'administrator'">
-                    <router-link to="/machines">Machines</router-link>
-                </li>
-                <li v-if="currentUser.userRoles[0] === 'administrator'">
-                    <router-link to="/connections">&nbsp;> Connections</router-link>
-                </li>
-                
-            </ul>
-        </nav>
+        <p class="user-role">{{ currentUser.userRoles[0] }}</p>
+      </header>
+      <nav class="menu-nav">
+        <ul>
+          <li>
+            <router-link to="/courses">
+              <i class="fas fa-book"></i> Courses
+            </router-link>
+          </li>
+          <li>
+            <router-link to="/chapters">
+              <i class="fas fa-book-open"></i> Chapters
+            </router-link>
+          </li>
+          <li>
+            <router-link to="/sections">
+              <i class="fas fa-stream"></i> Sections
+            </router-link>
+          </li>
+          <li>
+            <router-link to="/pages">
+              <i class="fas fa-file-alt"></i> Pages
+            </router-link>
+          </li>
+          <li>
+            <router-link to="/schedules">
+              <i class="fas fa-calendar-alt"></i> Schedules
+            </router-link>
+          </li>
+          <li>
+            <router-link to="/tps">
+              <i class="fas fa-laptop-code"></i> TPs
+            </router-link>
+          </li>
+          <li v-if="currentUser.userRoles[0] === 'administrator'">
+            <router-link to="/usernames">
+              <i class="fas fa-users"></i> Noms d'utilisateurs
+            </router-link>
+          </li>
+          <li v-if="currentUser.userRoles[0] === 'administrator'">
+            <router-link to="/machines">
+              <i class="fas fa-desktop"></i> Machines
+            </router-link>
+          </li>
+          <li v-if="currentUser.userRoles[0] === 'administrator'">
+            <router-link to="/connections">
+              <i class="fas fa-plug"></i> Connections
+            </router-link>
+          </li>
+        </ul>
+      </nav>
     </div>
-</template>
-
-<style scoped>
-
-p {
-  margin-left: 20px;
-  font-size: 12px;
-  font-size: 1rem;
-  text-transform: uppercase;
-}
-
-a {
-  color: #e7e7e7;
-  text-decoration: none;
-}
-
-h1 a {
-  font-size: 26px;
-  margin-left: 20px;
-}
-
-ul {
-  list-style-type: none;
-  margin-left: -32px;
-}
-
-ul li a {
-  padding: 13px 15px 12px 15px;
-  display: block;
-  cursor: pointer;
-  margin-bottom: 6px;
-}
-
-ul li:hover,
-ul li:focus {
-  background-color: #45484e;
-}
-
-</style>
+  </template>
+  
+  <script setup lang="ts">
+  import { useCurrentUserStore } from '../../store/currentUser.ts';
+  
+  const currentUser = useCurrentUserStore();
+  </script>
+  
+  <style scoped>
+  .main-menu {
+    background-color: #343a40;
+    color: #e7e7e7;
+    height: 100vh;
+    padding: 20px;
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .menu-header {
+    margin-bottom: 30px;
+  }
+  
+  .menu-header h1 a {
+    font-size: 2rem;
+    color: #e7e7e7;
+    text-decoration: none;
+  }
+  
+  .user-role {
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    margin-left: 20px;
+  }
+  
+  .menu-nav ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .menu-nav ul li a {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    color: #e7e7e7;
+    text-decoration: none;
+    border-radius: 4px;
+    margin-bottom: 5px;
+    transition: background-color 0.3s, transform 0.3s;
+  }
+  
+  .menu-nav ul li a:hover {
+    background-color: #495057;
+    transform: translateX(5px);
+  }
+  
+  .menu-nav ul li a i {
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
+  }
+  
+  </style>
+  

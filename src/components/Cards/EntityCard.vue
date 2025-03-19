@@ -21,15 +21,51 @@
  */ 
 -->
 
+<template>
+  <div class="entity-card">
+    <!-- Display the entity name prominently if available -->
+    <h2 v-if="props.entity.name" class="entity-name">
+      <i class="fas fa-tag"></i> {{ props.entity.name }}
+    </h2>
+
+    <div class="entity-properties">
+      <!-- Iterate over entity properties -->
+      <div
+        v-for="(value, key) in entity"
+        :key="key"
+        class="property"
+      >
+        <span v-if="shouldDisplayProperty(key)">
+          <!-- If the property is a sub-entity, render it recursively -->
+          <div v-if="isSubEntity(value)">
+            <h3 class="subentity-title">
+              <i class="fas fa-folder-open"></i> {{ key }}
+            </h3>
+            <EntityCard
+              :entity="value"
+              :entity-store="props.entityStore.subEntitiesStores.get(`${key}Id`)"
+            />
+          </div>
+          <!-- Otherwise, display the property name and value -->
+          <div v-else class="property-item">
+            <span class="property-name">
+              <i class="fas fa-info-circle"></i> {{ key }}:
+            </span>
+            <span class="property-value">{{ value }}</span>
+          </div>
+        </span>
+      </div>
+    </div>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { Store } from 'pinia';
-
 
 const props = defineProps<{
   entity: Record<string, any>;
   entityStore: Store;
 }>();
-
 
 function isSubEntity(value: any) {
   return value && typeof value === 'object' && !Array.isArray(value);
@@ -50,41 +86,6 @@ function shouldDisplayProperty(key: string) {
 
 </script>
 
-<template>
-  <div class="entity-card">
-    <!-- Display the entity name prominently if available -->
-    <h2 v-if="props.entity.name" class="entity-name">{{ props.entity.name }}</h2>
-    
-    <div class="entity-properties">
-      <!-- Iterate over entity properties -->
-      <div
-        v-for="(value, key) in entity"
-        :key="key"
-        class="property"
-      >
-      <span v-if="shouldDisplayProperty(key)">
-        <!-- If the property is a sub-entity, render it recursively -->
-        <div v-if="isSubEntity(value)">
-          <h3 class="subentity-title">{{ key }}</h3>
-          <EntityCard
-            :entity="value"
-            :entity-store="props.entityStore.subEntitiesStores.get(`${key}Id`)"
-          />
-        </div>
-        <!-- Otherwise, display the property name and value -->
-        <div v-else class="property-item">
-          <span class="property-name">{{ key }}:</span>
-          <span class="property-value">{{ value }}</span>
-        </div>
-      </span>
-        
-      </div>
-    </div>
-  </div>
-</template>
-
-
-
 <style scoped>
 .entity-card {
   border: 1px solid #e0e0e0;
@@ -93,12 +94,16 @@ function shouldDisplayProperty(key: string) {
   background-color: #fff;
   margin-bottom: 24px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.3s ease-in-out;
 }
 
 .entity-name {
   margin-bottom: 16px;
   font-size: 24px;
   color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .entity-properties {
@@ -114,6 +119,9 @@ function shouldDisplayProperty(key: string) {
   font-size: 20px;
   margin-bottom: 8px;
   color: #555;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .property-item {
@@ -125,6 +133,9 @@ function shouldDisplayProperty(key: string) {
   font-weight: 600;
   margin-right: 8px;
   color: #444;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .property-value {
@@ -134,4 +145,15 @@ function shouldDisplayProperty(key: string) {
 .property-item:not(:last-child) {
   margin-bottom: 8px;
 }
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 </style>
+
+

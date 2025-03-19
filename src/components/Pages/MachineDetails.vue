@@ -25,8 +25,6 @@
 import { useRoute } from 'vue-router'
 import { computed } from 'vue'
 import { useMachinesStore } from '../../store/machines.ts'
-import MainNavMenu from '../Menus/MainNavMenu.vue'
-import TopMenu from '../Menus/TopMenu.vue'
 
 const route = useRoute()
 const machineStore = useMachinesStore()
@@ -38,23 +36,19 @@ const machine = computed(() => {
 
 <template>
     <div class="wrapper">
-        <MainNavMenu />
-        <div class="inner-wrapper">
-            <TopMenu />
-            <div class="page-content" v-if="machine">
-                <div class="page-header">
-                    <h2>{{ machine.Name }}</h2>
-                </div>
-                <div>
-                    <ul>
-                        <li>IP : {{ machine.IP }}</li>
-                        <li>Port : {{ machine.Port }}</li>
-                    </ul>
-                </div>
+        <div class="page-content" v-if="machine">
+            <div class="page-header">
+                <h2>{{ machine.Name }}</h2>
             </div>
-            <div v-else>
-                <p>Machine inconnue.</p>
+            <div>
+                <ul>
+                    <li>IP : {{ machine.IP }}</li>
+                    <li>Port : {{ machine.Port }}</li>
+                </ul>
             </div>
+        </div>
+        <div v-else>
+            <p>Machine inconnue.</p>
         </div>
     </div>
 </template>

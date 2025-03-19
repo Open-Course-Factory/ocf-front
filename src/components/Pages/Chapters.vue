@@ -23,8 +23,6 @@
 
 <script setup lang="ts">
 
-import TopMenu from '../Menus/TopMenu.vue';
-import MainNavMenu from '../Menus/MainNavMenu.vue';
 import Entity from './Entity.vue';
 import { useChaptersStore } from '../../store/chapters';
 
@@ -34,10 +32,6 @@ const entityStore = useChaptersStore();
 
 <template>
     <div class="wrapper">
-        <MainNavMenu />
-        <div class="inner-wrapper">
-            <TopMenu />
             <Entity :entity-name='"chapters"' :entity-store=entityStore />
-        </div>
     </div>
 </template>

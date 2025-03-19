@@ -23,19 +23,13 @@
 
 <script setup lang="ts">
 import { useSchedulesStore } from '../../store/schedules';
-import MainNavMenu from '../Menus/MainNavMenu.vue';
 import Entity from './Entity.vue';
-import TopMenu from '../Menus/TopMenu.vue';
 
 const entityStore = useSchedulesStore();
 </script>
 
 <template>
     <div class="wrapper">
-        <MainNavMenu />
-        <div class="inner-wrapper">
-            <TopMenu />
-            <Entity :entity-name='"schedules"' :entity-store=entityStore />
-        </div>
+        <Entity :entity-name='"schedules"' :entity-store=entityStore />
     </div>
 </template>

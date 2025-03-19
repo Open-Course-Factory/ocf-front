@@ -23,8 +23,6 @@
 
 <script setup lang="ts">
 
-import TopMenu from '../Menus/TopMenu.vue';
-import MainNavMenu from '../Menus/MainNavMenu.vue';
 import Entity from './Entity.vue';
 import { useCoursesStore } from '../../store/courses';
 
@@ -34,10 +32,6 @@ const entityStore = useCoursesStore();
 
 <template>
     <div class="wrapper">
-        <MainNavMenu />
-        <div class="inner-wrapper">
-            <TopMenu />
-            <Entity :entity-name='"courses"' :entity-store=entityStore :field-list="entityStore.fieldList" />
-        </div>
+        <Entity :entity-name='"courses"' :entity-store=entityStore :field-list="entityStore.fieldList" />
     </div>
 </template>

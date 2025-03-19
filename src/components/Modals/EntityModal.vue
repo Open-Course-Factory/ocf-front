@@ -21,13 +21,77 @@
  */ 
 -->
 
+<template>
+  <div v-if="visible" class="modal-overlay">
+    <div class="modal-body">
+      <button class="close-button" @click="closeModal">
+        <i class="fas fa-times"></i>
+      </button>
+      <div class="modal-content">
+        <h2 v-if="entity">
+          <i class="fas fa-edit"></i> {{ t(`${props.entityName}.modify`) }}
+        </h2>
+        <h2 v-else>
+          <i class="fas fa-plus"></i> {{ t(`${props.entityName}.add`) }}
+        </h2>
+        <div class="checkout-form">
+          <div v-for="[name, field] of entityStore.fieldList" class="form-group">
+            <span v-if="field.type != 'subentity' && ((!entity && field.toBeSet) || (entity && field.toBeEdited))">
+              <label :for="name">{{ field.label }}</label>
+              <textarea
+                v-if="field.type == 'textarea' || field.type == 'advanced-textarea'"
+                :id="name"
+                v-model="data[name]"
+                :class="['form-control', { 'is-invalid': errors[name] }]"
+              />
+              <input
+                v-else-if="field.type == 'input'"
+                :id="name"
+                v-model="data[name]"
+                :class="['form-control', { 'is-invalid': errors[name] }]"
+              />
+              <div v-if="errors[name]" class="invalid-feedback">
+                {{ errors[name] }}
+              </div>
+            </span>
+          </div>
+          <div v-if="entityStore.subEntitiesStores.size > 0" v-for="[name, store] of entityStore.subEntitiesStores" class="form-group">
+            <span v-if="entityStore.fieldList.get(name).toBeSet">
+              <label :for="name">{{ name }}</label>
+              <v-autocomplete
+                label="Autocomplete"
+                v-model="data[name]"
+                :items="store.selectDatas"
+                item-text="text"
+                item-value="value"
+                item-title="text"
+                :class="['form-control', { 'is-invalid': errors[name] }]"
+              />
+            </span>
+          </div>
+          <div class="modal-actions">
+            <button v-if="entity" class="btn btn-primary" @click="handleEvent('modify')">
+              <i class="fas fa-save"></i> Modifier
+            </button>
+            <button v-else class="btn btn-primary" @click="handleEvent('submit')">
+              <i class="fas fa-save"></i> Ajouter
+            </button>
+            <button class="btn btn-danger" @click="closeModal">
+              <i class="fas fa-ban"></i> Annuler
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { reactive, watch } from 'vue';
-
 import { Store } from 'pinia';
 import { useI18n } from 'vue-i18n';
 
-const { t } = useI18n({}) 
+const { t } = useI18n();
 
 const data = reactive({});
 const errors = reactive({});
@@ -44,14 +108,13 @@ const emit = defineEmits<{
   (e: 'close'): void;
 }>();
 
-prepareNeededField()
+prepareNeededField();
 
 function validateFields() {
   let res = true;
 
   props.entityStore.fieldList.forEach((value, key) => {
     if ((!props.entity && value.toBeSet) || (props.entity && value.toBeEdited)) {
-      // Validate required fields
       if (data[key]?.toString().trim() === '' || data[key] === undefined) {
         errors[key] = `${key} est requis.`;
         res = false;
@@ -74,33 +137,30 @@ function validateFields() {
 function formatFields() {
   Object.keys(data).forEach((key) => {
     if (props.entityStore.fieldList.get(key).type == 'advanced-textarea') {
-      data[key] = data[key].split('\n')
+      data[key] = data[key].split('\n');
     }
   });
 }
 
 function handleEvent(event) {
   if (validateFields()) {
-    formatFields()
-    // Set data["id"] with current id in case of edition
-    if (props.entity) { 
-      data["id"] = props.entity["id"] 
+    formatFields();
+    if (props.entity) {
+      data['id'] = props.entity['id'];
     } else {
-      delete data['id']; // Ensure 'id' is not present when adding a new entity
+      delete data['id'];
     }
     emit(event, { ...data });
-
-    resetForm()  
-  } 
-  
+    resetForm();
+  }
 }
 
 function resetForm() {
   Object.keys(data).forEach((key) => {
-    delete data[key]; // Remove keys from data
+    delete data[key];
   });
   Object.keys(errors).forEach((key) => {
-    delete errors[key]; // Remove keys from errors
+    delete errors[key];
   });
 }
 
@@ -148,62 +208,6 @@ function prepareNeededField() {
 }
 </script>
 
-<template>
-  <div v-if="visible" class="modal-overlay">
-    <div class="modal-body">
-      <button class="close-button" @click="closeModal">&times;</button>
-      <div class="modal-content">
-        <h2 v-if="entity">{{ t(`${props.entityName}.modify`) }}</h2>
-        <h2 v-else>{{ t(`${props.entityName}.add`) }}</h2>
-        <div class="checkout-form">
-          <div v-for="[name, field] of entityStore.fieldList" class="form-group">
-            <span v-if="field.type != 'subentity' && ((!entity && field.toBeSet) || (entity && field.toBeEdited))">
-              <label :for=name>{{ field.label }}</label>
-              <textarea
-                v-if="(field.type == 'textarea' || field.type == 'advanced-textarea')"
-                :id=name
-                v-model=data[name]
-                :class="['form-control', { 'is-invalid': errors[name] }]"
-              />
-              <input
-                v-else-if="field.type == 'input'"
-                :id=name
-                v-model=data[name]
-                :class="['form-control', { 'is-invalid': errors[name] }]"
-              />
-              <div v-if="errors[name]" class="invalid-feedback">
-                {{ errors[name] }}
-              </div>
-            </span>
-          </div>
-          <div v-if="entityStore.subEntitiesStores.size > 0" v-for="[name, store] of entityStore.subEntitiesStores" class="form-group">
-            <span v-if="entityStore.fieldList.get(name).toBeSet">
-              <label :for=name>{{ name }}</label>
-              <v-autocomplete
-                    label="Autocomplete"
-                    v-model=data[name] 
-                    :items="store.selectDatas"
-                    item-text="text"
-                    item-value="value"
-                    item-title="text"
-                    :class="['form-control', { 'is-invalid': errors[name] }]"
-              >
-              </v-autocomplete>
-          </span>
-
-
-          </div>
-          <div>
-            <button v-if="entity" class="btn btn-primary" @click="handleEvent('modify')">Modifier</button>
-            <button v-else class="btn btn-primary" @click="handleEvent('submit')">Ajouter</button>
-            <button class="btn btn-danger" @click="closeModal">Annuler</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <style scoped>
 .modal-overlay {
   position: fixed;
@@ -215,6 +219,7 @@ function prepareNeededField() {
   display: flex;
   justify-content: center;
   align-items: center;
+  animation: fadeIn 0.3s ease-in-out;
 }
 
 .modal-body {
@@ -226,6 +231,7 @@ function prepareNeededField() {
   width: 90%;
   max-width: 800px;
   height: auto;
+  animation: slideIn 0.3s ease-in-out;
 }
 
 .close-button {
@@ -236,32 +242,61 @@ function prepareNeededField() {
   border: none;
   font-size: 1.5em;
   cursor: pointer;
-  padding-left: 10px;
-  padding-right: 10px;
-  z-index: 2;
+  transition: color 0.3s;
+}
+
+.close-button:hover {
+  color: #dc3545;
 }
 
 .modal-content {
   display: flex;
   flex-direction: column;
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
-.modal-content button {
-  width: 120px;
-  margin: 0 auto;
+.modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.modal-actions button {
+  width: auto;
+  padding: 10px 20px;
 }
 
 h2 {
   margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .form-group {
   margin-bottom: 20px;
-  height: auto;
 }
 
 textarea {
   height: 250px;
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-10px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
 </style>

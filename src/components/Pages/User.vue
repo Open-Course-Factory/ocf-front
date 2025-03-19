@@ -23,8 +23,6 @@
 
 <script setup lang="ts">
 
-import TopMenu from '../Menus/TopMenu.vue';
-import MainNavMenu from '../Menus/MainNavMenu.vue';
 import Entity from './Entity.vue';
 import { useSshKeysStore } from '../../store/sshKeys';
 
@@ -34,10 +32,6 @@ const sshKeysStore = useSshKeysStore();
 
 <template>
     <div class="wrapper">
-        <MainNavMenu />
-        <div class="inner-wrapper">
-            <TopMenu />
-            <Entity :entity-name='"sshkeys"' :entity-store=sshKeysStore />
-        </div>
+        <Entity :entity-name='"sshkeys"' :entity-store=sshKeysStore />
     </div>
 </template>

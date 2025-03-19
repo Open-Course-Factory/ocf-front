@@ -23,8 +23,6 @@
 
 <script setup lang="ts">
 
-import TopMenu from '../Menus/TopMenu.vue';
-import MainNavMenu from '../Menus/MainNavMenu.vue';
 import Entity from './Entity.vue';
 import { useSectionsStore } from '../../store/sections';
 
@@ -34,10 +32,6 @@ const entityStore = useSectionsStore();
 
 <template>
     <div class="wrapper">
-        <MainNavMenu />
-        <div class="inner-wrapper">
-            <TopMenu />
-            <Entity :entity-name='"sections"' :entity-store=entityStore />
-        </div>
+        <Entity :entity-name='"sections"' :entity-store=entityStore />
     </div>
 </template>

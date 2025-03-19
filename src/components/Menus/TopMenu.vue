@@ -22,71 +22,96 @@
 -->
 
 <script setup lang="ts">
-
 import { useI18n } from 'vue-i18n';
 import { useCurrentUserStore } from '../../store/currentUser.ts';
 import Disconnect from '../Buttons/Disconnect.vue';
 
-
 const currentUser = useCurrentUserStore();
-
-const model = useI18n().locale
-
+const { locale, availableLocales } = useI18n();
 </script>
 
 <template>
-    <div class="top-menu">
-
-        <div class="locale-changer">
-            <select v-model="model">
-            <option v-for="locale in useI18n().availableLocales" :key="`locale-${locale}`" :value="locale">{{ locale }}</option>
-            </select>
-        </div>
-        <router-link to="/user">
-            <div class="profile-picture"></div>
-            <p>{{ currentUser.userName }}</p>
-        </router-link>
-        <disconnect />
-            
+  <div class="top-menu">
+    <div class="locale-changer">
+      <select v-model="locale">
+        <option v-for="locale in availableLocales" :key="`locale-${locale}`" :value="locale">
+          {{ locale }}
+        </option>
+      </select>
     </div>
+    <router-link to="/user" class="user-info">
+      <div class="profile-picture">
+        <i class="fas fa-user"></i>
+      </div>
+      <p>{{ currentUser.userName }}</p>
+    </router-link>
+    <Disconnect />
+  </div>
 </template>
 
 <style scoped>
-
 .top-menu {
-    display: flex;
-    justify-content: end;
-    align-items: center;
-    width: 100%;
-    height: 60px;
-    border-bottom: 1px solid #D9DEE4;
-    background-color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 60px;
+  border-bottom: 1px solid #d9dee4;
+  background-color: #fff;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  padding: 0 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  animation: slideDown 0.3s ease-in-out;
 }
 
-p {
-    margin-top: 14px;
+.locale-changer {
+  margin-right: auto;
 }
 
-.top-menu a {
-    width: 130px;
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
-    padding: 0px 14px;
-    cursor: pointer;
-    color: #212529;
-    text-decoration: none;
+.locale-changer select {
+  padding: 5px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
 }
 
-.top-menu button {
-    margin-right: 44px;
+.user-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 14px;
+  cursor: pointer;
+  color: #212529;
+  text-decoration: none;
+}
+
+.user-info p {
+  margin-left: 10px;
 }
 
 .profile-picture {
-    width: 40px;
-    height: 40px;
-    background-color: #969696;
-    border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  background-color: #969696;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
 }
 
+.profile-picture i {
+  font-size: 1.2em;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
 </style>
