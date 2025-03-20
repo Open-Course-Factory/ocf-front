@@ -21,6 +21,30 @@
  */ 
 -->
 
+<template>
+  <div class="top-menu">
+    <button class="menu-toggle" @click="toggleMenu">
+      <i class="fas fa-bars"></i>
+    </button>
+    <div class="right-controls">
+      <div class="locale-changer">
+        <select v-model="locale">
+          <option v-for="locale in availableLocales" :key="`locale-${locale}`" :value="locale">
+            {{ locale }}
+          </option>
+        </select>
+      </div>
+      <router-link to="/user" class="user-info">
+        <div class="profile-picture">
+          <i class="fas fa-user"></i>
+        </div>
+        <p>{{ currentUser.userName }}</p>
+      </router-link>
+      <Disconnect />
+    </div>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import { useCurrentUserStore } from '../../store/currentUser.ts';
@@ -28,26 +52,13 @@ import Disconnect from '../Buttons/Disconnect.vue';
 
 const currentUser = useCurrentUserStore();
 const { locale, availableLocales } = useI18n();
-</script>
 
-<template>
-  <div class="top-menu">
-    <div class="locale-changer">
-      <select v-model="locale">
-        <option v-for="locale in availableLocales" :key="`locale-${locale}`" :value="locale">
-          {{ locale }}
-        </option>
-      </select>
-    </div>
-    <router-link to="/user" class="user-info">
-      <div class="profile-picture">
-        <i class="fas fa-user"></i>
-      </div>
-      <p>{{ currentUser.userName }}</p>
-    </router-link>
-    <Disconnect />
-  </div>
-</template>
+const emit = defineEmits(['toggle-menu']);
+
+function toggleMenu() {
+  emit('toggle-menu');
+}
+</script>
 
 <style scoped>
 .top-menu {
@@ -67,8 +78,20 @@ const { locale, availableLocales } = useI18n();
   animation: slideDown 0.3s ease-in-out;
 }
 
+.menu-toggle {
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  cursor: pointer;
+}
+
+.right-controls {
+  display: flex;
+  align-items: center;
+}
+
 .locale-changer {
-  margin-right: auto;
+  margin-right: 20px;
 }
 
 .locale-changer select {
