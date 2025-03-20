@@ -35,6 +35,7 @@ import Machines from '../components/Pages/Machines.vue';
 import Usernames from '../components/Pages/Usernames.vue';
 import Connections from '../components/Pages/Connections.vue';
 import LandingPage from '../components/Pages/LandingPage.vue';
+import User from '../components/Pages/User.vue';
 
 const basicRoutes = [
   { path: '/', name: 'LandingPage', component: LandingPage },
@@ -74,6 +75,11 @@ const basicRoutes = [
         path: 'connections',
         meta: { requiresAuth: true },
         children: [{ path: '', component: Connections }],
+      },
+      {
+        path: 'user',
+        meta: { requiresAuth: true },
+        children: [{ path: '', component: User }],
       },
     ],
   },

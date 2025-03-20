@@ -220,6 +220,7 @@ function prepareNeededField() {
   justify-content: center;
   align-items: center;
   animation: fadeIn 0.3s ease-in-out;
+  z-index: 1000; /* Ensure it stays above other content */
 }
 
 .modal-body {
@@ -232,6 +233,9 @@ function prepareNeededField() {
   max-width: 800px;
   height: auto;
   animation: slideIn 0.3s ease-in-out;
+  overflow-y: auto;
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
 }
 
 .close-button {
@@ -254,6 +258,8 @@ function prepareNeededField() {
   flex-direction: column;
   max-height: 80vh;
   overflow-y: auto;
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
 }
 
 .modal-actions {
@@ -280,6 +286,12 @@ h2 {
 
 textarea {
   height: 250px;
+}
+
+/* Hide scrollbars for WebKit browsers */
+.modal-body::-webkit-scrollbar,
+.modal-content::-webkit-scrollbar {
+  display: none;
 }
 
 @keyframes fadeIn {
