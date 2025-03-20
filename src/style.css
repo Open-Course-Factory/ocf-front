@@ -21,11 +21,17 @@
 
 html {
   height: 100%;
+  overflow: auto;
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
 }
 
 body {
   height: 100%;
   display: flex;
+  overflow: auto;
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
 }
 
 .left-col {

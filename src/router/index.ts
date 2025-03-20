@@ -22,7 +22,6 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import { useCurrentUserStore } from '../store/currentUser';
 import Layout from '../components/Layout.vue';
-//import Dashboard from '../components/Pages/Dashboard.vue';
 import Courses from '../components/Pages/Courses.vue';
 import Chapters from '../components/Pages/Chapters.vue';
 import Sections from '../components/Pages/Sections.vue';

@@ -31,7 +31,7 @@ export const useSchedulesStore = defineStore('schedules', () => {
 
     useI18n().mergeLocaleMessage('en', { schedules : { 
         id : "id",
-        pageTitle : 'Schedules list',
+        pageTitle : 'Schedules',
         name: 'Schedule Name',
         front_matter_content: 'Content',
         modify: 'Modify the schedule', 
@@ -39,7 +39,7 @@ export const useSchedulesStore = defineStore('schedules', () => {
     }})
     useI18n().mergeLocaleMessage('fr', { schedules : { 
         id : "id",
-        pageTitle : 'Liste des emplois du temps',
+        pageTitle : 'Emplois du temps',
         name: 'Nom de l\'emploi du temps',
         front_matter_content: 'Contenu',
         modify: 'Modifier l\'emploi du temps', 

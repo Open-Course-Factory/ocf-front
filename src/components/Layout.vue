@@ -51,10 +51,12 @@ onUnmounted(() => {
   left: 0;
   height: calc(100vh - 60px); /* Full height minus the TopMenu height */
   width: 250px; /* Adjust width as needed */
-  overflow-y: hidden;
+  overflow-y: auto; /* Allow scrolling within the menu */
   background-color: #343a40; /* Match your menu background color */
   z-index: 999; /* Ensure it stays above other content */
   transition: width 0.3s ease;
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
 }
 
 .main-nav-menu.collapsed {
@@ -67,11 +69,12 @@ onUnmounted(() => {
   flex-direction: column;
   width: calc(100% - 250px); /* Adjust width to account for the MainNavMenu */
   padding-top: 60px; /* Height of the TopMenu */
-  overflow-y: auto;
   padding: 10px;
   animation: fadeIn 0.5s ease-in-out;
   transition: margin-left 0.3s ease, width 0.3s ease;
-  margin-top: 60px;
+  overflow-y: auto; /* Allow scrolling within the content area */
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
 }
 
 .inner-wrapper.menu-collapsed {
@@ -85,7 +88,16 @@ onUnmounted(() => {
   background-color: #f8f9fa;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  overflow: hidden; /* Hide scrollbars */
+  overflow-y: auto; /* Allow scrolling within the content area */
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+  margin-top: 60px;
+}
+
+/* Hide scrollbars for WebKit browsers */
+.inner-wrapper::-webkit-scrollbar,
+.content-area::-webkit-scrollbar {
+  display: none;
 }
 
 @keyframes fadeIn {

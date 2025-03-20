@@ -30,7 +30,7 @@ export const useCoursesStore = defineStore('Courses', () => {
     const base = useBaseStore();
 
     useI18n().mergeLocaleMessage('en', { courses : { 
-        pageTitle: 'Courses list',
+        pageTitle: 'Courses',
         name: 'Name',
         theme: 'Theme',
         format: 'Format',
@@ -50,7 +50,7 @@ export const useCoursesStore = defineStore('Courses', () => {
         add: 'Add a course',
     }})
     useI18n().mergeLocaleMessage('fr', { courses : { 
-        pageTitle: 'Liste des cours',
+        pageTitle: 'Cours',
         name: 'Nom',
         theme: 'Theme',
         format: 'Format',
