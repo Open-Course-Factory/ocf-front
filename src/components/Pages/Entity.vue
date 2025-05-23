@@ -34,19 +34,25 @@
         <li v-for="entity in props.entityStore.entities" :key="entity.id" class="entity-item">
           <EntityCard :entity="entity" :entityStore="props.entityStore" />
           <div class="actions">
-            <button
-              class="btn btn-danger"
-              :disabled="props.entityStore.entities.length <= 1"
-              @click="deleteEntity(entity.id)"
-            >
-              <i class="fas fa-trash"></i> {{ t('delete') }}
-            </button>
+            <!-- Slot pour les actions spécifiques -->
+            <slot name="actions" :entity="entity"></slot>
             <button
               class="btn btn-primary"
               v-if="isEditable(props.entityStore)"
               @click="openModal(entity)"
             >
-              <i class="fas fa-edit"></i> {{ t('edit') }}
+              <i class="fas fa-edit"></i>
+              <br> 
+              {{ t('edit') }}
+            </button>
+            <button
+              class="btn btn-danger"
+              :disabled="props.entityStore.entities.length <= 1"
+              @click="deleteEntity(entity.id)"
+            >
+              <i class="fas fa-trash"></i>
+              <br>
+              {{ t('delete') }}
             </button>
           </div>
         </li>
@@ -76,6 +82,7 @@ import EntityModal from '../Modals/EntityModal.vue';
 import EntityCard from '../Cards/EntityCard.vue';
 import { useI18n } from 'vue-i18n';
 import { Store } from 'pinia';
+import router from '../../router/index';
 
 const { t } = useI18n();
 
@@ -112,6 +119,12 @@ async function getEntities(entityName: string, store: Store) {
     store.entities = [];
     store.selectDatas = [];
     console.error('Error while getting ' + entityName, error);
+    switch (error.response.status) {
+      case 404:
+        break;
+      default:
+        router.push({name: "Login"});
+    }
   }
 }
 
@@ -162,15 +175,15 @@ async function updateEntity(data: Record<string, string>) {
 }
 
 function isEditable(entityStore: Store) {
-        let res = false
-        entityStore.fieldList.forEach(element => {
-            if (element.toBeEdited == true) {
-                res = true
-                return res
-            }
-        });
-        return res
+  let res = false;
+  entityStore.fieldList.forEach(element => {
+    if (element.toBeEdited == true) {
+      res = true;
+      return res;
     }
+  });
+  return res;
+}
 
 function openModal(entity: any) {
   showModal.value = true;
@@ -212,8 +225,11 @@ ul {
   transform: scale(1.02);
 }
 
-.actions button {
+.actions :deep(button) {
   margin-left: 10px;
+  margin-bottom: 2px;
+  width: -moz-available;          /* WebKit-based browsers will ignore this. */
+  width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
 }
 
 .actions .btn i {
@@ -237,4 +253,3 @@ ul {
   scrollbar-width: none;  /* Firefox */
 }
 </style>
-

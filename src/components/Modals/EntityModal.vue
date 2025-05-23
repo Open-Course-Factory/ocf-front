@@ -110,17 +110,22 @@ const emit = defineEmits<{
 
 prepareNeededField();
 
+function isFieldRequired(field: any): boolean {
+  return field.required === true;
+}
+
 function validateFields() {
   let res = true;
 
   props.entityStore.fieldList.forEach((value, key) => {
     if ((!props.entity && value.toBeSet) || (props.entity && value.toBeEdited)) {
-      if (data[key]?.toString().trim() === '' || data[key] === undefined) {
+      if (isFieldRequired(value) && (data[key]?.toString().trim() === '' || data[key] === undefined)) {
         errors[key] = `${key} est requis.`;
         res = false;
       } else if (
         props.entityStore.entities.some(
-          (storeEntity) => storeEntity.name === data[key]?.toString().trim()
+          (storeEntity) => storeEntity.name === data[key]?.toString().trim() &&
+          (!props.entity || storeEntity.id !== props.entity.id)
         )
       ) {
         errors[key] = 'Ce nom est déjà utilisé.';

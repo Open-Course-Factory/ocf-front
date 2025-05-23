@@ -36,6 +36,8 @@ import Usernames from '../components/Pages/Usernames.vue';
 import Connections from '../components/Pages/Connections.vue';
 import LandingPage from '../components/Pages/LandingPage.vue';
 import User from '../components/Pages/User.vue';
+import Generations from '../components/Pages/Generations.vue';
+import Themes from '../components/Pages/Themes.vue';
 
 const basicRoutes = [
   { path: '/', name: 'LandingPage', component: LandingPage },
@@ -51,6 +53,8 @@ const basicRoutes = [
       { path: 'sections', name: 'Sections', component: Sections, meta: { requiresAuth: true } },
       { path: 'pages', name: 'Pages', component: Pages, meta: { requiresAuth: true } },
       { path: 'schedules', name: 'Schedules', component: Schedules, meta: { requiresAuth: true } },
+      { path: 'themes', name: 'Themes', component: Themes, meta: { requiresAuth: true } },
+      { path: 'generations', name: 'Generations', component: Generations, meta: { requiresAuth: true } },
       {
         path: 'tps',
         component: Tps,

@@ -12,33 +12,45 @@
     <nav class="menu-nav">
       <ul>
         <li>
-          <router-link to="/courses" class="menu-item" :title="$t(`courses.pageTitle`)">
+          <router-link to="/courses" class="menu-item" :title="t(`courses.pageTitle`)">
             <i class="fas fa-book"></i>
             <span class="menu-text">{{ t(`courses.pageTitle`) }}</span>
           </router-link>
         </li>
         <li>
-          <router-link to="/chapters" class="menu-item" :title="$t(`chapters.pageTitle`)">
+          <router-link to="/chapters" class="menu-item" :title="t(`chapters.pageTitle`)">
             <i class="fas fa-book-open"></i>
             <span class="menu-text">{{ t(`chapters.pageTitle`) }}</span>
           </router-link>
         </li>
         <li>
-          <router-link to="/sections" class="menu-item" :title="$t(`sections.pageTitle`)">
+          <router-link to="/sections" class="menu-item" :title="t(`sections.pageTitle`)">
             <i class="fas fa-stream"></i>
             <span class="menu-text">{{ t(`sections.pageTitle`) }}</span>
           </router-link>
         </li>
         <li>
-          <router-link to="/pages" class="menu-item" :title="$t(`pages.pageTitle`)">
+          <router-link to="/pages" class="menu-item" :title="t(`pages.pageTitle`)">
             <i class="fas fa-file-alt"></i>
             <span class="menu-text">{{ t(`pages.pageTitle`) }}</span>
           </router-link>
         </li>
         <li>
-          <router-link to="/schedules" class="menu-item" :title="$t(`schedules.pageTitle`)">
+          <router-link to="/schedules" class="menu-item" :title="t(`schedules.pageTitle`)">
             <i class="fas fa-calendar-alt"></i>
             <span class="menu-text">{{ t(`schedules.pageTitle`) }}</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/themes" class="menu-item" :title="t(`themes.pageTitle`)">
+            <i class="fas fa-id-card"></i>
+            <span class="menu-text">{{ t(`themes.pageTitle`) }}</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/generations" class="menu-item" :title="t(`generations.pageTitle`)">
+            <i class="fas fa-archive"></i>
+            <span class="menu-text">{{ t(`generations.pageTitle`) }}</span>
           </router-link>
         </li>
         <li>
@@ -48,19 +60,19 @@
           </router-link>
         </li>
         <li v-if="currentUser.userRoles[0] === 'administrator'">
-          <router-link to="/usernames" class="menu-item" :title="$t(`usernames.pageTitle`)">
+          <router-link to="/usernames" class="menu-item" :title="t(`usernames.pageTitle`)">
             <i class="fas fa-users"></i>
             <span class="menu-text">{{ t(`usernames.pageTitle`) }}</span>
           </router-link>
         </li>
         <li v-if="currentUser.userRoles[0] === 'administrator'">
-          <router-link to="/machines" class="menu-item" :title="$t(`machines.pageTitle`)">
+          <router-link to="/machines" class="menu-item" :title="t(`machines.pageTitle`)">
             <i class="fas fa-desktop"></i>
             <span class="menu-text">{{ t(`machines.pageTitle`) }}</span>
           </router-link>
         </li>
         <li v-if="currentUser.userRoles[0] === 'administrator'">
-          <router-link to="/connections" class="menu-item" :title="$t(`connections.pageTitle`)">
+          <router-link to="/connections" class="menu-item" :title="t(`connections.pageTitle`)">
             <i class="fas fa-plug"></i>
             <span class="menu-text">{{ t(`connections.pageTitle`) }}</span>
           </router-link>
@@ -76,14 +88,19 @@ import { useUsernamesStore } from '../../store/usernames.ts';
 import { useCurrentUserStore } from '../../store/currentUser.ts';
 import { useSchedulesStore } from '../../store/schedules.ts';
 import { useConnectionsStore } from '../../store/connections.ts';
+import { useThemesStore } from '../../store/themes.ts';
+import { useGenerationsStore } from '../../store/generations.ts';
 import { ref } from 'vue';
 import { useI18n } from "vue-i18n"
+
 
 //needed for i18n
 const coursesStore = useCoursesStore();
 const connectionsStore = useConnectionsStore();
 const schedulesStore = useSchedulesStore();
-const usernameStore = useUsernamesStore();
+const usernamesStore = useUsernamesStore();
+const themesStore = useThemesStore();
+const generationsStore = useGenerationsStore();
 
 const currentUser = useCurrentUserStore();
 const isMenuCollapsed = ref(false);
