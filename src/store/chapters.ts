@@ -23,6 +23,7 @@ import { defineStore } from "pinia"
 import { useI18n } from "vue-i18n"
 import { useBaseStore } from "./baseStore"
 import { useSectionsStore } from "./sections"
+import { useCoursesStore } from "./courses"
 
 
 export const useChaptersStore = defineStore('chapters', () => {
@@ -33,6 +34,7 @@ export const useChaptersStore = defineStore('chapters', () => {
     useI18n().mergeLocaleMessage('en', { chapters : { 
         id : "id",
         pageTitle: 'Chapters',
+        courses: 'Course',
         title: 'Chapter Title',
         number: 'Number',
         introduction: 'Introduction',
@@ -44,6 +46,7 @@ export const useChaptersStore = defineStore('chapters', () => {
     useI18n().mergeLocaleMessage('fr', { chapters : { 
         id : "id",
         pageTitle: 'Chapitres',
+        courses: 'Cours',
         title: 'Titre du chapitre',
         number: 'Numero',
         introduction: 'Introduction',
@@ -55,6 +58,7 @@ export const useChaptersStore = defineStore('chapters', () => {
 
     const fieldList = new Map<string, any>([
         ["id", { label: t('chapters.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
+        ["courseIDs", { label: t('chapters.courses'), type: "multi-select", display: false, toBeSet: false, toBeEdited: false }],
         ["title", { label: t('chapters.title'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
         ["introduction", { label: t('chapters.introduction'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
         ["footer", { label: t('chapters.footer'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
@@ -66,6 +70,10 @@ export const useChaptersStore = defineStore('chapters', () => {
 
     base.subEntitiesStores = new Map<string, any>([
         ["sections", useSectionsStore()],
+    ])
+
+    base.parentEntitiesStores = new Map<string, any>([
+        ["courseIDs", useCoursesStore()],
     ])
 
     return {...base, fieldList}

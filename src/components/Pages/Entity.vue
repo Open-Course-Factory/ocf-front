@@ -23,44 +23,108 @@
 
 <template>
   <div class="content">
-    <div class="header">
-      <h2>{{ t(`${props.entityName}.pageTitle`) }}</h2>
-      <button class="btn btn-primary" @click="openModal(null)">
-        <i class="fas fa-plus"></i> {{ t('add') }}
-      </button>
-    </div>
-    <div v-if="props.entityStore.entities.length > 0">
-      <ul>
-        <li v-for="entity in props.entityStore.entities" :key="entity.id" class="entity-item">
-          <EntityCard :entity="entity" :entityStore="props.entityStore" />
-          <div class="actions">
-            <!-- Slot pour les actions spécifiques -->
-            <slot name="actions" :entity="entity"></slot>
-            <button
-              class="btn btn-primary"
-              v-if="isEditable(props.entityStore)"
-              @click="openModal(entity)"
+    <!-- Barre d'outils fixe -->
+    <div class="toolbar-container">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <h2>{{ t(`${props.entityName}.pageTitle`) }}</h2>
+        </div>
+        <div class="toolbar-right">
+          <!-- Filtres par entités parentes -->
+          <div v-if="parentFilters.length > 0" class="filters-container">
+            <div 
+              v-for="filter in parentFilters" 
+              :key="filter.key" 
+              class="filter-group"
             >
-              <i class="fas fa-edit"></i>
-              <br> 
-              {{ t('edit') }}
-            </button>
-            <button
-              class="btn btn-danger"
-              :disabled="props.entityStore.entities.length <= 1"
-              @click="deleteEntity(entity.id)"
+              <label :for="`filter-${filter.key}`" class="filter-label">
+                <i class="fas fa-filter"></i>
+                {{ filter.label }}:
+              </label>
+              <select 
+                :id="`filter-${filter.key}`"
+                v-model="activeFilters[filter.key]" 
+                @change="applyFilters"
+                class="filter-select"
+              >
+                <option value="">{{ t('all') }}</option>
+                <option 
+                  v-for="option in filter.options" 
+                  :key="option.value" 
+                  :value="option.value"
+                >
+                  {{ option.text }}
+                </option>
+              </select>
+            </div>
+            <button 
+              v-if="hasActiveFilters" 
+              @click="clearFilters" 
+              class="btn btn-secondary btn-clear-filters"
+              :title="t('clearFilters')"
             >
-              <i class="fas fa-trash"></i>
-              <br>
-              {{ t('delete') }}
+              <i class="fas fa-times"></i>
             </button>
           </div>
-        </li>
-      </ul>
+          
+          <button class="btn btn-primary" @click="openModal(null)">
+            <i class="fas fa-plus"></i> {{ t('add') }}
+          </button>
+        </div>
+      </div>
     </div>
-    <div v-else>
-      <p>{{ t('empty') }}</p>
+
+    <!-- Contenu principal avec padding pour compenser la toolbar fixe -->
+    <div class="main-content">
+      <!-- Indicateur de filtres actifs -->
+      <div v-if="hasActiveFilters" class="active-filters-info">
+        <i class="fas fa-info-circle"></i>
+        {{ t('filteredResults', { total: filteredEntities.length, of: props.entityStore.entities.length }) }}
+      </div>
+
+      <div v-if="filteredEntities.length > 0">
+        <ul>
+          <li v-for="entity in filteredEntities" :key="entity.id" class="entity-item">
+            <EntityCard :entity="entity" :entityStore="props.entityStore" />
+            <div class="actions">
+              <!-- Slot pour les actions spécifiques -->
+              <slot name="actions" :entity="entity"></slot>
+              <button
+                class="btn btn-primary"
+                v-if="isEditable(props.entityStore)"
+                @click="openModal(entity)"
+              >
+                <i class="fas fa-edit"></i>
+                <br> 
+                {{ t('edit') }}
+              </button>
+              <button
+                class="btn btn-danger"
+                :disabled="props.entityStore.entities.length <= 1"
+                @click="deleteEntity(entity.id)"
+              >
+                <i class="fas fa-trash"></i>
+                <br>
+                {{ t('delete') }}
+              </button>
+            </div>
+          </li>
+        </ul>
+      </div>
+      <div v-else-if="props.entityStore.entities.length === 0">
+        <p class="empty-state">
+          <i class="fas fa-inbox"></i>
+          {{ t('empty') }}
+        </p>
+      </div>
+      <div v-else>
+        <p class="no-results">
+          <i class="fas fa-search"></i>
+          {{ t('noFilterResults') }}
+        </p>
+      </div>
     </div>
+
     <EntityModal
       :visible="showModal"
       :entity="entityToEdit"
@@ -76,7 +140,7 @@
 
 <script setup lang="ts">
 import axios from 'axios';
-import { ref, onBeforeMount } from 'vue';
+import { ref, onBeforeMount, computed, reactive, watch } from 'vue';
 import { useCurrentUserStore } from '../../store/currentUser';
 import EntityModal from '../Modals/EntityModal.vue';
 import EntityCard from '../Cards/EntityCard.vue';
@@ -85,6 +149,21 @@ import { Store } from 'pinia';
 import router from '../../router/index';
 
 const { t } = useI18n();
+
+// Ajouter les traductions manquantes
+useI18n().mergeLocaleMessage('en', {
+  all: 'All',
+  clearFilters: 'Clear filters',
+  filteredResults: 'Showing {total} of {of} results',
+  noFilterResults: 'No results match the current filters'
+});
+
+useI18n().mergeLocaleMessage('fr', {
+  all: 'Tous',
+  clearFilters: 'Effacer les filtres',
+  filteredResults: 'Affichage de {total} sur {of} résultats',
+  noFilterResults: 'Aucun résultat ne correspond aux filtres actuels'
+});
 
 const props = defineProps<{
   entityName: string;
@@ -97,11 +176,99 @@ const entityToEdit = ref();
 const apiUrl = import.meta.env.VITE_API_URL;
 const protocol = import.meta.env.VITE_PROTOCOL;
 
+// État pour les filtres
+const activeFilters = reactive<Record<string, string>>({});
+
+// Calcul des filtres disponibles basés sur les entités parentes
+const parentFilters = computed(() => {
+  const filters: Array<{key: string, label: string, options: Array<{value: string, text: string}>}> = [];
+  
+  if (!props.entityStore.fieldList) return filters;
+  
+  // Chercher dans les entités parentes
+  if ((props.entityStore as any).parentEntitiesStores) {
+    (props.entityStore as any).parentEntitiesStores.forEach((parentStore: any, key: string) => {
+      const field = props.entityStore.fieldList.get(key);
+      if (field && parentStore && parentStore.entities && parentStore.entities.length > 0) {
+        filters.push({
+          key: key,
+          label: field.label || t(`${props.entityName}.${key}`),
+          options: parentStore.selectDatas || []
+        });
+      }
+    });
+  }
+  
+  return filters;
+});
+
+// Entités filtrées
+const filteredEntities = computed(() => {
+  if (!hasActiveFilters.value) {
+    return props.entityStore.entities || [];
+  }
+  
+  return (props.entityStore.entities || []).filter((entity: any) => {
+    return Object.entries(activeFilters).every(([key, value]) => {
+      if (!value) return true;
+      
+      const entityValue = entity[key];
+      
+      // Gestion générique des relations many-to-many avec array d'IDs
+      if (Array.isArray(entityValue)) {
+        // Conversion en string pour être sûr de la comparaison
+        return entityValue.includes(String(value));
+      }
+      
+      // Relation simple (one-to-many classique)
+      return String(entityValue) === String(value);
+    });
+  });
+});
+
+// Vérifier s'il y a des filtres actifs
+const hasActiveFilters = computed(() => {
+  return Object.values(activeFilters).some(value => value !== '');
+});
+
+// Fonction pour appliquer les filtres
+function applyFilters() {
+  // Les filtres sont automatiquement appliqués via la computed property filteredEntities
+}
+
+// Fonction pour effacer tous les filtres
+function clearFilters() {
+  Object.keys(activeFilters).forEach(key => {
+    activeFilters[key] = '';
+  });
+}
+
+// Initialiser les filtres quand les données changent
+watch(() => props.entityStore.entities, () => {
+  // Réinitialiser les filtres si nécessaire
+  parentFilters.value.forEach(filter => {
+    if (!(filter.key in activeFilters)) {
+      activeFilters[filter.key] = '';
+    }
+  });
+}, { immediate: true });
+
 onBeforeMount(() => {
   getEntities(props.entityName, props.entityStore);
-  props.entityStore.subEntitiesStores.forEach((key) => {
-    getEntities(key.$id, key);
-  });
+  
+  // Charger les données des entités parentes
+  if ((props.entityStore as any).parentEntitiesStores) {
+    (props.entityStore as any).parentEntitiesStores.forEach((store: Store, key: string) => {
+      getEntities(store.$id || key, store);
+    });
+  }
+  
+  // Charger les données des sous-entités
+  if (props.entityStore.subEntitiesStores) {
+    props.entityStore.subEntitiesStores.forEach((store: Store, key: string) => {
+      getEntities(store.$id || key, store);
+    });
+  }
 });
 
 async function getEntities(entityName: string, store: Store) {
@@ -114,12 +281,14 @@ async function getEntities(entityName: string, store: Store) {
     });
 
     store.entities = response.data || [];
-    store.selectDatas = store.getSelectDatas(store.entities);
-  } catch (error) {
+    if (store.getSelectDatas) {
+      store.selectDatas = store.getSelectDatas(store.entities);
+    }
+  } catch (error: any) {
     store.entities = [];
     store.selectDatas = [];
     console.error('Error while getting ' + entityName, error);
-    switch (error.response.status) {
+    switch (error.response?.status) {
       case 404:
         break;
       default:
@@ -137,7 +306,9 @@ async function addEntity(data: Record<string, string>) {
       },
     });
     props.entityStore.entities.push(response.data);
-    props.entityStore.selectDatas = props.entityStore.getSelectDatas(props.entityStore.entities);
+    if (props.entityStore.getSelectDatas) {
+      props.entityStore.selectDatas = props.entityStore.getSelectDatas(props.entityStore.entities);
+    }
     showModal.value = false;
   } catch (error) {
     console.error('Error while adding ' + props.entityName, error);
@@ -152,8 +323,10 @@ async function deleteEntity(keyId: string) {
         'Authorization': currentUserStore.secretToken,
       },
     });
-    props.entityStore.entities = props.entityStore.entities.filter((key: any) => key.id !== keyId);
-    props.entityStore.selectDatas = props.entityStore.getSelectDatas(props.entityStore.entities);
+    props.entityStore.entities = props.entityStore.entities.filter((entity: any) => entity.id !== keyId);
+    if (props.entityStore.getSelectDatas) {
+      props.entityStore.selectDatas = props.entityStore.getSelectDatas(props.entityStore.entities);
+    }
   } catch (error) {
     console.error('Error while deleting ' + props.entityName, error);
   }
@@ -176,8 +349,8 @@ async function updateEntity(data: Record<string, string>) {
 
 function isEditable(entityStore: Store) {
   let res = false;
-  entityStore.fieldList.forEach(element => {
-    if (element.toBeEdited == true) {
+  entityStore.fieldList?.forEach((element: any) => {
+    if (element.toBeEdited === true) {
       res = true;
       return res;
     }
@@ -193,8 +366,7 @@ function openModal(entity: any) {
 
 <style scoped>
 .content {
-  width: 95%;
-  margin: 30px 42px;
+  width: 100%;
   animation: fadeIn 0.5s ease-in-out;
 }
 
@@ -251,5 +423,79 @@ ul {
   overflow-y: auto;
   -ms-overflow-style: none;  /* Internet Explorer 10+ */
   scrollbar-width: none;  /* Firefox */
+}
+
+/* === AJOUTS MINIMAUX POUR LES NOUVELLES FONCTIONNALITÉS === */
+
+/* Toolbar fixe */
+.toolbar-container {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toolbar {
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.toolbar-left {
+  flex: 1;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* Filtres - style minimal */
+.filters-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.filter-select {
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.btn-clear-filters {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+/* Contenu principal */
+.main-content {
+  width: 95%;
+  margin: 30px 42px;
+}
+
+/* Messages d'état */
+.active-filters-info {
+  background: #f0f8ff;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 15px;
+}
+
+.empty-state,
+.no-results {
+  text-align: center;
+  padding: 20px;
 }
 </style>

@@ -15,7 +15,7 @@
 			"version": "latest"
 		},
 		"ghcr.io/guiyomh/features/vim:0": {},
-		"ghcr.io/devcontainers-contrib/features/vue-cli": {}
+		"ghcr.io/devcontainers-extra/features/vue-cli:2": {}
 	},
 
 	"workspaceFolder": "/workspaces",

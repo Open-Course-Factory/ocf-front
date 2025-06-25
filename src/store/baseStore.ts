@@ -27,7 +27,10 @@ export const useBaseStore = () => {
 
     const subEntitiesStores = new Map<string, any>([
     ])
+
+    const parentEntitiesStores = new Map<string, any>([])
+
   
-    return { entities, getEntities, selectDatas, getSelectDatas, subEntitiesStores};
+    return { entities, getEntities, selectDatas, getSelectDatas, subEntitiesStores, parentEntitiesStores};
 };
   
