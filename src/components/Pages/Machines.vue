@@ -24,7 +24,7 @@
 <script setup lang="ts">
 
 import Entity from './Entity.vue';
-import { useMachinesStore } from '../../store/machines';
+import { useMachinesStore } from '../../stores/machines';
 
 const entityStore = useMachinesStore();
            

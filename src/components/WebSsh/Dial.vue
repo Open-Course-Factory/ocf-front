@@ -10,7 +10,7 @@ import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router';
-import { useCurrentUserStore } from '../../store/currentUser';
+import { useCurrentUserStore } from '../../stores/currentUser';
 
 let terminalBox = ref(null)
 let term

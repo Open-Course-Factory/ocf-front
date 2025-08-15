@@ -24,7 +24,7 @@
 <script setup lang="ts">
 
 import Entity from './Entity.vue';
-import { useCoursesStore } from '../../store/courses';
+import { useCoursesStore } from '../../stores/courses';
 
 const entityStore = useCoursesStore();
 

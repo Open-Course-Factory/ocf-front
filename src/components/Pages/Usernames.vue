@@ -24,7 +24,7 @@
 <script setup lang="ts">
 
 import Entity from './Entity.vue';
-import { useUsernamesStore } from '../../store/usernames';
+import { useUsernamesStore } from '../../stores/usernames';
 
 const entityStore = useUsernamesStore();
 

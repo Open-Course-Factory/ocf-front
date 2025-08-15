@@ -24,9 +24,9 @@
 <script setup lang="ts">
 
 import Entity from './Entity.vue';
-import { useGenerationsStore } from '../../store/generations';
+import { useGenerationsStore } from '../../stores/generations';
 import GenerateCourseButton from '../Buttons/GenerateCourseButton.vue';
-import { useLoginStore } from '../../store/login';
+import { useLoginStore } from '../../stores/login';
 
 const entityStore = useGenerationsStore();
 const loginStore = useLoginStore();

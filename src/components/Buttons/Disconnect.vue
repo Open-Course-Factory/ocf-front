@@ -23,8 +23,8 @@
 
 <script setup lang="ts">
 import router from "../../router/index.ts"
-import { useCurrentUserStore } from '../../store/currentUser.ts';
-import { useLoginStore } from '../../store/login.ts';
+import { useCurrentUserStore } from '../../stores/currentUser.ts';
+import { useLoginStore } from '../../stores/login.ts';
 
 
 const storeUser = useCurrentUserStore()

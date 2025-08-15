@@ -83,13 +83,13 @@
 </template>
 
 <script setup lang="ts">
-import { useCoursesStore } from '../../store/courses.ts';
-import { useUsernamesStore } from '../../store/usernames.ts';
-import { useCurrentUserStore } from '../../store/currentUser.ts';
-import { useSchedulesStore } from '../../store/schedules.ts';
-import { useConnectionsStore } from '../../store/connections.ts';
-import { useThemesStore } from '../../store/themes.ts';
-import { useGenerationsStore } from '../../store/generations.ts';
+import { useCoursesStore } from '../../stores/courses.ts';
+import { useUsernamesStore } from '../../stores/usernames.ts';
+import { useCurrentUserStore } from '../../stores/currentUser.ts';
+import { useSchedulesStore } from '../../stores/schedules.ts';
+import { useConnectionsStore } from '../../stores/connections.ts';
+import { useThemesStore } from '../../stores/themes.ts';
+import { useGenerationsStore } from '../../stores/generations.ts';
 import { ref } from 'vue';
 import { useI18n } from "vue-i18n"
 

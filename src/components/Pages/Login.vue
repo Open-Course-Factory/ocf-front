@@ -46,8 +46,8 @@
 import { ref } from 'vue';
 import axios from 'axios';
 import router from "../../router/index.ts";
-import { useLoginStore } from '../../store/login.ts';
-import { useCurrentUserStore } from '../../store/currentUser.ts';
+import { useLoginStore } from '../../stores/login.ts';
+import { useCurrentUserStore } from '../../stores/currentUser.ts';
 
 const loginStore = useLoginStore();
 const currentUserStore = useCurrentUserStore();

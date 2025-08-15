@@ -20,7 +20,7 @@
  */
 
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
-import { useCurrentUserStore } from '../store/currentUser';
+import { useCurrentUserStore } from '../stores/currentUser';
 import Layout from '../components/Layout.vue';
 import Courses from '../components/Pages/Courses.vue';
 import Chapters from '../components/Pages/Chapters.vue';

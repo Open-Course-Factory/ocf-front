@@ -24,7 +24,7 @@
 <script setup lang="ts">
 
 import Entity from './Entity.vue';
-import { useSshKeysStore } from '../../store/sshKeys';
+import { useSshKeysStore } from '../../stores/sshKeys';
 
 const sshKeysStore = useSshKeysStore();
 

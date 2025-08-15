@@ -24,7 +24,7 @@
 <script setup lang="ts">
 
 import Entity from './Entity.vue';
-import { usePagesStore } from '../../store/pages';
+import { usePagesStore } from '../../stores/pages';
 
 const entityStore = usePagesStore();
            

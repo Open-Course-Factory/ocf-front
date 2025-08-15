@@ -26,8 +26,8 @@
 import { useRouter } from 'vue-router'
 import axios from 'axios';
 import { onBeforeMount } from 'vue'
-import { useCurrentUserStore } from '../../store/currentUser';
-import { useConnectionsStore } from '../../store/connections';
+import { useCurrentUserStore } from '../../stores/currentUser';
+import { useConnectionsStore } from '../../stores/connections';
 
 const connectionsStore = useConnectionsStore()
 const currentUser = useCurrentUserStore()

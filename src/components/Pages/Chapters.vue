@@ -24,7 +24,7 @@
 <script setup lang="ts">
 
 import Entity from './Entity.vue';
-import { useChaptersStore } from '../../store/chapters';
+import { useChaptersStore } from '../../stores/chapters';
 
 const entityStore = useChaptersStore();
            

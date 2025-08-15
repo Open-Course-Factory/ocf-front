@@ -15,7 +15,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useCurrentUserStore } from '../../store/currentUser';
+import { useCurrentUserStore } from '../../stores/currentUser';
 import axios from 'axios';
 import Modal from '../Modals/BaseModal.vue';
 import { useI18n } from 'vue-i18n';

@@ -24,7 +24,7 @@
 <script setup lang="ts">
 
 import Entity from './Entity.vue';
-import { useSectionsStore } from '../../store/sections';
+import { useSectionsStore } from '../../stores/sections';
 
 const entityStore = useSectionsStore();
            

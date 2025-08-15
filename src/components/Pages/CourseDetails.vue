@@ -24,7 +24,7 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
 import { computed } from 'vue'
-import { useCoursesStore } from '../../store/courses'
+import { useCoursesStore } from '../../stores/courses'
 
 const route = useRoute()
 const courseStore = useCoursesStore()

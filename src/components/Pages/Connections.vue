@@ -24,7 +24,7 @@
 <script setup lang="ts">
 
 import Entity from './Entity.vue';
-import { useConnectionsStore } from '../../store/connections';
+import { useConnectionsStore } from '../../stores/connections';
 
 const entityStore = useConnectionsStore();
 

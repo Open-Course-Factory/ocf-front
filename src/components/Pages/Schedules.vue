@@ -22,7 +22,7 @@
 -->
 
 <script setup lang="ts">
-import { useSchedulesStore } from '../../store/schedules';
+import { useSchedulesStore } from '../../stores/schedules';
 import Entity from './Entity.vue';
 
 const entityStore = useSchedulesStore();

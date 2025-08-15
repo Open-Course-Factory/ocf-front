@@ -141,7 +141,7 @@
 <script setup lang="ts">
 import axios from 'axios';
 import { ref, onBeforeMount, computed, reactive, watch } from 'vue';
-import { useCurrentUserStore } from '../../store/currentUser';
+import { useCurrentUserStore } from '../../stores/currentUser';
 import EntityModal from '../Modals/EntityModal.vue';
 import EntityCard from '../Cards/EntityCard.vue';
 import { useI18n } from 'vue-i18n';

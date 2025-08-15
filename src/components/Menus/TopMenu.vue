@@ -47,7 +47,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import { useCurrentUserStore } from '../../store/currentUser.ts';
+import { useCurrentUserStore } from '../../stores/currentUser.ts';
 import Disconnect from '../Buttons/Disconnect.vue';
 
 const currentUser = useCurrentUserStore();

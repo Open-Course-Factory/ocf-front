@@ -24,7 +24,7 @@
 <script setup lang="ts">
 
 import Entity from './Entity.vue';
-import { useThemesStore } from '../../store/themes';
+import { useThemesStore } from '../../stores/themes';
 
 const entityStore = useThemesStore();
            
