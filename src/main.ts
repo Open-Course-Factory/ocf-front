@@ -67,6 +67,10 @@ declare module 'pinia' {
     fieldList: Map<string, any>
     subEntitiesStores: Map<string, any>
     getSelectDatas(any): any
+    executeAfterCreateHook,
+    executeBeforeCreateHook,
+    executeAfterUpdateHook,
+    executeAfterDeleteHook
   }
 }
 

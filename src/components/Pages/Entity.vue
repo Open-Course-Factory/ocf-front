@@ -299,16 +299,28 @@ async function getEntities(entityName: string, store: Store) {
 
 async function addEntity(data: Record<string, string>) {
   try {
-    const response = await axios.post(`${protocol}://${apiUrl}/api/v1/${props.entityName}`, data, {
+    // Exécuter le hook beforeCreate si défini
+    const processedData = await props.entityStore.executeBeforeCreateHook?.(data) || data;
+    
+    const response = await axios.post(`${protocol}://${apiUrl}/api/v1/${props.entityName}`, processedData, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': currentUserStore.secretToken,
       },
     });
-    props.entityStore.entities.push(response.data);
+    
+    const newEntity = response.data;
+    props.entityStore.entities.push(newEntity);
+    
     if (props.entityStore.getSelectDatas) {
       props.entityStore.selectDatas = props.entityStore.getSelectDatas(props.entityStore.entities);
     }
+    
+    // Exécuter le hook afterCreate si défini (générique)
+    if (props.entityStore.executeAfterCreateHook) {
+      await props.entityStore.executeAfterCreateHook(newEntity, data);
+    }
+    
     showModal.value = false;
   } catch (error) {
     console.error('Error while adding ' + props.entityName, error);
@@ -323,9 +335,16 @@ async function deleteEntity(keyId: string) {
         'Authorization': currentUserStore.secretToken,
       },
     });
+    
     props.entityStore.entities = props.entityStore.entities.filter((entity: any) => entity.id !== keyId);
+    
     if (props.entityStore.getSelectDatas) {
       props.entityStore.selectDatas = props.entityStore.getSelectDatas(props.entityStore.entities);
+    }
+    
+    // Exécuter le hook afterDelete si défini (générique)
+    if (props.entityStore.executeAfterDeleteHook) {
+      await props.entityStore.executeAfterDeleteHook(keyId);
     }
   } catch (error) {
     console.error('Error while deleting ' + props.entityName, error);
@@ -340,7 +359,16 @@ async function updateEntity(data: Record<string, string>) {
         'Authorization': currentUserStore.secretToken,
       },
     });
+    
+    // Recharger les entités
     getEntities(props.entityName, props.entityStore);
+    
+    // Exécuter le hook afterUpdate si défini (générique)
+    if (props.entityStore.executeAfterUpdateHook) {
+      const updatedEntity = props.entityStore.entities.find(e => e.id === data['id']);
+      await props.entityStore.executeAfterUpdateHook(updatedEntity, data);
+    }
+    
     showModal.value = false;
   } catch (error) {
     console.error('Error while updating ' + props.entityName, error);

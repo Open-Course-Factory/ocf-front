@@ -25,11 +25,15 @@ import { useBaseStore } from "./baseStore"
 import { useSchedulesStore } from "./schedules";
 import { useThemesStore } from "./themes";
 import { useCoursesStore } from "./courses";
-
+import { ref } from 'vue';
+import axios from 'axios';
 
 export const useGenerationsStore = defineStore('generations', () => {
 
     const base = useBaseStore();
+    
+    // État pour le polling des statuts
+    const pollingIntervals = ref(new Map<string, NodeJS.Timeout>());
 
     useI18n().mergeLocaleMessage('en', { generations : { 
         id : "id",
@@ -39,31 +43,65 @@ export const useGenerationsStore = defineStore('generations', () => {
         themes: 'Theme',
         schedules: 'Schedule',
         format: 'Format',
+        status: 'Status',
+        progress: 'Progress',
+        started_at: 'Started at',
+        completed_at: 'Completed at',
+        error_message: 'Error message',
+        worker_job_id: 'Job ID',
+        result_urls: 'Results',
         modify: 'Modify the generation', 
         add: 'Add a generation',
+        download: 'Download',
+        retry: 'Retry',
+        checkStatus: 'Check Status',
+        generating: 'Generating...',
+        completed: 'Completed',
+        failed: 'Failed',
+        pending: 'Pending',
     }})
     useI18n().mergeLocaleMessage('fr', { generations : { 
         id : "id",
-        pageTitle : "Generations",
-        name: 'Nom de la generation',
+        pageTitle : "Générations",
+        name: 'Nom de la génération',
         courses: 'Cours',
-        themes: 'Theme',
+        themes: 'Thème',
         schedules: 'Emploi du temps',
         format: 'Format',
-        modify: 'Modifier la generation', 
-        add: 'Ajouter une generation',
+        status: 'Statut',
+        progress: 'Progression',
+        started_at: 'Démarré le',
+        completed_at: 'Terminé le',
+        error_message: 'Message d\'erreur',
+        worker_job_id: 'ID du job',
+        result_urls: 'Résultats',
+        modify: 'Modifier la génération', 
+        add: 'Ajouter une génération',
+        download: 'Télécharger',
+        retry: 'Réessayer',
+        checkStatus: 'Vérifier le statut',
+        generating: 'Génération en cours...',
+        completed: 'Terminé',
+        failed: 'Échec',
+        pending: 'En attente',
      }})
 
     const { t } = useI18n()
 
-    
     const fieldList = new Map<string, any>([
         ["id", { label: t('generations.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["name", { label: t('generations.name'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["format", { label: t('generations.format'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["courses", { label: t('generation.courses'), type: "subentity", display: true, toBeSet: true, toBeEdited: true }],
-        ["themes", { label: t('generation.themes'), type: "subentity", display: true, toBeSet: true, toBeEdited: true }],
-        ["schedules", { label: t('generation.schedules'), type: "subentity", display: true, toBeSet: true, toBeEdited: true }],
+        ["name", { label: t('generations.name'), type: "input", display: true, toBeSet: true, toBeEdited: true, required: true }],
+        ["format", { label: t('generations.format'), type: "input", display: true, toBeSet: true, toBeEdited: true, required: true }],
+        ["courses", { label: t('generations.courses'), type: "subentity", display: true, toBeSet: true, toBeEdited: false, required: true }],
+        ["themes", { label: t('generations.themes'), type: "subentity", display: true, toBeSet: true, toBeEdited: false, required: true }],
+        ["schedules", { label: t('generations.schedules'), type: "subentity", display: true, toBeSet: true, toBeEdited: false, required: true }],
+        ["status", { label: t('generations.status'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+        ["progress", { label: t('generations.progress'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+        ["started_at", { label: t('generations.started_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+        ["completed_at", { label: t('generations.completed_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+        ["error_message", { label: t('generations.error_message'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+        ["worker_job_id", { label: t('generations.worker_job_id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
+        ["result_urls", { label: t('generations.result_urls'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
     ])
 
     base.subEntitiesStores = new Map<string, any>([
@@ -72,6 +110,143 @@ export const useGenerationsStore = defineStore('generations', () => {
         ["schedules", useSchedulesStore()],
     ])
 
-    
-    return {...base, fieldList}
+    // Fonction pour démarrer le polling du statut
+    const startStatusPolling = (generationId: string, interval: number = 3000) => {
+        if (pollingIntervals.value.has(generationId)) {
+            clearInterval(pollingIntervals.value.get(generationId));
+        }
+        
+        const intervalId = setInterval(async () => {
+            await checkGenerationStatus(generationId);
+        }, interval);
+        
+        pollingIntervals.value.set(generationId, intervalId);
+    };
+
+    // Fonction pour arrêter le polling
+    const stopStatusPolling = (generationId: string) => {
+        if (pollingIntervals.value.has(generationId)) {
+            clearInterval(pollingIntervals.value.get(generationId));
+            pollingIntervals.value.delete(generationId);
+        }
+    };
+
+    // Fonction pour vérifier le statut d'une génération
+    const checkGenerationStatus = async (generationId: string) => {
+        try {
+            const apiUrl = import.meta.env.VITE_API_URL;
+            const protocol = import.meta.env.VITE_PROTOCOL;
+            const { useCurrentUserStore } = await import('./currentUser');
+            const currentUserStore = useCurrentUserStore();
+            
+            const response = await fetch(`${protocol}://${apiUrl}/api/v1/generations/${generationId}/status`, {
+                headers: {
+                    'Authorization': currentUserStore.secretToken,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const statusData = await response.json();
+                
+                // Mettre à jour l'entité dans le store
+                const entityIndex = base.entities.findIndex(e => e.id === generationId);
+                if (entityIndex !== -1) {
+                    base.entities[entityIndex] = { ...base.entities[entityIndex], ...statusData };
+                }
+                
+                // Arrêter le polling si terminé
+                if (['COMPLETED', 'FAILED', 'CLIENT_ERROR', 'TUNNEL_ERROR'].includes(statusData.status)) {
+                    stopStatusPolling(generationId);
+                }
+                
+                return statusData;
+            }
+        } catch (error) {
+            console.error('Erreur lors de la vérification du statut:', error);
+            stopStatusPolling(generationId);
+        }
+    };
+
+    // Fonction spécifique pour déclencher une génération après création
+    const triggerGeneration = async (entity: any, originalData: any) => {
+        try {
+            const apiUrl = import.meta.env.VITE_API_URL;
+            const protocol = import.meta.env.VITE_PROTOCOL;
+            const { useCurrentUserStore } = await import('./currentUser');
+            const { useLoginStore } = await import('./login');
+            const currentUserStore = useCurrentUserStore();
+            const loginStore = useLoginStore();
+
+            // Préparer les données pour l'API de génération
+            const generatePayload = {
+                authorEmail: loginStore.email || currentUserStore.userName + '@example.com',
+                format: parseInt(originalData.format) || 0,
+                courseId: originalData.courses,
+                scheduleId: originalData.schedules,
+                themeId: originalData.themes
+            };
+
+            console.log('Déclenchement de la génération avec:', generatePayload);
+
+            const generateResponse = await axios.post(`${protocol}://${apiUrl}/api/v1/courses/generate`, generatePayload, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': currentUserStore.secretToken,
+                },
+            });
+
+            if (generateResponse.status === 202) {
+                const generationResult = generateResponse.data;
+                
+                // Mettre à jour l'entité avec les informations de génération
+                const entityIndex = base.entities.findIndex(e => e.id === entity.id);
+                if (entityIndex !== -1) {
+                    base.entities[entityIndex] = {
+                        ...base.entities[entityIndex],
+                        status: generationResult.status || 'pending',
+                        worker_job_id: generationResult.generation_id,
+                        started_at: new Date().toISOString()
+                    };
+                }
+
+                // Démarrer le polling pour suivre le statut
+                startStatusPolling(entity.id);
+
+                console.log('Génération déclenchée avec succès:', generationResult);
+            }
+        } catch (error) {
+            console.error('Erreur lors du déclenchement de la génération:', error);
+            
+            // Mettre à jour le statut comme échoué
+            const entityIndex = base.entities.findIndex(e => e.id === entity.id);
+            if (entityIndex !== -1) {
+                base.entities[entityIndex] = {
+                    ...base.entities[entityIndex],
+                    status: 'failed',
+                    error_message: 'Erreur lors du déclenchement de la génération: ' + (error.response?.data?.message || error.message)
+                };
+            }
+        }
+    };
+
+    // Nettoyer les intervals quand le store est détruit
+    const cleanup = () => {
+        pollingIntervals.value.forEach((interval) => {
+            clearInterval(interval);
+        });
+        pollingIntervals.value.clear();
+    };
+
+    // Configurer le hook afterCreate pour déclencher automatiquement la génération
+    base.setAfterCreateHook(triggerGeneration);
+
+    return {
+        ...base, 
+        fieldList,
+        startStatusPolling,
+        stopStatusPolling,
+        checkGenerationStatus,
+        cleanup
+    }
 })

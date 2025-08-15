@@ -25,25 +25,24 @@
 
 import Entity from './Entity.vue';
 import { useGenerationsStore } from '../../stores/generations';
-import GenerateCourseButton from '../Buttons/GenerateCourseButton.vue';
-import { useLoginStore } from '../../stores/login';
+import GenerationActions from '../Buttons/GenerationActions.vue';
+import { onUnmounted } from 'vue';
+
 
 const entityStore = useGenerationsStore();
-const loginStore = useLoginStore();
-           
+
+// Nettoyer les intervals quand la page est détruite
+onUnmounted(() => {
+  entityStore.cleanup();
+});
+
 </script>
 
 <template>
     <div class="wrapper">
         <Entity :entity-name='"generations"' :entity-store=entityStore>
             <template #actions="{ entity }">
-                <GenerateCourseButton
-                    :authorEmail="loginStore.email"
-                    :format="entity.format"
-                    :courseId="entity.courses"
-                    :scheduleId="entity.schedules"
-                    :themeId="entity.themes"
-                    /> 
+                <GenerationActions :entity="entity" />
             </template>
         </Entity>
     </div>
