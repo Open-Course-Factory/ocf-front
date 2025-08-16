@@ -26,6 +26,7 @@ import { useSchedulesStore } from "./schedules";
 import { useThemesStore } from "./themes";
 import { useCoursesStore } from "./courses";
 import { ref } from 'vue';
+import { nextTick } from 'vue';
 import axios from 'axios';
 
 export const useGenerationsStore = defineStore('generations', () => {
@@ -110,23 +111,59 @@ export const useGenerationsStore = defineStore('generations', () => {
         ["schedules", useSchedulesStore()],
     ])
 
-    // Fonction pour démarrer le polling du statut
-    const startStatusPolling = (generationId: string, interval: number = 3000) => {
+    const startStatusPolling = (generationId: string, initialInterval: number = 2000) => {
         if (pollingIntervals.value.has(generationId)) {
             clearInterval(pollingIntervals.value.get(generationId));
         }
         
-        const intervalId = setInterval(async () => {
-            await checkGenerationStatus(generationId);
-        }, interval);
+        let currentInterval = initialInterval;
+        let consecutiveUnchanged = 0;
+        let lastStatus = '';
         
-        pollingIntervals.value.set(generationId, intervalId);
+        const poll = async () => {
+            try {
+                const statusData = await checkGenerationStatus(generationId);
+                
+                if (statusData) {
+                    // Si le statut n'a pas changé, augmenter l'intervalle
+                    if (statusData.status === lastStatus) {
+                        consecutiveUnchanged++;
+                        // Augmenter progressivement l'intervalle : 2s -> 5s -> 10s -> 15s max
+                        if (consecutiveUnchanged >= 3) {
+                            currentInterval = Math.min(15000, currentInterval + 3000);
+                        }
+                    } else {
+                        // Status a changé, revenir à l'intervalle initial
+                        consecutiveUnchanged = 0;
+                        currentInterval = initialInterval;
+                        lastStatus = statusData.status;
+                    }
+                    
+                    // Arrêter le polling si terminé
+                    if (['completed', 'failed', 'client_error', 'tunnel_error'].includes(statusData.status?.toLowerCase())) {
+                        stopStatusPolling(generationId);
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur lors du polling:', error);
+                // En cas d'erreur, augmenter l'intervalle pour éviter le spam
+                currentInterval = Math.min(30000, currentInterval * 2);
+            }
+            
+            // Programmer le prochain poll avec l'intervalle mis à jour
+            const intervalId = setTimeout(poll, currentInterval);
+            pollingIntervals.value.set(generationId, intervalId);
+        };
+        
+        // Démarrer immédiatement
+        poll();
     };
 
-    // Fonction pour arrêter le polling
     const stopStatusPolling = (generationId: string) => {
         if (pollingIntervals.value.has(generationId)) {
-            clearInterval(pollingIntervals.value.get(generationId));
+            const intervalId = pollingIntervals.value.get(generationId);
+            clearTimeout(intervalId); // Utiliser clearTimeout au lieu de clearInterval
             pollingIntervals.value.delete(generationId);
         }
     };
@@ -149,23 +186,43 @@ export const useGenerationsStore = defineStore('generations', () => {
             if (response.ok) {
                 const statusData = await response.json();
                 
-                // Mettre à jour l'entité dans le store
+                console.log(`[Polling] Génération ${generationId}: ${statusData.status} (${statusData.progress || 0}%)`);
+                
+                // Trouver l'index de l'entité
                 const entityIndex = base.entities.findIndex(e => e.id === generationId);
                 if (entityIndex !== -1) {
-                    base.entities[entityIndex] = { ...base.entities[entityIndex], ...statusData };
-                }
-                
-                // Arrêter le polling si terminé
-                if (['COMPLETED', 'FAILED', 'CLIENT_ERROR', 'TUNNEL_ERROR'].includes(statusData.status)) {
-                    stopStatusPolling(generationId);
+                    // MÉTHODE 1: Remplacement complet de l'objet (plus sûr pour la réactivité)
+                    const updatedEntity = {
+                        ...base.entities[entityIndex],
+                        ...statusData,
+                        // S'assurer que les champs critiques sont présents
+                        id: generationId, // Préserver l'ID
+                        name: base.entities[entityIndex].name || statusData.name, // Préserver le nom local
+                    };
+                    
+                    // Remplacer l'entité dans le tableau
+                    base.entities.splice(entityIndex, 1, updatedEntity);
+                    
+                    // MÉTHODE 2: Alternative si la méthode 1 ne fonctionne pas
+                    // Force Vue à détecter le changement
+                    await nextTick();
+                    
+                    console.log(`[Polling] Entité mise à jour:`, updatedEntity);
+                } else {
+                    console.warn(`[Polling] Génération ${generationId} non trouvée dans le store`);
                 }
                 
                 return statusData;
+            } else {
+                console.error(`[Polling] Erreur HTTP ${response.status} pour génération ${generationId}`);
             }
         } catch (error) {
             console.error('Erreur lors de la vérification du statut:', error);
-            stopStatusPolling(generationId);
+            // Ne pas arrêter le polling en cas d'erreur réseau temporaire
+            // stopStatusPolling(generationId);
         }
+        
+        return null;
     };
 
     // Fonction spécifique pour déclencher une génération après création
@@ -182,9 +239,7 @@ export const useGenerationsStore = defineStore('generations', () => {
             const generatePayload = {
                 authorEmail: loginStore.email || currentUserStore.userName + '@example.com',
                 format: parseInt(originalData.format) || 0,
-                courseId: originalData.courses,
-                scheduleId: originalData.schedules,
-                themeId: originalData.themes
+                generationId: entity.id
             };
 
             console.log('Déclenchement de la génération avec:', generatePayload);
