@@ -63,7 +63,7 @@ async function handleSubmit() {
       password: loginStore.password
     });
 
-    currentUserStore.secretToken = responseLogin.data.access_token;
+    currentUserStore.setSecretToken(responseLogin.data.access_token);
     currentUserStore.userName = responseLogin.data.user_name;
     currentUserStore.userId = responseLogin.data.user_id;
     currentUserStore.userRoles = responseLogin.data.user_roles;

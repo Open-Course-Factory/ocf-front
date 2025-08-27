@@ -20,17 +20,72 @@
  */
 
 import { defineStore } from "pinia"
+import { tokenService } from "../services/tokenService"
+import router from "../router/index"
 
 export const useCurrentUserStore = defineStore('currentUser', {
     state() {
         return {
-            secretToken: "",
             userName: "",
             userId: "",
             userRoles: [],
         }
     },
     getters: {
-        isAuthenticated: (state) => !!state.secretToken,
+        isAuthenticated(): boolean {
+            // Vérifier si le token est valide ET non expiré
+            const hasToken = tokenService.hasValidToken();
+            
+            // Si le token est expiré, déconnecter automatiquement
+            if (!hasToken && this.userName) {
+                console.log('Token expiré, déconnexion automatique');
+                this.autoLogout();
+            }
+            
+            return hasToken;
+        },
+        secretToken(): string {
+            return tokenService.getAccessToken() || "";
+        }
+    },
+    actions: {
+        // Modifier la méthode de sauvegarde du token
+        setSecretToken(token: string) {
+            tokenService.setAccessToken(token);
+        },
+
+        autoLogout() {
+            this.$reset();
+            // Rediriger vers login seulement si on n'y est pas déjà
+            if (router.currentRoute.value.name !== 'Login') {
+                router.push({ name: 'Login' });
+            }
+        },
+
+        logout() {
+            this.$reset();
+            router.push({ name: 'Login' });
+        },
+        
+        // Modifier le reset pour utiliser tokenService
+        $reset() {
+            this.userName = "";
+            this.userId = "";
+            this.userRoles = [];
+            tokenService.clearTokens();
+        },
+
+        startTokenExpiryCheck() {
+            // Vérifier toutes les minutes
+            const interval = setInterval(() => {
+                if (!tokenService.hasValidToken() && this.userName) {
+                    console.log('Token expiré détecté lors de la vérification périodique');
+                    this.autoLogout();
+                    clearInterval(interval);
+                }
+            }, 60000); // 60 secondes
+            
+            return interval;
+        }
     }
 })

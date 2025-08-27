@@ -28,6 +28,7 @@ import router from './router'
 import 'element-plus/dist/index.css'
 import ElementPlus from 'element-plus'
 import { piniaPluginPersist } from './piniaPluginPersist'
+import { useCurrentUserStore } from './stores/currentUser'
 
 // Vuetify
 import 'vuetify/styles'
@@ -90,3 +91,8 @@ createApp(App)
     .use(i18n)
     .use(vuetify)
     .mount('#app')
+
+const userStore = useCurrentUserStore()
+if (userStore.isAuthenticated) {
+    userStore.startTokenExpiryCheck()
+}

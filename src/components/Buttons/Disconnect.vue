@@ -22,20 +22,13 @@
 -->
 
 <script setup lang="ts">
-import router from "../../router/index.ts"
 import { useCurrentUserStore } from '../../stores/currentUser.ts';
-import { useLoginStore } from '../../stores/login.ts';
 
 
 const storeUser = useCurrentUserStore()
-const storeLogin = useLoginStore()
 
 function disconnect() {
-    storeUser.$reset()
-    storeLogin.$reset()
-    localStorage.removeItem(`pinia_state_${storeUser.$id}`)
-    localStorage.removeItem(`pinia_state_${storeLogin.$id}`)
-    router.push({name: "Login"})
+    storeUser.logout();
 }
 
 </script>
