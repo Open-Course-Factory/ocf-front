@@ -104,10 +104,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const currentUserStore = useCurrentUserStore();
 const generationsStore = useGenerationsStore();
-const apiUrl = import.meta.env.VITE_API_URL;
-const protocol = import.meta.env.VITE_PROTOCOL;
 
 const isChecking = ref(false);
 const isDownloading = ref(false);
@@ -192,11 +189,8 @@ const downloadResults = async () => {
   isDownloading.value = true;
   try {
     const response = await axios.get(
-      `${protocol}://${apiUrl}/api/v1/generations/${props.entity.id}/download`,
+      `/generations/${props.entity.id}/download`,
       {
-        headers: {
-          'Authorization': currentUserStore.secretToken,
-        },
         responseType: 'blob' // Important pour télécharger un fichier
       }
     );
@@ -223,16 +217,7 @@ const downloadResults = async () => {
 const retryGeneration = async () => {
   isRetrying.value = true;
   try {
-    const response = await axios.post(
-      `${protocol}://${apiUrl}/api/v1/generations/${props.entity.id}/retry`,
-      {},
-      {
-        headers: {
-          'Authorization': currentUserStore.secretToken,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+    const response = await axios.post(`/generations/${props.entity.id}/retry`, {});
 
     // Démarrer le polling pour suivre la nouvelle génération
     if (response.status === 202) {

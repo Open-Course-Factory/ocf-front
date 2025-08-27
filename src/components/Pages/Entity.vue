@@ -141,12 +141,10 @@
 <script setup lang="ts">
 import axios from 'axios';
 import { ref, onBeforeMount, computed, reactive, watch } from 'vue';
-import { useCurrentUserStore } from '../../stores/currentUser';
 import EntityModal from '../Modals/EntityModal.vue';
 import EntityCard from '../Cards/EntityCard.vue';
 import { useI18n } from 'vue-i18n';
 import { Store } from 'pinia';
-import router from '../../router/index';
 
 const { t } = useI18n();
 
@@ -170,11 +168,8 @@ const props = defineProps<{
   entityStore: Store;
 }>();
 
-const currentUserStore = useCurrentUserStore();
 const showModal = ref(false);
 const entityToEdit = ref();
-const apiUrl = import.meta.env.VITE_API_URL;
-const protocol = import.meta.env.VITE_PROTOCOL;
 
 // État pour les filtres
 const activeFilters = reactive<Record<string, string>>({});
@@ -273,12 +268,7 @@ onBeforeMount(() => {
 
 async function getEntities(entityName: string, store: Store) {
   try {
-    const response = await axios.get(`${protocol}://${apiUrl}/api/v1/${entityName}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': currentUserStore.secretToken,
-      },
-    });
+    const response = await axios.get(`/${entityName}`);
 
     store.entities = response.data || [];
     if (store.getSelectDatas) {
@@ -291,8 +281,13 @@ async function getEntities(entityName: string, store: Store) {
     switch (error.response?.status) {
       case 404:
         break;
+      case 401:
+        // L'intercepteur va déjà gérer la déconnexion automatique
+        console.log('401 - L\'intercepteur va gérer la déconnexion');
+        break;
       default:
-        router.push({name: "Login"});
+        // Redirection vers login seulement pour les autres erreurs si nécessaire
+        break;
     }
   }
 }
@@ -302,12 +297,7 @@ async function addEntity(data: Record<string, string>) {
     // Exécuter le hook beforeCreate si défini
     const processedData = await props.entityStore.executeBeforeCreateHook?.(data) || data;
     
-    const response = await axios.post(`${protocol}://${apiUrl}/api/v1/${props.entityName}`, processedData, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': currentUserStore.secretToken,
-      },
-    });
+    const response = await axios.post(`/${props.entityName}`, processedData);
     
     const newEntity = response.data;
     props.entityStore.entities.push(newEntity);
@@ -329,12 +319,7 @@ async function addEntity(data: Record<string, string>) {
 
 async function deleteEntity(keyId: string) {
   try {
-    await axios.delete(`${protocol}://${apiUrl}/api/v1/${props.entityName}/${keyId}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': currentUserStore.secretToken,
-      },
-    });
+    await axios.delete(`/${props.entityName}/${keyId}`);
     
     props.entityStore.entities = props.entityStore.entities.filter((entity: any) => entity.id !== keyId);
     
@@ -353,12 +338,7 @@ async function deleteEntity(keyId: string) {
 
 async function updateEntity(data: Record<string, string>) {
   try {
-    await axios.patch(`${protocol}://${apiUrl}/api/v1/${props.entityName}/${data['id']}`, data, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': currentUserStore.secretToken,
-      },
-    });
+    await axios.patch(`/${props.entityName}/${data['id']}`, data);
     
     // Recharger les entités
     getEntities(props.entityName, props.entityStore);

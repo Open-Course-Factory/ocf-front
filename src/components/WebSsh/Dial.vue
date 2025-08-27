@@ -38,12 +38,12 @@ onMounted(() => {
 
     term.write('Connection...\r\n');
 
-    let protocol = "wss://"
+    let wsProtocol = "wss://"
     if (!import.meta.env.PROD) {
-        protocol = "ws://"
+        wsProtocol = "ws://"
     }
 
-    socket = new WebSocket(protocol + location.hostname +  ":8080/api/v1/ssh?Authorization="+ currentUser.secretToken)
+    socket = new WebSocket(wsProtocol + location.hostname + ":8080/api/v1/ssh?Authorization=" + currentUser.secretToken)
     
     socket.binaryType = "arraybuffer";
 

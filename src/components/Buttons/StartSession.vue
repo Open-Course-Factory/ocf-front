@@ -26,26 +26,16 @@
 import { useRouter } from 'vue-router'
 import axios from 'axios';
 import { onBeforeMount } from 'vue'
-import { useCurrentUserStore } from '../../stores/currentUser';
 import { useConnectionsStore } from '../../stores/connections';
 
 const connectionsStore = useConnectionsStore()
-const currentUser = useCurrentUserStore()
 const router = useRouter()
-const apiUrl = import.meta.env.VITE_API_URL;
-const protocol = import.meta.env.VITE_PROTOCOL;
 
 onBeforeMount(() => getConnections())
 
 async function getConnections() {
     try {
-        const responseConnections = await axios.get(protocol+'://'+apiUrl+'/api/v1/connections', {
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Content-Type': 'application/json',
-                'Authorization': currentUser.secretToken
-            }
-        })
+        const responseConnections = await axios.get('/connections');
         console.log(responseConnections);
         connectionsStore.entities = responseConnections.data
     } catch (error) {

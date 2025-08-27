@@ -29,6 +29,7 @@ import 'element-plus/dist/index.css'
 import ElementPlus from 'element-plus'
 import { piniaPluginPersist } from './piniaPluginPersist'
 import { useCurrentUserStore } from './stores/currentUser'
+import { setupAxiosInterceptors, setupAxiosDefaults } from './services/axiosInterceptor'
 
 // Vuetify
 import 'vuetify/styles'
@@ -83,6 +84,9 @@ const vuetify = createVuetify({
     components,
     directives,
   })
+
+setupAxiosDefaults()
+setupAxiosInterceptors()
 
 createApp(App)
     .use(ElementPlus)
