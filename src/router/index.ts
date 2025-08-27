@@ -42,6 +42,16 @@ import Themes from '../components/Pages/Themes.vue';
 const basicRoutes = [
   { path: '/', name: 'LandingPage', component: LandingPage },
   { path: '/login', name: 'Login', component: () => import('../components/Pages/Login.vue') },
+  { 
+    path: '/register', 
+    name: 'Register', 
+    component: () => import('../components/Pages/Register.vue')
+  },
+  { 
+    path: '/password-reset', 
+    name: 'PasswordReset', 
+    component: () => import('../components/Pages/PasswordReset.vue')
+  },
   {
     path: '/',
     component: Layout,

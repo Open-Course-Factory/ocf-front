@@ -31,11 +31,11 @@
             <input class="form-check-input" type="checkbox" id="rememberMe" />
             <label class="form-check-label" for="rememberMe">Se souvenir de moi</label>
           </div>
-          <a href="#!" class="forgot-password">Mot de passe oublié ?</a>
+          <router-link to="/password-reset" class="forgot-password">Mot de passe oublié ?</router-link>
         </div>
         <button type="submit" class="btn btn-primary btn-block">Se connecter</button>
         <div class="register-link">
-          <p>Pas encore membre ? <router-link to="/register">S'enregistrer</router-link></p>
+          <p>Pas encore de compte ? <router-link to="/register">S'inscrire</router-link></p>
         </div>
       </form>
     </div>

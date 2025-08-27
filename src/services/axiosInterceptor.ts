@@ -48,5 +48,5 @@ export const setupAxiosDefaults = () => {
   
   axios.defaults.baseURL = `${protocol}://${apiUrl}/api/v1`;
   axios.defaults.headers.common['Content-Type'] = 'application/json';
-  axios.defaults.timeout = 10000; // 10 secondes
+  axios.defaults.timeout = 30000; // 30 secondes
 };
