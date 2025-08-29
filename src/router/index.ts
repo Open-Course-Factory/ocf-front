@@ -38,6 +38,10 @@ import LandingPage from '../components/Pages/LandingPage.vue';
 import User from '../components/Pages/User.vue';
 import Generations from '../components/Pages/Generations.vue';
 import Themes from '../components/Pages/Themes.vue';
+// import Terminals from '../components/Pages/Terminals.vue';
+// import UserTerminalKeys from '../components/Pages/UserTerminalKeys.vue';
+import Terminals from '../components/Pages/TerminalsSimple.vue';
+import UserTerminalKeys from '../components/Pages/UserTerminalKeysSimple.vue';
 
 const basicRoutes = [
   { path: '/', name: 'LandingPage', component: LandingPage },
@@ -65,6 +69,8 @@ const basicRoutes = [
       { path: 'schedules', name: 'Schedules', component: Schedules, meta: { requiresAuth: true } },
       { path: 'themes', name: 'Themes', component: Themes, meta: { requiresAuth: true } },
       { path: 'generations', name: 'Generations', component: Generations, meta: { requiresAuth: true } },
+      { path: 'terminals', name: 'Terminals', component: Terminals, meta: { requiresAuth: true } },
+      { path: 'user-terminal-keys', name: 'UserTerminalKeys', component: UserTerminalKeys, meta: { requiresAuth: true } },
       {
         path: 'tps',
         component: Tps,

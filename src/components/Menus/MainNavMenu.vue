@@ -59,6 +59,18 @@
             <span class="menu-text">Labs</span>
           </router-link>
         </li>
+        <li>
+          <router-link to="/terminals" class="menu-item" :title="t('terminals.pageTitle')">
+            <i class="fas fa-terminal"></i>
+            <span class="menu-text">{{ t('terminals.pageTitle') }}</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/user-terminal-keys" class="menu-item" :title="t('userTerminalKeys.pageTitle')">
+            <i class="fas fa-key"></i>
+            <span class="menu-text">{{ t('userTerminalKeys.pageTitle') }}</span>
+          </router-link>
+        </li>
         <li v-if="currentUser.userRoles[0] === 'administrator'">
           <router-link to="/usernames" class="menu-item" :title="t(`usernames.pageTitle`)">
             <i class="fas fa-users"></i>
@@ -92,15 +104,19 @@ import { useThemesStore } from '../../stores/themes.ts';
 import { useGenerationsStore } from '../../stores/generations.ts';
 import { ref } from 'vue';
 import { useI18n } from "vue-i18n"
+import { useTerminalsStore } from '../../stores/terminals.ts';
+import { useUserTerminalKeysStore } from '../../stores/userTerminalKeys.ts';
 
 
 //needed for i18n
-const coursesStore = useCoursesStore();
-const connectionsStore = useConnectionsStore();
-const schedulesStore = useSchedulesStore();
-const usernamesStore = useUsernamesStore();
-const themesStore = useThemesStore();
-const generationsStore = useGenerationsStore();
+useCoursesStore();
+useConnectionsStore();
+useSchedulesStore();
+useUsernamesStore();
+useThemesStore();
+useGenerationsStore();
+useTerminalsStore();
+useUserTerminalKeysStore();
 
 const currentUser = useCurrentUserStore();
 const isMenuCollapsed = ref(false);
