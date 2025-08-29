@@ -123,21 +123,21 @@ export const useTerminalsStore = defineStore('terminals', () => {
         }
     }
 
-    const getConsoleWebSocketUrl = (terminalId: string, width?: number, height?: number) => {
-        const protocol = import.meta.env.VITE_PROTOCOL === 'https' ? 'wss' : 'ws'
-        const apiUrl = import.meta.env.VITE_API_URL
-        let url = `${protocol}://${apiUrl}/api/v1/terminals/${terminalId}/console`
+    // const getConsoleWebSocketUrl = (terminalId: string, width?: number, height?: number) => {
+    //     const protocol = import.meta.env.VITE_PROTOCOL === 'https' ? 'wss' : 'ws'
+    //     const apiUrl = import.meta.env.VITE_API_URL
+    //     let url = `${protocol}://${apiUrl}/api/v1/terminals/${terminalId}/console`
         
-        const params = new URLSearchParams()
-        if (width) params.append('width', width.toString())
-        if (height) params.append('height', height.toString())
+    //     const params = new URLSearchParams()
+    //     if (width) params.append('width', width.toString())
+    //     if (height) params.append('height', height.toString())
         
-        if (params.toString()) {
-            url += `?${params.toString()}`
-        }
+    //     if (params.toString()) {
+    //         url += `?${params.toString()}`
+    //     }
         
-        return url
-    }
+    //     return url
+    // }
 
     return {
         ...base, 
@@ -148,6 +148,6 @@ export const useTerminalsStore = defineStore('terminals', () => {
         startTerminalSession,
         stopTerminalSession,
         getUserSessions,
-        getConsoleWebSocketUrl
+        //getConsoleWebSocketUrl
     }
 })

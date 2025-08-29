@@ -3,7 +3,7 @@ FROM node:${VARIANT} AS build
 
 ARG USERNAME=node
 ARG NPM_GLOBAL=/usr/local/share/npm-global
-ARG NODE_MODULES="tslint-to-eslint-config typescript"
+ARG NODE_MODULES="tslint-to-eslint-config typescript xterm xterm-addon-fit xterm-addon-attach @xterm/addon-clipboard xterm-addon-serialize"
 ARG PORT=4000
 
 # Add NPM global to PATH.

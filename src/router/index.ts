@@ -27,19 +27,11 @@ import Chapters from '../components/Pages/Chapters.vue';
 import Sections from '../components/Pages/Sections.vue';
 import Pages from '../components/Pages/Pages.vue';
 import Schedules from '../components/Pages/Schedules.vue';
-import Tps from '../components/Pages/Tps.vue';
 import CourseDetails from '../components/Pages/CourseDetails.vue';
-import Dial from '../components/WebSsh/Dial.vue';
-import WebSsh from '../components/WebSsh/WebSsh.vue';
-import Machines from '../components/Pages/Machines.vue';
-import Usernames from '../components/Pages/Usernames.vue';
-import Connections from '../components/Pages/Connections.vue';
 import LandingPage from '../components/Pages/LandingPage.vue';
 import User from '../components/Pages/User.vue';
 import Generations from '../components/Pages/Generations.vue';
 import Themes from '../components/Pages/Themes.vue';
-// import Terminals from '../components/Pages/Terminals.vue';
-// import UserTerminalKeys from '../components/Pages/UserTerminalKeys.vue';
 import Terminals from '../components/Pages/TerminalsSimple.vue';
 import UserTerminalKeys from '../components/Pages/UserTerminalKeysSimple.vue';
 
@@ -71,31 +63,7 @@ const basicRoutes = [
       { path: 'generations', name: 'Generations', component: Generations, meta: { requiresAuth: true } },
       { path: 'terminals', name: 'Terminals', component: Terminals, meta: { requiresAuth: true } },
       { path: 'user-terminal-keys', name: 'UserTerminalKeys', component: UserTerminalKeys, meta: { requiresAuth: true } },
-      {
-        path: 'tps',
-        component: Tps,
-        meta: { requiresAuth: true },
-        children: [
-          { path: '', component: WebSsh },
-          { path: 'dial', component: Dial },
-        ],
-      },
       { path: 'course/:id', component: CourseDetails, meta: { requiresAuth: true } },
-      {
-        path: 'machines',
-        meta: { requiresAuth: true },
-        children: [{ path: '', component: Machines }],
-      },
-      {
-        path: 'usernames',
-        meta: { requiresAuth: true },
-        children: [{ path: '', component: Usernames }],
-      },
-      {
-        path: 'connections',
-        meta: { requiresAuth: true },
-        children: [{ path: '', component: Connections }],
-      },
       {
         path: 'user',
         meta: { requiresAuth: true },

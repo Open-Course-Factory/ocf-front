@@ -54,12 +54,6 @@
           </router-link>
         </li>
         <li>
-          <router-link to="/tps" class="menu-item" title="Labs">
-            <i class="fas fa-laptop-code"></i>
-            <span class="menu-text">Labs</span>
-          </router-link>
-        </li>
-        <li>
           <router-link to="/terminals" class="menu-item" :title="t('terminals.pageTitle')">
             <i class="fas fa-terminal"></i>
             <span class="menu-text">{{ t('terminals.pageTitle') }}</span>
@@ -71,7 +65,7 @@
             <span class="menu-text">{{ t('userTerminalKeys.pageTitle') }}</span>
           </router-link>
         </li>
-        <li v-if="currentUser.userRoles[0] === 'administrator'">
+        <!-- <li v-if="currentUser.userRoles[0] === 'administrator'">
           <router-link to="/usernames" class="menu-item" :title="t(`usernames.pageTitle`)">
             <i class="fas fa-users"></i>
             <span class="menu-text">{{ t(`usernames.pageTitle`) }}</span>
@@ -88,7 +82,7 @@
             <i class="fas fa-plug"></i>
             <span class="menu-text">{{ t(`connections.pageTitle`) }}</span>
           </router-link>
-        </li>
+        </li> -->
       </ul>
     </nav>
   </div>
@@ -96,10 +90,8 @@
 
 <script setup lang="ts">
 import { useCoursesStore } from '../../stores/courses.ts';
-import { useUsernamesStore } from '../../stores/usernames.ts';
 import { useCurrentUserStore } from '../../stores/currentUser.ts';
 import { useSchedulesStore } from '../../stores/schedules.ts';
-import { useConnectionsStore } from '../../stores/connections.ts';
 import { useThemesStore } from '../../stores/themes.ts';
 import { useGenerationsStore } from '../../stores/generations.ts';
 import { ref } from 'vue';
@@ -110,9 +102,7 @@ import { useUserTerminalKeysStore } from '../../stores/userTerminalKeys.ts';
 
 //needed for i18n
 useCoursesStore();
-useConnectionsStore();
 useSchedulesStore();
-useUsernamesStore();
 useThemesStore();
 useGenerationsStore();
 useTerminalsStore();

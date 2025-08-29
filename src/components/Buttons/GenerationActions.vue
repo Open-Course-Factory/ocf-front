@@ -93,7 +93,6 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue';
-import { useCurrentUserStore } from '../../stores/currentUser';
 import { useGenerationsStore } from '../../stores/generations';
 import Modal from '../Modals/BaseModal.vue';
 import { useI18n } from 'vue-i18n';
