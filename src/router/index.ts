@@ -48,6 +48,26 @@ const basicRoutes = [
     name: 'PasswordReset', 
     component: () => import('../components/Pages/PasswordReset.vue')
   },
+  // Route spéciale pour l'affichage du terminal en iframe (sans layout)
+  {
+    path: '/terminal/:sessionId',
+    name: 'TerminalViewer',
+    component: () => import('../components/Pages/TerminalPage.vue'),
+    meta: { 
+      requiresAuth: true,
+      isIframe: true // Marquer cette route comme étant pour iframe
+    }
+  },
+  // Route alternative avec query parameters
+  {
+    path: '/terminal-view',
+    name: 'TerminalViewerQuery',
+    component: () => import('../components/Pages/TerminalPage.vue'),
+    meta: { 
+      requiresAuth: true,
+      isIframe: true
+    }
+  },
   {
     path: '/',
     component: Layout,

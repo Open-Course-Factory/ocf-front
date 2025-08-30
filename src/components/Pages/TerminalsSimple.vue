@@ -47,13 +47,6 @@
 
     <!-- Contenu des onglets -->
     <div class="tab-content">
-      <!-- Debug info -->
-      <div class="debug-info" v-if="showDebug">
-        <p>Active tab: {{ activeTab }}</p>
-        <p>Sessions loaded: {{ sessions.length }}</p>
-        <p>TerminalStarter imported: {{ !!TerminalStarter }}</p>
-      </div>
-
       <!-- Onglet Nouvelle Session -->
       <div v-if="activeTab === 'starter'" class="tab-pane active">
         <div class="starter-container">
@@ -110,7 +103,7 @@
               class="session-card"
             >
               <div class="card-header">
-                <h5 class="session-id">{{ session.session_id || session.id }}</h5>
+                <h5 class="session-id">{{ session.session_id }}</h5>
                 <span :class="['status-badge', getStatusClass(session.status)]">
                   <i class="fas fa-circle"></i>
                   {{ session.status || 'unknown' }}
@@ -120,8 +113,12 @@
               <div class="card-body">
                 <div class="session-details">
                   <div class="detail-row">
-                    <span class="label">ID:</span>
+                    <span class="label">Terminal ID:</span>
                     <span class="value">{{ session.id }}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Session ID:</span>
+                    <span class="value">{{ session.session_id }}</span>
                   </div>
                   <div class="detail-row" v-if="session.created_at">
                     <span class="label">Créée le:</span>
@@ -136,12 +133,82 @@
                     <span class="value">{{ session.user_id }}</span>
                   </div>
                 </div>
+
+                <!-- Section intégration iframe -->
+                <div class="iframe-section" v-if="session.status === 'active'">
+                  <h6 class="iframe-title">
+                    <i class="fas fa-external-link-alt"></i>
+                    Accès Terminal
+                  </h6>
+                  
+                  <div class="iframe-controls">
+                    <div class="url-display">
+                      <input 
+                        :value="getTerminalUrl(session.session_id)"
+                        readonly
+                        class="url-input"
+                        ref="urlInput"
+                      />
+                      <button 
+                        class="btn btn-outline-secondary btn-sm"
+                        @click="copyUrlToClipboard(session.session_id)"
+                        :title="'Copier le lien'"
+                      >
+                        <i :class="copiedSessions.has(session.session_id) ? 'fas fa-check' : 'fas fa-copy'"></i>
+                      </button>
+                    </div>
+                    
+                    <div class="iframe-actions">
+                      <button 
+                        class="btn btn-primary btn-sm"
+                        @click="openTerminalInNewTab(session.session_id)"
+                      >
+                        <i class="fas fa-external-link-alt"></i>
+                        Ouvrir
+                      </button>
+                      
+                      <button 
+                        class="btn btn-info btn-sm"
+                        @click="toggleIframePreview(session.session_id)"
+                      >
+                        <i :class="showPreviews.has(session.session_id) ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                        {{ showPreviews.has(session.session_id) ? 'Masquer' : 'Aperçu' }}
+                      </button>
+                      
+                      <button 
+                        class="btn btn-warning btn-sm"
+                        @click="copyIframeCode(session.session_id)"
+                        :title="'Copier le code iframe'"
+                      >
+                        <i :class="copiedIframes.has(session.session_id) ? 'fas fa-check' : 'fas fa-code'"></i>
+                        iframe
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Aperçu iframe -->
+                  <div v-if="showPreviews.has(session.session_id)" class="iframe-preview">
+                    <div class="iframe-container">
+                      <iframe 
+                        :src="getTerminalUrl(session.session_id)"
+                        width="100%"
+                        height="300"
+                        frameborder="0"
+                        :title="`Terminal ${session.session_id}`"
+                      ></iframe>
+                    </div>
+                    <p class="iframe-info">
+                      <i class="fas fa-info-circle"></i>
+                      Aperçu du terminal intégrable - Taille: 100% x 300px
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div class="card-actions">
                 <button 
                   class="btn btn-danger btn-sm"
-                  @click="stopSession(session.id)"
+                  @click="stopSession(session.session_id)"
                   :disabled="session.status !== 'active'"
                 >
                   <i class="fas fa-stop"></i>
@@ -153,96 +220,206 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal pour le code iframe -->
+    <div v-if="showIframeModal" class="modal-overlay" @click="showIframeModal = false">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>Code d'intégration iframe</h3>
+          <button class="modal-close" @click="showIframeModal = false">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>Copiez ce code pour intégrer le terminal dans votre page :</p>
+          <textarea 
+            :value="currentIframeCode" 
+            readonly 
+            class="iframe-code"
+            rows="4"
+            ref="iframeCodeRef"
+          ></textarea>
+          <div class="modal-actions">
+            <button class="btn btn-primary" @click="copyIframeCodeToClipboard">
+              <i class="fas fa-copy"></i>
+              Copier le code
+            </button>
+            <button class="btn btn-secondary" @click="showIframeModal = false">
+              <i class="fas fa-times"></i>
+              Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, defineAsyncComponent } from 'vue';
-import axios from 'axios';
+import { ref, onMounted, defineAsyncComponent } from 'vue'
+import axios from 'axios'
 
-// Import dynamique du composant TerminalStarter pour éviter les problèmes de bundling
-const TerminalStarter = defineAsyncComponent(() => import('../Terminal/TerminalStarter.vue'));
+// Import dynamique du composant TerminalStarter
+const TerminalStarter = defineAsyncComponent(() => import('../Terminal/TerminalStarter.vue'))
 
-const sessions = ref([]);
-const isLoading = ref(false);
-const error = ref('');
-const activeTab = ref('starter');
-const showDebug = ref(process.env.NODE_ENV === 'development');
+const sessions = ref([])
+const isLoading = ref(false)
+const error = ref('')
+const activeTab = ref('starter')
+
+// États pour les fonctionnalités iframe
+const showPreviews = ref(new Set())
+const copiedSessions = ref(new Set())
+const copiedIframes = ref(new Set())
+const showIframeModal = ref(false)
+const currentIframeCode = ref('')
+const urlInput = ref(null)
+const iframeCodeRef = ref(null)
 
 onMounted(() => {
-  console.log('TerminalsSimple mounted');
-  loadSessions();
+  console.log('TerminalsSimple mounted')
+  loadSessions()
   
   // Rafraîchir les sessions toutes les 30 secondes si on est sur l'onglet sessions
   const interval = setInterval(() => {
     if (activeTab.value === 'sessions') {
-      loadSessions();
+      loadSessions()
     }
-  }, 30000);
+  }, 30000)
   
   // Cleanup
-  return () => clearInterval(interval);
-});
+  return () => clearInterval(interval)
+})
 
 async function loadSessions() {
-  if (isLoading.value) return; // Éviter les requêtes multiples
+  if (isLoading.value) return
   
-  isLoading.value = true;
-  error.value = '';
+  isLoading.value = true
+  error.value = ''
   
   try {
-    console.log('Loading sessions...');
-    const response = await axios.get('/terminals/user-sessions');
-    sessions.value = response.data || [];
-    console.log('Sessions loaded:', sessions.value);
+    console.log('Loading sessions...')
+    const response = await axios.get('/terminals/user-sessions')
+    sessions.value = response.data || []
+    console.log('Sessions loaded:', sessions.value)
   } catch (err: any) {
-    console.error('Erreur lors du chargement des sessions:', err);
-    error.value = err.response?.data?.error_message || 'Erreur lors du chargement des sessions';
-    sessions.value = [];
+    console.error('Erreur lors du chargement des sessions:', err)
+    error.value = err.response?.data?.error_message || 'Erreur lors du chargement des sessions'
+    sessions.value = []
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
 }
 
 async function stopSession(sessionId: string) {
   if (!sessionId) {
-    console.error('Session ID manquant');
-    return;
+    console.error('Session ID manquant')
+    return
   }
   
   try {
-    console.log('Stopping session:', sessionId);
-    await axios.post(`/terminals/${sessionId}/stop`);
-    await loadSessions(); // Recharger la liste
-    console.log('Session stopped successfully');
+    console.log('Stopping session:', sessionId)
+    await axios.post(`/terminals/${sessionId}/stop`)
+    await loadSessions()
+    console.log('Session stopped successfully')
   } catch (err: any) {
-    console.error('Erreur lors de l\'arrêt:', err);
-    error.value = err.response?.data?.error_message || 'Erreur lors de l\'arrêt de la session';
+    console.error('Erreur lors de l\'arrêt:', err)
+    error.value = err.response?.data?.error_message || 'Erreur lors de l\'arrêt de la session'
   }
 }
 
 function onSessionStarted() {
-  console.log('Session started, switching to sessions tab');
-  activeTab.value = 'sessions';
-  loadSessions();
+  console.log('Session started, switching to sessions tab')
+  activeTab.value = 'sessions'
+  loadSessions()
 }
 
 function formatDate(dateString: string) {
-  if (!dateString) return '-';
+  if (!dateString) return '-'
   try {
-    return new Date(dateString).toLocaleString('fr-FR');
+    return new Date(dateString).toLocaleString('fr-FR')
   } catch (e) {
-    return dateString;
+    return dateString
   }
 }
 
 function getStatusClass(status: string) {
   switch (status?.toLowerCase()) {
-    case 'active': return 'text-success';
-    case 'expired': return 'text-danger';
-    case 'stopped': return 'text-muted';
-    default: return 'text-warning';
+    case 'active': return 'text-success'
+    case 'expired': return 'text-danger'
+    case 'stopped': return 'text-muted'
+    default: return 'text-warning'
   }
+}
+
+// Fonctions pour les fonctionnalités iframe
+function getTerminalUrl(sessionId: string) {
+  const baseUrl = window.location.origin
+  return `${baseUrl}/terminal/${sessionId}?header=true&footer=false`
+}
+
+function openTerminalInNewTab(sessionId: string) {
+  const url = getTerminalUrl(sessionId)
+  window.open(url, '_blank', 'width=1000,height=600,menubar=no,toolbar=no,location=no,status=no')
+}
+
+async function copyUrlToClipboard(sessionId: string) {
+  try {
+    const url = getTerminalUrl(sessionId)
+    await navigator.clipboard.writeText(url)
+    
+    copiedSessions.value.add(sessionId)
+    setTimeout(() => {
+      copiedSessions.value.delete(sessionId)
+    }, 2000)
+  } catch (err) {
+    console.error('Erreur lors de la copie:', err)
+    // Fallback pour les navigateurs qui ne supportent pas navigator.clipboard
+    fallbackCopyTextToClipboard(getTerminalUrl(sessionId))
+  }
+}
+
+function toggleIframePreview(sessionId: string) {
+  if (showPreviews.value.has(sessionId)) {
+    showPreviews.value.delete(sessionId)
+  } else {
+    showPreviews.value.add(sessionId)
+  }
+}
+
+function copyIframeCode(sessionId: string) {
+  const url = getTerminalUrl(sessionId)
+  currentIframeCode.value = `<iframe src="${url}" width="100%" height="600" frameborder="0" title="Terminal OCF"></iframe>`
+  
+  copyIframeCodeToClipboard()
+  
+  copiedIframes.value.add(sessionId)
+  setTimeout(() => {
+    copiedIframes.value.delete(sessionId)
+  }, 2000)
+}
+
+async function copyIframeCodeToClipboard() {
+  try {
+    await navigator.clipboard.writeText(currentIframeCode.value)
+  } catch (err) {
+    console.error('Erreur lors de la copie:', err)
+    fallbackCopyTextToClipboard(currentIframeCode.value)
+  }
+}
+
+function fallbackCopyTextToClipboard(text: string) {
+  const textArea = document.createElement('textarea')
+  textArea.value = text
+  document.body.appendChild(textArea)
+  textArea.focus()
+  textArea.select()
+  try {
+    document.execCommand('copy')
+  } catch (err) {
+    console.error('Fallback: Could not copy text: ', err)
+  }
+  document.body.removeChild(textArea)
 }
 </script>
 
@@ -262,16 +439,6 @@ function getStatusClass(status: string) {
 .page-header h2 {
   margin: 0;
   color: #333;
-}
-
-.debug-info {
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  padding: 10px;
-  margin-bottom: 20px;
-  font-family: monospace;
-  font-size: 12px;
 }
 
 .tabs-navigation {
@@ -379,7 +546,7 @@ function getStatusClass(status: string) {
 
 .sessions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
   gap: 20px;
 }
 
@@ -427,6 +594,7 @@ function getStatusClass(status: string) {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-bottom: 15px;
 }
 
 .detail-row {
@@ -447,11 +615,140 @@ function getStatusClass(status: string) {
   word-break: break-all;
 }
 
+/* Styles spécifiques pour les fonctionnalités iframe */
+.iframe-section {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+}
+
+.iframe-title {
+  margin: 0 0 15px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.iframe-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.url-display {
+  display: flex;
+  gap: 5px;
+}
+
+.url-input {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  background-color: #fff;
+  font-family: monospace;
+}
+
+.iframe-actions {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.iframe-preview {
+  margin-top: 15px;
+}
+
+.iframe-container {
+  border: 2px solid #dee2e6;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.iframe-info {
+  margin: 10px 0 0 0;
+  font-size: 12px;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
 .card-actions {
   padding: 15px 20px;
   background-color: #f8f9fa;
   border-top: 1px solid #e9ecef;
   text-align: right;
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.modal-header h3 {
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #6c757d;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.iframe-code {
+  width: 100%;
+  font-family: monospace;
+  font-size: 12px;
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  resize: vertical;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 15px;
 }
 
 .alert {
@@ -516,10 +813,28 @@ function getStatusClass(status: string) {
   color: #fff;
 }
 
+.btn-info {
+  background-color: #17a2b8;
+  border-color: #17a2b8;
+  color: #fff;
+}
+
+.btn-warning {
+  background-color: #ffc107;
+  border-color: #ffc107;
+  color: #212529;
+}
+
 .btn-danger {
   background-color: #dc3545;
   border-color: #dc3545;
   color: #fff;
+}
+
+.btn-outline-secondary {
+  background-color: transparent;
+  border-color: #6c757d;
+  color: #6c757d;
 }
 
 .btn-outline-danger {
@@ -561,6 +876,15 @@ function getStatusClass(status: string) {
   
   .sessions-grid {
     grid-template-columns: 1fr;
+  }
+
+  .iframe-actions {
+    flex-direction: column;
+  }
+  
+  .iframe-actions .btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

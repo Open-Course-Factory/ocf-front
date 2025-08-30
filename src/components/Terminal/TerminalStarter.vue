@@ -214,7 +214,8 @@ const showInfoPanel = ref(false)
 const showTerminalPanel = ref(false)
 const showErrorPanel = ref(false)
 const showReconnectButton = ref(false)
-const showDebug = ref(process.env.NODE_ENV === 'development')
+//const showDebug = ref(process.env.NODE_ENV === 'development')
+const showDebug = false
 
 // État de l'application
 const isStarting = ref(false)
