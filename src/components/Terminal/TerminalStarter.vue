@@ -357,7 +357,7 @@ async function startNewSession() {
   try {
     const sessionData = {
       terms: termsInput.value.trim(),
-      ...(expiryInput.value && expiryInput.value !== 3600 && { expiry: expiryInput.value })
+      ...(expiryInput.value && { expiry: expiryInput.value })
     }
     
     console.log('Données de session:', sessionData)

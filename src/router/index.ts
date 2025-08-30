@@ -32,8 +32,8 @@ import LandingPage from '../components/Pages/LandingPage.vue';
 import User from '../components/Pages/User.vue';
 import Generations from '../components/Pages/Generations.vue';
 import Themes from '../components/Pages/Themes.vue';
-import Terminals from '../components/Pages/TerminalsSimple.vue';
-import UserTerminalKeys from '../components/Pages/UserTerminalKeysSimple.vue';
+import Terminals from '../components/Pages/TerminalSessions.vue';
+import UserTerminalKeys from '../components/Pages/UserTerminalKeys.vue';
 
 const basicRoutes = [
   { path: '/', name: 'LandingPage', component: LandingPage },
