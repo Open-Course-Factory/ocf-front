@@ -7,10 +7,22 @@
 
 <template>
   <div class="terminal-starter">
+    <!-- Debug info en mode développement -->
+    <div v-if="showDebug" class="debug-panel">
+      <h4>Debug Info</h4>
+      <p>showStartPanel: {{ showStartPanel }}</p>
+      <p>showInfoPanel: {{ showInfoPanel }}</p>
+      <p>showTerminalPanel: {{ showTerminalPanel }}</p>
+      <p>showErrorPanel: {{ showErrorPanel }}</p>
+      <p>isStarting: {{ isStarting }}</p>
+      <p>terminal initialized: {{ !!terminal }}</p>
+      <p>sessionInfo: {{ !!sessionInfo }}</p>
+    </div>
+
     <!-- Panneau de démarrage -->
     <div class="panel panel-warning" v-show="showStartPanel">
       <div class="panel-body">
-        <h4>Démarrer une nouvelle session terminal</h4>
+        <h4><i class="fas fa-play"></i> Démarrer une nouvelle session terminal</h4>
         
         <div class="form-group">
           <label for="terms">Conditions d'utilisation (obligatoire):</label>
@@ -22,6 +34,9 @@
             placeholder="J'accepte les conditions d'utilisation..."
             required
           ></textarea>
+          <small class="form-text text-muted">
+            Vous devez accepter les conditions d'utilisation pour démarrer une session terminal.
+          </small>
         </div>
         
         <div class="form-group">
@@ -35,24 +50,42 @@
             max="3600"
             placeholder="3600 (1 heure par défaut)"
           />
+          <small class="form-text text-muted">
+            Entre 60 secondes (1 min) et 3600 secondes (1h). Laissez vide pour la valeur par défaut.
+          </small>
         </div>
 
-        <button 
-          type="button" 
-          class="btn btn-primary btn-lg" 
-          @click="startNewSession" 
-          :disabled="!termsInput.trim() || isStarting"
-        >
-          <i v-if="isStarting" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-play"></i>
-          Démarrer le Terminal
-        </button>
+        <div class="form-actions">
+          <button 
+            type="button" 
+            class="btn btn-primary btn-lg" 
+            @click="startNewSession" 
+            :disabled="!termsInput.trim() || isStarting"
+          >
+            <i v-if="isStarting" class="fas fa-spinner fa-spin"></i>
+            <i v-else class="fas fa-play"></i>
+            {{ isStarting ? 'Démarrage...' : 'Démarrer le Terminal' }}
+          </button>
+          
+          <button 
+            type="button" 
+            class="btn btn-secondary" 
+            @click="resetForm" 
+            :disabled="isStarting"
+          >
+            <i class="fas fa-undo"></i>
+            Réinitialiser
+          </button>
+        </div>
 
         <div v-if="isStarting" class="progress-container">
-          <div class="spinner-container">
-            <div class="spinner"></div>
+          <div class="progress">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                 role="progressbar" 
+                 style="width: 100%">
+            </div>
           </div>
-          <p>{{ startStatus }}</p>
+          <p class="status-text">{{ startStatus }}</p>
         </div>
       </div>
     </div>
@@ -61,9 +94,13 @@
     <div class="panel panel-info" v-show="showInfoPanel && sessionInfo">
       <div class="panel-heading">
         <div class="session-header">
-          <span>Session Terminal</span>
+          <span>
+            <i class="fas fa-terminal"></i>
+            Session Terminal: {{ sessionInfo?.session_id }}
+          </span>
           <div class="session-actions">
             <span class="time-remaining" v-if="timeRemaining > 0">
+              <i class="fas fa-clock"></i>
               Temps restant: {{ formatTime(timeRemaining) }}
             </span>
             <button 
@@ -83,40 +120,75 @@
 
     <!-- Panneau du terminal -->
     <div class="panel panel-primary" v-show="showTerminalPanel">
-      <div class="terminal-wrapper">
-        <div ref="terminalRef" class="terminal-container"></div>
+      <div class="panel-heading">
+        <div class="terminal-header">
+          <span>
+            <i class="fas fa-terminal"></i>
+            Console Terminal
+          </span>
+          <div class="terminal-controls">
+            <button 
+              class="btn btn-warning btn-sm" 
+              @click="reconnectTerminal" 
+              v-show="showReconnectButton"
+            >
+              <i class="fas fa-sync"></i>
+              Reconnecter
+            </button>
+            
+            <div class="connection-status">
+              <span v-if="isConnected" class="status-connected">
+                <i class="fas fa-circle"></i> Connecté
+              </span>
+              <span v-else class="status-disconnected">
+                <i class="fas fa-circle"></i> Déconnecté
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
       
-      <div class="terminal-footer" v-if="showTerminalPanel">
-        <button 
-          class="btn btn-warning btn-sm" 
-          @click="reconnectTerminal" 
-          v-show="showReconnectButton"
-        >
-          <i class="fas fa-sync"></i>
-          Reconnecter
-        </button>
-        
-        <div class="connection-status">
-          <span v-if="isConnected" class="text-success">
-            <i class="fas fa-circle"></i> Connecté
-          </span>
-          <span v-else class="text-danger">
-            <i class="fas fa-circle"></i> Déconnecté
-          </span>
+      <div class="terminal-wrapper">
+        <div ref="terminalRef" class="terminal-container"></div>
+        <div v-if="!terminal" class="terminal-placeholder">
+          <i class="fas fa-terminal fa-3x"></i>
+          <p>Initialisation du terminal...</p>
+          <p v-if="terminalError" class="text-danger">{{ terminalError }}</p>
+        </div>
+      </div>
+      
+      <div class="terminal-footer">
+        <div class="terminal-info">
+          <small class="text-muted">
+            Session: {{ sessionInfo?.session_id }} | 
+            Statut: {{ sessionInfo?.status }} |
+            <span v-if="isConnected" class="text-success">WebSocket connecté</span>
+            <span v-else class="text-danger">WebSocket déconnecté</span>
+          </small>
         </div>
       </div>
     </div>
 
     <!-- Panneau d'erreur -->
     <div class="panel panel-danger" v-show="showErrorPanel">
-      <div class="panel-heading">Erreur</div>
+      <div class="panel-heading">
+        <i class="fas fa-exclamation-triangle"></i>
+        Erreur
+      </div>
       <div class="panel-body">
-        <p>{{ errorMessage }}</p>
-        <button class="btn btn-default" @click="resetToStart">
-          <i class="fas fa-home"></i>
-          Recommencer
-        </button>
+        <div class="error-message">
+          <p>{{ errorMessage }}</p>
+        </div>
+        <div class="error-actions">
+          <button class="btn btn-warning" @click="resetToStart">
+            <i class="fas fa-home"></i>
+            Recommencer
+          </button>
+          <button class="btn btn-info" @click="showDebug = !showDebug">
+            <i class="fas fa-bug"></i>
+            {{ showDebug ? 'Masquer' : 'Afficher' }} Debug
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -125,6 +197,9 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import axios from 'axios'
+
+// Définir les émissions
+const emit = defineEmits(['session-started'])
 
 // Importation différée de xterm.js pour éviter les erreurs SSR
 let Terminal, FitAddon, AttachAddon
@@ -139,6 +214,7 @@ const showInfoPanel = ref(false)
 const showTerminalPanel = ref(false)
 const showErrorPanel = ref(false)
 const showReconnectButton = ref(false)
+const showDebug = ref(process.env.NODE_ENV === 'development')
 
 // État de l'application
 const isStarting = ref(false)
@@ -146,6 +222,7 @@ const isStopping = ref(false)
 const isConnected = ref(false)
 const startStatus = ref('Préparation...')
 const errorMessage = ref('')
+const terminalError = ref('')
 
 // Informations de session
 const sessionInfo = ref(null)
@@ -164,44 +241,76 @@ async function initXterm() {
   if (terminal) return // Déjà initialisé
   
   try {
+    console.log('Initialisation de xterm.js...')
+    startStatus.value = 'Chargement des modules xterm.js...'
+    
     // Import dynamique pour éviter les erreurs SSR
-    const xtermModule = await import('@xterm/xterm')
-    const fitModule = await import('@xterm/addon-fit')
-    const attachModule = await import('xterm-addon-attach')
+    const [xtermModule, fitModule, attachModule] = await Promise.all([
+      import('@xterm/xterm'),
+      import('@xterm/addon-fit'),
+      import('xterm-addon-attach')
+    ])
     
     Terminal = xtermModule.Terminal
     FitAddon = fitModule.FitAddon
     AttachAddon = attachModule.AttachAddon
     
+    console.log('Modules xterm.js chargés, création du terminal...')
+    
     // Créer le terminal
     terminal = new Terminal({
       cursorBlink: true,
-      fontFamily: 'monospace',
+      fontFamily: '"Cascadia Code", "Fira Code", "SF Mono", Monaco, "Inconsolata", "Roboto Mono", "Source Code Pro", Menlo, "DejaVu Sans Mono", "Lucida Console", monospace',
       fontSize: 14,
       rows: 24,
       cols: 80,
       theme: {
-        background: '#000000',
-        foreground: '#ffffff'
+        background: '#1e1e1e',
+        foreground: '#d4d4d4',
+        cursor: '#ffffff',
+        selection: '#264f78',
+        black: '#1e1e1e',
+        red: '#f44747',
+        green: '#6a9955',
+        yellow: '#dcdcaa',
+        blue: '#569cd6',
+        magenta: '#c586c0',
+        cyan: '#4ec9b0',
+        white: '#d4d4d4',
+        brightBlack: '#6a6a6a',
+        brightRed: '#f44747',
+        brightGreen: '#6a9955',
+        brightYellow: '#dcdcaa',
+        brightBlue: '#569cd6',
+        brightMagenta: '#c586c0',
+        brightCyan: '#4ec9b0',
+        brightWhite: '#ffffff'
       }
     })
     
     fitAddon = new FitAddon()
     terminal.loadAddon(fitAddon)
     
-    console.log('Terminal xterm.js initialisé')
+    console.log('Terminal xterm.js initialisé avec succès')
+    terminalError.value = ''
+    return true
   } catch (error) {
     console.error('Erreur lors de l\'initialisation de xterm.js:', error)
-    errorMessage.value = 'Impossible de charger le terminal. Vérifiez que xterm.js est installé.'
+    terminalError.value = `Impossible de charger xterm.js: ${error.message}`
+    errorMessage.value = 'Impossible de charger le terminal. Vérifiez que les dépendances xterm.js sont installées.'
     showErrorPanel.value = true
+    return false
   }
 }
 
 onMounted(async () => {
+  console.log('TerminalStarter monté')
+  // Pré-charger xterm.js
   await initXterm()
 })
 
 onBeforeUnmount(() => {
+  console.log('TerminalStarter démontage - nettoyage')
   cleanup()
 })
 
@@ -225,6 +334,14 @@ function cleanup() {
   attachAddon = null
 }
 
+function resetForm() {
+  termsInput.value = 'J\'accepte les conditions d\'utilisation du service terminal.'
+  expiryInput.value = 3600
+  errorMessage.value = ''
+  terminalError.value = ''
+  showErrorPanel.value = false
+}
+
 async function startNewSession() {
   if (!termsInput.value.trim()) {
     errorMessage.value = 'Veuillez accepter les conditions d\'utilisation'
@@ -232,16 +349,21 @@ async function startNewSession() {
     return
   }
   
+  console.log('Démarrage d\'une nouvelle session...')
   isStarting.value = true
   startStatus.value = 'Démarrage de la session terminal...'
   
   try {
     const sessionData = {
       terms: termsInput.value.trim(),
-      ...(expiryInput.value && { expiry: expiryInput.value })
+      ...(expiryInput.value && expiryInput.value !== 3600 && { expiry: expiryInput.value })
     }
     
+    console.log('Données de session:', sessionData)
+    startStatus.value = 'Envoi de la requête au serveur...'
+    
     const response = await axios.post('/terminals/start-session', sessionData)
+    console.log('Réponse serveur:', response.data)
     
     sessionInfo.value = {
       session_id: response.data.session_id,
@@ -249,6 +371,8 @@ async function startNewSession() {
       expires_at: response.data.expires_at,
       status: response.data.status
     }
+    
+    startStatus.value = 'Session créée, initialisation du terminal...'
     
     // Cacher le panneau de démarrage et afficher les panneaux de session
     showStartPanel.value = false
@@ -260,20 +384,43 @@ async function startNewSession() {
       startExpirationTimer(response.data.expires_at)
     }
     
+    // Émettre l'événement pour informer le parent
+    emit('session-started')
+    
     // Initialiser le terminal
     await initializeTerminal()
     
   } catch (error) {
     console.error('Erreur lors du démarrage:', error)
-    errorMessage.value = error.response?.data?.error_message || 'Erreur lors du démarrage de la session'
+    errorMessage.value = error.response?.data?.error_message || 
+                         error.message || 
+                         'Erreur lors du démarrage de la session'
     showErrorPanel.value = true
+    showStartPanel.value = true
+    showInfoPanel.value = false
+    showTerminalPanel.value = false
   } finally {
     isStarting.value = false
+    startStatus.value = ''
   }
 }
 
 async function initializeTerminal() {
-  if (!terminal || !sessionInfo.value) return
+  console.log('Initialisation du terminal...')
+  
+  if (!terminal) {
+    console.log('Terminal non initialisé, tentative d\'initialisation...')
+    const success = await initXterm()
+    if (!success) {
+      console.error('Impossible d\'initialiser xterm.js')
+      return
+    }
+  }
+  
+  if (!sessionInfo.value) {
+    console.error('Informations de session manquantes')
+    return
+  }
   
   await nextTick()
   
@@ -282,15 +429,18 @@ async function initializeTerminal() {
     return
   }
   
+  console.log('Ouverture du terminal dans le DOM...')
   // Ouvrir le terminal dans le DOM
   if (!terminal.element) {
     terminal.open(terminalRef.value)
     
+    // Ajuster la taille après un délai
     setTimeout(() => {
-      if (fitAddon) {
+      if (fitAddon && terminal) {
+        console.log('Ajustement de la taille du terminal')
         fitAddon.fit()
       }
-    }, 100)
+    }, 200)
   }
   
   // Établir la connexion WebSocket
@@ -298,14 +448,14 @@ async function initializeTerminal() {
 }
 
 async function connectWebSocket() {
-  console.log('connectWebSocket')
+  console.log('Connexion WebSocket...')
   if (!sessionInfo.value || !sessionInfo.value.session_id) {
     console.error('Informations de session manquantes pour la connexion WebSocket')
     return
   }
   
   try {
-    // Extraire l'ID de session depuis l'URL de console ou utiliser d'autres moyens
+    // Extraire l'ID de session
     const sessionId = sessionInfo.value.session_id
     
     // Construire l'URL WebSocket
@@ -318,20 +468,25 @@ async function connectWebSocket() {
     socket = new WebSocket(wsUrl)
     
     socket.onopen = () => {
-      console.log('WebSocket connecté')
+      console.log('WebSocket connecté avec succès')
       isConnected.value = true
       showReconnectButton.value = false
       
-      if (attachAddon) {
+      // Attacher le socket au terminal
+      if (terminal && AttachAddon) {
+        if (attachAddon) {
+          // Supprimer l'ancien addon
+          console.log('Suppression de l\'ancien attachAddon')
+        }
+        
+        attachAddon = new AttachAddon(socket)
         terminal.loadAddon(attachAddon)
+        console.log('AttachAddon chargé et connecté')
       }
-      
-      attachAddon = new AttachAddon(socket)
-      terminal.loadAddon(attachAddon)
     }
     
     socket.onclose = (event) => {
-      console.log('WebSocket fermé:', event)
+      console.log('WebSocket fermé:', event.code, event.reason)
       isConnected.value = false
       showReconnectButton.value = true
     }
@@ -344,27 +499,32 @@ async function connectWebSocket() {
     
   } catch (error) {
     console.error('Erreur lors de la connexion WebSocket:', error)
-    errorMessage.value = 'Impossible de se connecter au terminal'
+    errorMessage.value = `Impossible de se connecter au terminal: ${error.message}`
     showErrorPanel.value = true
+    isConnected.value = false
+    showReconnectButton.value = true
   }
 }
 
 async function stopSession() {
   if (!sessionInfo.value) return
   
+  console.log('Arrêt de la session...')
   isStopping.value = true
   
   try {
-    // Extraire l'ID depuis les données de session
     const sessionId = sessionInfo.value.session_id
     await axios.post(`/terminals/${sessionId}/stop`)
     
+    console.log('Session arrêtée avec succès')
     // Reset de l'interface
     resetToStart()
     
   } catch (error) {
     console.error('Erreur lors de l\'arrêt:', error)
-    errorMessage.value = error.response?.data?.error_message || 'Erreur lors de l\'arrêt de la session'
+    errorMessage.value = error.response?.data?.error_message || 
+                         error.message || 
+                         'Erreur lors de l\'arrêt de la session'
     showErrorPanel.value = true
   } finally {
     isStopping.value = false
@@ -372,6 +532,7 @@ async function stopSession() {
 }
 
 function reconnectTerminal() {
+  console.log('Reconnexion du terminal...')
   if (socket) {
     socket.close()
   }
@@ -379,12 +540,15 @@ function reconnectTerminal() {
 }
 
 function resetToStart() {
+  console.log('Reset vers l\'état initial')
   cleanup()
   
   // Reset de l'état
   sessionInfo.value = null
   timeRemaining.value = 0
   isConnected.value = false
+  errorMessage.value = ''
+  terminalError.value = ''
   
   // Reset des panneaux
   showStartPanel.value = true
@@ -392,10 +556,18 @@ function resetToStart() {
   showTerminalPanel.value = false
   showErrorPanel.value = false
   showReconnectButton.value = false
+  
+  // Reset du formulaire
+  resetForm()
 }
 
 function startExpirationTimer(expiresAt) {
+  console.log('Démarrage du timer d\'expiration:', expiresAt)
   const expirationTime = new Date(expiresAt).getTime()
+  
+  if (timerInterval) {
+    clearInterval(timerInterval)
+  }
   
   timerInterval = setInterval(() => {
     const now = Date.now()
@@ -404,6 +576,7 @@ function startExpirationTimer(expiresAt) {
     timeRemaining.value = remaining
     
     if (remaining <= 0) {
+      console.log('Session expirée')
       clearInterval(timerInterval)
       errorMessage.value = 'Session expirée'
       showErrorPanel.value = true
@@ -414,9 +587,15 @@ function startExpirationTimer(expiresAt) {
 }
 
 function formatTime(seconds) {
-  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
   const secs = seconds % 60
-  return `${minutes}:${secs.toString().padStart(2, '0')}`
+  
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  } else {
+    return `${minutes}:${secs.toString().padStart(2, '0')}`
+  }
 }
 </script>
 
@@ -426,69 +605,91 @@ function formatTime(seconds) {
   margin: 0 auto;
 }
 
+.debug-panel {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 20px;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.debug-panel h4 {
+  margin-top: 0;
+  color: #495057;
+}
+
 .panel {
   margin-bottom: 20px;
   background-color: #fff;
   border: 1px solid transparent;
-  border-radius: 4px;
-  box-shadow: 0 1px 1px rgba(0,0,0,.05);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,.1);
+  overflow: hidden;
 }
 
 .panel-warning {
-  border-color: #faebcc;
+  border-color: #ffc107;
 }
 
 .panel-info {
-  border-color: #bce8f1;
+  border-color: #17a2b8;
 }
 
 .panel-primary {
-  border-color: #bce8f1;
+  border-color: #007bff;
 }
 
 .panel-danger {
-  border-color: #ebccd1;
+  border-color: #dc3545;
 }
 
 .panel-heading {
-  padding: 10px 15px;
+  padding: 15px 20px;
   border-bottom: 1px solid transparent;
-  border-top-left-radius: 3px;
-  border-top-right-radius: 3px;
-  background-color: #f5f5f5;
+  border-top-left-radius: 7px;
+  border-top-right-radius: 7px;
+  font-weight: 600;
 }
 
 .panel-warning > .panel-heading {
-  background-color: #fcf8e3;
-  border-color: #faebcc;
-  color: #8a6d3b;
+  background-color: #fff3cd;
+  border-color: #ffeaa7;
+  color: #856404;
 }
 
 .panel-info > .panel-heading {
-  background-color: #d9edf7;
-  border-color: #bce8f1;
-  color: #31708f;
+  background-color: #d1ecf1;
+  border-color: #bee5eb;
+  color: #0c5460;
+}
+
+.panel-primary > .panel-heading {
+  background-color: #cce7ff;
+  border-color: #b3d7ff;
+  color: #004085;
 }
 
 .panel-danger > .panel-heading {
-  background-color: #f2dede;
-  border-color: #ebccd1;
-  color: #a94442;
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
 }
 
 .panel-body {
-  padding: 15px;
+  padding: 20px;
 }
 
-.session-header {
+.session-header, .terminal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 15px;
 }
 
-.session-actions {
+.session-actions, .terminal-controls {
   display: flex;
   align-items: center;
   gap: 15px;
@@ -496,150 +697,250 @@ function formatTime(seconds) {
 
 .time-remaining {
   font-weight: bold;
-  color: #31708f;
+  color: #0c5460;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #495057;
 }
 
 .form-control {
   display: block;
   width: 100%;
-  padding: 6px 12px;
+  padding: 10px 12px;
   font-size: 14px;
-  line-height: 1.42857143;
-  color: #555;
+  line-height: 1.5;
+  color: #495057;
   background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  border: 2px solid #ced4da;
+  border-radius: 6px;
   box-sizing: border-box;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+  outline: 0;
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-text {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
 }
 
 .terminal-wrapper {
-  min-height: 400px;
-  background-color: #000;
+  min-height: 500px;
+  background-color: #1e1e1e;
   position: relative;
+  border: 2px solid #333;
 }
 
 .terminal-container {
   width: 100%;
   height: 100%;
+  min-height: 500px;
+}
+
+.terminal-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 500px;
+  color: #6c757d;
+}
+
+.terminal-placeholder i {
+  margin-bottom: 20px;
+  opacity: 0.5;
 }
 
 .terminal-footer {
-  padding: 10px;
-  background-color: #f5f5f5;
-  border-top: 1px solid #ddd;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  padding: 10px 15px;
+  background-color: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+}
+
+.terminal-info {
+  font-family: monospace;
 }
 
 .connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 0.9rem;
+}
+
+.status-connected {
+  color: #28a745;
+}
+
+.status-disconnected {
+  color: #dc3545;
 }
 
 .progress-container {
   margin-top: 20px;
+}
+
+.progress {
+  height: 20px;
+  background-color: #e9ecef;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #007bff;
+  transition: width 0.3s ease;
+}
+
+.progress-bar-striped {
+  background-image: linear-gradient(45deg, rgba(255,255,255,.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.15) 75%, transparent 75%, transparent);
+  background-size: 1rem 1rem;
+}
+
+.progress-bar-animated {
+  animation: progress-bar-stripes 1s linear infinite;
+}
+
+@keyframes progress-bar-stripes {
+  from {
+    background-position: 1rem 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+.status-text {
   text-align: center;
+  margin-top: 10px;
+  font-style: italic;
+  color: #6c757d;
 }
 
-.spinner-container {
+.error-message {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.error-actions {
   display: flex;
-  justify-content: center;
-  margin: 10px 0;
-}
-
-.spinner {
-  width: 30px;
-  height: 30px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #3498db;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .btn {
-  display: inline-block;
-  padding: 6px 12px;
-  margin-bottom: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
   font-size: 14px;
-  font-weight: normal;
-  line-height: 1.42857143;
+  font-weight: 500;
+  line-height: 1.5;
   text-align: center;
   white-space: nowrap;
   vertical-align: middle;
   cursor: pointer;
-  border: 1px solid transparent;
-  border-radius: 4px;
+  border: 2px solid transparent;
+  border-radius: 6px;
   text-decoration: none;
-  color: #333;
-  background-color: #fff;
-  border-color: #ccc;
+  transition: all 0.2s ease-in-out;
 }
 
 .btn:hover:not(:disabled) {
-  background-color: #e6e6e6;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .btn-lg {
-  padding: 10px 16px;
+  padding: 12px 24px;
   font-size: 18px;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .btn-sm {
-  padding: 5px 10px;
+  padding: 6px 12px;
   font-size: 12px;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 .btn-primary {
-  background-color: #337ab7;
-  border-color: #2e6da4;
+  background-color: #007bff;
+  border-color: #007bff;
+  color: #fff;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  border-color: #6c757d;
   color: #fff;
 }
 
 .btn-danger {
-  background-color: #d9534f;
-  border-color: #d43f3a;
+  background-color: #dc3545;
+  border-color: #dc3545;
   color: #fff;
 }
 
 .btn-warning {
-  background-color: #f0ad4e;
-  border-color: #eea236;
+  background-color: #ffc107;
+  border-color: #ffc107;
+  color: #212529;
+}
+
+.btn-info {
+  background-color: #17a2b8;
+  border-color: #17a2b8;
   color: #fff;
 }
 
 .text-success {
-  color: #3c763d;
+  color: #28a745;
 }
 
 .text-danger {
-  color: #a94442;
+  color: #dc3545;
+}
+
+.text-muted {
+  color: #6c757d;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .session-header {
+  .session-header, .terminal-header {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -648,9 +949,21 @@ function formatTime(seconds) {
     min-height: 300px;
   }
   
-  .terminal-footer {
+  .terminal-container {
+    min-height: 300px;
+  }
+  
+  .terminal-placeholder {
+    height: 300px;
+  }
+  
+  .form-actions, .error-actions {
     flex-direction: column;
-    gap: 10px;
+  }
+  
+  .btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

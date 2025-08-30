@@ -21,58 +21,6 @@
  */ 
 -->
 
-<script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import TerminalStarter from '../Terminal/TerminalStarter.vue';
-import axios from 'axios';
-
-const sessions = ref([]);
-const isLoading = ref(false);
-const error = ref('');
-const activeTab = ref('starter'); // 'starter' ou 'sessions'
-
-onMounted(() => {
-  loadSessions();
-  
-  // Rafraîchir les sessions toutes les 30 secondes
-  setInterval(loadSessions, 30000);
-});
-
-async function loadSessions() {
-  try {
-    const response = await axios.get('/terminals/user-sessions');
-    sessions.value = response.data || [];
-  } catch (err) {
-    console.error('Erreur lors du chargement des sessions:', err);
-    // Ne pas afficher l'erreur si c'est juste un problème de chargement des sessions existantes
-  }
-}
-
-async function stopSession(sessionId: string) {
-  try {
-    await axios.post(`/terminals/${sessionId}/stop`);
-    await loadSessions(); // Recharger la liste
-  } catch (err) {
-    console.error('Erreur lors de l\'arrêt:', err);
-    alert('Erreur lors de l\'arrêt de la session');
-  }
-}
-
-function formatDate(dateString: string) {
-  if (!dateString) return '-';
-  return new Date(dateString).toLocaleString();
-}
-
-function getStatusClass(status: string) {
-  switch (status?.toLowerCase()) {
-    case 'active': return 'text-success';
-    case 'expired': return 'text-danger';
-    case 'stopped': return 'text-muted';
-    default: return 'text-warning';
-  }
-}
-</script>
-
 <template>
   <div class="terminals-page">
     <div class="page-header">
@@ -90,7 +38,7 @@ function getStatusClass(status: string) {
       </button>
       <button 
         :class="['tab-btn', { active: activeTab === 'sessions' }]"
-        @click="activeTab = 'sessions'"
+        @click="activeTab = 'sessions'; loadSessions()"
       >
         <i class="fas fa-list"></i>
         Sessions Actives ({{ sessions.length }})
@@ -99,47 +47,73 @@ function getStatusClass(status: string) {
 
     <!-- Contenu des onglets -->
     <div class="tab-content">
+      <!-- Debug info -->
+      <div class="debug-info" v-if="showDebug">
+        <p>Active tab: {{ activeTab }}</p>
+        <p>Sessions loaded: {{ sessions.length }}</p>
+        <p>TerminalStarter imported: {{ !!TerminalStarter }}</p>
+      </div>
+
       <!-- Onglet Nouvelle Session -->
-      <div v-if="activeTab === 'starter'" class="tab-pane">
-        <TerminalStarter />
+      <div v-if="activeTab === 'starter'" class="tab-pane active">
+        <div class="starter-container">
+          <Suspense>
+            <template #default>
+              <TerminalStarter @session-started="onSessionStarted" />
+            </template>
+            <template #fallback>
+              <div class="loading-fallback">
+                <i class="fas fa-spinner fa-spin"></i>
+                Chargement du terminal...
+              </div>
+            </template>
+          </Suspense>
+        </div>
       </div>
 
       <!-- Onglet Sessions Actives -->
-      <div v-if="activeTab === 'sessions'" class="tab-pane">
+      <div v-if="activeTab === 'sessions'" class="tab-pane active">
         <div class="sessions-section">
           <div class="section-header">
             <h3>Sessions Terminal Actives</h3>
             <button class="btn btn-secondary" @click="loadSessions">
-              <i class="fas fa-sync"></i>
+              <i class="fas fa-sync" :class="{ 'fa-spin': isLoading }"></i>
               Actualiser
             </button>
           </div>
 
-          <div v-if="isLoading" class="loading-section">
+          <div v-if="isLoading && sessions.length === 0" class="loading-section">
             <i class="fas fa-spinner fa-spin"></i> Chargement des sessions...
           </div>
 
           <div v-else-if="error" class="alert alert-danger">
             {{ error }}
+            <button class="btn btn-sm btn-outline-danger" @click="error = ''; loadSessions()">
+              Réessayer
+            </button>
           </div>
 
           <div v-else-if="sessions.length === 0" class="empty-section">
             <i class="fas fa-terminal fa-3x text-muted"></i>
             <h4>Aucune session active</h4>
             <p class="text-muted">Démarrez une nouvelle session dans l'onglet "Nouvelle Session"</p>
+            <button class="btn btn-primary" @click="activeTab = 'starter'">
+              <i class="fas fa-plus"></i>
+              Nouvelle Session
+            </button>
           </div>
 
           <div v-else class="sessions-grid">
             <div 
               v-for="session in sessions" 
-              :key="session.id" 
+              :key="session.id || session.session_id" 
               class="session-card"
             >
               <div class="card-header">
-                <h5 class="session-id">{{ session.session_id }}</h5>
+                <h5 class="session-id">{{ session.session_id || session.id }}</h5>
                 <span :class="['status-badge', getStatusClass(session.status)]">
                   <i class="fas fa-circle"></i>
-                  {{ session.status }}
+                  {{ session.status || 'unknown' }}
                 </span>
               </div>
 
@@ -149,7 +123,7 @@ function getStatusClass(status: string) {
                     <span class="label">ID:</span>
                     <span class="value">{{ session.id }}</span>
                   </div>
-                  <div class="detail-row">
+                  <div class="detail-row" v-if="session.created_at">
                     <span class="label">Créée le:</span>
                     <span class="value">{{ formatDate(session.created_at) }}</span>
                   </div>
@@ -157,7 +131,7 @@ function getStatusClass(status: string) {
                     <span class="label">Expire le:</span>
                     <span class="value">{{ formatDate(session.expires_at) }}</span>
                   </div>
-                  <div class="detail-row">
+                  <div class="detail-row" v-if="session.user_id">
                     <span class="label">Utilisateur:</span>
                     <span class="value">{{ session.user_id }}</span>
                   </div>
@@ -182,11 +156,102 @@ function getStatusClass(status: string) {
   </div>
 </template>
 
+<script setup lang="ts">
+import { ref, onMounted, defineAsyncComponent } from 'vue';
+import axios from 'axios';
+
+// Import dynamique du composant TerminalStarter pour éviter les problèmes de bundling
+const TerminalStarter = defineAsyncComponent(() => import('../Terminal/TerminalStarter.vue'));
+
+const sessions = ref([]);
+const isLoading = ref(false);
+const error = ref('');
+const activeTab = ref('starter');
+const showDebug = ref(process.env.NODE_ENV === 'development');
+
+onMounted(() => {
+  console.log('TerminalsSimple mounted');
+  loadSessions();
+  
+  // Rafraîchir les sessions toutes les 30 secondes si on est sur l'onglet sessions
+  const interval = setInterval(() => {
+    if (activeTab.value === 'sessions') {
+      loadSessions();
+    }
+  }, 30000);
+  
+  // Cleanup
+  return () => clearInterval(interval);
+});
+
+async function loadSessions() {
+  if (isLoading.value) return; // Éviter les requêtes multiples
+  
+  isLoading.value = true;
+  error.value = '';
+  
+  try {
+    console.log('Loading sessions...');
+    const response = await axios.get('/terminals/user-sessions');
+    sessions.value = response.data || [];
+    console.log('Sessions loaded:', sessions.value);
+  } catch (err: any) {
+    console.error('Erreur lors du chargement des sessions:', err);
+    error.value = err.response?.data?.error_message || 'Erreur lors du chargement des sessions';
+    sessions.value = [];
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+async function stopSession(sessionId: string) {
+  if (!sessionId) {
+    console.error('Session ID manquant');
+    return;
+  }
+  
+  try {
+    console.log('Stopping session:', sessionId);
+    await axios.post(`/terminals/${sessionId}/stop`);
+    await loadSessions(); // Recharger la liste
+    console.log('Session stopped successfully');
+  } catch (err: any) {
+    console.error('Erreur lors de l\'arrêt:', err);
+    error.value = err.response?.data?.error_message || 'Erreur lors de l\'arrêt de la session';
+  }
+}
+
+function onSessionStarted() {
+  console.log('Session started, switching to sessions tab');
+  activeTab.value = 'sessions';
+  loadSessions();
+}
+
+function formatDate(dateString: string) {
+  if (!dateString) return '-';
+  try {
+    return new Date(dateString).toLocaleString('fr-FR');
+  } catch (e) {
+    return dateString;
+  }
+}
+
+function getStatusClass(status: string) {
+  switch (status?.toLowerCase()) {
+    case 'active': return 'text-success';
+    case 'expired': return 'text-danger';
+    case 'stopped': return 'text-muted';
+    default: return 'text-warning';
+  }
+}
+</script>
+
 <style scoped>
 .terminals-page {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+  min-height: 600px;
 }
 
 .page-header {
@@ -197,6 +262,16 @@ function getStatusClass(status: string) {
 .page-header h2 {
   margin: 0;
   color: #333;
+}
+
+.debug-info {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 20px;
+  font-family: monospace;
+  font-size: 12px;
 }
 
 .tabs-navigation {
@@ -235,7 +310,29 @@ function getStatusClass(status: string) {
 }
 
 .tab-pane {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease;
+}
+
+.tab-pane.active {
+  opacity: 1;
+  visibility: visible;
   animation: fadeIn 0.3s ease-in-out;
+}
+
+.starter-container {
+  width: 100%;
+  min-height: 400px;
+}
+
+.loading-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  font-size: 18px;
+  color: #6c757d;
 }
 
 .sessions-section {
@@ -258,6 +355,7 @@ function getStatusClass(status: string) {
   text-align: center;
   padding: 40px;
   color: #6c757d;
+  font-size: 16px;
 }
 
 .empty-section {
@@ -269,6 +367,14 @@ function getStatusClass(status: string) {
 .empty-section i {
   margin-bottom: 20px;
   opacity: 0.5;
+}
+
+.empty-section h4 {
+  margin-bottom: 10px;
+}
+
+.empty-section .btn {
+  margin-top: 15px;
 }
 
 .sessions-grid {
@@ -338,6 +444,7 @@ function getStatusClass(status: string) {
 .detail-row .value {
   color: #495057;
   font-size: 14px;
+  word-break: break-all;
 }
 
 .card-actions {
@@ -351,6 +458,9 @@ function getStatusClass(status: string) {
   padding: 12px 15px;
   border-radius: 4px;
   margin: 15px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .alert-danger {
@@ -360,7 +470,9 @@ function getStatusClass(status: string) {
 }
 
 .btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 6px 12px;
   font-size: 14px;
   font-weight: normal;
@@ -372,24 +484,30 @@ function getStatusClass(status: string) {
   border: 1px solid transparent;
   border-radius: 4px;
   text-decoration: none;
-  color: #333;
-  background-color: #fff;
-  border-color: #ccc;
+  transition: all 0.3s ease;
 }
 
 .btn:hover:not(:disabled) {
   opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
 }
 
 .btn-sm {
   padding: 5px 10px;
   font-size: 12px;
   border-radius: 3px;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  border-color: #007bff;
+  color: #fff;
 }
 
 .btn-secondary {
@@ -404,10 +522,16 @@ function getStatusClass(status: string) {
   color: #fff;
 }
 
-.text-success { color: #28a745; }
-.text-danger { color: #dc3545; }
-.text-warning { color: #ffc107; }
-.text-muted { color: #6c757d; }
+.btn-outline-danger {
+  background-color: transparent;
+  border-color: #dc3545;
+  color: #dc3545;
+}
+
+.text-success { color: #28a745 !important; }
+.text-danger { color: #dc3545 !important; }
+.text-warning { color: #ffc107 !important; }
+.text-muted { color: #6c757d !important; }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
