@@ -25,6 +25,12 @@
   <div class="terminals-page">
     <div class="page-header">
       <h2>Gestion des Sessions Terminal</h2>
+      <div class="sync-info" v-if="lastSyncTime">
+        <small class="text-muted">
+          <i class="fas fa-sync"></i>
+          Dernière sync: {{ formatSyncTime(lastSyncTime) }}
+        </small>
+      </div>
     </div>
 
     <!-- Navigation par onglets -->
@@ -69,10 +75,22 @@
         <div class="sessions-section">
           <div class="section-header">
             <h3>Sessions Terminal Actives</h3>
-            <button class="btn btn-secondary" @click="loadSessions">
-              <i class="fas fa-sync" :class="{ 'fa-spin': isLoading }"></i>
-              Actualiser
-            </button>
+            <div class="header-actions">
+              <!-- Bouton de synchronisation globale -->
+              <button 
+                class="btn btn-info" 
+                @click="syncAllSessions"
+                :disabled="isSyncing"
+                title="Synchroniser toutes les sessions avec l'API Terminal Trainer"
+              >
+                <i :class="isSyncing ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'"></i>
+                {{ isSyncing ? 'Synchronisation...' : 'Tout synchroniser' }}
+              </button>
+              <button class="btn btn-secondary" @click="loadSessions">
+                <i class="fas fa-sync" :class="{ 'fa-spin': isLoading }"></i>
+                Actualiser
+              </button>
+            </div>
           </div>
 
           <div v-if="isLoading && sessions.length === 0" class="loading-section">
@@ -86,28 +104,33 @@
             </button>
           </div>
 
-          <div v-else-if="sessions.length === 0" class="empty-section">
-            <i class="fas fa-terminal fa-3x text-muted"></i>
-            <h4>Aucune session active</h4>
-            <p class="text-muted">Démarrez une nouvelle session dans l'onglet "Nouvelle Session"</p>
-            <button class="btn btn-primary" @click="activeTab = 'starter'">
-              <i class="fas fa-plus"></i>
-              Nouvelle Session
-            </button>
-          </div>
-
-          <div v-else class="sessions-grid">
-            <div 
-              v-for="session in sessions" 
-              :key="session.id || session.session_id" 
-              class="session-card"
-            >
+          <div v-if="sessions.length > 0" class="sessions-grid">
+            <div v-for="session in sessions" :key="session.id || session.session_id" class="session-card">
+              
+              <!-- En-tête avec indicateur de sync -->
               <div class="card-header">
                 <h5 class="session-id">{{ session.session_id }}</h5>
-                <span :class="['status-badge', getStatusClass(session.status)]">
-                  <i class="fas fa-circle"></i>
-                  {{ session.status || 'unknown' }}
-                </span>
+                <div class="status-group">
+                  <span :class="['status-badge', getStatusClass(session.status)]">
+                    <i class="fas fa-circle"></i>
+                    {{ session.status || 'unknown' }}
+                  </span>
+                  <!-- NOUVEAU: Indicateur de sync -->
+                  <div v-if="getSyncResultForSession(session.session_id)" class="sync-indicator">
+                    <span v-if="getSyncResultForSession(session.session_id).updated" 
+                          class="sync-badge updated" 
+                          title="Statut mis à jour par la synchronisation">
+                      <i class="fas fa-arrow-up"></i>
+                      Synchronisé
+                    </span>
+                    <span v-else 
+                          class="sync-badge current" 
+                          title="Statut à jour">
+                      <i class="fas fa-check"></i>
+                      À jour
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div class="card-body">
@@ -131,6 +154,27 @@
                   <div class="detail-row" v-if="session.user_id">
                     <span class="label">Utilisateur:</span>
                     <span class="value">{{ session.user_id }}</span>
+                  </div>
+                </div>
+
+                <div v-if="getSyncResultForSession(session.session_id)" class="sync-details">
+                  <h6 class="sync-title">
+                    <i class="fas fa-sync-alt"></i>
+                    Dernière synchronisation
+                  </h6>
+                  <div class="sync-info-grid">
+                    <div class="sync-info-item">
+                      <span class="label">Statut précédent:</span>
+                      <span class="value">{{ getSyncResultForSession(session.session_id).previous_status }}</span>
+                    </div>
+                    <div class="sync-info-item">
+                      <span class="label">Statut actuel:</span>
+                      <span class="value">{{ getSyncResultForSession(session.session_id).current_status }}</span>
+                    </div>
+                    <div class="sync-info-item">
+                      <span class="label">Heure de sync:</span>
+                      <span class="value">{{ formatSyncTime(getSyncResultForSession(session.session_id).last_sync_at) }}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -207,6 +251,14 @@
 
               <div class="card-actions">
                 <button 
+                  class="btn btn-info btn-sm"
+                  @click="syncSession(session.session_id)"
+                  title="Synchroniser cette session avec l'API Terminal Trainer"
+                >
+                  <i class="fas fa-sync-alt"></i>
+                  Sync
+                </button>
+                <button 
                   class="btn btn-danger btn-sm"
                   @click="stopSession(session.session_id)"
                   :disabled="session.status !== 'active'"
@@ -252,6 +304,56 @@
         </div>
       </div>
     </div>
+
+    <div v-if="showSyncModal" class="modal-overlay" @click="showSyncModal = false">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>
+            <i class="fas fa-sync-alt"></i>
+            Résultats de la synchronisation
+          </h3>
+          <button class="modal-close" @click="showSyncModal = false">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body" v-if="syncAllResults">
+          <div class="sync-summary">
+            <div class="summary-item">
+              <span class="label">Sessions totales:</span>
+              <span class="value">{{ syncAllResults.total_sessions }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Sessions synchronisées:</span>
+              <span class="value">{{ syncAllResults.synced_sessions }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Sessions mises à jour:</span>
+              <span class="value">{{ syncAllResults.updated_sessions || 0 }}</span>
+            </div>
+            <div class="summary-item" v-if="syncAllResults.error_count > 0">
+              <span class="label">Erreurs:</span>
+              <span class="value text-danger">{{ syncAllResults.error_count }}</span>
+            </div>
+          </div>
+          
+          <div v-if="syncAllResults.errors && syncAllResults.errors.length > 0" class="sync-errors">
+            <h4>Erreurs rencontrées:</h4>
+            <ul>
+              <li v-for="error in syncAllResults.errors" :key="error" class="text-danger">
+                {{ error }}
+              </li>
+            </ul>
+          </div>
+          
+          <div class="modal-actions">
+            <button class="btn btn-primary" @click="showSyncModal = false">
+              <i class="fas fa-check"></i>
+              OK
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -275,6 +377,12 @@ const showIframeModal = ref(false)
 const currentIframeCode = ref('')
 const urlInput = ref(null)
 const iframeCodeRef = ref(null)
+
+const isSyncing = ref(false)
+const lastSyncTime = ref(null)
+const syncResults = ref(new Map()) // Map<sessionId, syncResult>
+const showSyncModal = ref(false)
+const syncAllResults = ref(null)
 
 onMounted(() => {
   console.log('TerminalsSimple mounted')
@@ -421,6 +529,70 @@ function fallbackCopyTextToClipboard(text: string) {
   }
   document.body.removeChild(textArea)
 }
+
+// Synchroniser une session spécifique
+async function syncSession(sessionId: string) {
+  try {
+    console.log('Syncing session:', sessionId)
+    const response = await axios.post(`/terminals/${sessionId}/sync`)
+    
+    // Stocker le résultat de la sync
+    syncResults.value.set(sessionId, {
+      ...response.data,
+      timestamp: new Date()
+    })
+    
+    // Recharger les sessions pour voir les changements
+    await loadSessions()
+    
+    // Afficher un message si le statut a changé
+    if (response.data.updated) {
+      console.log(`Session ${sessionId} synchronized: ${response.data.previous_status} -> ${response.data.current_status}`)
+    }
+    
+    return response.data
+  } catch (err: any) {
+    console.error('Erreur lors de la synchronisation:', err)
+    error.value = err.response?.data?.error_message || 'Erreur lors de la synchronisation'
+    throw err
+  }
+}
+
+// Synchroniser toutes les sessions
+async function syncAllSessions() {
+  isSyncing.value = true
+  try {
+    console.log('Syncing all sessions...')
+    const response = await axios.post('/terminals/sync-all')
+    
+    syncAllResults.value = response.data
+    showSyncModal.value = true
+    lastSyncTime.value = new Date()
+    
+    // Recharger les sessions
+    await loadSessions()
+    
+    console.log('All sessions synchronized:', response.data)
+    return response.data
+  } catch (err: any) {
+    console.error('Erreur lors de la synchronisation globale:', err)
+    error.value = err.response?.data?.error_message || 'Erreur lors de la synchronisation globale'
+    throw err
+  } finally {
+    isSyncing.value = false
+  }
+}
+
+// Utilitaires pour l'affichage
+function getSyncResultForSession(sessionId: string) {
+  return syncResults.value.get(sessionId)
+}
+
+function formatSyncTime(time: Date | string) {
+  if (!time) return ''
+  return new Date(time).toLocaleTimeString('fr-FR')
+}
+
 </script>
 
 <style scoped>
@@ -841,6 +1013,115 @@ function fallbackCopyTextToClipboard(text: string) {
   background-color: transparent;
   border-color: #dc3545;
   color: #dc3545;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.status-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sync-indicator {
+  font-size: 0.75rem;
+}
+
+.sync-badge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.7rem;
+}
+
+.sync-badge.updated {
+  background-color: #e1f5fe;
+  color: #01579b;
+}
+
+.sync-badge.current {
+  background-color: #e8f5e8;
+  color: #2e7d32;
+}
+
+.sync-details {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border-left: 4px solid #17a2b8;
+}
+
+.sync-title {
+  margin: 0 0 10px 0;
+  font-size: 0.9rem;
+  color: #495057;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sync-info-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 5px;
+}
+
+.sync-info-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+}
+
+.sync-info-item .label {
+  font-weight: 600;
+  color: #6c757d;
+}
+
+.sync-info-item .value {
+  color: #495057;
+}
+
+.sync-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.summary-item .label {
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.summary-item .value {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.sync-errors {
+  margin-top: 20px;
+}
+
+.sync-errors ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.sync-errors li {
+  padding: 5px 0;
+  border-bottom: 1px solid #eee;
 }
 
 .text-success { color: #28a745 !important; }
