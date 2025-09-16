@@ -58,6 +58,9 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
             checkoutError: 'Checkout Error',
             portalError: 'Portal Error',
             usageLimitError: 'Usage Limit Error',
+            dashboardTitle: 'Subscription Dashboard',
+            dashboardSubtitle: 'Manage your subscription, usage, and billing',
+            loadingDashboard: 'Loading dashboard...'
         }
     })
 
@@ -85,6 +88,9 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
             checkoutError: 'Erreur de Paiement',
             portalError: 'Erreur du Portail',
             usageLimitError: 'Erreur de Limite d\'Usage',
+            dashboardTitle: 'Tableau de Bord Abonnement',
+            dashboardSubtitle: 'Gérez votre abonnement, utilisation et facturation',
+            loadingDashboard: 'Chargement du tableau de bord...'
         }
     })
 

@@ -110,23 +110,6 @@ const recentInvoices = ref([])
 const lastCanceledSubscription = ref(null)
 const downloadingInvoices = ref<Set<string>>(new Set())
 
-// Traductions i18n (simplifiées - seulement les nouvelles)
-useI18n().mergeLocaleMessage('en', {
-  subscriptions: {
-    dashboardTitle: 'Subscription Dashboard',
-    dashboardSubtitle: 'Manage your subscription, usage, and billing',
-    loadingDashboard: 'Loading dashboard...'
-  }
-})
-
-useI18n().mergeLocaleMessage('fr', {
-  subscriptions: {
-    dashboardTitle: 'Tableau de Bord Abonnement',
-    dashboardSubtitle: 'Gérez votre abonnement, utilisation et facturation',
-    loadingDashboard: 'Chargement du tableau de bord...'
-  }
-})
-
 // Lifecycle
 onMounted(async () => {
   await loadDashboardData()

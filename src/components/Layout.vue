@@ -1,6 +1,10 @@
 <template>
   <div class="wrapper">
-    <MainNavMenu class="main-nav-menu" :class="{ collapsed: isMenuCollapsed }" />
+    <MainNavMenu 
+      class="main-nav-menu" 
+      :class="{ collapsed: isMenuCollapsed }"
+      :isMenuCollapsed="isMenuCollapsed"
+    />
     <div class="inner-wrapper" :class="{ 'menu-collapsed': isMenuCollapsed }">
       <TopMenu @toggle-menu="toggleMenu" />
       <div class="content-area">
@@ -60,7 +64,8 @@ onUnmounted(() => {
 }
 
 .main-nav-menu.collapsed {
-  width: 60px; /* Width of the icons */
+  width: 60px;
+  padding: 10px;
 }
 
 .inner-wrapper {
