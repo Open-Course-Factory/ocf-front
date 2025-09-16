@@ -90,11 +90,42 @@ const basicRoutes = [
         children: [{ path: '', component: User }],
       },
       { path: 'subscription-plans', name: 'SubscriptionPlans', component: () => import('../components/Pages/SubscriptionPlans.vue'), meta: { requiresAuth: true } },
-      // Dans les enfants du Layout
       { path: 'billing-addresses', name: 'BillingAddresses', component: () => import('../components/Pages/BillingAddresses.vue'), meta: { requiresAuth: true } },
       { path: 'payment-methods', name: 'PaymentMethods', component: () => import('../components/Pages/PaymentMethods.vue'), meta: { requiresAuth: true } },
       { path: 'invoices', name: 'Invoices', component: () => import('../components/Pages/Invoices.vue'), meta: { requiresAuth: true } },
       { path: 'subscription-dashboard', name: 'SubscriptionDashboard', component: () => import('../components/Pages/SubscriptionDashboard.vue'), meta: { requiresAuth: true } },
+      // Route pour le checkout avec planId
+      { 
+        path: 'checkout/:planId', 
+        name: 'Checkout', 
+        component: () => import('../components/Flows/CheckoutFlow.vue'), 
+        meta: { requiresAuth: true },
+        props: true
+      },
+
+      // Route pour le checkout sans planId (sélection depuis la page des plans)
+      { 
+        path: 'checkout', 
+        name: 'CheckoutSelect', 
+        component: () => import('../components/Flows/CheckoutFlow.vue'), 
+        meta: { requiresAuth: true }
+      },
+
+      // Route pour le succès de paiement (retour depuis Stripe)
+      { 
+        path: 'checkout-success', 
+        name: 'CheckoutSuccess', 
+        component: () => import('../components/Flows/CheckoutSuccess.vue'), 
+        meta: { requiresAuth: true }
+      },
+
+      // Route pour l'annulation de paiement (retour depuis Stripe)
+      { 
+        path: 'checkout-canceled',
+        name: 'CheckoutCanceled', 
+        component: () => import('../components/Flows/CheckoutCanceled.vue'), 
+        meta: { requiresAuth: true }
+      }
     ],
   },
 ];
