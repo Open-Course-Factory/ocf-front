@@ -444,7 +444,9 @@ ul {
   top: 0;
   z-index: 100;
   background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: 0 0 16px 16px;
+  border-radius: 12px;
 }
 
 .toolbar {
@@ -452,7 +454,8 @@ ul {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 }
 
 .toolbar-left {
@@ -491,8 +494,8 @@ ul {
 
 /* Contenu principal */
 .main-content {
-  width: 95%;
-  margin: 30px 42px;
+  width: 98%;
+  margin: 1%;
 }
 
 /* Messages d'état */

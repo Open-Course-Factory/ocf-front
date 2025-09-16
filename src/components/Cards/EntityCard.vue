@@ -98,9 +98,9 @@ function shouldDisplayProperty(key: string) {
   border-radius: 8px;
   padding: 24px;
   background-color: #fff;
-  margin-bottom: 24px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   animation: fadeIn 0.3s ease-in-out;
+  width: 100%;
 }
 
 .entity-name {

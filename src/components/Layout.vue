@@ -73,8 +73,6 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   width: calc(100% - 250px); /* Adjust width to account for the MainNavMenu */
-  padding-top: 60px; /* Height of the TopMenu */
-  padding: 10px;
   animation: fadeIn 0.5s ease-in-out;
   transition: margin-left 0.3s ease, width 0.3s ease;
   overflow-y: auto; /* Allow scrolling within the content area */
