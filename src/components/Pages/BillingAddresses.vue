@@ -55,13 +55,13 @@ const setAsDefault = async (addressId: string) => {
 };
 
 // Obtenir les pays les plus courants pour l'autocomplétion
-const getCountrySuggestions = () => {
-    return [
-        'France', 'Belgium', 'Switzerland', 'Canada', 
-        'United States', 'Germany', 'Italy', 'Spain', 
-        'United Kingdom', 'Netherlands'
-    ];
-};
+// const getCountrySuggestions = () => {
+//     return [
+//         'France', 'Belgium', 'Switzerland', 'Canada', 
+//         'United States', 'Germany', 'Italy', 'Spain', 
+//         'United Kingdom', 'Netherlands'
+//     ];
+// };
 </script>
 
 <template>

@@ -47,6 +47,11 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             stripe_price_id: 'Stripe Price ID',
             modify: 'Modify the plan', 
             add: 'Add a plan',
+            current_subscription_plan: 'Current plan',
+            no_active_subscription: 'No active subscription',
+            subscribe_to_start : 'Subscribe to start',
+            view_plans: 'View plans',
+            reactivate_subscription: 'Reactivate subscription'
         }
     })
 
@@ -69,6 +74,11 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             stripe_price_id: 'ID Prix Stripe',
             modify: 'Modifier le plan', 
             add: 'Ajouter un plan',
+            current_subscription_plan: 'Plan actuel',
+            no_active_subscription: 'Pas d\'abonnement actif',
+            subscribe_to_start: 'Abonnez-vous pour plus de sessions !',
+            view_plans: 'Voir les abonnements',
+            reactivate_subscription: 'Réactiver l\'abonnement'
         }
     })
 

@@ -67,13 +67,13 @@
         </li>
         <li>
           <router-link to="/subscription-plans" class="menu-item" :title="t(`subscriptionPlans.pageTitle`)">
-            <i class="fas fa-credit-card"></i>
+            <i class="fas fa-calendar"></i>
             <span class="menu-text">{{ t(`subscriptionPlans.pageTitle`) }}</span>
           </router-link>
         </li>
         <li>
           <router-link to="/billing-addresses" class="menu-item" :title="t(`billingAddresses.pageTitle`)">
-            <i class="fas fa-credit-card"></i>
+            <i class="fas fa-city"></i>
             <span class="menu-text">{{ t(`billingAddresses.pageTitle`) }}</span>
           </router-link>
         </li>
@@ -85,8 +85,14 @@
         </li>
         <li>
           <router-link to="/invoices" class="menu-item" :title="t(`invoices.pageTitle`)">
-            <i class="fas fa-credit-card"></i>
+            <i class="fas fa-money-bill"></i>
             <span class="menu-text">{{ t(`invoices.pageTitle`) }}</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/subscription-dashboard" class="menu-item" :title="t('subscriptions.dashboardTitle')">
+            <i class="fas fa-tachometer-alt"></i>
+            <span class="menu-text">{{ t('subscriptions.dashboardTitle') }}</span>
           </router-link>
         </li>
         
@@ -127,6 +133,7 @@ import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans.ts';
 import { useBillingAddressesStore } from '../../stores/billingAddresses.ts';
 import { usePaymentMethodsStore } from '../../stores/paymentMethods.ts';
 import { useInvoicesStore } from '../../stores/invoices.ts';
+import { useSubscriptionsStore } from '../../stores/subscriptions.ts';
 
 //needed for i18n
 useCoursesStore();
@@ -139,6 +146,7 @@ useSubscriptionPlansStore();
 useBillingAddressesStore();
 usePaymentMethodsStore();
 useInvoicesStore();
+useSubscriptionsStore();
 
 const currentUser = useCurrentUserStore();
 const isMenuCollapsed = ref(false);
