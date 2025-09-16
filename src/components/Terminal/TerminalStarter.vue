@@ -1,7 +1,7 @@
 <!-- 
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2024 Solution Libre
+ * Copyright (C) 2023-2025 Solution Libre
  */
 -->
 

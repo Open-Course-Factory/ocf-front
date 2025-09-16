@@ -1,7 +1,7 @@
 <!-- 
 /*
  * Open Machine Factory - Front
- * Copyright (C) 2023-2024 Solution Libre
+ * Copyright (C) 2023-2025 Solution Libre
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
