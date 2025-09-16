@@ -27,7 +27,7 @@
     <div class="toolbar-container">
       <div class="toolbar">
         <div class="toolbar-left">
-          <h2>{{ t(`${props.entityName}.pageTitle`) }}</h2>
+          <h2>{{ t(`${translationKey}.pageTitle`) }}</h2>
         </div>
         <div class="toolbar-right">
           <!-- Filtres par entités parentes -->
@@ -145,6 +145,7 @@ import EntityModal from '../Modals/EntityModal.vue';
 import EntityCard from '../Cards/EntityCard.vue';
 import { useI18n } from 'vue-i18n';
 import { Store } from 'pinia';
+import { getTranslationKey } from '../../utils';
 
 const { t } = useI18n();
 
@@ -187,7 +188,7 @@ const parentFilters = computed(() => {
       if (field && parentStore && parentStore.entities && parentStore.entities.length > 0) {
         filters.push({
           key: key,
-          label: field.label || t(`${props.entityName}.${key}`),
+          label: field.label || t(`${translationKey}.${key}`),
           options: parentStore.selectDatas || []
         });
       }
@@ -370,6 +371,8 @@ function openModal(entity: any) {
   showModal.value = true;
   entityToEdit.value = entity;
 }
+
+const translationKey = computed(() => getTranslationKey(props.entityName));
 </script>
 
 <style scoped>

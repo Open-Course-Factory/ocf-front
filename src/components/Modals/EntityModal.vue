@@ -29,10 +29,10 @@
       </button>
       <div class="modal-content">
         <h2 v-if="entity">
-          <i class="fas fa-edit"></i> {{ t(`${props.entityName}.modify`) }}
+          <i class="fas fa-edit"></i> {{ t(`${translationKey}.modify`) }}
         </h2>
         <h2 v-else>
-          <i class="fas fa-plus"></i> {{ t(`${props.entityName}.add`) }}
+          <i class="fas fa-plus"></i> {{ t(`${translationKey}.add`) }}
         </h2>
         <div class="checkout-form">
           <div v-for="[name, field] of entityStore.fieldList" class="form-group">
@@ -87,9 +87,10 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, watch } from 'vue';
+import { computed, reactive, watch } from 'vue';
 import { Store } from 'pinia';
 import { useI18n } from 'vue-i18n';
+import { getTranslationKey } from '../../utils';
 
 const { t } = useI18n();
 
@@ -211,6 +212,8 @@ function prepareNeededField() {
     });
   }
 }
+
+const translationKey = computed(() => getTranslationKey(props.entityName));
 </script>
 
 <style scoped>

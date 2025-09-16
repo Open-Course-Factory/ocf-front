@@ -65,6 +65,31 @@
             <span class="menu-text">{{ t('userTerminalKeys.pageTitle') }}</span>
           </router-link>
         </li>
+        <li>
+          <router-link to="/subscription-plans" class="menu-item" :title="t(`subscriptionPlans.pageTitle`)">
+            <i class="fas fa-credit-card"></i>
+            <span class="menu-text">{{ t(`subscriptionPlans.pageTitle`) }}</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/billing-addresses" class="menu-item" :title="t(`billingAddresses.pageTitle`)">
+            <i class="fas fa-credit-card"></i>
+            <span class="menu-text">{{ t(`billingAddresses.pageTitle`) }}</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/payment-methods" class="menu-item" :title="t(`paymentMethods.pageTitle`)">
+            <i class="fas fa-credit-card"></i>
+            <span class="menu-text">{{ t(`paymentMethods.pageTitle`) }}</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/invoices" class="menu-item" :title="t(`invoices.pageTitle`)">
+            <i class="fas fa-credit-card"></i>
+            <span class="menu-text">{{ t(`invoices.pageTitle`) }}</span>
+          </router-link>
+        </li>
+        
         <!-- <li v-if="currentUser.userRoles[0] === 'administrator'">
           <router-link to="/usernames" class="menu-item" :title="t(`usernames.pageTitle`)">
             <i class="fas fa-users"></i>
@@ -98,7 +123,10 @@ import { ref } from 'vue';
 import { useI18n } from "vue-i18n"
 import { useTerminalsStore } from '../../stores/terminals.ts';
 import { useUserTerminalKeysStore } from '../../stores/userTerminalKeys.ts';
-
+import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans.ts';
+import { useBillingAddressesStore } from '../../stores/billingAddresses.ts';
+import { usePaymentMethodsStore } from '../../stores/paymentMethods.ts';
+import { useInvoicesStore } from '../../stores/invoices.ts';
 
 //needed for i18n
 useCoursesStore();
@@ -107,6 +135,10 @@ useThemesStore();
 useGenerationsStore();
 useTerminalsStore();
 useUserTerminalKeysStore();
+useSubscriptionPlansStore();
+useBillingAddressesStore();
+usePaymentMethodsStore();
+useInvoicesStore();
 
 const currentUser = useCurrentUserStore();
 const isMenuCollapsed = ref(false);

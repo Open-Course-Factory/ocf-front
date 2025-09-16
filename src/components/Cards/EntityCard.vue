@@ -39,7 +39,7 @@
           <!-- If the property is a sub-entity, render it recursively -->
           <div v-if="isSubEntity(value)">
             <h3 class="subentity-title">
-              <i class="fas fa-folder-open"></i> {{ key }}
+              <i class="fas fa-folder-open"></i> {{ t(`${translationKey}.${key}`) }}
             </h3>
             <EntityCard
               :entity="value"
@@ -49,7 +49,7 @@
           <!-- Otherwise, display the property name and value -->
           <div v-else class="property-item">
             <span class="property-name">
-              <i class="fas fa-info-circle"></i> {{ key }}:
+              <i class="fas fa-info-circle"></i> {{ t(`${translationKey}.${key}`) }}:
             </span>
             <span class="property-value">{{ value }}</span>
           </div>
@@ -61,6 +61,12 @@
 
 <script setup lang="ts">
 import { Store } from 'pinia';
+import { getTranslationKey } from '../../utils';
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
+
+const translationKey = computed(() => getTranslationKey(props.entityStore.$id || 'unknown'));
 
 const props = defineProps<{
   entity: Record<string, any>;
