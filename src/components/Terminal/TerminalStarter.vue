@@ -41,7 +41,7 @@
         
         <div class="form-group">
           <label for="expiry">Durée d'expiration (secondes, optionnel):</label>
-          <input 
+          <input
             id="expiry"
             v-model.number="expiryInput"
             type="number"
@@ -52,6 +52,28 @@
           />
           <small class="form-text text-muted">
             Entre 60 secondes (1 min) et 3600 secondes (1h). Laissez vide pour la valeur par défaut.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="instanceType">Type d'instance:</label>
+          <select
+            id="instanceType"
+            v-model="selectedInstanceType"
+            class="form-control"
+            :disabled="loadingInstanceTypes"
+          >
+            <option v-if="loadingInstanceTypes" value="">Chargement...</option>
+            <option
+              v-for="instance in instanceTypes"
+              :key="instance.prefix"
+              :value="instance.prefix"
+            >
+              {{ instance.name }} - {{ instance.description }}
+            </option>
+          </select>
+          <small class="form-text text-muted">
+            Sélectionnez le type d'environnement pour votre session terminal.
           </small>
         </div>
 
@@ -116,6 +138,23 @@
           </div>
         </div>
       </div>
+      <div class="panel-body">
+        <div class="session-details">
+          <div class="detail-item" v-if="selectedInstanceInfo">
+            <strong><i class="fas fa-server"></i> Type d'instance:</strong>
+            <span class="instance-info">
+              {{ selectedInstanceInfo.name }} - {{ selectedInstanceInfo.description }}
+              <small class="text-muted">({{ selectedInstanceInfo.prefix }})</small>
+            </span>
+          </div>
+          <div class="detail-item">
+            <strong><i class="fas fa-info-circle"></i> Statut:</strong>
+            <span :class="getStatusClass(sessionInfo?.status)">
+              {{ sessionInfo?.status }}
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Panneau du terminal -->
@@ -160,8 +199,9 @@
       <div class="terminal-footer">
         <div class="terminal-info">
           <small class="text-muted">
-            Session: {{ sessionInfo?.session_id }} | 
+            Session: {{ sessionInfo?.session_id }} |
             Statut: {{ sessionInfo?.status }} |
+            <span v-if="selectedInstanceInfo">Instance: {{ selectedInstanceInfo.name }} ({{ selectedInstanceInfo.prefix }}) | </span>
             <span v-if="isConnected" class="text-success">WebSocket connecté</span>
             <span v-else class="text-danger">WebSocket déconnecté</span>
           </small>
@@ -195,8 +235,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import axios from 'axios'
+import { terminalService } from '../../services/terminalService'
 
 // Définir les émissions
 const emit = defineEmits(['session-started'])
@@ -233,9 +274,39 @@ let timerInterval = null
 // Formulaire
 const termsInput = ref('J\'accepte les conditions d\'utilisation du service terminal.')
 const expiryInput = ref(3600) // 1 heure par défaut
+const selectedInstanceType = ref('')
+
+// Instance types
+const instanceTypes = ref([])
+const loadingInstanceTypes = ref(false)
 
 // Références DOM
 const terminalRef = ref(null)
+
+// Computed properties
+const selectedInstanceInfo = computed(() => {
+  if (!selectedInstanceType.value || !instanceTypes.value.length) {
+    return null
+  }
+  return instanceTypes.value.find(instance => instance.prefix === selectedInstanceType.value)
+})
+
+// Helper functions
+function getStatusClass(status) {
+  switch (status?.toLowerCase()) {
+    case 'running':
+    case 'active':
+      return 'text-success'
+    case 'stopped':
+    case 'inactive':
+      return 'text-danger'
+    case 'starting':
+    case 'pending':
+      return 'text-warning'
+    default:
+      return 'text-muted'
+  }
+}
 
 // Initialisation dynamique des modules xterm
 async function initXterm() {
@@ -304,10 +375,31 @@ async function initXterm() {
   }
 }
 
+async function loadInstanceTypes() {
+  try {
+    loadingInstanceTypes.value = true
+    instanceTypes.value = await terminalService.getInstanceTypes()
+    // Set default selection to first available instance type
+    if (instanceTypes.value.length > 0) {
+      selectedInstanceType.value = instanceTypes.value[0].prefix
+    }
+    console.log('Instance types loaded:', instanceTypes.value)
+  } catch (error) {
+    console.error('Failed to load instance types:', error)
+    // Set a fallback if loading fails
+    instanceTypes.value = [{ name: 'default', prefix: 'default', description: 'Default instance' }]
+    selectedInstanceType.value = 'default'
+  } finally {
+    loadingInstanceTypes.value = false
+  }
+}
+
 onMounted(async () => {
   console.log('TerminalStarter monté')
   // Pré-charger xterm.js
   await initXterm()
+  // Charger les types d'instances
+  await loadInstanceTypes()
 })
 
 onBeforeUnmount(() => {
@@ -338,6 +430,12 @@ function cleanup() {
 function resetForm() {
   termsInput.value = 'J\'accepte les conditions d\'utilisation du service terminal.'
   expiryInput.value = 3600
+  // Reset to first available instance type or empty if none loaded
+  if (instanceTypes.value.length > 0) {
+    selectedInstanceType.value = instanceTypes.value[0].prefix
+  } else {
+    selectedInstanceType.value = ''
+  }
   errorMessage.value = ''
   terminalError.value = ''
   showErrorPanel.value = false
@@ -357,7 +455,8 @@ async function startNewSession() {
   try {
     const sessionData = {
       terms: termsInput.value.trim(),
-      ...(expiryInput.value && { expiry: expiryInput.value })
+      ...(expiryInput.value && { expiry: expiryInput.value }),
+      ...(selectedInstanceType.value && { instance_type: selectedInstanceType.value })
     }
     
     console.log('Données de session:', sessionData)
@@ -937,6 +1036,48 @@ function formatTime(seconds) {
 
 .text-muted {
   color: #6c757d;
+}
+
+.text-warning {
+  color: #ffc107;
+}
+
+.session-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border-left: 4px solid #17a2b8;
+}
+
+.detail-item strong {
+  min-width: 140px;
+  color: #495057;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.instance-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.instance-info small {
+  background-color: #e9ecef;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: monospace;
 }
 
 /* Responsive */

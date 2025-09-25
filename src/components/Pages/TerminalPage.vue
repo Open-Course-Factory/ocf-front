@@ -69,7 +69,7 @@ console.log('Route query:', route.query)
 </script>
 
 <style scoped>
-.terminal-page {
+.terminals-page {
   width: 100%;
   height: 100vh;
   margin: 0;

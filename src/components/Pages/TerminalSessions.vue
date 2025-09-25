@@ -155,6 +155,13 @@
                     <span class="label">Utilisateur:</span>
                     <span class="value">{{ session.user_id }}</span>
                   </div>
+                  <div class="detail-row" v-if="session.instance_type">
+                    <span class="label">Type d'instance:</span>
+                    <span class="value instance-type">
+                      {{ getInstanceName(session.instance_type) }}
+                      <i class="fas fa-server" title="Instance type"></i>
+                    </span>
+                  </div>
                 </div>
 
                 <div v-if="getSyncResultForSession(session.session_id)" class="sync-details">
@@ -360,6 +367,7 @@
 <script setup lang="ts">
 import { ref, onMounted, defineAsyncComponent } from 'vue'
 import axios from 'axios'
+import { terminalService } from '../../services/terminalService'
 
 // Import dynamique du composant TerminalStarter
 const TerminalStarter = defineAsyncComponent(() => import('../Terminal/TerminalStarter.vue'))
@@ -384,17 +392,20 @@ const syncResults = ref(new Map()) // Map<sessionId, syncResult>
 const showSyncModal = ref(false)
 const syncAllResults = ref(null)
 
+const instanceTypes = ref([])
+
 onMounted(() => {
   console.log('TerminalsSimple mounted')
   loadSessions()
-  
+  loadInstanceTypes()
+
   // Rafraîchir les sessions toutes les 30 secondes si on est sur l'onglet sessions
   const interval = setInterval(() => {
     if (activeTab.value === 'sessions') {
       loadSessions()
     }
   }, 30000)
-  
+
   // Cleanup
   return () => clearInterval(interval)
 })
@@ -591,6 +602,23 @@ function getSyncResultForSession(sessionId: string) {
 function formatSyncTime(time: Date | string) {
   if (!time) return ''
   return new Date(time).toLocaleTimeString('fr-FR')
+}
+
+async function loadInstanceTypes() {
+  try {
+    instanceTypes.value = await terminalService.getInstanceTypes()
+    console.log('Instance types loaded:', instanceTypes.value)
+  } catch (error) {
+    console.error('Failed to load instance types:', error)
+  }
+}
+
+function getInstanceName(prefix: string) {
+  if (!prefix || !instanceTypes.value.length) {
+    return prefix || 'Unknown'
+  }
+  const instance = instanceTypes.value.find(type => type.prefix === prefix)
+  return instance ? instance.name : prefix
 }
 
 </script>
@@ -1128,6 +1156,19 @@ function formatSyncTime(time: Date | string) {
 .text-danger { color: #dc3545 !important; }
 .text-warning { color: #ffc107 !important; }
 .text-muted { color: #6c757d !important; }
+
+.instance-type {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  color: #17a2b8;
+}
+
+.instance-type i {
+  color: #6c757d;
+  opacity: 0.7;
+}
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
