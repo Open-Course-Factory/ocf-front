@@ -462,7 +462,7 @@ async function startNewSession() {
     console.log('Données de session:', sessionData)
     startStatus.value = 'Envoi de la requête au serveur...'
     
-    const response = await axios.post('/terminals/start-session', sessionData)
+    const response = await axios.post('/terminal-sessions/start-session', sessionData)
     console.log('Réponse serveur:', response.data)
     
     sessionInfo.value = {
@@ -561,7 +561,7 @@ async function connectWebSocket() {
     // Construire l'URL WebSocket
     const protocol = import.meta.env.VITE_PROTOCOL === 'https' ? 'wss' : 'ws'
     const apiUrl = import.meta.env.VITE_API_URL
-    const wsUrl = `${protocol}://${apiUrl}/api/v1/terminals/${sessionId}/console?width=${terminal ? terminal.cols : 80}&height=${terminal ? terminal.rows : 24}`
+    const wsUrl = `${protocol}://${apiUrl}/api/v1/terminal-sessions/${sessionId}/console?width=${terminal ? terminal.cols : 80}&height=${terminal ? terminal.rows : 24}`
     
     console.log('Connexion WebSocket:', wsUrl)
     
@@ -614,7 +614,7 @@ async function stopSession() {
   
   try {
     const sessionId = sessionInfo.value.session_id
-    await axios.post(`/terminals/${sessionId}/stop`)
+    await axios.post(`/terminal-sessions/${sessionId}/stop`)
     
     console.log('Session arrêtée avec succès')
     // Reset de l'interface

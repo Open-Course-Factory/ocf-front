@@ -35,19 +35,26 @@
 
     <!-- Navigation par onglets -->
     <div class="tabs-navigation">
-      <button 
+      <button
         :class="['tab-btn', { active: activeTab === 'starter' }]"
         @click="activeTab = 'starter'"
       >
         <i class="fas fa-play"></i>
         Nouvelle Session
       </button>
-      <button 
+      <button
         :class="['tab-btn', { active: activeTab === 'sessions' }]"
         @click="activeTab = 'sessions'; loadSessions()"
       >
         <i class="fas fa-list"></i>
-        Sessions Actives ({{ sessions.length }})
+        Mes Sessions ({{ sessions.length }})
+      </button>
+      <button
+        :class="['tab-btn', { active: activeTab === 'shared' }]"
+        @click="activeTab = 'shared'; loadSharedSessions()"
+      >
+        <i class="fas fa-share-alt"></i>
+        Partagées avec moi ({{ sharedSessions.length }})
       </button>
     </div>
 
@@ -74,11 +81,11 @@
       <div v-if="activeTab === 'sessions'" class="tab-pane active">
         <div class="sessions-section">
           <div class="section-header">
-            <h3>Sessions Terminal Actives</h3>
+            <h3>Mes Sessions Terminal</h3>
             <div class="header-actions">
               <!-- Bouton de synchronisation globale -->
-              <button 
-                class="btn btn-info" 
+              <button
+                class="btn btn-info"
                 @click="syncAllSessions"
                 :disabled="isSyncing"
                 title="Synchroniser toutes les sessions avec l'API Terminal Trainer"
@@ -257,7 +264,7 @@
               </div>
 
               <div class="card-actions">
-                <button 
+                <button
                   class="btn btn-info btn-sm"
                   @click="syncSession(session.session_id)"
                   title="Synchroniser cette session avec l'API Terminal Trainer"
@@ -265,7 +272,23 @@
                   <i class="fas fa-sync-alt"></i>
                   Sync
                 </button>
-                <button 
+                <button
+                  class="btn btn-success btn-sm"
+                  @click="openSharingModal(session.session_id)"
+                  title="Partager ce terminal"
+                >
+                  <i class="fas fa-share-alt"></i>
+                  Partager
+                </button>
+                <button
+                  class="btn btn-warning btn-sm"
+                  @click="openAccessModal(session.session_id)"
+                  title="Gérer les accès"
+                >
+                  <i class="fas fa-users-cog"></i>
+                  Accès
+                </button>
+                <button
                   class="btn btn-danger btn-sm"
                   @click="stopSession(session.session_id)"
                   :disabled="session.status !== 'active'"
@@ -275,6 +298,169 @@
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Onglet Sessions Partagées -->
+      <div v-if="activeTab === 'shared'" class="tab-pane active">
+        <div class="sessions-section">
+          <div class="section-header">
+            <h3>Sessions Partagées avec Moi</h3>
+            <div class="header-actions">
+              <button class="btn btn-secondary" @click="loadSharedSessions">
+                <i class="fas fa-sync" :class="{ 'fa-spin': isLoadingShared }"></i>
+                Actualiser
+              </button>
+            </div>
+          </div>
+
+          <div v-if="isLoadingShared && sharedSessions.length === 0" class="loading-section">
+            <i class="fas fa-spinner fa-spin"></i> Chargement des sessions partagées...
+          </div>
+
+          <div v-else-if="error" class="alert alert-danger">
+            {{ error }}
+            <button class="btn btn-sm btn-outline-danger" @click="error = ''; loadSharedSessions()">
+              Réessayer
+            </button>
+          </div>
+
+          <div v-if="sharedSessions.length > 0" class="sessions-grid">
+            <div v-for="sharedSession in sharedSessions" :key="sharedSession.terminal.id" class="session-card shared-terminal">
+
+              <!-- En-tête avec indicateur de partage -->
+              <div class="card-header">
+                <h5 class="session-id">{{ sharedSession.terminal.session_id }}</h5>
+                <div class="status-group">
+                  <span :class="['status-badge', getStatusClass(sharedSession.terminal.status)]">
+                    <i class="fas fa-circle"></i>
+                    {{ sharedSession.terminal.status || 'unknown' }}
+                  </span>
+                  <div class="sharing-indicator">
+                    <span :class="['access-badge', getAccessBadgeClass(sharedSession.access_level)]">
+                      <i :class="getAccessIcon(sharedSession.access_level)"></i>
+                      {{ getAccessLabel(sharedSession.access_level) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card-body">
+                <div class="session-details">
+                  <div class="detail-row">
+                    <span class="label">Terminal ID:</span>
+                    <span class="value">{{ sharedSession.terminal.id }}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Session ID:</span>
+                    <span class="value">{{ sharedSession.terminal.session_id }}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Partagé par:</span>
+                    <span class="value">{{ getUserDisplayName(sharedSession.shared_by) }}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Partagé le:</span>
+                    <span class="value">{{ formatDate(sharedSession.shared_at) }}</span>
+                  </div>
+                  <div class="detail-row" v-if="sharedSession.expires_at">
+                    <span class="label">Expire le:</span>
+                    <span class="value">{{ formatDate(sharedSession.expires_at) }}</span>
+                  </div>
+                  <div class="detail-row" v-if="sharedSession.terminal.instance_type">
+                    <span class="label">Type d'instance:</span>
+                    <span class="value instance-type">
+                      {{ getInstanceName(sharedSession.terminal.instance_type) }}
+                      <i class="fas fa-server" title="Instance type"></i>
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Section intégration iframe pour les sessions actives -->
+                <div class="iframe-section" v-if="sharedSession.terminal.status === 'active' && ['write', 'admin'].includes(sharedSession.access_level)">
+                  <h6 class="iframe-title">
+                    <i class="fas fa-external-link-alt"></i>
+                    Accès Terminal
+                  </h6>
+
+                  <div class="iframe-controls">
+                    <div class="url-display">
+                      <input
+                        :value="getTerminalUrl(sharedSession.terminal.session_id)"
+                        readonly
+                        class="url-input"
+                        ref="urlInput"
+                      />
+                      <button
+                        class="btn btn-outline-secondary btn-sm"
+                        @click="copyUrlToClipboard(sharedSession.terminal.session_id)"
+                        :title="'Copier le lien'"
+                      >
+                        <i :class="copiedSessions.has(sharedSession.terminal.session_id) ? 'fas fa-check' : 'fas fa-copy'"></i>
+                      </button>
+                    </div>
+
+                    <div class="iframe-actions">
+                      <button
+                        class="btn btn-primary btn-sm"
+                        @click="openTerminalInNewTab(sharedSession.terminal.session_id)"
+                      >
+                        <i class="fas fa-external-link-alt"></i>
+                        Ouvrir
+                      </button>
+
+                      <button
+                        class="btn btn-info btn-sm"
+                        @click="toggleIframePreview(sharedSession.terminal.session_id)"
+                      >
+                        <i :class="showPreviews.has(sharedSession.terminal.session_id) ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                        {{ showPreviews.has(sharedSession.terminal.session_id) ? 'Masquer' : 'Aperçu' }}
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Aperçu iframe -->
+                  <div v-if="showPreviews.has(sharedSession.terminal.session_id)" class="iframe-preview">
+                    <div class="iframe-container">
+                      <iframe
+                        :src="getTerminalUrl(sharedSession.terminal.session_id)"
+                        width="100%"
+                        height="300"
+                        frameborder="0"
+                        :title="`Terminal ${sharedSession.terminal.session_id}`"
+                      ></iframe>
+                    </div>
+                    <p class="iframe-info">
+                      <i class="fas fa-info-circle"></i>
+                      Aperçu du terminal partagé - Niveau d'accès: {{ getAccessLabel(sharedSession.access_level) }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card-actions">
+                <button
+                  v-if="sharedSession.terminal.status === 'active' && sharedSession.access_level === 'admin'"
+                  class="btn btn-danger btn-sm"
+                  @click="stopSession(sharedSession.terminal.session_id)"
+                  title="Arrêter le terminal (accès admin requis)"
+                >
+                  <i class="fas fa-stop"></i>
+                  Arrêter
+                </button>
+                <span v-else-if="sharedSession.access_level === 'read'" class="access-note">
+                  <i class="fas fa-eye"></i>
+                  Accès lecture seule
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="empty-section">
+            <i class="fas fa-share-alt fa-3x"></i>
+            <h4>Aucune session partagée</h4>
+            <p>Aucun terminal n'est actuellement partagé avec vous.</p>
           </div>
         </div>
       </div>
@@ -361,16 +547,35 @@
         </div>
       </div>
     </div>
+
+    <!-- Modals de partage -->
+    <TerminalSharingModal
+      :show="showSharingModal"
+      :terminal-id="selectedTerminalId"
+      @close="closeSharingModal"
+      @shared="onTerminalShared"
+    />
+
+    <TerminalAccessModal
+      :show="showAccessModal"
+      :terminal-id="selectedTerminalId"
+      :refresh-trigger="accessModalRefreshTrigger"
+      @close="closeAccessModal"
+      @open-sharing="openSharingModal"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, defineAsyncComponent } from 'vue'
 import axios from 'axios'
-import { terminalService } from '../../services/terminalService'
+import { terminalService, type SharedTerminalInfo } from '../../services/terminalService'
+import { userService, type User } from '../../services/userService'
 
-// Import dynamique du composant TerminalStarter
+// Import dynamique des composants
 const TerminalStarter = defineAsyncComponent(() => import('../Terminal/TerminalStarter.vue'))
+const TerminalSharingModal = defineAsyncComponent(() => import('../Terminal/TerminalSharingModal.vue'))
+const TerminalAccessModal = defineAsyncComponent(() => import('../Terminal/TerminalAccessModal.vue'))
 
 const sessions = ref([])
 const isLoading = ref(false)
@@ -393,6 +598,15 @@ const showSyncModal = ref(false)
 const syncAllResults = ref(null)
 
 const instanceTypes = ref([])
+
+// États pour les fonctionnalités de partage
+const sharedSessions = ref<SharedTerminalInfo[]>([])
+const isLoadingShared = ref(false)
+const users = ref<Map<string, User>>(new Map()) // Cache for user data
+const showSharingModal = ref(false)
+const showAccessModal = ref(false)
+const selectedTerminalId = ref<string | null>(null)
+const accessModalRefreshTrigger = ref(0)
 
 onMounted(() => {
   console.log('TerminalsSimple mounted')
@@ -418,7 +632,7 @@ async function loadSessions() {
   
   try {
     console.log('Loading sessions...')
-    const response = await axios.get('/terminals/user-sessions')
+    const response = await axios.get('/terminal-sessions/user-sessions')
     sessions.value = response.data || []
     console.log('Sessions loaded:', sessions.value)
   } catch (err: any) {
@@ -438,7 +652,7 @@ async function stopSession(sessionId: string) {
   
   try {
     console.log('Stopping session:', sessionId)
-    await axios.post(`/terminals/${sessionId}/stop`)
+    await axios.post(`/terminal-sessions/${sessionId}/stop`)
     await loadSessions()
     console.log('Session stopped successfully')
   } catch (err: any) {
@@ -545,7 +759,7 @@ function fallbackCopyTextToClipboard(text: string) {
 async function syncSession(sessionId: string) {
   try {
     console.log('Syncing session:', sessionId)
-    const response = await axios.post(`/terminals/${sessionId}/sync`)
+    const response = await axios.post(`/terminal-sessions/${sessionId}/sync`)
     
     // Stocker le résultat de la sync
     syncResults.value.set(sessionId, {
@@ -574,7 +788,7 @@ async function syncAllSessions() {
   isSyncing.value = true
   try {
     console.log('Syncing all sessions...')
-    const response = await axios.post('/terminals/sync-all')
+    const response = await axios.post('/terminal-sessions/sync-all')
     
     syncAllResults.value = response.data
     showSyncModal.value = true
@@ -619,6 +833,125 @@ function getInstanceName(prefix: string) {
   }
   const instance = instanceTypes.value.find(type => type.prefix === prefix)
   return instance ? instance.name : prefix
+}
+
+// Fonctions pour les fonctionnalités de partage
+async function loadSharedSessions() {
+  if (isLoadingShared.value) return
+
+  isLoadingShared.value = true
+  error.value = ''
+
+  try {
+    console.log('Loading shared sessions...')
+    sharedSessions.value = await terminalService.getSharedTerminals()
+    console.log('Shared sessions loaded:', sharedSessions.value)
+
+    // Load user information for shared sessions
+    if (sharedSessions.value.length > 0) {
+      await loadUserInfoForSharedSessions(sharedSessions.value)
+    }
+  } catch (err: any) {
+    console.error('Erreur lors du chargement des sessions partagées:', err)
+    error.value = err.response?.data?.error_message || 'Erreur lors du chargement des sessions partagées'
+    sharedSessions.value = []
+  } finally {
+    isLoadingShared.value = false
+  }
+}
+
+async function loadUserInfoForSharedSessions(sessions: SharedTerminalInfo[]) {
+  try {
+    // Get all unique user IDs that we need to fetch
+    const userIds = Array.from(new Set([
+      ...sessions.map(session => session.shared_by),
+      ...sessions.map(session => session.terminal.user_id)
+    ]))
+
+    // Only fetch users we don't already have
+    const missingUserIds = userIds.filter(id => !users.value.has(id))
+
+    if (missingUserIds.length > 0) {
+      const fetchedUsers = await userService.getUsersByIds(missingUserIds)
+
+      // Update the users cache
+      fetchedUsers.forEach(user => {
+        users.value.set(user.id, user)
+      })
+    }
+  } catch (err: any) {
+    console.error('Error loading user information:', err)
+    // Don't show error to user, just fallback to showing UUIDs
+  }
+}
+
+function getUserDisplayName(userId: string): string {
+  const user = users.value.get(userId)
+  if (user) {
+    return user.name || user.email || userId
+  }
+  return userId
+}
+
+function openSharingModal(terminalId: string) {
+  selectedTerminalId.value = terminalId
+  showSharingModal.value = true
+}
+
+function closeSharingModal() {
+  showSharingModal.value = false
+  selectedTerminalId.value = null
+}
+
+function onTerminalShared(terminalId: string) {
+  console.log('Terminal shared:', terminalId)
+  // Reload sessions to reflect changes and trigger access modal refresh
+  loadSessions()
+  // Trigger access modal refresh if it's currently open for this terminal
+  if (showAccessModal.value && selectedTerminalId.value === terminalId) {
+    accessModalRefreshTrigger.value++
+  }
+}
+
+function openAccessModal(terminalId: string) {
+  selectedTerminalId.value = terminalId
+  showAccessModal.value = true
+}
+
+function closeAccessModal() {
+  showAccessModal.value = false
+  selectedTerminalId.value = null
+}
+
+// Fonctions utilitaires pour les niveaux d'accès
+function getAccessIcon(level: string) {
+  switch (level) {
+    case 'read': return 'fas fa-eye'
+    case 'write': return 'fas fa-edit'
+    case 'admin': return 'fas fa-cog'
+    case 'owner': return 'fas fa-crown'
+    default: return 'fas fa-question'
+  }
+}
+
+function getAccessLabel(level: string) {
+  switch (level) {
+    case 'read': return 'Lecture'
+    case 'write': return 'Écriture'
+    case 'admin': return 'Admin'
+    case 'owner': return 'Propriétaire'
+    default: return level
+  }
+}
+
+function getAccessBadgeClass(level: string) {
+  switch (level) {
+    case 'read': return 'read-badge'
+    case 'write': return 'write-badge'
+    case 'admin': return 'admin-badge'
+    case 'owner': return 'owner-badge'
+    default: return 'default-badge'
+  }
 }
 
 </script>
@@ -1207,6 +1540,90 @@ function getInstanceName(prefix: string) {
   .iframe-actions .btn {
     width: 100%;
     justify-content: center;
+  }
+}
+
+/* Styles pour les fonctionnalités de partage */
+.shared-terminal {
+  border-left: 4px solid #17a2b8;
+}
+
+.shared-terminal .card-header {
+  background-color: #e1f5fe;
+}
+
+.sharing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.access-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.read-badge {
+  background-color: #cce7ff;
+  color: #004085;
+  border: 1px solid #b3d7ff;
+}
+
+.write-badge {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.admin-badge {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.owner-badge {
+  background-color: #e2e3e5;
+  color: #383d41;
+  border: 1px solid #d6d8db;
+}
+
+.access-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #6c757d;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.btn-success {
+  background-color: #28a745;
+  border-color: #28a745;
+  color: #fff;
+}
+
+.btn-success:hover {
+  background-color: #218838;
+  border-color: #1e7e34;
+}
+
+/* Indicateurs de statut pour les accès partagés */
+.status-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+@media (max-width: 768px) {
+  .status-group {
+    align-items: flex-start;
   }
 }
 </style>
