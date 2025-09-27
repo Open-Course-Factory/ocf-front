@@ -161,13 +161,25 @@ const menuCategories = computed(() => [
     key: 'labs',
     label: 'Travaux Pratiques',
     icon: 'fas fa-laptop-code',
-    allowedRoles: ['administrator', 'teacher'], // Seulement admin et professeurs
+    allowedRoles: ['administrator', 'teacher', 'student'], // Seulement admin et professeurs
     items: [
       {
-        route: '/terminals',
-        label: t('terminals.pageTitle'),
-        title: t('terminals.pageTitle'),
+        route: '/terminal-creation',
+        label: 'Créer une Session',
+        title: 'Créer une nouvelle session terminal',
+        icon: 'fas fa-plus-circle'
+      },
+      {
+        route: '/terminal-sessions',
+        label: 'Mes Sessions',
+        title: 'Gérer mes sessions terminal',
         icon: 'fas fa-terminal'
+      },
+      {
+        route: '/terminal-shared',
+        label: 'Sessions Partagées',
+        title: 'Sessions partagées avec moi',
+        icon: 'fas fa-share-alt'
       },
       {
         route: '/user-terminal-keys',
@@ -181,7 +193,7 @@ const menuCategories = computed(() => [
     key: 'account',
     label: 'Gestion du compte',
     icon: 'fas fa-user-cog',
-    allowedRoles: ['administrator', 'teacher', 'student'], // Tous les rôles
+    allowedRoles: ['administrator', 'teacher'], // Tous les rôles
     items: [
       {
         route: '/subscription-dashboard',

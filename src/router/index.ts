@@ -32,7 +32,9 @@ import LandingPage from '../components/Pages/LandingPage.vue';
 import User from '../components/Pages/User.vue';
 import Generations from '../components/Pages/Generations.vue';
 import Themes from '../components/Pages/Themes.vue';
-import Terminals from '../components/Pages/TerminalSessions.vue';
+import TerminalCreation from '../components/Pages/TerminalCreation.vue';
+import TerminalMySessions from '../components/Pages/TerminalMySessions.vue';
+import TerminalSharedWithMe from '../components/Pages/TerminalSharedWithMe.vue';
 import UserTerminalKeys from '../components/Pages/UserTerminalKeys.vue';
 
 const basicRoutes = [
@@ -81,7 +83,9 @@ const basicRoutes = [
       { path: 'schedules', name: 'Schedules', component: Schedules, meta: { requiresAuth: true } },
       { path: 'themes', name: 'Themes', component: Themes, meta: { requiresAuth: true } },
       { path: 'generations', name: 'Generations', component: Generations, meta: { requiresAuth: true } },
-      { path: 'terminals', name: 'Terminals', component: Terminals, meta: { requiresAuth: true } },
+      { path: 'terminal-creation', name: 'TerminalCreation', component: TerminalCreation, meta: { requiresAuth: true } },
+      { path: 'terminal-sessions', name: 'TerminalSessions', component: TerminalMySessions, meta: { requiresAuth: true } },
+      { path: 'terminal-shared', name: 'TerminalSharedWithMe', component: TerminalSharedWithMe, meta: { requiresAuth: true } },
       { path: 'user-terminal-keys', name: 'UserTerminalKeys', component: UserTerminalKeys, meta: { requiresAuth: true } },
       { path: 'course/:id', component: CourseDetails, meta: { requiresAuth: true } },
       {
