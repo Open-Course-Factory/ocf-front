@@ -54,7 +54,8 @@
       </div>
 
       <div v-if="sharedSessions.length > 0" class="sessions-grid">
-        <div v-for="sharedSession in sharedSessions" :key="sharedSession.terminal.id" class="session-card shared-terminal">
+        <div v-for="sharedSession in sharedSessions" :key="sharedSession.terminal.id"
+             :class="['session-card', 'shared-terminal', { 'inactive-terminal': isTerminalInactive(sharedSession.terminal.status) }]">
 
           <!-- En-tête avec indicateur de partage -->
           <div class="card-header">
@@ -175,6 +176,15 @@
             >
               <i class="fas fa-stop"></i>
               Arrêter
+            </button>
+            <button
+              v-else-if="isTerminalInactive(sharedSession.terminal.status)"
+              class="btn btn-warning btn-sm"
+              @click="discardTerminal(sharedSession.terminal.id)"
+              title="Masquer ce terminal inactif"
+            >
+              <i class="fas fa-eye-slash"></i>
+              Masquer
             </button>
             <span v-else-if="sharedSession.access_level === 'read'" class="access-note">
               <i class="fas fa-eye"></i>
@@ -418,6 +428,30 @@ function getInstanceName(prefix: string) {
   const instance = instanceTypes.value.find(type => type.prefix === prefix)
   return instance ? instance.name : prefix
 }
+
+function isTerminalInactive(status: string): boolean {
+  return ['expired', 'stopped', 'terminated'].includes(status?.toLowerCase())
+}
+
+async function discardTerminal(terminalId: string) {
+  if (!confirm('Êtes-vous sûr de vouloir masquer ce terminal inactif ?')) {
+    return
+  }
+
+  try {
+    console.log('Hiding terminal:', terminalId)
+    await axios.post(`/terminal-sessions/${terminalId}/hide`)
+
+    // Remove from local display after successful API call
+    sharedSessions.value = sharedSessions.value.filter(
+      session => session.terminal.id !== terminalId
+    )
+    console.log('Terminal successfully hidden:', terminalId)
+  } catch (err: any) {
+    console.error('Erreur lors du masquage du terminal:', err)
+    error.value = err.response?.data?.error_message || 'Erreur lors du masquage du terminal'
+  }
+}
 </script>
 
 <style scoped>
@@ -510,6 +544,37 @@ function getInstanceName(prefix: string) {
 
 .shared-terminal .card-header {
   background-color: #e1f5fe;
+}
+
+/* Styles pour les terminaux inactifs */
+.inactive-terminal {
+  opacity: 0.7;
+  border-left-color: #6c757d !important;
+  background-color: #f8f9fa;
+}
+
+.inactive-terminal .card-header {
+  background-color: #e9ecef !important;
+  color: #6c757d;
+}
+
+.inactive-terminal::before {
+  content: "INACTIF";
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #6c757d;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: bold;
+  z-index: 2;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.inactive-terminal {
+  position: relative;
 }
 
 .card-header {

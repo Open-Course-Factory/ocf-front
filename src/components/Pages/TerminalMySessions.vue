@@ -70,7 +70,8 @@
       </div>
 
       <div v-if="sessions.length > 0" class="sessions-grid">
-        <div v-for="session in sessions" :key="session.id || session.session_id" class="session-card">
+        <div v-for="session in sessions" :key="session.id || session.session_id"
+             :class="['session-card', { 'inactive-terminal': isTerminalInactive(session.status) }]">
 
           <!-- En-tête avec indicateur de sync -->
           <div class="card-header">
@@ -223,6 +224,7 @@
 
           <div class="card-actions">
             <button
+              v-if="!isTerminalInactive(session.status)"
               class="btn btn-info btn-sm"
               @click="syncSession(session.session_id)"
               title="Synchroniser cette session avec l'API Terminal Trainer"
@@ -231,6 +233,7 @@
               Sync
             </button>
             <button
+              v-if="!isTerminalInactive(session.status)"
               class="btn btn-success btn-sm"
               @click="openSharingModal(session.session_id)"
               title="Partager ce terminal"
@@ -239,6 +242,7 @@
               Partager
             </button>
             <button
+              v-if="!isTerminalInactive(session.status)"
               class="btn btn-warning btn-sm"
               @click="openAccessModal(session.session_id)"
               title="Gérer les accès"
@@ -247,12 +251,21 @@
               Accès
             </button>
             <button
+              v-if="session.status === 'active'"
               class="btn btn-danger btn-sm"
               @click="stopSession(session.session_id)"
-              :disabled="session.status !== 'active'"
             >
               <i class="fas fa-stop"></i>
               Arrêter
+            </button>
+            <button
+              v-if="isTerminalInactive(session.status)"
+              class="btn btn-warning btn-sm"
+              @click="discardTerminal(session.id)"
+              title="Masquer cette session inactive"
+            >
+              <i class="fas fa-eye-slash"></i>
+              Masquer
             </button>
           </div>
         </div>
@@ -647,6 +660,28 @@ function openAccessModal(terminalId: string) {
 function closeAccessModal() {
   showAccessModal.value = false
   selectedTerminalId.value = null
+}
+
+function isTerminalInactive(status: string): boolean {
+  return ['expired', 'stopped', 'terminated'].includes(status?.toLowerCase())
+}
+
+async function discardTerminal(terminalId: string) {
+  if (!confirm('Êtes-vous sûr de vouloir masquer cette session inactive ?')) {
+    return
+  }
+
+  try {
+    console.log('Hiding terminal:', terminalId)
+    await axios.post(`/terminal-sessions/${terminalId}/hide`)
+
+    // Remove from local display after successful API call
+    sessions.value = sessions.value.filter(session => session.id !== terminalId)
+    console.log('Terminal successfully hidden:', terminalId)
+  } catch (err: any) {
+    console.error('Erreur lors du masquage du terminal:', err)
+    error.value = err.response?.data?.error_message || 'Erreur lors du masquage du terminal'
+  }
 }
 </script>
 
@@ -1130,6 +1165,33 @@ function closeAccessModal() {
 .text-danger { color: #dc3545 !important; }
 .text-warning { color: #ffc107 !important; }
 .text-muted { color: #6c757d !important; }
+
+/* Styles pour les terminaux inactifs */
+.inactive-terminal {
+  opacity: 0.7;
+  background-color: #f8f9fa;
+  position: relative;
+}
+
+.inactive-terminal .card-header {
+  background-color: #e9ecef !important;
+  color: #6c757d;
+}
+
+.inactive-terminal::before {
+  content: "INACTIF";
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #6c757d;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: bold;
+  z-index: 2;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
 
 .instance-type {
   display: flex;
