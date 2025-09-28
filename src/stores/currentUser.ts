@@ -50,8 +50,8 @@ export const useCurrentUserStore = defineStore('currentUser', {
     },
     actions: {
         // Modifier la méthode de sauvegarde du token
-        setSecretToken(token: string) {
-            tokenService.setAccessToken(token);
+        setSecretToken(token: string, rememberMe: boolean = false) {
+            tokenService.setAccessToken(token, rememberMe);
         },
 
         autoLogout() {

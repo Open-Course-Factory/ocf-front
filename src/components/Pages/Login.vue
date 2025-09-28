@@ -28,7 +28,7 @@
         </div>
         <div class="form-options">
           <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="rememberMe" />
+            <input class="form-check-input" type="checkbox" id="rememberMe" v-model="loginStore.rememberMe" />
             <label class="form-check-label" for="rememberMe">Se souvenir de moi</label>
           </div>
           <router-link to="/password-reset" class="forgot-password">Mot de passe oublié ?</router-link>
@@ -61,7 +61,7 @@ async function handleSubmit() {
       password: loginStore.password
     });
 
-    currentUserStore.setSecretToken(responseLogin.data.access_token);
+    currentUserStore.setSecretToken(responseLogin.data.access_token, loginStore.rememberMe);
     currentUserStore.userName = responseLogin.data.user_name;
     currentUserStore.userId = responseLogin.data.user_id;
     currentUserStore.userRoles = responseLogin.data.user_roles;

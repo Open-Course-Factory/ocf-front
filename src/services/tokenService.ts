@@ -1,22 +1,36 @@
 export class TokenService {
   private static readonly ACCESS_TOKEN_KEY = 'ocf_access_token';
   private static readonly EXPIRES_AT_KEY = 'ocf_expires_at';
+  private static readonly REMEMBER_ME_KEY = 'ocf_remember_me';
 
   getAccessToken(): string | null {
-    return localStorage.getItem(TokenService.ACCESS_TOKEN_KEY);
+    // Check both localStorage and sessionStorage
+    return localStorage.getItem(TokenService.ACCESS_TOKEN_KEY) ||
+           sessionStorage.getItem(TokenService.ACCESS_TOKEN_KEY);
   }
 
-  setAccessToken(token: string): void {
-    localStorage.setItem(TokenService.ACCESS_TOKEN_KEY, token);
-    
+  setAccessToken(token: string, rememberMe: boolean = false): void {
+    const storage = rememberMe ? localStorage : sessionStorage;
+    storage.setItem(TokenService.ACCESS_TOKEN_KEY, token);
+
     // Calculer la date d'expiration (1h par défaut si on ne peut pas parser le JWT)
     const expiresAt = this.extractExpirationFromToken(token);
-    localStorage.setItem(TokenService.EXPIRES_AT_KEY, expiresAt.toString());
+    storage.setItem(TokenService.EXPIRES_AT_KEY, expiresAt.toString());
+
+    // Store remember me preference
+    if (rememberMe) {
+      localStorage.setItem(TokenService.REMEMBER_ME_KEY, 'true');
+    } else {
+      localStorage.removeItem(TokenService.REMEMBER_ME_KEY);
+    }
   }
 
   clearTokens(): void {
     localStorage.removeItem(TokenService.ACCESS_TOKEN_KEY);
     localStorage.removeItem(TokenService.EXPIRES_AT_KEY);
+    localStorage.removeItem(TokenService.REMEMBER_ME_KEY);
+    sessionStorage.removeItem(TokenService.ACCESS_TOKEN_KEY);
+    sessionStorage.removeItem(TokenService.EXPIRES_AT_KEY);
   }
 
   hasValidToken(): boolean {
@@ -27,20 +41,24 @@ export class TokenService {
   }
 
   isTokenExpired(): boolean {
-    const expiresAtStr = localStorage.getItem(TokenService.EXPIRES_AT_KEY);
+    // Check both localStorage and sessionStorage for expiration
+    const expiresAtStr = localStorage.getItem(TokenService.EXPIRES_AT_KEY) ||
+                        sessionStorage.getItem(TokenService.EXPIRES_AT_KEY);
     if (!expiresAtStr) return true;
-    
+
     const expiresAt = parseInt(expiresAtStr);
     // Ajouter une marge de 5 minutes avant l'expiration
     const marginMs = 5 * 60 * 1000; // 5 minutes
-    
+
     return Date.now() >= (expiresAt - marginMs);
   }
 
   getTimeUntilExpiry(): number {
-    const expiresAtStr = localStorage.getItem(TokenService.EXPIRES_AT_KEY);
+    // Check both localStorage and sessionStorage for expiration
+    const expiresAtStr = localStorage.getItem(TokenService.EXPIRES_AT_KEY) ||
+                        sessionStorage.getItem(TokenService.EXPIRES_AT_KEY);
     if (!expiresAtStr) return 0;
-    
+
     const expiresAt = parseInt(expiresAtStr);
     return Math.max(0, expiresAt - Date.now());
   }
