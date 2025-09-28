@@ -63,7 +63,7 @@ import { useCurrentUserStore } from '../../stores/currentUser.ts';
 import { useSchedulesStore } from '../../stores/schedules.ts';
 import { useThemesStore } from '../../stores/themes.ts';
 import { useGenerationsStore } from '../../stores/generations.ts';
-import { ref, computed, defineProps, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useI18n } from "vue-i18n"
 import { useTerminalsStore } from '../../stores/terminals.ts';
 import { useUserTerminalKeysStore } from '../../stores/userTerminalKeys.ts';
