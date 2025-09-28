@@ -301,14 +301,37 @@ function handleOutsideClick(event: Event) {
   }
 }
 
-onMounted(() => {
-  if (!props.isMenuCollapsed) {
-    // Ouvrir la première catégorie par défaut
-    if (filteredCategories.value.length > 0) {
-      expandedCategories.value[filteredCategories.value[0].key] = true;
+// Fonction pour ouvrir la catégorie active selon la route courante
+function openActiveCategoryOnMount() {
+  if (props.isMenuCollapsed) return;
+
+  // Fermer toutes les catégories d'abord
+  Object.keys(expandedCategories.value).forEach(key => {
+    expandedCategories.value[key] = false;
+  });
+
+  // Trouver la catégorie contenant la route active
+  let activeCategoryFound = false;
+  for (const category of filteredCategories.value) {
+    const hasActiveItem = category.items.some(item =>
+      route.path === item.route || route.path.startsWith(item.route + '/')
+    );
+
+    if (hasActiveItem) {
+      expandedCategories.value[category.key] = true;
+      activeCategoryFound = true;
+      break;
     }
   }
-  
+
+  // Si aucune catégorie active n'est trouvée, ouvrir la première par défaut
+  if (!activeCategoryFound && filteredCategories.value.length > 0) {
+    expandedCategories.value[filteredCategories.value[0].key] = true;
+  }
+}
+
+onMounted(() => {
+  openActiveCategoryOnMount();
   document.addEventListener('click', handleOutsideClick);
 });
 
@@ -319,10 +342,14 @@ onUnmounted(() => {
 // Gérer les changements de mode collapsed
 watch(() => props.isMenuCollapsed, (isCollapsed) => {
   if (!isCollapsed) {
-    // Rouvrir la première catégorie quand on expand le menu
-    if (filteredCategories.value.length > 0) {
-      expandedCategories.value[filteredCategories.value[0].key] = true;
-    }
+    openActiveCategoryOnMount();
+  }
+});
+
+// Gérer les changements de route pour ouvrir la bonne catégorie
+watch(() => route.path, () => {
+  if (!props.isMenuCollapsed) {
+    openActiveCategoryOnMount();
   }
 });
 </script>
