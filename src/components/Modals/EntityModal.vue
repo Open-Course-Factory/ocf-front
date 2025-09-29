@@ -44,6 +44,21 @@
                 v-model="data[name]"
                 :class="['form-control', { 'is-invalid': errors[name] }]"
               />
+              <select
+                v-else-if="field.type == 'select'"
+                :id="name"
+                v-model="data[name]"
+                :class="['form-control', { 'is-invalid': errors[name] }]"
+              >
+                <option value="">{{ t('selectOption', 'Select an option') }}</option>
+                <option
+                  v-for="option in field.options"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.text }}
+                </option>
+              </select>
               <input
                 v-else-if="field.type == 'input'"
                 :id="name"

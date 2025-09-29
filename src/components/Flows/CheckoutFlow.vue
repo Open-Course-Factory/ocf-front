@@ -150,7 +150,7 @@
                         <div v-if="address.line2">{{ address.line2 }}</div>
                         <div>{{ address.postal_code }} {{ address.city }}</div>
                         <div v-if="address.state">{{ address.state }}</div>
-                        <div><strong>{{ address.country }}</strong></div>
+                        <div><strong>{{ address.country ? getCountryName(address.country, 'fr') : address.country }}</strong></div>
                       </div>
                       <div v-if="address.is_default" class="default-badge">
                         <span class="badge badge-primary">{{ t('checkout.default') }}</span>
@@ -170,97 +170,29 @@
                 </div>
               </div>
               
-              <!-- Formulaire nouvelle adresse -->
+              <!-- Bouton pour ouvrir la modale d'ajout d'adresse -->
               <div v-if="showNewAddressForm || billingAddresses.length === 0" class="new-address-form">
                 <h4 v-if="billingAddresses.length > 0">{{ t('checkout.newAddress') }}</h4>
                 <h4 v-else>{{ t('checkout.billingAddress') }}</h4>
-                
-                <form @submit.prevent="addBillingAddress">
-                  <div class="form-row">
-                    <div class="form-group">
-                      <label for="line1">{{ t('checkout.addressLine1') }} *</label>
-                      <input 
-                        id="line1"
-                        v-model="newAddress.line1"
-                        type="text"
-                        class="form-control"
-                        required
-                      />
-                    </div>
-                  </div>
-                  
-                  <div class="form-row">
-                    <div class="form-group">
-                      <label for="line2">{{ t('checkout.addressLine2') }}</label>
-                      <input 
-                        id="line2"
-                        v-model="newAddress.line2"
-                        type="text"
-                        class="form-control"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div class="form-row">
-                    <div class="form-group col-md-6">
-                      <label for="city">{{ t('checkout.city') }} *</label>
-                      <input 
-                        id="city"
-                        v-model="newAddress.city"
-                        type="text"
-                        class="form-control"
-                        required
-                      />
-                    </div>
-                    <div class="form-group col-md-6">
-                      <label for="postal_code">{{ t('checkout.postalCode') }} *</label>
-                      <input 
-                        id="postal_code"
-                        v-model="newAddress.postal_code"
-                        type="text"
-                        class="form-control"
-                        required
-                      />
-                    </div>
-                  </div>
-                  
-                  <div class="form-row">
-                    <div class="form-group col-md-6">
-                      <label for="state">{{ t('checkout.state') }}</label>
-                      <input 
-                        id="state"
-                        v-model="newAddress.state"
-                        type="text"
-                        class="form-control"
-                      />
-                    </div>
-                    <div class="form-group col-md-6">
-                      <label for="country">{{ t('checkout.country') }} *</label>
-                      <input 
-                        id="country"
-                        v-model="newAddress.country"
-                        type="text"
-                        class="form-control"
-                        required
-                      />
-                    </div>
-                  </div>
-                  
-                  <div class="form-actions">
-                    <button type="submit" class="btn btn-primary" :disabled="isAddingAddress">
-                      <i :class="isAddingAddress ? 'fas fa-spinner fa-spin' : 'fas fa-plus'"></i>
-                      {{ t('checkout.addAddress') }}
-                    </button>
-                    <button 
-                      v-if="billingAddresses.length > 0"
-                      type="button" 
-                      class="btn btn-secondary" 
-                      @click="showNewAddressForm = false"
-                    >
-                      {{ t('checkout.cancel') }}
-                    </button>
-                  </div>
-                </form>
+
+                <div class="add-address-section">
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    @click="showAddressModal = true"
+                  >
+                    <i class="fas fa-plus"></i>
+                    {{ t('checkout.addAddress') }}
+                  </button>
+                  <button
+                    v-if="billingAddresses.length > 0"
+                    type="button"
+                    class="btn btn-secondary"
+                    @click="showNewAddressForm = false"
+                  >
+                    {{ t('checkout.cancel') }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -314,7 +246,7 @@
                   <div v-if="selectedBillingAddress?.line2">{{ selectedBillingAddress.line2 }}</div>
                   <div>{{ selectedBillingAddress?.postal_code }} {{ selectedBillingAddress?.city }}</div>
                   <div v-if="selectedBillingAddress?.state">{{ selectedBillingAddress.state }}</div>
-                  <div>{{ selectedBillingAddress?.country }}</div>
+                  <div>{{ selectedBillingAddress?.country ? getCountryName(selectedBillingAddress.country, 'fr') : '' }}</div>
                 </div>
               </div>
             </div>
@@ -375,6 +307,14 @@
         </div>
       </div>
     </div>
+
+    <!-- Billing Address Modal -->
+    <BillingAddressModal
+      :visible="showAddressModal"
+      :is-loading="isAddingAddress"
+      @close="showAddressModal = false"
+      @submit="addBillingAddress"
+    />
   </div>
 </template>
 
@@ -385,6 +325,8 @@ import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useI18n } from 'vue-i18n'
 import axios from 'axios'
+import { getCountryName } from '../../services/countries'
+import BillingAddressModal from '../Modals/BillingAddressModal.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -414,14 +356,7 @@ const billingAddresses = ref([])
 const selectedBillingAddress = ref(null)
 const showNewAddressForm = ref(false)
 const isAddingAddress = ref(false)
-const newAddress = ref({
-  line1: '',
-  line2: '',
-  city: '',
-  state: '',
-  postal_code: '',
-  country: 'France'
-})
+const showAddressModal = ref(false)
 
 // Configuration des étapes
 const steps = [
@@ -584,14 +519,14 @@ function selectBillingAddress(address: any) {
   selectedBillingAddress.value = address
 }
 
-async function addBillingAddress() {
+async function addBillingAddress(addressData: any) {
   isAddingAddress.value = true
   try {
-    const response = await axios.post('/billing-addresses', newAddress.value)
+    const response = await axios.post('/billing-addresses', addressData)
     billingAddresses.value.push(response.data)
     selectedBillingAddress.value = response.data
     showNewAddressForm.value = false
-    resetNewAddressForm()
+    showAddressModal.value = false
   } catch (error) {
     console.error('Erreur lors de l\'ajout de l\'adresse:', error)
     checkoutError.value = 'Erreur lors de l\'ajout de l\'adresse'
@@ -600,16 +535,6 @@ async function addBillingAddress() {
   }
 }
 
-function resetNewAddressForm() {
-  newAddress.value = {
-    line1: '',
-    line2: '',
-    city: '',
-    state: '',
-    postal_code: '',
-    country: 'France'
-  }
-}
 
 async function validateCoupon() {
   if (!couponCode.value.trim()) return

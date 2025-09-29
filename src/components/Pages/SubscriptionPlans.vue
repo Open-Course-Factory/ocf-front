@@ -22,11 +22,11 @@
 -->
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import Entity from './Entity.vue';
-import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans';
-import { useCurrentUserStore } from '../../stores/currentUser.ts';
-import router from '../../router/index.ts';
+import { computed, onMounted } from 'vue'
+import Entity from './Entity.vue'
+import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
+import { useCurrentUserStore } from '../../stores/currentUser.ts'
+import router from '../../router/index.ts'
 
 const entityStore = useSubscriptionPlansStore();
 const currentUser = useCurrentUserStore();
@@ -51,13 +51,24 @@ const entityStoreWithFiltering = computed(() => ({
     entities: filteredPlans.value
 }));
 
+// Load plans on component mount
+onMounted(async () => {
+    try {
+        await entityStore.ensurePlansLoaded()
+    } catch (error) {
+        console.error('Error loading subscription plans:', error)
+    }
+})
+
 // Fonction pour sélectionner un plan (Composition API)
-const selectPlan = (plan: any) => {
-    // TODO: Rediriger vers le processus de checkout
-    console.log('Plan sélectionné:', plan);
-    // Ici on redirigera vers la page de checkout
-    router.push({ name: 'Checkout', params: { planId: plan.id } });
-};
+const selectPlan = async (plan: any) => {
+    try {
+        await entityStore.selectPlan(plan.id)
+        router.push({ name: 'Checkout', params: { planId: plan.id } })
+    } catch (error) {
+        console.error('Error selecting plan:', error)
+    }
+}
 </script>
 
 <template>

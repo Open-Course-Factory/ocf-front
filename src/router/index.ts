@@ -93,7 +93,8 @@ const basicRoutes = [
         meta: { requiresAuth: true },
         children: [{ path: '', component: User }],
       },
-      { path: 'subscription-plans', name: 'SubscriptionPlans', component: () => import('../components/Pages/SubscriptionPlans.vue'), meta: { requiresAuth: true } },
+      { path: 'subscription-plans', name: 'SubscriptionPlans', component: () => import('../components/Pages/SubscriptionPlansCustomer.vue'), meta: { requiresAuth: true } },
+      { path: 'admin/subscription-plans', name: 'AdminSubscriptionPlans', component: () => import('../components/Pages/SubscriptionPlans.vue'), meta: { requiresAuth: true } },
       { path: 'billing-addresses', name: 'BillingAddresses', component: () => import('../components/Pages/BillingAddresses.vue'), meta: { requiresAuth: true } },
       { path: 'payment-methods', name: 'PaymentMethods', component: () => import('../components/Pages/PaymentMethods.vue'), meta: { requiresAuth: true } },
       { path: 'invoices', name: 'Invoices', component: () => import('../components/Pages/Invoices.vue'), meta: { requiresAuth: true } },
@@ -124,11 +125,23 @@ const basicRoutes = [
       },
 
       // Route pour l'annulation de paiement (retour depuis Stripe)
-      { 
+      {
         path: 'checkout-canceled',
-        name: 'CheckoutCanceled', 
-        component: () => import('../components/Flows/CheckoutCanceled.vue'), 
+        name: 'CheckoutCanceled',
+        component: () => import('../components/Flows/CheckoutCanceled.vue'),
         meta: { requiresAuth: true }
+      },
+
+      // Demo routes (for testing subscription flow)
+      {
+        path: 'demo-checkout',
+        name: 'DemoCheckout',
+        component: () => import('../components/Demo/DemoCheckout.vue')
+      },
+      {
+        path: 'demo-portal',
+        name: 'DemoPortal',
+        component: () => import('../components/Demo/DemoPortal.vue')
       }
     ],
   },

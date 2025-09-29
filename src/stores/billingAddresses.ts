@@ -22,11 +22,18 @@
 import { defineStore } from "pinia"
 import { useI18n } from "vue-i18n"
 import { useBaseStore } from "./baseStore"
+import { getCountryOptions, getCountryName, getCountryCode } from '../services/countries'
 
 export const useBillingAddressesStore = defineStore('billingAddresses', () => {
 
     const base = useBaseStore();
     const { t } = useI18n()
+
+    // Get country options based on current locale (will be called when needed)
+    const getCountrySelectOptions = () => {
+        // Default to French since that's the main locale for this app
+        return getCountryOptions('fr')
+    }
 
     useI18n().mergeLocaleMessage('en', { 
         billingAddresses: { 
@@ -67,7 +74,16 @@ export const useBillingAddressesStore = defineStore('billingAddresses', () => {
         ["city", { label: t('billingAddresses.city'), type: "input", display: true, toBeSet: true, toBeEdited: true, required: true }],
         ["state", { label: t('billingAddresses.state'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
         ["postal_code", { label: t('billingAddresses.postal_code'), type: "input", display: true, toBeSet: true, toBeEdited: true, required: true }],
-        ["country", { label: t('billingAddresses.country'), type: "input", display: true, toBeSet: true, toBeEdited: true, required: true }],
+        ["country", {
+            label: t('billingAddresses.country'),
+            type: "select",
+            display: true,
+            toBeSet: true,
+            toBeEdited: true,
+            required: true,
+            options: getCountrySelectOptions(),
+            displayValue: (value: string) => getCountryName(value, 'fr') // Display function for showing full name instead of code
+        }],
         ["is_default", { label: t('billingAddresses.is_default'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
         ["set_default", { label: t('billingAddresses.set_default'), type: "input", display: false, toBeSet: true, toBeEdited: false }],
         ["user_id", { label: "User ID", type: "input", display: false, toBeSet: false, toBeEdited: false }],
@@ -82,9 +98,9 @@ export const useBillingAddressesStore = defineStore('billingAddresses', () => {
             address.line2,
             `${address.postal_code} ${address.city}`,
             address.state,
-            address.country
+            address.country ? getCountryName(address.country, 'fr') : address.country // Convert ISO code to country name for display
         ].filter(Boolean); // Enlève les parties vides
-        
+
         return parts.join(', ');
     }
 
@@ -103,6 +119,9 @@ export const useBillingAddressesStore = defineStore('billingAddresses', () => {
         }
         return res
     }
+
+    // No hooks needed - the select field handles ISO codes directly
+    // The select options have ISO codes as values and country names as display text
 
     return {
         ...base, 

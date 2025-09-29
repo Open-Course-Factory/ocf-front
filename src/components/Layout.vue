@@ -1,7 +1,8 @@
 <template>
   <div class="wrapper">
-    <MainNavMenu 
-      class="main-nav-menu" 
+    <DemoModeBanner />
+    <MainNavMenu
+      class="main-nav-menu"
       :class="{ collapsed: isMenuCollapsed }"
       :isMenuCollapsed="isMenuCollapsed"
     />
@@ -15,9 +16,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import MainNavMenu from './Menus/MainNavMenu.vue';
-import TopMenu from './Menus/TopMenu.vue';
+import { ref, onMounted, onUnmounted } from 'vue'
+import MainNavMenu from './Menus/MainNavMenu.vue'
+import TopMenu from './Menus/TopMenu.vue'
+import DemoModeBanner from './UI/DemoModeBanner.vue'
 
 const isMenuCollapsed = ref(false);
 

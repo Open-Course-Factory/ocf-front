@@ -51,7 +51,7 @@
             <span class="property-name">
               <i class="fas fa-info-circle"></i> {{ t(`${translationKey}.${key}`) }}:
             </span>
-            <span class="property-value">{{ value }}</span>
+            <span class="property-value">{{ getDisplayValue(key, value) }}</span>
           </div>
         </span>
       </div>
@@ -82,6 +82,20 @@ function shouldDisplayProperty(key: string) {
     props.entityStore.fieldList.get(key) ||
     props.entityStore.fieldList.get(`${key}Id`);
   return field?.display ?? false;
+}
+
+function getDisplayValue(key: string, value: any) {
+  const field =
+    props.entityStore.fieldList.get(key) ||
+    props.entityStore.fieldList.get(`${key}Id`);
+
+  // If field has a displayValue function, use it
+  if (field?.displayValue && typeof field.displayValue === 'function') {
+    return field.displayValue(value);
+  }
+
+  // Otherwise return the original value
+  return value;
 }
 
 // function checkDisplayParameters(index) {

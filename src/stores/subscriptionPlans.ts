@@ -21,7 +21,9 @@
 
 import { defineStore } from "pinia"
 import { useI18n } from "vue-i18n"
+import { onMounted } from 'vue'
 import { useBaseStore } from "./baseStore"
+import { getDemoSubscriptionPlans } from '../services/demoData'
 
 export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => {
 
@@ -29,7 +31,7 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
     const { t } = useI18n()
 
     useI18n().mergeLocaleMessage('en', { 
-        subscriptionPlans: { 
+        subscriptionPlans: {
             pageTitle: 'Subscription Plans',
             name: 'Plan Name',
             description: 'Description',
@@ -45,18 +47,32 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             is_active: 'Active',
             stripe_product_id: 'Stripe Product ID',
             stripe_price_id: 'Stripe Price ID',
-            modify: 'Modify the plan', 
+            modify: 'Modify the plan',
             add: 'Add a plan',
             current_subscription_plan: 'Current plan',
             no_active_subscription: 'No active subscription',
             subscribe_to_start : 'Subscribe to start',
             view_plans: 'View plans',
-            reactivate_subscription: 'Reactivate subscription'
+            reactivate_subscription: 'Reactivate subscription',
+            manageSubscription: 'Manage Subscription',
+            changePlan: 'Change Plan',
+            cancelSubscription: 'Cancel Subscription',
+            nextBilling: 'Next Billing',
+            trialActive: 'Free Trial Active',
+            trialEndsOn: 'Trial ends on',
+            subscriptionWillCancel: 'Subscription will cancel',
+            accessUntil: 'Access until',
+            active: 'Active',
+            trialing: 'Trial',
+            canceled: 'Canceled',
+            past_due: 'Past Due',
+            unpaid: 'Unpaid',
+            incomplete: 'Incomplete'
         }
     })
 
     useI18n().mergeLocaleMessage('fr', { 
-        subscriptionPlans: { 
+        subscriptionPlans: {
             pageTitle: 'Plans d\'Abonnement',
             name: 'Nom du Plan',
             description: 'Description',
@@ -72,13 +88,27 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             is_active: 'Actif',
             stripe_product_id: 'ID Produit Stripe',
             stripe_price_id: 'ID Prix Stripe',
-            modify: 'Modifier le plan', 
+            modify: 'Modifier le plan',
             add: 'Ajouter un plan',
             current_subscription_plan: 'Plan actuel',
             no_active_subscription: 'Pas d\'abonnement actif',
             subscribe_to_start: 'Abonnez-vous pour plus de sessions !',
             view_plans: 'Voir les abonnements',
-            reactivate_subscription: 'Réactiver l\'abonnement'
+            reactivate_subscription: 'Réactiver l\'abonnement',
+            manageSubscription: 'Gérer l\'Abonnement',
+            changePlan: 'Changer de Plan',
+            cancelSubscription: 'Annuler l\'Abonnement',
+            nextBilling: 'Prochaine Facturation',
+            trialActive: 'Essai Gratuit Actif',
+            trialEndsOn: 'L\'essai se termine le',
+            subscriptionWillCancel: 'L\'abonnement sera annulé',
+            accessUntil: 'Accès jusqu\'au',
+            active: 'Actif',
+            trialing: 'Essai',
+            canceled: 'Annulé',
+            past_due: 'En Retard',
+            unpaid: 'Non Payé',
+            incomplete: 'Incomplet'
         }
     })
 
@@ -126,10 +156,67 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
         return res
     }
 
+    // Load subscription plans on store initialization
+    const loadPlans = async () => {
+        return await base.loadEntities('/subscription-plans', getDemoSubscriptionPlans)
+    }
+
+    // Refresh subscription plans
+    const refreshPlans = async () => {
+        return await base.refreshEntities('/subscription-plans', getDemoSubscriptionPlans)
+    }
+
+    // Custom action for plan selection (for subscription flow)
+    const selectPlan = async (planId: string) => {
+        const plan = base.entities.find((p: any) => p.id === planId)
+        if (!plan) {
+            throw new Error('Plan not found')
+        }
+
+        // This will be handled by the checkout flow
+        return plan
+    }
+
+    // Hook for subscription-specific rendering
+    const getSubscriptionActionButton = (plan: any) => {
+        if (!plan.is_active) {
+            return null // Don't show subscribe button for inactive plans
+        }
+
+        return {
+            text: 'Subscribe',
+            class: 'btn btn-success',
+            icon: 'fas fa-shopping-cart',
+            action: 'subscribe'
+        }
+    }
+
+    // Check if user can see plan (admin vs regular user)
+    const canViewPlan = (plan: any, isAdmin: boolean) => {
+        return isAdmin || plan.is_active
+    }
+
+    // Auto-load plans when store is first used
+    let plansLoaded = false
+    const ensurePlansLoaded = async () => {
+        if (!plansLoaded && base.entities.length === 0) {
+            await loadPlans()
+            plansLoaded = true
+        }
+    }
+
     return {
-        ...base, 
+        ...base,
         fieldList,
         formatPrice,
-        getSelectDatas
+        getSelectDatas,
+
+        // New subscription-specific methods
+        loadPlans,
+        refreshPlans,
+        selectPlan,
+        getSubscriptionActionButton,
+        canViewPlan,
+        ensurePlansLoaded
     }
 })

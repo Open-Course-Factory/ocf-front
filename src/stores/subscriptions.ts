@@ -23,6 +23,9 @@ import { defineStore } from "pinia"
 import { useI18n } from "vue-i18n"
 import { ref } from 'vue'
 import axios from 'axios'
+import { isDemoMode, logDemoAction, simulateDelay } from '../services/demoConfig'
+import { demoPayments } from '../services/demoPayments'
+import { getDemoCurrentSubscription, getDemoUsageMetrics } from '../services/demoData'
 
 export const useSubscriptionsStore = defineStore('subscriptions', () => {
 
@@ -60,7 +63,25 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
             usageLimitError: 'Usage Limit Error',
             dashboardTitle: 'Subscription Dashboard',
             dashboardSubtitle: 'Manage your subscription, usage, and billing',
-            loadingDashboard: 'Loading dashboard...'
+            loadingDashboard: 'Loading dashboard...',
+            usageOverview: 'Usage Overview',
+            remaining: 'remaining',
+            noUsageData: 'No usage data available',
+            confirmCancellation: 'Confirm Cancellation',
+            cancellationWarning: 'Are you sure you want to cancel your subscription?',
+            cancelAtPeriodEnd: 'Cancel at period end',
+            cancelAtPeriodEndDesc: 'Your subscription will remain active until the end of your current billing period.',
+            cancelImmediately: 'Cancel immediately',
+            cancelImmediatelyDesc: 'Your subscription will be cancelled immediately and you will lose access.',
+            confirmCancel: 'Yes, Cancel',
+            keepSubscription: 'Keep Subscription',
+            confirmReactivation: 'Reactivate Subscription',
+            reactivationInfo: 'Your subscription will be reactivated and billing will resume.',
+            subscriptionDetails: 'Subscription Details',
+            plan: 'Plan',
+            price: 'Price',
+            confirmReactivate: 'Reactivate',
+            cancel: 'Cancel'
         }
     })
 
@@ -90,7 +111,25 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
             usageLimitError: 'Erreur de Limite d\'Usage',
             dashboardTitle: 'Tableau de Bord Abonnement',
             dashboardSubtitle: 'Gérez votre abonnement, utilisation et facturation',
-            loadingDashboard: 'Chargement du tableau de bord...'
+            loadingDashboard: 'Chargement du tableau de bord...',
+            usageOverview: 'Aperçu de l\'Utilisation',
+            remaining: 'restant',
+            noUsageData: 'Aucune donnée d\'utilisation disponible',
+            confirmCancellation: 'Confirmer l\'Annulation',
+            cancellationWarning: 'Êtes-vous sûr de vouloir annuler votre abonnement ?',
+            cancelAtPeriodEnd: 'Annuler à la fin de la période',
+            cancelAtPeriodEndDesc: 'Votre abonnement restera actif jusqu\'à la fin de votre période de facturation actuelle.',
+            cancelImmediately: 'Annuler immédiatement',
+            cancelImmediatelyDesc: 'Votre abonnement sera annulé immédiatement et vous perdrez l\'accès.',
+            confirmCancel: 'Oui, Annuler',
+            keepSubscription: 'Garder l\'Abonnement',
+            confirmReactivation: 'Réactiver l\'Abonnement',
+            reactivationInfo: 'Votre abonnement sera réactivé et la facturation reprendra.',
+            subscriptionDetails: 'Détails de l\'Abonnement',
+            plan: 'Plan',
+            price: 'Prix',
+            confirmReactivate: 'Réactiver',
+            cancel: 'Annuler'
         }
     })
 
@@ -98,11 +137,21 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     const getCurrentSubscription = async () => {
         isLoading.value = true
         error.value = ''
-        
+
         try {
-            const response = await axios.get('/subscriptions/current')
-            currentSubscription.value = response.data
-            return response.data
+            let data: any
+
+            if (isDemoMode()) {
+                logDemoAction('Getting demo current subscription')
+                await simulateDelay(1000)
+                data = getDemoCurrentSubscription('active') // You can change this to test different states
+            } else {
+                const response = await axios.get('/subscriptions/current')
+                data = response.data
+            }
+
+            currentSubscription.value = data
+            return data
         } catch (err: any) {
             if (err.response?.status === 404) {
                 // Pas d'abonnement actif
@@ -120,26 +169,34 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     const createCheckoutSession = async (planId: string, successUrl: string, cancelUrl: string, couponCode?: string) => {
         isLoading.value = true
         error.value = ''
-        
+
         try {
-            const payload: any = {
-                subscription_plan_id: planId,
-                success_url: successUrl,
-                cancel_url: cancelUrl
+            let response: any
+
+            if (isDemoMode()) {
+                logDemoAction('Creating demo checkout session', { planId, couponCode })
+                response = await demoPayments.createCheckoutSession(planId, successUrl, cancelUrl, couponCode)
+            } else {
+                const payload: any = {
+                    subscription_plan_id: planId,
+                    success_url: successUrl,
+                    cancel_url: cancelUrl
+                }
+
+                if (couponCode) {
+                    payload.coupon_code = couponCode
+                }
+
+                const axiosResponse = await axios.post('/subscriptions/checkout', payload)
+                response = axiosResponse.data
             }
-            
-            if (couponCode) {
-                payload.coupon_code = couponCode
+
+            // Rediriger vers Stripe Checkout (ou demo checkout)
+            if (response.url) {
+                window.location.href = response.url
             }
-            
-            const response = await axios.post('/subscriptions/checkout', payload)
-            
-            // Rediriger vers Stripe Checkout
-            if (response.data.url) {
-                window.location.href = response.data.url
-            }
-            
-            return response.data
+
+            return response
         } catch (err: any) {
             error.value = err.response?.data?.error_message || t('subscriptions.checkoutError')
             throw err
@@ -152,18 +209,26 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     const createPortalSession = async (returnUrl: string) => {
         isLoading.value = true
         error.value = ''
-        
+
         try {
-            const response = await axios.post('/subscriptions/portal', {
-                return_url: returnUrl
-            })
-            
-            // Rediriger vers le portail Stripe
-            if (response.data.url) {
-                window.location.href = response.data.url
+            let response: any
+
+            if (isDemoMode()) {
+                logDemoAction('Creating demo portal session', { returnUrl })
+                response = await demoPayments.createPortalSession(returnUrl)
+            } else {
+                const axiosResponse = await axios.post('/subscriptions/portal', {
+                    return_url: returnUrl
+                })
+                response = axiosResponse.data
             }
-            
-            return response.data
+
+            // Rediriger vers le portail Stripe (ou demo portal)
+            if (response.url) {
+                window.location.href = response.url
+            }
+
+            return response
         } catch (err: any) {
             error.value = err.response?.data?.error_message || t('subscriptions.portalError')
             throw err
@@ -216,8 +281,18 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     // Récupérer les métriques d'utilisation
     const getUsageMetrics = async () => {
         try {
-            const response = await axios.get('/subscriptions/usage')
-            usageMetrics.value = response.data || []
+            let data: any[]
+
+            if (isDemoMode()) {
+                logDemoAction('Getting demo usage metrics')
+                await simulateDelay(800)
+                data = getDemoUsageMetrics()
+            } else {
+                const response = await axios.get('/subscriptions/usage')
+                data = response.data || []
+            }
+
+            usageMetrics.value = data
             return usageMetrics.value
         } catch (err: any) {
             console.error('Erreur lors du chargement des métriques:', err)
@@ -226,14 +301,21 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     }
 
     // Vérifier les limites d'utilisation
-    const checkUsageLimit = async (metricType: string, increment: number = 1) => {
+    const checkUsageLimit = async (metricType: string, requestedAmount: number = 1) => {
         try {
-            const response = await axios.post('/subscriptions/usage/check', {
-                metric_type: metricType,
-                increment: increment
-            })
-            
-            return response.data.allowed
+            let result: any
+
+            if (isDemoMode()) {
+                logDemoAction('Checking demo usage limit', { metricType, requestedAmount })
+                result = await demoPayments.checkUsageLimit(metricType, requestedAmount)
+                return result.allowed
+            } else {
+                const response = await axios.post('/subscriptions/usage/check', {
+                    metric_type: metricType,
+                    requested_amount: requestedAmount
+                })
+                return response.data.allowed
+            }
         } catch (err: any) {
             console.error('Erreur lors de la vérification des limites:', err)
             error.value = err.response?.data?.error_message || t('subscriptions.usageLimitError')

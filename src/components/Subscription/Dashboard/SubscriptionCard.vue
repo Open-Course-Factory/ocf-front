@@ -121,7 +121,7 @@
             :disabled="isReactivating"
           >
             <i :class="isReactivating ? 'fas fa-spinner fa-spin' : 'fas fa-undo'"></i>
-            {{ t('subscriptionPlansreactivateSubscription') }}
+            {{ t('subscriptionPlans.reactivateSubscription') }}
           </button>
         </div>
       </div>

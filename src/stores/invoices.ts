@@ -52,6 +52,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
             unpaid: 'Unpaid',
             draft: 'Draft',
             void: 'Void',
+            viewInStripe: 'View in Stripe',
             modify: 'View invoice details', 
             add: 'Create invoice',
         }
@@ -80,6 +81,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
             unpaid: 'Non Payée',
             draft: 'Brouillon',
             void: 'Annulée',
+            viewInStripe: 'Voir dans Stripe',
             modify: 'Voir les détails de la facture', 
             add: 'Créer une facture',
         }
