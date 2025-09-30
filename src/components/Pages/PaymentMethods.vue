@@ -22,27 +22,39 @@
 -->
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import Entity from './Entity.vue';
 import { usePaymentMethodsStore } from '../../stores/paymentMethods';
-import axios from 'axios';
+import { useSubscriptionsStore } from '../../stores/subscriptions';
 
 const entityStore = usePaymentMethodsStore();
+const subscriptionsStore = useSubscriptionsStore();
 const isSettingDefault = ref(false);
 const error = ref('');
+
+// Charger les méthodes de paiement au montage
+onMounted(async () => {
+    await loadPaymentMethods();
+});
+
+// Fonction pour charger les méthodes de paiement
+const loadPaymentMethods = async () => {
+    try {
+        error.value = '';
+        await entityStore.syncAndLoadPaymentMethods();
+    } catch (err: any) {
+        console.error('Erreur lors du chargement des méthodes de paiement:', err);
+        error.value = 'Erreur lors du chargement des méthodes de paiement';
+    }
+};
 
 // Action pour définir une méthode comme défaut
 const setAsDefault = async (paymentMethodId: string) => {
     isSettingDefault.value = true;
     error.value = '';
-    
+
     try {
         await entityStore.setAsDefault(paymentMethodId);
-        
-        // Recharger les méthodes de paiement pour voir les changements
-        const response = await axios.get('/payment-methods/user');
-        entityStore.entities = response.data || [];
-        
     } catch (err: any) {
         console.error('Erreur lors de la définition comme défaut:', err);
         error.value = err.response?.data?.error_message || 'Erreur lors de la mise à jour';
@@ -51,12 +63,18 @@ const setAsDefault = async (paymentMethodId: string) => {
     }
 };
 
-// Ouvrir Stripe pour ajouter une nouvelle méthode
-const addPaymentMethod = () => {
-    // TODO: Intégrer Stripe Elements pour ajouter une carte
-    console.log('Ouverture de Stripe Elements pour ajouter une carte');
-    // Pour l'instant, on peut rediriger vers le portail Stripe
-    // ou intégrer Stripe Elements directement dans un modal
+// Ouvrir le portail Stripe pour gérer les méthodes de paiement
+const addPaymentMethod = async () => {
+    try {
+        const returnUrl = `${window.location.origin}/payment-methods`;
+        await subscriptionsStore.createPortalSession(returnUrl);
+
+        // Note: Quand l'utilisateur reviendra du portail,
+        // la page se rechargera et les méthodes seront automatiquement synchronisées
+    } catch (err: any) {
+        console.error('Erreur ouverture portail:', err);
+        error.value = err.response?.data?.error_message || 'Impossible d\'ouvrir le portail de gestion';
+    }
 };
 </script>
 
@@ -72,10 +90,21 @@ const addPaymentMethod = () => {
                 </button>
             </div>
 
-            <!-- Informations utiles -->
+            <!-- Informations utiles et actions -->
             <div class="info-banner">
-                <i class="fas fa-info-circle"></i>
-                <span>Gérez vos méthodes de paiement. Vos données bancaires sont sécurisées par Stripe.</span>
+                <div class="info-content">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Gérez vos méthodes de paiement. Vos données bancaires sont sécurisées par Stripe.</span>
+                </div>
+                <button
+                    class="btn btn-outline-primary btn-sm refresh-btn"
+                    @click="loadPaymentMethods"
+                    :disabled="entityStore.isLoading"
+                    title="Actualiser les méthodes de paiement"
+                >
+                    <i :class="entityStore.isLoading ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'"></i>
+                    <span v-if="!entityStore.isLoading">Actualiser</span>
+                </button>
             </div>
 
             <!-- Message si pas de méthodes de paiement -->
@@ -182,9 +211,33 @@ const addPaymentMethod = () => {
     padding: 15px;
     margin-bottom: 20px;
     display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    color: #2e7d32;
+}
+
+.info-content {
+    display: flex;
     align-items: center;
     gap: 10px;
+    flex: 1;
+}
+
+.refresh-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    white-space: nowrap;
     color: #2e7d32;
+    border-color: #2e7d32;
+}
+
+.refresh-btn:hover:not(:disabled) {
+    background-color: #2e7d32;
+    color: white;
 }
 
 .alert {

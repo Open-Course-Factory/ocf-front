@@ -128,12 +128,64 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', () => {
         return monthsUntilExpiry <= monthsAhead && monthsUntilExpiry >= 0;
     }
 
+    // Synchroniser les méthodes de paiement avec Stripe
+    const syncPaymentMethods = async () => {
+        try {
+            base.isLoading.value = true;
+            base.error.value = '';
+
+            const response = await axios.post('/payment-methods/sync');
+            console.log('Payment methods sync result:', response.data);
+
+            return response.data;
+        } catch (error: any) {
+            console.error('Erreur lors de la synchronisation des méthodes de paiement:', error);
+            base.error.value = error.response?.data?.error_message || 'Erreur lors de la synchronisation';
+            throw error;
+        } finally {
+            base.isLoading.value = false;
+        }
+    }
+
+    // Charger les méthodes de paiement de l'utilisateur
+    const loadUserPaymentMethods = async () => {
+        try {
+            base.isLoading.value = true;
+            base.error.value = '';
+
+            const response = await axios.get('/payment-methods/user');
+            base.entities.splice(0, base.entities.length, ...(response.data || []));
+            base.lastLoaded.value = new Date();
+
+            return response.data || [];
+        } catch (error: any) {
+            console.error('Erreur lors du chargement des méthodes de paiement:', error);
+            base.error.value = error.response?.data?.error_message || 'Erreur lors du chargement';
+            throw error;
+        } finally {
+            base.isLoading.value = false;
+        }
+    }
+
+    // Synchroniser puis charger les méthodes de paiement (méthode recommandée)
+    const syncAndLoadPaymentMethods = async () => {
+        try {
+            // D'abord synchroniser avec Stripe
+            await syncPaymentMethods();
+            // Puis charger les méthodes de paiement
+            return await loadUserPaymentMethods();
+        } catch (error) {
+            console.error('Erreur lors de la synchronisation et du chargement:', error);
+            throw error;
+        }
+    }
+
     // Action pour définir comme méthode par défaut
     const setAsDefault = async (paymentMethodId: string) => {
         try {
             await axios.post(`/payment-methods/${paymentMethodId}/set-default`);
             // Recharger les méthodes de paiement après modification
-            // Cette action sera appelée depuis les composants
+            await syncAndLoadPaymentMethods();
             return true;
         } catch (error) {
             console.error('Erreur lors de la définition comme défaut:', error);
@@ -158,11 +210,14 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', () => {
     }
 
     return {
-        ...base, 
+        ...base,
         fieldList,
         getCardIcon,
         formatPaymentMethod,
         isExpiringSoon,
+        syncPaymentMethods,
+        loadUserPaymentMethods,
+        syncAndLoadPaymentMethods,
         setAsDefault,
         getSelectDatas
     }

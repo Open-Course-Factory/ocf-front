@@ -55,19 +55,24 @@ const entityStoreWithFiltering = computed(() => ({
 
 // Charger les factures selon le rôle de l'utilisateur
 onMounted(async () => {
+    await loadInvoices();
+});
+
+// Fonction pour charger les factures
+const loadInvoices = async () => {
     try {
         if (isAdmin.value) {
             // Admin: charger toutes les factures
             await entityStore.loadEntities('/invoices');
         } else {
-            // Utilisateur normal: charger seulement ses factures
-            const response = await axios.get('/invoices/user');
-            entityStore.entities = response.data || [];
+            // Utilisateur normal: synchroniser et charger ses factures
+            await entityStore.syncAndLoadInvoices();
         }
     } catch (err) {
         console.error('Erreur lors du chargement des factures:', err);
+        error.value = 'Erreur lors du chargement des factures';
     }
-});
+};
 
 // Action pour télécharger une facture
 const downloadInvoice = async (invoiceId: string) => {
@@ -145,16 +150,29 @@ const getInvoiceStats = computed(() => {
                 </div>
             </div>
 
-            <!-- Filtres -->
+            <!-- Filtres et actions -->
             <div class="filter-section">
-                <label for="statusFilter">Filtrer par statut :</label>
-                <select id="statusFilter" v-model="filter" class="filter-select">
-                    <option value="all">Toutes les factures</option>
-                    <option value="paid">Payées</option>
-                    <option value="unpaid">Non payées</option>
-                    <option value="draft">Brouillons</option>
-                    <option value="void">Annulées</option>
-                </select>
+                <div class="filter-controls">
+                    <div class="filter-group">
+                        <label for="statusFilter">Filtrer par statut :</label>
+                        <select id="statusFilter" v-model="filter" class="filter-select">
+                            <option value="all">Toutes les factures</option>
+                            <option value="paid">Payées</option>
+                            <option value="unpaid">Non payées</option>
+                            <option value="draft">Brouillons</option>
+                            <option value="void">Annulées</option>
+                        </select>
+                    </div>
+                    <button
+                        class="btn btn-outline-primary refresh-btn"
+                        @click="loadInvoices"
+                        :disabled="entityStore.isLoading"
+                        title="Actualiser les factures"
+                    >
+                        <i :class="entityStore.isLoading ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'"></i>
+                        <span v-if="!entityStore.isLoading">Actualiser</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Message si pas de factures -->
@@ -316,6 +334,17 @@ const getInvoiceStats = computed(() => {
 
 .filter-section {
     margin-bottom: 20px;
+}
+
+.filter-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.filter-group {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -326,6 +355,15 @@ const getInvoiceStats = computed(() => {
     border: 1px solid #ddd;
     border-radius: 4px;
     background: white;
+}
+
+.refresh-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    white-space: nowrap;
 }
 
 .empty-state {

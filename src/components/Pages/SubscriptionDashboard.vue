@@ -160,8 +160,13 @@ async function loadUsageMetrics() {
 
 async function loadRecentInvoices() {
   try {
-    const response = await axios.get('/invoices/user?limit=3')
-    recentInvoices.value = response.data || []
+    // Utiliser le store pour synchroniser et charger les factures
+    const { useInvoicesStore } = await import('../../stores/invoices')
+    const invoicesStore = useInvoicesStore()
+
+    await invoicesStore.syncAndLoadInvoices()
+    // Prendre seulement les 3 plus récentes
+    recentInvoices.value = invoicesStore.entities.slice(0, 3)
   } catch (err) {
     console.warn('Impossible de charger les factures récentes:', err)
     recentInvoices.value = []

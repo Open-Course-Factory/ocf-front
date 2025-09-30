@@ -153,26 +153,70 @@ export const useInvoicesStore = defineStore('invoices', () => {
         }
     }
 
-    // Action pour télécharger une facture
+    // Synchroniser les factures avec Stripe
+    const syncInvoices = async () => {
+        try {
+            base.isLoading.value = true;
+            base.error.value = '';
+
+            const response = await axios.post('/invoices/sync');
+            console.log('Invoice sync result:', response.data);
+
+            return response.data;
+        } catch (error: any) {
+            console.error('Erreur lors de la synchronisation des factures:', error);
+            base.error.value = error.response?.data?.error_message || 'Erreur lors de la synchronisation';
+            throw error;
+        } finally {
+            base.isLoading.value = false;
+        }
+    }
+
+    // Charger les factures de l'utilisateur
+    const loadUserInvoices = async () => {
+        try {
+            base.isLoading.value = true;
+            base.error.value = '';
+
+            const response = await axios.get('/invoices/user');
+            base.entities.splice(0, base.entities.length, ...(response.data || []));
+            base.lastLoaded.value = new Date();
+
+            return response.data || [];
+        } catch (error: any) {
+            console.error('Erreur lors du chargement des factures:', error);
+            base.error.value = error.response?.data?.error_message || 'Erreur lors du chargement';
+            throw error;
+        } finally {
+            base.isLoading.value = false;
+        }
+    }
+
+    // Synchroniser puis charger les factures (méthode recommandée)
+    const syncAndLoadInvoices = async () => {
+        try {
+            // D'abord synchroniser avec Stripe
+            await syncInvoices();
+            // Puis charger les factures
+            return await loadUserInvoices();
+        } catch (error) {
+            console.error('Erreur lors de la synchronisation et du chargement:', error);
+            throw error;
+        }
+    }
+
+    // Action pour télécharger une facture (utilise la nouvelle API)
     const downloadInvoice = async (invoiceId: string) => {
         try {
-            const response = await axios.get(`/invoices/${invoiceId}/download`, {
-                responseType: 'blob' // Important pour télécharger un fichier
-            });
+            // Solution simple: utiliser window.location pour laisser le navigateur gérer la redirection
+            // Cela évite les problèmes CORS avec Stripe
+            const downloadUrl = `/invoices/${invoiceId}/download`;
 
-            // Créer un lien de téléchargement
-            const blob = new Blob([response.data], { type: 'application/pdf' });
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `facture-${invoiceId}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-            
+            // Ouvrir dans un nouvel onglet pour éviter de quitter la page
+            window.open(downloadUrl, '_blank');
+
             return true;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erreur lors du téléchargement:', error);
             throw error;
         }
@@ -196,13 +240,16 @@ export const useInvoicesStore = defineStore('invoices', () => {
     }
 
     return {
-        ...base, 
+        ...base,
         fieldList,
         formatAmount,
         getStatusClass,
         getStatusIcon,
         isOverdue,
         formatDate,
+        syncInvoices,
+        loadUserInvoices,
+        syncAndLoadInvoices,
         downloadInvoice,
         getSelectDatas
     }

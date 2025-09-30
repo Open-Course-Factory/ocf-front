@@ -33,7 +33,7 @@
 
     <div class="sessions-section">
       <div class="section-header">
-        <h3>Terminaux Partagés ({{ sharedSessions.length }})</h3>
+        <h3>Terminaux Partagés ({{ sharedSessions?.length || 0 }})</h3>
         <div class="header-actions">
           <button class="btn btn-secondary" @click="loadSharedSessions">
             <i class="fas fa-sync" :class="{ 'fa-spin': isLoadingShared }"></i>
@@ -42,7 +42,7 @@
         </div>
       </div>
 
-      <div v-if="isLoadingShared && sharedSessions.length === 0" class="loading-section">
+      <div v-if="isLoadingShared && (sharedSessions?.length || 0) === 0" class="loading-section">
         <i class="fas fa-spinner fa-spin"></i> Chargement des sessions partagées...
       </div>
 
@@ -53,8 +53,8 @@
         </button>
       </div>
 
-      <div v-if="sharedSessions.length > 0" class="sessions-grid">
-        <div v-for="sharedSession in sharedSessions" :key="sharedSession.terminal.id"
+      <div v-if="(sharedSessions?.length || 0) > 0" class="sessions-grid">
+        <div v-for="sharedSession in (sharedSessions || [])" :key="sharedSession.terminal.id"
              :class="['session-card', 'shared-terminal', { 'inactive-terminal': isTerminalInactive(sharedSession.terminal.status) }]">
 
           <!-- En-tête avec indicateur de partage -->
@@ -249,11 +249,14 @@ async function loadSharedSessions() {
 
   try {
     console.log('Loading shared sessions...')
-    sharedSessions.value = await terminalService.getSharedTerminals()
-    console.log('Shared sessions loaded:', sharedSessions.value)
+    const result = await terminalService.getSharedTerminals()
+    console.log('Shared sessions loaded:', result)
+
+    // Ensure we always have an array, even if API returns null/undefined
+    sharedSessions.value = Array.isArray(result) ? result : []
 
     // Load user information for shared sessions
-    if (sharedSessions.value.length > 0) {
+    if (sharedSessions.value && sharedSessions.value.length > 0) {
       await loadUserInfoForSharedSessions(sharedSessions.value)
     }
   } catch (err: any) {
