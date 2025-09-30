@@ -53,15 +53,19 @@ const entityStoreWithFiltering = computed(() => ({
     entities: filteredInvoices.value
 }));
 
-// Charger les factures de l'utilisateur au lieu de toutes les factures
+// Charger les factures selon le rôle de l'utilisateur
 onMounted(async () => {
-    if (!isAdmin.value) {
-        try {
+    try {
+        if (isAdmin.value) {
+            // Admin: charger toutes les factures
+            await entityStore.loadEntities('/invoices');
+        } else {
+            // Utilisateur normal: charger seulement ses factures
             const response = await axios.get('/invoices/user');
             entityStore.entities = response.data || [];
-        } catch (err) {
-            console.error('Erreur lors du chargement des factures:', err);
         }
+    } catch (err) {
+        console.error('Erreur lors du chargement des factures:', err);
     }
 });
 

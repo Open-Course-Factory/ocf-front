@@ -11,7 +11,7 @@
     </header>
     <nav class="menu-nav">
       <ul>
-        <li v-for="category in filteredCategories" :key="category.key" class="menu-category">
+        <li v-for="category in filteredCategories" :key="category.key" class="menu-category" :data-category="category.key">
           <div 
             class="category-header"
             @click="toggleCategory(category.key, $event)"
@@ -100,7 +100,8 @@ const route = useRoute();
 const expandedCategories = ref<Record<string, boolean>>({
   courses: false,
   labs: false,
-  account: false
+  account: false,
+  admin: false
 });
 
 const menuPositions = ref<Record<string, { top: number; left: number }>>({});
@@ -111,7 +112,7 @@ const menuCategories = computed(() => [
     key: 'courses',
     label: 'Conception de cours',
     icon: 'fas fa-graduation-cap',
-    allowedRoles: ['administrator', 'teacher', 'student'], // Tous les rôles
+    allowedRoles: ['administrator', 'teacher', 'student'],
     items: [
       {
         route: '/courses',
@@ -161,7 +162,7 @@ const menuCategories = computed(() => [
     key: 'labs',
     label: 'Travaux Pratiques',
     icon: 'fas fa-laptop-code',
-    allowedRoles: ['administrator', 'teacher', 'student'], // Seulement admin et professeurs
+    allowedRoles: ['administrator', 'teacher', 'student'],
     items: [
       {
         route: '/terminal-creation',
@@ -191,9 +192,9 @@ const menuCategories = computed(() => [
   },
   {
     key: 'account',
-    label: 'Gestion du compte',
-    icon: 'fas fa-user-cog',
-    allowedRoles: ['administrator', 'teacher'], // Tous les rôles
+    label: 'Mon Compte',
+    icon: 'fas fa-user',
+    allowedRoles: ['administrator', 'teacher', 'student'],
     items: [
       {
         route: '/subscription-dashboard',
@@ -218,12 +219,34 @@ const menuCategories = computed(() => [
         label: t('paymentMethods.pageTitle'),
         title: t('paymentMethods.pageTitle'),
         icon: 'fas fa-credit-card'
-      },
-      {
+      }
+    ].concat(
+      // Add invoices for non-admin users only
+      currentUser.userRoles[0] !== 'administrator' ? [{
         route: '/invoices',
         label: t('invoices.pageTitle'),
         title: t('invoices.pageTitle'),
         icon: 'fas fa-money-bill'
+      }] : []
+    )
+  },
+  {
+    key: 'admin',
+    label: 'Administration',
+    icon: 'fas fa-shield-alt',
+    allowedRoles: ['administrator'],
+    items: [
+      {
+        route: '/admin/subscription-plans',
+        label: 'Plans d\'Abonnement (Admin)',
+        title: 'Administration des plans d\'abonnement',
+        icon: 'fas fa-cogs'
+      },
+      {
+        route: '/invoices',
+        label: 'Toutes les Factures',
+        title: 'Visualiser toutes les factures système',
+        icon: 'fas fa-file-invoice-dollar'
       }
     ]
   }
@@ -655,6 +678,41 @@ watch(() => route.path, () => {
 .category-header.has-active-item {
   background-color: #495057;
   border-left: 3px solid #007bff;
+}
+
+/* Styles spéciaux pour la section Administration */
+.menu-category[data-category="admin"] .category-header {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  border: 1px solid #c82333;
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+}
+
+.menu-category[data-category="admin"] .category-header:hover {
+  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+  transform: translateX(3px);
+}
+
+.menu-category[data-category="admin"] .category-header.active {
+  background: linear-gradient(135deg, #bd2130 0%, #a71e2a 100%);
+}
+
+.menu-category[data-category="admin"] .category-items {
+  background-color: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+.menu-category[data-category="admin"] .category-items li a {
+  color: #f8d7da;
+}
+
+.menu-category[data-category="admin"] .category-items li a:hover {
+  background-color: rgba(220, 53, 69, 0.2);
+  color: #fff;
+}
+
+.main-menu.collapsed .menu-category[data-category="admin"] .category-items {
+  background-color: #dc3545;
+  border-color: #c82333;
 }
 
 /* Adaptation pour le mode collapsed */

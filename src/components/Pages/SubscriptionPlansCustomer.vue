@@ -137,19 +137,6 @@
         </div>
       </div>
 
-      <!-- Admin Section (if admin) -->
-      <div v-if="isAdmin" class="admin-section">
-        <div class="admin-header">
-          <h2>
-            <i class="fas fa-cog"></i>
-            Plan Management (Admin)
-          </h2>
-        </div>
-        <Entity
-          entity-name="subscription-plans"
-          :entity-store="entityStore"
-        />
-      </div>
     </div>
   </div>
 </template>
@@ -161,7 +148,6 @@ import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import { useI18n } from 'vue-i18n'
 import router from '../../router/index'
-import Entity from './Entity.vue'
 
 const { t } = useI18n()
 
@@ -482,23 +468,6 @@ async function selectPlan(plan: any) {
   line-height: 1.5;
 }
 
-/* Admin Section */
-.admin-section {
-  margin-top: 60px;
-  padding-top: 40px;
-  border-top: 2px solid #e9ecef;
-}
-
-.admin-header {
-  margin-bottom: 30px;
-}
-
-.admin-header h2 {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #333;
-}
 
 /* Utilities */
 .text-success { color: #28a745 !important; }
