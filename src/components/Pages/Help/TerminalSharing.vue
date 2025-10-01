@@ -26,42 +26,41 @@
     <div class="help-nav">
       <router-link to="/help" class="back-link">
         <i class="fas fa-arrow-left"></i>
-        Retour au Centre d'Aide
+        {{ t('help.navigation.backToHelp') }}
       </router-link>
     </div>
 
     <div class="article-header">
-      <h1><i class="fas fa-share-alt"></i> Partage et Collaboration</h1>
+      <h1><i class="fas fa-share-alt"></i> {{ t('help.terminals.sharing.title') }}</h1>
       <p class="article-description">
-        Apprenez à partager vos terminaux et collaborer efficacement avec d'autres utilisateurs
+        {{ t('help.terminals.sharing.intro') }}
       </p>
     </div>
 
     <div class="article-content">
       <section class="help-section">
-        <h2><i class="fas fa-info-circle"></i> Aperçu du partage de terminaux</h2>
+        <h2><i class="fas fa-info-circle"></i> {{ t('help.terminals.sharing.title') }}</h2>
         <p>
-          Le système de partage OCF vous permet de donner accès à vos sessions terminal à d'autres utilisateurs,
-          facilitant ainsi la collaboration, l'assistance technique et l'enseignement.
+          {{ t('help.terminals.sharing.intro') }}
         </p>
 
         <div class="feature-grid">
           <div class="feature-card">
             <i class="fas fa-users"></i>
-            <h4>Collaboration en temps réel</h4>
-            <p>Plusieurs utilisateurs peuvent accéder simultanément au même terminal</p>
+            <h4>{{ t('help.terminals.sharing.useCases.collaboration.title') }}</h4>
+            <p>{{ t('help.terminals.sharing.useCases.collaboration.description') }}</p>
           </div>
 
           <div class="feature-card">
-            <i class="fas fa-lock"></i>
-            <h4>Contrôle d'accès</h4>
-            <p>Gérez qui peut voir et interagir avec vos sessions</p>
+            <i class="fas fa-chalkboard-teacher"></i>
+            <h4>{{ t('help.terminals.sharing.useCases.teaching.title') }}</h4>
+            <p>{{ t('help.terminals.sharing.useCases.teaching.description') }}</p>
           </div>
 
           <div class="feature-card">
-            <i class="fas fa-clock"></i>
-            <h4>Partage temporaire</h4>
-            <p>Définissez des durées de partage pour un contrôle optimal</p>
+            <i class="fas fa-tools"></i>
+            <h4>{{ t('help.terminals.sharing.useCases.support.title') }}</h4>
+            <p>{{ t('help.terminals.sharing.useCases.support.description') }}</p>
           </div>
         </div>
       </section>
@@ -396,7 +395,16 @@
 </template>
 
 <script setup lang="ts">
-// Pas de logique spéciale nécessaire pour cette page
+import { onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useHelpTranslations } from '../../../composables/useHelpTranslations'
+
+const { t } = useI18n()
+const { loadHelpTranslations } = useHelpTranslations()
+
+onMounted(async () => {
+  await loadHelpTranslations()
+})
 </script>
 
 <style scoped>

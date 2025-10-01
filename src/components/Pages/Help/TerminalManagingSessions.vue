@@ -26,22 +26,22 @@
     <div class="help-nav">
       <router-link to="/help" class="back-link">
         <i class="fas fa-arrow-left"></i>
-        Retour au Centre d'Aide
+        {{ t('help.navigation.backToHelp') }}
       </router-link>
     </div>
 
     <div class="article-header">
-      <h1><i class="fas fa-cogs"></i> Gestion des Sessions Terminal</h1>
+      <h1><i class="fas fa-cogs"></i> {{ t('help.terminals.managingSessions.title') }}</h1>
       <p class="article-description">
-        Apprenez à surveiller, contrôler et optimiser vos sessions terminal
+        {{ t('help.terminals.managingSessions.intro') }}
       </p>
     </div>
 
     <div class="article-content">
       <section class="help-section">
-        <h2><i class="fas fa-list"></i> Vue d'ensemble de vos sessions</h2>
+        <h2><i class="fas fa-list"></i> {{ t('help.terminals.managingSessions.sessionTypes.title') }}</h2>
         <p>
-          La page <strong>"Mes Sessions"</strong> est votre tableau de bord principal pour gérer toutes vos sessions terminal actives et passées.
+          {{ t('help.terminals.managingSessions.intro') }}
         </p>
 
         <div class="info-card">
@@ -53,20 +53,29 @@
           </router-link>
         </div>
 
-        <h3>Informations affichées pour chaque session :</h3>
-        <ul>
-          <li><strong>ID de session :</strong> Identifiant unique de votre terminal</li>
-          <li><strong>Statut :</strong> Active, Expirée, ou Arrêtée</li>
-          <li><strong>Dates :</strong> Création et expiration de la session</li>
-          <li><strong>Type d'instance :</strong> Spécifications du serveur utilisé</li>
-          <li><strong>Accès rapide :</strong> Boutons pour ouvrir le terminal</li>
-        </ul>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <i class="fas fa-user"></i>
+            <h4>{{ t('help.terminals.managingSessions.sessionTypes.personal.title') }}</h4>
+            <p>{{ t('help.terminals.managingSessions.sessionTypes.personal.description') }}</p>
+          </div>
+          <div class="feature-card">
+            <i class="fas fa-users"></i>
+            <h4>{{ t('help.terminals.managingSessions.sessionTypes.shared.title') }}</h4>
+            <p>{{ t('help.terminals.managingSessions.sessionTypes.shared.description') }}</p>
+          </div>
+          <div class="feature-card">
+            <i class="fas fa-clock"></i>
+            <h4>{{ t('help.terminals.managingSessions.sessionTypes.temporary.title') }}</h4>
+            <p>{{ t('help.terminals.managingSessions.sessionTypes.temporary.description') }}</p>
+          </div>
+        </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-sync-alt"></i> Synchronisation des sessions</h2>
+        <h2><i class="fas fa-sync-alt"></i> {{ t('help.terminals.managingSessions.synchronization.title') }}</h2>
         <p>
-          La synchronisation permet de maintenir à jour le statut de vos sessions avec le serveur terminal.
+          {{ t('help.terminals.managingSessions.synchronization.description') }}
         </p>
 
         <div class="feature-grid">
@@ -281,7 +290,16 @@
 </template>
 
 <script setup lang="ts">
-// Pas de logique spéciale nécessaire pour cette page
+import { onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useHelpTranslations } from '../../../composables/useHelpTranslations'
+
+const { t } = useI18n()
+const { loadHelpTranslations } = useHelpTranslations()
+
+onMounted(async () => {
+  await loadHelpTranslations()
+})
 </script>
 
 <style scoped>

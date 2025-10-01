@@ -26,14 +26,14 @@
     <div class="help-nav">
       <router-link to="/help" class="back-link">
         <i class="fas fa-arrow-left"></i>
-        Retour au Centre d'Aide
+        {{ t('help.navigation.backToHelp') }}
       </router-link>
     </div>
 
     <div class="article-header">
-      <h1><i class="fas fa-calendar-check"></i> Gestion des Abonnements</h1>
+      <h1><i class="fas fa-calendar-check"></i> {{ t('help.account.subscription.title') }}</h1>
       <p class="article-description">
-        Comprendre et gérer votre abonnement OCF, suivre votre utilisation et optimiser votre plan
+        {{ t('help.account.subscription.intro') }}
       </p>
     </div>
 
@@ -406,7 +406,16 @@
 </template>
 
 <script setup lang="ts">
-// Pas de logique spéciale nécessaire pour cette page
+import { onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useHelpTranslations } from '../../../composables/useHelpTranslations'
+
+const { t } = useI18n()
+const { loadHelpTranslations } = useHelpTranslations()
+
+onMounted(async () => {
+  await loadHelpTranslations()
+})
 </script>
 
 <style scoped>

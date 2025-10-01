@@ -26,14 +26,14 @@
     <div class="help-nav">
       <router-link to="/help" class="back-link">
         <i class="fas fa-arrow-left"></i>
-        Retour au Centre d'Aide
+        {{ t('help.navigation.backToHelp') }}
       </router-link>
     </div>
 
     <div class="article-header">
-      <h1><i class="fas fa-credit-card"></i> Facturation et Paiements</h1>
+      <h1><i class="fas fa-credit-card"></i> {{ t('help.account.billing.title') }}</h1>
       <p class="article-description">
-        Gérer vos méthodes de paiement, consulter vos factures et comprendre la facturation OCF
+        {{ t('help.account.billing.intro') }}
       </p>
     </div>
 
@@ -528,7 +528,16 @@
 </template>
 
 <script setup lang="ts">
-// Pas de logique spéciale nécessaire pour cette page
+import { onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useHelpTranslations } from '../../../composables/useHelpTranslations'
+
+const { t } = useI18n()
+const { loadHelpTranslations } = useHelpTranslations()
+
+onMounted(async () => {
+  await loadHelpTranslations()
+})
 </script>
 
 <style scoped>

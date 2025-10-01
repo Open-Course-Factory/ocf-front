@@ -24,9 +24,9 @@
 <template>
   <div class="help-page">
     <div class="help-header">
-      <h1><i class="fas fa-question-circle"></i> Centre d'Aide</h1>
+      <h1><i class="fas fa-question-circle"></i> {{ t('help.title') }}</h1>
       <p class="help-description">
-        Guides et documentation pour utiliser efficacement la plateforme OCF
+        {{ t('help.subtitle') }}
       </p>
     </div>
 
@@ -71,11 +71,11 @@
 
     <div class="help-footer">
       <div class="contact-support">
-        <h3><i class="fas fa-headset"></i> Besoin d'aide supplémentaire ?</h3>
-        <p>Si vous ne trouvez pas la réponse à votre question, n'hésitez pas à nous contacter.</p>
+        <h3><i class="fas fa-headset"></i> {{ t('help.contact.title') }}</h3>
+        <p>{{ t('help.contact.text') }} <a href="mailto:contact@labinux.com">{{ t('help.contact.email') }}</a></p>
         <a href="mailto:contact@labinux.com" class="btn btn-primary">
           <i class="fas fa-envelope"></i>
-          Contacter le Support
+          {{ t('help.contact.title') }}
         </a>
       </div>
     </div>
@@ -83,84 +83,93 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useHelpTranslations } from '../../composables/useHelpTranslations'
+
+const { t } = useI18n()
+const { loadHelpTranslations } = useHelpTranslations()
+
+onMounted(async () => {
+  await loadHelpTranslations()
+})
 
 const expandedSections = ref(new Set<string>())
 
-const helpSections = [
+const helpSections = computed(() => [
   {
     id: 'terminals',
-    title: 'Système de Terminaux',
-    description: 'Guides pour créer, gérer et utiliser les sessions de terminaux',
+    title: t('help.sections.terminals.title'),
+    description: t('help.sections.terminals.description'),
     icon: 'fas fa-terminal',
     items: [
       {
         route: '/help/terminals/getting-started',
-        title: 'Premiers Pas',
-        description: 'Configuration initiale et création de votre première session',
+        title: t('help.sections.terminals.gettingStarted'),
+        description: t('help.terminals.gettingStarted.intro'),
         icon: 'fas fa-play-circle'
       },
       {
         route: '/help/terminals/managing-sessions',
-        title: 'Gestion des Sessions',
-        description: 'Comment gérer, surveiller et contrôler vos sessions actives',
+        title: t('help.sections.terminals.managingSessions'),
+        description: t('help.terminals.managingSessions.intro'),
         icon: 'fas fa-cogs'
       },
       {
         route: '/help/terminals/sharing',
-        title: 'Partage et Collaboration',
-        description: 'Partager vos terminaux et collaborer avec d\'autres utilisateurs',
+        title: t('help.sections.terminals.sharing'),
+        description: t('help.terminals.sharing.intro'),
         icon: 'fas fa-share-alt'
       },
       {
         route: '/help/terminals/troubleshooting',
-        title: 'Dépannage',
-        description: 'Solutions aux problèmes courants et conseils de dépannage',
+        title: t('help.sections.terminals.troubleshooting'),
+        description: t('help.terminals.troubleshooting.intro'),
         icon: 'fas fa-wrench'
       }
     ]
   },
   {
     id: 'courses',
-    title: 'Création de Cours',
-    description: 'Guides pour concevoir et organiser vos contenus pédagogiques',
+    title: t('help.sections.courses.title'),
+    description: t('help.sections.courses.description'),
     icon: 'fas fa-graduation-cap',
     items: [
       {
         route: '/help/courses/structure',
-        title: 'Structure des Cours',
-        description: 'Organisation des cours, chapitres, sections et pages',
+        title: t('help.sections.courses.structure'),
+        description: t('help.courses.structure.intro'),
         icon: 'fas fa-sitemap'
       },
       {
         route: '/help/courses/content',
-        title: 'Création de Contenu',
-        description: 'Rédaction et mise en forme du contenu pédagogique',
+        title: t('help.sections.courses.content'),
+        description: t('help.courses.content.intro'),
         icon: 'fas fa-edit'
       }
     ]
   },
   {
     id: 'account',
-    title: 'Gestion du Compte',
-    description: 'Abonnements, facturation et paramètres de compte',
+    title: t('help.sections.account.title'),
+    description: t('help.sections.account.description'),
     icon: 'fas fa-user-cog',
     items: [
       {
         route: '/help/account/subscription',
-        title: 'Abonnements',
-        description: 'Gérer votre abonnement et suivre votre utilisation',
+        title: t('help.sections.account.subscription'),
+        description: t('help.account.subscription.intro'),
         icon: 'fas fa-calendar-check'
       },
       {
         route: '/help/account/billing',
-        title: 'Facturation',
-        description: 'Méthodes de paiement, factures et adresses de facturation',
+        title: t('help.sections.account.billing'),
+        description: t('help.account.billing.intro'),
         icon: 'fas fa-credit-card'
       }
     ]
   }
-]
+])
 
 function toggleSection(sectionId: string) {
   if (expandedSections.value.has(sectionId)) {

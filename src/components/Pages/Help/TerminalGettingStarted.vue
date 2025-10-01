@@ -26,36 +26,29 @@
     <div class="help-nav">
       <router-link to="/help" class="back-link">
         <i class="fas fa-arrow-left"></i>
-        Retour au Centre d'Aide
+        {{ t('help.navigation.backToHelp') }}
       </router-link>
     </div>
 
     <div class="article-header">
-      <h1><i class="fas fa-play-circle"></i> Premiers Pas avec les Terminaux</h1>
+      <h1><i class="fas fa-play-circle"></i> {{ t('help.terminals.gettingStarted.title') }}</h1>
       <p class="article-description">
-        Guide de démarrage pour configurer et créer votre première session terminal
+        {{ t('help.terminals.gettingStarted.intro') }}
       </p>
     </div>
 
     <div class="article-content">
       <section class="help-section">
-        <h2><i class="fas fa-info-circle"></i> Qu'est-ce qu'un terminal OCF ?</h2>
+        <h2><i class="fas fa-info-circle"></i> {{ t('help.terminals.gettingStarted.overview.title') }}</h2>
         <p>
-          Le système de terminaux OCF vous permet d'accéder à des environnements Linux sécurisés
-          directement depuis votre navigateur. Ces terminaux sont parfaits pour :
+          {{ t('help.terminals.gettingStarted.overview.description') }}
         </p>
-        <ul>
-          <li>Apprendre et pratiquer les commandes Linux</li>
-          <li>Développer et tester du code</li>
-          <li>Collaborer sur des projets avec d'autres utilisateurs</li>
-          <li>Accéder à des outils de développement spécialisés</li>
-        </ul>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-key"></i> Étape 1 : Vérifier votre clé d'accès</h2>
+        <h2><i class="fas fa-key"></i> {{ t('help.terminals.gettingStarted.firstSteps.step1.title') }}</h2>
         <p>
-          Avant de créer votre première session, assurez-vous que votre clé d'accès terminal est configurée :
+          {{ t('help.terminals.gettingStarted.firstSteps.step1.description') }}
         </p>
         <div class="step-card">
           <div class="step-number">1</div>
@@ -84,9 +77,9 @@
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-plus-circle"></i> Étape 2 : Créer votre première session</h2>
+        <h2><i class="fas fa-plus-circle"></i> {{ t('help.terminals.gettingStarted.firstSteps.step2.title') }}</h2>
         <p>
-          Une fois votre clé d'accès configurée, vous pouvez créer votre première session terminal :
+          {{ t('help.terminals.gettingStarted.firstSteps.step2.description') }}
         </p>
 
         <div class="step-card">
@@ -127,9 +120,9 @@
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-terminal"></i> Étape 3 : Accéder à votre terminal</h2>
+        <h2><i class="fas fa-terminal"></i> {{ t('help.terminals.gettingStarted.firstSteps.step3.title') }}</h2>
         <p>
-          Une fois votre session créée, vous serez redirigé vers la page de gestion des sessions :
+          {{ t('help.terminals.gettingStarted.firstSteps.step3.description') }}
         </p>
 
         <div class="step-card">
@@ -160,32 +153,27 @@
       </section>
 
       <section class="help-section warning">
-        <h2><i class="fas fa-exclamation-triangle"></i> Conseils importants</h2>
+        <h2><i class="fas fa-exclamation-triangle"></i> {{ t('help.terminals.gettingStarted.firstSteps.step4.title') }}</h2>
         <div class="warning-content">
-          <ul>
-            <li><strong>Sauvegardez votre travail :</strong> Les sessions ont une durée limitée. Sauvegardez régulièrement vos fichiers importants.</li>
-            <li><strong>Clé d'accès sécurisée :</strong> Ne partagez jamais votre clé d'accès terminal avec d'autres personnes.</li>
-            <li><strong>Sessions limitées :</strong> Le nombre de sessions simultanées peut être limité selon votre abonnement.</li>
-            <li><strong>Expiration automatique :</strong> Les sessions inactives expirent automatiquement pour économiser les ressources.</li>
-          </ul>
+          <p>{{ t('help.terminals.gettingStarted.firstSteps.step4.description') }}</p>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-question-circle"></i> Prochaines étapes</h2>
-        <p>Maintenant que vous avez créé votre première session, explorez ces fonctionnalités :</p>
+        <h2><i class="fas fa-question-circle"></i> {{ t('help.navigation.nextSteps') }}</h2>
+        <p>{{ t('help.terminals.gettingStarted.quickAccess.title') }}</p>
 
         <div class="next-steps">
           <router-link to="/help/terminals/managing-sessions" class="next-step-card">
             <i class="fas fa-cogs"></i>
-            <h4>Gestion des Sessions</h4>
-            <p>Apprenez à surveiller, synchroniser et arrêter vos sessions</p>
+            <h4>{{ t('help.sections.terminals.managingSessions') }}</h4>
+            <p>{{ t('help.terminals.managingSessions.intro') }}</p>
           </router-link>
 
           <router-link to="/help/terminals/sharing" class="next-step-card">
             <i class="fas fa-share-alt"></i>
-            <h4>Partage et Collaboration</h4>
-            <p>Découvrez comment partager vos terminaux avec d'autres utilisateurs</p>
+            <h4>{{ t('help.sections.terminals.sharing') }}</h4>
+            <p>{{ t('help.terminals.sharing.intro') }}</p>
           </router-link>
         </div>
       </section>
@@ -194,7 +182,16 @@
 </template>
 
 <script setup lang="ts">
-// Pas de logique spéciale nécessaire pour cette page
+import { onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useHelpTranslations } from '../../../composables/useHelpTranslations'
+
+const { t } = useI18n()
+const { loadHelpTranslations } = useHelpTranslations()
+
+onMounted(async () => {
+  await loadHelpTranslations()
+})
 </script>
 
 <style scoped>

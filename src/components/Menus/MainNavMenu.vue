@@ -73,6 +73,7 @@ import { usePaymentMethodsStore } from '../../stores/paymentMethods.ts';
 import { useInvoicesStore } from '../../stores/invoices.ts';
 import { useSubscriptionsStore } from '../../stores/subscriptions.ts';
 import { useRoute } from 'vue-router';
+import { useHelpTranslations } from '../../composables/useHelpTranslations';
 
 // Props
 const props = defineProps<{
@@ -91,6 +92,9 @@ useBillingAddressesStore();
 usePaymentMethodsStore();
 useInvoicesStore();
 useSubscriptionsStore();
+
+// Load help translations
+const { loadHelpTranslations } = useHelpTranslations();
 
 const currentUser = useCurrentUserStore();
 const { t } = useI18n();
@@ -232,32 +236,32 @@ const menuCategories = computed(() => [
   },
   {
     key: 'help',
-    label: 'Aide & Documentation',
+    label: t('help.title'),
     icon: 'fas fa-question-circle',
     allowedRoles: ['administrator', 'teacher', 'student'],
     items: [
       {
         route: '/help',
-        label: 'Centre d\'Aide',
-        title: 'Guides et documentation',
+        label: t('help.title'),
+        title: t('help.subtitle'),
         icon: 'fas fa-book'
       },
       {
         route: '/help/terminals/getting-started',
-        label: 'Guide Terminal',
-        title: 'Guide de démarrage des terminaux',
+        label: t('help.sections.terminals.title'),
+        title: t('help.sections.terminals.description'),
         icon: 'fas fa-terminal'
       },
       {
         route: '/help/courses/structure',
-        label: 'Guide Cours',
-        title: 'Structure et organisation des cours',
+        label: t('help.sections.courses.title'),
+        title: t('help.sections.courses.description'),
         icon: 'fas fa-graduation-cap'
       },
       {
         route: '/help/account/subscription',
-        label: 'Guide Compte',
-        title: 'Gestion abonnement et facturation',
+        label: t('help.sections.account.title'),
+        title: t('help.sections.account.description'),
         icon: 'fas fa-user-cog'
       }
     ]
@@ -385,7 +389,8 @@ function openActiveCategoryOnMount() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await loadHelpTranslations();
   openActiveCategoryOnMount();
   document.addEventListener('click', handleOutsideClick);
 });
