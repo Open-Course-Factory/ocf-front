@@ -142,6 +142,62 @@ const basicRoutes = [
         path: 'demo-portal',
         name: 'DemoPortal',
         component: () => import('../components/Demo/DemoPortal.vue')
+      },
+
+      // Help and Documentation routes
+      {
+        path: 'help',
+        name: 'Help',
+        component: () => import('../components/Pages/Help.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'help/terminals/getting-started',
+        name: 'HelpTerminalsGettingStarted',
+        component: () => import('../components/Pages/Help/TerminalGettingStarted.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'help/terminals/managing-sessions',
+        name: 'HelpTerminalsManagingSessions',
+        component: () => import('../components/Pages/Help/TerminalManagingSessions.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'help/terminals/sharing',
+        name: 'HelpTerminalsSharing',
+        component: () => import('../components/Pages/Help/TerminalSharing.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'help/terminals/troubleshooting',
+        name: 'HelpTerminalsTroubleshooting',
+        component: () => import('../components/Pages/Help/TerminalTroubleshooting.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'help/courses/structure',
+        name: 'HelpCoursesStructure',
+        component: () => import('../components/Pages/Help/CourseStructure.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'help/courses/content',
+        name: 'HelpCoursesContent',
+        component: () => import('../components/Pages/Help/CourseContent.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'help/account/subscription',
+        name: 'HelpAccountSubscription',
+        component: () => import('../components/Pages/Help/AccountSubscription.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'help/account/billing',
+        name: 'HelpAccountBilling',
+        component: () => import('../components/Pages/Help/AccountBilling.vue'),
+        meta: { requiresAuth: true }
       }
     ],
   },

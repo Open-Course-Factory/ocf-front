@@ -1,0 +1,459 @@
+<!--
+/*
+ * Open Course Factory - Front
+ * Copyright (C) 2023-2025 Solution Libre
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * Copyright (c) - All Rights Reserved.
+ *
+ * See the LICENSE file for more information.
+ */
+-->
+
+<template>
+  <div class="help-article">
+    <div class="help-nav">
+      <router-link to="/help" class="back-link">
+        <i class="fas fa-arrow-left"></i>
+        Retour au Centre d'Aide
+      </router-link>
+    </div>
+
+    <div class="article-header">
+      <h1><i class="fas fa-play-circle"></i> Premiers Pas avec les Terminaux</h1>
+      <p class="article-description">
+        Guide de démarrage pour configurer et créer votre première session terminal
+      </p>
+    </div>
+
+    <div class="article-content">
+      <section class="help-section">
+        <h2><i class="fas fa-info-circle"></i> Qu'est-ce qu'un terminal OCF ?</h2>
+        <p>
+          Le système de terminaux OCF vous permet d'accéder à des environnements Linux sécurisés
+          directement depuis votre navigateur. Ces terminaux sont parfaits pour :
+        </p>
+        <ul>
+          <li>Apprendre et pratiquer les commandes Linux</li>
+          <li>Développer et tester du code</li>
+          <li>Collaborer sur des projets avec d'autres utilisateurs</li>
+          <li>Accéder à des outils de développement spécialisés</li>
+        </ul>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-key"></i> Étape 1 : Vérifier votre clé d'accès</h2>
+        <p>
+          Avant de créer votre première session, assurez-vous que votre clé d'accès terminal est configurée :
+        </p>
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>Accéder aux clés d'accès</h4>
+            <p>
+              Naviguez vers <strong>Travaux Pratiques > Clés d'Accès Terminal</strong> dans le menu principal.
+            </p>
+            <router-link to="/user-terminal-keys" class="btn btn-outline">
+              <i class="fas fa-key"></i>
+              Voir mes clés d'accès
+            </router-link>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h4>Vérifier le statut</h4>
+            <p>
+              Si vous voyez "Aucune clé terminal trouvée" ou si votre clé est inactive,
+              utilisez le bouton <strong>"Régénérer la clé"</strong> pour en créer une nouvelle.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-plus-circle"></i> Étape 2 : Créer votre première session</h2>
+        <p>
+          Une fois votre clé d'accès configurée, vous pouvez créer votre première session terminal :
+        </p>
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>Accéder à la création de session</h4>
+            <p>
+              Cliquez sur <strong>Travaux Pratiques > Créer une Session</strong> dans le menu.
+            </p>
+            <router-link to="/terminal-creation" class="btn btn-primary">
+              <i class="fas fa-plus"></i>
+              Créer une session maintenant
+            </router-link>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h4>Configurer votre session</h4>
+            <ul>
+              <li><strong>Conditions d'utilisation :</strong> Acceptez les conditions (obligatoire)</li>
+              <li><strong>Durée d'expiration :</strong> Choisissez combien de temps votre session restera active (optionnel)</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h4>Lancer la session</h4>
+            <p>
+              Cliquez sur <strong>"Démarrer une session"</strong>.
+              La création peut prendre quelques instants pendant que le système prépare votre environnement.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-terminal"></i> Étape 3 : Accéder à votre terminal</h2>
+        <p>
+          Une fois votre session créée, vous serez redirigé vers la page de gestion des sessions :
+        </p>
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>Localiser votre session</h4>
+            <p>
+              Dans <strong>Travaux Pratiques > Mes Sessions</strong>,
+              vous verrez votre nouvelle session avec le statut "active".
+            </p>
+            <router-link to="/terminal-sessions" class="btn btn-outline">
+              <i class="fas fa-list"></i>
+              Voir mes sessions
+            </router-link>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h4>Se connecter au terminal</h4>
+            <p>
+              Cliquez sur le bouton <strong>"Ouvrir"</strong> pour accéder à votre terminal dans un nouvel onglet,
+              ou utilisez <strong>"Aperçu"</strong> pour le voir directement dans la page.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="help-section warning">
+        <h2><i class="fas fa-exclamation-triangle"></i> Conseils importants</h2>
+        <div class="warning-content">
+          <ul>
+            <li><strong>Sauvegardez votre travail :</strong> Les sessions ont une durée limitée. Sauvegardez régulièrement vos fichiers importants.</li>
+            <li><strong>Clé d'accès sécurisée :</strong> Ne partagez jamais votre clé d'accès terminal avec d'autres personnes.</li>
+            <li><strong>Sessions limitées :</strong> Le nombre de sessions simultanées peut être limité selon votre abonnement.</li>
+            <li><strong>Expiration automatique :</strong> Les sessions inactives expirent automatiquement pour économiser les ressources.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-question-circle"></i> Prochaines étapes</h2>
+        <p>Maintenant que vous avez créé votre première session, explorez ces fonctionnalités :</p>
+
+        <div class="next-steps">
+          <router-link to="/help/terminals/managing-sessions" class="next-step-card">
+            <i class="fas fa-cogs"></i>
+            <h4>Gestion des Sessions</h4>
+            <p>Apprenez à surveiller, synchroniser et arrêter vos sessions</p>
+          </router-link>
+
+          <router-link to="/help/terminals/sharing" class="next-step-card">
+            <i class="fas fa-share-alt"></i>
+            <h4>Partage et Collaboration</h4>
+            <p>Découvrez comment partager vos terminaux avec d'autres utilisateurs</p>
+          </router-link>
+        </div>
+      </section>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+// Pas de logique spéciale nécessaire pour cette page
+</script>
+
+<style scoped>
+.help-article {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.help-nav {
+  margin-bottom: 30px;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #007bff;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.back-link:hover {
+  color: #0056b3;
+}
+
+.article-header {
+  text-align: center;
+  margin-bottom: 40px;
+  padding-bottom: 30px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.article-header h1 {
+  color: #333;
+  font-size: 2.5rem;
+  margin: 0 0 15px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+}
+
+.article-header h1 i {
+  color: #007bff;
+}
+
+.article-description {
+  color: #6c757d;
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.article-content {
+  line-height: 1.6;
+}
+
+.help-section {
+  margin-bottom: 40px;
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.help-section h2 {
+  color: #333;
+  margin: 0 0 20px 0;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.help-section h2 i {
+  color: #007bff;
+}
+
+.help-section p {
+  color: #555;
+  margin-bottom: 15px;
+}
+
+.help-section ul {
+  color: #555;
+  margin-left: 20px;
+}
+
+.help-section li {
+  margin-bottom: 8px;
+}
+
+.step-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin: 20px 0;
+  border-left: 4px solid #007bff;
+}
+
+.step-number {
+  background: #007bff;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.step-content {
+  flex-grow: 1;
+}
+
+.step-content h4 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.step-content p {
+  margin: 0 0 15px 0;
+  color: #555;
+}
+
+.step-content ul {
+  margin: 10px 0 15px 20px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: #007bff;
+  border: 2px solid #007bff;
+}
+
+.btn-outline:hover {
+  background-color: #007bff;
+  color: white;
+}
+
+.help-section.warning {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  border-left: 4px solid #ffc107;
+}
+
+.help-section.warning h2 i {
+  color: #ffc107;
+}
+
+.warning-content ul {
+  margin: 0;
+}
+
+.warning-content li {
+  margin-bottom: 10px;
+}
+
+.next-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.next-step-card {
+  display: block;
+  padding: 20px;
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.next-step-card:hover {
+  border-color: #007bff;
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+}
+
+.next-step-card i {
+  font-size: 2rem;
+  color: #007bff;
+  margin-bottom: 15px;
+}
+
+.next-step-card h4 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.next-step-card p {
+  margin: 0;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .help-article {
+    padding: 10px;
+  }
+
+  .article-header h1 {
+    font-size: 2rem;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .help-section {
+    padding: 20px;
+  }
+
+  .step-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .step-number {
+    align-self: center;
+  }
+
+  .next-steps {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

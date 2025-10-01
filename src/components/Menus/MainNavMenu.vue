@@ -231,6 +231,38 @@ const menuCategories = computed(() => [
     )
   },
   {
+    key: 'help',
+    label: 'Aide & Documentation',
+    icon: 'fas fa-question-circle',
+    allowedRoles: ['administrator', 'teacher', 'student'],
+    items: [
+      {
+        route: '/help',
+        label: 'Centre d\'Aide',
+        title: 'Guides et documentation',
+        icon: 'fas fa-book'
+      },
+      {
+        route: '/help/terminals/getting-started',
+        label: 'Guide Terminal',
+        title: 'Guide de démarrage des terminaux',
+        icon: 'fas fa-terminal'
+      },
+      {
+        route: '/help/courses/structure',
+        label: 'Guide Cours',
+        title: 'Structure et organisation des cours',
+        icon: 'fas fa-graduation-cap'
+      },
+      {
+        route: '/help/account/subscription',
+        label: 'Guide Compte',
+        title: 'Gestion abonnement et facturation',
+        icon: 'fas fa-user-cog'
+      }
+    ]
+  },
+  {
     key: 'admin',
     label: 'Administration',
     icon: 'fas fa-shield-alt',
