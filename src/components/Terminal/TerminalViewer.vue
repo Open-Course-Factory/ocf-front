@@ -61,11 +61,11 @@
       
       <div v-if="error" class="terminal-error">
         <i class="fas fa-exclamation-triangle fa-2x"></i>
-        <h3>Erreur de connexion</h3>
+        <h3>{{ t('terminals.connectionError') }}</h3>
         <p>{{ error }}</p>
         <button class="btn btn-primary" @click="retry">
           <i class="fas fa-redo"></i>
-          Réessayer
+          {{ t('ui.retry') }}
         </button>
       </div>
     </div>

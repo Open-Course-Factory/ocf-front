@@ -94,7 +94,7 @@ const addPaymentMethod = async () => {
             <div class="info-banner">
                 <div class="info-content">
                     <i class="fas fa-info-circle"></i>
-                    <span>Gérez vos méthodes de paiement. Vos données bancaires sont sécurisées par Stripe.</span>
+                    <span>{{ t('ui.managePaymentMethods') }}</span>
                 </div>
                 <button
                     class="btn btn-outline-primary btn-sm refresh-btn"
@@ -103,15 +103,15 @@ const addPaymentMethod = async () => {
                     title="Actualiser les méthodes de paiement"
                 >
                     <i :class="entityStore.isLoading ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'"></i>
-                    <span v-if="!entityStore.isLoading">Actualiser</span>
+                    <span v-if="!entityStore.isLoading">{{ t('ui.refresh') }}</span>
                 </button>
             </div>
 
             <!-- Message si pas de méthodes de paiement -->
             <div v-if="entityStore.entities.length === 0" class="empty-state">
                 <i class="fas fa-credit-card fa-3x"></i>
-                <h4>Aucune méthode de paiement</h4>
-                <p>Ajoutez une carte bancaire pour effectuer vos achats.</p>
+                <h4>{{ t('ui.noPaymentMethods') }}</h4>
+                <p>{{ t('ui.addCardToPurchase') }}</p>
                 <button class="btn btn-primary" @click="addPaymentMethod">
                     <i class="fas fa-plus"></i>
                     Ajouter une carte
@@ -149,7 +149,7 @@ const addPaymentMethod = async () => {
                                     <!-- Alerte d'expiration -->
                                     <div v-if="entityStore.isExpiringSoon(entity)" class="expiry-warning">
                                         <i class="fas fa-exclamation-triangle"></i>
-                                        <small>Expire bientôt</small>
+                                        <small>{{ t('ui.expiringSoon') }}</small>
                                     </div>
                                 </div>
                             </div>

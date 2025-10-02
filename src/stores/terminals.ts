@@ -35,7 +35,7 @@ export const useTerminalsStore = defineStore('terminals', () => {
     const isLoading = ref(false)
     const error = ref('')
 
-    useI18n().mergeLocaleMessage('en', { terminals : { 
+    useI18n().mergeLocaleMessage('en', { terminals : {
         pageTitle: 'Terminal Sessions',
         session_id: 'Session ID',
         status: 'Status',
@@ -45,10 +45,36 @@ export const useTerminalsStore = defineStore('terminals', () => {
         add: 'Start a terminal session',
         start: 'Start Session',
         stop: 'Stop Session',
-        connect: 'Connect to Console'
+        connect: 'Connect to Console',
+        userToAdd: 'User to add:',
+        searchPlaceholder: 'Search by name or email...',
+        searchInProgress: 'Searching...',
+        accessLevel: 'Access level:',
+        readAccess: '👁️ Read - Can view console',
+        writeAccess: '✏️ Write - Can interact with terminal',
+        adminAccess: '🔧 Admin - Can manage terminal and sharing',
+        expirationDate: 'Expiration date (optional):',
+        debugInfo: 'Debug Info',
+        startNewSession: 'Start a new terminal session',
+        termsRequired: 'Terms of Service (required):',
+        expirySeconds: 'Expiry duration (seconds, optional):',
+        instanceType: 'Instance type:',
+        loading: 'Loading...',
+        sessionMissing: 'Session missing',
+        sessionIdNotProvided: 'Session ID was not provided in the URL.',
+        expectedFormat: 'Expected format:',
+        initializingTerminal: 'Initializing terminal...',
+        websocketConnected: 'WebSocket connected',
+        websocketDisconnected: 'WebSocket disconnected',
+        terminal: 'Terminal:',
+        instance: 'Instance:',
+        fullControl: 'Full terminal control',
+        noActiveSharing: 'No active sharing',
+        notSharedWithUsers: 'This terminal is not shared with any other users at the moment.',
+        connectionError: 'Connection error'
     }})
     
-    useI18n().mergeLocaleMessage('fr', { terminals : { 
+    useI18n().mergeLocaleMessage('fr', { terminals : {
         pageTitle: 'Sessions Terminal',
         session_id: 'ID de session',
         status: 'Statut',
@@ -58,8 +84,97 @@ export const useTerminalsStore = defineStore('terminals', () => {
         add: 'Démarrer une session terminal',
         start: 'Démarrer une session',
         stop: 'Arrêter la session',
-        connect: 'Se connecter à la console'
+        connect: 'Se connecter à la console',
+        userToAdd: 'Utilisateur à ajouter:',
+        searchPlaceholder: 'Rechercher par nom ou email...',
+        searchInProgress: 'Recherche en cours...',
+        accessLevel: 'Niveau d\'accès:',
+        readAccess: '👁️ Lecture - Peut voir la console',
+        writeAccess: '✏️ Écriture - Peut interagir avec le terminal',
+        adminAccess: '🔧 Admin - Peut gérer le terminal et le partage',
+        expirationDate: 'Date d\'expiration (optionnel):',
+        debugInfo: 'Debug Info',
+        startNewSession: 'Démarrer une nouvelle session terminal',
+        termsRequired: 'Conditions d\'utilisation (obligatoire):',
+        expirySeconds: 'Durée d\'expiration (secondes, optionnel):',
+        instanceType: 'Type d\'instance:',
+        loading: 'Chargement...',
+        sessionMissing: 'Session manquante',
+        sessionIdNotProvided: 'L\'ID de session n\'a pas été fourni dans l\'URL.',
+        expectedFormat: 'Format attendu:',
+        initializingTerminal: 'Initialisation du terminal...',
+        websocketConnected: 'WebSocket connecté',
+        websocketDisconnected: 'WebSocket déconnecté',
+        terminal: 'Terminal:',
+        instance: 'Instance:',
+        fullControl: 'Contrôle total du terminal',
+        noActiveSharing: 'Aucun partage actif',
+        notSharedWithUsers: 'Ce terminal n\'est partagé avec aucun autre utilisateur pour le moment.',
+        connectionError: 'Erreur de connexion'
     }})
+
+    // Add common UI translations here
+    useI18n().mergeLocaleMessage('en', {
+        ui: {
+            logout: 'Logout',
+            disconnect: 'Disconnect',
+            refresh: 'Refresh',
+            retry: 'Retry',
+            managePaymentMethods: 'Manage your payment methods. Your banking data is secured by Stripe.',
+            noPaymentMethods: 'No payment methods',
+            addCardToPurchase: 'Add a bank card to make your purchases.',
+            expiringSoon: 'Expires soon',
+            availablePlans: 'Available subscription plans. Contact your administrator to subscribe.',
+            manageBillingAddresses: 'Manage your billing addresses. The default address will be used for your next purchases.'
+        },
+        navigation: {
+            courseDesign: 'Course Design',
+            practicalWork: 'Practical Work',
+            myAccount: 'My Account',
+            administration: 'Administration',
+            createSession: 'Create Session',
+            createNewTerminalSession: 'Create a new terminal session',
+            mySessions: 'My Sessions',
+            manageTerminalSessions: 'Manage my terminal sessions',
+            sharedSessions: 'Shared Sessions',
+            sessionsSharedWithMe: 'Sessions shared with me',
+            adminSubscriptionPlans: 'Subscription Plans (Admin)',
+            adminSubscriptionPlansTitle: 'Administration of subscription plans',
+            allInvoices: 'All Invoices',
+            viewAllSystemInvoices: 'View all system invoices'
+        }
+    })
+
+    useI18n().mergeLocaleMessage('fr', {
+        ui: {
+            logout: 'Se déconnecter',
+            disconnect: 'Se déconnecter',
+            refresh: 'Actualiser',
+            retry: 'Réessayer',
+            managePaymentMethods: 'Gérez vos méthodes de paiement. Vos données bancaires sont sécurisées par Stripe.',
+            noPaymentMethods: 'Aucune méthode de paiement',
+            addCardToPurchase: 'Ajoutez une carte bancaire pour effectuer vos achats.',
+            expiringSoon: 'Expire bientôt',
+            availablePlans: 'Plans d\'abonnement disponibles. Contactez votre administrateur pour souscrire.',
+            manageBillingAddresses: 'Gérez vos adresses de facturation. L\'adresse par défaut sera utilisée pour vos prochains achats.'
+        },
+        navigation: {
+            courseDesign: 'Conception de cours',
+            practicalWork: 'Travaux Pratiques',
+            myAccount: 'Mon Compte',
+            administration: 'Administration',
+            createSession: 'Créer une Session',
+            createNewTerminalSession: 'Créer une nouvelle session terminal',
+            mySessions: 'Mes Sessions',
+            manageTerminalSessions: 'Gérer mes sessions terminal',
+            sharedSessions: 'Sessions Partagées',
+            sessionsSharedWithMe: 'Sessions partagées avec moi',
+            adminSubscriptionPlans: 'Plans d\'Abonnement (Admin)',
+            adminSubscriptionPlansTitle: 'Administration des plans d\'abonnement',
+            allInvoices: 'Toutes les Factures',
+            viewAllSystemInvoices: 'Visualiser toutes les factures système'
+        }
+    })
 
     const fieldList = new Map<string, any>([
         ["id", { label: "ID", type: "input", display: true, toBeSet: false, toBeEdited: false }],

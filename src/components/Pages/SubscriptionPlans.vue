@@ -77,7 +77,7 @@ const selectPlan = async (plan: any) => {
             <!-- Message informatif pour les non-admins -->
             <div v-if="!isAdmin" class="info-banner">
                 <i class="fas fa-info-circle"></i>
-                <span>Plans d'abonnement disponibles. Contactez votre administrateur pour souscrire.</span>
+                <span>{{ t('ui.availablePlans') }}</span>
             </div>
             
             <!-- Vue générique utilisant le composant Entity -->

@@ -30,14 +30,14 @@
 
         <form @submit.prevent="shareTerminal" class="sharing-form">
           <div class="form-group">
-            <label for="userSearch">Utilisateur à ajouter:</label>
+            <label for="userSearch">{{ t('terminals.userToAdd') }}</label>
             <div class="user-search-container">
               <input
                 id="userSearch"
                 v-model="userSearchQuery"
                 type="text"
                 class="form-control"
-                placeholder="Rechercher par nom ou email..."
+                :placeholder="t('terminals.searchPlaceholder')"
                 @input="onSearchInput"
                 @focus="showSearchDropdown = true"
                 @blur="onSearchBlur"
@@ -46,7 +46,7 @@
               <div v-if="showSearchDropdown && (searchResults.length > 0 || isSearching)" class="search-dropdown">
                 <div v-if="isSearching" class="search-loading">
                   <i class="fas fa-spinner fa-spin"></i>
-                  Recherche en cours...
+                  {{ t('terminals.searchInProgress') }}
                 </div>
                 <div v-else-if="searchResults.length === 0 && userSearchQuery.trim()" class="search-empty">
                   Aucun utilisateur trouvé
@@ -70,16 +70,16 @@
           </div>
 
           <div class="form-group">
-            <label for="accessLevel">Niveau d'accès:</label>
+            <label for="accessLevel">{{ t('terminals.accessLevel') }}</label>
             <select
               id="accessLevel"
               v-model="shareData.access_level"
               class="form-control"
               required
             >
-              <option value="read">👁️ Lecture - Peut voir la console</option>
-              <option value="write">✏️ Écriture - Peut interagir avec le terminal</option>
-              <option value="admin">🔧 Admin - Peut gérer le terminal et le partage</option>
+              <option value="read">{{ t('terminals.readAccess') }}</option>
+              <option value="write">{{ t('terminals.writeAccess') }}</option>
+              <option value="admin">{{ t('terminals.adminAccess') }}</option>
             </select>
             <small class="form-text text-muted">
               Sélectionnez le niveau d'autorisation pour cet utilisateur.
@@ -87,7 +87,7 @@
           </div>
 
           <div class="form-group">
-            <label for="expiresAt">Date d'expiration (optionnel):</label>
+            <label for="expiresAt">{{ t('terminals.expirationDate') }}</label>
             <input
               id="expiresAt"
               v-model="shareData.expires_at"

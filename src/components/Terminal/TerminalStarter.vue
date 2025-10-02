@@ -9,7 +9,7 @@
   <div class="terminal-starter">
     <!-- Debug info en mode développement -->
     <div v-if="showDebug" class="debug-panel">
-      <h4>Debug Info</h4>
+      <h4>{{ t('terminals.debugInfo') }}</h4>
       <p>showStartPanel: {{ showStartPanel }}</p>
       <p>showInfoPanel: {{ showInfoPanel }}</p>
       <p>showTerminalPanel: {{ showTerminalPanel }}</p>
@@ -22,10 +22,10 @@
     <!-- Panneau de démarrage -->
     <div class="panel panel-warning" v-show="showStartPanel">
       <div class="panel-body">
-        <h4><i class="fas fa-play"></i> Démarrer une nouvelle session terminal</h4>
+        <h4><i class="fas fa-play"></i> {{ t('terminals.startNewSession') }}</h4>
         
         <div class="form-group">
-          <label for="terms">Conditions d'utilisation (obligatoire):</label>
+          <label for="terms">{{ t('terminals.termsRequired') }}</label>
           <textarea 
             id="terms"
             v-model="termsInput"
@@ -40,7 +40,7 @@
         </div>
         
         <div class="form-group">
-          <label for="expiry">Durée d'expiration (secondes, optionnel):</label>
+          <label for="expiry">{{ t('terminals.expirySeconds') }}</label>
           <input
             id="expiry"
             v-model.number="expiryInput"
@@ -56,14 +56,14 @@
         </div>
 
         <div class="form-group">
-          <label for="instanceType">Type d'instance:</label>
+          <label for="instanceType">{{ t('terminals.instanceType') }}</label>
           <select
             id="instanceType"
             v-model="selectedInstanceType"
             class="form-control"
             :disabled="loadingInstanceTypes"
           >
-            <option v-if="loadingInstanceTypes" value="">Chargement...</option>
+            <option v-if="loadingInstanceTypes" value="">{{ t('terminals.loading') }}</option>
             <option
               v-for="instance in instanceTypes"
               :key="instance.prefix"
@@ -141,14 +141,14 @@
       <div class="panel-body">
         <div class="session-details">
           <div class="detail-item" v-if="selectedInstanceInfo">
-            <strong><i class="fas fa-server"></i> Type d'instance:</strong>
+            <strong><i class="fas fa-server"></i> {{ t('terminals.instanceType') }}</strong>
             <span class="instance-info">
               {{ selectedInstanceInfo.name }} - {{ selectedInstanceInfo.description }}
               <small class="text-muted">({{ selectedInstanceInfo.prefix }})</small>
             </span>
           </div>
           <div class="detail-item">
-            <strong><i class="fas fa-info-circle"></i> Statut:</strong>
+            <strong><i class="fas fa-info-circle"></i> {{ t('terminals.status') }}</strong>
             <span :class="getStatusClass(sessionInfo?.status)">
               {{ sessionInfo?.status }}
             </span>
@@ -191,7 +191,7 @@
         <div ref="terminalRef" class="terminal-container"></div>
         <div v-if="!terminal" class="terminal-placeholder">
           <i class="fas fa-terminal fa-3x"></i>
-          <p>Initialisation du terminal...</p>
+          <p>{{ t('terminals.initializingTerminal') }}</p>
           <p v-if="terminalError" class="text-danger">{{ terminalError }}</p>
         </div>
       </div>
@@ -202,8 +202,8 @@
             Session: {{ sessionInfo?.session_id }} |
             Statut: {{ sessionInfo?.status }} |
             <span v-if="selectedInstanceInfo">Instance: {{ selectedInstanceInfo.name }} ({{ selectedInstanceInfo.prefix }}) | </span>
-            <span v-if="isConnected" class="text-success">WebSocket connecté</span>
-            <span v-else class="text-danger">WebSocket déconnecté</span>
+            <span v-if="isConnected" class="text-success">{{ t('terminals.websocketConnected') }}</span>
+            <span v-else class="text-danger">{{ t('terminals.websocketDisconnected') }}</span>
           </small>
         </div>
       </div>
@@ -236,11 +236,15 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 import { terminalService } from '../../services/terminalService'
 
 // Définir les émissions
 const emit = defineEmits(['session-started'])
+
+// i18n setup
+const { t } = useI18n()
 
 // Importation différée de xterm.js pour éviter les erreurs SSR
 let Terminal, FitAddon, AttachAddon

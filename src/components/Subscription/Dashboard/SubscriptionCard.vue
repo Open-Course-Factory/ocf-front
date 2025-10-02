@@ -34,7 +34,7 @@
     <div v-else class="subscription-card">
       <div class="subscription-header">
         <div class="plan-info">
-          <h4>{{ subscription?.plan_name || 'Plan actuel' }}</h4>
+          <h4>{{ subscription?.plan_name || t('subscriptionPlans.current_subscription_plan') }}</h4>
           <div class="plan-price" v-if="subscription?.plan_price">
             {{ formatPrice(subscription.plan_price, subscription.currency) }}
             <span class="billing-period">/ {{ subscription?.billing_interval }}</span>

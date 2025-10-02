@@ -21,15 +21,15 @@
       <div class="modal-body">
         <div v-if="terminalInfo" class="terminal-info">
           <div class="info-item">
-            <strong><i class="fas fa-terminal"></i> Terminal:</strong>
+            <strong><i class="fas fa-terminal"></i> {{ t('terminals.terminal') }}</strong>
             <span>{{ terminalInfo.terminal.session_id }}</span>
           </div>
           <div class="info-item">
-            <strong><i class="fas fa-server"></i> Instance:</strong>
+            <strong><i class="fas fa-server"></i> {{ t('terminals.instance') }}</strong>
             <span>{{ terminalInfo.terminal.instance_type }}</span>
           </div>
           <div class="info-item">
-            <strong><i class="fas fa-info-circle"></i> Statut:</strong>
+            <strong><i class="fas fa-info-circle"></i> {{ t('terminals.status') }}</strong>
             <span :class="getStatusClass(terminalInfo.terminal.status)">
               {{ terminalInfo.terminal.status }}
             </span>
@@ -52,7 +52,7 @@
               </div>
             </div>
             <div class="user-meta">
-              <small class="text-muted">Contrôle total du terminal</small>
+              <small class="text-muted">{{ t('terminals.fullControl') }}</small>
             </div>
           </div>
         </div>
@@ -110,8 +110,8 @@
         <div v-else-if="!shares || shares.length === 0" class="access-section">
           <div class="empty-state">
             <i class="fas fa-users fa-3x"></i>
-            <h5>Aucun partage actif</h5>
-            <p class="text-muted">Ce terminal n'est partagé avec aucun autre utilisateur pour le moment.</p>
+            <h5>{{ t('terminals.noActiveSharing') }}</h5>
+            <p class="text-muted">{{ t('terminals.notSharedWithUsers') }}</p>
           </div>
         </div>
 

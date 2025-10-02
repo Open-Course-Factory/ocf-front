@@ -26,9 +26,9 @@
     <div v-if="!sessionId" class="error-container">
       <div class="error-content">
         <i class="fas fa-exclamation-triangle fa-3x"></i>
-        <h2>Session manquante</h2>
-        <p>L'ID de session n'a pas été fourni dans l'URL.</p>
-        <p>Format attendu: <code>/terminal/SESSION_ID</code></p>
+        <h2>{{ t('terminals.sessionMissing') }}</h2>
+        <p>{{ t('terminals.sessionIdNotProvided') }}</p>
+        <p>{{ t('terminals.expectedFormat') }} <code>/terminal/SESSION_ID</code></p>
       </div>
     </div>
     

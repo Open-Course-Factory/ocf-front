@@ -79,7 +79,7 @@ const setAsDefault = async (addressId: string) => {
             <!-- Informations utiles -->
             <div class="info-banner">
                 <i class="fas fa-info-circle"></i>
-                <span>Gérez vos adresses de facturation. L'adresse par défaut sera utilisée pour vos prochains achats.</span>
+                <span>{{ t('ui.manageBillingAddresses') }}</span>
             </div>
             
             <!-- Vue générique utilisant le composant Entity -->

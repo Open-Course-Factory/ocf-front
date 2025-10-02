@@ -22,9 +22,10 @@
 -->
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useCurrentUserStore } from '../../stores/currentUser.ts';
 
-
+const { t } = useI18n()
 const storeUser = useCurrentUserStore()
 
 function disconnect() {
@@ -34,5 +35,5 @@ function disconnect() {
 </script>
 
 <template>
-    <button type="button" class="btn btn-outline-danger" @click="disconnect">Se déconnecter</button>
+    <button type="button" class="btn btn-outline-danger" @click="disconnect">{{ t('ui.disconnect') }}</button>
 </template>

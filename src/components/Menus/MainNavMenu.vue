@@ -114,7 +114,7 @@ const menuPositions = ref<Record<string, { top: number; left: number }>>({});
 const menuCategories = computed(() => [
   {
     key: 'courses',
-    label: 'Conception de cours',
+    label: t('navigation.courseDesign'),
     icon: 'fas fa-graduation-cap',
     allowedRoles: ['administrator', 'teacher', 'student'],
     items: [
@@ -164,26 +164,26 @@ const menuCategories = computed(() => [
   },
   {
     key: 'labs',
-    label: 'Travaux Pratiques',
+    label: t('navigation.practicalWork'),
     icon: 'fas fa-laptop-code',
     allowedRoles: ['administrator', 'teacher', 'student'],
     items: [
       {
         route: '/terminal-creation',
-        label: 'Créer une Session',
-        title: 'Créer une nouvelle session terminal',
+        label: t('navigation.createSession'),
+        title: t('navigation.createNewTerminalSession'),
         icon: 'fas fa-plus-circle'
       },
       {
         route: '/terminal-sessions',
-        label: 'Mes Sessions',
-        title: 'Gérer mes sessions terminal',
+        label: t('navigation.mySessions'),
+        title: t('navigation.manageTerminalSessions'),
         icon: 'fas fa-terminal'
       },
       {
         route: '/terminal-shared',
-        label: 'Sessions Partagées',
-        title: 'Sessions partagées avec moi',
+        label: t('navigation.sharedSessions'),
+        title: t('navigation.sessionsSharedWithMe'),
         icon: 'fas fa-share-alt'
       },
       {
@@ -196,7 +196,7 @@ const menuCategories = computed(() => [
   },
   {
     key: 'account',
-    label: 'Mon Compte',
+    label: t('navigation.myAccount'),
     icon: 'fas fa-user',
     allowedRoles: ['administrator', 'teacher', 'student'],
     items: [
@@ -268,20 +268,20 @@ const menuCategories = computed(() => [
   },
   {
     key: 'admin',
-    label: 'Administration',
+    label: t('navigation.administration'),
     icon: 'fas fa-shield-alt',
     allowedRoles: ['administrator'],
     items: [
       {
         route: '/admin/subscription-plans',
-        label: 'Plans d\'Abonnement (Admin)',
-        title: 'Administration des plans d\'abonnement',
+        label: t('navigation.adminSubscriptionPlans'),
+        title: t('navigation.adminSubscriptionPlansTitle'),
         icon: 'fas fa-cogs'
       },
       {
         route: '/invoices',
-        label: 'Toutes les Factures',
-        title: 'Visualiser toutes les factures système',
+        label: t('navigation.allInvoices'),
+        title: t('navigation.viewAllSystemInvoices'),
         icon: 'fas fa-file-invoice-dollar'
       }
     ]
