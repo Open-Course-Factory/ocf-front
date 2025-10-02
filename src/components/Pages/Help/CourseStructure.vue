@@ -24,7 +24,7 @@
 <template>
   <div class="help-article">
     <div class="help-nav">
-      <router-link to="/help" class="back-link">
+      <router-link :to="helpMainRoute" class="back-link">
         <i class="fas fa-arrow-left"></i>
         Retour au Centre d'Aide
       </router-link>
@@ -324,7 +324,7 @@
       <section class="help-section">
         <h2><i class="fas fa-question-circle"></i> Prochaines étapes</h2>
         <div class="next-steps">
-          <router-link to="/help/courses/content" class="next-step-card">
+          <router-link :to="`${helpRoutePrefix}/courses/content`" class="next-step-card">
             <i class="fas fa-edit"></i>
             <h4>Création de Contenu</h4>
             <p>Apprenez à rédiger et structurer le contenu pédagogique</p>
@@ -342,7 +342,15 @@
 </template>
 
 <script setup lang="ts">
-// Pas de logique spéciale nécessaire pour cette page
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+
+// Determine the correct help routes based on current path
+const isPublicHelp = computed(() => route.path.startsWith('/help-public'))
+const helpMainRoute = computed(() => isPublicHelp.value ? '/help-public' : '/help')
+const helpRoutePrefix = computed(() => isPublicHelp.value ? '/help-public' : '/help')
 </script>
 
 <style scoped>

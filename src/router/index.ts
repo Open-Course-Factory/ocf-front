@@ -45,10 +45,66 @@ const basicRoutes = [
     name: 'Register', 
     component: () => import('../components/Pages/Register.vue')
   },
-  { 
-    path: '/password-reset', 
-    name: 'PasswordReset', 
+  {
+    path: '/password-reset',
+    name: 'PasswordReset',
     component: () => import('../components/Pages/PasswordReset.vue')
+  },
+  // Public help route for non-authenticated users
+  {
+    path: '/help-public',
+    name: 'HelpPublic',
+    component: () => import('../components/Pages/Help.vue'),
+    meta: { requiresAuth: false }
+  },
+  // Public help sub-routes for non-authenticated users
+  {
+    path: '/help-public/terminals/getting-started',
+    name: 'HelpPublicTerminalsGettingStarted',
+    component: () => import('../components/Pages/Help/TerminalGettingStarted.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/help-public/terminals/managing-sessions',
+    name: 'HelpPublicTerminalsManagingSessions',
+    component: () => import('../components/Pages/Help/TerminalManagingSessions.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/help-public/terminals/sharing',
+    name: 'HelpPublicTerminalsSharing',
+    component: () => import('../components/Pages/Help/TerminalSharing.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/help-public/terminals/troubleshooting',
+    name: 'HelpPublicTerminalsTroubleshooting',
+    component: () => import('../components/Pages/Help/TerminalTroubleshooting.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/help-public/courses/structure',
+    name: 'HelpPublicCoursesStructure',
+    component: () => import('../components/Pages/Help/CourseStructure.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/help-public/courses/content',
+    name: 'HelpPublicCoursesContent',
+    component: () => import('../components/Pages/Help/CourseContent.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/help-public/account/subscription',
+    name: 'HelpPublicAccountSubscription',
+    component: () => import('../components/Pages/Help/AccountSubscription.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/help-public/account/billing',
+    name: 'HelpPublicAccountBilling',
+    component: () => import('../components/Pages/Help/AccountBilling.vue'),
+    meta: { requiresAuth: false }
   },
   // Route spéciale pour l'affichage du terminal en iframe (sans layout)
   {

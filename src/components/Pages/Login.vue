@@ -1,6 +1,12 @@
 <template>
   <div class="connection-page">
     <div class="connection-form">
+      <div class="back-button">
+        <router-link to="/" class="btn-back">
+          <i class="fas fa-arrow-left"></i>
+          Retour à l'accueil
+        </router-link>
+      </div>
       <h2>Connexion</h2>
       <form @submit.prevent="handleSubmit">
         <div class="form-group">
@@ -96,6 +102,28 @@ function redirect() {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 400px;
+}
+
+.back-button {
+  margin-bottom: 16px;
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #6c757d;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.3s ease;
+}
+
+.btn-back:hover {
+  color: #007bff;
+}
+
+.btn-back i {
+  font-size: 0.8rem;
 }
 
 .connection-form h2 {

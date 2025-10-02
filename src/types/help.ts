@@ -26,7 +26,6 @@ export interface HelpTranslations {
     contact: {
       title: string;
       text: string;
-      email: string;
     };
     sections: {
       terminals: {

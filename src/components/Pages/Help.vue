@@ -23,6 +23,12 @@
 
 <template>
   <div class="help-page">
+    <div class="back-button">
+      <router-link :to="backRoute" class="btn-back">
+        <i class="fas fa-arrow-left"></i>
+        {{ backButtonText }}
+      </router-link>
+    </div>
     <div class="help-header">
       <h1><i class="fas fa-question-circle"></i> {{ t('help.title') }}</h1>
       <p class="help-description">
@@ -72,7 +78,7 @@
     <div class="help-footer">
       <div class="contact-support">
         <h3><i class="fas fa-headset"></i> {{ t('help.contact.title') }}</h3>
-        <p>{{ t('help.contact.text') }} <a href="mailto:contact@labinux.com">{{ t('help.contact.email') }}</a></p>
+        <p>{{ t('help.contact.text') }} <a href="mailto:contact@labinux.com">contact@labinux.com</a></p>
         <a href="mailto:contact@labinux.com" class="btn btn-primary">
           <i class="fas fa-envelope"></i>
           {{ t('help.contact.title') }}
@@ -85,16 +91,26 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import { useHelpTranslations } from '../../composables/useHelpTranslations'
 
 const { t } = useI18n()
 const { loadHelpTranslations } = useHelpTranslations()
+const route = useRoute()
 
 onMounted(async () => {
   await loadHelpTranslations()
 })
 
 const expandedSections = ref(new Set<string>())
+
+// Determine if this is public help (non-authenticated) or authenticated help
+const isPublicHelp = computed(() => route.path.startsWith('/help-public'))
+const routePrefix = computed(() => isPublicHelp.value ? '/help-public' : '/help')
+
+// Back button configuration
+const backRoute = computed(() => isPublicHelp.value ? '/' : '/courses')
+const backButtonText = computed(() => isPublicHelp.value ? 'Retour à l\'accueil' : 'Retour à l\'application')
 
 const helpSections = computed(() => [
   {
@@ -104,25 +120,25 @@ const helpSections = computed(() => [
     icon: 'fas fa-terminal',
     items: [
       {
-        route: '/help/terminals/getting-started',
+        route: `${routePrefix.value}/terminals/getting-started`,
         title: t('help.sections.terminals.gettingStarted'),
         description: t('help.terminals.gettingStarted.intro'),
         icon: 'fas fa-play-circle'
       },
       {
-        route: '/help/terminals/managing-sessions',
+        route: `${routePrefix.value}/terminals/managing-sessions`,
         title: t('help.sections.terminals.managingSessions'),
         description: t('help.terminals.managingSessions.intro'),
         icon: 'fas fa-cogs'
       },
       {
-        route: '/help/terminals/sharing',
+        route: `${routePrefix.value}/terminals/sharing`,
         title: t('help.sections.terminals.sharing'),
         description: t('help.terminals.sharing.intro'),
         icon: 'fas fa-share-alt'
       },
       {
-        route: '/help/terminals/troubleshooting',
+        route: `${routePrefix.value}/terminals/troubleshooting`,
         title: t('help.sections.terminals.troubleshooting'),
         description: t('help.terminals.troubleshooting.intro'),
         icon: 'fas fa-wrench'
@@ -136,13 +152,13 @@ const helpSections = computed(() => [
     icon: 'fas fa-graduation-cap',
     items: [
       {
-        route: '/help/courses/structure',
+        route: `${routePrefix.value}/courses/structure`,
         title: t('help.sections.courses.structure'),
         description: t('help.courses.structure.intro'),
         icon: 'fas fa-sitemap'
       },
       {
-        route: '/help/courses/content',
+        route: `${routePrefix.value}/courses/content`,
         title: t('help.sections.courses.content'),
         description: t('help.courses.content.intro'),
         icon: 'fas fa-edit'
@@ -156,13 +172,13 @@ const helpSections = computed(() => [
     icon: 'fas fa-user-cog',
     items: [
       {
-        route: '/help/account/subscription',
+        route: `${routePrefix.value}/account/subscription`,
         title: t('help.sections.account.subscription'),
         description: t('help.account.subscription.intro'),
         icon: 'fas fa-calendar-check'
       },
       {
-        route: '/help/account/billing',
+        route: `${routePrefix.value}/account/billing`,
         title: t('help.sections.account.billing'),
         description: t('help.account.billing.intro'),
         icon: 'fas fa-credit-card'
@@ -185,6 +201,28 @@ function toggleSection(sectionId: string) {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+}
+
+.back-button {
+  margin-bottom: 20px;
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #6c757d;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.3s ease;
+}
+
+.btn-back:hover {
+  color: #007bff;
+}
+
+.btn-back i {
+  font-size: 0.8rem;
 }
 
 .help-header {

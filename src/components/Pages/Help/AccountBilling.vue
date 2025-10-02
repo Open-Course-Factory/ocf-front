@@ -24,7 +24,7 @@
 <template>
   <div class="help-article">
     <div class="help-nav">
-      <router-link to="/help" class="back-link">
+      <router-link :to="helpMainRoute" class="back-link">
         <i class="fas fa-arrow-left"></i>
         {{ t('help.navigation.backToHelp') }}
       </router-link>
@@ -498,7 +498,7 @@
       <section class="help-section">
         <h2><i class="fas fa-arrow-right"></i> Ressources utiles</h2>
         <div class="billing-resources">
-          <router-link to="/help/account/subscription" class="resource-card">
+          <router-link :to="`${helpRoutePrefix}/account/subscription`" class="resource-card">
             <i class="fas fa-calendar-check"></i>
             <h4>Gestion d'abonnement</h4>
             <p>Comprendre et optimiser votre plan OCF</p>
@@ -528,12 +528,19 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import { useHelpTranslations } from '../../../composables/useHelpTranslations'
 
 const { t } = useI18n()
 const { loadHelpTranslations } = useHelpTranslations()
+const route = useRoute()
+
+// Determine the correct help routes based on current path
+const isPublicHelp = computed(() => route.path.startsWith('/help-public'))
+const helpMainRoute = computed(() => isPublicHelp.value ? '/help-public' : '/help')
+const helpRoutePrefix = computed(() => isPublicHelp.value ? '/help-public' : '/help')
 
 onMounted(async () => {
   await loadHelpTranslations()

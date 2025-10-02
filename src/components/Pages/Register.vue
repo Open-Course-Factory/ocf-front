@@ -1,6 +1,12 @@
 <template>
   <div class="register-page">
     <div class="register-form">
+      <div class="back-button">
+        <router-link to="/" class="btn-back">
+          <i class="fas fa-arrow-left"></i>
+          Retour à l'accueil
+        </router-link>
+      </div>
       <h2>Créer un compte</h2>
       <form @submit.prevent="handleSubmit">
         <div class="form-row">
@@ -323,6 +329,28 @@ const handleSubmit = async () => {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 500px;
+}
+
+.back-button {
+  margin-bottom: 16px;
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #6c757d;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.3s ease;
+}
+
+.btn-back:hover {
+  color: #007bff;
+}
+
+.btn-back i {
+  font-size: 0.8rem;
 }
 
 .register-form h2 {

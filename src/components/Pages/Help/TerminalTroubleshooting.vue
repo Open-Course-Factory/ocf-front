@@ -24,7 +24,7 @@
 <template>
   <div class="help-article">
     <div class="help-nav">
-      <router-link to="/help" class="back-link">
+      <router-link :to="helpMainRoute" class="back-link">
         <i class="fas fa-arrow-left"></i>
         Retour au Centre d'Aide
       </router-link>
@@ -471,19 +471,19 @@
       <section class="help-section">
         <h2><i class="fas fa-question-circle"></i> Ressources supplémentaires</h2>
         <div class="resources-grid">
-          <router-link to="/help/terminals/getting-started" class="resource-card">
+          <router-link :to="`${helpRoutePrefix}/terminals/getting-started`" class="resource-card">
             <i class="fas fa-play-circle"></i>
             <h4>Guide de démarrage</h4>
             <p>Retour aux bases pour une configuration optimale</p>
           </router-link>
 
-          <router-link to="/help/terminals/managing-sessions" class="resource-card">
+          <router-link :to="`${helpRoutePrefix}/terminals/managing-sessions`" class="resource-card">
             <i class="fas fa-cogs"></i>
             <h4>Gestion des sessions</h4>
             <p>Optimisez votre utilisation des sessions terminal</p>
           </router-link>
 
-          <router-link to="/help/terminals/sharing" class="resource-card">
+          <router-link :to="`${helpRoutePrefix}/terminals/sharing`" class="resource-card">
             <i class="fas fa-share-alt"></i>
             <h4>Partage et collaboration</h4>
             <p>Maîtrisez les fonctionnalités de partage</p>
@@ -495,7 +495,15 @@
 </template>
 
 <script setup lang="ts">
-// Pas de logique spéciale nécessaire pour cette page
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+
+// Determine the correct help routes based on current path
+const isPublicHelp = computed(() => route.path.startsWith('/help-public'))
+const helpMainRoute = computed(() => isPublicHelp.value ? '/help-public' : '/help')
+const helpRoutePrefix = computed(() => isPublicHelp.value ? '/help-public' : '/help')
 </script>
 
 <style scoped>

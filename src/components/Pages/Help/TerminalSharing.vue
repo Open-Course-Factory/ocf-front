@@ -24,7 +24,7 @@
 <template>
   <div class="help-article">
     <div class="help-nav">
-      <router-link to="/help" class="back-link">
+      <router-link :to="helpMainRoute" class="back-link">
         <i class="fas fa-arrow-left"></i>
         {{ t('help.navigation.backToHelp') }}
       </router-link>
@@ -377,13 +377,13 @@
       <section class="help-section">
         <h2><i class="fas fa-question-circle"></i> Prochaines étapes</h2>
         <div class="next-steps">
-          <router-link to="/help/terminals/managing-sessions" class="next-step-card">
+          <router-link :to="`${helpRoutePrefix}/terminals/managing-sessions`" class="next-step-card">
             <i class="fas fa-cogs"></i>
             <h4>Gestion des Sessions</h4>
             <p>Apprenez à gérer efficacement toutes vos sessions terminal</p>
           </router-link>
 
-          <router-link to="/help/terminals/troubleshooting" class="next-step-card">
+          <router-link :to="`${helpRoutePrefix}/terminals/troubleshooting`" class="next-step-card">
             <i class="fas fa-wrench"></i>
             <h4>Dépannage</h4>
             <p>Solutions aux problèmes de partage et de collaboration</p>
@@ -395,12 +395,19 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import { useHelpTranslations } from '../../../composables/useHelpTranslations'
 
 const { t } = useI18n()
 const { loadHelpTranslations } = useHelpTranslations()
+const route = useRoute()
+
+// Determine the correct help routes based on current path
+const isPublicHelp = computed(() => route.path.startsWith('/help-public'))
+const helpMainRoute = computed(() => isPublicHelp.value ? '/help-public' : '/help')
+const helpRoutePrefix = computed(() => isPublicHelp.value ? '/help-public' : '/help')
 
 onMounted(async () => {
   await loadHelpTranslations()

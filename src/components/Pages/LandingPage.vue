@@ -17,6 +17,10 @@
             <i class="fas fa-user-plus"></i>
             {{ t('landing.register') }}
           </router-link>
+          <router-link to="/help-public" class="btn btn-help btn-lg">
+            <i class="fas fa-question-circle"></i>
+            {{ t('landing.help') }}
+          </router-link>
         </div>
       </div>
       <div class="hero-animation">
@@ -369,6 +373,7 @@ onMounted(() => {
       heroSubtitle: 'Plateforme complète de gestion de cours avec terminaux intégrés et système d\'abonnement',
       login: 'Se connecter',
       register: "S'inscrire",
+      help: 'Aide',
       courses: 'Cours',
       terminals: 'Terminaux',
       navigation: 'Fonctionnalités',
@@ -465,6 +470,7 @@ onMounted(() => {
       heroSubtitle: 'Complete course management platform with integrated terminals and subscription system',
       login: 'Login',
       register: 'Register',
+      help: 'Help',
       courses: 'Courses',
       terminals: 'Terminals',
       navigation: 'Features',
@@ -661,6 +667,20 @@ onUnmounted(() => {
 .btn-outline-light:hover {
   background: #fff;
   color: #667eea;
+  transform: translateY(-2px);
+}
+
+.btn-help {
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.btn-help:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-color: #fff;
   transform: translateY(-2px);
 }
 

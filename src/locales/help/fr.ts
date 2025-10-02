@@ -26,8 +26,7 @@ export const helpFr = {
 
     contact: {
       title: "Besoin d'aide ?",
-      text: "Si vous ne trouvez pas ce que vous cherchez, n'hésitez pas à nous contacter à",
-      email: "contact@labinux.com"
+      text: "Si vous ne trouvez pas ce que vous cherchez, n'hésitez pas à nous contacter à"
     },
 
     sections: {
