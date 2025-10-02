@@ -144,6 +144,14 @@ const basicRoutes = [
         component: () => import('../components/Demo/DemoPortal.vue')
       },
 
+      // Debug routes (admin only)
+      {
+        path: 'debug/feature-flags',
+        name: 'FeatureFlagsDebug',
+        component: () => import('../components/Debug/FeatureFlagsDebug.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+
       // Help and Documentation routes
       {
         path: 'help',

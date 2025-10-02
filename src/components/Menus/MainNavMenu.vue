@@ -74,6 +74,7 @@ import { useInvoicesStore } from '../../stores/invoices.ts';
 import { useSubscriptionsStore } from '../../stores/subscriptions.ts';
 import { useRoute } from 'vue-router';
 import { useHelpTranslations } from '../../composables/useHelpTranslations';
+import { useFeatureFlags } from '../../composables/useFeatureFlags';
 
 // Props
 const props = defineProps<{
@@ -100,6 +101,55 @@ const currentUser = useCurrentUserStore();
 const { t } = useI18n();
 const route = useRoute();
 
+// Feature flags
+const { createReactiveFlag } = useFeatureFlags();
+
+// Create reactive computed values for each flag we need to check
+const courseConceptionEnabled = createReactiveFlag('course_conception')
+const themeCustomizationEnabled = createReactiveFlag('theme_customization')
+const archiveGenerationsEnabled = createReactiveFlag('archive_generations')
+const sshKeyManagementEnabled = createReactiveFlag('ssh_key_management')
+const terminalManagementEnabled = createReactiveFlag('terminal_management')
+const helpDocumentationEnabled = createReactiveFlag('help_documentation')
+
+// Helper function to check feature flags reactively
+const isFeatureEnabled = (flagName: string): boolean => {
+  switch (flagName) {
+    case 'course_conception':
+      return courseConceptionEnabled.value
+    case 'theme_customization':
+      return themeCustomizationEnabled.value
+    case 'archive_generations':
+      return archiveGenerationsEnabled.value
+    case 'ssh_key_management':
+      return sshKeyManagementEnabled.value
+    case 'terminal_management':
+      return terminalManagementEnabled.value
+    case 'help_documentation':
+      return helpDocumentationEnabled.value
+    default:
+      return true // Default to enabled for unknown flags
+  }
+}
+
+// Types for menu items
+interface MenuItem {
+  route: string
+  label: string
+  title: string
+  icon: string
+  featureFlag?: string
+}
+
+interface MenuCategory {
+  key: string
+  label: string
+  icon: string
+  allowedRoles: string[]
+  items: MenuItem[]
+  featureFlag?: string
+}
+
 // État pour gérer l'expansion des catégories et leur position
 const expandedCategories = ref<Record<string, boolean>>({
   courses: false,
@@ -111,12 +161,13 @@ const expandedCategories = ref<Record<string, boolean>>({
 const menuPositions = ref<Record<string, { top: number; left: number }>>({});
 
 // Structure des catégories de menu
-const menuCategories = computed(() => [
+const menuCategories = computed((): MenuCategory[] => [
   {
     key: 'courses',
     label: t('navigation.courseDesign'),
     icon: 'fas fa-graduation-cap',
     allowedRoles: ['administrator', 'teacher', 'student'],
+    featureFlag: 'course_conception',
     items: [
       {
         route: '/courses',
@@ -152,13 +203,15 @@ const menuCategories = computed(() => [
         route: '/themes',
         label: t('themes.pageTitle'),
         title: t('themes.pageTitle'),
-        icon: 'fas fa-id-card'
+        icon: 'fas fa-id-card',
+        featureFlag: 'theme_customization'
       },
       {
         route: '/generations',
         label: t('generations.pageTitle'),
         title: t('generations.pageTitle'),
-        icon: 'fas fa-archive'
+        icon: 'fas fa-archive',
+        featureFlag: 'archive_generations'
       }
     ]
   },
@@ -167,6 +220,7 @@ const menuCategories = computed(() => [
     label: t('navigation.practicalWork'),
     icon: 'fas fa-laptop-code',
     allowedRoles: ['administrator', 'teacher', 'student'],
+    featureFlag: 'terminal_management',
     items: [
       {
         route: '/terminal-creation',
@@ -190,7 +244,8 @@ const menuCategories = computed(() => [
         route: '/user-terminal-keys',
         label: t('userTerminalKeys.pageTitle'),
         title: t('userTerminalKeys.pageTitle'),
-        icon: 'fas fa-key'
+        icon: 'fas fa-key',
+        featureFlag: 'ssh_key_management'
       }
     ]
   },
@@ -239,6 +294,7 @@ const menuCategories = computed(() => [
     label: t('help.title'),
     icon: 'fas fa-question-circle',
     allowedRoles: ['administrator', 'teacher', 'student'],
+    featureFlag: 'help_documentation',
     items: [
       {
         route: '/help',
@@ -283,17 +339,44 @@ const menuCategories = computed(() => [
         label: t('navigation.allInvoices'),
         title: t('navigation.viewAllSystemInvoices'),
         icon: 'fas fa-file-invoice-dollar'
+      },
+      {
+        route: '/debug/feature-flags',
+        label: t('navigation.featureFlags'),
+        title: t('navigation.featureFlagsTitle'),
+        icon: 'fas fa-flag'
       }
     ]
   }
 ]);
 
-// Catégories filtrées selon le rôle de l'utilisateur
+// Catégories filtrées selon le rôle de l'utilisateur et les feature flags
 const filteredCategories = computed(() => {
   const userRole = currentUser.userRoles[0];
-  return menuCategories.value.filter(category => 
-    category.allowedRoles.includes(userRole)
-  );
+  return menuCategories.value
+    .filter(category => {
+      // Check role access
+      if (!category.allowedRoles.includes(userRole)) {
+        return false
+      }
+      // Check category-level feature flag
+      if (category.featureFlag) {
+        return isFeatureEnabled(category.featureFlag)
+      }
+      return true
+    })
+    .map(category => ({
+      ...category,
+      items: category.items.filter(item => {
+        // Check item-level feature flag if it exists
+        if (item.featureFlag) {
+          return isFeatureEnabled(item.featureFlag)
+        }
+        // Include items without feature flags
+        return true
+      })
+    }))
+    .filter(category => category.items.length > 0) // Remove categories with no visible items
 });
 
 // Fonction pour déterminer si une catégorie contient l'élément actif

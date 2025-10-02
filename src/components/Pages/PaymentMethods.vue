@@ -23,9 +23,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import Entity from './Entity.vue';
 import { usePaymentMethodsStore } from '../../stores/paymentMethods';
 import { useSubscriptionsStore } from '../../stores/subscriptions';
+
+const { t } = useI18n();
 
 const entityStore = usePaymentMethodsStore();
 const subscriptionsStore = useSubscriptionsStore();

@@ -139,3 +139,65 @@ When creating new entity stores, extend baseStore and define:
 
 **Demo Mode Usage:**
 Enable demo mode for safe development without backend dependencies. All subscription/payment features work with realistic mock data and simulated delays.
+
+## Feature Flags System
+
+**GitLab-style Implementation:**
+OCF Front includes a comprehensive feature flags system for gradual rollouts, A/B testing, and emergency feature toggling.
+
+**Core Architecture:**
+- `services/featureFlags.ts` - Main service with GitLab-style API
+- `composables/useFeatureFlags.ts` - Vue 3 composable for easy integration
+- Reactive flag checking with real-time navigation updates
+- Environment variable configuration via `VITE_FEATURE_FLAG_*`
+
+**Available Feature Flags:**
+```bash
+# Individual Features (item-level)
+VITE_FEATURE_FLAG_THEME_CUSTOMIZATION=true    # Themes menu item
+VITE_FEATURE_FLAG_ARCHIVE_GENERATIONS=true    # Generations menu item
+VITE_FEATURE_FLAG_SSH_KEY_MANAGEMENT=true     # SSH keys menu item
+
+# Major Sections (category-level)
+VITE_FEATURE_FLAG_COURSE_CONCEPTION=true      # Entire Course Design section
+VITE_FEATURE_FLAG_TERMINAL_MANAGEMENT=true    # Entire Practical Work section
+VITE_FEATURE_FLAG_HELP_DOCUMENTATION=true     # Entire Help section
+```
+
+**Usage Patterns:**
+```typescript
+// In components
+const { isEnabled } = useFeatureFlags()
+if (isEnabled('course_conception')) {
+  // Feature-specific code
+}
+
+// Reactive navigation filtering (automatic)
+// Categories/items with featureFlag property are auto-filtered
+
+// Admin interface
+// /debug/feature-flags or Administration → Feature Flags
+```
+
+**Role-based Restrictions:**
+- `course_conception` - Limited to administrators and teachers
+- `terminal_management` - Available to all user roles
+- `help_documentation` - Available to all user roles
+- Individual flags - No role restrictions by default
+
+**Navigation Integration:**
+The feature flags system automatically controls navigation menu visibility:
+- Category-level flags hide entire menu sections
+- Item-level flags hide individual menu items
+- Real-time updates when flags are toggled in admin panel
+- Graceful degradation with no broken links
+
+**Emergency Controls:**
+Feature flags can be disabled instantly via environment variables for emergency situations:
+```bash
+# Disable core course functionality
+VITE_FEATURE_FLAG_COURSE_CONCEPTION=false
+
+# Disable all terminal/lab features
+VITE_FEATURE_FLAG_TERMINAL_MANAGEMENT=false
+```

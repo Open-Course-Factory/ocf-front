@@ -141,7 +141,9 @@ export const useTerminalsStore = defineStore('terminals', () => {
             adminSubscriptionPlans: 'Subscription Plans (Admin)',
             adminSubscriptionPlansTitle: 'Administration of subscription plans',
             allInvoices: 'All Invoices',
-            viewAllSystemInvoices: 'View all system invoices'
+            viewAllSystemInvoices: 'View all system invoices',
+            featureFlags: 'Feature Flags',
+            featureFlagsTitle: 'Manage feature flags and experimental features'
         }
     })
 
@@ -172,7 +174,9 @@ export const useTerminalsStore = defineStore('terminals', () => {
             adminSubscriptionPlans: 'Plans d\'Abonnement (Admin)',
             adminSubscriptionPlansTitle: 'Administration des plans d\'abonnement',
             allInvoices: 'Toutes les Factures',
-            viewAllSystemInvoices: 'Visualiser toutes les factures système'
+            viewAllSystemInvoices: 'Visualiser toutes les factures système',
+            featureFlags: 'Feature Flags',
+            featureFlagsTitle: 'Gérer les feature flags et fonctionnalités expérimentales'
         }
     })
 

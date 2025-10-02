@@ -127,9 +127,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { terminalService, type ShareTerminalRequest, type SharedTerminalInfo } from '../../services/terminalService'
 import { userService, type User } from '../../services/userService'
+
+const { t } = useI18n()
 
 interface Props {
   show: boolean
@@ -192,7 +195,7 @@ async function shareTerminal() {
       })
     }
 
-    const result = await terminalService.shareTerminal(props.terminalId, requestData)
+    await terminalService.shareTerminal(props.terminalId, requestData)
     successMessage.value = 'Terminal partagé avec succès!'
     emit('shared', props.terminalId)
 
