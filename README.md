@@ -73,6 +73,7 @@ OCF Front includes a GitLab-style feature flags system for safe feature deployme
 ### Usage
 
 **Environment Variables:**
+
 ```bash
 # Disable course management features
 VITE_FEATURE_FLAG_COURSE_CONCEPTION=false
@@ -82,11 +83,13 @@ VITE_FEATURE_FLAG_TERMINAL_MANAGEMENT=false
 ```
 
 **Admin Interface:**
+
 - Access via `/debug/feature-flags` or **Administration → Feature Flags**
 - Real-time toggling with instant navigation updates
 - Admin-only access with role-based restrictions
 
 **In Code:**
+
 ```typescript
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
@@ -106,18 +109,21 @@ if (isEnabled('course_conception')) {
 ## 🎨 Architecture Highlights
 
 ### Store Pattern (Pinia)
+
 - **BaseStore**: Generic CRUD operations with hooks
 - **Entity Stores**: Domain-specific stores extending BaseStore
 - **Embedded Translations**: I18n translations within stores
 - **Demo Integration**: Automatic API/mock switching
 
 ### Component System
+
 - **Generic Entity Component**: Automatic CRUD interfaces
 - **Dynamic Field Rendering**: Based on store configurations
 - **Layout System**: Authenticated vs public layouts
 - **Feature Flag Integration**: Automatic navigation filtering
 
 ### Security & Authentication
+
 - **JWT Token Management**: Automatic token handling
 - **Route Protection**: Authentication guards
 - **Role-based Access**: Feature restrictions by user role
@@ -132,6 +138,7 @@ VITE_DEMO_MODE=true
 ```
 
 Features:
+
 - Mock API responses with realistic data
 - Simulated Stripe payment flows
 - Network delay simulation
@@ -166,5 +173,5 @@ Features:
 
 ## License
 
- - OCF - Front is licensed under the AGPL v3.0. You can read the full license [here](LICENSE)
- - OCF - Front uses [guac-vue](https://github.com/wwt/guac-vue) licensed under the Apache-2.0 licence. 
+- OCF - Front is licensed under the AGPL v3.0. You can read the full license [here](LICENSE)
+- OCF - Front uses [guac-vue](https://github.com/wwt/guac-vue) licensed under the Apache-2.0 licence.
