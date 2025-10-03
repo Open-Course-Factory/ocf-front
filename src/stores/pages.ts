@@ -21,7 +21,10 @@
 
 import { defineStore } from "pinia"
 import { useI18n } from "vue-i18n"
-import { useBaseStore } from "./baseStore";
+import { useBaseStore } from "./baseStore"
+import { useCoursesStore } from "./courses"
+import { useChaptersStore } from "./chapters"
+import { useSectionsStore } from "./sections"
 
 
 export const usePagesStore = defineStore('pages', () => {
@@ -58,6 +61,9 @@ export const usePagesStore = defineStore('pages', () => {
         ["id", { label: t('pages.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
         ["number", { label: t('pages.number'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
         ["parentSectionTitle", { label: t('pages.parent_section_title'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
+        ["courseId", { label: "Course", type: "select", display: false, toBeSet: false, toBeEdited: false }],
+        ["chapterId", { label: "Chapter", type: "select", display: false, toBeSet: false, toBeEdited: false }],
+        ["sectionId", { label: "Section", type: "select", display: false, toBeSet: false, toBeEdited: false }],
         ["toc", { label: t('pages.toc'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
         ["content", { label: t('pages.content'), type: "advanced-textarea", display: true, toBeSet: true, toBeEdited: true }],
         ["hide", { label: t('pages.hide'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
@@ -68,6 +74,11 @@ export const usePagesStore = defineStore('pages', () => {
     base.subEntitiesStores = new Map<string, any>([
     ])
 
+    base.parentEntitiesStores = new Map<string, any>([
+        ["courseId", useCoursesStore()],
+        ["chapterId", useChaptersStore()],
+        ["sectionId", useSectionsStore()],
+    ])
 
     return {...base, fieldList}
 })

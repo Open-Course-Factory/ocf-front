@@ -32,41 +32,41 @@
         <div class="toolbar-right">
           <!-- Filtres par entités parentes -->
           <div v-if="parentFilters.length > 0" class="filters-container">
-            <div 
-              v-for="filter in parentFilters" 
-              :key="filter.key" 
+            <div
+              v-for="filter in parentFilters"
+              :key="filter.key"
               class="filter-group"
             >
               <label :for="`filter-${filter.key}`" class="filter-label">
                 <i class="fas fa-filter"></i>
                 {{ filter.label }}:
               </label>
-              <select 
+              <select
                 :id="`filter-${filter.key}`"
-                v-model="activeFilters[filter.key]" 
+                v-model="activeFilters[filter.key]"
                 @change="applyFilters"
                 class="filter-select"
               >
-                <option value="">{{ t('all') }}</option>
-                <option 
-                  v-for="option in filter.options" 
-                  :key="option.value" 
+                <option value="">All</option>
+                <option
+                  v-for="option in filter.options"
+                  :key="option.value"
                   :value="option.value"
                 >
                   {{ option.text }}
                 </option>
               </select>
             </div>
-            <button 
-              v-if="hasActiveFilters" 
-              @click="clearFilters" 
+            <button
+              v-if="hasActiveFilters"
+              @click="clearFilters"
               class="btn btn-secondary btn-clear-filters"
-              :title="t('clearFilters')"
+              title="Clear filters"
             >
               <i class="fas fa-times"></i>
             </button>
           </div>
-          
+
           <button class="btn btn-primary" @click="openModal(null)">
             <i class="fas fa-plus"></i> {{ t('add') }}
           </button>
@@ -79,12 +79,12 @@
       <!-- Indicateur de filtres actifs -->
       <div v-if="hasActiveFilters" class="active-filters-info">
         <i class="fas fa-info-circle"></i>
-        {{ t('filteredResults', { total: filteredEntities.length, of: props.entityStore.entities.length }) }}
+        Filtered results: {{ totalItems }} total items found
       </div>
 
-      <div v-if="filteredEntities.length > 0">
+      <div v-if="displayedEntities.length > 0">
         <ul>
-          <li v-for="entity in filteredEntities" :key="entity.id" class="entity-item">
+          <li v-for="entity in displayedEntities" :key="entity.id" class="entity-item">
             <EntityCard :entity="entity" :entityStore="props.entityStore" />
             <div class="actions">
               <!-- Slot pour les actions spécifiques -->
@@ -111,16 +111,83 @@
           </li>
         </ul>
       </div>
-      <div v-else-if="props.entityStore.entities.length === 0">
+
+      <!-- Pagination Controls -->
+      <div v-if="totalPages > 1" class="pagination-container">
+        <div class="pagination-info">
+          <span>Showing {{ ((currentPage - 1) * pageSize) + 1 }}-{{ Math.min(currentPage * pageSize, totalItems) }} of {{ totalItems }} results</span>
+        </div>
+        <div class="pagination-controls">
+          <button
+            class="btn btn-secondary btn-sm"
+            :disabled="!hasPreviousPage || isLoadingEntities"
+            @click="goToPage(1)"
+          >
+            <i class="fas fa-angle-double-left"></i>
+          </button>
+          <button
+            class="btn btn-secondary btn-sm"
+            :disabled="!hasPreviousPage || isLoadingEntities"
+            @click="goToPage(currentPage - 1)"
+          >
+            <i class="fas fa-angle-left"></i> Previous
+          </button>
+
+          <div class="page-numbers">
+            <button
+              v-for="page in visiblePages"
+              :key="page"
+              class="btn btn-sm"
+              :class="page === currentPage ? 'btn-primary' : 'btn-outline-secondary'"
+              :disabled="isLoadingEntities"
+              @click="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          </div>
+
+          <button
+            class="btn btn-secondary btn-sm"
+            :disabled="!hasNextPage || isLoadingEntities"
+            @click="goToPage(currentPage + 1)"
+          >
+            Next <i class="fas fa-angle-right"></i>
+          </button>
+          <button
+            class="btn btn-secondary btn-sm"
+            :disabled="!hasNextPage || isLoadingEntities"
+            @click="goToPage(totalPages)"
+          >
+            <i class="fas fa-angle-double-right"></i>
+          </button>
+        </div>
+        <div class="page-size-selector">
+          <label for="pageSize">Items per page:</label>
+          <select
+            id="pageSize"
+            v-model="pageSize"
+            @change="changePageSize"
+            :disabled="isLoadingEntities"
+            class="form-select form-select-sm"
+          >
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+      </div>
+
+      <div v-else-if="totalItems === 0 && hasActiveFilters && !isLoadingEntities">
+        <p class="no-results">
+          <i class="fas fa-search"></i>
+          No results match the current filters
+        </p>
+      </div>
+      <div v-else-if="totalItems === 0 && !isLoadingEntities">
         <p class="empty-state">
           <i class="fas fa-inbox"></i>
           {{ t('empty') }}
-        </p>
-      </div>
-      <div v-else>
-        <p class="no-results">
-          <i class="fas fa-search"></i>
-          {{ t('noFilterResults') }}
         </p>
       </div>
     </div>
@@ -149,21 +216,6 @@ import { getTranslationKey } from '../../utils';
 
 const { t } = useI18n();
 
-// Ajouter les traductions manquantes
-useI18n().mergeLocaleMessage('en', {
-  all: 'All',
-  clearFilters: 'Clear filters',
-  filteredResults: 'Showing {total} of {of} results',
-  noFilterResults: 'No results match the current filters'
-});
-
-useI18n().mergeLocaleMessage('fr', {
-  all: 'Tous',
-  clearFilters: 'Effacer les filtres',
-  filteredResults: 'Affichage de {total} sur {of} résultats',
-  noFilterResults: 'Aucun résultat ne correspond aux filtres actuels'
-});
-
 const props = defineProps<{
   entityName: string;
   entityStore: Store;
@@ -172,15 +224,24 @@ const props = defineProps<{
 const showModal = ref(false);
 const entityToEdit = ref();
 
-// État pour les filtres
+// Estado para les filtres
 const activeFilters = reactive<Record<string, string>>({});
+
+// Pagination state
+const currentPage = ref(1);
+const pageSize = ref(20);
+const totalPages = ref(1);
+const totalItems = ref(0);
+const isLoadingEntities = ref(false);
+const hasNextPage = ref(false);
+const hasPreviousPage = ref(false);
 
 // Calcul des filtres disponibles basés sur les entités parentes
 const parentFilters = computed(() => {
   const filters: Array<{key: string, label: string, options: Array<{value: string, text: string}>}> = [];
-  
+
   if (!props.entityStore.fieldList) return filters;
-  
+
   // Chercher dans les entités parentes
   if ((props.entityStore as any).parentEntitiesStores) {
     (props.entityStore as any).parentEntitiesStores.forEach((parentStore: any, key: string) => {
@@ -194,32 +255,13 @@ const parentFilters = computed(() => {
       }
     });
   }
-  
+
   return filters;
 });
 
-// Entités filtrées
-const filteredEntities = computed(() => {
-  if (!hasActiveFilters.value) {
-    return props.entityStore.entities || [];
-  }
-  
-  return (props.entityStore.entities || []).filter((entity: any) => {
-    return Object.entries(activeFilters).every(([key, value]) => {
-      if (!value) return true;
-      
-      const entityValue = entity[key];
-      
-      // Gestion générique des relations many-to-many avec array d'IDs
-      if (Array.isArray(entityValue)) {
-        // Conversion en string pour être sûr de la comparaison
-        return entityValue.includes(String(value));
-      }
-      
-      // Relation simple (one-to-many classique)
-      return String(entityValue) === String(value);
-    });
-  });
+// Entités affichées (viennent directement du serveur, déjà filtrées)
+const displayedEntities = computed(() => {
+  return props.entityStore.entities || [];
 });
 
 // Vérifier s'il y a des filtres actifs
@@ -229,7 +271,10 @@ const hasActiveFilters = computed(() => {
 
 // Fonction pour appliquer les filtres
 function applyFilters() {
-  // Les filtres sont automatiquement appliqués via la computed property filteredEntities
+  // Reset to page 1 when filters change
+  currentPage.value = 1;
+  // Reload data from server with filters
+  loadEntities();
 }
 
 // Fonction pour effacer tous les filtres
@@ -237,6 +282,9 @@ function clearFilters() {
   Object.keys(activeFilters).forEach(key => {
     activeFilters[key] = '';
   });
+  // Reset to page 1 and reload data
+  currentPage.value = 1;
+  loadEntities();
 }
 
 // Initialiser les filtres quand les données changent
@@ -250,28 +298,96 @@ watch(() => props.entityStore.entities, () => {
 }, { immediate: true });
 
 onBeforeMount(() => {
-  getEntities(props.entityName, props.entityStore);
-  
-  // Charger les données des entités parentes
+  loadEntities();
+
+  // Charger les données des entités parentes (sans pagination)
   if ((props.entityStore as any).parentEntitiesStores) {
     (props.entityStore as any).parentEntitiesStores.forEach((store: Store, key: string) => {
-      getEntities(store.$id || key, store);
+      getEntitiesWithoutPagination(store.$id || key, store);
     });
   }
-  
-  // Charger les données des sous-entités
+
+  // Charger les données des sous-entités (sans pagination)
   if (props.entityStore.subEntitiesStores) {
     props.entityStore.subEntitiesStores.forEach((store: Store, key: string) => {
-      getEntities(store.$id || key, store);
+      getEntitiesWithoutPagination(store.$id || key, store);
     });
   }
 });
 
-async function getEntities(entityName: string, store: Store) {
+async function getEntities(entityName: string, store: Store, page: number = 1, size: number = 20, filters: Record<string, string> = {}) {
+  isLoadingEntities.value = true;
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString()
+    });
+
+    // Add filter parameters
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value && value !== '') {
+        params.append(key, value);
+      }
+    });
+
+    const response = await axios.get(`/${entityName}?${params}`);
+
+    // Handle paginated response with metadata
+    if (response.data?.data) {
+      // API response has data wrapper
+      const entities = response.data.data || [];
+      store.entities = entities;
+
+      // Use pagination metadata from API
+      totalItems.value = response.data.total || 0;
+      totalPages.value = response.data.totalPages || 1;
+      currentPage.value = response.data.currentPage || page;
+      hasNextPage.value = response.data.hasNextPage || false;
+      hasPreviousPage.value = response.data.hasPreviousPage || false;
+
+      // Optional: Log pagination info for debugging (remove in production)
+      // console.log('Pagination info:', { total: totalItems.value, totalPages: totalPages.value, currentPage: currentPage.value });
+    } else {
+      // Direct array response (fallback for non-paginated endpoints)
+      const entities = response.data || [];
+      store.entities = entities;
+      totalItems.value = entities.length;
+      totalPages.value = 1;
+      currentPage.value = 1;
+    }
+
+    if (store.getSelectDatas) {
+      store.selectDatas = store.getSelectDatas(store.entities);
+    }
+  } catch (error: any) {
+    console.error('Error while getting ' + entityName, error);
+    store.entities = [];
+    store.selectDatas = [];
+    totalItems.value = 0;
+    totalPages.value = 1;
+    currentPage.value = 1;
+    hasNextPage.value = false;
+    hasPreviousPage.value = false;
+    switch (error.response?.status) {
+      case 404:
+        break;
+      case 401:
+        console.log('401 - L\'intercepteur va gérer la déconnexion');
+        break;
+      default:
+        break;
+    }
+  } finally {
+    isLoadingEntities.value = false;
+  }
+}
+
+// Get entities without pagination for parent/sub entities
+async function getEntitiesWithoutPagination(entityName: string, store: Store) {
   try {
     const response = await axios.get(`/${entityName}`);
-
-    store.entities = response.data || [];
+    const entities = response.data?.data || response.data || [];
+    store.entities = entities;
     if (store.getSelectDatas) {
       store.selectDatas = store.getSelectDatas(store.entities);
     }
@@ -279,17 +395,6 @@ async function getEntities(entityName: string, store: Store) {
     store.entities = [];
     store.selectDatas = [];
     console.error('Error while getting ' + entityName, error);
-    switch (error.response?.status) {
-      case 404:
-        break;
-      case 401:
-        // L'intercepteur va déjà gérer la déconnexion automatique
-        console.log('401 - L\'intercepteur va gérer la déconnexion');
-        break;
-      default:
-        // Redirection vers login seulement pour les autres erreurs si nécessaire
-        break;
-    }
   }
 }
 
@@ -342,7 +447,7 @@ async function updateEntity(data: Record<string, string>) {
     await axios.patch(`/${props.entityName}/${data['id']}`, data);
     
     // Recharger les entités
-    getEntities(props.entityName, props.entityStore);
+    loadEntities();
     
     // Exécuter le hook afterUpdate si défini (générique)
     if (props.entityStore.executeAfterUpdateHook) {
@@ -355,6 +460,36 @@ async function updateEntity(data: Record<string, string>) {
     console.error('Error while updating ' + props.entityName, error);
   }
 }
+
+// Pagination functions
+function loadEntities() {
+  getEntities(props.entityName, props.entityStore, currentPage.value, pageSize.value, activeFilters);
+}
+
+function goToPage(page: number) {
+  if (page >= 1 && page <= totalPages.value && page !== currentPage.value) {
+    currentPage.value = page;
+    loadEntities();
+  }
+}
+
+function changePageSize() {
+  currentPage.value = 1;
+  loadEntities();
+}
+
+// Visible page numbers for pagination
+const visiblePages = computed(() => {
+  const pages = [];
+  const start = Math.max(1, currentPage.value - 2);
+  const end = Math.min(totalPages.value, currentPage.value + 2);
+
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+
+  return pages;
+});
 
 function isEditable(entityStore: Store) {
   let res = false;
@@ -507,9 +642,80 @@ ul {
   margin-bottom: 15px;
 }
 
+/* Messages d'état */
 .empty-state,
 .no-results {
   text-align: center;
   padding: 20px;
+}
+
+/* === PAGINATION STYLES === */
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.pagination-info {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 4px;
+  margin: 0 8px;
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.page-size-selector select {
+  width: auto;
+  min-width: 70px;
+}
+
+/* Responsive pagination */
+@media (max-width: 768px) {
+  .pagination-container {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .pagination-controls {
+    order: 2;
+  }
+
+  .pagination-info {
+    order: 1;
+  }
+
+  .page-size-selector {
+    order: 3;
+  }
+
+  .page-numbers {
+    margin: 0 4px;
+  }
+
+  .page-numbers .btn {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
 }
 </style>

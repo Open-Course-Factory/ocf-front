@@ -78,6 +78,12 @@ function isSubEntity(value: any) {
 }
 
 function shouldDisplayProperty(key: string) {
+  // If fieldList is not available, show basic properties but exclude technical fields
+  if (!props.entityStore.fieldList) {
+    const excludedFields = ['id', 'created_at', 'updated_at', 'createdAt', 'updatedAt'];
+    return !excludedFields.includes(key);
+  }
+
   const field =
     props.entityStore.fieldList.get(key) ||
     props.entityStore.fieldList.get(`${key}Id`);
@@ -85,6 +91,11 @@ function shouldDisplayProperty(key: string) {
 }
 
 function getDisplayValue(key: string, value: any) {
+  // If fieldList is not available, return the raw value
+  if (!props.entityStore.fieldList) {
+    return value;
+  }
+
   const field =
     props.entityStore.fieldList.get(key) ||
     props.entityStore.fieldList.get(`${key}Id`);
