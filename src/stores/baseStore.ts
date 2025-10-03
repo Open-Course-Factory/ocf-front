@@ -20,15 +20,23 @@ export const useBaseStore = () => {
         if (inputEntities.length > 0) {
             inputEntities.forEach( (value) => {
                 let name = ""
-                if (value.name === undefined) {
-                    name = value.Username
-                } else {
+                // Try multiple possible display name fields in order of preference
+                if (value.title) {
+                    name = value.title
+                } else if (value.name) {
                     name = value.name
+                } else if (value.Username) {
+                    name = value.Username
+                } else if (value.label) {
+                    name = value.label
+                } else {
+                    // Fallback to ID if no display name is found
+                    name = value.id
                 }
                 res.push({ text: name, value: value.id})
             })
         }
-        
+
         return res
     }
 

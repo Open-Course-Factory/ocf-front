@@ -247,10 +247,63 @@ const parentFilters = computed(() => {
     (props.entityStore as any).parentEntitiesStores.forEach((parentStore: any, key: string) => {
       const field = props.entityStore.fieldList.get(key);
       if (field && parentStore && parentStore.entities && parentStore.entities.length > 0) {
+        let filteredOptions = parentStore.selectDatas || [];
+
+        // Filter options based on other active filters for related entities
+        if (Object.keys(activeFilters).some(filterKey => activeFilters[filterKey] && filterKey !== key)) {
+          filteredOptions = parentStore.selectDatas.filter((option: any) => {
+            const entity = parentStore.entities.find((e: any) => e.id === option.value);
+            if (!entity) return false;
+
+            // Check if this entity is compatible with other active filters
+            return Object.entries(activeFilters).every(([filterKey, filterValue]) => {
+              if (!filterValue || filterKey === key) return true;
+
+              // Check if the entity has a relationship field that matches the active filter
+              // Direct match (e.g., section.courseId === selectedCourseId)
+              if (entity[filterKey] === filterValue) return true;
+
+              // Array field match (e.g., chapter.courseIDs.includes(selectedCourseId))
+              if (Array.isArray(entity[filterKey]) && entity[filterKey].includes(filterValue)) return true;
+
+              // Handle field name variations generically
+              const variations = [
+                filterKey.replace(/s$/, ''), // courseIds -> courseId
+                filterKey + 's', // courseId -> courseIds
+                filterKey.replace(/Id$/, 'IDs'), // courseId -> courseIDs
+                filterKey.replace(/ID$/, 'IDs'), // courseID -> courseIDs
+                filterKey.replace(/id$/, 'ids'), // courseid -> courseids
+              ];
+
+              for (const variation of variations) {
+                // Direct value match
+                if (entity[variation] === filterValue) return true;
+
+                // Array/collection match (including Proxy arrays)
+                if (entity[variation] && entity[variation].includes && entity[variation].includes(filterValue)) {
+                  return true;
+                }
+
+                // Additional check for reactive arrays that might not have direct includes method
+                if (entity[variation]) {
+                  try {
+                    const arrayContent = Array.from(entity[variation]);
+                    if (arrayContent.includes(filterValue)) return true;
+                  } catch (e) {
+                    // Not iterable, skip
+                  }
+                }
+              }
+
+              return false;
+            });
+          });
+        }
+
         filters.push({
           key: key,
           label: field.label || t(`${translationKey}.${key}`),
-          options: parentStore.selectDatas || []
+          options: filteredOptions
         });
       }
     });
@@ -451,7 +504,7 @@ async function updateEntity(data: Record<string, string>) {
     
     // Exécuter le hook afterUpdate si défini (générique)
     if (props.entityStore.executeAfterUpdateHook) {
-      const updatedEntity = props.entityStore.entities.find(e => e.id === data['id']);
+      const updatedEntity = props.entityStore.entities.find((e: any) => e.id === data['id']);
       await props.entityStore.executeAfterUpdateHook(updatedEntity, data);
     }
     
