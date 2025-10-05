@@ -51,6 +51,9 @@ export const useSshKeysStore = defineStore('SshKeys', () => {
         ["private_key", { label: t('sshkeys.value'), type: "textarea", display: false, toBeSet: true, toBeEdited: false }],
         ["created_at", { label: t('created_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
     ])
-        
+
+    // Enable prevention of last object deletion for SSH keys
+    base.preventLastObjectDeletion.value = true
+
     return {...base, fieldList}
 })

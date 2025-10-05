@@ -109,7 +109,7 @@
               </button>
               <button
                 class="btn btn-danger"
-                :disabled="props.entityStore.entities.length <= 1"
+                :disabled="shouldPreventLastObjectDeletion && props.entityStore.entities.length <= 1"
                 @click="deleteEntity(entity.id)"
               >
                 <i class="fas fa-trash"></i>
@@ -365,6 +365,11 @@ const shouldShowPagination = computed(() => {
 // Calculate total pages
 const totalPages = computed(() => {
   return Math.ceil(totalItems.value / pageSize.value);
+});
+
+// Determine if last object deletion should be prevented (configurable per store)
+const shouldPreventLastObjectDeletion = computed(() => {
+  return (props.entityStore as any).preventLastObjectDeletion?.value || false;
 });
 
 // Fonction pour appliquer les filtres

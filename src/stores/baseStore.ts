@@ -55,6 +55,9 @@ export const useBaseStore = () => {
     const error = ref('')
     const lastLoaded = ref(null as Date | null)
 
+    // Prevent deletion of last object (configurable per store)
+    const preventLastObjectDeletion = ref(false)
+
     function getEntities() {
         return entities
     }
@@ -407,6 +410,9 @@ export const useBaseStore = () => {
         getSelectDatas,
         subEntitiesStores,
         parentEntitiesStores,
+
+        // Configuration options
+        preventLastObjectDeletion,
 
         // Hook methods
         setAfterCreateHook,
