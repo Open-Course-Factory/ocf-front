@@ -1,8 +1,52 @@
 import { reactive, ref } from 'vue'
 import axios from 'axios'
+import { useI18n } from 'vue-i18n'
 import { isDemoMode, logDemoAction, simulateDelay } from '../services/demoConfig'
 
 export const useBaseStore = () => {
+    // Add pagination translations (shared by all entities)
+    useI18n().mergeLocaleMessage('en', {
+        pagination: {
+            showing: 'Showing',
+            of: 'of',
+            results: 'results',
+            page: 'Page',
+            previous: 'Previous',
+            next: 'Next',
+            itemsPerPage: 'Items per page:',
+            filteredResults: 'Filtered results:',
+            totalItems: 'total items found',
+            noResults: 'No results match the current filters',
+            empty: 'No items to display',
+            navigatingTo: 'Navigating to page',
+            clickToJump: 'Click to jump to page',
+            invalidPage: 'Please enter a valid page number',
+            pageNotExist: 'doesn\'t exist. Maximum page is',
+            go: 'Go'
+        }
+    });
+
+    useI18n().mergeLocaleMessage('fr', {
+        pagination: {
+            showing: 'Affichage',
+            of: 'de',
+            results: 'résultats',
+            page: 'Page',
+            previous: 'Précédent',
+            next: 'Suivant',
+            itemsPerPage: 'Éléments par page :',
+            filteredResults: 'Résultats filtrés :',
+            totalItems: 'éléments trouvés au total',
+            noResults: 'Aucun résultat ne correspond aux filtres actuels',
+            empty: 'Aucun élément à afficher',
+            navigatingTo: 'Navigation vers la page',
+            clickToJump: 'Cliquez pour aller à la page',
+            invalidPage: 'Veuillez saisir un numéro de page valide',
+            pageNotExist: 'n\'existe pas. La page maximum est',
+            go: 'Aller'
+        }
+    });
+
     let entities = reactive([])
     let selectDatas = reactive([])
 

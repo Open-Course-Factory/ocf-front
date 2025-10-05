@@ -79,7 +79,7 @@
       <!-- Indicateur de filtres actifs -->
       <div v-if="hasActiveFilters" class="active-filters-info">
         <i class="fas fa-info-circle"></i>
-        Filtered results: {{ totalItems }} total items found
+        {{ t('pagination.filteredResults') }} {{ totalItems }} {{ t('pagination.totalItems') }}
       </div>
 
       <!-- Sequential navigation loading state -->
@@ -87,7 +87,7 @@
         <div class="loading-spinner">
           <i class="fas fa-spinner fa-spin"></i>
         </div>
-        <p>Navigating to page {{ targetPageForNavigation }}...</p>
+        <p>{{ t('pagination.navigatingTo') }} {{ targetPageForNavigation }}...</p>
       </div>
 
       <!-- Normal entity list (hidden during sequential navigation) -->
@@ -124,7 +124,7 @@
       <!-- Cursor-based Pagination Controls -->
       <div v-if="shouldShowPagination && !isSequentialNavigating" class="pagination-container">
         <div class="pagination-info">
-          <span>Showing {{ (currentPageIndex * pageSize) + 1 }}-{{ (currentPageIndex * pageSize) + displayedEntities.length }} of {{ totalItems }} results (Page {{ currentPageIndex + 1 }})</span>
+          <span>{{ t('pagination.showing') }} {{ (currentPageIndex * pageSize) + 1 }}-{{ (currentPageIndex * pageSize) + displayedEntities.length }} {{ t('pagination.of') }} {{ totalItems }} {{ t('pagination.results') }} ({{ t('pagination.page') }} {{ currentPageIndex + 1 }})</span>
         </div>
         <div class="pagination-controls">
           <button
@@ -139,7 +139,7 @@
             :disabled="!hasPreviousPage || isLoadingEntities"
             @click="goToPreviousPage"
           >
-            <i class="fas fa-angle-left"></i> Previous
+            <i class="fas fa-angle-left"></i> {{ t('pagination.previous') }}
           </button>
 
           <div class="page-indicator">
@@ -147,9 +147,9 @@
               v-if="!showPageJumpInput"
               class="current-page-indicator clickable"
               @click="togglePageJumpInput"
-              :title="`Click to jump to page (1-${totalPages})`"
+              :title="`${t('pagination.clickToJump')} (1-${totalPages})`"
             >
-              Page {{ currentPageIndex + 1 }} / {{ totalPages }}
+              {{ t('pagination.page') }} {{ currentPageIndex + 1 }} / {{ totalPages }}
             </span>
             <div v-else class="page-jump-container">
               <input
@@ -167,7 +167,7 @@
                 @mousedown.prevent
                 @click="jumpToPage"
               >
-                Go
+                {{ t('pagination.go') }}
               </button>
             </div>
           </div>
@@ -177,11 +177,11 @@
             :disabled="!hasNextPage || isLoadingEntities"
             @click="goToNextPage"
           >
-            Next <i class="fas fa-angle-right"></i>
+            {{ t('pagination.next') }} <i class="fas fa-angle-right"></i>
           </button>
         </div>
         <div class="page-size-selector">
-          <label for="pageSize">Items per page:</label>
+          <label for="pageSize">{{ t('pagination.itemsPerPage') }}</label>
           <select
             id="pageSize"
             v-model="pageSize"
@@ -200,7 +200,7 @@
       <div v-else-if="totalItems === 0 && hasActiveFilters && !isLoadingEntities">
         <p class="no-results">
           <i class="fas fa-search"></i>
-          No results match the current filters
+          {{ t('pagination.noResults') }}
         </p>
       </div>
       <div v-else-if="totalItems === 0 && !isLoadingEntities">
@@ -233,10 +233,15 @@ import { useI18n } from 'vue-i18n';
 import { Store } from 'pinia';
 import { getTranslationKey } from '../../utils';
 import { useRoute, useRouter } from 'vue-router';
+import { useBaseStore } from '../../stores/baseStore';
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
+
+// Ensure baseStore is initialized to load pagination translations
+useBaseStore();
+
 
 const props = defineProps<{
   entityName: string;
@@ -518,13 +523,13 @@ function jumpToPage() {
 
   if (isNaN(targetPage) || targetPage < 1) {
     console.log('❌ Invalid page number');
-    alert('Please enter a valid page number');
+    alert(t('pagination.invalidPage'));
     return;
   }
 
   if (targetPage > totalPages.value) {
     console.log('❌ Page exceeds maximum');
-    alert(`Page ${targetPage} doesn't exist. Maximum page is ${totalPages.value}`);
+    alert(`${t('pagination.page')} ${targetPage} ${t('pagination.pageNotExist')} ${totalPages.value}`);
     return;
   }
 
