@@ -30,10 +30,23 @@
       </router-link>
     </div>
     <div class="help-header">
-      <h1><i class="fas fa-question-circle"></i> {{ t('help.title') }}</h1>
-      <p class="help-description">
-        {{ t('help.subtitle') }}
-      </p>
+      <div class="header-content">
+        <div class="header-text">
+          <h1><i class="fas fa-question-circle"></i> {{ t('help.title') }}</h1>
+          <p class="help-description">
+            {{ t('help.subtitle') }}
+          </p>
+        </div>
+        <div v-if="isPublicHelp" class="header-controls">
+          <div class="language-selector">
+            <select :value="currentLocale" @change="handleLocaleChange" class="help-language-select">
+              <option v-for="localeCode in supportedLocales" :key="`help-locale-${localeCode}`" :value="localeCode">
+                {{ getLocaleInfo(localeCode).flag }} {{ getLocaleInfo(localeCode).name }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="help-sections">
@@ -93,9 +106,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useHelpTranslations } from '../../composables/useHelpTranslations'
+import { useLocale } from '../../composables/useLocale'
 
 const { t } = useI18n()
 const { loadHelpTranslations } = useHelpTranslations()
+const { currentLocale, supportedLocales, setLocale, getLocaleInfo } = useLocale()
 const route = useRoute()
 
 onMounted(async () => {
@@ -193,6 +208,11 @@ function toggleSection(sectionId: string) {
   } else {
     expandedSections.value.add(sectionId)
   }
+}
+
+function handleLocaleChange(event: Event) {
+  const target = event.target as HTMLSelectElement
+  setLocale(target.value)
 }
 </script>
 
@@ -431,6 +451,44 @@ function toggleSection(sectionId: string) {
   box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
 }
 
+.header-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.language-selector {
+  display: flex;
+  align-items: center;
+}
+
+.help-language-select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background-color: white;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+  min-width: 140px;
+}
+
+.help-language-select:hover {
+  border-color: #9ca3af;
+}
+
+.help-language-select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.help-language-select option {
+  padding: 8px;
+  font-size: 14px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .help-page {
@@ -461,6 +519,16 @@ function toggleSection(sectionId: string) {
 
   .item-icon {
     margin-right: 15px;
+  }
+
+  .header-controls {
+    margin-top: 15px;
+  }
+
+  .help-language-select {
+    padding: 6px 10px;
+    min-width: 120px;
+    font-size: 12px;
   }
 }
 </style>

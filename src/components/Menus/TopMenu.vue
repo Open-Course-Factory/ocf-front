@@ -28,9 +28,9 @@
     </button>
     <div class="right-controls">
       <div class="locale-changer">
-        <select v-model="locale">
-          <option v-for="locale in availableLocales" :key="`locale-${locale}`" :value="locale">
-            {{ locale }}
+        <select :value="currentLocale" @change="handleLocaleChange" class="flag-select">
+          <option v-for="localeCode in supportedLocales" :key="`locale-${localeCode}`" :value="localeCode">
+            {{ getLocaleInfo(localeCode).flag }} {{ getLocaleInfo(localeCode).name }}
           </option>
         </select>
       </div>
@@ -46,17 +46,22 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n';
 import { useCurrentUserStore } from '../../stores/currentUser.ts';
 import Disconnect from '../Buttons/Disconnect.vue';
+import { useLocale } from '../../composables/useLocale';
 
 const currentUser = useCurrentUserStore();
-const { locale, availableLocales } = useI18n();
+const { currentLocale, supportedLocales, setLocale, getLocaleInfo } = useLocale();
 
 const emit = defineEmits(['toggle-menu']);
 
 function toggleMenu() {
   emit('toggle-menu');
+}
+
+function handleLocaleChange(event: Event) {
+  const target = event.target as HTMLSelectElement;
+  setLocale(target.value);
 }
 </script>
 
@@ -95,9 +100,29 @@ function toggleMenu() {
 }
 
 .locale-changer select {
-  padding: 5px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background-color: white;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+  min-width: 140px;
+}
+
+.locale-changer select:hover {
+  border-color: #9ca3af;
+}
+
+.locale-changer select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.flag-select option {
+  padding: 8px;
+  font-size: 14px;
 }
 
 .user-info {

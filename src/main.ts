@@ -30,6 +30,7 @@ import ElementPlus from 'element-plus'
 import { piniaPluginPersist } from './piniaPluginPersist'
 import { useCurrentUserStore } from './stores/currentUser'
 import { setupAxiosInterceptors, setupAxiosDefaults } from './services/axiosInterceptor'
+import { getSavedLocale } from './services/localeStorage'
 
 // Vuetify
 import 'vuetify/styles'
@@ -40,7 +41,7 @@ import * as directives from 'vuetify/directives'
 const i18n = createI18n({
     legacy: false,
     globalInjection: true,
-    locale: 'fr',
+    locale: getSavedLocale(), // Use saved user preference
     fallbackLocale: 'en',
     messages: {
         en: { 
