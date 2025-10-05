@@ -124,6 +124,12 @@ export const useBaseStore = () => {
                 data = response.data || []
             }
 
+            // Ensure data is an array before spreading
+            if (!Array.isArray(data)) {
+                console.warn('Expected array but got:', typeof data, data)
+                data = []
+            }
+
             // Clear current entities and add new ones
             entities.splice(0, entities.length, ...data)
             lastLoaded.value = new Date()
@@ -132,6 +138,96 @@ export const useBaseStore = () => {
         } catch (err: any) {
             error.value = err.response?.data?.error_message || err.message || 'Error loading data'
             logDemoAction(`Error loading data: ${error.value}`)
+            throw err
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    // Cursor-based pagination methods
+    const loadEntitiesWithCursor = async (endpoint: string, cursor?: string, limit: number = 20, filters: Record<string, string> = {}, demoDataProvider?: () => any[]) => {
+        isLoading.value = true
+        error.value = ''
+
+        try {
+            let response: any
+
+            if (isDemoMode() && demoDataProvider) {
+                logDemoAction(`Loading demo data with cursor for ${endpoint}`)
+                await simulateDelay(1500)
+
+                const allData = demoDataProvider()
+
+                // Parse cursor to get startIndex (for demo mode only)
+                let startIndex = 0;
+                if (cursor) {
+                    try {
+                        const decodedCursor = atob(cursor);
+                        // Handle both old format (just numbers) and new format (demo_123_timestamp)
+                        if (decodedCursor.startsWith('demo_')) {
+                            const parts = decodedCursor.split('_');
+                            startIndex = parseInt(parts[1]) || 0;
+                        } else {
+                            // Legacy numeric cursor
+                            startIndex = parseInt(decodedCursor) || 0;
+                        }
+                    } catch {
+                        console.warn('Invalid demo cursor, starting from 0');
+                        startIndex = 0;
+                    }
+                }
+
+                const endIndex = Math.min(startIndex + limit, allData.length)
+                const data = allData.slice(startIndex, endIndex)
+
+                // Generate realistic-looking cursor for demo (but still functional)
+                const nextCursor = endIndex < allData.length
+                    ? btoa(`demo_${endIndex}_${Date.now()}`) // More realistic demo cursor
+                    : null;
+
+                response = {
+                    data: {
+                        data,
+                        nextCursor,
+                        hasMore: endIndex < allData.length,
+                        total: allData.length
+                    }
+                }
+            } else {
+                const params = new URLSearchParams()
+                params.append('cursor', cursor || '') // ✅ Always include cursor param, even if empty
+                params.append('limit', limit.toString())
+
+                // Add filter parameters
+                Object.entries(filters).forEach(([key, value]) => {
+                    if (value && value !== '') {
+                        params.append(key, value)
+                    }
+                })
+
+                logDemoAction(`Loading real data with cursor from ${endpoint}`)
+                response = await axios.get(`${endpoint}?${params}`)
+            }
+
+            const result = response.data?.data || response.data || []
+            const nextCursor = response.data?.nextCursor || null
+            const hasMore = response.data?.hasMore || false
+            const total = response.data?.total ?? (hasMore ? Math.max(result.length * 10, 100) : result.length)
+
+            // For cursor pagination with page navigation, replace data (don't append)
+            entities.splice(0, entities.length, ...result)
+
+            lastLoaded.value = new Date()
+
+            return {
+                data: result,
+                nextCursor,
+                hasMore,
+                total
+            }
+        } catch (err: any) {
+            error.value = err.response?.data?.error_message || err.message || 'Error loading data'
+            logDemoAction(`Error loading data with cursor: ${error.value}`)
             throw err
         } finally {
             isLoading.value = false
@@ -285,6 +381,7 @@ export const useBaseStore = () => {
         error,
         lastLoaded,
         loadEntities,
+        loadEntitiesWithCursor,
         refreshEntities,
         clearEntities,
         createEntity,

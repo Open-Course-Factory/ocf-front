@@ -82,7 +82,16 @@
         Filtered results: {{ totalItems }} total items found
       </div>
 
-      <div v-if="displayedEntities.length > 0">
+      <!-- Sequential navigation loading state -->
+      <div v-if="isSequentialNavigating" class="sequential-loading">
+        <div class="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+        </div>
+        <p>Navigating to page {{ targetPageForNavigation }}...</p>
+      </div>
+
+      <!-- Normal entity list (hidden during sequential navigation) -->
+      <div v-else-if="displayedEntities.length > 0">
         <ul>
           <li v-for="entity in displayedEntities" :key="entity.id" class="entity-item">
             <EntityCard :entity="entity" :entityStore="props.entityStore" />
@@ -95,7 +104,7 @@
                 @click="openModal(entity)"
               >
                 <i class="fas fa-edit"></i>
-                <br> 
+                <br>
                 {{ t('edit') }}
               </button>
               <button
@@ -112,53 +121,63 @@
         </ul>
       </div>
 
-      <!-- Pagination Controls -->
-      <div v-if="totalPages > 1" class="pagination-container">
+      <!-- Cursor-based Pagination Controls -->
+      <div v-if="shouldShowPagination && !isSequentialNavigating" class="pagination-container">
         <div class="pagination-info">
-          <span>Showing {{ ((currentPage - 1) * pageSize) + 1 }}-{{ Math.min(currentPage * pageSize, totalItems) }} of {{ totalItems }} results</span>
+          <span>Showing {{ (currentPageIndex * pageSize) + 1 }}-{{ (currentPageIndex * pageSize) + displayedEntities.length }} of {{ totalItems }} results (Page {{ currentPageIndex + 1 }})</span>
         </div>
         <div class="pagination-controls">
           <button
             class="btn btn-secondary btn-sm"
             :disabled="!hasPreviousPage || isLoadingEntities"
-            @click="goToPage(1)"
+            @click="goToFirstPage"
           >
             <i class="fas fa-angle-double-left"></i>
           </button>
           <button
             class="btn btn-secondary btn-sm"
             :disabled="!hasPreviousPage || isLoadingEntities"
-            @click="goToPage(currentPage - 1)"
+            @click="goToPreviousPage"
           >
             <i class="fas fa-angle-left"></i> Previous
           </button>
 
-          <div class="page-numbers">
-            <button
-              v-for="page in visiblePages"
-              :key="page"
-              class="btn btn-sm"
-              :class="page === currentPage ? 'btn-primary' : 'btn-outline-secondary'"
-              :disabled="isLoadingEntities"
-              @click="goToPage(page)"
+          <div class="page-indicator">
+            <span
+              v-if="!showPageJumpInput"
+              class="current-page-indicator clickable"
+              @click="togglePageJumpInput"
+              :title="`Click to jump to page (1-${totalPages})`"
             >
-              {{ page }}
-            </button>
+              Page {{ currentPageIndex + 1 }} / {{ totalPages }}
+            </span>
+            <div v-else class="page-jump-container">
+              <input
+                v-model="pageJumpInput"
+                type="number"
+                min="1"
+                :max="totalPages"
+                class="page-jump-input"
+                @keyup="handlePageJumpKeypress"
+                @blur="handleInputBlur"
+                :placeholder="`1-${totalPages}`"
+              />
+              <button
+                class="btn btn-primary btn-xs"
+                @mousedown.prevent
+                @click="jumpToPage"
+              >
+                Go
+              </button>
+            </div>
           </div>
 
           <button
             class="btn btn-secondary btn-sm"
             :disabled="!hasNextPage || isLoadingEntities"
-            @click="goToPage(currentPage + 1)"
+            @click="goToNextPage"
           >
             Next <i class="fas fa-angle-right"></i>
-          </button>
-          <button
-            class="btn btn-secondary btn-sm"
-            :disabled="!hasNextPage || isLoadingEntities"
-            @click="goToPage(totalPages)"
-          >
-            <i class="fas fa-angle-double-right"></i>
           </button>
         </div>
         <div class="page-size-selector">
@@ -213,8 +232,11 @@ import EntityCard from '../Cards/EntityCard.vue';
 import { useI18n } from 'vue-i18n';
 import { Store } from 'pinia';
 import { getTranslationKey } from '../../utils';
+import { useRoute, useRouter } from 'vue-router';
 
 const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 
 const props = defineProps<{
   entityName: string;
@@ -227,14 +249,22 @@ const entityToEdit = ref();
 // Estado para les filtres
 const activeFilters = reactive<Record<string, string>>({});
 
-// Pagination state
-const currentPage = ref(1);
+// Cursor-based pagination state
+const currentCursor = ref<string | null>(null);
+const nextCursor = ref<string | null>(null);
 const pageSize = ref(20);
-const totalPages = ref(1);
 const totalItems = ref(0);
 const isLoadingEntities = ref(false);
 const hasNextPage = ref(false);
 const hasPreviousPage = ref(false);
+const pageHistory = ref<Array<{ cursor: string | null, count: number }>>([{ cursor: null, count: 0 }]);
+const currentPageIndex = ref(0);
+const isUpdatingURL = ref(false);
+const backendSupportsCursor = ref<boolean | null>(null); // null = unknown, true = supports, false = doesn't support
+const pageJumpInput = ref('');
+const showPageJumpInput = ref(false);
+const isSequentialNavigating = ref(false);
+const targetPageForNavigation = ref(0);
 
 // Calcul des filtres disponibles basés sur les entités parentes
 const parentFilters = computed(() => {
@@ -322,10 +352,22 @@ const hasActiveFilters = computed(() => {
   return Object.values(activeFilters).some(value => value !== '');
 });
 
+// Determine if pagination should be shown
+const shouldShowPagination = computed(() => {
+  return hasNextPage.value || hasPreviousPage.value || totalItems.value > pageSize.value;
+});
+
+// Calculate total pages
+const totalPages = computed(() => {
+  return Math.ceil(totalItems.value / pageSize.value);
+});
+
 // Fonction pour appliquer les filtres
 function applyFilters() {
-  // Reset to page 1 when filters change
-  currentPage.value = 1;
+  // Reset to first page when filters change
+  resetPagination();
+  // Update URL with new filters
+  updateURL();
   // Reload data from server with filters
   loadEntities();
 }
@@ -335,10 +377,307 @@ function clearFilters() {
   Object.keys(activeFilters).forEach(key => {
     activeFilters[key] = '';
   });
-  // Reset to page 1 and reload data
-  currentPage.value = 1;
+  // Reset to first page and reload data
+  resetPagination();
+  // Update URL to remove filters
+  updateURL();
   loadEntities();
 }
+
+// Reset pagination to initial state
+function resetPagination() {
+  currentCursor.value = null;
+  nextCursor.value = null;
+  currentPageIndex.value = 0;
+  pageHistory.value = [{ cursor: null, count: 0 }];
+  hasNextPage.value = false;
+  hasPreviousPage.value = false;
+}
+
+// Validate page from URL and redirect to valid page if needed
+function validateRequestedPage() {
+  const requestedPage = (window as any).__requestedPage;
+  if (!requestedPage || requestedPage <= 1) {
+    // Clear the stored requested page
+    delete (window as any).__requestedPage;
+    return;
+  }
+
+  // Use computed total pages
+  const totalPagesCount = totalPages.value;
+
+  console.log(`Validating requested page ${requestedPage} against ${totalPagesCount} total pages`);
+
+  if (requestedPage > totalPagesCount && totalPagesCount > 0) {
+    // Requested page doesn't exist, redirect to last page
+    console.log(`Page ${requestedPage} doesn't exist, redirecting to last page ${totalPagesCount}`);
+
+    // Clear the stored requested page
+    delete (window as any).__requestedPage;
+
+    // Update URL to valid last page
+    const validQuery = { ...route.query };
+    validQuery.page = totalPagesCount.toString();
+
+    router.replace({
+      path: route.path,
+      query: validQuery
+    });
+
+    return;
+  } else if (requestedPage <= totalPagesCount && requestedPage > 1) {
+    // Valid page requested - we need to navigate to it
+    console.log(`Valid page ${requestedPage} requested - starting navigation`);
+
+    // Clear the stored requested page
+    delete (window as any).__requestedPage;
+
+    // Navigate to the requested page sequentially
+    navigateToPageSequentially(requestedPage);
+  } else {
+    // Clear the stored requested page
+    delete (window as any).__requestedPage;
+  }
+}
+
+// Navigate to a specific page by loading pages sequentially (for cursor pagination)
+async function navigateToPageSequentially(targetPage: number) {
+  if (targetPage <= 1) {
+    return;
+  }
+
+  console.log(`Starting sequential navigation to page ${targetPage}`);
+
+  // Set navigation flag to hide intermediate states
+  isSequentialNavigating.value = true;
+  targetPageForNavigation.value = targetPage;
+
+  try {
+    // Start from page 1
+    resetPagination();
+
+  // Load pages sequentially until we reach the target
+  for (let page = 1; page <= targetPage; page++) {
+    if (!hasNextPage.value && page > 1) {
+      // We've reached the end before getting to target page
+      console.log(`Reached end at page ${page}, target was ${targetPage}`);
+      break;
+    }
+
+    if (page > 1) {
+      // Move to next page
+      await goToNextPageForSequentialNavigation();
+    } else {
+      // Load first page
+      await loadEntities();
+    }
+
+    // Safety check to prevent infinite loops
+    if (page > 100) {
+      console.error('Sequential navigation safety limit reached');
+      break;
+    }
+  }
+
+  console.log(`Sequential navigation completed, currently on page ${currentPageIndex.value + 1}`);
+
+  } finally {
+    // Clear navigation flag to show final result
+    isSequentialNavigating.value = false;
+  }
+}
+
+// Page jump functions
+function togglePageJumpInput() {
+  showPageJumpInput.value = !showPageJumpInput.value;
+  if (showPageJumpInput.value) {
+    pageJumpInput.value = (currentPageIndex.value + 1).toString();
+    // Focus the input after the next tick
+    setTimeout(() => {
+      const input = document.querySelector('.page-jump-input') as HTMLInputElement;
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }, 100);
+  }
+}
+
+function jumpToPage() {
+  console.log('🔄 jumpToPage called with input:', pageJumpInput.value);
+
+  const targetPage = parseInt(pageJumpInput.value);
+
+  console.log('📊 Jump validation:', {
+    input: pageJumpInput.value,
+    targetPage,
+    isNaN: isNaN(targetPage),
+    totalPages: totalPages.value,
+    currentPage: currentPageIndex.value + 1
+  });
+
+  if (isNaN(targetPage) || targetPage < 1) {
+    console.log('❌ Invalid page number');
+    alert('Please enter a valid page number');
+    return;
+  }
+
+  if (targetPage > totalPages.value) {
+    console.log('❌ Page exceeds maximum');
+    alert(`Page ${targetPage} doesn't exist. Maximum page is ${totalPages.value}`);
+    return;
+  }
+
+  if (targetPage === currentPageIndex.value + 1) {
+    // Already on this page
+    console.log('✅ Already on target page, closing input');
+    showPageJumpInput.value = false;
+    return;
+  }
+
+  console.log(`✅ Jumping to page ${targetPage}`);
+
+  // Update URL to trigger navigation
+  const newQuery = { ...route.query };
+  newQuery.page = targetPage.toString();
+
+  console.log('🔄 Updating URL:', { newQuery });
+
+  router.push({
+    path: route.path,
+    query: newQuery
+  });
+
+  showPageJumpInput.value = false;
+}
+
+function handlePageJumpKeypress(event: KeyboardEvent) {
+  if (event.key === 'Enter') {
+    jumpToPage();
+  } else if (event.key === 'Escape') {
+    showPageJumpInput.value = false;
+  }
+}
+
+function handleInputBlur() {
+  // Delay the blur to allow button click to process first
+  setTimeout(() => {
+    showPageJumpInput.value = false;
+  }, 150);
+}
+
+// Helper function for sequential navigation (doesn't update URL)
+async function goToNextPageForSequentialNavigation() {
+  if (hasNextPage.value) {
+    // Save current page info in history
+    if (currentPageIndex.value >= pageHistory.value.length - 1) {
+      pageHistory.value.push({
+        cursor: nextCursor.value,
+        count: displayedEntities.value.length
+      });
+    }
+
+    currentPageIndex.value++;
+    currentCursor.value = nextCursor.value;
+    hasPreviousPage.value = true;
+
+    // Load entities without updating URL (for sequential navigation)
+    await getEntitiesWithCursor(props.entityName, props.entityStore, currentCursor.value, pageSize.value, activeFilters);
+  }
+}
+
+// URL synchronization functions
+function updateURL() {
+  // Prevent infinite loops
+  isUpdatingURL.value = true;
+
+  const query: Record<string, string> = {};
+
+  // Add active filters to URL
+  Object.entries(activeFilters).forEach(([key, value]) => {
+    if (value && value !== '') {
+      query[key] = value;
+    }
+  });
+
+  // Add pagination info
+  if (currentPageIndex.value > 0) {
+    query.page = (currentPageIndex.value + 1).toString();
+  }
+
+  if (pageSize.value !== 20) {
+    query.size = pageSize.value.toString();
+  }
+
+  // Use push for pagination to create history entries, replace for filters
+  // This allows back button to navigate through pagination states
+  const currentQuery = route.query;
+  const isPageChange = query.page !== currentQuery.page;
+
+  const routeUpdate = {
+    path: route.path,
+    query
+  };
+
+  if (isPageChange && query.page) {
+    // Pagination changes create new history entries
+    router.push(routeUpdate).finally(() => {
+      isUpdatingURL.value = false;
+    });
+  } else {
+    // Filter changes and resets use replace to avoid cluttering history
+    router.replace(routeUpdate).finally(() => {
+      isUpdatingURL.value = false;
+    });
+  }
+}
+
+function loadFromURL() {
+  // Load filters from URL
+  Object.keys(activeFilters).forEach(key => {
+    const urlValue = route.query[key] as string;
+    if (urlValue) {
+      activeFilters[key] = urlValue;
+    }
+  });
+
+  // Load page size from URL
+  const urlSize = route.query.size as string;
+  if (urlSize) {
+    pageSize.value = parseInt(urlSize);
+  }
+
+  // For cursor pagination, we can't jump to arbitrary pages
+  // We need to load from page 1 and validate the requested page after getting total count
+  const urlPage = route.query.page as string;
+  if (urlPage) {
+    const requestedPage = parseInt(urlPage);
+    if (requestedPage > 1) {
+      // Store the requested page for validation after data loads
+      (window as any).__requestedPage = requestedPage;
+      console.log(`URL requests page ${requestedPage} - will validate after loading data`);
+    }
+  }
+}
+
+// Watch for URL query changes to reload data
+watch(() => route.query, (newQuery, oldQuery) => {
+  // Skip if we're updating URL programmatically, or if it's the initial load
+  if (isUpdatingURL.value || !oldQuery || JSON.stringify(newQuery) === JSON.stringify(oldQuery)) {
+    return;
+  }
+
+  console.log('URL query changed from browser navigation, reloading data:', { newQuery, oldQuery });
+
+  // Reset pagination state
+  resetPagination();
+
+  // Load state from new URL
+  loadFromURL();
+
+  // Reload entities with new parameters
+  loadEntities();
+}, { deep: true });
 
 // Initialiser les filtres quand les données changent
 watch(() => props.entityStore.entities, () => {
@@ -351,6 +690,8 @@ watch(() => props.entityStore.entities, () => {
 }, { immediate: true });
 
 onBeforeMount(() => {
+  // Load state from URL first
+  loadFromURL();
   loadEntities();
 
   // Charger les données des entités parentes (sans pagination)
@@ -368,57 +709,96 @@ onBeforeMount(() => {
   }
 });
 
-async function getEntities(entityName: string, store: Store, page: number = 1, size: number = 20, filters: Record<string, string> = {}) {
+async function getEntitiesWithCursor(entityName: string, store: any, cursor: string | null = null, size: number = 20, filters: Record<string, string> = {}) {
   isLoadingEntities.value = true;
   try {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      size: size.toString()
-    });
+    let result: { data: any[], nextCursor: string | null, hasMore: boolean, total: number };
 
-    // Add filter parameters
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value && value !== '') {
-        params.append(key, value);
-      }
-    });
-
-    const response = await axios.get(`/${entityName}?${params}`);
-
-    // Handle paginated response with metadata
-    if (response.data?.data) {
-      // API response has data wrapper
-      const entities = response.data.data || [];
-      store.entities = entities;
-
-      // Use pagination metadata from API
-      totalItems.value = response.data.total || 0;
-      totalPages.value = response.data.totalPages || 1;
-      currentPage.value = response.data.currentPage || page;
-      hasNextPage.value = response.data.hasNextPage || false;
-      hasPreviousPage.value = response.data.hasPreviousPage || false;
-
-      // Optional: Log pagination info for debugging (remove in production)
-      // console.log('Pagination info:', { total: totalItems.value, totalPages: totalPages.value, currentPage: currentPage.value });
+    // Check if store supports cursor-based pagination
+    if (store.loadEntitiesWithCursor && typeof store.loadEntitiesWithCursor === 'function') {
+      result = await store.loadEntitiesWithCursor(`/${entityName}`, cursor, size, filters);
     } else {
-      // Direct array response (fallback for non-paginated endpoints)
-      const entities = response.data || [];
-      store.entities = entities;
-      totalItems.value = entities.length;
-      totalPages.value = 1;
-      currentPage.value = 1;
+      // Determine pagination strategy based on backend support
+      let response: any;
+
+      // Backend supports cursor pagination when cursor parameter is present
+      console.log('Using cursor pagination with cursor:', cursor || '(empty for first page)');
+
+      const cursorParams = new URLSearchParams();
+      cursorParams.append('cursor', cursor || ''); // ✅ Always include cursor param, even if empty
+      cursorParams.append('limit', size.toString());
+
+      // Add filter parameters
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value && value !== '') {
+          cursorParams.append(key, value);
+        }
+      });
+
+      response = await axios.get(`/${entityName}?${cursorParams}`);
+
+      // Handle cursor-based response (backend always returns cursor format when cursor param is present)
+      console.log('✅ Backend supports cursor pagination');
+      result = {
+        data: response.data?.data || response.data || [],
+        nextCursor: response.data?.nextCursor || null, // ✅ Use exact cursor from API
+        hasMore: response.data?.hasMore || false,
+        total: response.data?.total || 0
+      };
+
+      // Update store entities manually for fallback
+      if (cursor) {
+        store.entities.push(...result.data);
+      } else {
+        store.entities.splice(0, store.entities.length, ...result.data);
+      }
     }
 
+    // Update pagination state
+    totalItems.value = result.total || 0;
+    hasNextPage.value = result.hasMore || false;
+
+    // Safety check: if we have a total that's larger than current page, we should have next page
+    if (totalItems.value > (currentPageIndex.value + 1) * pageSize.value) {
+      hasNextPage.value = true;
+
+      // ❌ NEVER generate fake cursors - this breaks UUID-based backends
+    }
+
+    // Debug logging (can be removed in production)
+    console.log('Pagination debug:', {
+      totalItems: totalItems.value,
+      hasNextPage: hasNextPage.value,
+      hasPreviousPage: hasPreviousPage.value,
+      currentPageIndex: currentPageIndex.value,
+      pageSize: pageSize.value,
+      entityCount: result.data.length,
+      nextCursor: result.nextCursor,
+      currentCursor: currentCursor.value,
+      mode: backendSupportsCursor.value === true ? 'cursor' :
+            backendSupportsCursor.value === false ? 'offset' : 'detecting'
+    });
+
+    // Store next cursor separately (don't overwrite currentCursor)
+    nextCursor.value = result.nextCursor;
+
+    // Update previous page state based on current position
+    hasPreviousPage.value = currentPageIndex.value > 0;
+
+    // Validate requested page from URL after we have total count
+    validateRequestedPage();
+
+    // Update select data if available
     if (store.getSelectDatas) {
       store.selectDatas = store.getSelectDatas(store.entities);
     }
+
+    return result;
   } catch (error: any) {
     console.error('Error while getting ' + entityName, error);
     store.entities = [];
     store.selectDatas = [];
     totalItems.value = 0;
-    totalPages.value = 1;
-    currentPage.value = 1;
     hasNextPage.value = false;
     hasPreviousPage.value = false;
     switch (error.response?.status) {
@@ -514,35 +894,88 @@ async function updateEntity(data: Record<string, string>) {
   }
 }
 
-// Pagination functions
-function loadEntities() {
-  getEntities(props.entityName, props.entityStore, currentPage.value, pageSize.value, activeFilters);
+// Cursor-based pagination functions
+async function loadEntities() {
+  // Use currentCursor for the current page, not pageHistory
+  return await getEntitiesWithCursor(props.entityName, props.entityStore, currentCursor.value, pageSize.value, activeFilters);
 }
 
-function goToPage(page: number) {
-  if (page >= 1 && page <= totalPages.value && page !== currentPage.value) {
-    currentPage.value = page;
+function goToNextPage() {
+  console.log('🔄 goToNextPage called:', {
+    hasNextPage: hasNextPage.value,
+    currentCursor: currentCursor.value,
+    currentPageIndex: currentPageIndex.value,
+    totalItems: totalItems.value
+  });
+
+  if (hasNextPage.value) {
+    // Save current page info in history BEFORE moving to next page
+    if (currentPageIndex.value >= pageHistory.value.length - 1) {
+      pageHistory.value.push({
+        cursor: nextCursor.value,
+        count: displayedEntities.value.length
+      });
+    }
+
+    currentPageIndex.value++;
+    // Update currentCursor to the next page cursor
+    currentCursor.value = nextCursor.value;
+
+    hasPreviousPage.value = true;
+    // Update URL with new page
+    updateURL();
+    loadEntities();
+  } else {
+    console.log('❌ Cannot go to next page: hasNextPage is false');
+  }
+}
+
+function goToPreviousPage() {
+  if (hasPreviousPage.value && currentPageIndex.value > 0) {
+    currentPageIndex.value--;
+
+    // Get the cursor for the previous page
+    const previousPageData = pageHistory.value[currentPageIndex.value];
+    currentCursor.value = previousPageData?.cursor || null;
+
+    console.log('🔄 Going to previous page:', {
+      currentPageIndex: currentPageIndex.value,
+      cursor: currentCursor.value,
+      pageHistoryLength: pageHistory.value.length
+    });
+
+    // Update URL with new page
+    updateURL();
+    loadEntities();
+
+    // Update previous page state
+    hasPreviousPage.value = currentPageIndex.value > 0;
+  }
+}
+
+function goToFirstPage() {
+  if (hasPreviousPage.value) {
+    resetPagination();
+    props.entityStore.entities.splice(0);
+    // Update URL to remove page
+    updateURL();
     loadEntities();
   }
 }
 
 function changePageSize() {
-  currentPage.value = 1;
+  console.log('📏 changePageSize called:', {
+    newPageSize: pageSize.value,
+    currentPageIndex: currentPageIndex.value,
+    totalItems: totalItems.value
+  });
+
+  resetPagination();
+  props.entityStore.entities.splice(0);
+  // Update URL with new page size
+  updateURL();
   loadEntities();
 }
-
-// Visible page numbers for pagination
-const visiblePages = computed(() => {
-  const pages = [];
-  const start = Math.max(1, currentPage.value - 2);
-  const end = Math.min(totalPages.value, currentPage.value + 2);
-
-  for (let i = start; i <= end; i++) {
-    pages.push(i);
-  }
-
-  return pages;
-});
 
 function isEditable(entityStore: Store) {
   let res = false;
@@ -725,10 +1158,18 @@ ul {
   gap: 8px;
 }
 
-.page-numbers {
+.page-indicator {
   display: flex;
-  gap: 4px;
+  align-items: center;
   margin: 0 8px;
+}
+
+.current-page-indicator {
+  padding: 8px 12px;
+  background: #e9ecef;
+  border-radius: 4px;
+  font-weight: 500;
+  color: #495057;
 }
 
 .page-size-selector {
@@ -762,13 +1203,77 @@ ul {
     order: 3;
   }
 
-  .page-numbers {
+  .page-indicator {
     margin: 0 4px;
   }
 
-  .page-numbers .btn {
-    padding: 4px 8px;
+  .current-page-indicator {
+    padding: 6px 10px;
     font-size: 12px;
+  }
+
+  .current-page-indicator.clickable {
+    cursor: pointer;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+  }
+
+  .current-page-indicator.clickable:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+  }
+
+  .page-jump-container {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .page-jump-input {
+    width: 60px;
+    padding: 4px 6px;
+    font-size: 12px;
+    border: 1px solid #ced4da;
+    border-radius: 3px;
+    text-align: center;
+  }
+
+  .page-jump-input:focus {
+    outline: none;
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+
+  .btn-xs {
+    padding: 2px 6px;
+    font-size: 11px;
+    line-height: 1.2;
+  }
+
+  .sequential-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+  }
+
+  .loading-spinner {
+    margin-bottom: 16px;
+  }
+
+  .loading-spinner i {
+    font-size: 24px;
+    color: #007bff;
+  }
+
+  .sequential-loading p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 14px;
   }
 }
 </style>
