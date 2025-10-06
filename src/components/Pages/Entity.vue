@@ -757,7 +757,7 @@ async function getEntitiesWithCursor(entityName: string, store: any, cursor: str
       };
 
       // Update store entities manually for fallback
-      if (cursor) {
+      if (cursor && currentPageIndex.value > 0) {
         store.entities.push(...result.data);
       } else {
         store.entities.splice(0, store.entities.length, ...result.data);
