@@ -757,7 +757,9 @@ async function getEntitiesWithCursor(entityName: string, store: any, cursor: str
       };
 
       // Update store entities manually for fallback
-      if (cursor && currentPageIndex.value > 0) {
+      // Replace entities if it's the first page OR if filters are active
+      // Append entities only for pagination without filters
+      if (cursor && currentPageIndex.value > 0 && !hasActiveFilters.value) {
         store.entities.push(...result.data);
       } else {
         store.entities.splice(0, store.entities.length, ...result.data);
