@@ -43,7 +43,7 @@
             v-if="invoice.stripe_hosted_url"
             :href="invoice.stripe_hosted_url"
             target="_blank"
-            class="btn btn-sm btn-outline-secondary"
+            class="btn btn-sm btn-outline-primary"
             :title="t('invoices.viewInStripe')"
           >
             <i class="fas fa-external-link-alt"></i>
@@ -104,7 +104,7 @@ function formatDate(dateString: string) {
 .recent-invoices {
   background: white;
   border-radius: 12px;
-  padding: 25px;
+  padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 1px solid #e9ecef;
 }

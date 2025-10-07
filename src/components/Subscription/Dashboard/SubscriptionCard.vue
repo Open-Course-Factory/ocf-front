@@ -40,7 +40,7 @@
             <span class="billing-period">/ {{ currentPlan?.billing_interval || subscription?.billing_interval }}</span>
           </div>
         </div>
-        
+
         <div class="subscription-status">
           <span :class="['status-badge', getStatusClass(subscription?.status)]">
             <i :class="getStatusIcon(subscription?.status)"></i>
@@ -262,7 +262,7 @@ function formatDate(dateString: string) {
 .subscription-overview {
   background: white;
   border-radius: 12px;
-  padding: 25px;
+  padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 1px solid #e9ecef;
 }
@@ -271,7 +271,7 @@ function formatDate(dateString: string) {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 0 0 20px 0;
+  margin: 0 0 15px 0;
   color: #495057;
   font-size: 1.25rem;
 }
@@ -279,7 +279,7 @@ function formatDate(dateString: string) {
 /* No subscription styles */
 .no-subscription-card {
   text-align: center;
-  padding: 40px 20px;
+  padding: 30px 15px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-radius: 12px;
@@ -305,7 +305,7 @@ function formatDate(dateString: string) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
+  padding: 15px;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border-bottom: 1px solid #e0e0e0;
 }
@@ -338,7 +338,7 @@ function formatDate(dateString: string) {
 }
 
 .subscription-details {
-  padding: 20px;
+  padding: 15px;
 }
 
 .trial-card,

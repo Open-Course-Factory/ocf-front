@@ -117,7 +117,7 @@ function getMetricDisplayName(metricType: string) {
 .usage-overview {
   background: white;
   border-radius: 12px;
-  padding: 25px;
+  padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 1px solid #e9ecef;
 }
@@ -135,13 +135,13 @@ function getMetricDisplayName(metricType: string) {
 .usage-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
+  gap: 15px;
 }
 
 .usage-card {
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  padding: 20px;
+  padding: 15px;
   background: #fafafa;
 }
 
@@ -149,7 +149,7 @@ function getMetricDisplayName(metricType: string) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 12px;
 }
 
 .metric-info {
@@ -203,7 +203,7 @@ function getMetricDisplayName(metricType: string) {
 
 .no-usage-data {
   text-align: center;
-  padding: 40px 20px;
+  padding: 30px 15px;
   color: #6c757d;
 }
 

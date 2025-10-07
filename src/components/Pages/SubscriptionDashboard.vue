@@ -260,7 +260,7 @@ async function downloadInvoice(invoiceId: string) {
 
 .dashboard-header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 20px;
 }
 
 .dashboard-header h2 {
@@ -274,13 +274,13 @@ async function downloadInvoice(invoiceId: string) {
 
 .loading-section {
   text-align: center;
-  padding: 60px 20px;
+  padding: 40px 20px;
   color: #6c757d;
 }
 
 .dashboard-content {
   display: grid;
-  gap: 30px;
+  gap: 15px;
 }
 
 /* Alert */
