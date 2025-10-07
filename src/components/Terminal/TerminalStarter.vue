@@ -34,7 +34,18 @@
     <!-- Usage Overview Panel -->
     <div v-if="currentSubscription" class="panel panel-info usage-panel">
       <div class="panel-body">
-        <h4><i class="fas fa-chart-bar"></i> {{ t('terminals.currentUsage') }}</h4>
+        <div class="usage-header">
+          <h4><i class="fas fa-chart-bar"></i> {{ t('terminals.currentUsage') }}</h4>
+          <button
+            @click="refreshUsage"
+            :disabled="refreshingUsage"
+            class="btn btn-sm btn-outline-primary refresh-btn"
+            :title="t('terminals.refreshUsage')"
+          >
+            <i :class="refreshingUsage ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'"></i>
+            {{ t('ui.refresh') }}
+          </button>
+        </div>
         <div class="usage-stats">
           <div class="usage-item">
             <span class="usage-label">
@@ -42,7 +53,7 @@
               {{ t('terminals.concurrentTerminals').charAt(0).toUpperCase() + t('terminals.concurrentTerminals').slice(1) }}:
             </span>
             <span class="usage-value">
-              <span v-if="loadingUsage" class="text-muted">
+              <span v-if="loadingUsage || refreshingUsage" class="text-muted">
                 <i class="fas fa-spinner fa-spin"></i>
               </span>
               <span v-else>{{ currentTerminalCount }}</span>
@@ -59,6 +70,12 @@
               {{ currentSubscription.plan_features?.session_duration_hours || 1 }}h
             </span>
           </div>
+        </div>
+        <div class="usage-info">
+          <small class="text-muted">
+            <i class="fas fa-info-circle"></i>
+            {{ t('terminals.autoRefreshInfo', { minutes: refreshIntervalMinutes }) }}
+          </small>
         </div>
       </div>
     </div>
@@ -425,6 +442,10 @@ const terminalError = ref('')
 const sessionInfo = ref(null)
 const timeRemaining = ref(0)
 let timerInterval = null
+let usageRefreshInterval = null
+
+// Usage refresh configuration
+const USAGE_REFRESH_INTERVAL = 600000 // 10 minutes in milliseconds
 
 // Formulaire
 const termsInput = ref('J\'accepte les conditions d\'utilisation du service terminal.')
@@ -446,6 +467,7 @@ const usageCheckResult = ref(null)
 const currentSubscription = computed(() => subscriptionsStore.currentSubscription)
 const currentTerminalCount = ref(0)
 const loadingUsage = ref(false)
+const refreshingUsage = ref(false)
 
 // Références DOM
 const terminalRef = ref(null)
@@ -512,6 +534,11 @@ const sessionDurationCap = computed(() => {
 
 const maxTerminals = computed(() => {
   return currentSubscription.value?.plan_features?.concurrent_terminals || 1
+})
+
+// Computed for refresh interval display
+const refreshIntervalMinutes = computed(() => {
+  return Math.floor(USAGE_REFRESH_INTERVAL / 60000)
 })
 
 // Computed for scalable instance display
@@ -722,6 +749,18 @@ async function loadCurrentTerminalUsage() {
   }
 }
 
+// Manual refresh of usage data
+async function refreshUsage() {
+  try {
+    refreshingUsage.value = true
+    await loadCurrentTerminalUsage()
+  } catch (error) {
+    console.error('Failed to refresh usage:', error)
+  } finally {
+    refreshingUsage.value = false
+  }
+}
+
 // Set default instance selection based on availability
 function setDefaultInstanceSelection() {
   // If we have instances, always select the first one
@@ -754,6 +793,15 @@ onMounted(async () => {
   await nextTick(() => {
     setDefaultInstanceSelection()
   })
+
+  // Start periodic refresh of usage metrics to handle expired terminals
+  usageRefreshInterval = setInterval(async () => {
+    try {
+      await loadCurrentTerminalUsage()
+    } catch (error) {
+      // Silently handle refresh errors to avoid disrupting user experience
+    }
+  }, USAGE_REFRESH_INTERVAL)
 })
 
 onBeforeUnmount(() => {
@@ -765,17 +813,22 @@ function cleanup() {
     socket.close()
     socket = null
   }
-  
+
   if (timerInterval) {
     clearInterval(timerInterval)
     timerInterval = null
   }
-  
+
+  if (usageRefreshInterval) {
+    clearInterval(usageRefreshInterval)
+    usageRefreshInterval = null
+  }
+
   if (terminal) {
     terminal.dispose()
     terminal = null
   }
-  
+
   fitAddon = null
   attachAddon = null
 }
@@ -1548,10 +1601,38 @@ function formatTime(seconds) {
   margin-bottom: 20px;
 }
 
+.usage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.usage-header h4 {
+  margin: 0;
+}
+
+.refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 .usage-stats {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  margin-bottom: 15px;
+}
+
+.usage-info {
+  padding-top: 10px;
+  border-top: 1px solid #e9ecef;
 }
 
 .usage-item {

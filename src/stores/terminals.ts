@@ -92,6 +92,8 @@ export const useTerminalsStore = defineStore('terminals', () => {
         allowedSizes: 'allowed sizes',
         yourPlanAllows: 'Your plan allows sizes',
         selectEnvironmentType: 'Select the environment type for your terminal session.',
+        refreshUsage: 'Refresh usage data',
+        autoRefreshInfo: 'Usage data refreshes automatically every {minutes} minutes',
         // Instance type translations
         instances: {
             alpine: {
@@ -166,6 +168,8 @@ export const useTerminalsStore = defineStore('terminals', () => {
         allowedSizes: 'tailles autorisées',
         yourPlanAllows: 'Votre plan autorise les tailles',
         selectEnvironmentType: 'Sélectionnez le type d\'environnement pour votre session terminal.',
+        refreshUsage: 'Actualiser les données d\'utilisation',
+        autoRefreshInfo: 'Les données d\'utilisation se rafraîchissent automatiquement toutes les {minutes} minutes',
         // Instance type translations
         instances: {
             alpine: {
