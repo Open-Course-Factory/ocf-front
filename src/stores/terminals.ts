@@ -71,7 +71,42 @@ export const useTerminalsStore = defineStore('terminals', () => {
         fullControl: 'Full terminal control',
         noActiveSharing: 'No active sharing',
         notSharedWithUsers: 'This terminal is not shared with any other users at the moment.',
-        connectionError: 'Connection error'
+        connectionError: 'Connection error',
+        // New translations for scalable instance system
+        searchInstances: 'Search for an instance type...',
+        allInstances: 'All',
+        availableInstances: 'Available',
+        restrictedInstances: 'Restricted',
+        noInstancesFound: 'No instances found',
+        noMatchingInstances: 'No instances match "{searchTerm}"',
+        noAvailableInstances: 'No instances available in your current plan.',
+        allInstancesAvailable: 'All instances are available in your plan.',
+        clearFilters: 'Clear filters',
+        availableInPlan: 'Available in your plan',
+        requiresUpgrade: 'Requires upgrade',
+        upgrade: 'Upgrade',
+        currentUsage: 'Current Usage',
+        concurrentTerminals: 'concurrent terminals',
+        planLimit: 'plan limit',
+        sessionDuration: 'session duration',
+        allowedSizes: 'allowed sizes',
+        yourPlanAllows: 'Your plan allows sizes',
+        selectEnvironmentType: 'Select the environment type for your terminal session.',
+        // Instance type translations
+        instances: {
+            alpine: {
+                name: 'Alpine Linux',
+                description: 'Lightweight Linux distribution'
+            },
+            debian: {
+                name: 'Debian',
+                description: 'Stable Linux distribution'
+            },
+            ubuntu: {
+                name: 'Ubuntu Server',
+                description: 'Popular server distribution'
+            }
+        }
     }})
     
     useI18n().mergeLocaleMessage('fr', { terminals : {
@@ -110,7 +145,42 @@ export const useTerminalsStore = defineStore('terminals', () => {
         fullControl: 'Contrôle total du terminal',
         noActiveSharing: 'Aucun partage actif',
         notSharedWithUsers: 'Ce terminal n\'est partagé avec aucun autre utilisateur pour le moment.',
-        connectionError: 'Erreur de connexion'
+        connectionError: 'Erreur de connexion',
+        // New translations for scalable instance system
+        searchInstances: 'Rechercher un type d\'instance...',
+        allInstances: 'Tous',
+        availableInstances: 'Disponibles',
+        restrictedInstances: 'Restreints',
+        noInstancesFound: 'Aucune instance trouvée',
+        noMatchingInstances: 'Aucune instance ne correspond à "{searchTerm}"',
+        noAvailableInstances: 'Aucune instance disponible dans votre plan actuel.',
+        allInstancesAvailable: 'Toutes les instances sont disponibles dans votre plan.',
+        clearFilters: 'Réinitialiser les filtres',
+        availableInPlan: 'Disponible dans votre plan',
+        requiresUpgrade: 'Nécessite une mise à niveau',
+        upgrade: 'Améliorer',
+        currentUsage: 'Utilisation Actuelle',
+        concurrentTerminals: 'terminaux simultanés',
+        planLimit: 'limite de votre plan',
+        sessionDuration: 'durée max par session',
+        allowedSizes: 'tailles autorisées',
+        yourPlanAllows: 'Votre plan autorise les tailles',
+        selectEnvironmentType: 'Sélectionnez le type d\'environnement pour votre session terminal.',
+        // Instance type translations
+        instances: {
+            alpine: {
+                name: 'Alpine Linux',
+                description: 'Distribution Linux légère'
+            },
+            debian: {
+                name: 'Debian',
+                description: 'Distribution Linux stable'
+            },
+            ubuntu: {
+                name: 'Ubuntu Server',
+                description: 'Distribution serveur populaire'
+            }
+        }
     }})
 
     // Add common UI translations here

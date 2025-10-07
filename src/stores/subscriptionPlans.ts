@@ -21,9 +21,10 @@
 
 import { defineStore } from "pinia"
 import { useI18n } from "vue-i18n"
-import { onMounted } from 'vue'
 import { useBaseStore } from "./baseStore"
 import { getDemoSubscriptionPlans } from '../services/demoData'
+import { isDemoMode, logDemoAction, simulateDelay } from '../services/demoConfig'
+import axios from 'axios'
 
 export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => {
 
@@ -67,7 +68,21 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             canceled: 'Canceled',
             past_due: 'Past Due',
             unpaid: 'Unpaid',
-            incomplete: 'Incomplete'
+            incomplete: 'Incomplete',
+            planFeatures: 'Plan Features',
+            concurrentTerminals: 'concurrent terminals',
+            sessionDuration: 'session duration',
+            machineSizes: 'machine sizes',
+            allowedSizes: 'allowed sizes',
+            storage: 'storage',
+            networkAccess: 'Network Access',
+            currentPlan: 'Current Plan',
+            choosePlan: 'Choose Plan',
+            upgrade: 'Upgrade',
+            downgrade: 'Downgrade',
+            syncWithStripe: 'Sync with Stripe',
+            syncing: 'Syncing...',
+            syncDescription: 'Synchronizes database plans with Stripe products and prices'
         }
     })
 
@@ -108,7 +123,21 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             canceled: 'Annulé',
             past_due: 'En Retard',
             unpaid: 'Non Payé',
-            incomplete: 'Incomplet'
+            incomplete: 'Incomplet',
+            planFeatures: 'Fonctionnalités du Plan',
+            concurrentTerminals: 'terminaux simultanés',
+            sessionDuration: 'durée de session',
+            machineSizes: 'tailles de machine',
+            allowedSizes: 'tailles autorisées',
+            storage: 'stockage',
+            networkAccess: 'Accès Réseau',
+            currentPlan: 'Plan Actuel',
+            choosePlan: 'Choisir ce Plan',
+            upgrade: 'Améliorer',
+            downgrade: 'Rétrograder',
+            syncWithStripe: 'Synchroniser avec Stripe',
+            syncing: 'Synchronisation...',
+            syncDescription: 'Synchronise les plans de la base de données avec les produits et prix Stripe'
         }
     })
 
@@ -196,6 +225,61 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
         return isAdmin || plan.is_active
     }
 
+    // Synchroniser les plans avec Stripe
+    const syncPlansWithStripe = async () => {
+        try {
+            base.isLoading.value = true
+            base.error.value = ''
+
+            if (isDemoMode()) {
+                logDemoAction('Syncing demo subscription plans with Stripe')
+                await simulateDelay(2000)
+                // In demo mode, just refresh the local plans
+                return await loadPlans()
+            } else {
+                const response = await axios.post('/subscription-plans/sync-stripe')
+                console.log('Subscription plans sync result:', response.data)
+
+                // Adapt backend response to expected frontend format
+                const data = response.data
+                const adapted = {
+                    success: true,
+                    synced_count: data.synced_plans?.length || 0,
+                    skipped_count: data.skipped_plans?.length || 0,
+                    failed_count: data.failed_plans?.length || 0,
+                    total_plans: data.total_plans || 0,
+                    message: `Synchronisé ${data.synced_plans?.length || 0} plan(s) avec succès`,
+                    details: {
+                        synced: data.synced_plans || [],
+                        skipped: data.skipped_plans || [],
+                        failed: data.failed_plans || []
+                    }
+                }
+
+                return adapted
+            }
+        } catch (error: any) {
+            console.error('Erreur lors de la synchronisation des plans:', error)
+            base.error.value = error.response?.data?.error_message || 'Erreur lors de la synchronisation'
+            throw error
+        } finally {
+            base.isLoading.value = false
+        }
+    }
+
+    // Synchroniser puis charger les plans (méthode recommandée)
+    const syncAndLoadPlans = async () => {
+        try {
+            // D'abord synchroniser avec Stripe
+            await syncPlansWithStripe()
+            // Puis charger les plans
+            return await loadPlans()
+        } catch (error) {
+            console.error('Erreur lors de la synchronisation et du chargement:', error)
+            throw error
+        }
+    }
+
     // Auto-load plans when store is first used
     let plansLoaded = false
     const ensurePlansLoaded = async () => {
@@ -217,6 +301,8 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
         selectPlan,
         getSubscriptionActionButton,
         canViewPlan,
-        ensurePlansLoaded
+        ensurePlansLoaded,
+        syncPlansWithStripe,
+        syncAndLoadPlans
     }
 })

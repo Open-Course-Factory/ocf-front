@@ -95,12 +95,26 @@ Each domain has a dedicated store (e.g., `subscriptionPlans`, `subscriptions`, `
 - JWT token automatically added to requests via `setupAxiosInterceptors()`
 - Token format: `Bearer ${token}` (automatically prefixed if missing)
 - Token expiry monitoring in `currentUser` store
+- **IMPORTANT**: API version prefix `/api/v1/` is automatically added by axios interceptors
 
 **Backend Integration:**
 
 - Compatible with OCF Core Payment API (Stripe-based subscription system)
 - API endpoints follow REST conventions (e.g., `/subscriptions/current`, `/invoices/user`)
 - Error handling with user-friendly messages via store error states
+
+**API Endpoint Guidelines:**
+
+- ✅ **Correct**: Use relative paths without version prefix
+  ```javascript
+  axios.get('/subscriptions/current')
+  axios.post('/terminal-sessions/start-session', data)
+  ```
+- ❌ **Incorrect**: Do NOT include `/api/v1/` prefix
+  ```javascript
+  axios.get('/api/v1/subscriptions/current')  // WRONG - double prefix
+  ```
+- **Exception**: Only use full URLs for external services or when bypassing interceptors
 
 ### Subscription System
 

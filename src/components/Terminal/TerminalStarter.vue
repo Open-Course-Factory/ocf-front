@@ -9,7 +9,7 @@
   <div class="terminal-starter">
     <!-- Debug info en mode développement -->
     <div v-if="showDebug" class="debug-panel">
-      <h4>{{ t('terminals.debugInfo') }}</h4>
+      <h4>Debug Info</h4>
       <p>showStartPanel: {{ showStartPanel }}</p>
       <p>showInfoPanel: {{ showInfoPanel }}</p>
       <p>showTerminalPanel: {{ showTerminalPanel }}</p>
@@ -17,6 +17,50 @@
       <p>isStarting: {{ isStarting }}</p>
       <p>terminal initialized: {{ !!terminal }}</p>
       <p>sessionInfo: {{ !!sessionInfo }}</p>
+      <hr>
+      <p>instanceTypes.length: {{ instanceTypes.length }}</p>
+      <p>allowedInstanceTypes.length: {{ allowedInstanceTypes.length }}</p>
+      <p>selectedInstanceType: {{ selectedInstanceType }}</p>
+      <p>allowedMachineSizes: {{ allowedMachineSizes }}</p>
+      <p>loadingInstanceTypes: {{ loadingInstanceTypes }}</p>
+      <p>currentSubscription: {{ !!currentSubscription }}</p>
+      <hr>
+      <div>
+        <strong>All Instances:</strong>
+        <pre>{{ JSON.stringify(instanceTypes, null, 2) }}</pre>
+      </div>
+    </div>
+
+    <!-- Usage Overview Panel -->
+    <div v-if="currentSubscription" class="panel panel-info usage-panel">
+      <div class="panel-body">
+        <h4><i class="fas fa-chart-bar"></i> {{ t('terminals.currentUsage') }}</h4>
+        <div class="usage-stats">
+          <div class="usage-item">
+            <span class="usage-label">
+              <i class="fas fa-terminal"></i>
+              {{ t('terminals.concurrentTerminals').charAt(0).toUpperCase() + t('terminals.concurrentTerminals').slice(1) }}:
+            </span>
+            <span class="usage-value">
+              <span v-if="loadingUsage" class="text-muted">
+                <i class="fas fa-spinner fa-spin"></i>
+              </span>
+              <span v-else>{{ currentTerminalCount }}</span>
+              / {{ maxTerminals }}
+              <small class="text-muted">({{ t('terminals.planLimit') }})</small>
+            </span>
+          </div>
+          <div class="usage-item">
+            <span class="usage-label">
+              <i class="fas fa-clock"></i>
+              {{ t('terminals.sessionDuration').charAt(0).toUpperCase() + t('terminals.sessionDuration').slice(1) }}:
+            </span>
+            <span class="usage-value">
+              {{ currentSubscription.plan_features?.session_duration_hours || 1 }}h
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Panneau de démarrage -->
@@ -47,42 +91,145 @@
             type="number"
             class="form-control"
             min="60"
-            max="3600"
-            placeholder="3600 (1 heure par défaut)"
+            :max="sessionDurationCap"
+            :placeholder="`${sessionDurationCap} (${sessionDurationCap / 3600}h maximum pour votre plan)`"
           />
           <small class="form-text text-muted">
-            Entre 60 secondes (1 min) et 3600 secondes (1h). Laissez vide pour la valeur par défaut.
+            Entre 60 secondes (1 min) et {{ sessionDurationCap }} secondes ({{ sessionDurationCap / 3600 }}h max).
+            <span v-if="currentSubscription?.plan_features?.session_duration_hours" class="plan-restriction">
+              Limité à {{ currentSubscription.plan_features.session_duration_hours }}h par votre plan {{ currentSubscription.plan_name }}.
+            </span>
           </small>
         </div>
 
         <div class="form-group">
           <label for="instanceType">{{ t('terminals.instanceType') }}</label>
-          <select
-            id="instanceType"
-            v-model="selectedInstanceType"
-            class="form-control"
-            :disabled="loadingInstanceTypes"
-          >
-            <option v-if="loadingInstanceTypes" value="">{{ t('terminals.loading') }}</option>
-            <option
-              v-for="instance in instanceTypes"
-              :key="instance.prefix"
-              :value="instance.prefix"
+
+          <!-- Search/Filter for many instances -->
+          <div v-if="instanceTypes.length > 6" class="instance-search">
+            <input
+              v-model="instanceSearchTerm"
+              type="text"
+              class="form-control"
+              :placeholder="t('terminals.searchInstances')"
+              @input="filterInstances"
             >
-              {{ instance.name }} - {{ instance.description }}
-            </option>
-          </select>
+            <div class="instance-filters">
+              <button
+                v-for="filterOption in availableFilters"
+                :key="filterOption.key"
+                class="btn btn-sm"
+                :class="activeFilter === filterOption.key ? 'btn-primary' : 'btn-outline-secondary'"
+                @click="setFilter(filterOption.key)"
+              >
+                {{ filterOption.label }} ({{ filterOption.count }})
+              </button>
+            </div>
+          </div>
+
+          <!-- Instance Type Cards -->
+          <div
+            class="instance-types-grid"
+            :class="{ 'compact': instanceTypes.length > 10 }"
+          >
+            <!-- Empty state when no instances match filters -->
+            <div v-if="displayedInstanceTypes.length === 0" class="no-instances-found">
+              <i class="fas fa-search"></i>
+              <h5>{{ t('terminals.noInstancesFound') }}</h5>
+              <p v-if="instanceSearchTerm">
+                {{ t('terminals.noMatchingInstances').replace('{searchTerm}', instanceSearchTerm) }}
+              </p>
+              <p v-else-if="activeFilter === 'available'">
+                {{ t('terminals.noAvailableInstances') }}
+              </p>
+              <p v-else-if="activeFilter === 'restricted'">
+                {{ t('terminals.allInstancesAvailable') }}
+              </p>
+              <button
+                v-if="instanceSearchTerm || activeFilter !== 'all'"
+                @click="clearFilters"
+                class="btn btn-sm btn-primary"
+              >
+                {{ t('terminals.clearFilters') }}
+              </button>
+            </div>
+
+            <!-- Instance cards -->
+            <div
+              v-for="instance in displayedInstanceTypes"
+              :key="instance.prefix"
+              class="instance-card"
+              :class="{
+                'available': instanceAvailabilityMap.get(instance.prefix)?.available,
+                'restricted': !instanceAvailabilityMap.get(instance.prefix)?.available,
+                'selected': selectedInstanceType === instance.prefix
+              }"
+              @click="selectInstance(instance)"
+            >
+              <div class="instance-header">
+                <div class="instance-info">
+                  <h5>{{ getTranslatedInstanceName(instance) }}</h5>
+                  <p>{{ getTranslatedInstanceDescription(instance) }}</p>
+                </div>
+                <div class="instance-status">
+                  <i v-if="instanceAvailabilityMap.get(instance.prefix)?.available"
+                     class="fas fa-check-circle text-success"></i>
+                  <i v-else class="fas fa-lock text-warning"></i>
+                </div>
+              </div>
+
+              <!-- Size badges -->
+              <div class="size-badges">
+                <span
+                  v-for="size in instanceUtils.getSizeDisplay(instance.size)"
+                  :key="size"
+                  class="size-badge"
+                  :class="{
+                    'available': instanceUtils.isSizeAllowed(size, allowedMachineSizes),
+                    'restricted': !instanceUtils.isSizeAllowed(size, allowedMachineSizes)
+                  }"
+                >
+                  {{ size }}
+                </span>
+              </div>
+
+              <!-- Availability message with upgrade button -->
+              <div class="availability-message">
+                <div v-if="instanceAvailabilityMap.get(instance.prefix)?.available"
+                     class="available-message">
+                  <small class="text-success">
+                    <i class="fas fa-check"></i> {{ t('terminals.availableInPlan') }}
+                  </small>
+                </div>
+                <div v-else class="restricted-message">
+                  <small class="text-warning">
+                    <i class="fas fa-exclamation-triangle"></i> {{ t('terminals.requiresUpgrade') }}
+                  </small>
+                  <router-link to="/subscription-plans" class="btn btn-sm btn-outline-primary upgrade-btn">
+                    <i class="fas fa-arrow-up"></i>
+                    {{ t('terminals.upgrade') }}
+                  </router-link>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <small class="form-text text-muted">
-            Sélectionnez le type d'environnement pour votre session terminal.
+            {{ t('terminals.selectEnvironmentType') }}
+            <span v-if="allowedMachineSizes.length > 0" class="plan-restriction">
+              {{ t('terminals.yourPlanAllows') }}: {{ allowedMachineSizes.join(', ') }}
+            </span>
           </small>
+
         </div>
 
+
         <div class="form-actions">
-          <button 
-            type="button" 
-            class="btn btn-primary btn-lg" 
-            @click="startNewSession" 
-            :disabled="!termsInput.trim() || isStarting"
+          <button
+            type="button"
+            class="btn btn-primary btn-lg"
+            @click="startNewSession"
+            :disabled="!termsInput.trim() || !selectedInstanceType || isStarting"
           >
             <i v-if="isStarting" class="fas fa-spinner fa-spin"></i>
             <i v-else class="fas fa-play"></i>
@@ -143,7 +290,7 @@
           <div class="detail-item" v-if="selectedInstanceInfo">
             <strong><i class="fas fa-server"></i> {{ t('terminals.instanceType') }}</strong>
             <span class="instance-info">
-              {{ selectedInstanceInfo.name }} - {{ selectedInstanceInfo.description }}
+              {{ getTranslatedInstanceName(selectedInstanceInfo) }} - {{ getTranslatedInstanceDescription(selectedInstanceInfo) }}
               <small class="text-muted">({{ selectedInstanceInfo.prefix }})</small>
             </span>
           </div>
@@ -238,10 +385,14 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import axios from 'axios'
-import { terminalService } from '../../services/terminalService'
+import { terminalService, instanceUtils } from '../../services/terminalService'
+import { useSubscriptionsStore } from '../../stores/subscriptions'
 
 // Définir les émissions
 const emit = defineEmits(['session-started'])
+
+// Stores
+const subscriptionsStore = useSubscriptionsStore()
 
 // i18n setup
 const { t } = useI18n()
@@ -260,7 +411,7 @@ const showTerminalPanel = ref(false)
 const showErrorPanel = ref(false)
 const showReconnectButton = ref(false)
 //const showDebug = ref(process.env.NODE_ENV === 'development')
-const showDebug = false
+const showDebug = ref(false)
 
 // État de l'application
 const isStarting = ref(false)
@@ -284,6 +435,18 @@ const selectedInstanceType = ref('')
 const instanceTypes = ref([])
 const loadingInstanceTypes = ref(false)
 
+// Search and filtering for scalability
+const instanceSearchTerm = ref('')
+const activeFilter = ref('all')
+const filteredInstanceTypes = ref([])
+
+// Subscription and usage state
+const checkingUsage = ref(false)
+const usageCheckResult = ref(null)
+const currentSubscription = computed(() => subscriptionsStore.currentSubscription)
+const currentTerminalCount = ref(0)
+const loadingUsage = ref(false)
+
 // Références DOM
 const terminalRef = ref(null)
 
@@ -295,7 +458,125 @@ const selectedInstanceInfo = computed(() => {
   return instanceTypes.value.find(instance => instance.prefix === selectedInstanceType.value)
 })
 
-// Helper functions
+// Get allowed machine sizes from subscription
+const allowedMachineSizes = computed(() => {
+  const sizes = currentSubscription.value?.plan_features?.allowed_machine_sizes || []
+
+  // If no sizes are defined, default to allowing XS (basic free tier)
+  if (sizes.length === 0) {
+    return ['XS']
+  }
+
+  return sizes
+})
+
+// Get instance availability information
+const instanceAvailabilityMap = computed(() => {
+  const map = new Map()
+  instanceTypes.value.forEach(instance => {
+    const availability = instanceUtils.checkAvailability(instance, allowedMachineSizes.value)
+    map.set(instance.prefix, availability)
+  })
+  return map
+})
+
+// Plan restrictions - filter instances that have at least one available size
+const allowedInstanceTypes = computed(() => {
+  if (allowedMachineSizes.value.length === 0) {
+    return instanceTypes.value // No restrictions if no plan data
+  }
+
+  return instanceTypes.value.filter(instance => {
+    const availability = instanceAvailabilityMap.value.get(instance.prefix)
+    return availability?.available || false
+  })
+})
+
+// Get instances that require upgrade
+const restrictedInstanceTypes = computed(() => {
+  if (allowedMachineSizes.value.length === 0) {
+    return [] // No restrictions if no plan data
+  }
+
+  return instanceTypes.value.filter(instance => {
+    const availability = instanceAvailabilityMap.value.get(instance.prefix)
+    return availability && !availability.available
+  })
+})
+
+const sessionDurationCap = computed(() => {
+  return currentSubscription.value?.plan_features?.session_duration_hours ?
+    currentSubscription.value.plan_features.session_duration_hours * 3600 : // Convert hours to seconds
+    3600 // Default 1 hour
+})
+
+const maxTerminals = computed(() => {
+  return currentSubscription.value?.plan_features?.concurrent_terminals || 1
+})
+
+// Computed for scalable instance display
+const displayedInstanceTypes = computed(() => {
+  let instances = instanceTypes.value
+
+  // Apply search filter
+  if (instanceSearchTerm.value.trim()) {
+    const searchTerm = instanceSearchTerm.value.toLowerCase()
+    instances = instances.filter(instance =>
+      instance.name.toLowerCase().includes(searchTerm) ||
+      instance.description.toLowerCase().includes(searchTerm) ||
+      instance.prefix.toLowerCase().includes(searchTerm) ||
+      getTranslatedInstanceName(instance).toLowerCase().includes(searchTerm) ||
+      getTranslatedInstanceDescription(instance).toLowerCase().includes(searchTerm)
+    )
+  }
+
+  // Apply category filter
+  if (activeFilter.value === 'available') {
+    instances = instances.filter(instance => {
+      const availability = instanceAvailabilityMap.value.get(instance.prefix)
+      return availability?.available || false
+    })
+  } else if (activeFilter.value === 'restricted') {
+    instances = instances.filter(instance => {
+      const availability = instanceAvailabilityMap.value.get(instance.prefix)
+      return availability && !availability.available
+    })
+  }
+
+  return instances
+})
+
+// Filter options for many instances
+const availableFilters = computed(() => {
+  const allCount = instanceTypes.value.length
+  const availableCount = instanceTypes.value.filter(instance => {
+    const availability = instanceAvailabilityMap.value.get(instance.prefix)
+    return availability?.available || false
+  }).length
+  const restrictedCount = allCount - availableCount
+
+  return [
+    { key: 'all', label: t('terminals.allInstances'), count: allCount },
+    { key: 'available', label: t('terminals.availableInstances'), count: availableCount },
+    { key: 'restricted', label: t('terminals.restrictedInstances'), count: restrictedCount }
+  ].filter(filter => filter.count > 0)
+})
+
+// Helper functions for instance translation
+function getTranslatedInstanceName(instance) {
+  const key = `terminals.instances.${instance.name.toLowerCase()}.name`
+  const translated = t(key)
+  // If translation key doesn't exist, fall back to the original name with proper formatting
+  return translated === key ? (instance.name.charAt(0).toUpperCase() + instance.name.slice(1)) : translated
+}
+
+function getTranslatedInstanceDescription(instance) {
+  const key = `terminals.instances.${instance.name.toLowerCase()}.description`
+  const translated = t(key)
+  // If translation key doesn't exist, fall back to the original description
+  return translated === key ? instance.description : translated
+}
+
 function getStatusClass(status) {
   switch (status?.toLowerCase()) {
     case 'running':
@@ -317,7 +598,6 @@ async function initXterm() {
   if (terminal) return // Déjà initialisé
   
   try {
-    console.log('Initialisation de xterm.js...')
     startStatus.value = 'Chargement des modules xterm.js...'
     
     // Import dynamique pour éviter les erreurs SSR
@@ -331,7 +611,6 @@ async function initXterm() {
     FitAddon = fitModule.FitAddon
     AttachAddon = attachModule.AttachAddon
     
-    console.log('Modules xterm.js chargés, création du terminal...')
     
     // Créer le terminal
     terminal = new Terminal({
@@ -367,7 +646,6 @@ async function initXterm() {
     fitAddon = new FitAddon()
     terminal.loadAddon(fitAddon)
     
-    console.log('Terminal xterm.js initialisé avec succès')
     terminalError.value = ''
     return true
   } catch (error) {
@@ -382,32 +660,103 @@ async function initXterm() {
 async function loadInstanceTypes() {
   try {
     loadingInstanceTypes.value = true
-    instanceTypes.value = await terminalService.getInstanceTypes()
-    // Set default selection to first available instance type
-    if (instanceTypes.value.length > 0) {
-      selectedInstanceType.value = instanceTypes.value[0].prefix
+    const loadedTypes = await terminalService.getInstanceTypes()
+
+    // Ensure we have a valid array
+    if (!Array.isArray(loadedTypes)) {
+      instanceTypes.value = []
+      errorMessage.value = 'Format de données invalide pour les types d\'instances.'
+      showErrorPanel.value = true
+      return
     }
-    console.log('Instance types loaded:', instanceTypes.value)
+
+    instanceTypes.value = loadedTypes
+
+    if (instanceTypes.value.length === 0) {
+      errorMessage.value = 'Aucun type d\'instance disponible. Contactez l\'administrateur.'
+      showErrorPanel.value = true
+      return
+    }
+
+    // Set default selection after data is loaded
+    setDefaultInstanceSelection()
   } catch (error) {
     console.error('Failed to load instance types:', error)
-    // Set a fallback if loading fails
-    instanceTypes.value = [{ name: 'default', prefix: 'default', description: 'Default instance' }]
-    selectedInstanceType.value = 'default'
+    errorMessage.value = `Erreur lors du chargement des types d'instances: ${error.message || error}`
+    showErrorPanel.value = true
+    // Initialize with empty array on error
+    instanceTypes.value = []
+    selectedInstanceType.value = ''
   } finally {
     loadingInstanceTypes.value = false
   }
 }
 
+// Load current terminal usage count
+async function loadCurrentTerminalUsage() {
+  try {
+    loadingUsage.value = true
+
+    // Get usage metrics from subscription store
+    const usageMetrics = await subscriptionsStore.getUsageMetrics()
+
+    // Find concurrent terminals metric
+    const terminalMetric = usageMetrics.find(metric =>
+      metric.metric_type === 'concurrent_terminals' ||
+      metric.name === 'concurrent_terminals'
+    )
+
+    if (terminalMetric) {
+      // The current terminal count is in current_value property
+      currentTerminalCount.value = terminalMetric.current_value || 0
+    } else {
+      // Fallback: default to 0 if metric not found
+      currentTerminalCount.value = 0
+    }
+  } catch (error) {
+    console.error('Failed to load terminal usage:', error)
+    // Don't show error to user, just default to 0
+    currentTerminalCount.value = 0
+  } finally {
+    loadingUsage.value = false
+  }
+}
+
+// Set default instance selection based on availability
+function setDefaultInstanceSelection() {
+  // If we have instances, always select the first one
+  // The availability checking will happen when trying to start the session
+  if (instanceTypes.value.length > 0) {
+    // Prefer allowed instances if any
+    if (allowedInstanceTypes.value.length > 0) {
+      selectedInstanceType.value = allowedInstanceTypes.value[0].prefix
+    } else {
+      // If no instances are "allowed" but we have instances, select the first one
+      // This handles cases where subscription data isn't loaded yet or plan has no restrictions
+      selectedInstanceType.value = instanceTypes.value[0].prefix
+    }
+  } else {
+    selectedInstanceType.value = ''
+  }
+}
+
 onMounted(async () => {
-  console.log('TerminalStarter monté')
   // Pré-charger xterm.js
   await initXterm()
-  // Charger les types d'instances
-  await loadInstanceTypes()
+  // Charger les types d'instances, les données d'abonnement et l'utilisation actuelle
+  await Promise.all([
+    loadInstanceTypes(),
+    subscriptionsStore.getCurrentSubscription(),
+    loadCurrentTerminalUsage()
+  ])
+
+  // Set default selection after both instances and subscription are loaded
+  await nextTick(() => {
+    setDefaultInstanceSelection()
+  })
 })
 
 onBeforeUnmount(() => {
-  console.log('TerminalStarter démontage - nettoyage')
   cleanup()
 })
 
@@ -434,15 +783,39 @@ function cleanup() {
 function resetForm() {
   termsInput.value = 'J\'accepte les conditions d\'utilisation du service terminal.'
   expiryInput.value = 3600
-  // Reset to first available instance type or empty if none loaded
-  if (instanceTypes.value.length > 0) {
-    selectedInstanceType.value = instanceTypes.value[0].prefix
-  } else {
-    selectedInstanceType.value = ''
-  }
+  // Reset to default available instance type
+  setDefaultInstanceSelection()
   errorMessage.value = ''
   terminalError.value = ''
   showErrorPanel.value = false
+}
+
+// Search and filter methods for scalability
+function filterInstances() {
+  // The filtering is handled by displayedInstanceTypes computed property
+  // This method exists for future enhancements if needed
+}
+
+function setFilter(filterKey) {
+  activeFilter.value = filterKey
+}
+
+function clearFilters() {
+  instanceSearchTerm.value = ''
+  activeFilter.value = 'all'
+}
+
+// Select instance function
+function selectInstance(instance) {
+  const availability = instanceAvailabilityMap.value.get(instance.prefix)
+
+  // Always allow selection (the real check will happen when starting the session)
+  selectedInstanceType.value = instance.prefix
+
+  // Show warning for restricted instances but still allow selection
+  if (availability && !availability.available) {
+    // Instance may require plan upgrade but allow selection for later validation
+  }
 }
 
 async function startNewSession() {
@@ -451,23 +824,66 @@ async function startNewSession() {
     showErrorPanel.value = true
     return
   }
-  
-  console.log('Démarrage d\'une nouvelle session...')
+
+  if (!selectedInstanceType.value) {
+    errorMessage.value = 'Veuillez sélectionner un type d\'instance'
+    showErrorPanel.value = true
+    return
+  }
+
+  // Check usage limits before starting
+  checkingUsage.value = true
+  startStatus.value = 'Vérification des limites d\'utilisation...'
+
+  try {
+    // Check if user can create a new terminal
+    const canCreateTerminal = await subscriptionsStore.checkUsageLimit('concurrent_terminals', 1)
+
+    if (!canCreateTerminal) {
+      errorMessage.value = 'Vous avez atteint votre limite de terminaux simultanés. Veuillez arrêter un terminal existant ou mettre à niveau votre plan.'
+      showErrorPanel.value = true
+      isStarting.value = false
+      checkingUsage.value = false
+      return
+    }
+  } catch (error) {
+    console.error('Error checking usage limits:', error)
+    if (error.response?.status === 403 && error.response?.data?.error_message?.includes('Maximum concurrent terminals')) {
+      errorMessage.value = error.response.data.error_message + ' Veuillez mettre à niveau votre plan pour créer plus de terminaux.'
+      showErrorPanel.value = true
+      isStarting.value = false
+      checkingUsage.value = false
+      return
+    }
+    // Continue if it's just a check error, don't block terminal creation
+  }
+
+  checkingUsage.value = false
+
+  // Check if selected instance is available
+  if (selectedInstanceType.value) {
+    const availability = instanceAvailabilityMap.value.get(selectedInstanceType.value)
+    if (!availability?.available) {
+      errorMessage.value = 'L\'instance sélectionnée n\'est pas disponible avec votre plan actuel. Veuillez choisir une autre instance ou mettre à niveau votre plan.'
+      showErrorPanel.value = true
+      isStarting.value = false
+      return
+    }
+  }
+
   isStarting.value = true
   startStatus.value = 'Démarrage de la session terminal...'
-  
+
   try {
     const sessionData = {
       terms: termsInput.value.trim(),
       ...(expiryInput.value && { expiry: expiryInput.value }),
       ...(selectedInstanceType.value && { instance_type: selectedInstanceType.value })
     }
-    
-    console.log('Données de session:', sessionData)
+
     startStatus.value = 'Envoi de la requête au serveur...'
-    
+
     const response = await axios.post('/terminal-sessions/start-session', sessionData)
-    console.log('Réponse serveur:', response.data)
     
     sessionInfo.value = {
       session_id: response.data.session_id,
@@ -490,15 +906,52 @@ async function startNewSession() {
     
     // Émettre l'événement pour informer le parent
     emit('session-started')
-    
+
+    // Refresh terminal count after starting a new session
+    await loadCurrentTerminalUsage()
+
     // Initialiser le terminal
     await initializeTerminal()
     
   } catch (error) {
     console.error('Erreur lors du démarrage:', error)
-    errorMessage.value = error.response?.data?.error_message || 
-                         error.message || 
-                         'Erreur lors du démarrage de la session'
+
+    // Handle size-based restriction errors
+    const errorMsg = error.response?.data?.error_message || error.message || 'Erreur lors du démarrage de la session'
+
+    if (error.response?.status === 400 && errorMsg.includes('not allowed in your plan')) {
+      // Extract instance name and sizes from error message
+      const instanceMatch = errorMsg.match(/instance '([^']+)'/)
+      const sizesMatch = errorMsg.match(/sizes \[([^\]]+)\]/)
+      const allowedMatch = errorMsg.match(/Allowed sizes: \[([^\]]+)\]/)
+
+      let enhancedError = errorMsg
+
+      if (instanceMatch && sizesMatch && allowedMatch) {
+        const instanceName = instanceMatch[1]
+        const requiredSizes = sizesMatch[1].split('|').map(s => s.trim())
+        const allowedSizes = allowedMatch[1].split(',').map(s => s.trim())
+
+        enhancedError = `❌ Instance non autorisée
+
+L'instance "${instanceName}" nécessite les tailles: ${requiredSizes.join(', ')}
+Votre plan autorise: ${allowedSizes.join(', ')}
+
+Veuillez choisir une autre instance ou mettre à niveau votre plan.`
+      }
+
+      errorMessage.value = enhancedError
+
+      // Show upgrade suggestion
+      setTimeout(() => {
+        if (confirm('Souhaitez-vous voir les plans disponibles pour débloquer cette instance ?')) {
+          window.open('/subscription-plans', '_blank')
+        }
+      }, 2000)
+    } else {
+      errorMessage.value = errorMsg
+    }
+
     showErrorPanel.value = true
     showStartPanel.value = true
     showInfoPanel.value = false
@@ -510,38 +963,30 @@ async function startNewSession() {
 }
 
 async function initializeTerminal() {
-  console.log('Initialisation du terminal...')
-  
   if (!terminal) {
-    console.log('Terminal non initialisé, tentative d\'initialisation...')
     const success = await initXterm()
     if (!success) {
-      console.error('Impossible d\'initialiser xterm.js')
       return
     }
   }
   
   if (!sessionInfo.value) {
-    console.error('Informations de session manquantes')
     return
   }
   
   await nextTick()
   
   if (!terminalRef.value) {
-    console.error('Élément terminal DOM non trouvé')
     return
   }
   
-  console.log('Ouverture du terminal dans le DOM...')
   // Ouvrir le terminal dans le DOM
   if (!terminal.element) {
     terminal.open(terminalRef.value)
-    
+
     // Ajuster la taille après un délai
     setTimeout(() => {
       if (fitAddon && terminal) {
-        console.log('Ajustement de la taille du terminal')
         fitAddon.fit()
       }
     }, 200)
@@ -552,45 +997,33 @@ async function initializeTerminal() {
 }
 
 async function connectWebSocket() {
-  console.log('Connexion WebSocket...')
   if (!sessionInfo.value || !sessionInfo.value.session_id) {
-    console.error('Informations de session manquantes pour la connexion WebSocket')
     return
   }
-  
+
   try {
     // Extraire l'ID de session
     const sessionId = sessionInfo.value.session_id
-    
+
     // Construire l'URL WebSocket
     const protocol = import.meta.env.VITE_PROTOCOL === 'https' ? 'wss' : 'ws'
     const apiUrl = import.meta.env.VITE_API_URL
     const wsUrl = `${protocol}://${apiUrl}/api/v1/terminal-sessions/${sessionId}/console?width=${terminal ? terminal.cols : 80}&height=${terminal ? terminal.rows : 24}`
-    
-    console.log('Connexion WebSocket:', wsUrl)
-    
+
     socket = new WebSocket(wsUrl)
-    
+
     socket.onopen = () => {
-      console.log('WebSocket connecté avec succès')
       isConnected.value = true
       showReconnectButton.value = false
-      
+
       // Attacher le socket au terminal
       if (terminal && AttachAddon) {
-        if (attachAddon) {
-          // Supprimer l'ancien addon
-          console.log('Suppression de l\'ancien attachAddon')
-        }
-        
         attachAddon = new AttachAddon(socket)
         terminal.loadAddon(attachAddon)
-        console.log('AttachAddon chargé et connecté')
       }
     }
-    
+
     socket.onclose = (event) => {
-      console.log('WebSocket fermé:', event.code, event.reason)
       isConnected.value = false
       showReconnectButton.value = true
     }
@@ -612,15 +1045,16 @@ async function connectWebSocket() {
 
 async function stopSession() {
   if (!sessionInfo.value) return
-  
-  console.log('Arrêt de la session...')
+
   isStopping.value = true
-  
+
   try {
     const sessionId = sessionInfo.value.session_id
     await axios.post(`/terminal-sessions/${sessionId}/stop`)
-    
-    console.log('Session arrêtée avec succès')
+
+    // Refresh terminal count after stopping a session
+    await loadCurrentTerminalUsage()
+
     // Reset de l'interface
     resetToStart()
     
@@ -636,7 +1070,6 @@ async function stopSession() {
 }
 
 function reconnectTerminal() {
-  console.log('Reconnexion du terminal...')
   if (socket) {
     socket.close()
   }
@@ -644,7 +1077,6 @@ function reconnectTerminal() {
 }
 
 function resetToStart() {
-  console.log('Reset vers l\'état initial')
   cleanup()
   
   // Reset de l'état
@@ -666,21 +1098,19 @@ function resetToStart() {
 }
 
 function startExpirationTimer(expiresAt) {
-  console.log('Démarrage du timer d\'expiration:', expiresAt)
   const expirationTime = new Date(expiresAt).getTime()
-  
+
   if (timerInterval) {
     clearInterval(timerInterval)
   }
-  
+
   timerInterval = setInterval(() => {
     const now = Date.now()
     const remaining = Math.max(0, Math.floor((expirationTime - now) / 1000))
-    
+
     timeRemaining.value = remaining
-    
+
     if (remaining <= 0) {
-      console.log('Session expirée')
       clearInterval(timerInterval)
       errorMessage.value = 'Session expirée'
       showErrorPanel.value = true
@@ -1110,6 +1540,273 @@ function formatTime(seconds) {
   .btn {
     width: 100%;
     justify-content: center;
+  }
+}
+
+/* Usage Panel Styles */
+.usage-panel {
+  margin-bottom: 20px;
+}
+
+.usage-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.usage-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.usage-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: #495057;
+}
+
+.usage-value {
+  font-weight: 600;
+  color: #007bff;
+}
+
+/* Plan Restriction Styles */
+.plan-restriction {
+  color: #856404;
+  font-weight: 500;
+}
+
+.restricted-instances {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 4px;
+}
+
+.upgrade-link {
+  color: #e17055;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.upgrade-link:hover {
+  text-decoration: underline;
+}
+
+/* Instance Types Grid - Scalable Layout */
+.instance-types-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 15px;
+  margin-bottom: 15px;
+  max-height: 400px; /* Limit height for many instances */
+  overflow-y: auto; /* Enable scrolling for many items */
+  padding: 10px;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+}
+
+.instance-card {
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.instance-card:hover {
+  border-color: #007bff;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+}
+
+.instance-card.selected {
+  border-color: #007bff;
+  background: #f8f9ff;
+}
+
+.instance-card.available {
+  border-left: 4px solid #28a745;
+}
+
+.instance-card.restricted {
+  border-left: 4px solid #ffc107;
+  opacity: 0.8;
+}
+
+.instance-card.restricted:hover {
+  border-color: #ffc107;
+  cursor: not-allowed;
+}
+
+.instance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.instance-info h5 {
+  margin: 0 0 4px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.instance-info p {
+  margin: 0;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.instance-status {
+  font-size: 1.2rem;
+}
+
+.size-badges {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.size-badge {
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.size-badge.available {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.size-badge.restricted {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.availability-message {
+  margin-top: 8px;
+}
+
+.restricted-message {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.upgrade-btn {
+  padding: 2px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.upgrade-btn:hover {
+  text-decoration: none;
+}
+
+
+
+/* Search and Filter Styles */
+.instance-search {
+  margin-bottom: 20px;
+}
+
+.instance-search .form-control {
+  margin-bottom: 10px;
+}
+
+.instance-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.instance-filters .btn-sm {
+  padding: 4px 12px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+.btn-outline-secondary {
+  border-color: #6c757d;
+  color: #6c757d;
+  background-color: transparent;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #6c757d;
+  color: #fff;
+}
+
+/* Empty state for filtered results */
+.no-instances-found {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6c757d;
+  border: 2px dashed #e9ecef;
+  border-radius: 8px;
+}
+
+.no-instances-found i {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  opacity: 0.5;
+}
+
+/* Compact view for many instances */
+.instance-types-grid.compact {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.instance-types-grid.compact .instance-card {
+  padding: 12px;
+}
+
+.instance-types-grid.compact .instance-info h5 {
+  font-size: 1rem;
+  margin-bottom: 2px;
+}
+
+.instance-types-grid.compact .instance-info p {
+  font-size: 0.8rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .instance-types-grid {
+    grid-template-columns: 1fr;
+    max-height: 300px; /* Smaller height on mobile */
+  }
+
+  .instance-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .instance-filters {
+    flex-direction: column;
+  }
+
+  .instance-filters .btn {
+    width: 100%;
   }
 }
 </style>

@@ -300,6 +300,38 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         }
     }
 
+    // Mettre à niveau le plan
+    const upgradePlan = async (newPlanId: string) => {
+        isLoading.value = true
+        error.value = ''
+
+        try {
+            let result: any
+
+            if (isDemoMode()) {
+                logDemoAction('Upgrading demo plan', { newPlanId })
+                await simulateDelay(1500)
+                result = { success: true, subscription: getDemoCurrentSubscription('active') }
+            } else {
+                const response = await axios.post('/subscriptions/upgrade', {
+                    new_plan_id: newPlanId
+                })
+                result = response.data
+            }
+
+            // Recharger l'abonnement actuel
+            await getCurrentSubscription()
+            await getUsageMetrics()
+
+            return result
+        } catch (err: any) {
+            error.value = err.response?.data?.error_message || 'Erreur lors de la mise à niveau'
+            throw err
+        } finally {
+            isLoading.value = false
+        }
+    }
+
     // Vérifier les limites d'utilisation
     const checkUsageLimit = async (metricType: string, requestedAmount: number = 1) => {
         try {
@@ -312,7 +344,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
             } else {
                 const response = await axios.post('/subscriptions/usage/check', {
                     metric_type: metricType,
-                    requested_amount: requestedAmount
+                    increment: requestedAmount
                 })
                 return response.data.allowed
             }
@@ -383,6 +415,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         createPortalSession,
         cancelSubscription,
         reactivateSubscription,
+        upgradePlan,
         getUsageMetrics,
         checkUsageLimit,
         

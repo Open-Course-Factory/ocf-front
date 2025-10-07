@@ -9,6 +9,11 @@ export interface InstanceType {
   name: string
   prefix: string
   description: string
+  size: string // Available sizes separated by | (e.g., "XS|S|M")
+}
+
+export interface InstanceTypeResponse {
+  instance_types: InstanceType[]
 }
 
 export interface StartSessionData {
@@ -51,10 +56,76 @@ export interface ShareTerminalRequest {
   expires_at?: string
 }
 
+export interface InstanceAvailability {
+  available: boolean
+  matchingSizes: string[]
+  upgradeSizes: string[]
+  hasAllSizes: boolean
+}
+
+// Utility functions for size handling
+export const instanceUtils = {
+  // Parse size string into array
+  parseSizes(sizeString: string): string[] {
+    return sizeString.split('|').map(s => s.trim())
+  },
+
+  // Check if instance is available based on user's plan
+  checkAvailability(instance: InstanceType, allowedSizes: string[]): InstanceAvailability {
+    const instanceSizes = this.parseSizes(instance.size)
+
+    // Check if "all" is in allowed sizes (unlimited plan)
+    if (allowedSizes.includes('all')) {
+      return {
+        available: true,
+        matchingSizes: instanceSizes,
+        upgradeSizes: [],
+        hasAllSizes: true
+      }
+    }
+
+    // Find matching sizes
+    const matchingSizes = instanceSizes.filter(size =>
+      allowedSizes.includes(size)
+    )
+
+    const upgradeSizes = instanceSizes.filter(size =>
+      !allowedSizes.includes(size)
+    )
+
+    return {
+      available: matchingSizes.length > 0,
+      matchingSizes,
+      upgradeSizes,
+      hasAllSizes: matchingSizes.length === instanceSizes.length
+    }
+  },
+
+  // Get size display with badges
+  getSizeDisplay(sizeString: string): string[] {
+    return this.parseSizes(sizeString)
+  },
+
+  // Check if a specific size is allowed
+  isSizeAllowed(size: string, allowedSizes: string[]): boolean {
+    return allowedSizes.includes('all') || allowedSizes.includes(size)
+  }
+}
+
 export const terminalService = {
   async getInstanceTypes(): Promise<InstanceType[]> {
     const response = await axios.get('/terminal-sessions/instance-types')
-    return response.data
+    const data = response.data
+
+    // Handle both formats: direct array or wrapped in instance_types
+    if (Array.isArray(data)) {
+      return data
+    } else if (data.instance_types && Array.isArray(data.instance_types)) {
+      return data.instance_types
+    } else {
+      console.error('Unexpected instance types response format:', data)
+      throw new Error('Invalid response format for instance types')
+    }
   },
 
   async startSession(sessionData: StartSessionData) {

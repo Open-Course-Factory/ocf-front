@@ -78,6 +78,36 @@
           </div>
         </div>
 
+        <!-- Plan limits and features -->
+        <div v-if="subscription?.plan_features" class="plan-features">
+          <h5>
+            <i class="fas fa-list"></i>
+            {{ t('subscriptionPlans.planFeatures') }}
+          </h5>
+          <div class="features-grid">
+            <div v-if="subscription.plan_features.concurrent_terminals" class="feature-item">
+              <i class="fas fa-terminal"></i>
+              <span>{{ subscription.plan_features.concurrent_terminals }} {{ t('subscriptionPlans.concurrentTerminals') }}</span>
+            </div>
+            <div v-if="subscription.plan_features.session_duration_hours" class="feature-item">
+              <i class="fas fa-clock"></i>
+              <span>{{ subscription.plan_features.session_duration_hours }}h {{ t('subscriptionPlans.sessionDuration') }}</span>
+            </div>
+            <div v-if="subscription.plan_features.allowed_machine_sizes" class="feature-item">
+              <i class="fas fa-server"></i>
+              <span>{{ subscription.plan_features.allowed_machine_sizes.join(', ') }} {{ t('subscriptionPlans.allowedSizes') }}</span>
+            </div>
+            <div v-if="subscription.plan_features.storage_gb" class="feature-item">
+              <i class="fas fa-hdd"></i>
+              <span>{{ subscription.plan_features.storage_gb }}GB {{ t('subscriptionPlans.storage') }}</span>
+            </div>
+            <div v-if="subscription.plan_features.network_access" class="feature-item">
+              <i class="fas fa-network-wired"></i>
+              <span>{{ t('subscriptionPlans.networkAccess') }}</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Prochaine facturation -->
         <div v-else-if="subscription?.current_period_end" class="billing-info">
           <div class="detail-row">
@@ -327,6 +357,50 @@ function formatDate(dateString: string) {
   margin-top: 20px;
 }
 
+/* Plan features */
+.plan-features {
+  margin: 20px 0;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.plan-features h5 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 15px 0;
+  color: #495057;
+  font-size: 1rem;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.feature-item i {
+  color: #6c757d;
+  width: 16px;
+  text-align: center;
+}
+
+.feature-item span {
+  font-size: 14px;
+  color: #495057;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .subscription-header {
@@ -334,14 +408,18 @@ function formatDate(dateString: string) {
     gap: 15px;
     text-align: center;
   }
-  
+
   .subscription-actions {
     flex-direction: column;
   }
-  
+
   .subscription-actions .btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
   }
 }
 
