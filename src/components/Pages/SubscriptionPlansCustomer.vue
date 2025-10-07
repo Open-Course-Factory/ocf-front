@@ -33,88 +33,77 @@
         </button>
       </div>
 
-      <!-- Plans Grid -->
-      <div v-else-if="filteredPlans.length > 0" class="plans-grid">
+      <!-- Plans Grid - Compact Design -->
+      <div v-else-if="filteredPlans.length > 0" class="plans-grid-compact">
         <div
           v-for="plan in filteredPlans"
           :key="plan.id"
-          :class="['plan-card', { 'popular': plan.name.includes('Pro') }]"
+          :class="['plan-card-compact', { 'current-plan': isCurrentPlan(plan) }]"
         >
-          <!-- Popular Badge -->
-          <div v-if="plan.name.includes('Pro')" class="popular-badge">
-            <i class="fas fa-star"></i>
-            Popular
-          </div>
-
-          <!-- Plan Header -->
-          <div class="plan-header">
-            <h3 class="plan-name">{{ plan.name }}</h3>
-            <div class="plan-price">
-              <span class="price-amount">{{ formatPrice(plan.price_amount, plan.currency) }}</span>
-              <span class="billing-period">/ {{ plan.billing_interval }}</span>
-            </div>
-            <p v-if="plan.description" class="plan-description">{{ plan.description }}</p>
-          </div>
-
-          <!-- Plan Features -->
-          <div class="plan-body">
-            <!-- Trial Info -->
-            <div v-if="plan.trial_days > 0" class="trial-info">
-              <i class="fas fa-gift text-success"></i>
-              <span>{{ plan.trial_days }} days free trial</span>
-            </div>
-
-            <!-- Features List -->
-            <div v-if="plan.features && plan.features.length > 0" class="features-list">
-              <h4>What's included:</h4>
-              <ul>
-                <li v-for="feature in plan.features" :key="feature">
-                  <i class="fas fa-check text-success"></i>
-                  {{ feature }}
-                </li>
-              </ul>
-            </div>
-
-            <!-- Limits -->
-            <div class="limits-list">
-              <div v-if="plan.max_courses" class="limit-item">
-                <i class="fas fa-book"></i>
-                <span>
-                  {{ plan.max_courses === -1 ? 'Unlimited' : plan.max_courses }} courses
-                </span>
+          <!-- Plan Header with Status -->
+          <div class="plan-header-compact">
+            <div class="plan-title-section">
+              <h3 class="plan-name-compact">{{ plan.name }}</h3>
+              <div v-if="isCurrentPlan(plan)" class="current-badge">
+                <i class="fas fa-check-circle"></i>
+                Current
               </div>
-              <div v-if="plan.max_concurrent_users" class="limit-item">
-                <i class="fas fa-users"></i>
-                <span>
-                  {{ plan.max_concurrent_users === -1 ? 'Unlimited' : plan.max_concurrent_users }} concurrent users
-                </span>
-              </div>
-              <div v-if="plan.max_lab_sessions" class="limit-item">
-                <i class="fas fa-flask"></i>
-                <span>
-                  {{ plan.max_lab_sessions === -1 ? 'Unlimited' : plan.max_lab_sessions }} lab sessions/month
-                </span>
-              </div>
+            </div>
+            <div class="plan-price-compact">
+              <span class="price-amount-compact">{{ formatPrice(plan.price_amount, plan.currency) }}</span>
+              <span class="billing-period-compact">{{ plan.billing_interval }}</span>
             </div>
           </div>
 
-          <!-- Plan Actions -->
-          <div class="plan-footer">
-            <button
-              class="btn btn-subscribe"
-              :class="plan.name.includes('Pro') ? 'btn-primary btn-lg' : 'btn-outline-primary'"
-              @click="selectPlan(plan)"
-              :disabled="!plan.is_active || isSubscribing"
-            >
-              <i v-if="isSubscribing" class="fas fa-spinner fa-spin"></i>
-              <i v-else class="fas fa-shopping-cart"></i>
-              <span v-if="plan.trial_days > 0">Start Free Trial</span>
-              <span v-else>Subscribe Now</span>
-            </button>
-
-            <div v-if="!plan.is_active" class="inactive-notice">
-              <small class="text-muted">This plan is no longer available</small>
+          <!-- Plan Content in Two Columns -->
+          <div class="plan-content-compact">
+            <!-- Left Column: Key Features -->
+            <div class="features-column">
+              <div class="key-features">
+                <div class="feature-item">
+                  <i class="fas fa-users"></i>
+                  <span>{{ plan.max_concurrent_users === -1 ? 'Unlimited' : plan.max_concurrent_users }} {{ t('subscriptionPlans.concurrentTerminals') }}</span>
+                </div>
+                <div v-if="plan.features && plan.features.find(f => f.includes('hour'))" class="feature-item">
+                  <i class="fas fa-clock"></i>
+                  <span>{{ plan.features.find(f => f.includes('hour')) }}</span>
+                </div>
+                <div v-if="plan.features && plan.features.find(f => f.includes('machine'))" class="feature-item">
+                  <i class="fas fa-server"></i>
+                  <span>{{ plan.features.find(f => f.includes('machine')) }}</span>
+                </div>
+                <div v-if="plan.features && plan.features.find(f => f.includes('GB') || f.includes('persistence'))" class="feature-item">
+                  <i class="fas fa-hdd"></i>
+                  <span>{{ plan.features.find(f => f.includes('GB') || f.includes('persistence')) }}</span>
+                </div>
+              </div>
             </div>
+
+            <!-- Right Column: Action Button -->
+            <div class="action-column">
+              <button
+                v-if="!isCurrentPlan(plan)"
+                class="btn-compact"
+                :class="isCurrentPlan(plan) ? 'btn-current' : 'btn-subscribe-compact'"
+                @click="selectPlan(plan)"
+                :disabled="!plan.is_active || isSubscribing"
+              >
+                <i v-if="isSubscribing" class="fas fa-spinner fa-spin"></i>
+                <i v-else class="fas fa-shopping-cart"></i>
+                <span v-if="plan.trial_days > 0">Start Trial</span>
+                <span v-else>Subscribe</span>
+              </button>
+
+              <div v-else class="current-plan-indicator">
+                <i class="fas fa-check-circle"></i>
+                <span>Active Plan</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Description (if any) -->
+          <div v-if="plan.description" class="plan-description-compact">
+            {{ plan.description }}
           </div>
         </div>
       </div>
@@ -173,6 +162,33 @@ const filteredPlans = computed(() => {
   return entityStore.entities.filter((plan: any) => plan.is_active)
 })
 
+const currentPlanId = computed(() => {
+  const subscription = subscriptionsStore.currentSubscription
+  if (!subscription) return null
+
+  // Try different possible plan ID fields
+  const planId = subscription.subscription_plan_id ||
+                 subscription.plan_id ||
+                 subscription.subscription_plans ||
+                 subscription.subscription_plan?.id
+
+  return planId
+})
+
+const isCurrentPlan = (plan: any) => {
+  const subscription = subscriptionsStore.currentSubscription
+  if (!subscription) return false
+
+  // Method 1: Direct plan ID comparison
+  const planIdMatch = plan.id === currentPlanId.value
+
+  // Method 2: Compare by plan name (fallback)
+  const planNameMatch = subscription.plan_name === plan.name ||
+                        subscription.subscription_plan?.name === plan.name
+
+  return planIdMatch || planNameMatch
+}
+
 // Methods
 onMounted(async () => {
   await loadPlans()
@@ -219,12 +235,12 @@ async function selectPlan(plan: any) {
 .subscription-plans-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 40px 20px;
+  padding: 20px;
 }
 
 .page-header {
   text-align: center;
-  margin-bottom: 50px;
+  margin-bottom: 30px;
 }
 
 .page-header h1 {
@@ -256,186 +272,175 @@ async function selectPlan(plan: any) {
   margin: 20px 0;
 }
 
-/* Plans Grid */
-.plans-grid {
+/* Compact Plans Grid */
+.plans-grid-compact {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 30px;
-  margin-bottom: 50px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
-.plan-card {
+.plan-card-compact {
   background: white;
-  border: 2px solid #e9ecef;
-  border-radius: 15px;
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
   padding: 0;
   position: relative;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
 
-.plan-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+.plan-card-compact:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
 }
 
-.plan-card.popular {
-  border-color: #007bff;
-  transform: scale(1.05);
+.plan-card-compact.current-plan {
+  border-color: #28a745;
+  background: linear-gradient(135deg, #f8fff9 0%, #e8f5e9 100%);
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.2);
 }
 
-.popular-badge {
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-  color: white;
-  padding: 5px 20px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 600;
+/* Compact Header */
+.plan-header-compact {
+  padding: 15px;
+  border-bottom: 1px solid #f1f3f4;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8f9fa;
+}
+
+.plan-title-section {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 10px;
 }
 
-.plan-header {
-  padding: 30px 25px 20px 25px;
-  text-align: center;
-  border-bottom: 1px solid #f8f9fa;
-}
-
-.plan-name {
-  margin: 0 0 15px 0;
-  font-size: 1.5rem;
+.plan-name-compact {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
   color: #333;
 }
 
-.plan-price {
-  margin: 15px 0;
+.current-badge {
+  background: #28a745;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.price-amount {
-  font-size: 2.5rem;
+.plan-price-compact {
+  text-align: right;
+}
+
+.price-amount-compact {
+  font-size: 1.4rem;
   font-weight: bold;
   color: #28a745;
+  display: block;
 }
 
-.billing-period {
-  font-size: 1rem;
+.billing-period-compact {
+  font-size: 0.8rem;
   color: #666;
-  font-weight: normal;
 }
 
-.plan-description {
-  margin: 15px 0 0 0;
-  color: #666;
-  line-height: 1.5;
-}
-
-.plan-body {
-  padding: 25px;
-}
-
-.trial-info {
-  background: #e8f5e9;
-  border: 1px solid #c8e6c9;
-  border-radius: 8px;
+/* Compact Content */
+.plan-content-compact {
   padding: 15px;
-  margin-bottom: 25px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 15px;
+  align-items: center;
+}
+
+.features-column {
+  min-width: 0;
+}
+
+.key-features {
+  display: grid;
+  gap: 6px;
+}
+
+.feature-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: #2e7d32;
-  font-weight: 500;
-}
-
-.features-list h4 {
-  margin: 0 0 15px 0;
-  font-size: 1.1rem;
-  color: #333;
-}
-
-.features-list ul {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 25px 0;
-}
-
-.features-list li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 8px;
+  font-size: 0.85rem;
   color: #555;
 }
 
-.limits-list {
+.feature-item i {
+  width: 14px;
+  color: #007bff;
+  font-size: 0.8rem;
+}
+
+.action-column {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-
-.limit-item {
-  display: flex;
   align-items: center;
-  gap: 10px;
-  color: #666;
-  font-size: 0.95rem;
 }
 
-.plan-footer {
-  padding: 25px;
-  border-top: 1px solid #f8f9fa;
-  text-align: center;
-}
-
-.btn-subscribe {
-  width: 100%;
-  padding: 15px;
-  font-size: 16px;
+.btn-compact {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.9rem;
   font-weight: 600;
-  border-radius: 8px;
+  border: none;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
+  gap: 6px;
+  min-width: 100px;
   justify-content: center;
-  gap: 10px;
 }
 
-.btn-primary {
-  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-  border: none;
+.btn-subscribe-compact {
+  background: #007bff;
   color: white;
 }
 
-.btn-outline-primary {
-  background: transparent;
-  border: 2px solid #007bff;
-  color: #007bff;
+.btn-subscribe-compact:hover:not(:disabled) {
+  background: #0056b3;
+  transform: translateY(-1px);
 }
 
-.btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-.btn:disabled {
+.btn-subscribe-compact:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  transform: none;
 }
 
-.btn-lg {
-  padding: 18px;
-  font-size: 18px;
+.current-plan-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #28a745;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
-.inactive-notice {
+.plan-description-compact {
+  padding: 0 15px 15px 15px;
+  font-size: 0.85rem;
+  color: #666;
+  line-height: 1.4;
+  border-top: 1px solid #f1f3f4;
+  background: #fafbfc;
   margin-top: 10px;
 }
+
+/* Remove old styles - replaced by compact design */
 
 /* Current Subscription Info */
 .current-subscription-info {
@@ -505,13 +510,22 @@ async function selectPlan(plan: any) {
     gap: 10px;
   }
 
-  .plans-grid {
+  .plans-grid-compact {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 10px;
   }
 
-  .plan-card.popular {
-    transform: none;
+  .plan-content-compact {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .action-column {
+    align-items: stretch;
+  }
+
+  .btn-compact {
+    width: 100%;
   }
 
   .price-amount {

@@ -168,7 +168,8 @@ export const useBaseStore = () => {
             } else {
                 logDemoAction(`Loading real data from ${endpoint}`)
                 const response = await axios.get(endpoint)
-                data = response.data || []
+                // Handle both direct array responses and paginated responses
+                data = response.data?.data || response.data || []
             }
 
             // Ensure data is an array before spreading

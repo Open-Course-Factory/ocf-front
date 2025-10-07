@@ -34,10 +34,10 @@
     <div v-else class="subscription-card">
       <div class="subscription-header">
         <div class="plan-info">
-          <h4>{{ subscription?.plan_name || t('subscriptionPlans.current_subscription_plan') }}</h4>
-          <div class="plan-price" v-if="subscription?.plan_price">
-            {{ formatPrice(subscription.plan_price, subscription.currency) }}
-            <span class="billing-period">/ {{ subscription?.billing_interval }}</span>
+          <h4>{{ planName }}</h4>
+          <div class="plan-price" v-if="currentPlan?.price_amount || subscription?.plan_price">
+            {{ formatPrice(currentPlan?.price_amount || subscription?.plan_price, currentPlan?.currency || subscription?.currency) }}
+            <span class="billing-period">/ {{ currentPlan?.billing_interval || subscription?.billing_interval }}</span>
           </div>
         </div>
         
@@ -160,7 +160,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useSubscriptionPlansStore } from '../../../stores/subscriptionPlans'
 import { useSubscriptionTranslations } from '../composables/useSubscriptionTranslations'
 
@@ -187,11 +187,37 @@ const emit = defineEmits<{
 
 const subscriptionPlansStore = useSubscriptionPlansStore()
 
+// Ensure plans are loaded when component mounts
+onMounted(async () => {
+  try {
+    await subscriptionPlansStore.ensurePlansLoaded()
+  } catch (error) {
+    console.warn('Failed to load subscription plans for dashboard:', error)
+  }
+})
+
 // Computed
 const formatPrice = computed(() => subscriptionPlansStore.formatPrice)
 
 const isTrialing = computed(() => props.subscription?.status === 'trialing')
 const isCanceled = computed(() => props.subscription?.cancel_at_period_end === true)
+
+// Get current plan details by matching the subscription plan ID
+const currentPlan = computed(() => {
+  if (!props.subscription) return null
+
+  const planId = props.subscription.subscription_plans ||
+                 props.subscription.subscription_plan_id ||
+                 props.subscription.plan_id
+
+  return subscriptionPlansStore.entities.find((plan: any) => plan.id === planId)
+})
+
+const planName = computed(() => {
+  return currentPlan.value?.name ||
+         props.subscription?.plan_name ||
+         t('subscriptionPlans.current_subscription_plan')
+})
 
 // Méthodes utilitaires (dupliquées depuis le store subscriptions)
 function getStatusClass(status: string) {

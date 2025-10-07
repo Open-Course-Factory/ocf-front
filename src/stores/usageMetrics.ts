@@ -40,10 +40,12 @@ export const useUsageMetricsStore = defineStore('usageMetrics', () => {
             last_updated: 'Last Updated',
             courses: 'Courses',
             concurrent_users: 'Concurrent Users',
+            concurrent_terminals: 'Concurrent Terminals',
             lab_sessions: 'Lab Sessions',
             storage: 'Storage',
             api_calls: 'API Calls',
             quotaExceeded: 'Quota Exceeded',
+            maxQuotaReached: 'Max quota reached',
             quotaWarning: 'Quota Warning',
             quotaNormal: 'Within Limits',
             remaining: 'remaining',
@@ -65,10 +67,12 @@ export const useUsageMetricsStore = defineStore('usageMetrics', () => {
             last_updated: 'Dernière Mise à Jour',
             courses: 'Cours',
             concurrent_users: 'Utilisateurs Concurrents',
+            concurrent_terminals: 'Terminaux Concurrents',
             lab_sessions: 'Sessions Lab',
             storage: 'Stockage',
             api_calls: 'Appels API',
             quotaExceeded: 'Quota Dépassé',
+            maxQuotaReached: 'Quota maximum atteint',
             quotaWarning: 'Alerte Quota',
             quotaNormal: 'Dans les Limites',
             remaining: 'restant',
@@ -92,7 +96,8 @@ export const useUsageMetricsStore = defineStore('usageMetrics', () => {
 
     // Obtenir la classe CSS selon le pourcentage d'usage
     const getUsageClass = (usagePercent: number) => {
-        if (usagePercent >= 100) return 'text-danger'; // Rouge si dépassé
+        if (usagePercent > 100) return 'text-danger'; // Rouge si vraiment dépassé
+        if (usagePercent >= 100) return 'text-warning'; // Orange si quota atteint
         if (usagePercent >= 80) return 'text-warning'; // Orange si > 80%
         if (usagePercent >= 60) return 'text-info'; // Bleu si > 60%
         return 'text-success'; // Vert si < 60%
@@ -103,6 +108,7 @@ export const useUsageMetricsStore = defineStore('usageMetrics', () => {
         switch (metricType?.toLowerCase()) {
             case 'courses': return 'fas fa-book';
             case 'concurrent_users': return 'fas fa-users';
+            case 'concurrent_terminals': return 'fas fa-terminal';
             case 'lab_sessions': return 'fas fa-flask';
             case 'storage': return 'fas fa-hdd';
             case 'api_calls': return 'fas fa-exchange-alt';
@@ -112,7 +118,8 @@ export const useUsageMetricsStore = defineStore('usageMetrics', () => {
 
     // Obtenir le statut lisible
     const getUsageStatus = (usagePercent: number) => {
-        if (usagePercent >= 100) return t('usageMetrics.quotaExceeded');
+        if (usagePercent > 100) return t('usageMetrics.quotaExceeded');
+        if (usagePercent >= 100) return t('usageMetrics.maxQuotaReached');
         if (usagePercent >= 80) return t('usageMetrics.quotaWarning');
         return t('usageMetrics.quotaNormal');
     }
@@ -163,10 +170,11 @@ export const useUsageMetricsStore = defineStore('usageMetrics', () => {
 
     // Obtenir la barre de progression
     const getProgressBarClass = (usagePercent: number) => {
-        if (usagePercent >= 100) return 'bg-danger';
-        if (usagePercent >= 80) return 'bg-warning';
-        if (usagePercent >= 60) return 'bg-info';
-        return 'bg-success';
+        if (usagePercent > 100) return 'bg-danger'; // Rouge si vraiment dépassé
+        if (usagePercent >= 100) return 'bg-warning'; // Orange si quota atteint
+        if (usagePercent >= 80) return 'bg-warning'; // Orange si > 80%
+        if (usagePercent >= 60) return 'bg-info'; // Bleu si > 60%
+        return 'bg-success'; // Vert si < 60%
     }
 
     // Fonction personnalisée pour les données de sélection
