@@ -502,8 +502,8 @@ async function loadSelectedPlan() {
 async function loadBillingAddresses() {
   try {
     const response = await axios.get('/billing-addresses')
-    billingAddresses.value = response.data || []
-    
+    billingAddresses.value = response.data?.data || response.data || []
+
     // Sélectionner l'adresse par défaut
     const defaultAddress = billingAddresses.value.find(addr => addr.is_default)
     if (defaultAddress) {
