@@ -8,7 +8,21 @@
       </router-link>
     </h3>
 
-    <div v-if="invoices.length > 0" class="invoices-list">
+    <!-- Loading skeleton -->
+    <div v-if="isLoading" class="invoices-list">
+      <div v-for="n in 3" :key="n" class="invoice-item skeleton-invoice">
+        <div class="skeleton-content">
+          <LoadingSkeleton variant="text" width="150px" height="18px" />
+          <LoadingSkeleton variant="text" width="100px" height="14px" style="margin-top: 8px" />
+        </div>
+        <div class="skeleton-actions">
+          <LoadingSkeleton variant="button" width="36px" height="32px" />
+          <LoadingSkeleton variant="button" width="36px" height="32px" />
+        </div>
+      </div>
+    </div>
+
+    <div v-else-if="invoices.length > 0" class="invoices-list">
       <div 
         v-for="invoice in invoices" 
         :key="invoice.id" 
@@ -63,17 +77,19 @@
 
 import { useInvoicesStore } from '../../../stores/invoices'
 import { useSubscriptionTranslations } from '../composables/useSubscriptionTranslations'
-
+import LoadingSkeleton from './LoadingSkeleton.vue'
 
 const { t } = useSubscriptionTranslations()
-
 
 interface Props {
   invoices: any[]
   downloadingIds: Set<string>
+  isLoading?: boolean
 }
 
-defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  isLoading: false
+})
 
 const emit = defineEmits<{
   downloadInvoice: [invoiceId: string]
@@ -182,6 +198,20 @@ function formatDate(dateString: string) {
 
 .no-invoices i {
   margin-bottom: 15px;
+}
+
+/* Loading skeleton styles */
+.skeleton-invoice {
+  opacity: 0.7;
+}
+
+.skeleton-content {
+  flex: 1;
+}
+
+.skeleton-actions {
+  display: flex;
+  gap: 8px;
 }
 
 /* Button styles */

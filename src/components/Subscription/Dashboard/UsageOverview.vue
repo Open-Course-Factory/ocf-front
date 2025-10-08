@@ -3,16 +3,27 @@
     <h3>
       <i class="fas fa-chart-bar"></i>
       {{ t('subscriptions.usageOverview') }}
-      <button 
-        class="btn btn-sm btn-outline-secondary" 
-        @click="$emit('refresh')" 
+      <button
+        class="btn btn-sm btn-outline-secondary"
+        @click="$emit('refresh')"
         :disabled="isRefreshing"
       >
         <i :class="isRefreshing ? 'fas fa-spinner fa-spin' : 'fas fa-sync'"></i>
       </button>
     </h3>
 
-    <div v-if="visibleMetrics.length > 0" class="usage-grid">
+    <!-- Loading skeleton -->
+    <div v-if="isLoading" class="usage-grid">
+      <div v-for="n in 3" :key="n" class="usage-card skeleton-card">
+        <div class="skeleton-content">
+          <LoadingSkeleton variant="text" width="60%" height="20px" />
+          <LoadingSkeleton variant="text" width="100%" height="8px" style="margin-top: 15px" />
+          <LoadingSkeleton variant="text" width="80%" height="16px" style="margin-top: 10px" />
+        </div>
+      </div>
+    </div>
+
+    <div v-else-if="visibleMetrics.length > 0" class="usage-grid">
       <div
         v-for="metric in visibleMetrics"
         :key="metric.metric_type"
@@ -63,6 +74,7 @@ import { computed } from 'vue'
 import { useUsageMetricsStore } from '../../../stores/usageMetrics'
 import { useSubscriptionTranslations } from '../composables/useSubscriptionTranslations'
 import { useFeatureFlags } from '../../../composables/useFeatureFlags'
+import LoadingSkeleton from './LoadingSkeleton.vue'
 
 const { t } = useSubscriptionTranslations()
 const { filterByFeatureFlags } = useFeatureFlags()
@@ -70,10 +82,12 @@ const { filterByFeatureFlags } = useFeatureFlags()
 interface Props {
   metrics: any[]
   isRefreshing?: boolean
+  isLoading?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  isRefreshing: false
+  isRefreshing: false,
+  isLoading: false
 })
 
 const emit = defineEmits<{
@@ -217,6 +231,19 @@ function getMetricDisplayName(metricType: string) {
 
 .no-usage-data i {
   margin-bottom: 15px;
+}
+
+/* Loading skeleton styles */
+.skeleton-card {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.skeleton-content {
+  width: 100%;
+  padding: 10px;
 }
 
 /* Button styles */

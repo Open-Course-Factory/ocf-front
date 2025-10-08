@@ -82,8 +82,13 @@
         {{ t('pagination.filteredResults') }} {{ totalItems }} {{ t('pagination.totalItems') }}
       </div>
 
+      <!-- Initial loading state -->
+      <div v-if="isLoadingEntities && displayedEntities.length === 0 && !isSequentialNavigating">
+        <EntityListSkeleton :count="pageSize" />
+      </div>
+
       <!-- Sequential navigation loading state -->
-      <div v-if="isSequentialNavigating" class="sequential-loading">
+      <div v-else-if="isSequentialNavigating" class="sequential-loading">
         <div class="loading-spinner">
           <i class="fas fa-spinner fa-spin"></i>
         </div>
@@ -229,6 +234,7 @@ import axios from 'axios';
 import { ref, onBeforeMount, computed, reactive, watch } from 'vue';
 import EntityModal from '../Modals/EntityModal.vue';
 import EntityCard from '../Cards/EntityCard.vue';
+import EntityListSkeleton from '../Generic/EntityListSkeleton.vue';
 import { useI18n } from 'vue-i18n';
 import { Store } from 'pinia';
 import { getTranslationKey } from '../../utils';

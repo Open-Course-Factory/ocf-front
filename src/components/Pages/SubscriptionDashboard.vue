@@ -49,6 +49,7 @@
           v-if="subscriptionsStore.hasActiveSubscription()"
           :metrics="usageMetrics"
           :is-refreshing="isRefreshingUsage"
+          :is-loading="isLoadingUsage"
           @refresh="refreshUsage"
         />
 
@@ -56,6 +57,7 @@
         <RecentInvoices
           :invoices="recentInvoices"
           :downloading-ids="downloadingInvoices"
+          :is-loading="isLoadingInvoices"
           @download-invoice="downloadInvoice"
         />
       </div>
@@ -104,6 +106,10 @@ const isReactivating = ref(false)
 const showCancelModal = ref(false)
 const showReactivateModal = ref(false)
 
+// Loading states for components
+const isLoadingUsage = ref(false)
+const isLoadingInvoices = ref(false)
+
 // Données réactives
 const usageMetrics = ref([])
 const recentInvoices = ref([])
@@ -120,20 +126,30 @@ async function loadDashboardData() {
   isLoading.value = true
   error.value = ''
 
+  // Set loading states immediately for all components
+  isLoadingUsage.value = true
+  isLoadingInvoices.value = true
+
   try {
     await loadCurrentSubscription()
-    
+
     if (subscriptionsStore.hasActiveSubscription()) {
       await Promise.allSettled([
         loadUsageMetrics(),
         loadRecentInvoices()
       ])
     } else {
+      // If no active subscription, stop loading these components
+      isLoadingUsage.value = false
+      isLoadingInvoices.value = false
       await loadLastCanceledSubscription()
     }
   } catch (err: any) {
     console.error('Erreur lors du chargement du dashboard:', err)
     error.value = 'Erreur lors du chargement du tableau de bord'
+    // Make sure to stop loading on error
+    isLoadingUsage.value = false
+    isLoadingInvoices.value = false
   } finally {
     isLoading.value = false
   }
@@ -155,6 +171,8 @@ async function loadUsageMetrics() {
   } catch (err) {
     console.warn('Impossible de charger les métriques d\'usage:', err)
     usageMetrics.value = []
+  } finally {
+    isLoadingUsage.value = false
   }
 }
 
@@ -170,6 +188,8 @@ async function loadRecentInvoices() {
   } catch (err) {
     console.warn('Impossible de charger les factures récentes:', err)
     recentInvoices.value = []
+  } finally {
+    isLoadingInvoices.value = false
   }
 }
 
