@@ -28,8 +28,8 @@ export const useUsageMetricsStore = defineStore('usageMetrics', () => {
     const base = useBaseStore();
     const { t } = useI18n()
 
-    useI18n().mergeLocaleMessage('en', { 
-        usageMetrics: { 
+    useI18n().mergeLocaleMessage('en', {
+        usageMetrics: {
             pageTitle: 'Usage Statistics',
             metric_type: 'Metric Type',
             current_value: 'Current Usage',
@@ -38,25 +38,32 @@ export const useUsageMetricsStore = defineStore('usageMetrics', () => {
             period_start: 'Period Start',
             period_end: 'Period End',
             last_updated: 'Last Updated',
+            // Metric types
             courses: 'Courses',
+            courses_created: 'Courses Created',
             concurrent_users: 'Concurrent Users',
             concurrent_terminals: 'Concurrent Terminals',
             lab_sessions: 'Lab Sessions',
+            terminal_sessions: 'Terminal Sessions',
             storage: 'Storage',
+            storage_used: 'Storage Used',
             api_calls: 'API Calls',
+            users: 'Users',
+            active_users: 'Active Users',
+            // Status messages
             quotaExceeded: 'Quota Exceeded',
             maxQuotaReached: 'Max quota reached',
             quotaWarning: 'Quota Warning',
             quotaNormal: 'Within Limits',
             remaining: 'remaining',
             unlimited: 'Unlimited',
-            modify: 'View metric details', 
+            modify: 'View metric details',
             add: 'Add metric',
         }
     })
 
-    useI18n().mergeLocaleMessage('fr', { 
-        usageMetrics: { 
+    useI18n().mergeLocaleMessage('fr', {
+        usageMetrics: {
             pageTitle: 'Statistiques d\'Utilisation',
             metric_type: 'Type de Métrique',
             current_value: 'Utilisation Actuelle',
@@ -65,19 +72,26 @@ export const useUsageMetricsStore = defineStore('usageMetrics', () => {
             period_start: 'Début de Période',
             period_end: 'Fin de Période',
             last_updated: 'Dernière Mise à Jour',
+            // Types de métriques
             courses: 'Cours',
+            courses_created: 'Cours Créés',
             concurrent_users: 'Utilisateurs Concurrents',
             concurrent_terminals: 'Terminaux Concurrents',
             lab_sessions: 'Sessions Lab',
+            terminal_sessions: 'Sessions Terminal',
             storage: 'Stockage',
+            storage_used: 'Stockage Utilisé',
             api_calls: 'Appels API',
+            users: 'Utilisateurs',
+            active_users: 'Utilisateurs Actifs',
+            // Messages de statut
             quotaExceeded: 'Quota Dépassé',
             maxQuotaReached: 'Quota maximum atteint',
             quotaWarning: 'Alerte Quota',
             quotaNormal: 'Dans les Limites',
             remaining: 'restant',
             unlimited: 'Illimité',
-            modify: 'Voir les détails de la métrique', 
+            modify: 'Voir les détails de la métrique',
             add: 'Ajouter une métrique',
         }
     })
@@ -106,13 +120,25 @@ export const useUsageMetricsStore = defineStore('usageMetrics', () => {
     // Obtenir l'icône selon le type de métrique
     const getMetricIcon = (metricType: string) => {
         switch (metricType?.toLowerCase()) {
-            case 'courses': return 'fas fa-book';
-            case 'concurrent_users': return 'fas fa-users';
-            case 'concurrent_terminals': return 'fas fa-terminal';
-            case 'lab_sessions': return 'fas fa-flask';
-            case 'storage': return 'fas fa-hdd';
-            case 'api_calls': return 'fas fa-exchange-alt';
-            default: return 'fas fa-chart-bar';
+            case 'courses':
+            case 'courses_created':
+                return 'fas fa-book';
+            case 'users':
+            case 'active_users':
+            case 'concurrent_users':
+                return 'fas fa-users';
+            case 'concurrent_terminals':
+            case 'terminal_sessions':
+                return 'fas fa-terminal';
+            case 'lab_sessions':
+                return 'fas fa-flask';
+            case 'storage':
+            case 'storage_used':
+                return 'fas fa-hdd';
+            case 'api_calls':
+                return 'fas fa-exchange-alt';
+            default:
+                return 'fas fa-chart-bar';
         }
     }
 
