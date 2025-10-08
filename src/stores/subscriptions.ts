@@ -26,6 +26,7 @@ import axios from 'axios'
 import { isDemoMode, logDemoAction, simulateDelay } from '../services/demoConfig'
 import { demoPayments } from '../services/demoPayments'
 import { getDemoCurrentSubscription, getDemoUsageMetrics } from '../services/demoData'
+import { featureFlagService } from '../services/featureFlags'
 
 export const useSubscriptionsStore = defineStore('subscriptions', () => {
 
@@ -461,8 +462,18 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     }
 
     const hasActiveSubscription = () => {
-        return currentSubscription.value && 
+        return currentSubscription.value &&
                ['active', 'trialing'].includes(currentSubscription.value.status)
+    }
+
+    /**
+     * Filter usage metrics based on feature flags
+     * This ensures metrics related to disabled features are not shown
+     */
+    const getFilteredUsageMetrics = (actor?: { userId?: string, role?: string }) => {
+        return usageMetrics.value.filter(metric => {
+            return featureFlagService.isMetricVisible(metric.metric_type, actor)
+        })
     }
 
     return {
@@ -480,8 +491,9 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         reactivateSubscription,
         upgradePlan,
         getUsageMetrics,
+        getFilteredUsageMetrics,
         checkUsageLimit,
-        
+
         // Utilitaires
         getStatusClass,
         getStatusIcon,

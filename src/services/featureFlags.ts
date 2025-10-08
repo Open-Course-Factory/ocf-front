@@ -28,8 +28,10 @@
  */
 
 import { reactive } from 'vue'
+import axios from 'axios'
 
 export interface FeatureFlagConfig {
+  id?: string               // Backend feature ID
   enabled: boolean
   description?: string
   type?: 'development' | 'ops' | 'experiment'
@@ -37,6 +39,14 @@ export interface FeatureFlagConfig {
   allowedRoles?: string[]
   allowedUsers?: string[]
   environments?: string[]
+  // Metadata for filtering related entities
+  controlledMetrics?: string[]  // Usage metric types controlled by this flag
+  controlledFeatures?: string[] // Generic features controlled by this flag
+  // Backend metadata
+  module?: string           // Feature module/category
+  name?: string             // Backend feature name
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface FeatureFlags {
@@ -61,6 +71,10 @@ export interface FeatureFlags {
 export class FeatureFlagService {
   private static instance: FeatureFlagService
   private flags: FeatureFlags
+  private readonly STORAGE_KEY = 'ocf_feature_flags'
+  private readonly CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+  private lastFetch: number = 0
+  private isFetching: boolean = false
 
   private constructor() {
     // Default feature flag configuration - using reactive for Vue reactivity
@@ -86,14 +100,18 @@ export class FeatureFlagService {
         enabled: true,
         description: 'Enable course conception and design features',
         type: 'ops',
-        allowedRoles: ['administrator', 'teacher']
+        allowedRoles: ['administrator', 'teacher'],
+        controlledMetrics: ['courses'], // Hide course-related usage metrics when disabled
+        controlledFeatures: ['course_creation', 'course_editing']
       },
       // Terminal/Labs Features
       terminal_management: {
         enabled: true,
         description: 'Enable terminal and practical work features',
         type: 'ops',
-        allowedRoles: ['administrator', 'teacher', 'student']
+        allowedRoles: ['administrator', 'teacher', 'student'],
+        controlledMetrics: ['concurrent_terminals', 'lab_sessions'], // Hide terminal-related metrics when disabled
+        controlledFeatures: ['terminal_access', 'lab_management']
       },
       // Documentation Features
       help_documentation: {
@@ -103,8 +121,16 @@ export class FeatureFlagService {
       }
     })
 
-    // Load flags from environment variables (if any)
+    // Load flags from environment variables only
+    // Backend API is the source of truth (loaded async)
     this.loadEnvironmentFlags()
+
+    // Fetch from backend immediately (blocks initial checks)
+    this.fetchFromBackend().catch(err => {
+      console.warn('⚠️ Failed to fetch feature flags from backend, using defaults:', err)
+      // Only load localStorage as emergency fallback if backend fails
+      this.loadLocalStorageFlags()
+    })
   }
 
   static getInstance(): FeatureFlagService {
@@ -128,6 +154,219 @@ export class FeatureFlagService {
         console.log(`🏴 Feature flag "${flagName}" set from environment: ${this.flags[flagName].enabled}`)
       }
     })
+  }
+
+  /**
+   * Load feature flags from localStorage (EMERGENCY FALLBACK ONLY)
+   * Only called when backend fetch fails
+   * LocalStorage values are only written when admin manually toggles flags
+   */
+  private loadLocalStorageFlags(): void {
+    try {
+      const stored = localStorage.getItem(this.STORAGE_KEY)
+      if (stored) {
+        const storedFlags = JSON.parse(stored)
+        Object.keys(storedFlags).forEach(flagName => {
+          if (this.flags[flagName] && storedFlags[flagName].enabled !== undefined) {
+            this.flags[flagName].enabled = storedFlags[flagName].enabled
+            console.log(`🏴 Feature flag "${flagName}" loaded from localStorage (fallback): ${this.flags[flagName].enabled}`)
+          }
+        })
+      }
+    } catch (error) {
+      console.warn('Failed to load feature flags from localStorage:', error)
+    }
+  }
+
+  /**
+   * Save current feature flags to localStorage
+   */
+  private saveToLocalStorage(): void {
+    try {
+      const flagsToStore: Record<string, { enabled: boolean }> = {}
+      Object.keys(this.flags).forEach(flagName => {
+        flagsToStore[flagName] = { enabled: this.flags[flagName].enabled }
+      })
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(flagsToStore))
+      console.log('🏴 Feature flags saved to localStorage')
+    } catch (error) {
+      console.warn('Failed to save feature flags to localStorage:', error)
+    }
+  }
+
+  /**
+   * Clear localStorage and reload from backend
+   */
+  clearLocalStorage(): void {
+    try {
+      localStorage.removeItem(this.STORAGE_KEY)
+      console.log('🏴 Feature flags cleared from localStorage')
+      // Force reload from backend
+      this.fetchFromBackend(true).catch(err => {
+        console.warn('Failed to reload from backend:', err)
+        // Fallback to environment defaults
+        this.loadEnvironmentFlags()
+      })
+    } catch (error) {
+      console.warn('Failed to clear feature flags from localStorage:', error)
+    }
+  }
+
+  /**
+   * Fetch feature flags from backend API
+   * Uses caching with TTL to avoid excessive requests
+   */
+  async fetchFromBackend(force: boolean = false): Promise<void> {
+    const now = Date.now()
+    const cacheValid = (now - this.lastFetch) < this.CACHE_TTL
+
+    // Skip if cache is valid and not forced
+    if (!force && cacheValid) {
+      console.log('🏴 Using cached feature flags')
+      return
+    }
+
+    // Prevent concurrent fetches
+    if (this.isFetching) {
+      console.log('🏴 Feature flags fetch already in progress')
+      return
+    }
+
+    this.isFetching = true
+
+    try {
+      console.log(`🏴 Fetching from: GET /features`)
+      const response = await axios.get('/features')
+      console.log(`🏴 Backend response status: ${response.status}`)
+      console.log(`🏴 Backend response headers:`, response.headers)
+      console.log(`🏴 Backend response data (raw):`, response.data)
+      console.log(`🏴 Backend response data type:`, typeof response.data)
+      console.log(`🏴 Is array?`, Array.isArray(response.data))
+
+      // Handle paginated response (data is inside response.data.data)
+      const backendFeatures = Array.isArray(response.data)
+        ? response.data
+        : response.data.data || []
+
+      if (Array.isArray(backendFeatures) && backendFeatures.length > 0) {
+        console.log(`🏴 Backend returned ${backendFeatures.length} features:`, backendFeatures)
+
+        backendFeatures.forEach((feature: any) => {
+          // Backend uses 'key' field, not 'name'
+          const backendKey = feature.key || feature.name
+          const flagKey = this.mapBackendFeatureToFlagKey(backendKey)
+          console.log(`🏴 Mapping backend key="${feature.key}" name="${feature.name}" → frontend "${flagKey}" (enabled: ${feature.enabled})`)
+
+          if (this.flags[flagKey]) {
+            // Merge backend data with existing config
+            const oldEnabled = this.flags[flagKey].enabled
+            this.flags[flagKey] = {
+              ...this.flags[flagKey],
+              id: feature.id,
+              enabled: feature.enabled, // Backend is source of truth
+              description: feature.description || this.flags[flagKey].description,
+              module: feature.module,
+              name: feature.name, // Human-readable name
+              createdAt: feature.created_at || feature.createdAt,
+              updatedAt: feature.updated_at || feature.updatedAt
+            }
+
+            if (oldEnabled !== feature.enabled) {
+              console.log(`🏴 Updated "${flagKey}": ${oldEnabled} → ${feature.enabled} (from backend)`)
+            }
+          } else {
+            console.warn(`🏴 Backend feature key="${feature.key}" name="${feature.name}" (mapped to "${flagKey}") not found in frontend flags`)
+            console.warn(`🏴 Available frontend flags:`, Object.keys(this.flags))
+          }
+        })
+
+        this.lastFetch = now
+        console.log(`✅ Feature flags synced from backend (${backendFeatures.length} features)`)
+      } else {
+        console.error(`❌ Backend response is not an array!`, {
+          type: typeof backendFeatures,
+          isNull: backendFeatures === null,
+          isObject: typeof backendFeatures === 'object',
+          keys: backendFeatures ? Object.keys(backendFeatures) : null,
+          value: backendFeatures
+        })
+      }
+    } catch (error: any) {
+      console.error(`❌ Failed to fetch feature flags from backend:`, {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        url: error.config?.url
+      })
+      // Fallback to cached/local values - don't throw
+    } finally {
+      this.isFetching = false
+    }
+  }
+
+  /**
+   * Map backend feature key to frontend flag key
+   * Backend already sends keys in snake_case format
+   * Map special cases where backend and frontend keys differ
+   */
+  private mapBackendFeatureToFlagKey(backendKey: string): string {
+    // Special mappings for backend -> frontend
+    const keyMap: Record<string, string> = {
+      'labs': 'terminal_management',  // Backend "labs" -> Frontend "terminal_management"
+      'terminals': 'terminal_management', // Backend "terminals" -> Frontend "terminal_management"
+      'course_conception': 'course_conception', // Direct match
+      // Add more mappings as needed
+    }
+
+    // Return mapped key or original key (already in correct format)
+    return keyMap[backendKey] || backendKey
+  }
+
+  /**
+   * Sync feature flag changes to backend
+   */
+  async syncToBackend(flagKey: string): Promise<void> {
+    const flag = this.flags[flagKey]
+    if (!flag || !flag.id) {
+      console.warn(`⚠️ Cannot sync flag "${flagKey}" - no backend ID`, flag)
+      return
+    }
+
+    const payload = { enabled: flag.enabled }
+    console.log(`🏴 Syncing "${flagKey}" to backend:`, {
+      url: `/features/${flag.id}`,
+      method: 'PATCH',
+      payload,
+      flagName: flag.name
+    })
+
+    try {
+      const response = await axios.patch(`/features/${flag.id}`, payload)
+      console.log(`✅ Feature flag "${flagKey}" synced to backend successfully`, response.data)
+    } catch (error: any) {
+      console.error(`❌ Failed to sync feature flag "${flagKey}":`, {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      })
+      throw error
+    }
+  }
+
+  /**
+   * Sync usage limits after toggling course/terminal features
+   */
+  async syncUsageLimits(): Promise<void> {
+    try {
+      const response = await axios.post('/subscriptions/sync-usage-limits')
+      console.log('🏴 Usage limits synced:', response.data)
+      return response.data
+    } catch (error: any) {
+      console.error('Failed to sync usage limits:', error)
+      throw error
+    }
   }
 
   /**
@@ -179,11 +418,55 @@ export class FeatureFlagService {
 
   /**
    * Update a feature flag (for admin interface)
+   * Syncs to backend if backend ID exists
    */
-  updateFlag(flagName: string, config: Partial<FeatureFlagConfig>): void {
+  async updateFlag(flagName: string, config: Partial<FeatureFlagConfig>): Promise<void> {
     if (this.flags[flagName]) {
+      const oldEnabled = this.flags[flagName].enabled
+      const hasBackendId = !!this.flags[flagName].id
+
+      console.log(`🏴 updateFlag("${flagName}")`, {
+        oldEnabled,
+        newEnabled: config.enabled,
+        hasBackendId,
+        backendId: this.flags[flagName].id,
+        backendName: this.flags[flagName].name
+      })
+
       this.flags[flagName] = { ...this.flags[flagName], ...config }
       this.logFlagChange(flagName, config)
+
+      // Persist to localStorage (local override)
+      this.saveToLocalStorage()
+
+      // Sync to backend if we have a backend ID
+      if (this.flags[flagName].id && config.enabled !== undefined) {
+        console.log(`🏴 Flag has backend ID, syncing to backend...`)
+        try {
+          await this.syncToBackend(flagName)
+
+          // Auto-sync usage limits if toggling course/terminal features
+          if (oldEnabled !== config.enabled &&
+              (this.flags[flagName].controlledMetrics?.length || 0) > 0) {
+            console.log(`🏴 Feature "${flagName}" affects metrics, syncing usage limits...`)
+            await this.syncUsageLimits()
+          }
+        } catch (error) {
+          console.error(`❌ Failed to sync "${flagName}" to backend:`, error)
+          // Revert local change on backend failure
+          this.flags[flagName].enabled = oldEnabled
+          this.saveToLocalStorage()
+          throw error
+        }
+      } else {
+        console.warn(`⚠️ Flag "${flagName}" NOT synced to backend`, {
+          reason: !this.flags[flagName].id ? 'No backend ID' : 'enabled not in config',
+          hasId: !!this.flags[flagName].id,
+          configKeys: Object.keys(config)
+        })
+      }
+    } else {
+      console.error(`❌ Flag "${flagName}" not found in flags`)
     }
   }
 
@@ -193,6 +476,8 @@ export class FeatureFlagService {
   addFlag(flagName: string, config: FeatureFlagConfig): void {
     this.flags[flagName] = config
     this.logFlagChange(flagName, config)
+    // Persist to localStorage
+    this.saveToLocalStorage()
   }
 
   /**
@@ -209,6 +494,69 @@ export class FeatureFlagService {
   }
 
   /**
+   * Check if a specific metric type should be visible based on feature flags
+   */
+  isMetricVisible(
+    metricType: string,
+    actor?: { userId?: string, role?: string, projectId?: string }
+  ): boolean {
+    // Check all feature flags to see if any control this metric type
+    for (const [flagName, flag] of Object.entries(this.flags)) {
+      if (flag.controlledMetrics?.includes(metricType)) {
+        // If a flag controls this metric, check if that flag is enabled
+        if (!this.isEnabled(flagName, actor)) {
+          return false
+        }
+      }
+    }
+    return true
+  }
+
+  /**
+   * Check if a specific feature should be visible based on feature flags
+   */
+  isFeatureVisible(
+    featureName: string,
+    actor?: { userId?: string, role?: string, projectId?: string }
+  ): boolean {
+    // Check all feature flags to see if any control this feature
+    for (const [flagName, flag] of Object.entries(this.flags)) {
+      if (flag.controlledFeatures?.includes(featureName)) {
+        // If a flag controls this feature, check if that flag is enabled
+        if (!this.isEnabled(flagName, actor)) {
+          return false
+        }
+      }
+    }
+    return true
+  }
+
+  /**
+   * Get all visible metric types based on current feature flags
+   */
+  getVisibleMetricTypes(
+    actor?: { userId?: string, role?: string, projectId?: string }
+  ): Set<string> {
+    const allMetricTypes = new Set<string>()
+    const hiddenMetricTypes = new Set<string>()
+
+    // Collect all controlled metrics
+    Object.entries(this.flags).forEach(([flagName, flag]) => {
+      if (flag.controlledMetrics) {
+        flag.controlledMetrics.forEach(metric => {
+          allMetricTypes.add(metric)
+          if (!this.isEnabled(flagName, actor)) {
+            hiddenMetricTypes.add(metric)
+          }
+        })
+      }
+    })
+
+    // Return only visible ones
+    return new Set([...allMetricTypes].filter(m => !hiddenMetricTypes.has(m)))
+  }
+
+  /**
    * Log feature flag changes
    */
   private logFlagChange(flagName: string, config: Partial<FeatureFlagConfig>): void {
@@ -219,20 +567,10 @@ export class FeatureFlagService {
 // Export singleton instance
 export const featureFlagService = FeatureFlagService.getInstance()
 
-// Export convenience functions (GitLab style)
+// Export convenience function (GitLab style)
 export const isFeatureEnabled = (
   flagName: string,
   actor?: { userId?: string, role?: string, projectId?: string }
 ): boolean => {
   return featureFlagService.isEnabled(flagName, actor)
-}
-
-// Vue 3 Composable for feature flags
-export function useFeatureFlags() {
-  return {
-    isEnabled: isFeatureEnabled,
-    getAllFlags: () => featureFlagService.getAllFlags(),
-    updateFlag: (flagName: string, config: Partial<FeatureFlagConfig>) =>
-      featureFlagService.updateFlag(flagName, config)
-  }
 }

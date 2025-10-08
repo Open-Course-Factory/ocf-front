@@ -24,11 +24,24 @@
 <template>
   <div class="feature-flags-debug">
     <div class="debug-header">
-      <h3>🏴 Feature Flags Debug Panel</h3>
+      <h3>🏴 Feature Flags Management</h3>
       <p class="debug-note">
         <i class="fas fa-info-circle"></i>
-        Admin-only debug interface for testing feature flags
+        Admin-only interface for managing feature flags (Backend-synced)
       </p>
+    </div>
+
+    <!-- Error message -->
+    <div v-if="error" class="alert alert-danger">
+      <i class="fas fa-exclamation-triangle"></i>
+      {{ error }}
+      <button @click="error = null" class="btn-close">×</button>
+    </div>
+
+    <!-- Loading indicator -->
+    <div v-if="isLoading" class="loading-overlay">
+      <i class="fas fa-spinner fa-spin fa-2x"></i>
+      <p>Loading feature flags from backend...</p>
     </div>
 
     <div class="flags-grid">
@@ -93,26 +106,66 @@
     </div>
 
     <div class="debug-actions">
-      <button @click="refreshFlags" class="btn btn-secondary">
-        <i class="fas fa-sync"></i> Refresh Flags
+      <button @click="refreshFlags" class="btn btn-secondary" :disabled="isLoading">
+        <i :class="isLoading ? 'fas fa-spinner fa-spin' : 'fas fa-sync'"></i>
+        {{ isLoading ? 'Loading...' : 'Refresh from Backend' }}
       </button>
-      <button @click="resetToDefaults" class="btn btn-warning">
-        <i class="fas fa-undo"></i> Reset to Defaults
+      <button @click="syncLimits" class="btn btn-primary" :disabled="isSyncing">
+        <i :class="isSyncing ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'"></i>
+        {{ isSyncing ? 'Syncing...' : 'Sync Usage Limits' }}
+      </button>
+      <button @click="diagnose" class="btn btn-info">
+        <i class="fas fa-stethoscope"></i> Diagnose
+      </button>
+      <button @click="resetToDefaults" class="btn btn-warning" :disabled="isLoading">
+        <i class="fas fa-undo"></i> Reset All to Enabled
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick } from 'vue'
+import { computed, nextTick, ref, onMounted } from 'vue'
 import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import { useCurrentUserStore } from '../../stores/currentUser'
 
-const { flags, isEnabled, updateFlag } = useFeatureFlags()
+const { flags, isEnabled, updateFlag, fetchFromBackend, syncUsageLimits } = useFeatureFlags()
 const currentUser = useCurrentUserStore()
+
+// Loading states
+const isLoading = ref(false)
+const isSyncing = ref(false)
+const error = ref<string | null>(null)
 
 // Only show for administrators
 const isAdmin = computed(() => currentUser.userRoles[0] === 'administrator')
+
+// Load from backend on mount
+onMounted(async () => {
+  if (isAdmin.value) {
+    isLoading.value = true
+    error.value = null
+    try {
+      console.log('🏴 Admin panel: Fetching feature flags from backend...')
+      await fetchFromBackend(true) // Force fetch
+      console.log('🏴 Admin panel: Backend fetch complete, flags:', flags.value)
+
+      // Check if flags have backend IDs
+      const flagsWithoutIds = Object.entries(flags.value)
+        .filter(([_, flag]) => !flag.id)
+        .map(([name]) => name)
+
+      if (flagsWithoutIds.length > 0) {
+        console.warn('⚠️ Some flags missing backend IDs:', flagsWithoutIds)
+      }
+    } catch (err) {
+      error.value = 'Failed to load feature flags from backend'
+      console.error('❌ Admin panel: Backend fetch failed:', err)
+    } finally {
+      isLoading.value = false
+    }
+  }
+})
 
 // Force reactivity by computing a summary
 const flagSummary = computed(() => {
@@ -132,11 +185,18 @@ async function toggleFlag(flagName: string, event: Event) {
   }
 
   const target = event.target as HTMLInputElement
-  updateFlag(flagName, { enabled: target.checked })
+  error.value = null
 
-  // Force a small delay to ensure reactivity propagates
-  await nextTick()
-  console.log(`🏴 Feature flag "${flagName}" toggled to: ${target.checked}`)
+  try {
+    await updateFlag(flagName, { enabled: target.checked })
+    // Force a small delay to ensure reactivity propagates
+    await nextTick()
+    console.log(`🏴 Feature flag "${flagName}" toggled to: ${target.checked}`)
+  } catch (err: any) {
+    error.value = `Failed to update ${flagName}: ${err.message}`
+    // Revert checkbox
+    target.checked = !target.checked
+  }
 }
 
 function getEnvValue(flagName: string): string | undefined {
@@ -144,18 +204,88 @@ function getEnvValue(flagName: string): string | undefined {
   return import.meta.env[envVar]
 }
 
-function refreshFlags() {
-  console.log('🏴 Refreshing feature flags...')
-  window.location.reload()
+async function refreshFlags() {
+  console.log('🏴 Refreshing feature flags from backend...')
+  isLoading.value = true
+  error.value = null
+
+  try {
+    await fetchFromBackend(true) // Force refresh
+  } catch (err: any) {
+    error.value = `Failed to refresh: ${err.message}`
+  } finally {
+    isLoading.value = false
+  }
 }
 
-function resetToDefaults() {
+async function syncLimits() {
   if (!isAdmin.value) return
 
-  console.log('🏴 Resetting feature flags to defaults...')
-  Object.keys(flags.value).forEach(flagName => {
-    updateFlag(flagName, { enabled: true })
+  console.log('🏴 Syncing usage limits...')
+  isSyncing.value = true
+  error.value = null
+
+  try {
+    await syncUsageLimits()
+    alert('✅ Usage limits synced successfully!')
+  } catch (err: any) {
+    error.value = `Failed to sync limits: ${err.message}`
+  } finally {
+    isSyncing.value = false
+  }
+}
+
+function diagnose() {
+  console.log('🏴 === FEATURE FLAGS DIAGNOSTIC ===')
+  console.log('Current flags:', flags.value)
+
+  const flagsWithIds: string[] = []
+  const flagsWithoutIds: string[] = []
+
+  Object.entries(flags.value).forEach(([name, flag]) => {
+    const info = {
+      name,
+      enabled: flag.enabled,
+      hasBackendId: !!flag.id,
+      backendId: flag.id,
+      backendName: flag.name,
+      module: flag.module
+    }
+
+    if (flag.id) {
+      flagsWithIds.push(name)
+    } else {
+      flagsWithoutIds.push(name)
+    }
+
+    console.log(`  ${name}:`, info)
   })
+
+  console.log('✅ Flags WITH backend IDs:', flagsWithIds)
+  console.log('❌ Flags WITHOUT backend IDs:', flagsWithoutIds)
+  console.log('localStorage:', localStorage.getItem('ocf_feature_flags'))
+  console.log('=== END DIAGNOSTIC ===')
+
+  alert(`Diagnostic complete! Check console.\n\n✅ ${flagsWithIds.length} flags have backend IDs\n❌ ${flagsWithoutIds.length} flags missing backend IDs`)
+}
+
+async function resetToDefaults() {
+  if (!isAdmin.value) return
+
+  if (!confirm('Reset all feature flags to enabled? This will sync to backend.')) {
+    return
+  }
+
+  console.log('🏴 Resetting feature flags to defaults...')
+  error.value = null
+
+  try {
+    for (const flagName of Object.keys(flags.value)) {
+      await updateFlag(flagName, { enabled: true })
+    }
+  } catch (err: any) {
+    error.value = `Failed to reset flags: ${err.message}`
+  }
 }
 
 // Hide component for non-admins
@@ -374,21 +504,41 @@ input:checked + .slider:before {
 }
 
 .debug-actions {
-  text-align: center;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .btn {
   padding: 10px 20px;
-  margin: 0 10px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-weight: 600;
   transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: #007bff;
+  color: white;
 }
 
 .btn-secondary {
   background: #6c757d;
+  color: white;
+}
+
+.btn-info {
+  background: #17a2b8;
   color: white;
 }
 
@@ -397,8 +547,60 @@ input:checked + .slider:before {
   color: #212529;
 }
 
-.btn:hover {
+.btn:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Alert styles */
+.alert {
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.btn-close {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: inherit;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Loading overlay */
+.loading-overlay {
+  text-align: center;
+  padding: 40px 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.loading-overlay i {
+  color: #007bff;
+  margin-bottom: 15px;
+}
+
+.loading-overlay p {
+  color: #6c757d;
+  margin: 0;
 }
 </style>

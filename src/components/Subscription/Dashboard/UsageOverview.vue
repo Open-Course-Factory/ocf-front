@@ -12,10 +12,10 @@
       </button>
     </h3>
 
-    <div v-if="metrics.length > 0" class="usage-grid">
-      <div 
-        v-for="metric in metrics" 
-        :key="metric.metric_type" 
+    <div v-if="visibleMetrics.length > 0" class="usage-grid">
+      <div
+        v-for="metric in visibleMetrics"
+        :key="metric.metric_type"
         class="usage-card"
       >
         <div class="usage-header">
@@ -59,17 +59,20 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useUsageMetricsStore } from '../../../stores/usageMetrics'
 import { useSubscriptionTranslations } from '../composables/useSubscriptionTranslations'
+import { useFeatureFlags } from '../../../composables/useFeatureFlags'
 
 const { t } = useSubscriptionTranslations()
+const { filterByFeatureFlags } = useFeatureFlags()
 
 interface Props {
   metrics: any[]
   isRefreshing?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   isRefreshing: false
 })
 
@@ -78,6 +81,11 @@ const emit = defineEmits<{
 }>()
 
 const usageMetricsStore = useUsageMetricsStore()
+
+// Filter metrics based on feature flags
+const visibleMetrics = computed(() => {
+  return filterByFeatureFlags(props.metrics, 'metric_type')
+})
 
 // Méthodes utilitaires (délégation vers le store)
 function getMetricIcon(metricType: string) {

@@ -21,6 +21,7 @@
 
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import { useCurrentUserStore } from '../stores/currentUser';
+import { featureFlagService } from '../services/featureFlags';
 import Layout from '../components/Layout.vue';
 import Courses from '../components/Pages/Courses.vue';
 import Chapters from '../components/Pages/Chapters.vue';
@@ -132,14 +133,14 @@ const basicRoutes = [
     meta: { requiresAuth: true },
     children: [
       //{ path: 'dashboard', name: 'Dashboard', component: Dashboard, meta: { requiresAuth: true } },
-      { path: 'courses', name: 'Courses', component: Courses, meta: { requiresAuth: true } },
-      { path: 'chapters', name: 'Chapters', component: Chapters, meta: { requiresAuth: true } },
-      { path: 'sections', name: 'Sections', component: Sections, meta: { requiresAuth: true } },
-      { path: 'pages', name: 'Pages', component: Pages, meta: { requiresAuth: true } },
+      { path: 'courses', name: 'Courses', component: Courses, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
+      { path: 'chapters', name: 'Chapters', component: Chapters, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
+      { path: 'sections', name: 'Sections', component: Sections, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
+      { path: 'pages', name: 'Pages', component: Pages, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
       { path: 'schedules', name: 'Schedules', component: Schedules, meta: { requiresAuth: true } },
       { path: 'themes', name: 'Themes', component: Themes, meta: { requiresAuth: true } },
       { path: 'generations', name: 'Generations', component: Generations, meta: { requiresAuth: true } },
-      { path: 'terminal-creation', name: 'TerminalCreation', component: TerminalCreation, meta: { requiresAuth: true } },
+      { path: 'terminal-creation', name: 'TerminalCreation', component: TerminalCreation, meta: { requiresAuth: true, requiresFeature: 'terminal_management' } },
       { path: 'terminal-sessions', name: 'TerminalSessions', component: TerminalMySessions, meta: { requiresAuth: true } },
       { path: 'terminal-shared', name: 'TerminalSharedWithMe', component: TerminalSharedWithMe, meta: { requiresAuth: true } },
       { path: 'user-terminal-keys', name: 'UserTerminalKeys', component: UserTerminalKeys, meta: { requiresAuth: true } },
@@ -275,15 +276,36 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   const currentUserStore = useCurrentUserStore();
 
+  // Check authentication first
   if (to.matched.some(record => record.meta.requiresAuth)) {
     if (!currentUserStore.isAuthenticated) {
       next({ name: 'Login' });
-    } else {
-      next();
+      return;
     }
-  } else {
-    next();
   }
+
+  // Check feature flags (deep link protection)
+  const requiredFeature = to.meta.requiresFeature as string | undefined;
+  if (requiredFeature) {
+    const actor = currentUserStore.currentUser ? {
+      userId: currentUserStore.currentUser.id,
+      role: currentUserStore.currentUser.role
+    } : undefined;
+
+    const isFeatureEnabled = featureFlagService.isEnabled(requiredFeature, actor);
+
+    if (!isFeatureEnabled) {
+      console.warn(`🏴 Access denied: Feature "${requiredFeature}" is disabled`);
+      // Redirect to home with error message
+      next({
+        name: 'LandingPage',
+        query: { error: 'feature_disabled', feature: requiredFeature }
+      });
+      return;
+    }
+  }
+
+  next();
 });
 
 export default router;

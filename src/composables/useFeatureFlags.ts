@@ -63,13 +63,34 @@ export function useFeatureFlags() {
   /**
    * Update a feature flag (admin only)
    */
-  const updateFlag = (flagName: string, config: Partial<FeatureFlagConfig>) => {
+  const updateFlag = async (flagName: string, config: Partial<FeatureFlagConfig>) => {
     const actor = getCurrentActor()
     if (actor.role === 'administrator') {
-      featureFlagService.updateFlag(flagName, config)
+      await featureFlagService.updateFlag(flagName, config)
     } else {
       console.warn('🏴 Only administrators can update feature flags')
     }
+  }
+
+  /**
+   * Fetch feature flags from backend
+   */
+  const fetchFromBackend = async (force?: boolean) => {
+    await featureFlagService.fetchFromBackend(force)
+  }
+
+  /**
+   * Sync usage limits
+   */
+  const syncUsageLimits = async () => {
+    await featureFlagService.syncUsageLimits()
+  }
+
+  /**
+   * Clear localStorage overrides
+   */
+  const clearLocalStorage = () => {
+    featureFlagService.clearLocalStorage()
   }
 
   /**
@@ -86,6 +107,45 @@ export function useFeatureFlags() {
     return flagNames.some(flagName => isEnabled(flagName))
   }
 
+  /**
+   * Check if a metric type is visible (for filtering)
+   */
+  const isMetricVisible = (metricType: string) => {
+    const actor = getCurrentActor()
+    return featureFlagService.isMetricVisible(metricType, actor)
+  }
+
+  /**
+   * Check if a feature is visible (for filtering)
+   */
+  const isFeatureVisible = (featureName: string) => {
+    const actor = getCurrentActor()
+    return featureFlagService.isFeatureVisible(featureName, actor)
+  }
+
+  /**
+   * Get all visible metric types
+   */
+  const getVisibleMetricTypes = () => {
+    const actor = getCurrentActor()
+    return featureFlagService.getVisibleMetricTypes(actor)
+  }
+
+  /**
+   * Generic filter function for any array of entities with a type/category field
+   */
+  const filterByFeatureFlags = <T extends Record<string, any>>(
+    entities: T[],
+    typeField: keyof T
+  ): T[] => {
+    const actor = getCurrentActor()
+    return entities.filter(entity => {
+      const entityType = entity[typeField]
+      if (!entityType) return true // If no type field, always show
+      return featureFlagService.isMetricVisible(entityType.toString(), actor)
+    })
+  }
+
   return {
     isEnabled,
     createReactiveFlag,
@@ -93,6 +153,13 @@ export function useFeatureFlags() {
     anyEnabled,
     flags,
     updateFlag,
+    fetchFromBackend,
+    syncUsageLimits,
+    clearLocalStorage,
+    isMetricVisible,
+    isFeatureVisible,
+    getVisibleMetricTypes,
+    filterByFeatureFlags,
     getCurrentActor
   }
 }
