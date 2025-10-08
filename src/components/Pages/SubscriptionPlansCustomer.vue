@@ -38,8 +38,14 @@
         <div
           v-for="plan in filteredPlans"
           :key="plan.id"
-          :class="['plan-card-compact', { 'current-plan': isCurrentPlan(plan) }]"
+          :class="['plan-card-compact', { 'current-plan': isCurrentPlan(plan), 'coming-soon-plan': !plan.is_active }]"
         >
+          <!-- Coming Soon Badge -->
+          <div v-if="!plan.is_active" class="coming-soon-badge">
+            <i class="fas fa-clock"></i>
+            Coming Soon
+          </div>
+
           <!-- Plan Header with Status -->
           <div class="plan-header-compact">
             <div class="plan-title-section">
@@ -49,7 +55,7 @@
                 Current
               </div>
             </div>
-            <div class="plan-price-compact">
+            <div v-if="plan.is_active" class="plan-price-compact">
               <span class="price-amount-compact">{{ formatPrice(plan.price_amount, plan.currency) }}</span>
               <span class="billing-period-compact">{{ plan.billing_interval }}</span>
             </div>
@@ -60,21 +66,34 @@
             <!-- Left Column: Key Features -->
             <div class="features-column">
               <div class="key-features">
-                <div class="feature-item">
-                  <i class="fas fa-users"></i>
-                  <span>{{ plan.max_concurrent_users === -1 ? 'Unlimited' : plan.max_concurrent_users }} {{ t('subscriptionPlans.concurrentTerminals') }}</span>
-                </div>
-                <div v-if="plan.features && plan.features.find(f => f.includes('hour'))" class="feature-item">
-                  <i class="fas fa-clock"></i>
-                  <span>{{ plan.features.find(f => f.includes('hour')) }}</span>
-                </div>
-                <div v-if="plan.features && plan.features.find(f => f.includes('machine'))" class="feature-item">
+                <!-- Machine Size -->
+                <div v-if="plan.allowed_machine_sizes && plan.allowed_machine_sizes.length > 0" class="feature-item">
                   <i class="fas fa-server"></i>
-                  <span>{{ plan.features.find(f => f.includes('machine')) }}</span>
+                  <span>{{ plan.allowed_machine_sizes.join(', ') }} machine(s)</span>
                 </div>
-                <div v-if="plan.features && plan.features.find(f => f.includes('GB') || f.includes('persistence'))" class="feature-item">
+
+                <!-- Session Duration -->
+                <div v-if="plan.max_session_duration_minutes" class="feature-item">
+                  <i class="fas fa-clock"></i>
+                  <span>{{ formatSessionDuration(plan.max_session_duration_minutes) }}</span>
+                </div>
+
+                <!-- Concurrent Terminals -->
+                <div v-if="plan.max_concurrent_terminals" class="feature-item">
+                  <i class="fas fa-terminal"></i>
+                  <span>{{ plan.max_concurrent_terminals }} {{ plan.max_concurrent_terminals === 1 ? 'terminal' : 'terminals' }}</span>
+                </div>
+
+                <!-- Storage -->
+                <div class="feature-item">
                   <i class="fas fa-hdd"></i>
-                  <span>{{ plan.features.find(f => f.includes('GB') || f.includes('persistence')) }}</span>
+                  <span>{{ formatStorage(plan) }}</span>
+                </div>
+
+                <!-- Network Access -->
+                <div class="feature-item">
+                  <i class="fas fa-network-wired"></i>
+                  <span>{{ plan.network_access_enabled ? 'Outbound network' : 'No network access' }}</span>
                 </div>
               </div>
             </div>
@@ -104,6 +123,19 @@
           <div v-if="plan.description" class="plan-description-compact">
             {{ plan.description }}
           </div>
+
+          <!-- Planned Features (Coming Soon) -->
+          <div v-if="plan.planned_features && plan.planned_features.length > 0" class="planned-features-section">
+            <div class="planned-features-header">
+              <i class="fas fa-clock"></i>
+              <span>Coming Soon</span>
+            </div>
+            <ul class="planned-features-list">
+              <li v-for="(feature, index) in plan.planned_features" :key="index" class="planned-feature-item">
+                {{ feature }}
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
 
@@ -112,21 +144,6 @@
         <i class="fas fa-inbox fa-3x"></i>
         <h3>No subscription plans available</h3>
         <p>Please check back later or contact support.</p>
-      </div>
-
-      <!-- Current Subscription Info -->
-      <div v-if="hasCurrentSubscription" class="current-subscription-info">
-        <div class="info-card">
-          <i class="fas fa-info-circle text-info"></i>
-          <div class="info-content">
-            <h4>{{ t('subscriptions.currentPlan') }}</h4>
-            <p>{{ t('subscriptions.changePlanWarning') }}</p>
-            <p class="proration-note">
-              <i class="fas fa-receipt"></i>
-              {{ t('subscriptions.prorationAlwaysInvoiceDesc') }}
-            </p>
-          </div>
-        </div>
       </div>
 
     </div>
@@ -158,11 +175,8 @@ const isAdmin = computed(() =>
 )
 
 const filteredPlans = computed(() => {
-  if (isAdmin.value) {
-    return entityStore.entities
-  }
-  // Regular users only see active plans
-  return entityStore.entities.filter((plan: any) => plan.is_active)
+  // Show all plans to everyone, but mark inactive ones as "Coming Soon"
+  return entityStore.entities
 })
 
 const currentPlanId = computed(() => {
@@ -191,6 +205,11 @@ const isCurrentPlan = (plan: any) => {
 }
 
 const getPlanButtonText = (plan: any) => {
+  // Check if plan is inactive (coming soon)
+  if (!plan.is_active) {
+    return 'Coming Soon'
+  }
+
   if (!hasCurrentSubscription.value) {
     return plan.trial_days > 0 ? 'Start Trial' : 'Subscribe'
   }
@@ -208,6 +227,19 @@ const getPlanButtonText = (plan: any) => {
   } else {
     return 'Change Plan'
   }
+}
+
+// Format helper functions for new fields
+function formatSessionDuration(minutes: number): string {
+  const hours = minutes / 60
+  return hours === 1 ? '1 hour max' : `${hours} hours max`
+}
+
+function formatStorage(plan: any): string {
+  if (!plan.data_persistence_enabled) {
+    return 'Ephemeral only'
+  }
+  return `${plan.data_persistence_gb}GB storage`
 }
 
 // Methods
@@ -353,6 +385,35 @@ async function selectPlan(plan: any) {
   box-shadow: 0 4px 15px rgba(40, 167, 69, 0.2);
 }
 
+.plan-card-compact.coming-soon-plan {
+  opacity: 0.7;
+  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+  position: relative;
+}
+
+.plan-card-compact.coming-soon-plan:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Coming Soon Badge */
+.coming-soon-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(255, 152, 0, 0.3);
+}
+
 /* Compact Header */
 .plan-header-compact {
   padding: 15px;
@@ -468,8 +529,14 @@ async function selectPlan(plan: any) {
 }
 
 .btn-subscribe-compact:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
+  background: #6c757d;
+  color: #fff;
+}
+
+.coming-soon-plan .btn-subscribe-compact:disabled {
+  background: #adb5bd;
 }
 
 .current-plan-indicator {
@@ -491,50 +558,49 @@ async function selectPlan(plan: any) {
   margin-top: 10px;
 }
 
-/* Remove old styles - replaced by compact design */
-
-/* Current Subscription Info */
-.current-subscription-info {
-  margin-bottom: 40px;
+/* Planned Features Section */
+.planned-features-section {
+  padding: 15px;
+  border-top: 1px solid #e9ecef;
+  background: #f8f9fa;
+  margin-top: 10px;
 }
 
-.info-card {
-  background: #e3f2fd;
-  border: 1px solid #bbdefb;
-  border-radius: 10px;
-  padding: 20px;
-  display: flex;
-  align-items: flex-start;
-  gap: 15px;
-}
-
-.info-card i {
-  font-size: 1.5rem;
-  margin-top: 2px;
-}
-
-.info-content h4 {
-  margin: 0 0 8px 0;
-  color: #1976d2;
-}
-
-.info-content p {
-  margin: 0 0 8px 0;
-  color: #1976d2;
-  line-height: 1.5;
-}
-
-.info-content p:last-child {
-  margin-bottom: 0;
-}
-
-.proration-note {
+.planned-features-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6c757d;
+  margin-bottom: 10px;
+}
+
+.planned-features-header i {
+  color: #ffc107;
+}
+
+.planned-features-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.planned-feature-item {
+  font-size: 0.8rem;
+  color: #868e96;
+  padding-left: 8px;
+  line-height: 1.4;
   font-style: italic;
-  margin-top: 8px;
+}
+
+.planned-feature-item::before {
+  content: '•';
+  margin-right: 6px;
+  color: #adb5bd;
 }
 
 
@@ -594,11 +660,6 @@ async function selectPlan(plan: any) {
 
   .price-amount {
     font-size: 2rem;
-  }
-
-  .info-card {
-    flex-direction: column;
-    text-align: center;
   }
 }
 </style>

@@ -482,7 +482,7 @@ const selectedInstanceInfo = computed(() => {
 
 // Get allowed machine sizes from subscription
 const allowedMachineSizes = computed(() => {
-  const sizes = currentSubscription.value?.plan_features?.allowed_machine_sizes || []
+  const sizes = currentSubscription.value?.subscription_plan?.allowed_machine_sizes || []
 
   // If no sizes are defined, default to allowing XS (basic free tier)
   if (sizes.length === 0) {

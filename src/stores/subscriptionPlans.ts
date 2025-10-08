@@ -82,7 +82,15 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             downgrade: 'Downgrade',
             syncWithStripe: 'Sync with Stripe',
             syncing: 'Syncing...',
-            syncDescription: 'Synchronizes database plans with Stripe products and prices'
+            syncDescription: 'Synchronizes database plans with Stripe products and prices',
+            comingSoon: 'Coming Soon',
+            max_session_duration_minutes: 'Max Session Duration',
+            max_concurrent_terminals: 'Max Concurrent Terminals',
+            allowed_machine_sizes: 'Allowed Machine Sizes',
+            network_access_enabled: 'Network Access',
+            data_persistence_enabled: 'Data Persistence',
+            data_persistence_gb: 'Storage Size (GB)',
+            allowed_templates: 'Allowed Templates'
         }
     })
 
@@ -137,7 +145,15 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             downgrade: 'Rétrograder',
             syncWithStripe: 'Synchroniser avec Stripe',
             syncing: 'Synchronisation...',
-            syncDescription: 'Synchronise les plans de la base de données avec les produits et prix Stripe'
+            syncDescription: 'Synchronise les plans de la base de données avec les produits et prix Stripe',
+            comingSoon: 'Bientôt disponible',
+            max_session_duration_minutes: 'Durée Max de Session',
+            max_concurrent_terminals: 'Terminaux Simultanés Max',
+            allowed_machine_sizes: 'Tailles de Machine Autorisées',
+            network_access_enabled: 'Accès Réseau',
+            data_persistence_enabled: 'Persistance des Données',
+            data_persistence_gb: 'Taille de Stockage (GB)',
+            allowed_templates: 'Modèles Autorisés'
         }
     })
 
