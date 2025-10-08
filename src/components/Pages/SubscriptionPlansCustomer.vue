@@ -90,8 +90,7 @@
               >
                 <i v-if="isSubscribing" class="fas fa-spinner fa-spin"></i>
                 <i v-else class="fas fa-shopping-cart"></i>
-                <span v-if="plan.trial_days > 0">Start Trial</span>
-                <span v-else>Subscribe</span>
+                <span>{{ getPlanButtonText(plan) }}</span>
               </button>
 
               <div v-else class="current-plan-indicator">
@@ -120,8 +119,12 @@
         <div class="info-card">
           <i class="fas fa-info-circle text-info"></i>
           <div class="info-content">
-            <h4>Current Subscription</h4>
-            <p>You currently have an active subscription. Selecting a new plan will change your current subscription.</p>
+            <h4>{{ t('subscriptions.currentPlan') }}</h4>
+            <p>{{ t('subscriptions.changePlanWarning') }}</p>
+            <p class="proration-note">
+              <i class="fas fa-receipt"></i>
+              {{ t('subscriptions.prorationAlwaysInvoiceDesc') }}
+            </p>
           </div>
         </div>
       </div>
@@ -166,10 +169,8 @@ const currentPlanId = computed(() => {
   const subscription = subscriptionsStore.currentSubscription
   if (!subscription) return null
 
-  // Try different possible plan ID fields
+  // Backend now returns subscription_plan_id (corrected field name)
   const planId = subscription.subscription_plan_id ||
-                 subscription.plan_id ||
-                 subscription.subscription_plans ||
                  subscription.subscription_plan?.id
 
   return planId
@@ -187,6 +188,26 @@ const isCurrentPlan = (plan: any) => {
                         subscription.subscription_plan?.name === plan.name
 
   return planIdMatch || planNameMatch
+}
+
+const getPlanButtonText = (plan: any) => {
+  if (!hasCurrentSubscription.value) {
+    return plan.trial_days > 0 ? 'Start Trial' : 'Subscribe'
+  }
+
+  const currentPlan = filteredPlans.value.find((p: any) => isCurrentPlan(p))
+  if (!currentPlan) {
+    return 'Change Plan'
+  }
+
+  // Compare prices to determine if it's an upgrade or downgrade
+  if (plan.price_amount > currentPlan.price_amount) {
+    return t('subscriptionPlans.upgrade')
+  } else if (plan.price_amount < currentPlan.price_amount) {
+    return t('subscriptionPlans.downgrade')
+  } else {
+    return 'Change Plan'
+  }
 }
 
 // Methods
@@ -222,10 +243,40 @@ async function selectPlan(plan: any) {
 
   isSubscribing.value = true
   try {
-    await entityStore.selectPlan(plan.id)
-    router.push({ name: 'Checkout', params: { planId: plan.id } })
-  } catch (error) {
+    // If user has an active subscription, use the upgrade endpoint
+    if (hasCurrentSubscription.value) {
+      // Show confirmation dialog
+      const confirmed = window.confirm(
+        `${t('subscriptions.changePlanWarning')}\n\n` +
+        `${t('subscriptions.prorationAlwaysInvoiceDesc')}`
+      )
+
+      if (!confirmed) {
+        isSubscribing.value = false
+        return
+      }
+
+      // Call upgrade endpoint with immediate proration
+      await subscriptionsStore.upgradePlan(plan.id, 'always_invoice')
+
+      // Show success message
+      alert(t('subscriptions.planChangedSuccess'))
+
+      // Reload current page to refresh subscription details
+      await checkCurrentSubscription()
+      await loadPlans()
+    } else {
+      // No active subscription - use checkout flow
+      await entityStore.selectPlan(plan.id)
+      router.push({ name: 'Checkout', params: { planId: plan.id } })
+    }
+  } catch (error: any) {
     console.error('Error selecting plan:', error)
+    // Show error from store (already formatted with translations)
+    if (subscriptionsStore.error) {
+      alert(subscriptionsStore.error)
+    }
+  } finally {
     isSubscribing.value = false
   }
 }
@@ -468,9 +519,22 @@ async function selectPlan(plan: any) {
 }
 
 .info-content p {
-  margin: 0;
+  margin: 0 0 8px 0;
   color: #1976d2;
   line-height: 1.5;
+}
+
+.info-content p:last-child {
+  margin-bottom: 0;
+}
+
+.proration-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-style: italic;
+  margin-top: 8px;
 }
 
 

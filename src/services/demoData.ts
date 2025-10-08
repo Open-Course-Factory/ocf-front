@@ -150,7 +150,9 @@ export class DemoDataService {
     const baseSubscription = {
       id: 'demo_sub_123',
       user_id: 'demo_user_123',
+      subscription_plan_id: 'demo_plan_pro_123', // Correct field name from backend
       subscription_plan: {
+        id: 'demo_plan_pro_123',
         name: 'Professional Plan',
         price_amount: 2900,
         currency: 'eur',
@@ -160,6 +162,7 @@ export class DemoDataService {
       plan_price: 2900,
       currency: 'eur',
       billing_interval: 'month',
+      stripe_subscription_id: 'sub_demo_123',
       created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
       updated_at: new Date().toISOString()
     }

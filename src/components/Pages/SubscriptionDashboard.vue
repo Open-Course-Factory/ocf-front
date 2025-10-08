@@ -215,12 +215,15 @@ async function confirmCancellation(cancelImmediately: boolean) {
   isCanceling.value = true
   try {
     await subscriptionsStore.cancelSubscription(
-      subscriptionsStore.currentSubscription.id, 
+      subscriptionsStore.currentSubscription.id,
       cancelImmediately
     )
-    showCancelModal.value = false
+  } catch (err: any) {
+    console.error('Error canceling subscription:', err)
+    error.value = err.response?.data?.error_message || 'Failed to cancel subscription'
   } finally {
     isCanceling.value = false
+    showCancelModal.value = false
   }
 }
 
@@ -230,9 +233,12 @@ async function confirmReactivation() {
   isReactivating.value = true
   try {
     await subscriptionsStore.reactivateSubscription(subscriptionsStore.currentSubscription.id)
-    showReactivateModal.value = false
+  } catch (err: any) {
+    console.error('Error reactivating subscription:', err)
+    error.value = err.response?.data?.error_message || 'Failed to reactivate subscription'
   } finally {
     isReactivating.value = false
+    showReactivateModal.value = false
   }
 }
 

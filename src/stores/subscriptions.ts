@@ -37,8 +37,8 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     const error = ref('')
     const usageMetrics = ref([])
 
-    useI18n().mergeLocaleMessage('en', { 
-        subscriptions: { 
+    useI18n().mergeLocaleMessage('en', {
+        subscriptions: {
             pageTitle: 'My Subscription',
             currentPlan: 'Current Plan',
             status: 'Status',
@@ -81,12 +81,27 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
             plan: 'Plan',
             price: 'Price',
             confirmReactivate: 'Reactivate',
-            cancel: 'Cancel'
+            cancel: 'Cancel',
+            changePlanConfirm: 'Change Subscription Plan',
+            changePlanWarning: 'Are you sure you want to change your subscription plan?',
+            prorationBehavior: 'Billing Adjustment',
+            prorationAlwaysInvoice: 'Immediate adjustment (recommended)',
+            prorationAlwaysInvoiceDesc: 'You will be charged or credited immediately for the plan change',
+            prorationCreateProrations: 'Bill at next cycle',
+            prorationCreateProrationsDesc: 'Changes will be reflected in your next billing cycle',
+            prorationNone: 'No proration',
+            prorationNoneDesc: 'New price takes effect immediately without adjustment',
+            confirmChange: 'Change Plan',
+            planNotAvailableError: 'This plan is not available. Please contact support.',
+            paymentProviderError: 'Payment provider error. Please try again or contact support.',
+            upgradeError: 'Failed to change subscription plan',
+            changingPlan: 'Changing plan...',
+            planChangedSuccess: 'Your subscription plan has been changed successfully!'
         }
     })
 
-    useI18n().mergeLocaleMessage('fr', { 
-        subscriptions: { 
+    useI18n().mergeLocaleMessage('fr', {
+        subscriptions: {
             pageTitle: 'Mon Abonnement',
             currentPlan: 'Plan Actuel',
             status: 'Statut',
@@ -129,7 +144,22 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
             plan: 'Plan',
             price: 'Prix',
             confirmReactivate: 'Réactiver',
-            cancel: 'Annuler'
+            cancel: 'Annuler',
+            changePlanConfirm: 'Changer de Plan d\'Abonnement',
+            changePlanWarning: 'Êtes-vous sûr de vouloir changer votre plan d\'abonnement ?',
+            prorationBehavior: 'Ajustement de Facturation',
+            prorationAlwaysInvoice: 'Ajustement immédiat (recommandé)',
+            prorationAlwaysInvoiceDesc: 'Vous serez facturé ou crédité immédiatement pour le changement de plan',
+            prorationCreateProrations: 'Facturer au prochain cycle',
+            prorationCreateProrationsDesc: 'Les changements seront reflétés dans votre prochain cycle de facturation',
+            prorationNone: 'Pas de proratisation',
+            prorationNoneDesc: 'Le nouveau prix prend effet immédiatement sans ajustement',
+            confirmChange: 'Changer de Plan',
+            planNotAvailableError: 'Ce plan n\'est pas disponible. Veuillez contacter le support.',
+            paymentProviderError: 'Erreur du fournisseur de paiement. Veuillez réessayer ou contacter le support.',
+            upgradeError: 'Échec du changement de plan d\'abonnement',
+            changingPlan: 'Changement de plan...',
+            planChangedSuccess: 'Votre plan d\'abonnement a été changé avec succès !'
         }
     })
 
@@ -301,7 +331,10 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     }
 
     // Mettre à niveau le plan
-    const upgradePlan = async (newPlanId: string) => {
+    const upgradePlan = async (
+        newPlanId: string,
+        prorationBehavior: 'always_invoice' | 'create_prorations' | 'none' = 'always_invoice'
+    ) => {
         isLoading.value = true
         error.value = ''
 
@@ -309,23 +342,53 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
             let result: any
 
             if (isDemoMode()) {
-                logDemoAction('Upgrading demo plan', { newPlanId })
+                logDemoAction('Upgrading demo plan', { newPlanId, prorationBehavior })
                 await simulateDelay(1500)
                 result = { success: true, subscription: getDemoCurrentSubscription('active') }
             } else {
                 const response = await axios.post('/subscriptions/upgrade', {
-                    new_plan_id: newPlanId
+                    new_plan_id: newPlanId,
+                    proration_behavior: prorationBehavior
                 })
                 result = response.data
+                console.log('Upgrade response:', result)
             }
 
-            // Recharger l'abonnement actuel
+            // Wait for Stripe webhook to process (may take 1-3 seconds)
+            console.log('Waiting for webhook to process...')
+            await new Promise(resolve => setTimeout(resolve, 2000))
+
+            // Recharger l'abonnement actuel (first attempt)
+            console.log('Reloading subscription after upgrade (attempt 1)...')
             await getCurrentSubscription()
+            console.log('Updated subscription (attempt 1):', currentSubscription.value)
+
+            // If subscription_plan_id doesn't match the new plan, try one more time
+            if (currentSubscription.value?.subscription_plan_id !== newPlanId) {
+                console.warn('Plan ID mismatch, waiting for webhook... Retrying in 2s')
+                await new Promise(resolve => setTimeout(resolve, 2000))
+
+                console.log('Reloading subscription (attempt 2)...')
+                await getCurrentSubscription()
+                console.log('Updated subscription (attempt 2):', currentSubscription.value)
+            }
+
             await getUsageMetrics()
+            console.log('Updated usage metrics:', usageMetrics.value)
 
             return result
         } catch (err: any) {
-            error.value = err.response?.data?.error_message || 'Erreur lors de la mise à niveau'
+            // Enhanced error handling for Stripe-specific errors
+            const errorMessage = err.response?.data?.error_message || ''
+
+            if (errorMessage.includes('Stripe price')) {
+                error.value = t('subscriptions.planNotAvailableError')
+            } else if (errorMessage.includes('Stripe')) {
+                error.value = t('subscriptions.paymentProviderError')
+            } else {
+                error.value = errorMessage || t('subscriptions.upgradeError')
+            }
+
             throw err
         } finally {
             isLoading.value = false

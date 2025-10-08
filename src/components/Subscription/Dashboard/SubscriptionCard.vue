@@ -206,17 +206,37 @@ const isCanceled = computed(() => props.subscription?.cancel_at_period_end === t
 const currentPlan = computed(() => {
   if (!props.subscription) return null
 
-  const planId = props.subscription.subscription_plans ||
-                 props.subscription.subscription_plan_id ||
-                 props.subscription.plan_id
+  // Backend now returns subscription_plan_id (corrected field name)
+  const planId = props.subscription.subscription_plan_id ||
+                 props.subscription.subscription_plan?.id
 
-  return subscriptionPlansStore.entities.find((plan: any) => plan.id === planId)
+  console.log('[SubscriptionCard] Looking up plan:', {
+    planId,
+    subscription: props.subscription,
+    availablePlans: subscriptionPlansStore.entities.map((p: any) => ({ id: p.id, name: p.name }))
+  })
+
+  const foundPlan = subscriptionPlansStore.entities.find((plan: any) => plan.id === planId)
+
+  console.log('[SubscriptionCard] Found plan:', foundPlan)
+
+  return foundPlan
 })
 
 const planName = computed(() => {
-  return currentPlan.value?.name ||
-         props.subscription?.plan_name ||
-         t('subscriptionPlans.current_subscription_plan')
+  // Always prefer the plan name from the subscription plans store (most up-to-date)
+  // This ensures plan changes are immediately reflected in the UI
+  if (currentPlan.value?.name) {
+    return currentPlan.value.name
+  }
+
+  // Fallback to the denormalized plan_name field (may be stale after plan changes)
+  if (props.subscription?.plan_name) {
+    return props.subscription.plan_name
+  }
+
+  // Final fallback
+  return t('subscriptionPlans.current_subscription_plan')
 })
 
 // Méthodes utilitaires (dupliquées depuis le store subscriptions)
