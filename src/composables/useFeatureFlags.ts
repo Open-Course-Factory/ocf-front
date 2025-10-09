@@ -80,6 +80,13 @@ export function useFeatureFlags() {
   }
 
   /**
+   * Wait for feature flags to initialize from backend
+   */
+  const waitForInitialization = async () => {
+    await featureFlagService.waitForInitialization()
+  }
+
+  /**
    * Sync usage limits
    */
   const syncUsageLimits = async () => {
@@ -154,6 +161,7 @@ export function useFeatureFlags() {
     flags,
     updateFlag,
     fetchFromBackend,
+    waitForInitialization,
     syncUsageLimits,
     clearLocalStorage,
     isMetricVisible,

@@ -57,12 +57,14 @@ import { useCurrentUserStore } from '../../stores/currentUser.ts';
 import { useUserSettingsStore } from '../../stores/userSettings.ts';
 import { useLocale } from '../../composables/useLocale';
 import { useTheme } from '../../composables/useTheme';
+import { useFeatureFlags } from '../../composables/useFeatureFlags';
 
 const loginStore = useLoginStore();
 const currentUserStore = useCurrentUserStore();
 const settingsStore = useUserSettingsStore();
 const { setLocale } = useLocale();
 const { setTheme } = useTheme();
+const { isEnabled, waitForInitialization } = useFeatureFlags();
 const errorMessage = ref('');
 
 async function handleSubmit() {
@@ -88,6 +90,9 @@ async function handleSubmit() {
 async function redirect() {
   if (currentUserStore.secretToken) {
     try {
+      // Wait for feature flags to initialize from backend
+      await waitForInitialization();
+
       // Load user settings
       const settings = await settingsStore.loadSettings();
 
@@ -99,12 +104,38 @@ async function redirect() {
         setTheme(settings.theme as 'light' | 'dark' | 'auto');
       }
 
-      // Redirect to preferred landing page or default to courses
-      const landingPage = settings.default_landing_page || '/courses';
+      // Determine redirect based on user preference and feature flags
+      let landingPage = settings.default_landing_page;
+
+      // If user has a landing page preference, validate it's enabled
+      if (landingPage) {
+        // Check if the landing page requires a feature that's disabled
+        if (landingPage === '/courses' && !isEnabled('course_conception')) {
+          landingPage = null; // Reset to find alternative
+        }
+        if (landingPage?.startsWith('/terminal') && !isEnabled('terminal_management')) {
+          landingPage = null; // Reset to find alternative
+        }
+      }
+
+      // If no valid landing page, find first available enabled route
+      if (!landingPage) {
+        // Priority order: dashboard > terminals > courses
+        if (isEnabled('terminal_management')) {
+          landingPage = '/subscription-dashboard';
+        } else if (isEnabled('course_conception')) {
+          landingPage = '/courses';
+        } else {
+          // Fallback to subscription dashboard (always available)
+          landingPage = '/subscription-dashboard';
+        }
+      }
+
       router.push(landingPage);
     } catch (error) {
-      console.error('Error loading settings, using default route:', error);
-      router.push({ name: "Courses" });
+      console.error('Error loading settings, using fallback route:', error);
+      // Fallback to subscription dashboard (always available)
+      router.push({ name: "SubscriptionDashboard" });
     }
   }
 }

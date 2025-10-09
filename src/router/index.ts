@@ -310,7 +310,7 @@ const router = createRouter({
   routes: basicRoutes as RouteRecordRaw[],
 });
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const currentUserStore = useCurrentUserStore();
 
   // Check authentication first
@@ -320,6 +320,9 @@ router.beforeEach((to, _from, next) => {
       return;
     }
   }
+
+  // Wait for feature flags to initialize before checking
+  await featureFlagService.waitForInitialization();
 
   // Check feature flags (deep link protection)
   const requiredFeature = to.meta.requiresFeature as string | undefined;

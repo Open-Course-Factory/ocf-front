@@ -75,11 +75,15 @@ export class FeatureFlagService {
   private readonly CACHE_TTL = 5 * 60 * 1000 // 5 minutes
   private lastFetch: number = 0
   private isFetching: boolean = false
+  private initPromise: Promise<void> | null = null
+  private isInitialized: boolean = false
 
   private constructor() {
     // Default feature flag configuration - using reactive for Vue reactivity
+    // IMPORTANT: Start with enabled: false for major features to prevent flashing
+    // They will be enabled once backend response arrives or env vars are loaded
     this.flags = reactive({
-      // Pilot Features - Non-critical
+      // Pilot Features - Non-critical (can start enabled)
       theme_customization: {
         enabled: true,
         description: 'Enable theme customization features',
@@ -95,25 +99,25 @@ export class FeatureFlagService {
         description: 'Enable SSH key management for terminal access',
         type: 'ops'
       },
-      // Course Management Features
+      // Course Management Features (start disabled to prevent flashing)
       course_conception: {
-        enabled: true,
+        enabled: false,
         description: 'Enable course conception and design features',
         type: 'ops',
         allowedRoles: ['administrator', 'teacher'],
         controlledMetrics: ['courses'], // Hide course-related usage metrics when disabled
         controlledFeatures: ['course_creation', 'course_editing']
       },
-      // Terminal/Labs Features
+      // Terminal/Labs Features (start disabled to prevent flashing)
       terminal_management: {
-        enabled: true,
+        enabled: false,
         description: 'Enable terminal and practical work features',
         type: 'ops',
         allowedRoles: ['administrator', 'teacher', 'student'],
-        controlledMetrics: ['concurrent_terminals', 'lab_sessions'], // Hide terminal-related metrics when disabled
-        controlledFeatures: ['terminal_access', 'lab_management']
+        controlledMetrics: ['concurrent_terminals'], // Hide terminal-related metrics when disabled
+        controlledFeatures: ['terminal_access']
       },
-      // Documentation Features
+      // Documentation Features (can start enabled)
       help_documentation: {
         enabled: true,
         description: 'Enable help center and documentation features',
@@ -121,16 +125,32 @@ export class FeatureFlagService {
       }
     })
 
-    // Load flags from environment variables only
-    // Backend API is the source of truth (loaded async)
-    this.loadEnvironmentFlags()
+    // Initialize by fetching from backend (don't load env vars - backend is source of truth)
+    this.initPromise = this.initialize()
+  }
 
-    // Fetch from backend immediately (blocks initial checks)
-    this.fetchFromBackend().catch(err => {
-      console.warn('⚠️ Failed to fetch feature flags from backend, using defaults:', err)
-      // Only load localStorage as emergency fallback if backend fails
+  private async initialize(): Promise<void> {
+    try {
+      await this.fetchFromBackend(true)
+      console.log('✅ Feature flags initialized from backend')
+    } catch (err) {
+      console.warn('⚠️ Failed to fetch feature flags from backend, using localStorage fallback:', err)
       this.loadLocalStorageFlags()
-    })
+    } finally {
+      this.isInitialized = true
+    }
+  }
+
+  /**
+   * Wait for feature flags to be initialized from backend
+   */
+  async waitForInitialization(): Promise<void> {
+    if (this.isInitialized) {
+      return
+    }
+    if (this.initPromise) {
+      await this.initPromise
+    }
   }
 
   static getInstance(): FeatureFlagService {
@@ -251,32 +271,49 @@ export class FeatureFlagService {
       if (Array.isArray(backendFeatures) && backendFeatures.length > 0) {
         console.log(`🏴 Backend returned ${backendFeatures.length} features:`, backendFeatures)
 
+        // First pass: reset all flags that will be updated from backend
+        const flagsToUpdate = new Set<string>()
         backendFeatures.forEach((feature: any) => {
-          // Backend uses 'key' field, not 'name'
+          const backendKey = feature.key || feature.name
+          const flagKey = this.mapBackendFeatureToFlagKey(backendKey)
+          flagsToUpdate.add(flagKey)
+        })
+
+        // Reset flags that will be updated (especially important for OR logic)
+        flagsToUpdate.forEach(flagKey => {
+          if (this.flags[flagKey]) {
+            this.flags[flagKey].enabled = false
+          }
+        })
+
+        // Second pass: apply backend features using OR logic
+        backendFeatures.forEach((feature: any) => {
           const backendKey = feature.key || feature.name
           const flagKey = this.mapBackendFeatureToFlagKey(backendKey)
           console.log(`🏴 Mapping backend key="${feature.key}" name="${feature.name}" → frontend "${flagKey}" (enabled: ${feature.enabled})`)
 
           if (this.flags[flagKey]) {
-            // Merge backend data with existing config
             const oldEnabled = this.flags[flagKey].enabled
-            this.flags[flagKey] = {
-              ...this.flags[flagKey],
-              id: feature.id,
-              enabled: feature.enabled, // Backend is source of truth
-              description: feature.description || this.flags[flagKey].description,
-              module: feature.module,
-              name: feature.name, // Human-readable name
-              createdAt: feature.created_at || feature.createdAt,
-              updatedAt: feature.updated_at || feature.updatedAt
+
+            // Apply feature state using OR logic for multi-mapped features
+            this.applyBackendFeatureToFlag(backendKey, feature.enabled)
+
+            // Merge other backend metadata (only once per flag)
+            if (!this.flags[flagKey].id) {
+              this.flags[flagKey] = {
+                ...this.flags[flagKey],
+                id: feature.id,
+                description: feature.description || this.flags[flagKey].description,
+                module: feature.module,
+                name: feature.name,
+                createdAt: feature.created_at || feature.createdAt,
+                updatedAt: feature.updated_at || feature.updatedAt
+              }
             }
 
-            if (oldEnabled !== feature.enabled) {
-              console.log(`🏴 Updated "${flagKey}": ${oldEnabled} → ${feature.enabled} (from backend)`)
-            }
+            console.log(`🏴 Updated "${flagKey}": ${oldEnabled} → ${this.flags[flagKey].enabled} (from backend)`)
           } else {
             console.warn(`🏴 Backend feature key="${feature.key}" name="${feature.name}" (mapped to "${flagKey}") not found in frontend flags`)
-            console.warn(`🏴 Available frontend flags:`, Object.keys(this.flags))
           }
         })
 
@@ -313,14 +350,31 @@ export class FeatureFlagService {
   private mapBackendFeatureToFlagKey(backendKey: string): string {
     // Special mappings for backend -> frontend
     const keyMap: Record<string, string> = {
-      'labs': 'terminal_management',  // Backend "labs" -> Frontend "terminal_management"
-      'terminals': 'terminal_management', // Backend "terminals" -> Frontend "terminal_management"
       'course_conception': 'course_conception', // Direct match
+      'terminals': 'terminal_management', // Backend "terminals" -> Frontend "terminal_management"
       // Add more mappings as needed
     }
 
-    // Return mapped key or original key (already in correct format)
     return keyMap[backendKey] || backendKey
+  }
+
+  /**
+   * Apply backend feature state to frontend flag
+   * If multiple backend features map to the same frontend flag, use OR logic (any enabled = flag enabled)
+   */
+  private applyBackendFeatureToFlag(backendKey: string, backendEnabled: boolean): void {
+    const flagKey = this.mapBackendFeatureToFlagKey(backendKey)
+
+    if (this.flags[flagKey]) {
+      // For terminal_management, enable if ANY backend feature (labs OR terminals) is enabled
+      if (flagKey === 'terminal_management') {
+        // Use OR logic: keep existing enabled state or set to new enabled state
+        this.flags[flagKey].enabled = this.flags[flagKey].enabled || backendEnabled
+      } else {
+        // For other flags, just set directly
+        this.flags[flagKey].enabled = backendEnabled
+      }
+    }
   }
 
   /**

@@ -59,7 +59,6 @@ export class DemoDataService {
         ],
         max_courses: 5,
         max_concurrent_users: 2,
-        max_lab_sessions: 10,
         trial_days: 14,
         is_active: true,
         stripe_product_id: 'prod_demo_starter',
@@ -84,7 +83,6 @@ export class DemoDataService {
         ],
         max_courses: 25,
         max_concurrent_users: 10,
-        max_lab_sessions: 100,
         trial_days: 14,
         is_active: true,
         stripe_product_id: 'prod_demo_pro',
@@ -110,7 +108,6 @@ export class DemoDataService {
         ],
         max_courses: -1, // -1 = unlimited
         max_concurrent_users: -1,
-        max_lab_sessions: -1,
         trial_days: 30,
         is_active: true,
         stripe_product_id: 'prod_demo_enterprise',
@@ -128,7 +125,6 @@ export class DemoDataService {
         features: ['Legacy features'],
         max_courses: 10,
         max_concurrent_users: 5,
-        max_lab_sessions: 50,
         trial_days: 0,
         is_active: false, // Inactive plan for testing
         stripe_product_id: 'prod_demo_legacy',
@@ -240,17 +236,6 @@ export class DemoDataService {
         last_updated: new Date().toISOString(),
         user_id: 'demo_user_123'
       },
-      {
-        id: 'demo_usage_labs',
-        metric_type: 'lab_sessions',
-        current_value: 85,
-        limit_value: 100,
-        usage_percent: 85,
-        period_start: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-        period_end: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-        last_updated: new Date().toISOString(),
-        user_id: 'demo_user_123'
-      }
     ]
   }
 

@@ -102,7 +102,7 @@ const { t } = useI18n();
 const route = useRoute();
 
 // Feature flags
-const { createReactiveFlag } = useFeatureFlags();
+const { createReactiveFlag, waitForInitialization } = useFeatureFlags();
 
 // Create reactive computed values for each flag we need to check
 const courseConceptionEnabled = createReactiveFlag('course_conception')
@@ -111,6 +111,9 @@ const archiveGenerationsEnabled = createReactiveFlag('archive_generations')
 const sshKeyManagementEnabled = createReactiveFlag('ssh_key_management')
 const terminalManagementEnabled = createReactiveFlag('terminal_management')
 const helpDocumentationEnabled = createReactiveFlag('help_documentation')
+
+// Track initialization state
+const featureFlagsReady = ref(false)
 
 // Helper function to check feature flags reactively
 const isFeatureEnabled = (flagName: string): boolean => {
@@ -473,6 +476,10 @@ function openActiveCategoryOnMount() {
 }
 
 onMounted(async () => {
+  // Wait for feature flags to be initialized from backend
+  await waitForInitialization();
+  featureFlagsReady.value = true;
+
   await loadHelpTranslations();
   openActiveCategoryOnMount();
   document.addEventListener('click', handleOutsideClick);
