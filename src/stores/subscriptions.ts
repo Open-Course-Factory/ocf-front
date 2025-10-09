@@ -177,7 +177,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
                 await simulateDelay(1000)
                 data = getDemoCurrentSubscription('active') // You can change this to test different states
             } else {
-                const response = await axios.get('/subscriptions/current')
+                const response = await axios.get('/user-subscriptions/current')
                 data = response.data
             }
 
@@ -223,7 +223,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
                     payload.allow_replace = true
                 }
 
-                const axiosResponse = await axios.post('/subscriptions/checkout', payload)
+                const axiosResponse = await axios.post('/user-subscriptions/checkout', payload)
                 response = axiosResponse.data
             }
 
@@ -263,7 +263,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
                 logDemoAction('Creating demo portal session', { returnUrl })
                 response = await demoPayments.createPortalSession(returnUrl)
             } else {
-                const axiosResponse = await axios.post('/subscriptions/portal', {
+                const axiosResponse = await axios.post('/user-subscriptions/portal', {
                     return_url: returnUrl
                 })
                 response = axiosResponse.data
@@ -290,7 +290,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         
         try {
             const params = cancelImmediately ? '?cancel_immediately=true' : ''
-            await axios.post(`/subscriptions/${subscriptionId}/cancel${params}`)
+            await axios.post(`/user-subscriptions/${subscriptionId}/cancel${params}`)
             
             // Recharger l'abonnement actuel
             await getCurrentSubscription()
@@ -310,7 +310,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         error.value = ''
         
         try {
-            await axios.post(`/subscriptions/${subscriptionId}/reactivate`)
+            await axios.post(`/user-subscriptions/${subscriptionId}/reactivate`)
             
             // Recharger l'abonnement actuel
             await getCurrentSubscription()
@@ -334,7 +334,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
                 await simulateDelay(800)
                 data = getDemoUsageMetrics()
             } else {
-                const response = await axios.get('/subscriptions/usage')
+                const response = await axios.get('/user-subscriptions/usage')
                 data = response.data || []
             }
 
@@ -370,7 +370,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
                 await simulateDelay(1500)
                 result = { success: true, subscription: getDemoCurrentSubscription('active') }
             } else {
-                const response = await axios.post('/subscriptions/upgrade', {
+                const response = await axios.post('/user-subscriptions/upgrade', {
                     new_plan_id: newPlanId,
                     proration_behavior: prorationBehavior
                 })
@@ -429,7 +429,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
                 result = await demoPayments.checkUsageLimit(metricType, requestedAmount)
                 return result.allowed
             } else {
-                const response = await axios.post('/subscriptions/usage/check', {
+                const response = await axios.post('/user-subscriptions/usage/check', {
                     metric_type: metricType,
                     increment: requestedAmount
                 })

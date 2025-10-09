@@ -71,7 +71,7 @@ Update a specific feature flag.
 }
 ```
 
-### POST `/api/v1/subscriptions/sync-usage-limits`
+### POST `/api/v1/user-subscriptions/sync-usage-limits`
 
 Sync user usage limits after toggling features that affect metrics (courses, terminals, etc.).
 
@@ -384,7 +384,7 @@ def update_feature(feature_id, data):
 ### Usage Limits Not Updating
 
 1. Check if flag has `controlledMetrics` defined
-2. Verify `POST /subscriptions/sync-usage-limits` succeeds
+2. Verify `POST /user-subscriptions/sync-usage-limits` succeeds
 3. Look for auto-sync console logs
 4. Manually trigger via admin panel "Sync Limits" button
 

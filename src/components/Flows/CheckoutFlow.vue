@@ -541,7 +541,7 @@ async function validateCoupon() {
   
   isValidatingCoupon.value = true
   try {
-    const response = await axios.post('/subscriptions/validate-coupon', {
+    const response = await axios.post('/user-subscriptions/validate-coupon', {
       coupon_code: couponCode.value,
       subscription_plan_id: planId.value
     })

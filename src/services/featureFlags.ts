@@ -414,7 +414,7 @@ export class FeatureFlagService {
    */
   async syncUsageLimits(): Promise<void> {
     try {
-      const response = await axios.post('/subscriptions/sync-usage-limits')
+      const response = await axios.post('/user-subscriptions/sync-usage-limits')
       console.log('🏴 Usage limits synced:', response.data)
       return response.data
     } catch (error: any) {

@@ -212,11 +212,11 @@ export class DemoPaymentService {
 
     const interceptedEndpoints = [
       '/subscription-plans',
-      '/subscriptions/current',
-      '/subscriptions/checkout',
-      '/subscriptions/portal',
-      '/subscriptions/usage',
-      '/subscriptions/usage/check',
+      '/user-subscriptions/current',
+      '/user-subscriptions/checkout',
+      '/user-subscriptions/portal',
+      '/user-subscriptions/usage',
+      '/user-subscriptions/usage/check',
       '/invoices/user',
       '/payment-methods/user'
     ]

@@ -198,7 +198,7 @@ async function loadRecentInvoices() {
 
 async function loadLastCanceledSubscription() {
   try {
-    const response = await axios.get('/subscriptions/history?status=canceled&limit=1')
+    const response = await axios.get('/user-subscriptions/history?status=canceled&limit=1')
     if (response.data && response.data.length > 0) {
       lastCanceledSubscription.value = response.data[0]
     }

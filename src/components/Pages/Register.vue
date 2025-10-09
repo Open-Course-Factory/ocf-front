@@ -126,17 +126,6 @@
           </div>
         </div>
 
-        <div class="form-group">
-          <label for="defaultRole">Rôle</label>
-          <select
-            id="defaultRole"
-            v-model="formData.defaultRole"
-            class="form-control"
-          >
-            <option value="student">Utilisateur</option>
-          </select>
-        </div>
-
         <div v-if="errorMessage" class="alert alert-danger" role="alert">
           {{ errorMessage }}
         </div>
@@ -178,8 +167,7 @@ const formData = reactive({
   displayName: '',
   email: '',
   password: '',
-  confirmPassword: '',
-  defaultRole: 'user'
+  confirmPassword: ''
 });
 
 const errors = reactive({
@@ -284,8 +272,7 @@ const handleSubmit = async () => {
       firstName: formData.firstName,
       lastName: formData.lastName,
       userName: formData.userName,
-      displayName: formData.displayName,
-      defaultRole: formData.defaultRole
+      displayName: formData.displayName
     };
 
     // Utilisation de la requête simplifiée

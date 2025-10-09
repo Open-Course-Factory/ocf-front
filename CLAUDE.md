@@ -100,19 +100,19 @@ Each domain has a dedicated store (e.g., `subscriptionPlans`, `subscriptions`, `
 **Backend Integration:**
 
 - Compatible with OCF Core Payment API (Stripe-based subscription system)
-- API endpoints follow REST conventions (e.g., `/subscriptions/current`, `/invoices/user`)
+- API endpoints follow REST conventions (e.g., `/user-subscriptions/current`, `/invoices/user`)
 - Error handling with user-friendly messages via store error states
 
 **API Endpoint Guidelines:**
 
 - ✅ **Correct**: Use relative paths without version prefix
   ```javascript
-  axios.get('/subscriptions/current')
+  axios.get('/user-subscriptions/current')
   axios.post('/terminal-sessions/start-session', data)
   ```
 - ❌ **Incorrect**: Do NOT include `/api/v1/` prefix
   ```javascript
-  axios.get('/api/v1/subscriptions/current')  // WRONG - double prefix
+  axios.get('/api/v1/user-subscriptions/current')  // WRONG - double prefix
   ```
 - **Exception**: Only use full URLs for external services or when bypassing interceptors
 

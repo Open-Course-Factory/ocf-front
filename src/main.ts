@@ -32,6 +32,7 @@ import { piniaPluginPersist } from './piniaPluginPersist'
 import { useCurrentUserStore } from './stores/currentUser'
 import { setupAxiosInterceptors, setupAxiosDefaults } from './services/axiosInterceptor'
 import { getSavedLocale } from './services/localeStorage'
+import { featureFlagService } from './services/featureFlags'
 
 // Vuetify
 import 'vuetify/styles'
@@ -95,6 +96,15 @@ const vuetify = createVuetify({
 
 setupAxiosDefaults()
 setupAxiosInterceptors()
+
+// Eagerly initialize feature flag service to start fetching from backend
+// This ensures flags are loaded before components render
+console.log('🏴 Eagerly initializing feature flags service...')
+featureFlagService.waitForInitialization().then(() => {
+    console.log('🏴 Feature flags ready at app startup')
+}).catch(err => {
+    console.warn('🏴 Feature flags initialization failed at startup:', err)
+})
 
 createApp(App)
     .use(ElementPlus)

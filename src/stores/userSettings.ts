@@ -21,8 +21,9 @@
 
 import { defineStore } from "pinia"
 import { useI18n } from "vue-i18n"
-import { ref } from "vue"
+import { ref, computed } from "vue"
 import axios from "axios"
+import { useFeatureFlags } from "../composables/useFeatureFlags"
 
 export interface UserSettings {
     id?: string
@@ -48,6 +49,7 @@ export interface ChangePasswordData {
 
 export const useUserSettingsStore = defineStore('UserSettings', () => {
     const { t } = useI18n()
+    const { isEnabled } = useFeatureFlags()
 
     // Translations
     useI18n().mergeLocaleMessage('en', {
@@ -177,12 +179,22 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
     const isLoading = ref(false)
     const error = ref('')
 
-    // Available options
-    const availablePages = [
-        { value: '/courses', label: 'Courses' },
+    // Available options (with feature flags)
+    const allPages = [
+        { value: '/courses', label: 'Courses', featureFlag: 'course_conception' },
         { value: '/subscription-dashboard', label: 'Subscription Dashboard' },
-        { value: '/terminal-sessions', label: 'Terminal Sessions' }
+        { value: '/terminal-sessions', label: 'Terminal Sessions', featureFlag: 'terminal_management' }
     ]
+
+    // Filter pages based on feature flags
+    const availablePages = computed(() => {
+        return allPages.filter(page => {
+            // If no feature flag is required, always show the page
+            if (!page.featureFlag) return true
+            // Otherwise, check if the feature flag is enabled
+            return isEnabled(page.featureFlag)
+        })
+    })
 
     const availableLanguages = [
         { value: 'en', label: t('userSettings.languages.en') },

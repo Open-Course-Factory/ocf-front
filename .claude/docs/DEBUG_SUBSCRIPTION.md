@@ -16,7 +16,7 @@ After attempting a plan change, check the browser console for these logs:
 Look for errors or warnings in the OCF Core backend logs related to:
 - Stripe subscription update
 - Database subscription update
-- The `/api/v1/subscriptions/upgrade` endpoint
+- The `/api/v1/user-subscriptions/upgrade` endpoint
 
 ### 3. Verify Backend Implementation
 The backend should:
@@ -79,7 +79,7 @@ Ok(Json(updated_subscription))
 ### Check Current Subscription via API
 ```bash
 curl -H "Authorization: Bearer YOUR_TOKEN" \
-  http://localhost:8080/api/v1/subscriptions/current
+  http://localhost:8080/api/v1/user-subscriptions/current
 ```
 
 ### Check if Plan Changed in Response
@@ -90,7 +90,7 @@ After backend fix, hard refresh the browser (Ctrl+Shift+R) to ensure no caching
 
 ## Expected API Response
 
-The `/subscriptions/upgrade` endpoint should return:
+The `/user-subscriptions/upgrade` endpoint should return:
 ```json
 {
   "id": "subscription-uuid",

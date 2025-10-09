@@ -28,7 +28,7 @@ You should see these logs in order:
 
 ```javascript
 // From upgradePlan in subscriptions.ts
-"Upgrade response:" { /* response from /api/v1/subscriptions/upgrade */ }
+"Upgrade response:" { /* response from /api/v1/user-subscriptions/upgrade */ }
 
 // After 1 second delay
 "Reloading subscription after upgrade..."
@@ -146,7 +146,7 @@ This clears the browser cache.
 
 ### Fix 2: Check API Response Directly
 
-Open Network tab, find the request to `/api/v1/subscriptions/current`, and check the response:
+Open Network tab, find the request to `/api/v1/user-subscriptions/current`, and check the response:
 
 **What you should see:**
 ```json
@@ -216,7 +216,7 @@ const plansStore = window.$pinia.state.value.subscriptionPlans
 console.log('Available plans:', plansStore.entities)
 
 // Force reload subscription
-await fetch('/api/v1/subscriptions/current', {
+await fetch('/api/v1/user-subscriptions/current', {
   headers: {
     'Authorization': `Bearer ${localStorage.getItem('token')}`
   }
@@ -246,7 +246,7 @@ If any step fails, the UI will show the wrong plan.
 
 1. Try changing the plan again
 2. Copy ALL console logs and share them
-3. Check the Network tab for `/api/v1/subscriptions/current` response
+3. Check the Network tab for `/api/v1/user-subscriptions/current` response
 4. Share the `plan_name` and `subscription_plan_id` from the API response
 
 This will pinpoint exactly where the issue is!
