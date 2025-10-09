@@ -55,6 +55,16 @@
             <i class="fas fa-plus"></i>
             Nouvelle Session
           </router-link>
+          <!-- Bouton global pour masquer toutes les sessions inactives -->
+          <button
+            class="btn btn-warning"
+            @click="hideAllInactiveSessions"
+            :disabled="inactiveSessionsCount === 0"
+            title="Masquer toutes les sessions inactives"
+          >
+            <i class="fas fa-eye-slash"></i>
+            Masquer toutes les inactives
+          </button>
         </div>
       </div>
 
@@ -443,6 +453,11 @@ const activeSessionsCount = computed(() => {
   return sessions.value.filter(session => !isTerminalInactive(session.status)).length
 })
 
+// Computed property to count inactive sessions
+const inactiveSessionsCount = computed(() => {
+  return sessions.value.filter(session => isTerminalInactive(session.status)).length
+})
+
 // Computed property to sort sessions with active ones at the top
 const sortedSessions = computed(() => {
   return [...sessions.value].sort((a, b) => {
@@ -722,6 +737,29 @@ async function discardTerminal(terminalId: string) {
   } catch (err: any) {
     console.error('Erreur lors du masquage du terminal:', err)
     error.value = err.response?.data?.error_message || 'Erreur lors du masquage du terminal'
+  }
+}
+
+async function hideAllInactiveSessions() {
+  const inactive = sessions.value.filter(session => isTerminalInactive(session.status))
+  if (inactive.length === 0) return
+
+  const confirmed = await showConfirm(
+    `Êtes-vous sûr de vouloir masquer toutes les sessions inactives (${inactive.length}) ?`,
+    'Masquer toutes les sessions inactives'
+  )
+  if (!confirmed) return
+
+  try {
+    for (const session of inactive) {
+      await axios.post(`/terminal-sessions/${session.id}/hide`)
+    }
+    // Remove all inactive from local display
+    sessions.value = sessions.value.filter(session => !isTerminalInactive(session.status))
+    console.log('All inactive terminals successfully hidden')
+  } catch (err: any) {
+    console.error('Erreur lors du masquage global:', err)
+    error.value = err.response?.data?.error_message || 'Erreur lors du masquage des terminaux inactifs'
   }
 }
 </script>
