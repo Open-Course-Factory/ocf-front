@@ -22,6 +22,7 @@
 import { createI18n } from 'vue-i18n'
 import { createApp } from 'vue'
 import './style.css'
+import './assets/styles/main.css'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
@@ -44,19 +45,25 @@ const i18n = createI18n({
     locale: getSavedLocale(), // Use saved user preference
     fallbackLocale: 'en',
     messages: {
-        en: { 
+        en: {
             empty: 'Nothing to display here',
             add: 'Add',
             edit: 'Edit',
             delete: 'Delete',
+            save: 'Save',
+            cancel: 'Cancel',
+            confirmDelete: 'Are you sure you want to delete this item?',
             created_at: 'Created at',
             updated_at: 'Updated at',
          },
-        fr: { 
+        fr: {
             empty: 'Rien à afficher ici',
             add: 'Ajouter',
             edit: 'Editer',
             delete: 'Supprimer',
+            save: 'Enregistrer',
+            cancel: 'Annuler',
+            confirmDelete: 'Êtes-vous sûr de vouloir supprimer cet élément ?',
             created_at: 'Date de création',
             updated_at: 'Date de modification',
         }

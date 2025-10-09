@@ -150,6 +150,43 @@ const basicRoutes = [
         meta: { requiresAuth: true },
         children: [{ path: '', component: User }],
       },
+      // User Settings Routes
+      {
+        path: 'settings/navigation',
+        name: 'SettingsNavigation',
+        component: () => import('../components/Pages/Settings/NavigationSettingsPage.vue'),
+        meta: { requiresAuth: true, isSettings: true }
+      },
+      {
+        path: 'settings/localization',
+        name: 'SettingsLocalization',
+        component: () => import('../components/Pages/Settings/LocalizationSettingsPage.vue'),
+        meta: { requiresAuth: true, isSettings: true }
+      },
+      {
+        path: 'settings/ui',
+        name: 'SettingsUI',
+        component: () => import('../components/Pages/Settings/UISettingsPage.vue'),
+        meta: { requiresAuth: true, isSettings: true }
+      },
+      {
+        path: 'settings/notifications',
+        name: 'SettingsNotifications',
+        component: () => import('../components/Pages/Settings/NotificationSettingsPage.vue'),
+        meta: { requiresAuth: true, isSettings: true }
+      },
+      {
+        path: 'settings/security',
+        name: 'SettingsSecurity',
+        component: () => import('../components/Pages/Settings/SecuritySettingsPage.vue'),
+        meta: { requiresAuth: true, isSettings: true }
+      },
+      {
+        path: 'settings/ssh-keys',
+        name: 'SettingsSSHKeys',
+        component: () => import('../components/Pages/Settings/SSHKeysSettingsPage.vue'),
+        meta: { requiresAuth: true, isSettings: true }
+      },
       { path: 'subscription-plans', name: 'SubscriptionPlans', component: () => import('../components/Pages/SubscriptionPlansCustomer.vue'), meta: { requiresAuth: true } },
       { path: 'admin/subscription-plans', name: 'AdminSubscriptionPlans', component: () => import('../components/Pages/SubscriptionPlans.vue'), meta: { requiresAuth: true } },
       { path: 'billing-addresses', name: 'BillingAddresses', component: () => import('../components/Pages/BillingAddresses.vue'), meta: { requiresAuth: true } },

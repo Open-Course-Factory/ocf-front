@@ -1,31 +1,79 @@
 <template>
   <div class="wrapper">
     <DemoModeBanner />
+    <!-- Show SettingsNavMenu when in settings routes, otherwise MainNavMenu -->
+    <SettingsNavMenu
+      v-if="isInSettings"
+      class="main-nav-menu"
+      :class="{ collapsed: isMenuCollapsed }"
+      :isMenuCollapsed="isMenuCollapsed"
+    />
     <MainNavMenu
+      v-else
       class="main-nav-menu"
       :class="{ collapsed: isMenuCollapsed }"
       :isMenuCollapsed="isMenuCollapsed"
     />
     <div class="inner-wrapper" :class="{ 'menu-collapsed': isMenuCollapsed }">
-      <TopMenu @toggle-menu="toggleMenu" />
+      <TopMenu
+        @toggle-menu="toggleMenu"
+      />
       <div class="content-area">
         <router-view />
       </div>
     </div>
+    <ToastContainer />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import MainNavMenu from './Menus/MainNavMenu.vue'
+import SettingsNavMenu from './Menus/SettingsNavMenu.vue'
 import TopMenu from './Menus/TopMenu.vue'
 import DemoModeBanner from './UI/DemoModeBanner.vue'
+import ToastContainer from './UI/ToastContainer.vue'
+import { useUserSettingsStore } from '../stores/userSettings'
+import { useLocale } from '../composables/useLocale'
+import { useTheme } from '../composables/useTheme'
 
+const route = useRoute()
 const isMenuCollapsed = ref(false);
+const settingsStore = useUserSettingsStore()
+const { setLocale } = useLocale()
+const { setTheme } = useTheme()
+
+// Check if we're in a settings route
+const isInSettings = computed(() => route.meta.isSettings === true)
 
 function toggleMenu() {
   isMenuCollapsed.value = !isMenuCollapsed.value;
 }
+
+// Load and apply user settings when component mounts
+async function loadAndApplySettings() {
+  try {
+    const settings = await settingsStore.loadSettings()
+
+    // Apply language if set
+    if (settings.preferred_language) {
+      setLocale(settings.preferred_language)
+    }
+
+    // Apply theme if set
+    if (settings.theme) {
+      setTheme(settings.theme as 'light' | 'dark' | 'auto')
+    }
+  } catch (error) {
+    console.error('Error loading user settings:', error)
+    // Don't show error toast on app load, just log it
+  }
+}
+
+onMounted(() => {
+  loadAndApplySettings()
+})
 
 function handleResize() {
   if (window.innerWidth <= 768 && !isMenuCollapsed.value) {

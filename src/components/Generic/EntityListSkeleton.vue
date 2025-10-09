@@ -4,8 +4,8 @@
       <div class="skeleton-card-content">
         <div class="skeleton-main">
           <LoadingSkeleton variant="text" width="40%" height="20px" />
-          <LoadingSkeleton variant="text" width="60%" height="16px" style="margin-top: 8px" />
-          <LoadingSkeleton variant="text" width="30%" height="14px" style="margin-top: 6px" />
+          <LoadingSkeleton variant="text" width="60%" height="16px" class="mt-2" />
+          <LoadingSkeleton variant="text" width="30%" height="14px" class="mt-1" />
         </div>
       </div>
       <div class="skeleton-actions">
@@ -37,17 +37,17 @@ withDefaults(defineProps<Props>(), {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
-  padding: 10px;
-  border: 1px solid #e0e0e0;
-  border-radius: 5px;
-  background: #fafafa;
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-md);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-tertiary);
   min-height: 80px;
 }
 
 .skeleton-card-content {
   flex: 1;
-  padding-right: 20px;
+  padding-right: var(--spacing-lg);
 }
 
 .skeleton-main {
@@ -57,7 +57,7 @@ withDefaults(defineProps<Props>(), {
 
 .skeleton-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--spacing-md);
   align-items: center;
 }
 </style>

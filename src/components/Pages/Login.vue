@@ -54,9 +54,15 @@ import axios from 'axios';
 import router from "../../router/index.ts";
 import { useLoginStore } from '../../stores/login.ts';
 import { useCurrentUserStore } from '../../stores/currentUser.ts';
+import { useUserSettingsStore } from '../../stores/userSettings.ts';
+import { useLocale } from '../../composables/useLocale';
+import { useTheme } from '../../composables/useTheme';
 
 const loginStore = useLoginStore();
 const currentUserStore = useCurrentUserStore();
+const settingsStore = useUserSettingsStore();
+const { setLocale } = useLocale();
+const { setTheme } = useTheme();
 const errorMessage = ref('');
 
 async function handleSubmit() {
@@ -72,16 +78,34 @@ async function handleSubmit() {
     currentUserStore.userId = responseLogin.data.user_id;
     currentUserStore.userRoles = responseLogin.data.user_roles;
 
-    redirect();
+    await redirect();
   } catch (error) {
     console.error('Error during login:', error);
     errorMessage.value = 'Email ou mot de passe invalide, merci de réessayer';
   }
 }
 
-function redirect() {
+async function redirect() {
   if (currentUserStore.secretToken) {
-    router.push({ name: "Courses" });
+    try {
+      // Load user settings
+      const settings = await settingsStore.loadSettings();
+
+      // Apply settings
+      if (settings.preferred_language) {
+        setLocale(settings.preferred_language);
+      }
+      if (settings.theme) {
+        setTheme(settings.theme as 'light' | 'dark' | 'auto');
+      }
+
+      // Redirect to preferred landing page or default to courses
+      const landingPage = settings.default_landing_page || '/courses';
+      router.push(landingPage);
+    } catch (error) {
+      console.error('Error loading settings, using default route:', error);
+      router.push({ name: "Courses" });
+    }
   }
 }
 </script>

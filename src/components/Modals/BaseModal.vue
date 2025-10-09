@@ -49,36 +49,37 @@ function closeModal() {
   display: flex;
   justify-content: center;
   align-items: center;
-  animation: fadeIn 0.3s ease-in-out;
-  z-index: 1000;
+  animation: fadeIn var(--transition-slow) ease-in-out;
+  z-index: var(--z-index-modal);
 }
 
 .modal-body {
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background-color: var(--color-bg-primary);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
   position: relative;
   width: 90%;
   max-width: 800px;
   height: auto;
-  animation: slideIn 0.3s ease-in-out;
+  animation: slideIn var(--transition-slow) ease-in-out;
   overflow-y: auto;
 }
 
 .close-button {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
   background: none;
   border: none;
-  font-size: 1.5em;
+  font-size: var(--font-size-2xl);
   cursor: pointer;
-  transition: color 0.3s;
+  transition: color var(--transition-slow);
+  color: var(--color-text-primary);
 }
 
 .close-button:hover {
-  color: #dc3545;
+  color: var(--color-danger);
 }
 
 .modal-content {
@@ -93,7 +94,7 @@ function closeModal() {
   align-items: center;
   justify-content: center;
   height: 100%;
-  font-size: 1.2em;
+  font-size: var(--font-size-lg);
 }
 
 @keyframes fadeIn {

@@ -34,7 +34,7 @@
           </option>
         </select>
       </div>
-      <router-link to="/user" class="user-info">
+      <router-link to="/settings/navigation" class="user-info">
         <div class="profile-picture">
           <i class="fas fa-user"></i>
         </div>
@@ -72,22 +72,23 @@ function handleLocaleChange(event: Event) {
   align-items: center;
   width: 100%;
   height: 60px;
-  border-bottom: 1px solid #d9dee4;
-  background-color: #fff;
+  border-bottom: var(--border-width-thin) solid var(--color-border-light);
+  background-color: var(--color-bg-primary);
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 1000;
-  padding: 0 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  animation: slideDown 0.3s ease-in-out;
+  z-index: var(--z-index-modal);
+  padding: 0 var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  animation: slideDown var(--transition-slow) ease-in-out;
 }
 
 .menu-toggle {
   background: none;
   border: none;
-  font-size: 1.5em;
+  font-size: var(--font-size-2xl);
   cursor: pointer;
+  color: var(--color-text-primary);
 }
 
 .right-controls {
@@ -96,62 +97,62 @@ function handleLocaleChange(event: Event) {
 }
 
 .locale-changer {
-  margin-right: 20px;
+  margin-right: var(--spacing-lg);
 }
 
 .locale-changer select {
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  background-color: white;
-  font-size: 14px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-thin) solid var(--color-border-medium);
+  background-color: var(--color-bg-primary);
+  font-size: var(--font-size-sm);
   cursor: pointer;
-  transition: border-color 0.2s ease;
+  transition: border-color var(--transition-base);
   min-width: 140px;
 }
 
 .locale-changer select:hover {
-  border-color: #9ca3af;
+  border-color: var(--color-border-dark);
 }
 
 .locale-changer select:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus-primary);
 }
 
 .flag-select option {
-  padding: 8px;
-  font-size: 14px;
+  padding: var(--spacing-sm);
+  font-size: var(--font-size-sm);
 }
 
 .user-info {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding: 0 14px;
+  padding: 0 var(--spacing-md);
   cursor: pointer;
-  color: #212529;
+  color: var(--color-text-primary);
   text-decoration: none;
 }
 
 .user-info p {
-  margin-left: 10px;
+  margin-left: var(--spacing-md);
 }
 
 .profile-picture {
   width: 40px;
   height: 40px;
-  background-color: #969696;
-  border-radius: 50%;
+  background-color: var(--color-gray-500);
+  border-radius: var(--border-radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--color-white);
 }
 
 .profile-picture i {
-  font-size: 1.2em;
+  font-size: var(--font-size-lg);
 }
 
 @keyframes slideDown {

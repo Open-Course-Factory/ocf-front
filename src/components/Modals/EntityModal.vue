@@ -242,20 +242,20 @@ const translationKey = computed(() => getTranslationKey(props.entityName));
   display: flex;
   justify-content: center;
   align-items: center;
-  animation: fadeIn 0.3s ease-in-out;
-  z-index: 1000; /* Ensure it stays above other content */
+  animation: fadeIn var(--transition-slow) ease-in-out;
+  z-index: var(--z-index-modal);
 }
 
 .modal-body {
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background-color: var(--color-bg-primary);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
   position: relative;
   width: 90%;
   max-width: 800px;
   height: auto;
-  animation: slideIn 0.3s ease-in-out;
+  animation: slideIn var(--transition-slow) ease-in-out;
   overflow-y: auto;
   -ms-overflow-style: none;  /* Internet Explorer 10+ */
   scrollbar-width: none;  /* Firefox */
@@ -263,17 +263,18 @@ const translationKey = computed(() => getTranslationKey(props.entityName));
 
 .close-button {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
   background: none;
   border: none;
-  font-size: 1.5em;
+  font-size: var(--font-size-2xl);
   cursor: pointer;
-  transition: color 0.3s;
+  transition: color var(--transition-slow);
+  color: var(--color-text-primary);
 }
 
 .close-button:hover {
-  color: #dc3545;
+  color: var(--color-danger);
 }
 
 .modal-content {
@@ -288,23 +289,23 @@ const translationKey = computed(() => getTranslationKey(props.entityName));
 .modal-actions {
   display: flex;
   justify-content: center;
-  gap: 10px;
+  gap: var(--spacing-md);
 }
 
 .modal-actions button {
   width: auto;
-  padding: 10px 20px;
+  padding: var(--btn-padding-md);
 }
 
 h2 {
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-lg);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--spacing-md);
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-lg);
 }
 
 textarea {

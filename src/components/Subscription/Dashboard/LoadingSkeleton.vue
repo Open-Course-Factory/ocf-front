@@ -33,33 +33,33 @@ const skeletonStyle = computed(() => ({
 .skeleton {
   background: linear-gradient(
     90deg,
-    #f0f0f0 0%,
-    #e0e0e0 20%,
-    #f0f0f0 40%,
-    #f0f0f0 100%
+    var(--color-gray-200) 0%,
+    var(--color-gray-300) 20%,
+    var(--color-gray-200) 40%,
+    var(--color-gray-200) 100%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
-  border-radius: 4px;
+  border-radius: var(--border-radius-sm);
   opacity: 0.7;
 }
 
 .skeleton-text {
-  border-radius: 4px;
-  margin-bottom: 8px;
+  border-radius: var(--border-radius-sm);
+  margin-bottom: var(--spacing-sm);
 }
 
 .skeleton-card {
-  border-radius: 8px;
+  border-radius: var(--border-radius-lg);
   min-height: 100px;
 }
 
 .skeleton-circle {
-  border-radius: 50%;
+  border-radius: var(--border-radius-full);
 }
 
 .skeleton-button {
-  border-radius: 4px;
+  border-radius: var(--border-radius-sm);
   height: 36px;
 }
 

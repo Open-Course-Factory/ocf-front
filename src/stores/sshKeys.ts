@@ -55,5 +55,14 @@ export const useSshKeysStore = defineStore('SshKeys', () => {
     // Enable prevention of last object deletion for SSH keys
     base.preventLastObjectDeletion.value = true
 
-    return {...base, fieldList}
+    // Override loadEntities to use correct endpoint
+    const loadEntities = async () => {
+        return await base.loadEntities('/ssh-keys')
+    }
+
+    return {
+        ...base,
+        fieldList,
+        loadEntities
+    }
 })

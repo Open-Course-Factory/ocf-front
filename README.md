@@ -146,7 +146,10 @@ Features:
 
 ## 📚 Documentation
 
-- **CLAUDE.md** - Comprehensive development guide for Claude Code
+All development documentation is located in `.claude/docs/`:
+
+- **[.claude/docs/CLAUDE.md](.claude/docs/CLAUDE.md)** - Comprehensive development guide for Claude Code
+- **[.claude/docs/DESIGN_SYSTEM.md](.claude/docs/DESIGN_SYSTEM.md)** - Complete design system documentation with tokens, components, and migration guide
 - **FEATURE_FLAGS.md** - Detailed feature flags documentation
 - **Component Documentation** - Inline documentation in components
 

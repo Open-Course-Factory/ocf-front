@@ -45,12 +45,12 @@ function hideBanner() {
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 9999;
+  z-index: var(--z-index-modal);
   background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
-  color: white;
-  padding: 8px 20px;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-  animation: slideUp 0.3s ease-out;
+  color: var(--color-white);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+  animation: slideUp var(--transition-slow) ease-out;
 }
 
 @keyframes slideUp {
@@ -66,15 +66,15 @@ function hideBanner() {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: var(--spacing-md);
   max-width: 1200px;
   margin: 0 auto;
   position: relative;
 }
 
 .banner-text {
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
   animation: pulse 2s infinite;
 }
 
@@ -92,12 +92,12 @@ function hideBanner() {
   right: 0;
   background: transparent;
   border: none;
-  color: white;
-  font-size: 16px;
+  color: var(--color-white);
+  font-size: var(--font-size-base);
   cursor: pointer;
-  padding: 5px;
-  border-radius: 3px;
-  transition: background-color 0.2s ease;
+  padding: var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  transition: background-color var(--transition-base);
 }
 
 .close-btn:hover {
@@ -107,11 +107,11 @@ function hideBanner() {
 /* Responsive */
 @media (max-width: 768px) {
   .demo-mode-banner {
-    padding: 10px 15px;
+    padding: var(--spacing-md) var(--spacing-md);
   }
 
   .banner-text {
-    font-size: 12px;
+    font-size: var(--font-size-xs);
   }
 
   .close-btn {

@@ -499,12 +499,12 @@ watch(() => route.path, () => {
 
 <style scoped>
 .main-menu {
-  background-color: #343a40;
-  color: #e7e7e7;
+  background-color: var(--color-gray-800);
+  color: var(--color-white);
   height: 100vh;
-  padding: 20px;
+  padding: var(--spacing-lg);
   animation: fadeIn 0.5s ease-in-out;
-  transition: width 0.3s ease;
+  transition: width var(--transition-slow) ease;
   overflow: hidden;
 }
 
@@ -513,12 +513,12 @@ watch(() => route.path, () => {
 }
 
 .menu-header {
-  margin-bottom: 30px;
+  margin-bottom: var(--spacing-2xl);
 }
 
 .menu-header h1 a {
-  font-size: 2rem;
-  color: #e7e7e7;
+  font-size: var(--font-size-4xl);
+  color: var(--color-white);
   text-decoration: none;
   display: flex;
   align-items: center;
@@ -530,8 +530,8 @@ watch(() => route.path, () => {
 
 .menu-header h1 a .menu-text {
   display: inline;
-  transition: opacity 0.3s ease;
-  margin-left: 20px;
+  transition: opacity var(--transition-slow) ease;
+  margin-left: var(--spacing-lg);
 }
 
 .main-menu.collapsed .menu-header h1 a {
@@ -546,10 +546,10 @@ watch(() => route.path, () => {
 }
 
 .user-role {
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   text-transform: uppercase;
-  margin-left: 20px;
-  transition: opacity 0.3s ease;
+  margin-left: var(--spacing-lg);
+  transition: opacity var(--transition-slow) ease;
 }
 
 .main-menu.collapsed .user-role {
@@ -566,19 +566,19 @@ watch(() => route.path, () => {
 
 /* Styles pour les catégories */
 .menu-category {
-  margin-bottom: 8px;
+  margin-bottom: var(--spacing-sm);
   position: relative;
 }
 
 .category-header {
   display: flex;
   align-items: center;
-  padding: 15px;
-  color: #e7e7e7;
-  background-color: #495057;
-  border-radius: 4px;
+  padding: var(--spacing-md);
+  color: var(--color-white);
+  background-color: var(--color-gray-700);
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
-  transition: background-color 0.3s, transform 0.3s;
+  transition: background-color var(--transition-slow), transform var(--transition-slow);
   position: relative;
   user-select: none;
   min-height: 50px;
@@ -586,31 +586,31 @@ watch(() => route.path, () => {
 }
 
 .category-header:hover {
-  background-color: #5a6268;
+  background-color: var(--color-gray-600);
   transform: translateX(3px);
 }
 
 .category-header.active {
-  background-color: #6c757d;
+  background-color: var(--color-gray-600);
 }
 
 .category-header i:first-child {
   width: 20px;
   text-align: center;
-  margin-right: 10px;
+  margin-right: var(--spacing-md);
   flex-shrink: 0;
 }
 
 .category-title {
   flex-grow: 1;
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
 }
 
 .chevron-icon {
   margin-left: auto;
-  transition: transform 0.3s ease;
-  font-size: 0.8rem;
+  transition: transform var(--transition-slow) ease;
+  font-size: var(--font-size-xs);
   flex-shrink: 0;
 }
 
@@ -623,7 +623,7 @@ watch(() => route.path, () => {
   justify-content: center;
   align-items: center;
   min-height: 50px;
-  margin-bottom: 5px;
+  margin-bottom: var(--spacing-xs);
   width: 100%;
   margin-left: 0;
   margin-right: 0;
@@ -633,7 +633,7 @@ watch(() => route.path, () => {
 
 .main-menu.collapsed .category-header:hover {
   transform: none;
-  background-color: #5a6268;
+  background-color: var(--color-gray-600);
 }
 
 .main-menu.collapsed .category-header i:first-child {
@@ -712,43 +712,43 @@ watch(() => route.path, () => {
 .category-items li a {
   display: flex;
   align-items: center;
-  padding: 12px 25px;
-  color: #c8d1d8;
+  padding: var(--spacing-md) var(--spacing-lg);
+  color: var(--color-gray-400);
   text-decoration: none;
-  transition: background-color 0.3s, transform 0.3s, color 0.3s;
+  transition: background-color var(--transition-slow), transform var(--transition-slow), color var(--transition-slow);
   position: relative;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   min-height: 44px;
   box-sizing: border-box;
 }
 
 .category-items li a:hover {
   background-color: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  color: var(--color-white);
   transform: translateX(5px);
 }
 
 .category-items li a i {
   width: 18px;
   text-align: center;
-  margin-right: 12px;
-  font-size: 0.9rem;
+  margin-right: var(--spacing-md);
+  font-size: var(--font-size-sm);
   flex-shrink: 0;
 }
 
 .category-items li a .menu-text {
-  transition: opacity 0.3s ease;
+  transition: opacity var(--transition-slow) ease;
 }
 
 /* Styles spéciaux pour le mode collapsed */
 .main-menu.collapsed .category-items li a {
-  padding: 12px 15px;
+  padding: var(--spacing-md) var(--spacing-md);
   transform: none;
 }
 
 .main-menu.collapsed .category-items li a:hover {
   transform: none;
-  background-color: #495057;
+  background-color: var(--color-gray-700);
 }
 
 .main-menu.collapsed .category-items li a .menu-text {
@@ -781,34 +781,34 @@ watch(() => route.path, () => {
 /* Style pour l'élément de menu actif */
 .category-items li a.router-link-active,
 .category-items li a.router-link-exact-active {
-  background-color: #007bff !important; /* Couleur bleue pour l'élément actif */
-  color: #fff !important;
-  font-weight: 600;
-  border-left: 4px solid #0056b3; /* Bordure gauche pour plus de visibilité */
-  transform: translateX(0) !important; /* Éviter le décalage au hover */
+  background-color: var(--color-primary) !important;
+  color: var(--color-white) !important;
+  font-weight: var(--font-weight-semibold);
+  border-left: 4px solid var(--color-primary-hover);
+  transform: translateX(0) !important;
 }
 
 .category-items li a.router-link-active:hover,
 .category-items li a.router-link-exact-active:hover {
-  background-color: #0056b3 !important;
+  background-color: var(--color-primary-hover) !important;
   transform: translateX(0) !important;
 }
 
 /* Style pour l'en-tête de catégorie contenant un élément actif */
 .category-header.has-active-item {
-  background-color: #495057;
-  border-left: 3px solid #007bff;
+  background-color: var(--color-gray-700);
+  border-left: 3px solid var(--color-primary);
 }
 
 /* Styles spéciaux pour la section Administration */
 .menu-category[data-category="admin"] .category-header {
-  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-  border: 1px solid #c82333;
-  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+  background: linear-gradient(135deg, var(--color-danger) 0%, var(--color-danger-hover) 100%);
+  border: var(--border-width-thin) solid var(--color-danger-hover);
+  box-shadow: var(--shadow-sm);
 }
 
 .menu-category[data-category="admin"] .category-header:hover {
-  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+  background: linear-gradient(135deg, var(--color-danger-hover) 0%, #bd2130 100%);
   transform: translateX(3px);
 }
 
@@ -818,7 +818,7 @@ watch(() => route.path, () => {
 
 .menu-category[data-category="admin"] .category-items {
   background-color: rgba(220, 53, 69, 0.1);
-  border: 1px solid rgba(220, 53, 69, 0.2);
+  border: var(--border-width-thin) solid rgba(220, 53, 69, 0.2);
 }
 
 .menu-category[data-category="admin"] .category-items li a {
@@ -827,19 +827,19 @@ watch(() => route.path, () => {
 
 .menu-category[data-category="admin"] .category-items li a:hover {
   background-color: rgba(220, 53, 69, 0.2);
-  color: #fff;
+  color: var(--color-white);
 }
 
 .main-menu.collapsed .menu-category[data-category="admin"] .category-items {
-  background-color: #dc3545;
-  border-color: #c82333;
+  background-color: var(--color-danger);
+  border-color: var(--color-danger-hover);
 }
 
 /* Adaptation pour le mode collapsed */
 .main-menu.collapsed .category-items li a.router-link-active,
 .main-menu.collapsed .category-items li a.router-link-exact-active {
-  background-color: #007bff !important;
+  background-color: var(--color-primary) !important;
   border-left: none;
-  border-radius: 4px;
+  border-radius: var(--border-radius-sm);
 }
 </style>
