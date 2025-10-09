@@ -20,6 +20,7 @@
  */
 
 import { useSubscriptionsStore } from '../../../stores/subscriptions'
+import { useNotification } from '../../../composables/useNotification'
 
 /**
  * Usage Limit Guard Composable
@@ -31,6 +32,7 @@ import { useSubscriptionsStore } from '../../../stores/subscriptions'
  */
 export function useUsageLimit(metricType: string) {
   const subscriptionsStore = useSubscriptionsStore()
+  const { showError } = useNotification()
 
   /**
    * Check if a requested action would exceed usage limits
@@ -59,7 +61,7 @@ export function useUsageLimit(metricType: string) {
   }
 
   /**
-   * Check usage and show appropriate alert if limit exceeded
+   * Check usage and show appropriate notification if limit exceeded
    * @param requestedAmount - Amount of resources to be consumed
    * @returns Promise<boolean> - true if action is allowed
    */
@@ -68,9 +70,9 @@ export function useUsageLimit(metricType: string) {
 
     if (!result.allowed) {
       if (result.error) {
-        alert('Unable to verify usage limits. Please try again.')
+        showError('Unable to verify usage limits. Please try again.', 'Usage Verification Error')
       } else {
-        alert('Usage limit exceeded. Please upgrade your plan.')
+        showError('Usage limit exceeded. Please upgrade your plan.', 'Usage Limit Exceeded')
       }
       return false
     }

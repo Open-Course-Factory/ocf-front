@@ -387,6 +387,9 @@
 import { ref, onMounted, defineAsyncComponent } from 'vue'
 import axios from 'axios'
 import { terminalService } from '../../services/terminalService'
+import { useNotification } from '../../composables/useNotification'
+
+const { showConfirm } = useNotification()
 
 // Import dynamique des composants
 const TerminalSharingModal = defineAsyncComponent(() => import('../Terminal/TerminalSharingModal.vue'))
@@ -667,7 +670,11 @@ function isTerminalInactive(status: string): boolean {
 }
 
 async function discardTerminal(terminalId: string) {
-  if (!confirm('Êtes-vous sûr de vouloir masquer cette session inactive ?')) {
+  const confirmed = await showConfirm(
+    'Êtes-vous sûr de vouloir masquer cette session inactive ?',
+    'Masquer la session'
+  )
+  if (!confirmed) {
     return
   }
 

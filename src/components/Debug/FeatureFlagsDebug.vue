@@ -128,9 +128,11 @@
 import { computed, nextTick, ref, onMounted } from 'vue'
 import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import { useCurrentUserStore } from '../../stores/currentUser'
+import { useNotification } from '../../composables/useNotification'
 
 const { flags, isEnabled, updateFlag, fetchFromBackend, syncUsageLimits } = useFeatureFlags()
 const currentUser = useCurrentUserStore()
+const { showSuccess, showInfo, showConfirm } = useNotification()
 
 // Loading states
 const isLoading = ref(false)
@@ -227,7 +229,7 @@ async function syncLimits() {
 
   try {
     await syncUsageLimits()
-    alert('✅ Usage limits synced successfully!')
+    showSuccess('Usage limits synced successfully!', 'Sync Complete')
   } catch (err: any) {
     error.value = `Failed to sync limits: ${err.message}`
   } finally {
@@ -266,13 +268,14 @@ function diagnose() {
   console.log('localStorage:', localStorage.getItem('ocf_feature_flags'))
   console.log('=== END DIAGNOSTIC ===')
 
-  alert(`Diagnostic complete! Check console.\n\n✅ ${flagsWithIds.length} flags have backend IDs\n❌ ${flagsWithoutIds.length} flags missing backend IDs`)
+  showInfo(`Diagnostic complete! Check console.\n\n✅ ${flagsWithIds.length} flags have backend IDs\n❌ ${flagsWithoutIds.length} flags missing backend IDs`, 'Diagnostic Complete')
 }
 
 async function resetToDefaults() {
   if (!isAdmin.value) return
 
-  if (!confirm('Reset all feature flags to enabled? This will sync to backend.')) {
+  const confirmed = await showConfirm('Reset all feature flags to enabled? This will sync to backend.', 'Reset Feature Flags')
+  if (!confirmed) {
     return
   }
 

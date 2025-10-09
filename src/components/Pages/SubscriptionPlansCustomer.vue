@@ -156,8 +156,10 @@ import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useI18n } from 'vue-i18n'
 import router from '../../router/index'
+import { useNotification } from '../../composables/useNotification'
 
 const { t } = useI18n()
+const { showSuccess, showError, showConfirm } = useNotification()
 
 // Stores
 const entityStore = useSubscriptionPlansStore()
@@ -276,10 +278,11 @@ async function selectPlan(plan: any) {
 
       // Special case: downgrade to free plan requires cancellation first
       if (plan.price_amount === 0) {
-        const confirmed = window.confirm(
+        const confirmed = await showConfirm(
           `To switch to the free plan, we need to cancel your current subscription.\n\n` +
           `Your current subscription will be cancelled immediately and you'll be switched to the free plan.\n\n` +
-          `Do you want to continue?`
+          `Do you want to continue?`,
+          'Switch to Free Plan'
         )
 
         if (!confirmed) {
@@ -310,7 +313,7 @@ async function selectPlan(plan: any) {
         )
 
         if (response?.free_plan) {
-          alert('Successfully switched to free plan!')
+          showSuccess('Successfully switched to free plan!')
           // Reload to show the new free subscription
           await checkCurrentSubscription()
           await loadPlans()
@@ -318,17 +321,18 @@ async function selectPlan(plan: any) {
         } else {
           // If no free_plan flag but no error, something went wrong
           console.error('Unexpected response:', response)
-          alert('There was an issue activating the free plan. Please try again or contact support.')
+          showError('There was an issue activating the free plan. Please try again or contact support.', 'Activation Error')
         }
       }
 
       // Special case: upgrading FROM free plan to paid plan
       // This is a new subscription, not an upgrade
       if (isCurrentlyOnFreePlan && plan.price_amount > 0) {
-        const confirmed = window.confirm(
+        const confirmed = await showConfirm(
           `You're about to upgrade from the free plan to ${plan.name}.\n\n` +
           `Your free plan will be replaced when you complete checkout.\n\n` +
-          `Do you want to continue?`
+          `Do you want to continue?`,
+          'Upgrade from Free Plan'
         )
 
         if (!confirmed) {
@@ -349,9 +353,10 @@ async function selectPlan(plan: any) {
 
       // For paid-to-paid upgrades/downgrades
       // Show confirmation dialog
-      const confirmed = window.confirm(
+      const confirmed = await showConfirm(
         `${t('subscriptions.changePlanWarning')}\n\n` +
-        `${t('subscriptions.prorationAlwaysInvoiceDesc')}`
+        `${t('subscriptions.prorationAlwaysInvoiceDesc')}`,
+        'Change Plan'
       )
 
       if (!confirmed) {
@@ -363,7 +368,7 @@ async function selectPlan(plan: any) {
       await subscriptionsStore.upgradePlan(plan.id, 'always_invoice')
 
       // Show success message
-      alert(t('subscriptions.planChangedSuccess'))
+      showSuccess(t('subscriptions.planChangedSuccess'))
 
       // Reload current page to refresh subscription details
       await checkCurrentSubscription()
@@ -386,7 +391,7 @@ async function selectPlan(plan: any) {
 
         // If it's a free plan, redirect to dashboard with success message
         if (response?.free_plan) {
-          alert(t('subscriptions.planChangedSuccess') || 'Free plan activated successfully!')
+          showSuccess(t('subscriptions.planChangedSuccess') || 'Free plan activated successfully!')
           router.push('/subscription-dashboard')
           return
         }
@@ -399,7 +404,7 @@ async function selectPlan(plan: any) {
     console.error('Error selecting plan:', error)
     // Show error from store (already formatted with translations)
     if (subscriptionsStore.error) {
-      alert(subscriptionsStore.error)
+      showError(subscriptionsStore.error, 'Subscription Error')
     }
   } finally {
     isSubscribing.value = false

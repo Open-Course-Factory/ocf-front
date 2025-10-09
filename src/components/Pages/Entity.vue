@@ -240,10 +240,12 @@ import { Store } from 'pinia';
 import { getTranslationKey } from '../../utils';
 import { useRoute, useRouter } from 'vue-router';
 import { useBaseStore } from '../../stores/baseStore';
+import { useNotification } from '../../composables/useNotification';
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
+const { showError } = useNotification();
 
 // Ensure baseStore is initialized to load pagination translations
 useBaseStore();
@@ -534,13 +536,13 @@ function jumpToPage() {
 
   if (isNaN(targetPage) || targetPage < 1) {
     console.log('❌ Invalid page number');
-    alert(t('pagination.invalidPage'));
+    showError(t('pagination.invalidPage'), t('pagination.error'));
     return;
   }
 
   if (targetPage > totalPages.value) {
     console.log('❌ Page exceeds maximum');
-    alert(`${t('pagination.page')} ${targetPage} ${t('pagination.pageNotExist')} ${totalPages.value}`);
+    showError(`${t('pagination.page')} ${targetPage} ${t('pagination.pageNotExist')} ${totalPages.value}`, t('pagination.error'));
     return;
   }
 

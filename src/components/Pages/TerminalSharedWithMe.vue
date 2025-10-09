@@ -214,6 +214,9 @@ import { ref, onMounted } from 'vue'
 import { terminalService, type SharedTerminalInfo } from '../../services/terminalService'
 import { userService, type User } from '../../services/userService'
 import axios from 'axios'
+import { useNotification } from '../../composables/useNotification'
+
+const { showConfirm } = useNotification()
 
 // États pour les sessions partagées
 const sharedSessions = ref<SharedTerminalInfo[]>([])
@@ -437,7 +440,11 @@ function isTerminalInactive(status: string): boolean {
 }
 
 async function discardTerminal(terminalId: string) {
-  if (!confirm('Êtes-vous sûr de vouloir masquer ce terminal inactif ?')) {
+  const confirmed = await showConfirm(
+    'Êtes-vous sûr de vouloir masquer ce terminal inactif ?',
+    'Masquer le terminal'
+  )
+  if (!confirmed) {
     return
   }
 

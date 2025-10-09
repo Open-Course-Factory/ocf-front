@@ -24,6 +24,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
+import { useNotification } from '../../composables/useNotification';
+
+const { showSuccess, showError } = useNotification();
 
 const currentKey = ref(null);
 const isLoading = ref(false);
@@ -59,9 +62,9 @@ async function regenerateKey() {
     await axios.post('/user-terminal-keys/regenerate');
     await loadKey();
     showConfirm.value = false;
-    alert('Clé régénérée avec succès');
+    showSuccess('Clé régénérée avec succès');
   } catch (err) {
-    alert('Erreur lors de la régénération');
+    showError('Erreur lors de la régénération', 'Erreur');
   } finally {
     isRegenerating.value = false;
   }

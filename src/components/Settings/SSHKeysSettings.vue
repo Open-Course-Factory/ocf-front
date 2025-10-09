@@ -93,9 +93,11 @@ import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSshKeysStore } from '../../stores/sshKeys'
 import SettingsCard from '../UI/SettingsCard.vue'
+import { useNotification } from '../../composables/useNotification'
 
 const { t } = useI18n()
 const sshKeysStore = useSshKeysStore()
+const { showConfirm } = useNotification()
 
 // Add missing translations
 useI18n().mergeLocaleMessage('en', {
@@ -172,7 +174,8 @@ async function saveKey() {
 }
 
 async function deleteKey(id: string) {
-  if (confirm(t('confirmDelete'))) {
+  const confirmed = await showConfirm(t('confirmDelete'), t('delete'))
+  if (confirmed) {
     try {
       await sshKeysStore.delete(id)
       await sshKeysStore.loadEntities()

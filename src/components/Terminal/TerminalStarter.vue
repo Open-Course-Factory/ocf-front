@@ -404,6 +404,7 @@ import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 import { terminalService, instanceUtils } from '../../services/terminalService'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
+import { useNotification } from '../../composables/useNotification'
 
 // Définir les émissions
 const emit = defineEmits(['session-started'])
@@ -413,6 +414,7 @@ const subscriptionsStore = useSubscriptionsStore()
 
 // i18n setup
 const { t } = useI18n()
+const { showConfirm } = useNotification()
 
 // Importation différée de xterm.js pour éviter les erreurs SSR
 let Terminal, FitAddon, AttachAddon
@@ -996,8 +998,12 @@ Veuillez choisir une autre instance ou mettre à niveau votre plan.`
       errorMessage.value = enhancedError
 
       // Show upgrade suggestion
-      setTimeout(() => {
-        if (confirm('Souhaitez-vous voir les plans disponibles pour débloquer cette instance ?')) {
+      setTimeout(async () => {
+        const confirmed = await showConfirm(
+          'Souhaitez-vous voir les plans disponibles pour débloquer cette instance ?',
+          'Mettre à niveau le plan'
+        )
+        if (confirmed) {
           window.open('/subscription-plans', '_blank')
         }
       }, 2000)

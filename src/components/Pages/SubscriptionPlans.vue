@@ -29,8 +29,10 @@ import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useCurrentUserStore } from '../../stores/currentUser.ts'
 import router from '../../router/index.ts'
+import { useNotification } from '../../composables/useNotification'
 
 const { t } = useI18n()
+const { showError } = useNotification()
 
 const entityStore = useSubscriptionPlansStore()
 const subscriptionsStore = useSubscriptionsStore()
@@ -115,9 +117,9 @@ const upgradePlan = async (plan: any) => {
         console.error('Error upgrading plan:', error)
         // Handle specific error cases
         if (error.response?.status === 403) {
-            alert('Unable to upgrade: ' + (error.response?.data?.error_message || 'Permission denied'))
+            showError(error.response?.data?.error_message || 'Permission denied', 'Unable to upgrade')
         } else {
-            alert('Upgrade failed: ' + (error.response?.data?.error_message || error.message))
+            showError(error.response?.data?.error_message || error.message, 'Upgrade failed')
         }
     } finally {
         isUpgrading.value = false
