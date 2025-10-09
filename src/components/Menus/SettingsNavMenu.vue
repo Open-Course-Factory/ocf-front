@@ -9,10 +9,10 @@
   <div class="settings-menu" :class="{ collapsed: isMenuCollapsed }">
     <header class="menu-header">
       <h1>
-        <router-link to="/courses" class="back-link">
+        <a @click="goBack" class="back-link" style="cursor: pointer;">
           <i class="fas fa-arrow-left"></i>
           <span class="menu-text">{{ t('userSettings.pageTitle') }}</span>
-        </router-link>
+        </a>
       </h1>
     </header>
     <nav class="menu-nav">
@@ -35,12 +35,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useSettingsNavigation } from '../../composables/useSettingsNavigation'
 
-const props = defineProps<{
+defineProps<{
   isMenuCollapsed?: boolean
 }>()
 
 const { t } = useI18n()
+const { goBackFromSettings } = useSettingsNavigation()
+
+const goBack = () => {
+  goBackFromSettings()
+}
 
 const settingsMenuItems = computed(() => [
   {
