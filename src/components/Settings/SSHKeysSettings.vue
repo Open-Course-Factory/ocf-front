@@ -100,17 +100,21 @@ const sshKeysStore = useSshKeysStore()
 const { showConfirm } = useNotification()
 
 // Add missing translations
-useI18n().mergeLocaleMessage('en', {
+const i18n = useI18n()
+const existingEn = (i18n.getLocaleMessage('en') as any)?.sshkeys || {}
+const existingFr = (i18n.getLocaleMessage('fr') as any)?.sshkeys || {}
+
+i18n.mergeLocaleMessage('en', {
   sshkeys: {
-    ...useI18n().getLocaleMessage('en').sshkeys,
+    ...existingEn,
     description: 'Manage your SSH keys for terminal access',
     noKeys: 'No SSH keys configured yet'
   }
 })
 
-useI18n().mergeLocaleMessage('fr', {
+i18n.mergeLocaleMessage('fr', {
   sshkeys: {
-    ...useI18n().getLocaleMessage('fr').sshkeys,
+    ...existingFr,
     description: 'Gérez vos clés SSH pour l\'accès aux terminaux',
     noKeys: 'Aucune clé SSH configurée pour le moment'
   }
@@ -162,9 +166,9 @@ function closeModal() {
 async function saveKey() {
   try {
     if (editingKey.value) {
-      await sshKeysStore.update(editingKey.value.id, { name: keyForm.value.name })
+      await sshKeysStore.updateEntity('/ssh-keys', editingKey.value.id, { name: keyForm.value.name })
     } else {
-      await sshKeysStore.create(keyForm.value)
+      await sshKeysStore.createEntity('/ssh-keys', keyForm.value)
     }
     await sshKeysStore.loadEntities()
     closeModal()
@@ -177,7 +181,7 @@ async function deleteKey(id: string) {
   const confirmed = await showConfirm(t('confirmDelete'), t('delete'))
   if (confirmed) {
     try {
-      await sshKeysStore.delete(id)
+      await sshKeysStore.deleteEntity('/ssh-keys', id)
       await sshKeysStore.loadEntities()
     } catch (error) {
       console.error('Error deleting SSH key:', error)
