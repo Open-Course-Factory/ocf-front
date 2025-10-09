@@ -24,6 +24,7 @@ Complete guide to the Open Course Factory (OCF) design system - a comprehensive 
 ## 🎯 Overview
 
 The OCF Design System provides:
+
 - **100+ design tokens** for colors, spacing, typography, etc.
 - **50+ reusable component classes** (.btn, .card, .form-control, etc.)
 - **30+ utility classes** for rapid development
@@ -52,6 +53,7 @@ src/assets/styles/
 ```
 
 **Import in `src/main.ts`:**
+
 ```typescript
 import './assets/styles/main.css'
 ```
@@ -63,6 +65,7 @@ import './assets/styles/main.css'
 ### Colors
 
 #### Primary Colors
+
 ```css
 --color-primary: #007bff           /* Main brand color */
 --color-primary-hover: #0056b3     /* Hover state */
@@ -71,6 +74,7 @@ import './assets/styles/main.css'
 ```
 
 #### Status Colors
+
 ```css
 --color-success: #28a745    /* Green for success */
 --color-danger: #dc3545     /* Red for errors/delete */
@@ -79,6 +83,7 @@ import './assets/styles/main.css'
 ```
 
 #### Neutral Colors
+
 ```css
 --color-white: #ffffff
 --color-black: #000000
@@ -101,6 +106,7 @@ import './assets/styles/main.css'
 ```
 
 #### Dark Mode Colors
+
 ```css
 [data-theme="dark"] {
   --color-bg-primary: #1a1a1a
@@ -127,6 +133,7 @@ import './assets/styles/main.css'
 ```
 
 **Usage:**
+
 ```css
 .my-component {
   padding: var(--spacing-md);
@@ -138,6 +145,7 @@ import './assets/styles/main.css'
 ### Typography
 
 #### Font Sizes
+
 ```css
 --font-size-xs: 0.75rem    /* 12px */
 --font-size-sm: 0.85rem    /* 13.6px */
@@ -151,6 +159,7 @@ import './assets/styles/main.css'
 ```
 
 #### Font Weights
+
 ```css
 --font-weight-normal: 400
 --font-weight-medium: 500
@@ -159,6 +168,7 @@ import './assets/styles/main.css'
 ```
 
 #### Line Heights
+
 ```css
 --line-height-tight: 1.25
 --line-height-normal: 1.5
@@ -166,6 +176,7 @@ import './assets/styles/main.css'
 ```
 
 #### Font Families
+
 ```css
 --font-family-primary: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif
 --font-family-monospace: "Courier New", Courier, monospace
@@ -174,6 +185,7 @@ import './assets/styles/main.css'
 ### Borders & Shadows
 
 #### Border Radius
+
 ```css
 --border-radius-sm: 4px
 --border-radius-md: 6px
@@ -183,6 +195,7 @@ import './assets/styles/main.css'
 ```
 
 #### Border Width
+
 ```css
 --border-width-thin: 1px
 --border-width-medium: 2px
@@ -190,6 +203,7 @@ import './assets/styles/main.css'
 ```
 
 #### Shadows
+
 ```css
 --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05)
 --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1)
@@ -307,6 +321,7 @@ import './assets/styles/main.css'
 Located in `/src/composables/useNotification.ts`, this composable provides consistent modal-based feedback to users, replacing browser alerts and custom error panels.
 
 **Import & Setup:**
+
 ```vue
 <script setup>
 import { useNotification } from '@/composables/useNotification'
@@ -318,12 +333,14 @@ const { showError, showSuccess, showWarning, showInfo, showConfirm, showAlert, s
 #### Available Notification Functions
 
 ##### 1. **Success Notification**
+
 ```javascript
 showSuccess('Operation completed successfully!', 'Success')
 // Title is optional, defaults to 'Success'
 ```
 
 ##### 2. **Error Notification**
+
 ```javascript
 showError('An error occurred. Please try again.', 'Error')
 // Title is optional, defaults to 'Error'
@@ -331,6 +348,7 @@ showError('An error occurred. Please try again.', 'Error')
 ```
 
 ##### 3. **Warning Notification**
+
 ```javascript
 showWarning('This action cannot be undone.', 'Warning')
 // Title is optional, defaults to 'Warning'
@@ -338,6 +356,7 @@ showWarning('This action cannot be undone.', 'Warning')
 ```
 
 ##### 4. **Info Notification**
+
 ```javascript
 showInfo('Did you know...', 'Info')
 // Title is optional, defaults to 'Info'
@@ -345,6 +364,7 @@ showInfo('Did you know...', 'Info')
 ```
 
 ##### 5. **Simple Toast Message** (less intrusive)
+
 ```javascript
 showMessage('Changes saved', 'success')
 // Type: 'success' | 'warning' | 'info' | 'error'
@@ -352,12 +372,14 @@ showMessage('Changes saved', 'success')
 ```
 
 ##### 6. **Alert Modal** (replaces window.alert)
+
 ```javascript
 await showAlert('Your session will expire soon', 'Session Warning', 'warning')
 // Type: 'info' | 'warning' | 'error' | 'success'
 ```
 
 ##### 7. **Confirm Dialog** (replaces window.confirm)
+
 ```javascript
 const confirmed = await showConfirm(
   'Are you sure you want to delete this item?',
@@ -376,6 +398,7 @@ if (confirmed) {
 ```
 
 ##### 8. **Prompt Dialog** (replaces window.prompt)
+
 ```javascript
 const name = await showPrompt(
   'Please enter your name',
@@ -396,6 +419,7 @@ if (name !== null) {
 #### Usage Examples
 
 **Error Handling in Forms:**
+
 ```vue
 <script setup>
 import { useNotification } from '@/composables/useNotification'
@@ -419,6 +443,7 @@ async function saveForm() {
 ```
 
 **Confirming Destructive Actions:**
+
 ```vue
 <script setup>
 import { useNotification } from '@/composables/useNotification'
@@ -445,6 +470,7 @@ async function deleteItem(itemId) {
 ```
 
 **Session Limits & Warnings:**
+
 ```vue
 <script setup>
 import { useNotification } from '@/composables/useNotification'
@@ -648,6 +674,7 @@ function handleError(error) {
 #### 1. Replace Colors
 
 **Before:**
+
 ```css
 .my-component {
   color: #007bff;
@@ -657,6 +684,7 @@ function handleError(error) {
 ```
 
 **After:**
+
 ```css
 .my-component {
   color: var(--color-primary);
@@ -668,6 +696,7 @@ function handleError(error) {
 #### 2. Replace Spacing
 
 **Before:**
+
 ```css
 .my-component {
   padding: 16px;
@@ -677,6 +706,7 @@ function handleError(error) {
 ```
 
 **After:**
+
 ```css
 .my-component {
   padding: var(--spacing-md);
@@ -688,6 +718,7 @@ function handleError(error) {
 #### 3. Replace Typography
 
 **Before:**
+
 ```css
 .my-component {
   font-size: 0.95rem;
@@ -697,6 +728,7 @@ function handleError(error) {
 ```
 
 **After:**
+
 ```css
 .my-component {
   font-size: var(--font-size-base);
@@ -708,6 +740,7 @@ function handleError(error) {
 #### 4. Replace Borders & Shadows
 
 **Before:**
+
 ```css
 .my-component {
   border-radius: 6px;
@@ -716,6 +749,7 @@ function handleError(error) {
 ```
 
 **After:**
+
 ```css
 .my-component {
   border-radius: var(--border-radius-md);
@@ -726,6 +760,7 @@ function handleError(error) {
 #### 5. Replace Transitions
 
 **Before:**
+
 ```css
 .my-component {
   transition: all 0.2s ease;
@@ -733,6 +768,7 @@ function handleError(error) {
 ```
 
 **After:**
+
 ```css
 .my-component {
   transition: all var(--transition-base);
@@ -742,6 +778,7 @@ function handleError(error) {
 #### 6. Use Component Classes
 
 **Before:**
+
 ```html
 <button style="background:#007bff; color:#fff; padding:10px 20px;">
   Save
@@ -749,6 +786,7 @@ function handleError(error) {
 ```
 
 **After:**
+
 ```html
 <button class="btn btn-primary">
   Save
@@ -791,16 +829,20 @@ function handleError(error) {
 ## ✅ Migrated Components
 
 ### Core Components
+
 - ✅ **SettingsCard** - Reusable card component
 
 ### Page Components
+
 - ✅ **Entity.vue** - Generic CRUD interface with design tokens (pagination, filters, loading states)
 
 ### Menu/Navigation Components
+
 - ✅ **MainNavMenu** - Left sidebar navigation with collapsible categories
 - ✅ **TopMenu** - Top bar with user info and locale selector
 
 ### Settings Components
+
 - ✅ **NavigationSettings** - Uses SettingsCard + design tokens
 - ✅ **LocalizationSettings** - Uses SettingsCard + design tokens
 - ✅ **UISettings** - Uses SettingsCard + design tokens
@@ -809,21 +851,26 @@ function handleError(error) {
 - ✅ **SSHKeysSettings** - Uses SettingsCard + design tokens
 
 ### UI Components
+
 - ✅ **ToastContainer** - Uses design tokens
 - ✅ **DemoModeBanner** - Uses design tokens
 - ✅ **LoadingSkeleton** - Skeleton loading component with variants
 
 ### Generic Components
+
 - ✅ **EntityListSkeleton** - Uses design tokens
 
 ### Modal Components
+
 - ✅ **BaseModal** - Uses design tokens
 - ✅ **EntityModal** - Uses design tokens
 
 ### Terminal Components
+
 - ✅ **TerminalAccessModal** - Modal for managing terminal access and permissions
 
 ### Button Components
+
 - ✅ **Disconnect** - Already using design system button classes
 
 ### Migration Statistics
@@ -870,12 +917,14 @@ All CSS variables automatically switch to dark variants defined in `variables.cs
 ```
 
 **Time to create new theme:**
+
 - **Before:** Days/weeks (modify 89+ files)
 - **After:** ~1 hour (modify 1 file)
 
 ### Theme Variables to Customize
 
 **Essential:**
+
 - Primary color
 - Success/danger/warning colors
 - Background colors
@@ -883,6 +932,7 @@ All CSS variables automatically switch to dark variants defined in `variables.cs
 - Border colors
 
 **Optional:**
+
 - Spacing (for compact/spacious variants)
 - Font sizes (for accessibility)
 - Border radius (for sharp/rounded styles)
@@ -895,6 +945,7 @@ All CSS variables automatically switch to dark variants defined in `variables.cs
 ### 1. Always Use Design Tokens
 
 ❌ **Don't:**
+
 ```css
 .my-component {
   color: #007bff;
@@ -904,6 +955,7 @@ All CSS variables automatically switch to dark variants defined in `variables.cs
 ```
 
 ✅ **Do:**
+
 ```css
 .my-component {
   color: var(--color-primary);
@@ -915,11 +967,13 @@ All CSS variables automatically switch to dark variants defined in `variables.cs
 ### 2. Use Semantic Class Names
 
 ❌ **Don't:**
+
 ```html
 <button class="blue-button large">Click me</button>
 ```
 
 ✅ **Do:**
+
 ```html
 <button class="btn btn-primary btn-lg">Click me</button>
 ```
@@ -929,6 +983,7 @@ All CSS variables automatically switch to dark variants defined in `variables.cs
 Before creating custom styles, check if a component class exists.
 
 ❌ **Don't:**
+
 ```vue
 <div style="padding: 30px; background: white; border-radius: 8px;">
   <h2 style="margin-bottom: 20px;">Title</h2>
@@ -937,6 +992,7 @@ Before creating custom styles, check if a component class exists.
 ```
 
 ✅ **Do:**
+
 ```vue
 <div class="card">
   <div class="card-header">
@@ -982,4 +1038,5 @@ When creating new reusable components, document them following this guide's form
 ---
 
 **Version History:**
+
 - v1.0.0 (2025-10-09) - Initial comprehensive design system

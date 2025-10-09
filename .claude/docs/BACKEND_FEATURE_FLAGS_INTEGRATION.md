@@ -21,6 +21,7 @@ Backend DB → API → Frontend (with 5min cache) → LocalStorage (backup)
 3. **LocalStorage** - **Emergency fallback only** (if backend fetch fails)
 
 **Important**: LocalStorage is **NOT** loaded by default. It's only used:
+
 - As a fallback when backend is unreachable
 - To persist admin toggles (written, not read on startup)
 
@@ -31,6 +32,7 @@ Backend DB → API → Frontend (with 5min cache) → LocalStorage (backup)
 Fetch all feature flags from backend.
 
 **Response:**
+
 ```json
 [
   {
@@ -46,6 +48,7 @@ Fetch all feature flags from backend.
 ```
 
 **Frontend mapping:**
+
 - Backend `name: "Course Conception"` → Frontend key: `course_conception`
 - Backend `enabled` → Frontend flag state
 - Backend `id` → Used for updates via PATCH
@@ -55,6 +58,7 @@ Fetch all feature flags from backend.
 Update a specific feature flag.
 
 **Request:**
+
 ```json
 {
   "enabled": false
@@ -62,6 +66,7 @@ Update a specific feature flag.
 ```
 
 **Response:**
+
 ```json
 {
   "id": "uuid-123",
@@ -76,6 +81,7 @@ Update a specific feature flag.
 Sync user usage limits after toggling features that affect metrics (courses, terminals, etc.).
 
 **Response:**
+
 ```json
 {
   "synced_users": 150,
@@ -84,6 +90,7 @@ Sync user usage limits after toggling features that affect metrics (courses, ter
 ```
 
 **Auto-triggered when:**
+
 - Toggling `course_conception` (affects `courses` metric)
 - Toggling `terminal_management` (affects `concurrent_terminals`, `lab_sessions` metrics)
 
@@ -350,15 +357,19 @@ def update_feature(feature_id, data):
 **Symptom**: Backend says flag is `true` but frontend shows it as `false`
 
 **Solution**:
+
 1. Clear localStorage: `localStorage.removeItem('ocf_feature_flags')`
 2. Refresh the page
 3. Check console logs for mapping:
+
    ```
    🏴 Mapping backend "Course Conception" → frontend "course_conception" (enabled: true)
    ```
+
 4. Verify backend feature name matches expected format
 
 **Common name mapping issues**:
+
 - Backend: `"Course Conception"` → Frontend: `course_conception` ✅
 - Backend: `"course_conception"` → Frontend: `course_conception` ✅
 - Backend: `"CourseConception"` → Frontend: `courseconception` ⚠️ (may not match)
@@ -429,6 +440,7 @@ Track who changed what and when:
 ## Support
 
 For issues or questions:
-- GitHub: https://github.com/your-org/ocf-front/issues
+
+- GitHub: <https://github.com/your-org/ocf-front/issues>
 - Docs: `/docs/feature-flags`
 - Backend docs: `/api/v1/docs`
