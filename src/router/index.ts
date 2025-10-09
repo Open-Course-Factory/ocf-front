@@ -22,6 +22,7 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import { useCurrentUserStore } from '../stores/currentUser';
 import { featureFlagService } from '../services/featureFlags';
+import { useSettingsNavigation } from '../composables/useSettingsNavigation';
 import Layout from '../components/Layout.vue';
 import Courses from '../components/Pages/Courses.vue';
 import Chapters from '../components/Pages/Chapters.vue';
@@ -310,8 +311,14 @@ const router = createRouter({
   routes: basicRoutes as RouteRecordRaw[],
 });
 
-router.beforeEach(async (to, _from, next) => {
+router.beforeEach(async (to, from, next) => {
   const currentUserStore = useCurrentUserStore();
+  const { storePreviousRoute } = useSettingsNavigation();
+
+  // Store previous route when entering settings
+  if (to.meta.isSettings && !from.meta.isSettings) {
+    storePreviousRoute(from);
+  }
 
   // Check authentication first
   if (to.matched.some(record => record.meta.requiresAuth)) {

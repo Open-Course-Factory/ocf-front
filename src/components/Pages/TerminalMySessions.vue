@@ -35,7 +35,7 @@
 
     <div class="sessions-section">
       <div class="section-header">
-        <h3>Sessions Actives ({{ sessions.length }})</h3>
+        <h3>Sessions Actives ({{ activeSessionsCount }})</h3>
         <div class="header-actions">
           <!-- Bouton de synchronisation globale -->
           <button
@@ -70,8 +70,18 @@
       </div>
 
       <div v-if="sessions.length > 0" class="sessions-grid">
-        <div v-for="session in sessions" :key="session.id || session.session_id"
-             :class="['session-card', { 'inactive-terminal': isTerminalInactive(session.status) }]">
+        <template v-for="(session, index) in sortedSessions" :key="session.id || session.session_id">
+          <!-- Separator between active and inactive sessions -->
+          <div
+            v-if="index > 0 && !isTerminalInactive(sortedSessions[index - 1].status) && isTerminalInactive(session.status)"
+            class="sessions-separator"
+          >
+            <div class="separator-line"></div>
+            <span class="separator-label">Sessions Inactives</span>
+            <div class="separator-line"></div>
+          </div>
+
+          <div :class="['session-card', { 'inactive-terminal': isTerminalInactive(session.status) }]">
 
           <!-- En-tête avec indicateur de sync -->
           <div class="card-header">
@@ -268,7 +278,8 @@
               Masquer
             </button>
           </div>
-        </div>
+          </div>
+        </template>
       </div>
 
       <div v-else class="empty-section">
@@ -384,7 +395,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, defineAsyncComponent } from 'vue'
+import { ref, onMounted, defineAsyncComponent, computed } from 'vue'
 import axios from 'axios'
 import { terminalService } from '../../services/terminalService'
 import { useNotification } from '../../composables/useNotification'
@@ -421,6 +432,33 @@ const showSharingModal = ref(false)
 const showAccessModal = ref(false)
 const selectedTerminalId = ref<string | null>(null)
 const accessModalRefreshTrigger = ref(0)
+
+// Helper function to check if terminal is inactive
+function isTerminalInactive(status: string): boolean {
+  return ['expired', 'stopped', 'terminated'].includes(status?.toLowerCase())
+}
+
+// Computed property to count only active sessions
+const activeSessionsCount = computed(() => {
+  return sessions.value.filter(session => !isTerminalInactive(session.status)).length
+})
+
+// Computed property to sort sessions with active ones at the top
+const sortedSessions = computed(() => {
+  return [...sessions.value].sort((a, b) => {
+    const aActive = !isTerminalInactive(a.status)
+    const bActive = !isTerminalInactive(b.status)
+
+    // Active sessions first
+    if (aActive && !bActive) return -1
+    if (!aActive && bActive) return 1
+
+    // Within the same status group, sort by creation date (most recent first)
+    const aDate = new Date(a.created_at || 0).getTime()
+    const bDate = new Date(b.created_at || 0).getTime()
+    return bDate - aDate
+  })
+})
 
 onMounted(() => {
   console.log('MySessions mounted')
@@ -665,10 +703,6 @@ function closeAccessModal() {
   selectedTerminalId.value = null
 }
 
-function isTerminalInactive(status: string): boolean {
-  return ['expired', 'stopped', 'terminated'].includes(status?.toLowerCase())
-}
-
 async function discardTerminal(terminalId: string) {
   const confirmed = await showConfirm(
     'Êtes-vous sûr de vouloir masquer cette session inactive ?',
@@ -758,6 +792,35 @@ async function discardTerminal(terminalId: string) {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
   gap: 20px;
+}
+
+/* Separator between active and inactive sessions */
+.sessions-separator {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin: 20px 0;
+  padding: 0 10px;
+}
+
+.separator-line {
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(to right, transparent, #dee2e6, transparent);
+}
+
+.separator-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  padding: 5px 15px;
+  background: #f8f9fa;
+  border-radius: 20px;
+  border: 2px solid #dee2e6;
 }
 
 .session-card {

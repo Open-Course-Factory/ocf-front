@@ -722,16 +722,28 @@ async function loadCurrentTerminalUsage() {
   }
 }
 
+// Synchronize all terminal sessions with the backend
+async function syncAllSessions() {
+  try {
+    const response = await axios.post('/terminal-sessions/sync-all')
+    console.log('All sessions synchronized:', response.data)
+    return response.data
+  } catch (error) {
+    console.error('Failed to sync sessions:', error)
+    throw error
+  }
+}
+
 // Manual refresh of usage data
 async function refreshUsage() {
   try {
     refreshingUsage.value = true
 
-    // First, sync usage limits with the backend to ensure expired terminals are cleaned up
+    // First, sync all terminal sessions with the API to get current status
     try {
-      await subscriptionsStore.syncUsageLimits()
+      await syncAllSessions()
     } catch (syncError) {
-      console.error('Failed to sync usage limits:', syncError)
+      console.error('Failed to sync sessions:', syncError)
       // Continue anyway to try loading current usage
     }
 
