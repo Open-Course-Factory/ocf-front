@@ -13,7 +13,6 @@
       <p>showStartPanel: {{ showStartPanel }}</p>
       <p>showInfoPanel: {{ showInfoPanel }}</p>
       <p>showTerminalPanel: {{ showTerminalPanel }}</p>
-      <p>showErrorPanel: {{ showErrorPanel }}</p>
       <p>isStarting: {{ isStarting }}</p>
       <p>terminal initialized: {{ !!terminal }}</p>
       <p>sessionInfo: {{ !!sessionInfo }}</p>
@@ -373,28 +372,6 @@
       </div>
     </div>
 
-    <!-- Panneau d'erreur -->
-    <div class="panel panel-danger" v-show="showErrorPanel">
-      <div class="panel-heading">
-        <i class="fas fa-exclamation-triangle"></i>
-        Erreur
-      </div>
-      <div class="panel-body">
-        <div class="error-message">
-          <p>{{ errorMessage }}</p>
-        </div>
-        <div class="error-actions">
-          <button class="btn btn-warning" @click="resetToStart">
-            <i class="fas fa-home"></i>
-            Recommencer
-          </button>
-          <button class="btn btn-info" @click="showDebug = !showDebug">
-            <i class="fas fa-bug"></i>
-            {{ showDebug ? 'Masquer' : 'Afficher' }} Debug
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -414,7 +391,7 @@ const subscriptionsStore = useSubscriptionsStore()
 
 // i18n setup
 const { t } = useI18n()
-const { showConfirm } = useNotification()
+const { showConfirm, showError: showErrorNotification, showWarning } = useNotification()
 
 // Importation différée de xterm.js pour éviter les erreurs SSR
 let Terminal, FitAddon, AttachAddon
@@ -427,7 +404,6 @@ let socket = null
 const showStartPanel = ref(true)
 const showInfoPanel = ref(false)
 const showTerminalPanel = ref(false)
-const showErrorPanel = ref(false)
 const showReconnectButton = ref(false)
 //const showDebug = ref(process.env.NODE_ENV === 'development')
 const showDebug = ref(false)
@@ -437,7 +413,6 @@ const isStarting = ref(false)
 const isStopping = ref(false)
 const isConnected = ref(false)
 const startStatus = ref('Préparation...')
-const errorMessage = ref('')
 const terminalError = ref('')
 
 // Informations de session
@@ -625,22 +600,22 @@ function getStatusClass(status) {
 // Initialisation dynamique des modules xterm
 async function initXterm() {
   if (terminal) return // Déjà initialisé
-  
+
   try {
     startStatus.value = 'Chargement des modules xterm.js...'
-    
+
     // Import dynamique pour éviter les erreurs SSR
     const [xtermModule, fitModule, attachModule] = await Promise.all([
       import('@xterm/xterm'),
       import('@xterm/addon-fit'),
       import('xterm-addon-attach')
     ])
-    
+
     Terminal = xtermModule.Terminal
     FitAddon = fitModule.FitAddon
     AttachAddon = attachModule.AttachAddon
-    
-    
+
+
     // Créer le terminal
     terminal = new Terminal({
       cursorBlink: true,
@@ -671,17 +646,16 @@ async function initXterm() {
         brightWhite: '#ffffff'
       }
     })
-    
+
     fitAddon = new FitAddon()
     terminal.loadAddon(fitAddon)
-    
+
     terminalError.value = ''
     return true
   } catch (error) {
     console.error('Erreur lors de l\'initialisation de xterm.js:', error)
     terminalError.value = `Impossible de charger xterm.js: ${error.message}`
-    errorMessage.value = 'Impossible de charger le terminal. Vérifiez que les dépendances xterm.js sont installées.'
-    showErrorPanel.value = true
+    showErrorNotification('Impossible de charger le terminal. Vérifiez que les dépendances xterm.js sont installées.', 'Erreur d\'initialisation')
     return false
   }
 }
@@ -694,16 +668,14 @@ async function loadInstanceTypes() {
     // Ensure we have a valid array
     if (!Array.isArray(loadedTypes)) {
       instanceTypes.value = []
-      errorMessage.value = 'Format de données invalide pour les types d\'instances.'
-      showErrorPanel.value = true
+      showErrorNotification('Format de données invalide pour les types d\'instances.', 'Erreur de chargement')
       return
     }
 
     instanceTypes.value = loadedTypes
 
     if (instanceTypes.value.length === 0) {
-      errorMessage.value = 'Aucun type d\'instance disponible. Contactez l\'administrateur.'
-      showErrorPanel.value = true
+      showWarning('Aucun type d\'instance disponible. Contactez l\'administrateur.', 'Aucune instance disponible')
       return
     }
 
@@ -711,8 +683,7 @@ async function loadInstanceTypes() {
     setDefaultInstanceSelection()
   } catch (error) {
     console.error('Failed to load instance types:', error)
-    errorMessage.value = `Erreur lors du chargement des types d'instances: ${error.message || error}`
-    showErrorPanel.value = true
+    showErrorNotification(`Erreur lors du chargement des types d'instances: ${error.message || error}`, 'Erreur de chargement')
     // Initialize with empty array on error
     instanceTypes.value = []
     selectedInstanceType.value = ''
@@ -755,6 +726,16 @@ async function loadCurrentTerminalUsage() {
 async function refreshUsage() {
   try {
     refreshingUsage.value = true
+
+    // First, sync usage limits with the backend to ensure expired terminals are cleaned up
+    try {
+      await subscriptionsStore.syncUsageLimits()
+    } catch (syncError) {
+      console.error('Failed to sync usage limits:', syncError)
+      // Continue anyway to try loading current usage
+    }
+
+    // Then load the updated usage data
     await loadCurrentTerminalUsage()
   } catch (error) {
     console.error('Failed to refresh usage:', error)
@@ -840,9 +821,7 @@ function resetForm() {
   expiryInput.value = 3600
   // Reset to default available instance type
   setDefaultInstanceSelection()
-  errorMessage.value = ''
   terminalError.value = ''
-  showErrorPanel.value = false
 }
 
 // Search and filter methods for scalability
@@ -875,14 +854,12 @@ function selectInstance(instance) {
 
 async function startNewSession() {
   if (!termsInput.value.trim()) {
-    errorMessage.value = 'Veuillez accepter les conditions d\'utilisation'
-    showErrorPanel.value = true
+    showErrorNotification('Veuillez accepter les conditions d\'utilisation', 'Erreur de validation')
     return
   }
 
   if (!selectedInstanceType.value) {
-    errorMessage.value = 'Veuillez sélectionner un type d\'instance'
-    showErrorPanel.value = true
+    showErrorNotification('Veuillez sélectionner un type d\'instance', 'Erreur de validation')
     return
   }
 
@@ -895,8 +872,10 @@ async function startNewSession() {
     const canCreateTerminal = await subscriptionsStore.checkUsageLimit('concurrent_terminals', 1)
 
     if (!canCreateTerminal) {
-      errorMessage.value = 'Vous avez atteint votre limite de terminaux simultanés. Veuillez arrêter un terminal existant ou mettre à niveau votre plan.'
-      showErrorPanel.value = true
+      showErrorNotification(
+        'Vous avez atteint votre limite de terminaux simultanés. Veuillez arrêter un terminal existant ou mettre à niveau votre plan.',
+        'Limite atteinte'
+      )
       isStarting.value = false
       checkingUsage.value = false
       return
@@ -904,8 +883,10 @@ async function startNewSession() {
   } catch (error) {
     console.error('Error checking usage limits:', error)
     if (error.response?.status === 403 && error.response?.data?.error_message?.includes('Maximum concurrent terminals')) {
-      errorMessage.value = error.response.data.error_message + ' Veuillez mettre à niveau votre plan pour créer plus de terminaux.'
-      showErrorPanel.value = true
+      showErrorNotification(
+        error.response.data.error_message + ' Veuillez mettre à niveau votre plan pour créer plus de terminaux.',
+        'Limite atteinte'
+      )
       isStarting.value = false
       checkingUsage.value = false
       return
@@ -919,8 +900,10 @@ async function startNewSession() {
   if (selectedInstanceType.value) {
     const availability = instanceAvailabilityMap.value.get(selectedInstanceType.value)
     if (!availability?.available) {
-      errorMessage.value = 'L\'instance sélectionnée n\'est pas disponible avec votre plan actuel. Veuillez choisir une autre instance ou mettre à niveau votre plan.'
-      showErrorPanel.value = true
+      showWarning(
+        'L\'instance sélectionnée n\'est pas disponible avec votre plan actuel. Veuillez choisir une autre instance ou mettre à niveau votre plan.',
+        'Instance non disponible'
+      )
       isStarting.value = false
       return
     }
@@ -939,26 +922,26 @@ async function startNewSession() {
     startStatus.value = 'Envoi de la requête au serveur...'
 
     const response = await axios.post('/terminal-sessions/start-session', sessionData)
-    
+
     sessionInfo.value = {
       session_id: response.data.session_id,
       console_url: response.data.console_url,
       expires_at: response.data.expires_at,
       status: response.data.status
     }
-    
+
     startStatus.value = 'Session créée, initialisation du terminal...'
-    
+
     // Cacher le panneau de démarrage et afficher les panneaux de session
     showStartPanel.value = false
     showInfoPanel.value = true
     showTerminalPanel.value = true
-    
+
     // Démarrer le timer d'expiration
     if (response.data.expires_at) {
       startExpirationTimer(response.data.expires_at)
     }
-    
+
     // Émettre l'événement pour informer le parent
     emit('session-started')
 
@@ -967,7 +950,7 @@ async function startNewSession() {
 
     // Initialiser le terminal
     await initializeTerminal()
-    
+
   } catch (error) {
     console.error('Erreur lors du démarrage:', error)
 
@@ -987,15 +970,10 @@ async function startNewSession() {
         const requiredSizes = sizesMatch[1].split('|').map(s => s.trim())
         const allowedSizes = allowedMatch[1].split(',').map(s => s.trim())
 
-        enhancedError = `❌ Instance non autorisée
-
-L'instance "${instanceName}" nécessite les tailles: ${requiredSizes.join(', ')}
-Votre plan autorise: ${allowedSizes.join(', ')}
-
-Veuillez choisir une autre instance ou mettre à niveau votre plan.`
+        enhancedError = `Instance non autorisée\n\nL'instance "${instanceName}" nécessite les tailles: ${requiredSizes.join(', ')}\nVotre plan autorise: ${allowedSizes.join(', ')}\n\nVeuillez choisir une autre instance ou mettre à niveau votre plan.`
       }
 
-      errorMessage.value = enhancedError
+      showErrorNotification(enhancedError, 'Instance non autorisée')
 
       // Show upgrade suggestion
       setTimeout(async () => {
@@ -1008,10 +986,9 @@ Veuillez choisir une autre instance ou mettre à niveau votre plan.`
         }
       }, 2000)
     } else {
-      errorMessage.value = errorMsg
+      showErrorNotification(errorMsg, 'Erreur de démarrage')
     }
 
-    showErrorPanel.value = true
     showStartPanel.value = true
     showInfoPanel.value = false
     showTerminalPanel.value = false
@@ -1086,17 +1063,16 @@ async function connectWebSocket() {
       isConnected.value = false
       showReconnectButton.value = true
     }
-    
+
     socket.onerror = (error) => {
       console.error('Erreur WebSocket:', error)
       isConnected.value = false
       showReconnectButton.value = true
     }
-    
+
   } catch (error) {
     console.error('Erreur lors de la connexion WebSocket:', error)
-    errorMessage.value = `Impossible de se connecter au terminal: ${error.message}`
-    showErrorPanel.value = true
+    showErrorNotification(`Impossible de se connecter au terminal: ${error.message}`, 'Erreur de connexion')
     isConnected.value = false
     showReconnectButton.value = true
   }
@@ -1116,13 +1092,11 @@ async function stopSession() {
 
     // Reset de l'interface
     resetToStart()
-    
+
   } catch (error) {
     console.error('Erreur lors de l\'arrêt:', error)
-    errorMessage.value = error.response?.data?.error_message || 
-                         error.message || 
-                         'Erreur lors de l\'arrêt de la session'
-    showErrorPanel.value = true
+    const errorMsg = error.response?.data?.error_message || error.message || 'Erreur lors de l\'arrêt de la session'
+    showErrorNotification(errorMsg, 'Erreur d\'arrêt')
   } finally {
     isStopping.value = false
   }
@@ -1137,21 +1111,19 @@ function reconnectTerminal() {
 
 function resetToStart() {
   cleanup()
-  
+
   // Reset de l'état
   sessionInfo.value = null
   timeRemaining.value = 0
   isConnected.value = false
-  errorMessage.value = ''
   terminalError.value = ''
-  
+
   // Reset des panneaux
   showStartPanel.value = true
   showInfoPanel.value = false
   showTerminalPanel.value = false
-  showErrorPanel.value = false
   showReconnectButton.value = false
-  
+
   // Reset du formulaire
   resetForm()
 }
@@ -1171,8 +1143,7 @@ function startExpirationTimer(expiresAt) {
 
     if (remaining <= 0) {
       clearInterval(timerInterval)
-      errorMessage.value = 'Session expirée'
-      showErrorPanel.value = true
+      showWarning('Votre session terminal a expiré', 'Session expirée')
       showTerminalPanel.value = false
       showInfoPanel.value = false
     }
@@ -1433,19 +1404,6 @@ function formatTime(seconds) {
   color: #6c757d;
 }
 
-.error-message {
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  padding: 15px;
-  margin-bottom: 15px;
-}
-
-.error-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
 
 .btn {
   display: inline-flex;

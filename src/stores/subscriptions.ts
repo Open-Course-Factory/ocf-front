@@ -442,6 +442,23 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         }
     }
 
+    // Synchroniser les limites d'utilisation avec le backend
+    const syncUsageLimits = async () => {
+        try {
+            if (isDemoMode()) {
+                logDemoAction('Syncing demo usage limits')
+                await simulateDelay(500)
+                return { success: true }
+            } else {
+                const response = await axios.post('/user-subscriptions/sync-usage-limits')
+                return response.data
+            }
+        } catch (err: any) {
+            console.error('Erreur lors de la synchronisation des limites:', err)
+            throw err
+        }
+    }
+
     // Utilitaires pour l'affichage
     const getStatusClass = (status: string) => {
         switch (status?.toLowerCase()) {
@@ -505,7 +522,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         isLoading,
         error,
         usageMetrics,
-        
+
         // Actions
         getCurrentSubscription,
         createCheckoutSession,
@@ -516,6 +533,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         getUsageMetrics,
         getFilteredUsageMetrics,
         checkUsageLimit,
+        syncUsageLimits,
 
         // Utilitaires
         getStatusClass,

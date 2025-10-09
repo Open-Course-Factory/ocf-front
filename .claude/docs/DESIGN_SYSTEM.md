@@ -298,32 +298,253 @@ import './assets/styles/main.css'
 </div>
 ```
 
-### Alerts
+### Notifications & Modals
+
+**IMPORTANT:** OCF uses Element Plus notification system via the `useNotification` composable. **DO NOT use HTML alert/error panels** for user feedback - always use the notification composable functions.
+
+#### Notification Composable (`useNotification`)
+
+Located in `/src/composables/useNotification.ts`, this composable provides consistent modal-based feedback to users, replacing browser alerts and custom error panels.
+
+**Import & Setup:**
+```vue
+<script setup>
+import { useNotification } from '@/composables/useNotification'
+
+const { showError, showSuccess, showWarning, showInfo, showConfirm, showAlert, showMessage, showPrompt } = useNotification()
+</script>
+```
+
+#### Available Notification Functions
+
+##### 1. **Success Notification**
+```javascript
+showSuccess('Operation completed successfully!', 'Success')
+// Title is optional, defaults to 'Success'
+```
+
+##### 2. **Error Notification**
+```javascript
+showError('An error occurred. Please try again.', 'Error')
+// Title is optional, defaults to 'Error'
+// Duration: 4000ms (4 seconds)
+```
+
+##### 3. **Warning Notification**
+```javascript
+showWarning('This action cannot be undone.', 'Warning')
+// Title is optional, defaults to 'Warning'
+// Duration: 3500ms (3.5 seconds)
+```
+
+##### 4. **Info Notification**
+```javascript
+showInfo('Did you know...', 'Info')
+// Title is optional, defaults to 'Info'
+// Duration: 3000ms (3 seconds)
+```
+
+##### 5. **Simple Toast Message** (less intrusive)
+```javascript
+showMessage('Changes saved', 'success')
+// Type: 'success' | 'warning' | 'info' | 'error'
+// Duration: 2500ms (2.5 seconds)
+```
+
+##### 6. **Alert Modal** (replaces window.alert)
+```javascript
+await showAlert('Your session will expire soon', 'Session Warning', 'warning')
+// Type: 'info' | 'warning' | 'error' | 'success'
+```
+
+##### 7. **Confirm Dialog** (replaces window.confirm)
+```javascript
+const confirmed = await showConfirm(
+  'Are you sure you want to delete this item?',
+  'Confirm Delete',
+  {
+    confirmButtonText: 'Yes, Delete',
+    cancelButtonText: 'Cancel',
+    type: 'warning'
+  }
+)
+
+if (confirmed) {
+  // User clicked confirm
+  deleteItem()
+}
+```
+
+##### 8. **Prompt Dialog** (replaces window.prompt)
+```javascript
+const name = await showPrompt(
+  'Please enter your name',
+  'User Information',
+  {
+    inputPlaceholder: 'Enter name',
+    inputPattern: /^[a-zA-Z\s]+$/,
+    inputErrorMessage: 'Invalid name format'
+  }
+)
+
+if (name !== null) {
+  // User entered a value
+  saveName(name)
+}
+```
+
+#### Usage Examples
+
+**Error Handling in Forms:**
+```vue
+<script setup>
+import { useNotification } from '@/composables/useNotification'
+
+const { showError, showSuccess } = useNotification()
+
+async function saveForm() {
+  if (!formData.email) {
+    showError('Email is required', 'Validation Error')
+    return
+  }
+
+  try {
+    await api.save(formData)
+    showSuccess('Form saved successfully!', 'Success')
+  } catch (error) {
+    showError(error.message || 'Failed to save form', 'Error')
+  }
+}
+</script>
+```
+
+**Confirming Destructive Actions:**
+```vue
+<script setup>
+import { useNotification } from '@/composables/useNotification'
+
+const { showConfirm, showSuccess } = useNotification()
+
+async function deleteItem(itemId) {
+  const confirmed = await showConfirm(
+    'This action cannot be undone. Are you sure?',
+    'Delete Item',
+    {
+      confirmButtonText: 'Yes, Delete',
+      cancelButtonText: 'Cancel',
+      type: 'warning'
+    }
+  )
+
+  if (confirmed) {
+    await api.delete(itemId)
+    showSuccess('Item deleted successfully', 'Deleted')
+  }
+}
+</script>
+```
+
+**Session Limits & Warnings:**
+```vue
+<script setup>
+import { useNotification } from '@/composables/useNotification'
+
+const { showWarning, showConfirm } = useNotification()
+
+async function startTerminal() {
+  if (currentTerminalCount >= maxTerminals) {
+    showWarning(
+      'You have reached your limit. Please stop an existing terminal or upgrade your plan.',
+      'Limit Reached'
+    )
+
+    // Optional: Show upgrade suggestion
+    const wantsUpgrade = await showConfirm(
+      'Would you like to see available plans?',
+      'Upgrade Plan'
+    )
+
+    if (wantsUpgrade) {
+      router.push('/subscription-plans')
+    }
+    return
+  }
+
+  // Start terminal...
+}
+</script>
+```
+
+#### ❌ DON'T: Custom Error Panels
+
+```vue
+<!-- ❌ WRONG: Don't use custom error panels -->
+<div v-if="showErrorPanel" class="error-panel">
+  <p>{{ errorMessage }}</p>
+  <button @click="closeError">Close</button>
+</div>
+
+<script>
+const showErrorPanel = ref(false)
+const errorMessage = ref('')
+
+function handleError(error) {
+  errorMessage.value = error.message
+  showErrorPanel.value = true  // ❌ Bad practice
+}
+</script>
+```
+
+#### ✅ DO: Use Notification Composable
+
+```vue
+<!-- ✅ CORRECT: Use notification composable -->
+<script setup>
+import { useNotification } from '@/composables/useNotification'
+
+const { showError } = useNotification()
+
+function handleError(error) {
+  showError(error.message, 'Error')  // ✅ Good practice
+}
+</script>
+```
+
+#### Notification Best Practices
+
+1. **Use appropriate notification type** for the context:
+   - `showError` - For errors that require user attention
+   - `showWarning` - For warnings and destructive action confirmations
+   - `showSuccess` - For successful operations
+   - `showInfo` - For informational messages
+   - `showMessage` - For quick, non-critical updates
+
+2. **Provide clear, actionable titles**:
+   - ✅ "Validation Error", "Limit Reached", "Session Expired"
+   - ❌ "Error", "Oops", "Something went wrong"
+
+3. **Write user-friendly messages**:
+   - ✅ "You have reached your terminal limit. Please stop an existing terminal or upgrade your plan."
+   - ❌ "403 Forbidden: MAX_CONCURRENT_TERMINALS_EXCEEDED"
+
+4. **Use confirm dialogs for destructive actions**:
+   - Always use `showConfirm` before delete/cancel/destructive operations
+   - Provide clear button labels ("Yes, Delete" instead of "OK")
+
+5. **Don't spam notifications**:
+   - Avoid showing multiple notifications for the same error
+   - Use `showMessage` for less critical updates (saves, auto-updates)
+
+### Static Alerts (Deprecated)
+
+**Note:** The following static alert styles are **deprecated** and should only be used for legacy compatibility. New features should use the `useNotification` composable instead.
 
 ```html
-<!-- Success alert -->
-<div class="alert alert-success">
-  <i class="fas fa-check-circle"></i>
-  Operation completed successfully!
-</div>
-
-<!-- Error alert -->
-<div class="alert alert-error">
-  <i class="fas fa-exclamation-circle"></i>
-  An error occurred. Please try again.
-</div>
-
-<!-- Warning alert -->
-<div class="alert alert-warning">
-  <i class="fas fa-exclamation-triangle"></i>
-  This action cannot be undone.
-</div>
-
-<!-- Info alert -->
-<div class="alert alert-info">
-  <i class="fas fa-info-circle"></i>
-  Did you know...
-</div>
+<!-- Only use these for backward compatibility -->
+<div class="alert alert-success">Static success alert (deprecated)</div>
+<div class="alert alert-error">Static error alert (deprecated)</div>
+<div class="alert alert-warning">Static warning alert (deprecated)</div>
+<div class="alert alert-info">Static info alert (deprecated)</div>
 ```
 
 ### Badges
