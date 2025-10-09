@@ -17,6 +17,9 @@ export const setupAxiosInterceptors = () => {
         // Ensure Bearer token format as required by the payment API
         const bearerToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
         config.headers.Authorization = bearerToken;
+        console.debug(`🔑 Request to ${config.url}: Token added (valid: ${tokenService.hasValidToken()})`)
+      } else {
+        console.debug(`🔑 Request to ${config.url}: No valid token available`)
       }
 
       return config;

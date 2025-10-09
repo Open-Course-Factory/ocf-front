@@ -80,6 +80,13 @@ export function useFeatureFlags() {
   }
 
   /**
+   * Refresh feature flags after login (bypasses cache)
+   */
+  const refreshAfterLogin = async () => {
+    await featureFlagService.refreshAfterLogin()
+  }
+
+  /**
    * Wait for feature flags to initialize from backend
    */
   const waitForInitialization = async () => {
@@ -161,6 +168,7 @@ export function useFeatureFlags() {
     flags,
     updateFlag,
     fetchFromBackend,
+    refreshAfterLogin,
     waitForInitialization,
     syncUsageLimits,
     clearLocalStorage,

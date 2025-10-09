@@ -64,7 +64,7 @@ const currentUserStore = useCurrentUserStore();
 const settingsStore = useUserSettingsStore();
 const { setLocale } = useLocale();
 const { setTheme } = useTheme();
-const { isEnabled, fetchFromBackend } = useFeatureFlags();
+const { isEnabled, refreshAfterLogin } = useFeatureFlags();
 const errorMessage = ref('');
 
 async function handleSubmit() {
@@ -91,9 +91,9 @@ async function redirect() {
   if (currentUserStore.secretToken) {
     try {
       // Force refresh feature flags from backend after login
-      console.log('🏴 Fetching feature flags after login...')
-      await fetchFromBackend(true)
-      console.log('🏴 Feature flags refreshed after login')
+      console.log('🏴 Refreshing feature flags after login...')
+      await refreshAfterLogin()
+      console.log('🏴 Feature flags refreshed successfully after login')
 
       // Load user settings
       const settings = await settingsStore.loadSettings();

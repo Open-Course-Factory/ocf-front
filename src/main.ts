@@ -97,24 +97,55 @@ const vuetify = createVuetify({
 setupAxiosDefaults()
 setupAxiosInterceptors()
 
-// Eagerly initialize feature flag service to start fetching from backend
-// This ensures flags are loaded before components render
-console.log('🏴 Eagerly initializing feature flags service...')
-featureFlagService.waitForInitialization().then(() => {
-    console.log('🏴 Feature flags ready at app startup')
-}).catch(err => {
-    console.warn('🏴 Feature flags initialization failed at startup:', err)
-})
+// CRITICAL: Initialize app in correct order to prevent race conditions
+// 1. Create app instance
+// 2. Register Pinia (so stores can access localStorage/tokens)
+// 3. Fetch feature flags (which needs token from Pinia store)
+// 4. Mount app
+console.log('🏴 Starting app initialization...')
 
-createApp(App)
-    .use(ElementPlus)
-    .use(router)
-    .use(pinia)
-    .use(i18n)
-    .use(vuetify)
-    .mount('#app')
+async function initializeApp() {
+    // Step 1: Create app instance and register Pinia FIRST
+    // This allows tokenService and stores to work properly
+    const app = createApp(App)
+        .use(ElementPlus)
+        .use(router)
+        .use(pinia)  // ← Pinia must be registered before feature flags are fetched!
+        .use(i18n)
+        .use(vuetify)
 
-const userStore = useCurrentUserStore()
-if (userStore.isAuthenticated) {
-    userStore.startTokenExpiryCheck()
+    // Step 2: Now that Pinia is registered, stores can access persisted data
+    // Initialize currentUser store to ensure token is loaded from localStorage
+    const userStore = useCurrentUserStore()
+    console.log('🏴 Current user authenticated:', userStore.isAuthenticated)
+
+    // Step 3: Clear any stale localStorage flags to prevent conflicts with backend
+    // Backend is the source of truth, localStorage is only for emergency fallback
+    const storedFlags = localStorage.getItem('ocf_feature_flags')
+    if (storedFlags) {
+        console.log('🏴 Clearing stale localStorage feature flags before initialization')
+        localStorage.removeItem('ocf_feature_flags')
+    }
+
+    // Step 4: Fetch feature flags (now token is available if user is authenticated)
+    try {
+        console.log('🏴 Fetching feature flags from backend...')
+        await featureFlagService.waitForInitialization()
+        console.log('✅ Feature flags initialized successfully')
+    } catch (err: any) {
+        console.warn('⚠️ Feature flags initialization failed, using defaults:', err?.message || err)
+    }
+
+    // Step 5: Mount the app
+    app.mount('#app')
+    console.log('✅ App mounted successfully')
+
+    // Step 6: Start token expiry monitoring if authenticated
+    if (userStore.isAuthenticated) {
+        userStore.startTokenExpiryCheck()
+        console.log('🏴 Token expiry monitoring started')
+    }
 }
+
+// Start app initialization
+initializeApp()

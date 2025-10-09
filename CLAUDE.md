@@ -180,9 +180,76 @@ OCF Front includes a comprehensive feature flags system for gradual rollouts, A/
 - `services/featureFlags.ts` - Main service with GitLab-style API
 - `composables/useFeatureFlags.ts` - Vue 3 composable for easy integration
 - Reactive flag checking with real-time navigation updates
-- Environment variable configuration via `VITE_FEATURE_FLAG_*`
+- Backend database as primary source of truth (via `/features` endpoint)
+- Environment variable fallback via `VITE_FEATURE_FLAG_*` (when backend returns empty)
 
-**Available Feature Flags:**
+**Critical Initialization Order:**
+
+The feature flags system has a **strict initialization sequence** to ensure proper functionality:
+
+```typescript
+// CORRECT ORDER (in main.ts):
+1. setupAxiosDefaults()           // Set axios baseURL FIRST
+2. setupAxiosInterceptors()       // Set auth interceptors
+3. Create app + use(pinia)        // Initialize Pinia (for token access)
+4. Initialize userStore           // Load persisted token
+5. featureFlagService.waitForInitialization()  // Fetch flags from backend
+6. app.mount('#app')              // Mount app with correct flags
+```
+
+**⚠️ Common Pitfall - Timing Issues:**
+
+The feature flag service uses **lazy initialization** to avoid fetching before axios is configured:
+
+```typescript
+// ❌ WRONG - Eager initialization (fetches immediately)
+private constructor() {
+  this.initPromise = this.initialize()  // Axios not ready!
+}
+
+// ✅ CORRECT - Lazy initialization (waits for explicit call)
+private constructor() {
+  this.initPromise = null  // No fetch yet
+}
+
+async waitForInitialization() {
+  if (!this.initPromise) {
+    this.initPromise = this.initialize()  // Start now (axios ready)
+  }
+  await this.initPromise
+}
+```
+
+**If feature flags fail on page reload but work after login:**
+- Check that axios baseURL is set BEFORE feature flag initialization
+- Verify request goes to `http://localhost:8080/api/v1/features` (not `http://localhost:4000/features`)
+- Check browser Network tab: should return JSON, not HTML
+- Backend should return paginated response: `{data: [{key, enabled, ...}]}`
+
+**Data Flow:**
+
+1. **Backend Primary Source**: GET `/features` returns array of feature flags from database
+2. **Paginated Response**: `{data: [...], total: N, currentPage: 1, ...}`
+3. **Frontend Mapping**: Backend keys map to frontend flags (e.g., `"terminals"` → `"terminal_management"`)
+4. **OR Logic**: Multiple backend features can map to one frontend flag (enabled if ANY are enabled)
+5. **Fallback**: If backend returns empty array, falls back to environment variables (if any)
+6. **Default Values**: If no backend data and no env vars, uses hardcoded defaults (security-first: disabled)
+
+**Backend-to-Frontend Flag Mapping:**
+
+The backend feature keys map to frontend flags as follows:
+
+| Backend Key | Frontend Flag | OR Logic | Notes |
+|-------------|---------------|----------|-------|
+| `course_conception` | `course_conception` | No | Direct 1:1 mapping |
+| `labs` | `terminal_management` | **Yes** | Multiple backend → one frontend |
+| `terminals` | `terminal_management` | **Yes** | Enabled if labs OR terminals enabled |
+| *(unmapped)* | `theme_customization` | No | Frontend-only (defaults enabled) |
+| *(unmapped)* | `archive_generations` | No | Frontend-only (defaults enabled) |
+| *(unmapped)* | `ssh_key_management` | No | Frontend-only (defaults enabled) |
+| *(unmapped)* | `help_documentation` | No | Frontend-only (defaults enabled) |
+
+**Environment Variable Fallback (Emergency Use):**
 
 ```bash
 # Individual Features (item-level)
@@ -195,6 +262,8 @@ VITE_FEATURE_FLAG_COURSE_CONCEPTION=true      # Entire Course Design section
 VITE_FEATURE_FLAG_TERMINAL_MANAGEMENT=true    # Entire Practical Work section
 VITE_FEATURE_FLAG_HELP_DOCUMENTATION=true     # Entire Help section
 ```
+
+**⚠️ Security Note**: Environment variables should ONLY be used as emergency fallback. The backend database is the source of truth for production. Default values are intentionally restrictive (disabled) to prevent unauthorized access.
 
 **Usage Patterns:**
 

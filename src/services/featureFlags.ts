@@ -125,17 +125,25 @@ export class FeatureFlagService {
       }
     })
 
-    // Initialize by fetching from backend (don't load env vars - backend is source of truth)
-    this.initPromise = this.initialize()
+    // DO NOT initialize here! Must wait for axios baseURL to be configured
+    // Initialization will be triggered manually by calling waitForInitialization()
+    this.initPromise = null
   }
 
   private async initialize(): Promise<void> {
     try {
       await this.fetchFromBackend(true)
       console.log('✅ Feature flags initialized from backend')
-    } catch (err) {
-      console.warn('⚠️ Failed to fetch feature flags from backend, using localStorage fallback:', err)
-      this.loadLocalStorageFlags()
+    } catch (err: any) {
+      // If error is 401/403 (unauthenticated), that's expected - just use defaults
+      // Don't load localStorage in this case as it may have stale data
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        console.log('🏴 User not authenticated yet, using default feature flags')
+      } else {
+        console.warn('⚠️ Failed to fetch feature flags from backend, using defaults:', err)
+      }
+      // Do NOT load localStorage here - backend is source of truth
+      // localStorage will only be loaded if backend fetch fails during updateFlag()
     } finally {
       this.isInitialized = true
     }
@@ -143,14 +151,17 @@ export class FeatureFlagService {
 
   /**
    * Wait for feature flags to be initialized from backend
+   * If not yet started, start initialization now
    */
   async waitForInitialization(): Promise<void> {
     if (this.isInitialized) {
       return
     }
-    if (this.initPromise) {
-      await this.initPromise
+    // Start initialization if not already started
+    if (!this.initPromise) {
+      this.initPromise = this.initialize()
     }
+    await this.initPromise
   }
 
   static getInstance(): FeatureFlagService {
@@ -180,7 +191,9 @@ export class FeatureFlagService {
    * Load feature flags from localStorage (EMERGENCY FALLBACK ONLY)
    * Only called when backend fetch fails
    * LocalStorage values are only written when admin manually toggles flags
+   * Note: Currently unused as we prefer default values over potentially stale localStorage
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private loadLocalStorageFlags(): void {
     try {
       const stored = localStorage.getItem(this.STORAGE_KEY)
@@ -233,6 +246,16 @@ export class FeatureFlagService {
   }
 
   /**
+   * Refresh feature flags from backend after login/authentication
+   * This bypasses cache and ensures we have fresh data
+   */
+  async refreshAfterLogin(): Promise<void> {
+    console.log('🏴 Refreshing feature flags after login...')
+    this.lastFetch = 0 // Reset cache timestamp to force refresh
+    await this.fetchFromBackend(true)
+  }
+
+  /**
    * Fetch feature flags from backend API
    * Uses caching with TTL to avoid excessive requests
    */
@@ -259,66 +282,100 @@ export class FeatureFlagService {
       const response = await axios.get('/features')
       console.log(`🏴 Backend response status: ${response.status}`)
       console.log(`🏴 Backend response headers:`, response.headers)
-      console.log(`🏴 Backend response data (raw):`, response.data)
-      console.log(`🏴 Backend response data type:`, typeof response.data)
-      console.log(`🏴 Is array?`, Array.isArray(response.data))
+      console.log(`🏴 Backend response FULL:`, JSON.stringify(response.data, null, 2))
+      console.log(`🏴 Backend response.data:`, response.data)
+      console.log(`🏴 Backend response.data.data:`, response.data?.data)
+      console.log(`🏴 typeof response.data:`, typeof response.data)
+      console.log(`🏴 Array.isArray(response.data):`, Array.isArray(response.data))
+      console.log(`🏴 response.data has .data property?`, 'data' in (response.data || {}))
 
       // Handle paginated response (data is inside response.data.data)
       const backendFeatures = Array.isArray(response.data)
         ? response.data
         : response.data.data || []
 
-      if (Array.isArray(backendFeatures) && backendFeatures.length > 0) {
-        console.log(`🏴 Backend returned ${backendFeatures.length} features:`, backendFeatures)
+      console.log(`🏴 Extracted backendFeatures:`, backendFeatures)
+      console.log(`🏴 backendFeatures length:`, backendFeatures?.length)
+      console.log(`🏴 Array.isArray(backendFeatures):`, Array.isArray(backendFeatures))
 
-        // First pass: reset all flags that will be updated from backend
-        const flagsToUpdate = new Set<string>()
-        backendFeatures.forEach((feature: any) => {
-          const backendKey = feature.key || feature.name
-          const flagKey = this.mapBackendFeatureToFlagKey(backendKey)
-          flagsToUpdate.add(flagKey)
-        })
+      if (Array.isArray(backendFeatures)) {
+        if (backendFeatures.length > 0) {
+          console.log(`🏴 Backend returned ${backendFeatures.length} features:`, backendFeatures)
 
-        // Reset flags that will be updated (especially important for OR logic)
-        flagsToUpdate.forEach(flagKey => {
-          if (this.flags[flagKey]) {
-            this.flags[flagKey].enabled = false
-          }
-        })
+          // First pass: reset all flags that will be updated from backend
+          const flagsToUpdate = new Set<string>()
+          backendFeatures.forEach((feature: any) => {
+            const backendKey = feature.key || feature.name
+            const flagKey = this.mapBackendFeatureToFlagKey(backendKey)
+            flagsToUpdate.add(flagKey)
+          })
 
-        // Second pass: apply backend features using OR logic
-        backendFeatures.forEach((feature: any) => {
-          const backendKey = feature.key || feature.name
-          const flagKey = this.mapBackendFeatureToFlagKey(backendKey)
-          console.log(`🏴 Mapping backend key="${feature.key}" name="${feature.name}" → frontend "${flagKey}" (enabled: ${feature.enabled})`)
-
-          if (this.flags[flagKey]) {
-            const oldEnabled = this.flags[flagKey].enabled
-
-            // Apply feature state using OR logic for multi-mapped features
-            this.applyBackendFeatureToFlag(backendKey, feature.enabled)
-
-            // Merge other backend metadata (only once per flag)
-            if (!this.flags[flagKey].id) {
-              this.flags[flagKey] = {
-                ...this.flags[flagKey],
-                id: feature.id,
-                description: feature.description || this.flags[flagKey].description,
-                module: feature.module,
-                name: feature.name,
-                createdAt: feature.created_at || feature.createdAt,
-                updatedAt: feature.updated_at || feature.updatedAt
-              }
+          // Reset flags that will be updated (especially important for OR logic)
+          flagsToUpdate.forEach(flagKey => {
+            if (this.flags[flagKey]) {
+              this.flags[flagKey].enabled = false
             }
+          })
 
-            console.log(`🏴 Updated "${flagKey}": ${oldEnabled} → ${this.flags[flagKey].enabled} (from backend)`)
+          // Second pass: apply backend features using OR logic
+          backendFeatures.forEach((feature: any) => {
+            const backendKey = feature.key || feature.name
+            const flagKey = this.mapBackendFeatureToFlagKey(backendKey)
+            console.log(`🏴 Processing backend feature: key="${feature.key}" name="${feature.name}" enabled="${feature.enabled}"`)
+            console.log(`🏴   → Mapped to frontend flag: "${flagKey}"`)
+
+            if (this.flags[flagKey]) {
+              const oldEnabled = this.flags[flagKey].enabled
+
+              // Apply feature state using OR logic for multi-mapped features
+              this.applyBackendFeatureToFlag(backendKey, feature.enabled)
+
+              // Merge other backend metadata (only once per flag)
+              if (!this.flags[flagKey].id) {
+                this.flags[flagKey] = {
+                  ...this.flags[flagKey],
+                  id: feature.id,
+                  description: feature.description || this.flags[flagKey].description,
+                  module: feature.module,
+                  name: feature.name,
+                  createdAt: feature.created_at || feature.createdAt,
+                  updatedAt: feature.updated_at || feature.updatedAt
+                }
+              }
+
+              console.log(`🏴   → Result: "${flagKey}": ${oldEnabled} → ${this.flags[flagKey].enabled}`)
+            } else {
+              console.warn(`🏴   → WARNING: Backend feature "${flagKey}" not found in frontend flags!`)
+            }
+          })
+
+          this.lastFetch = now
+          console.log(`✅ Feature flags synced from backend (${backendFeatures.length} features)`)
+        } else {
+          // Backend returned empty array - no features configured in database
+          console.warn(`⚠️ Backend returned empty feature flags array`)
+          console.log(`🏴 Falling back to environment variables...`)
+          this.loadEnvironmentFlags()
+
+          // Log which flags are enabled from environment
+          const envEnabledFlags = Object.entries(this.flags)
+            .filter(([_, flag]) => flag.enabled)
+            .map(([key, _]) => key)
+
+          if (envEnabledFlags.length > 0) {
+            console.log(`🏴 Enabled flags from environment: ${envEnabledFlags.join(', ')}`)
           } else {
-            console.warn(`🏴 Backend feature key="${feature.key}" name="${feature.name}" (mapped to "${flagKey}") not found in frontend flags`)
+            console.warn(`⚠️ No environment variables found. Using default flag states.`)
           }
-        })
 
-        this.lastFetch = now
-        console.log(`✅ Feature flags synced from backend (${backendFeatures.length} features)`)
+          this.lastFetch = now
+        }
+
+        // Log final state of all flags
+        console.log('🏴 Final feature flag states:')
+        Object.entries(this.flags).forEach(([key, flag]) => {
+          console.log(`🏴   - ${key}: ${flag.enabled ? '✅ ENABLED' : '❌ DISABLED'}`)
+        })
       } else {
         console.error(`❌ Backend response is not an array!`, {
           type: typeof backendFeatures,
@@ -438,6 +495,14 @@ export class FeatureFlagService {
       console.warn(`🏴 Feature flag "${flagName}" not found, defaulting to false`)
       return false
     }
+
+    // Debug logging for troubleshooting
+    if (!flag.enabled) {
+      console.debug(`🏴 Feature flag "${flagName}" is DISABLED (enabled=${flag.enabled}, initialized=${this.isInitialized}, lastFetch=${this.lastFetch})`)
+      return false
+    }
+
+    console.debug(`🏴 Feature flag "${flagName}" is ENABLED (enabled=${flag.enabled}, actor role=${actor?.role})`)
 
     // Check base enabled state
     if (!flag.enabled) {
