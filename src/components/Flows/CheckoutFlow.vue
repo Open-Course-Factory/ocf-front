@@ -593,23 +593,34 @@ function previousStep() {
 
 async function processCheckout() {
   if (!canContinue.value) return
-  
+
   isProcessing.value = true
   checkoutError.value = ''
-  
+
   try {
     const successUrl = `${window.location.origin}/subscription-dashboard?success=true`
     const cancelUrl = `${window.location.origin}/checkout/${planId.value}?canceled=true`
-    
-    await subscriptionsStore.createCheckoutSession(
+
+    // Check if this is an upgrade from free plan
+    const isUpgradeFromFree = route.query.upgradeFromFree === 'true'
+
+    const response = await subscriptionsStore.createCheckoutSession(
       planId.value,
       successUrl,
       cancelUrl,
-      validatedCoupon.value?.code
+      validatedCoupon.value?.code,
+      isUpgradeFromFree // Pass allowReplace flag
     )
-    
-    // La redirection vers Stripe se fait automatiquement dans le store
-    
+
+    // Handle free plan activation (no Stripe redirect)
+    if (response?.free_plan) {
+      // Redirect to success page
+      window.location.href = successUrl
+      return
+    }
+
+    // For paid plans, redirection to Stripe happens automatically in the store
+
   } catch (error) {
     console.error('Erreur lors du checkout:', error)
     checkoutError.value = 'Erreur lors du traitement du paiement'

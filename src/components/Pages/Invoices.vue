@@ -26,7 +26,6 @@ import { ref, computed, onMounted } from 'vue';
 import Entity from './Entity.vue';
 import { useInvoicesStore } from '../../stores/invoices';
 import { useCurrentUserStore } from '../../stores/currentUser.ts';
-import axios from 'axios';
 
 const entityStore = useInvoicesStore();
 const currentUser = useCurrentUserStore();

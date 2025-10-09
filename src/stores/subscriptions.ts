@@ -197,7 +197,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     }
 
     // Créer une session de checkout Stripe
-    const createCheckoutSession = async (planId: string, successUrl: string, cancelUrl: string, couponCode?: string) => {
+    const createCheckoutSession = async (planId: string, successUrl: string, cancelUrl: string, couponCode?: string, allowReplace: boolean = false) => {
         isLoading.value = true
         error.value = ''
 
@@ -218,11 +218,26 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
                     payload.coupon_code = couponCode
                 }
 
+                // If allowReplace is true, tell backend to replace existing free subscription
+                if (allowReplace) {
+                    payload.allow_replace = true
+                }
+
                 const axiosResponse = await axios.post('/subscriptions/checkout', payload)
                 response = axiosResponse.data
             }
 
-            // Rediriger vers Stripe Checkout (ou demo checkout)
+            // Handle free plan activation (no Stripe redirect needed)
+            if (response.free_plan) {
+                // Update local subscription state
+                if (response.subscription) {
+                    currentSubscription.value = response.subscription
+                }
+                // Return response to let caller handle success UI
+                return response
+            }
+
+            // Handle paid plans - redirect to Stripe Checkout
             if (response.url) {
                 window.location.href = response.url
             }
@@ -323,7 +338,15 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
                 data = response.data || []
             }
 
-            usageMetrics.value = data
+            // Deduplicate metrics by metric_type (keep the first occurrence)
+            const uniqueMetrics = new Map()
+            data.forEach(metric => {
+                if (!uniqueMetrics.has(metric.metric_type)) {
+                    uniqueMetrics.set(metric.metric_type, metric)
+                }
+            })
+
+            usageMetrics.value = Array.from(uniqueMetrics.values())
             return usageMetrics.value
         } catch (err: any) {
             console.error('Erreur lors du chargement des métriques:', err)

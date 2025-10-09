@@ -141,7 +141,7 @@ const syncWithStripe = async () => {
         showSyncResult.value = true
 
         // Auto-hide success message after 10 seconds
-        if (result?.details?.failed?.length === 0) {
+        if ((result as any)?.details?.failed?.length === 0) {
             setTimeout(() => {
                 showSyncResult.value = false
             }, 10000)

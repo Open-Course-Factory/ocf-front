@@ -27,7 +27,7 @@ import { saveLocale, getSupportedLocales, isValidLocale } from '../services/loca
  * Composable for managing locale/language settings
  */
 export function useLocale() {
-  const { locale, availableLocales } = useI18n()
+  const { locale } = useI18n()
 
   // Current locale as a computed property
   const currentLocale = computed(() => locale.value)

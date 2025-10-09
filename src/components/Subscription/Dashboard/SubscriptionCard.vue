@@ -11,15 +11,24 @@
         <i class="fas fa-plus-circle fa-3x"></i>
         <h4>{{ t('subscriptionPlans.no_active_subscription') }}</h4>
         <p>{{ t('subscriptionPlans.subscribe_to_start') }}</p>
-        
+
         <div class="subscription-actions">
-          <router-link to="/subscription-plans" class="btn btn-primary btn-lg">
+          <button
+            class="btn btn-success btn-lg"
+            @click="$emit('activateFreePlan')"
+            :disabled="isActivatingFreePlan"
+          >
+            <i :class="isActivatingFreePlan ? 'fas fa-spinner fa-spin' : 'fas fa-gift'"></i>
+            {{ isActivatingFreePlan ? 'Activating...' : 'Start Free Trial' }}
+          </button>
+
+          <router-link to="/subscription-plans" class="btn btn-outline-primary btn-lg">
             <i class="fas fa-rocket"></i>
             {{ t('subscriptionPlans.view_plans') }}
           </router-link>
-          
-          <button 
-            v-if="lastCanceledSubscription" 
+
+          <button
+            v-if="lastCanceledSubscription"
             class="btn btn-outline-primary"
             @click="$emit('reactivate')"
           >
@@ -121,7 +130,9 @@
 
         <!-- Actions rapides -->
         <div class="subscription-actions">
-          <button 
+          <!-- Manage Subscription - Only for paid plans -->
+          <button
+            v-if="!isFreePlan"
             class="btn btn-primary"
             @click="$emit('manage')"
             :disabled="isManaging"
@@ -129,14 +140,16 @@
             <i :class="isManaging ? 'fas fa-spinner fa-spin' : 'fas fa-cog'"></i>
             {{ t('subscriptionPlans.manageSubscription') }}
           </button>
-          
+
+          <!-- Change Plan - Available for all plans -->
           <router-link to="/subscription-plans" class="btn btn-outline-primary">
             <i class="fas fa-exchange-alt"></i>
             {{ t('subscriptionPlans.changePlan') }}
           </router-link>
 
-          <button 
-            v-if="!isCanceled" 
+          <!-- Cancel Subscription - Only for paid plans that aren't already canceled -->
+          <button
+            v-if="!isFreePlan && !isCanceled"
             class="btn btn-outline-warning"
             @click="$emit('cancel')"
           >
@@ -144,8 +157,9 @@
             {{ t('subscriptionPlans.cancelSubscription') }}
           </button>
 
-          <button 
-            v-else 
+          <!-- Reactivate Subscription - Only for paid plans that are canceled -->
+          <button
+            v-if="!isFreePlan && isCanceled"
             class="btn btn-success"
             @click="$emit('reactivate')"
             :disabled="isReactivating"
@@ -172,17 +186,20 @@ interface Props {
   lastCanceledSubscription: any | null
   isManaging?: boolean
   isReactivating?: boolean
+  isActivatingFreePlan?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isManaging: false,
-  isReactivating: false
+  isReactivating: false,
+  isActivatingFreePlan: false
 })
 
 const emit = defineEmits<{
   manage: []
   cancel: []
   reactivate: []
+  activateFreePlan: []
 }>()
 
 const subscriptionPlansStore = useSubscriptionPlansStore()
@@ -201,6 +218,11 @@ const formatPrice = computed(() => subscriptionPlansStore.formatPrice)
 
 const isTrialing = computed(() => props.subscription?.status === 'trialing')
 const isCanceled = computed(() => props.subscription?.cancel_at_period_end === true)
+
+// Check if current plan is free (price_amount === 0)
+const isFreePlan = computed(() => {
+  return currentPlan.value?.price_amount === 0
+})
 
 // Get current plan details by matching the subscription plan ID
 const currentPlan = computed(() => {
@@ -285,6 +307,13 @@ function formatDate(dateString: string) {
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 1px solid #e9ecef;
+  min-width: 600px;
+}
+
+@media (max-width: 768px) {
+  .subscription-overview {
+    min-width: unset;
+  }
 }
 
 .subscription-overview h3 {

@@ -287,9 +287,9 @@ router.beforeEach((to, _from, next) => {
   // Check feature flags (deep link protection)
   const requiredFeature = to.meta.requiresFeature as string | undefined;
   if (requiredFeature) {
-    const actor = currentUserStore.currentUser ? {
-      userId: currentUserStore.currentUser.id,
-      role: currentUserStore.currentUser.role
+    const actor = currentUserStore.userId ? {
+      userId: currentUserStore.userId,
+      role: currentUserStore.userRoles[0]
     } : undefined;
 
     const isFeatureEnabled = featureFlagService.isEnabled(requiredFeature, actor);

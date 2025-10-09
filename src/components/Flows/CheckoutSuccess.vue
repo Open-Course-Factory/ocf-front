@@ -195,9 +195,34 @@ useI18n().mergeLocaleMessage('fr', {
 
 onMounted(async () => {
   // Récupérer les détails de l'abonnement depuis l'API
+  // Poll for up to 10 seconds to wait for webhook to process
+  const maxAttempts = 10
+  const delayMs = 1000
+  let attempts = 0
+
   try {
-    await subscriptionsStore.getCurrentSubscription()
-    subscriptionDetails.value = subscriptionsStore.currentSubscription
+    while (attempts < maxAttempts) {
+      await subscriptionsStore.getCurrentSubscription()
+
+      // Check if we have a subscription now
+      if (subscriptionsStore.currentSubscription) {
+        subscriptionDetails.value = subscriptionsStore.currentSubscription
+        console.log('Subscription loaded:', subscriptionDetails.value)
+        break
+      }
+
+      // Wait before next attempt
+      attempts++
+      if (attempts < maxAttempts) {
+        console.log(`Waiting for subscription... (attempt ${attempts}/${maxAttempts})`)
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+      }
+    }
+
+    if (!subscriptionsStore.currentSubscription) {
+      console.warn('Subscription not loaded after polling. Webhook may still be processing.')
+      // Still show the success page, just without details
+    }
   } catch (error) {
     console.error('Erreur lors du chargement de l\'abonnement:', error)
   } finally {

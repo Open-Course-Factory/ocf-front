@@ -39,9 +39,11 @@
           :last-canceled-subscription="lastCanceledSubscription"
           :is-managing="isManaging"
           :is-reactivating="isReactivating"
+          :is-activating-free-plan="isActivatingFreePlan"
           @manage="openStripePortal"
           @cancel="showCancelModal = true"
           @reactivate="showReactivateModal = true"
+          @activate-free-plan="activateFreePlan"
         />
 
         <!-- Composant Utilisation (seulement si abonnement actif) -->
@@ -103,6 +105,7 @@ const isManaging = ref(false)
 const isRefreshingUsage = ref(false)
 const isCanceling = ref(false)
 const isReactivating = ref(false)
+const isActivatingFreePlan = ref(false)
 const showCancelModal = ref(false)
 const showReactivateModal = ref(false)
 
@@ -259,6 +262,45 @@ async function confirmReactivation() {
   } finally {
     isReactivating.value = false
     showReactivateModal.value = false
+  }
+}
+
+async function activateFreePlan() {
+  isActivatingFreePlan.value = true
+  error.value = ''
+
+  try {
+    // Find the free trial plan (price_amount === 0)
+    const { useSubscriptionPlansStore } = await import('../../stores/subscriptionPlans')
+    const plansStore = useSubscriptionPlansStore()
+    await plansStore.ensurePlansLoaded()
+
+    const freePlan = plansStore.entities.find((plan: any) => plan.price_amount === 0 && plan.is_active)
+
+    if (!freePlan) {
+      error.value = 'Free trial plan not available'
+      return
+    }
+
+    // Activate the free plan
+    const successUrl = `${window.location.origin}/subscription-dashboard?success=true`
+    const cancelUrl = `${window.location.origin}/subscription-dashboard`
+
+    const response = await subscriptionsStore.createCheckoutSession(
+      freePlan.id,
+      successUrl,
+      cancelUrl
+    )
+
+    if (response?.free_plan) {
+      // Reload dashboard data
+      await loadDashboardData()
+    }
+  } catch (err: any) {
+    console.error('Error activating free plan:', err)
+    error.value = err.response?.data?.error_message || 'Failed to activate free plan'
+  } finally {
+    isActivatingFreePlan.value = false
   }
 }
 

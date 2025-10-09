@@ -22,7 +22,7 @@
 import { defineStore } from "pinia"
 import { useI18n } from "vue-i18n"
 import { useBaseStore } from "./baseStore"
-import { getCountryOptions, getCountryName, getCountryCode } from '../services/countries'
+import { getCountryOptions, getCountryName } from '../services/countries'
 
 export const useBillingAddressesStore = defineStore('billingAddresses', () => {
 

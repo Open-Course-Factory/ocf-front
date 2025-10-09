@@ -154,7 +154,6 @@
 import { computed, onMounted, ref } from 'vue'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
-import { useCurrentUserStore } from '../../stores/currentUser'
 import { useI18n } from 'vue-i18n'
 import router from '../../router/index'
 
@@ -163,17 +162,12 @@ const { t } = useI18n()
 // Stores
 const entityStore = useSubscriptionPlansStore()
 const subscriptionsStore = useSubscriptionsStore()
-const currentUser = useCurrentUserStore()
 
 // State
 const isSubscribing = ref(false)
 const hasCurrentSubscription = ref(false)
 
 // Computed
-const isAdmin = computed(() =>
-  currentUser.userRoles.includes('administrator')
-)
-
 const filteredPlans = computed(() => {
   // Show all plans to everyone, but mark inactive ones as "Coming Soon"
   return entityStore.entities
@@ -275,8 +269,85 @@ async function selectPlan(plan: any) {
 
   isSubscribing.value = true
   try {
-    // If user has an active subscription, use the upgrade endpoint
+    // If user has an active subscription
     if (hasCurrentSubscription.value) {
+      const currentPlan = filteredPlans.value.find((p: any) => isCurrentPlan(p))
+      const isCurrentlyOnFreePlan = currentPlan?.price_amount === 0
+
+      // Special case: downgrade to free plan requires cancellation first
+      if (plan.price_amount === 0) {
+        const confirmed = window.confirm(
+          `To switch to the free plan, we need to cancel your current subscription.\n\n` +
+          `Your current subscription will be cancelled immediately and you'll be switched to the free plan.\n\n` +
+          `Do you want to continue?`
+        )
+
+        if (!confirmed) {
+          isSubscribing.value = false
+          return
+        }
+
+        // Cancel current subscription immediately
+        await subscriptionsStore.cancelSubscription(
+          subscriptionsStore.currentSubscription.id,
+          true // cancel immediately
+        )
+
+        // Reload subscription state to clear current subscription
+        await checkCurrentSubscription()
+
+        // Wait a moment for cancellation to fully process on backend
+        await new Promise(resolve => setTimeout(resolve, 1500))
+
+        // Now activate the free plan
+        const successUrl = `${window.location.origin}/subscription-dashboard?success=true`
+        const cancelUrl = `${window.location.origin}/subscription-plans`
+
+        const response = await subscriptionsStore.createCheckoutSession(
+          plan.id,
+          successUrl,
+          cancelUrl
+        )
+
+        if (response?.free_plan) {
+          alert('Successfully switched to free plan!')
+          // Reload to show the new free subscription
+          await checkCurrentSubscription()
+          await loadPlans()
+          return
+        } else {
+          // If no free_plan flag but no error, something went wrong
+          console.error('Unexpected response:', response)
+          alert('There was an issue activating the free plan. Please try again or contact support.')
+        }
+      }
+
+      // Special case: upgrading FROM free plan to paid plan
+      // This is a new subscription, not an upgrade
+      if (isCurrentlyOnFreePlan && plan.price_amount > 0) {
+        const confirmed = window.confirm(
+          `You're about to upgrade from the free plan to ${plan.name}.\n\n` +
+          `Your free plan will be replaced when you complete checkout.\n\n` +
+          `Do you want to continue?`
+        )
+
+        if (!confirmed) {
+          isSubscribing.value = false
+          return
+        }
+
+        // For free plans, go to checkout with allowReplace flag
+        // Pass upgradeFromFree=true in the route query
+        await entityStore.selectPlan(plan.id)
+        router.push({
+          name: 'Checkout',
+          params: { planId: plan.id },
+          query: { upgradeFromFree: 'true' }
+        })
+        return
+      }
+
+      // For paid-to-paid upgrades/downgrades
       // Show confirmation dialog
       const confirmed = window.confirm(
         `${t('subscriptions.changePlanWarning')}\n\n` +
@@ -298,8 +369,30 @@ async function selectPlan(plan: any) {
       await checkCurrentSubscription()
       await loadPlans()
     } else {
-      // No active subscription - use checkout flow
+      // No active subscription
       await entityStore.selectPlan(plan.id)
+
+      // For free plans (price_amount === 0), activate directly without Stripe checkout
+      if (plan.price_amount === 0) {
+        // Call checkout API which will activate the free plan immediately
+        const successUrl = `${window.location.origin}/subscription-dashboard?success=true`
+        const cancelUrl = `${window.location.origin}/subscription-plans`
+
+        const response = await subscriptionsStore.createCheckoutSession(
+          plan.id,
+          successUrl,
+          cancelUrl
+        )
+
+        // If it's a free plan, redirect to dashboard with success message
+        if (response?.free_plan) {
+          alert(t('subscriptions.planChangedSuccess') || 'Free plan activated successfully!')
+          router.push('/subscription-dashboard')
+          return
+        }
+      }
+
+      // For paid plans, go through checkout flow
       router.push({ name: 'Checkout', params: { planId: plan.id } })
     }
   } catch (error: any) {

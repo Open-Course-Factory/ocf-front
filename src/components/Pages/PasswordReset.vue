@@ -177,11 +177,10 @@
 
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import axios from 'axios';
 
 const route = useRoute();
-const router = useRouter();
 
 const step = ref<'request' | 'sent' | 'reset' | 'success'>('request');
 const email = ref('');

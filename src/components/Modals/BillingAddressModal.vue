@@ -271,7 +271,7 @@ function handleSubmit() {
   }
 
   // Create clean data object (without set_default for updates)
-  const submitData = {
+  const submitData: any = {
     line1: formData.line1.trim(),
     line2: formData.line2.trim(),
     city: formData.city.trim(),

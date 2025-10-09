@@ -24,7 +24,7 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
 import { computed } from 'vue'
-import { useMachinesStore } from '../../stores/machines.ts'
+import { useMachinesStore } from '../../stores/machines'
 
 const route = useRoute()
 const machineStore = useMachinesStore()
