@@ -1,4 +1,4 @@
-<!-- 
+<!--
 /*
  * Open Course Factory - Front
  * Copyright (C) 2023-2025 Solution Libre
@@ -31,255 +31,239 @@
     </div>
 
     <!-- Usage Overview Panel -->
-    <div v-if="currentSubscription" class="panel panel-info usage-panel">
-      <div class="panel-body">
-        <div class="usage-header">
-          <h4><i class="fas fa-chart-bar"></i> {{ t('terminals.currentUsage') }}</h4>
-          <button
-            @click="refreshUsage"
-            :disabled="refreshingUsage"
-            class="btn btn-sm btn-outline-primary refresh-btn"
-            :title="t('terminals.refreshUsage')"
-          >
-            <i :class="refreshingUsage ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'"></i>
-            {{ t('ui.refresh') }}
-          </button>
+    <SettingsCard v-if="currentSubscription" :title="t('terminals.currentUsage')">
+      <template #headerActions>
+        <Button
+          size="sm"
+          variant="outline-primary"
+          :icon="refreshingUsage ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'"
+          :disabled="refreshingUsage"
+          :title="t('terminals.refreshUsage')"
+          @click="refreshUsage"
+        >
+          {{ t('ui.refresh') }}
+        </Button>
+      </template>
+
+      <div class="usage-stats">
+        <div class="usage-item">
+          <span class="usage-label">
+            <i class="fas fa-terminal"></i>
+            {{ t('terminals.concurrentTerminals').charAt(0).toUpperCase() + t('terminals.concurrentTerminals').slice(1) }}:
+          </span>
+          <span class="usage-value">
+            <span v-if="loadingUsage || refreshingUsage" class="text-muted">
+              <i class="fas fa-spinner fa-spin"></i>
+            </span>
+            <span v-else>{{ currentTerminalCount }}</span>
+            / {{ maxTerminals }}
+            <small class="text-muted">({{ t('terminals.planLimit') }})</small>
+          </span>
         </div>
-        <div class="usage-stats">
-          <div class="usage-item">
-            <span class="usage-label">
-              <i class="fas fa-terminal"></i>
-              {{ t('terminals.concurrentTerminals').charAt(0).toUpperCase() + t('terminals.concurrentTerminals').slice(1) }}:
-            </span>
-            <span class="usage-value">
-              <span v-if="loadingUsage || refreshingUsage" class="text-muted">
-                <i class="fas fa-spinner fa-spin"></i>
-              </span>
-              <span v-else>{{ currentTerminalCount }}</span>
-              / {{ maxTerminals }}
-              <small class="text-muted">({{ t('terminals.planLimit') }})</small>
-            </span>
-          </div>
-          <div class="usage-item">
-            <span class="usage-label">
-              <i class="fas fa-clock"></i>
-              {{ t('terminals.sessionDuration').charAt(0).toUpperCase() + t('terminals.sessionDuration').slice(1) }}:
-            </span>
-            <span class="usage-value">
-              {{ currentSubscription.plan_features?.session_duration_hours || 1 }}h
-            </span>
-          </div>
-        </div>
-        <div class="usage-info">
-          <small class="text-muted">
-            <i class="fas fa-info-circle"></i>
-            {{ t('terminals.autoRefreshInfo', { minutes: refreshIntervalMinutes }) }}
-          </small>
+        <div class="usage-item">
+          <span class="usage-label">
+            <i class="fas fa-clock"></i>
+            {{ t('terminals.sessionDuration').charAt(0).toUpperCase() + t('terminals.sessionDuration').slice(1) }}:
+          </span>
+          <span class="usage-value">
+            {{ currentSubscription.plan_features?.session_duration_hours || 1 }}h
+          </span>
         </div>
       </div>
-    </div>
+      <div class="usage-info">
+        <small class="text-muted">
+          <i class="fas fa-info-circle"></i>
+          {{ t('terminals.autoRefreshInfo', { minutes: refreshIntervalMinutes }) }}
+        </small>
+      </div>
+    </SettingsCard>
 
     <!-- Panneau de démarrage -->
-    <div class="panel panel-warning" v-show="showStartPanel">
-      <div class="panel-body">
-        <h4><i class="fas fa-play"></i> {{ t('terminals.startNewSession') }}</h4>
-        
-        <div class="form-group">
-          <label for="terms">{{ t('terminals.termsRequired') }}</label>
-          <textarea 
-            id="terms"
-            v-model="termsInput"
-            class="form-control"
-            rows="3"
-            placeholder="J'accepte les conditions d'utilisation..."
-            required
-          ></textarea>
-          <small class="form-text text-muted">
-            Vous devez accepter les conditions d'utilisation pour démarrer une session terminal.
-          </small>
-        </div>
-        
-        <div class="form-group">
-          <label for="expiry">{{ t('terminals.expirySeconds') }}</label>
+    <SettingsCard v-show="showStartPanel" :title="t('terminals.startNewSession')">
+      <FormGroup
+        :label="t('terminals.termsRequired')"
+        id="terms"
+        help-text="Vous devez accepter les conditions d'utilisation pour démarrer une session terminal."
+      >
+        <textarea
+          id="terms"
+          v-model="termsInput"
+          rows="3"
+          placeholder="J'accepte les conditions d'utilisation..."
+          required
+        ></textarea>
+      </FormGroup>
+
+      <FormGroup
+        :label="t('terminals.expirySeconds')"
+        id="expiry"
+        :help-text="`Entre 60 secondes (1 min) et ${sessionDurationCap} secondes (${sessionDurationCap / 3600}h max).${currentSubscription?.plan_features?.session_duration_hours ? ' Limité à ' + currentSubscription.plan_features.session_duration_hours + 'h par votre plan ' + currentSubscription.plan_name + '.' : ''}`"
+      >
+        <input
+          id="expiry"
+          v-model.number="expiryInput"
+          type="number"
+          min="60"
+          :max="sessionDurationCap"
+          :placeholder="`${sessionDurationCap} (${sessionDurationCap / 3600}h maximum pour votre plan)`"
+        />
+      </FormGroup>
+
+      <FormGroup
+        :label="t('terminals.instanceType')"
+        id="instanceType"
+        :help-text="`${t('terminals.selectEnvironmentType')}${allowedMachineSizes.length > 0 ? ' ' + t('terminals.yourPlanAllows') + ': ' + allowedMachineSizes.join(', ') : ''}`"
+      >
+        <!-- Search/Filter for many instances -->
+        <div v-if="instanceTypes.length > 6" class="instance-search">
           <input
-            id="expiry"
-            v-model.number="expiryInput"
-            type="number"
-            class="form-control"
-            min="60"
-            :max="sessionDurationCap"
-            :placeholder="`${sessionDurationCap} (${sessionDurationCap / 3600}h maximum pour votre plan)`"
-          />
-          <small class="form-text text-muted">
-            Entre 60 secondes (1 min) et {{ sessionDurationCap }} secondes ({{ sessionDurationCap / 3600 }}h max).
-            <span v-if="currentSubscription?.plan_features?.session_duration_hours" class="plan-restriction">
-              Limité à {{ currentSubscription.plan_features.session_duration_hours }}h par votre plan {{ currentSubscription.plan_name }}.
-            </span>
-          </small>
+            v-model="instanceSearchTerm"
+            type="text"
+            :placeholder="t('terminals.searchInstances')"
+            @input="filterInstances"
+          >
+          <div class="instance-filters">
+            <Button
+              v-for="filterOption in availableFilters"
+              :key="filterOption.key"
+              size="sm"
+              :variant="activeFilter === filterOption.key ? 'primary' : 'outline-secondary'"
+              @click="setFilter(filterOption.key)"
+            >
+              {{ filterOption.label }} ({{ filterOption.count }})
+            </Button>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label for="instanceType">{{ t('terminals.instanceType') }}</label>
-
-          <!-- Search/Filter for many instances -->
-          <div v-if="instanceTypes.length > 6" class="instance-search">
-            <input
-              v-model="instanceSearchTerm"
-              type="text"
-              class="form-control"
-              :placeholder="t('terminals.searchInstances')"
-              @input="filterInstances"
+        <!-- Instance Type Cards -->
+        <div
+          class="instance-types-grid"
+          :class="{ 'compact': instanceTypes.length > 10 }"
+        >
+          <!-- Empty state when no instances match filters -->
+          <div v-if="displayedInstanceTypes.length === 0" class="no-instances-found">
+            <i class="fas fa-search"></i>
+            <h5>{{ t('terminals.noInstancesFound') }}</h5>
+            <p v-if="instanceSearchTerm">
+              {{ t('terminals.noMatchingInstances').replace('{searchTerm}', instanceSearchTerm) }}
+            </p>
+            <p v-else-if="activeFilter === 'available'">
+              {{ t('terminals.noAvailableInstances') }}
+            </p>
+            <p v-else-if="activeFilter === 'restricted'">
+              {{ t('terminals.allInstancesAvailable') }}
+            </p>
+            <Button
+              v-if="instanceSearchTerm || activeFilter !== 'all'"
+              size="sm"
+              variant="primary"
+              @click="clearFilters"
             >
-            <div class="instance-filters">
-              <button
-                v-for="filterOption in availableFilters"
-                :key="filterOption.key"
-                class="btn btn-sm"
-                :class="activeFilter === filterOption.key ? 'btn-primary' : 'btn-outline-secondary'"
-                @click="setFilter(filterOption.key)"
-              >
-                {{ filterOption.label }} ({{ filterOption.count }})
-              </button>
-            </div>
+              {{ t('terminals.clearFilters') }}
+            </Button>
           </div>
 
-          <!-- Instance Type Cards -->
+          <!-- Instance cards -->
           <div
-            class="instance-types-grid"
-            :class="{ 'compact': instanceTypes.length > 10 }"
+            v-for="instance in displayedInstanceTypes"
+            :key="instance.prefix"
+            class="instance-card"
+            :class="{
+              'available': instanceAvailabilityMap.get(instance.prefix)?.available,
+              'restricted': !instanceAvailabilityMap.get(instance.prefix)?.available,
+              'selected': selectedInstanceType === instance.prefix
+            }"
+            @click="selectInstance(instance)"
           >
-            <!-- Empty state when no instances match filters -->
-            <div v-if="displayedInstanceTypes.length === 0" class="no-instances-found">
-              <i class="fas fa-search"></i>
-              <h5>{{ t('terminals.noInstancesFound') }}</h5>
-              <p v-if="instanceSearchTerm">
-                {{ t('terminals.noMatchingInstances').replace('{searchTerm}', instanceSearchTerm) }}
-              </p>
-              <p v-else-if="activeFilter === 'available'">
-                {{ t('terminals.noAvailableInstances') }}
-              </p>
-              <p v-else-if="activeFilter === 'restricted'">
-                {{ t('terminals.allInstancesAvailable') }}
-              </p>
-              <button
-                v-if="instanceSearchTerm || activeFilter !== 'all'"
-                @click="clearFilters"
-                class="btn btn-sm btn-primary"
+            <div class="instance-header">
+              <div class="instance-info">
+                <h5>{{ getTranslatedInstanceName(instance) }}</h5>
+                <p>{{ getTranslatedInstanceDescription(instance) }}</p>
+              </div>
+              <div class="instance-status">
+                <i v-if="instanceAvailabilityMap.get(instance.prefix)?.available"
+                   class="fas fa-check-circle text-success"></i>
+                <i v-else class="fas fa-lock text-warning"></i>
+              </div>
+            </div>
+
+            <!-- Size badges -->
+            <div class="size-badges">
+              <span
+                v-for="size in instanceUtils.getSizeDisplay(instance.size)"
+                :key="size"
+                class="size-badge"
+                :class="{
+                  'available': instanceUtils.isSizeAllowed(size, allowedMachineSizes),
+                  'restricted': !instanceUtils.isSizeAllowed(size, allowedMachineSizes)
+                }"
               >
-                {{ t('terminals.clearFilters') }}
-              </button>
+                {{ size }}
+              </span>
             </div>
 
-            <!-- Instance cards -->
-            <div
-              v-for="instance in displayedInstanceTypes"
-              :key="instance.prefix"
-              class="instance-card"
-              :class="{
-                'available': instanceAvailabilityMap.get(instance.prefix)?.available,
-                'restricted': !instanceAvailabilityMap.get(instance.prefix)?.available,
-                'selected': selectedInstanceType === instance.prefix
-              }"
-              @click="selectInstance(instance)"
-            >
-              <div class="instance-header">
-                <div class="instance-info">
-                  <h5>{{ getTranslatedInstanceName(instance) }}</h5>
-                  <p>{{ getTranslatedInstanceDescription(instance) }}</p>
-                </div>
-                <div class="instance-status">
-                  <i v-if="instanceAvailabilityMap.get(instance.prefix)?.available"
-                     class="fas fa-check-circle text-success"></i>
-                  <i v-else class="fas fa-lock text-warning"></i>
-                </div>
+            <!-- Availability message with upgrade button -->
+            <div class="availability-message">
+              <div v-if="instanceAvailabilityMap.get(instance.prefix)?.available"
+                   class="available-message">
+                <small class="text-success">
+                  <i class="fas fa-check"></i> {{ t('terminals.availableInPlan') }}
+                </small>
               </div>
-
-              <!-- Size badges -->
-              <div class="size-badges">
-                <span
-                  v-for="size in instanceUtils.getSizeDisplay(instance.size)"
-                  :key="size"
-                  class="size-badge"
-                  :class="{
-                    'available': instanceUtils.isSizeAllowed(size, allowedMachineSizes),
-                    'restricted': !instanceUtils.isSizeAllowed(size, allowedMachineSizes)
-                  }"
-                >
-                  {{ size }}
-                </span>
-              </div>
-
-              <!-- Availability message with upgrade button -->
-              <div class="availability-message">
-                <div v-if="instanceAvailabilityMap.get(instance.prefix)?.available"
-                     class="available-message">
-                  <small class="text-success">
-                    <i class="fas fa-check"></i> {{ t('terminals.availableInPlan') }}
-                  </small>
-                </div>
-                <div v-else class="restricted-message">
-                  <small class="text-warning">
-                    <i class="fas fa-exclamation-triangle"></i> {{ t('terminals.requiresUpgrade') }}
-                  </small>
-                  <router-link to="/subscription-plans" class="btn btn-sm btn-outline-primary upgrade-btn">
-                    <i class="fas fa-arrow-up"></i>
-                    {{ t('terminals.upgrade') }}
-                  </router-link>
-                </div>
+              <div v-else class="restricted-message">
+                <small class="text-warning">
+                  <i class="fas fa-exclamation-triangle"></i> {{ t('terminals.requiresUpgrade') }}
+                </small>
+                <router-link to="/subscription-plans" class="upgrade-link">
+                  <i class="fas fa-arrow-up"></i>
+                  {{ t('terminals.upgrade') }}
+                </router-link>
               </div>
             </div>
           </div>
-
-          <small class="form-text text-muted">
-            {{ t('terminals.selectEnvironmentType') }}
-            <span v-if="allowedMachineSizes.length > 0" class="plan-restriction">
-              {{ t('terminals.yourPlanAllows') }}: {{ allowedMachineSizes.join(', ') }}
-            </span>
-          </small>
-
         </div>
+      </FormGroup>
 
+      <div class="form-actions">
+        <Button
+          type="button"
+          variant="primary"
+          size="lg"
+          :icon="isStarting ? 'fas fa-spinner fa-spin' : 'fas fa-play'"
+          :disabled="!termsInput.trim() || !selectedInstanceType || isStarting"
+          :loading="isStarting"
+          @click="startNewSession"
+        >
+          {{ isStarting ? 'Démarrage...' : 'Démarrer le Terminal' }}
+        </Button>
 
-        <div class="form-actions">
-          <button
-            type="button"
-            class="btn btn-primary btn-lg"
-            @click="startNewSession"
-            :disabled="!termsInput.trim() || !selectedInstanceType || isStarting"
-          >
-            <i v-if="isStarting" class="fas fa-spinner fa-spin"></i>
-            <i v-else class="fas fa-play"></i>
-            {{ isStarting ? 'Démarrage...' : 'Démarrer le Terminal' }}
-          </button>
-          
-          <button 
-            type="button" 
-            class="btn btn-secondary" 
-            @click="resetForm" 
-            :disabled="isStarting"
-          >
-            <i class="fas fa-undo"></i>
-            Réinitialiser
-          </button>
-        </div>
-
-        <div v-if="isStarting" class="progress-container">
-          <div class="progress">
-            <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                 role="progressbar" 
-                 style="width: 100%">
-            </div>
-          </div>
-          <p class="status-text">{{ startStatus }}</p>
-        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          icon="fas fa-undo"
+          :disabled="isStarting"
+          @click="resetForm"
+        >
+          Réinitialiser
+        </Button>
       </div>
-    </div>
+
+      <div v-if="isStarting" class="progress-container">
+        <div class="progress">
+          <div class="progress-bar progress-bar-striped progress-bar-animated"
+               role="progressbar"
+               style="width: 100%">
+          </div>
+        </div>
+        <p class="status-text">{{ startStatus }}</p>
+      </div>
+    </SettingsCard>
 
     <!-- Panneau d'information de session -->
-    <div class="panel panel-info" v-show="showInfoPanel && sessionInfo">
-      <div class="panel-heading">
+    <SettingsCard v-show="showInfoPanel && sessionInfo">
+      <template #default>
         <div class="session-header">
-          <span>
+          <span class="session-title">
             <i class="fas fa-terminal"></i>
             Session Terminal: {{ sessionInfo?.session_id }}
           </span>
@@ -288,20 +272,19 @@
               <i class="fas fa-clock"></i>
               Temps restant: {{ formatTime(timeRemaining) }}
             </span>
-            <button 
-              type="button" 
-              class="btn btn-danger btn-sm" 
-              @click="stopSession"
+            <Button
+              variant="danger"
+              size="sm"
+              :icon="isStopping ? 'fas fa-spinner fa-spin' : 'fas fa-stop'"
               :disabled="isStopping"
+              :loading="isStopping"
+              @click="stopSession"
             >
-              <i v-if="isStopping" class="fas fa-spinner fa-spin"></i>
-              <i v-else class="fas fa-stop"></i>
               Arrêter
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
-      <div class="panel-body">
+
         <div class="session-details">
           <div class="detail-item" v-if="selectedInstanceInfo">
             <strong><i class="fas fa-server"></i> {{ t('terminals.instanceType') }}</strong>
@@ -317,39 +300,32 @@
             </span>
           </div>
         </div>
-      </div>
-    </div>
+      </template>
+    </SettingsCard>
 
     <!-- Panneau du terminal -->
-    <div class="panel panel-primary" v-show="showTerminalPanel">
-      <div class="panel-heading">
-        <div class="terminal-header">
-          <span>
-            <i class="fas fa-terminal"></i>
-            Console Terminal
+    <SettingsCard v-show="showTerminalPanel" title="Console Terminal">
+      <template #headerActions>
+        <Button
+          variant="warning"
+          size="sm"
+          icon="fas fa-sync"
+          v-show="showReconnectButton"
+          @click="reconnectTerminal"
+        >
+          Reconnecter
+        </Button>
+
+        <div class="connection-status">
+          <span v-if="isConnected" class="status-connected">
+            <i class="fas fa-circle"></i> Connecté
           </span>
-          <div class="terminal-controls">
-            <button 
-              class="btn btn-warning btn-sm" 
-              @click="reconnectTerminal" 
-              v-show="showReconnectButton"
-            >
-              <i class="fas fa-sync"></i>
-              Reconnecter
-            </button>
-            
-            <div class="connection-status">
-              <span v-if="isConnected" class="status-connected">
-                <i class="fas fa-circle"></i> Connecté
-              </span>
-              <span v-else class="status-disconnected">
-                <i class="fas fa-circle"></i> Déconnecté
-              </span>
-            </div>
-          </div>
+          <span v-else class="status-disconnected">
+            <i class="fas fa-circle"></i> Déconnecté
+          </span>
         </div>
-      </div>
-      
+      </template>
+
       <div class="terminal-wrapper">
         <div ref="terminalRef" class="terminal-container"></div>
         <div v-if="!terminal" class="terminal-placeholder">
@@ -358,7 +334,7 @@
           <p v-if="terminalError" class="text-danger">{{ terminalError }}</p>
         </div>
       </div>
-      
+
       <div class="terminal-footer">
         <div class="terminal-info">
           <small class="text-muted">
@@ -370,8 +346,7 @@
           </small>
         </div>
       </div>
-    </div>
-
+    </SettingsCard>
   </div>
 </template>
 
@@ -382,6 +357,9 @@ import axios from 'axios'
 import { terminalService, instanceUtils } from '../../services/terminalService'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useNotification } from '../../composables/useNotification'
+import SettingsCard from '../UI/SettingsCard.vue'
+import Button from '../UI/Button.vue'
+import FormGroup from '../UI/FormGroup.vue'
 
 // Définir les émissions
 const emit = defineEmits(['session-started'])
@@ -1017,17 +995,17 @@ async function initializeTerminal() {
       return
     }
   }
-  
+
   if (!sessionInfo.value) {
     return
   }
-  
+
   await nextTick()
-  
+
   if (!terminalRef.value) {
     return
   }
-  
+
   // Ouvrir le terminal dans le DOM
   if (!terminal.element) {
     terminal.open(terminalRef.value)
@@ -1039,7 +1017,7 @@ async function initializeTerminal() {
       }
     }, 200)
   }
-  
+
   // Établir la connexion WebSocket
   await connectWebSocket()
 }
@@ -1166,7 +1144,7 @@ function formatTime(seconds) {
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
   const secs = seconds % 60
-  
+
   if (hours > 0) {
     return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   } else {
@@ -1181,214 +1159,82 @@ function formatTime(seconds) {
   margin: 0 auto;
 }
 
+/* Debug Panel */
 .debug-panel {
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  padding: 15px;
-  margin-bottom: 20px;
-  font-family: monospace;
-  font-size: 12px;
+  background: var(--color-bg-secondary);
+  border: var(--border-width-thin) solid var(--color-border-medium);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-sm);
 }
 
 .debug-panel h4 {
   margin-top: 0;
-  color: #495057;
+  color: var(--color-text-secondary);
 }
 
-.panel {
-  margin-bottom: 20px;
-  background-color: #fff;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,.1);
-  overflow: hidden;
+/* Usage Stats */
+.usage-stats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
 }
 
-.panel-warning {
-  border-color: #ffc107;
-}
-
-.panel-info {
-  border-color: #17a2b8;
-}
-
-.panel-primary {
-  border-color: #007bff;
-}
-
-.panel-danger {
-  border-color: #dc3545;
-}
-
-.panel-heading {
-  padding: 15px 20px;
-  border-bottom: 1px solid transparent;
-  border-top-left-radius: 7px;
-  border-top-right-radius: 7px;
-  font-weight: 600;
-}
-
-.panel-warning > .panel-heading {
-  background-color: #fff3cd;
-  border-color: #ffeaa7;
-  color: #856404;
-}
-
-.panel-info > .panel-heading {
-  background-color: #d1ecf1;
-  border-color: #bee5eb;
-  color: #0c5460;
-}
-
-.panel-primary > .panel-heading {
-  background-color: #cce7ff;
-  border-color: #b3d7ff;
-  color: #004085;
-}
-
-.panel-danger > .panel-heading {
-  background-color: #f8d7da;
-  border-color: #f5c6cb;
-  color: #721c24;
-}
-
-.panel-body {
-  padding: 20px;
-}
-
-.session-header, .terminal-header {
+.usage-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 15px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-thin) solid var(--color-border-light);
 }
 
-.session-actions, .terminal-controls {
+.usage-label {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: var(--spacing-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
 }
 
-.time-remaining {
-  font-weight: bold;
-  color: #0c5460;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.usage-value {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
 }
 
-.form-group {
-  margin-bottom: 20px;
+.usage-info {
+  padding-top: var(--spacing-sm);
+  border-top: var(--border-width-thin) solid var(--color-border-light);
 }
 
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #495057;
-}
-
-.form-control {
-  display: block;
-  width: 100%;
-  padding: 10px 12px;
-  font-size: 14px;
-  line-height: 1.5;
-  color: #495057;
-  background-color: #fff;
-  border: 2px solid #ced4da;
-  border-radius: 6px;
-  box-sizing: border-box;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.form-control:focus {
-  outline: 0;
-  border-color: #80bdff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-.form-text {
-  display: block;
-  margin-top: 5px;
-  font-size: 12px;
-}
-
+/* Form Actions */
 .form-actions {
   display: flex;
-  gap: 15px;
+  gap: var(--spacing-md);
   flex-wrap: wrap;
+  margin-top: var(--spacing-lg);
 }
 
-.terminal-wrapper {
-  min-height: 500px;
-  background-color: #1e1e1e;
-  position: relative;
-  border: 2px solid #333;
-}
-
-.terminal-container {
-  width: 100%;
-  height: 100%;
-  min-height: 500px;
-}
-
-.terminal-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 500px;
-  color: #6c757d;
-}
-
-.terminal-placeholder i {
-  margin-bottom: 20px;
-  opacity: 0.5;
-}
-
-.terminal-footer {
-  padding: 10px 15px;
-  background-color: #f8f9fa;
-  border-top: 1px solid #dee2e6;
-}
-
-.terminal-info {
-  font-family: monospace;
-}
-
-.connection-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-}
-
-.status-connected {
-  color: #28a745;
-}
-
-.status-disconnected {
-  color: #dc3545;
-}
-
+/* Progress Container */
 .progress-container {
-  margin-top: 20px;
+  margin-top: var(--spacing-lg);
 }
 
 .progress {
   height: 20px;
-  background-color: #e9ecef;
-  border-radius: 10px;
+  background-color: var(--color-gray-200);
+  border-radius: var(--border-radius-lg);
   overflow: hidden;
 }
 
 .progress-bar {
   height: 100%;
-  background-color: #007bff;
-  transition: width 0.3s ease;
+  background-color: var(--color-primary);
+  transition: width var(--transition-slow);
 }
 
 .progress-bar-striped {
@@ -1411,296 +1257,219 @@ function formatTime(seconds) {
 
 .status-text {
   text-align: center;
-  margin-top: 10px;
+  margin-top: var(--spacing-sm);
   font-style: italic;
-  color: #6c757d;
+  color: var(--color-text-muted);
 }
 
-
-.btn {
-  display: inline-flex;
+/* Session Details */
+.session-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.5;
-  text-align: center;
-  white-space: nowrap;
-  vertical-align: middle;
-  cursor: pointer;
-  border: 2px solid transparent;
-  border-radius: 6px;
-  text-decoration: none;
-  transition: all 0.2s ease-in-out;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
 }
 
-.btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+.session-title {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+.session-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
 }
 
-.btn-lg {
-  padding: 12px 24px;
-  font-size: 18px;
-  border-radius: 8px;
-}
-
-.btn-sm {
-  padding: 6px 12px;
-  font-size: 12px;
-  border-radius: 4px;
-}
-
-.btn-primary {
-  background-color: #007bff;
-  border-color: #007bff;
-  color: #fff;
-}
-
-.btn-secondary {
-  background-color: #6c757d;
-  border-color: #6c757d;
-  color: #fff;
-}
-
-.btn-danger {
-  background-color: #dc3545;
-  border-color: #dc3545;
-  color: #fff;
-}
-
-.btn-warning {
-  background-color: #ffc107;
-  border-color: #ffc107;
-  color: #212529;
-}
-
-.btn-info {
-  background-color: #17a2b8;
-  border-color: #17a2b8;
-  color: #fff;
-}
-
-.text-success {
-  color: #28a745;
-}
-
-.text-danger {
-  color: #dc3545;
-}
-
-.text-muted {
-  color: #6c757d;
-}
-
-.text-warning {
-  color: #ffc107;
+.time-remaining {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-info-text);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .session-details {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--spacing-md);
 }
 
 .detail-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-  border-left: 4px solid #17a2b8;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius-sm);
+  border-left: var(--border-width-thick) solid var(--color-info);
 }
 
 .detail-item strong {
   min-width: 140px;
-  color: #495057;
+  color: var(--color-text-secondary);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--spacing-xs);
 }
 
 .instance-info {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 500;
+  gap: var(--spacing-sm);
+  font-weight: var(--font-weight-medium);
 }
 
 .instance-info small {
-  background-color: #e9ecef;
+  background-color: var(--color-gray-200);
   padding: 2px 6px;
-  border-radius: 3px;
-  font-family: monospace;
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-family-monospace);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .session-header, .terminal-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .terminal-wrapper {
-    min-height: 300px;
-  }
-  
-  .terminal-container {
-    min-height: 300px;
-  }
-  
-  .terminal-placeholder {
-    height: 300px;
-  }
-  
-  .form-actions, .error-actions {
-    flex-direction: column;
-  }
-  
-  .btn {
-    width: 100%;
-    justify-content: center;
-  }
+/* Terminal Wrapper */
+.terminal-wrapper {
+  min-height: 500px;
+  background-color: #1e1e1e;
+  position: relative;
+  border: var(--border-width-medium) solid #333;
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
 }
 
-/* Usage Panel Styles */
-.usage-panel {
-  margin-bottom: 20px;
+.terminal-container {
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
 }
 
-.usage-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.usage-header h4 {
-  margin: 0;
-}
-
-.refresh-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 12px;
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.usage-stats {
+.terminal-placeholder {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 15px;
-}
-
-.usage-info {
-  padding-top: 10px;
-  border-top: 1px solid #e9ecef;
-}
-
-.usage-item {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  border: 1px solid #e9ecef;
+  justify-content: center;
+  height: 500px;
+  color: var(--color-text-muted);
 }
 
-.usage-label {
+.terminal-placeholder i {
+  margin-bottom: var(--spacing-lg);
+  opacity: 0.5;
+}
+
+.terminal-footer {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-bg-secondary);
+  border-top: var(--border-width-thin) solid var(--color-border-medium);
+  margin-top: var(--spacing-md);
+  border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
+}
+
+.terminal-info {
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-sm);
+}
+
+.connection-status {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 500;
-  color: #495057;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
 }
 
-.usage-value {
-  font-weight: 600;
-  color: #007bff;
+.status-connected {
+  color: var(--color-success);
 }
 
-/* Plan Restriction Styles */
-.plan-restriction {
-  color: #856404;
-  font-weight: 500;
+.status-disconnected {
+  color: var(--color-danger);
 }
 
-.restricted-instances {
-  margin-top: 8px;
-  padding: 8px 12px;
-  background: #fff3cd;
-  border: 1px solid #ffeaa7;
-  border-radius: 4px;
+/* Text Utilities */
+.text-success {
+  color: var(--color-success);
 }
 
-.upgrade-link {
-  color: #e17055;
-  text-decoration: none;
-  font-weight: 500;
+.text-danger {
+  color: var(--color-danger);
 }
 
-.upgrade-link:hover {
-  text-decoration: underline;
+.text-muted {
+  color: var(--color-text-muted);
 }
 
-/* Instance Types Grid - Scalable Layout */
+.text-warning {
+  color: var(--color-warning-text);
+}
+
+/* Instance Search */
+.instance-search {
+  margin-bottom: var(--spacing-lg);
+}
+
+.instance-search input {
+  margin-bottom: var(--spacing-sm);
+}
+
+.instance-filters {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+/* Instance Types Grid */
 .instance-types-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 15px;
-  margin-bottom: 15px;
-  max-height: 400px; /* Limit height for many instances */
-  overflow-y: auto; /* Enable scrolling for many items */
-  padding: 10px;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  max-height: 400px;
+  overflow-y: auto;
+  padding: var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-lg);
+}
+
+.instance-types-grid.compact {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--spacing-sm);
 }
 
 .instance-card {
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
-  padding: 15px;
+  border: var(--border-width-medium) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
   cursor: pointer;
-  transition: all 0.2s ease;
-  background: white;
+  transition: all var(--transition-base);
+  background: var(--color-bg-primary);
 }
 
 .instance-card:hover {
-  border-color: #007bff;
-  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
 }
 
 .instance-card.selected {
-  border-color: #007bff;
-  background: #f8f9ff;
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
 }
 
 .instance-card.available {
-  border-left: 4px solid #28a745;
+  border-left: var(--border-width-thick) solid var(--color-success);
 }
 
 .instance-card.restricted {
-  border-left: 4px solid #ffc107;
+  border-left: var(--border-width-thick) solid var(--color-warning);
   opacity: 0.8;
 }
 
 .instance-card.restricted:hover {
-  border-color: #ffc107;
+  border-color: var(--color-warning);
   cursor: not-allowed;
 }
 
@@ -1708,161 +1477,141 @@ function formatTime(seconds) {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: var(--spacing-md);
 }
 
 .instance-info h5 {
-  margin: 0 0 4px 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #333;
+  margin: 0 0 var(--spacing-xs) 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 
 .instance-info p {
   margin: 0;
-  color: #6c757d;
-  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }
 
 .instance-status {
-  font-size: 1.2rem;
+  font-size: var(--font-size-xl);
 }
 
+/* Size Badges */
 .size-badges {
   display: flex;
-  gap: 6px;
-  margin-bottom: 10px;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-sm);
   flex-wrap: wrap;
 }
 
 .size-badge {
   padding: 3px 8px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
 }
 
 .size-badge.available {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  border: var(--border-width-thin) solid var(--color-success);
 }
 
 .size-badge.restricted {
-  background: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeaa7;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  border: var(--border-width-thin) solid var(--color-warning);
 }
 
+/* Availability Messages */
 .availability-message {
-  margin-top: 8px;
+  margin-top: var(--spacing-sm);
 }
 
 .restricted-message {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
-.upgrade-btn {
+.upgrade-link {
   padding: 2px 8px;
-  font-size: 11px;
-  border-radius: 4px;
+  font-size: var(--font-size-xs);
+  border-radius: var(--border-radius-sm);
   text-decoration: none;
   white-space: nowrap;
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  border: var(--border-width-thin) solid var(--color-primary);
+  transition: all var(--transition-fast);
 }
 
-.upgrade-btn:hover {
+.upgrade-link:hover {
+  background-color: var(--color-primary-hover);
   text-decoration: none;
 }
 
-
-
-/* Search and Filter Styles */
-.instance-search {
-  margin-bottom: 20px;
-}
-
-.instance-search .form-control {
-  margin-bottom: 10px;
-}
-
-.instance-filters {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.instance-filters .btn-sm {
-  padding: 4px 12px;
-  font-size: 12px;
-  border-radius: 4px;
-}
-
-.btn-outline-secondary {
-  border-color: #6c757d;
-  color: #6c757d;
-  background-color: transparent;
-}
-
-.btn-outline-secondary:hover {
-  background-color: #6c757d;
-  color: #fff;
-}
-
-/* Empty state for filtered results */
+/* Empty State */
 .no-instances-found {
   text-align: center;
-  padding: 40px 20px;
-  color: #6c757d;
-  border: 2px dashed #e9ecef;
-  border-radius: 8px;
+  padding: var(--spacing-2xl) var(--spacing-lg);
+  color: var(--color-text-muted);
+  border: var(--border-width-medium) dashed var(--color-border-light);
+  border-radius: var(--border-radius-lg);
 }
 
 .no-instances-found i {
   font-size: 3rem;
-  margin-bottom: 15px;
+  margin-bottom: var(--spacing-md);
   opacity: 0.5;
 }
 
-/* Compact view for many instances */
-.instance-types-grid.compact {
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 12px;
-}
-
-.instance-types-grid.compact .instance-card {
-  padding: 12px;
-}
-
-.instance-types-grid.compact .instance-info h5 {
-  font-size: 1rem;
-  margin-bottom: 2px;
-}
-
-.instance-types-grid.compact .instance-info p {
-  font-size: 0.8rem;
-}
-
-/* Responsive adjustments */
+/* Responsive */
 @media (max-width: 768px) {
+  .session-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .terminal-wrapper {
+    min-height: 300px;
+  }
+
+  .terminal-container {
+    min-height: 300px;
+  }
+
+  .terminal-placeholder {
+    height: 300px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions :deep(.btn) {
+    width: 100%;
+    justify-content: center;
+  }
+
   .instance-types-grid {
     grid-template-columns: 1fr;
-    max-height: 300px; /* Smaller height on mobile */
+    max-height: 300px;
   }
 
   .instance-header {
     flex-direction: column;
-    gap: 8px;
+    gap: var(--spacing-sm);
   }
 
   .instance-filters {
     flex-direction: column;
   }
 
-  .instance-filters .btn {
+  .instance-filters :deep(.btn) {
     width: 100%;
   }
 }
