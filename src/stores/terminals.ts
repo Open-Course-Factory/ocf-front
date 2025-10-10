@@ -46,6 +46,14 @@ export const useTerminalsStore = defineStore('terminals', () => {
         start: 'Start Session',
         stop: 'Stop Session',
         connect: 'Connect to Console',
+        name: 'Terminal Name',
+        nameOptional: 'Terminal Name (optional)',
+        namePlaceholder: 'Give this terminal a name...',
+        editName: 'Edit name',
+        saveName: 'Save name',
+        cancelEdit: 'Cancel',
+        unnamed: 'Unnamed Terminal',
+        terminalWithPrefix: 'Terminal',
         userToAdd: 'User to add:',
         searchPlaceholder: 'Search by name or email...',
         searchInProgress: 'Searching...',
@@ -122,6 +130,14 @@ export const useTerminalsStore = defineStore('terminals', () => {
         start: 'Démarrer une session',
         stop: 'Arrêter la session',
         connect: 'Se connecter à la console',
+        name: 'Nom du Terminal',
+        nameOptional: 'Nom du Terminal (optionnel)',
+        namePlaceholder: 'Donnez un nom à ce terminal...',
+        editName: 'Modifier le nom',
+        saveName: 'Enregistrer le nom',
+        cancelEdit: 'Annuler',
+        unnamed: 'Terminal sans nom',
+        terminalWithPrefix: 'Terminal',
         userToAdd: 'Utilisateur à ajouter:',
         searchPlaceholder: 'Rechercher par nom ou email...',
         searchInProgress: 'Recherche en cours...',
@@ -265,10 +281,10 @@ export const useTerminalsStore = defineStore('terminals', () => {
     ])
 
     // Actions spécifiques aux terminaux
-    const startTerminalSession = async (sessionData: { terms: string, expiry?: number }) => {
+    const startTerminalSession = async (sessionData: { terms: string, expiry?: number, instance_type?: string, name?: string }) => {
         isLoading.value = true
         error.value = ''
-        
+
         try {
             const response = await axios.post('/terminal-sessions/start-session', sessionData)
             await getUserSessions()

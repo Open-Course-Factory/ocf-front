@@ -81,6 +81,21 @@
     <!-- Panneau de démarrage -->
     <SettingsCard v-show="showStartPanel" :title="t('terminals.startNewSession')">
       <FormGroup
+        :label="t('terminals.nameOptional')"
+        id="terminalName"
+        help-text="Donnez un nom personnalisé à votre terminal pour le retrouver facilement. Maximum 255 caractères."
+      >
+        <input
+          id="terminalName"
+          v-model="nameInput"
+          type="text"
+          maxlength="255"
+          :placeholder="t('terminals.namePlaceholder')"
+        />
+        <small v-if="nameInput.length > 0" class="char-count">{{ nameInput.length }}/255</small>
+      </FormGroup>
+
+      <FormGroup
         :label="t('terminals.termsRequired')"
         id="terms"
         help-text="Vous devez accepter les conditions d'utilisation pour démarrer une session terminal."
@@ -406,6 +421,7 @@ const USAGE_REFRESH_INTERVAL = 600000 // 10 minutes in milliseconds
 const termsInput = ref('J\'accepte les conditions d\'utilisation du service terminal.')
 const expiryInput = ref(3600) // 1 heure par défaut
 const selectedInstanceType = ref('')
+const nameInput = ref('')
 
 // Instance types
 const instanceTypes = ref([])
@@ -809,6 +825,7 @@ function cleanup() {
 function resetForm() {
   termsInput.value = 'J\'accepte les conditions d\'utilisation du service terminal.'
   expiryInput.value = 3600
+  nameInput.value = ''
   // Reset to default available instance type
   setDefaultInstanceSelection()
   terminalError.value = ''
@@ -906,7 +923,8 @@ async function startNewSession() {
     const sessionData = {
       terms: termsInput.value.trim(),
       ...(expiryInput.value && { expiry: expiryInput.value }),
-      ...(selectedInstanceType.value && { instance_type: selectedInstanceType.value })
+      ...(selectedInstanceType.value && { instance_type: selectedInstanceType.value }),
+      ...(nameInput.value.trim() && { name: nameInput.value.trim() })
     }
 
     startStatus.value = 'Envoi de la requête au serveur...'
@@ -1567,6 +1585,15 @@ function formatTime(seconds) {
   font-size: 3rem;
   margin-bottom: var(--spacing-md);
   opacity: 0.5;
+}
+
+/* Character counter for name input */
+.char-count {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+  display: block;
+  text-align: right;
 }
 
 /* Responsive */

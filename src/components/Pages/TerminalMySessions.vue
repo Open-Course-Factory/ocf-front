@@ -95,7 +95,53 @@
 
           <!-- En-tête avec indicateur de sync -->
           <div class="card-header">
-            <h5 class="session-id">{{ session.session_id }}</h5>
+            <div class="session-title-container">
+              <div v-if="!editingNames.has(session.id)" class="session-title-display">
+                <h5 class="session-id">{{ getTerminalDisplayName(session) }}</h5>
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  icon="fas fa-pencil-alt"
+                  @click="startEditingName(session.id, session.name)"
+                  :title="t('terminals.editName')"
+                  class="btn-edit-name"
+                />
+              </div>
+              <div v-else class="session-title-edit">
+                <div class="name-input-wrapper">
+                  <input
+                    v-model="editingNames.get(session.id)!.value"
+                    type="text"
+                    class="name-input"
+                    :placeholder="t('terminals.namePlaceholder')"
+                    maxlength="255"
+                    @keyup.enter="saveName(session.id)"
+                    @keyup.esc="cancelEditingName(session.id)"
+                    :disabled="savingNames.has(session.id)"
+                  />
+                  <div class="name-edit-actions">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      icon="fas fa-check"
+                      @click="saveName(session.id)"
+                      :disabled="savingNames.has(session.id)"
+                      :loading="savingNames.has(session.id)"
+                      :title="t('terminals.saveName')"
+                    />
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon="fas fa-times"
+                      @click="cancelEditingName(session.id)"
+                      :disabled="savingNames.has(session.id)"
+                      :title="t('terminals.cancelEdit')"
+                    />
+                  </div>
+                </div>
+                <small class="char-counter">{{ (editingNames.get(session.id)?.value || '').length }}/255</small>
+              </div>
+            </div>
             <div class="status-group">
               <span :class="['status-badge', getStatusClass(session.status)]">
                 <i class="fas fa-circle"></i>
@@ -409,8 +455,11 @@ import { ref, onMounted, defineAsyncComponent, computed } from 'vue'
 import axios from 'axios'
 import { terminalService } from '../../services/terminalService'
 import { useNotification } from '../../composables/useNotification'
+import { useI18n } from 'vue-i18n'
+import Button from '../UI/Button.vue'
 
 const { showConfirm } = useNotification()
+const { t } = useI18n()
 
 // Import dynamique des composants
 const TerminalSharingModal = defineAsyncComponent(() => import('../Terminal/TerminalSharingModal.vue'))
@@ -442,6 +491,10 @@ const showSharingModal = ref(false)
 const showAccessModal = ref(false)
 const selectedTerminalId = ref<string | null>(null)
 const accessModalRefreshTrigger = ref(0)
+
+// États pour l'édition des noms
+const editingNames = ref(new Map<string, { value: string }>())
+const savingNames = ref(new Set<string>())
 
 // Helper function to check if terminal is inactive
 function isTerminalInactive(status: string): boolean {
@@ -687,6 +740,56 @@ function getInstanceName(prefix: string) {
   }
   const instance = instanceTypes.value.find(type => type.prefix === prefix)
   return instance ? instance.name : prefix
+}
+
+// Fonctions pour gérer les noms de terminaux
+function getTerminalDisplayName(session: any): string {
+  if (session.name && session.name.trim()) {
+    return session.name
+  }
+  // Fallback: show "Terminal {prefix}" using first 8 chars of session_id
+  const prefix = session.session_id ? session.session_id.substring(0, 8) : 'unknown'
+  return `Terminal ${prefix}`
+}
+
+function startEditingName(terminalId: string, currentName: string | undefined) {
+  editingNames.value.set(terminalId, { value: currentName || '' })
+}
+
+function cancelEditingName(terminalId: string) {
+  editingNames.value.delete(terminalId)
+}
+
+async function saveName(terminalId: string) {
+  const editData = editingNames.value.get(terminalId)
+  if (!editData) return
+
+  const newName = editData.value.trim()
+
+  // Optimistic update
+  const session = sessions.value.find(s => s.id === terminalId)
+  const previousName = session?.name
+
+  if (session) {
+    session.name = newName
+  }
+
+  savingNames.value.add(terminalId)
+
+  try {
+    await axios.patch(`/terminals/${terminalId}`, { name: newName })
+    editingNames.value.delete(terminalId)
+  } catch (err: any) {
+    console.error('Erreur lors de la mise à jour du nom:', err)
+    error.value = err.response?.data?.error_message || 'Erreur lors de la mise à jour du nom'
+
+    // Rollback on error
+    if (session) {
+      session.name = previousName
+    }
+  } finally {
+    savingNames.value.delete(terminalId)
+  }
 }
 
 // Fonctions pour les fonctionnalités de partage
@@ -1312,6 +1415,89 @@ async function hideAllInactiveSessions() {
 .instance-type i {
   color: #6c757d;
   opacity: 0.7;
+}
+
+/* Terminal Name Editing Styles */
+.session-title-container {
+  flex: 1;
+  min-width: 0;
+}
+
+.session-title-display {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.session-title-display .session-id {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-edit-name {
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.session-title-display:hover .btn-edit-name,
+.btn-edit-name:focus-visible {
+  opacity: 1;
+}
+
+.session-title-edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  width: 100%;
+}
+
+.name-input-wrapper {
+  display: flex;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
+.name-input {
+  flex: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width-medium) solid var(--color-border-medium);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  font-family: var(--font-family-primary);
+  transition: all var(--transition-base);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+.name-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus-primary);
+}
+
+.name-input:disabled {
+  background-color: var(--color-bg-secondary);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.name-edit-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+.char-counter {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  align-self: flex-end;
+  font-style: italic;
+  margin-top: var(--spacing-xs);
 }
 
 /* Responsive */

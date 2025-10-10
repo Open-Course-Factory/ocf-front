@@ -59,7 +59,7 @@
 
           <!-- En-tête avec indicateur de partage -->
           <div class="card-header">
-            <h5 class="session-id">{{ sharedSession.terminal.session_id }}</h5>
+            <h5 class="session-id">{{ getTerminalDisplayName(sharedSession.terminal) }}</h5>
             <div class="status-group">
               <span :class="['status-badge', getStatusClass(sharedSession.terminal.status)]">
                 <i class="fas fa-circle"></i>
@@ -437,6 +437,16 @@ function getInstanceName(prefix: string) {
 
 function isTerminalInactive(status: string): boolean {
   return ['expired', 'stopped', 'terminated'].includes(status?.toLowerCase())
+}
+
+// Fonction pour afficher le nom du terminal
+function getTerminalDisplayName(terminal: any): string {
+  if (terminal.name && terminal.name.trim()) {
+    return terminal.name
+  }
+  // Fallback: show "Terminal {prefix}" using first 8 chars of session_id
+  const prefix = terminal.session_id ? terminal.session_id.substring(0, 8) : 'unknown'
+  return `Terminal ${prefix}`
 }
 
 async function discardTerminal(terminalId: string) {

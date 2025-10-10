@@ -20,6 +20,11 @@ export interface StartSessionData {
   terms: string
   expiry?: number
   instance_type?: string
+  name?: string
+}
+
+export interface UpdateTerminalRequest {
+  name?: string
 }
 
 export interface TerminalShareOutput {
@@ -42,6 +47,7 @@ export interface SharedTerminalInfo {
     expires_at: string
     instance_type: string
     created_at: string
+    name?: string
   }
   shared_by: string
   access_level: 'read' | 'write' | 'admin' | 'owner'
@@ -161,5 +167,10 @@ export const terminalService = {
 
   async revokeAccess(terminalId: string, userId: string): Promise<void> {
     await axios.delete(`/terminal-sessions/${terminalId}/share/${userId}`)
+  },
+
+  async updateTerminal(terminalId: string, data: UpdateTerminalRequest): Promise<any> {
+    const response = await axios.patch(`/terminals/${terminalId}`, data)
+    return response.data
   }
 }
