@@ -126,6 +126,32 @@
           </div>
         </div>
 
+        <div class="form-group tos-acceptance">
+          <div class="tos-checkbox">
+            <input
+              type="checkbox"
+              id="tosAccepted"
+              v-model="formData.tosAccepted"
+              :class="{ 'is-invalid': errors.tosAccepted }"
+              required
+            />
+            <label for="tosAccepted">
+              {{ t('register.tosAcceptance') }}
+              <button
+                type="button"
+                class="tos-link"
+                @click="showTosModal = true"
+              >
+                {{ t('register.tosLink') }}
+              </button>
+              *
+            </label>
+          </div>
+          <div v-if="errors.tosAccepted" class="invalid-feedback d-block">
+            {{ errors.tosAccepted }}
+          </div>
+        </div>
+
         <div v-if="errorMessage" class="alert alert-danger" role="alert">
           {{ errorMessage }}
         </div>
@@ -150,6 +176,11 @@
         </div>
       </form>
     </div>
+
+    <TermsOfServiceModal
+      :is-open="showTosModal"
+      @close="showTosModal = false"
+    />
   </div>
 </template>
 
@@ -158,8 +189,10 @@ import { ref, computed, reactive, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import axios from 'axios';
+import TermsOfServiceModal from '../../components/Modals/TermsOfServiceModal.vue';
 
 const router = useRouter();
+const showTosModal = ref(false);
 
 const i18n = useI18n();
 const { t } = i18n;
@@ -171,7 +204,8 @@ const formData = reactive({
   displayName: '',
   email: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  tosAccepted: false
 });
 
 const errors = reactive({
@@ -181,7 +215,8 @@ const errors = reactive({
   displayName: '',
   email: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  tosAccepted: ''
 });
 
 const passwordValidations = reactive({
@@ -195,8 +230,17 @@ const successMessage = ref('');
 const isLoading = ref(false);
 
 const isFormValid = computed(() => {
+  const allFieldsFilled = formData.firstName !== '' &&
+                          formData.lastName !== '' &&
+                          formData.userName !== '' &&
+                          formData.displayName !== '' &&
+                          formData.email !== '' &&
+                          formData.password !== '' &&
+                          formData.confirmPassword !== '';
+
   return Object.values(errors).every(error => error === '') &&
-         Object.values(formData).every(value => value !== '') &&
+         allFieldsFilled &&
+         formData.tosAccepted &&
          passwordValidations.length &&
          passwordValidations.uppercase &&
          passwordValidations.number;
@@ -254,6 +298,14 @@ const validateConfirmPassword = () => {
   }
 };
 
+const validateTosAcceptance = () => {
+  if (!formData.tosAccepted) {
+    errors.tosAccepted = t('register.tosMustAccept');
+  } else {
+    errors.tosAccepted = '';
+  }
+};
+
 onMounted(() => {
   // Add translations
   i18n.mergeLocaleMessage('en', {
@@ -270,6 +322,9 @@ onMounted(() => {
       passwordReqUppercase: 'One uppercase letter',
       passwordReqNumber: 'One number',
       confirmPasswordLabel: 'Confirm password *',
+      tosAcceptance: 'I have read and accept the',
+      tosLink: 'Terms of Service',
+      tosMustAccept: 'You must accept the Terms of Service to create an account',
       creatingAccount: 'Creating account...',
       submitButton: 'Create account',
       haveAccount: 'Already have an account?',
@@ -299,6 +354,9 @@ onMounted(() => {
       passwordReqUppercase: 'Une majuscule',
       passwordReqNumber: 'Un chiffre',
       confirmPasswordLabel: 'Confirmer le mot de passe *',
+      tosAcceptance: 'J\'ai lu et j\'accepte les',
+      tosLink: 'Conditions Générales d\'Utilisation',
+      tosMustAccept: 'Vous devez accepter les Conditions Générales d\'Utilisation pour créer un compte',
       creatingAccount: 'Création en cours...',
       submitButton: 'Créer le compte',
       haveAccount: 'Déjà un compte ?',
@@ -321,6 +379,7 @@ const handleSubmit = async () => {
   validateUserName();
   validatePassword();
   validateConfirmPassword();
+  validateTosAcceptance();
 
   if (!isFormValid.value) {
     return;
@@ -331,13 +390,18 @@ const handleSubmit = async () => {
   successMessage.value = '';
 
   try {
+    // GDPR-compliant: Record the exact timestamp when user accepted ToS
+    const tosAcceptedAt = new Date().toISOString();
+
     const registrationData = {
       email: formData.email,
       password: formData.password,
       firstName: formData.firstName,
       lastName: formData.lastName,
       userName: formData.userName,
-      displayName: formData.displayName
+      displayName: formData.displayName,
+      tosAcceptedAt: tosAcceptedAt,
+      tosVersion: '2025-10-11' // Version identifier for the ToS
     };
 
     // Utilisation de la requête simplifiée
@@ -480,5 +544,59 @@ const handleSubmit = async () => {
   background-color: #d4edda;
   border-color: #c3e6cb;
   color: #155724;
+}
+
+.tos-acceptance {
+  margin-top: 24px;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.tos-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.tos-checkbox input[type="checkbox"] {
+  margin-top: 4px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.tos-checkbox input[type="checkbox"].is-invalid {
+  border-color: #dc3545;
+  outline: 2px solid #dc3545;
+}
+
+.tos-checkbox label {
+  font-weight: 400;
+  margin-bottom: 0;
+  cursor: pointer;
+  line-height: 1.5;
+}
+
+.tos-link {
+  background: none;
+  border: none;
+  color: #007bff;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  margin: 0 4px;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.tos-link:hover {
+  color: #0056b3;
+}
+
+.d-block {
+  display: block;
+  margin-top: 8px;
 }
 </style>

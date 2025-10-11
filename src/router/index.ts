@@ -247,6 +247,14 @@ const basicRoutes = [
         meta: { requiresAuth: true, requiresAdmin: true }
       },
 
+      // Admin routes
+      {
+        path: 'admin/terminal-metrics',
+        name: 'AdminTerminalMetrics',
+        component: () => import('../components/Pages/Admin/TerminalMetrics.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+
       // Help and Documentation routes
       {
         path: 'help',

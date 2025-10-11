@@ -30,104 +30,35 @@
       </div>
     </div>
 
-    <!-- Usage Overview Panel -->
-    <SettingsCard v-if="currentSubscription" :title="t('terminals.currentUsage')">
-      <template #headerActions>
-        <Button
-          size="sm"
-          variant="outline-primary"
-          :icon="refreshingUsage ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'"
-          :disabled="refreshingUsage"
-          :title="t('terminals.refreshUsage')"
-          @click="refreshUsage"
-        >
-          {{ t('ui.refresh') }}
-        </Button>
-      </template>
-
-      <div class="usage-stats">
-        <div class="usage-item">
-          <span class="usage-label">
-            <i class="fas fa-terminal"></i>
-            {{ t('terminals.concurrentTerminals').charAt(0).toUpperCase() + t('terminals.concurrentTerminals').slice(1) }}:
-          </span>
-          <span class="usage-value">
-            <span v-if="loadingUsage || refreshingUsage" class="text-muted">
-              <i class="fas fa-spinner fa-spin"></i>
-            </span>
-            <span v-else>{{ currentTerminalCount }}</span>
-            / {{ maxTerminals }}
-            <small class="text-muted">({{ t('terminals.planLimit') }})</small>
-          </span>
-        </div>
-        <div class="usage-item">
-          <span class="usage-label">
-            <i class="fas fa-clock"></i>
-            {{ t('terminals.sessionDuration').charAt(0).toUpperCase() + t('terminals.sessionDuration').slice(1) }}:
-          </span>
-          <span class="usage-value">
-            {{ currentSubscription.plan_features?.session_duration_hours || 1 }}h
-          </span>
-        </div>
-      </div>
-      <div class="usage-info">
-        <small class="text-muted">
-          <i class="fas fa-info-circle"></i>
-          {{ t('terminals.autoRefreshInfo', { minutes: refreshIntervalMinutes }) }}
-        </small>
-      </div>
-    </SettingsCard>
-
     <!-- Panneau de démarrage -->
     <SettingsCard v-show="showStartPanel" :title="t('terminals.startNewSession')">
-      <FormGroup
-        :label="t('terminalStarter.nameOptional')"
-        id="terminalName"
-        :help-text="t('terminalStarter.nameHelp')"
-      >
-        <input
-          id="terminalName"
-          v-model="nameInput"
-          type="text"
-          maxlength="255"
-          :placeholder="t('terminalStarter.namePlaceholder')"
-        />
-        <small v-if="nameInput.length > 0" class="char-count">{{ nameInput.length }}/255</small>
-      </FormGroup>
+      <template #headerActions>
+        <div class="header-actions-group">
+          <!-- Compact Capacity Check -->
+          <div v-if="selectedInstanceType" class="capacity-check-inline" :class="`status-${capacityStatusLevel}`">
+            <i :class="capacityStatusIcon"></i>
+            <span class="capacity-text">{{ capacityStatusText }}</span>
+          </div>
 
-      <FormGroup
-        :label="t('terminalStarter.termsRequired')"
-        id="terms"
-        :help-text="t('terminalStarter.termsHelp')"
-      >
-        <textarea
-          id="terms"
-          v-model="termsInput"
-          rows="3"
-          :placeholder="t('terminalStarter.termsPlaceholder')"
-          required
-        ></textarea>
-      </FormGroup>
+          <Button
+            type="button"
+            variant="primary"
+            size="md"
+            :icon="isStarting ? 'fas fa-spinner fa-spin' : 'fas fa-rocket'"
+            :disabled="!selectedInstanceType || isStarting"
+            :loading="isStarting"
+            @click="startNewSession"
+          >
+            {{ isStarting ? t('terminalStarter.buttonStarting') : t('terminalStarter.launchTerminal') }}
+          </Button>
+        </div>
+      </template>
 
-      <FormGroup
-        :label="t('terminalStarter.expirySeconds')"
-        id="expiry"
-        :help-text="expiryHelpText"
-      >
-        <input
-          id="expiry"
-          v-model.number="expiryInput"
-          type="number"
-          min="60"
-          :max="sessionDurationCap"
-          :placeholder="t('terminalStarter.expiryPlaceholder', { max: sessionDurationCap, maxHours: sessionDurationCap / 3600 })"
-        />
-      </FormGroup>
-
+      <!-- Primary: Instance Type Selection -->
       <FormGroup
         :label="t('terminalStarter.instanceType')"
         id="instanceType"
-        :help-text="`${t('terminalStarter.selectEnvironmentType')}${allowedMachineSizes.length > 0 ? ' ' + t('terminalStarter.yourPlanAllows') + ': ' + allowedMachineSizes.join(', ') : ''}`"
+        :help-text="t('terminalStarter.selectEnvironmentType')"
       >
         <!-- Search/Filter for many instances -->
         <div v-if="instanceTypes.length > 6" class="instance-search">
@@ -239,30 +170,6 @@
         </div>
       </FormGroup>
 
-      <div class="form-actions">
-        <Button
-          type="button"
-          variant="primary"
-          size="lg"
-          :icon="isStarting ? 'fas fa-spinner fa-spin' : 'fas fa-play'"
-          :disabled="!termsInput.trim() || !selectedInstanceType || isStarting"
-          :loading="isStarting"
-          @click="startNewSession"
-        >
-          {{ isStarting ? t('terminalStarter.buttonStarting') : t('terminalStarter.buttonStart') }}
-        </Button>
-
-        <Button
-          type="button"
-          variant="secondary"
-          icon="fas fa-undo"
-          :disabled="isStarting"
-          @click="resetForm"
-        >
-          {{ t('terminalStarter.buttonReset') }}
-        </Button>
-      </div>
-
       <div v-if="isStarting" class="progress-container">
         <div class="progress">
           <div class="progress-bar progress-bar-striped progress-bar-animated"
@@ -271,6 +178,143 @@
           </div>
         </div>
         <p class="status-text">{{ startStatus }}</p>
+      </div>
+
+      <!-- Collapsible: Advanced Options -->
+      <div class="collapsible-section">
+        <button
+          type="button"
+          class="collapsible-header"
+          @click="showAdvancedOptions = !showAdvancedOptions"
+        >
+          <i class="fas" :class="showAdvancedOptions ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+          {{ t('terminalStarter.advancedOptions') }}
+        </button>
+        <div v-show="showAdvancedOptions" class="collapsible-content">
+          <FormGroup
+            :label="t('terminalStarter.nameOptional')"
+            id="terminalName"
+            :help-text="t('terminalStarter.nameHelp')"
+          >
+            <input
+              id="terminalName"
+              v-model="nameInput"
+              type="text"
+              maxlength="255"
+              :placeholder="t('terminalStarter.namePlaceholder')"
+            />
+            <small v-if="nameInput.length > 0" class="char-count">{{ nameInput.length }}/255</small>
+          </FormGroup>
+
+          <FormGroup
+            :label="t('terminalStarter.termsOptional')"
+            id="terms"
+            :help-text="t('terminalStarter.termsHelp')"
+          >
+            <textarea
+              id="terms"
+              v-model="termsInput"
+              rows="3"
+              :placeholder="t('terminalStarter.termsPlaceholder')"
+            ></textarea>
+          </FormGroup>
+
+          <FormGroup
+            :label="t('terminalStarter.expirySeconds')"
+            id="expiry"
+            :help-text="expiryHelpText"
+          >
+            <input
+              id="expiry"
+              v-model.number="expiryInput"
+              type="number"
+              min="60"
+              :max="sessionDurationCap"
+              :placeholder="t('terminalStarter.expiryPlaceholder', { max: sessionDurationCap, maxHours: sessionDurationCap / 3600 })"
+            />
+          </FormGroup>
+
+          <div class="form-actions">
+            <Button
+              type="button"
+              variant="secondary"
+              icon="fas fa-undo"
+              size="sm"
+              :disabled="isStarting"
+              @click="resetForm"
+            >
+              {{ t('terminalStarter.buttonReset') }}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Collapsible: Usage & Quota -->
+      <div v-if="currentSubscription" class="collapsible-section">
+        <button
+          type="button"
+          class="collapsible-header"
+          @click="showUsageDetails = !showUsageDetails"
+        >
+          <i class="fas" :class="showUsageDetails ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+          {{ t('terminals.currentUsage') }}
+          <span class="usage-badge">{{ currentTerminalCount }}/{{ maxTerminals }}</span>
+        </button>
+        <div v-show="showUsageDetails" class="collapsible-content">
+          <div class="usage-header">
+            <Button
+              size="sm"
+              variant="outline-primary"
+              :icon="refreshingUsage ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'"
+              :disabled="refreshingUsage"
+              :title="t('terminals.refreshUsage')"
+              @click="refreshUsage"
+            >
+              {{ t('ui.refresh') }}
+            </Button>
+          </div>
+
+          <div class="usage-stats">
+            <div class="usage-item">
+              <span class="usage-label">
+                <i class="fas fa-terminal"></i>
+                {{ t('terminals.concurrentTerminals').charAt(0).toUpperCase() + t('terminals.concurrentTerminals').slice(1) }}:
+              </span>
+              <span class="usage-value">
+                <span v-if="loadingUsage || refreshingUsage" class="text-muted">
+                  <i class="fas fa-spinner fa-spin"></i>
+                </span>
+                <span v-else>{{ currentTerminalCount }}</span>
+                / {{ maxTerminals }}
+                <small class="text-muted">({{ t('terminals.planLimit') }})</small>
+              </span>
+            </div>
+            <div class="usage-item">
+              <span class="usage-label">
+                <i class="fas fa-clock"></i>
+                {{ t('terminals.sessionDuration').charAt(0).toUpperCase() + t('terminals.sessionDuration').slice(1) }}:
+              </span>
+              <span class="usage-value">
+                {{ currentSubscription.plan_features?.session_duration_hours || 1 }}h
+              </span>
+            </div>
+            <div v-if="allowedMachineSizes.length > 0" class="usage-item">
+              <span class="usage-label">
+                <i class="fas fa-server"></i>
+                {{ t('terminalStarter.allowedSizes') }}:
+              </span>
+              <span class="usage-value">
+                {{ allowedMachineSizes.join(', ') }}
+              </span>
+            </div>
+          </div>
+          <div class="usage-info">
+            <small class="text-muted">
+              <i class="fas fa-info-circle"></i>
+              {{ t('terminals.autoRefreshInfo', { minutes: refreshIntervalMinutes }) }}
+            </small>
+          </div>
+        </div>
       </div>
     </SettingsCard>
 
@@ -366,11 +410,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 import { terminalService, instanceUtils } from '../../services/terminalService'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
+import { useTerminalMetricsStore } from '../../stores/terminalMetrics'
 import { useNotification } from '../../composables/useNotification'
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
@@ -381,6 +426,7 @@ const emit = defineEmits(['session-started'])
 
 // Stores
 const subscriptionsStore = useSubscriptionsStore()
+const metricsStore = useTerminalMetricsStore()
 
 // i18n setup
 const i18n = useI18n()
@@ -401,6 +447,10 @@ const showTerminalPanel = ref(false)
 const showReconnectButton = ref(false)
 //const showDebug = ref(process.env.NODE_ENV === 'development')
 const showDebug = ref(false)
+
+// État des sections repliables
+const showAdvancedOptions = ref(false)
+const showUsageDetails = ref(false)
 
 // État de l'application
 const isStarting = ref(false)
@@ -577,6 +627,70 @@ const availableFilters = computed(() => {
     { key: 'restricted', label: t('terminals.restrictedInstances'), count: restrictedCount }
   ].filter(filter => filter.count > 0)
 })
+
+// Capacity Check - Inline version
+const INSTANCE_RAM_REQUIREMENTS = {
+  'alpine': 0.5,
+  'debian': 1.0,
+  'ubuntu': 1.0,
+  'default': 1.0
+}
+const SYSTEM_RESERVE_GB = 0.6
+
+const serverMetrics = computed(() => metricsStore.metrics)
+
+const canLaunchInstance = computed(() => {
+  if (!selectedInstanceType.value || !serverMetrics.value) return null
+
+  // Check CPU - must be under 95%
+  if (serverMetrics.value.cpu_percent > 95) {
+    return false
+  }
+
+  // Check RAM
+  const requiredRAM = getInstanceRAMRequirement(selectedInstanceType.value)
+  const totalRequired = requiredRAM + SYSTEM_RESERVE_GB
+
+  return serverMetrics.value.ram_available_gb >= totalRequired
+})
+
+const capacityStatusLevel = computed(() => {
+  if (!selectedInstanceType.value) return 'neutral'
+  if (canLaunchInstance.value === null) return 'checking'
+  return canLaunchInstance.value ? 'ok' : 'error'
+})
+
+const capacityStatusIcon = computed(() => {
+  switch (capacityStatusLevel.value) {
+    case 'ok':
+      return 'fas fa-check-circle'
+    case 'error':
+      return 'fas fa-exclamation-circle'
+    case 'checking':
+      return 'fas fa-spinner fa-spin'
+    default:
+      return 'fas fa-info-circle'
+  }
+})
+
+const capacityStatusText = computed(() => {
+  if (!selectedInstanceType.value) return ''
+  if (canLaunchInstance.value === null) return t('terminalStarter.checkingCapacity')
+  return canLaunchInstance.value
+    ? t('terminalStarter.readyToLaunch')
+    : t('terminalStarter.capacityIssue')
+})
+
+// Helper function for instance RAM requirements
+function getInstanceRAMRequirement(instancePrefix) {
+  const lowerPrefix = instancePrefix.toLowerCase()
+  for (const key in INSTANCE_RAM_REQUIREMENTS) {
+    if (lowerPrefix.includes(key)) {
+      return INSTANCE_RAM_REQUIREMENTS[key]
+    }
+  }
+  return INSTANCE_RAM_REQUIREMENTS['default']
+}
 
 // Helper functions for instance translation
 function getTranslatedInstanceName(instance) {
@@ -790,12 +904,18 @@ onMounted(async () => {
   // Add translations
   i18n.mergeLocaleMessage('en', {
     terminalStarter: {
+      launchTerminal: 'Launch Terminal',
+      advancedOptions: 'Advanced Options',
+      allowedSizes: 'Allowed Sizes',
+      readyToLaunch: 'Ready to Launch',
+      capacityIssue: 'Capacity Issue',
+      checkingCapacity: 'Checking...',
       nameOptional: 'Terminal Name (Optional)',
       namePlaceholder: 'My terminal...',
       nameHelp: 'Give your terminal a custom name to easily find it. Maximum 255 characters.',
-      termsRequired: 'Terms of Use (Required)',
+      termsOptional: 'Terms of Use (Optional)',
       termsPlaceholder: 'I accept the terms of use of the terminal service.',
-      termsHelp: 'You must accept the terms of use to start a terminal session.',
+      termsHelp: 'Optionally, you can specify custom terms of use for this terminal session.',
       expirySeconds: 'Session Duration (seconds)',
       expiryHelpBase: 'Between {min} seconds (1 min) and {max} seconds ({maxHours}h max).',
       expiryHelpPlanLimit: 'Limited to {planHours}h by your {planName} plan.',
@@ -839,7 +959,6 @@ onMounted(async () => {
       status: 'Status',
       sessionExpired: 'Your terminal session has expired',
       sessionExpiredTitle: 'Session Expired',
-      errorValidationTerms: 'Please accept the terms of use',
       errorValidationInstance: 'Please select an instance type',
       errorLimitReached: 'You have reached your limit of concurrent terminals. Please stop an existing terminal or upgrade your plan.',
       errorLimitReachedTitle: 'Limit Reached',
@@ -862,18 +981,26 @@ onMounted(async () => {
       errorWebsocket: 'Connection Error',
       errorWebsocketMessage: 'Unable to connect to the terminal: {message}',
       errorStopping: 'Error stopping',
-      errorStoppingMessage: 'Error stopping the session'
+      errorStoppingMessage: 'Error stopping the session',
+      errorServerCapacity: 'Server at Capacity',
+      errorServerCapacityMessage: 'The server does not have enough resources to create a new terminal session. Please try again in a few minutes or stop an existing terminal.'
     }
   })
 
   i18n.mergeLocaleMessage('fr', {
     terminalStarter: {
+      launchTerminal: 'Lancer le Terminal',
+      advancedOptions: 'Options Avancées',
+      allowedSizes: 'Tailles Autorisées',
+      readyToLaunch: 'Prêt à Lancer',
+      capacityIssue: 'Problème de Capacité',
+      checkingCapacity: 'Vérification...',
       nameOptional: 'Nom du Terminal (Optionnel)',
       namePlaceholder: 'Mon terminal...',
       nameHelp: 'Donnez un nom personnalisé à votre terminal pour le retrouver facilement. Maximum 255 caractères.',
-      termsRequired: 'Conditions d\'Utilisation (Requis)',
+      termsOptional: 'Conditions d\'Utilisation (Optionnel)',
       termsPlaceholder: 'J\'accepte les conditions d\'utilisation du service terminal.',
-      termsHelp: 'Vous devez accepter les conditions d\'utilisation pour démarrer une session terminal.',
+      termsHelp: 'Vous pouvez optionnellement spécifier des conditions d\'utilisation personnalisées pour cette session terminal.',
       expirySeconds: 'Durée de la Session (secondes)',
       expiryHelpBase: 'Entre {min} secondes (1 min) et {max} secondes ({maxHours}h max).',
       expiryHelpPlanLimit: 'Limité à {planHours}h par votre plan {planName}.',
@@ -917,7 +1044,6 @@ onMounted(async () => {
       status: 'Statut',
       sessionExpired: 'Votre session terminal a expiré',
       sessionExpiredTitle: 'Session expirée',
-      errorValidationTerms: 'Veuillez accepter les conditions d\'utilisation',
       errorValidationInstance: 'Veuillez sélectionner un type d\'instance',
       errorLimitReached: 'Vous avez atteint votre limite de terminaux simultanés. Veuillez arrêter un terminal existant ou mettre à niveau votre plan.',
       errorLimitReachedTitle: 'Limite atteinte',
@@ -940,12 +1066,11 @@ onMounted(async () => {
       errorWebsocket: 'Erreur de connexion',
       errorWebsocketMessage: 'Impossible de se connecter au terminal: {message}',
       errorStopping: 'Erreur d\'arrêt',
-      errorStoppingMessage: 'Erreur lors de l\'arrêt de la session'
+      errorStoppingMessage: 'Erreur lors de l\'arrêt de la session',
+      errorServerCapacity: 'Serveur à Capacité Maximale',
+      errorServerCapacityMessage: 'Le serveur n\'a pas suffisamment de ressources pour créer une nouvelle session terminal. Veuillez réessayer dans quelques minutes ou arrêter un terminal existant.'
     }
   })
-
-  // Set default terms text
-  termsInput.value = t('terminalStarter.termsPlaceholder')
 
   // Pré-charger xterm.js
   await initXterm()
@@ -969,6 +1094,28 @@ onMounted(async () => {
       // Silently handle refresh errors to avoid disrupting user experience
     }
   }, USAGE_REFRESH_INTERVAL)
+
+  // Load initial metrics for capacity check
+  metricsStore.refreshMetrics()
+
+  // Watch for instance type changes to refresh metrics
+  watch(selectedInstanceType, (newInstance) => {
+    if (newInstance) {
+      metricsStore.refreshMetrics()
+    }
+  })
+
+  // Periodic refresh of metrics (every 30 seconds)
+  const metricsRefreshInterval = setInterval(() => {
+    if (selectedInstanceType.value) {
+      metricsStore.refreshMetrics()
+    }
+  }, 30000)
+
+  // Clean up on unmount
+  onBeforeUnmount(() => {
+    clearInterval(metricsRefreshInterval)
+  })
 })
 
 onBeforeUnmount(() => {
@@ -1001,7 +1148,7 @@ function cleanup() {
 }
 
 function resetForm() {
-  termsInput.value = t('terminalStarter.termsPlaceholder')
+  termsInput.value = ''
   expiryInput.value = 3600
   nameInput.value = ''
   // Reset to default available instance type
@@ -1038,11 +1185,6 @@ function selectInstance(instance) {
 }
 
 async function startNewSession() {
-  if (!termsInput.value.trim()) {
-    showErrorNotification(t('terminalStarter.errorValidationTerms'), t('terminalStarter.errorStarting'))
-    return
-  }
-
   if (!selectedInstanceType.value) {
     showErrorNotification(t('terminalStarter.errorValidationInstance'), t('terminalStarter.errorStarting'))
     return
@@ -1099,7 +1241,7 @@ async function startNewSession() {
 
   try {
     const sessionData = {
-      terms: termsInput.value.trim(),
+      ...(termsInput.value.trim() && { terms: termsInput.value.trim() }),
       ...(expiryInput.value && { expiry: expiryInput.value }),
       ...(selectedInstanceType.value && { instance_type: selectedInstanceType.value }),
       ...(nameInput.value.trim() && { name: nameInput.value.trim() })
@@ -1140,10 +1282,18 @@ async function startNewSession() {
   } catch (error) {
     console.error('Erreur lors du démarrage:', error)
 
-    // Handle size-based restriction errors
+    // Handle different error statuses
     const errorMsg = error.response?.data?.error_message || error.message || 'Erreur lors du démarrage de la session'
 
-    if (error.response?.status === 400 && errorMsg.includes('not allowed in your plan')) {
+    // Handle 503 Server at Capacity error
+    if (error.response?.status === 503) {
+      showErrorNotification(
+        errorMsg,
+        t('terminalStarter.errorServerCapacity')
+      )
+    }
+    // Handle size-based restriction errors (400)
+    else if (error.response?.status === 400 && errorMsg.includes('not allowed in your plan')) {
       // Extract instance name and sizes from error message
       const instanceMatch = errorMsg.match(/instance '([^']+)'/)
       const sizesMatch = errorMsg.match(/sizes \[([^\]]+)\]/)
@@ -1411,12 +1561,118 @@ function formatTime(seconds) {
   border-top: var(--border-width-thin) solid var(--color-border-light);
 }
 
+/* Header Actions Group */
+.header-actions-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+/* Inline Capacity Check */
+.capacity-check-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  transition: all var(--transition-fast);
+}
+
+.capacity-check-inline.status-ok {
+  background-color: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.capacity-check-inline.status-ok i {
+  color: var(--color-success);
+}
+
+.capacity-check-inline.status-error {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+.capacity-check-inline.status-error i {
+  color: var(--color-danger);
+}
+
+.capacity-check-inline.status-checking {
+  background-color: var(--color-info-bg);
+  color: var(--color-info-text);
+}
+
+.capacity-check-inline.status-checking i {
+  color: var(--color-info);
+}
+
+.capacity-check-inline .capacity-text {
+  white-space: nowrap;
+}
+
+/* Collapsible Sections */
+.collapsible-section {
+  margin-top: var(--spacing-lg);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  background: var(--color-bg-secondary);
+}
+
+.collapsible-header {
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-bg-secondary);
+  border: none;
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  transition: background-color var(--transition-fast);
+}
+
+.collapsible-header:hover {
+  background: var(--color-bg-tertiary);
+}
+
+.collapsible-header i {
+  color: var(--color-primary);
+  transition: transform var(--transition-fast);
+}
+
+.collapsible-content {
+  padding: var(--spacing-lg);
+  background: var(--color-bg-primary);
+  border-top: var(--border-width-thin) solid var(--color-border-light);
+}
+
+.usage-badge {
+  margin-left: auto;
+  padding: 4px 12px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.usage-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--spacing-md);
+}
+
 /* Form Actions */
 .form-actions {
   display: flex;
   gap: var(--spacing-md);
   flex-wrap: wrap;
-  margin-top: var(--spacing-lg);
+  margin-top: var(--spacing-md);
 }
 
 /* Progress Container */
@@ -1626,7 +1882,7 @@ function formatTime(seconds) {
 .instance-types-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
   margin-bottom: var(--spacing-md);
   max-height: 400px;
   overflow-y: auto;
@@ -1637,13 +1893,13 @@ function formatTime(seconds) {
 
 .instance-types-grid.compact {
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
 }
 
 .instance-card {
   border: var(--border-width-medium) solid var(--color-border-light);
   border-radius: var(--border-radius-md);
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
   cursor: pointer;
   transition: all var(--transition-base);
   background: var(--color-bg-primary);
@@ -1677,12 +1933,12 @@ function formatTime(seconds) {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-xs);
 }
 
 .instance-info h5 {
-  margin: 0 0 var(--spacing-xs) 0;
-  font-size: var(--font-size-lg);
+  margin: 0 0 2px 0;
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
 }
@@ -1690,27 +1946,30 @@ function formatTime(seconds) {
 .instance-info p {
   margin: 0;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
+  line-height: 1.3;
 }
 
 .instance-status {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-lg);
+  line-height: 1;
 }
 
 /* Size Badges */
 .size-badges {
   display: flex;
-  gap: var(--spacing-xs);
-  margin-bottom: var(--spacing-sm);
+  gap: 4px;
+  margin-bottom: 6px;
   flex-wrap: wrap;
 }
 
 .size-badge {
-  padding: 3px 8px;
+  padding: 2px 6px;
   border-radius: var(--border-radius-full);
-  font-size: var(--font-size-xs);
+  font-size: 10px;
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
+  line-height: 1.2;
 }
 
 .size-badge.available {
@@ -1727,19 +1986,24 @@ function formatTime(seconds) {
 
 /* Availability Messages */
 .availability-message {
-  margin-top: var(--spacing-sm);
+  margin-top: 6px;
+}
+
+.availability-message small {
+  font-size: 11px;
+  line-height: 1.2;
 }
 
 .restricted-message {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
 }
 
 .upgrade-link {
-  padding: 2px 8px;
-  font-size: var(--font-size-xs);
+  padding: 2px 6px;
+  font-size: 10px;
   border-radius: var(--border-radius-sm);
   text-decoration: none;
   white-space: nowrap;
@@ -1797,6 +2061,17 @@ function formatTime(seconds) {
     height: 300px;
   }
 
+  .header-actions-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-sm);
+    width: 100%;
+  }
+
+  .capacity-check-inline {
+    justify-content: center;
+  }
+
   .form-actions {
     flex-direction: column;
   }
@@ -1822,6 +2097,15 @@ function formatTime(seconds) {
 
   .instance-filters :deep(.btn) {
     width: 100%;
+  }
+
+  .collapsible-header {
+    font-size: var(--font-size-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .collapsible-content {
+    padding: var(--spacing-md);
   }
 }
 </style>

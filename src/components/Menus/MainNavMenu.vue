@@ -344,6 +344,12 @@ const menuCategories = computed((): MenuCategory[] => [
         icon: 'fas fa-file-invoice-dollar'
       },
       {
+        route: '/admin/terminal-metrics',
+        label: t('navigation.terminalMetrics'),
+        title: t('navigation.terminalMetricsTitle'),
+        icon: 'fas fa-chart-line'
+      },
+      {
         route: '/debug/feature-flags',
         label: t('navigation.featureFlags'),
         title: t('navigation.featureFlagsTitle'),

@@ -63,7 +63,7 @@ onMounted(() => {
   i18n.mergeLocaleMessage('en', {
     terminalCreation: {
       title: 'Create a New Terminal Session',
-      description: 'Start a new terminal for your practical work. Choose the terms of use and instance type according to your needs.',
+      description: 'Start a new terminal for your practical work. Choose the instance type according to your needs.',
       loading: 'Loading terminal...'
     }
   })
@@ -71,7 +71,7 @@ onMounted(() => {
   i18n.mergeLocaleMessage('fr', {
     terminalCreation: {
       title: 'Créer une Nouvelle Session Terminal',
-      description: 'Démarrez un nouveau terminal pour vos travaux pratiques. Choisissez les conditions d\'utilisation et le type d\'instance selon vos besoins.',
+      description: 'Démarrez un nouveau terminal pour vos travaux pratiques. Choisissez le type d\'instance selon vos besoins.',
       loading: 'Chargement du terminal...'
     }
   })

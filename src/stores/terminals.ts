@@ -233,7 +233,9 @@ export const useTerminalsStore = defineStore('terminals', () => {
             allInvoices: 'All Invoices',
             viewAllSystemInvoices: 'View all system invoices',
             featureFlags: 'Feature Flags',
-            featureFlagsTitle: 'Manage feature flags and experimental features'
+            featureFlagsTitle: 'Manage feature flags and experimental features',
+            terminalMetrics: 'Server Metrics',
+            terminalMetricsTitle: 'Monitor server resource usage and terminal capacity'
         }
     })
 
@@ -266,7 +268,9 @@ export const useTerminalsStore = defineStore('terminals', () => {
             allInvoices: 'Toutes les Factures',
             viewAllSystemInvoices: 'Visualiser toutes les factures système',
             featureFlags: 'Feature Flags',
-            featureFlagsTitle: 'Gérer les feature flags et fonctionnalités expérimentales'
+            featureFlagsTitle: 'Gérer les feature flags et fonctionnalités expérimentales',
+            terminalMetrics: 'Métriques du Serveur',
+            terminalMetricsTitle: 'Surveiller l\'utilisation des ressources du serveur et la capacité des terminaux'
         }
     })
 
