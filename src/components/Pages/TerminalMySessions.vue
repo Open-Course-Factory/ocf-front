@@ -693,7 +693,7 @@ async function loadSessions() {
 
   try {
     console.log('Loading sessions...')
-    const response = await axios.get('/terminal-sessions/user-sessions')
+    const response = await axios.get('/terminals/user-sessions')
     sessions.value = response.data || []
     console.log('Sessions loaded:', sessions.value)
   } catch (err: any) {
@@ -713,7 +713,7 @@ async function stopSession(sessionId: string) {
 
   try {
     console.log('Stopping session:', sessionId)
-    await axios.post(`/terminal-sessions/${sessionId}/stop`)
+    await axios.post(`/terminals/${sessionId}/stop`)
     await loadSessions()
     console.log('Session stopped successfully')
   } catch (err: any) {
@@ -813,7 +813,7 @@ function fallbackCopyTextToClipboard(text: string) {
 async function syncSession(sessionId: string) {
   try {
     console.log('Syncing session:', sessionId)
-    const response = await axios.post(`/terminal-sessions/${sessionId}/sync`)
+    const response = await axios.post(`/terminals/${sessionId}/sync`)
 
     syncResults.value.set(sessionId, {
       ...response.data,
@@ -839,7 +839,7 @@ async function syncAllSessions() {
   isSyncing.value = true
   try {
     console.log('Syncing all sessions...')
-    const response = await axios.post('/terminal-sessions/sync-all')
+    const response = await axios.post('/terminals/sync-all')
 
     syncAllResults.value = response.data
     showSyncModal.value = true
@@ -975,7 +975,7 @@ async function discardTerminal(terminalId: string) {
 
   try {
     console.log('Hiding terminal:', terminalId)
-    await axios.post(`/terminal-sessions/${terminalId}/hide`)
+    await axios.post(`/terminals/${terminalId}/hide`)
 
     // Remove from local display after successful API call
     sessions.value = sessions.value.filter(session => session.id !== terminalId)
@@ -998,7 +998,7 @@ async function hideAllInactiveSessions() {
 
   try {
     for (const session of inactive) {
-      await axios.post(`/terminal-sessions/${session.id}/hide`)
+      await axios.post(`/terminals/${session.id}/hide`)
     }
     // Remove all inactive from local display
     sessions.value = sessions.value.filter(session => !isTerminalInactive(session.status))

@@ -290,7 +290,7 @@ export const useTerminalsStore = defineStore('terminals', () => {
         error.value = ''
 
         try {
-            const response = await axios.post('/terminal-sessions/start-session', sessionData)
+            const response = await axios.post('/terminals/start-session', sessionData)
             await getUserSessions()
             return response.data
         } catch (err: any) {
@@ -306,7 +306,7 @@ export const useTerminalsStore = defineStore('terminals', () => {
         error.value = ''
         
         try {
-            await axios.post(`/terminal-sessions/${terminalId}/stop`)
+            await axios.post(`/terminals/${terminalId}/stop`)
             await getUserSessions()
             return true
         } catch (err: any) {
@@ -322,7 +322,7 @@ export const useTerminalsStore = defineStore('terminals', () => {
         error.value = ''
         
         try {
-            const response = await axios.get('/terminal-sessions/user-sessions')
+            const response = await axios.get('/terminals/user-sessions')
             activeSessions.value = response.data || []
             base.entities = activeSessions.value
             return activeSessions.value
@@ -339,7 +339,7 @@ export const useTerminalsStore = defineStore('terminals', () => {
     // const getConsoleWebSocketUrl = (terminalId: string, width?: number, height?: number) => {
     //     const protocol = import.meta.env.VITE_PROTOCOL === 'https' ? 'wss' : 'ws'
     //     const apiUrl = import.meta.env.VITE_API_URL
-    //     let url = `${protocol}://${apiUrl}/api/v1/terminal-sessions/${terminalId}/console`
+    //     let url = `${protocol}://${apiUrl}/api/v1/terminals/${terminalId}/console`
         
     //     const params = new URLSearchParams()
     //     if (width) params.append('width', width.toString())

@@ -122,7 +122,7 @@ export const useTerminalMetricsStore = defineStore('terminalMetrics', () => {
 
     try {
       const params = bypassCache ? { nocache: '1' } : {}
-      const response = await axios.get('/terminal-sessions/metrics', { params })
+      const response = await axios.get('/terminals/metrics', { params })
 
       metrics.value = response.data
       lastFetchTime.value = Date.now()

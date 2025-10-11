@@ -312,7 +312,7 @@ async function stopSession(sessionId: string) {
 
   try {
     console.log('Stopping session:', sessionId)
-    await axios.post(`/terminal-sessions/${sessionId}/stop`)
+    await axios.post(`/terminals/${sessionId}/stop`)
     await loadSharedSessions()
     console.log('Session stopped successfully')
   } catch (err: any) {
@@ -460,7 +460,7 @@ async function discardTerminal(terminalId: string) {
 
   try {
     console.log('Hiding terminal:', terminalId)
-    await axios.post(`/terminal-sessions/${terminalId}/hide`)
+    await axios.post(`/terminals/${terminalId}/hide`)
 
     // Remove from local display after successful API call
     sharedSessions.value = sharedSessions.value.filter(

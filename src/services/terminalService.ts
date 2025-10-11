@@ -120,7 +120,7 @@ export const instanceUtils = {
 
 export const terminalService = {
   async getInstanceTypes(): Promise<InstanceType[]> {
-    const response = await axios.get('/terminal-sessions/instance-types')
+    const response = await axios.get('/terminals/instance-types')
     const data = response.data
 
     // Handle both formats: direct array or wrapped in instance_types
@@ -135,38 +135,38 @@ export const terminalService = {
   },
 
   async startSession(sessionData: StartSessionData) {
-    const response = await axios.post('/terminal-sessions/start-session', sessionData)
+    const response = await axios.post('/terminals/start-session', sessionData)
     return response.data
   },
 
   async stopSession(sessionId: string) {
-    const response = await axios.post(`/terminal-sessions/${sessionId}/stop`)
+    const response = await axios.post(`/terminals/${sessionId}/stop`)
     return response.data
   },
 
   // Terminal Sharing API functions
   async shareTerminal(terminalId: string, data: ShareTerminalRequest): Promise<TerminalShareOutput> {
-    const response = await axios.post(`/terminal-sessions/${terminalId}/share`, data)
+    const response = await axios.post(`/terminals/${terminalId}/share`, data)
     return response.data
   },
 
   async getSharedTerminals(): Promise<SharedTerminalInfo[]> {
-    const response = await axios.get('/terminal-sessions/shared-with-me')
+    const response = await axios.get('/terminals/shared-with-me')
     return response.data
   },
 
   async getTerminalInfo(terminalId: string): Promise<SharedTerminalInfo> {
-    const response = await axios.get(`/terminal-sessions/${terminalId}/info`)
+    const response = await axios.get(`/terminals/${terminalId}/info`)
     return response.data
   },
 
   async getTerminalShares(terminalId: string): Promise<TerminalShareOutput[]> {
-    const response = await axios.get(`/terminal-sessions/${terminalId}/shares`)
+    const response = await axios.get(`/terminals/${terminalId}/shares`)
     return response.data
   },
 
   async revokeAccess(terminalId: string, userId: string): Promise<void> {
-    await axios.delete(`/terminal-sessions/${terminalId}/share/${userId}`)
+    await axios.delete(`/terminals/${terminalId}/share/${userId}`)
   },
 
   async updateTerminal(terminalId: string, data: UpdateTerminalRequest): Promise<any> {

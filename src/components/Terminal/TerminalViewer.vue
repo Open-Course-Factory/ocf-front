@@ -249,7 +249,7 @@ async function connectToTerminal() {
     const apiUrl = import.meta.env.VITE_API_URL
     
     // Construire l'URL de base
-    let wsUrl = `${protocol}://${apiUrl}/api/v1/terminal-sessions/${sessionId.value}/console?width=${terminal.value.cols}&height=${terminal.value.rows}`
+    let wsUrl = `${protocol}://${apiUrl}/api/v1/terminals/${sessionId.value}/console?width=${terminal.value.cols}&height=${terminal.value.rows}`
     
     // Ajouter le token d'authentification en query parameter "Authorization"
     // Le backend a déjà un hack pour récupérer l'auth depuis ctx.Query("Authorization")

@@ -108,7 +108,7 @@ Each domain has a dedicated store (e.g., `subscriptionPlans`, `subscriptions`, `
 - ✅ **Correct**: Use relative paths without version prefix
   ```javascript
   axios.get('/user-subscriptions/current')
-  axios.post('/terminal-sessions/start-session', data)
+  axios.post('/terminals/start-session', data)
   ```
 - ❌ **Incorrect**: Do NOT include `/api/v1/` prefix
   ```javascript

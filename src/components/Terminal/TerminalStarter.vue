@@ -206,34 +206,6 @@
             <small v-if="nameInput.length > 0" class="char-count">{{ nameInput.length }}/255</small>
           </FormGroup>
 
-          <FormGroup
-            :label="t('terminalStarter.termsOptional')"
-            id="terms"
-            :help-text="t('terminalStarter.termsHelp')"
-          >
-            <textarea
-              id="terms"
-              v-model="termsInput"
-              rows="3"
-              :placeholder="t('terminalStarter.termsPlaceholder')"
-            ></textarea>
-          </FormGroup>
-
-          <FormGroup
-            :label="t('terminalStarter.expirySeconds')"
-            id="expiry"
-            :help-text="expiryHelpText"
-          >
-            <input
-              id="expiry"
-              v-model.number="expiryInput"
-              type="number"
-              min="60"
-              :max="sessionDurationCap"
-              :placeholder="t('terminalStarter.expiryPlaceholder', { max: sessionDurationCap, maxHours: sessionDurationCap / 3600 })"
-            />
-          </FormGroup>
-
           <div class="form-actions">
             <Button
               type="button"
@@ -469,8 +441,6 @@ let usageRefreshInterval = null
 const USAGE_REFRESH_INTERVAL = 600000 // 10 minutes in milliseconds
 
 // Formulaire
-const termsInput = ref('')
-const expiryInput = ref(3600) // 1 heure par défaut
 const selectedInstanceType = ref('')
 const nameInput = ref('')
 
@@ -851,7 +821,7 @@ async function loadCurrentTerminalUsage() {
 // Synchronize all terminal sessions with the backend
 async function syncAllSessions() {
   try {
-    const response = await axios.post('/terminal-sessions/sync-all')
+    const response = await axios.post('/terminals/sync-all')
     console.log('All sessions synchronized:', response.data)
     return response.data
   } catch (error) {
@@ -913,7 +883,7 @@ onMounted(async () => {
       nameOptional: 'Terminal Name (Optional)',
       namePlaceholder: 'My terminal...',
       nameHelp: 'Give your terminal a custom name to easily find it. Maximum 255 characters.',
-      termsOptional: 'Terms of Use (Optional)',
+      termsRequired: 'Terms of Use (Mandatory)',
       termsPlaceholder: 'I accept the terms of use of the terminal service.',
       termsHelp: 'Optionally, you can specify custom terms of use for this terminal session.',
       expirySeconds: 'Session Duration (seconds)',
@@ -998,7 +968,7 @@ onMounted(async () => {
       nameOptional: 'Nom du Terminal (Optionnel)',
       namePlaceholder: 'Mon terminal...',
       nameHelp: 'Donnez un nom personnalisé à votre terminal pour le retrouver facilement. Maximum 255 caractères.',
-      termsOptional: 'Conditions d\'Utilisation (Optionnel)',
+      termsRequired: 'Conditions d\'Utilisation (Obligatoire)',
       termsPlaceholder: 'J\'accepte les conditions d\'utilisation du service terminal.',
       termsHelp: 'Vous pouvez optionnellement spécifier des conditions d\'utilisation personnalisées pour cette session terminal.',
       expirySeconds: 'Durée de la Session (secondes)',
@@ -1148,8 +1118,6 @@ function cleanup() {
 }
 
 function resetForm() {
-  termsInput.value = ''
-  expiryInput.value = 3600
   nameInput.value = ''
   // Reset to default available instance type
   setDefaultInstanceSelection()
@@ -1241,15 +1209,15 @@ async function startNewSession() {
 
   try {
     const sessionData = {
-      ...(termsInput.value.trim() && { terms: termsInput.value.trim() }),
-      ...(expiryInput.value && { expiry: expiryInput.value }),
+      terms: 'J\'accepte les conditions d\'utilisation du service terminal.',
+      expiry: sessionDurationCap.value,
       ...(selectedInstanceType.value && { instance_type: selectedInstanceType.value }),
       ...(nameInput.value.trim() && { name: nameInput.value.trim() })
     }
 
     startStatus.value = t('terminalStarter.sendingRequest')
 
-    const response = await axios.post('/terminal-sessions/start-session', sessionData)
+    const response = await axios.post('/terminals/start-session', sessionData)
 
     sessionInfo.value = {
       session_id: response.data.session_id,
@@ -1384,7 +1352,7 @@ async function connectWebSocket() {
     // Construire l'URL WebSocket
     const protocol = import.meta.env.VITE_PROTOCOL === 'https' ? 'wss' : 'ws'
     const apiUrl = import.meta.env.VITE_API_URL
-    const wsUrl = `${protocol}://${apiUrl}/api/v1/terminal-sessions/${sessionId}/console?width=${terminal ? terminal.cols : 80}&height=${terminal ? terminal.rows : 24}`
+    const wsUrl = `${protocol}://${apiUrl}/api/v1/terminals/${sessionId}/console?width=${terminal ? terminal.cols : 80}&height=${terminal ? terminal.rows : 24}`
 
     socket = new WebSocket(wsUrl)
 
@@ -1425,7 +1393,7 @@ async function stopSession() {
 
   try {
     const sessionId = sessionInfo.value.session_id
-    await axios.post(`/terminal-sessions/${sessionId}/stop`)
+    await axios.post(`/terminals/${sessionId}/stop`)
 
     // Refresh terminal count after stopping a session
     await loadCurrentTerminalUsage()
