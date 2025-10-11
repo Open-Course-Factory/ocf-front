@@ -125,7 +125,7 @@ const routePrefix = computed(() => isPublicHelp.value ? '/help-public' : '/help'
 
 // Back button configuration
 const backRoute = computed(() => isPublicHelp.value ? '/' : '/courses')
-const backButtonText = computed(() => isPublicHelp.value ? 'Retour à l\'accueil' : 'Retour à l\'application')
+const backButtonText = computed(() => isPublicHelp.value ? t('help.backToHome') : t('help.backToApp'))
 
 const helpSections = computed(() => [
   {

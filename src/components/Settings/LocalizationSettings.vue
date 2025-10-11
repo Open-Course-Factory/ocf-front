@@ -26,7 +26,7 @@
         v-model="localSettings.timezone"
         @blur="saveSettings"
         class="form-control"
-        placeholder="UTC"
+        :placeholder="t('userSettings.localization.timezonePlaceholder')"
       />
     </div>
   </SettingsCard>

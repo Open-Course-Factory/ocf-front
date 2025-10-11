@@ -45,11 +45,11 @@
         </p>
 
         <div class="info-card">
-          <h4>Accès rapide</h4>
-          <p>Naviguez vers <strong>Travaux Pratiques > Mes Sessions</strong> pour voir toutes vos sessions.</p>
+          <h4>{{ t('help.terminals.managingSessions.quickAccessCard.title') }}</h4>
+          <p v-html="t('help.terminals.managingSessions.quickAccessCard.description')"></p>
           <router-link to="/terminal-sessions" class="btn btn-primary">
             <i class="fas fa-terminal"></i>
-            Voir mes sessions
+            {{ t('help.terminals.managingSessions.quickAccessCard.button') }}
           </router-link>
         </div>
 
@@ -81,36 +81,35 @@
         <div class="feature-grid">
           <div class="feature-card">
             <i class="fas fa-sync"></i>
-            <h4>Synchronisation individuelle</h4>
-            <p>Cliquez sur le bouton "Sync" d'une session pour mettre à jour son statut spécifiquement.</p>
+            <h4>{{ t('help.terminals.managingSessions.syncMethods.individual.title') }}</h4>
+            <p>{{ t('help.terminals.managingSessions.syncMethods.individual.description') }}</p>
           </div>
 
           <div class="feature-card">
             <i class="fas fa-sync-alt"></i>
-            <h4>Synchronisation globale</h4>
-            <p>Le bouton "Tout synchroniser" met à jour toutes vos sessions en une seule fois.</p>
+            <h4>{{ t('help.terminals.managingSessions.syncMethods.global.title') }}</h4>
+            <p>{{ t('help.terminals.managingSessions.syncMethods.global.description') }}</p>
           </div>
 
           <div class="feature-card">
             <i class="fas fa-clock"></i>
-            <h4>Synchronisation automatique</h4>
-            <p>Les sessions se synchronisent automatiquement toutes les 30 secondes.</p>
+            <h4>{{ t('help.terminals.managingSessions.syncMethods.automatic.title') }}</h4>
+            <p>{{ t('help.terminals.managingSessions.syncMethods.automatic.description') }}</p>
           </div>
         </div>
 
         <div class="tip-box">
-          <h4><i class="fas fa-lightbulb"></i> Conseil</h4>
+          <h4><i class="fas fa-lightbulb"></i> {{ t('help.terminals.managingSessions.syncTip.title') }}</h4>
           <p>
-            Si une session semble inactive mais apparaît encore comme "active",
-            utilisez la synchronisation pour obtenir le statut le plus récent.
+            {{ t('help.terminals.managingSessions.syncTip.description') }}
           </p>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-external-link-alt"></i> Accès aux terminaux</h2>
+        <h2><i class="fas fa-external-link-alt"></i> {{ t('help.terminals.managingSessions.accessMethods.title') }}</h2>
         <p>
-          Plusieurs options sont disponibles pour accéder à vos sessions terminal :
+          {{ t('help.terminals.managingSessions.accessMethods.description') }}
         </p>
 
         <div class="access-methods">
@@ -119,11 +118,8 @@
               <i class="fas fa-external-link-alt"></i>
             </div>
             <div class="method-content">
-              <h4>Ouvrir dans un nouvel onglet</h4>
-              <p>
-                Le bouton <strong>"Ouvrir"</strong> lance votre terminal dans une nouvelle fenêtre optimisée,
-                idéal pour un travail prolongé.
-              </p>
+              <h4>{{ t('help.terminals.managingSessions.accessMethods.newTab.title') }}</h4>
+              <p v-html="t('help.terminals.managingSessions.accessMethods.newTab.description')"></p>
             </div>
           </div>
 
@@ -132,11 +128,8 @@
               <i class="fas fa-eye"></i>
             </div>
             <div class="method-content">
-              <h4>Aperçu intégré</h4>
-              <p>
-                L'<strong>"Aperçu"</strong> affiche le terminal directement dans la page,
-                pratique pour des vérifications rapides.
-              </p>
+              <h4>{{ t('help.terminals.managingSessions.accessMethods.preview.title') }}</h4>
+              <p v-html="t('help.terminals.managingSessions.accessMethods.preview.description')"></p>
             </div>
           </div>
 
@@ -145,10 +138,9 @@
               <i class="fas fa-copy"></i>
             </div>
             <div class="method-content">
-              <h4>Copie de lien</h4>
+              <h4>{{ t('help.terminals.managingSessions.accessMethods.copyLink.title') }}</h4>
               <p>
-                Copiez l'URL du terminal pour y accéder plus tard ou
-                l'intégrer dans vos favoris.
+                {{ t('help.terminals.managingSessions.accessMethods.copyLink.description') }}
               </p>
             </div>
           </div>
@@ -156,35 +148,31 @@
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-code"></i> Intégration iframe</h2>
+        <h2><i class="fas fa-code"></i> {{ t('help.terminals.managingSessions.iframeIntegration.title') }}</h2>
         <p>
-          Vous pouvez intégrer vos terminaux dans d'autres sites web ou plateformes d'apprentissage :
+          {{ t('help.terminals.managingSessions.iframeIntegration.description') }}
         </p>
 
         <div class="step-card">
           <div class="step-number">1</div>
           <div class="step-content">
-            <h4>Générer le code iframe</h4>
-            <p>
-              Cliquez sur le bouton <strong>"iframe"</strong> à côté d'une session active
-              pour copier automatiquement le code d'intégration.
-            </p>
+            <h4>{{ t('help.terminals.managingSessions.iframeIntegration.step1.title') }}</h4>
+            <p v-html="t('help.terminals.managingSessions.iframeIntegration.step1.description')"></p>
           </div>
         </div>
 
         <div class="step-card">
           <div class="step-number">2</div>
           <div class="step-content">
-            <h4>Personnaliser l'affichage</h4>
+            <h4>{{ t('help.terminals.managingSessions.iframeIntegration.step2.title') }}</h4>
             <p>
-              Le code iframe par défaut utilise une taille de 100% x 600px.
-              Vous pouvez modifier ces dimensions selon vos besoins.
+              {{ t('help.terminals.managingSessions.iframeIntegration.step2.description') }}
             </p>
           </div>
         </div>
 
         <div class="code-example">
-          <h4>Exemple de code iframe :</h4>
+          <h4>{{ t('help.terminals.managingSessions.iframeIntegration.codeExample.title') }}</h4>
           <pre><code>&lt;iframe src="https://votre-domaine.com/terminal/session123?header=true&footer=false"
         width="100%"
         height="600"
@@ -194,94 +182,85 @@
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-stop-circle"></i> Arrêt et nettoyage</h2>
+        <h2><i class="fas fa-stop-circle"></i> {{ t('help.terminals.managingSessions.stopAndCleanup.title') }}</h2>
         <p>
-          Une gestion appropriée de vos sessions permet d'optimiser les ressources :
+          {{ t('help.terminals.managingSessions.stopAndCleanup.description') }}
         </p>
 
         <div class="action-grid">
           <div class="action-card danger">
             <i class="fas fa-stop"></i>
-            <h4>Arrêter une session</h4>
-            <p>
-              Utilisez le bouton <strong>"Arrêter"</strong> pour terminer proprement une session active
-              quand vous avez fini de travailler.
-            </p>
+            <h4>{{ t('help.terminals.managingSessions.stopAndCleanup.stopSession.title') }}</h4>
+            <p v-html="t('help.terminals.managingSessions.stopAndCleanup.stopSession.description')"></p>
           </div>
 
           <div class="action-card warning">
             <i class="fas fa-eye-slash"></i>
-            <h4>Masquer les sessions inactives</h4>
-            <p>
-              Le bouton <strong>"Masquer"</strong> sur les sessions expirées ou arrêtées
-              les retire de votre liste pour un affichage plus propre.
-            </p>
+            <h4>{{ t('help.terminals.managingSessions.stopAndCleanup.hideSessions.title') }}</h4>
+            <p v-html="t('help.terminals.managingSessions.stopAndCleanup.hideSessions.description')"></p>
           </div>
         </div>
 
         <div class="warning-box">
-          <h4><i class="fas fa-exclamation-triangle"></i> Important</h4>
-          <p>
-            <strong>Sauvegardez toujours votre travail</strong> avant d'arrêter une session.
-            Une fois arrêtée, vous ne pourrez plus récupérer les fichiers non sauvegardés.
-          </p>
+          <h4><i class="fas fa-exclamation-triangle"></i> {{ t('help.terminals.managingSessions.stopAndCleanup.warning.title') }}</h4>
+          <p v-html="t('help.terminals.managingSessions.stopAndCleanup.warning.description')"></p>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-chart-line"></i> Surveillance et optimisation</h2>
+        <h2><i class="fas fa-chart-line"></i> {{ t('help.terminals.managingSessions.monitoring.title') }}</h2>
         <p>
-          Suivez ces bonnes pratiques pour une utilisation optimale :
+          {{ t('help.terminals.managingSessions.monitoring.description') }}
         </p>
 
         <div class="best-practices">
           <div class="practice-item">
             <i class="fas fa-clock"></i>
             <div>
-              <h4>Surveillez les expirations</h4>
-              <p>Vérifiez régulièrement les dates d'expiration pour éviter la perte de travail.</p>
+              <h4>{{ t('help.terminals.managingSessions.monitoring.practices.expiration.title') }}</h4>
+              <p>{{ t('help.terminals.managingSessions.monitoring.practices.expiration.description') }}</p>
             </div>
           </div>
 
           <div class="practice-item">
             <i class="fas fa-save"></i>
             <div>
-              <h4>Sauvegardez fréquemment</h4>
-              <p>Téléchargez vos fichiers importants ou utilisez des dépôts Git.</p>
+              <h4>{{ t('help.terminals.managingSessions.monitoring.practices.backup.title') }}</h4>
+              <p>{{ t('help.terminals.managingSessions.monitoring.practices.backup.description') }}</p>
             </div>
           </div>
 
           <div class="practice-item">
             <i class="fas fa-memory"></i>
             <div>
-              <h4>Gérez les ressources</h4>
-              <p>N'utilisez que le nombre de sessions nécessaires selon votre abonnement.</p>
+              <h4>{{ t('help.terminals.managingSessions.monitoring.practices.resources.title') }}</h4>
+              <p>{{ t('help.terminals.managingSessions.monitoring.practices.resources.description') }}</p>
             </div>
           </div>
 
           <div class="practice-item">
             <i class="fas fa-refresh"></i>
             <div>
-              <h4>Synchronisez régulièrement</h4>
-              <p>Utilisez la synchronisation si vous suspectez des problèmes de statut.</p>
+              <h4>{{ t('help.terminals.managingSessions.monitoring.practices.sync.title') }}</h4>
+              <p>{{ t('help.terminals.managingSessions.monitoring.practices.sync.description') }}</p>
             </div>
           </div>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-question-circle"></i> Prochaines étapes</h2>
+        <h2><i class="fas fa-question-circle"></i> {{ t('help.navigation.nextSteps') }}</h2>
         <div class="next-steps">
           <router-link :to="`${helpRoutePrefix}/terminals/sharing`" class="next-step-card">
             <i class="fas fa-share-alt"></i>
-            <h4>Partage et Collaboration</h4>
-            <p>Apprenez à partager vos terminaux avec d'autres utilisateurs</p>
+            <h4>{{ t('help.terminals.managingSessions.nextSteps.sharing.title') }}</h4>
+            <p>{{ t('help.terminals.managingSessions.nextSteps.sharing.description') }}</p>
           </router-link>
 
           <router-link :to="`${helpRoutePrefix}/terminals/troubleshooting`" class="next-step-card">
             <i class="fas fa-wrench"></i>
-            <h4>Dépannage</h4>
-            <p>Solutions aux problèmes courants de gestion des sessions</p>
+            <h4>{{ t('help.terminals.managingSessions.nextSteps.troubleshooting.title') }}</h4>
+            <p>{{ t('help.terminals.managingSessions.nextSteps.troubleshooting.description') }}</p>
           </router-link>
         </div>
       </section>

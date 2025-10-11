@@ -11,21 +11,21 @@
       <div class="demo-header">
         <div class="demo-badge">
           <i class="fas fa-flask"></i>
-          DEMO MODE - Simulated Portal
+          {{ t('demoPortal.badge') }}
         </div>
         <h1>
           <i class="fas fa-cog"></i>
-          Demo Stripe Customer Portal
+          {{ t('demoPortal.title') }}
         </h1>
       </div>
 
       <div class="portal-simulator">
         <div class="current-subscription">
-          <h2>Current Subscription</h2>
+          <h2>{{ t('demoPortal.currentSubscription') }}</h2>
           <div class="subscription-info">
-            <div class="plan-name">Professional Plan</div>
-            <div class="plan-price">€29.00 / month</div>
-            <div class="plan-status active">Active</div>
+            <div class="plan-name">{{ t('demoPortal.planName') }}</div>
+            <div class="plan-price">{{ t('demoPortal.planPrice') }}</div>
+            <div class="plan-status active">{{ t('demoPortal.statusActive') }}</div>
           </div>
         </div>
 
@@ -33,31 +33,31 @@
           <div class="portal-section">
             <h3>
               <i class="fas fa-credit-card"></i>
-              Payment Methods
+              {{ t('demoPortal.paymentMethods') }}
             </h3>
             <div class="payment-method">
               <i class="fab fa-cc-visa"></i>
-              Visa •••• 4242
-              <span class="default-badge">Default</span>
+              {{ t('demoPortal.cardInfo') }}
+              <span class="default-badge">{{ t('demoPortal.defaultBadge') }}</span>
             </div>
             <button class="btn btn-outline-primary btn-sm">
-              Add Payment Method
+              {{ t('demoPortal.addPaymentMethod') }}
             </button>
           </div>
 
           <div class="portal-section">
             <h3>
               <i class="fas fa-file-invoice"></i>
-              Billing History
+              {{ t('demoPortal.billingHistory') }}
             </h3>
             <div class="invoice-list">
               <div class="invoice-item">
                 <span>Jan 15, 2025 - €29.00</span>
-                <span class="status paid">Paid</span>
+                <span class="status paid">{{ t('demoPortal.statusPaid') }}</span>
               </div>
               <div class="invoice-item">
                 <span>Dec 15, 2024 - €29.00</span>
-                <span class="status paid">Paid</span>
+                <span class="status paid">{{ t('demoPortal.statusPaid') }}</span>
               </div>
             </div>
           </div>
@@ -65,22 +65,22 @@
           <div class="portal-section">
             <h3>
               <i class="fas fa-exchange-alt"></i>
-              Change Plan
+              {{ t('demoPortal.changePlan') }}
             </h3>
-            <p>Upgrade or downgrade your subscription</p>
+            <p>{{ t('demoPortal.changePlanDesc') }}</p>
             <button class="btn btn-outline-primary btn-sm">
-              View Plans
+              {{ t('demoPortal.viewPlans') }}
             </button>
           </div>
 
           <div class="portal-section danger">
             <h3>
               <i class="fas fa-times-circle"></i>
-              Cancel Subscription
+              {{ t('demoPortal.cancelSubscription') }}
             </h3>
-            <p>Cancel your subscription (active until next billing cycle)</p>
+            <p>{{ t('demoPortal.cancelSubscriptionDesc') }}</p>
             <button class="btn btn-outline-danger btn-sm">
-              Cancel Subscription
+              {{ t('demoPortal.cancelSubscription') }}
             </button>
           </div>
         </div>
@@ -91,20 +91,20 @@
             @click="returnToDashboard"
           >
             <i class="fas fa-arrow-left"></i>
-            Return to Dashboard
+            {{ t('demoPortal.returnToDashboard') }}
           </button>
         </div>
 
         <div class="demo-info">
           <h4>
             <i class="fas fa-info-circle"></i>
-            Demo Portal Information
+            {{ t('demoPortal.infoTitle') }}
           </h4>
           <ul>
-            <li>This is a simulated Stripe Customer Portal</li>
-            <li>No real billing operations are performed</li>
-            <li>In production, this would be the actual Stripe portal</li>
-            <li>Users can manage payment methods, view invoices, and change plans</li>
+            <li>{{ t('demoPortal.info1') }}</li>
+            <li>{{ t('demoPortal.info2') }}</li>
+            <li>{{ t('demoPortal.info3') }}</li>
+            <li>{{ t('demoPortal.info4') }}</li>
           </ul>
         </div>
       </div>
@@ -115,9 +115,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { logDemoAction, simulateDelay } from '../../services/demoConfig'
 
 const route = useRoute()
+const i18n = useI18n()
+const { t } = i18n
 
 const sessionId = ref('')
 const returnUrl = ref('')
@@ -129,6 +132,63 @@ onMounted(() => {
   logDemoAction('Demo portal page loaded', {
     sessionId: sessionId.value,
     returnUrl: returnUrl.value
+  })
+
+  // Add translations
+  i18n.mergeLocaleMessage('en', {
+    demoPortal: {
+      badge: 'DEMO MODE - Simulated Portal',
+      title: 'Demo Stripe Customer Portal',
+      currentSubscription: 'Current Subscription',
+      planName: 'Professional Plan',
+      planPrice: '€29.00 / month',
+      statusActive: 'Active',
+      statusPaid: 'Paid',
+      paymentMethods: 'Payment Methods',
+      cardInfo: 'Visa •••• 4242',
+      defaultBadge: 'Default',
+      addPaymentMethod: 'Add Payment Method',
+      billingHistory: 'Billing History',
+      changePlan: 'Change Plan',
+      changePlanDesc: 'Upgrade or downgrade your subscription',
+      viewPlans: 'View Plans',
+      cancelSubscription: 'Cancel Subscription',
+      cancelSubscriptionDesc: 'Cancel your subscription (active until next billing cycle)',
+      returnToDashboard: 'Return to Dashboard',
+      infoTitle: 'Demo Portal Information',
+      info1: 'This is a simulated Stripe Customer Portal',
+      info2: 'No real billing operations are performed',
+      info3: 'In production, this would be the actual Stripe portal',
+      info4: 'Users can manage payment methods, view invoices, and change plans'
+    }
+  })
+
+  i18n.mergeLocaleMessage('fr', {
+    demoPortal: {
+      badge: 'MODE DEMO - Portail Simulé',
+      title: 'Portail Client Stripe Démo',
+      currentSubscription: 'Abonnement Actuel',
+      planName: 'Forfait Professionnel',
+      planPrice: '29,00 € / mois',
+      statusActive: 'Actif',
+      statusPaid: 'Payé',
+      paymentMethods: 'Moyens de Paiement',
+      cardInfo: 'Visa •••• 4242',
+      defaultBadge: 'Par défaut',
+      addPaymentMethod: 'Ajouter un Moyen de Paiement',
+      billingHistory: 'Historique de Facturation',
+      changePlan: 'Changer de Forfait',
+      changePlanDesc: 'Augmentez ou réduisez votre abonnement',
+      viewPlans: 'Voir les Forfaits',
+      cancelSubscription: 'Annuler l\'Abonnement',
+      cancelSubscriptionDesc: 'Annuler votre abonnement (actif jusqu\'au prochain cycle de facturation)',
+      returnToDashboard: 'Retour au Tableau de Bord',
+      infoTitle: 'Informations sur le Portail Démo',
+      info1: 'Ceci est un portail client Stripe simulé',
+      info2: 'Aucune opération de facturation réelle n\'est effectuée',
+      info3: 'En production, ce serait le véritable portail Stripe',
+      info4: 'Les utilisateurs peuvent gérer les moyens de paiement, voir les factures et changer de forfait'
+    }
   })
 })
 

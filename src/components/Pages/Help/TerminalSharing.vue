@@ -66,22 +66,19 @@
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-share"></i> Partager un terminal</h2>
+        <h2><i class="fas fa-share"></i> {{ t('help.terminals.sharing.howToShare.title') }}</h2>
         <p>
-          Pour partager l'une de vos sessions actives avec d'autres utilisateurs :
+          {{ t('help.terminals.sharing.sharingSteps.description') }}
         </p>
 
         <div class="step-card">
           <div class="step-number">1</div>
           <div class="step-content">
-            <h4>Accéder au partage</h4>
-            <p>
-              Dans <strong>Mes Sessions</strong>, cliquez sur le bouton <strong>"Partager"</strong>
-              à côté de la session que vous souhaitez partager.
-            </p>
+            <h4>{{ t('help.terminals.sharing.sharingSteps.step1.title') }}</h4>
+            <p v-html="t('help.terminals.sharing.sharingSteps.step1.description')"></p>
             <router-link to="/terminal-sessions" class="btn btn-primary">
               <i class="fas fa-terminal"></i>
-              Voir mes sessions
+              {{ t('help.terminals.sharing.sharingSteps.step1.button') }}
             </router-link>
           </div>
         </div>
@@ -89,13 +86,13 @@
         <div class="step-card">
           <div class="step-number">2</div>
           <div class="step-content">
-            <h4>Configurer le partage</h4>
-            <p>Dans la fenêtre de partage, vous pouvez :</p>
+            <h4>{{ t('help.terminals.sharing.sharingSteps.step2.title') }}</h4>
+            <p>{{ t('help.terminals.sharing.sharingSteps.step2.description') }}</p>
             <ul>
-              <li>Entrer l'email ou l'identifiant de l'utilisateur destinataire</li>
-              <li>Définir le type d'accès (lecture seule ou lecture/écriture)</li>
-              <li>Spécifier une durée d'expiration pour le partage</li>
-              <li>Ajouter un message optionnel pour le destinataire</li>
+              <li v-html="t('help.terminals.sharing.sharingSteps.step2.item1')"></li>
+              <li v-html="t('help.terminals.sharing.sharingSteps.step2.item2')"></li>
+              <li v-html="t('help.terminals.sharing.sharingSteps.step2.item3')"></li>
+              <li v-html="t('help.terminals.sharing.sharingSteps.step2.item4')"></li>
             </ul>
           </div>
         </div>
@@ -103,19 +100,16 @@
         <div class="step-card">
           <div class="step-number">3</div>
           <div class="step-content">
-            <h4>Envoyer l'invitation</h4>
-            <p>
-              Cliquez sur <strong>"Partager"</strong> pour envoyer l'invitation.
-              Le destinataire recevra une notification et pourra accéder au terminal partagé.
-            </p>
+            <h4>{{ t('help.terminals.sharing.sharingSteps.step3.title') }}</h4>
+            <p v-html="t('help.terminals.sharing.sharingSteps.step3.description')"></p>
           </div>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-users-cog"></i> Gestion des accès</h2>
+        <h2><i class="fas fa-users-cog"></i> {{ t('help.terminals.sharing.accessManagement.title') }}</h2>
         <p>
-          Utilisez le système de gestion des accès pour contrôler finement qui peut utiliser vos terminaux :
+          {{ t('help.terminals.sharing.accessManagement.description') }}
         </p>
 
         <div class="access-types">
@@ -124,15 +118,14 @@
               <i class="fas fa-eye"></i>
             </div>
             <div class="access-content">
-              <h4>Accès Lecture Seule</h4>
+              <h4>{{ t('help.terminals.sharing.permissions.readOnly.title') }}</h4>
               <p>
-                L'utilisateur peut voir le terminal et suivre votre travail,
-                mais ne peut pas taper de commandes ou modifier les fichiers.
+                {{ t('help.terminals.sharing.accessManagement.readOnly.description') }}
               </p>
               <div class="access-features">
-                <span class="feature-tag">👁️ Observation</span>
-                <span class="feature-tag">📺 Démonstration</span>
-                <span class="feature-tag">🎓 Enseignement</span>
+                <span class="feature-tag">{{ t('help.terminals.sharing.accessManagement.readOnly.tag1') }}</span>
+                <span class="feature-tag">{{ t('help.terminals.sharing.accessManagement.readOnly.tag2') }}</span>
+                <span class="feature-tag">{{ t('help.terminals.sharing.accessManagement.readOnly.tag3') }}</span>
               </div>
             </div>
           </div>
@@ -142,44 +135,43 @@
               <i class="fas fa-edit"></i>
             </div>
             <div class="access-content">
-              <h4>Accès Lecture/Écriture</h4>
+              <h4>{{ t('help.terminals.sharing.permissions.readWrite.title') }}</h4>
               <p>
-                L'utilisateur a un contrôle complet du terminal et peut
-                exécuter des commandes, modifier des fichiers et collaborer activement.
+                {{ t('help.terminals.sharing.accessManagement.readWrite.description') }}
               </p>
               <div class="access-features">
-                <span class="feature-tag">⌨️ Commandes</span>
-                <span class="feature-tag">✏️ Édition</span>
-                <span class="feature-tag">🤝 Collaboration</span>
+                <span class="feature-tag">{{ t('help.terminals.sharing.accessManagement.readWrite.tag1') }}</span>
+                <span class="feature-tag">{{ t('help.terminals.sharing.accessManagement.readWrite.tag2') }}</span>
+                <span class="feature-tag">{{ t('help.terminals.sharing.accessManagement.readWrite.tag3') }}</span>
               </div>
             </div>
           </div>
         </div>
 
         <div class="management-actions">
-          <h3>Actions de gestion disponibles :</h3>
+          <h3>{{ t('help.terminals.sharing.accessManagement.actionsTitle') }}</h3>
           <div class="action-list">
             <div class="action-item">
               <i class="fas fa-users-cog"></i>
               <div>
-                <h4>Gérer les accès</h4>
-                <p>Cliquez sur "Accès" pour voir tous les utilisateurs ayant accès à votre terminal</p>
+                <h4>{{ t('help.terminals.sharing.accessManagement.actions.manage.title') }}</h4>
+                <p>{{ t('help.terminals.sharing.accessManagement.actions.manage.description') }}</p>
               </div>
             </div>
 
             <div class="action-item">
               <i class="fas fa-ban"></i>
               <div>
-                <h4>Révoquer un accès</h4>
-                <p>Supprimez l'accès d'un utilisateur à tout moment depuis la fenêtre de gestion</p>
+                <h4>{{ t('help.terminals.sharing.accessManagement.actions.revoke.title') }}</h4>
+                <p>{{ t('help.terminals.sharing.accessManagement.actions.revoke.description') }}</p>
               </div>
             </div>
 
             <div class="action-item">
               <i class="fas fa-clock"></i>
               <div>
-                <h4>Modifier la durée</h4>
-                <p>Prolongez ou raccourcissez la durée d'accès d'un partage existant</p>
+                <h4>{{ t('help.terminals.sharing.accessManagement.actions.modify.title') }}</h4>
+                <p>{{ t('help.terminals.sharing.accessManagement.actions.modify.description') }}</p>
               </div>
             </div>
           </div>
@@ -187,22 +179,19 @@
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-inbox"></i> Accéder aux terminaux partagés</h2>
+        <h2><i class="fas fa-inbox"></i> {{ t('help.terminals.sharing.accessingShared.title') }}</h2>
         <p>
-          Lorsque quelqu'un partage un terminal avec vous, voici comment y accéder :
+          {{ t('help.terminals.sharing.accessingShared.description') }}
         </p>
 
         <div class="step-card">
           <div class="step-number">1</div>
           <div class="step-content">
-            <h4>Consulter les sessions partagées</h4>
-            <p>
-              Naviguez vers <strong>Travaux Pratiques > Sessions Partagées</strong>
-              pour voir tous les terminaux auxquels vous avez accès.
-            </p>
+            <h4>{{ t('help.terminals.sharing.accessingShared.step1.title') }}</h4>
+            <p v-html="t('help.terminals.sharing.accessingShared.step1.description')"></p>
             <router-link to="/terminal-shared" class="btn btn-outline">
               <i class="fas fa-share-alt"></i>
-              Voir les sessions partagées
+              {{ t('help.terminals.sharing.accessingShared.step1.button') }}
             </router-link>
           </div>
         </div>
@@ -210,15 +199,15 @@
         <div class="step-card">
           <div class="step-number">2</div>
           <div class="step-content">
-            <h4>Vérifier les permissions</h4>
+            <h4>{{ t('help.terminals.sharing.accessingShared.step2.title') }}</h4>
             <p>
-              Chaque session partagée affiche clairement :
+              {{ t('help.terminals.sharing.accessingShared.step2.description') }}
             </p>
             <ul>
-              <li>Le propriétaire du terminal</li>
-              <li>Votre type d'accès (lecture ou lecture/écriture)</li>
-              <li>La date d'expiration du partage</li>
-              <li>Les informations de connexion</li>
+              <li v-html="t('help.terminals.sharing.accessingShared.step2.item1')"></li>
+              <li v-html="t('help.terminals.sharing.accessingShared.step2.item2')"></li>
+              <li v-html="t('help.terminals.sharing.accessingShared.step2.item3')"></li>
+              <li v-html="t('help.terminals.sharing.accessingShared.step2.item4')"></li>
             </ul>
           </div>
         </div>
@@ -226,167 +215,156 @@
         <div class="step-card">
           <div class="step-number">3</div>
           <div class="step-content">
-            <h4>Se connecter au terminal</h4>
-            <p>
-              Cliquez sur <strong>"Ouvrir"</strong> pour accéder au terminal partagé.
-              Respectez les permissions qui vous ont été accordées.
-            </p>
+            <h4>{{ t('help.terminals.sharing.accessingShared.step3.title') }}</h4>
+            <p v-html="t('help.terminals.sharing.accessingShared.step3.description')"></p>
           </div>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-chalkboard-teacher"></i> Cas d'usage courants</h2>
+        <h2><i class="fas fa-chalkboard-teacher"></i> {{ t('help.terminals.sharing.commonUseCases.title') }}</h2>
         <p>
-          Voici quelques scénarios typiques d'utilisation du partage de terminaux :
+          {{ t('help.terminals.sharing.commonUseCases.description') }}
         </p>
 
         <div class="usecase-grid">
           <div class="usecase-card">
             <i class="fas fa-graduation-cap"></i>
-            <h4>Enseignement</h4>
-            <p>
-              Un enseignant partage son terminal en <strong>lecture seule</strong> avec ses étudiants
-              pour faire des démonstrations en direct ou montrer des exemples.
-            </p>
+            <h4>{{ t('help.terminals.sharing.useCases.teaching.title') }}</h4>
+            <p v-html="t('help.terminals.sharing.commonUseCases.teaching.description')"></p>
           </div>
 
           <div class="usecase-card">
             <i class="fas fa-hands-helping"></i>
-            <h4>Support technique</h4>
-            <p>
-              Un expert reçoit un accès <strong>lecture/écriture</strong> temporaire
-              pour diagnostiquer et résoudre un problème technique.
-            </p>
+            <h4>{{ t('help.terminals.sharing.useCases.support.title') }}</h4>
+            <p v-html="t('help.terminals.sharing.commonUseCases.support.description')"></p>
           </div>
 
           <div class="usecase-card">
             <i class="fas fa-code-branch"></i>
-            <h4>Développement collaboratif</h4>
+            <h4>{{ t('help.terminals.sharing.commonUseCases.collaboration.title') }}</h4>
             <p>
-              Plusieurs développeurs travaillent ensemble sur un projet,
-              partageant l'accès à un environnement de développement commun.
+              {{ t('help.terminals.sharing.commonUseCases.collaboration.description') }}
             </p>
           </div>
 
           <div class="usecase-card">
             <i class="fas fa-user-graduate"></i>
-            <h4>Mentorat</h4>
+            <h4>{{ t('help.terminals.sharing.commonUseCases.mentoring.title') }}</h4>
             <p>
-              Un mentor guide un étudiant en temps réel,
-              alternant entre observation et assistance directe.
+              {{ t('help.terminals.sharing.commonUseCases.mentoring.description') }}
             </p>
           </div>
         </div>
       </section>
 
       <section class="help-section warning">
-        <h2><i class="fas fa-shield-alt"></i> Bonnes pratiques de sécurité</h2>
+        <h2><i class="fas fa-shield-alt"></i> {{ t('help.terminals.sharing.security.title') }}</h2>
         <div class="security-guidelines">
           <div class="guideline-item">
             <i class="fas fa-user-check"></i>
             <div>
-              <h4>Vérifiez l'identité</h4>
-              <p>Assurez-vous toujours de l'identité de la personne avant de partager un accès</p>
+              <h4>{{ t('help.terminals.sharing.securityPractices.verifyIdentity.title') }}</h4>
+              <p>{{ t('help.terminals.sharing.securityPractices.verifyIdentity.description') }}</p>
             </div>
           </div>
 
           <div class="guideline-item">
             <i class="fas fa-clock"></i>
             <div>
-              <h4>Limitez la durée</h4>
-              <p>Définissez toujours une durée d'expiration appropriée pour vos partages</p>
+              <h4>{{ t('help.terminals.sharing.securityPractices.limitDuration.title') }}</h4>
+              <p>{{ t('help.terminals.sharing.securityPractices.limitDuration.description') }}</p>
             </div>
           </div>
 
           <div class="guideline-item">
             <i class="fas fa-eye"></i>
             <div>
-              <h4>Surveillez l'activité</h4>
-              <p>Gardez un œil sur ce qui se passe dans vos terminaux partagés</p>
+              <h4>{{ t('help.terminals.sharing.securityPractices.monitorActivity.title') }}</h4>
+              <p>{{ t('help.terminals.sharing.securityPractices.monitorActivity.description') }}</p>
             </div>
           </div>
 
           <div class="guideline-item">
             <i class="fas fa-save"></i>
             <div>
-              <h4>Sauvegardez avant</h4>
-              <p>Sauvegardez vos données importantes avant de donner un accès en écriture</p>
+              <h4>{{ t('help.terminals.sharing.securityPractices.backupFirst.title') }}</h4>
+              <p>{{ t('help.terminals.sharing.securityPractices.backupFirst.description') }}</p>
             </div>
           </div>
 
           <div class="guideline-item">
             <i class="fas fa-ban"></i>
             <div>
-              <h4>Révoquez rapidement</h4>
-              <p>N'hésitez pas à révoquer un accès dès qu'il n'est plus nécessaire</p>
+              <h4>{{ t('help.terminals.sharing.securityPractices.revokeQuickly.title') }}</h4>
+              <p>{{ t('help.terminals.sharing.securityPractices.revokeQuickly.description') }}</p>
             </div>
           </div>
 
           <div class="guideline-item">
             <i class="fas fa-file-contract"></i>
             <div>
-              <h4>Respectez les données</h4>
-              <p>Ne partagez jamais de terminaux contenant des données sensibles ou confidentielles</p>
+              <h4>{{ t('help.terminals.sharing.securityPractices.respectData.title') }}</h4>
+              <p>{{ t('help.terminals.sharing.securityPractices.respectData.description') }}</p>
             </div>
           </div>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-exclamation-triangle"></i> Limitations et considérations</h2>
+        <h2><i class="fas fa-exclamation-triangle"></i> {{ t('help.terminals.sharing.limitations.title') }}</h2>
         <p>
-          Gardez à l'esprit ces limitations lors de l'utilisation du partage :
+          {{ t('help.terminals.sharing.limitations.description') }}
         </p>
 
         <div class="limitation-list">
           <div class="limitation-item">
             <i class="fas fa-users"></i>
             <div>
-              <h4>Nombre d'utilisateurs simultanés</h4>
-              <p>Le nombre d'utilisateurs pouvant accéder simultanément à un terminal peut être limité selon votre abonnement</p>
+              <h4>{{ t('help.terminals.sharing.limitations.users.title') }}</h4>
+              <p>{{ t('help.terminals.sharing.limitations.users.description') }}</p>
             </div>
           </div>
 
           <div class="limitation-item">
             <i class="fas fa-network-wired"></i>
             <div>
-              <h4>Performance réseau</h4>
-              <p>Les performances peuvent être affectées avec de nombreux utilisateurs connectés simultanément</p>
+              <h4>{{ t('help.terminals.sharing.limitations.network.title') }}</h4>
+              <p>{{ t('help.terminals.sharing.limitations.network.description') }}</p>
             </div>
           </div>
 
           <div class="limitation-item">
             <i class="fas fa-sync-alt"></i>
             <div>
-              <h4>Synchronisation</h4>
-              <p>Il peut y avoir un léger délai dans la synchronisation des actions entre utilisateurs</p>
+              <h4>{{ t('help.terminals.sharing.limitations.sync.title') }}</h4>
+              <p>{{ t('help.terminals.sharing.limitations.sync.description') }}</p>
             </div>
           </div>
 
           <div class="limitation-item">
             <i class="fas fa-history"></i>
             <div>
-              <h4>Historique partagé</h4>
-              <p>Tous les utilisateurs voient le même historique de commandes et les mêmes fichiers</p>
+              <h4>{{ t('help.terminals.sharing.limitations.history.title') }}</h4>
+              <p>{{ t('help.terminals.sharing.limitations.history.description') }}</p>
             </div>
           </div>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-question-circle"></i> Prochaines étapes</h2>
+        <h2><i class="fas fa-question-circle"></i> {{ t('help.navigation.nextSteps') }}</h2>
         <div class="next-steps">
           <router-link :to="`${helpRoutePrefix}/terminals/managing-sessions`" class="next-step-card">
             <i class="fas fa-cogs"></i>
-            <h4>Gestion des Sessions</h4>
-            <p>Apprenez à gérer efficacement toutes vos sessions terminal</p>
+            <h4>{{ t('help.terminals.sharing.nextSteps.managingSessions.title') }}</h4>
+            <p>{{ t('help.terminals.sharing.nextSteps.managingSessions.description') }}</p>
           </router-link>
 
           <router-link :to="`${helpRoutePrefix}/terminals/troubleshooting`" class="next-step-card">
             <i class="fas fa-wrench"></i>
-            <h4>Dépannage</h4>
-            <p>Solutions aux problèmes de partage et de collaboration</p>
+            <h4>{{ t('help.terminals.sharing.nextSteps.troubleshooting.title') }}</h4>
+            <p>{{ t('help.terminals.sharing.nextSteps.troubleshooting.description') }}</p>
           </router-link>
         </div>
       </section>

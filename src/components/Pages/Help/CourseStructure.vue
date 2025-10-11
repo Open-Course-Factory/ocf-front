@@ -26,23 +26,22 @@
     <div class="help-nav">
       <router-link :to="helpMainRoute" class="back-link">
         <i class="fas fa-arrow-left"></i>
-        Retour au Centre d'Aide
+        {{ t('help.navigation.backToHelp') }}
       </router-link>
     </div>
 
     <div class="article-header">
-      <h1><i class="fas fa-sitemap"></i> Structure des Cours</h1>
+      <h1><i class="fas fa-sitemap"></i> {{ t('help.courses.structure.title') }}</h1>
       <p class="article-description">
-        Comprendre l'organisation hiérarchique des contenus pédagogiques dans OCF
+        {{ t('help.courses.structure.intro') }}
       </p>
     </div>
 
     <div class="article-content">
       <section class="help-section">
-        <h2><i class="fas fa-layer-group"></i> Hiérarchie des contenus</h2>
+        <h2><i class="fas fa-layer-group"></i> {{ t('help.courses.structure.hierarchy.title') }}</h2>
         <p>
-          OCF utilise une structure hiérarchique à quatre niveaux pour organiser les contenus pédagogiques.
-          Cette organisation permet une navigation intuitive et une gestion flexible des cours.
+          {{ t('help.courses.structure.hierarchy.description') }}
         </p>
 
         <div class="hierarchy-diagram">
@@ -51,12 +50,12 @@
               <i class="fas fa-book"></i>
             </div>
             <div class="level-content">
-              <h3>Cours</h3>
-              <p>Niveau principal - Un domaine d'apprentissage complet</p>
+              <h3>{{ t('help.courses.structure.hierarchy.levels.course.title') }}</h3>
+              <p>{{ t('help.courses.structure.hierarchy.levels.course.description') }}</p>
               <div class="level-examples">
-                <span class="example-tag">Programmation Python</span>
-                <span class="example-tag">Linux Administration</span>
-                <span class="example-tag">Bases de données</span>
+                <span class="example-tag">{{ t('help.courses.structure.hierarchy.levels.course.example1') }}</span>
+                <span class="example-tag">{{ t('help.courses.structure.hierarchy.levels.course.example2') }}</span>
+                <span class="example-tag">{{ t('help.courses.structure.hierarchy.levels.course.example3') }}</span>
               </div>
             </div>
           </div>
@@ -70,12 +69,12 @@
               <i class="fas fa-book-open"></i>
             </div>
             <div class="level-content">
-              <h3>Chapitres</h3>
-              <p>Grandes thématiques du cours</p>
+              <h3>{{ t('help.courses.structure.hierarchy.levels.chapter.title') }}</h3>
+              <p>{{ t('help.courses.structure.hierarchy.levels.chapter.description') }}</p>
               <div class="level-examples">
-                <span class="example-tag">Variables et Types</span>
-                <span class="example-tag">Fonctions</span>
-                <span class="example-tag">Programmation Orientée Objet</span>
+                <span class="example-tag">{{ t('help.courses.structure.hierarchy.levels.chapter.example1') }}</span>
+                <span class="example-tag">{{ t('help.courses.structure.hierarchy.levels.chapter.example2') }}</span>
+                <span class="example-tag">{{ t('help.courses.structure.hierarchy.levels.chapter.example3') }}</span>
               </div>
             </div>
           </div>
@@ -89,12 +88,12 @@
               <i class="fas fa-stream"></i>
             </div>
             <div class="level-content">
-              <h3>Sections</h3>
-              <p>Sous-thèmes spécifiques</p>
+              <h3>{{ t('help.courses.structure.hierarchy.levels.section.title') }}</h3>
+              <p>{{ t('help.courses.structure.hierarchy.levels.section.description') }}</p>
               <div class="level-examples">
-                <span class="example-tag">Déclaration de variables</span>
-                <span class="example-tag">Types primitifs</span>
-                <span class="example-tag">Conversion de types</span>
+                <span class="example-tag">{{ t('help.courses.structure.hierarchy.levels.section.example1') }}</span>
+                <span class="example-tag">{{ t('help.courses.structure.hierarchy.levels.section.example2') }}</span>
+                <span class="example-tag">{{ t('help.courses.structure.hierarchy.levels.section.example3') }}</span>
               </div>
             </div>
           </div>
@@ -108,12 +107,12 @@
               <i class="fas fa-file-alt"></i>
             </div>
             <div class="level-content">
-              <h3>Pages</h3>
-              <p>Contenu pédagogique détaillé</p>
+              <h3>{{ t('help.courses.structure.hierarchy.levels.page.title') }}</h3>
+              <p>{{ t('help.courses.structure.hierarchy.levels.page.description') }}</p>
               <div class="level-examples">
-                <span class="example-tag">Leçon théorique</span>
-                <span class="example-tag">Exercice pratique</span>
-                <span class="example-tag">Évaluation</span>
+                <span class="example-tag">{{ t('help.courses.structure.hierarchy.levels.page.example1') }}</span>
+                <span class="example-tag">{{ t('help.courses.structure.hierarchy.levels.page.example2') }}</span>
+                <span class="example-tag">{{ t('help.courses.structure.hierarchy.levels.page.example3') }}</span>
               </div>
             </div>
           </div>
@@ -121,24 +120,22 @@
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-plus-circle"></i> Création et organisation</h2>
+        <h2><i class="fas fa-plus-circle"></i> {{ t('help.courses.structure.creation.title') }}</h2>
         <p>
-          Chaque niveau peut être créé et géré indépendamment, permettant une flexibilité maximale
-          dans l'organisation de vos contenus pédagogiques.
+          {{ t('help.courses.structure.creation.description') }}
         </p>
 
         <div class="creation-workflow">
           <div class="workflow-step">
             <div class="step-number">1</div>
             <div class="step-content">
-              <h4>Créer un cours</h4>
+              <h4>{{ t('help.courses.structure.creation.step1.title') }}</h4>
               <p>
-                Définissez le cadre général de votre enseignement.
-                Choisissez un titre explicite et une description claire des objectifs.
+                {{ t('help.courses.structure.creation.step1.description') }}
               </p>
               <router-link to="/courses" class="btn btn-outline">
                 <i class="fas fa-book"></i>
-                Gérer les cours
+                {{ t('help.courses.structure.creation.step1.button') }}
               </router-link>
             </div>
           </div>
@@ -146,14 +143,13 @@
           <div class="workflow-step">
             <div class="step-number">2</div>
             <div class="step-content">
-              <h4>Structurer en chapitres</h4>
+              <h4>{{ t('help.courses.structure.creation.step2.title') }}</h4>
               <p>
-                Organisez votre cours en grandes thématiques logiques.
-                Chaque chapitre représente un module d'apprentissage cohérent.
+                {{ t('help.courses.structure.creation.step2.description') }}
               </p>
               <router-link to="/chapters" class="btn btn-outline">
                 <i class="fas fa-book-open"></i>
-                Gérer les chapitres
+                {{ t('help.courses.structure.creation.step2.button') }}
               </router-link>
             </div>
           </div>
@@ -161,14 +157,13 @@
           <div class="workflow-step">
             <div class="step-number">3</div>
             <div class="step-content">
-              <h4>Détailler en sections</h4>
+              <h4>{{ t('help.courses.structure.creation.step3.title') }}</h4>
               <p>
-                Découpez chaque chapitre en sections spécifiques.
-                Facilitez la navigation et l'assimilation progressive.
+                {{ t('help.courses.structure.creation.step3.description') }}
               </p>
               <router-link to="/sections" class="btn btn-outline">
                 <i class="fas fa-stream"></i>
-                Gérer les sections
+                {{ t('help.courses.structure.creation.step3.button') }}
               </router-link>
             </div>
           </div>
@@ -176,14 +171,13 @@
           <div class="workflow-step">
             <div class="step-number">4</div>
             <div class="step-content">
-              <h4>Rédiger les pages</h4>
+              <h4>{{ t('help.courses.structure.creation.step4.title') }}</h4>
               <p>
-                Créez le contenu pédagogique final : leçons, exercices,
-                évaluations et ressources complémentaires.
+                {{ t('help.courses.structure.creation.step4.description') }}
               </p>
               <router-link to="/pages" class="btn btn-outline">
                 <i class="fas fa-file-alt"></i>
-                Gérer les pages
+                {{ t('help.courses.structure.creation.step4.button') }}
               </router-link>
             </div>
           </div>
@@ -191,59 +185,54 @@
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-cogs"></i> Bonnes pratiques d'organisation</h2>
+        <h2><i class="fas fa-cogs"></i> {{ t('help.courses.structure.organization.title') }}</h2>
         <p>
-          Suivez ces recommandations pour créer des cours bien structurés et faciles à naviguer :
+          {{ t('help.courses.structure.organization.description') }}
         </p>
 
         <div class="practices-grid">
           <div class="practice-card">
             <i class="fas fa-bullseye"></i>
-            <h4>Objectifs clairs</h4>
+            <h4>{{ t('help.courses.structure.organization.tips.tip1.title') }}</h4>
             <p>
-              Définissez des objectifs pédagogiques précis pour chaque niveau.
-              Chaque élément doit contribuer à un apprentissage spécifique.
+              {{ t('help.courses.structure.organization.tips.tip1.description') }}
             </p>
           </div>
 
           <div class="practice-card">
             <i class="fas fa-sort-amount-up"></i>
-            <h4>Progression logique</h4>
+            <h4>{{ t('help.courses.structure.organization.tips.tip2.title') }}</h4>
             <p>
-              Organisez le contenu selon une progression pédagogique cohérente.
-              Les prérequis doivent être acquis avant les notions avancées.
+              {{ t('help.courses.structure.organization.tips.tip2.description') }}
             </p>
           </div>
 
           <div class="practice-card">
             <i class="fas fa-balance-scale"></i>
-            <h4>Équilibre des contenus</h4>
+            <h4>{{ t('help.courses.structure.organization.tips.tip3.title') }}</h4>
             <p>
-              Maintenez un équilibre entre théorie et pratique.
-              Alternez leçons, exercices et évaluations.
+              {{ t('help.courses.structure.organization.tips.tip3.description') }}
             </p>
           </div>
 
           <div class="practice-card">
             <i class="fas fa-tags"></i>
-            <h4>Nomenclature cohérente</h4>
+            <h4>{{ t('help.courses.structure.organization.tips.tip4.title') }}</h4>
             <p>
-              Utilisez une nomenclature claire et cohérente.
-              Facilitez la compréhension et la navigation.
+              {{ t('help.courses.structure.organization.tips.tip4.description') }}
             </p>
           </div>
         </div>
 
         <div class="structuring-tips">
-          <h3>Conseils de structuration :</h3>
+          <h3>{{ t('help.courses.structure.organization.structuring.title') }}</h3>
           <div class="tip-list">
             <div class="tip-item">
               <i class="fas fa-lightbulb"></i>
               <div>
-                <h4>Granularité appropriée</h4>
+                <h4>{{ t('help.courses.structure.organization.structuring.tip1.title') }}</h4>
                 <p>
-                  Évitez les chapitres trop longs ou trop courts.
-                  Visez 3-7 sections par chapitre, 3-5 pages par section.
+                  {{ t('help.courses.structure.organization.structuring.tip1.description') }}
                 </p>
               </div>
             </div>
@@ -251,10 +240,9 @@
             <div class="tip-item">
               <i class="fas fa-puzzle-piece"></i>
               <div>
-                <h4>Modularité</h4>
+                <h4>{{ t('help.courses.structure.organization.structuring.tip2.title') }}</h4>
                 <p>
-                  Créez des modules autonomes qui peuvent être réutilisés
-                  ou réorganisés selon les besoins pédagogiques.
+                  {{ t('help.courses.structure.organization.structuring.tip2.description') }}
                 </p>
               </div>
             </div>
@@ -262,10 +250,9 @@
             <div class="tip-item">
               <i class="fas fa-route"></i>
               <div>
-                <h4>Parcours multiples</h4>
+                <h4>{{ t('help.courses.structure.organization.structuring.tip3.title') }}</h4>
                 <p>
-                  Prévoyez différents parcours selon le niveau des apprenants :
-                  débutant, intermédiaire, avancé.
+                  {{ t('help.courses.structure.organization.structuring.tip3.description') }}
                 </p>
               </div>
             </div>
@@ -274,66 +261,58 @@
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-link"></i> Relations et dépendances</h2>
+        <h2><i class="fas fa-link"></i> {{ t('help.courses.structure.relationships.title') }}</h2>
         <p>
-          Comprenez comment les différents éléments interagissent entre eux :
+          {{ t('help.courses.structure.relationships.description') }}
         </p>
 
         <div class="relationships-info">
           <div class="relationship-card">
-            <h4><i class="fas fa-sitemap"></i> Hiérarchie stricte</h4>
+            <h4><i class="fas fa-sitemap"></i> {{ t('help.courses.structure.relationships.strict.title') }}</h4>
             <p>
-              Chaque élément appartient obligatoirement à son niveau parent.
-              Une page ne peut exister sans section, une section sans chapitre, etc.
+              {{ t('help.courses.structure.relationships.strict.description') }}
             </p>
           </div>
 
           <div class="relationship-card">
-            <h4><i class="fas fa-copy"></i> Réutilisation possible</h4>
+            <h4><i class="fas fa-copy"></i> {{ t('help.courses.structure.relationships.reuse.title') }}</h4>
             <p>
-              Les contenus peuvent être référencés dans plusieurs contextes.
-              Une même page peut apparaître dans différentes sections si pertinent.
+              {{ t('help.courses.structure.relationships.reuse.description') }}
             </p>
           </div>
 
           <div class="relationship-card">
-            <h4><i class="fas fa-share-alt"></i> Partage entre cours</h4>
+            <h4><i class="fas fa-share-alt"></i> {{ t('help.courses.structure.relationships.sharing.title') }}</h4>
             <p>
-              Certains éléments peuvent être partagés entre différents cours
-              pour éviter la duplication de contenu.
+              {{ t('help.courses.structure.relationships.sharing.description') }}
             </p>
           </div>
         </div>
       </section>
 
       <section class="help-section info">
-        <h2><i class="fas fa-info-circle"></i> Évolution de la structure</h2>
+        <h2><i class="fas fa-info-circle"></i> {{ t('help.courses.structure.evolution.title') }}</h2>
         <div class="evolution-notice">
+          <p v-html="t('help.courses.structure.evolution.notice')"></p>
           <p>
-            <strong>Note importante :</strong> La structure et les fonctionnalités de gestion des cours
-            sont en constante évolution. De nouvelles options d'organisation, des outils de création
-            avancés et des fonctionnalités collaboratives seront régulièrement ajoutés.
-          </p>
-          <p>
-            Cette documentation sera mise à jour en conséquence pour refléter
-            les dernières améliorations et bonnes pratiques.
+            {{ t('help.courses.structure.evolution.documentation') }}
           </p>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-question-circle"></i> Prochaines étapes</h2>
+        <h2><i class="fas fa-question-circle"></i> {{ t('help.navigation.nextSteps') }}</h2>
         <div class="next-steps">
           <router-link :to="`${helpRoutePrefix}/courses/content`" class="next-step-card">
             <i class="fas fa-edit"></i>
-            <h4>Création de Contenu</h4>
-            <p>Apprenez à rédiger et structurer le contenu pédagogique</p>
+            <h4>{{ t('help.courses.structure.nextSteps.content.title') }}</h4>
+            <p>{{ t('help.courses.structure.nextSteps.content.description') }}</p>
           </router-link>
 
           <div class="next-step-card disabled">
             <i class="fas fa-users"></i>
-            <h4>Collaboration (Bientôt)</h4>
-            <p>Fonctionnalités de travail en équipe sur les cours</p>
+            <h4>{{ t('help.courses.structure.nextSteps.collaboration.title') }}</h4>
+            <p>{{ t('help.courses.structure.nextSteps.collaboration.description') }}</p>
           </div>
         </div>
       </section>
@@ -342,15 +321,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { useHelpTranslations } from '../../../composables/useHelpTranslations'
 
 const route = useRoute()
+const { t } = useI18n()
+const { loadHelpTranslations } = useHelpTranslations()
 
 // Determine the correct help routes based on current path
 const isPublicHelp = computed(() => route.path.startsWith('/help-public'))
 const helpMainRoute = computed(() => isPublicHelp.value ? '/help-public' : '/help')
 const helpRoutePrefix = computed(() => isPublicHelp.value ? '/help-public' : '/help')
+
+onMounted(async () => {
+  await loadHelpTranslations()
+})
 </script>
 
 <style scoped>

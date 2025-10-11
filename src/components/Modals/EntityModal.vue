@@ -29,10 +29,10 @@
       </button>
       <div class="modal-content">
         <h2 v-if="entity">
-          <i class="fas fa-edit"></i> {{ t(`${translationKey}.modify`) }}
+          <i class="fas fa-edit"></i> {{ t('entityModal.modify') }}
         </h2>
         <h2 v-else>
-          <i class="fas fa-plus"></i> {{ t(`${translationKey}.add`) }}
+          <i class="fas fa-plus"></i> {{ t('entityModal.add') }}
         </h2>
         <div class="checkout-form">
           <div v-for="[name, field] of entityStore.fieldList" class="form-group">
@@ -50,7 +50,7 @@
                 v-model="data[name]"
                 :class="['form-control', { 'is-invalid': errors[name] }]"
               >
-                <option value="">{{ t('selectOption', 'Select an option') }}</option>
+                <option value="">{{ t('entityModal.selectOption') }}</option>
                 <option
                   v-for="option in field.options"
                   :key="option.value"
@@ -86,13 +86,13 @@
           </div>
           <div class="modal-actions">
             <button v-if="entity" class="btn btn-primary" @click="handleEvent('modify')">
-              <i class="fas fa-save"></i> Modifier
+              <i class="fas fa-save"></i> {{ t('entityModal.buttonModify') }}
             </button>
             <button v-else class="btn btn-primary" @click="handleEvent('submit')">
-              <i class="fas fa-save"></i> Ajouter
+              <i class="fas fa-save"></i> {{ t('entityModal.buttonAdd') }}
             </button>
             <button class="btn btn-danger" @click="closeModal">
-              <i class="fas fa-ban"></i> Annuler
+              <i class="fas fa-ban"></i> {{ t('entityModal.buttonCancel') }}
             </button>
           </div>
         </div>
@@ -102,12 +102,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue';
+import { computed, reactive, watch, onMounted } from 'vue';
 import { Store } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import { getTranslationKey } from '../../utils';
 
-const { t } = useI18n();
+const i18n = useI18n();
+const { t } = i18n;
 
 const data = reactive({});
 const errors = reactive({});
@@ -136,7 +137,7 @@ function validateFields() {
   props.entityStore.fieldList.forEach((value, key) => {
     if ((!props.entity && value.toBeSet) || (props.entity && value.toBeEdited)) {
       if (isFieldRequired(value) && (data[key]?.toString().trim() === '' || data[key] === undefined)) {
-        errors[key] = `${key} est requis.`;
+        errors[key] = t('entityModal.fieldRequired', { field: key });
         res = false;
       } else if (
         props.entityStore.entities.some(
@@ -144,7 +145,7 @@ function validateFields() {
           (!props.entity || storeEntity.id !== props.entity.id)
         )
       ) {
-        errors[key] = 'Ce nom est déjà utilisé.';
+        errors[key] = t('entityModal.nameAlreadyUsed');
         res = false;
       } else {
         errors[key] = null;
@@ -229,6 +230,35 @@ function prepareNeededField() {
 }
 
 const translationKey = computed(() => getTranslationKey(props.entityName));
+
+onMounted(() => {
+  // Add translations
+  i18n.mergeLocaleMessage('en', {
+    entityModal: {
+      modify: 'Modify',
+      add: 'Add',
+      selectOption: 'Select an option',
+      buttonModify: 'Modify',
+      buttonAdd: 'Add',
+      buttonCancel: 'Cancel',
+      fieldRequired: '{field} is required.',
+      nameAlreadyUsed: 'This name is already used.'
+    }
+  });
+
+  i18n.mergeLocaleMessage('fr', {
+    entityModal: {
+      modify: 'Modifier',
+      add: 'Ajouter',
+      selectOption: 'Sélectionner une option',
+      buttonModify: 'Modifier',
+      buttonAdd: 'Ajouter',
+      buttonCancel: 'Annuler',
+      fieldRequired: '{field} est requis.',
+      nameAlreadyUsed: 'Ce nom est déjà utilisé.'
+    }
+  });
+});
 </script>
 
 <style scoped>

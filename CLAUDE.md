@@ -141,6 +141,132 @@ Each domain has a dedicated store (e.g., `subscriptionPlans`, `subscriptions`, `
 - SSH key management for user access
 - Iframe-based terminal viewer (bypasses main layout)
 
+## Internationalization (i18n)
+
+**Implementation Status:**
+
+✅ **Complete i18n Coverage** - All user-facing components are fully translated in French (default) and English (fallback).
+
+**Architecture:**
+
+The application uses Vue i18n with an embedded translation pattern where translations are defined directly in components rather than separate locale files:
+
+```typescript
+import { useI18n } from 'vue-i18n'
+
+const i18n = useI18n()
+const { t } = i18n
+
+onMounted(() => {
+  // English translations
+  i18n.mergeLocaleMessage('en', {
+    componentName: {
+      key: 'English text',
+      parameterized: 'Hello {name}'
+    }
+  })
+
+  // French translations
+  i18n.mergeLocaleMessage('fr', {
+    componentName: {
+      key: 'Texte français',
+      parameterized: 'Bonjour {name}'
+    }
+  })
+})
+```
+
+**Translation Patterns:**
+
+1. **Component-Scoped Prefixes**: Each component uses a unique prefix (e.g., `login.*`, `terminalMySessions.*`)
+2. **Store Translations**: Common translations centralized in stores to avoid duplication
+3. **Help Documentation**: Separate locale files at `/src/locales/help/{en,fr}.ts`
+4. **Parameter Interpolation**: Support for dynamic values using `{paramName}` syntax
+
+**Fully Translated Components:**
+
+**Authentication Pages:**
+- `/src/components/Pages/Login.vue` (9 strings)
+- `/src/components/Pages/Register.vue` (20 strings)
+- `/src/components/Pages/PasswordReset.vue` (35 strings)
+
+**Terminal Components:**
+- `/src/components/Pages/TerminalCreation.vue` (3 strings)
+- `/src/components/Pages/TerminalMySessions.vue` (70+ strings)
+- `/src/components/Terminal/TerminalStarter.vue` (62+ strings)
+- `/src/components/Terminal/TerminalSharingModal.vue` (already had i18n)
+
+**Modals & Flows:**
+- `/src/components/Modals/EntityModal.vue` (8 strings)
+- `/src/components/Flows/CheckoutFlow.vue` (7 error strings)
+
+**Settings Components:**
+- `/src/components/Settings/SecuritySettings.vue` (6 strings)
+- `/src/components/Settings/SSHKeysSettings.vue` (5 strings)
+- `/src/components/Settings/LocalizationSettings.vue` (1 string)
+
+**Help System:**
+- `/src/components/Pages/Help.vue` (fully translated)
+- `/src/locales/help/en.ts` (comprehensive English help documentation)
+- `/src/locales/help/fr.ts` (comprehensive French help documentation)
+
+**Demo Components:**
+- `/src/components/Demo/DemoPortal.vue` (18 strings)
+- `/src/components/Demo/DemoCheckout.vue` (12 strings)
+
+**Utility Components:**
+- `/src/components/Buttons/GenerationActions.vue` (5 error strings)
+
+**Store Translations:**
+- `/src/stores/userSettings.ts` (9 translation keys)
+- `/src/stores/sshKeys.ts` (6 translation keys)
+
+**Adding i18n to New Components:**
+
+When creating new components, follow this pattern:
+
+```vue
+<template>
+  <div>
+    <h1>{{ t('myComponent.title') }}</h1>
+    <p>{{ t('myComponent.description') }}</p>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const i18n = useI18n()
+const { t } = i18n
+
+onMounted(() => {
+  i18n.mergeLocaleMessage('en', {
+    myComponent: {
+      title: 'My Component',
+      description: 'This is my component description'
+    }
+  })
+
+  i18n.mergeLocaleMessage('fr', {
+    myComponent: {
+      title: 'Mon Composant',
+      description: 'Ceci est la description de mon composant'
+    }
+  })
+})
+</script>
+```
+
+**Important Guidelines:**
+
+- ✅ **Always use `t()` function** for user-facing text
+- ✅ **Register translations in `onMounted()`** to ensure proper initialization
+- ✅ **Use component-scoped prefixes** to avoid key collisions
+- ✅ **Provide both English and French** translations for all strings
+- ❌ **Never hardcode** user-facing text in templates or JavaScript
+- ❌ **Avoid fallback strings** in `t()` calls when possible (register translations instead)
+
 ## Key Development Patterns
 
 **Store Creation:**

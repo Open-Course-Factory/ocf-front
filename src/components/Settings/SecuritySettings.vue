@@ -15,7 +15,7 @@
           </div>
           <div class="info-item">
             <label>{{ t('userSettings.security.twoFactorEnabled') }}</label>
-            <p>{{ settingsStore.settings.two_factor_enabled ? 'Yes' : 'No' }}</p>
+            <p>{{ settingsStore.settings.two_factor_enabled ? t('userSettings.security.yes') : t('userSettings.security.no') }}</p>
           </div>
         </div>
       </div>
@@ -60,7 +60,7 @@
           </div>
           <button type="submit" class="btn-primary" :disabled="settingsStore.isLoading">
             <i class="fas fa-key"></i>
-            {{ settingsStore.isLoading ? 'Changing...' : t('userSettings.security.changePassword') }}
+            {{ settingsStore.isLoading ? t('userSettings.security.changing') : t('userSettings.security.changePassword') }}
           </button>
         </form>
       </div>
@@ -86,7 +86,7 @@ const errorMessage = ref('')
 const successMessage = ref('')
 
 function formatDate(dateString: string | undefined): string {
-  if (!dateString) return 'Never'
+  if (!dateString) return t('userSettings.security.never')
   return new Date(dateString).toLocaleDateString()
 }
 
@@ -117,7 +117,7 @@ async function handleChangePassword() {
       confirm_password: ''
     }
   } catch (error: any) {
-    errorMessage.value = error.response?.data?.message || 'Error changing password'
+    errorMessage.value = error.response?.data?.message || t('userSettings.security.errorChangingPassword')
   }
 }
 </script>

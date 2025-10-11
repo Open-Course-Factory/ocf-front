@@ -4,14 +4,14 @@
       <div class="back-button">
         <router-link to="/" class="btn-back">
           <i class="fas fa-arrow-left"></i>
-          Retour à l'accueil
+          {{ t('register.backToHome') }}
         </router-link>
       </div>
-      <h2>Créer un compte</h2>
+      <h2>{{ t('register.title') }}</h2>
       <form @submit.prevent="handleSubmit">
         <div class="form-row">
           <div class="form-group">
-            <label for="firstName">Prénom *</label>
+            <label for="firstName">{{ t('register.firstNameLabel') }}</label>
             <input
               type="text"
               id="firstName"
@@ -24,7 +24,7 @@
             </div>
           </div>
           <div class="form-group">
-            <label for="lastName">Nom *</label>
+            <label for="lastName">{{ t('register.lastNameLabel') }}</label>
             <input
               type="text"
               id="lastName"
@@ -39,7 +39,7 @@
         </div>
 
         <div class="form-group">
-          <label for="userName">Nom d'utilisateur *</label>
+          <label for="userName">{{ t('register.userNameLabel') }}</label>
           <input
             type="text"
             id="userName"
@@ -54,7 +54,7 @@
         </div>
 
         <div class="form-group">
-          <label for="displayName">Nom d'affichage *</label>
+          <label for="displayName">{{ t('register.displayNameLabel') }}</label>
           <input
             type="text"
             id="displayName"
@@ -68,7 +68,7 @@
         </div>
 
         <div class="form-group">
-          <label for="email">Adresse email *</label>
+          <label for="email">{{ t('register.emailLabel') }}</label>
           <input
             type="email"
             id="email"
@@ -83,7 +83,7 @@
         </div>
 
         <div class="form-group">
-          <label for="password">Mot de passe *</label>
+          <label for="password">{{ t('register.passwordLabel') }}</label>
           <input
             type="password"
             id="password"
@@ -95,15 +95,15 @@
           <div class="password-requirements">
             <small :class="{ 'text-success': passwordValidations.length, 'text-muted': !passwordValidations.length }">
               <i :class="passwordValidations.length ? 'fas fa-check' : 'fas fa-times'"></i>
-              Au moins 8 caractères
+              {{ t('register.passwordReq8Chars') }}
             </small>
             <small :class="{ 'text-success': passwordValidations.uppercase, 'text-muted': !passwordValidations.uppercase }">
               <i :class="passwordValidations.uppercase ? 'fas fa-check' : 'fas fa-times'"></i>
-              Une majuscule
+              {{ t('register.passwordReqUppercase') }}
             </small>
             <small :class="{ 'text-success': passwordValidations.number, 'text-muted': !passwordValidations.number }">
               <i :class="passwordValidations.number ? 'fas fa-check' : 'fas fa-times'"></i>
-              Un chiffre
+              {{ t('register.passwordReqNumber') }}
             </small>
           </div>
           <div v-if="errors.password" class="invalid-feedback">
@@ -112,7 +112,7 @@
         </div>
 
         <div class="form-group">
-          <label for="confirmPassword">Confirmer le mot de passe *</label>
+          <label for="confirmPassword">{{ t('register.confirmPasswordLabel') }}</label>
           <input
             type="password"
             id="confirmPassword"
@@ -140,13 +140,13 @@
           :disabled="isLoading || !isFormValid"
         >
           <span v-if="isLoading">
-            <i class="fas fa-spinner fa-spin"></i> Création en cours...
+            <i class="fas fa-spinner fa-spin"></i> {{ t('register.creatingAccount') }}
           </span>
-          <span v-else>Créer le compte</span>
+          <span v-else>{{ t('register.submitButton') }}</span>
         </button>
 
         <div class="login-link">
-          <p>Déjà un compte ? <router-link to="/login">Se connecter</router-link></p>
+          <p>{{ t('register.haveAccount') }} <router-link to="/login">{{ t('register.loginLink') }}</router-link></p>
         </div>
       </form>
     </div>
@@ -154,11 +154,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, watch } from 'vue';
+import { ref, computed, reactive, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 
 const router = useRouter();
+
+const i18n = useI18n();
+const { t } = i18n;
 
 const formData = reactive({
   firstName: '',
@@ -208,7 +212,7 @@ watch([() => formData.firstName, () => formData.lastName], () => {
 const validateEmail = () => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(formData.email)) {
-    errors.email = 'Adresse email invalide';
+    errors.email = t('register.invalidEmail');
   } else {
     errors.email = '';
   }
@@ -216,9 +220,9 @@ const validateEmail = () => {
 
 const validateUserName = () => {
   if (formData.userName.length < 3) {
-    errors.userName = 'Le nom d\'utilisateur doit contenir au moins 3 caractères';
+    errors.userName = t('register.userNameTooShort');
   } else if (!/^[a-zA-Z0-9_-]+$/.test(formData.userName)) {
-    errors.userName = 'Le nom d\'utilisateur ne peut contenir que des lettres, chiffres, tirets et underscores';
+    errors.userName = t('register.userNameInvalidChars');
   } else {
     errors.userName = '';
   }
@@ -226,17 +230,17 @@ const validateUserName = () => {
 
 const validatePassword = () => {
   const password = formData.password;
-  
+
   passwordValidations.length = password.length >= 8;
   passwordValidations.uppercase = /[A-Z]/.test(password);
   passwordValidations.number = /\d/.test(password);
-  
+
   if (!passwordValidations.length || !passwordValidations.uppercase || !passwordValidations.number) {
-    errors.password = 'Le mot de passe ne respecte pas les critères requis';
+    errors.password = t('register.passwordInvalid');
   } else {
     errors.password = '';
   }
-  
+
   if (formData.confirmPassword) {
     validateConfirmPassword();
   }
@@ -244,11 +248,72 @@ const validatePassword = () => {
 
 const validateConfirmPassword = () => {
   if (formData.password !== formData.confirmPassword) {
-    errors.confirmPassword = 'Les mots de passe ne correspondent pas';
+    errors.confirmPassword = t('register.passwordMismatch');
   } else {
     errors.confirmPassword = '';
   }
 };
+
+onMounted(() => {
+  // Add translations
+  i18n.mergeLocaleMessage('en', {
+    register: {
+      backToHome: 'Back to home',
+      title: 'Create an account',
+      firstNameLabel: 'First name *',
+      lastNameLabel: 'Last name *',
+      userNameLabel: 'Username *',
+      displayNameLabel: 'Display name *',
+      emailLabel: 'Email address *',
+      passwordLabel: 'Password *',
+      passwordReq8Chars: 'At least 8 characters',
+      passwordReqUppercase: 'One uppercase letter',
+      passwordReqNumber: 'One number',
+      confirmPasswordLabel: 'Confirm password *',
+      creatingAccount: 'Creating account...',
+      submitButton: 'Create account',
+      haveAccount: 'Already have an account?',
+      loginLink: 'Sign in',
+      invalidEmail: 'Invalid email address',
+      userNameTooShort: 'Username must be at least 3 characters',
+      userNameInvalidChars: 'Username can only contain letters, numbers, hyphens and underscores',
+      passwordInvalid: 'Password does not meet requirements',
+      passwordMismatch: 'Passwords do not match',
+      successMessage: 'Account created successfully! You can now log in.',
+      errorEmailExists: 'A user with this email address already exists',
+      errorGeneric: 'Error creating account. Please try again.'
+    }
+  });
+
+  i18n.mergeLocaleMessage('fr', {
+    register: {
+      backToHome: 'Retour à l\'accueil',
+      title: 'Créer un compte',
+      firstNameLabel: 'Prénom *',
+      lastNameLabel: 'Nom *',
+      userNameLabel: 'Nom d\'utilisateur *',
+      displayNameLabel: 'Nom d\'affichage *',
+      emailLabel: 'Adresse email *',
+      passwordLabel: 'Mot de passe *',
+      passwordReq8Chars: 'Au moins 8 caractères',
+      passwordReqUppercase: 'Une majuscule',
+      passwordReqNumber: 'Un chiffre',
+      confirmPasswordLabel: 'Confirmer le mot de passe *',
+      creatingAccount: 'Création en cours...',
+      submitButton: 'Créer le compte',
+      haveAccount: 'Déjà un compte ?',
+      loginLink: 'Se connecter',
+      invalidEmail: 'Adresse email invalide',
+      userNameTooShort: 'Le nom d\'utilisateur doit contenir au moins 3 caractères',
+      userNameInvalidChars: 'Le nom d\'utilisateur ne peut contenir que des lettres, chiffres, tirets et underscores',
+      passwordInvalid: 'Le mot de passe ne respecte pas les critères requis',
+      passwordMismatch: 'Les mots de passe ne correspondent pas',
+      successMessage: 'Compte créé avec succès ! Vous pouvez maintenant vous connecter.',
+      errorEmailExists: 'Un utilisateur avec cette adresse email existe déjà',
+      errorGeneric: 'Erreur lors de la création du compte. Veuillez réessayer.'
+    }
+  });
+});
 
 const handleSubmit = async () => {
   // Valider tous les champs
@@ -277,9 +342,9 @@ const handleSubmit = async () => {
 
     // Utilisation de la requête simplifiée
     await axios.post('/users', registrationData);
-    
-    successMessage.value = 'Compte créé avec succès ! Vous pouvez maintenant vous connecter.';
-    
+
+    successMessage.value = t('register.successMessage');
+
     // Rediriger vers la page de connexion après 2 secondes
     setTimeout(() => {
       router.push({ name: 'Login' });
@@ -289,9 +354,9 @@ const handleSubmit = async () => {
     if (error.response?.data?.error_message) {
       errorMessage.value = error.response.data.error_message;
     } else if (error.response?.status === 409) {
-      errorMessage.value = 'Un utilisateur avec cette adresse email existe déjà';
+      errorMessage.value = t('register.errorEmailExists');
     } else {
-      errorMessage.value = 'Erreur lors de la création du compte. Veuillez réessayer.';
+      errorMessage.value = t('register.errorGeneric');
     }
   } finally {
     isLoading.value = false;

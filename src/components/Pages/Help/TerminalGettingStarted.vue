@@ -53,13 +53,13 @@
         <div class="step-card">
           <div class="step-number">1</div>
           <div class="step-content">
-            <h4>Accéder aux clés d'accès</h4>
+            <h4>{{ t('help.terminals.gettingStarted.steps.accessKeys.title') }}</h4>
             <p>
-              Naviguez vers <strong>Travaux Pratiques > Clés d'Accès Terminal</strong> dans le menu principal.
+              {{ t('help.terminals.gettingStarted.steps.accessKeys.description') }}
             </p>
             <router-link to="/user-terminal-keys" class="btn btn-outline">
               <i class="fas fa-key"></i>
-              Voir mes clés d'accès
+              {{ t('help.terminals.gettingStarted.steps.accessKeys.button') }}
             </router-link>
           </div>
         </div>
@@ -67,10 +67,9 @@
         <div class="step-card">
           <div class="step-number">2</div>
           <div class="step-content">
-            <h4>Vérifier le statut</h4>
+            <h4>{{ t('help.terminals.gettingStarted.steps.checkStatus.title') }}</h4>
             <p>
-              Si vous voyez "Aucune clé terminal trouvée" ou si votre clé est inactive,
-              utilisez le bouton <strong>"Régénérer la clé"</strong> pour en créer une nouvelle.
+              {{ t('help.terminals.gettingStarted.steps.checkStatus.description') }}
             </p>
           </div>
         </div>
@@ -85,13 +84,13 @@
         <div class="step-card">
           <div class="step-number">1</div>
           <div class="step-content">
-            <h4>Accéder à la création de session</h4>
+            <h4>{{ t('help.terminals.gettingStarted.steps.accessCreation.title') }}</h4>
             <p>
-              Cliquez sur <strong>Travaux Pratiques > Créer une Session</strong> dans le menu.
+              {{ t('help.terminals.gettingStarted.steps.accessCreation.description') }}
             </p>
             <router-link to="/terminal-creation" class="btn btn-primary">
               <i class="fas fa-plus"></i>
-              Créer une session maintenant
+              {{ t('help.terminals.gettingStarted.steps.accessCreation.button') }}
             </router-link>
           </div>
         </div>
@@ -99,10 +98,10 @@
         <div class="step-card">
           <div class="step-number">2</div>
           <div class="step-content">
-            <h4>Configurer votre session</h4>
+            <h4>{{ t('help.terminals.gettingStarted.steps.configure.title') }}</h4>
             <ul>
-              <li><strong>Conditions d'utilisation :</strong> Acceptez les conditions (obligatoire)</li>
-              <li><strong>Durée d'expiration :</strong> Choisissez combien de temps votre session restera active (optionnel)</li>
+              <li v-html="t('help.terminals.gettingStarted.steps.configure.item1')"></li>
+              <li v-html="t('help.terminals.gettingStarted.steps.configure.item2')"></li>
             </ul>
           </div>
         </div>
@@ -110,10 +109,9 @@
         <div class="step-card">
           <div class="step-number">3</div>
           <div class="step-content">
-            <h4>Lancer la session</h4>
+            <h4>{{ t('help.terminals.gettingStarted.steps.launch.title') }}</h4>
             <p>
-              Cliquez sur <strong>"Démarrer une session"</strong>.
-              La création peut prendre quelques instants pendant que le système prépare votre environnement.
+              {{ t('help.terminals.gettingStarted.steps.launch.description') }}
             </p>
           </div>
         </div>
@@ -128,14 +126,13 @@
         <div class="step-card">
           <div class="step-number">1</div>
           <div class="step-content">
-            <h4>Localiser votre session</h4>
+            <h4>{{ t('help.terminals.gettingStarted.steps.locate.title') }}</h4>
             <p>
-              Dans <strong>Travaux Pratiques > Mes Sessions</strong>,
-              vous verrez votre nouvelle session avec le statut "active".
+              {{ t('help.terminals.gettingStarted.steps.locate.description') }}
             </p>
             <router-link to="/terminal-sessions" class="btn btn-outline">
               <i class="fas fa-list"></i>
-              Voir mes sessions
+              {{ t('help.terminals.gettingStarted.steps.locate.button') }}
             </router-link>
           </div>
         </div>
@@ -143,10 +140,9 @@
         <div class="step-card">
           <div class="step-number">2</div>
           <div class="step-content">
-            <h4>Se connecter au terminal</h4>
+            <h4>{{ t('help.terminals.gettingStarted.steps.connect.title') }}</h4>
             <p>
-              Cliquez sur le bouton <strong>"Ouvrir"</strong> pour accéder à votre terminal dans un nouvel onglet,
-              ou utilisez <strong>"Aperçu"</strong> pour le voir directement dans la page.
+              {{ t('help.terminals.gettingStarted.steps.connect.description') }}
             </p>
           </div>
         </div>

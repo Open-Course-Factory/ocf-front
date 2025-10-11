@@ -81,38 +81,38 @@
     <!-- Panneau de démarrage -->
     <SettingsCard v-show="showStartPanel" :title="t('terminals.startNewSession')">
       <FormGroup
-        :label="t('terminals.nameOptional')"
+        :label="t('terminalStarter.nameOptional')"
         id="terminalName"
-        help-text="Donnez un nom personnalisé à votre terminal pour le retrouver facilement. Maximum 255 caractères."
+        :help-text="t('terminalStarter.nameHelp')"
       >
         <input
           id="terminalName"
           v-model="nameInput"
           type="text"
           maxlength="255"
-          :placeholder="t('terminals.namePlaceholder')"
+          :placeholder="t('terminalStarter.namePlaceholder')"
         />
         <small v-if="nameInput.length > 0" class="char-count">{{ nameInput.length }}/255</small>
       </FormGroup>
 
       <FormGroup
-        :label="t('terminals.termsRequired')"
+        :label="t('terminalStarter.termsRequired')"
         id="terms"
-        help-text="Vous devez accepter les conditions d'utilisation pour démarrer une session terminal."
+        :help-text="t('terminalStarter.termsHelp')"
       >
         <textarea
           id="terms"
           v-model="termsInput"
           rows="3"
-          placeholder="J'accepte les conditions d'utilisation..."
+          :placeholder="t('terminalStarter.termsPlaceholder')"
           required
         ></textarea>
       </FormGroup>
 
       <FormGroup
-        :label="t('terminals.expirySeconds')"
+        :label="t('terminalStarter.expirySeconds')"
         id="expiry"
-        :help-text="`Entre 60 secondes (1 min) et ${sessionDurationCap} secondes (${sessionDurationCap / 3600}h max).${currentSubscription?.plan_features?.session_duration_hours ? ' Limité à ' + currentSubscription.plan_features.session_duration_hours + 'h par votre plan ' + currentSubscription.plan_name + '.' : ''}`"
+        :help-text="expiryHelpText"
       >
         <input
           id="expiry"
@@ -120,21 +120,21 @@
           type="number"
           min="60"
           :max="sessionDurationCap"
-          :placeholder="`${sessionDurationCap} (${sessionDurationCap / 3600}h maximum pour votre plan)`"
+          :placeholder="t('terminalStarter.expiryPlaceholder', { max: sessionDurationCap, maxHours: sessionDurationCap / 3600 })"
         />
       </FormGroup>
 
       <FormGroup
-        :label="t('terminals.instanceType')"
+        :label="t('terminalStarter.instanceType')"
         id="instanceType"
-        :help-text="`${t('terminals.selectEnvironmentType')}${allowedMachineSizes.length > 0 ? ' ' + t('terminals.yourPlanAllows') + ': ' + allowedMachineSizes.join(', ') : ''}`"
+        :help-text="`${t('terminalStarter.selectEnvironmentType')}${allowedMachineSizes.length > 0 ? ' ' + t('terminalStarter.yourPlanAllows') + ': ' + allowedMachineSizes.join(', ') : ''}`"
       >
         <!-- Search/Filter for many instances -->
         <div v-if="instanceTypes.length > 6" class="instance-search">
           <input
             v-model="instanceSearchTerm"
             type="text"
-            :placeholder="t('terminals.searchInstances')"
+            :placeholder="t('terminalStarter.searchInstances')"
             @input="filterInstances"
           >
           <div class="instance-filters">
@@ -158,15 +158,15 @@
           <!-- Empty state when no instances match filters -->
           <div v-if="displayedInstanceTypes.length === 0" class="no-instances-found">
             <i class="fas fa-search"></i>
-            <h5>{{ t('terminals.noInstancesFound') }}</h5>
+            <h5>{{ t('terminalStarter.noInstancesFound') }}</h5>
             <p v-if="instanceSearchTerm">
-              {{ t('terminals.noMatchingInstances').replace('{searchTerm}', instanceSearchTerm) }}
+              {{ t('terminalStarter.noMatchingInstances', { searchTerm: instanceSearchTerm }) }}
             </p>
             <p v-else-if="activeFilter === 'available'">
-              {{ t('terminals.noAvailableInstances') }}
+              {{ t('terminalStarter.noAvailableInstances') }}
             </p>
             <p v-else-if="activeFilter === 'restricted'">
-              {{ t('terminals.allInstancesAvailable') }}
+              {{ t('terminalStarter.allInstancesAvailable') }}
             </p>
             <Button
               v-if="instanceSearchTerm || activeFilter !== 'all'"
@@ -174,7 +174,7 @@
               variant="primary"
               @click="clearFilters"
             >
-              {{ t('terminals.clearFilters') }}
+              {{ t('terminalStarter.clearFilters') }}
             </Button>
           </div>
 
@@ -222,16 +222,16 @@
               <div v-if="instanceAvailabilityMap.get(instance.prefix)?.available"
                    class="available-message">
                 <small class="text-success">
-                  <i class="fas fa-check"></i> {{ t('terminals.availableInPlan') }}
+                  <i class="fas fa-check"></i> {{ t('terminalStarter.availableInPlan') }}
                 </small>
               </div>
               <div v-else class="restricted-message">
                 <small class="text-warning">
-                  <i class="fas fa-exclamation-triangle"></i> {{ t('terminals.requiresUpgrade') }}
+                  <i class="fas fa-exclamation-triangle"></i> {{ t('terminalStarter.requiresUpgrade') }}
                 </small>
                 <router-link to="/subscription-plans" class="upgrade-link">
                   <i class="fas fa-arrow-up"></i>
-                  {{ t('terminals.upgrade') }}
+                  {{ t('terminalStarter.upgrade') }}
                 </router-link>
               </div>
             </div>
@@ -249,7 +249,7 @@
           :loading="isStarting"
           @click="startNewSession"
         >
-          {{ isStarting ? 'Démarrage...' : 'Démarrer le Terminal' }}
+          {{ isStarting ? t('terminalStarter.buttonStarting') : t('terminalStarter.buttonStart') }}
         </Button>
 
         <Button
@@ -259,7 +259,7 @@
           :disabled="isStarting"
           @click="resetForm"
         >
-          Réinitialiser
+          {{ t('terminalStarter.buttonReset') }}
         </Button>
       </div>
 
@@ -285,7 +285,7 @@
           <div class="session-actions">
             <span class="time-remaining" v-if="timeRemaining > 0">
               <i class="fas fa-clock"></i>
-              Temps restant: {{ formatTime(timeRemaining) }}
+              {{ t('terminalStarter.timeRemaining') }}: {{ formatTime(timeRemaining) }}
             </span>
             <Button
               variant="danger"
@@ -295,21 +295,21 @@
               :loading="isStopping"
               @click="stopSession"
             >
-              Arrêter
+              {{ t('terminalStarter.stop') }}
             </Button>
           </div>
         </div>
 
         <div class="session-details">
           <div class="detail-item" v-if="selectedInstanceInfo">
-            <strong><i class="fas fa-server"></i> {{ t('terminals.instanceType') }}</strong>
+            <strong><i class="fas fa-server"></i> {{ t('terminalStarter.instanceType') }}</strong>
             <span class="instance-info">
               {{ getTranslatedInstanceName(selectedInstanceInfo) }} - {{ getTranslatedInstanceDescription(selectedInstanceInfo) }}
               <small class="text-muted">({{ selectedInstanceInfo.prefix }})</small>
             </span>
           </div>
           <div class="detail-item">
-            <strong><i class="fas fa-info-circle"></i> {{ t('terminals.status') }}</strong>
+            <strong><i class="fas fa-info-circle"></i> {{ t('terminalStarter.status') }}</strong>
             <span :class="getStatusClass(sessionInfo?.status)">
               {{ sessionInfo?.status }}
             </span>
@@ -328,15 +328,15 @@
           v-show="showReconnectButton"
           @click="reconnectTerminal"
         >
-          Reconnecter
+          {{ t('terminalStarter.reconnect') }}
         </Button>
 
         <div class="connection-status">
           <span v-if="isConnected" class="status-connected">
-            <i class="fas fa-circle"></i> Connecté
+            <i class="fas fa-circle"></i> {{ t('terminalStarter.connected') }}
           </span>
           <span v-else class="status-disconnected">
-            <i class="fas fa-circle"></i> Déconnecté
+            <i class="fas fa-circle"></i> {{ t('terminalStarter.disconnected') }}
           </span>
         </div>
       </template>
@@ -345,7 +345,7 @@
         <div ref="terminalRef" class="terminal-container"></div>
         <div v-if="!terminal" class="terminal-placeholder">
           <i class="fas fa-terminal fa-3x"></i>
-          <p>{{ t('terminals.initializingTerminal') }}</p>
+          <p>{{ t('terminalStarter.initializingTerminal') }}</p>
           <p v-if="terminalError" class="text-danger">{{ terminalError }}</p>
         </div>
       </div>
@@ -356,8 +356,8 @@
             Session: {{ sessionInfo?.session_id }} |
             Statut: {{ sessionInfo?.status }} |
             <span v-if="selectedInstanceInfo">Instance: {{ selectedInstanceInfo.name }} ({{ selectedInstanceInfo.prefix }}) | </span>
-            <span v-if="isConnected" class="text-success">{{ t('terminals.websocketConnected') }}</span>
-            <span v-else class="text-danger">{{ t('terminals.websocketDisconnected') }}</span>
+            <span v-if="isConnected" class="text-success">{{ t('terminalStarter.websocketConnected') }}</span>
+            <span v-else class="text-danger">{{ t('terminalStarter.websocketDisconnected') }}</span>
           </small>
         </div>
       </div>
@@ -383,7 +383,8 @@ const emit = defineEmits(['session-started'])
 const subscriptionsStore = useSubscriptionsStore()
 
 // i18n setup
-const { t } = useI18n()
+const i18n = useI18n()
+const { t } = i18n
 const { showConfirm, showError: showErrorNotification, showWarning } = useNotification()
 
 // Importation différée de xterm.js pour éviter les erreurs SSR
@@ -405,7 +406,7 @@ const showDebug = ref(false)
 const isStarting = ref(false)
 const isStopping = ref(false)
 const isConnected = ref(false)
-const startStatus = ref('Préparation...')
+const startStatus = ref('')
 const terminalError = ref('')
 
 // Informations de session
@@ -418,7 +419,7 @@ let usageRefreshInterval = null
 const USAGE_REFRESH_INTERVAL = 600000 // 10 minutes in milliseconds
 
 // Formulaire
-const termsInput = ref('J\'accepte les conditions d\'utilisation du service terminal.')
+const termsInput = ref('')
 const expiryInput = ref(3600) // 1 heure par défaut
 const selectedInstanceType = ref('')
 const nameInput = ref('')
@@ -512,6 +513,23 @@ const refreshIntervalMinutes = computed(() => {
   return Math.floor(USAGE_REFRESH_INTERVAL / 60000)
 })
 
+// Computed for expiry help text
+const expiryHelpText = computed(() => {
+  const min = 60
+  const max = sessionDurationCap.value
+  const maxHours = sessionDurationCap.value / 3600
+  const planHours = currentSubscription.value?.plan_features?.session_duration_hours || ''
+  const planName = currentSubscription.value?.plan_name || ''
+
+  let baseText = t('terminalStarter.expiryHelpBase', { min, max, maxHours })
+
+  if (planHours && planName) {
+    baseText += ' ' + t('terminalStarter.expiryHelpPlanLimit', { planHours, planName })
+  }
+
+  return baseText
+})
+
 // Computed for scalable instance display
 const displayedInstanceTypes = computed(() => {
   let instances = instanceTypes.value
@@ -596,7 +614,7 @@ async function initXterm() {
   if (terminal) return // Déjà initialisé
 
   try {
-    startStatus.value = 'Chargement des modules xterm.js...'
+    startStatus.value = t('terminalStarter.loadingModules')
 
     // Import dynamique pour éviter les erreurs SSR
     const [xtermModule, fitModule, attachModule] = await Promise.all([
@@ -648,8 +666,8 @@ async function initXterm() {
     return true
   } catch (error) {
     console.error('Erreur lors de l\'initialisation de xterm.js:', error)
-    terminalError.value = `Impossible de charger xterm.js: ${error.message}`
-    showErrorNotification('Impossible de charger le terminal. Vérifiez que les dépendances xterm.js sont installées.', 'Erreur d\'initialisation')
+    terminalError.value = `${t('terminalStarter.errorInitializationMessage')}: ${error.message}`
+    showErrorNotification(t('terminalStarter.errorInitializationMessage'), t('terminalStarter.errorInitialization'))
     return false
   }
 }
@@ -669,7 +687,7 @@ async function loadInstanceTypes() {
     instanceTypes.value = loadedTypes
 
     if (instanceTypes.value.length === 0) {
-      showWarning('Aucun type d\'instance disponible. Contactez l\'administrateur.', 'Aucune instance disponible')
+      showWarning(t('terminalStarter.errorLoading'), t('terminalStarter.errorLoadingTitle'))
       return
     }
 
@@ -677,7 +695,7 @@ async function loadInstanceTypes() {
     setDefaultInstanceSelection()
   } catch (error) {
     console.error('Failed to load instance types:', error)
-    showErrorNotification(`Erreur lors du chargement des types d'instances: ${error.message || error}`, 'Erreur de chargement')
+    showErrorNotification(`${t('terminalStarter.errorLoadingFormat')}: ${error.message || error}`, t('terminalStarter.errorLoadingFormatTitle'))
     // Initialize with empty array on error
     instanceTypes.value = []
     selectedInstanceType.value = ''
@@ -769,6 +787,166 @@ function setDefaultInstanceSelection() {
 }
 
 onMounted(async () => {
+  // Add translations
+  i18n.mergeLocaleMessage('en', {
+    terminalStarter: {
+      nameOptional: 'Terminal Name (Optional)',
+      namePlaceholder: 'My terminal...',
+      nameHelp: 'Give your terminal a custom name to easily find it. Maximum 255 characters.',
+      termsRequired: 'Terms of Use (Required)',
+      termsPlaceholder: 'I accept the terms of use of the terminal service.',
+      termsHelp: 'You must accept the terms of use to start a terminal session.',
+      expirySeconds: 'Session Duration (seconds)',
+      expiryHelpBase: 'Between {min} seconds (1 min) and {max} seconds ({maxHours}h max).',
+      expiryHelpPlanLimit: 'Limited to {planHours}h by your {planName} plan.',
+      expiryPlaceholder: '{max} ({maxHours}h maximum for your plan)',
+      instanceType: 'Instance Type',
+      selectEnvironmentType: 'Select your terminal environment type.',
+      yourPlanAllows: 'Your plan allows',
+      searchInstances: 'Search instances...',
+      noInstancesFound: 'No instances found',
+      noMatchingInstances: 'No instances match "{searchTerm}"',
+      noAvailableInstances: 'No instances available for your current plan.',
+      allInstancesAvailable: 'All instances are available.',
+      clearFilters: 'Clear filters',
+      allInstances: 'All',
+      availableInstances: 'Available',
+      restrictedInstances: 'Restricted',
+      availableInPlan: 'Available in your plan',
+      requiresUpgrade: 'Requires plan upgrade',
+      upgrade: 'Upgrade',
+      buttonStarting: 'Starting...',
+      buttonStart: 'Start Terminal',
+      buttonReset: 'Reset',
+      startingSession: 'Starting terminal session...',
+      checkingLimits: 'Checking usage limits...',
+      sendingRequest: 'Sending request to server...',
+      sessionCreated: 'Session created, initializing terminal...',
+      currentUsage: 'Current Usage',
+      refreshUsage: 'Refresh usage',
+      concurrentTerminals: 'concurrent terminals',
+      sessionDuration: 'session duration',
+      planLimit: 'plan limit',
+      autoRefreshInfo: 'Usage data is automatically refreshed every {minutes} minutes.',
+      initializingTerminal: 'Initializing terminal...',
+      websocketConnected: 'WebSocket connected',
+      websocketDisconnected: 'WebSocket disconnected',
+      connected: 'Connected',
+      disconnected: 'Disconnected',
+      reconnect: 'Reconnect',
+      timeRemaining: 'Time remaining',
+      stop: 'Stop',
+      status: 'Status',
+      sessionExpired: 'Your terminal session has expired',
+      sessionExpiredTitle: 'Session Expired',
+      errorValidationTerms: 'Please accept the terms of use',
+      errorValidationInstance: 'Please select an instance type',
+      errorLimitReached: 'You have reached your limit of concurrent terminals. Please stop an existing terminal or upgrade your plan.',
+      errorLimitReachedTitle: 'Limit Reached',
+      errorInstanceNotAvailable: 'The selected instance is not available with your current plan. Please choose another instance or upgrade your plan.',
+      errorInstanceNotAvailableTitle: 'Instance Not Available',
+      errorInstanceRestricted: 'Instance Not Allowed',
+      errorInstanceRestrictedDetails: 'Instance Not Allowed\n\nInstance "{name}" requires sizes: {required}\nYour plan allows: {allowed}\n\nPlease choose another instance or upgrade your plan.',
+      errorUpgradePrompt: 'Would you like to view available plans to unlock this instance?',
+      errorUpgradePromptTitle: 'Upgrade Plan',
+      errorStarting: 'Startup Error',
+      errorLoading: 'Failed to load instance types. Contact the administrator.',
+      errorLoadingTitle: 'No instances available',
+      errorLoadingFormat: 'Invalid data format for instance types.',
+      errorLoadingFormatTitle: 'Loading Error',
+      loadingModules: 'Loading xterm.js modules...',
+      preparingSession: 'Preparing...',
+      errorInitialization: 'Initialization Error',
+      errorInitializationMessage: 'Unable to load the terminal. Please check that xterm.js dependencies are installed.',
+      errorInstanceRestrictedMessage: 'Instance "{name}" requires sizes: {required}\nYour plan allows: {allowed}\n\nPlease choose another instance or upgrade your plan.',
+      errorWebsocket: 'Connection Error',
+      errorWebsocketMessage: 'Unable to connect to the terminal: {message}',
+      errorStopping: 'Error stopping',
+      errorStoppingMessage: 'Error stopping the session'
+    }
+  })
+
+  i18n.mergeLocaleMessage('fr', {
+    terminalStarter: {
+      nameOptional: 'Nom du Terminal (Optionnel)',
+      namePlaceholder: 'Mon terminal...',
+      nameHelp: 'Donnez un nom personnalisé à votre terminal pour le retrouver facilement. Maximum 255 caractères.',
+      termsRequired: 'Conditions d\'Utilisation (Requis)',
+      termsPlaceholder: 'J\'accepte les conditions d\'utilisation du service terminal.',
+      termsHelp: 'Vous devez accepter les conditions d\'utilisation pour démarrer une session terminal.',
+      expirySeconds: 'Durée de la Session (secondes)',
+      expiryHelpBase: 'Entre {min} secondes (1 min) et {max} secondes ({maxHours}h max).',
+      expiryHelpPlanLimit: 'Limité à {planHours}h par votre plan {planName}.',
+      expiryPlaceholder: '{max} ({maxHours}h maximum pour votre plan)',
+      instanceType: 'Type d\'Instance',
+      selectEnvironmentType: 'Sélectionnez le type d\'environnement de votre terminal.',
+      yourPlanAllows: 'Votre plan autorise',
+      searchInstances: 'Rechercher des instances...',
+      noInstancesFound: 'Aucune instance trouvée',
+      noMatchingInstances: 'Aucune instance ne correspond à "{searchTerm}"',
+      noAvailableInstances: 'Aucune instance disponible pour votre plan actuel.',
+      allInstancesAvailable: 'Toutes les instances sont disponibles.',
+      clearFilters: 'Effacer les filtres',
+      allInstances: 'Toutes',
+      availableInstances: 'Disponibles',
+      restrictedInstances: 'Restreintes',
+      availableInPlan: 'Disponible dans votre plan',
+      requiresUpgrade: 'Nécessite une mise à niveau',
+      upgrade: 'Mettre à niveau',
+      buttonStarting: 'Démarrage...',
+      buttonStart: 'Démarrer le Terminal',
+      buttonReset: 'Réinitialiser',
+      startingSession: 'Démarrage de la session terminal...',
+      checkingLimits: 'Vérification des limites d\'utilisation...',
+      sendingRequest: 'Envoi de la requête au serveur...',
+      sessionCreated: 'Session créée, initialisation du terminal...',
+      currentUsage: 'Utilisation Actuelle',
+      refreshUsage: 'Actualiser l\'utilisation',
+      concurrentTerminals: 'terminaux simultanés',
+      sessionDuration: 'durée de session',
+      planLimit: 'limite du plan',
+      autoRefreshInfo: 'Les données d\'utilisation sont automatiquement actualisées toutes les {minutes} minutes.',
+      initializingTerminal: 'Initialisation du terminal...',
+      websocketConnected: 'WebSocket connecté',
+      websocketDisconnected: 'WebSocket déconnecté',
+      connected: 'Connecté',
+      disconnected: 'Déconnecté',
+      reconnect: 'Reconnecter',
+      timeRemaining: 'Temps restant',
+      stop: 'Arrêter',
+      status: 'Statut',
+      sessionExpired: 'Votre session terminal a expiré',
+      sessionExpiredTitle: 'Session expirée',
+      errorValidationTerms: 'Veuillez accepter les conditions d\'utilisation',
+      errorValidationInstance: 'Veuillez sélectionner un type d\'instance',
+      errorLimitReached: 'Vous avez atteint votre limite de terminaux simultanés. Veuillez arrêter un terminal existant ou mettre à niveau votre plan.',
+      errorLimitReachedTitle: 'Limite atteinte',
+      errorInstanceNotAvailable: 'L\'instance sélectionnée n\'est pas disponible avec votre plan actuel. Veuillez choisir une autre instance ou mettre à niveau votre plan.',
+      errorInstanceNotAvailableTitle: 'Instance non disponible',
+      errorInstanceRestricted: 'Instance non autorisée',
+      errorInstanceRestrictedDetails: 'Instance non autorisée\n\nL\'instance "{name}" nécessite les tailles: {required}\nVotre plan autorise: {allowed}\n\nVeuillez choisir une autre instance ou mettre à niveau votre plan.',
+      errorUpgradePrompt: 'Souhaitez-vous voir les plans disponibles pour débloquer cette instance ?',
+      errorUpgradePromptTitle: 'Mettre à niveau le plan',
+      errorStarting: 'Erreur de démarrage',
+      errorLoading: 'Aucun type d\'instance disponible. Contactez l\'administrateur.',
+      errorLoadingTitle: 'Aucune instance disponible',
+      errorLoadingFormat: 'Format de données invalide pour les types d\'instances.',
+      errorLoadingFormatTitle: 'Erreur de chargement',
+      loadingModules: 'Chargement des modules xterm.js...',
+      preparingSession: 'Préparation...',
+      errorInitialization: 'Erreur d\'initialisation',
+      errorInitializationMessage: 'Impossible de charger le terminal. Vérifiez que les dépendances xterm.js sont installées.',
+      errorInstanceRestrictedMessage: 'L\'instance "{name}" nécessite les tailles: {required}\nVotre plan autorise: {allowed}\n\nVeuillez choisir une autre instance ou mettre à niveau votre plan.',
+      errorWebsocket: 'Erreur de connexion',
+      errorWebsocketMessage: 'Impossible de se connecter au terminal: {message}',
+      errorStopping: 'Erreur d\'arrêt',
+      errorStoppingMessage: 'Erreur lors de l\'arrêt de la session'
+    }
+  })
+
+  // Set default terms text
+  termsInput.value = t('terminalStarter.termsPlaceholder')
+
   // Pré-charger xterm.js
   await initXterm()
   // Charger les types d'instances, les données d'abonnement et l'utilisation actuelle
@@ -823,7 +1001,7 @@ function cleanup() {
 }
 
 function resetForm() {
-  termsInput.value = 'J\'accepte les conditions d\'utilisation du service terminal.'
+  termsInput.value = t('terminalStarter.termsPlaceholder')
   expiryInput.value = 3600
   nameInput.value = ''
   // Reset to default available instance type
@@ -861,18 +1039,18 @@ function selectInstance(instance) {
 
 async function startNewSession() {
   if (!termsInput.value.trim()) {
-    showErrorNotification('Veuillez accepter les conditions d\'utilisation', 'Erreur de validation')
+    showErrorNotification(t('terminalStarter.errorValidationTerms'), t('terminalStarter.errorStarting'))
     return
   }
 
   if (!selectedInstanceType.value) {
-    showErrorNotification('Veuillez sélectionner un type d\'instance', 'Erreur de validation')
+    showErrorNotification(t('terminalStarter.errorValidationInstance'), t('terminalStarter.errorStarting'))
     return
   }
 
   // Check usage limits before starting
   checkingUsage.value = true
-  startStatus.value = 'Vérification des limites d\'utilisation...'
+  startStatus.value = t('terminalStarter.checkingLimits')
 
   try {
     // Check if user can create a new terminal
@@ -880,8 +1058,8 @@ async function startNewSession() {
 
     if (!canCreateTerminal) {
       showErrorNotification(
-        'Vous avez atteint votre limite de terminaux simultanés. Veuillez arrêter un terminal existant ou mettre à niveau votre plan.',
-        'Limite atteinte'
+        t('terminalStarter.errorLimitReached'),
+        t('terminalStarter.errorLimitReachedTitle')
       )
       isStarting.value = false
       checkingUsage.value = false
@@ -891,8 +1069,8 @@ async function startNewSession() {
     console.error('Error checking usage limits:', error)
     if (error.response?.status === 403 && error.response?.data?.error_message?.includes('Maximum concurrent terminals')) {
       showErrorNotification(
-        error.response.data.error_message + ' Veuillez mettre à niveau votre plan pour créer plus de terminaux.',
-        'Limite atteinte'
+        error.response.data.error_message + ' ' + t('terminalStarter.errorLimitReached'),
+        t('terminalStarter.errorLimitReachedTitle')
       )
       isStarting.value = false
       checkingUsage.value = false
@@ -908,8 +1086,8 @@ async function startNewSession() {
     const availability = instanceAvailabilityMap.value.get(selectedInstanceType.value)
     if (!availability?.available) {
       showWarning(
-        'L\'instance sélectionnée n\'est pas disponible avec votre plan actuel. Veuillez choisir une autre instance ou mettre à niveau votre plan.',
-        'Instance non disponible'
+        t('terminalStarter.errorInstanceNotAvailable'),
+        t('terminalStarter.errorInstanceNotAvailableTitle')
       )
       isStarting.value = false
       return
@@ -917,7 +1095,7 @@ async function startNewSession() {
   }
 
   isStarting.value = true
-  startStatus.value = 'Démarrage de la session terminal...'
+  startStatus.value = t('terminalStarter.startingSession')
 
   try {
     const sessionData = {
@@ -927,7 +1105,7 @@ async function startNewSession() {
       ...(nameInput.value.trim() && { name: nameInput.value.trim() })
     }
 
-    startStatus.value = 'Envoi de la requête au serveur...'
+    startStatus.value = t('terminalStarter.sendingRequest')
 
     const response = await axios.post('/terminal-sessions/start-session', sessionData)
 
@@ -938,7 +1116,7 @@ async function startNewSession() {
       status: response.data.status
     }
 
-    startStatus.value = 'Session créée, initialisation du terminal...'
+    startStatus.value = t('terminalStarter.sessionCreated')
 
     // Cacher le panneau de démarrage et afficher les panneaux de session
     showStartPanel.value = false
@@ -978,23 +1156,27 @@ async function startNewSession() {
         const requiredSizes = sizesMatch[1].split('|').map(s => s.trim())
         const allowedSizes = allowedMatch[1].split(',').map(s => s.trim())
 
-        enhancedError = `Instance non autorisée\n\nL'instance "${instanceName}" nécessite les tailles: ${requiredSizes.join(', ')}\nVotre plan autorise: ${allowedSizes.join(', ')}\n\nVeuillez choisir une autre instance ou mettre à niveau votre plan.`
+        enhancedError = t('terminalStarter.errorInstanceRestrictedMessage', {
+          name: instanceName,
+          required: requiredSizes.join(', '),
+          allowed: allowedSizes.join(', ')
+        })
       }
 
-      showErrorNotification(enhancedError, 'Instance non autorisée')
+      showErrorNotification(enhancedError, t('terminalStarter.errorInstanceRestricted'))
 
       // Show upgrade suggestion
       setTimeout(async () => {
         const confirmed = await showConfirm(
-          'Souhaitez-vous voir les plans disponibles pour débloquer cette instance ?',
-          'Mettre à niveau le plan'
+          t('terminalStarter.errorUpgradePrompt'),
+          t('terminalStarter.errorUpgradePromptTitle')
         )
         if (confirmed) {
           window.open('/subscription-plans', '_blank')
         }
       }, 2000)
     } else {
-      showErrorNotification(errorMsg, 'Erreur de démarrage')
+      showErrorNotification(errorMsg, t('terminalStarter.errorStarting'))
     }
 
     showStartPanel.value = true
@@ -1080,7 +1262,7 @@ async function connectWebSocket() {
 
   } catch (error) {
     console.error('Erreur lors de la connexion WebSocket:', error)
-    showErrorNotification(`Impossible de se connecter au terminal: ${error.message}`, 'Erreur de connexion')
+    showErrorNotification(t('terminalStarter.errorWebsocketMessage', { message: error.message }), t('terminalStarter.errorWebsocket'))
     isConnected.value = false
     showReconnectButton.value = true
   }
@@ -1103,8 +1285,8 @@ async function stopSession() {
 
   } catch (error) {
     console.error('Erreur lors de l\'arrêt:', error)
-    const errorMsg = error.response?.data?.error_message || error.message || 'Erreur lors de l\'arrêt de la session'
-    showErrorNotification(errorMsg, 'Erreur d\'arrêt')
+    const errorMsg = error.response?.data?.error_message || error.message || t('terminalStarter.errorStoppingMessage')
+    showErrorNotification(errorMsg, t('terminalStarter.errorStopping'))
   } finally {
     isStopping.value = false
   }
@@ -1151,7 +1333,7 @@ function startExpirationTimer(expiresAt) {
 
     if (remaining <= 0) {
       clearInterval(timerInterval)
-      showWarning('Votre session terminal a expiré', 'Session expirée')
+      showWarning(t('terminalStarter.sessionExpired'), t('terminalStarter.sessionExpiredTitle'))
       showTerminalPanel.value = false
       showInfoPanel.value = false
     }

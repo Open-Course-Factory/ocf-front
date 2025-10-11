@@ -328,7 +328,8 @@ import axios from 'axios'
 import { getCountryName } from '../../services/countries'
 import BillingAddressModal from '../Modals/BillingAddressModal.vue'
 
-const { t } = useI18n()
+const i18n = useI18n()
+const { t } = i18n
 const route = useRoute()
 // const router = useRouter()
 
@@ -365,8 +366,38 @@ const steps = [
   { key: 'review', title: 'Révision' }
 ]
 
-// Traductions
-useI18n().mergeLocaleMessage('en', {
+// Méthodes
+onMounted(async () => {
+  // Add translations first
+  i18n.mergeLocaleMessage('en', {
+    checkoutFlow: {
+      planNotFound: 'Plan not found',
+      errorLoading: 'Error loading data',
+      errorLoadingPlan: 'Error loading plan',
+      errorLoadingAddresses: 'Error loading addresses',
+      errorAddingAddress: 'Error adding address',
+      invalidCoupon: 'Invalid coupon code',
+      errorProcessing: 'Error processing payment'
+    }
+  });
+
+  i18n.mergeLocaleMessage('fr', {
+    checkoutFlow: {
+      planNotFound: 'Plan non trouvé',
+      errorLoading: 'Erreur lors du chargement des données',
+      errorLoadingPlan: 'Erreur lors du chargement du plan',
+      errorLoadingAddresses: 'Erreur lors du chargement des adresses',
+      errorAddingAddress: 'Erreur lors de l\'ajout de l\'adresse',
+      invalidCoupon: 'Code promo invalide',
+      errorProcessing: 'Erreur lors du traitement du paiement'
+    }
+  });
+
+  await loadInitialData();
+});
+
+// Existing translations
+i18n.mergeLocaleMessage('en', {
   checkout: {
     title: 'Checkout',
     steps: {
@@ -411,7 +442,7 @@ useI18n().mergeLocaleMessage('en', {
   }
 })
 
-useI18n().mergeLocaleMessage('fr', {
+i18n.mergeLocaleMessage('fr', {
   checkout: {
     title: 'Commande',
     steps: {
@@ -468,11 +499,6 @@ const canContinue = computed(() => {
   }
 })
 
-// Méthodes
-onMounted(async () => {
-  await loadInitialData()
-})
-
 async function loadInitialData() {
   try {
     // Charger le plan sélectionné
@@ -485,7 +511,7 @@ async function loadInitialData() {
     
   } catch (error) {
     console.error('Erreur lors du chargement:', error)
-    checkoutError.value = 'Erreur lors du chargement des données'
+    checkoutError.value = t('checkoutFlow.errorLoading')
   }
 }
 
@@ -495,7 +521,7 @@ async function loadSelectedPlan() {
     selectedPlan.value = response.data
   } catch (error) {
     console.error('Erreur lors du chargement du plan:', error)
-    checkoutError.value = 'Plan non trouvé'
+    checkoutError.value = t('checkoutFlow.planNotFound')
   }
 }
 
@@ -529,7 +555,7 @@ async function addBillingAddress(addressData: any) {
     showAddressModal.value = false
   } catch (error) {
     console.error('Erreur lors de l\'ajout de l\'adresse:', error)
-    checkoutError.value = 'Erreur lors de l\'ajout de l\'adresse'
+    checkoutError.value = t('checkoutFlow.errorAddingAddress')
   } finally {
     isAddingAddress.value = false
   }
@@ -549,7 +575,7 @@ async function validateCoupon() {
     validatedCoupon.value = response.data
   } catch (error) {
     console.error('Erreur validation coupon:', error)
-    checkoutError.value = 'Code promo invalide'
+    checkoutError.value = t('checkoutFlow.invalidCoupon')
   } finally {
     isValidatingCoupon.value = false
   }
@@ -623,7 +649,7 @@ async function processCheckout() {
 
   } catch (error) {
     console.error('Erreur lors du checkout:', error)
-    checkoutError.value = 'Erreur lors du traitement du paiement'
+    checkoutError.value = t('checkoutFlow.errorProcessing')
   } finally {
     isProcessing.value = false
   }

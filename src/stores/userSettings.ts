@@ -71,7 +71,8 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
             localization: {
                 title: "Localization",
                 preferredLanguage: "Preferred Language",
-                timezone: "Timezone"
+                timezone: "Timezone",
+                timezonePlaceholder: "UTC"
             },
             ui: {
                 title: "User Interface",
@@ -96,7 +97,12 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
                 confirmPassword: "Confirm New Password",
                 passwordChanged: "Password changed successfully",
                 passwordMismatch: "Passwords do not match",
-                passwordWeak: "Password is too weak"
+                passwordWeak: "Password is too weak",
+                yes: "Yes",
+                no: "No",
+                never: "Never",
+                changing: "Changing...",
+                errorChangingPassword: "Error changing password"
             },
             themes: {
                 light: "Light",
@@ -109,7 +115,10 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
             },
             saveSuccess: "Settings saved successfully",
             saveError: "Error saving settings",
-            loadError: "Error loading settings"
+            loadError: "Error loading settings",
+            loading: "Loading...",
+            saving: "Saving...",
+            unknown: "Unknown"
         }
     })
 
@@ -132,7 +141,8 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
             localization: {
                 title: "Localisation",
                 preferredLanguage: "Langue Préférée",
-                timezone: "Fuseau Horaire"
+                timezone: "Fuseau Horaire",
+                timezonePlaceholder: "UTC"
             },
             ui: {
                 title: "Interface Utilisateur",
@@ -157,7 +167,12 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
                 confirmPassword: "Confirmer le Nouveau Mot de Passe",
                 passwordChanged: "Mot de passe modifié avec succès",
                 passwordMismatch: "Les mots de passe ne correspondent pas",
-                passwordWeak: "Le mot de passe est trop faible"
+                passwordWeak: "Le mot de passe est trop faible",
+                yes: "Oui",
+                no: "Non",
+                never: "Jamais",
+                changing: "Modification...",
+                errorChangingPassword: "Erreur lors du changement de mot de passe"
             },
             themes: {
                 light: "Clair",
@@ -170,7 +185,10 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
             },
             saveSuccess: "Paramètres enregistrés avec succès",
             saveError: "Erreur lors de l'enregistrement des paramètres",
-            loadError: "Erreur lors du chargement des paramètres"
+            loadError: "Erreur lors du chargement des paramètres",
+            loading: "Chargement...",
+            saving: "Enregistrement...",
+            unknown: "Inconnu"
         }
     })
 

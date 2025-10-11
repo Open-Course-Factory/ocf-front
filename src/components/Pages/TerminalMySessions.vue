@@ -24,58 +24,58 @@
 <template>
   <div class="my-sessions-page">
     <div class="page-header">
-      <h2>Mes Sessions Terminal</h2>
+      <h2>{{ t('terminalMySessions.title') }}</h2>
       <div class="sync-info" v-if="lastSyncTime">
         <small class="text-muted">
           <i class="fas fa-sync"></i>
-          Dernière sync: {{ formatSyncTime(lastSyncTime) }}
+          {{ t('terminalMySessions.lastSync') }}: {{ formatSyncTime(lastSyncTime) }}
         </small>
       </div>
     </div>
 
     <div class="sessions-section">
       <div class="section-header">
-        <h3>Sessions Actives ({{ activeSessionsCount }})</h3>
+        <h3>{{ t('terminalMySessions.activeSessions') }} ({{ activeSessionsCount }})</h3>
         <div class="header-actions">
           <!-- Bouton de synchronisation globale -->
           <button
             class="btn btn-info"
             @click="syncAllSessions"
             :disabled="isSyncing"
-            title="Synchroniser toutes les sessions avec l'API Terminal Trainer"
+            :title="t('terminalMySessions.tooltipSyncAll')"
           >
             <i :class="isSyncing ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'"></i>
-            {{ isSyncing ? 'Synchronisation...' : 'Tout synchroniser' }}
+            {{ isSyncing ? t('terminalMySessions.buttonSyncing') : t('terminalMySessions.buttonSync') }}
           </button>
           <button class="btn btn-secondary" @click="loadSessions">
             <i class="fas fa-sync" :class="{ 'fa-spin': isLoading }"></i>
-            Actualiser
+            {{ t('terminalMySessions.buttonRefresh') }}
           </button>
           <router-link to="/terminal-creation" class="btn btn-primary">
             <i class="fas fa-plus"></i>
-            Nouvelle Session
+            {{ t('terminalMySessions.buttonNewSession') }}
           </router-link>
           <!-- Bouton global pour masquer toutes les sessions inactives -->
           <button
             class="btn btn-warning"
             @click="hideAllInactiveSessions"
             :disabled="inactiveSessionsCount === 0"
-            title="Masquer toutes les sessions inactives"
+            :title="t('terminalMySessions.tooltipHideAll')"
           >
             <i class="fas fa-eye-slash"></i>
-            Masquer toutes les inactives
+            {{ t('terminalMySessions.buttonHideAllInactive') }}
           </button>
         </div>
       </div>
 
       <div v-if="isLoading && sessions.length === 0" class="loading-section">
-        <i class="fas fa-spinner fa-spin"></i> Chargement des sessions...
+        <i class="fas fa-spinner fa-spin"></i> {{ t('terminalMySessions.loadingSessions') }}
       </div>
 
       <div v-else-if="error" class="alert alert-danger">
         {{ error }}
         <button class="btn btn-sm btn-outline-danger" @click="error = ''; loadSessions()">
-          Réessayer
+          {{ t('terminalMySessions.errorRetry') }}
         </button>
       </div>
 
@@ -87,7 +87,7 @@
             class="sessions-separator"
           >
             <div class="separator-line"></div>
-            <span class="separator-label">Sessions Inactives</span>
+            <span class="separator-label">{{ t('terminalMySessions.inactiveSessions') }}</span>
             <div class="separator-line"></div>
           </div>
 
@@ -155,15 +155,15 @@
               <div v-if="getSyncResultForSession(session.session_id)" class="sync-indicator">
                 <span v-if="getSyncResultForSession(session.session_id).updated"
                       class="sync-badge updated"
-                      title="Statut mis à jour par la synchronisation">
+                      :title="t('terminalMySessions.synchronized')">
                   <i class="fas fa-arrow-up"></i>
-                  Synchronisé
+                  {{ t('terminalMySessions.synchronized') }}
                 </span>
                 <span v-else
                       class="sync-badge current"
-                      title="Statut à jour">
+                      :title="t('terminalMySessions.upToDate')">
                   <i class="fas fa-check"></i>
-                  À jour
+                  {{ t('terminalMySessions.upToDate') }}
                 </span>
               </div>
             </div>
@@ -172,30 +172,30 @@
           <div class="card-body">
             <div class="session-details">
               <div class="detail-row">
-                <span class="label">Terminal ID:</span>
+                <span class="label">{{ t('terminalMySessions.terminalId') }}:</span>
                 <span class="value">{{ session.id }}</span>
               </div>
               <div class="detail-row">
-                <span class="label">Session ID:</span>
+                <span class="label">{{ t('terminalMySessions.sessionId') }}:</span>
                 <span class="value">{{ session.session_id }}</span>
               </div>
               <div class="detail-row" v-if="session.created_at">
-                <span class="label">Créée le:</span>
+                <span class="label">{{ t('terminalMySessions.createdAt') }}:</span>
                 <span class="value">{{ formatDate(session.created_at) }}</span>
               </div>
               <div class="detail-row" v-if="session.expires_at">
-                <span class="label">Expire le:</span>
+                <span class="label">{{ t('terminalMySessions.expiresAt') }}:</span>
                 <span class="value">{{ formatDate(session.expires_at) }}</span>
               </div>
               <div class="detail-row" v-if="session.user_id">
-                <span class="label">Utilisateur:</span>
+                <span class="label">{{ t('terminalMySessions.userId') }}:</span>
                 <span class="value">{{ session.user_id }}</span>
               </div>
               <div class="detail-row" v-if="session.instance_type">
-                <span class="label">Type d'instance:</span>
+                <span class="label">{{ t('terminalMySessions.instanceType') }}:</span>
                 <span class="value instance-type">
                   {{ getInstanceName(session.instance_type) }}
-                  <i class="fas fa-server" title="Instance type"></i>
+                  <i class="fas fa-server" :title="t('terminalMySessions.instanceType')"></i>
                 </span>
               </div>
             </div>
@@ -203,19 +203,19 @@
             <div v-if="getSyncResultForSession(session.session_id)" class="sync-details">
               <h6 class="sync-title">
                 <i class="fas fa-sync-alt"></i>
-                Dernière synchronisation
+                {{ t('terminalMySessions.lastSynchronization') }}
               </h6>
               <div class="sync-info-grid">
                 <div class="sync-info-item">
-                  <span class="label">Statut précédent:</span>
+                  <span class="label">{{ t('terminalMySessions.previousStatus') }}:</span>
                   <span class="value">{{ getSyncResultForSession(session.session_id).previous_status }}</span>
                 </div>
                 <div class="sync-info-item">
-                  <span class="label">Statut actuel:</span>
+                  <span class="label">{{ t('terminalMySessions.currentStatus') }}:</span>
                   <span class="value">{{ getSyncResultForSession(session.session_id).current_status }}</span>
                 </div>
                 <div class="sync-info-item">
-                  <span class="label">Heure de sync:</span>
+                  <span class="label">{{ t('terminalMySessions.syncTime') }}:</span>
                   <span class="value">{{ formatSyncTime(getSyncResultForSession(session.session_id).last_sync_at) }}</span>
                 </div>
               </div>
@@ -225,7 +225,7 @@
             <div class="iframe-section" v-if="session.status === 'active'">
               <h6 class="iframe-title">
                 <i class="fas fa-external-link-alt"></i>
-                Accès Terminal
+                {{ t('terminalMySessions.terminalAccess') }}
               </h6>
 
               <div class="iframe-controls">
@@ -239,7 +239,7 @@
                   <button
                     class="btn btn-outline-secondary btn-sm"
                     @click="copyUrlToClipboard(session.session_id)"
-                    :title="'Copier le lien'"
+                    :title="t('terminalMySessions.copyLink')"
                   >
                     <i :class="copiedSessions.has(session.session_id) ? 'fas fa-check' : 'fas fa-copy'"></i>
                   </button>
@@ -251,7 +251,7 @@
                     @click="openTerminalInNewTab(session.session_id)"
                   >
                     <i class="fas fa-external-link-alt"></i>
-                    Ouvrir
+                    {{ t('terminalMySessions.buttonOpen') }}
                   </button>
 
                   <button
@@ -259,13 +259,13 @@
                     @click="toggleIframePreview(session.session_id)"
                   >
                     <i :class="showPreviews.has(session.session_id) ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-                    {{ showPreviews.has(session.session_id) ? 'Masquer' : 'Aperçu' }}
+                    {{ showPreviews.has(session.session_id) ? t('terminalMySessions.buttonHide') : t('terminalMySessions.buttonShow') }}
                   </button>
 
                   <button
                     class="btn btn-warning btn-sm"
                     @click="copyIframeCode(session.session_id)"
-                    :title="'Copier le code iframe'"
+                    :title="t('terminalMySessions.iframeCodeTitle')"
                   >
                     <i :class="copiedIframes.has(session.session_id) ? 'fas fa-check' : 'fas fa-code'"></i>
                     iframe
@@ -286,7 +286,7 @@
                 </div>
                 <p class="iframe-info">
                   <i class="fas fa-info-circle"></i>
-                  Aperçu du terminal intégrable - Taille: 100% x 300px
+                  {{ t('terminalMySessions.iframePreviewInfo') }}
                 </p>
               </div>
             </div>
@@ -297,28 +297,28 @@
               v-if="!isTerminalInactive(session.status)"
               class="btn btn-info btn-sm"
               @click="syncSession(session.session_id)"
-              title="Synchroniser cette session avec l'API Terminal Trainer"
+              :title="t('terminalMySessions.tooltipSync')"
             >
               <i class="fas fa-sync-alt"></i>
-              Sync
+              {{ t('terminalMySessions.buttonSyncSession') }}
             </button>
             <button
               v-if="!isTerminalInactive(session.status)"
               class="btn btn-success btn-sm"
               @click="openSharingModal(session.session_id)"
-              title="Partager ce terminal"
+              :title="t('terminalMySessions.tooltipShare')"
             >
               <i class="fas fa-share-alt"></i>
-              Partager
+              {{ t('terminalMySessions.buttonShare') }}
             </button>
             <button
               v-if="!isTerminalInactive(session.status)"
               class="btn btn-warning btn-sm"
               @click="openAccessModal(session.session_id)"
-              title="Gérer les accès"
+              :title="t('terminalMySessions.tooltipAccess')"
             >
               <i class="fas fa-users-cog"></i>
-              Accès
+              {{ t('terminalMySessions.buttonAccess') }}
             </button>
             <button
               v-if="session.status === 'active'"
@@ -326,16 +326,16 @@
               @click="stopSession(session.session_id)"
             >
               <i class="fas fa-stop"></i>
-              Arrêter
+              {{ t('terminalMySessions.buttonStop') }}
             </button>
             <button
               v-if="isTerminalInactive(session.status)"
               class="btn btn-warning btn-sm"
               @click="discardTerminal(session.id)"
-              title="Masquer cette session inactive"
+              :title="t('terminalMySessions.tooltipHide')"
             >
               <i class="fas fa-eye-slash"></i>
-              Masquer
+              {{ t('terminalMySessions.buttonHideSession') }}
             </button>
           </div>
           </div>
@@ -344,11 +344,11 @@
 
       <div v-else class="empty-section">
         <i class="fas fa-terminal fa-3x"></i>
-        <h4>Aucune session active</h4>
-        <p>Vous n'avez aucune session terminal active pour le moment.</p>
+        <h4>{{ t('terminalMySessions.noActiveSessions') }}</h4>
+        <p>{{ t('terminalMySessions.noActiveSessionsDesc') }}</p>
         <router-link to="/terminal-creation" class="btn btn-primary">
           <i class="fas fa-plus"></i>
-          Créer une nouvelle session
+          {{ t('terminalMySessions.createNewSession') }}
         </router-link>
       </div>
     </div>
@@ -357,13 +357,13 @@
     <div v-if="showIframeModal" class="modal-overlay" @click="showIframeModal = false">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h3>Code d'intégration iframe</h3>
+          <h3>{{ t('terminalMySessions.iframeCodeTitle') }}</h3>
           <button class="modal-close" @click="showIframeModal = false">
             <i class="fas fa-times"></i>
           </button>
         </div>
         <div class="modal-body">
-          <p>Copiez ce code pour intégrer le terminal dans votre page :</p>
+          <p>{{ t('terminalMySessions.iframeCodeDesc') }}</p>
           <textarea
             :value="currentIframeCode"
             readonly
@@ -374,11 +374,11 @@
           <div class="modal-actions">
             <button class="btn btn-primary" @click="copyIframeCodeToClipboard">
               <i class="fas fa-copy"></i>
-              Copier le code
+              {{ t('terminalMySessions.buttonCopyCode') }}
             </button>
             <button class="btn btn-secondary" @click="showIframeModal = false">
               <i class="fas fa-times"></i>
-              Fermer
+              {{ t('terminalMySessions.buttonClose') }}
             </button>
           </div>
         </div>
@@ -391,7 +391,7 @@
         <div class="modal-header">
           <h3>
             <i class="fas fa-sync-alt"></i>
-            Résultats de la synchronisation
+            {{ t('terminalMySessions.syncResultsTitle') }}
           </h3>
           <button class="modal-close" @click="showSyncModal = false">
             <i class="fas fa-times"></i>
@@ -400,25 +400,25 @@
         <div class="modal-body" v-if="syncAllResults">
           <div class="sync-summary">
             <div class="summary-item">
-              <span class="label">Sessions totales:</span>
+              <span class="label">{{ t('terminalMySessions.totalSessions') }}:</span>
               <span class="value">{{ syncAllResults.total_sessions }}</span>
             </div>
             <div class="summary-item">
-              <span class="label">Sessions synchronisées:</span>
+              <span class="label">{{ t('terminalMySessions.syncedSessions') }}:</span>
               <span class="value">{{ syncAllResults.synced_sessions }}</span>
             </div>
             <div class="summary-item">
-              <span class="label">Sessions mises à jour:</span>
+              <span class="label">{{ t('terminalMySessions.updatedSessions') }}:</span>
               <span class="value">{{ syncAllResults.updated_sessions || 0 }}</span>
             </div>
             <div class="summary-item" v-if="syncAllResults.error_count > 0">
-              <span class="label">Erreurs:</span>
+              <span class="label">{{ t('terminalMySessions.errors') }}:</span>
               <span class="value text-danger">{{ syncAllResults.error_count }}</span>
             </div>
           </div>
 
           <div v-if="syncAllResults.errors && syncAllResults.errors.length > 0" class="sync-errors">
-            <h4>Erreurs rencontrées:</h4>
+            <h4>{{ t('terminalMySessions.encounterededErrors') }}</h4>
             <ul>
               <li v-for="error in syncAllResults.errors" :key="error" class="text-danger">
                 {{ error }}
@@ -429,7 +429,7 @@
           <div class="modal-actions">
             <button class="btn btn-primary" @click="showSyncModal = false">
               <i class="fas fa-check"></i>
-              OK
+              {{ t('terminalMySessions.buttonOK') }}
             </button>
           </div>
         </div>
@@ -463,7 +463,8 @@ import { useI18n } from 'vue-i18n'
 import Button from '../UI/Button.vue'
 
 const { showConfirm } = useNotification()
-const { t } = useI18n()
+const i18n = useI18n()
+const { t } = i18n
 
 // Import dynamique des composants
 const TerminalSharingModal = defineAsyncComponent(() => import('../Terminal/TerminalSharingModal.vue'))
@@ -534,6 +535,144 @@ const sortedSessions = computed(() => {
 
 onMounted(() => {
   console.log('MySessions mounted')
+
+  // Add translations
+  i18n.mergeLocaleMessage('en', {
+    terminalMySessions: {
+      title: 'My Terminal Sessions',
+      lastSync: 'Last sync',
+      activeSessions: 'Active Sessions',
+      inactiveSessions: 'Inactive Sessions',
+      buttonSync: 'Sync All',
+      buttonSyncing: 'Syncing...',
+      buttonRefresh: 'Refresh',
+      buttonNewSession: 'New Session',
+      buttonHideAllInactive: 'Hide All Inactive',
+      loadingSessions: 'Loading sessions...',
+      errorRetry: 'Retry',
+      synchronized: 'Synchronized',
+      upToDate: 'Up to date',
+      terminalId: 'Terminal ID',
+      sessionId: 'Session ID',
+      createdAt: 'Created on',
+      expiresAt: 'Expires on',
+      userId: 'User',
+      instanceType: 'Instance type',
+      lastSynchronization: 'Last synchronization',
+      previousStatus: 'Previous status',
+      currentStatus: 'Current status',
+      syncTime: 'Sync time',
+      terminalAccess: 'Terminal Access',
+      copyLink: 'Copy link',
+      buttonOpen: 'Open',
+      buttonHide: 'Hide',
+      buttonShow: 'Show',
+      preview: 'Preview',
+      iframePreviewInfo: 'Embeddable terminal preview - Size: 100% x 300px',
+      buttonSyncSession: 'Sync',
+      buttonShare: 'Share',
+      buttonAccess: 'Access',
+      buttonStop: 'Stop',
+      buttonHideSession: 'Hide',
+      tooltipSync: 'Sync this session with the Terminal Trainer API',
+      tooltipSyncAll: 'Sync all sessions with the Terminal Trainer API',
+      tooltipShare: 'Share this terminal',
+      tooltipAccess: 'Manage access',
+      tooltipHide: 'Hide this inactive session',
+      tooltipHideAll: 'Hide all inactive sessions',
+      noActiveSessions: 'No active sessions',
+      noActiveSessionsDesc: 'You have no active terminal sessions at the moment.',
+      createNewSession: 'Create a new session',
+      iframeCodeTitle: 'iframe integration code',
+      iframeCodeDesc: 'Copy this code to embed the terminal in your page:',
+      buttonCopyCode: 'Copy code',
+      buttonClose: 'Close',
+      syncResultsTitle: 'Synchronization Results',
+      totalSessions: 'Total sessions',
+      syncedSessions: 'Synced sessions',
+      updatedSessions: 'Updated sessions',
+      errors: 'Errors',
+      encounterededErrors: 'Encountered errors:',
+      buttonOK: 'OK',
+      confirmHide: 'Are you sure you want to hide this inactive session?',
+      confirmHideTitle: 'Hide session',
+      confirmHideAll: 'Are you sure you want to hide all inactive sessions ({count})?',
+      confirmHideAllTitle: 'Hide all inactive sessions',
+      errorHiding: 'Error hiding the terminal',
+      errorHidingAll: 'Error hiding inactive terminals',
+      errorLoading: 'Error loading sessions',
+      errorStopping: 'Error stopping the session'
+    }
+  })
+
+  i18n.mergeLocaleMessage('fr', {
+    terminalMySessions: {
+      title: 'Mes Sessions Terminal',
+      lastSync: 'Dernière sync',
+      activeSessions: 'Sessions Actives',
+      inactiveSessions: 'Sessions Inactives',
+      buttonSync: 'Tout synchroniser',
+      buttonSyncing: 'Synchronisation...',
+      buttonRefresh: 'Actualiser',
+      buttonNewSession: 'Nouvelle Session',
+      buttonHideAllInactive: 'Masquer toutes les inactives',
+      loadingSessions: 'Chargement des sessions...',
+      errorRetry: 'Réessayer',
+      synchronized: 'Synchronisé',
+      upToDate: 'À jour',
+      terminalId: 'Terminal ID',
+      sessionId: 'Session ID',
+      createdAt: 'Créée le',
+      expiresAt: 'Expire le',
+      userId: 'Utilisateur',
+      instanceType: 'Type d\'instance',
+      lastSynchronization: 'Dernière synchronisation',
+      previousStatus: 'Statut précédent',
+      currentStatus: 'Statut actuel',
+      syncTime: 'Heure de sync',
+      terminalAccess: 'Accès Terminal',
+      copyLink: 'Copier le lien',
+      buttonOpen: 'Ouvrir',
+      buttonHide: 'Masquer',
+      buttonShow: 'Aperçu',
+      preview: 'Aperçu',
+      iframePreviewInfo: 'Aperçu du terminal intégrable - Taille: 100% x 300px',
+      buttonSyncSession: 'Sync',
+      buttonShare: 'Partager',
+      buttonAccess: 'Accès',
+      buttonStop: 'Arrêter',
+      buttonHideSession: 'Masquer',
+      tooltipSync: 'Synchroniser cette session avec l\'API Terminal Trainer',
+      tooltipSyncAll: 'Synchroniser toutes les sessions avec l\'API Terminal Trainer',
+      tooltipShare: 'Partager ce terminal',
+      tooltipAccess: 'Gérer les accès',
+      tooltipHide: 'Masquer cette session inactive',
+      tooltipHideAll: 'Masquer toutes les sessions inactives',
+      noActiveSessions: 'Aucune session active',
+      noActiveSessionsDesc: 'Vous n\'avez aucune session terminal active pour le moment.',
+      createNewSession: 'Créer une nouvelle session',
+      iframeCodeTitle: 'Code d\'intégration iframe',
+      iframeCodeDesc: 'Copiez ce code pour intégrer le terminal dans votre page :',
+      buttonCopyCode: 'Copier le code',
+      buttonClose: 'Fermer',
+      syncResultsTitle: 'Résultats de la synchronisation',
+      totalSessions: 'Sessions totales',
+      syncedSessions: 'Sessions synchronisées',
+      updatedSessions: 'Sessions mises à jour',
+      errors: 'Erreurs',
+      encounterededErrors: 'Erreurs rencontrées:',
+      buttonOK: 'OK',
+      confirmHide: 'Êtes-vous sûr de vouloir masquer cette session inactive ?',
+      confirmHideTitle: 'Masquer la session',
+      confirmHideAll: 'Êtes-vous sûr de vouloir masquer toutes les sessions inactives ({count}) ?',
+      confirmHideAllTitle: 'Masquer toutes les sessions inactives',
+      errorHiding: 'Erreur lors du masquage du terminal',
+      errorHidingAll: 'Erreur lors du masquage des terminaux inactifs',
+      errorLoading: 'Erreur lors du chargement des sessions',
+      errorStopping: 'Erreur lors de l\'arrêt de la session'
+    }
+  })
+
   loadSessions()
   loadInstanceTypes()
 
@@ -559,7 +698,7 @@ async function loadSessions() {
     console.log('Sessions loaded:', sessions.value)
   } catch (err: any) {
     console.error('Erreur lors du chargement des sessions:', err)
-    error.value = err.response?.data?.error_message || 'Erreur lors du chargement des sessions'
+    error.value = err.response?.data?.error_message || t('terminalMySessions.errorLoading')
     sessions.value = []
   } finally {
     isLoading.value = false
@@ -579,7 +718,7 @@ async function stopSession(sessionId: string) {
     console.log('Session stopped successfully')
   } catch (err: any) {
     console.error('Erreur lors de l\'arrêt:', err)
-    error.value = err.response?.data?.error_message || 'Erreur lors de l\'arrêt de la session'
+    error.value = err.response?.data?.error_message || t('terminalMySessions.errorStopping')
   }
 }
 
@@ -827,8 +966,8 @@ function closeAccessModal() {
 
 async function discardTerminal(terminalId: string) {
   const confirmed = await showConfirm(
-    'Êtes-vous sûr de vouloir masquer cette session inactive ?',
-    'Masquer la session'
+    t('terminalMySessions.confirmHide'),
+    t('terminalMySessions.confirmHideTitle')
   )
   if (!confirmed) {
     return
@@ -843,7 +982,7 @@ async function discardTerminal(terminalId: string) {
     console.log('Terminal successfully hidden:', terminalId)
   } catch (err: any) {
     console.error('Erreur lors du masquage du terminal:', err)
-    error.value = err.response?.data?.error_message || 'Erreur lors du masquage du terminal'
+    error.value = err.response?.data?.error_message || t('terminalMySessions.errorHiding')
   }
 }
 
@@ -852,8 +991,8 @@ async function hideAllInactiveSessions() {
   if (inactive.length === 0) return
 
   const confirmed = await showConfirm(
-    `Êtes-vous sûr de vouloir masquer toutes les sessions inactives (${inactive.length}) ?`,
-    'Masquer toutes les sessions inactives'
+    t('terminalMySessions.confirmHideAll').replace('{count}', inactive.length.toString()),
+    t('terminalMySessions.confirmHideAllTitle')
   )
   if (!confirmed) return
 
@@ -866,7 +1005,7 @@ async function hideAllInactiveSessions() {
     console.log('All inactive terminals successfully hidden')
   } catch (err: any) {
     console.error('Erreur lors du masquage global:', err)
-    error.value = err.response?.data?.error_message || 'Erreur lors du masquage des terminaux inactifs'
+    error.value = err.response?.data?.error_message || t('terminalMySessions.errorHidingAll')
   }
 }
 </script>

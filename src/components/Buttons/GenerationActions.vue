@@ -80,10 +80,10 @@
     <!-- Modal pour les erreurs -->
     <Modal :visible="showErrorModal" @close="showErrorModal = false">
       <div>
-        <h3><i class="fas fa-exclamation-triangle text-warning"></i> Erreur</h3>
+        <h3><i class="fas fa-exclamation-triangle text-warning"></i> {{ t('generationActions.error') }}</h3>
         <p>{{ errorMessage }}</p>
         <div v-if="entity.error_message" class="error-details">
-          <h4>Détails de l'erreur :</h4>
+          <h4>{{ t('generationActions.errorDetails') }}</h4>
           <pre>{{ entity.error_message }}</pre>
         </div>
       </div>
@@ -102,8 +102,37 @@ const props = defineProps<{
   entity: any;
 }>();
 
-const { t } = useI18n();
+const i18n = useI18n();
+const { t } = i18n;
 const generationsStore = useGenerationsStore();
+
+// Add translations in onMounted
+onMounted(() => {
+  i18n.mergeLocaleMessage('en', {
+    generationActions: {
+      error: 'Error',
+      errorDetails: 'Error details:',
+      statusCheckError: 'Unable to check generation status',
+      downloadError: 'Unable to download generated files',
+      retryError: 'Unable to restart generation'
+    }
+  });
+
+  i18n.mergeLocaleMessage('fr', {
+    generationActions: {
+      error: 'Erreur',
+      errorDetails: 'Détails de l\'erreur :',
+      statusCheckError: 'Impossible de vérifier le statut de la génération',
+      downloadError: 'Impossible de télécharger les fichiers générés',
+      retryError: 'Impossible de relancer la génération'
+    }
+  });
+
+  // Start polling if generation is in progress
+  if (['connecting', 'waiting', 'pending'].includes(props.entity.status?.toLowerCase())) {
+    generationsStore.startStatusPolling(props.entity.id);
+  }
+});
 
 const isChecking = ref(false);
 const isDownloading = ref(false);
@@ -177,7 +206,7 @@ const checkStatus = async () => {
     await generationsStore.checkGenerationStatus(props.entity.id);
   } catch (error) {
     console.error('Erreur lors de la vérification du statut:', error);
-    errorMessage.value = 'Impossible de vérifier le statut de la génération';
+    errorMessage.value = t('generationActions.statusCheckError');
     showErrorModal.value = true;
   } finally {
     isChecking.value = false;
@@ -206,7 +235,7 @@ const downloadResults = async () => {
     window.URL.revokeObjectURL(url);
   } catch (error) {
     console.error('Erreur lors du téléchargement:', error);
-    errorMessage.value = 'Impossible de télécharger les fichiers générés';
+    errorMessage.value = t('generationActions.downloadError');
     showErrorModal.value = true;
   } finally {
     isDownloading.value = false;
@@ -224,20 +253,12 @@ const retryGeneration = async () => {
     }
   } catch (error) {
     console.error('Erreur lors du retry:', error);
-    errorMessage.value = 'Impossible de relancer la génération';
+    errorMessage.value = t('generationActions.retryError');
     showErrorModal.value = true;
   } finally {
     isRetrying.value = false;
   }
 };
-
-// Lifecycle
-onMounted(() => {
-  // Démarrer le polling si la génération est en cours
-  if (['connecting', 'waiting', 'pending'].includes(props.entity.status?.toLowerCase())) {
-    generationsStore.startStatusPolling(props.entity.id);
-  }
-});
 
 onUnmounted(() => {
   // Arrêter le polling quand le composant est détruit

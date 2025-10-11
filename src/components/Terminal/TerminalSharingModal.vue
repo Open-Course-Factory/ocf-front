@@ -11,7 +11,7 @@
       <div class="modal-header">
         <h3>
           <i class="fas fa-share-alt"></i>
-          Partager le Terminal
+          {{ t('terminalSharing.title') }}
         </h3>
         <button class="modal-close" @click="closeModal">
           <i class="fas fa-times"></i>
@@ -20,24 +20,24 @@
 
       <div class="modal-body">
         <div v-if="terminalInfo" class="terminal-info">
-          <h4>Terminal: {{ terminalInfo.terminal.session_id }}</h4>
+          <h4>{{ t('terminalSharing.terminalLabel') }}: {{ terminalInfo.terminal.session_id }}</h4>
           <p class="text-muted">
             <i class="fas fa-server"></i>
-            Instance: {{ terminalInfo.terminal.instance_type }} |
-            Statut: <span :class="getStatusClass(terminalInfo.terminal.status)">{{ terminalInfo.terminal.status }}</span>
+            {{ t('terminalSharing.instance') }}: {{ terminalInfo.terminal.instance_type }} |
+            {{ t('terminalSharing.status') }}: <span :class="getStatusClass(terminalInfo.terminal.status)">{{ terminalInfo.terminal.status }}</span>
           </p>
         </div>
 
         <form @submit.prevent="shareTerminal" class="sharing-form">
           <div class="form-group">
-            <label for="userSearch">{{ t('terminals.userToAdd') }}</label>
+            <label for="userSearch">{{ t('terminalSharing.userToAdd') }}</label>
             <div class="user-search-container">
               <input
                 id="userSearch"
                 v-model="userSearchQuery"
                 type="text"
                 class="form-control"
-                :placeholder="t('terminals.searchPlaceholder')"
+                :placeholder="t('terminalSharing.searchPlaceholder')"
                 @input="onSearchInput"
                 @focus="showSearchDropdown = true"
                 @blur="onSearchBlur"
@@ -46,10 +46,10 @@
               <div v-if="showSearchDropdown && (searchResults.length > 0 || isSearching)" class="search-dropdown">
                 <div v-if="isSearching" class="search-loading">
                   <i class="fas fa-spinner fa-spin"></i>
-                  {{ t('terminals.searchInProgress') }}
+                  {{ t('terminalSharing.searchInProgress') }}
                 </div>
                 <div v-else-if="searchResults.length === 0 && userSearchQuery.trim()" class="search-empty">
-                  Aucun utilisateur trouvé
+                  {{ t('terminalSharing.noUserFound') }}
                 </div>
                 <div
                   v-for="user in searchResults"
@@ -65,29 +65,29 @@
               </div>
             </div>
             <small class="form-text text-muted">
-              Recherchez et sélectionnez l'utilisateur avec qui partager ce terminal.
+              {{ t('terminalSharing.userSearchHelp') }}
             </small>
           </div>
 
           <div class="form-group">
-            <label for="accessLevel">{{ t('terminals.accessLevel') }}</label>
+            <label for="accessLevel">{{ t('terminalSharing.accessLevel') }}</label>
             <select
               id="accessLevel"
               v-model="shareData.access_level"
               class="form-control"
               required
             >
-              <option value="read">{{ t('terminals.readAccess') }}</option>
-              <option value="write">{{ t('terminals.writeAccess') }}</option>
-              <option value="admin">{{ t('terminals.adminAccess') }}</option>
+              <option value="read">{{ t('terminalSharing.readAccess') }}</option>
+              <option value="write">{{ t('terminalSharing.writeAccess') }}</option>
+              <option value="admin">{{ t('terminalSharing.adminAccess') }}</option>
             </select>
             <small class="form-text text-muted">
-              Sélectionnez le niveau d'autorisation pour cet utilisateur.
+              {{ t('terminalSharing.accessLevelHelp') }}
             </small>
           </div>
 
           <div class="form-group">
-            <label for="expiresAt">{{ t('terminals.expirationDate') }}</label>
+            <label for="expiresAt">{{ t('terminalSharing.expirationDate') }}</label>
             <input
               id="expiresAt"
               v-model="shareData.expires_at"
@@ -95,7 +95,7 @@
               class="form-control"
             />
             <small class="form-text text-muted">
-              Laissez vide pour un accès permanent (jusqu'à l'arrêt du terminal).
+              {{ t('terminalSharing.expirationHelp') }}
             </small>
           </div>
 
@@ -103,11 +103,11 @@
             <button type="submit" class="btn btn-primary" :disabled="isSharing">
               <i v-if="isSharing" class="fas fa-spinner fa-spin"></i>
               <i v-else class="fas fa-share-alt"></i>
-              {{ isSharing ? 'Partage...' : 'Partager' }}
+              {{ isSharing ? t('terminalSharing.buttonSharing') : t('terminalSharing.buttonShare') }}
             </button>
             <button type="button" class="btn btn-secondary" @click="closeModal" :disabled="isSharing">
               <i class="fas fa-times"></i>
-              Annuler
+              {{ t('terminalSharing.buttonCancel') }}
             </button>
           </div>
         </form>
@@ -127,12 +127,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { terminalService, type ShareTerminalRequest, type SharedTerminalInfo } from '../../services/terminalService'
 import { userService, type User } from '../../services/userService'
 
-const { t } = useI18n()
+const i18n = useI18n()
+const { t } = i18n
 
 interface Props {
   show: boolean
@@ -160,6 +161,63 @@ const searchResults = ref<User[]>([])
 const isSearching = ref(false)
 const showSearchDropdown = ref(false)
 
+onMounted(() => {
+  // Add translations
+  i18n.mergeLocaleMessage('en', {
+    terminalSharing: {
+      title: 'Share Terminal',
+      terminalLabel: 'Terminal',
+      instance: 'Instance',
+      status: 'Status',
+      userToAdd: 'User to Add',
+      searchPlaceholder: 'Search by name or email...',
+      searchInProgress: 'Searching...',
+      noUserFound: 'No user found',
+      userSearchHelp: 'Search and select the user to share this terminal with.',
+      accessLevel: 'Access Level',
+      readAccess: 'Read (View only)',
+      writeAccess: 'Write (Can execute commands)',
+      adminAccess: 'Admin (Full control)',
+      accessLevelHelp: 'Select the permission level for this user.',
+      expirationDate: 'Expiration Date (Optional)',
+      expirationHelp: 'Leave empty for permanent access (until terminal is stopped).',
+      buttonSharing: 'Sharing...',
+      buttonShare: 'Share',
+      buttonCancel: 'Cancel',
+      successMessage: 'Terminal successfully shared!',
+      errorLoading: 'Error loading terminal information',
+      errorSharing: 'Error sharing the terminal'
+    }
+  })
+
+  i18n.mergeLocaleMessage('fr', {
+    terminalSharing: {
+      title: 'Partager le Terminal',
+      terminalLabel: 'Terminal',
+      instance: 'Instance',
+      status: 'Statut',
+      userToAdd: 'Utilisateur à ajouter',
+      searchPlaceholder: 'Rechercher par nom ou email...',
+      searchInProgress: 'Recherche...',
+      noUserFound: 'Aucun utilisateur trouvé',
+      userSearchHelp: 'Recherchez et sélectionnez l\'utilisateur avec qui partager ce terminal.',
+      accessLevel: 'Niveau d\'accès',
+      readAccess: 'Lecture (Visualisation uniquement)',
+      writeAccess: 'Écriture (Peut exécuter des commandes)',
+      adminAccess: 'Admin (Contrôle total)',
+      accessLevelHelp: 'Sélectionnez le niveau d\'autorisation pour cet utilisateur.',
+      expirationDate: 'Date d\'expiration (Optionnel)',
+      expirationHelp: 'Laissez vide pour un accès permanent (jusqu\'à l\'arrêt du terminal).',
+      buttonSharing: 'Partage...',
+      buttonShare: 'Partager',
+      buttonCancel: 'Annuler',
+      successMessage: 'Terminal partagé avec succès!',
+      errorLoading: 'Erreur lors du chargement des informations du terminal',
+      errorSharing: 'Erreur lors du partage du terminal'
+    }
+  })
+})
+
 watch(() => props.show, async (newShow) => {
   if (newShow && props.terminalId) {
     await loadTerminalInfo()
@@ -174,7 +232,7 @@ async function loadTerminalInfo() {
     terminalInfo.value = await terminalService.getTerminalInfo(props.terminalId)
   } catch (err: any) {
     console.error('Error loading terminal info:', err)
-    error.value = err.response?.data?.error_message || 'Erreur lors du chargement des informations du terminal'
+    error.value = err.response?.data?.error_message || t('terminalSharing.errorLoading')
   }
 }
 
@@ -196,7 +254,7 @@ async function shareTerminal() {
     }
 
     await terminalService.shareTerminal(props.terminalId, requestData)
-    successMessage.value = 'Terminal partagé avec succès!'
+    successMessage.value = t('terminalSharing.successMessage')
     emit('shared', props.terminalId)
 
     // Show success message briefly before closing
@@ -205,7 +263,7 @@ async function shareTerminal() {
     }, 1500)
   } catch (err: any) {
     console.error('Error sharing terminal:', err)
-    error.value = err.response?.data?.error_message || 'Erreur lors du partage du terminal'
+    error.value = err.response?.data?.error_message || t('terminalSharing.errorSharing')
   } finally {
     isSharing.value = false
   }

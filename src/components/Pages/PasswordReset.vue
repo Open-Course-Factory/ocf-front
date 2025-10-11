@@ -3,14 +3,14 @@
     <div class="password-reset-form">
       <!-- Étape 1: Demande de reset -->
       <div v-if="step === 'request'" class="reset-request">
-        <h2>Réinitialiser le mot de passe</h2>
+        <h2>{{ t('passwordReset.requestTitle') }}</h2>
         <p class="text-muted">
-          Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.
+          {{ t('passwordReset.requestDescription') }}
         </p>
 
         <form @submit.prevent="handleRequestReset">
           <div class="form-group">
-            <label for="email">Adresse email</label>
+            <label for="email">{{ t('passwordReset.emailLabel') }}</label>
             <input
               type="email"
               id="email"
@@ -34,17 +34,17 @@
             :disabled="isLoading"
           >
             <span v-if="isLoading">
-              <i class="fas fa-spinner fa-spin"></i> Envoi en cours...
+              <i class="fas fa-spinner fa-spin"></i> {{ t('passwordReset.sending') }}
             </span>
             <span v-else>
-              <i class="fas fa-paper-plane"></i> Envoyer le lien
+              <i class="fas fa-paper-plane"></i> {{ t('passwordReset.sendLink') }}
             </span>
           </button>
         </form>
 
         <div class="back-to-login">
           <router-link to="/login">
-            <i class="fas fa-arrow-left"></i> Retour à la connexion
+            <i class="fas fa-arrow-left"></i> {{ t('passwordReset.backToLogin') }}
           </router-link>
         </div>
       </div>
@@ -54,45 +54,44 @@
         <div class="success-icon">
           <i class="fas fa-check-circle"></i>
         </div>
-        <h2>Email envoyé !</h2>
+        <h2>{{ t('passwordReset.emailSent') }}</h2>
         <p class="text-muted">
-          Un lien de réinitialisation a été envoyé à <strong>{{ email }}</strong>.
-          Vérifiez votre boîte mail et suivez les instructions.
+          {{ t('passwordReset.emailSentDescription', { email }) }}
         </p>
 
         <div class="resend-section">
-          <p>Vous n'avez pas reçu l'email ?</p>
+          <p>{{ t('passwordReset.didntReceive') }}</p>
           <button
             @click="handleRequestReset"
             class="btn btn-outline-primary"
             :disabled="resendCooldown > 0"
           >
             <span v-if="resendCooldown > 0">
-              Renvoyer dans {{ resendCooldown }}s
+              {{ t('passwordReset.resendIn', { seconds: resendCooldown }) }}
             </span>
             <span v-else>
-              <i class="fas fa-redo"></i> Renvoyer l'email
+              <i class="fas fa-redo"></i> {{ t('passwordReset.resendEmail') }}
             </span>
           </button>
         </div>
 
         <div class="back-to-login">
           <router-link to="/login">
-            <i class="fas fa-arrow-left"></i> Retour à la connexion
+            <i class="fas fa-arrow-left"></i> {{ t('passwordReset.backToLogin') }}
           </router-link>
         </div>
       </div>
 
       <!-- Étape 3: Nouveau mot de passe (si token dans l'URL) -->
       <div v-if="step === 'reset'" class="password-reset">
-        <h2>Nouveau mot de passe</h2>
+        <h2>{{ t('passwordReset.resetTitle') }}</h2>
         <p class="text-muted">
-          Choisissez un nouveau mot de passe sécurisé pour votre compte.
+          {{ t('passwordReset.resetDescription') }}
         </p>
 
         <form @submit.prevent="handlePasswordReset">
           <div class="form-group">
-            <label for="newPassword">Nouveau mot de passe</label>
+            <label for="newPassword">{{ t('passwordReset.newPasswordLabel') }}</label>
             <input
               type="password"
               id="newPassword"
@@ -101,19 +100,19 @@
               @input="validatePassword"
               required
             />
-            
+
             <div class="password-requirements">
               <small :class="{ 'text-success': passwordValidations.length, 'text-muted': !passwordValidations.length }">
                 <i :class="passwordValidations.length ? 'fas fa-check' : 'fas fa-times'"></i>
-                Au moins 8 caractères
+                {{ t('passwordReset.passwordReq8Chars') }}
               </small>
               <small :class="{ 'text-success': passwordValidations.uppercase, 'text-muted': !passwordValidations.uppercase }">
                 <i :class="passwordValidations.uppercase ? 'fas fa-check' : 'fas fa-times'"></i>
-                Une majuscule
+                {{ t('passwordReset.passwordReqUppercase') }}
               </small>
               <small :class="{ 'text-success': passwordValidations.number, 'text-muted': !passwordValidations.number }">
                 <i :class="passwordValidations.number ? 'fas fa-check' : 'fas fa-times'"></i>
-                Un chiffre
+                {{ t('passwordReset.passwordReqNumber') }}
               </small>
             </div>
 
@@ -123,7 +122,7 @@
           </div>
 
           <div class="form-group">
-            <label for="confirmPassword">Confirmer le mot de passe</label>
+            <label for="confirmPassword">{{ t('passwordReset.confirmPasswordLabel') }}</label>
             <input
               type="password"
               id="confirmPassword"
@@ -147,10 +146,10 @@
             :disabled="isLoading || !isPasswordValid"
           >
             <span v-if="isLoading">
-              <i class="fas fa-spinner fa-spin"></i> Mise à jour...
+              <i class="fas fa-spinner fa-spin"></i> {{ t('passwordReset.updating') }}
             </span>
             <span v-else>
-              <i class="fas fa-key"></i> Mettre à jour le mot de passe
+              <i class="fas fa-key"></i> {{ t('passwordReset.updatePassword') }}
             </span>
           </button>
         </form>
@@ -161,14 +160,13 @@
         <div class="success-icon">
           <i class="fas fa-check-circle"></i>
         </div>
-        <h2>Mot de passe mis à jour !</h2>
+        <h2>{{ t('passwordReset.successTitle') }}</h2>
         <p class="text-muted">
-          Votre mot de passe a été mis à jour avec succès. 
-          Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.
+          {{ t('passwordReset.successDescription') }}
         </p>
 
         <router-link to="/login" class="btn btn-primary">
-          <i class="fas fa-sign-in-alt"></i> Se connecter
+          <i class="fas fa-sign-in-alt"></i> {{ t('passwordReset.signIn') }}
         </router-link>
       </div>
     </div>
@@ -178,9 +176,12 @@
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 
 const route = useRoute();
+const i18n = useI18n();
+const { t } = i18n;
 
 const step = ref<'request' | 'sent' | 'reset' | 'success'>('request');
 const email = ref('');
@@ -209,6 +210,77 @@ const isPasswordValid = computed(() => {
 });
 
 onMounted(() => {
+  // Add translations
+  i18n.mergeLocaleMessage('en', {
+    passwordReset: {
+      requestTitle: 'Reset password',
+      requestDescription: 'Enter your email address and we will send you a link to reset your password.',
+      emailLabel: 'Email address',
+      sending: 'Sending...',
+      sendLink: 'Send link',
+      backToLogin: 'Back to login',
+      emailSent: 'Email sent!',
+      emailSentDescription: 'A reset link has been sent to {email}. Check your mailbox and follow the instructions.',
+      didntReceive: 'Didn\'t receive the email?',
+      resendIn: 'Resend in {seconds}s',
+      resendEmail: 'Resend email',
+      resetTitle: 'New password',
+      resetDescription: 'Choose a new secure password for your account.',
+      newPasswordLabel: 'New password',
+      passwordReq8Chars: 'At least 8 characters',
+      passwordReqUppercase: 'One uppercase letter',
+      passwordReqNumber: 'One number',
+      confirmPasswordLabel: 'Confirm password',
+      updating: 'Updating...',
+      updatePassword: 'Update password',
+      successTitle: 'Password updated!',
+      successDescription: 'Your password has been successfully updated. You can now log in with your new password.',
+      signIn: 'Sign in',
+      invalidEmail: 'Invalid email address',
+      passwordInvalid: 'Password does not meet requirements',
+      passwordMismatch: 'Passwords do not match',
+      errorNoAccount: 'No account associated with this email address',
+      errorSendingEmail: 'Error sending email. Please try again.',
+      errorInvalidToken: 'Reset link expired or invalid',
+      errorUpdatingPassword: 'Error updating password. Please try again.'
+    }
+  });
+
+  i18n.mergeLocaleMessage('fr', {
+    passwordReset: {
+      requestTitle: 'Réinitialiser le mot de passe',
+      requestDescription: 'Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.',
+      emailLabel: 'Adresse email',
+      sending: 'Envoi en cours...',
+      sendLink: 'Envoyer le lien',
+      backToLogin: 'Retour à la connexion',
+      emailSent: 'Email envoyé !',
+      emailSentDescription: 'Un lien de réinitialisation a été envoyé à {email}. Vérifiez votre boîte mail et suivez les instructions.',
+      didntReceive: 'Vous n\'avez pas reçu l\'email ?',
+      resendIn: 'Renvoyer dans {seconds}s',
+      resendEmail: 'Renvoyer l\'email',
+      resetTitle: 'Nouveau mot de passe',
+      resetDescription: 'Choisissez un nouveau mot de passe sécurisé pour votre compte.',
+      newPasswordLabel: 'Nouveau mot de passe',
+      passwordReq8Chars: 'Au moins 8 caractères',
+      passwordReqUppercase: 'Une majuscule',
+      passwordReqNumber: 'Un chiffre',
+      confirmPasswordLabel: 'Confirmer le mot de passe',
+      updating: 'Mise à jour...',
+      updatePassword: 'Mettre à jour le mot de passe',
+      successTitle: 'Mot de passe mis à jour !',
+      successDescription: 'Votre mot de passe a été mis à jour avec succès. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.',
+      signIn: 'Se connecter',
+      invalidEmail: 'Adresse email invalide',
+      passwordInvalid: 'Le mot de passe ne respecte pas les critères requis',
+      passwordMismatch: 'Les mots de passe ne correspondent pas',
+      errorNoAccount: 'Aucun compte associé à cette adresse email',
+      errorSendingEmail: 'Erreur lors de l\'envoi de l\'email. Veuillez réessayer.',
+      errorInvalidToken: 'Lien de réinitialisation expiré ou invalide',
+      errorUpdatingPassword: 'Erreur lors de la mise à jour du mot de passe. Veuillez réessayer.'
+    }
+  });
+
   // Vérifier si on a un token de reset dans l'URL
   resetToken.value = route.query.token as string || '';
   if (resetToken.value) {
@@ -219,7 +291,7 @@ onMounted(() => {
 const validateEmail = () => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email.value)) {
-    emailError.value = 'Adresse email invalide';
+    emailError.value = t('passwordReset.invalidEmail');
     return false;
   } else {
     emailError.value = '';
@@ -229,13 +301,13 @@ const validateEmail = () => {
 
 const validatePassword = () => {
   const password = newPassword.value;
-  
+
   passwordValidations.length = password.length >= 8;
   passwordValidations.uppercase = /[A-Z]/.test(password);
   passwordValidations.number = /\d/.test(password);
-  
+
   if (!passwordValidations.length || !passwordValidations.uppercase || !passwordValidations.number) {
-    passwordError.value = 'Le mot de passe ne respecte pas les critères requis';
+    passwordError.value = t('passwordReset.passwordInvalid');
     return false;
   } else {
     passwordError.value = '';
@@ -245,7 +317,7 @@ const validatePassword = () => {
 
 const validateConfirmPassword = () => {
   if (newPassword.value !== confirmPassword.value) {
-    confirmPasswordError.value = 'Les mots de passe ne correspondent pas';
+    confirmPasswordError.value = t('passwordReset.passwordMismatch');
     return false;
   } else {
     confirmPasswordError.value = '';
@@ -264,14 +336,14 @@ const handleRequestReset = async () => {
   try {
     // Requête simplifiée - NOTE: Cet endpoint n'existe pas encore dans votre API
     await axios.post('/auth/password-reset-request', { email: email.value });
-    
+
     step.value = 'sent';
     startResendCooldown();
   } catch (error: any) {
     if (error.response?.status === 404) {
-      errorMessage.value = 'Aucun compte associé à cette adresse email';
+      errorMessage.value = t('passwordReset.errorNoAccount');
     } else {
-      errorMessage.value = 'Erreur lors de l\'envoi de l\'email. Veuillez réessayer.';
+      errorMessage.value = t('passwordReset.errorSendingEmail');
     }
     console.error('Erreur reset password request:', error);
   } finally {
@@ -293,13 +365,13 @@ const handlePasswordReset = async () => {
       token: resetToken.value,
       new_password: newPassword.value
     });
-    
+
     step.value = 'success';
   } catch (error: any) {
     if (error.response?.status === 400) {
-      errorMessage.value = 'Lien de réinitialisation expiré ou invalide';
+      errorMessage.value = t('passwordReset.errorInvalidToken');
     } else {
-      errorMessage.value = 'Erreur lors de la mise à jour du mot de passe. Veuillez réessayer.';
+      errorMessage.value = t('passwordReset.errorUpdatingPassword');
     }
     console.error('Erreur password reset:', error);
   } finally {

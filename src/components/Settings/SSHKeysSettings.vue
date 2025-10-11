@@ -18,7 +18,7 @@
     <!-- SSH Keys List -->
     <div v-if="sshKeysStore.isLoading" class="loading">
       <div class="spinner"></div>
-      Loading...
+      {{ t('sshkeys.loading') }}
     </div>
     <div v-else-if="sshKeysStore.entities.length === 0" class="empty-state">
       <i class="fas fa-key"></i>
@@ -80,7 +80,7 @@
             {{ t('cancel') }}
           </button>
           <button class="btn btn-primary" @click="saveKey" :disabled="sshKeysStore.isLoading">
-            {{ sshKeysStore.isLoading ? 'Saving...' : t('save') }}
+            {{ sshKeysStore.isLoading ? t('sshkeys.saving') : t('save') }}
           </button>
         </div>
       </div>
@@ -99,27 +99,6 @@ const { t } = useI18n()
 const sshKeysStore = useSshKeysStore()
 const { showConfirm } = useNotification()
 
-// Add missing translations
-const i18n = useI18n()
-const existingEn = (i18n.getLocaleMessage('en') as any)?.sshkeys || {}
-const existingFr = (i18n.getLocaleMessage('fr') as any)?.sshkeys || {}
-
-i18n.mergeLocaleMessage('en', {
-  sshkeys: {
-    ...existingEn,
-    description: 'Manage your SSH keys for terminal access',
-    noKeys: 'No SSH keys configured yet'
-  }
-})
-
-i18n.mergeLocaleMessage('fr', {
-  sshkeys: {
-    ...existingFr,
-    description: 'Gérez vos clés SSH pour l\'accès aux terminaux',
-    noKeys: 'Aucune clé SSH configurée pour le moment'
-  }
-})
-
 const showModal = ref(false)
 const editingKey = ref<any>(null)
 const keyForm = ref({
@@ -132,7 +111,7 @@ onMounted(async () => {
 })
 
 function formatDate(dateString: string | undefined): string {
-  if (!dateString) return 'Unknown'
+  if (!dateString) return t('sshkeys.unknown')
   return new Date(dateString).toLocaleDateString()
 }
 

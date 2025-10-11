@@ -26,22 +26,22 @@
     <div class="help-nav">
       <router-link :to="helpMainRoute" class="back-link">
         <i class="fas fa-arrow-left"></i>
-        Retour au Centre d'Aide
+        {{ t('help.navigation.backToHelp') }}
       </router-link>
     </div>
 
     <div class="article-header">
-      <h1><i class="fas fa-wrench"></i> Dépannage Terminal</h1>
+      <h1><i class="fas fa-wrench"></i> {{ t('help.terminals.troubleshooting.title') }}</h1>
       <p class="article-description">
-        Solutions aux problèmes courants et guide de résolution des incidents
+        {{ t('help.terminals.troubleshooting.intro') }}
       </p>
     </div>
 
     <div class="article-content">
       <section class="help-section">
-        <h2><i class="fas fa-search"></i> Diagnostic rapide</h2>
+        <h2><i class="fas fa-search"></i> {{ t('help.terminals.troubleshooting.quickDiagnosis.title') }}</h2>
         <p>
-          Avant de chercher une solution spécifique, effectuez ces vérifications de base :
+          {{ t('help.terminals.troubleshooting.quickDiagnosis.description') }}
         </p>
 
         <div class="diagnostic-checklist">
@@ -49,89 +49,89 @@
             <input type="checkbox" id="check1">
             <label for="check1">
               <i class="fas fa-wifi"></i>
-              Connexion Internet stable
+              {{ t('help.terminals.troubleshooting.quickDiagnosis.checks.internet') }}
             </label>
           </div>
           <div class="check-item">
             <input type="checkbox" id="check2">
             <label for="check2">
               <i class="fas fa-browser"></i>
-              Navigateur à jour (Chrome, Firefox, Safari, Edge)
+              {{ t('help.terminals.troubleshooting.quickDiagnosis.checks.browser') }}
             </label>
           </div>
           <div class="check-item">
             <input type="checkbox" id="check3">
             <label for="check3">
               <i class="fas fa-key"></i>
-              Clé d'accès terminal active
+              {{ t('help.terminals.troubleshooting.quickDiagnosis.checks.key') }}
             </label>
           </div>
           <div class="check-item">
             <input type="checkbox" id="check4">
             <label for="check4">
               <i class="fas fa-clock"></i>
-              Session non expirée
+              {{ t('help.terminals.troubleshooting.quickDiagnosis.checks.session') }}
             </label>
           </div>
           <div class="check-item">
             <input type="checkbox" id="check5">
             <label for="check5">
               <i class="fas fa-shield-alt"></i>
-              Pas de bloqueur de publicités/scripts sur le domaine
+              {{ t('help.terminals.troubleshooting.quickDiagnosis.checks.blocker') }}
             </label>
           </div>
         </div>
 
         <div class="quick-actions">
-          <h3>Actions rapides :</h3>
+          <h3>{{ t('help.terminals.troubleshooting.quickDiagnosis.actionsTitle') }}</h3>
           <router-link to="/terminal-sessions" class="btn btn-primary">
             <i class="fas fa-sync"></i>
-            Synchroniser mes sessions
+            {{ t('help.terminals.troubleshooting.quickDiagnosis.syncButton') }}
           </router-link>
           <router-link to="/user-terminal-keys" class="btn btn-outline">
             <i class="fas fa-key"></i>
-            Vérifier ma clé d'accès
+            {{ t('help.terminals.troubleshooting.quickDiagnosis.keyButton') }}
           </router-link>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-exclamation-triangle"></i> Problèmes de connexion</h2>
+        <h2><i class="fas fa-exclamation-triangle"></i> {{ t('help.terminals.troubleshooting.commonProblems.connectionIssues.title') }}</h2>
 
         <div class="problem-card">
           <div class="problem-header">
             <i class="fas fa-times-circle"></i>
-            <h3>Impossible de créer une session</h3>
+            <h3>{{ t('help.terminals.troubleshooting.commonProblems.cannotCreateSession.title') }}</h3>
           </div>
           <div class="problem-content">
-            <h4>Causes possibles :</h4>
+            <h4>{{ t('help.terminals.troubleshooting.commonProblems.cannotCreateSession.causesTitle') }}</h4>
             <ul>
-              <li>Clé d'accès terminal manquante ou inactive</li>
-              <li>Limite de sessions simultanées atteinte</li>
-              <li>Problème temporaire du serveur</li>
-              <li>Quota d'utilisation dépassé</li>
+              <li>{{ t('help.terminals.troubleshooting.commonProblems.cannotCreateSession.causes.cause1') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.commonProblems.cannotCreateSession.causes.cause2') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.commonProblems.cannotCreateSession.causes.cause3') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.commonProblems.cannotCreateSession.causes.cause4') }}</li>
             </ul>
-            <h4>Solutions :</h4>
+            <h4>{{ t('help.terminals.troubleshooting.commonProblems.cannotCreateSession.solutionsTitle') }}</h4>
             <div class="solution-steps">
               <div class="solution-step">
                 <span class="step-number">1</span>
                 <div>
-                  <strong>Vérifiez votre clé d'accès :</strong>
-                  <p>Allez dans "Clés d'Accès Terminal" et régénérez votre clé si nécessaire</p>
+                  <strong>{{ t('help.terminals.troubleshooting.commonProblems.cannotCreateSession.solutions.step1.title') }}</strong>
+                  <p>{{ t('help.terminals.troubleshooting.commonProblems.cannotCreateSession.solutions.step1.description') }}</p>
                 </div>
               </div>
               <div class="solution-step">
                 <span class="step-number">2</span>
                 <div>
-                  <strong>Fermez les sessions inutiles :</strong>
-                  <p>Arrêtez les sessions actives que vous n'utilisez plus</p>
+                  <strong>{{ t('help.terminals.troubleshooting.commonProblems.cannotCreateSession.solutions.step2.title') }}</strong>
+                  <p>{{ t('help.terminals.troubleshooting.commonProblems.cannotCreateSession.solutions.step2.description') }}</p>
                 </div>
               </div>
               <div class="solution-step">
                 <span class="step-number">3</span>
                 <div>
-                  <strong>Attendez et réessayez :</strong>
-                  <p>Patientez quelques minutes puis tentez une nouvelle création</p>
+                  <strong>{{ t('help.terminals.troubleshooting.commonProblems.cannotCreateSession.solutions.step3.title') }}</strong>
+                  <p>{{ t('help.terminals.troubleshooting.commonProblems.cannotCreateSession.solutions.step3.description') }}</p>
                 </div>
               </div>
             </div>
@@ -141,37 +141,37 @@
         <div class="problem-card">
           <div class="problem-header">
             <i class="fas fa-plug"></i>
-            <h3>Terminal ne s'affiche pas ou écran noir</h3>
+            <h3>{{ t('help.terminals.troubleshooting.commonProblems.blackScreen.title') }}</h3>
           </div>
           <div class="problem-content">
-            <h4>Causes possibles :</h4>
+            <h4>{{ t('help.terminals.troubleshooting.commonProblems.blackScreen.causesTitle') }}</h4>
             <ul>
-              <li>Bloqueur de contenu actif</li>
-              <li>WebSocket bloqué par le réseau/firewall</li>
-              <li>Session expirée ou arrêtée</li>
-              <li>Problème de navigateur</li>
+              <li>{{ t('help.terminals.troubleshooting.commonProblems.blackScreen.causes.cause1') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.commonProblems.blackScreen.causes.cause2') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.commonProblems.blackScreen.causes.cause3') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.commonProblems.blackScreen.causes.cause4') }}</li>
             </ul>
-            <h4>Solutions :</h4>
+            <h4>{{ t('help.terminals.troubleshooting.commonProblems.blackScreen.solutionsTitle') }}</h4>
             <div class="solution-steps">
               <div class="solution-step">
                 <span class="step-number">1</span>
                 <div>
-                  <strong>Désactivez les bloqueurs :</strong>
-                  <p>Mettez le domaine OCF en liste blanche dans vos extensions</p>
+                  <strong>{{ t('help.terminals.troubleshooting.commonProblems.blackScreen.solutions.step1.title') }}</strong>
+                  <p>{{ t('help.terminals.troubleshooting.commonProblems.blackScreen.solutions.step1.description') }}</p>
                 </div>
               </div>
               <div class="solution-step">
                 <span class="step-number">2</span>
                 <div>
-                  <strong>Essayez un autre navigateur :</strong>
-                  <p>Testez avec Chrome, Firefox ou Edge en navigation privée</p>
+                  <strong>{{ t('help.terminals.troubleshooting.commonProblems.blackScreen.solutions.step2.title') }}</strong>
+                  <p>{{ t('help.terminals.troubleshooting.commonProblems.blackScreen.solutions.step2.description') }}</p>
                 </div>
               </div>
               <div class="solution-step">
                 <span class="step-number">3</span>
                 <div>
-                  <strong>Vérifiez le statut de la session :</strong>
-                  <p>Synchronisez la session pour confirmer qu'elle est active</p>
+                  <strong>{{ t('help.terminals.troubleshooting.commonProblems.blackScreen.solutions.step3.title') }}</strong>
+                  <p>{{ t('help.terminals.troubleshooting.commonProblems.blackScreen.solutions.step3.description') }}</p>
                 </div>
               </div>
             </div>
@@ -181,37 +181,37 @@
         <div class="problem-card">
           <div class="problem-header">
             <i class="fas fa-keyboard"></i>
-            <h3>Clavier ne répond pas ou caractères incorrects</h3>
+            <h3>{{ t('help.terminals.troubleshooting.commonProblems.keyboard.title') }}</h3>
           </div>
           <div class="problem-content">
-            <h4>Causes possibles :</h4>
+            <h4>{{ t('help.terminals.troubleshooting.commonProblems.keyboard.causesTitle') }}</h4>
             <ul>
-              <li>Configuration clavier incorrecte</li>
-              <li>Conflit avec raccourcis navigateur</li>
-              <li>Délai de réseau élevé</li>
-              <li>Focus perdu sur le terminal</li>
+              <li>{{ t('help.terminals.troubleshooting.commonProblems.keyboard.causes.cause1') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.commonProblems.keyboard.causes.cause2') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.commonProblems.keyboard.causes.cause3') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.commonProblems.keyboard.causes.cause4') }}</li>
             </ul>
-            <h4>Solutions :</h4>
+            <h4>{{ t('help.terminals.troubleshooting.commonProblems.keyboard.solutionsTitle') }}</h4>
             <div class="solution-steps">
               <div class="solution-step">
                 <span class="step-number">1</span>
                 <div>
-                  <strong>Cliquez dans le terminal :</strong>
-                  <p>Assurez-vous que le focus est bien sur la zone de terminal</p>
+                  <strong>{{ t('help.terminals.troubleshooting.commonProblems.keyboard.solutions.step1.title') }}</strong>
+                  <p>{{ t('help.terminals.troubleshooting.commonProblems.keyboard.solutions.step1.description') }}</p>
                 </div>
               </div>
               <div class="solution-step">
                 <span class="step-number">2</span>
                 <div>
-                  <strong>Configurez le clavier :</strong>
-                  <p>Utilisez <code>sudo dpkg-reconfigure keyboard-configuration</code></p>
+                  <strong>{{ t('help.terminals.troubleshooting.commonProblems.keyboard.solutions.step2.title') }}</strong>
+                  <p v-html="t('help.terminals.troubleshooting.commonProblems.keyboard.solutions.step2.description')"></p>
                 </div>
               </div>
               <div class="solution-step">
                 <span class="step-number">3</span>
                 <div>
-                  <strong>Rechargez la page :</strong>
-                  <p>Actualisez (F5) pour rétablir la connexion</p>
+                  <strong>{{ t('help.terminals.troubleshooting.commonProblems.keyboard.solutions.step3.title') }}</strong>
+                  <p>{{ t('help.terminals.troubleshooting.commonProblems.keyboard.solutions.step3.description') }}</p>
                 </div>
               </div>
             </div>
@@ -220,92 +220,91 @@
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-share-alt"></i> Problèmes de partage</h2>
+        <h2><i class="fas fa-share-alt"></i> {{ t('help.terminals.troubleshooting.sharingProblems.title') }}</h2>
 
         <div class="problem-card">
           <div class="problem-header">
             <i class="fas fa-ban"></i>
-            <h3>Impossible de partager un terminal</h3>
+            <h3>{{ t('help.terminals.troubleshooting.sharingProblems.cannotShare.title') }}</h3>
           </div>
           <div class="problem-content">
-            <h4>Vérifications :</h4>
+            <h4>{{ t('help.terminals.troubleshooting.sharingProblems.cannotShare.checksTitle') }}</h4>
             <ul>
-              <li>La session est-elle active ?</li>
-              <li>L'utilisateur destinataire existe-t-il ?</li>
-              <li>Avez-vous les permissions de partage ?</li>
+              <li>{{ t('help.terminals.troubleshooting.sharingProblems.cannotShare.checks.check1') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.sharingProblems.cannotShare.checks.check2') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.sharingProblems.cannotShare.checks.check3') }}</li>
             </ul>
-            <h4>Solution :</h4>
-            <p>Synchronisez d'abord votre session, puis réessayez le partage avec un email valide.</p>
+            <h4>{{ t('help.terminals.troubleshooting.sharingProblems.cannotShare.solutionTitle') }}</h4>
+            <p>{{ t('help.terminals.troubleshooting.sharingProblems.cannotShare.solution') }}</p>
           </div>
         </div>
 
         <div class="problem-card">
           <div class="problem-header">
             <i class="fas fa-eye-slash"></i>
-            <h3>Utilisateur ne peut pas accéder au terminal partagé</h3>
+            <h3>{{ t('help.terminals.troubleshooting.sharingProblems.cannotAccess.title') }}</h3>
           </div>
           <div class="problem-content">
-            <h4>Points à vérifier :</h4>
+            <h4>{{ t('help.terminals.troubleshooting.sharingProblems.cannotAccess.checksTitle') }}</h4>
             <ul>
-              <li>Le partage n'a pas expiré</li>
-              <li>L'utilisateur est connecté à son compte</li>
-              <li>Les permissions sont correctes</li>
-              <li>La session source est toujours active</li>
+              <li>{{ t('help.terminals.troubleshooting.sharingProblems.cannotAccess.checks.check1') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.sharingProblems.cannotAccess.checks.check2') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.sharingProblems.cannotAccess.checks.check3') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.sharingProblems.cannotAccess.checks.check4') }}</li>
             </ul>
           </div>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-tachometer-alt"></i> Problèmes de performance</h2>
+        <h2><i class="fas fa-tachometer-alt"></i> {{ t('help.terminals.troubleshooting.performanceProblems.title') }}</h2>
 
         <div class="performance-tips">
           <div class="tip-card">
             <i class="fas fa-rocket"></i>
-            <h4>Terminal lent ou qui rame</h4>
+            <h4>{{ t('help.terminals.troubleshooting.performanceProblems.slowTerminal.title') }}</h4>
             <ul>
-              <li>Fermez les onglets/applications inutiles</li>
-              <li>Vérifiez votre connexion Internet</li>
-              <li>Réduisez le nombre d'utilisateurs connectés</li>
-              <li>Redémarrez votre navigateur</li>
+              <li>{{ t('help.terminals.troubleshooting.performanceProblems.slowTerminal.tip1') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.performanceProblems.slowTerminal.tip2') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.performanceProblems.slowTerminal.tip3') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.performanceProblems.slowTerminal.tip4') }}</li>
             </ul>
           </div>
 
           <div class="tip-card">
             <i class="fas fa-memory"></i>
-            <h4>Session qui se fige</h4>
+            <h4>{{ t('help.terminals.troubleshooting.performanceProblems.freezing.title') }}</h4>
             <ul>
-              <li>Évitez les processus consommant beaucoup de mémoire</li>
-              <li>Tuez les processus bloqués avec <code>Ctrl+C</code></li>
-              <li>Redémarrez la session si nécessaire</li>
-              <li>Contactez le support si le problème persiste</li>
+              <li>{{ t('help.terminals.troubleshooting.performanceProblems.freezing.tip1') }}</li>
+              <li v-html="t('help.terminals.troubleshooting.performanceProblems.freezing.tip2')"></li>
+              <li>{{ t('help.terminals.troubleshooting.performanceProblems.freezing.tip3') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.performanceProblems.freezing.tip4') }}</li>
             </ul>
           </div>
 
           <div class="tip-card">
             <i class="fas fa-network-wired"></i>
-            <h4>Déconnexions fréquentes</h4>
+            <h4>{{ t('help.terminals.troubleshooting.performanceProblems.disconnections.title') }}</h4>
             <ul>
-              <li>Vérifiez la stabilité de votre réseau</li>
-              <li>Désactivez les VPN si possible</li>
-              <li>Changez de réseau (4G/WiFi)</li>
-              <li>Utilisez une connexion filaire si disponible</li>
+              <li>{{ t('help.terminals.troubleshooting.performanceProblems.disconnections.tip1') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.performanceProblems.disconnections.tip2') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.performanceProblems.disconnections.tip3') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.performanceProblems.disconnections.tip4') }}</li>
             </ul>
           </div>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-cogs"></i> Problèmes de synchronisation</h2>
+        <h2><i class="fas fa-cogs"></i> {{ t('help.terminals.troubleshooting.syncProblems.title') }}</h2>
 
         <div class="sync-issues">
           <div class="issue-item">
             <i class="fas fa-sync-alt"></i>
             <div>
-              <h4>Statut de session incorrect</h4>
+              <h4>{{ t('help.terminals.troubleshooting.syncProblems.incorrectStatus.title') }}</h4>
               <p>
-                Utilisez le bouton "Sync" pour mettre à jour le statut.
-                Si le problème persiste, attendez quelques minutes et réessayez.
+                {{ t('help.terminals.troubleshooting.syncProblems.incorrectStatus.description') }}
               </p>
             </div>
           </div>
@@ -313,10 +312,9 @@
           <div class="issue-item">
             <i class="fas fa-clock"></i>
             <div>
-              <h4>Dates d'expiration incohérentes</h4>
+              <h4>{{ t('help.terminals.troubleshooting.syncProblems.inconsistentDates.title') }}</h4>
               <p>
-                La synchronisation globale ("Tout synchroniser") résout généralement ce problème.
-                Vérifiez aussi les fuseaux horaires de votre système.
+                {{ t('help.terminals.troubleshooting.syncProblems.inconsistentDates.description') }}
               </p>
             </div>
           </div>
@@ -324,10 +322,9 @@
           <div class="issue-item">
             <i class="fas fa-exclamation-triangle"></i>
             <div>
-              <h4>Erreurs de synchronisation</h4>
+              <h4>{{ t('help.terminals.troubleshooting.syncProblems.syncErrors.title') }}</h4>
               <p>
-                Ces erreurs sont souvent temporaires. Patientez quelques minutes
-                et relancez la synchronisation. Contactez le support si elles persistent.
+                {{ t('help.terminals.troubleshooting.syncProblems.syncErrors.description') }}
               </p>
             </div>
           </div>
@@ -335,21 +332,21 @@
       </section>
 
       <section class="help-section warning">
-        <h2><i class="fas fa-life-ring"></i> Quand contacter le support</h2>
+        <h2><i class="fas fa-life-ring"></i> {{ t('help.terminals.troubleshooting.support.whenToContact.title') }}</h2>
         <p>
-          Contactez notre équipe support dans ces situations :
+          {{ t('help.terminals.troubleshooting.support.whenToContact.description') }}
         </p>
 
         <div class="support-triggers">
           <div class="trigger-item critical">
             <i class="fas fa-exclamation-circle"></i>
             <div>
-              <h4>Critique - Contact immédiat</h4>
+              <h4>{{ t('help.terminals.troubleshooting.support.whenToContact.critical.title') }}</h4>
               <ul>
-                <li>Perte de données importantes non sauvegardées</li>
-                <li>Accès non autorisé à vos sessions</li>
-                <li>Facturation incorrecte ou charges inattendues</li>
-                <li>Problème de sécurité suspecté</li>
+                <li>{{ t('help.terminals.troubleshooting.support.whenToContact.critical.item1') }}</li>
+                <li>{{ t('help.terminals.troubleshooting.support.whenToContact.critical.item2') }}</li>
+                <li>{{ t('help.terminals.troubleshooting.support.whenToContact.critical.item3') }}</li>
+                <li>{{ t('help.terminals.troubleshooting.support.whenToContact.critical.item4') }}</li>
               </ul>
             </div>
           </div>
@@ -357,12 +354,12 @@
           <div class="trigger-item high">
             <i class="fas fa-exclamation-triangle"></i>
             <div>
-              <h4>Important - Contact sous 24h</h4>
+              <h4>{{ t('help.terminals.troubleshooting.support.whenToContact.high.title') }}</h4>
               <ul>
-                <li>Impossible de créer des sessions depuis plusieurs jours</li>
-                <li>Erreurs persistantes malgré les solutions tentées</li>
-                <li>Problèmes de performance généralisés</li>
-                <li>Fonctionnalités de partage non fonctionnelles</li>
+                <li>{{ t('help.terminals.troubleshooting.support.whenToContact.high.item1') }}</li>
+                <li>{{ t('help.terminals.troubleshooting.support.whenToContact.high.item2') }}</li>
+                <li>{{ t('help.terminals.troubleshooting.support.whenToContact.high.item3') }}</li>
+                <li>{{ t('help.terminals.troubleshooting.support.whenToContact.high.item4') }}</li>
               </ul>
             </div>
           </div>
@@ -370,123 +367,123 @@
           <div class="trigger-item normal">
             <i class="fas fa-info-circle"></i>
             <div>
-              <h4>Normal - Support général</h4>
+              <h4>{{ t('help.terminals.troubleshooting.support.whenToContact.normal.title') }}</h4>
               <ul>
-                <li>Questions sur l'utilisation des fonctionnalités</li>
-                <li>Demandes d'amélioration ou suggestions</li>
-                <li>Aide pour optimiser votre utilisation</li>
-                <li>Formation ou accompagnement</li>
+                <li>{{ t('help.terminals.troubleshooting.support.whenToContact.normal.item1') }}</li>
+                <li>{{ t('help.terminals.troubleshooting.support.whenToContact.normal.item2') }}</li>
+                <li>{{ t('help.terminals.troubleshooting.support.whenToContact.normal.item3') }}</li>
+                <li>{{ t('help.terminals.troubleshooting.support.whenToContact.normal.item4') }}</li>
               </ul>
             </div>
           </div>
         </div>
 
         <div class="contact-info">
-          <h3>Informations à inclure dans votre demande :</h3>
+          <h3>{{ t('help.terminals.troubleshooting.support.infoToInclude.title') }}</h3>
           <div class="info-checklist">
             <div class="info-item">
               <i class="fas fa-user"></i>
-              <span>Votre nom d'utilisateur et email</span>
+              <span>{{ t('help.terminals.troubleshooting.support.infoToInclude.username') }}</span>
             </div>
             <div class="info-item">
               <i class="fas fa-calendar"></i>
-              <span>Date et heure du problème</span>
+              <span>{{ t('help.terminals.troubleshooting.support.infoToInclude.dateTime') }}</span>
             </div>
             <div class="info-item">
               <i class="fas fa-list"></i>
-              <span>Description détaillée des étapes effectuées</span>
+              <span>{{ t('help.terminals.troubleshooting.support.infoToInclude.detailedDescription') }}</span>
             </div>
             <div class="info-item">
               <i class="fas fa-browser"></i>
-              <span>Navigateur et version utilisés</span>
+              <span>{{ t('help.terminals.troubleshooting.support.infoToInclude.browser') }}</span>
             </div>
             <div class="info-item">
               <i class="fas fa-desktop"></i>
-              <span>Système d'exploitation (Windows, Mac, Linux)</span>
+              <span>{{ t('help.terminals.troubleshooting.support.infoToInclude.os') }}</span>
             </div>
             <div class="info-item">
               <i class="fas fa-camera"></i>
-              <span>Captures d'écran des erreurs (si possible)</span>
+              <span>{{ t('help.terminals.troubleshooting.support.infoToInclude.screenshots') }}</span>
             </div>
           </div>
 
           <div class="contact-action">
             <a href="mailto:contact@labinux.com" class="btn btn-primary">
               <i class="fas fa-envelope"></i>
-              Contacter le Support
+              {{ t('help.terminals.troubleshooting.support.contactButton') }}
             </a>
           </div>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-lightbulb"></i> Conseils de prévention</h2>
+        <h2><i class="fas fa-lightbulb"></i> {{ t('help.terminals.troubleshooting.prevention.title') }}</h2>
         <p>
-          Adoptez ces bonnes pratiques pour éviter les problèmes :
+          {{ t('help.terminals.troubleshooting.prevention.description') }}
         </p>
 
         <div class="prevention-tips">
           <div class="prevention-category">
-            <h4><i class="fas fa-save"></i> Sauvegarde</h4>
+            <h4><i class="fas fa-save"></i> {{ t('help.terminals.troubleshooting.prevention.backup.title') }}</h4>
             <ul>
-              <li>Sauvegardez régulièrement vos fichiers importants</li>
-              <li>Utilisez Git pour versionner votre code</li>
-              <li>Téléchargez les données critiques localement</li>
-              <li>Documentez vos configurations importantes</li>
+              <li>{{ t('help.terminals.troubleshooting.prevention.backup.tip1') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.prevention.backup.tip2') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.prevention.backup.tip3') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.prevention.backup.tip4') }}</li>
             </ul>
           </div>
 
           <div class="prevention-category">
-            <h4><i class="fas fa-clock"></i> Gestion du temps</h4>
+            <h4><i class="fas fa-clock"></i> {{ t('help.terminals.troubleshooting.prevention.timeManagement.title') }}</h4>
             <ul>
-              <li>Surveillez les dates d'expiration de vos sessions</li>
-              <li>Prolongez les sessions actives avant expiration</li>
-              <li>Planifiez votre travail selon les limites de temps</li>
-              <li>Arrêtez les sessions inutilisées</li>
+              <li>{{ t('help.terminals.troubleshooting.prevention.timeManagement.tip1') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.prevention.timeManagement.tip2') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.prevention.timeManagement.tip3') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.prevention.timeManagement.tip4') }}</li>
             </ul>
           </div>
 
           <div class="prevention-category">
-            <h4><i class="fas fa-shield-alt"></i> Sécurité</h4>
+            <h4><i class="fas fa-shield-alt"></i> {{ t('help.terminals.troubleshooting.prevention.security.title') }}</h4>
             <ul>
-              <li>Ne partagez jamais vos clés d'accès</li>
-              <li>Révoquez les partages dès qu'ils ne sont plus nécessaires</li>
-              <li>Vérifiez les accès accordés régulièrement</li>
-              <li>Utilisez des mots de passe forts pour vos comptes</li>
+              <li>{{ t('help.terminals.troubleshooting.prevention.security.tip1') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.prevention.security.tip2') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.prevention.security.tip3') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.prevention.security.tip4') }}</li>
             </ul>
           </div>
 
           <div class="prevention-category">
-            <h4><i class="fas fa-tools"></i> Maintenance</h4>
+            <h4><i class="fas fa-tools"></i> {{ t('help.terminals.troubleshooting.prevention.maintenance.title') }}</h4>
             <ul>
-              <li>Gardez votre navigateur à jour</li>
-              <li>Nettoyez le cache régulièrement</li>
-              <li>Synchronisez vos sessions fréquemment</li>
-              <li>Surveillez l'utilisation de vos ressources</li>
+              <li>{{ t('help.terminals.troubleshooting.prevention.maintenance.tip1') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.prevention.maintenance.tip2') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.prevention.maintenance.tip3') }}</li>
+              <li>{{ t('help.terminals.troubleshooting.prevention.maintenance.tip4') }}</li>
             </ul>
           </div>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-question-circle"></i> Ressources supplémentaires</h2>
+        <h2><i class="fas fa-question-circle"></i> {{ t('help.terminals.troubleshooting.resources.title') }}</h2>
         <div class="resources-grid">
           <router-link :to="`${helpRoutePrefix}/terminals/getting-started`" class="resource-card">
             <i class="fas fa-play-circle"></i>
-            <h4>Guide de démarrage</h4>
-            <p>Retour aux bases pour une configuration optimale</p>
+            <h4>{{ t('help.terminals.troubleshooting.resources.gettingStarted.title') }}</h4>
+            <p>{{ t('help.terminals.troubleshooting.resources.gettingStarted.description') }}</p>
           </router-link>
 
           <router-link :to="`${helpRoutePrefix}/terminals/managing-sessions`" class="resource-card">
             <i class="fas fa-cogs"></i>
-            <h4>Gestion des sessions</h4>
-            <p>Optimisez votre utilisation des sessions terminal</p>
+            <h4>{{ t('help.terminals.troubleshooting.resources.managingSessions.title') }}</h4>
+            <p>{{ t('help.terminals.troubleshooting.resources.managingSessions.description') }}</p>
           </router-link>
 
           <router-link :to="`${helpRoutePrefix}/terminals/sharing`" class="resource-card">
             <i class="fas fa-share-alt"></i>
-            <h4>Partage et collaboration</h4>
-            <p>Maîtrisez les fonctionnalités de partage</p>
+            <h4>{{ t('help.terminals.troubleshooting.resources.sharing.title') }}</h4>
+            <p>{{ t('help.terminals.troubleshooting.resources.sharing.description') }}</p>
           </router-link>
         </div>
       </section>
@@ -495,15 +492,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { useHelpTranslations } from '../../../composables/useHelpTranslations'
 
 const route = useRoute()
+const { t } = useI18n()
+const { loadHelpTranslations } = useHelpTranslations()
 
 // Determine the correct help routes based on current path
 const isPublicHelp = computed(() => route.path.startsWith('/help-public'))
 const helpMainRoute = computed(() => isPublicHelp.value ? '/help-public' : '/help')
 const helpRoutePrefix = computed(() => isPublicHelp.value ? '/help-public' : '/help')
+
+onMounted(async () => {
+  await loadHelpTranslations()
+})
 </script>
 
 <style scoped>

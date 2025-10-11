@@ -11,11 +11,11 @@
       <div class="demo-header">
         <div class="demo-badge">
           <i class="fas fa-flask"></i>
-          DEMO MODE - No real charges
+          {{ t('demoCheckout.badge') }}
         </div>
         <h1>
           <i class="fas fa-credit-card"></i>
-          Demo Stripe Checkout
+          {{ t('demoCheckout.title') }}
         </h1>
       </div>
 
@@ -24,12 +24,12 @@
           <h2>{{ planName }}</h2>
           <div class="amount">
             {{ formatAmount(amount, currency) }}
-            <span class="billing-cycle">/ month</span>
+            <span class="billing-cycle">{{ t('demoCheckout.billingCycle') }}</span>
           </div>
         </div>
 
         <div class="demo-actions">
-          <h3>Simulate Payment Outcome:</h3>
+          <h3>{{ t('demoCheckout.simulateOutcome') }}</h3>
 
           <button
             class="btn btn-success btn-lg"
@@ -37,7 +37,7 @@
             :disabled="isProcessing"
           >
             <i class="fas fa-check-circle"></i>
-            Simulate Successful Payment
+            {{ t('demoCheckout.simulateSuccess') }}
           </button>
 
           <button
@@ -46,7 +46,7 @@
             :disabled="isProcessing"
           >
             <i class="fas fa-times-circle"></i>
-            Simulate Canceled Payment
+            {{ t('demoCheckout.simulateCancel') }}
           </button>
 
           <button
@@ -55,25 +55,25 @@
             :disabled="isProcessing"
           >
             <i class="fas fa-exclamation-triangle"></i>
-            Simulate Payment Error
+            {{ t('demoCheckout.simulateError') }}
           </button>
         </div>
 
         <div v-if="isProcessing" class="processing">
           <i class="fas fa-spinner fa-spin fa-2x"></i>
-          <p>Processing payment simulation...</p>
+          <p>{{ t('demoCheckout.processing') }}</p>
         </div>
 
         <div class="demo-info">
           <h4>
             <i class="fas fa-info-circle"></i>
-            Demo Information
+            {{ t('demoCheckout.infoTitle') }}
           </h4>
           <ul>
-            <li>This is a simulated Stripe checkout page</li>
-            <li>No real payment will be processed</li>
-            <li>Click one of the buttons above to test different outcomes</li>
-            <li>The subscription will be simulated in your account</li>
+            <li>{{ t('demoCheckout.info1') }}</li>
+            <li>{{ t('demoCheckout.info2') }}</li>
+            <li>{{ t('demoCheckout.info3') }}</li>
+            <li>{{ t('demoCheckout.info4') }}</li>
           </ul>
         </div>
       </div>
@@ -84,9 +84,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { logDemoAction, simulateDelay } from '../../services/demoConfig'
 
 const route = useRoute()
+const i18n = useI18n()
+const { t } = i18n
 
 const sessionId = ref('')
 const successUrl = ref('')
@@ -109,6 +112,43 @@ onMounted(() => {
     sessionId: sessionId.value,
     planName: planName.value,
     amount: amount.value
+  })
+
+  // Add translations
+  i18n.mergeLocaleMessage('en', {
+    demoCheckout: {
+      badge: 'DEMO MODE - No real charges',
+      title: 'Demo Stripe Checkout',
+      billingCycle: '/ month',
+      simulateOutcome: 'Simulate Payment Outcome:',
+      simulateSuccess: 'Simulate Successful Payment',
+      simulateCancel: 'Simulate Canceled Payment',
+      simulateError: 'Simulate Payment Error',
+      processing: 'Processing payment simulation...',
+      infoTitle: 'Demo Information',
+      info1: 'This is a simulated Stripe checkout page',
+      info2: 'No real payment will be processed',
+      info3: 'Click one of the buttons above to test different outcomes',
+      info4: 'The subscription will be simulated in your account'
+    }
+  })
+
+  i18n.mergeLocaleMessage('fr', {
+    demoCheckout: {
+      badge: 'MODE DEMO - Aucun frais réel',
+      title: 'Paiement Stripe Démo',
+      billingCycle: '/ mois',
+      simulateOutcome: 'Simuler le Résultat du Paiement:',
+      simulateSuccess: 'Simuler un Paiement Réussi',
+      simulateCancel: 'Simuler un Paiement Annulé',
+      simulateError: 'Simuler une Erreur de Paiement',
+      processing: 'Traitement de la simulation de paiement...',
+      infoTitle: 'Informations de Démo',
+      info1: 'Ceci est une page de paiement Stripe simulée',
+      info2: 'Aucun paiement réel ne sera traité',
+      info3: 'Cliquez sur l\'un des boutons ci-dessus pour tester différents résultats',
+      info4: 'L\'abonnement sera simulé dans votre compte'
+    }
   })
 })
 

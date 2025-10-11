@@ -4,13 +4,13 @@
       <div class="back-button">
         <router-link to="/" class="btn-back">
           <i class="fas fa-arrow-left"></i>
-          Retour à l'accueil
+          {{ t('login.backToHome') }}
         </router-link>
       </div>
-      <h2>Connexion</h2>
+      <h2>{{ t('login.title') }}</h2>
       <form @submit.prevent="handleSubmit">
         <div class="form-group">
-          <label for="email">Adresse mail</label>
+          <label for="email">{{ t('login.emailLabel') }}</label>
           <input
             type="email"
             id="email"
@@ -20,7 +20,7 @@
           />
         </div>
         <div class="form-group">
-          <label for="password">Mot de passe</label>
+          <label for="password">{{ t('login.passwordLabel') }}</label>
           <input
             type="password"
             id="password"
@@ -35,13 +35,13 @@
         <div class="form-options">
           <div class="form-check">
             <input class="form-check-input" type="checkbox" id="rememberMe" v-model="loginStore.rememberMe" />
-            <label class="form-check-label" for="rememberMe">Se souvenir de moi</label>
+            <label class="form-check-label" for="rememberMe">{{ t('login.rememberMe') }}</label>
           </div>
-          <router-link to="/password-reset" class="forgot-password">Mot de passe oublié ?</router-link>
+          <router-link to="/password-reset" class="forgot-password">{{ t('login.forgotPassword') }}</router-link>
         </div>
-        <button type="submit" class="btn btn-primary btn-block">Se connecter</button>
+        <button type="submit" class="btn btn-primary btn-block">{{ t('login.submitButton') }}</button>
         <div class="register-link">
-          <p>Pas encore de compte ? <router-link to="/register">S'inscrire</router-link></p>
+          <p>{{ t('login.noAccount') }} <router-link to="/register">{{ t('login.registerLink') }}</router-link></p>
         </div>
       </form>
     </div>
@@ -49,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import router from "../../router/index.ts";
 import { useLoginStore } from '../../stores/login.ts';
@@ -58,7 +58,10 @@ import { useUserSettingsStore } from '../../stores/userSettings.ts';
 import { useLocale } from '../../composables/useLocale';
 import { useTheme } from '../../composables/useTheme';
 import { useFeatureFlags } from '../../composables/useFeatureFlags';
+import { useI18n } from 'vue-i18n';
 
+const i18n = useI18n();
+const { t } = i18n;
 const loginStore = useLoginStore();
 const currentUserStore = useCurrentUserStore();
 const settingsStore = useUserSettingsStore();
@@ -66,6 +69,39 @@ const { setLocale } = useLocale();
 const { setTheme } = useTheme();
 const { isEnabled, refreshAfterLogin } = useFeatureFlags();
 const errorMessage = ref('');
+
+onMounted(() => {
+  // Add translations
+  i18n.mergeLocaleMessage('en', {
+    login: {
+      backToHome: 'Back to home',
+      title: 'Login',
+      emailLabel: 'Email address',
+      passwordLabel: 'Password',
+      rememberMe: 'Remember me',
+      forgotPassword: 'Forgot password?',
+      submitButton: 'Sign in',
+      noAccount: 'No account yet?',
+      registerLink: 'Sign up',
+      invalidCredentials: 'Invalid email or password, please try again'
+    }
+  });
+
+  i18n.mergeLocaleMessage('fr', {
+    login: {
+      backToHome: 'Retour à l\'accueil',
+      title: 'Connexion',
+      emailLabel: 'Adresse mail',
+      passwordLabel: 'Mot de passe',
+      rememberMe: 'Se souvenir de moi',
+      forgotPassword: 'Mot de passe oublié ?',
+      submitButton: 'Se connecter',
+      noAccount: 'Pas encore de compte ?',
+      registerLink: 'S\'inscrire',
+      invalidCredentials: 'Email ou mot de passe invalide, merci de réessayer'
+    }
+  });
+});
 
 async function handleSubmit() {
   errorMessage.value = '';
@@ -83,7 +119,7 @@ async function handleSubmit() {
     await redirect();
   } catch (error) {
     console.error('Error during login:', error);
-    errorMessage.value = 'Email ou mot de passe invalide, merci de réessayer';
+    errorMessage.value = t('login.invalidCredentials');
   }
 }
 
