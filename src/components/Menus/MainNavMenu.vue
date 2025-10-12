@@ -246,13 +246,15 @@ const menuCategories = computed((): MenuCategory[] => [
         route: '/help/terminals/getting-started',
         label: t('help.sections.terminals.title'),
         title: t('help.sections.terminals.description'),
-        icon: 'fas fa-terminal'
+        icon: 'fas fa-terminal',
+        featureFlag: 'terminal_management'
       },
       {
         route: '/help/courses/structure',
         label: t('help.sections.courses.title'),
         title: t('help.sections.courses.description'),
-        icon: 'fas fa-graduation-cap'
+        icon: 'fas fa-graduation-cap',
+        featureFlag: 'course_conception'
       },
       {
         route: '/help/account/subscription',

@@ -107,10 +107,12 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useHelpTranslations } from '../../composables/useHelpTranslations'
 import { useLocale } from '../../composables/useLocale'
+import { useFeatureFlags } from '../../composables/useFeatureFlags'
 
 const { t } = useI18n()
 const { loadHelpTranslations } = useHelpTranslations()
 const { currentLocale, supportedLocales, setLocale, getLocaleInfo } = useLocale()
+const { isEnabled } = useFeatureFlags()
 const route = useRoute()
 
 onMounted(async () => {
@@ -127,80 +129,98 @@ const routePrefix = computed(() => isPublicHelp.value ? '/help-public' : '/help'
 const backRoute = computed(() => isPublicHelp.value ? '/' : '/courses')
 const backButtonText = computed(() => isPublicHelp.value ? t('help.backToHome') : t('help.backToApp'))
 
-const helpSections = computed(() => [
-  {
-    id: 'terminals',
-    title: t('help.sections.terminals.title'),
-    description: t('help.sections.terminals.description'),
-    icon: 'fas fa-terminal',
-    items: [
-      {
-        route: `${routePrefix.value}/terminals/getting-started`,
-        title: t('help.sections.terminals.gettingStarted'),
-        description: t('help.terminals.gettingStarted.intro'),
-        icon: 'fas fa-play-circle'
-      },
-      {
-        route: `${routePrefix.value}/terminals/managing-sessions`,
-        title: t('help.sections.terminals.managingSessions'),
-        description: t('help.terminals.managingSessions.intro'),
-        icon: 'fas fa-cogs'
-      },
-      {
-        route: `${routePrefix.value}/terminals/sharing`,
-        title: t('help.sections.terminals.sharing'),
-        description: t('help.terminals.sharing.intro'),
-        icon: 'fas fa-share-alt'
-      },
-      {
-        route: `${routePrefix.value}/terminals/troubleshooting`,
-        title: t('help.sections.terminals.troubleshooting'),
-        description: t('help.terminals.troubleshooting.intro'),
-        icon: 'fas fa-wrench'
-      }
-    ]
-  },
-  {
-    id: 'courses',
-    title: t('help.sections.courses.title'),
-    description: t('help.sections.courses.description'),
-    icon: 'fas fa-graduation-cap',
-    items: [
-      {
-        route: `${routePrefix.value}/courses/structure`,
-        title: t('help.sections.courses.structure'),
-        description: t('help.courses.structure.intro'),
-        icon: 'fas fa-sitemap'
-      },
-      {
-        route: `${routePrefix.value}/courses/content`,
-        title: t('help.sections.courses.content'),
-        description: t('help.courses.content.intro'),
-        icon: 'fas fa-edit'
-      }
-    ]
-  },
-  {
-    id: 'account',
-    title: t('help.sections.account.title'),
-    description: t('help.sections.account.description'),
-    icon: 'fas fa-user-cog',
-    items: [
-      {
-        route: `${routePrefix.value}/account/subscription`,
-        title: t('help.sections.account.subscription'),
-        description: t('help.account.subscription.intro'),
-        icon: 'fas fa-calendar-check'
-      },
-      {
-        route: `${routePrefix.value}/account/billing`,
-        title: t('help.sections.account.billing'),
-        description: t('help.account.billing.intro'),
-        icon: 'fas fa-credit-card'
-      }
-    ]
-  }
-])
+// Feature flag mapping for help sections
+const sectionFeatureFlags: Record<string, string> = {
+  terminals: 'terminal_management',
+  courses: 'course_conception',
+  // account section is always visible (no feature flag)
+}
+
+const helpSections = computed(() => {
+  const allSections = [
+    {
+      id: 'terminals',
+      title: t('help.sections.terminals.title'),
+      description: t('help.sections.terminals.description'),
+      icon: 'fas fa-terminal',
+      items: [
+        {
+          route: `${routePrefix.value}/terminals/getting-started`,
+          title: t('help.sections.terminals.gettingStarted'),
+          description: t('help.terminals.gettingStarted.intro'),
+          icon: 'fas fa-play-circle'
+        },
+        {
+          route: `${routePrefix.value}/terminals/managing-sessions`,
+          title: t('help.sections.terminals.managingSessions'),
+          description: t('help.terminals.managingSessions.intro'),
+          icon: 'fas fa-cogs'
+        },
+        {
+          route: `${routePrefix.value}/terminals/sharing`,
+          title: t('help.sections.terminals.sharing'),
+          description: t('help.terminals.sharing.intro'),
+          icon: 'fas fa-share-alt'
+        },
+        {
+          route: `${routePrefix.value}/terminals/troubleshooting`,
+          title: t('help.sections.terminals.troubleshooting'),
+          description: t('help.terminals.troubleshooting.intro'),
+          icon: 'fas fa-wrench'
+        }
+      ]
+    },
+    {
+      id: 'courses',
+      title: t('help.sections.courses.title'),
+      description: t('help.sections.courses.description'),
+      icon: 'fas fa-graduation-cap',
+      items: [
+        {
+          route: `${routePrefix.value}/courses/structure`,
+          title: t('help.sections.courses.structure'),
+          description: t('help.courses.structure.intro'),
+          icon: 'fas fa-sitemap'
+        },
+        {
+          route: `${routePrefix.value}/courses/content`,
+          title: t('help.sections.courses.content'),
+          description: t('help.courses.content.intro'),
+          icon: 'fas fa-edit'
+        }
+      ]
+    },
+    {
+      id: 'account',
+      title: t('help.sections.account.title'),
+      description: t('help.sections.account.description'),
+      icon: 'fas fa-user-cog',
+      items: [
+        {
+          route: `${routePrefix.value}/account/subscription`,
+          title: t('help.sections.account.subscription'),
+          description: t('help.account.subscription.intro'),
+          icon: 'fas fa-calendar-check'
+        },
+        {
+          route: `${routePrefix.value}/account/billing`,
+          title: t('help.sections.account.billing'),
+          description: t('help.account.billing.intro'),
+          icon: 'fas fa-credit-card'
+        }
+      ]
+    }
+  ]
+
+  // Filter sections based on feature flags
+  return allSections.filter(section => {
+    const featureFlag = sectionFeatureFlags[section.id]
+    // If no feature flag is defined for this section, always show it
+    if (!featureFlag) return true
+    // Otherwise, check if the feature flag is enabled
+    return isEnabled(featureFlag)
+  })
+})
 
 function toggleSection(sectionId: string) {
   if (expandedSections.value.has(sectionId)) {
