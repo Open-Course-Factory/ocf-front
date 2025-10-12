@@ -19,7 +19,7 @@
         @toggle-menu="toggleMenu"
       />
       <div class="content-area">
-        <router-view />
+        <router-view :key="route.fullPath" />
       </div>
     </div>
     <ToastContainer />

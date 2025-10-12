@@ -28,10 +28,10 @@
         <i class="fas fa-bars"></i>
       </button>
       <h1 class="app-title">
-        <router-link to="/courses">
+        <a href="#" @click.prevent="navigateToHome">
           <i class="fas fa-book"></i>
           <span>OCF</span>
-        </router-link>
+        </a>
       </h1>
     </div>
     <div class="right-controls">
@@ -83,11 +83,15 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useCurrentUserStore } from '../../stores/currentUser.ts';
+import { useUserSettingsStore } from '../../stores/userSettings.ts';
 import { useLocale } from '../../composables/useLocale';
+import { useFeatureFlags } from '../../composables/useFeatureFlags';
 
 const router = useRouter();
 const currentUser = useCurrentUserStore();
+const settingsStore = useUserSettingsStore();
 const { currentLocale, supportedLocales, setLocale, getLocaleInfo } = useLocale();
+const { isEnabled } = useFeatureFlags();
 const i18n = useI18n();
 const { t } = i18n;
 
@@ -117,6 +121,44 @@ function handleDisconnect() {
   closeUserMenu();
   currentUser.logout();
   router.push('/login');
+}
+
+async function navigateToHome() {
+  try {
+    // Load user settings to get default landing page
+    const settings = await settingsStore.loadSettings();
+    let landingPage = settings.default_landing_page;
+
+    // If user has a landing page preference, validate it's enabled
+    if (landingPage) {
+      // Check if the landing page requires a feature that's disabled
+      if (landingPage === '/courses' && !isEnabled('course_conception')) {
+        landingPage = null; // Reset to find alternative
+      }
+      if (landingPage?.startsWith('/terminal') && !isEnabled('terminal_management')) {
+        landingPage = null; // Reset to find alternative
+      }
+    }
+
+    // If no valid landing page, find first available enabled route
+    if (!landingPage) {
+      // Priority order: dashboard > terminals > courses
+      if (isEnabled('terminal_management')) {
+        landingPage = '/subscription-dashboard';
+      } else if (isEnabled('course_conception')) {
+        landingPage = '/courses';
+      } else {
+        // Fallback to subscription dashboard (always available)
+        landingPage = '/subscription-dashboard';
+      }
+    }
+
+    router.push(landingPage);
+  } catch (error) {
+    console.error('Error loading default landing page:', error);
+    // Fallback to subscription dashboard
+    router.push('/subscription-dashboard');
+  }
 }
 
 function handleClickOutside(event: Event) {
