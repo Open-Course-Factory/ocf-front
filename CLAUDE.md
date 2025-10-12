@@ -295,6 +295,122 @@ When creating new entity stores, extend baseStore and define:
 
 Enable demo mode for safe development without backend dependencies. All subscription/payment features work with realistic mock data and simulated delays.
 
+## Code Quality & Standards
+
+### Error Handling
+
+**Standard Pattern:**
+
+All error handling in the application must follow a consistent pattern:
+
+```typescript
+// ✅ CORRECT - Use translation keys for error messages
+try {
+  const response = await axios.post('/endpoint', data)
+  return response.data
+} catch (err: any) {
+  error.value = err.response?.data?.error_message ||
+                err.response?.data?.message ||
+                t('myDomain.errorKey')
+  throw err
+}
+```
+
+**Important Guidelines:**
+
+- ✅ **Always use translation keys** for error messages (never hardcode French or English)
+- ✅ **Check both `error_message` and `message`** fields from API responses
+- ✅ **Provide fallback translation key** for unknown errors
+- ✅ **Use try-catch-finally** for loading state management
+- ❌ **Never hardcode** error messages like `'Erreur de chargement'` or `'Error loading'`
+- ❌ **Never show** raw error objects to users
+
+**Error Message Priority:**
+1. `err.response?.data?.error_message` - Backend-provided user-friendly message
+2. `err.response?.data?.message` - Alternative backend message field
+3. `t('domain.errorKey')` - Translated fallback message
+
+**Example - Store Error Handling:**
+
+```typescript
+const loadUserData = async () => {
+  try {
+    base.isLoading.value = true
+    base.error.value = ''
+    const response = await axios.get('/users/current')
+    userData.value = response.data
+    return response.data
+  } catch (err: any) {
+    console.error('Error loading user data:', err)
+    base.error.value = err.response?.data?.error_message ||
+                       err.response?.data?.message ||
+                       t('users.loadError')
+    throw err
+  } finally {
+    base.isLoading.value = false
+  }
+}
+```
+
+**Console Logging Standards:**
+
+- Use `console.error()` for errors with descriptive context
+- Use `console.warn()` for warnings (e.g., demo mode fallbacks)
+- Use `console.log()` sparingly for important state changes
+- Use `console.debug()` (wrapped in `import.meta.env.DEV` check) for development-only logs
+
+### Import Paths
+
+**IMPORTANT:** This project does NOT have `@` path alias configured.
+
+```typescript
+// ❌ WRONG - @ alias is not configured
+import { formatCurrency } from '@/utils/formatters'
+import { useBaseStore } from '@/stores/baseStore'
+
+// ✅ CORRECT - Use relative paths
+import { formatCurrency } from '../utils/formatters'
+import { formatCurrency } from '../../utils/formatters'
+import { useBaseStore } from './baseStore'
+```
+
+**Path Resolution Rules:**
+- Always use **relative paths** (`./`, `../`, `../../`)
+- Count directory levels carefully
+- From stores → utils: `'../utils/formatters'`
+- From components → utils: `'../../utils/formatters'` or `'../../../utils/formatters'`
+- From stores → stores: `'./otherStore'`
+
+### Shared Utilities
+
+**Formatters (`/src/utils/formatters.ts`):**
+
+Always use shared formatter functions instead of duplicating formatting logic:
+
+```typescript
+import { formatCurrency, formatDate, formatDateTime, formatStorageSize } from '../utils/formatters'
+
+// ✅ CORRECT - Use shared formatters
+const displayPrice = formatCurrency(priceInCents, 'EUR')
+const displayDate = formatDate(dateString, 'fr-FR')
+
+// ❌ WRONG - Don't duplicate formatting logic
+const displayPrice = new Intl.NumberFormat('fr-FR', {
+  style: 'currency',
+  currency: 'EUR'
+}).format(priceInCents / 100)
+```
+
+Available formatters:
+- `formatCurrency(amount, currency, locale)` - Format money (amount in cents)
+- `formatDate(dateString, locale, fallback)` - Format date only
+- `formatDateTime(dateString, locale, fallback)` - Format date and time
+- `formatStorageSize(bytes, decimals)` - Format bytes to KB/MB/GB
+- `formatNumber(value, locale)` - Format with thousand separators
+- `formatPercentage(value, decimals, locale)` - Format decimal as percentage
+- `formatDuration(seconds)` - Format seconds to "2h 30m" format
+- `truncate(text, maxLength, ellipsis)` - Truncate long strings
+
 ## Feature Flags System
 
 **GitLab-style Implementation:**

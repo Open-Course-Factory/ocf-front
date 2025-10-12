@@ -1,12 +1,12 @@
-import axios from 'axios';
+import axios, { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { tokenService } from './tokenService';
 import { useCurrentUserStore } from '../stores/currentUser';
 
 // Request deduplication cache
-const pendingRequests = new Map<string, Promise<any>>();
+const pendingRequests = new Map<string, Promise<AxiosResponse>>();
 
 // Generate a unique key for request deduplication
-function getRequestKey(config: any): string {
+function getRequestKey(config: AxiosRequestConfig): string {
   const { method, url, params } = config;
   return `${method}:${url}:${JSON.stringify(params || {})}`;
 }
@@ -15,7 +15,7 @@ export const setupAxiosInterceptors = () => {
 
   // Intercepteur de requête - ajouter automatiquement le token et dédupliquer
   axios.interceptors.request.use(
-    (config: any) => {
+    (config: InternalAxiosRequestConfig) => {
       // Ne pas ajouter de token aux requêtes d'authentification
       if (config.url?.includes('/auth/login')) {
         return config;
@@ -29,7 +29,7 @@ export const setupAxiosInterceptors = () => {
       }
 
       // Request deduplication - only for GET requests
-      if (config.method?.toLowerCase() === 'get' && !config.skipDeduplication) {
+      if (config.method?.toLowerCase() === 'get' && !(config as any).skipDeduplication) {
         const requestKey = getRequestKey(config);
 
         if (pendingRequests.has(requestKey)) {

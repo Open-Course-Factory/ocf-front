@@ -49,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import axios from 'axios';
 import router from "../../router/index.ts";
 import { useLoginStore } from '../../stores/login.ts';
@@ -58,21 +58,10 @@ import { useUserSettingsStore } from '../../stores/userSettings.ts';
 import { useLocale } from '../../composables/useLocale';
 import { useTheme } from '../../composables/useTheme';
 import { useFeatureFlags } from '../../composables/useFeatureFlags';
-import { useI18n } from 'vue-i18n';
+import { useTranslations } from '../../composables/useTranslations';
 
-const i18n = useI18n();
-const { t } = i18n;
-const loginStore = useLoginStore();
-const currentUserStore = useCurrentUserStore();
-const settingsStore = useUserSettingsStore();
-const { setLocale } = useLocale();
-const { setTheme } = useTheme();
-const { isEnabled, refreshAfterLogin } = useFeatureFlags();
-const errorMessage = ref('');
-
-onMounted(() => {
-  // Add translations
-  i18n.mergeLocaleMessage('en', {
+const { t } = useTranslations({
+  en: {
     login: {
       backToHome: 'Back to home',
       title: 'Login',
@@ -85,9 +74,8 @@ onMounted(() => {
       registerLink: 'Sign up',
       invalidCredentials: 'Invalid email or password, please try again'
     }
-  });
-
-  i18n.mergeLocaleMessage('fr', {
+  },
+  fr: {
     login: {
       backToHome: 'Retour à l\'accueil',
       title: 'Connexion',
@@ -100,8 +88,16 @@ onMounted(() => {
       registerLink: 'S\'inscrire',
       invalidCredentials: 'Email ou mot de passe invalide, merci de réessayer'
     }
-  });
+  }
 });
+
+const loginStore = useLoginStore();
+const currentUserStore = useCurrentUserStore();
+const settingsStore = useUserSettingsStore();
+const { setLocale } = useLocale();
+const { setTheme } = useTheme();
+const { isEnabled, refreshAfterLogin } = useFeatureFlags();
+const errorMessage = ref('');
 
 async function handleSubmit() {
   errorMessage.value = '';

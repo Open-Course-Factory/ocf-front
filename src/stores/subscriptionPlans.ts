@@ -25,6 +25,7 @@ import { useBaseStore } from "./baseStore"
 import { getDemoSubscriptionPlans } from '../services/demoData'
 import { isDemoMode, logDemoAction, simulateDelay } from '../services/demoConfig'
 import axios from 'axios'
+import { formatCurrency } from '../utils/formatters'
 
 export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => {
 
@@ -179,10 +180,7 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
 
     // Formatage du prix pour affichage
     const formatPrice = (amount: number, currency: string = 'EUR') => {
-        return new Intl.NumberFormat('fr-FR', {
-            style: 'currency',
-            currency: currency.toUpperCase(),
-        }).format(amount / 100); // Conversion centimes -> euros
+        return formatCurrency(amount, currency)
     }
 
     // Fonction personnalisée pour les données de sélection

@@ -27,6 +27,7 @@ import { isDemoMode, logDemoAction, simulateDelay } from '../services/demoConfig
 import { demoPayments } from '../services/demoPayments'
 import { getDemoCurrentSubscription, getDemoUsageMetrics } from '../services/demoData'
 import { featureFlagService } from '../services/featureFlags'
+import { formatDate as formatDateUtil } from '../utils/formatters'
 
 export const useSubscriptionsStore = defineStore('subscriptions', () => {
 
@@ -486,12 +487,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     }
 
     const formatDate = (dateString: string) => {
-        if (!dateString) return '-'
-        try {
-            return new Date(dateString).toLocaleDateString('fr-FR')
-        } catch (e) {
-            return dateString
-        }
+        return formatDateUtil(dateString, 'fr-FR', '-')
     }
 
     const isTrialing = () => {

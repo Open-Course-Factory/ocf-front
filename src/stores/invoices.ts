@@ -23,6 +23,7 @@ import { defineStore } from "pinia"
 import { useI18n } from "vue-i18n"
 import { useBaseStore } from "./baseStore"
 import axios from 'axios'
+import { formatCurrency, formatDate as formatDateUtil } from '../utils/formatters'
 
 export const useInvoicesStore = defineStore('invoices', () => {
 
@@ -106,10 +107,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
 
     // Formatage du montant avec devise
     const formatAmount = (amount: number, currency: string = 'EUR') => {
-        return new Intl.NumberFormat('fr-FR', {
-            style: 'currency',
-            currency: currency.toUpperCase(),
-        }).format(amount / 100); // Conversion centimes -> euros
+        return formatCurrency(amount, currency)
     }
 
     // Obtenir la classe CSS pour le statut
@@ -145,12 +143,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
 
     // Formater la date
     const formatDate = (dateString: string) => {
-        if (!dateString) return '-';
-        try {
-            return new Date(dateString).toLocaleDateString('fr-FR');
-        } catch (e) {
-            return dateString;
-        }
+        return formatDateUtil(dateString, 'fr-FR', '-')
     }
 
     // Synchroniser les factures avec Stripe
