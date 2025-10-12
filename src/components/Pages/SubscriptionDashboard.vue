@@ -119,6 +119,11 @@ const recentInvoices = ref([])
 const lastCanceledSubscription = ref(null)
 const downloadingInvoices = ref<Set<string>>(new Set())
 
+// Caching timestamps to avoid redundant reloads
+const lastUsageLoad = ref<number>(0)
+const lastInvoicesLoad = ref<number>(0)
+const CACHE_DURATION = 60 * 1000 // 1 minute
+
 // Lifecycle
 onMounted(async () => {
   await loadDashboardData()
@@ -168,9 +173,18 @@ async function loadCurrentSubscription() {
   }
 }
 
-async function loadUsageMetrics() {
+async function loadUsageMetrics(force: boolean = false) {
+  // Check cache unless forced reload
+  const now = Date.now()
+  if (!force && (now - lastUsageLoad.value) < CACHE_DURATION && usageMetrics.value.length > 0) {
+    console.debug('Using cached usage metrics')
+    isLoadingUsage.value = false
+    return
+  }
+
   try {
     usageMetrics.value = await subscriptionsStore.getUsageMetrics()
+    lastUsageLoad.value = now
   } catch (err) {
     console.warn('Impossible de charger les métriques d\'usage:', err)
     usageMetrics.value = []
@@ -179,7 +193,15 @@ async function loadUsageMetrics() {
   }
 }
 
-async function loadRecentInvoices() {
+async function loadRecentInvoices(force: boolean = false) {
+  // Check cache unless forced reload
+  const now = Date.now()
+  if (!force && (now - lastInvoicesLoad.value) < CACHE_DURATION && recentInvoices.value.length > 0) {
+    console.debug('Using cached invoices')
+    isLoadingInvoices.value = false
+    return
+  }
+
   try {
     // Utiliser le store pour synchroniser et charger les factures
     const { useInvoicesStore } = await import('../../stores/invoices')
@@ -188,6 +210,7 @@ async function loadRecentInvoices() {
     await invoicesStore.syncAndLoadInvoices()
     // Prendre seulement les 3 plus récentes
     recentInvoices.value = invoicesStore.entities.slice(0, 3)
+    lastInvoicesLoad.value = now
   } catch (err) {
     console.warn('Impossible de charger les factures récentes:', err)
     recentInvoices.value = []
@@ -210,7 +233,7 @@ async function loadLastCanceledSubscription() {
 async function refreshUsage() {
   isRefreshingUsage.value = true
   try {
-    await loadUsageMetrics()
+    await loadUsageMetrics(true) // Force reload, bypass cache
   } finally {
     isRefreshingUsage.value = false
   }

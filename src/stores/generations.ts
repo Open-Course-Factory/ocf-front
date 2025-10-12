@@ -111,26 +111,26 @@ export const useGenerationsStore = defineStore('generations', () => {
         ["schedules", useSchedulesStore()],
     ])
 
-    const startStatusPolling = (generationId: string, initialInterval: number = 2000) => {
+    const startStatusPolling = (generationId: string, initialInterval: number = 5000) => {
         if (pollingIntervals.value.has(generationId)) {
             clearInterval(pollingIntervals.value.get(generationId));
         }
-        
+
         let currentInterval = initialInterval;
         let consecutiveUnchanged = 0;
         let lastStatus = '';
-        
+
         const poll = async () => {
             try {
                 const statusData = await checkGenerationStatus(generationId);
-                
+
                 if (statusData) {
                     // Si le statut n'a pas changé, augmenter l'intervalle
                     if (statusData.status === lastStatus) {
                         consecutiveUnchanged++;
-                        // Augmenter progressivement l'intervalle : 2s -> 5s -> 10s -> 15s max
-                        if (consecutiveUnchanged >= 3) {
-                            currentInterval = Math.min(15000, currentInterval + 3000);
+                        // Augmenter progressivement l'intervalle : 5s -> 10s -> 15s -> 20s -> 30s max
+                        if (consecutiveUnchanged >= 2) {
+                            currentInterval = Math.min(30000, currentInterval + 5000);
                         }
                     } else {
                         // Status a changé, revenir à l'intervalle initial
@@ -138,7 +138,7 @@ export const useGenerationsStore = defineStore('generations', () => {
                         currentInterval = initialInterval;
                         lastStatus = statusData.status;
                     }
-                    
+
                     // Arrêter le polling si terminé
                     if (['completed', 'failed', 'client_error', 'tunnel_error'].includes(statusData.status?.toLowerCase())) {
                         stopStatusPolling(generationId);
@@ -148,14 +148,14 @@ export const useGenerationsStore = defineStore('generations', () => {
             } catch (error) {
                 console.error('Erreur lors du polling:', error);
                 // En cas d'erreur, augmenter l'intervalle pour éviter le spam
-                currentInterval = Math.min(30000, currentInterval * 2);
+                currentInterval = Math.min(60000, currentInterval * 2);
             }
-            
+
             // Programmer le prochain poll avec l'intervalle mis à jour
             const intervalId = setTimeout(poll, currentInterval);
             pollingIntervals.value.set(generationId, intervalId);
         };
-        
+
         // Démarrer immédiatement
         poll();
     };

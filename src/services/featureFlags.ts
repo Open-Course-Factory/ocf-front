@@ -278,29 +278,16 @@ export class FeatureFlagService {
     this.isFetching = true
 
     try {
-      console.log(`🏴 Fetching from: GET /features`)
       const response = await axios.get('/features')
-      console.log(`🏴 Backend response status: ${response.status}`)
-      console.log(`🏴 Backend response headers:`, response.headers)
-      console.log(`🏴 Backend response FULL:`, JSON.stringify(response.data, null, 2))
-      console.log(`🏴 Backend response.data:`, response.data)
-      console.log(`🏴 Backend response.data.data:`, response.data?.data)
-      console.log(`🏴 typeof response.data:`, typeof response.data)
-      console.log(`🏴 Array.isArray(response.data):`, Array.isArray(response.data))
-      console.log(`🏴 response.data has .data property?`, 'data' in (response.data || {}))
 
       // Handle paginated response (data is inside response.data.data)
       const backendFeatures = Array.isArray(response.data)
         ? response.data
         : response.data.data || []
 
-      console.log(`🏴 Extracted backendFeatures:`, backendFeatures)
-      console.log(`🏴 backendFeatures length:`, backendFeatures?.length)
-      console.log(`🏴 Array.isArray(backendFeatures):`, Array.isArray(backendFeatures))
-
       if (Array.isArray(backendFeatures)) {
         if (backendFeatures.length > 0) {
-          console.log(`🏴 Backend returned ${backendFeatures.length} features:`, backendFeatures)
+          console.log(`🏴 Backend returned ${backendFeatures.length} features`)
 
           // First pass: reset all flags that will be updated from backend
           const flagsToUpdate = new Set<string>()
@@ -321,12 +308,8 @@ export class FeatureFlagService {
           backendFeatures.forEach((feature: any) => {
             const backendKey = feature.key || feature.name
             const flagKey = this.mapBackendFeatureToFlagKey(backendKey)
-            console.log(`🏴 Processing backend feature: key="${feature.key}" name="${feature.name}" enabled="${feature.enabled}"`)
-            console.log(`🏴   → Mapped to frontend flag: "${flagKey}"`)
 
             if (this.flags[flagKey]) {
-              const oldEnabled = this.flags[flagKey].enabled
-
               // Apply feature state using OR logic for multi-mapped features
               this.applyBackendFeatureToFlag(backendKey, feature.enabled)
 
@@ -342,10 +325,6 @@ export class FeatureFlagService {
                   updatedAt: feature.updated_at || feature.updatedAt
                 }
               }
-
-              console.log(`🏴   → Result: "${flagKey}": ${oldEnabled} → ${this.flags[flagKey].enabled}`)
-            } else {
-              console.warn(`🏴   → WARNING: Backend feature "${flagKey}" not found in frontend flags!`)
             }
           })
 
@@ -371,19 +350,15 @@ export class FeatureFlagService {
           this.lastFetch = now
         }
 
-        // Log final state of all flags
-        console.log('🏴 Final feature flag states:')
-        Object.entries(this.flags).forEach(([key, flag]) => {
-          console.log(`🏴   - ${key}: ${flag.enabled ? '✅ ENABLED' : '❌ DISABLED'}`)
-        })
+        // Log final state summary (only in dev mode)
+        if (import.meta.env.DEV) {
+          const enabledFlags = Object.entries(this.flags)
+            .filter(([_, flag]) => flag.enabled)
+            .map(([key, _]) => key)
+          console.log(`🏴 Feature flags: ${enabledFlags.join(', ') || 'none enabled'}`)
+        }
       } else {
-        console.error(`❌ Backend response is not an array!`, {
-          type: typeof backendFeatures,
-          isNull: backendFeatures === null,
-          isObject: typeof backendFeatures === 'object',
-          keys: backendFeatures ? Object.keys(backendFeatures) : null,
-          value: backendFeatures
-        })
+        console.error(`❌ Backend response is not an array!`)
       }
     } catch (error: any) {
       console.error(`❌ Failed to fetch feature flags from backend:`, {

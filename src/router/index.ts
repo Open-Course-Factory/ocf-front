@@ -319,6 +319,9 @@ const router = createRouter({
   routes: basicRoutes as RouteRecordRaw[],
 });
 
+// Cache for route feature flag checks (per-user session)
+const routeFeatureCache = new Map<string, boolean>();
+
 router.beforeEach(async (to, from, next) => {
   const currentUserStore = useCurrentUserStore();
   const { storePreviousRoute } = useSettingsNavigation();
@@ -336,10 +339,10 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // Wait for feature flags to initialize before checking
+  // Wait for feature flags to initialize before checking (cached after first call)
   await featureFlagService.waitForInitialization();
 
-  // Check feature flags (deep link protection)
+  // Check feature flags (deep link protection) with per-route caching
   const requiredFeature = to.meta.requiresFeature as string | undefined;
   if (requiredFeature) {
     const actor = currentUserStore.userId ? {
@@ -347,7 +350,19 @@ router.beforeEach(async (to, from, next) => {
       role: currentUserStore.userRoles[0]
     } : undefined;
 
-    const isFeatureEnabled = featureFlagService.isEnabled(requiredFeature, actor);
+    // Create cache key combining route and user
+    const cacheKey = `${to.path}:${requiredFeature}:${currentUserStore.userId}`;
+
+    // Check cache first
+    let isFeatureEnabled: boolean;
+    if (routeFeatureCache.has(cacheKey)) {
+      isFeatureEnabled = routeFeatureCache.get(cacheKey)!;
+      console.debug(`🏴 Using cached feature check for ${requiredFeature}: ${isFeatureEnabled}`);
+    } else {
+      // Check feature flag and cache result
+      isFeatureEnabled = featureFlagService.isEnabled(requiredFeature, actor);
+      routeFeatureCache.set(cacheKey, isFeatureEnabled);
+    }
 
     if (!isFeatureEnabled) {
       console.warn(`🏴 Access denied: Feature "${requiredFeature}" is disabled`);

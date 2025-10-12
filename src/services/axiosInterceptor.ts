@@ -2,9 +2,18 @@ import axios from 'axios';
 import { tokenService } from './tokenService';
 import { useCurrentUserStore } from '../stores/currentUser';
 
+// Request deduplication cache
+const pendingRequests = new Map<string, Promise<any>>();
+
+// Generate a unique key for request deduplication
+function getRequestKey(config: any): string {
+  const { method, url, params } = config;
+  return `${method}:${url}:${JSON.stringify(params || {})}`;
+}
+
 export const setupAxiosInterceptors = () => {
-  
-  // Intercepteur de requête - ajouter automatiquement le token
+
+  // Intercepteur de requête - ajouter automatiquement le token et dédupliquer
   axios.interceptors.request.use(
     (config: any) => {
       // Ne pas ajouter de token aux requêtes d'authentification
@@ -17,9 +26,19 @@ export const setupAxiosInterceptors = () => {
         // Ensure Bearer token format as required by the payment API
         const bearerToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
         config.headers.Authorization = bearerToken;
-        console.debug(`🔑 Request to ${config.url}: Token added (valid: ${tokenService.hasValidToken()})`)
-      } else {
-        console.debug(`🔑 Request to ${config.url}: No valid token available`)
+      }
+
+      // Request deduplication - only for GET requests
+      if (config.method?.toLowerCase() === 'get' && !config.skipDeduplication) {
+        const requestKey = getRequestKey(config);
+
+        if (pendingRequests.has(requestKey)) {
+          // Return the existing promise instead of making a new request
+          if (import.meta.env.DEV) {
+            console.debug(`🔄 Deduplicating request: ${requestKey}`);
+          }
+          return pendingRequests.get(requestKey)!.then(() => config);
+        }
       }
 
       return config;
@@ -29,10 +48,23 @@ export const setupAxiosInterceptors = () => {
     }
   );
 
-  // Intercepteur de réponse - gérer les erreurs 401
+  // Intercepteur de réponse - gérer les erreurs 401 et nettoyer le cache
   axios.interceptors.response.use(
-    (response) => response,
+    (response) => {
+      // Clean up request from pending cache
+      if (response.config.method?.toLowerCase() === 'get') {
+        const requestKey = getRequestKey(response.config);
+        pendingRequests.delete(requestKey);
+      }
+      return response;
+    },
     (error) => {
+      // Clean up request from pending cache on error
+      if (error.config?.method?.toLowerCase() === 'get') {
+        const requestKey = getRequestKey(error.config);
+        pendingRequests.delete(requestKey);
+      }
+
       // Si on reçoit une 401, déconnecter automatiquement
       if (error.response?.status === 401) {
         console.log('Erreur 401 détectée, déconnexion automatique');

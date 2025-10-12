@@ -378,25 +378,26 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
                 console.log('Upgrade response:', result)
             }
 
-            // Wait for Stripe webhook to process (may take 1-3 seconds)
+            // Wait for Stripe webhook to process (optimized single wait)
             console.log('Waiting for webhook to process...')
-            await new Promise(resolve => setTimeout(resolve, 2000))
+            await new Promise(resolve => setTimeout(resolve, 3000))
 
-            // Recharger l'abonnement actuel (first attempt)
-            console.log('Reloading subscription after upgrade (attempt 1)...')
+            // Recharger l'abonnement actuel
+            console.log('Reloading subscription after upgrade...')
             await getCurrentSubscription()
-            console.log('Updated subscription (attempt 1):', currentSubscription.value)
+            console.log('Updated subscription:', currentSubscription.value)
 
-            // If subscription_plan_id doesn't match the new plan, try one more time
+            // Only retry if plan_id doesn't match (webhook might be slow)
             if (currentSubscription.value?.subscription_plan_id !== newPlanId) {
-                console.warn('Plan ID mismatch, waiting for webhook... Retrying in 2s')
+                console.warn('Plan ID mismatch, waiting additional 2s for webhook...')
                 await new Promise(resolve => setTimeout(resolve, 2000))
 
-                console.log('Reloading subscription (attempt 2)...')
+                console.log('Final reload attempt...')
                 await getCurrentSubscription()
-                console.log('Updated subscription (attempt 2):', currentSubscription.value)
+                console.log('Final subscription state:', currentSubscription.value)
             }
 
+            // Reload usage metrics
             await getUsageMetrics()
             console.log('Updated usage metrics:', usageMetrics.value)
 
