@@ -4,7 +4,7 @@
     <header class="hero-section">
       <div class="hero-content">
         <div class="hero-badge">
-          <span class="badge">🚀 {{ t('landing.newFeatures') }}</span>
+          <span class="badge">🚀 {{ t('landing.platformReady') }}</span>
         </div>
         <h1 class="hero-title">{{ t('landing.heroTitle') }}</h1>
         <p class="hero-subtitle">{{ t('landing.heroSubtitle') }}</p>
@@ -25,9 +25,9 @@
       </div>
       <div class="hero-animation">
         <div class="floating-cards">
-          <div class="card card-1">🎓 {{ t('landing.courses') }}</div>
-          <div class="card card-2">🖥️ {{ t('landing.terminals') }}</div>
-          <div class="card card-3">⚙️ {{ t('landing.navigation') }}</div>
+          <div class="card card-1">🖥️ {{ t('landing.terminals') }}</div>
+          <div class="card card-2">💳 {{ t('landing.subscriptions') }}</div>
+          <div class="card card-3">🌍 {{ t('landing.multiLanguage') }}</div>
         </div>
       </div>
 
@@ -39,18 +39,6 @@
       <div class="container">
         <h2 class="section-title">{{ t('landing.features.title') }}</h2>
         <div class="features-grid">
-          <!-- Course Design -->
-          <div class="feature-card feature-course">
-            <div class="feature-icon">🎓</div>
-            <h3>{{ t('landing.features.courseDesign.title') }}</h3>
-            <p>{{ t('landing.features.courseDesign.description') }}</p>
-            <ul class="feature-list">
-              <li>{{ t('landing.features.courseDesign.chapters') }}</li>
-              <li>{{ t('landing.features.courseDesign.sections') }}</li>
-              <li>{{ t('landing.features.courseDesign.pages') }}</li>
-              <li>{{ t('landing.features.courseDesign.scheduling') }}</li>
-            </ul>
-          </div>
 
           <!-- Terminal Management -->
           <div class="feature-card feature-terminal">
@@ -155,11 +143,6 @@
             <h3>{{ t('landing.gettingStarted.step3.title') }}</h3>
             <p>{{ t('landing.gettingStarted.step3.description') }}</p>
           </div>
-          <div class="step">
-            <div class="step-number">4</div>
-            <h3>{{ t('landing.gettingStarted.step4.title') }}</h3>
-            <p>{{ t('landing.gettingStarted.step4.description') }}</p>
-          </div>
         </div>
       </div>
     </section>
@@ -215,16 +198,17 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useLocale } from '../../composables/useLocale'
 import packageJson from '../../../package.json'
 
-const { t, locale } = useI18n()
-
-const currentLocale = computed(() => locale.value)
+const { t } = useI18n()
+const { currentLocale, setLocale } = useLocale()
 const showScrollIndicator = ref(true)
 const isAtBottom = ref(false)
 
 const toggleLanguage = () => {
-  locale.value = locale.value === 'en' ? 'fr' : 'en'
+  const newLocale = currentLocale.value === 'en' ? 'fr' : 'en'
+  setLocale(newLocale)
 }
 
 
@@ -368,88 +352,75 @@ onMounted(() => {
 
   mergeLocaleMessage('fr', {
     landing: {
-      newFeatures: 'Nouvelles fonctionnalités',
+      platformReady: 'Essai gratuit disponible',
       heroTitle: 'Open Course Factory',
-      heroSubtitle: 'Plateforme complète de gestion de cours avec terminaux intégrés et système d\'abonnement',
+      heroSubtitle: 'Testez gratuitement sans carte bancaire ! Terminaux SSH, système d\'abonnement flexible et interface multilingue',
       login: 'Se connecter',
-      register: "S'inscrire",
+      register: "S'inscrire gratuitement",
       help: 'Aide',
-      courses: 'Cours',
       terminals: 'Terminaux',
-      navigation: 'Fonctionnalités',
+      subscriptions: 'Abonnements',
+      multiLanguage: 'Multilingue',
       scrollDown: 'Découvrir plus',
       backToTop: 'Retour en haut',
 
       features: {
         title: 'Fonctionnalités Principales',
-        courseDesign: {
-          title: 'Conception de Cours',
-          description: 'Créez des cours structurés avec chapitres, sections et pages',
-          chapters: 'Gestion des chapitres',
-          sections: 'Organisation en sections',
-          pages: 'Édition de pages',
-          scheduling: 'Planification des cours'
-        },
         terminals: {
-          title: 'Gestion des Terminaux',
-          description: 'Terminaux interactifs avec XTerm.js et partage en temps réel',
+          title: 'Terminaux Interactifs',
+          description: 'Accédez à des terminaux SSH sécurisés avec XTerm.js et partage en temps réel',
           interactive: 'Sessions terminaux interactives',
-          sharing: 'Partage de sessions',
+          sharing: 'Partage de sessions en temps réel',
           ssh: 'Gestion des clés SSH',
-          realTime: 'Collaboration temps réel'
+          realTime: 'Collaboration instantanée'
         },
         billing: {
-          title: 'Plans d\'Abonnement',
-          description: 'Choisissez le plan qui correspond à vos besoins pédagogiques',
-          flexible: 'Plans flexibles',
-          plans: 'Formules adaptées',
-          invoices: 'Facturation simple',
-          portal: 'Gestion autonome'
+          title: 'Plan Gratuit & Abonnements',
+          description: 'Commencez gratuitement sans carte bancaire, puis choisissez un plan pour plus de fonctionnalités',
+          flexible: 'Plan gratuit pour tester la plateforme',
+          plans: 'Plans payants pour fonctionnalités avancées',
+          invoices: 'Facturation sécurisée avec Stripe',
+          portal: 'Aucune carte requise pour débuter'
         },
         i18n: {
           title: 'Support Multi-langues',
-          description: 'Interface complètement traduite avec détection automatique',
-          french: 'Français (par défaut)',
-          english: 'Anglais (fallback)',
-          embedded: 'Traductions intégrées',
-          dynamic: 'Chargement dynamique'
+          description: 'Interface entièrement traduite en français et anglais',
+          french: 'Français (langue par défaut)',
+          english: 'Anglais (langue alternative)',
+          embedded: 'Traductions intégrées aux composants',
+          dynamic: 'Changement de langue instantané'
         }
       },
 
       tech: {
         title: 'Technologies Modernes',
         subtitle: 'Stack technique de pointe pour une expérience optimale',
-        vue: 'Composition API et TypeScript',
-        pinia: 'Gestion d\'état moderne',
-        router: 'Navigation avec guards',
-        vite: 'Build tool ultra-rapide',
-        typescript: 'Typage statique',
-        ui: 'Composants modernes'
+        vue: 'Vue 3 Composition API avec TypeScript',
+        pinia: 'Pinia pour la gestion d\'état',
+        router: 'Vue Router avec guards d\'authentification',
+        vite: 'Vite pour un build ultra-rapide',
+        typescript: 'TypeScript pour la sûreté du code',
+        ui: 'Element Plus et Vuetify pour l\'interface'
       },
-
 
       gettingStarted: {
         title: 'Commencer',
         step1: {
-          title: 'Créer un compte',
-          description: 'Inscrivez-vous pour accéder à toutes les fonctionnalités'
+          title: 'Créer un compte gratuit',
+          description: 'Inscription en 2 minutes, sans carte bancaire'
         },
         step2: {
-          title: 'Configurer votre profil',
-          description: 'Définissez vos préférences et votre rôle'
+          title: 'Tester gratuitement',
+          description: 'Explorez toutes les fonctionnalités du plan gratuit'
         },
         step3: {
-          title: 'Créer votre premier cours',
-          description: 'Utilisez notre interface intuitive pour structurer vos contenus'
-        },
-        step4: {
-          title: 'Lancer vos terminaux',
-          description: 'Intégrez des labs pratiques à vos cours'
+          title: 'Passer à un plan payant (optionnel)',
+          description: 'Débloquez plus de fonctionnalités quand vous êtes prêt'
         }
       },
 
       footer: {
-        description: 'Plateforme moderne d\'enseignement avec labs intégrés',
+        description: 'Plateforme de gestion avec terminaux et abonnements intégrés',
         product: 'Produit',
         features: 'Fonctionnalités',
         technology: 'Technologies',
@@ -465,88 +436,75 @@ onMounted(() => {
 
   mergeLocaleMessage('en', {
     landing: {
-      newFeatures: 'New Features',
+      platformReady: 'Free Trial Available',
       heroTitle: 'Open Course Factory',
-      heroSubtitle: 'Complete course management platform with integrated terminals and subscription system',
+      heroSubtitle: 'Test for free without credit card! SSH terminals, flexible subscription system, and multilingual interface',
       login: 'Login',
-      register: 'Register',
+      register: 'Sign Up Free',
       help: 'Help',
-      courses: 'Courses',
       terminals: 'Terminals',
-      navigation: 'Features',
+      subscriptions: 'Subscriptions',
+      multiLanguage: 'Multi-language',
       scrollDown: 'Discover more',
       backToTop: 'Back to top',
 
       features: {
         title: 'Core Features',
-        courseDesign: {
-          title: 'Course Design',
-          description: 'Create structured courses with chapters, sections and pages',
-          chapters: 'Chapter management',
-          sections: 'Section organization',
-          pages: 'Page editing',
-          scheduling: 'Course scheduling'
-        },
         terminals: {
-          title: 'Terminal Management',
-          description: 'Interactive terminals with XTerm.js and real-time sharing',
+          title: 'Interactive Terminals',
+          description: 'Access secure SSH terminals with XTerm.js and real-time sharing',
           interactive: 'Interactive terminal sessions',
-          sharing: 'Session sharing',
+          sharing: 'Real-time session sharing',
           ssh: 'SSH key management',
-          realTime: 'Real-time collaboration'
+          realTime: 'Instant collaboration'
         },
         billing: {
-          title: 'Subscription Plans',
-          description: 'Choose the plan that fits your educational needs',
-          flexible: 'Flexible plans',
-          plans: 'Tailored options',
-          invoices: 'Simple billing',
-          portal: 'Self-service portal'
+          title: 'Free Plan & Subscriptions',
+          description: 'Start free without credit card, then choose a plan for more features',
+          flexible: 'Free plan to test the platform',
+          plans: 'Paid plans for advanced features',
+          invoices: 'Secure billing with Stripe',
+          portal: 'No card required to start'
         },
         i18n: {
           title: 'Multi-language Support',
-          description: 'Fully translated interface with automatic detection',
-          french: 'French (default)',
-          english: 'English (fallback)',
-          embedded: 'Embedded translations',
-          dynamic: 'Dynamic loading'
+          description: 'Fully translated interface in French and English',
+          french: 'French (default language)',
+          english: 'English (alternative language)',
+          embedded: 'Component-embedded translations',
+          dynamic: 'Instant language switching'
         }
       },
 
       tech: {
         title: 'Modern Technologies',
         subtitle: 'Cutting-edge tech stack for optimal experience',
-        vue: 'Composition API and TypeScript',
-        pinia: 'Modern state management',
-        router: 'Navigation with guards',
-        vite: 'Ultra-fast build tool',
-        typescript: 'Static typing',
-        ui: 'Modern components'
+        vue: 'Vue 3 Composition API with TypeScript',
+        pinia: 'Pinia for state management',
+        router: 'Vue Router with authentication guards',
+        vite: 'Vite for ultra-fast build',
+        typescript: 'TypeScript for code safety',
+        ui: 'Element Plus and Vuetify for UI'
       },
-
 
       gettingStarted: {
         title: 'Getting Started',
         step1: {
-          title: 'Create Account',
-          description: 'Sign up to access all features'
+          title: 'Create Free Account',
+          description: '2-minute signup, no credit card required'
         },
         step2: {
-          title: 'Setup Profile',
-          description: 'Define your preferences and role'
+          title: 'Test for Free',
+          description: 'Explore all features of the free plan'
         },
         step3: {
-          title: 'Create First Course',
-          description: 'Use our intuitive interface to structure content'
-        },
-        step4: {
-          title: 'Launch Terminals',
-          description: 'Integrate practical labs into your courses'
+          title: 'Upgrade to Paid Plan (Optional)',
+          description: 'Unlock more features when you\'re ready'
         }
       },
 
       footer: {
-        description: 'Modern teaching platform with integrated labs',
+        description: 'Management platform with integrated terminals and subscriptions',
         product: 'Product',
         features: 'Features',
         technology: 'Technology',
@@ -879,18 +837,18 @@ onUnmounted(() => {
 
 /* Features Section */
 .features-section {
-  padding: 80px 0;
+  padding: 60px 0;
   background: #fff;
 }
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 40px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
 }
 
 .feature-card {
-  padding: 40px;
+  padding: 30px;
   border-radius: 12px;
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -983,6 +941,7 @@ onUnmounted(() => {
   font-size: 1.2rem;
   font-weight: 600;
   margin-bottom: 10px;
+  color: #fff;
 }
 
 .tech-card p {
@@ -1052,6 +1011,7 @@ onUnmounted(() => {
   font-size: 1.5rem;
   font-weight: 700;
   margin-bottom: 15px;
+  color: #fff;
 }
 
 .footer-brand p {
@@ -1069,6 +1029,7 @@ onUnmounted(() => {
   font-size: 1.1rem;
   font-weight: 600;
   margin-bottom: 15px;
+  color: #fff;
 }
 
 .link-group a {
@@ -1091,6 +1052,7 @@ onUnmounted(() => {
   align-items: center;
   flex-wrap: wrap;
   gap: 20px;
+  color: #d1d5db;
 }
 
 .version {
