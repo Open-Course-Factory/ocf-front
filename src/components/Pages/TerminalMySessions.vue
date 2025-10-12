@@ -47,10 +47,6 @@
             <i :class="isSyncing ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'"></i>
             {{ isSyncing ? t('terminalMySessions.buttonSyncing') : t('terminalMySessions.buttonSync') }}
           </button>
-          <button class="btn btn-secondary" @click="loadSessions">
-            <i class="fas fa-sync" :class="{ 'fa-spin': isLoading }"></i>
-            {{ t('terminalMySessions.buttonRefresh') }}
-          </button>
           <router-link to="/terminal-creation" class="btn btn-primary">
             <i class="fas fa-plus"></i>
             {{ t('terminalMySessions.buttonNewSession') }}
@@ -91,253 +87,150 @@
             <div class="separator-line"></div>
           </div>
 
-          <div :class="['session-card', { 'inactive-terminal': isTerminalInactive(session.status) }]">
-
-          <!-- En-tête avec indicateur de sync -->
-          <div class="card-header">
-            <div class="session-title-container">
-              <div v-if="!editingNames.has(session.id)" class="session-title-display">
-                <h5 class="session-id">{{ getTerminalDisplayName(session) }}</h5>
-                <Button
-                  variant="outline-secondary"
-                  size="sm"
-                  icon="fas fa-pencil-alt"
-                  @click="startEditingName(session.id, session.name)"
-                  :title="t('terminals.editName')"
-                  class="btn-edit-name"
-                />
-              </div>
-              <div v-else class="session-title-edit">
-                <div class="name-input-wrapper">
-                  <div class="name-input-container">
-                    <input
-                      v-model="editingNames.get(session.id)!.value"
-                      type="text"
-                      class="name-input"
-                      :placeholder="t('terminals.namePlaceholder')"
-                      maxlength="255"
-                      @keyup.enter="saveName(session.id)"
-                      @keyup.esc="cancelEditingName(session.id)"
-                      :disabled="savingNames.has(session.id)"
-                    />
-                    <small class="char-counter">{{ (editingNames.get(session.id)?.value || '').length }}/255</small>
-                  </div>
-                  <div class="name-edit-actions">
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      icon="fas fa-check"
-                      @click="saveName(session.id)"
-                      :disabled="savingNames.has(session.id)"
-                      :loading="savingNames.has(session.id)"
-                      :title="t('terminals.saveName')"
-                    />
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      icon="fas fa-times"
-                      @click="cancelEditingName(session.id)"
-                      :disabled="savingNames.has(session.id)"
-                      :title="t('terminals.cancelEdit')"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="status-group">
-              <span
-                :class="['status-indicator', getStatusClass(session.status)]"
-                :title="session.status || 'unknown'"
-              >
-                <i class="fas fa-circle"></i>
-              </span>
-              <!-- Indicateur de sync -->
-              <div v-if="getSyncResultForSession(session.session_id)" class="sync-indicator">
-                <span v-if="getSyncResultForSession(session.session_id).updated"
-                      class="sync-badge updated"
-                      :title="t('terminalMySessions.synchronized')">
-                  <i class="fas fa-arrow-up"></i>
-                  {{ t('terminalMySessions.synchronized') }}
-                </span>
-                <span v-else
-                      class="sync-badge current"
-                      :title="t('terminalMySessions.upToDate')">
-                  <i class="fas fa-check"></i>
-                  {{ t('terminalMySessions.upToDate') }}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div class="card-body">
-            <div class="session-details">
-              <div class="detail-row">
-                <span class="label">{{ t('terminalMySessions.terminalId') }}:</span>
-                <span class="value">{{ session.id }}</span>
-              </div>
-              <div class="detail-row">
-                <span class="label">{{ t('terminalMySessions.sessionId') }}:</span>
-                <span class="value">{{ session.session_id }}</span>
-              </div>
-              <div class="detail-row" v-if="session.created_at">
-                <span class="label">{{ t('terminalMySessions.createdAt') }}:</span>
-                <span class="value">{{ formatDate(session.created_at) }}</span>
-              </div>
-              <div class="detail-row" v-if="session.expires_at">
-                <span class="label">{{ t('terminalMySessions.expiresAt') }}:</span>
-                <span class="value">{{ formatDate(session.expires_at) }}</span>
-              </div>
-              <div class="detail-row" v-if="session.user_id">
-                <span class="label">{{ t('terminalMySessions.userId') }}:</span>
-                <span class="value">{{ session.user_id }}</span>
-              </div>
-              <div class="detail-row" v-if="session.instance_type">
-                <span class="label">{{ t('terminalMySessions.instanceType') }}:</span>
-                <span class="value instance-type">
-                  {{ getInstanceName(session.instance_type) }}
-                  <i class="fas fa-server" :title="t('terminalMySessions.instanceType')"></i>
-                </span>
-              </div>
-            </div>
-
-            <div v-if="getSyncResultForSession(session.session_id)" class="sync-details">
-              <h6 class="sync-title">
-                <i class="fas fa-sync-alt"></i>
-                {{ t('terminalMySessions.lastSynchronization') }}
-              </h6>
-              <div class="sync-info-grid">
-                <div class="sync-info-item">
-                  <span class="label">{{ t('terminalMySessions.previousStatus') }}:</span>
-                  <span class="value">{{ getSyncResultForSession(session.session_id).previous_status }}</span>
-                </div>
-                <div class="sync-info-item">
-                  <span class="label">{{ t('terminalMySessions.currentStatus') }}:</span>
-                  <span class="value">{{ getSyncResultForSession(session.session_id).current_status }}</span>
-                </div>
-                <div class="sync-info-item">
-                  <span class="label">{{ t('terminalMySessions.syncTime') }}:</span>
-                  <span class="value">{{ formatSyncTime(getSyncResultForSession(session.session_id).last_sync_at) }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Section intégration iframe -->
-            <div class="iframe-section" v-if="session.status === 'active'">
-              <h6 class="iframe-title">
-                <i class="fas fa-external-link-alt"></i>
-                {{ t('terminalMySessions.terminalAccess') }}
-              </h6>
-
-              <div class="iframe-controls">
-                <div class="url-display">
-                  <input
-                    :value="getTerminalUrl(session.session_id)"
-                    readonly
-                    class="url-input"
-                    ref="urlInput"
-                  />
+          <div :class="['session-card', { 'inactive-terminal': isTerminalInactive(session.status), 'shared-terminal': session.isShared, 'dropdown-open': openDropdowns.has(session.id || session.session_id) }]">
+            <!-- Compact header with all info in one line -->
+            <div class="card-header">
+              <div class="header-left">
+                <!-- Terminal name with inline edit -->
+                <div v-if="!editingNames.has(session.id)" class="session-title-display">
+                  <h5 class="session-name">{{ getTerminalDisplayName(session) }}</h5>
                   <button
-                    class="btn btn-outline-secondary btn-sm"
-                    @click="copyUrlToClipboard(session.session_id)"
-                    :title="t('terminalMySessions.copyLink')"
+                    class="btn-icon btn-edit-name"
+                    @click="startEditingName(session.id, session.name)"
+                    :title="t('terminals.editName')"
                   >
-                    <i :class="copiedSessions.has(session.session_id) ? 'fas fa-check' : 'fas fa-copy'"></i>
+                    <i class="fas fa-pencil-alt"></i>
+                  </button>
+                </div>
+                <div v-else class="session-title-edit">
+                  <input
+                    v-model="editingNames.get(session.id)!.value"
+                    type="text"
+                    class="name-input-compact"
+                    :placeholder="t('terminals.namePlaceholder')"
+                    maxlength="255"
+                    @keyup.enter="saveName(session.id)"
+                    @keyup.esc="cancelEditingName(session.id)"
+                    :disabled="savingNames.has(session.id)"
+                  />
+                  <button class="btn-icon" @click="saveName(session.id)" :disabled="savingNames.has(session.id)">
+                    <i class="fas fa-check"></i>
+                  </button>
+                  <button class="btn-icon" @click="cancelEditingName(session.id)" :disabled="savingNames.has(session.id)">
+                    <i class="fas fa-times"></i>
                   </button>
                 </div>
 
-                <div class="iframe-actions">
+                <!-- Compact metadata -->
+                <div class="session-metadata">
+                  <span v-if="session.isShared" class="metadata-item shared-info" :title="`${t('terminalMySessions.sharedBy')}: ${session.shared_by}`">
+                    <i class="fas fa-share-alt"></i>
+                    {{ session.shared_by }}
+                  </span>
+                  <span v-if="session.instance_type" class="metadata-item" :title="t('terminalMySessions.instanceType')">
+                    <i class="fas fa-server"></i>
+                    {{ getInstanceName(session.instance_type) }}
+                  </span>
+                  <span v-if="session.expires_at" class="metadata-item" :title="t('terminalMySessions.expiresAt')">
+                    <i class="fas fa-clock"></i>
+                    {{ formatDate(session.expires_at) }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="header-right">
+                <!-- Status indicator -->
+                <span :class="['status-badge', getStatusClass(session.status)]" :title="session.status">
+                  <i class="fas fa-circle"></i>
+                  {{ session.status }}
+                </span>
+
+                <!-- Action buttons -->
+                <div class="card-actions-compact">
                   <button
-                    class="btn btn-primary btn-sm"
+                    v-if="session.status === 'active'"
+                    class="btn-icon btn-primary"
                     @click="openTerminalInNewTab(session.session_id)"
+                    :title="t('terminalMySessions.buttonOpen')"
                   >
                     <i class="fas fa-external-link-alt"></i>
-                    {{ t('terminalMySessions.buttonOpen') }}
                   </button>
-
                   <button
-                    class="btn btn-info btn-sm"
-                    @click="toggleIframePreview(session.session_id)"
+                    v-if="!isTerminalInactive(session.status) && !session.isShared"
+                    class="btn-icon btn-share"
+                    @click="openSharingModal(session.session_id)"
+                    :title="t('terminalMySessions.tooltipShare')"
                   >
-                    <i :class="showPreviews.has(session.session_id) ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-                    {{ showPreviews.has(session.session_id) ? t('terminalMySessions.buttonHide') : t('terminalMySessions.buttonShow') }}
+                    <i class="fas fa-share-alt"></i>
                   </button>
-
                   <button
-                    class="btn btn-warning btn-sm"
-                    @click="copyIframeCode(session.session_id)"
-                    :title="t('terminalMySessions.iframeCodeTitle')"
+                    v-if="session.status === 'active' && !session.isShared"
+                    class="btn-icon btn-stop"
+                    @click="stopSession(session.session_id)"
+                    :title="t('terminalMySessions.buttonStop')"
                   >
-                    <i :class="copiedIframes.has(session.session_id) ? 'fas fa-check' : 'fas fa-code'"></i>
-                    iframe
+                    <i class="fas fa-stop"></i>
                   </button>
-                </div>
-              </div>
+                  <button
+                    v-if="isTerminalInactive(session.status)"
+                    class="btn-icon"
+                    @click="discardTerminal(session.id)"
+                    :title="t('terminalMySessions.tooltipHide')"
+                  >
+                    <i class="fas fa-eye-slash"></i>
+                  </button>
 
-              <!-- Aperçu iframe -->
-              <div v-if="showPreviews.has(session.session_id)" class="iframe-preview">
-                <div class="iframe-container">
-                  <iframe
-                    :src="getTerminalUrl(session.session_id)"
-                    width="100%"
-                    height="300"
-                    frameborder="0"
-                    :title="`Terminal ${session.session_id}`"
-                  ></iframe>
+                  <!-- Dropdown menu for additional actions -->
+                  <div class="dropdown-container" :ref="el => dropdownRefs.set(session.id || session.session_id, el)">
+                    <button
+                      class="btn-icon"
+                      @click.stop="toggleDropdown(session.id || session.session_id)"
+                      :title="t('terminalMySessions.moreActions')"
+                    >
+                      <i class="fas fa-ellipsis-v"></i>
+                    </button>
+
+                    <div v-if="openDropdowns.has(session.id || session.session_id)" class="dropdown-menu" @click.stop>
+                      <!-- Copy URL -->
+                      <button class="dropdown-item" @click="copyUrlToClipboard(session.session_id); closeDropdown(session.id || session.session_id)">
+                        <i class="fas fa-link"></i>
+                        <span>{{ copiedSessions.has(session.session_id) ? t('terminalMySessions.copied') : t('terminalMySessions.copyLink') }}</span>
+                      </button>
+
+                      <!-- Copy iframe code -->
+                      <button class="dropdown-item" @click="copyIframeCode(session.session_id); closeDropdown(session.id || session.session_id)">
+                        <i class="fas fa-code"></i>
+                        <span>{{ copiedIframes.has(session.session_id) ? t('terminalMySessions.copiedIframe') : t('terminalMySessions.copyIframeCode') }}</span>
+                      </button>
+
+                      <!-- Manage access (only for owned terminals) -->
+                      <button
+                        v-if="!session.isShared"
+                        class="dropdown-item"
+                        @click="openAccessModal(session.session_id); closeDropdown(session.id || session.session_id)"
+                      >
+                        <i class="fas fa-users-cog"></i>
+                        <span>{{ t('terminalMySessions.manageAccess') }}</span>
+                      </button>
+
+                      <!-- Divider -->
+                      <div v-if="!session.isShared" class="dropdown-divider"></div>
+
+                      <!-- Sync session -->
+                      <button
+                        v-if="!session.isShared"
+                        class="dropdown-item"
+                        @click="syncSession(session.session_id); closeDropdown(session.id || session.session_id)"
+                        :title="t('terminalMySessions.tooltipSync')"
+                      >
+                        <i class="fas fa-sync"></i>
+                        <span>{{ t('terminalMySessions.buttonSyncSession') }}</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <p class="iframe-info">
-                  <i class="fas fa-info-circle"></i>
-                  {{ t('terminalMySessions.iframePreviewInfo') }}
-                </p>
               </div>
             </div>
-          </div>
-
-          <div class="card-actions">
-            <button
-              v-if="!isTerminalInactive(session.status)"
-              class="btn btn-info btn-sm"
-              @click="syncSession(session.session_id)"
-              :title="t('terminalMySessions.tooltipSync')"
-            >
-              <i class="fas fa-sync-alt"></i>
-              {{ t('terminalMySessions.buttonSyncSession') }}
-            </button>
-            <button
-              v-if="!isTerminalInactive(session.status)"
-              class="btn btn-success btn-sm"
-              @click="openSharingModal(session.session_id)"
-              :title="t('terminalMySessions.tooltipShare')"
-            >
-              <i class="fas fa-share-alt"></i>
-              {{ t('terminalMySessions.buttonShare') }}
-            </button>
-            <button
-              v-if="!isTerminalInactive(session.status)"
-              class="btn btn-warning btn-sm"
-              @click="openAccessModal(session.session_id)"
-              :title="t('terminalMySessions.tooltipAccess')"
-            >
-              <i class="fas fa-users-cog"></i>
-              {{ t('terminalMySessions.buttonAccess') }}
-            </button>
-            <button
-              v-if="session.status === 'active'"
-              class="btn btn-danger btn-sm"
-              @click="stopSession(session.session_id)"
-            >
-              <i class="fas fa-stop"></i>
-              {{ t('terminalMySessions.buttonStop') }}
-            </button>
-            <button
-              v-if="isTerminalInactive(session.status)"
-              class="btn btn-warning btn-sm"
-              @click="discardTerminal(session.id)"
-              :title="t('terminalMySessions.tooltipHide')"
-            >
-              <i class="fas fa-eye-slash"></i>
-              {{ t('terminalMySessions.buttonHideSession') }}
-            </button>
-          </div>
           </div>
         </template>
       </div>
@@ -455,7 +348,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, defineAsyncComponent, computed } from 'vue'
+import { ref, onMounted, onUnmounted, defineAsyncComponent, computed } from 'vue'
 import axios from 'axios'
 import { terminalService } from '../../services/terminalService'
 import { useNotification } from '../../composables/useNotification'
@@ -471,6 +364,7 @@ const TerminalSharingModal = defineAsyncComponent(() => import('../Terminal/Term
 const TerminalAccessModal = defineAsyncComponent(() => import('../Terminal/TerminalAccessModal.vue'))
 
 const sessions = ref([])
+const sharedSessions = ref([])
 const isLoading = ref(false)
 const error = ref('')
 
@@ -501,24 +395,44 @@ const accessModalRefreshTrigger = ref(0)
 const editingNames = ref(new Map<string, { value: string }>())
 const savingNames = ref(new Set<string>())
 
+// États pour les dropdowns
+const openDropdowns = ref(new Set<string>())
+const dropdownRefs = ref(new Map<string, HTMLElement>())
+
 // Helper function to check if terminal is inactive
 function isTerminalInactive(status: string): boolean {
   return ['expired', 'stopped', 'terminated'].includes(status?.toLowerCase())
 }
 
+// Computed property for all sessions (owned + shared)
+const allSessions = computed(() => {
+  // Mark owned sessions
+  const ownedWithFlag = sessions.value.map(s => ({ ...s, isShared: false }))
+
+  // Mark shared sessions and extract terminal data
+  const sharedWithFlag = sharedSessions.value.map(shared => ({
+    ...shared.terminal,
+    isShared: true,
+    shared_by: shared.shared_by_display_name || shared.shared_by, // Use display name, fallback to ID
+    access_level: shared.access_level
+  }))
+
+  return [...ownedWithFlag, ...sharedWithFlag]
+})
+
 // Computed property to count only active sessions
 const activeSessionsCount = computed(() => {
-  return sessions.value.filter(session => !isTerminalInactive(session.status)).length
+  return allSessions.value.filter(session => !isTerminalInactive(session.status)).length
 })
 
 // Computed property to count inactive sessions
 const inactiveSessionsCount = computed(() => {
-  return sessions.value.filter(session => isTerminalInactive(session.status)).length
+  return allSessions.value.filter(session => isTerminalInactive(session.status)).length
 })
 
 // Computed property to sort sessions with active ones at the top
 const sortedSessions = computed(() => {
-  return [...sessions.value].sort((a, b) => {
+  return [...allSessions.value].sort((a, b) => {
     const aActive = !isTerminalInactive(a.status)
     const bActive = !isTerminalInactive(b.status)
 
@@ -533,13 +447,47 @@ const sortedSessions = computed(() => {
   })
 })
 
+// Dropdown management functions
+function toggleDropdown(sessionId: string) {
+  if (openDropdowns.value.has(sessionId)) {
+    openDropdowns.value.delete(sessionId)
+  } else {
+    // Close all other dropdowns
+    openDropdowns.value.clear()
+    openDropdowns.value.add(sessionId)
+  }
+}
+
+function closeDropdown(sessionId: string) {
+  openDropdowns.value.delete(sessionId)
+}
+
+function handleClickOutside(event: MouseEvent) {
+  const target = event.target as HTMLElement
+  let clickedInside = false
+
+  // Check if click was inside any dropdown
+  dropdownRefs.value.forEach((ref) => {
+    if (ref && ref.contains(target)) {
+      clickedInside = true
+    }
+  })
+
+  if (!clickedInside) {
+    openDropdowns.value.clear()
+  }
+}
+
 onMounted(() => {
   console.log('MySessions mounted')
+
+  // Add click outside listener for dropdowns
+  document.addEventListener('click', handleClickOutside)
 
   // Add translations
   i18n.mergeLocaleMessage('en', {
     terminalMySessions: {
-      title: 'My Terminal Sessions',
+      title: 'Terminal Sessions',
       lastSync: 'Last sync',
       activeSessions: 'Active Sessions',
       inactiveSessions: 'Inactive Sessions',
@@ -601,13 +549,22 @@ onMounted(() => {
       errorHiding: 'Error hiding the terminal',
       errorHidingAll: 'Error hiding inactive terminals',
       errorLoading: 'Error loading sessions',
-      errorStopping: 'Error stopping the session'
+      errorStopping: 'Error stopping the session',
+      sharedWithMe: 'Shared with me',
+      sharedSessions: 'Shared Sessions',
+      sharedBy: 'Shared by',
+      accessLevel: 'Access level',
+      moreActions: 'More actions',
+      copied: 'Copied!',
+      copiedIframe: 'Iframe code copied!',
+      copyIframeCode: 'Copy iframe code',
+      manageAccess: 'Manage access'
     }
   })
 
   i18n.mergeLocaleMessage('fr', {
     terminalMySessions: {
-      title: 'Mes Sessions Terminal',
+      title: 'Sessions Terminal',
       lastSync: 'Dernière sync',
       activeSessions: 'Sessions Actives',
       inactiveSessions: 'Sessions Inactives',
@@ -669,20 +626,35 @@ onMounted(() => {
       errorHiding: 'Erreur lors du masquage du terminal',
       errorHidingAll: 'Erreur lors du masquage des terminaux inactifs',
       errorLoading: 'Erreur lors du chargement des sessions',
-      errorStopping: 'Erreur lors de l\'arrêt de la session'
+      errorStopping: 'Erreur lors de l\'arrêt de la session',
+      sharedWithMe: 'Partagé avec moi',
+      sharedSessions: 'Sessions Partagées',
+      sharedBy: 'Partagé par',
+      accessLevel: 'Niveau d\'accès',
+      moreActions: 'Plus d\'actions',
+      copied: 'Copié !',
+      copiedIframe: 'Code iframe copié !',
+      copyIframeCode: 'Copier le code iframe',
+      manageAccess: 'Gérer les accès'
     }
   })
 
   loadSessions()
+  loadSharedSessions()
   loadInstanceTypes()
 
-  // Rafraîchir les sessions toutes les 30 secondes
+  // Rafraîchir les sessions toutes les 30 secondes et vérifier les expirations
   const interval = setInterval(() => {
+    checkExpiredSessions()
     loadSessions()
+    loadSharedSessions()
   }, 30000)
 
-  // Cleanup
-  return () => clearInterval(interval)
+  // Cleanup on unmount
+  onUnmounted(() => {
+    clearInterval(interval)
+    document.removeEventListener('click', handleClickOutside)
+  })
 })
 
 async function loadSessions() {
@@ -702,6 +674,19 @@ async function loadSessions() {
     sessions.value = []
   } finally {
     isLoading.value = false
+  }
+}
+
+async function loadSharedSessions() {
+  try {
+    console.log('Loading shared sessions...')
+    const data = await terminalService.getSharedTerminals()
+    sharedSessions.value = data || []
+    console.log('Shared sessions loaded:', sharedSessions.value)
+  } catch (err: any) {
+    console.error('Erreur lors du chargement des sessions partagées:', err)
+    // Don't show error for shared sessions as they're optional
+    sharedSessions.value = []
   }
 }
 
@@ -855,6 +840,42 @@ async function syncAllSessions() {
     throw err
   } finally {
     isSyncing.value = false
+  }
+}
+
+// Vérifier et synchroniser automatiquement les sessions expirées
+async function checkExpiredSessions() {
+  if (isSyncing.value || isLoading.value) return
+
+  const now = new Date()
+  const expiredSessions = sessions.value.filter(session => {
+    // Skip already inactive sessions
+    if (isTerminalInactive(session.status)) return false
+
+    // Check if session has an expiration date
+    if (!session.expires_at) return false
+
+    try {
+      const expiresAt = new Date(session.expires_at)
+      // Check if expired (with 1 minute buffer to avoid timing issues)
+      return expiresAt <= now
+    } catch (e) {
+      return false
+    }
+  })
+
+  if (expiredSessions.length > 0) {
+    console.log(`Found ${expiredSessions.length} expired session(s), auto-syncing...`)
+
+    // Sync each expired session silently
+    for (const session of expiredSessions) {
+      try {
+        await syncSession(session.session_id)
+        console.log(`Auto-synced expired session: ${session.session_id}`)
+      } catch (err) {
+        console.error(`Failed to auto-sync session ${session.session_id}:`, err)
+      }
+    }
   }
 }
 
@@ -1083,11 +1104,12 @@ async function hideAllInactiveSessions() {
   margin-top: var(--spacing-md);
 }
 
-/* Session Grid */
+/* Session Grid - Compact layout */
 .sessions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-  gap: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  overflow: visible;
 }
 
 /* Separator between active and inactive sessions */
@@ -1119,157 +1141,203 @@ async function hideAllInactiveSessions() {
   border: var(--border-width-medium) solid var(--color-border-light);
 }
 
-/* Session Cards */
+/* Compact Session Cards */
 .session-card {
   border: var(--border-width-thin) solid var(--color-border-light);
-  border-radius: var(--border-radius-lg);
+  border-radius: var(--border-radius-md);
   background: var(--color-bg-primary);
-  overflow: hidden;
-  transition: box-shadow var(--transition-base);
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: visible;
+  z-index: 1;
+}
+
+.session-card.dropdown-open {
+  z-index: 10000 !important;
 }
 
 .session-card:hover {
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--color-border-medium);
+}
+
+/* Shared terminal - subtle background difference */
+.session-card.shared-terminal {
+  background: linear-gradient(to right, rgba(108, 117, 125, 0.03), var(--color-bg-primary));
+  border-left: 3px solid var(--color-secondary);
 }
 
 .card-header {
-  padding: var(--spacing-md) var(--spacing-lg);
-  background-color: var(--color-bg-secondary);
-  border-bottom: var(--border-width-thin) solid var(--color-border-light);
+  padding: var(--spacing-sm) var(--spacing-md);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--spacing-md);
+  overflow: visible;
 }
 
-.session-id {
+.header-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.session-name {
   margin: 0;
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-}
-
-/* Status Indicator - Compact colored dot */
-.status-indicator {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  cursor: help;
-  transition: transform var(--transition-fast);
-}
-
-.status-indicator:hover {
-  transform: scale(1.2);
-}
-
-.status-indicator i {
-  font-size: 12px;
-}
-
-/* Card Body & Details */
-.card-body {
-  padding: var(--spacing-lg);
-}
-
-.session-details {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-md);
-}
-
-.detail-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.detail-row .label {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-}
-
-.detail-row .value {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  word-break: break-all;
-}
-
-/* Iframe Section Styles */
-.iframe-section {
-  margin-top: var(--spacing-lg);
-  padding: var(--spacing-md);
-  background-color: var(--color-bg-secondary);
-  border-radius: var(--border-radius-md);
-  border: var(--border-width-thin) solid var(--color-border-light);
-}
-
-.iframe-title {
-  margin: 0 0 var(--spacing-md) 0;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-}
-
-.iframe-controls {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.url-display {
-  display: flex;
-  gap: var(--spacing-xs);
-}
-
-.url-input {
-  flex: 1;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: var(--font-size-xs);
-  border: var(--border-width-thin) solid var(--color-border-medium);
-  border-radius: var(--border-radius-sm);
-  background-color: var(--color-bg-primary);
-  font-family: var(--font-family-monospace);
   color: var(--color-text-primary);
 }
 
-.iframe-actions {
+/* Compact metadata row */
+.session-metadata {
   display: flex;
-  gap: var(--spacing-xs);
+  align-items: center;
+  gap: var(--spacing-md);
   flex-wrap: wrap;
 }
 
-.iframe-preview {
-  margin-top: var(--spacing-md);
-}
-
-.iframe-container {
-  border: var(--border-width-medium) solid var(--color-border-light);
-  border-radius: var(--border-radius-sm);
-  overflow: hidden;
-}
-
-.iframe-info {
-  margin: var(--spacing-sm) 0 0 0;
+.metadata-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+}
+
+.metadata-item i {
+  font-size: var(--font-size-xs);
+  opacity: 0.7;
+}
+
+.metadata-item.shared-info {
+  color: var(--color-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Status Badge */
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: capitalize;
+}
+
+.status-badge i {
+  font-size: 8px;
+}
+
+.status-badge.text-success {
+  background-color: rgba(40, 167, 69, 0.1);
+  color: var(--color-success);
+}
+
+.status-badge.text-danger {
+  background-color: rgba(220, 53, 69, 0.1);
+  color: var(--color-danger);
+}
+
+.status-badge.text-warning {
+  background-color: rgba(255, 193, 7, 0.1);
+  color: var(--color-warning);
+}
+
+.status-badge.text-muted {
+  background-color: rgba(108, 117, 125, 0.1);
+  color: var(--color-text-muted);
+}
+
+/* Compact action buttons */
+.card-actions-compact {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
 }
 
-/* Card Actions Footer */
-.card-actions {
-  padding: var(--spacing-md) var(--spacing-lg);
-  background-color: var(--color-bg-secondary);
-  border-top: var(--border-width-thin) solid var(--color-border-light);
-  text-align: right;
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
 }
+
+.btn-icon:hover:not(:disabled) {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-primary);
+}
+
+.btn-icon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-icon.btn-primary {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+.btn-icon.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-primary);
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-icon.btn-danger {
+  color: var(--color-danger);
+}
+
+.btn-icon.btn-danger:hover:not(:disabled) {
+  background-color: rgba(220, 53, 69, 0.1);
+  color: var(--color-danger);
+}
+
+.btn-icon.btn-stop {
+  background-color: var(--color-danger);
+  color: var(--color-white);
+  border-radius: var(--border-radius-sm);
+}
+
+.btn-icon.btn-stop:hover:not(:disabled) {
+  background-color: var(--color-danger);
+  opacity: 0.85;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-icon.btn-share {
+  background-color: var(--color-info);
+  color: var(--color-white);
+  border-radius: var(--border-radius-sm);
+}
+
+.btn-icon.btn-share:hover:not(:disabled) {
+  background-color: var(--color-info);
+  opacity: 0.85;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
 
 /* Modal Styles */
 .modal-overlay {
@@ -1487,44 +1555,6 @@ async function hideAllInactiveSessions() {
   color: var(--color-success);
 }
 
-.sync-details {
-  margin-top: var(--spacing-md);
-  padding: var(--spacing-sm);
-  background-color: var(--color-bg-secondary);
-  border-radius: var(--border-radius-sm);
-  border-left: var(--border-width-thick) solid var(--color-info);
-}
-
-.sync-title {
-  margin: 0 0 var(--spacing-sm) 0;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-}
-
-.sync-info-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--spacing-xs);
-}
-
-.sync-info-item {
-  display: flex;
-  justify-content: space-between;
-  font-size: var(--font-size-xs);
-}
-
-.sync-info-item .label {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-muted);
-}
-
-.sync-info-item .value {
-  color: var(--color-text-secondary);
-}
 
 .sync-summary {
   display: grid;
@@ -1595,110 +1625,52 @@ async function hideAllInactiveSessions() {
   opacity: 0.7;
 }
 
-/* Terminal Name Editing Styles */
-.session-title-container {
-  flex: 1;
-  min-width: 0;
-  min-height: 32px; /* Prevent height changes */
-  display: flex;
-  align-items: center;
-}
-
+/* Compact Terminal Name Editing */
 .session-title-display {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  width: 100%;
-  min-height: 32px; /* Match container height */
-}
-
-.session-title-display .session-id {
-  margin: 0;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  line-height: 32px; /* Match height for vertical centering */
+  gap: var(--spacing-xs);
 }
 
 .btn-edit-name {
   opacity: 0;
   transition: opacity var(--transition-base);
-  flex-shrink: 0;
 }
 
-.session-title-display:hover .btn-edit-name,
-.btn-edit-name:focus-visible {
+.session-title-display:hover .btn-edit-name {
   opacity: 1;
 }
 
 .session-title-edit {
   display: flex;
-  width: 100%;
-  min-height: 32px; /* Match display mode height */
   align-items: center;
-}
-
-.name-input-wrapper {
-  display: flex;
   gap: var(--spacing-xs);
-  align-items: center;
-  width: 100%;
-}
-
-.name-input-container {
-  position: relative;
   flex: 1;
-  min-height: 32px; /* Consistent height */
-  display: flex;
-  align-items: center;
 }
 
-.name-input {
-  width: 100%;
-  height: 32px; /* Fixed height to match display */
-  padding: 0 50px 0 var(--spacing-sm); /* Compact padding */
+.name-input-compact {
+  flex: 1;
+  min-width: 200px;
+  padding: var(--spacing-xs) var(--spacing-sm);
   border: var(--border-width-medium) solid var(--color-border-medium);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
   font-family: var(--font-family-primary);
-  transition: all var(--transition-base);
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
-  line-height: 1;
+  transition: all var(--transition-base);
 }
 
-.name-input:focus {
+.name-input-compact:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: var(--shadow-focus-primary);
 }
 
-.name-input:disabled {
-  background-color: var(--color-bg-secondary);
+.name-input-compact:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.name-edit-actions {
-  display: flex;
-  gap: var(--spacing-xs);
-  flex-shrink: 0;
-}
-
-.char-counter {
-  position: absolute;
-  right: var(--spacing-sm);
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  font-style: italic;
-  pointer-events: none;
-  background-color: var(--color-bg-primary);
-  padding: 0 var(--spacing-xs);
 }
 
 /* Responsive Design */
@@ -1717,19 +1689,6 @@ async function hideAllInactiveSessions() {
     align-items: stretch;
   }
 
-  .sessions-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .iframe-actions {
-    flex-direction: column;
-  }
-
-  .iframe-actions .btn {
-    width: 100%;
-    justify-content: center;
-  }
-
   .header-actions {
     flex-direction: column;
   }
@@ -1738,16 +1697,78 @@ async function hideAllInactiveSessions() {
     width: 100%;
   }
 
-  .name-input-wrapper {
+  .card-header {
     flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
   }
 
-  .name-edit-actions {
+  .header-right {
     width: 100%;
+    justify-content: space-between;
   }
 
-  .name-edit-actions .btn {
-    flex: 1;
+  .session-metadata {
+    flex-wrap: wrap;
   }
+}
+
+/* Dropdown Menu Styles */
+.dropdown-container {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute !important;
+  top: calc(100% + var(--spacing-xs)) !important;
+  right: 0 !important;
+  min-width: 200px;
+  background-color: var(--color-bg-primary);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: visible;
+  z-index: 10001 !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.dropdown-item:hover {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-primary);
+}
+
+.dropdown-item i {
+  width: 18px;
+  text-align: center;
+  font-size: var(--font-size-base);
+  opacity: 0.7;
+}
+
+.dropdown-item:hover i {
+  opacity: 1;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: var(--color-border-light);
+  margin: var(--spacing-xs) 0;
 }
 </style>

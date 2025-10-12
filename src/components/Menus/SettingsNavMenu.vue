@@ -36,6 +36,9 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSettingsNavigation } from '../../composables/useSettingsNavigation'
+import { useUserTerminalKeysStore } from '../../stores/userTerminalKeys'
+import { useBillingAddressesStore } from '../../stores/billingAddresses'
+import { usePaymentMethodsStore } from '../../stores/paymentMethods'
 
 defineProps<{
   isMenuCollapsed?: boolean
@@ -43,6 +46,11 @@ defineProps<{
 
 const { t } = useI18n()
 const { goBackFromSettings } = useSettingsNavigation()
+
+// Initialize stores to load their translations
+useUserTerminalKeysStore()
+useBillingAddressesStore()
+usePaymentMethodsStore()
 
 const goBack = () => {
   goBackFromSettings()
@@ -78,6 +86,21 @@ const settingsMenuItems = computed(() => [
     route: '/settings/ssh-keys',
     label: t('userSettings.menu.sshKeys'),
     icon: 'fas fa-key'
+  },
+  {
+    route: '/user-terminal-keys',
+    label: t('userTerminalKeys.pageTitle'),
+    icon: 'fas fa-terminal'
+  },
+  {
+    route: '/billing-addresses',
+    label: t('billingAddresses.pageTitle'),
+    icon: 'fas fa-city'
+  },
+  {
+    route: '/payment-methods',
+    label: t('paymentMethods.pageTitle'),
+    icon: 'fas fa-credit-card'
   }
 ])
 </script>

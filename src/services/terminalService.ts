@@ -49,7 +49,8 @@ export interface SharedTerminalInfo {
     created_at: string
     name?: string
   }
-  shared_by: string
+  shared_by: string // User ID (for reference)
+  shared_by_display_name: string // User display name (use this for display)
   access_level: 'read' | 'write' | 'admin' | 'owner'
   expires_at?: string
   shared_at: string

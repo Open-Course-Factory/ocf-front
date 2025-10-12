@@ -113,6 +113,7 @@ async function handleSubmit() {
 
     currentUserStore.setSecretToken(responseLogin.data.access_token, loginStore.rememberMe);
     currentUserStore.userName = responseLogin.data.user_name;
+    currentUserStore.userDisplayName = responseLogin.data.display_name || responseLogin.data.user_name;
     currentUserStore.userId = responseLogin.data.user_id;
     currentUserStore.userRoles = responseLogin.data.user_roles;
 

@@ -27,6 +27,7 @@ export const useCurrentUserStore = defineStore('currentUser', {
     state() {
         return {
             userName: "",
+            userDisplayName: "",
             userId: "",
             userRoles: [],
         }
@@ -70,6 +71,7 @@ export const useCurrentUserStore = defineStore('currentUser', {
         // Modifier le reset pour utiliser tokenService
         $reset() {
             this.userName = "";
+            this.userDisplayName = "";
             this.userId = "";
             this.userRoles = [];
             tokenService.clearTokens();

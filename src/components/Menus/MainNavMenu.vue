@@ -1,14 +1,5 @@
 <template>
   <div class="main-menu" :class="{ collapsed: isMenuCollapsed }">
-    <header class="menu-header">
-      <h1>
-        <router-link to="/courses">
-          <i class="fas fa-book"></i>
-          <span class="menu-text">OCF</span>
-        </router-link>
-      </h1>
-      <p class="user-role">{{ currentUser.userRoles[0] }}</p>
-    </header>
     <nav class="menu-nav">
       <ul>
         <li v-for="category in filteredCategories" :key="category.key" class="menu-category" :data-category="category.key">
@@ -157,7 +148,6 @@ interface MenuCategory {
 const expandedCategories = ref<Record<string, boolean>>({
   courses: false,
   labs: false,
-  account: false,
   admin: false
 });
 
@@ -234,63 +224,10 @@ const menuCategories = computed((): MenuCategory[] => [
       {
         route: '/terminal-sessions',
         label: t('navigation.mySessions'),
-        title: t('navigation.manageTerminalSessions'),
+        title: t('navigation.manageAllTerminalSessions'),
         icon: 'fas fa-terminal'
-      },
-      {
-        route: '/terminal-shared',
-        label: t('navigation.sharedSessions'),
-        title: t('navigation.sessionsSharedWithMe'),
-        icon: 'fas fa-share-alt'
-      },
-      {
-        route: '/user-terminal-keys',
-        label: t('userTerminalKeys.pageTitle'),
-        title: t('userTerminalKeys.pageTitle'),
-        icon: 'fas fa-key',
-        featureFlag: 'ssh_key_management'
       }
     ]
-  },
-  {
-    key: 'account',
-    label: t('navigation.myAccount'),
-    icon: 'fas fa-user',
-    allowedRoles: ['administrator', 'teacher', 'student'],
-    items: [
-      {
-        route: '/subscription-dashboard',
-        label: t('subscriptions.dashboardTitle'),
-        title: t('subscriptions.dashboardTitle'),
-        icon: 'fas fa-tachometer-alt'
-      },
-      {
-        route: '/subscription-plans',
-        label: t('subscriptionPlans.pageTitle'),
-        title: t('subscriptionPlans.pageTitle'),
-        icon: 'fas fa-calendar'
-      },
-      {
-        route: '/billing-addresses',
-        label: t('billingAddresses.pageTitle'),
-        title: t('billingAddresses.pageTitle'),
-        icon: 'fas fa-city'
-      },
-      {
-        route: '/payment-methods',
-        label: t('paymentMethods.pageTitle'),
-        title: t('paymentMethods.pageTitle'),
-        icon: 'fas fa-credit-card'
-      }
-    ].concat(
-      // Add invoices for non-admin users only
-      currentUser.userRoles[0] !== 'administrator' ? [{
-        route: '/invoices',
-        label: t('invoices.pageTitle'),
-        title: t('invoices.pageTitle'),
-        icon: 'fas fa-money-bill'
-      }] : []
-    )
   },
   {
     key: 'help',
@@ -523,52 +460,6 @@ watch(() => route.path, () => {
 
 .main-menu.collapsed {
   width: 80px;
-}
-
-.menu-header {
-  margin-bottom: var(--spacing-2xl);
-}
-
-.menu-header h1 a {
-  font-size: var(--font-size-4xl);
-  color: var(--color-white);
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-}
-
-.main-menu.collapsed .menu-header {
-  margin-bottom: 0px;
-}
-
-.menu-header h1 a .menu-text {
-  display: inline;
-  transition: opacity var(--transition-slow) ease;
-  margin-left: var(--spacing-lg);
-}
-
-.main-menu.collapsed .menu-header h1 a {
-  flex-direction: column;
-  align-items: center;
-}
-
-.main-menu.collapsed .menu-header h1 a .menu-text {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.user-role {
-  font-size: var(--font-size-sm);
-  text-transform: uppercase;
-  margin-left: var(--spacing-lg);
-  transition: opacity var(--transition-slow) ease;
-}
-
-.main-menu.collapsed .user-role {
-  opacity: 0;
-  width: 0;
-  height: 0;
 }
 
 .menu-nav ul {

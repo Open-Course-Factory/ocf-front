@@ -143,8 +143,8 @@ const basicRoutes = [
       { path: 'generations', name: 'Generations', component: Generations, meta: { requiresAuth: true } },
       { path: 'terminal-creation', name: 'TerminalCreation', component: TerminalCreation, meta: { requiresAuth: true, requiresFeature: 'terminal_management' } },
       { path: 'terminal-sessions', name: 'TerminalSessions', component: TerminalMySessions, meta: { requiresAuth: true } },
-      { path: 'terminal-shared', name: 'TerminalSharedWithMe', component: TerminalSharedWithMe, meta: { requiresAuth: true } },
-      { path: 'user-terminal-keys', name: 'UserTerminalKeys', component: UserTerminalKeys, meta: { requiresAuth: true } },
+      { path: 'terminal-shared', redirect: '/terminal-sessions' }, // Redirect old route to unified sessions page
+      { path: 'user-terminal-keys', name: 'UserTerminalKeys', component: UserTerminalKeys, meta: { requiresAuth: true, isSettings: true } },
       { path: 'course/:id', component: CourseDetails, meta: { requiresAuth: true } },
       {
         path: 'user',
@@ -190,8 +190,8 @@ const basicRoutes = [
       },
       { path: 'subscription-plans', name: 'SubscriptionPlans', component: () => import('../components/Pages/SubscriptionPlansCustomer.vue'), meta: { requiresAuth: true } },
       { path: 'admin/subscription-plans', name: 'AdminSubscriptionPlans', component: () => import('../components/Pages/SubscriptionPlans.vue'), meta: { requiresAuth: true } },
-      { path: 'billing-addresses', name: 'BillingAddresses', component: () => import('../components/Pages/BillingAddresses.vue'), meta: { requiresAuth: true } },
-      { path: 'payment-methods', name: 'PaymentMethods', component: () => import('../components/Pages/PaymentMethods.vue'), meta: { requiresAuth: true } },
+      { path: 'billing-addresses', name: 'BillingAddresses', component: () => import('../components/Pages/BillingAddresses.vue'), meta: { requiresAuth: true, isSettings: true } },
+      { path: 'payment-methods', name: 'PaymentMethods', component: () => import('../components/Pages/PaymentMethods.vue'), meta: { requiresAuth: true, isSettings: true } },
       { path: 'invoices', name: 'Invoices', component: () => import('../components/Pages/Invoices.vue'), meta: { requiresAuth: true } },
       { path: 'subscription-dashboard', name: 'SubscriptionDashboard', component: () => import('../components/Pages/SubscriptionDashboard.vue'), meta: { requiresAuth: true } },
       // Route pour le checkout avec planId
