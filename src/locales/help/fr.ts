@@ -295,12 +295,60 @@ export const helpFr = {
         intro: "Les terminaux peuvent être partagés avec d'autres utilisateurs pour faciliter la collaboration, l'enseignement ou le support technique.",
 
         howToShare: {
-          title: "Comment Partager un Terminal",
-          step1: "Créez un nouveau terminal ou sélectionnez un terminal existant",
-          step2: "Dans les paramètres du terminal, activez l'option de partage",
-          step3: "Ajoutez des utilisateurs par email ou nom d'utilisateur",
-          step4: "Configurez les permissions d'accès (lecture seule, lecture-écriture, admin)",
-          step5: "Partagez le lien d'accès avec vos collaborateurs"
+          title: "Comment Partager un Terminal"
+        },
+
+        sharingSteps: {
+          description: "Le partage de terminaux se fait en quelques étapes simples :",
+          step1: {
+            title: "Accédez à vos sessions",
+            description: "Allez dans <strong>Travaux Pratiques > Mes Sessions</strong> pour voir la liste de vos sessions terminal actives.",
+            button: "Voir mes sessions"
+          },
+          step2: {
+            title: "Configurer le partage",
+            description: "Pour chaque session, vous pouvez configurer les options de partage :",
+            item1: "<strong>Activer le partage</strong> pour rendre la session accessible",
+            item2: "<strong>Ajouter des utilisateurs</strong> par email ou nom d'utilisateur",
+            item3: "<strong>Définir les permissions</strong> (lecture seule ou lecture-écriture)",
+            item4: "<strong>Définir la durée</strong> d'accès si nécessaire"
+          },
+          step3: {
+            title: "Partager le lien",
+            description: "Copiez le <strong>lien de partage</strong> et envoyez-le aux utilisateurs autorisés. Ils pourront accéder au terminal directement depuis leur compte."
+          }
+        },
+
+        accessManagement: {
+          title: "Gestion des Accès",
+          description: "Contrôlez précisément qui peut accéder à vos terminaux et ce qu'ils peuvent faire.",
+          readOnly: {
+            description: "L'utilisateur peut voir le contenu du terminal et observer les commandes exécutées, mais ne peut pas interagir ou modifier quoi que ce soit.",
+            tag1: "👁️ Observation",
+            tag2: "📋 Copie autorisée",
+            tag3: "🚫 Pas de modification"
+          },
+          readWrite: {
+            description: "L'utilisateur peut exécuter des commandes, modifier des fichiers et interagir pleinement avec le terminal.",
+            tag1: "⌨️ Commandes",
+            tag2: "✏️ Modifications",
+            tag3: "💾 Sauvegarde"
+          },
+          actionsTitle: "Actions de gestion :",
+          actions: {
+            manage: {
+              title: "Gérer les utilisateurs",
+              description: "Ajoutez ou supprimez des utilisateurs ayant accès à votre terminal"
+            },
+            revoke: {
+              title: "Révoquer l'accès",
+              description: "Retirez immédiatement l'accès d'un utilisateur spécifique"
+            },
+            modify: {
+              title: "Modifier les permissions",
+              description: "Changez les niveaux d'accès ou les durées de partage"
+            }
+          }
         },
 
         permissions: {
@@ -316,6 +364,28 @@ export const helpFr = {
           admin: {
             title: "Administrateur",
             description: "Accès complet incluant les paramètres du terminal et la gestion des utilisateurs"
+          }
+        },
+
+        accessingShared: {
+          title: "Accéder aux Terminaux Partagés",
+          description: "Lorsque quelqu'un partage un terminal avec vous, voici comment y accéder :",
+          step1: {
+            title: "Vérifiez vos partages",
+            description: "Allez dans <strong>Travaux Pratiques > Partagés avec Moi</strong> pour voir tous les terminaux auxquels vous avez accès.",
+            button: "Voir les terminaux partagés"
+          },
+          step2: {
+            title: "Informations du partage",
+            description: "Pour chaque terminal partagé, vous verrez :",
+            item1: "<strong>Le propriétaire</strong> qui a partagé le terminal",
+            item2: "<strong>Vos permissions</strong> (lecture seule ou lecture-écriture)",
+            item3: "<strong>La date d'expiration</strong> de l'accès si applicable",
+            item4: "<strong>Le statut</strong> de la session (active, arrêtée, expirée)"
+          },
+          step3: {
+            title: "Se connecter",
+            description: "Cliquez sur <strong>\"Ouvrir\"</strong> pour accéder au terminal partagé dans une nouvelle fenêtre."
           }
         },
 
@@ -339,6 +409,52 @@ export const helpFr = {
           }
         },
 
+        commonUseCases: {
+          title: "Cas d'Usage Fréquents",
+          description: "Le partage de terminaux s'adapte à de nombreux scénarios d'utilisation :",
+          teaching: {
+            description: "Créez des <strong>environnements d'apprentissage guidés</strong> où les étudiants peuvent pratiquer sous supervision. Partagez des terminaux préparés avec des exercices et observez leur progression en temps réel."
+          },
+          support: {
+            description: "Facilitez le <strong>dépannage et l'assistance technique</strong> en donnant un accès temporaire à votre environnement. L'équipe support peut diagnostiquer et résoudre les problèmes directement."
+          },
+          collaboration: {
+            title: "Développement Collaboratif",
+            description: "Travaillez en équipe sur le même code, en temps réel, avec partage d'écran intégré et synchronisation instantanée."
+          },
+          mentoring: {
+            title: "Mentorat et Accompagnement",
+            description: "Accompagnez des développeurs juniors en leur montrant directement les bonnes pratiques et techniques de développement."
+          }
+        },
+
+        securityPractices: {
+          verifyIdentity: {
+            title: "Vérifiez l'identité",
+            description: "Assurez-vous de ne partager vos terminaux qu'avec des personnes de confiance et vérifiez les adresses email"
+          },
+          limitDuration: {
+            title: "Limitez la durée",
+            description: "Configurez des durées d'accès limitées pour les partages temporaires"
+          },
+          monitorActivity: {
+            title: "Surveillez l'activité",
+            description: "Gardez un œil sur ce qui se passe dans les terminaux partagés en accès écriture"
+          },
+          backupFirst: {
+            title: "Sauvegardez d'abord",
+            description: "Faites une copie de sauvegarde de votre travail important avant de partager en mode écriture"
+          },
+          revokeQuickly: {
+            title: "Révoquez rapidement",
+            description: "Supprimez les accès dès qu'ils ne sont plus nécessaires"
+          },
+          respectData: {
+            title: "Respectez les données",
+            description: "Ne partagez jamais de terminaux contenant des informations sensibles ou confidentielles"
+          }
+        },
+
         security: {
           title: "Sécurité et Bonnes Pratiques",
           practices: {
@@ -347,6 +463,38 @@ export const helpFr = {
             practice3: "Utilisez l'accès en lecture seule quand c'est possible",
             practice4: "Surveillez l'activité dans les sessions partagées",
             practice5: "Configurez l'expiration automatique des sessions pour les accès temporaires"
+          }
+        },
+
+        limitations: {
+          title: "Limitations et Considérations",
+          description: "Gardez à l'esprit ces aspects lors du partage de terminaux :",
+          users: {
+            title: "Nombre d'utilisateurs",
+            description: "Le nombre d'utilisateurs pouvant accéder simultanément à un terminal peut être limité selon votre plan d'abonnement"
+          },
+          network: {
+            title: "Performance réseau",
+            description: "La latence peut augmenter avec plusieurs utilisateurs connectés. Privilégiez les connexions stables"
+          },
+          sync: {
+            title: "Synchronisation",
+            description: "Les modifications sont synchronisées en temps réel mais peuvent avoir un léger délai selon la connexion"
+          },
+          history: {
+            title: "Historique des commandes",
+            description: "Toutes les commandes exécutées par tous les utilisateurs sont enregistrées dans l'historique du terminal"
+          }
+        },
+
+        nextSteps: {
+          managingSessions: {
+            title: "Gestion des Sessions",
+            description: "Apprendre à gérer efficacement vos sessions terminal"
+          },
+          troubleshooting: {
+            title: "Dépannage",
+            description: "Résoudre les problèmes courants de partage et d'accès"
           }
         }
       },
@@ -934,54 +1082,166 @@ export const helpFr = {
         title: "Abonnement et Plans",
         intro: "Gérez votre abonnement, comprenez les fonctionnalités des plans et optimisez votre utilisation.",
 
+        overview: {
+          title: "Vue d'ensemble des abonnements",
+          description: "OCF propose différents plans d'abonnement adaptés à vos besoins d'apprentissage et d'enseignement. Chaque plan offre un accès à des fonctionnalités spécifiques et des quotas d'utilisation.",
+          individual: {
+            title: "Plans individuels",
+            description: "Parfaits pour l'apprentissage personnel et les projets individuels. Accès aux terminaux, création de contenu et ressources de base."
+          },
+          educational: {
+            title: "Plans éducatifs",
+            description: "Conçus pour les enseignants et formateurs. Fonctionnalités avancées de collaboration et gestion de classes."
+          },
+          enterprise: {
+            title: "Plans entreprise",
+            description: "Solutions pour les organisations et institutions. Support prioritaire, personnalisation et intégrations avancées."
+          }
+        },
+
         dashboard: {
-          title: "Tableau de Bord Abonnement",
-          description: "Votre tableau de bord d'abonnement fournit une vue d'ensemble complète de :",
-          features: {
-            currentPlan: "Votre plan actuel et ses avantages",
-            usage: "Utilisation des ressources et limites",
-            renewalDate: "Date et montant du prochain renouvellement",
-            invoiceHistory: "Historique des factures et paiements",
-            planComparison: "Plans disponibles et options de mise à niveau"
+          title: "Tableau de bord abonnement",
+          description: "Le tableau de bord vous donne une vue complète de votre abonnement actuel et de votre utilisation.",
+          usage: {
+            title: "Suivi de l'utilisation",
+            description: "Surveillez votre consommation de ressources : sessions terminal actives, stockage utilisé, bande passante et autres métriques importantes.",
+            button: "Voir le tableau de bord"
+          },
+          info: {
+            title: "Informations d'abonnement",
+            description: "Consultez les détails de votre plan actuel : date de renouvellement, fonctionnalités incluses, limites et quotas disponibles."
+          },
+          alerts: {
+            title: "Alertes et notifications",
+            description: "Recevez des alertes lorsque vous approchez de vos limites d'utilisation ou lorsque votre abonnement nécessite une attention."
           }
         },
 
-        planChanges: {
-          title: "Changement de Plans",
-          upgrade: {
-            title: "Mise à Niveau",
-            description: "Passez à un plan supérieur à tout moment. Les changements prennent effet immédiatement et vous serez facturé au prorata de la différence."
+        planChange: {
+          title: "Changement de plan",
+          description: "Vous pouvez modifier votre abonnement à tout moment selon l'évolution de vos besoins.",
+          step1: {
+            title: "Évaluer vos besoins",
+            description: "Analysez votre utilisation actuelle et identifiez les fonctionnalités dont vous avez besoin pour optimiser votre choix de plan."
           },
-          downgrade: {
-            title: "Rétrogradation",
-            description: "Les rétrogradations prennent effet à la prochaine date de renouvellement pour éviter la perte de fonctionnalités payées."
+          step2: {
+            title: "Comparer les plans",
+            description: "Explorez les différentes options disponibles et leurs avantages. Comparez les fonctionnalités, quotas et tarifs.",
+            button: "Voir les plans disponibles"
           },
-          cancellation: {
-            title: "Annulation",
-            description: "Annulez à tout moment via le portail de facturation. L'accès continue jusqu'à la fin de votre période de facturation."
-          }
-        },
-
-        billingPortal: {
-          title: "Portail de Facturation",
-          description: "Accédez au portail de facturation sécurisé de Stripe pour :",
-          actions: {
-            action1: "Mettre à jour les méthodes de paiement",
-            action2: "Télécharger les factures",
-            action3: "Changer l'adresse de facturation",
-            action4: "Gérer les paramètres d'abonnement",
-            action5: "Voir l'historique des paiements"
+          step3: {
+            title: "Effectuer le changement",
+            description: "Sélectionnez votre nouveau plan et suivez le processus de mise à niveau ou de rétrogradation selon vos besoins."
+          },
+          tips: {
+            title: "Points importants à retenir :",
+            upgrade: {
+              title: "Mise à niveau",
+              description: "Les améliorations prennent effet immédiatement. La facturation est ajustée au prorata pour la période en cours."
+            },
+            downgrade: {
+              title: "Rétrogradation",
+              description: "Les changements vers un plan inférieur prennent généralement effet au prochain cycle de facturation pour éviter la perte de données."
+            },
+            dataProtection: {
+              title: "Protection des données",
+              description: "Vos données et configurations sont préservées lors des changements de plan. Seuls les quotas et fonctionnalités disponibles sont modifiés."
+            }
           }
         },
 
         optimization: {
-          title: "Optimisation de l'Utilisation",
-          tips: {
-            tip1: "Surveillez régulièrement votre utilisation des ressources",
-            tip2: "Fermez les sessions terminal inutilisées pour économiser les ressources",
-            tip3: "Choisissez le plan qui correspond le mieux à votre utilisation réelle",
-            tip4: "Profitez des remises éducatives si vous êtes éligible",
-            tip5: "Contactez le support pour des solutions d'entreprise personnalisées"
+          title: "Optimisation de l'utilisation",
+          description: "Maximisez la valeur de votre abonnement en adoptant ces bonnes pratiques :",
+          sessions: {
+            title: "Gestion des sessions",
+            description: "Fermez les sessions terminal inutilisées pour économiser vos quotas. Utilisez des durées d'expiration appropriées pour vos sessions."
+          },
+          storage: {
+            title: "Stockage efficace",
+            description: "Nettoyez régulièrement les fichiers temporaires et anciens projets. Utilisez des dépôts Git externes pour les gros projets."
+          },
+          sharing: {
+            title: "Partage intelligent",
+            description: "Partagez les ressources avec vos collaborateurs pour éviter la duplication et optimiser l'utilisation collective."
+          },
+          planning: {
+            title: "Planification d'usage",
+            description: "Planifiez vos activités intensives pendant les heures creuses et surveillez vos pics d'utilisation."
+          }
+        },
+
+        suspension: {
+          title: "Suspension et annulation",
+          description: "Vous avez le contrôle total sur votre abonnement, y compris la possibilité de le suspendre temporairement ou de l'annuler définitivement.",
+          pause: {
+            title: "Suspension temporaire",
+            description: "Mettez votre abonnement en pause pendant une période déterminée. Idéal pour les vacances ou les périodes d'inactivité prévues.",
+            feature1: "Conservation de toutes vos données",
+            feature2: "Arrêt de la facturation pendant la pause",
+            feature3: "Reprise facile quand vous le souhaitez",
+            feature4: "Durée maximale selon les conditions"
+          },
+          cancel: {
+            title: "Annulation définitive",
+            description: "Annulez votre abonnement de manière permanente. Toutes les données seront supprimées après la période de grâce.",
+            feature1: "Accès maintenu jusqu'à la fin du cycle payé",
+            feature2: "Période de grâce pour récupérer les données",
+            feature3: "Suppression définitive après expiration",
+            feature4: "Possibilité de réactivation avec nouveau compte"
+          },
+          warning: {
+            title: "Important",
+            description: "<strong>Sauvegardez vos données importantes</strong> avant toute suspension ou annulation. Bien que nous conservions vos données pendant une période de grâce, il est recommandé de faire des sauvegardes locales de vos projets critiques."
+          }
+        },
+
+        evolution: {
+          title: "Évolution du système d'abonnement",
+          notice: "<strong>Le système d'abonnement OCF est en développement actif.</strong> De nouvelles options de plans, fonctionnalités de facturation et outils de gestion seront régulièrement ajoutés pour mieux répondre à vos besoins.",
+          upcoming: {
+            title: "Améliorations prévues :",
+            feature1: "Plans personnalisables avec options à la carte",
+            feature2: "Facturation basée sur l'utilisation réelle",
+            feature3: "Gestion d'équipe et facturation centralisée",
+            feature4: "Intégrations avec systèmes de gestion existants",
+            feature5: "Analytics avancés d'utilisation"
+          },
+          documentation: "Cette documentation sera mise à jour pour refléter les nouvelles fonctionnalités au fur et à mesure de leur déploiement."
+        },
+
+        support: {
+          title: "Support et assistance",
+          description: "Notre équipe support est là pour vous aider avec toutes vos questions d'abonnement :",
+          email: {
+            title: "Support par email",
+            description: "Pour les questions générales sur votre abonnement",
+            button: "Contacter le support"
+          },
+          billing: {
+            title: "Questions de facturation",
+            description: "Pour les problèmes de paiement et facturation",
+            button: "Support facturation"
+          },
+          optimization: {
+            title: "Conseils d'optimisation",
+            description: "Pour optimiser votre utilisation et choisir le bon plan",
+            button: "Demander conseil"
+          }
+        },
+
+        nextSteps: {
+          billing: {
+            title: "Facturation",
+            description: "Gérer vos méthodes de paiement et consulter vos factures"
+          },
+          dashboard: {
+            title: "Tableau de bord",
+            description: "Consulter votre utilisation actuelle et les détails de votre plan"
+          },
+          plans: {
+            title: "Plans disponibles",
+            description: "Explorer et comparer tous les plans d'abonnement"
           }
         }
       },
@@ -990,65 +1250,224 @@ export const helpFr = {
         title: "Facturation et Paiements",
         intro: "Tout ce que vous devez savoir sur la facturation, les paiements et la gestion financière de votre compte.",
 
+        system: {
+          title: "Système de facturation",
+          description: "OCF utilise un système de facturation automatisé intégré avec Stripe pour garantir des paiements sécurisés et une gestion transparente de votre abonnement.",
+          recurring: {
+            title: "Facturation récurrente",
+            description: "Les abonnements sont facturés automatiquement selon votre cycle choisi (mensuel ou annuel). Vous recevez une facture avant chaque prélèvement."
+          },
+          secure: {
+            title: "Paiements sécurisés",
+            description: "Tous les paiements sont traités via Stripe, leader mondial de la sécurité des paiements en ligne. Vos données sont protégées."
+          },
+          transparent: {
+            title: "Facturation transparente",
+            description: "Toutes les charges sont clairement détaillées dans vos factures. Pas de frais cachés, seulement ce que vous utilisez et souscrivez."
+          }
+        },
+
         paymentMethods: {
-          title: "Méthodes de Paiement",
-          description: "Gérez vos méthodes de paiement en toute sécurité :",
-          actions: {
-            add: "Ajouter de nouvelles cartes de crédit/débit",
-            update: "Mettre à jour les dates d'expiration et informations de facturation",
-            default: "Définir la méthode de paiement par défaut",
-            remove: "Supprimer les méthodes de paiement non utilisées",
-            security: "Toutes les données de paiement sont stockées en toute sécurité par Stripe"
+          title: "Méthodes de paiement",
+          description: "Gérez vos cartes de crédit et autres méthodes de paiement pour assurer la continuité de votre service OCF.",
+          types: {
+            title: "Types de paiement acceptés :",
+            visa: "Visa",
+            mastercard: "Mastercard",
+            amex: "American Express",
+            sepa: "Virement SEPA"
+          },
+          management: {
+            title: "Gestion de vos méthodes :",
+            add: {
+              title: "Ajouter une méthode",
+              description: "Ajoutez une nouvelle carte ou méthode de paiement de secours",
+              button: "Gérer les paiements"
+            },
+            default: {
+              title: "Méthode par défaut",
+              description: "Définissez quelle méthode utiliser en priorité pour vos factures"
+            },
+            update: {
+              title: "Mise à jour",
+              description: "Modifiez les informations d'une carte expirée ou changée"
+            }
+          },
+          security: {
+            title: "Conseils de sécurité :",
+            tip1: "Utilisez uniquement des connexions sécurisées (HTTPS)",
+            tip2: "Vérifiez régulièrement vos relevés bancaires",
+            tip3: "Activez les notifications de paiement",
+            tip4: "Supprimez les méthodes de paiement inutilisées"
           }
         },
 
         billingAddress: {
-          title: "Adresses de Facturation",
-          description: "Maintenez des informations de facturation précises :",
+          title: "Adresses de facturation",
+          description: "Configurez vos adresses de facturation pour recevoir des factures conformes aux réglementations fiscales de votre pays.",
           importance: {
-            importance1: "Requises pour la génération de factures",
-            importance2: "Nécessaires pour les calculs de taxes",
-            importance3: "Utilisées pour la vérification des paiements",
-            importance4: "Importantes pour la conformité aux réglementations locales"
+            title: "Pourquoi c'est important :",
+            fiscal: "Conformité fiscale selon votre localisation",
+            vat: "Application correcte de la TVA et taxes locales",
+            accounting: "Factures valides pour votre comptabilité",
+            regulations: "Respect des réglementations internationales"
+          },
+          management: {
+            title: "Gestion des adresses :",
+            primary: {
+              title: "Adresse principale",
+              description: "Votre adresse de facturation par défaut"
+            },
+            business: {
+              title: "Adresses professionnelles",
+              description: "Adresses d'entreprise pour facturation institutionnelle"
+            },
+            edit: {
+              title: "Modification",
+              description: "Mise à jour en cas de déménagement ou changement"
+            },
+            button: "Gérer les adresses"
           }
         },
 
         invoices: {
-          title: "Gestion des Factures",
-          description: "Accédez et gérez vos factures :",
+          title: "Consultation des factures",
+          description: "Accédez à toutes vos factures OCF, téléchargez-les et suivez l'historique de vos paiements pour votre comptabilité.",
           features: {
-            view: "Voir toutes les factures passées et actuelles",
-            download: "Télécharger les factures au format PDF",
-            details: "Voir les détails des frais",
-            history: "Historique complet des paiements",
-            support: "Support et questions liées aux factures"
+            history: {
+              title: "Historique complet",
+              description: "Consultez toutes vos factures depuis le début de votre abonnement. Recherchez par date, montant ou statut."
+            },
+            download: {
+              title: "Téléchargement PDF",
+              description: "Téléchargez vos factures au format PDF pour votre comptabilité ou vos déclarations fiscales."
+            },
+            details: {
+              title: "Détails transparents",
+              description: "Chaque facture détaille clairement les services utilisés, les périodes de facturation et les taxes applicables."
+            },
+            button: "Consulter mes factures"
+          },
+          structure: {
+            title: "Structure d'une facture OCF :",
+            header: "Informations OCF et vos coordonnées",
+            period: "Dates de service et de facturation",
+            detail: "Services utilisés et tarifs appliqués",
+            taxes: "TVA et taxes locales selon votre pays",
+            total: "Montant final et méthode de paiement"
           }
         },
 
-        billing: {
-          title: "Cycle de Facturation",
-          monthly: {
-            title: "Facturation Mensuelle",
-            description: "Facturé à la même date chaque mois"
+        paymentIssues: {
+          title: "Problèmes de paiement",
+          description: "Si vous rencontrez des difficultés avec vos paiements, voici les étapes à suivre pour résoudre rapidement les problèmes.",
+          declined: {
+            title: "Paiement refusé",
+            causes: {
+              title: "Causes courantes :",
+              insufficient: "Fonds insuffisants sur le compte",
+              expired: "Carte expirée ou bloquée",
+              limit: "Limite de paiement dépassée",
+              incorrect: "Informations incorrectes"
+            },
+            solutions: {
+              title: "Solutions :",
+              balance: "Vérifiez le solde de votre compte",
+              update: "Mettez à jour les informations de carte",
+              bank: "Contactez votre banque si nécessaire",
+              alternative: "Utilisez une méthode de paiement alternative"
+            }
           },
-          annual: {
-            title: "Facturation Annuelle",
-            description: "Facturé annuellement avec des économies potentielles"
+          retry: {
+            title: "Nouvelle tentative",
+            description1: "OCF effectue automatiquement plusieurs tentatives de paiement sur quelques jours en cas d'échec initial.",
+            description2: "Vous recevez des notifications par email pour vous informer de la situation et vous permettre de corriger le problème."
           },
-          proration: {
-            title: "Frais au Prorata",
-            description: "Les changements de plan sont calculés au prorata basé sur le temps restant dans le cycle de facturation"
+          suspension: {
+            title: "Suspension du service",
+            description1: "En cas d'échec répété des paiements, votre service peut être temporairement suspendu pour éviter l'accumulation de frais.",
+            description2: "Votre compte et vos données restent saufs pendant la suspension. Le service reprend automatiquement après règlement."
+          }
+        },
+
+        refunds: {
+          title: "Remboursements et crédits",
+          description: "Informations sur les conditions de remboursement et le système de crédits OCF.",
+          policy: {
+            title: "Politique de remboursement :",
+            trial: {
+              title: "Période d'essai",
+              description: "Remboursement intégral possible pendant les 7 premiers jours de votre première souscription (conditions d'utilisation normale)."
+            },
+            proration: {
+              title: "Remboursement au prorata",
+              description: "En cas de rétrogradation ou d'annulation, remboursement calculé sur la période non utilisée."
+            },
+            technical: {
+              title: "Problèmes techniques",
+              description: "Crédits ou remboursements accordés en cas d'interruption prolongée du service due à des problèmes techniques."
+            }
+          },
+          credits: {
+            title: "Système de crédits :",
+            description1: "OCF peut attribuer des crédits à votre compte pour compenser des désagréments ou dans le cadre de promotions spéciales.",
+            description2: "Les crédits sont automatiquement appliqués à vos prochaines factures et apparaissent clairement dans votre historique de facturation."
+          }
+        },
+
+        evolution: {
+          title: "Évolution du système de facturation",
+          notice: "<strong>Le système de facturation OCF continue d'évoluer</strong> pour offrir plus de flexibilité et de transparence dans la gestion de vos paiements et abonnements.",
+          upcoming: {
+            title: "Améliorations en développement :",
+            usage: "Facturation détaillée par usage réel des ressources",
+            alternatives: "Options de paiement alternatives (crypto, virements)",
+            group: "Facturation groupée pour les organisations",
+            alerts: "Alertes avancées de consommation et budget",
+            integration: "Intégration avec systèmes comptables d'entreprise",
+            currencies: "Devises locales et paiements internationaux optimisés"
           }
         },
 
         support: {
-          title: "Support Facturation",
-          description: "Pour les questions ou problèmes de facturation :",
-          contact: {
-            email: "Contactez notre support facturation",
-            portal: "Utilisez le portail de facturation pour le libre-service",
-            documentation: "Consultez cette documentation pour les questions courantes",
-            response: "Nous répondons aux demandes de facturation sous 24 heures"
+          title: "Support facturation",
+          description: "Notre équipe support est spécialisée dans la résolution rapide des problèmes de facturation et de paiement.",
+          email: {
+            title: "Email support",
+            description: "Réponse sous 24h pour les questions de facturation",
+            button: "Contacter le support"
+          },
+          priority: {
+            title: "Support prioritaire",
+            description: "Assistance téléphonique pour les problèmes urgents de paiement",
+            note: "Disponible pour les plans entreprise"
+          },
+          tips: {
+            title: "Pour un support efficace, incluez :",
+            email: "Votre adresse email de compte",
+            invoice: "Numéro de facture concernée",
+            datetime: "Date et heure du problème",
+            screenshot: "Capture d'écran si applicable"
+          }
+        },
+
+        resources: {
+          title: "Ressources utiles",
+          subscription: {
+            title: "Gestion d'abonnement",
+            description: "Comprendre et optimiser votre plan OCF"
+          },
+          paymentMethods: {
+            title: "Méthodes de paiement",
+            description: "Ajouter et gérer vos cartes et comptes"
+          },
+          invoices: {
+            title: "Mes factures",
+            description: "Consulter et télécharger vos factures"
+          },
+          addresses: {
+            title: "Adresses de facturation",
+            description: "Configurer vos informations de facturation"
           }
         }
       }

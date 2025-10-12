@@ -39,46 +39,42 @@
 
     <div class="article-content">
       <section class="help-section">
-        <h2><i class="fas fa-info-circle"></i> Vue d'ensemble des abonnements</h2>
+        <h2><i class="fas fa-info-circle"></i> {{ t('help.account.subscription.overview.title') }}</h2>
         <p>
-          OCF propose différents plans d'abonnement adaptés à vos besoins d'apprentissage et d'enseignement.
-          Chaque plan offre un accès à des fonctionnalités spécifiques et des quotas d'utilisation.
+          {{ t('help.account.subscription.overview.description') }}
         </p>
 
         <div class="subscription-overview">
           <div class="overview-card">
             <i class="fas fa-user"></i>
-            <h4>Plans individuels</h4>
+            <h4>{{ t('help.account.subscription.overview.individual.title') }}</h4>
             <p>
-              Parfaits pour l'apprentissage personnel et les projets individuels.
-              Accès aux terminaux, création de contenu et ressources de base.
+              {{ t('help.account.subscription.overview.individual.description') }}
             </p>
           </div>
 
           <div class="overview-card">
             <i class="fas fa-users"></i>
-            <h4>Plans éducatifs</h4>
+            <h4>{{ t('help.account.subscription.overview.educational.title') }}</h4>
             <p>
-              Conçus pour les enseignants et formateurs.
-              Fonctionnalités avancées de collaboration et gestion de classes.
+              {{ t('help.account.subscription.overview.educational.description') }}
             </p>
           </div>
 
           <div class="overview-card">
             <i class="fas fa-building"></i>
-            <h4>Plans entreprise</h4>
+            <h4>{{ t('help.account.subscription.overview.enterprise.title') }}</h4>
             <p>
-              Solutions pour les organisations et institutions.
-              Support prioritaire, personnalisation et intégrations avancées.
+              {{ t('help.account.subscription.overview.enterprise.description') }}
             </p>
           </div>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-tachometer-alt"></i> Tableau de bord abonnement</h2>
+        <h2><i class="fas fa-tachometer-alt"></i> {{ t('help.account.subscription.dashboard.title') }}</h2>
         <p>
-          Le tableau de bord vous donne une vue complète de votre abonnement actuel et de votre utilisation.
+          {{ t('help.account.subscription.dashboard.description') }}
         </p>
 
         <div class="dashboard-guide">
@@ -87,14 +83,13 @@
               <i class="fas fa-chart-line"></i>
             </div>
             <div class="step-content">
-              <h4>Suivi de l'utilisation</h4>
+              <h4>{{ t('help.account.subscription.dashboard.usage.title') }}</h4>
               <p>
-                Surveillez votre consommation de ressources : sessions terminal actives,
-                stockage utilisé, bande passante et autres métriques importantes.
+                {{ t('help.account.subscription.dashboard.usage.description') }}
               </p>
               <router-link to="/subscription-dashboard" class="btn btn-primary">
                 <i class="fas fa-tachometer-alt"></i>
-                Voir le tableau de bord
+                {{ t('help.account.subscription.dashboard.usage.button') }}
               </router-link>
             </div>
           </div>
@@ -104,10 +99,9 @@
               <i class="fas fa-calendar-alt"></i>
             </div>
             <div class="step-content">
-              <h4>Informations d'abonnement</h4>
+              <h4>{{ t('help.account.subscription.dashboard.info.title') }}</h4>
               <p>
-                Consultez les détails de votre plan actuel : date de renouvellement,
-                fonctionnalités incluses, limites et quotas disponibles.
+                {{ t('help.account.subscription.dashboard.info.description') }}
               </p>
             </div>
           </div>
@@ -117,10 +111,9 @@
               <i class="fas fa-bell"></i>
             </div>
             <div class="step-content">
-              <h4>Alertes et notifications</h4>
+              <h4>{{ t('help.account.subscription.dashboard.alerts.title') }}</h4>
               <p>
-                Recevez des alertes lorsque vous approchez de vos limites d'utilisation
-                ou lorsque votre abonnement nécessite une attention.
+                {{ t('help.account.subscription.dashboard.alerts.description') }}
               </p>
             </div>
           </div>
@@ -128,19 +121,18 @@
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-exchange-alt"></i> Changement de plan</h2>
+        <h2><i class="fas fa-exchange-alt"></i> {{ t('help.account.subscription.planChange.title') }}</h2>
         <p>
-          Vous pouvez modifier votre abonnement à tout moment selon l'évolution de vos besoins.
+          {{ t('help.account.subscription.planChange.description') }}
         </p>
 
         <div class="plan-change-workflow">
           <div class="workflow-step">
             <div class="step-number">1</div>
             <div class="step-content">
-              <h4>Évaluer vos besoins</h4>
+              <h4>{{ t('help.account.subscription.planChange.step1.title') }}</h4>
               <p>
-                Analysez votre utilisation actuelle et identifiez les fonctionnalités
-                dont vous avez besoin pour optimiser votre choix de plan.
+                {{ t('help.account.subscription.planChange.step1.description') }}
               </p>
             </div>
           </div>
@@ -148,14 +140,13 @@
           <div class="workflow-step">
             <div class="step-number">2</div>
             <div class="step-content">
-              <h4>Comparer les plans</h4>
+              <h4>{{ t('help.account.subscription.planChange.step2.title') }}</h4>
               <p>
-                Explorez les différentes options disponibles et leurs avantages.
-                Comparez les fonctionnalités, quotas et tarifs.
+                {{ t('help.account.subscription.planChange.step2.description') }}
               </p>
               <router-link to="/subscription-plans" class="btn btn-outline">
                 <i class="fas fa-search"></i>
-                Voir les plans disponibles
+                {{ t('help.account.subscription.planChange.step2.button') }}
               </router-link>
             </div>
           </div>
@@ -163,25 +154,23 @@
           <div class="workflow-step">
             <div class="step-number">3</div>
             <div class="step-content">
-              <h4>Effectuer le changement</h4>
+              <h4>{{ t('help.account.subscription.planChange.step3.title') }}</h4>
               <p>
-                Sélectionnez votre nouveau plan et suivez le processus de mise à niveau
-                ou de rétrogradation selon vos besoins.
+                {{ t('help.account.subscription.planChange.step3.description') }}
               </p>
             </div>
           </div>
         </div>
 
         <div class="change-tips">
-          <h3>Points importants à retenir :</h3>
+          <h3>{{ t('help.account.subscription.planChange.tips.title') }}</h3>
           <div class="tip-list">
             <div class="tip-item">
               <i class="fas fa-arrow-up"></i>
               <div>
-                <h4>Mise à niveau</h4>
+                <h4>{{ t('help.account.subscription.planChange.tips.upgrade.title') }}</h4>
                 <p>
-                  Les améliorations prennent effet immédiatement.
-                  La facturation est ajustée au prorata pour la période en cours.
+                  {{ t('help.account.subscription.planChange.tips.upgrade.description') }}
                 </p>
               </div>
             </div>
@@ -189,10 +178,9 @@
             <div class="tip-item">
               <i class="fas fa-arrow-down"></i>
               <div>
-                <h4>Rétrogradation</h4>
+                <h4>{{ t('help.account.subscription.planChange.tips.downgrade.title') }}</h4>
                 <p>
-                  Les changements vers un plan inférieur prennent généralement effet
-                  au prochain cycle de facturation pour éviter la perte de données.
+                  {{ t('help.account.subscription.planChange.tips.downgrade.description') }}
                 </p>
               </div>
             </div>
@@ -200,10 +188,9 @@
             <div class="tip-item">
               <i class="fas fa-shield-alt"></i>
               <div>
-                <h4>Protection des données</h4>
+                <h4>{{ t('help.account.subscription.planChange.tips.dataProtection.title') }}</h4>
                 <p>
-                  Vos données et configurations sont préservées lors des changements de plan.
-                  Seuls les quotas et fonctionnalités disponibles sont modifiés.
+                  {{ t('help.account.subscription.planChange.tips.dataProtection.description') }}
                 </p>
               </div>
             </div>
@@ -212,73 +199,67 @@
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-chart-bar"></i> Optimisation de l'utilisation</h2>
+        <h2><i class="fas fa-chart-bar"></i> {{ t('help.account.subscription.optimization.title') }}</h2>
         <p>
-          Maximisez la valeur de votre abonnement en adoptant ces bonnes pratiques :
+          {{ t('help.account.subscription.optimization.description') }}
         </p>
 
         <div class="optimization-grid">
           <div class="optimization-card">
             <i class="fas fa-stopwatch"></i>
-            <h4>Gestion des sessions</h4>
+            <h4>{{ t('help.account.subscription.optimization.sessions.title') }}</h4>
             <p>
-              Fermez les sessions terminal inutilisées pour économiser vos quotas.
-              Utilisez des durées d'expiration appropriées pour vos sessions.
+              {{ t('help.account.subscription.optimization.sessions.description') }}
             </p>
           </div>
 
           <div class="optimization-card">
             <i class="fas fa-database"></i>
-            <h4>Stockage efficace</h4>
+            <h4>{{ t('help.account.subscription.optimization.storage.title') }}</h4>
             <p>
-              Nettoyez régulièrement les fichiers temporaires et anciens projets.
-              Utilisez des dépôts Git externes pour les gros projets.
+              {{ t('help.account.subscription.optimization.storage.description') }}
             </p>
           </div>
 
           <div class="optimization-card">
             <i class="fas fa-share-alt"></i>
-            <h4>Partage intelligent</h4>
+            <h4>{{ t('help.account.subscription.optimization.sharing.title') }}</h4>
             <p>
-              Partagez les ressources avec vos collaborateurs pour éviter
-              la duplication et optimiser l'utilisation collective.
+              {{ t('help.account.subscription.optimization.sharing.description') }}
             </p>
           </div>
 
           <div class="optimization-card">
             <i class="fas fa-clock"></i>
-            <h4>Planification d'usage</h4>
+            <h4>{{ t('help.account.subscription.optimization.planning.title') }}</h4>
             <p>
-              Planifiez vos activités intensives pendant les heures creuses
-              et surveillez vos pics d'utilisation.
+              {{ t('help.account.subscription.optimization.planning.description') }}
             </p>
           </div>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-pause-circle"></i> Suspension et annulation</h2>
+        <h2><i class="fas fa-pause-circle"></i> {{ t('help.account.subscription.suspension.title') }}</h2>
         <p>
-          Vous avez le contrôle total sur votre abonnement, y compris la possibilité
-          de le suspendre temporairement ou de l'annuler définitivement.
+          {{ t('help.account.subscription.suspension.description') }}
         </p>
 
         <div class="cancellation-options">
           <div class="option-card pause">
             <div class="option-header">
               <i class="fas fa-pause"></i>
-              <h4>Suspension temporaire</h4>
+              <h4>{{ t('help.account.subscription.suspension.pause.title') }}</h4>
             </div>
             <div class="option-content">
               <p>
-                Mettez votre abonnement en pause pendant une période déterminée.
-                Idéal pour les vacances ou les périodes d'inactivité prévues.
+                {{ t('help.account.subscription.suspension.pause.description') }}
               </p>
               <ul>
-                <li>Conservation de toutes vos données</li>
-                <li>Arrêt de la facturation pendant la pause</li>
-                <li>Reprise facile quand vous le souhaitez</li>
-                <li>Durée maximale selon les conditions</li>
+                <li>{{ t('help.account.subscription.suspension.pause.feature1') }}</li>
+                <li>{{ t('help.account.subscription.suspension.pause.feature2') }}</li>
+                <li>{{ t('help.account.subscription.suspension.pause.feature3') }}</li>
+                <li>{{ t('help.account.subscription.suspension.pause.feature4') }}</li>
               </ul>
             </div>
           </div>
@@ -286,118 +267,108 @@
           <div class="option-card cancel">
             <div class="option-header">
               <i class="fas fa-times-circle"></i>
-              <h4>Annulation définitive</h4>
+              <h4>{{ t('help.account.subscription.suspension.cancel.title') }}</h4>
             </div>
             <div class="option-content">
               <p>
-                Annulez votre abonnement de manière permanente.
-                Toutes les données seront supprimées après la période de grâce.
+                {{ t('help.account.subscription.suspension.cancel.description') }}
               </p>
               <ul>
-                <li>Accès maintenu jusqu'à la fin du cycle payé</li>
-                <li>Période de grâce pour récupérer les données</li>
-                <li>Suppression définitive après expiration</li>
-                <li>Possibilité de réactivation avec nouveau compte</li>
+                <li>{{ t('help.account.subscription.suspension.cancel.feature1') }}</li>
+                <li>{{ t('help.account.subscription.suspension.cancel.feature2') }}</li>
+                <li>{{ t('help.account.subscription.suspension.cancel.feature3') }}</li>
+                <li>{{ t('help.account.subscription.suspension.cancel.feature4') }}</li>
               </ul>
             </div>
           </div>
         </div>
 
         <div class="warning-box">
-          <h4><i class="fas fa-exclamation-triangle"></i> Important</h4>
-          <p>
-            <strong>Sauvegardez vos données importantes</strong> avant toute suspension ou annulation.
-            Bien que nous conservions vos données pendant une période de grâce,
-            il est recommandé de faire des sauvegardes locales de vos projets critiques.
-          </p>
+          <h4><i class="fas fa-exclamation-triangle"></i> {{ t('help.account.subscription.suspension.warning.title') }}</h4>
+          <p v-html="t('help.account.subscription.suspension.warning.description')"></p>
         </div>
       </section>
 
       <section class="help-section info">
-        <h2><i class="fas fa-rocket"></i> Évolution du système d'abonnement</h2>
+        <h2><i class="fas fa-rocket"></i> {{ t('help.account.subscription.evolution.title') }}</h2>
         <div class="evolution-notice">
-          <p>
-            <strong>Le système d'abonnement OCF est en développement actif.</strong>
-            De nouvelles options de plans, fonctionnalités de facturation et outils
-            de gestion seront régulièrement ajoutés pour mieux répondre à vos besoins.
-          </p>
+          <p v-html="t('help.account.subscription.evolution.notice')"></p>
 
           <div class="upcoming-features">
-            <h4>Améliorations prévues :</h4>
+            <h4>{{ t('help.account.subscription.evolution.upcoming.title') }}</h4>
             <ul>
-              <li>Plans personnalisables avec options à la carte</li>
-              <li>Facturation basée sur l'utilisation réelle</li>
-              <li>Gestion d'équipe et facturation centralisée</li>
-              <li>Intégrations avec systèmes de gestion existants</li>
-              <li>Analytics avancés d'utilisation</li>
+              <li>{{ t('help.account.subscription.evolution.upcoming.feature1') }}</li>
+              <li>{{ t('help.account.subscription.evolution.upcoming.feature2') }}</li>
+              <li>{{ t('help.account.subscription.evolution.upcoming.feature3') }}</li>
+              <li>{{ t('help.account.subscription.evolution.upcoming.feature4') }}</li>
+              <li>{{ t('help.account.subscription.evolution.upcoming.feature5') }}</li>
             </ul>
           </div>
 
           <p>
-            Cette documentation sera mise à jour pour refléter les nouvelles fonctionnalités
-            au fur et à mesure de leur déploiement.
+            {{ t('help.account.subscription.evolution.documentation') }}
           </p>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-question-circle"></i> Support et assistance</h2>
+        <h2><i class="fas fa-question-circle"></i> {{ t('help.account.subscription.support.title') }}</h2>
         <p>
-          Notre équipe support est là pour vous aider avec toutes vos questions d'abonnement :
+          {{ t('help.account.subscription.support.description') }}
         </p>
 
         <div class="support-options">
           <div class="support-card">
             <i class="fas fa-envelope"></i>
-            <h4>Support par email</h4>
-            <p>Pour les questions générales sur votre abonnement</p>
+            <h4>{{ t('help.account.subscription.support.email.title') }}</h4>
+            <p>{{ t('help.account.subscription.support.email.description') }}</p>
             <a href="mailto:contact@labinux.com" class="btn btn-outline">
               <i class="fas fa-envelope"></i>
-              Contacter le support
+              {{ t('help.account.subscription.support.email.button') }}
             </a>
           </div>
 
           <div class="support-card">
             <i class="fas fa-credit-card"></i>
-            <h4>Questions de facturation</h4>
-            <p>Pour les problèmes de paiement et facturation</p>
+            <h4>{{ t('help.account.subscription.support.billing.title') }}</h4>
+            <p>{{ t('help.account.subscription.support.billing.description') }}</p>
             <a href="mailto:contact@labinux.com" class="btn btn-outline">
               <i class="fas fa-calculator"></i>
-              Support facturation
+              {{ t('help.account.subscription.support.billing.button') }}
             </a>
           </div>
 
           <div class="support-card">
             <i class="fas fa-handshake"></i>
-            <h4>Conseils d'optimisation</h4>
-            <p>Pour optimiser votre utilisation et choisir le bon plan</p>
+            <h4>{{ t('help.account.subscription.support.optimization.title') }}</h4>
+            <p>{{ t('help.account.subscription.support.optimization.description') }}</p>
             <a href="mailto:contact@labinux.com" class="btn btn-outline">
               <i class="fas fa-lightbulb"></i>
-              Demander conseil
+              {{ t('help.account.subscription.support.optimization.button') }}
             </a>
           </div>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-arrow-right"></i> Prochaines étapes</h2>
+        <h2><i class="fas fa-arrow-right"></i> {{ t('help.navigation.nextSteps') }}</h2>
         <div class="next-steps">
           <router-link :to="`${helpRoutePrefix}/account/billing`" class="next-step-card">
             <i class="fas fa-credit-card"></i>
-            <h4>Facturation</h4>
-            <p>Gérer vos méthodes de paiement et consulter vos factures</p>
+            <h4>{{ t('help.account.subscription.nextSteps.billing.title') }}</h4>
+            <p>{{ t('help.account.subscription.nextSteps.billing.description') }}</p>
           </router-link>
 
           <router-link to="/subscription-dashboard" class="next-step-card">
             <i class="fas fa-tachometer-alt"></i>
-            <h4>Tableau de bord</h4>
-            <p>Consulter votre utilisation actuelle et les détails de votre plan</p>
+            <h4>{{ t('help.account.subscription.nextSteps.dashboard.title') }}</h4>
+            <p>{{ t('help.account.subscription.nextSteps.dashboard.description') }}</p>
           </router-link>
 
           <router-link to="/subscription-plans" class="next-step-card">
             <i class="fas fa-list"></i>
-            <h4>Plans disponibles</h4>
-            <p>Explorer et comparer tous les plans d'abonnement</p>
+            <h4>{{ t('help.account.subscription.nextSteps.plans.title') }}</h4>
+            <p>{{ t('help.account.subscription.nextSteps.plans.description') }}</p>
           </router-link>
         </div>
       </section>

@@ -54,8 +54,8 @@
           <div class="step-number">1</div>
           <div class="step-content">
             <h4>{{ t('help.terminals.gettingStarted.steps.accessKeys.title') }}</h4>
-            <p>
-              {{ t('help.terminals.gettingStarted.steps.accessKeys.description') }}
+            <p v-html="t('help.terminals.gettingStarted.steps.accessKeys.description')">
+    
             </p>
             <router-link to="/user-terminal-keys" class="btn btn-outline">
               <i class="fas fa-key"></i>
@@ -68,9 +68,7 @@
           <div class="step-number">2</div>
           <div class="step-content">
             <h4>{{ t('help.terminals.gettingStarted.steps.checkStatus.title') }}</h4>
-            <p>
-              {{ t('help.terminals.gettingStarted.steps.checkStatus.description') }}
-            </p>
+            <p v-html="t('help.terminals.gettingStarted.steps.checkStatus.description')"></p>
           </div>
         </div>
       </section>
@@ -85,9 +83,7 @@
           <div class="step-number">1</div>
           <div class="step-content">
             <h4>{{ t('help.terminals.gettingStarted.steps.accessCreation.title') }}</h4>
-            <p>
-              {{ t('help.terminals.gettingStarted.steps.accessCreation.description') }}
-            </p>
+            <p v-html="t('help.terminals.gettingStarted.steps.accessCreation.description')"></p>
             <router-link to="/terminal-creation" class="btn btn-primary">
               <i class="fas fa-plus"></i>
               {{ t('help.terminals.gettingStarted.steps.accessCreation.button') }}
@@ -110,9 +106,7 @@
           <div class="step-number">3</div>
           <div class="step-content">
             <h4>{{ t('help.terminals.gettingStarted.steps.launch.title') }}</h4>
-            <p>
-              {{ t('help.terminals.gettingStarted.steps.launch.description') }}
-            </p>
+            <p v-html="t('help.terminals.gettingStarted.steps.launch.description')"></p>
           </div>
         </div>
       </section>
@@ -127,9 +121,7 @@
           <div class="step-number">1</div>
           <div class="step-content">
             <h4>{{ t('help.terminals.gettingStarted.steps.locate.title') }}</h4>
-            <p>
-              {{ t('help.terminals.gettingStarted.steps.locate.description') }}
-            </p>
+            <p v-html="t('help.terminals.gettingStarted.steps.locate.description')"></p>
             <router-link to="/terminal-sessions" class="btn btn-outline">
               <i class="fas fa-list"></i>
               {{ t('help.terminals.gettingStarted.steps.locate.button') }}
@@ -141,9 +133,7 @@
           <div class="step-number">2</div>
           <div class="step-content">
             <h4>{{ t('help.terminals.gettingStarted.steps.connect.title') }}</h4>
-            <p>
-              {{ t('help.terminals.gettingStarted.steps.connect.description') }}
-            </p>
+            <p v-html="t('help.terminals.gettingStarted.steps.connect.description')"></p>
           </div>
         </div>
       </section>

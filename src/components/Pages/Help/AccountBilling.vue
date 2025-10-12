@@ -39,20 +39,18 @@
 
     <div class="article-content">
       <section class="help-section">
-        <h2><i class="fas fa-info-circle"></i> Système de facturation</h2>
+        <h2><i class="fas fa-info-circle"></i> {{ t('help.account.billing.system.title') }}</h2>
         <p>
-          OCF utilise un système de facturation automatisé intégré avec Stripe
-          pour garantir des paiements sécurisés et une gestion transparente de votre abonnement.
+          {{ t('help.account.billing.system.description') }}
         </p>
 
         <div class="billing-overview">
           <div class="overview-item">
             <i class="fas fa-calendar-alt"></i>
             <div>
-              <h4>Facturation récurrente</h4>
+              <h4>{{ t('help.account.billing.system.recurring.title') }}</h4>
               <p>
-                Les abonnements sont facturés automatiquement selon votre cycle choisi
-                (mensuel ou annuel). Vous recevez une facture avant chaque prélèvement.
+                {{ t('help.account.billing.system.recurring.description') }}
               </p>
             </div>
           </div>
@@ -60,10 +58,9 @@
           <div class="overview-item">
             <i class="fas fa-shield-alt"></i>
             <div>
-              <h4>Paiements sécurisés</h4>
+              <h4>{{ t('help.account.billing.system.secure.title') }}</h4>
               <p>
-                Tous les paiements sont traités via Stripe, leader mondial
-                de la sécurité des paiements en ligne. Vos données sont protégées.
+                {{ t('help.account.billing.system.secure.description') }}
               </p>
             </div>
           </div>
@@ -71,10 +68,9 @@
           <div class="overview-item">
             <i class="fas fa-calculator"></i>
             <div>
-              <h4>Facturation transparente</h4>
+              <h4>{{ t('help.account.billing.system.transparent.title') }}</h4>
               <p>
-                Toutes les charges sont clairement détaillées dans vos factures.
-                Pas de frais cachés, seulement ce que vous utilisez et souscrivez.
+                {{ t('help.account.billing.system.transparent.description') }}
               </p>
             </div>
           </div>
@@ -82,240 +78,233 @@
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-credit-card"></i> Méthodes de paiement</h2>
+        <h2><i class="fas fa-credit-card"></i> {{ t('help.account.billing.paymentMethods.title') }}</h2>
         <p>
-          Gérez vos cartes de crédit et autres méthodes de paiement pour assurer
-          la continuité de votre service OCF.
+          {{ t('help.account.billing.paymentMethods.description') }}
         </p>
 
         <div class="payment-methods-guide">
           <div class="method-section">
-            <h3>Types de paiement acceptés :</h3>
+            <h3>{{ t('help.account.billing.paymentMethods.types.title') }}</h3>
             <div class="payment-types">
               <div class="payment-type">
                 <i class="fab fa-cc-visa"></i>
-                <span>Visa</span>
+                <span>{{ t('help.account.billing.paymentMethods.types.visa') }}</span>
               </div>
               <div class="payment-type">
                 <i class="fab fa-cc-mastercard"></i>
-                <span>Mastercard</span>
+                <span>{{ t('help.account.billing.paymentMethods.types.mastercard') }}</span>
               </div>
               <div class="payment-type">
                 <i class="fab fa-cc-amex"></i>
-                <span>American Express</span>
+                <span>{{ t('help.account.billing.paymentMethods.types.amex') }}</span>
               </div>
               <div class="payment-type">
                 <i class="fas fa-university"></i>
-                <span>Virement SEPA</span>
+                <span>{{ t('help.account.billing.paymentMethods.types.sepa') }}</span>
               </div>
             </div>
           </div>
 
           <div class="method-section">
-            <h3>Gestion de vos méthodes :</h3>
+            <h3>{{ t('help.account.billing.paymentMethods.management.title') }}</h3>
             <div class="management-actions">
               <div class="action-card">
                 <i class="fas fa-plus-circle"></i>
-                <h4>Ajouter une méthode</h4>
-                <p>Ajoutez une nouvelle carte ou méthode de paiement de secours</p>
+                <h4>{{ t('help.account.billing.paymentMethods.management.add.title') }}</h4>
+                <p>{{ t('help.account.billing.paymentMethods.management.add.description') }}</p>
                 <router-link to="/payment-methods" class="btn btn-primary">
                   <i class="fas fa-credit-card"></i>
-                  Gérer les paiements
+                  {{ t('help.account.billing.paymentMethods.management.add.button') }}
                 </router-link>
               </div>
 
               <div class="action-card">
                 <i class="fas fa-star"></i>
-                <h4>Méthode par défaut</h4>
-                <p>Définissez quelle méthode utiliser en priorité pour vos factures</p>
+                <h4>{{ t('help.account.billing.paymentMethods.management.default.title') }}</h4>
+                <p>{{ t('help.account.billing.paymentMethods.management.default.description') }}</p>
               </div>
 
               <div class="action-card">
                 <i class="fas fa-sync-alt"></i>
-                <h4>Mise à jour</h4>
-                <p>Modifiez les informations d'une carte expirée ou changée</p>
+                <h4>{{ t('help.account.billing.paymentMethods.management.update.title') }}</h4>
+                <p>{{ t('help.account.billing.paymentMethods.management.update.description') }}</p>
               </div>
             </div>
           </div>
         </div>
 
         <div class="security-tips">
-          <h3>Conseils de sécurité :</h3>
+          <h3>{{ t('help.account.billing.paymentMethods.security.title') }}</h3>
           <div class="security-list">
             <div class="security-item">
               <i class="fas fa-lock"></i>
-              <span>Utilisez uniquement des connexions sécurisées (HTTPS)</span>
+              <span>{{ t('help.account.billing.paymentMethods.security.tip1') }}</span>
             </div>
             <div class="security-item">
               <i class="fas fa-eye"></i>
-              <span>Vérifiez régulièrement vos relevés bancaires</span>
+              <span>{{ t('help.account.billing.paymentMethods.security.tip2') }}</span>
             </div>
             <div class="security-item">
               <i class="fas fa-bell"></i>
-              <span>Activez les notifications de paiement</span>
+              <span>{{ t('help.account.billing.paymentMethods.security.tip3') }}</span>
             </div>
             <div class="security-item">
               <i class="fas fa-trash-alt"></i>
-              <span>Supprimez les méthodes de paiement inutilisées</span>
+              <span>{{ t('help.account.billing.paymentMethods.security.tip4') }}</span>
             </div>
           </div>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-map-marker-alt"></i> Adresses de facturation</h2>
+        <h2><i class="fas fa-map-marker-alt"></i> {{ t('help.account.billing.billingAddress.title') }}</h2>
         <p>
-          Configurez vos adresses de facturation pour recevoir des factures conformes
-          aux réglementations fiscales de votre pays.
+          {{ t('help.account.billing.billingAddress.description') }}
         </p>
 
         <div class="billing-address-guide">
           <div class="address-importance">
-            <h3>Pourquoi c'est important :</h3>
+            <h3>{{ t('help.account.billing.billingAddress.importance.title') }}</h3>
             <ul>
-              <li>Conformité fiscale selon votre localisation</li>
-              <li>Application correcte de la TVA et taxes locales</li>
-              <li>Factures valides pour votre comptabilité</li>
-              <li>Respect des réglementations internationales</li>
+              <li>{{ t('help.account.billing.billingAddress.importance.fiscal') }}</li>
+              <li>{{ t('help.account.billing.billingAddress.importance.vat') }}</li>
+              <li>{{ t('help.account.billing.billingAddress.importance.accounting') }}</li>
+              <li>{{ t('help.account.billing.billingAddress.importance.regulations') }}</li>
             </ul>
           </div>
 
           <div class="address-management">
-            <h3>Gestion des adresses :</h3>
+            <h3>{{ t('help.account.billing.billingAddress.management.title') }}</h3>
             <div class="address-actions">
               <div class="address-action">
                 <i class="fas fa-home"></i>
                 <div>
-                  <h4>Adresse principale</h4>
-                  <p>Votre adresse de facturation par défaut</p>
+                  <h4>{{ t('help.account.billing.billingAddress.management.primary.title') }}</h4>
+                  <p>{{ t('help.account.billing.billingAddress.management.primary.description') }}</p>
                 </div>
               </div>
 
               <div class="address-action">
                 <i class="fas fa-building"></i>
                 <div>
-                  <h4>Adresses professionnelles</h4>
-                  <p>Adresses d'entreprise pour facturation institutionnelle</p>
+                  <h4>{{ t('help.account.billing.billingAddress.management.business.title') }}</h4>
+                  <p>{{ t('help.account.billing.billingAddress.management.business.description') }}</p>
                 </div>
               </div>
 
               <div class="address-action">
                 <i class="fas fa-edit"></i>
                 <div>
-                  <h4>Modification</h4>
-                  <p>Mise à jour en cas de déménagement ou changement</p>
+                  <h4>{{ t('help.account.billing.billingAddress.management.edit.title') }}</h4>
+                  <p>{{ t('help.account.billing.billingAddress.management.edit.description') }}</p>
                 </div>
               </div>
             </div>
 
             <router-link to="/billing-addresses" class="btn btn-outline">
               <i class="fas fa-map-marker-alt"></i>
-              Gérer les adresses
+              {{ t('help.account.billing.billingAddress.management.button') }}
             </router-link>
           </div>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-file-invoice"></i> Consultation des factures</h2>
+        <h2><i class="fas fa-file-invoice"></i> {{ t('help.account.billing.invoices.title') }}</h2>
         <p>
-          Accédez à toutes vos factures OCF, téléchargez-les et suivez l'historique
-          de vos paiements pour votre comptabilité.
+          {{ t('help.account.billing.invoices.description') }}
         </p>
 
         <div class="invoice-management">
           <div class="invoice-features">
             <div class="feature-card">
               <i class="fas fa-list"></i>
-              <h4>Historique complet</h4>
+              <h4>{{ t('help.account.billing.invoices.features.history.title') }}</h4>
               <p>
-                Consultez toutes vos factures depuis le début de votre abonnement.
-                Recherchez par date, montant ou statut.
+                {{ t('help.account.billing.invoices.features.history.description') }}
               </p>
             </div>
 
             <div class="feature-card">
               <i class="fas fa-download"></i>
-              <h4>Téléchargement PDF</h4>
+              <h4>{{ t('help.account.billing.invoices.features.download.title') }}</h4>
               <p>
-                Téléchargez vos factures au format PDF pour votre comptabilité
-                ou vos déclarations fiscales.
+                {{ t('help.account.billing.invoices.features.download.description') }}
               </p>
             </div>
 
             <div class="feature-card">
               <i class="fas fa-info-circle"></i>
-              <h4>Détails transparents</h4>
+              <h4>{{ t('help.account.billing.invoices.features.details.title') }}</h4>
               <p>
-                Chaque facture détaille clairement les services utilisés,
-                les périodes de facturation et les taxes applicables.
+                {{ t('help.account.billing.invoices.features.details.description') }}
               </p>
             </div>
           </div>
 
           <div class="invoice-access">
-            <h3>Accéder à vos factures :</h3>
+            <h3>{{ t('help.account.billing.invoices.features.button') }}</h3>
             <router-link to="/invoices" class="btn btn-primary">
               <i class="fas fa-file-invoice"></i>
-              Consulter mes factures
+              {{ t('help.account.billing.invoices.features.button') }}
             </router-link>
           </div>
         </div>
 
         <div class="invoice-structure">
-          <h3>Structure d'une facture OCF :</h3>
+          <h3>{{ t('help.account.billing.invoices.structure.title') }}</h3>
           <div class="structure-items">
             <div class="structure-item">
               <span class="structure-label">En-tête :</span>
-              <span>Informations OCF et vos coordonnées</span>
+              <span>{{ t('help.account.billing.invoices.structure.header') }}</span>
             </div>
             <div class="structure-item">
               <span class="structure-label">Période :</span>
-              <span>Dates de service et de facturation</span>
+              <span>{{ t('help.account.billing.invoices.structure.period') }}</span>
             </div>
             <div class="structure-item">
               <span class="structure-label">Détail :</span>
-              <span>Services utilisés et tarifs appliqués</span>
+              <span>{{ t('help.account.billing.invoices.structure.detail') }}</span>
             </div>
             <div class="structure-item">
               <span class="structure-label">Taxes :</span>
-              <span>TVA et taxes locales selon votre pays</span>
+              <span>{{ t('help.account.billing.invoices.structure.taxes') }}</span>
             </div>
             <div class="structure-item">
               <span class="structure-label">Total :</span>
-              <span>Montant final et méthode de paiement</span>
+              <span>{{ t('help.account.billing.invoices.structure.total') }}</span>
             </div>
           </div>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-exclamation-triangle"></i> Problèmes de paiement</h2>
+        <h2><i class="fas fa-exclamation-triangle"></i> {{ t('help.account.billing.paymentIssues.title') }}</h2>
         <p>
-          Si vous rencontrez des difficultés avec vos paiements, voici les étapes
-          à suivre pour résoudre rapidement les problèmes.
+          {{ t('help.account.billing.paymentIssues.description') }}
         </p>
 
         <div class="payment-issues">
           <div class="issue-card declined">
             <div class="issue-header">
               <i class="fas fa-times-circle"></i>
-              <h4>Paiement refusé</h4>
+              <h4>{{ t('help.account.billing.paymentIssues.declined.title') }}</h4>
             </div>
             <div class="issue-content">
-              <h5>Causes courantes :</h5>
+              <h5>{{ t('help.account.billing.paymentIssues.declined.causes.title') }}</h5>
               <ul>
-                <li>Fonds insuffisants sur le compte</li>
-                <li>Carte expirée ou bloquée</li>
-                <li>Limite de paiement dépassée</li>
-                <li>Informations incorrectes</li>
+                <li>{{ t('help.account.billing.paymentIssues.declined.causes.insufficient') }}</li>
+                <li>{{ t('help.account.billing.paymentIssues.declined.causes.expired') }}</li>
+                <li>{{ t('help.account.billing.paymentIssues.declined.causes.limit') }}</li>
+                <li>{{ t('help.account.billing.paymentIssues.declined.causes.incorrect') }}</li>
               </ul>
-              <h5>Solutions :</h5>
+              <h5>{{ t('help.account.billing.paymentIssues.declined.solutions.title') }}</h5>
               <ul>
-                <li>Vérifiez le solde de votre compte</li>
-                <li>Mettez à jour les informations de carte</li>
-                <li>Contactez votre banque si nécessaire</li>
-                <li>Utilisez une méthode de paiement alternative</li>
+                <li>{{ t('help.account.billing.paymentIssues.declined.solutions.balance') }}</li>
+                <li>{{ t('help.account.billing.paymentIssues.declined.solutions.update') }}</li>
+                <li>{{ t('help.account.billing.paymentIssues.declined.solutions.bank') }}</li>
+                <li>{{ t('help.account.billing.paymentIssues.declined.solutions.alternative') }}</li>
               </ul>
             </div>
           </div>
@@ -323,16 +312,14 @@
           <div class="issue-card retry">
             <div class="issue-header">
               <i class="fas fa-redo"></i>
-              <h4>Nouvelle tentative</h4>
+              <h4>{{ t('help.account.billing.paymentIssues.retry.title') }}</h4>
             </div>
             <div class="issue-content">
               <p>
-                OCF effectue automatiquement plusieurs tentatives de paiement
-                sur quelques jours en cas d'échec initial.
+                {{ t('help.account.billing.paymentIssues.retry.description1') }}
               </p>
               <p>
-                Vous recevez des notifications par email pour vous informer
-                de la situation et vous permettre de corriger le problème.
+                {{ t('help.account.billing.paymentIssues.retry.description2') }}
               </p>
             </div>
           </div>
@@ -340,16 +327,14 @@
           <div class="issue-card suspension">
             <div class="issue-header">
               <i class="fas fa-pause-circle"></i>
-              <h4>Suspension du service</h4>
+              <h4>{{ t('help.account.billing.paymentIssues.suspension.title') }}</h4>
             </div>
             <div class="issue-content">
               <p>
-                En cas d'échec répété des paiements, votre service peut être
-                temporairement suspendu pour éviter l'accumulation de frais.
+                {{ t('help.account.billing.paymentIssues.suspension.description1') }}
               </p>
               <p>
-                Votre compte et vos données restent saufs pendant la suspension.
-                Le service reprend automatiquement après règlement.
+                {{ t('help.account.billing.paymentIssues.suspension.description2') }}
               </p>
             </div>
           </div>
@@ -357,22 +342,21 @@
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-calculator"></i> Remboursements et crédits</h2>
+        <h2><i class="fas fa-calculator"></i> {{ t('help.account.billing.refunds.title') }}</h2>
         <p>
-          Informations sur les conditions de remboursement et le système de crédits OCF.
+          {{ t('help.account.billing.refunds.description') }}
         </p>
 
         <div class="refund-policy">
           <div class="policy-section">
-            <h3>Politique de remboursement :</h3>
+            <h3>{{ t('help.account.billing.refunds.policy.title') }}</h3>
             <div class="policy-items">
               <div class="policy-item">
                 <i class="fas fa-calendar-week"></i>
                 <div>
-                  <h4>Période d'essai</h4>
+                  <h4>{{ t('help.account.billing.refunds.policy.trial.title') }}</h4>
                   <p>
-                    Remboursement intégral possible pendant les 7 premiers jours
-                    de votre première souscription (conditions d'utilisation normale).
+                    {{ t('help.account.billing.refunds.policy.trial.description') }}
                   </p>
                 </div>
               </div>
@@ -380,10 +364,9 @@
               <div class="policy-item">
                 <i class="fas fa-balance-scale"></i>
                 <div>
-                  <h4>Remboursement au prorata</h4>
+                  <h4>{{ t('help.account.billing.refunds.policy.proration.title') }}</h4>
                   <p>
-                    En cas de rétrogradation ou d'annulation, remboursement
-                    calculé sur la période non utilisée.
+                    {{ t('help.account.billing.refunds.policy.proration.description') }}
                   </p>
                 </div>
               </div>
@@ -391,10 +374,9 @@
               <div class="policy-item">
                 <i class="fas fa-bug"></i>
                 <div>
-                  <h4>Problèmes techniques</h4>
+                  <h4>{{ t('help.account.billing.refunds.policy.technical.title') }}</h4>
                   <p>
-                    Crédits ou remboursements accordés en cas d'interruption
-                    prolongée du service due à des problèmes techniques.
+                    {{ t('help.account.billing.refunds.policy.technical.description') }}
                   </p>
                 </div>
               </div>
@@ -402,47 +384,40 @@
           </div>
 
           <div class="credit-system">
-            <h3>Système de crédits :</h3>
+            <h3>{{ t('help.account.billing.refunds.credits.title') }}</h3>
             <p>
-              OCF peut attribuer des crédits à votre compte pour compenser
-              des désagréments ou dans le cadre de promotions spéciales.
+              {{ t('help.account.billing.refunds.credits.description1') }}
             </p>
             <p>
-              Les crédits sont automatiquement appliqués à vos prochaines factures
-              et apparaissent clairement dans votre historique de facturation.
+              {{ t('help.account.billing.refunds.credits.description2') }}
             </p>
           </div>
         </div>
       </section>
 
       <section class="help-section info">
-        <h2><i class="fas fa-tools"></i> Évolution du système de facturation</h2>
+        <h2><i class="fas fa-tools"></i> {{ t('help.account.billing.evolution.title') }}</h2>
         <div class="billing-evolution">
-          <p>
-            <strong>Le système de facturation OCF continue d'évoluer</strong>
-            pour offrir plus de flexibilité et de transparence dans la gestion
-            de vos paiements et abonnements.
-          </p>
+          <p v-html="t('help.account.billing.evolution.notice')"></p>
 
           <div class="upcoming-billing-features">
-            <h4>Améliorations en développement :</h4>
+            <h4>{{ t('help.account.billing.evolution.upcoming.title') }}</h4>
             <ul>
-              <li>Facturation détaillée par usage réel des ressources</li>
-              <li>Options de paiement alternatives (crypto, virements)</li>
-              <li>Facturation groupée pour les organisations</li>
-              <li>Alertes avancées de consommation et budget</li>
-              <li>Intégration avec systèmes comptables d'entreprise</li>
-              <li>Devises locales et paiements internationaux optimisés</li>
+              <li>{{ t('help.account.billing.evolution.upcoming.usage') }}</li>
+              <li>{{ t('help.account.billing.evolution.upcoming.alternatives') }}</li>
+              <li>{{ t('help.account.billing.evolution.upcoming.group') }}</li>
+              <li>{{ t('help.account.billing.evolution.upcoming.alerts') }}</li>
+              <li>{{ t('help.account.billing.evolution.upcoming.integration') }}</li>
+              <li>{{ t('help.account.billing.evolution.upcoming.currencies') }}</li>
             </ul>
           </div>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-headset"></i> Support facturation</h2>
+        <h2><i class="fas fa-headset"></i> {{ t('help.account.billing.support.title') }}</h2>
         <p>
-          Notre équipe support est spécialisée dans la résolution rapide
-          des problèmes de facturation et de paiement.
+          {{ t('help.account.billing.support.description') }}
         </p>
 
         <div class="billing-support">
@@ -450,11 +425,11 @@
             <div class="support-channel">
               <i class="fas fa-envelope"></i>
               <div>
-                <h4>Email support</h4>
-                <p>Réponse sous 24h pour les questions de facturation</p>
+                <h4>{{ t('help.account.billing.support.email.title') }}</h4>
+                <p>{{ t('help.account.billing.support.email.description') }}</p>
                 <a href="mailto:contact@labinux.com?subject=Support Facturation" class="btn btn-outline">
                   <i class="fas fa-envelope"></i>
-                  Contacter le support
+                  {{ t('help.account.billing.support.email.button') }}
                 </a>
               </div>
             </div>
@@ -462,33 +437,33 @@
             <div class="support-channel">
               <i class="fas fa-phone"></i>
               <div>
-                <h4>Support prioritaire</h4>
-                <p>Assistance téléphonique pour les problèmes urgents de paiement</p>
+                <h4>{{ t('help.account.billing.support.priority.title') }}</h4>
+                <p>{{ t('help.account.billing.support.priority.description') }}</p>
                 <div class="contact-note">
-                  <small>Disponible pour les plans entreprise</small>
+                  <small>{{ t('help.account.billing.support.priority.note') }}</small>
                 </div>
               </div>
             </div>
           </div>
 
           <div class="support-tips">
-            <h4>Pour un support efficace, incluez :</h4>
+            <h4>{{ t('help.account.billing.support.tips.title') }}</h4>
             <div class="tips-list">
               <div class="tip-point">
                 <i class="fas fa-user"></i>
-                <span>Votre adresse email de compte</span>
+                <span>{{ t('help.account.billing.support.tips.email') }}</span>
               </div>
               <div class="tip-point">
                 <i class="fas fa-file-invoice"></i>
-                <span>Numéro de facture concernée</span>
+                <span>{{ t('help.account.billing.support.tips.invoice') }}</span>
               </div>
               <div class="tip-point">
                 <i class="fas fa-calendar"></i>
-                <span>Date et heure du problème</span>
+                <span>{{ t('help.account.billing.support.tips.datetime') }}</span>
               </div>
               <div class="tip-point">
                 <i class="fas fa-camera"></i>
-                <span>Capture d'écran si applicable</span>
+                <span>{{ t('help.account.billing.support.tips.screenshot') }}</span>
               </div>
             </div>
           </div>
@@ -496,30 +471,30 @@
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-arrow-right"></i> Ressources utiles</h2>
+        <h2><i class="fas fa-arrow-right"></i> {{ t('help.account.billing.resources.title') }}</h2>
         <div class="billing-resources">
           <router-link :to="`${helpRoutePrefix}/account/subscription`" class="resource-card">
             <i class="fas fa-calendar-check"></i>
-            <h4>Gestion d'abonnement</h4>
-            <p>Comprendre et optimiser votre plan OCF</p>
+            <h4>{{ t('help.account.billing.resources.subscription.title') }}</h4>
+            <p>{{ t('help.account.billing.resources.subscription.description') }}</p>
           </router-link>
 
           <router-link to="/payment-methods" class="resource-card">
             <i class="fas fa-credit-card"></i>
-            <h4>Méthodes de paiement</h4>
-            <p>Ajouter et gérer vos cartes et comptes</p>
+            <h4>{{ t('help.account.billing.resources.paymentMethods.title') }}</h4>
+            <p>{{ t('help.account.billing.resources.paymentMethods.description') }}</p>
           </router-link>
 
           <router-link to="/invoices" class="resource-card">
             <i class="fas fa-file-invoice"></i>
-            <h4>Mes factures</h4>
-            <p>Consulter et télécharger vos factures</p>
+            <h4>{{ t('help.account.billing.resources.invoices.title') }}</h4>
+            <p>{{ t('help.account.billing.resources.invoices.description') }}</p>
           </router-link>
 
           <router-link to="/billing-addresses" class="resource-card">
             <i class="fas fa-map-marker-alt"></i>
-            <h4>Adresses de facturation</h4>
-            <p>Configurer vos informations de facturation</p>
+            <h4>{{ t('help.account.billing.resources.addresses.title') }}</h4>
+            <p>{{ t('help.account.billing.resources.addresses.description') }}</p>
           </router-link>
         </div>
       </section>

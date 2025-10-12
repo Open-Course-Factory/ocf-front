@@ -294,149 +294,208 @@ export const helpEn = {
         title: "Sharing & Collaboration",
         intro: "Terminals can be shared with other users to facilitate collaboration, teaching, or technical support.",
 
+        howToShare: {
+          title: "How to Share a Terminal"
+        },
+
         sharingSteps: {
-          title: "Share a Terminal",
-          description: "To share one of your active sessions with another user:",
+          description: "Sharing terminals is done in a few simple steps:",
           step1: {
-            title: "Access the session list",
-            description: "Go to <strong>Practical Work > My Sessions</strong> to see your active sessions.",
+            title: "Access your sessions",
+            description: "Go to <strong>Practical Work > My Sessions</strong> to see the list of your active terminal sessions.",
             button: "View my sessions"
           },
           step2: {
             title: "Configure sharing",
-            description: "For the session you want to share, several options are available:",
-            item1: "<strong>Read access:</strong> The user can view but not interact with the terminal",
-            item2: "<strong>Write access:</strong> The user can execute commands and modify files",
-            item3: "<strong>Administrator access:</strong> Full control of the session, including sharing management",
-            item4: "<strong>Access duration:</strong> You can limit sharing to a specific period"
+            description: "For each session, you can configure sharing options:",
+            item1: "<strong>Enable sharing</strong> to make the session accessible",
+            item2: "<strong>Add users</strong> by email or username",
+            item3: "<strong>Set permissions</strong> (read-only or read-write)",
+            item4: "<strong>Set access duration</strong> if necessary"
           },
           step3: {
             title: "Share the link",
-            description: "Once configured, send the sharing link to the authorized user. They will be able to access the terminal according to the permissions you have defined."
+            description: "Copy the <strong>sharing link</strong> and send it to authorized users. They will be able to access the terminal directly from their account."
           }
         },
 
         accessManagement: {
           title: "Access Management",
-          description: "You have complete control over who accesses your terminals and what they can do.",
+          description: "Precisely control who can access your terminals and what they can do.",
           readOnly: {
-            title: "Read-Only Access",
-            description: "This type of access is ideal for:",
-            tag1: "Code demonstrations",
-            tag2: "Teaching sessions",
-            tag3: "Progress monitoring"
+            description: "The user can see the terminal content and observe executed commands, but cannot interact or modify anything.",
+            tag1: "👁️ Observation",
+            tag2: "📋 Copy allowed",
+            tag3: "🚫 No modification"
           },
           readWrite: {
-            title: "Read-Write Access",
-            description: "This access allows full interaction and is recommended for:",
-            tag1: "Active collaboration",
-            tag2: "Technical support",
-            tag3: "Practical work"
+            description: "The user can execute commands, modify files, and fully interact with the terminal.",
+            tag1: "⌨️ Commands",
+            tag2: "✏️ Modifications",
+            tag3: "💾 Save"
           },
-          actionsTitle: "Access Management Actions",
+          actionsTitle: "Management actions:",
           actions: {
-            manage: "Manage active shares",
-            revoke: "Instantly revoke access if needed",
-            modify: "Modify permissions without revoking access"
+            manage: {
+              title: "Manage users",
+              description: "Add or remove users with access to your terminal"
+            },
+            revoke: {
+              title: "Revoke access",
+              description: "Immediately remove access for a specific user"
+            },
+            modify: {
+              title: "Modify permissions",
+              description: "Change access levels or sharing durations"
+            }
+          }
+        },
+
+        permissions: {
+          title: "Access Permissions",
+          readOnly: {
+            title: "Read-Only",
+            description: "Users can view the terminal content but cannot execute commands"
+          },
+          readWrite: {
+            title: "Read-Write",
+            description: "Users can execute commands and modify files"
+          },
+          admin: {
+            title: "Administrator",
+            description: "Full access including terminal settings and user management"
           }
         },
 
         accessingShared: {
-          title: "Access Shared Terminals",
-          description: "When someone shares a terminal with you:",
+          title: "Accessing Shared Terminals",
+          description: "When someone shares a terminal with you, here's how to access it:",
           step1: {
-            title: "Access the shared section",
-            description: "Navigate to <strong>Practical Work > Shared with Me</strong> to see all sessions shared with you.",
-            button: "View shared sessions"
+            title: "Check your shares",
+            description: "Go to <strong>Practical Work > Shared with Me</strong> to see all terminals you have access to.",
+            button: "View shared terminals"
           },
           step2: {
-            title: "Check your permissions",
-            description: "Before accessing a shared terminal, check:",
-            item1: "<strong>Your access level:</strong> Do you have read or read-write permissions?",
-            item2: "<strong>Expiration:</strong> How long will you have access to this terminal?",
-            item3: "<strong>Session owner:</strong> Who shared this terminal with you?",
-            item4: "<strong>Session status:</strong> Is the terminal active and functional?"
+            title: "Share information",
+            description: "For each shared terminal, you will see:",
+            item1: "<strong>The owner</strong> who shared the terminal",
+            item2: "<strong>Your permissions</strong> (read-only or read-write)",
+            item3: "<strong>The expiration date</strong> of access if applicable",
+            item4: "<strong>The status</strong> of the session (active, stopped, expired)"
           },
           step3: {
-            title: "Respect permissions",
-            description: "Use the terminal according to permissions granted to you. Don't try to execute actions not authorized by your access level."
+            title: "Connect",
+            description: "Click on <strong>\"Open\"</strong> to access the shared terminal in a new window."
+          }
+        },
+
+        useCases: {
+          title: "Use Cases",
+          teaching: {
+            title: "Teaching and Training",
+            description: "Share terminals with students for practical exercises or live demonstrations"
+          },
+          collaboration: {
+            title: "Team Collaboration",
+            description: "Work together on the same codebase in real-time"
+          },
+          support: {
+            title: "Technical Support",
+            description: "Allow support team to access your environment to solve problems"
+          },
+          presentation: {
+            title: "Presentations",
+            description: "Use shared terminals for live programming demonstrations"
           }
         },
 
         commonUseCases: {
           title: "Common Use Cases",
-          description: "Sharing is particularly useful for:",
+          description: "Terminal sharing adapts to many usage scenarios:",
           teaching: {
-            title: "Teaching",
-            description: "Share terminals with students for practical exercises, live demonstrations, or guided labs."
+            description: "Create <strong>guided learning environments</strong> where students can practice under supervision. Share prepared terminals with exercises and observe their progress in real-time."
           },
           support: {
-            title: "Technical Support",
-            description: "Facilitate problem solving by giving temporary access to a support team member."
+            description: "Facilitate <strong>troubleshooting and technical assistance</strong> by giving temporary access to your environment. The support team can diagnose and solve problems directly."
           },
           collaboration: {
-            title: "Pair Programming",
-            description: "Work collaboratively on the same code with colleagues in real-time."
+            title: "Collaborative Development",
+            description: "Work as a team on the same code, in real-time, with integrated screen sharing and instant synchronization."
           },
           mentoring: {
-            title: "Mentoring",
-            description: "Observe a learner's progress by accessing their environment with appropriate permission."
+            title: "Mentoring and Guidance",
+            description: "Guide junior developers by directly showing them best practices and development techniques."
           }
         },
 
         securityPractices: {
-          title: "Security Best Practices",
-          description: "For secure and optimal use of terminal sharing:",
           verifyIdentity: {
-            title: "Verify Identity",
-            description: "Always ensure you're sharing with the right person before granting access."
+            title: "Verify identity",
+            description: "Make sure to only share your terminals with trusted people and verify email addresses"
           },
           limitDuration: {
-            title: "Limit Duration",
-            description: "Set time limits on shares to minimize security risks."
+            title: "Limit duration",
+            description: "Configure limited access durations for temporary shares"
           },
           monitorActivity: {
-            title: "Monitor Activity",
-            description: "Regularly check actions taken in your shared terminals."
+            title: "Monitor activity",
+            description: "Keep an eye on what's happening in shared terminals with write access"
           },
           backupFirst: {
-            title: "Backup Your Data",
-            description: "Before sharing a session with write access, ensure you have recent backups of your work."
+            title: "Backup first",
+            description: "Make a backup copy of your important work before sharing in write mode"
           },
           revokeQuickly: {
-            title: "Revoke When Done",
-            description: "Remove access as soon as the collaboration or support is complete."
+            title: "Revoke quickly",
+            description: "Remove access as soon as it's no longer needed"
           },
           respectData: {
-            title: "Respect Shared Data",
-            description: "When you have access to someone's terminal, respect their files and configurations."
+            title: "Respect data",
+            description: "Never share terminals containing sensitive or confidential information"
+          }
+        },
+
+        security: {
+          title: "Security and Best Practices",
+          practices: {
+            practice1: "Never share terminals containing sensitive information",
+            practice2: "Regularly review and revoke unnecessary access",
+            practice3: "Use read-only access when possible",
+            practice4: "Monitor activity in shared sessions",
+            practice5: "Configure automatic session expiration for temporary access"
           }
         },
 
         limitations: {
           title: "Limitations and Considerations",
-          description: "Some aspects to consider when using sharing:",
+          description: "Keep these aspects in mind when sharing terminals:",
           users: {
-            title: "Number of Users",
-            description: "Depending on your subscription, the number of simultaneous shares may be limited."
+            title: "Number of users",
+            description: "The number of users who can access a terminal simultaneously may be limited according to your subscription plan"
           },
           network: {
-            title: "Network Performance",
-            description: "Multiple users on the same session can affect responsiveness depending on available bandwidth."
+            title: "Network performance",
+            description: "Latency may increase with multiple connected users. Favor stable connections"
           },
           sync: {
             title: "Synchronization",
-            description: "Commands and changes may take a few moments to synchronize between different users."
+            description: "Changes are synchronized in real-time but may have a slight delay depending on connection"
           },
           history: {
-            title: "Command History",
-            description: "The command history is shared between all users of the same session, which can be useful for tracking work but requires additional caution."
+            title: "Command history",
+            description: "All commands executed by all users are recorded in the terminal history"
           }
         },
 
         nextSteps: {
-          managingSessions: "Managing Sessions",
-          troubleshooting: "Troubleshooting"
+          managingSessions: {
+            title: "Managing Sessions",
+            description: "Learn to effectively manage your terminal sessions"
+          },
+          troubleshooting: {
+            title: "Troubleshooting",
+            description: "Solve common sharing and access problems"
+          }
         }
       },
 
@@ -1023,54 +1082,166 @@ export const helpEn = {
         title: "Subscription & Plans",
         intro: "Manage your subscription, understand plan features, and optimize your usage.",
 
+        overview: {
+          title: "Subscription Overview",
+          description: "OCF offers different subscription plans tailored to your learning and teaching needs. Each plan provides access to specific features and usage quotas.",
+          individual: {
+            title: "Individual Plans",
+            description: "Perfect for personal learning and individual projects. Access to terminals, content creation, and basic resources."
+          },
+          educational: {
+            title: "Educational Plans",
+            description: "Designed for teachers and trainers. Advanced collaboration features and class management."
+          },
+          enterprise: {
+            title: "Enterprise Plans",
+            description: "Solutions for organizations and institutions. Priority support, customization, and advanced integrations."
+          }
+        },
+
         dashboard: {
           title: "Subscription Dashboard",
-          description: "Your subscription dashboard provides a complete overview of:",
-          features: {
-            currentPlan: "Your current plan and its benefits",
-            usage: "Resource usage and limits",
-            renewalDate: "Next renewal date and amount",
-            invoiceHistory: "Invoice and payment history",
-            planComparison: "Available plans and upgrade options"
+          description: "The dashboard gives you a complete view of your current subscription and usage.",
+          usage: {
+            title: "Usage Tracking",
+            description: "Monitor your resource consumption: active terminal sessions, storage used, bandwidth, and other important metrics.",
+            button: "View Dashboard"
+          },
+          info: {
+            title: "Subscription Information",
+            description: "Check details of your current plan: renewal date, included features, limits, and available quotas."
+          },
+          alerts: {
+            title: "Alerts and Notifications",
+            description: "Receive alerts when you approach your usage limits or when your subscription requires attention."
           }
         },
 
-        planChanges: {
-          title: "Changing Plans",
-          upgrade: {
-            title: "Upgrading",
-            description: "Upgrade to a higher plan at any time. Changes take effect immediately and you'll be charged the prorated difference."
+        planChange: {
+          title: "Plan Changes",
+          description: "You can modify your subscription at any time as your needs evolve.",
+          step1: {
+            title: "Evaluate Your Needs",
+            description: "Analyze your current usage and identify the features you need to optimize your plan choice."
           },
-          downgrade: {
-            title: "Downgrading",
-            description: "Downgrades take effect at the next renewal date to avoid loss of paid features."
+          step2: {
+            title: "Compare Plans",
+            description: "Explore different available options and their benefits. Compare features, quotas, and pricing.",
+            button: "View Available Plans"
           },
-          cancellation: {
-            title: "Cancellation",
-            description: "Cancel anytime through the billing portal. Access continues until the end of your billing period."
-          }
-        },
-
-        billingPortal: {
-          title: "Billing Portal",
-          description: "Access Stripe's secure billing portal to:",
-          actions: {
-            action1: "Update payment methods",
-            action2: "Download invoices",
-            action3: "Change billing address",
-            action4: "Manage subscription settings",
-            action5: "View payment history"
+          step3: {
+            title: "Make the Change",
+            description: "Select your new plan and follow the upgrade or downgrade process according to your needs."
+          },
+          tips: {
+            title: "Important Points to Remember:",
+            upgrade: {
+              title: "Upgrade",
+              description: "Upgrades take effect immediately. Billing is adjusted pro-rata for the current period."
+            },
+            downgrade: {
+              title: "Downgrade",
+              description: "Changes to a lower plan generally take effect at the next billing cycle to avoid data loss."
+            },
+            dataProtection: {
+              title: "Data Protection",
+              description: "Your data and configurations are preserved during plan changes. Only quotas and available features are modified."
+            }
           }
         },
 
         optimization: {
           title: "Usage Optimization",
-          tips: {
-            tip1: "Monitor your resource usage regularly",
-            tip2: "Close unused terminal sessions to save resources",
-            tip3: "Choose the plan that best fits your actual usage",
-            tip4: "Take advantage of educational discounts if eligible",
-            tip5: "Contact support for custom enterprise solutions"
+          description: "Maximize the value of your subscription by adopting these best practices:",
+          sessions: {
+            title: "Session Management",
+            description: "Close unused terminal sessions to save your quotas. Use appropriate expiration times for your sessions."
+          },
+          storage: {
+            title: "Efficient Storage",
+            description: "Regularly clean up temporary files and old projects. Use external Git repositories for large projects."
+          },
+          sharing: {
+            title: "Smart Sharing",
+            description: "Share resources with your collaborators to avoid duplication and optimize collective usage."
+          },
+          planning: {
+            title: "Usage Planning",
+            description: "Schedule intensive activities during off-peak hours and monitor your usage peaks."
+          }
+        },
+
+        suspension: {
+          title: "Suspension and Cancellation",
+          description: "You have full control over your subscription, including the ability to temporarily suspend it or cancel it permanently.",
+          pause: {
+            title: "Temporary Suspension",
+            description: "Put your subscription on pause for a set period. Ideal for vacations or planned periods of inactivity.",
+            feature1: "Preservation of all your data",
+            feature2: "Billing stopped during pause",
+            feature3: "Easy resumption when you want",
+            feature4: "Maximum duration according to terms"
+          },
+          cancel: {
+            title: "Permanent Cancellation",
+            description: "Cancel your subscription permanently. All data will be deleted after the grace period.",
+            feature1: "Access maintained until end of paid cycle",
+            feature2: "Grace period to recover data",
+            feature3: "Permanent deletion after expiration",
+            feature4: "Possibility of reactivation with new account"
+          },
+          warning: {
+            title: "Important",
+            description: "<strong>Back up your important data</strong> before any suspension or cancellation. Although we keep your data during a grace period, it is recommended to make local backups of your critical projects."
+          }
+        },
+
+        evolution: {
+          title: "Subscription System Evolution",
+          notice: "<strong>The OCF subscription system is under active development.</strong> New plan options, billing features, and management tools will be regularly added to better meet your needs.",
+          upcoming: {
+            title: "Planned Improvements:",
+            feature1: "Customizable plans with à la carte options",
+            feature2: "Billing based on actual usage",
+            feature3: "Team management and centralized billing",
+            feature4: "Integrations with existing management systems",
+            feature5: "Advanced usage analytics"
+          },
+          documentation: "This documentation will be updated to reflect new features as they are deployed."
+        },
+
+        support: {
+          title: "Support and Assistance",
+          description: "Our support team is here to help you with all your subscription questions:",
+          email: {
+            title: "Email Support",
+            description: "For general questions about your subscription",
+            button: "Contact Support"
+          },
+          billing: {
+            title: "Billing Questions",
+            description: "For payment and billing issues",
+            button: "Billing Support"
+          },
+          optimization: {
+            title: "Optimization Advice",
+            description: "To optimize your usage and choose the right plan",
+            button: "Request Advice"
+          }
+        },
+
+        nextSteps: {
+          billing: {
+            title: "Billing",
+            description: "Manage your payment methods and view your invoices"
+          },
+          dashboard: {
+            title: "Dashboard",
+            description: "View your current usage and plan details"
+          },
+          plans: {
+            title: "Available Plans",
+            description: "Explore and compare all subscription plans"
           }
         }
       },
@@ -1079,65 +1250,224 @@ export const helpEn = {
         title: "Billing & Payments",
         intro: "Everything you need to know about billing, payments, and financial management of your account.",
 
+        system: {
+          title: "Billing System",
+          description: "OCF uses an automated billing system integrated with Stripe to ensure secure payments and transparent management of your subscription.",
+          recurring: {
+            title: "Recurring Billing",
+            description: "Subscriptions are automatically billed according to your chosen cycle (monthly or annual). You receive an invoice before each charge."
+          },
+          secure: {
+            title: "Secure Payments",
+            description: "All payments are processed via Stripe, the global leader in online payment security. Your data is protected."
+          },
+          transparent: {
+            title: "Transparent Billing",
+            description: "All charges are clearly detailed in your invoices. No hidden fees, only what you use and subscribe to."
+          }
+        },
+
         paymentMethods: {
           title: "Payment Methods",
-          description: "Manage your payment methods securely:",
-          actions: {
-            add: "Add new credit/debit cards",
-            update: "Update expiration dates and billing information",
-            default: "Set default payment method",
-            remove: "Remove unused payment methods",
-            security: "All payment data is securely stored by Stripe"
+          description: "Manage your credit cards and other payment methods to ensure continuity of your OCF service.",
+          types: {
+            title: "Accepted payment types:",
+            visa: "Visa",
+            mastercard: "Mastercard",
+            amex: "American Express",
+            sepa: "SEPA Transfer"
+          },
+          management: {
+            title: "Managing your methods:",
+            add: {
+              title: "Add a Method",
+              description: "Add a new card or backup payment method",
+              button: "Manage Payments"
+            },
+            default: {
+              title: "Default Method",
+              description: "Set which method to use as priority for your invoices"
+            },
+            update: {
+              title: "Update",
+              description: "Modify information of an expired or changed card"
+            }
+          },
+          security: {
+            title: "Security Tips:",
+            tip1: "Only use secure connections (HTTPS)",
+            tip2: "Regularly check your bank statements",
+            tip3: "Enable payment notifications",
+            tip4: "Remove unused payment methods"
           }
         },
 
         billingAddress: {
           title: "Billing Addresses",
-          description: "Maintain accurate billing information:",
+          description: "Configure your billing addresses to receive invoices compliant with your country's tax regulations.",
           importance: {
-            importance1: "Required for invoice generation",
-            importance2: "Needed for tax calculations",
-            importance3: "Used for payment verification",
-            importance4: "Important for compliance with local regulations"
+            title: "Why it's important:",
+            fiscal: "Tax compliance according to your location",
+            vat: "Correct application of VAT and local taxes",
+            accounting: "Valid invoices for your accounting",
+            regulations: "Compliance with international regulations"
+          },
+          management: {
+            title: "Address Management:",
+            primary: {
+              title: "Primary Address",
+              description: "Your default billing address"
+            },
+            business: {
+              title: "Business Addresses",
+              description: "Corporate addresses for institutional billing"
+            },
+            edit: {
+              title: "Modification",
+              description: "Update in case of relocation or change"
+            },
+            button: "Manage Addresses"
           }
         },
 
         invoices: {
-          title: "Invoice Management",
-          description: "Access and manage your invoices:",
+          title: "Invoice Consultation",
+          description: "Access all your OCF invoices, download them, and track your payment history for accounting.",
           features: {
-            view: "View all past and current invoices",
-            download: "Download invoices in PDF format",
-            details: "See detailed breakdowns of charges",
-            history: "Complete payment history",
-            support: "Invoice-related support and questions"
+            history: {
+              title: "Complete History",
+              description: "View all your invoices since the beginning of your subscription. Search by date, amount, or status."
+            },
+            download: {
+              title: "PDF Download",
+              description: "Download your invoices in PDF format for your accounting or tax returns."
+            },
+            details: {
+              title: "Transparent Details",
+              description: "Each invoice clearly details services used, billing periods, and applicable taxes."
+            },
+            button: "View My Invoices"
+          },
+          structure: {
+            title: "Structure of an OCF Invoice:",
+            header: "OCF information and your details",
+            period: "Service and billing dates",
+            detail: "Services used and rates applied",
+            taxes: "VAT and local taxes according to your country",
+            total: "Final amount and payment method"
           }
         },
 
-        billing: {
-          title: "Billing Cycle",
-          monthly: {
-            title: "Monthly Billing",
-            description: "Charged on the same date each month"
+        paymentIssues: {
+          title: "Payment Issues",
+          description: "If you encounter difficulties with your payments, here are the steps to quickly resolve problems.",
+          declined: {
+            title: "Payment Declined",
+            causes: {
+              title: "Common Causes:",
+              insufficient: "Insufficient funds in account",
+              expired: "Expired or blocked card",
+              limit: "Payment limit exceeded",
+              incorrect: "Incorrect information"
+            },
+            solutions: {
+              title: "Solutions:",
+              balance: "Check your account balance",
+              update: "Update card information",
+              bank: "Contact your bank if necessary",
+              alternative: "Use an alternative payment method"
+            }
           },
-          annual: {
-            title: "Annual Billing",
-            description: "Charged yearly with potential savings"
+          retry: {
+            title: "Retry",
+            description1: "OCF automatically makes several payment attempts over a few days in case of initial failure.",
+            description2: "You receive email notifications to inform you of the situation and allow you to correct the problem."
           },
-          proration: {
-            title: "Prorated Charges",
-            description: "Plan changes are prorated based on remaining time in billing cycle"
+          suspension: {
+            title: "Service Suspension",
+            description1: "In case of repeated payment failures, your service may be temporarily suspended to avoid accumulation of charges.",
+            description2: "Your account and data remain safe during suspension. Service resumes automatically after payment."
+          }
+        },
+
+        refunds: {
+          title: "Refunds and Credits",
+          description: "Information on refund conditions and the OCF credit system.",
+          policy: {
+            title: "Refund Policy:",
+            trial: {
+              title: "Trial Period",
+              description: "Full refund possible during the first 7 days of your first subscription (normal usage conditions)."
+            },
+            proration: {
+              title: "Pro-rata Refund",
+              description: "In case of downgrade or cancellation, refund calculated on unused period."
+            },
+            technical: {
+              title: "Technical Problems",
+              description: "Credits or refunds granted in case of prolonged service interruption due to technical problems."
+            }
+          },
+          credits: {
+            title: "Credit System:",
+            description1: "OCF may award credits to your account to compensate for inconveniences or as part of special promotions.",
+            description2: "Credits are automatically applied to your next invoices and appear clearly in your billing history."
+          }
+        },
+
+        evolution: {
+          title: "Billing System Evolution",
+          notice: "<strong>The OCF billing system continues to evolve</strong> to offer more flexibility and transparency in managing your payments and subscriptions.",
+          upcoming: {
+            title: "Improvements in Development:",
+            usage: "Detailed billing by actual resource usage",
+            alternatives: "Alternative payment options (crypto, transfers)",
+            group: "Group billing for organizations",
+            alerts: "Advanced consumption and budget alerts",
+            integration: "Integration with enterprise accounting systems",
+            currencies: "Local currencies and optimized international payments"
           }
         },
 
         support: {
           title: "Billing Support",
-          description: "For billing questions or issues:",
-          contact: {
-            email: "Contact our billing support",
-            portal: "Use the billing portal for self-service",
-            documentation: "Consult this documentation for common questions",
-            response: "We respond to billing inquiries within 24 hours"
+          description: "Our support team specializes in quickly resolving billing and payment issues.",
+          email: {
+            title: "Email Support",
+            description: "Response within 24 hours for billing questions",
+            button: "Contact Support"
+          },
+          priority: {
+            title: "Priority Support",
+            description: "Phone assistance for urgent payment issues",
+            note: "Available for enterprise plans"
+          },
+          tips: {
+            title: "For effective support, include:",
+            email: "Your account email address",
+            invoice: "Invoice number concerned",
+            datetime: "Date and time of problem",
+            screenshot: "Screenshot if applicable"
+          }
+        },
+
+        resources: {
+          title: "Useful Resources",
+          subscription: {
+            title: "Subscription Management",
+            description: "Understand and optimize your OCF plan"
+          },
+          paymentMethods: {
+            title: "Payment Methods",
+            description: "Add and manage your cards and accounts"
+          },
+          invoices: {
+            title: "My Invoices",
+            description: "View and download your invoices"
+          },
+          addresses: {
+            title: "Billing Addresses",
+            description: "Configure your billing information"
           }
         }
       }
