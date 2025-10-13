@@ -36,7 +36,6 @@ import Generations from '../components/Pages/Generations.vue';
 import Themes from '../components/Pages/Themes.vue';
 import TerminalCreation from '../components/Pages/TerminalCreation.vue';
 import TerminalMySessions from '../components/Pages/TerminalMySessions.vue';
-import TerminalSharedWithMe from '../components/Pages/TerminalSharedWithMe.vue';
 import UserTerminalKeys from '../components/Pages/UserTerminalKeys.vue';
 
 const basicRoutes = [

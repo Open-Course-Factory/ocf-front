@@ -3,7 +3,7 @@
  * Copyright (C) 2023-2025 Solution Libre
  */
 
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 
 type Theme = 'light' | 'dark' | 'auto'
 

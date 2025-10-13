@@ -102,10 +102,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, watch, onMounted } from 'vue';
+import { reactive, watch, onMounted } from 'vue';
 import { Store } from 'pinia';
 import { useI18n } from 'vue-i18n';
-import { getTranslationKey } from '../../utils';
 
 const i18n = useI18n();
 const { t } = i18n;
@@ -228,8 +227,6 @@ function prepareNeededField() {
     });
   }
 }
-
-const translationKey = computed(() => getTranslationKey(props.entityName));
 
 onMounted(() => {
   // Add translations

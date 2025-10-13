@@ -151,7 +151,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref } from 'vue'
+import { onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTerminalMetricsStore } from '../../../stores/terminalMetrics'
 import Button from '../../UI/Button.vue'

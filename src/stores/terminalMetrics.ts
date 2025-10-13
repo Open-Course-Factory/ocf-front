@@ -34,7 +34,6 @@ export interface TerminalMetrics {
 const CACHE_DURATION_MS = 8000 // 8 seconds cache as specified in backend
 
 export const useTerminalMetricsStore = defineStore('terminalMetrics', () => {
-  const { t } = useI18n()
 
   // State
   const metrics = ref<TerminalMetrics | null>(null)
