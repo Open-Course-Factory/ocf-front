@@ -176,42 +176,13 @@
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { useI18n } from 'vue-i18n';
 import axios from 'axios';
+import { useTranslations } from '../../composables/useTranslations';
 
 const route = useRoute();
-const i18n = useI18n();
-const { t } = i18n;
 
-const step = ref<'request' | 'sent' | 'reset' | 'success'>('request');
-const email = ref('');
-const newPassword = ref('');
-const confirmPassword = ref('');
-const resetToken = ref('');
-
-const emailError = ref('');
-const passwordError = ref('');
-const confirmPasswordError = ref('');
-const errorMessage = ref('');
-const isLoading = ref(false);
-const resendCooldown = ref(0);
-
-const passwordValidations = reactive({
-  length: false,
-  uppercase: false,
-  number: false
-});
-
-const isPasswordValid = computed(() => {
-  return passwordValidations.length &&
-         passwordValidations.uppercase &&
-         passwordValidations.number &&
-         newPassword.value === confirmPassword.value;
-});
-
-onMounted(() => {
-  // Add translations
-  i18n.mergeLocaleMessage('en', {
+const { t } = useTranslations({
+  en: {
     passwordReset: {
       requestTitle: 'Reset password',
       requestDescription: 'Enter your email address and we will send you a link to reset your password.',
@@ -244,9 +215,8 @@ onMounted(() => {
       errorInvalidToken: 'Reset link expired or invalid',
       errorUpdatingPassword: 'Error updating password. Please try again.'
     }
-  });
-
-  i18n.mergeLocaleMessage('fr', {
+  },
+  fr: {
     passwordReset: {
       requestTitle: 'Réinitialiser le mot de passe',
       requestDescription: 'Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.',
@@ -279,9 +249,37 @@ onMounted(() => {
       errorInvalidToken: 'Lien de réinitialisation expiré ou invalide',
       errorUpdatingPassword: 'Erreur lors de la mise à jour du mot de passe. Veuillez réessayer.'
     }
-  });
+  }
+});
 
-  // Vérifier si on a un token de reset dans l'URL
+const step = ref<'request' | 'sent' | 'reset' | 'success'>('request');
+const email = ref('');
+const newPassword = ref('');
+const confirmPassword = ref('');
+const resetToken = ref('');
+
+const emailError = ref('');
+const passwordError = ref('');
+const confirmPasswordError = ref('');
+const errorMessage = ref('');
+const isLoading = ref(false);
+const resendCooldown = ref(0);
+
+const passwordValidations = reactive({
+  length: false,
+  uppercase: false,
+  number: false
+});
+
+const isPasswordValid = computed(() => {
+  return passwordValidations.length &&
+         passwordValidations.uppercase &&
+         passwordValidations.number &&
+         newPassword.value === confirmPassword.value;
+});
+
+// Vérifier si on a un token de reset dans l'URL
+onMounted(() => {
   resetToken.value = route.query.token as string || '';
   if (resetToken.value) {
     step.value = 'reset';

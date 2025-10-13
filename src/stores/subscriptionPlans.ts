@@ -22,6 +22,7 @@
 import { defineStore } from "pinia"
 import { useI18n } from "vue-i18n"
 import { useBaseStore } from "./baseStore"
+import { handleStoreError } from '../services/errorHandler'
 import { getDemoSubscriptionPlans } from '../services/demoData'
 import { isDemoMode, logDemoAction, simulateDelay } from '../services/demoConfig'
 import axios from 'axios'
@@ -91,7 +92,8 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             network_access_enabled: 'Network Access',
             data_persistence_enabled: 'Data Persistence',
             data_persistence_gb: 'Storage Size (GB)',
-            allowed_templates: 'Allowed Templates'
+            allowed_templates: 'Allowed Templates',
+            syncError: 'Error syncing subscription plans'
         }
     })
 
@@ -154,7 +156,8 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             network_access_enabled: 'Accès Réseau',
             data_persistence_enabled: 'Persistance des Données',
             data_persistence_gb: 'Taille de Stockage (GB)',
-            allowed_templates: 'Modèles Autorisés'
+            allowed_templates: 'Modèles Autorisés',
+            syncError: 'Erreur lors de la synchronisation des plans'
         }
     })
 
@@ -273,8 +276,7 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
                 return adapted
             }
         } catch (error: any) {
-            console.error('Erreur lors de la synchronisation des plans:', error)
-            base.error.value = error.response?.data?.error_message || 'Erreur lors de la synchronisation'
+            base.error.value = handleStoreError(error, 'subscriptionPlans.syncError')
             throw error
         } finally {
             base.isLoading.value = false

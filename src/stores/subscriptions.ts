@@ -28,6 +28,7 @@ import { demoPayments } from '../services/demoPayments'
 import { getDemoCurrentSubscription, getDemoUsageMetrics } from '../services/demoData'
 import { featureFlagService } from '../services/featureFlags'
 import { formatDate as formatDateUtil } from '../utils/formatters'
+import { handleStoreError } from '../services/errorHandler'
 
 export const useSubscriptionsStore = defineStore('subscriptions', () => {
 
@@ -63,6 +64,9 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
             checkoutError: 'Checkout Error',
             portalError: 'Portal Error',
             usageLimitError: 'Usage Limit Error',
+            loadError: 'Error loading subscription',
+            cancelError: 'Error canceling subscription',
+            reactivateError: 'Error reactivating subscription',
             dashboardTitle: 'Subscription Dashboard',
             dashboardSubtitle: 'Manage your subscription, usage, and billing',
             loadingDashboard: 'Loading dashboard...',
@@ -126,6 +130,9 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
             checkoutError: 'Erreur de Paiement',
             portalError: 'Erreur du Portail',
             usageLimitError: 'Erreur de Limite d\'Usage',
+            loadError: 'Erreur lors du chargement de l\'abonnement',
+            cancelError: 'Erreur lors de l\'annulation de l\'abonnement',
+            reactivateError: 'Erreur lors de la réactivation de l\'abonnement',
             dashboardTitle: 'Tableau de Bord Abonnement',
             dashboardSubtitle: 'Gérez votre abonnement, utilisation et facturation',
             loadingDashboard: 'Chargement du tableau de bord...',
@@ -189,7 +196,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
                 // Pas d'abonnement actif
                 currentSubscription.value = null
             } else {
-                error.value = err.response?.data?.error_message || 'Erreur lors du chargement'
+                error.value = handleStoreError(err, 'subscriptions.loadError')
             }
             throw err
         } finally {
@@ -245,7 +252,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
 
             return response
         } catch (err: any) {
-            error.value = err.response?.data?.error_message || t('subscriptions.checkoutError')
+            error.value = handleStoreError(err, 'subscriptions.checkoutError')
             throw err
         } finally {
             isLoading.value = false
@@ -277,7 +284,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
 
             return response
         } catch (err: any) {
-            error.value = err.response?.data?.error_message || t('subscriptions.portalError')
+            error.value = handleStoreError(err, 'subscriptions.portalError')
             throw err
         } finally {
             isLoading.value = false
@@ -298,7 +305,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
             
             return true
         } catch (err: any) {
-            error.value = err.response?.data?.error_message || 'Erreur lors de l\'annulation'
+            error.value = handleStoreError(err, 'subscriptions.cancelError')
             throw err
         } finally {
             isLoading.value = false
@@ -318,7 +325,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
             
             return true
         } catch (err: any) {
-            error.value = err.response?.data?.error_message || 'Erreur lors de la réactivation'
+            error.value = handleStoreError(err, 'subscriptions.reactivateError')
             throw err
         } finally {
             isLoading.value = false
@@ -438,8 +445,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
                 return response.data.allowed
             }
         } catch (err: any) {
-            console.error('Erreur lors de la vérification des limites:', err)
-            error.value = err.response?.data?.error_message || t('subscriptions.usageLimitError')
+            error.value = handleStoreError(err, 'subscriptions.usageLimitError')
             return false
         }
     }

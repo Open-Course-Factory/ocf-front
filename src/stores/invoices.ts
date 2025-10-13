@@ -22,6 +22,7 @@
 import { defineStore } from "pinia"
 import { useI18n } from "vue-i18n"
 import { useBaseStore } from "./baseStore"
+import { handleStoreError } from '../services/errorHandler'
 import axios from 'axios'
 import { formatCurrency, formatDate as formatDateUtil } from '../utils/formatters'
 
@@ -54,8 +55,10 @@ export const useInvoicesStore = defineStore('invoices', () => {
             draft: 'Draft',
             void: 'Void',
             viewInStripe: 'View in Stripe',
-            modify: 'View invoice details', 
+            modify: 'View invoice details',
             add: 'Create invoice',
+            syncError: 'Error syncing invoices',
+            loadError: 'Error loading invoices',
         }
     })
 
@@ -83,8 +86,10 @@ export const useInvoicesStore = defineStore('invoices', () => {
             draft: 'Brouillon',
             void: 'Annulée',
             viewInStripe: 'Voir dans Stripe',
-            modify: 'Voir les détails de la facture', 
+            modify: 'Voir les détails de la facture',
             add: 'Créer une facture',
+            syncError: 'Erreur lors de la synchronisation des factures',
+            loadError: 'Erreur lors du chargement des factures',
         }
     })
 
@@ -157,8 +162,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
 
             return response.data;
         } catch (error: any) {
-            console.error('Erreur lors de la synchronisation des factures:', error);
-            base.error.value = error.response?.data?.error_message || 'Erreur lors de la synchronisation';
+            base.error.value = handleStoreError(error, 'invoices.syncError');
             throw error;
         } finally {
             base.isLoading.value = false;
@@ -177,8 +181,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
 
             return response.data || [];
         } catch (error: any) {
-            console.error('Erreur lors du chargement des factures:', error);
-            base.error.value = error.response?.data?.error_message || 'Erreur lors du chargement';
+            base.error.value = handleStoreError(error, 'invoices.loadError');
             throw error;
         } finally {
             base.isLoading.value = false;

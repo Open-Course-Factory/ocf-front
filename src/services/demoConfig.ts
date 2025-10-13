@@ -26,6 +26,8 @@
  * allowing safe testing of subscription flows without real payments.
  */
 
+import { logger } from './logger'
+
 export class DemoConfigService {
   private static instance: DemoConfigService
 
@@ -86,7 +88,7 @@ export class DemoConfigService {
    */
   logDemoAction(action: string, data?: any): void {
     if (this.isDemoMode() && this.getDemoConfig().showDebugInfo) {
-      console.log(`🎭 DEMO: ${action}`, data || '')
+      logger.demo(action, data)
     }
   }
 }

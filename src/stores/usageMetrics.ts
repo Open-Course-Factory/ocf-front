@@ -22,6 +22,7 @@
 import { defineStore } from "pinia"
 import { useI18n } from "vue-i18n"
 import { useBaseStore } from "./baseStore"
+import { formatStorageSize, formatNumber, formatDate as formatDateUtil } from '../utils/formatters'
 
 export const useUsageMetricsStore = defineStore('usageMetrics', () => {
 
@@ -150,17 +151,9 @@ export const useUsageMetricsStore = defineStore('usageMetrics', () => {
     const formatValue = (value: number, metricType: string) => {
         switch (metricType?.toLowerCase()) {
             case 'storage':
-                if (value >= 1073741824) { // GB
-                    return `${(value / 1073741824).toFixed(2)} GB`;
-                } else if (value >= 1048576) { // MB
-                    return `${(value / 1048576).toFixed(2)} MB`;
-                } else if (value >= 1024) { // KB
-                    return `${(value / 1024).toFixed(2)} KB`;
-                } else {
-                    return `${value} B`;
-                }
+                return formatStorageSize(value);
             case 'api_calls':
-                return value.toLocaleString();
+                return formatNumber(value);
             default:
                 return value.toString();
         }
@@ -182,8 +175,8 @@ export const useUsageMetricsStore = defineStore('usageMetrics', () => {
     const formatPeriod = (startDate: string, endDate: string) => {
         if (!startDate || !endDate) return '-';
         try {
-            const start = new Date(startDate).toLocaleDateString('fr-FR');
-            const end = new Date(endDate).toLocaleDateString('fr-FR');
+            const start = formatDateUtil(startDate);
+            const end = formatDateUtil(endDate);
             return `${start} - ${end}`;
         } catch (e) {
             return `${startDate} - ${endDate}`;

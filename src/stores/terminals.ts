@@ -22,6 +22,7 @@
 import { defineStore } from "pinia"
 import { useI18n } from "vue-i18n"
 import { useBaseStore } from "./baseStore"
+import { handleStoreError } from '../services/errorHandler'
 import { ref } from 'vue'
 import axios from 'axios'
 
@@ -116,7 +117,10 @@ export const useTerminalsStore = defineStore('terminals', () => {
                 name: 'Ubuntu Server',
                 description: 'Popular server distribution'
             }
-        }
+        },
+        startError: 'Error starting terminal session',
+        stopError: 'Error stopping terminal session',
+        loadError: 'Error loading terminal sessions'
     }})
     
     useI18n().mergeLocaleMessage('fr', { terminals : {
@@ -200,7 +204,10 @@ export const useTerminalsStore = defineStore('terminals', () => {
                 name: 'Ubuntu Server',
                 description: 'Distribution serveur populaire'
             }
-        }
+        },
+        startError: 'Erreur lors du démarrage de la session terminal',
+        stopError: 'Erreur lors de l\'arrêt de la session terminal',
+        loadError: 'Erreur lors du chargement des sessions terminal'
     }})
 
     // Add common UI translations here
@@ -294,7 +301,7 @@ export const useTerminalsStore = defineStore('terminals', () => {
             await getUserSessions()
             return response.data
         } catch (err: any) {
-            error.value = err.response?.data?.error_message || 'Erreur lors du démarrage'
+            error.value = handleStoreError(err, 'terminals.startError')
             throw err
         } finally {
             isLoading.value = false
@@ -310,7 +317,7 @@ export const useTerminalsStore = defineStore('terminals', () => {
             await getUserSessions()
             return true
         } catch (err: any) {
-            error.value = err.response?.data?.error_message || 'Erreur lors de l\'arrêt'
+            error.value = handleStoreError(err, 'terminals.stopError')
             throw err
         } finally {
             isLoading.value = false
@@ -327,7 +334,7 @@ export const useTerminalsStore = defineStore('terminals', () => {
             base.entities = activeSessions.value
             return activeSessions.value
         } catch (err: any) {
-            error.value = err.response?.data?.error_message || 'Erreur lors du chargement'
+            error.value = handleStoreError(err, 'terminals.loadError')
             activeSessions.value = []
             base.entities = []
             throw err

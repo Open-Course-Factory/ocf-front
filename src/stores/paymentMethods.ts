@@ -22,6 +22,7 @@
 import { defineStore } from "pinia"
 import { useI18n } from "vue-i18n"
 import { useBaseStore } from "./baseStore"
+import { handleStoreError } from '../services/errorHandler'
 import axios from 'axios'
 
 export const usePaymentMethodsStore = defineStore('paymentMethods', () => {
@@ -29,8 +30,8 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', () => {
     const base = useBaseStore();
     const { t } = useI18n()
 
-    useI18n().mergeLocaleMessage('en', { 
-        paymentMethods: { 
+    useI18n().mergeLocaleMessage('en', {
+        paymentMethods: {
             pageTitle: 'Payment Methods',
             type: 'Type',
             card_brand: 'Card Brand',
@@ -42,15 +43,17 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', () => {
             stripe_payment_method_id: 'Stripe Payment Method ID',
             set_as_default: 'Set as Default',
             setAsDefault: 'Set as Default',
-            modify: 'Modify payment method', 
+            modify: 'Modify payment method',
             add: 'Add a payment method',
             cardEnding: 'Card ending in',
             expires: 'Expires',
+            syncError: 'Error syncing payment methods',
+            loadError: 'Error loading payment methods',
         }
     })
 
-    useI18n().mergeLocaleMessage('fr', { 
-        paymentMethods: { 
+    useI18n().mergeLocaleMessage('fr', {
+        paymentMethods: {
             pageTitle: 'Méthodes de Paiement',
             type: 'Type',
             card_brand: 'Marque de Carte',
@@ -62,10 +65,12 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', () => {
             stripe_payment_method_id: 'ID Stripe Méthode de Paiement',
             set_as_default: 'Définir par Défaut',
             setAsDefault: 'Définir par Défaut',
-            modify: 'Modifier la méthode de paiement', 
+            modify: 'Modifier la méthode de paiement',
             add: 'Ajouter une méthode de paiement',
             cardEnding: 'Carte se terminant par',
             expires: 'Expire',
+            syncError: 'Erreur lors de la synchronisation des méthodes de paiement',
+            loadError: 'Erreur lors du chargement des méthodes de paiement',
         }
     })
 
@@ -139,8 +144,7 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', () => {
 
             return response.data;
         } catch (error: any) {
-            console.error('Erreur lors de la synchronisation des méthodes de paiement:', error);
-            base.error.value = error.response?.data?.error_message || 'Erreur lors de la synchronisation';
+            base.error.value = handleStoreError(error, 'paymentMethods.syncError');
             throw error;
         } finally {
             base.isLoading.value = false;
@@ -159,8 +163,7 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', () => {
 
             return response.data || [];
         } catch (error: any) {
-            console.error('Erreur lors du chargement des méthodes de paiement:', error);
-            base.error.value = error.response?.data?.error_message || 'Erreur lors du chargement';
+            base.error.value = handleStoreError(error, 'paymentMethods.loadError');
             throw error;
         } finally {
             base.isLoading.value = false;

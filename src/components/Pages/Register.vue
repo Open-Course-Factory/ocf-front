@@ -185,17 +185,79 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, watch, onMounted } from 'vue';
+import { ref, computed, reactive, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 import TermsOfServiceModal from '../../components/Modals/TermsOfServiceModal.vue';
+import { useTranslations } from '../../composables/useTranslations';
 
 const router = useRouter();
 const showTosModal = ref(false);
 
-const i18n = useI18n();
-const { t } = i18n;
+const { t } = useTranslations({
+  en: {
+    register: {
+      backToHome: 'Back to home',
+      title: 'Create an account',
+      firstNameLabel: 'First name *',
+      lastNameLabel: 'Last name *',
+      userNameLabel: 'Username *',
+      displayNameLabel: 'Display name *',
+      emailLabel: 'Email address *',
+      passwordLabel: 'Password *',
+      passwordReq8Chars: 'At least 8 characters',
+      passwordReqUppercase: 'One uppercase letter',
+      passwordReqNumber: 'One number',
+      confirmPasswordLabel: 'Confirm password *',
+      tosAcceptance: 'I have read and accept the',
+      tosLink: 'Terms of Service',
+      tosMustAccept: 'You must accept the Terms of Service to create an account',
+      creatingAccount: 'Creating account...',
+      submitButton: 'Create account',
+      haveAccount: 'Already have an account?',
+      loginLink: 'Sign in',
+      invalidEmail: 'Invalid email address',
+      userNameTooShort: 'Username must be at least 3 characters',
+      userNameInvalidChars: 'Username can only contain letters, numbers, hyphens and underscores',
+      passwordInvalid: 'Password does not meet requirements',
+      passwordMismatch: 'Passwords do not match',
+      successMessage: 'Account created successfully! You can now log in.',
+      errorEmailExists: 'A user with this email address already exists',
+      errorGeneric: 'Error creating account. Please try again.'
+    }
+  },
+  fr: {
+    register: {
+      backToHome: 'Retour à l\'accueil',
+      title: 'Créer un compte',
+      firstNameLabel: 'Prénom *',
+      lastNameLabel: 'Nom *',
+      userNameLabel: 'Nom d\'utilisateur *',
+      displayNameLabel: 'Nom d\'affichage *',
+      emailLabel: 'Adresse email *',
+      passwordLabel: 'Mot de passe *',
+      passwordReq8Chars: 'Au moins 8 caractères',
+      passwordReqUppercase: 'Une majuscule',
+      passwordReqNumber: 'Un chiffre',
+      confirmPasswordLabel: 'Confirmer le mot de passe *',
+      tosAcceptance: 'J\'ai lu et j\'accepte les',
+      tosLink: 'Conditions Générales d\'Utilisation',
+      tosMustAccept: 'Vous devez accepter les Conditions Générales d\'Utilisation pour créer un compte',
+      creatingAccount: 'Création en cours...',
+      submitButton: 'Créer le compte',
+      haveAccount: 'Déjà un compte ?',
+      loginLink: 'Se connecter',
+      invalidEmail: 'Adresse email invalide',
+      userNameTooShort: 'Le nom d\'utilisateur doit contenir au moins 3 caractères',
+      userNameInvalidChars: 'Le nom d\'utilisateur ne peut contenir que des lettres, chiffres, tirets et underscores',
+      passwordInvalid: 'Le mot de passe ne respecte pas les critères requis',
+      passwordMismatch: 'Les mots de passe ne correspondent pas',
+      successMessage: 'Compte créé avec succès ! Vous pouvez maintenant vous connecter.',
+      errorEmailExists: 'Un utilisateur avec cette adresse email existe déjà',
+      errorGeneric: 'Erreur lors de la création du compte. Veuillez réessayer.'
+    }
+  }
+});
 
 const formData = reactive({
   firstName: '',
@@ -305,73 +367,6 @@ const validateTosAcceptance = () => {
     errors.tosAccepted = '';
   }
 };
-
-onMounted(() => {
-  // Add translations
-  i18n.mergeLocaleMessage('en', {
-    register: {
-      backToHome: 'Back to home',
-      title: 'Create an account',
-      firstNameLabel: 'First name *',
-      lastNameLabel: 'Last name *',
-      userNameLabel: 'Username *',
-      displayNameLabel: 'Display name *',
-      emailLabel: 'Email address *',
-      passwordLabel: 'Password *',
-      passwordReq8Chars: 'At least 8 characters',
-      passwordReqUppercase: 'One uppercase letter',
-      passwordReqNumber: 'One number',
-      confirmPasswordLabel: 'Confirm password *',
-      tosAcceptance: 'I have read and accept the',
-      tosLink: 'Terms of Service',
-      tosMustAccept: 'You must accept the Terms of Service to create an account',
-      creatingAccount: 'Creating account...',
-      submitButton: 'Create account',
-      haveAccount: 'Already have an account?',
-      loginLink: 'Sign in',
-      invalidEmail: 'Invalid email address',
-      userNameTooShort: 'Username must be at least 3 characters',
-      userNameInvalidChars: 'Username can only contain letters, numbers, hyphens and underscores',
-      passwordInvalid: 'Password does not meet requirements',
-      passwordMismatch: 'Passwords do not match',
-      successMessage: 'Account created successfully! You can now log in.',
-      errorEmailExists: 'A user with this email address already exists',
-      errorGeneric: 'Error creating account. Please try again.'
-    }
-  });
-
-  i18n.mergeLocaleMessage('fr', {
-    register: {
-      backToHome: 'Retour à l\'accueil',
-      title: 'Créer un compte',
-      firstNameLabel: 'Prénom *',
-      lastNameLabel: 'Nom *',
-      userNameLabel: 'Nom d\'utilisateur *',
-      displayNameLabel: 'Nom d\'affichage *',
-      emailLabel: 'Adresse email *',
-      passwordLabel: 'Mot de passe *',
-      passwordReq8Chars: 'Au moins 8 caractères',
-      passwordReqUppercase: 'Une majuscule',
-      passwordReqNumber: 'Un chiffre',
-      confirmPasswordLabel: 'Confirmer le mot de passe *',
-      tosAcceptance: 'J\'ai lu et j\'accepte les',
-      tosLink: 'Conditions Générales d\'Utilisation',
-      tosMustAccept: 'Vous devez accepter les Conditions Générales d\'Utilisation pour créer un compte',
-      creatingAccount: 'Création en cours...',
-      submitButton: 'Créer le compte',
-      haveAccount: 'Déjà un compte ?',
-      loginLink: 'Se connecter',
-      invalidEmail: 'Adresse email invalide',
-      userNameTooShort: 'Le nom d\'utilisateur doit contenir au moins 3 caractères',
-      userNameInvalidChars: 'Le nom d\'utilisateur ne peut contenir que des lettres, chiffres, tirets et underscores',
-      passwordInvalid: 'Le mot de passe ne respecte pas les critères requis',
-      passwordMismatch: 'Les mots de passe ne correspondent pas',
-      successMessage: 'Compte créé avec succès ! Vous pouvez maintenant vous connecter.',
-      errorEmailExists: 'Un utilisateur avec cette adresse email existe déjà',
-      errorGeneric: 'Erreur lors de la création du compte. Veuillez réessayer.'
-    }
-  });
-});
 
 const handleSubmit = async () => {
   // Valider tous les champs

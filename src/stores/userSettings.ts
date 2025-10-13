@@ -24,6 +24,7 @@ import { useI18n } from "vue-i18n"
 import { ref, computed } from "vue"
 import axios from "axios"
 import { useFeatureFlags } from "../composables/useFeatureFlags"
+import { handleStoreError } from '../services/errorHandler'
 
 export interface UserSettings {
     id?: string
@@ -234,7 +235,7 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
             settings.value = response.data
             return response.data
         } catch (err: any) {
-            error.value = err.response?.data?.message || t('userSettings.loadError')
+            error.value = handleStoreError(err, 'userSettings.loadError')
             throw err
         } finally {
             isLoading.value = false
@@ -249,7 +250,7 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
             settings.value = { ...settings.value, ...response.data }
             return response.data
         } catch (err: any) {
-            error.value = err.response?.data?.message || t('userSettings.saveError')
+            error.value = handleStoreError(err, 'userSettings.saveError')
             throw err
         } finally {
             isLoading.value = false
@@ -264,7 +265,7 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
             // Update password last changed date
             await loadSettings()
         } catch (err: any) {
-            error.value = err.response?.data?.message || 'Error changing password'
+            error.value = handleStoreError(err, 'userSettings.security.errorChangingPassword')
             throw err
         } finally {
             isLoading.value = false

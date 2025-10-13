@@ -49,8 +49,8 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useUserSettingsStore } from '../../stores/userSettings'
+import { useTranslations } from '../../composables/useTranslations'
 import NavigationSettings from '../Settings/NavigationSettings.vue'
 import LocalizationSettings from '../Settings/LocalizationSettings.vue'
 import UISettings from '../Settings/UISettings.vue'
@@ -58,12 +58,16 @@ import NotificationSettings from '../Settings/NotificationSettings.vue'
 import SecuritySettings from '../Settings/SecuritySettings.vue'
 import SSHKeysSettings from '../Settings/SSHKeysSettings.vue'
 
-const { t } = useI18n()
-const settingsStore = useUserSettingsStore()
+const { t } = useTranslations({
+  en: {
+    loading: 'Loading...'
+  },
+  fr: {
+    loading: 'Chargement...'
+  }
+})
 
-// Add loading translation if not exists
-useI18n().mergeLocaleMessage('en', { loading: 'Loading...' })
-useI18n().mergeLocaleMessage('fr', { loading: 'Chargement...' })
+const settingsStore = useUserSettingsStore()
 
 onMounted(async () => {
   await settingsStore.loadSettings()
