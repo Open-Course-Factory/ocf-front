@@ -127,13 +127,65 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { ref, watch } from 'vue'
+import { useTranslations } from '../../composables/useTranslations'
 import { terminalService, type ShareTerminalRequest, type SharedTerminalInfo } from '../../services/terminalService'
 import { userService, type User } from '../../services/userService'
 
-const i18n = useI18n()
-const { t } = i18n
+const { t } = useTranslations({
+  en: {
+    terminalSharing: {
+      title: 'Share Terminal',
+      terminalLabel: 'Terminal',
+      instance: 'Instance',
+      status: 'Status',
+      userToAdd: 'User to Add',
+      searchPlaceholder: 'Search by name or email...',
+      searchInProgress: 'Searching...',
+      noUserFound: 'No user found',
+      userSearchHelp: 'Search and select the user to share this terminal with.',
+      accessLevel: 'Access Level',
+      readAccess: 'Read (View only)',
+      writeAccess: 'Write (Can execute commands)',
+      adminAccess: 'Admin (Full control)',
+      accessLevelHelp: 'Select the permission level for this user.',
+      expirationDate: 'Expiration Date (Optional)',
+      expirationHelp: 'Leave empty for permanent access (until terminal is stopped).',
+      buttonSharing: 'Sharing...',
+      buttonShare: 'Share',
+      buttonCancel: 'Cancel',
+      successMessage: 'Terminal successfully shared!',
+      errorLoading: 'Error loading terminal information',
+      errorSharing: 'Error sharing the terminal'
+    }
+  },
+  fr: {
+    terminalSharing: {
+      title: 'Partager le Terminal',
+      terminalLabel: 'Terminal',
+      instance: 'Instance',
+      status: 'Statut',
+      userToAdd: 'Utilisateur à ajouter',
+      searchPlaceholder: 'Rechercher par nom ou email...',
+      searchInProgress: 'Recherche...',
+      noUserFound: 'Aucun utilisateur trouvé',
+      userSearchHelp: 'Recherchez et sélectionnez l\'utilisateur avec qui partager ce terminal.',
+      accessLevel: 'Niveau d\'accès',
+      readAccess: 'Lecture (Visualisation uniquement)',
+      writeAccess: 'Écriture (Peut exécuter des commandes)',
+      adminAccess: 'Admin (Contrôle total)',
+      accessLevelHelp: 'Sélectionnez le niveau d\'autorisation pour cet utilisateur.',
+      expirationDate: 'Date d\'expiration (Optionnel)',
+      expirationHelp: 'Laissez vide pour un accès permanent (jusqu\'à l\'arrêt du terminal).',
+      buttonSharing: 'Partage...',
+      buttonShare: 'Partager',
+      buttonCancel: 'Annuler',
+      successMessage: 'Terminal partagé avec succès!',
+      errorLoading: 'Erreur lors du chargement des informations du terminal',
+      errorSharing: 'Erreur lors du partage du terminal'
+    }
+  }
+})
 
 interface Props {
   show: boolean
@@ -160,63 +212,6 @@ const userSearchQuery = ref('')
 const searchResults = ref<User[]>([])
 const isSearching = ref(false)
 const showSearchDropdown = ref(false)
-
-onMounted(() => {
-  // Add translations
-  i18n.mergeLocaleMessage('en', {
-    terminalSharing: {
-      title: 'Share Terminal',
-      terminalLabel: 'Terminal',
-      instance: 'Instance',
-      status: 'Status',
-      userToAdd: 'User to Add',
-      searchPlaceholder: 'Search by name or email...',
-      searchInProgress: 'Searching...',
-      noUserFound: 'No user found',
-      userSearchHelp: 'Search and select the user to share this terminal with.',
-      accessLevel: 'Access Level',
-      readAccess: 'Read (View only)',
-      writeAccess: 'Write (Can execute commands)',
-      adminAccess: 'Admin (Full control)',
-      accessLevelHelp: 'Select the permission level for this user.',
-      expirationDate: 'Expiration Date (Optional)',
-      expirationHelp: 'Leave empty for permanent access (until terminal is stopped).',
-      buttonSharing: 'Sharing...',
-      buttonShare: 'Share',
-      buttonCancel: 'Cancel',
-      successMessage: 'Terminal successfully shared!',
-      errorLoading: 'Error loading terminal information',
-      errorSharing: 'Error sharing the terminal'
-    }
-  })
-
-  i18n.mergeLocaleMessage('fr', {
-    terminalSharing: {
-      title: 'Partager le Terminal',
-      terminalLabel: 'Terminal',
-      instance: 'Instance',
-      status: 'Statut',
-      userToAdd: 'Utilisateur à ajouter',
-      searchPlaceholder: 'Rechercher par nom ou email...',
-      searchInProgress: 'Recherche...',
-      noUserFound: 'Aucun utilisateur trouvé',
-      userSearchHelp: 'Recherchez et sélectionnez l\'utilisateur avec qui partager ce terminal.',
-      accessLevel: 'Niveau d\'accès',
-      readAccess: 'Lecture (Visualisation uniquement)',
-      writeAccess: 'Écriture (Peut exécuter des commandes)',
-      adminAccess: 'Admin (Contrôle total)',
-      accessLevelHelp: 'Sélectionnez le niveau d\'autorisation pour cet utilisateur.',
-      expirationDate: 'Date d\'expiration (Optionnel)',
-      expirationHelp: 'Laissez vide pour un accès permanent (jusqu\'à l\'arrêt du terminal).',
-      buttonSharing: 'Partage...',
-      buttonShare: 'Partager',
-      buttonCancel: 'Annuler',
-      successMessage: 'Terminal partagé avec succès!',
-      errorLoading: 'Erreur lors du chargement des informations du terminal',
-      errorSharing: 'Erreur lors du partage du terminal'
-    }
-  })
-})
 
 watch(() => props.show, async (newShow) => {
   if (newShow && props.terminalId) {

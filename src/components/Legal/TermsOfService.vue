@@ -181,27 +181,11 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed } from 'vue';
-import { useI18n } from 'vue-i18n';
+import { computed } from 'vue';
+import { useTranslations } from '../../composables/useTranslations';
 
-const i18n = useI18n();
-const { t, locale } = i18n;
-
-// Configuration - update these values for your organization
-const lastUpdateDate = computed(() => {
-  const date = new Date('2025-10-11');
-  return date.toLocaleDateString(locale.value, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-});
-
-const contactEmail = 'legal@your-organization.com';
-
-onMounted(() => {
-  // English translations
-  i18n.mergeLocaleMessage('en', {
+const { t, locale } = useTranslations({
+  en: {
     tos: {
       title: 'Terms of Service',
       lastUpdated: 'Last updated: {date}',
@@ -414,10 +398,8 @@ onMounted(() => {
         content: 'For questions about these Terms of Service, to exercise your GDPR rights, or to report violations, please contact us at:'
       }
     }
-  });
-
-  // French translations
-  i18n.mergeLocaleMessage('fr', {
+  },
+  fr: {
     tos: {
       title: 'Conditions Générales d\'Utilisation',
       lastUpdated: 'Dernière mise à jour : {date}',
@@ -632,8 +614,20 @@ onMounted(() => {
         content: 'Pour toute question concernant ces Conditions Générales d\'Utilisation, pour exercer vos droits RGPD ou pour signaler des violations, veuillez nous contacter à :'
       }
     }
+  }
+})
+
+// Configuration - update these values for your organization
+const lastUpdateDate = computed(() => {
+  const date = new Date('2025-10-11');
+  return date.toLocaleDateString(locale.value, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   });
 });
+
+const contactEmail = 'legal@your-organization.com';
 </script>
 
 <style scoped>

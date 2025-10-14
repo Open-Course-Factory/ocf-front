@@ -111,9 +111,36 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useUsageMetricsStore } from '../../stores/usageMetrics'
-import { useI18n } from 'vue-i18n'
+import { useTranslations } from '../../composables/useTranslations'
 
-const { t } = useI18n()
+const { t } = useTranslations({
+  en: {
+    usageWidget: {
+      remaining: 'remaining',
+      limitExceeded: 'Limit exceeded',
+      nearLimit: 'Near limit',
+      approachingLimit: 'Approaching limit',
+      upgrade: 'Upgrade',
+      refresh: 'Refresh',
+      ok: 'OK',
+      warning: 'Warning',
+      danger: 'Danger'
+    }
+  },
+  fr: {
+    usageWidget: {
+      remaining: 'restant',
+      limitExceeded: 'Limite dépassée',
+      nearLimit: 'Proche de la limite',
+      approachingLimit: 'Approche de la limite',
+      upgrade: 'Améliorer',
+      refresh: 'Actualiser',
+      ok: 'OK',
+      warning: 'Attention',
+      danger: 'Danger'
+    }
+  }
+})
 
 interface Props {
   // Données de base
@@ -156,35 +183,6 @@ const emit = defineEmits<{
   upgrade: []
   refresh: []
 }>()
-
-// Traductions
-useI18n().mergeLocaleMessage('en', {
-  usageWidget: {
-    remaining: 'remaining',
-    limitExceeded: 'Limit exceeded',
-    nearLimit: 'Near limit',
-    approachingLimit: 'Approaching limit',
-    upgrade: 'Upgrade',
-    refresh: 'Refresh',
-    ok: 'OK',
-    warning: 'Warning',
-    danger: 'Danger'
-  }
-})
-
-useI18n().mergeLocaleMessage('fr', {
-  usageWidget: {
-    remaining: 'restant',
-    limitExceeded: 'Limite dépassée',
-    nearLimit: 'Proche de la limite',
-    approachingLimit: 'Approche de la limite',
-    upgrade: 'Améliorer',
-    refresh: 'Actualiser',
-    ok: 'OK',
-    warning: 'Attention',
-    danger: 'Danger'
-  }
-})
 
 const usageMetricsStore = useUsageMetricsStore()
 

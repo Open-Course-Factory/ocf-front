@@ -49,8 +49,9 @@ Each domain has a dedicated store (e.g., `subscriptionPlans`, `subscriptions`, `
 
 **Translation Management:**
 - Translations are embedded directly in stores, not separate files
-- Each store adds its translations to the global i18n instance
-- Pattern: `useI18n().mergeLocaleMessage('en', { domainName: { key: 'value' } })`
+- Each store adds its translations to the global i18n instance using the `useStoreTranslations()` composable
+- Pattern: `const { t } = useStoreTranslations({ en: {...}, fr: {...} })`
+- Cleaner syntax that combines both languages in a single call
 - Supports both English and French translations
 
 ### Component Architecture
@@ -149,30 +150,47 @@ Each domain has a dedicated store (e.g., `subscriptionPlans`, `subscriptions`, `
 
 **Architecture:**
 
-The application uses Vue i18n with an embedded translation pattern where translations are defined directly in components rather than separate locale files:
+The application uses Vue i18n with an embedded translation pattern where translations are defined directly in components and stores rather than separate locale files. OCF Front provides two composables for cleaner translation registration:
 
+**For Components** - `useTranslations()` (registers in onMounted):
 ```typescript
-import { useI18n } from 'vue-i18n'
+import { useTranslations } from '../composables/useTranslations'
 
-const i18n = useI18n()
-const { t } = i18n
-
-onMounted(() => {
-  // English translations
-  i18n.mergeLocaleMessage('en', {
-    componentName: {
-      key: 'English text',
+const { t } = useTranslations({
+  en: {
+    myComponent: {
+      title: 'My Component',
+      description: 'This is my component description',
       parameterized: 'Hello {name}'
     }
-  })
-
-  // French translations
-  i18n.mergeLocaleMessage('fr', {
-    componentName: {
-      key: 'Texte français',
+  },
+  fr: {
+    myComponent: {
+      title: 'Mon Composant',
+      description: 'Ceci est la description de mon composant',
       parameterized: 'Bonjour {name}'
     }
-  })
+  }
+})
+```
+
+**For Stores** - `useStoreTranslations()` (registers immediately):
+```typescript
+import { useStoreTranslations } from '../composables/useTranslations'
+
+const { t } = useStoreTranslations({
+  en: {
+    myStore: {
+      loadError: 'Error loading data',
+      saveSuccess: 'Data saved successfully'
+    }
+  },
+  fr: {
+    myStore: {
+      loadError: 'Erreur lors du chargement des données',
+      saveSuccess: 'Données enregistrées avec succès'
+    }
+  }
 })
 ```
 
@@ -223,7 +241,7 @@ onMounted(() => {
 
 **Adding i18n to New Components:**
 
-When creating new components, follow this pattern:
+When creating new components, use the `useTranslations()` composable:
 
 ```vue
 <template>
@@ -234,37 +252,68 @@ When creating new components, follow this pattern:
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { useTranslations } from '../composables/useTranslations'
 
-const i18n = useI18n()
-const { t } = i18n
-
-onMounted(() => {
-  i18n.mergeLocaleMessage('en', {
+const { t } = useTranslations({
+  en: {
     myComponent: {
       title: 'My Component',
       description: 'This is my component description'
     }
-  })
-
-  i18n.mergeLocaleMessage('fr', {
+  },
+  fr: {
     myComponent: {
       title: 'Mon Composant',
       description: 'Ceci est la description de mon composant'
     }
-  })
+  }
 })
 </script>
+```
+
+**Adding i18n to New Stores:**
+
+When creating new stores, use the `useStoreTranslations()` composable:
+
+```typescript
+import { defineStore } from "pinia"
+import { useStoreTranslations } from '../composables/useTranslations'
+import { useBaseStore } from "./baseStore"
+
+export const useMyStore = defineStore('myStore', () => {
+  const base = useBaseStore()
+
+  const { t } = useStoreTranslations({
+    en: {
+      myStore: {
+        pageTitle: 'My Store',
+        loadError: 'Error loading data',
+        saveSuccess: 'Data saved successfully'
+      }
+    },
+    fr: {
+      myStore: {
+        pageTitle: 'Mon Store',
+        loadError: 'Erreur lors du chargement des données',
+        saveSuccess: 'Données enregistrées avec succès'
+      }
+    }
+  })
+
+  // ... rest of store implementation
+})
 ```
 
 **Important Guidelines:**
 
 - ✅ **Always use `t()` function** for user-facing text
-- ✅ **Register translations in `onMounted()`** to ensure proper initialization
-- ✅ **Use component-scoped prefixes** to avoid key collisions
-- ✅ **Provide both English and French** translations for all strings
+- ✅ **Use `useTranslations()` for components** - handles onMounted registration automatically
+- ✅ **Use `useStoreTranslations()` for stores** - registers immediately for use in setup
+- ✅ **Use component/store-scoped prefixes** to avoid key collisions
+- ✅ **Provide both English and French** translations for all strings in a single object
+- ✅ **Group translations by domain** (e.g., `myComponent: {...}` or `myStore: {...}`)
 - ❌ **Never hardcode** user-facing text in templates or JavaScript
+- ❌ **Never use old pattern** `useI18n().mergeLocaleMessage()` - use new composables instead
 - ❌ **Avoid fallback strings** in `t()` calls when possible (register translations instead)
 
 ## Key Development Patterns

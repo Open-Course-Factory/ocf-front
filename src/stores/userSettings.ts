@@ -20,11 +20,11 @@
  */
 
 import { defineStore } from "pinia"
-import { useI18n } from "vue-i18n"
 import { ref, computed } from "vue"
 import axios from "axios"
 import { useFeatureFlags } from "../composables/useFeatureFlags"
 import { handleStoreError } from '../services/errorHandler'
+import { useStoreTranslations } from '../composables/useTranslations'
 
 export interface UserSettings {
     id?: string
@@ -49,149 +49,148 @@ export interface ChangePasswordData {
 }
 
 export const useUserSettingsStore = defineStore('UserSettings', () => {
-    const { t } = useI18n()
+    const { t } = useStoreTranslations({
+        en: {
+            userSettings: {
+                pageTitle: "User Settings",
+                menu: {
+                    navigation: "Navigation",
+                    localization: "Localization",
+                    ui: "User Interface",
+                    notifications: "Notifications",
+                    security: "Security",
+                    sshKeys: "SSH Keys"
+                },
+                navigation: {
+                    title: "Navigation Preferences",
+                    defaultLandingPage: "Default Landing Page",
+                    defaultLandingPageHelp: "Page to show after login"
+                },
+                localization: {
+                    title: "Localization",
+                    preferredLanguage: "Preferred Language",
+                    timezone: "Timezone",
+                    timezonePlaceholder: "UTC"
+                },
+                ui: {
+                    title: "User Interface",
+                    theme: "Theme",
+                    compactMode: "Compact Mode",
+                    compactModeHelp: "Reduce spacing and padding for a more compact interface"
+                },
+                notifications: {
+                    title: "Notifications",
+                    emailNotifications: "Email Notifications",
+                    emailNotificationsHelp: "Receive notifications via email",
+                    desktopNotifications: "Desktop Notifications",
+                    desktopNotificationsHelp: "Show browser notifications"
+                },
+                security: {
+                    title: "Security",
+                    passwordLastChanged: "Password Last Changed",
+                    twoFactorEnabled: "Two-Factor Authentication",
+                    changePassword: "Change Password",
+                    currentPassword: "Current Password",
+                    newPassword: "New Password",
+                    confirmPassword: "Confirm New Password",
+                    passwordChanged: "Password changed successfully",
+                    passwordMismatch: "Passwords do not match",
+                    passwordWeak: "Password is too weak",
+                    yes: "Yes",
+                    no: "No",
+                    never: "Never",
+                    changing: "Changing...",
+                    errorChangingPassword: "Error changing password"
+                },
+                themes: {
+                    light: "Light",
+                    dark: "Dark",
+                    auto: "Auto (System)"
+                },
+                languages: {
+                    en: "English",
+                    fr: "Français"
+                },
+                saveSuccess: "Settings saved successfully",
+                saveError: "Error saving settings",
+                loadError: "Error loading settings",
+                loading: "Loading...",
+                saving: "Saving...",
+                unknown: "Unknown"
+            }
+        },
+        fr: {
+            userSettings: {
+                pageTitle: "Paramètres Utilisateur",
+                menu: {
+                    navigation: "Navigation",
+                    localization: "Localisation",
+                    ui: "Interface Utilisateur",
+                    notifications: "Notifications",
+                    security: "Sécurité",
+                    sshKeys: "Clés SSH"
+                },
+                navigation: {
+                    title: "Préférences de Navigation",
+                    defaultLandingPage: "Page d'Accueil par Défaut",
+                    defaultLandingPageHelp: "Page à afficher après connexion"
+                },
+                localization: {
+                    title: "Localisation",
+                    preferredLanguage: "Langue Préférée",
+                    timezone: "Fuseau Horaire",
+                    timezonePlaceholder: "UTC"
+                },
+                ui: {
+                    title: "Interface Utilisateur",
+                    theme: "Thème",
+                    compactMode: "Mode Compact",
+                    compactModeHelp: "Réduire l'espacement et le remplissage pour une interface plus compacte"
+                },
+                notifications: {
+                    title: "Notifications",
+                    emailNotifications: "Notifications par Email",
+                    emailNotificationsHelp: "Recevoir des notifications par email",
+                    desktopNotifications: "Notifications Bureau",
+                    desktopNotificationsHelp: "Afficher les notifications dans le navigateur"
+                },
+                security: {
+                    title: "Sécurité",
+                    passwordLastChanged: "Mot de Passe Modifié le",
+                    twoFactorEnabled: "Authentification à Deux Facteurs",
+                    changePassword: "Changer le Mot de Passe",
+                    currentPassword: "Mot de Passe Actuel",
+                    newPassword: "Nouveau Mot de Passe",
+                    confirmPassword: "Confirmer le Nouveau Mot de Passe",
+                    passwordChanged: "Mot de passe modifié avec succès",
+                    passwordMismatch: "Les mots de passe ne correspondent pas",
+                    passwordWeak: "Le mot de passe est trop faible",
+                    yes: "Oui",
+                    no: "Non",
+                    never: "Jamais",
+                    changing: "Modification...",
+                    errorChangingPassword: "Erreur lors du changement de mot de passe"
+                },
+                themes: {
+                    light: "Clair",
+                    dark: "Sombre",
+                    auto: "Auto (Système)"
+                },
+                languages: {
+                    en: "Anglais",
+                    fr: "Français"
+                },
+                saveSuccess: "Paramètres enregistrés avec succès",
+                saveError: "Erreur lors de l'enregistrement des paramètres",
+                loadError: "Erreur lors du chargement des paramètres",
+                loading: "Chargement...",
+                saving: "Enregistrement...",
+                unknown: "Inconnu"
+            }
+        }
+    })
+
     const { isEnabled } = useFeatureFlags()
-
-    // Translations
-    useI18n().mergeLocaleMessage('en', {
-        userSettings: {
-            pageTitle: "User Settings",
-            menu: {
-                navigation: "Navigation",
-                localization: "Localization",
-                ui: "User Interface",
-                notifications: "Notifications",
-                security: "Security",
-                sshKeys: "SSH Keys"
-            },
-            navigation: {
-                title: "Navigation Preferences",
-                defaultLandingPage: "Default Landing Page",
-                defaultLandingPageHelp: "Page to show after login"
-            },
-            localization: {
-                title: "Localization",
-                preferredLanguage: "Preferred Language",
-                timezone: "Timezone",
-                timezonePlaceholder: "UTC"
-            },
-            ui: {
-                title: "User Interface",
-                theme: "Theme",
-                compactMode: "Compact Mode",
-                compactModeHelp: "Reduce spacing and padding for a more compact interface"
-            },
-            notifications: {
-                title: "Notifications",
-                emailNotifications: "Email Notifications",
-                emailNotificationsHelp: "Receive notifications via email",
-                desktopNotifications: "Desktop Notifications",
-                desktopNotificationsHelp: "Show browser notifications"
-            },
-            security: {
-                title: "Security",
-                passwordLastChanged: "Password Last Changed",
-                twoFactorEnabled: "Two-Factor Authentication",
-                changePassword: "Change Password",
-                currentPassword: "Current Password",
-                newPassword: "New Password",
-                confirmPassword: "Confirm New Password",
-                passwordChanged: "Password changed successfully",
-                passwordMismatch: "Passwords do not match",
-                passwordWeak: "Password is too weak",
-                yes: "Yes",
-                no: "No",
-                never: "Never",
-                changing: "Changing...",
-                errorChangingPassword: "Error changing password"
-            },
-            themes: {
-                light: "Light",
-                dark: "Dark",
-                auto: "Auto (System)"
-            },
-            languages: {
-                en: "English",
-                fr: "Français"
-            },
-            saveSuccess: "Settings saved successfully",
-            saveError: "Error saving settings",
-            loadError: "Error loading settings",
-            loading: "Loading...",
-            saving: "Saving...",
-            unknown: "Unknown"
-        }
-    })
-
-    useI18n().mergeLocaleMessage('fr', {
-        userSettings: {
-            pageTitle: "Paramètres Utilisateur",
-            menu: {
-                navigation: "Navigation",
-                localization: "Localisation",
-                ui: "Interface Utilisateur",
-                notifications: "Notifications",
-                security: "Sécurité",
-                sshKeys: "Clés SSH"
-            },
-            navigation: {
-                title: "Préférences de Navigation",
-                defaultLandingPage: "Page d'Accueil par Défaut",
-                defaultLandingPageHelp: "Page à afficher après connexion"
-            },
-            localization: {
-                title: "Localisation",
-                preferredLanguage: "Langue Préférée",
-                timezone: "Fuseau Horaire",
-                timezonePlaceholder: "UTC"
-            },
-            ui: {
-                title: "Interface Utilisateur",
-                theme: "Thème",
-                compactMode: "Mode Compact",
-                compactModeHelp: "Réduire l'espacement et le remplissage pour une interface plus compacte"
-            },
-            notifications: {
-                title: "Notifications",
-                emailNotifications: "Notifications par Email",
-                emailNotificationsHelp: "Recevoir des notifications par email",
-                desktopNotifications: "Notifications Bureau",
-                desktopNotificationsHelp: "Afficher les notifications dans le navigateur"
-            },
-            security: {
-                title: "Sécurité",
-                passwordLastChanged: "Mot de Passe Modifié le",
-                twoFactorEnabled: "Authentification à Deux Facteurs",
-                changePassword: "Changer le Mot de Passe",
-                currentPassword: "Mot de Passe Actuel",
-                newPassword: "Nouveau Mot de Passe",
-                confirmPassword: "Confirmer le Nouveau Mot de Passe",
-                passwordChanged: "Mot de passe modifié avec succès",
-                passwordMismatch: "Les mots de passe ne correspondent pas",
-                passwordWeak: "Le mot de passe est trop faible",
-                yes: "Oui",
-                no: "Non",
-                never: "Jamais",
-                changing: "Modification...",
-                errorChangingPassword: "Erreur lors du changement de mot de passe"
-            },
-            themes: {
-                light: "Clair",
-                dark: "Sombre",
-                auto: "Auto (Système)"
-            },
-            languages: {
-                en: "Anglais",
-                fr: "Français"
-            },
-            saveSuccess: "Paramètres enregistrés avec succès",
-            saveError: "Erreur lors de l'enregistrement des paramètres",
-            loadError: "Erreur lors du chargement des paramètres",
-            loading: "Chargement...",
-            saving: "Enregistrement...",
-            unknown: "Inconnu"
-        }
-    })
 
     // State
     const settings = ref<UserSettings>({})

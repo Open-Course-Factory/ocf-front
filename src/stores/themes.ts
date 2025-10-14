@@ -20,36 +20,40 @@
  */
 
 import { defineStore } from "pinia"
-import { useI18n } from "vue-i18n"
 import {useBaseStore} from "./baseStore"
+import { useStoreTranslations } from '../composables/useTranslations'
 
 
 export const useThemesStore = defineStore('themes', () => {
 
     const base = useBaseStore();
 
-    useI18n().mergeLocaleMessage('en', { themes : { 
-        id : "id",
-        pageTitle : "Themes",
-        name: 'Theme Name',
-        repository: 'Repository',
-	    repositoryBranch: 'Branch',
-	    size: 'Size',
-        modify: 'Modify the theme', 
-        add: 'Add a theme',
-    }})
-    useI18n().mergeLocaleMessage('fr', { themes : { 
-        id : "id",
-        pageTitle : "Themes",
-        name: 'Nom du theme',
-        repository: 'Adresse du dépôt',
-	    repositoryBranch: 'Branche',
-	    size: 'Taille',
-        modify: 'Modifier le theme', 
-        add: 'Ajouter le theme',
-     }})
-
-    const { t } = useI18n()
+    const { t } = useStoreTranslations({
+        en: {
+            themes: {
+                id: "id",
+                pageTitle: "Themes",
+                name: 'Theme Name',
+                repository: 'Repository',
+                repositoryBranch: 'Branch',
+                size: 'Size',
+                modify: 'Modify the theme',
+                add: 'Add a theme',
+            }
+        },
+        fr: {
+            themes: {
+                id: "id",
+                pageTitle: "Themes",
+                name: 'Nom du theme',
+                repository: 'Adresse du dépôt',
+                repositoryBranch: 'Branche',
+                size: 'Taille',
+                modify: 'Modifier le theme',
+                add: 'Ajouter le theme',
+            }
+        }
+    })
 
     
     const fieldList = new Map<string, any>([

@@ -18,7 +18,7 @@
       <Button
         v-if="showRefreshButton"
         size="sm"
-        variant="ghost"
+        variant="outline-secondary"
         :icon="isLoading ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'"
         :disabled="isLoading"
         @click="checkCapacity"
@@ -30,7 +30,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { useTranslations } from '../../composables/useTranslations'
 import { useTerminalMetricsStore } from '../../stores/terminalMetrics'
 import Button from './Button.vue'
 
@@ -50,7 +50,37 @@ const props = withDefaults(defineProps<Props>(), {
   showDetails: true
 })
 
-const { t } = useI18n()
+const { t } = useTranslations({
+  en: {
+    instanceLaunchCheck: {
+      canLaunch: 'Ready to Launch',
+      cannotLaunch: 'Cannot Launch',
+      checking: 'Checking...',
+      sufficientResources: 'Server has sufficient resources for this instance.',
+      insufficientRAM: 'Insufficient RAM available. Need {required}GB, only {available}GB available.',
+      highCPU: 'Server CPU is critically high ({cpu}%). Please wait before launching.',
+      selectInstance: 'Select an instance to check server capacity.',
+      refresh: 'Check again',
+      capacityOK: 'Server capacity OK',
+      capacityIssue: 'Server capacity issue'
+    }
+  },
+  fr: {
+    instanceLaunchCheck: {
+      canLaunch: 'Prêt à Lancer',
+      cannotLaunch: 'Impossible de Lancer',
+      checking: 'Vérification...',
+      sufficientResources: 'Le serveur dispose de ressources suffisantes pour cette instance.',
+      insufficientRAM: 'RAM insuffisante. Besoin de {required}GB, seulement {available}GB disponible.',
+      highCPU: 'Le CPU du serveur est critique ({cpu}%). Veuillez attendre avant de lancer.',
+      selectInstance: 'Sélectionnez une instance pour vérifier la capacité du serveur.',
+      refresh: 'Vérifier à nouveau',
+      capacityOK: 'Capacité du serveur OK',
+      capacityIssue: 'Problème de capacité du serveur'
+    }
+  }
+})
+
 const metricsStore = useTerminalMetricsStore()
 
 const isLoading = ref(false)
@@ -68,39 +98,7 @@ const INSTANCE_RAM_REQUIREMENTS: Record<string, number> = {
 // Reserve buffer for system (in GB)
 const SYSTEM_RESERVE_GB = 0.6
 
-// Add translations
-const i18n = useI18n()
 onMounted(() => {
-  i18n.mergeLocaleMessage('en', {
-    instanceLaunchCheck: {
-      canLaunch: 'Ready to Launch',
-      cannotLaunch: 'Cannot Launch',
-      checking: 'Checking...',
-      sufficientResources: 'Server has sufficient resources for this instance.',
-      insufficientRAM: 'Insufficient RAM available. Need {required}GB, only {available}GB available.',
-      highCPU: 'Server CPU is critically high ({cpu}%). Please wait before launching.',
-      selectInstance: 'Select an instance to check server capacity.',
-      refresh: 'Check again',
-      capacityOK: 'Server capacity OK',
-      capacityIssue: 'Server capacity issue'
-    }
-  })
-
-  i18n.mergeLocaleMessage('fr', {
-    instanceLaunchCheck: {
-      canLaunch: 'Prêt à Lancer',
-      cannotLaunch: 'Impossible de Lancer',
-      checking: 'Vérification...',
-      sufficientResources: 'Le serveur dispose de ressources suffisantes pour cette instance.',
-      insufficientRAM: 'RAM insuffisante. Besoin de {required}GB, seulement {available}GB disponible.',
-      highCPU: 'Le CPU du serveur est critique ({cpu}%). Veuillez attendre avant de lancer.',
-      selectInstance: 'Sélectionnez une instance pour vérifier la capacité du serveur.',
-      refresh: 'Vérifier à nouveau',
-      capacityOK: 'Capacité du serveur OK',
-      capacityIssue: 'Problème de capacité du serveur'
-    }
-  })
-
   // Initial check
   if (props.instanceType) {
     checkCapacity()

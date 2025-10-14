@@ -20,7 +20,7 @@
  */
 
 import { defineStore } from "pinia"
-import { useI18n } from "vue-i18n"
+import { useStoreTranslations } from '../composables/useTranslations'
 import { useBaseStore } from "./baseStore"
 import { useSchedulesStore } from "./schedules";
 import { useThemesStore } from "./themes";
@@ -32,62 +32,66 @@ import axios from 'axios';
 export const useGenerationsStore = defineStore('generations', () => {
 
     const base = useBaseStore();
-    
+
     // État pour le polling des statuts
     const pollingIntervals = ref(new Map<string, NodeJS.Timeout>());
 
-    useI18n().mergeLocaleMessage('en', { generations : { 
-        id : "id",
-        pageTitle : "Generations",
-        name: 'Generation Name',
-        courses: 'Course',
-        themes: 'Theme',
-        schedules: 'Schedule',
-        format: 'Format',
-        status: 'Status',
-        progress: 'Progress',
-        started_at: 'Started at',
-        completed_at: 'Completed at',
-        error_message: 'Error message',
-        worker_job_id: 'Job ID',
-        result_urls: 'Results',
-        modify: 'Modify the generation', 
-        add: 'Add a generation',
-        download: 'Download',
-        retry: 'Retry',
-        checkStatus: 'Check Status',
-        generating: 'Generating...',
-        completed: 'Completed',
-        failed: 'Failed',
-        pending: 'Pending',
-    }})
-    useI18n().mergeLocaleMessage('fr', { generations : { 
-        id : "id",
-        pageTitle : "Générations",
-        name: 'Nom de la génération',
-        courses: 'Cours',
-        themes: 'Thème',
-        schedules: 'Emploi du temps',
-        format: 'Format',
-        status: 'Statut',
-        progress: 'Progression',
-        started_at: 'Démarré le',
-        completed_at: 'Terminé le',
-        error_message: 'Message d\'erreur',
-        worker_job_id: 'ID du job',
-        result_urls: 'Résultats',
-        modify: 'Modifier la génération', 
-        add: 'Ajouter une génération',
-        download: 'Télécharger',
-        retry: 'Réessayer',
-        checkStatus: 'Vérifier le statut',
-        generating: 'Génération en cours...',
-        completed: 'Terminé',
-        failed: 'Échec',
-        pending: 'En attente',
-     }})
-
-    const { t } = useI18n()
+    const { t } = useStoreTranslations({
+        en: {
+            generations: {
+                id: "id",
+                pageTitle: "Generations",
+                name: 'Generation Name',
+                courses: 'Course',
+                themes: 'Theme',
+                schedules: 'Schedule',
+                format: 'Format',
+                status: 'Status',
+                progress: 'Progress',
+                started_at: 'Started at',
+                completed_at: 'Completed at',
+                error_message: 'Error message',
+                worker_job_id: 'Job ID',
+                result_urls: 'Results',
+                modify: 'Modify the generation',
+                add: 'Add a generation',
+                download: 'Download',
+                retry: 'Retry',
+                checkStatus: 'Check Status',
+                generating: 'Generating...',
+                completed: 'Completed',
+                failed: 'Failed',
+                pending: 'Pending',
+            }
+        },
+        fr: {
+            generations: {
+                id: "id",
+                pageTitle: "Générations",
+                name: 'Nom de la génération',
+                courses: 'Cours',
+                themes: 'Thème',
+                schedules: 'Emploi du temps',
+                format: 'Format',
+                status: 'Statut',
+                progress: 'Progression',
+                started_at: 'Démarré le',
+                completed_at: 'Terminé le',
+                error_message: 'Message d\'erreur',
+                worker_job_id: 'ID du job',
+                result_urls: 'Résultats',
+                modify: 'Modifier la génération',
+                add: 'Ajouter une génération',
+                download: 'Télécharger',
+                retry: 'Réessayer',
+                checkStatus: 'Vérifier le statut',
+                generating: 'Génération en cours...',
+                completed: 'Terminé',
+                failed: 'Échec',
+                pending: 'En attente',
+            }
+        }
+    })
 
     const fieldList = new Map<string, any>([
         ["id", { label: t('generations.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],

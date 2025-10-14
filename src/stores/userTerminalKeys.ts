@@ -20,15 +20,14 @@
  */
 
 import { defineStore } from "pinia"
-import { useI18n } from "vue-i18n"
 import { useBaseStore } from "./baseStore"
 import { ref } from 'vue'
 import axios from 'axios'
+import { useStoreTranslations } from '../composables/useTranslations'
 
 export const useUserTerminalKeysStore = defineStore('userTerminalKeys', () => {
 
     const base = useBaseStore();
-    const { t } = useI18n()
 
     // État spécifique aux clés terminal
     const currentKey = ref(null)
@@ -36,35 +35,40 @@ export const useUserTerminalKeysStore = defineStore('userTerminalKeys', () => {
     const error = ref('')
     const isRegenerating = ref(false)
 
-    useI18n().mergeLocaleMessage('en', { userTerminalKeys : { 
-        pageTitle: 'Terminal Access Keys',
-        key_name: 'Key Name',
-        is_active: 'Active',
-        max_sessions: 'Max Sessions',
-        regenerate: 'Regenerate Key',
-        noKeyFound: 'No terminal key found',
-        keyRegenerated: 'Terminal key regenerated successfully',
-        confirmRegenerate: 'Are you sure you want to regenerate your terminal key?',
-        keyDetails: 'Key Details',
-        securityWarning: 'Keep your terminal key secure.',
-        active: 'Active',
-        inactive: 'Inactive'
-    }})
-    
-    useI18n().mergeLocaleMessage('fr', { userTerminalKeys : { 
-        pageTitle: 'Clés d\'accès Terminal',
-        key_name: 'Nom de la clé',
-        is_active: 'Active',
-        max_sessions: 'Nombre max de sessions',
-        regenerate: 'Régénérer la clé',
-        noKeyFound: 'Aucune clé terminal trouvée',
-        keyRegenerated: 'Clé terminal régénérée avec succès',
-        confirmRegenerate: 'Êtes-vous sûr de vouloir régénérer votre clé terminal ?',
-        keyDetails: 'Détails de la clé',
-        securityWarning: 'Gardez votre clé terminal sécurisée.',
-        active: 'Active',
-        inactive: 'Inactive'
-    }})
+    const { t } = useStoreTranslations({
+        en: {
+            userTerminalKeys: {
+                pageTitle: 'Terminal Access Keys',
+                key_name: 'Key Name',
+                is_active: 'Active',
+                max_sessions: 'Max Sessions',
+                regenerate: 'Regenerate Key',
+                noKeyFound: 'No terminal key found',
+                keyRegenerated: 'Terminal key regenerated successfully',
+                confirmRegenerate: 'Are you sure you want to regenerate your terminal key?',
+                keyDetails: 'Key Details',
+                securityWarning: 'Keep your terminal key secure.',
+                active: 'Active',
+                inactive: 'Inactive'
+            }
+        },
+        fr: {
+            userTerminalKeys: {
+                pageTitle: 'Clés d\'accès Terminal',
+                key_name: 'Nom de la clé',
+                is_active: 'Active',
+                max_sessions: 'Nombre max de sessions',
+                regenerate: 'Régénérer la clé',
+                noKeyFound: 'Aucune clé terminal trouvée',
+                keyRegenerated: 'Clé terminal régénérée avec succès',
+                confirmRegenerate: 'Êtes-vous sûr de vouloir régénérer votre clé terminal ?',
+                keyDetails: 'Détails de la clé',
+                securityWarning: 'Gardez votre clé terminal sécurisée.',
+                active: 'Active',
+                inactive: 'Inactive'
+            }
+        }
+    })
 
     const fieldList = new Map<string, any>([
         ["id", { label: "ID", type: "input", display: true, toBeSet: false, toBeEdited: false }],

@@ -20,73 +20,76 @@
  */
 
 import { defineStore } from "pinia"
-import { useI18n } from "vue-i18n"
 import { useBaseStore } from "./baseStore"
-import { handleStoreError } from '../services/errorHandler'
 import axios from 'axios'
+import { createAsyncWrapper } from '../utils/asyncWrapper'
+import { buildFieldList, field, systemFields } from '../utils/fieldBuilder'
+import { useStoreTranslations } from '../composables/useTranslations'
 
 export const usePaymentMethodsStore = defineStore('paymentMethods', () => {
 
     const base = useBaseStore();
-    const { t } = useI18n()
-
-    useI18n().mergeLocaleMessage('en', {
-        paymentMethods: {
-            pageTitle: 'Payment Methods',
-            type: 'Type',
-            card_brand: 'Card Brand',
-            card_last4: 'Last 4 Digits',
-            card_exp_month: 'Expiry Month',
-            card_exp_year: 'Expiry Year',
-            is_default: 'Default Method',
-            is_active: 'Active',
-            stripe_payment_method_id: 'Stripe Payment Method ID',
-            set_as_default: 'Set as Default',
-            setAsDefault: 'Set as Default',
-            modify: 'Modify payment method',
-            add: 'Add a payment method',
-            cardEnding: 'Card ending in',
-            expires: 'Expires',
-            syncError: 'Error syncing payment methods',
-            loadError: 'Error loading payment methods',
+    const { t } = useStoreTranslations({
+        en: {
+            paymentMethods: {
+                pageTitle: 'Payment Methods',
+                type: 'Type',
+                card_brand: 'Card Brand',
+                card_last4: 'Last 4 Digits',
+                card_exp_month: 'Expiry Month',
+                card_exp_year: 'Expiry Year',
+                is_default: 'Default Method',
+                is_active: 'Active',
+                stripe_payment_method_id: 'Stripe Payment Method ID',
+                set_as_default: 'Set as Default',
+                setAsDefault: 'Set as Default',
+                modify: 'Modify payment method',
+                add: 'Add a payment method',
+                cardEnding: 'Card ending in',
+                expires: 'Expires',
+                syncError: 'Error syncing payment methods',
+                loadError: 'Error loading payment methods',
+            }
+        },
+        fr: {
+            paymentMethods: {
+                pageTitle: 'Méthodes de Paiement',
+                type: 'Type',
+                card_brand: 'Marque de Carte',
+                card_last4: '4 Derniers Chiffres',
+                card_exp_month: 'Mois d\'Expiration',
+                card_exp_year: 'Année d\'Expiration',
+                is_default: 'Méthode par Défaut',
+                is_active: 'Active',
+                stripe_payment_method_id: 'ID Stripe Méthode de Paiement',
+                set_as_default: 'Définir par Défaut',
+                setAsDefault: 'Définir par Défaut',
+                modify: 'Modifier la méthode de paiement',
+                add: 'Ajouter une méthode de paiement',
+                cardEnding: 'Carte se terminant par',
+                expires: 'Expire',
+                syncError: 'Erreur lors de la synchronisation des méthodes de paiement',
+                loadError: 'Erreur lors du chargement des méthodes de paiement',
+            }
         }
     })
 
-    useI18n().mergeLocaleMessage('fr', {
-        paymentMethods: {
-            pageTitle: 'Méthodes de Paiement',
-            type: 'Type',
-            card_brand: 'Marque de Carte',
-            card_last4: '4 Derniers Chiffres',
-            card_exp_month: 'Mois d\'Expiration',
-            card_exp_year: 'Année d\'Expiration',
-            is_default: 'Méthode par Défaut',
-            is_active: 'Active',
-            stripe_payment_method_id: 'ID Stripe Méthode de Paiement',
-            set_as_default: 'Définir par Défaut',
-            setAsDefault: 'Définir par Défaut',
-            modify: 'Modifier la méthode de paiement',
-            add: 'Ajouter une méthode de paiement',
-            cardEnding: 'Carte se terminant par',
-            expires: 'Expire',
-            syncError: 'Erreur lors de la synchronisation des méthodes de paiement',
-            loadError: 'Erreur lors du chargement des méthodes de paiement',
-        }
-    })
+    // Create async wrapper with base store state
+    const baseAsync = createAsyncWrapper({ isLoading: base.isLoading, error: base.error })
 
-    const fieldList = new Map<string, any>([
-        ["id", { label: "ID", type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["type", { label: t('paymentMethods.type'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["card_brand", { label: t('paymentMethods.card_brand'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["card_last4", { label: t('paymentMethods.card_last4'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["card_exp_month", { label: t('paymentMethods.card_exp_month'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["card_exp_year", { label: t('paymentMethods.card_exp_year'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["is_default", { label: t('paymentMethods.is_default'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["is_active", { label: t('paymentMethods.is_active'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["stripe_payment_method_id", { label: t('paymentMethods.stripe_payment_method_id'), type: "input", display: false, toBeSet: true, toBeEdited: false, required: true }],
-        ["set_as_default", { label: t('paymentMethods.set_as_default'), type: "input", display: false, toBeSet: true, toBeEdited: false }],
-        ["user_id", { label: "User ID", type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["created_at", { label: t('created_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+    const fieldList = buildFieldList([
+        ...systemFields(['id', 'user_id', 'is_active', 'created_at'], {
+            is_active: t('paymentMethods.is_active'),
+            created_at: t('created_at')
+        }),
+        field('type', t('paymentMethods.type')).readonly(),
+        field('card_brand', t('paymentMethods.card_brand')).readonly(),
+        field('card_last4', t('paymentMethods.card_last4')).readonly(),
+        field('card_exp_month', t('paymentMethods.card_exp_month')).readonly(),
+        field('card_exp_year', t('paymentMethods.card_exp_year')).readonly(),
+        field('is_default', t('paymentMethods.is_default')).readonly(),
+        field('stripe_payment_method_id', t('paymentMethods.stripe_payment_method_id')).hidden().creatable().required(),
+        field('set_as_default', t('paymentMethods.set_as_default')).hidden().creatable(),
     ])
 
     // Icône selon la marque de carte
@@ -135,39 +138,31 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', () => {
 
     // Synchroniser les méthodes de paiement avec Stripe
     const syncPaymentMethods = async () => {
-        try {
-            base.isLoading.value = true;
-            base.error.value = '';
-
-            const response = await axios.post('/payment-methods/sync');
-            console.log('Payment methods sync result:', response.data);
-
-            return response.data;
-        } catch (error: any) {
-            base.error.value = handleStoreError(error, 'paymentMethods.syncError');
-            throw error;
-        } finally {
-            base.isLoading.value = false;
-        }
+        return await baseAsync(
+            async () => {
+                const response = await axios.post('/payment-methods/sync');
+                console.log('Payment methods sync result:', response.data);
+                return response.data;
+            },
+            'paymentMethods.syncError'
+        );
     }
 
     // Charger les méthodes de paiement de l'utilisateur
     const loadUserPaymentMethods = async () => {
-        try {
-            base.isLoading.value = true;
-            base.error.value = '';
-
-            const response = await axios.get('/payment-methods/user');
-            base.entities.splice(0, base.entities.length, ...(response.data || []));
-            base.lastLoaded.value = new Date();
-
-            return response.data || [];
-        } catch (error: any) {
-            base.error.value = handleStoreError(error, 'paymentMethods.loadError');
-            throw error;
-        } finally {
-            base.isLoading.value = false;
-        }
+        return await baseAsync(
+            async () => {
+                const response = await axios.get('/payment-methods/user');
+                return response.data || [];
+            },
+            'paymentMethods.loadError',
+            {
+                onSuccess: (data) => {
+                    base.entities.splice(0, base.entities.length, ...data);
+                    base.lastLoaded.value = new Date();
+                }
+            }
+        );
     }
 
     // Synchroniser puis charger les méthodes de paiement (méthode recommandée)

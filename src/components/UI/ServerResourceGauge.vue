@@ -15,7 +15,7 @@
       <Button
         v-if="showRefreshButton"
         size="sm"
-        variant="ghost"
+        variant="outline-secondary"
         :icon="isLoading ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'"
         :disabled="isLoading"
         @click="refresh"
@@ -90,7 +90,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { useTranslations } from '../../composables/useTranslations'
 import { useTerminalMetricsStore } from '../../stores/terminalMetrics'
 import Button from './Button.vue'
 
@@ -108,15 +108,8 @@ const props = withDefaults(defineProps<Props>(), {
   compact: true
 })
 
-const { t } = useI18n()
-const metricsStore = useTerminalMetricsStore()
-
-let refreshIntervalId: NodeJS.Timeout | null = null
-
-// Add translations
-const i18n = useI18n()
-onMounted(() => {
-  i18n.mergeLocaleMessage('en', {
+const { t } = useTranslations({
+  en: {
     serverResourceGauge: {
       title: 'Server Resources',
       cpu: 'CPU',
@@ -132,9 +125,8 @@ onMounted(() => {
       lowRAM: 'Low RAM available',
       highCPU: 'High CPU usage'
     }
-  })
-
-  i18n.mergeLocaleMessage('fr', {
+  },
+  fr: {
     serverResourceGauge: {
       title: 'Ressources du Serveur',
       cpu: 'CPU',
@@ -150,8 +142,14 @@ onMounted(() => {
       lowRAM: 'RAM disponible faible',
       highCPU: 'Utilisation CPU élevée'
     }
-  })
+  }
+})
 
+const metricsStore = useTerminalMetricsStore()
+
+let refreshIntervalId: NodeJS.Timeout | null = null
+
+onMounted(() => {
   // Initial fetch
   fetchMetrics()
 

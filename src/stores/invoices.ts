@@ -20,94 +20,95 @@
  */
 
 import { defineStore } from "pinia"
-import { useI18n } from "vue-i18n"
 import { useBaseStore } from "./baseStore"
-import { handleStoreError } from '../services/errorHandler'
 import axios from 'axios'
 import { formatCurrency, formatDate as formatDateUtil } from '../utils/formatters'
+import { createAsyncWrapper } from '../utils/asyncWrapper'
+import { buildFieldList, field, systemFields } from '../utils/fieldBuilder'
+import { useStoreTranslations } from '../composables/useTranslations'
 
 export const useInvoicesStore = defineStore('invoices', () => {
 
     const base = useBaseStore();
-    const { t } = useI18n()
-
-    useI18n().mergeLocaleMessage('en', { 
-        invoices: { 
-            pageTitle: 'Invoices',
-            invoice_number: 'Invoice Number',
-            amount: 'Amount',
-            currency: 'Currency',
-            status: 'Status',
-            invoice_date: 'Invoice Date',
-            due_date: 'Due Date',
-            paid_at: 'Paid Date',
-            download_url: 'Download URL',
-            stripe_hosted_url: 'Stripe URL',
-            stripe_invoice_id: 'Stripe Invoice ID',
-            user_subscription: 'Subscription',
-            download: 'Download PDF',
-            view: 'View Invoice',
-            view_all: 'View all invoices',
-            no_invoice_yet: 'No invoice yet',
-            paid: 'Paid',
-            recent: 'Recent Invoices',
-            unpaid: 'Unpaid',
-            draft: 'Draft',
-            void: 'Void',
-            viewInStripe: 'View in Stripe',
-            modify: 'View invoice details',
-            add: 'Create invoice',
-            syncError: 'Error syncing invoices',
-            loadError: 'Error loading invoices',
+    const { t } = useStoreTranslations({
+        en: {
+            invoices: {
+                pageTitle: 'Invoices',
+                invoice_number: 'Invoice Number',
+                amount: 'Amount',
+                currency: 'Currency',
+                status: 'Status',
+                invoice_date: 'Invoice Date',
+                due_date: 'Due Date',
+                paid_at: 'Paid Date',
+                download_url: 'Download URL',
+                stripe_hosted_url: 'Stripe URL',
+                stripe_invoice_id: 'Stripe Invoice ID',
+                user_subscription: 'Subscription',
+                download: 'Download PDF',
+                view: 'View Invoice',
+                view_all: 'View all invoices',
+                no_invoice_yet: 'No invoice yet',
+                paid: 'Paid',
+                recent: 'Recent Invoices',
+                unpaid: 'Unpaid',
+                draft: 'Draft',
+                void: 'Void',
+                viewInStripe: 'View in Stripe',
+                modify: 'View invoice details',
+                add: 'Create invoice',
+                syncError: 'Error syncing invoices',
+                loadError: 'Error loading invoices',
+            }
+        },
+        fr: {
+            invoices: {
+                pageTitle: 'Factures',
+                invoice_number: 'Numéro de Facture',
+                amount: 'Montant',
+                currency: 'Devise',
+                status: 'Statut',
+                invoice_date: 'Date de Facture',
+                due_date: 'Date d\'Échéance',
+                paid_at: 'Date de Paiement',
+                download_url: 'URL de Téléchargement',
+                stripe_hosted_url: 'URL Stripe',
+                stripe_invoice_id: 'ID Facture Stripe',
+                user_subscription: 'Abonnement',
+                download: 'Télécharger PDF',
+                view: 'Voir la Facture',
+                view_all: 'Toutes les factures',
+                no_invoice_yet: 'Pas encore de facture',
+                paid: 'Payée',
+                recent: 'Factures récentes',
+                unpaid: 'Non Payée',
+                draft: 'Brouillon',
+                void: 'Annulée',
+                viewInStripe: 'Voir dans Stripe',
+                modify: 'Voir les détails de la facture',
+                add: 'Créer une facture',
+                syncError: 'Erreur lors de la synchronisation des factures',
+                loadError: 'Erreur lors du chargement des factures',
+            }
         }
     })
 
-    useI18n().mergeLocaleMessage('fr', { 
-        invoices: { 
-            pageTitle: 'Factures',
-            invoice_number: 'Numéro de Facture',
-            amount: 'Montant',
-            currency: 'Devise',
-            status: 'Statut',
-            invoice_date: 'Date de Facture',
-            due_date: 'Date d\'Échéance',
-            paid_at: 'Date de Paiement',
-            download_url: 'URL de Téléchargement',
-            stripe_hosted_url: 'URL Stripe',
-            stripe_invoice_id: 'ID Facture Stripe',
-            user_subscription: 'Abonnement',
-            download: 'Télécharger PDF',
-            view: 'Voir la Facture',
-            view_all: 'Toutes les factures',
-            no_invoice_yet: 'Pas encore de facture',
-            paid: 'Payée',
-            recent: 'Factures récentes',
-            unpaid: 'Non Payée',
-            draft: 'Brouillon',
-            void: 'Annulée',
-            viewInStripe: 'Voir dans Stripe',
-            modify: 'Voir les détails de la facture',
-            add: 'Créer une facture',
-            syncError: 'Erreur lors de la synchronisation des factures',
-            loadError: 'Erreur lors du chargement des factures',
-        }
-    })
+    // Create async wrapper with base store state
+    const baseAsync = createAsyncWrapper({ isLoading: base.isLoading, error: base.error })
 
-    const fieldList = new Map<string, any>([
-        ["id", { label: "ID", type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["invoice_number", { label: t('invoices.invoice_number'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["amount", { label: t('invoices.amount'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["currency", { label: t('invoices.currency'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["status", { label: t('invoices.status'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["invoice_date", { label: t('invoices.invoice_date'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["due_date", { label: t('invoices.due_date'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["paid_at", { label: t('invoices.paid_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["download_url", { label: t('invoices.download_url'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["stripe_hosted_url", { label: t('invoices.stripe_hosted_url'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["stripe_invoice_id", { label: t('invoices.stripe_invoice_id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["user_subscription", { label: t('invoices.user_subscription'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["user_id", { label: "User ID", type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["created_at", { label: t('created_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+    const fieldList = buildFieldList([
+        ...systemFields(['id', 'user_id', 'created_at'], { created_at: t('created_at') }),
+        field('invoice_number', t('invoices.invoice_number')).readonly(),
+        field('amount', t('invoices.amount')).readonly(),
+        field('currency', t('invoices.currency')).readonly(),
+        field('status', t('invoices.status')).readonly(),
+        field('invoice_date', t('invoices.invoice_date')).readonly(),
+        field('due_date', t('invoices.due_date')).readonly(),
+        field('paid_at', t('invoices.paid_at')).readonly(),
+        field('download_url', t('invoices.download_url')).hidden(),
+        field('stripe_hosted_url', t('invoices.stripe_hosted_url')).hidden(),
+        field('stripe_invoice_id', t('invoices.stripe_invoice_id')).hidden(),
+        field('user_subscription', t('invoices.user_subscription')).hidden(),
     ])
 
     // Formatage du montant avec devise
@@ -153,39 +154,31 @@ export const useInvoicesStore = defineStore('invoices', () => {
 
     // Synchroniser les factures avec Stripe
     const syncInvoices = async () => {
-        try {
-            base.isLoading.value = true;
-            base.error.value = '';
-
-            const response = await axios.post('/invoices/sync');
-            console.log('Invoice sync result:', response.data);
-
-            return response.data;
-        } catch (error: any) {
-            base.error.value = handleStoreError(error, 'invoices.syncError');
-            throw error;
-        } finally {
-            base.isLoading.value = false;
-        }
+        return await baseAsync(
+            async () => {
+                const response = await axios.post('/invoices/sync');
+                console.log('Invoice sync result:', response.data);
+                return response.data;
+            },
+            'invoices.syncError'
+        );
     }
 
     // Charger les factures de l'utilisateur
     const loadUserInvoices = async () => {
-        try {
-            base.isLoading.value = true;
-            base.error.value = '';
-
-            const response = await axios.get('/invoices/user');
-            base.entities.splice(0, base.entities.length, ...(response.data || []));
-            base.lastLoaded.value = new Date();
-
-            return response.data || [];
-        } catch (error: any) {
-            base.error.value = handleStoreError(error, 'invoices.loadError');
-            throw error;
-        } finally {
-            base.isLoading.value = false;
-        }
+        return await baseAsync(
+            async () => {
+                const response = await axios.get('/invoices/user');
+                return response.data || [];
+            },
+            'invoices.loadError',
+            {
+                onSuccess: (data) => {
+                    base.entities.splice(0, base.entities.length, ...data);
+                    base.lastLoaded.value = new Date();
+                }
+            }
+        );
     }
 
     // Synchroniser puis charger les factures (méthode recommandée)

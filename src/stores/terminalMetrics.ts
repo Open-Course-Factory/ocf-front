@@ -22,7 +22,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import axios from 'axios'
-import { useI18n } from 'vue-i18n'
+import { useStoreTranslations } from '../composables/useTranslations'
 
 export interface TerminalMetrics {
   cpu_percent: number
@@ -42,43 +42,44 @@ export const useTerminalMetricsStore = defineStore('terminalMetrics', () => {
   const lastFetchTime = ref<number>(0)
 
   // Add translations
-  useI18n().mergeLocaleMessage('en', {
-    terminalMetrics: {
-      pageTitle: 'Server Metrics',
-      cpuUsage: 'CPU Usage',
-      ramUsage: 'RAM Usage',
-      ramAvailable: 'RAM Available',
-      timestamp: 'Last Update',
-      refresh: 'Refresh',
-      serverStatus: 'Server Status',
-      healthy: 'Healthy',
-      warning: 'Warning',
-      critical: 'Critical',
-      capacityWarning: 'Server at capacity',
-      capacityWarningMessage: 'Server resources are running low. Please try again in a few minutes.',
-      insufficientRAM: 'Insufficient RAM available',
-      highCPU: 'High CPU usage',
-      autoRefresh: 'Auto-refreshing every {seconds} seconds'
-    }
-  })
-
-  useI18n().mergeLocaleMessage('fr', {
-    terminalMetrics: {
-      pageTitle: 'Métriques du Serveur',
-      cpuUsage: 'Utilisation CPU',
-      ramUsage: 'Utilisation RAM',
-      ramAvailable: 'RAM Disponible',
-      timestamp: 'Dernière Mise à Jour',
-      refresh: 'Actualiser',
-      serverStatus: 'État du Serveur',
-      healthy: 'Bon',
-      warning: 'Attention',
-      critical: 'Critique',
-      capacityWarning: 'Serveur à capacité maximale',
-      capacityWarningMessage: 'Les ressources du serveur sont faibles. Veuillez réessayer dans quelques minutes.',
-      insufficientRAM: 'RAM disponible insuffisante',
-      highCPU: 'Utilisation CPU élevée',
-      autoRefresh: 'Actualisation automatique toutes les {seconds} secondes'
+  useStoreTranslations({
+    en: {
+      terminalMetrics: {
+        pageTitle: 'Server Metrics',
+        cpuUsage: 'CPU Usage',
+        ramUsage: 'RAM Usage',
+        ramAvailable: 'RAM Available',
+        timestamp: 'Last Update',
+        refresh: 'Refresh',
+        serverStatus: 'Server Status',
+        healthy: 'Healthy',
+        warning: 'Warning',
+        critical: 'Critical',
+        capacityWarning: 'Server at capacity',
+        capacityWarningMessage: 'Server resources are running low. Please try again in a few minutes.',
+        insufficientRAM: 'Insufficient RAM available',
+        highCPU: 'High CPU usage',
+        autoRefresh: 'Auto-refreshing every {seconds} seconds'
+      }
+    },
+    fr: {
+      terminalMetrics: {
+        pageTitle: 'Métriques du Serveur',
+        cpuUsage: 'Utilisation CPU',
+        ramUsage: 'Utilisation RAM',
+        ramAvailable: 'RAM Disponible',
+        timestamp: 'Dernière Mise à Jour',
+        refresh: 'Actualiser',
+        serverStatus: 'État du Serveur',
+        healthy: 'Bon',
+        warning: 'Attention',
+        critical: 'Critique',
+        capacityWarning: 'Serveur à capacité maximale',
+        capacityWarningMessage: 'Les ressources du serveur sont faibles. Veuillez réessayer dans quelques minutes.',
+        insufficientRAM: 'RAM disponible insuffisante',
+        highCPU: 'Utilisation CPU élevée',
+        autoRefresh: 'Actualisation automatique toutes les {seconds} secondes'
+      }
     }
   })
 

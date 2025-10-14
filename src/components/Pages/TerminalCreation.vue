@@ -47,35 +47,31 @@
 </template>
 
 <script setup lang="ts">
-import { defineAsyncComponent, onMounted } from 'vue'
+import { defineAsyncComponent } from 'vue'
 import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
+import { useTranslations } from '../../composables/useTranslations'
 
 const router = useRouter()
-const i18n = useI18n()
-const { t } = i18n
 
-// Import dynamique du composant
-const TerminalStarter = defineAsyncComponent(() => import('../Terminal/TerminalStarter.vue'))
-
-onMounted(() => {
-  // Add translations
-  i18n.mergeLocaleMessage('en', {
+const { t } = useTranslations({
+  en: {
     terminalCreation: {
       title: 'Create a New Terminal Session',
       description: 'Start a new terminal for your practical work. Choose the instance type according to your needs.',
       loading: 'Loading terminal...'
     }
-  })
-
-  i18n.mergeLocaleMessage('fr', {
+  },
+  fr: {
     terminalCreation: {
       title: 'Créer une Nouvelle Session Terminal',
       description: 'Démarrez un nouveau terminal pour vos travaux pratiques. Choisissez le type d\'instance selon vos besoins.',
       loading: 'Chargement du terminal...'
     }
-  })
+  }
 })
+
+// Import dynamique du composant
+const TerminalStarter = defineAsyncComponent(() => import('../Terminal/TerminalStarter.vue'))
 
 function onSessionStarted() {
   console.log('Session started, redirecting to sessions page')

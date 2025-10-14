@@ -115,27 +115,13 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useI18n } from 'vue-i18n'
+import { useTranslations } from '../../composables/useTranslations'
 import { logDemoAction, simulateDelay } from '../../services/demoConfig'
 
 const route = useRoute()
-const i18n = useI18n()
-const { t } = i18n
 
-const sessionId = ref('')
-const returnUrl = ref('')
-
-onMounted(() => {
-  sessionId.value = route.query.session_id as string || ''
-  returnUrl.value = route.query.return_url as string || '/subscription-dashboard'
-
-  logDemoAction('Demo portal page loaded', {
-    sessionId: sessionId.value,
-    returnUrl: returnUrl.value
-  })
-
-  // Add translations
-  i18n.mergeLocaleMessage('en', {
+const { t } = useTranslations({
+  en: {
     demoPortal: {
       badge: 'DEMO MODE - Simulated Portal',
       title: 'Demo Stripe Customer Portal',
@@ -161,9 +147,8 @@ onMounted(() => {
       info3: 'In production, this would be the actual Stripe portal',
       info4: 'Users can manage payment methods, view invoices, and change plans'
     }
-  })
-
-  i18n.mergeLocaleMessage('fr', {
+  },
+  fr: {
     demoPortal: {
       badge: 'MODE DEMO - Portail Simulé',
       title: 'Portail Client Stripe Démo',
@@ -189,6 +174,19 @@ onMounted(() => {
       info3: 'En production, ce serait le véritable portail Stripe',
       info4: 'Les utilisateurs peuvent gérer les moyens de paiement, voir les factures et changer de forfait'
     }
+  }
+})
+
+const sessionId = ref('')
+const returnUrl = ref('')
+
+onMounted(() => {
+  sessionId.value = route.query.session_id as string || ''
+  returnUrl.value = route.query.return_url as string || '/subscription-dashboard'
+
+  logDemoAction('Demo portal page loaded', {
+    sessionId: sessionId.value,
+    returnUrl: returnUrl.value
   })
 })
 

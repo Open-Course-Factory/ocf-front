@@ -20,20 +20,20 @@
  */
 
 import { defineStore } from "pinia"
-import { useI18n } from "vue-i18n"
 import { useBaseStore } from "./baseStore"
-import { handleStoreError } from '../services/errorHandler'
 import { getDemoSubscriptionPlans } from '../services/demoData'
 import { isDemoMode, logDemoAction, simulateDelay } from '../services/demoConfig'
 import axios from 'axios'
 import { formatCurrency } from '../utils/formatters'
+import { createAsyncWrapper } from '../utils/asyncWrapper'
+import { useStoreTranslations } from '../composables/useTranslations'
 
 export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => {
 
     const base = useBaseStore();
-    const { t } = useI18n()
 
-    useI18n().mergeLocaleMessage('en', { 
+    const { t } = useStoreTranslations({
+        en: { 
         subscriptionPlans: {
             pageTitle: 'Subscription Plans',
             name: 'Plan Name',
@@ -95,10 +95,9 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             allowed_templates: 'Allowed Templates',
             syncError: 'Error syncing subscription plans'
         }
-    })
-
-    useI18n().mergeLocaleMessage('fr', { 
-        subscriptionPlans: {
+        },
+        fr: {
+            subscriptionPlans: {
             pageTitle: 'Plans d\'Abonnement',
             name: 'Nom du Plan',
             description: 'Description',
@@ -159,7 +158,11 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             allowed_templates: 'Modèles Autorisés',
             syncError: 'Erreur lors de la synchronisation des plans'
         }
+        }
     })
+
+    // Create async wrapper with base store state
+    const baseAsync = createAsyncWrapper({ isLoading: base.isLoading, error: base.error })
 
     const fieldList = new Map<string, any>([
         ["id", { label: "ID", type: "input", display: false, toBeSet: false, toBeEdited: false }],
@@ -244,43 +247,38 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
 
     // Synchroniser les plans avec Stripe
     const syncPlansWithStripe = async () => {
-        try {
-            base.isLoading.value = true
-            base.error.value = ''
+        return await baseAsync(
+            async () => {
+                if (isDemoMode()) {
+                    logDemoAction('Syncing demo subscription plans with Stripe')
+                    await simulateDelay(2000)
+                    // In demo mode, just refresh the local plans
+                    return await loadPlans()
+                } else {
+                    const response = await axios.post('/subscription-plans/sync-stripe')
+                    console.log('Subscription plans sync result:', response.data)
 
-            if (isDemoMode()) {
-                logDemoAction('Syncing demo subscription plans with Stripe')
-                await simulateDelay(2000)
-                // In demo mode, just refresh the local plans
-                return await loadPlans()
-            } else {
-                const response = await axios.post('/subscription-plans/sync-stripe')
-                console.log('Subscription plans sync result:', response.data)
-
-                // Adapt backend response to expected frontend format
-                const data = response.data
-                const adapted = {
-                    success: true,
-                    synced_count: data.synced_plans?.length || 0,
-                    skipped_count: data.skipped_plans?.length || 0,
-                    failed_count: data.failed_plans?.length || 0,
-                    total_plans: data.total_plans || 0,
-                    message: `Synchronisé ${data.synced_plans?.length || 0} plan(s) avec succès`,
-                    details: {
-                        synced: data.synced_plans || [],
-                        skipped: data.skipped_plans || [],
-                        failed: data.failed_plans || []
+                    // Adapt backend response to expected frontend format
+                    const data = response.data
+                    const adapted = {
+                        success: true,
+                        synced_count: data.synced_plans?.length || 0,
+                        skipped_count: data.skipped_plans?.length || 0,
+                        failed_count: data.failed_plans?.length || 0,
+                        total_plans: data.total_plans || 0,
+                        message: `Synchronisé ${data.synced_plans?.length || 0} plan(s) avec succès`,
+                        details: {
+                            synced: data.synced_plans || [],
+                            skipped: data.skipped_plans || [],
+                            failed: data.failed_plans || []
+                        }
                     }
-                }
 
-                return adapted
-            }
-        } catch (error: any) {
-            base.error.value = handleStoreError(error, 'subscriptionPlans.syncError')
-            throw error
-        } finally {
-            base.isLoading.value = false
-        }
+                    return adapted
+                }
+            },
+            'subscriptionPlans.syncError'
+        );
     }
 
     // Synchroniser puis charger les plans (méthode recommandée)

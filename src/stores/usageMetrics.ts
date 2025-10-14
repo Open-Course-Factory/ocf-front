@@ -20,78 +20,77 @@
  */
 
 import { defineStore } from "pinia"
-import { useI18n } from "vue-i18n"
 import { useBaseStore } from "./baseStore"
 import { formatStorageSize, formatNumber, formatDate as formatDateUtil } from '../utils/formatters'
+import { useStoreTranslations } from '../composables/useTranslations'
 
 export const useUsageMetricsStore = defineStore('usageMetrics', () => {
 
     const base = useBaseStore();
-    const { t } = useI18n()
-
-    useI18n().mergeLocaleMessage('en', {
-        usageMetrics: {
-            pageTitle: 'Usage Statistics',
-            metric_type: 'Metric Type',
-            current_value: 'Current Usage',
-            limit_value: 'Limit',
-            usage_percent: 'Usage Percentage',
-            period_start: 'Period Start',
-            period_end: 'Period End',
-            last_updated: 'Last Updated',
-            // Metric types
-            courses: 'Courses',
-            courses_created: 'Courses Created',
-            concurrent_users: 'Concurrent Users',
-            concurrent_terminals: 'Concurrent Terminals',
-            terminal_sessions: 'Terminal Sessions',
-            storage: 'Storage',
-            storage_used: 'Storage Used',
-            api_calls: 'API Calls',
-            users: 'Users',
-            active_users: 'Active Users',
-            // Status messages
-            quotaExceeded: 'Quota Exceeded',
-            maxQuotaReached: 'Max quota reached',
-            quotaWarning: 'Quota Warning',
-            quotaNormal: 'Within Limits',
-            remaining: 'remaining',
-            unlimited: 'Unlimited',
-            modify: 'View metric details',
-            add: 'Add metric',
-        }
-    })
-
-    useI18n().mergeLocaleMessage('fr', {
-        usageMetrics: {
-            pageTitle: 'Statistiques d\'Utilisation',
-            metric_type: 'Type de Métrique',
-            current_value: 'Utilisation Actuelle',
-            limit_value: 'Limite',
-            usage_percent: 'Pourcentage d\'Utilisation',
-            period_start: 'Début de Période',
-            period_end: 'Fin de Période',
-            last_updated: 'Dernière Mise à Jour',
-            // Types de métriques
-            courses: 'Cours',
-            courses_created: 'Cours Créés',
-            concurrent_users: 'Utilisateurs Concurrents',
-            concurrent_terminals: 'Terminaux Concurrents',
-            terminal_sessions: 'Sessions Terminal',
-            storage: 'Stockage',
-            storage_used: 'Stockage Utilisé',
-            api_calls: 'Appels API',
-            users: 'Utilisateurs',
-            active_users: 'Utilisateurs Actifs',
-            // Messages de statut
-            quotaExceeded: 'Quota Dépassé',
-            maxQuotaReached: 'Quota maximum atteint',
-            quotaWarning: 'Alerte Quota',
-            quotaNormal: 'Dans les Limites',
-            remaining: 'restant',
-            unlimited: 'Illimité',
-            modify: 'Voir les détails de la métrique',
-            add: 'Ajouter une métrique',
+    const { t } = useStoreTranslations({
+        en: {
+            usageMetrics: {
+                pageTitle: 'Usage Statistics',
+                metric_type: 'Metric Type',
+                current_value: 'Current Usage',
+                limit_value: 'Limit',
+                usage_percent: 'Usage Percentage',
+                period_start: 'Period Start',
+                period_end: 'Period End',
+                last_updated: 'Last Updated',
+                // Metric types
+                courses: 'Courses',
+                courses_created: 'Courses Created',
+                concurrent_users: 'Concurrent Users',
+                concurrent_terminals: 'Concurrent Terminals',
+                terminal_sessions: 'Terminal Sessions',
+                storage: 'Storage',
+                storage_used: 'Storage Used',
+                api_calls: 'API Calls',
+                users: 'Users',
+                active_users: 'Active Users',
+                // Status messages
+                quotaExceeded: 'Quota Exceeded',
+                maxQuotaReached: 'Max quota reached',
+                quotaWarning: 'Quota Warning',
+                quotaNormal: 'Within Limits',
+                remaining: 'remaining',
+                unlimited: 'Unlimited',
+                modify: 'View metric details',
+                add: 'Add metric',
+            }
+        },
+        fr: {
+            usageMetrics: {
+                pageTitle: 'Statistiques d\'Utilisation',
+                metric_type: 'Type de Métrique',
+                current_value: 'Utilisation Actuelle',
+                limit_value: 'Limite',
+                usage_percent: 'Pourcentage d\'Utilisation',
+                period_start: 'Début de Période',
+                period_end: 'Fin de Période',
+                last_updated: 'Dernière Mise à Jour',
+                // Types de métriques
+                courses: 'Cours',
+                courses_created: 'Cours Créés',
+                concurrent_users: 'Utilisateurs Concurrents',
+                concurrent_terminals: 'Terminaux Concurrents',
+                terminal_sessions: 'Sessions Terminal',
+                storage: 'Stockage',
+                storage_used: 'Stockage Utilisé',
+                api_calls: 'Appels API',
+                users: 'Utilisateurs',
+                active_users: 'Utilisateurs Actifs',
+                // Messages de statut
+                quotaExceeded: 'Quota Dépassé',
+                maxQuotaReached: 'Quota maximum atteint',
+                quotaWarning: 'Alerte Quota',
+                quotaNormal: 'Dans les Limites',
+                remaining: 'restant',
+                unlimited: 'Illimité',
+                modify: 'Voir les détails de la métrique',
+                add: 'Ajouter une métrique',
+            }
         }
     })
 

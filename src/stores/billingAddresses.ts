@@ -20,14 +20,13 @@
  */
 
 import { defineStore } from "pinia"
-import { useI18n } from "vue-i18n"
 import { useBaseStore } from "./baseStore"
 import { getCountryOptions, getCountryName } from '../services/countries'
+import { useStoreTranslations } from '../composables/useTranslations'
 
 export const useBillingAddressesStore = defineStore('billingAddresses', () => {
 
     const base = useBaseStore();
-    const { t } = useI18n()
 
     // Get country options based on current locale (will be called when needed)
     const getCountrySelectOptions = () => {
@@ -35,35 +34,36 @@ export const useBillingAddressesStore = defineStore('billingAddresses', () => {
         return getCountryOptions('fr')
     }
 
-    useI18n().mergeLocaleMessage('en', { 
-        billingAddresses: { 
-            pageTitle: 'Billing Addresses',
-            line1: 'Address Line 1',
-            line2: 'Address Line 2',
-            city: 'City',
-            state: 'State/Province',
-            postal_code: 'Postal Code',
-            country: 'Country',
-            is_default: 'Default Address',
-            set_default: 'Set as Default',
-            modify: 'Modify address', 
-            add: 'Add an address',
-        }
-    })
-
-    useI18n().mergeLocaleMessage('fr', { 
-        billingAddresses: { 
-            pageTitle: 'Adresses de Facturation',
-            line1: 'Adresse Ligne 1',
-            line2: 'Adresse Ligne 2',
-            city: 'Ville',
-            state: 'État/Province',
-            postal_code: 'Code Postal',
-            country: 'Pays',
-            is_default: 'Adresse par Défaut',
-            set_default: 'Définir par Défaut',
-            modify: 'Modifier l\'adresse', 
-            add: 'Ajouter une adresse',
+    const { t } = useStoreTranslations({
+        en: {
+            billingAddresses: {
+                pageTitle: 'Billing Addresses',
+                line1: 'Address Line 1',
+                line2: 'Address Line 2',
+                city: 'City',
+                state: 'State/Province',
+                postal_code: 'Postal Code',
+                country: 'Country',
+                is_default: 'Default Address',
+                set_default: 'Set as Default',
+                modify: 'Modify address',
+                add: 'Add an address',
+            }
+        },
+        fr: {
+            billingAddresses: {
+                pageTitle: 'Adresses de Facturation',
+                line1: 'Adresse Ligne 1',
+                line2: 'Adresse Ligne 2',
+                city: 'Ville',
+                state: 'État/Province',
+                postal_code: 'Code Postal',
+                country: 'Pays',
+                is_default: 'Adresse par Défaut',
+                set_default: 'Définir par Défaut',
+                modify: 'Modifier l\'adresse',
+                add: 'Ajouter une adresse',
+            }
         }
     })
 

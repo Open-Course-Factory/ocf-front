@@ -73,12 +73,12 @@ class HelpServiceImpl implements HelpService {
   private getLocalTranslations(locale: string): HelpTranslations {
     switch (locale) {
       case 'fr':
-        return helpFr;
+        return helpFr as unknown as HelpTranslations;
       case 'en':
-        return helpEn;
+        return helpEn as unknown as HelpTranslations;
       default:
         console.warn(`Unsupported locale ${locale}, falling back to French`);
-        return helpFr;
+        return helpFr as unknown as HelpTranslations;
     }
   }
 }

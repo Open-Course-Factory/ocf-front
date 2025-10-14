@@ -20,8 +20,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch } from 'vue';
-import { useI18n } from 'vue-i18n';
+import { watch, onMounted, onBeforeUnmount } from 'vue';
+import { useTranslations } from '../../composables/useTranslations';
 import TermsOfService from '../Legal/TermsOfService.vue';
 
 interface Props {
@@ -35,8 +35,20 @@ interface Emits {
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-const i18n = useI18n();
-const { t } = i18n;
+const { t } = useTranslations({
+  en: {
+    tosModal: {
+      title: 'Terms of Service',
+      close: 'Close'
+    }
+  },
+  fr: {
+    tosModal: {
+      title: 'Conditions Générales d\'Utilisation',
+      close: 'Fermer'
+    }
+  }
+});
 
 const closeModal = () => {
   emit('close');
@@ -60,32 +72,12 @@ const handleKeydown = (e: KeyboardEvent) => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown);
-
-  // Add translations
-  i18n.mergeLocaleMessage('en', {
-    tosModal: {
-      title: 'Terms of Service',
-      close: 'Close'
-    }
-  });
-
-  i18n.mergeLocaleMessage('fr', {
-    tosModal: {
-      title: 'Conditions Générales d\'Utilisation',
-      close: 'Fermer'
-    }
-  });
 });
 
-// Cleanup
-const cleanup = () => {
+onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeydown);
   document.body.style.overflow = '';
-};
-
-// Vue 3 onBeforeUnmount
-import { onBeforeUnmount } from 'vue';
-onBeforeUnmount(cleanup);
+});
 </script>
 
 <style scoped>

@@ -197,11 +197,179 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { useTranslations } from '../../composables/useTranslations'
 import { useLocale } from '../../composables/useLocale'
 import packageJson from '../../../package.json'
 
-const { t } = useI18n()
+const { t } = useTranslations({
+  en: {
+    landing: {
+      platformReady: 'Free Trial Available',
+      heroTitle: 'Open Course Factory',
+      heroSubtitle: 'Test for free without credit card! SSH terminals, flexible subscription system, and multilingual interface',
+      login: 'Login',
+      register: 'Sign Up Free',
+      help: 'Help',
+      terminals: 'Terminals',
+      subscriptions: 'Subscriptions',
+      multiLanguage: 'Multi-language',
+      scrollDown: 'Discover more',
+      backToTop: 'Back to top',
+
+      features: {
+        title: 'Core Features',
+        terminals: {
+          title: 'Interactive Terminals',
+          description: 'Access secure SSH terminals with XTerm.js and real-time sharing',
+          interactive: 'Interactive terminal sessions',
+          sharing: 'Real-time session sharing',
+          ssh: 'SSH key management',
+          realTime: 'Instant collaboration'
+        },
+        billing: {
+          title: 'Free Plan & Subscriptions',
+          description: 'Start free without credit card, then choose a plan for more features',
+          flexible: 'Free plan to test the platform',
+          plans: 'Paid plans for advanced features',
+          invoices: 'Secure billing with Stripe',
+          portal: 'No card required to start'
+        },
+        i18n: {
+          title: 'Multi-language Support',
+          description: 'Fully translated interface in French and English',
+          french: 'French (default language)',
+          english: 'English (alternative language)',
+          embedded: 'Component-embedded translations',
+          dynamic: 'Instant language switching'
+        }
+      },
+
+      tech: {
+        title: 'Modern Technologies',
+        subtitle: 'Cutting-edge tech stack for optimal experience',
+        vue: 'Vue 3 Composition API with TypeScript',
+        pinia: 'Pinia for state management',
+        router: 'Vue Router with authentication guards',
+        vite: 'Vite for ultra-fast build',
+        typescript: 'TypeScript for code safety',
+        ui: 'Element Plus and Vuetify for UI'
+      },
+
+      gettingStarted: {
+        title: 'Getting Started',
+        step1: {
+          title: 'Create Free Account',
+          description: '2-minute signup, no credit card required'
+        },
+        step2: {
+          title: 'Test for Free',
+          description: 'Explore all features of the free plan'
+        },
+        step3: {
+          title: 'Upgrade to Paid Plan (Optional)',
+          description: 'Unlock more features when you\'re ready'
+        }
+      },
+
+      footer: {
+        description: 'Management platform with integrated terminals and subscriptions',
+        product: 'Product',
+        features: 'Features',
+        technology: 'Technology',
+        demo: 'Demo',
+        resources: 'Resources',
+        documentation: 'Documentation',
+        github: 'GitHub',
+        support: 'Support',
+        rights: 'All rights reserved'
+      }
+    }
+  },
+  fr: {
+    landing: {
+      platformReady: 'Essai gratuit disponible',
+      heroTitle: 'Open Course Factory',
+      heroSubtitle: 'Testez gratuitement sans carte bancaire ! Terminaux SSH, système d\'abonnement flexible et interface multilingue',
+      login: 'Se connecter',
+      register: "S'inscrire gratuitement",
+      help: 'Aide',
+      terminals: 'Terminaux',
+      subscriptions: 'Abonnements',
+      multiLanguage: 'Multilingue',
+      scrollDown: 'Découvrir plus',
+      backToTop: 'Retour en haut',
+
+      features: {
+        title: 'Fonctionnalités Principales',
+        terminals: {
+          title: 'Terminaux Interactifs',
+          description: 'Accédez à des terminaux SSH sécurisés avec XTerm.js et partage en temps réel',
+          interactive: 'Sessions terminaux interactives',
+          sharing: 'Partage de sessions en temps réel',
+          ssh: 'Gestion des clés SSH',
+          realTime: 'Collaboration instantanée'
+        },
+        billing: {
+          title: 'Plan Gratuit & Abonnements',
+          description: 'Commencez gratuitement sans carte bancaire, puis choisissez un plan pour plus de fonctionnalités',
+          flexible: 'Plan gratuit pour tester la plateforme',
+          plans: 'Plans payants pour fonctionnalités avancées',
+          invoices: 'Facturation sécurisée avec Stripe',
+          portal: 'Aucune carte requise pour débuter'
+        },
+        i18n: {
+          title: 'Support Multi-langues',
+          description: 'Interface entièrement traduite en français et anglais',
+          french: 'Français (langue par défaut)',
+          english: 'Anglais (langue alternative)',
+          embedded: 'Traductions intégrées aux composants',
+          dynamic: 'Changement de langue instantané'
+        }
+      },
+
+      tech: {
+        title: 'Technologies Modernes',
+        subtitle: 'Stack technique de pointe pour une expérience optimale',
+        vue: 'Vue 3 Composition API avec TypeScript',
+        pinia: 'Pinia pour la gestion d\'état',
+        router: 'Vue Router avec guards d\'authentification',
+        vite: 'Vite pour un build ultra-rapide',
+        typescript: 'TypeScript pour la sûreté du code',
+        ui: 'Element Plus et Vuetify pour l\'interface'
+      },
+
+      gettingStarted: {
+        title: 'Commencer',
+        step1: {
+          title: 'Créer un compte gratuit',
+          description: 'Inscription en 2 minutes, sans carte bancaire'
+        },
+        step2: {
+          title: 'Tester gratuitement',
+          description: 'Explorez toutes les fonctionnalités du plan gratuit'
+        },
+        step3: {
+          title: 'Passer à un plan payant (optionnel)',
+          description: 'Débloquez plus de fonctionnalités quand vous êtes prêt'
+        }
+      },
+
+      footer: {
+        description: 'Plateforme de gestion avec terminaux et abonnements intégrés',
+        product: 'Produit',
+        features: 'Fonctionnalités',
+        technology: 'Technologies',
+        demo: 'Démo',
+        resources: 'Ressources',
+        documentation: 'Documentation',
+        github: 'GitHub',
+        support: 'Support',
+        rights: 'Tous droits réservés'
+      }
+    }
+  }
+})
+
 const { currentLocale, setLocale } = useLocale()
 const showScrollIndicator = ref(true)
 const isAtBottom = ref(false)
@@ -309,10 +477,7 @@ const handleScrollNew = () => {
   // Keep the button always readable - no complex color detection needed
 }
 
-// Add translations
 onMounted(() => {
-  const { mergeLocaleMessage } = useI18n()
-
   // Simple scroll listener
   const onScroll = () => {
     handleScrollNew()
@@ -349,174 +514,6 @@ onMounted(() => {
   setTimeout(() => {
     handleScrollNew()
   }, 100)
-
-  mergeLocaleMessage('fr', {
-    landing: {
-      platformReady: 'Essai gratuit disponible',
-      heroTitle: 'Open Course Factory',
-      heroSubtitle: 'Testez gratuitement sans carte bancaire ! Terminaux SSH, système d\'abonnement flexible et interface multilingue',
-      login: 'Se connecter',
-      register: "S'inscrire gratuitement",
-      help: 'Aide',
-      terminals: 'Terminaux',
-      subscriptions: 'Abonnements',
-      multiLanguage: 'Multilingue',
-      scrollDown: 'Découvrir plus',
-      backToTop: 'Retour en haut',
-
-      features: {
-        title: 'Fonctionnalités Principales',
-        terminals: {
-          title: 'Terminaux Interactifs',
-          description: 'Accédez à des terminaux SSH sécurisés avec XTerm.js et partage en temps réel',
-          interactive: 'Sessions terminaux interactives',
-          sharing: 'Partage de sessions en temps réel',
-          ssh: 'Gestion des clés SSH',
-          realTime: 'Collaboration instantanée'
-        },
-        billing: {
-          title: 'Plan Gratuit & Abonnements',
-          description: 'Commencez gratuitement sans carte bancaire, puis choisissez un plan pour plus de fonctionnalités',
-          flexible: 'Plan gratuit pour tester la plateforme',
-          plans: 'Plans payants pour fonctionnalités avancées',
-          invoices: 'Facturation sécurisée avec Stripe',
-          portal: 'Aucune carte requise pour débuter'
-        },
-        i18n: {
-          title: 'Support Multi-langues',
-          description: 'Interface entièrement traduite en français et anglais',
-          french: 'Français (langue par défaut)',
-          english: 'Anglais (langue alternative)',
-          embedded: 'Traductions intégrées aux composants',
-          dynamic: 'Changement de langue instantané'
-        }
-      },
-
-      tech: {
-        title: 'Technologies Modernes',
-        subtitle: 'Stack technique de pointe pour une expérience optimale',
-        vue: 'Vue 3 Composition API avec TypeScript',
-        pinia: 'Pinia pour la gestion d\'état',
-        router: 'Vue Router avec guards d\'authentification',
-        vite: 'Vite pour un build ultra-rapide',
-        typescript: 'TypeScript pour la sûreté du code',
-        ui: 'Element Plus et Vuetify pour l\'interface'
-      },
-
-      gettingStarted: {
-        title: 'Commencer',
-        step1: {
-          title: 'Créer un compte gratuit',
-          description: 'Inscription en 2 minutes, sans carte bancaire'
-        },
-        step2: {
-          title: 'Tester gratuitement',
-          description: 'Explorez toutes les fonctionnalités du plan gratuit'
-        },
-        step3: {
-          title: 'Passer à un plan payant (optionnel)',
-          description: 'Débloquez plus de fonctionnalités quand vous êtes prêt'
-        }
-      },
-
-      footer: {
-        description: 'Plateforme de gestion avec terminaux et abonnements intégrés',
-        product: 'Produit',
-        features: 'Fonctionnalités',
-        technology: 'Technologies',
-        demo: 'Démo',
-        resources: 'Ressources',
-        documentation: 'Documentation',
-        github: 'GitHub',
-        support: 'Support',
-        rights: 'Tous droits réservés'
-      }
-    }
-  })
-
-  mergeLocaleMessage('en', {
-    landing: {
-      platformReady: 'Free Trial Available',
-      heroTitle: 'Open Course Factory',
-      heroSubtitle: 'Test for free without credit card! SSH terminals, flexible subscription system, and multilingual interface',
-      login: 'Login',
-      register: 'Sign Up Free',
-      help: 'Help',
-      terminals: 'Terminals',
-      subscriptions: 'Subscriptions',
-      multiLanguage: 'Multi-language',
-      scrollDown: 'Discover more',
-      backToTop: 'Back to top',
-
-      features: {
-        title: 'Core Features',
-        terminals: {
-          title: 'Interactive Terminals',
-          description: 'Access secure SSH terminals with XTerm.js and real-time sharing',
-          interactive: 'Interactive terminal sessions',
-          sharing: 'Real-time session sharing',
-          ssh: 'SSH key management',
-          realTime: 'Instant collaboration'
-        },
-        billing: {
-          title: 'Free Plan & Subscriptions',
-          description: 'Start free without credit card, then choose a plan for more features',
-          flexible: 'Free plan to test the platform',
-          plans: 'Paid plans for advanced features',
-          invoices: 'Secure billing with Stripe',
-          portal: 'No card required to start'
-        },
-        i18n: {
-          title: 'Multi-language Support',
-          description: 'Fully translated interface in French and English',
-          french: 'French (default language)',
-          english: 'English (alternative language)',
-          embedded: 'Component-embedded translations',
-          dynamic: 'Instant language switching'
-        }
-      },
-
-      tech: {
-        title: 'Modern Technologies',
-        subtitle: 'Cutting-edge tech stack for optimal experience',
-        vue: 'Vue 3 Composition API with TypeScript',
-        pinia: 'Pinia for state management',
-        router: 'Vue Router with authentication guards',
-        vite: 'Vite for ultra-fast build',
-        typescript: 'TypeScript for code safety',
-        ui: 'Element Plus and Vuetify for UI'
-      },
-
-      gettingStarted: {
-        title: 'Getting Started',
-        step1: {
-          title: 'Create Free Account',
-          description: '2-minute signup, no credit card required'
-        },
-        step2: {
-          title: 'Test for Free',
-          description: 'Explore all features of the free plan'
-        },
-        step3: {
-          title: 'Upgrade to Paid Plan (Optional)',
-          description: 'Unlock more features when you\'re ready'
-        }
-      },
-
-      footer: {
-        description: 'Management platform with integrated terminals and subscriptions',
-        product: 'Product',
-        features: 'Features',
-        technology: 'Technology',
-        demo: 'Demo',
-        resources: 'Resources',
-        documentation: 'Documentation',
-        github: 'GitHub',
-        support: 'Support',
-        rights: 'All rights reserved'
-      }
-    }
-  })
 })
 
 onUnmounted(() => {

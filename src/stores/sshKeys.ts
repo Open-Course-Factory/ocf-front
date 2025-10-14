@@ -20,40 +20,44 @@
  */
 
 import { defineStore } from "pinia"
-import { useI18n } from "vue-i18n"
 import { useBaseStore } from "./baseStore";
+import { useStoreTranslations } from '../composables/useTranslations'
 
 export const useSshKeysStore = defineStore('SshKeys', () => {
 
     const base = useBaseStore();
-    const { t } = useI18n()
-
-    useI18n().mergeLocaleMessage('en', { sshkeys : {
-        id : "id",
-        pageTitle : "Ssh Keys list",
-        name: 'Key name',
-        value: 'Key value (PRIVATE)',
-        modify: 'Modify SSH key name',
-        add: 'Add a SSH key',
-        description: 'Manage your SSH keys for terminal access',
-        noKeys: 'No SSH keys configured yet',
-        loading: 'Loading...',
-        saving: 'Saving...',
-        unknown: 'Unknown'
-    }})
-    useI18n().mergeLocaleMessage('fr', { sshkeys : {
-        id : "id",
-        pageTitle : "Liste des clés SSH",
-        name: 'Nom de la clé',
-        value: 'Valeur de la clé (PRIVEE)',
-        modify: 'Modifier le nom de la clé SSH',
-        add: 'Ajouter une clé SSH',
-        description: 'Gérez vos clés SSH pour l\'accès aux terminaux',
-        noKeys: 'Aucune clé SSH configurée pour le moment',
-        loading: 'Chargement...',
-        saving: 'Enregistrement...',
-        unknown: 'Inconnu'
-     }})
+    const { t } = useStoreTranslations({
+        en: {
+            sshkeys: {
+                id: "id",
+                pageTitle: "Ssh Keys list",
+                name: 'Key name',
+                value: 'Key value (PRIVATE)',
+                modify: 'Modify SSH key name',
+                add: 'Add a SSH key',
+                description: 'Manage your SSH keys for terminal access',
+                noKeys: 'No SSH keys configured yet',
+                loading: 'Loading...',
+                saving: 'Saving...',
+                unknown: 'Unknown'
+            }
+        },
+        fr: {
+            sshkeys: {
+                id: "id",
+                pageTitle: "Liste des clés SSH",
+                name: 'Nom de la clé',
+                value: 'Valeur de la clé (PRIVEE)',
+                modify: 'Modifier le nom de la clé SSH',
+                add: 'Ajouter une clé SSH',
+                description: 'Gérez vos clés SSH pour l\'accès aux terminaux',
+                noKeys: 'Aucune clé SSH configurée pour le moment',
+                loading: 'Chargement...',
+                saving: 'Enregistrement...',
+                unknown: 'Inconnu'
+            }
+        }
+    })
     
     const fieldList = new Map<string, any>([
         ["id", { label: t('sshkeys.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],

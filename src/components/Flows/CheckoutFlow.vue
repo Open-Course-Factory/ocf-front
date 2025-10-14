@@ -323,13 +323,120 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
-import { useI18n } from 'vue-i18n'
+import { useTranslations } from '../../composables/useTranslations'
 import axios from 'axios'
 import { getCountryName } from '../../services/countries'
 import BillingAddressModal from '../Modals/BillingAddressModal.vue'
 
-const i18n = useI18n()
-const { t } = i18n
+const { t } = useTranslations({
+  en: {
+    checkoutFlow: {
+      planNotFound: 'Plan not found',
+      errorLoading: 'Error loading data',
+      errorLoadingPlan: 'Error loading plan',
+      errorLoadingAddresses: 'Error loading addresses',
+      errorAddingAddress: 'Error adding address',
+      invalidCoupon: 'Invalid coupon code',
+      errorProcessing: 'Error processing payment'
+    },
+    checkout: {
+      title: 'Checkout',
+      steps: {
+        plan: 'Plan Selection',
+        billing: 'Billing Address',
+        review: 'Review & Pay'
+      },
+      features: 'Features',
+      unlimited: 'Unlimited',
+      courses: 'courses',
+      users: 'concurrent users',
+      labSessions: 'lab sessions',
+      trialDays: '{days} days free trial',
+      couponCode: 'Coupon Code',
+      couponPlaceholder: 'Enter coupon code',
+      applyCoupon: 'Apply',
+      couponApplied: 'Coupon {code} applied: {discount}',
+      loadingPlan: 'Loading plan details...',
+      selectAddress: 'Select billing address',
+      default: 'Default',
+      addNewAddress: 'Add new address',
+      newAddress: 'New address',
+      billingAddress: 'Billing address',
+      addressLine1: 'Address line 1',
+      addressLine2: 'Address line 2',
+      city: 'City',
+      postalCode: 'Postal code',
+      state: 'State',
+      country: 'Country',
+      addAddress: 'Add address',
+      cancel: 'Cancel',
+      orderSummary: 'Order Summary',
+      discount: 'Discount',
+      total: 'Total',
+      trialNotice: 'Free for {days} days, then billed {interval}',
+      previous: 'Previous',
+      continue: 'Continue',
+      subscribe: 'Subscribe',
+      processing: 'Processing...',
+      securePayment: 'Secure payment with Stripe',
+      needHelp: 'Need help?'
+    }
+  },
+  fr: {
+    checkoutFlow: {
+      planNotFound: 'Plan non trouvé',
+      errorLoading: 'Erreur lors du chargement des données',
+      errorLoadingPlan: 'Erreur lors du chargement du plan',
+      errorLoadingAddresses: 'Erreur lors du chargement des adresses',
+      errorAddingAddress: 'Erreur lors de l\'ajout de l\'adresse',
+      invalidCoupon: 'Code promo invalide',
+      errorProcessing: 'Erreur lors du traitement du paiement'
+    },
+    checkout: {
+      title: 'Commande',
+      steps: {
+        plan: 'Sélection du plan',
+        billing: 'Adresse de facturation',
+        review: 'Révision et paiement'
+      },
+      features: 'Fonctionnalités',
+      unlimited: 'Illimité',
+      courses: 'cours',
+      users: 'utilisateurs concurrents',
+      labSessions: 'sessions lab',
+      trialDays: '{days} jours d\'essai gratuit',
+      couponCode: 'Code promo',
+      couponPlaceholder: 'Entrez votre code promo',
+      applyCoupon: 'Appliquer',
+      couponApplied: 'Code {code} appliqué : {discount}',
+      loadingPlan: 'Chargement du plan...',
+      selectAddress: 'Sélectionnez une adresse de facturation',
+      default: 'Défaut',
+      addNewAddress: 'Ajouter une nouvelle adresse',
+      newAddress: 'Nouvelle adresse',
+      billingAddress: 'Adresse de facturation',
+      addressLine1: 'Adresse ligne 1',
+      addressLine2: 'Adresse ligne 2',
+      city: 'Ville',
+      postalCode: 'Code postal',
+      state: 'État/Province',
+      country: 'Pays',
+      addAddress: 'Ajouter l\'adresse',
+      cancel: 'Annuler',
+      orderSummary: 'Résumé de la commande',
+      discount: 'Remise',
+      total: 'Total',
+      trialNotice: 'Gratuit pendant {days} jours, puis facturé',
+      previous: 'Précédent',
+      continue: 'Continuer',
+      subscribe: 'S\'abonner',
+      processing: 'Traitement...',
+      securePayment: 'Paiement sécurisé avec Stripe',
+      needHelp: 'Besoin d\'aide ?'
+    }
+  }
+})
+
 const route = useRoute()
 // const router = useRouter()
 
@@ -368,124 +475,8 @@ const steps = [
 
 // Méthodes
 onMounted(async () => {
-  // Add translations first
-  i18n.mergeLocaleMessage('en', {
-    checkoutFlow: {
-      planNotFound: 'Plan not found',
-      errorLoading: 'Error loading data',
-      errorLoadingPlan: 'Error loading plan',
-      errorLoadingAddresses: 'Error loading addresses',
-      errorAddingAddress: 'Error adding address',
-      invalidCoupon: 'Invalid coupon code',
-      errorProcessing: 'Error processing payment'
-    }
-  });
-
-  i18n.mergeLocaleMessage('fr', {
-    checkoutFlow: {
-      planNotFound: 'Plan non trouvé',
-      errorLoading: 'Erreur lors du chargement des données',
-      errorLoadingPlan: 'Erreur lors du chargement du plan',
-      errorLoadingAddresses: 'Erreur lors du chargement des adresses',
-      errorAddingAddress: 'Erreur lors de l\'ajout de l\'adresse',
-      invalidCoupon: 'Code promo invalide',
-      errorProcessing: 'Erreur lors du traitement du paiement'
-    }
-  });
-
   await loadInitialData();
 });
-
-// Existing translations
-i18n.mergeLocaleMessage('en', {
-  checkout: {
-    title: 'Checkout',
-    steps: {
-      plan: 'Plan Selection',
-      billing: 'Billing Address',
-      review: 'Review & Pay'
-    },
-    features: 'Features',
-    unlimited: 'Unlimited',
-    courses: 'courses',
-    users: 'concurrent users',
-    labSessions: 'lab sessions',
-    trialDays: '{days} days free trial',
-    couponCode: 'Coupon Code',
-    couponPlaceholder: 'Enter coupon code',
-    applyCoupon: 'Apply',
-    couponApplied: 'Coupon {code} applied: {discount}',
-    loadingPlan: 'Loading plan details...',
-    selectAddress: 'Select billing address',
-    default: 'Default',
-    addNewAddress: 'Add new address',
-    newAddress: 'New address',
-    billingAddress: 'Billing address',
-    addressLine1: 'Address line 1',
-    addressLine2: 'Address line 2',
-    city: 'City',
-    postalCode: 'Postal code',
-    state: 'State',
-    country: 'Country',
-    addAddress: 'Add address',
-    cancel: 'Cancel',
-    orderSummary: 'Order Summary',
-    discount: 'Discount',
-    total: 'Total',
-    trialNotice: 'Free for {days} days, then billed {interval}',
-    previous: 'Previous',
-    continue: 'Continue',
-    subscribe: 'Subscribe',
-    processing: 'Processing...',
-    securePayment: 'Secure payment with Stripe',
-    needHelp: 'Need help?'
-  }
-})
-
-i18n.mergeLocaleMessage('fr', {
-  checkout: {
-    title: 'Commande',
-    steps: {
-      plan: 'Sélection du plan',
-      billing: 'Adresse de facturation',
-      review: 'Révision et paiement'
-    },
-    features: 'Fonctionnalités',
-    unlimited: 'Illimité',
-    courses: 'cours',
-    users: 'utilisateurs concurrents',
-    labSessions: 'sessions lab',
-    trialDays: '{days} jours d\'essai gratuit',
-    couponCode: 'Code promo',
-    couponPlaceholder: 'Entrez votre code promo',
-    applyCoupon: 'Appliquer',
-    couponApplied: 'Code {code} appliqué : {discount}',
-    loadingPlan: 'Chargement du plan...',
-    selectAddress: 'Sélectionnez une adresse de facturation',
-    default: 'Défaut',
-    addNewAddress: 'Ajouter une nouvelle adresse',
-    newAddress: 'Nouvelle adresse',
-    billingAddress: 'Adresse de facturation',
-    addressLine1: 'Adresse ligne 1',
-    addressLine2: 'Adresse ligne 2',
-    city: 'Ville',
-    postalCode: 'Code postal',
-    state: 'État/Province',
-    country: 'Pays',
-    addAddress: 'Ajouter l\'adresse',
-    cancel: 'Annuler',
-    orderSummary: 'Résumé de la commande',
-    discount: 'Remise',
-    total: 'Total',
-    trialNotice: 'Gratuit pendant {days} jours, puis facturé',
-    previous: 'Précédent',
-    continue: 'Continuer',
-    subscribe: 'S\'abonner',
-    processing: 'Traitement...',
-    securePayment: 'Paiement sécurisé avec Stripe',
-    needHelp: 'Besoin d\'aide ?'
-  }
-})
 
 // Computed
 const formatPrice = computed(() => subscriptionPlansStore.formatPrice)

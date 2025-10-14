@@ -81,19 +81,38 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useI18n } from 'vue-i18n';
+import { useTranslations } from '../../composables/useTranslations';
 import { useCurrentUserStore } from '../../stores/currentUser.ts';
 import { useUserSettingsStore } from '../../stores/userSettings.ts';
 import { useLocale } from '../../composables/useLocale';
 import { useFeatureFlags } from '../../composables/useFeatureFlags';
+
+const { t } = useTranslations({
+  en: {
+    topMenu: {
+      account: 'Account',
+      subscriptionDashboard: 'Subscription Dashboard',
+      subscriptionPlans: 'Subscription Plans',
+      settings: 'Settings',
+      disconnect: 'Disconnect'
+    }
+  },
+  fr: {
+    topMenu: {
+      account: 'Compte',
+      subscriptionDashboard: 'Tableau de bord abonnement',
+      subscriptionPlans: 'Plans d\'abonnement',
+      settings: 'Paramètres',
+      disconnect: 'Déconnexion'
+    }
+  }
+})
 
 const router = useRouter();
 const currentUser = useCurrentUserStore();
 const settingsStore = useUserSettingsStore();
 const { currentLocale, supportedLocales, setLocale, getLocaleInfo } = useLocale();
 const { isEnabled } = useFeatureFlags();
-const i18n = useI18n();
-const { t } = i18n;
 
 const emit = defineEmits(['toggle-menu']);
 
@@ -168,30 +187,8 @@ function handleClickOutside(event: Event) {
   }
 }
 
-// Register translations and event listeners
+// Register event listeners
 onMounted(() => {
-  // English translations
-  i18n.mergeLocaleMessage('en', {
-    topMenu: {
-      account: 'Account',
-      subscriptionDashboard: 'Subscription Dashboard',
-      subscriptionPlans: 'Subscription Plans',
-      settings: 'Settings',
-      disconnect: 'Disconnect'
-    }
-  });
-
-  // French translations
-  i18n.mergeLocaleMessage('fr', {
-    topMenu: {
-      account: 'Compte',
-      subscriptionDashboard: 'Tableau de bord abonnement',
-      subscriptionPlans: 'Plans d\'abonnement',
-      settings: 'Paramètres',
-      disconnect: 'Déconnexion'
-    }
-  });
-
   // Add click outside listener
   document.addEventListener('click', handleClickOutside);
 });

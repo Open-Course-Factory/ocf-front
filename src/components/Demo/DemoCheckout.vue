@@ -84,12 +84,47 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useI18n } from 'vue-i18n'
+import { useTranslations } from '../../composables/useTranslations'
 import { logDemoAction, simulateDelay } from '../../services/demoConfig'
 
 const route = useRoute()
-const i18n = useI18n()
-const { t } = i18n
+
+const { t } = useTranslations({
+  en: {
+    demoCheckout: {
+      badge: 'DEMO MODE - No real charges',
+      title: 'Demo Stripe Checkout',
+      billingCycle: '/ month',
+      simulateOutcome: 'Simulate Payment Outcome:',
+      simulateSuccess: 'Simulate Successful Payment',
+      simulateCancel: 'Simulate Canceled Payment',
+      simulateError: 'Simulate Payment Error',
+      processing: 'Processing payment simulation...',
+      infoTitle: 'Demo Information',
+      info1: 'This is a simulated Stripe checkout page',
+      info2: 'No real payment will be processed',
+      info3: 'Click one of the buttons above to test different outcomes',
+      info4: 'The subscription will be simulated in your account'
+    }
+  },
+  fr: {
+    demoCheckout: {
+      badge: 'MODE DEMO - Aucun frais réel',
+      title: 'Paiement Stripe Démo',
+      billingCycle: '/ mois',
+      simulateOutcome: 'Simuler le Résultat du Paiement:',
+      simulateSuccess: 'Simuler un Paiement Réussi',
+      simulateCancel: 'Simuler un Paiement Annulé',
+      simulateError: 'Simuler une Erreur de Paiement',
+      processing: 'Traitement de la simulation de paiement...',
+      infoTitle: 'Informations de Démo',
+      info1: 'Ceci est une page de paiement Stripe simulée',
+      info2: 'Aucun paiement réel ne sera traité',
+      info3: 'Cliquez sur l\'un des boutons ci-dessus pour tester différents résultats',
+      info4: 'L\'abonnement sera simulé dans votre compte'
+    }
+  }
+})
 
 const sessionId = ref('')
 const successUrl = ref('')
@@ -112,43 +147,6 @@ onMounted(() => {
     sessionId: sessionId.value,
     planName: planName.value,
     amount: amount.value
-  })
-
-  // Add translations
-  i18n.mergeLocaleMessage('en', {
-    demoCheckout: {
-      badge: 'DEMO MODE - No real charges',
-      title: 'Demo Stripe Checkout',
-      billingCycle: '/ month',
-      simulateOutcome: 'Simulate Payment Outcome:',
-      simulateSuccess: 'Simulate Successful Payment',
-      simulateCancel: 'Simulate Canceled Payment',
-      simulateError: 'Simulate Payment Error',
-      processing: 'Processing payment simulation...',
-      infoTitle: 'Demo Information',
-      info1: 'This is a simulated Stripe checkout page',
-      info2: 'No real payment will be processed',
-      info3: 'Click one of the buttons above to test different outcomes',
-      info4: 'The subscription will be simulated in your account'
-    }
-  })
-
-  i18n.mergeLocaleMessage('fr', {
-    demoCheckout: {
-      badge: 'MODE DEMO - Aucun frais réel',
-      title: 'Paiement Stripe Démo',
-      billingCycle: '/ mois',
-      simulateOutcome: 'Simuler le Résultat du Paiement:',
-      simulateSuccess: 'Simuler un Paiement Réussi',
-      simulateCancel: 'Simuler un Paiement Annulé',
-      simulateError: 'Simuler une Erreur de Paiement',
-      processing: 'Traitement de la simulation de paiement...',
-      infoTitle: 'Informations de Démo',
-      info1: 'Ceci est une page de paiement Stripe simulée',
-      info2: 'Aucun paiement réel ne sera traité',
-      info3: 'Cliquez sur l\'un des boutons ci-dessus pour tester différents résultats',
-      info4: 'L\'abonnement sera simulé dans votre compte'
-    }
   })
 })
 

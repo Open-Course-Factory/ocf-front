@@ -20,31 +20,35 @@
  */
 
 import { defineStore } from "pinia"
-import { useI18n } from "vue-i18n"
 import { useBaseStore } from "./baseStore";
+import { useStoreTranslations } from '../composables/useTranslations'
 
 
 export const useSchedulesStore = defineStore('schedules', () => {
 
     const base = useBaseStore();
-    const { t } = useI18n()
-
-    useI18n().mergeLocaleMessage('en', { schedules : { 
-        id : "id",
-        pageTitle : 'Schedules',
-        name: 'Schedule Name',
-        front_matter_content: 'Content',
-        modify: 'Modify the schedule', 
-        add: 'Add a schedule',
-    }})
-    useI18n().mergeLocaleMessage('fr', { schedules : { 
-        id : "id",
-        pageTitle : 'Emplois du temps',
-        name: 'Nom de l\'emploi du temps',
-        front_matter_content: 'Contenu',
-        modify: 'Modifier l\'emploi du temps', 
-        add: 'Ajouter un emploi du temps',
-     }})
+    const { t } = useStoreTranslations({
+        en: {
+            schedules: {
+                id: "id",
+                pageTitle: 'Schedules',
+                name: 'Schedule Name',
+                front_matter_content: 'Content',
+                modify: 'Modify the schedule',
+                add: 'Add a schedule',
+            }
+        },
+        fr: {
+            schedules: {
+                id: "id",
+                pageTitle: 'Emplois du temps',
+                name: 'Nom de l\'emploi du temps',
+                front_matter_content: 'Contenu',
+                modify: 'Modifier l\'emploi du temps',
+                add: 'Ajouter un emploi du temps',
+            }
+        }
+    })
 
     const fieldList = new Map<string, any>([
         ["id", { label: t('schedules.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],

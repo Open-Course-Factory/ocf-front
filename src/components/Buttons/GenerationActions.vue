@@ -95,20 +95,15 @@
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useGenerationsStore } from '../../stores/generations';
 import Modal from '../Modals/BaseModal.vue';
-import { useI18n } from 'vue-i18n';
+import { useTranslations } from '../../composables/useTranslations';
 import axios from 'axios';
 
 const props = defineProps<{
   entity: any;
 }>();
 
-const i18n = useI18n();
-const { t } = i18n;
-const generationsStore = useGenerationsStore();
-
-// Add translations in onMounted
-onMounted(() => {
-  i18n.mergeLocaleMessage('en', {
+const { t } = useTranslations({
+  en: {
     generationActions: {
       error: 'Error',
       errorDetails: 'Error details:',
@@ -116,9 +111,8 @@ onMounted(() => {
       downloadError: 'Unable to download generated files',
       retryError: 'Unable to restart generation'
     }
-  });
-
-  i18n.mergeLocaleMessage('fr', {
+  },
+  fr: {
     generationActions: {
       error: 'Erreur',
       errorDetails: 'Détails de l\'erreur :',
@@ -126,8 +120,12 @@ onMounted(() => {
       downloadError: 'Impossible de télécharger les fichiers générés',
       retryError: 'Impossible de relancer la génération'
     }
-  });
+  }
+});
 
+const generationsStore = useGenerationsStore();
+
+onMounted(() => {
   // Start polling if generation is in progress
   if (['connecting', 'waiting', 'pending'].includes(props.entity.status?.toLowerCase())) {
     generationsStore.startStatusPolling(props.entity.id);

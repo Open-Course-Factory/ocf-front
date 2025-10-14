@@ -102,12 +102,36 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, watch, onMounted } from 'vue';
+import { reactive, watch } from 'vue';
 import { Store } from 'pinia';
-import { useI18n } from 'vue-i18n';
+import { useTranslations } from '../../composables/useTranslations';
 
-const i18n = useI18n();
-const { t } = i18n;
+const { t } = useTranslations({
+  en: {
+    entityModal: {
+      modify: 'Modify',
+      add: 'Add',
+      selectOption: 'Select an option',
+      buttonModify: 'Modify',
+      buttonAdd: 'Add',
+      buttonCancel: 'Cancel',
+      fieldRequired: '{field} is required.',
+      nameAlreadyUsed: 'This name is already used.'
+    }
+  },
+  fr: {
+    entityModal: {
+      modify: 'Modifier',
+      add: 'Ajouter',
+      selectOption: 'Sélectionner une option',
+      buttonModify: 'Modifier',
+      buttonAdd: 'Ajouter',
+      buttonCancel: 'Annuler',
+      fieldRequired: '{field} est requis.',
+      nameAlreadyUsed: 'Ce nom est déjà utilisé.'
+    }
+  }
+});
 
 const data = reactive({});
 const errors = reactive({});
@@ -227,35 +251,6 @@ function prepareNeededField() {
     });
   }
 }
-
-onMounted(() => {
-  // Add translations
-  i18n.mergeLocaleMessage('en', {
-    entityModal: {
-      modify: 'Modify',
-      add: 'Add',
-      selectOption: 'Select an option',
-      buttonModify: 'Modify',
-      buttonAdd: 'Add',
-      buttonCancel: 'Cancel',
-      fieldRequired: '{field} is required.',
-      nameAlreadyUsed: 'This name is already used.'
-    }
-  });
-
-  i18n.mergeLocaleMessage('fr', {
-    entityModal: {
-      modify: 'Modifier',
-      add: 'Ajouter',
-      selectOption: 'Sélectionner une option',
-      buttonModify: 'Modifier',
-      buttonAdd: 'Ajouter',
-      buttonCancel: 'Annuler',
-      fieldRequired: '{field} est requis.',
-      nameAlreadyUsed: 'Ce nom est déjà utilisé.'
-    }
-  });
-});
 </script>
 
 <style scoped>

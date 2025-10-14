@@ -181,7 +181,7 @@
                   </button>
 
                   <!-- Dropdown menu for additional actions -->
-                  <div class="dropdown-container" :ref="el => dropdownRefs.set(session.id || session.session_id, el)">
+                  <div class="dropdown-container" :ref="(el) => dropdownRefs.set(session.id || session.session_id, el as HTMLElement)">
                     <button
                       class="btn-icon"
                       @click.stop="toggleDropdown(session.id || session.session_id)"
@@ -352,12 +352,163 @@ import { ref, onMounted, onUnmounted, defineAsyncComponent, computed } from 'vue
 import axios from 'axios'
 import { terminalService } from '../../services/terminalService'
 import { useNotification } from '../../composables/useNotification'
-import { useI18n } from 'vue-i18n'
-import Button from '../UI/Button.vue'
+import { useTranslations } from '../../composables/useTranslations'
 
 const { showConfirm } = useNotification()
-const i18n = useI18n()
-const { t } = i18n
+const { t } = useTranslations({
+  en: {
+    terminalMySessions: {
+      title: 'Terminal Sessions',
+      lastSync: 'Last sync',
+      activeSessions: 'Active Sessions',
+      inactiveSessions: 'Inactive Sessions',
+      buttonSync: 'Sync All',
+      buttonSyncing: 'Syncing...',
+      buttonRefresh: 'Refresh',
+      buttonNewSession: 'New Session',
+      buttonHideAllInactive: 'Hide All Inactive',
+      loadingSessions: 'Loading sessions...',
+      errorRetry: 'Retry',
+      synchronized: 'Synchronized',
+      upToDate: 'Up to date',
+      terminalId: 'Terminal ID',
+      sessionId: 'Session ID',
+      createdAt: 'Created on',
+      expiresAt: 'Expires on',
+      userId: 'User',
+      instanceType: 'Instance type',
+      lastSynchronization: 'Last synchronization',
+      previousStatus: 'Previous status',
+      currentStatus: 'Current status',
+      syncTime: 'Sync time',
+      terminalAccess: 'Terminal Access',
+      copyLink: 'Copy link',
+      buttonOpen: 'Open',
+      buttonHide: 'Hide',
+      buttonShow: 'Show',
+      preview: 'Preview',
+      iframePreviewInfo: 'Embeddable terminal preview - Size: 100% x 300px',
+      buttonSyncSession: 'Sync',
+      buttonShare: 'Share',
+      buttonAccess: 'Access',
+      buttonStop: 'Stop',
+      buttonHideSession: 'Hide',
+      tooltipSync: 'Sync this session with the Terminal Trainer API',
+      tooltipSyncAll: 'Sync all sessions with the Terminal Trainer API',
+      tooltipShare: 'Share this terminal',
+      tooltipAccess: 'Manage access',
+      tooltipHide: 'Hide this inactive session',
+      tooltipHideAll: 'Hide all inactive sessions',
+      noActiveSessions: 'No active sessions',
+      noActiveSessionsDesc: 'You have no active terminal sessions at the moment.',
+      createNewSession: 'Create a new session',
+      iframeCodeTitle: 'iframe integration code',
+      iframeCodeDesc: 'Copy this code to embed the terminal in your page:',
+      buttonCopyCode: 'Copy code',
+      buttonClose: 'Close',
+      syncResultsTitle: 'Synchronization Results',
+      totalSessions: 'Total sessions',
+      syncedSessions: 'Synced sessions',
+      updatedSessions: 'Updated sessions',
+      errors: 'Errors',
+      encounterededErrors: 'Encountered errors:',
+      buttonOK: 'OK',
+      confirmHide: 'Are you sure you want to hide this inactive session?',
+      confirmHideTitle: 'Hide session',
+      confirmHideAll: 'Are you sure you want to hide all inactive sessions ({count})?',
+      confirmHideAllTitle: 'Hide all inactive sessions',
+      errorHiding: 'Error hiding the terminal',
+      errorHidingAll: 'Error hiding inactive terminals',
+      errorLoading: 'Error loading sessions',
+      errorStopping: 'Error stopping the session',
+      sharedWithMe: 'Shared with me',
+      sharedSessions: 'Shared Sessions',
+      sharedBy: 'Shared by',
+      accessLevel: 'Access level',
+      moreActions: 'More actions',
+      copied: 'Copied!',
+      copiedIframe: 'Iframe code copied!',
+      copyIframeCode: 'Copy iframe code',
+      manageAccess: 'Manage access'
+    }
+  },
+  fr: {
+    terminalMySessions: {
+      title: 'Sessions Terminal',
+      lastSync: 'Dernière sync',
+      activeSessions: 'Sessions Actives',
+      inactiveSessions: 'Sessions Inactives',
+      buttonSync: 'Tout synchroniser',
+      buttonSyncing: 'Synchronisation...',
+      buttonRefresh: 'Actualiser',
+      buttonNewSession: 'Nouvelle Session',
+      buttonHideAllInactive: 'Masquer toutes les inactives',
+      loadingSessions: 'Chargement des sessions...',
+      errorRetry: 'Réessayer',
+      synchronized: 'Synchronisé',
+      upToDate: 'À jour',
+      terminalId: 'Terminal ID',
+      sessionId: 'Session ID',
+      createdAt: 'Créée le',
+      expiresAt: 'Expire le',
+      userId: 'Utilisateur',
+      instanceType: 'Type d\'instance',
+      lastSynchronization: 'Dernière synchronisation',
+      previousStatus: 'Statut précédent',
+      currentStatus: 'Statut actuel',
+      syncTime: 'Heure de sync',
+      terminalAccess: 'Accès Terminal',
+      copyLink: 'Copier le lien',
+      buttonOpen: 'Ouvrir',
+      buttonHide: 'Masquer',
+      buttonShow: 'Aperçu',
+      preview: 'Aperçu',
+      iframePreviewInfo: 'Aperçu du terminal intégrable - Taille: 100% x 300px',
+      buttonSyncSession: 'Sync',
+      buttonShare: 'Partager',
+      buttonAccess: 'Accès',
+      buttonStop: 'Arrêter',
+      buttonHideSession: 'Masquer',
+      tooltipSync: 'Synchroniser cette session avec l\'API Terminal Trainer',
+      tooltipSyncAll: 'Synchroniser toutes les sessions avec l\'API Terminal Trainer',
+      tooltipShare: 'Partager ce terminal',
+      tooltipAccess: 'Gérer les accès',
+      tooltipHide: 'Masquer cette session inactive',
+      tooltipHideAll: 'Masquer toutes les sessions inactives',
+      noActiveSessions: 'Aucune session active',
+      noActiveSessionsDesc: 'Vous n\'avez aucune session terminal active pour le moment.',
+      createNewSession: 'Créer une nouvelle session',
+      iframeCodeTitle: 'Code d\'intégration iframe',
+      iframeCodeDesc: 'Copiez ce code pour intégrer le terminal dans votre page :',
+      buttonCopyCode: 'Copier le code',
+      buttonClose: 'Fermer',
+      syncResultsTitle: 'Résultats de la synchronisation',
+      totalSessions: 'Sessions totales',
+      syncedSessions: 'Sessions synchronisées',
+      updatedSessions: 'Sessions mises à jour',
+      errors: 'Erreurs',
+      encounterededErrors: 'Erreurs rencontrées:',
+      buttonOK: 'OK',
+      confirmHide: 'Êtes-vous sûr de vouloir masquer cette session inactive ?',
+      confirmHideTitle: 'Masquer la session',
+      confirmHideAll: 'Êtes-vous sûr de vouloir masquer toutes les sessions inactives ({count}) ?',
+      confirmHideAllTitle: 'Masquer toutes les sessions inactives',
+      errorHiding: 'Erreur lors du masquage du terminal',
+      errorHidingAll: 'Erreur lors du masquage des terminaux inactifs',
+      errorLoading: 'Erreur lors du chargement des sessions',
+      errorStopping: 'Erreur lors de l\'arrêt de la session',
+      sharedWithMe: 'Partagé avec moi',
+      sharedSessions: 'Sessions Partagées',
+      sharedBy: 'Partagé par',
+      accessLevel: 'Niveau d\'accès',
+      moreActions: 'Plus d\'actions',
+      copied: 'Copié !',
+      copiedIframe: 'Code iframe copié !',
+      copyIframeCode: 'Copier le code iframe',
+      manageAccess: 'Gérer les accès'
+    }
+  }
+})
 
 // Import dynamique des composants
 const TerminalSharingModal = defineAsyncComponent(() => import('../Terminal/TerminalSharingModal.vue'))
@@ -374,7 +525,6 @@ const copiedSessions = ref(new Set())
 const copiedIframes = ref(new Set())
 const showIframeModal = ref(false)
 const currentIframeCode = ref('')
-const urlInput = ref(null)
 const iframeCodeRef = ref(null)
 
 const isSyncing = ref(false)
@@ -483,161 +633,6 @@ onMounted(() => {
 
   // Add click outside listener for dropdowns
   document.addEventListener('click', handleClickOutside)
-
-  // Add translations
-  i18n.mergeLocaleMessage('en', {
-    terminalMySessions: {
-      title: 'Terminal Sessions',
-      lastSync: 'Last sync',
-      activeSessions: 'Active Sessions',
-      inactiveSessions: 'Inactive Sessions',
-      buttonSync: 'Sync All',
-      buttonSyncing: 'Syncing...',
-      buttonRefresh: 'Refresh',
-      buttonNewSession: 'New Session',
-      buttonHideAllInactive: 'Hide All Inactive',
-      loadingSessions: 'Loading sessions...',
-      errorRetry: 'Retry',
-      synchronized: 'Synchronized',
-      upToDate: 'Up to date',
-      terminalId: 'Terminal ID',
-      sessionId: 'Session ID',
-      createdAt: 'Created on',
-      expiresAt: 'Expires on',
-      userId: 'User',
-      instanceType: 'Instance type',
-      lastSynchronization: 'Last synchronization',
-      previousStatus: 'Previous status',
-      currentStatus: 'Current status',
-      syncTime: 'Sync time',
-      terminalAccess: 'Terminal Access',
-      copyLink: 'Copy link',
-      buttonOpen: 'Open',
-      buttonHide: 'Hide',
-      buttonShow: 'Show',
-      preview: 'Preview',
-      iframePreviewInfo: 'Embeddable terminal preview - Size: 100% x 300px',
-      buttonSyncSession: 'Sync',
-      buttonShare: 'Share',
-      buttonAccess: 'Access',
-      buttonStop: 'Stop',
-      buttonHideSession: 'Hide',
-      tooltipSync: 'Sync this session with the Terminal Trainer API',
-      tooltipSyncAll: 'Sync all sessions with the Terminal Trainer API',
-      tooltipShare: 'Share this terminal',
-      tooltipAccess: 'Manage access',
-      tooltipHide: 'Hide this inactive session',
-      tooltipHideAll: 'Hide all inactive sessions',
-      noActiveSessions: 'No active sessions',
-      noActiveSessionsDesc: 'You have no active terminal sessions at the moment.',
-      createNewSession: 'Create a new session',
-      iframeCodeTitle: 'iframe integration code',
-      iframeCodeDesc: 'Copy this code to embed the terminal in your page:',
-      buttonCopyCode: 'Copy code',
-      buttonClose: 'Close',
-      syncResultsTitle: 'Synchronization Results',
-      totalSessions: 'Total sessions',
-      syncedSessions: 'Synced sessions',
-      updatedSessions: 'Updated sessions',
-      errors: 'Errors',
-      encounterededErrors: 'Encountered errors:',
-      buttonOK: 'OK',
-      confirmHide: 'Are you sure you want to hide this inactive session?',
-      confirmHideTitle: 'Hide session',
-      confirmHideAll: 'Are you sure you want to hide all inactive sessions ({count})?',
-      confirmHideAllTitle: 'Hide all inactive sessions',
-      errorHiding: 'Error hiding the terminal',
-      errorHidingAll: 'Error hiding inactive terminals',
-      errorLoading: 'Error loading sessions',
-      errorStopping: 'Error stopping the session',
-      sharedWithMe: 'Shared with me',
-      sharedSessions: 'Shared Sessions',
-      sharedBy: 'Shared by',
-      accessLevel: 'Access level',
-      moreActions: 'More actions',
-      copied: 'Copied!',
-      copiedIframe: 'Iframe code copied!',
-      copyIframeCode: 'Copy iframe code',
-      manageAccess: 'Manage access'
-    }
-  })
-
-  i18n.mergeLocaleMessage('fr', {
-    terminalMySessions: {
-      title: 'Sessions Terminal',
-      lastSync: 'Dernière sync',
-      activeSessions: 'Sessions Actives',
-      inactiveSessions: 'Sessions Inactives',
-      buttonSync: 'Tout synchroniser',
-      buttonSyncing: 'Synchronisation...',
-      buttonRefresh: 'Actualiser',
-      buttonNewSession: 'Nouvelle Session',
-      buttonHideAllInactive: 'Masquer toutes les inactives',
-      loadingSessions: 'Chargement des sessions...',
-      errorRetry: 'Réessayer',
-      synchronized: 'Synchronisé',
-      upToDate: 'À jour',
-      terminalId: 'Terminal ID',
-      sessionId: 'Session ID',
-      createdAt: 'Créée le',
-      expiresAt: 'Expire le',
-      userId: 'Utilisateur',
-      instanceType: 'Type d\'instance',
-      lastSynchronization: 'Dernière synchronisation',
-      previousStatus: 'Statut précédent',
-      currentStatus: 'Statut actuel',
-      syncTime: 'Heure de sync',
-      terminalAccess: 'Accès Terminal',
-      copyLink: 'Copier le lien',
-      buttonOpen: 'Ouvrir',
-      buttonHide: 'Masquer',
-      buttonShow: 'Aperçu',
-      preview: 'Aperçu',
-      iframePreviewInfo: 'Aperçu du terminal intégrable - Taille: 100% x 300px',
-      buttonSyncSession: 'Sync',
-      buttonShare: 'Partager',
-      buttonAccess: 'Accès',
-      buttonStop: 'Arrêter',
-      buttonHideSession: 'Masquer',
-      tooltipSync: 'Synchroniser cette session avec l\'API Terminal Trainer',
-      tooltipSyncAll: 'Synchroniser toutes les sessions avec l\'API Terminal Trainer',
-      tooltipShare: 'Partager ce terminal',
-      tooltipAccess: 'Gérer les accès',
-      tooltipHide: 'Masquer cette session inactive',
-      tooltipHideAll: 'Masquer toutes les sessions inactives',
-      noActiveSessions: 'Aucune session active',
-      noActiveSessionsDesc: 'Vous n\'avez aucune session terminal active pour le moment.',
-      createNewSession: 'Créer une nouvelle session',
-      iframeCodeTitle: 'Code d\'intégration iframe',
-      iframeCodeDesc: 'Copiez ce code pour intégrer le terminal dans votre page :',
-      buttonCopyCode: 'Copier le code',
-      buttonClose: 'Fermer',
-      syncResultsTitle: 'Résultats de la synchronisation',
-      totalSessions: 'Sessions totales',
-      syncedSessions: 'Sessions synchronisées',
-      updatedSessions: 'Sessions mises à jour',
-      errors: 'Erreurs',
-      encounterededErrors: 'Erreurs rencontrées:',
-      buttonOK: 'OK',
-      confirmHide: 'Êtes-vous sûr de vouloir masquer cette session inactive ?',
-      confirmHideTitle: 'Masquer la session',
-      confirmHideAll: 'Êtes-vous sûr de vouloir masquer toutes les sessions inactives ({count}) ?',
-      confirmHideAllTitle: 'Masquer toutes les sessions inactives',
-      errorHiding: 'Erreur lors du masquage du terminal',
-      errorHidingAll: 'Erreur lors du masquage des terminaux inactifs',
-      errorLoading: 'Erreur lors du chargement des sessions',
-      errorStopping: 'Erreur lors de l\'arrêt de la session',
-      sharedWithMe: 'Partagé avec moi',
-      sharedSessions: 'Sessions Partagées',
-      sharedBy: 'Partagé par',
-      accessLevel: 'Niveau d\'accès',
-      moreActions: 'Plus d\'actions',
-      copied: 'Copié !',
-      copiedIframe: 'Code iframe copié !',
-      copyIframeCode: 'Copier le code iframe',
-      manageAccess: 'Gérer les accès'
-    }
-  })
 
   loadSessions()
   loadSharedSessions()
@@ -751,6 +746,8 @@ async function copyUrlToClipboard(sessionId: string) {
   }
 }
 
+// Function temporarily unused but may be needed for future iframe preview feature
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function toggleIframePreview(sessionId: string) {
   if (showPreviews.value.has(sessionId)) {
     showPreviews.value.delete(sessionId)
@@ -880,6 +877,8 @@ async function checkExpiredSessions() {
 }
 
 // Utilitaires pour l'affichage
+// Function temporarily unused but may be needed for sync results display
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function getSyncResultForSession(sessionId: string) {
   return syncResults.value.get(sessionId)
 }

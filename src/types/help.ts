@@ -136,11 +136,57 @@ export interface HelpTranslations {
         intro: string;
         howToShare: {
           title: string;
-          step1: string;
-          step2: string;
-          step3: string;
-          step4: string;
-          step5: string;
+        };
+        sharingSteps: {
+          description: string;
+          step1: {
+            title: string;
+            description: string;
+            button: string;
+          };
+          step2: {
+            title: string;
+            description: string;
+            item1: string;
+            item2: string;
+            item3: string;
+            item4: string;
+          };
+          step3: {
+            title: string;
+            description: string;
+          };
+        };
+        accessManagement: {
+          title: string;
+          description: string;
+          readOnly: {
+            description: string;
+            tag1: string;
+            tag2: string;
+            tag3: string;
+          };
+          readWrite: {
+            description: string;
+            tag1: string;
+            tag2: string;
+            tag3: string;
+          };
+          actionsTitle: string;
+          actions: {
+            manage: {
+              title: string;
+              description: string;
+            };
+            revoke: {
+              title: string;
+              description: string;
+            };
+            modify: {
+              title: string;
+              description: string;
+            };
+          };
         };
         permissions: {
           title: string;
@@ -191,70 +237,130 @@ export interface HelpTranslations {
         title: string;
         intro: string;
         commonProblems: {
-          title: string;
-          connectionLost: {
+          connectionIssues: {
             title: string;
-            problem: string;
+          };
+          cannotCreateSession: {
+            title: string;
+            causesTitle: string;
+            causes: {
+              cause1: string;
+              cause2: string;
+              cause3: string;
+              cause4: string;
+            };
+            solutionsTitle: string;
             solutions: {
-              solution1: string;
-              solution2: string;
-              solution3: string;
-              solution4: string;
-              solution5: string;
+              step1: {
+                title: string;
+                description: string;
+              };
+              step2: {
+                title: string;
+                description: string;
+              };
+              step3: {
+                title: string;
+                description: string;
+              };
             };
           };
-          slowPerformance: {
+          blackScreen: {
             title: string;
-            problem: string;
+            causesTitle: string;
+            causes: {
+              cause1: string;
+              cause2: string;
+              cause3: string;
+              cause4: string;
+            };
+            solutionsTitle: string;
             solutions: {
-              solution1: string;
-              solution2: string;
-              solution3: string;
-              solution4: string;
-              solution5: string;
+              step1: {
+                title: string;
+                description: string;
+              };
+              step2: {
+                title: string;
+                description: string;
+              };
+              step3: {
+                title: string;
+                description: string;
+              };
             };
           };
-          accessDenied: {
+          keyboard: {
             title: string;
-            problem: string;
-            solutions: {
-              solution1: string;
-              solution2: string;
-              solution3: string;
-              solution4: string;
-              solution5: string;
+            causesTitle: string;
+            causes: {
+              cause1: string;
+              cause2: string;
+              cause3: string;
+              cause4: string;
             };
-          };
-          filesSyncing: {
-            title: string;
-            problem: string;
+            solutionsTitle: string;
             solutions: {
-              solution1: string;
-              solution2: string;
-              solution3: string;
-              solution4: string;
-              solution5: string;
+              step1: {
+                title: string;
+                description: string;
+              };
+              step2: {
+                title: string;
+                description: string;
+              };
+              step3: {
+                title: string;
+                description: string;
+              };
             };
           };
         };
         prevention: {
           title: string;
-          tips: {
+          description: string;
+          backup: {
+            title: string;
             tip1: string;
             tip2: string;
             tip3: string;
             tip4: string;
-            tip5: string;
+          };
+          timeManagement: {
+            title: string;
+            tip1: string;
+            tip2: string;
+            tip3: string;
+            tip4: string;
+          };
+          security: {
+            title: string;
+            tip1: string;
+            tip2: string;
+            tip3: string;
+            tip4: string;
+          };
+          maintenance: {
+            title: string;
+            tip1: string;
+            tip2: string;
+            tip3: string;
+            tip4: string;
           };
         };
-        support: {
+        resources: {
           title: string;
-          description: string;
-          steps: {
-            step1: string;
-            step2: string;
-            step3: string;
-            step4: string;
+          gettingStarted: {
+            title: string;
+            description: string;
+          };
+          managingSessions: {
+            title: string;
+            description: string;
+          };
+          sharing: {
+            title: string;
+            description: string;
           };
         };
       };
@@ -287,11 +393,39 @@ export interface HelpTranslations {
         };
         organization: {
           title: string;
+          description: string;
           tips: {
-            tip1: string;
-            tip2: string;
-            tip3: string;
-            tip4: string;
+            tip1: {
+              title: string;
+              description: string;
+            };
+            tip2: {
+              title: string;
+              description: string;
+            };
+            tip3: {
+              title: string;
+              description: string;
+            };
+            tip4: {
+              title: string;
+              description: string;
+            };
+          };
+          structuring: {
+            title: string;
+            tip1: {
+              title: string;
+              description: string;
+            };
+            tip2: {
+              title: string;
+              description: string;
+            };
+            tip3: {
+              title: string;
+              description: string;
+            };
           };
         };
         evolution: {
@@ -302,44 +436,130 @@ export interface HelpTranslations {
       content: {
         title: string;
         intro: string;
+        types: {
+          title: string;
+          description: string;
+          theoretical: {
+            title: string;
+            description: string;
+            tag1: string;
+            tag2: string;
+            tag3: string;
+          };
+          practical: {
+            title: string;
+            description: string;
+            tag1: string;
+            tag2: string;
+            tag3: string;
+          };
+          assessments: {
+            title: string;
+            description: string;
+            tag1: string;
+            tag2: string;
+            tag3: string;
+          };
+          resources: {
+            title: string;
+            description: string;
+            tag1: string;
+            tag2: string;
+            tag3: string;
+          };
+        };
+        tools: {
+          title: string;
+          description: string;
+          richEditor: {
+            title: string;
+            description: string;
+            feature1: string;
+            feature2: string;
+            feature3: string;
+            feature4: string;
+          };
+          terminalIntegration: {
+            title: string;
+            description: string;
+            feature1: string;
+            feature2: string;
+            feature3: string;
+            feature4: string;
+          };
+          interactiveModules: {
+            title: string;
+            description: string;
+            badge: string;
+          };
+        };
         principles: {
           title: string;
-          principle1: {
+          description: string;
+          clearObjectives: {
             title: string;
             description: string;
+            exampleLabel: string;
+            exampleText: string;
           };
-          principle2: {
+          gradualProgression: {
             title: string;
             description: string;
+            exampleLabel: string;
+            exampleText: string;
           };
-          principle3: {
+          activeLearning: {
             title: string;
             description: string;
+            exampleLabel: string;
+            exampleText: string;
           };
-          principle4: {
+          immediateFeedback: {
             title: string;
             description: string;
+            exampleLabel: string;
+            exampleText: string;
           };
         };
         writingTips: {
           title: string;
-          tips: {
+          description: string;
+          languageStyle: {
+            title: string;
             tip1: string;
             tip2: string;
             tip3: string;
             tip4: string;
-            tip5: string;
+          };
+          visualStructure: {
+            title: string;
+            tip1: string;
+            tip2: string;
+            tip3: string;
+            tip4: string;
+          };
+          validationExamples: {
+            title: string;
+            tip1: string;
+            tip2: string;
+            tip3: string;
+            tip4: string;
           };
         };
         futureFeatures: {
           title: string;
           description: string;
-          features: {
+          soon: {
+            title: string;
             feature1: string;
             feature2: string;
             feature3: string;
-            feature4: string;
-            feature5: string;
+          };
+          future: {
+            title: string;
+            feature1: string;
+            feature2: string;
+            feature3: string;
           };
         };
       };

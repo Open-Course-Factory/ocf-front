@@ -20,42 +20,46 @@
  */
 
 import { defineStore } from "pinia"
-import { useI18n } from "vue-i18n"
 import { useBaseStore } from "./baseStore"
 import { useCoursesStore } from "./courses"
 import { useChaptersStore } from "./chapters"
 import { useSectionsStore } from "./sections"
+import { useStoreTranslations } from '../composables/useTranslations'
 
 
 export const usePagesStore = defineStore('pages', () => {
 
     const base = useBaseStore();
-    const { t } = useI18n()
-
-    useI18n().mergeLocaleMessage('en', { pages : { 
-        id : "id",
-        pageTitle : 'Pages',
-        name: 'Page Name',
-        number: 'Page number',
-        parent_section_title: 'Parent section title',
-        toc: 'Table of Content',
-        content: 'Content',
-        hide: 'Hide page',
-        modify: 'Modify the page', 
-        add: 'Add a page',
-    }})
-    useI18n().mergeLocaleMessage('fr', { pages : { 
-        id : "id",
-        pageTitle : 'Pages',
-        name: 'Nom de la page',
-        number: 'Numéro de la page',
-        parent_section_title: 'Titre de la section parente',
-        toc: 'Table des contenus',
-        content: 'Contenu',
-        hide: 'Cacher la page',
-        modify: 'Modifier la page', 
-        add: 'Ajouter une page',
-     }})
+    const { t } = useStoreTranslations({
+        en: {
+            pages: {
+                id: "id",
+                pageTitle: 'Pages',
+                name: 'Page Name',
+                number: 'Page number',
+                parent_section_title: 'Parent section title',
+                toc: 'Table of Content',
+                content: 'Content',
+                hide: 'Hide page',
+                modify: 'Modify the page',
+                add: 'Add a page',
+            }
+        },
+        fr: {
+            pages: {
+                id: "id",
+                pageTitle: 'Pages',
+                name: 'Nom de la page',
+                number: 'Numéro de la page',
+                parent_section_title: 'Titre de la section parente',
+                toc: 'Table des contenus',
+                content: 'Contenu',
+                hide: 'Cacher la page',
+                modify: 'Modifier la page',
+                add: 'Ajouter une page',
+            }
+        }
+    })
 
     const fieldList = new Map<string, any>([
         ["id", { label: t('pages.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],

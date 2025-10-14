@@ -20,7 +20,7 @@
  */
 
 import { defineStore } from "pinia"
-import { useI18n } from "vue-i18n"
+import { useStoreTranslations } from '../composables/useTranslations'
 import { useBaseStore } from "./baseStore"
 import { handleStoreError } from '../services/errorHandler'
 import { ref } from 'vue'
@@ -29,15 +29,16 @@ import axios from 'axios'
 export const useTerminalsStore = defineStore('terminals', () => {
 
     const base = useBaseStore();
-    const { t } = useI18n()
 
     // État spécifique aux terminaux
     const activeSessions = ref([])
     const isLoading = ref(false)
     const error = ref('')
 
-    useI18n().mergeLocaleMessage('en', { terminals : {
-        pageTitle: 'Terminal Sessions',
+    const { t } = useStoreTranslations({
+        en: {
+            terminals: {
+                pageTitle: 'Terminal Sessions',
         session_id: 'Session ID',
         status: 'Status',
         expires_at: 'Expires at',
@@ -118,12 +119,45 @@ export const useTerminalsStore = defineStore('terminals', () => {
                 description: 'Popular server distribution'
             }
         },
-        startError: 'Error starting terminal session',
-        stopError: 'Error stopping terminal session',
-        loadError: 'Error loading terminal sessions'
-    }})
-    
-    useI18n().mergeLocaleMessage('fr', { terminals : {
+                startError: 'Error starting terminal session',
+                stopError: 'Error stopping terminal session',
+                loadError: 'Error loading terminal sessions'
+            },
+            ui: {
+                logout: 'Logout',
+                disconnect: 'Disconnect',
+                refresh: 'Refresh',
+                retry: 'Retry',
+                managePaymentMethods: 'Manage your payment methods. Your banking data is secured by Stripe.',
+                noPaymentMethods: 'No payment methods',
+                addCardToPurchase: 'Add a bank card to make your purchases.',
+                expiringSoon: 'Expires soon',
+                availablePlans: 'Available subscription plans. Contact your administrator to subscribe.',
+                manageBillingAddresses: 'Manage your billing addresses. The default address will be used for your next purchases.'
+            },
+            navigation: {
+                courseDesign: 'Course Design',
+                practicalWork: 'Practical Work',
+                myAccount: 'My Account',
+                administration: 'Administration',
+                createSession: 'Create Session',
+                createNewTerminalSession: 'Create a new terminal session',
+                mySessions: 'My Sessions',
+                manageTerminalSessions: 'Manage my terminal sessions',
+                sharedSessions: 'Shared Sessions',
+                sessionsSharedWithMe: 'Sessions shared with me',
+                adminSubscriptionPlans: 'Subscription Plans (Admin)',
+                adminSubscriptionPlansTitle: 'Administration of subscription plans',
+                allInvoices: 'All Invoices',
+                viewAllSystemInvoices: 'View all system invoices',
+                featureFlags: 'Feature Flags',
+                featureFlagsTitle: 'Manage feature flags and experimental features',
+                terminalMetrics: 'Server Metrics',
+                terminalMetricsTitle: 'Monitor server resource usage and terminal capacity'
+            }
+        },
+        fr: {
+            terminals: {
         pageTitle: 'Sessions Terminal',
         session_id: 'ID de session',
         status: 'Statut',
@@ -205,79 +239,42 @@ export const useTerminalsStore = defineStore('terminals', () => {
                 description: 'Distribution serveur populaire'
             }
         },
-        startError: 'Erreur lors du démarrage de la session terminal',
-        stopError: 'Erreur lors de l\'arrêt de la session terminal',
-        loadError: 'Erreur lors du chargement des sessions terminal'
-    }})
-
-    // Add common UI translations here
-    useI18n().mergeLocaleMessage('en', {
-        ui: {
-            logout: 'Logout',
-            disconnect: 'Disconnect',
-            refresh: 'Refresh',
-            retry: 'Retry',
-            managePaymentMethods: 'Manage your payment methods. Your banking data is secured by Stripe.',
-            noPaymentMethods: 'No payment methods',
-            addCardToPurchase: 'Add a bank card to make your purchases.',
-            expiringSoon: 'Expires soon',
-            availablePlans: 'Available subscription plans. Contact your administrator to subscribe.',
-            manageBillingAddresses: 'Manage your billing addresses. The default address will be used for your next purchases.'
-        },
-        navigation: {
-            courseDesign: 'Course Design',
-            practicalWork: 'Practical Work',
-            myAccount: 'My Account',
-            administration: 'Administration',
-            createSession: 'Create Session',
-            createNewTerminalSession: 'Create a new terminal session',
-            mySessions: 'My Sessions',
-            manageTerminalSessions: 'Manage my terminal sessions',
-            sharedSessions: 'Shared Sessions',
-            sessionsSharedWithMe: 'Sessions shared with me',
-            adminSubscriptionPlans: 'Subscription Plans (Admin)',
-            adminSubscriptionPlansTitle: 'Administration of subscription plans',
-            allInvoices: 'All Invoices',
-            viewAllSystemInvoices: 'View all system invoices',
-            featureFlags: 'Feature Flags',
-            featureFlagsTitle: 'Manage feature flags and experimental features',
-            terminalMetrics: 'Server Metrics',
-            terminalMetricsTitle: 'Monitor server resource usage and terminal capacity'
-        }
-    })
-
-    useI18n().mergeLocaleMessage('fr', {
-        ui: {
-            logout: 'Se déconnecter',
-            disconnect: 'Se déconnecter',
-            refresh: 'Actualiser',
-            retry: 'Réessayer',
-            managePaymentMethods: 'Gérez vos méthodes de paiement. Vos données bancaires sont sécurisées par Stripe.',
-            noPaymentMethods: 'Aucune méthode de paiement',
-            addCardToPurchase: 'Ajoutez une carte bancaire pour effectuer vos achats.',
-            expiringSoon: 'Expire bientôt',
-            availablePlans: 'Plans d\'abonnement disponibles. Contactez votre administrateur pour souscrire.',
-            manageBillingAddresses: 'Gérez vos adresses de facturation. L\'adresse par défaut sera utilisée pour vos prochains achats.'
-        },
-        navigation: {
-            courseDesign: 'Conception de cours',
-            practicalWork: 'Travaux Pratiques',
-            myAccount: 'Mon Compte',
-            administration: 'Administration',
-            createSession: 'Créer une Session',
-            createNewTerminalSession: 'Créer une nouvelle session terminal',
-            mySessions: 'Mes Sessions',
-            manageTerminalSessions: 'Gérer mes sessions terminal',
-            sharedSessions: 'Sessions Partagées',
-            sessionsSharedWithMe: 'Sessions partagées avec moi',
-            adminSubscriptionPlans: 'Plans d\'Abonnement (Admin)',
-            adminSubscriptionPlansTitle: 'Administration des plans d\'abonnement',
-            allInvoices: 'Toutes les Factures',
-            viewAllSystemInvoices: 'Visualiser toutes les factures système',
-            featureFlags: 'Feature Flags',
-            featureFlagsTitle: 'Gérer les feature flags et fonctionnalités expérimentales',
-            terminalMetrics: 'Métriques du Serveur',
-            terminalMetricsTitle: 'Surveiller l\'utilisation des ressources du serveur et la capacité des terminaux'
+                startError: 'Erreur lors du démarrage de la session terminal',
+                stopError: 'Erreur lors de l\'arrêt de la session terminal',
+                loadError: 'Erreur lors du chargement des sessions terminal'
+            },
+            ui: {
+                logout: 'Se déconnecter',
+                disconnect: 'Se déconnecter',
+                refresh: 'Actualiser',
+                retry: 'Réessayer',
+                managePaymentMethods: 'Gérez vos méthodes de paiement. Vos données bancaires sont sécurisées par Stripe.',
+                noPaymentMethods: 'Aucune méthode de paiement',
+                addCardToPurchase: 'Ajoutez une carte bancaire pour effectuer vos achats.',
+                expiringSoon: 'Expire bientôt',
+                availablePlans: 'Plans d\'abonnement disponibles. Contactez votre administrateur pour souscrire.',
+                manageBillingAddresses: 'Gérez vos adresses de facturation. L\'adresse par défaut sera utilisée pour vos prochains achats.'
+            },
+            navigation: {
+                courseDesign: 'Conception de cours',
+                practicalWork: 'Travaux Pratiques',
+                myAccount: 'Mon Compte',
+                administration: 'Administration',
+                createSession: 'Créer une Session',
+                createNewTerminalSession: 'Créer une nouvelle session terminal',
+                mySessions: 'Mes Sessions',
+                manageTerminalSessions: 'Gérer mes sessions terminal',
+                sharedSessions: 'Sessions Partagées',
+                sessionsSharedWithMe: 'Sessions partagées avec moi',
+                adminSubscriptionPlans: 'Plans d\'Abonnement (Admin)',
+                adminSubscriptionPlansTitle: 'Administration des plans d\'abonnement',
+                allInvoices: 'Toutes les Factures',
+                viewAllSystemInvoices: 'Visualiser toutes les factures système',
+                featureFlags: 'Feature Flags',
+                featureFlagsTitle: 'Gérer les feature flags et fonctionnalités expérimentales',
+                terminalMetrics: 'Métriques du Serveur',
+                terminalMetricsTitle: 'Surveiller l\'utilisation des ressources du serveur et la capacité des terminaux'
+            }
         }
     })
 

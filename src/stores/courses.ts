@@ -20,56 +20,58 @@
  */
 
 import { defineStore } from "pinia"
-import { useI18n } from "vue-i18n"
 import { useBaseStore } from "./baseStore"
 import { useChaptersStore } from "./chapters"
+import { useStoreTranslations } from '../composables/useTranslations'
 
 export const useCoursesStore = defineStore('courses', () => {
 
     const base = useBaseStore();
 
-    useI18n().mergeLocaleMessage('en', { courses : { 
-        pageTitle: 'Courses',
-        name: 'Name',
-        format: 'Format',
-        authorEmail: 'Author email',
-        category: 'Category',
-        version: 'Version',
-        title: 'Title',
-        subTitle: 'Subtitle',
-        header: 'Header',
-        footer: 'Footer',
-        logo: 'Logo file',
-        description: 'Description',
-        prelude: 'Prelude',
-        learningObjectives: 'Learning objectives',
-        chapters: 'Chapters',
-        add: 'Add a course',
-        generate: 'Generate',
-    }})
-    useI18n().mergeLocaleMessage('fr', { courses : { 
-        pageTitle: 'Cours',
-        name: 'Nom',
-        format: 'Format',
-        authorEmail: 'Email de l\'auteur',
-        category: 'Categorie',
-        version: 'Version',
-        title: 'Titre',
-        subTitle: 'Sous-titre',
-        header: 'En-tête',
-        footer: 'Pied de page',
-        logo: 'Fichier du logo',
-        description: 'Description',
-        prelude: 'Préambule',
-        learningObjectives: 'Objectifs pédagogiques',
-        chapters: 'Chapitres',
-        add: 'Ajouter un cours',
-        generate: 'Générer',
-     }})
-
-  
-
-    const { t } = useI18n()
+    const { t } = useStoreTranslations({
+        en: {
+            courses: {
+                pageTitle: 'Courses',
+                name: 'Name',
+                format: 'Format',
+                authorEmail: 'Author email',
+                category: 'Category',
+                version: 'Version',
+                title: 'Title',
+                subTitle: 'Subtitle',
+                header: 'Header',
+                footer: 'Footer',
+                logo: 'Logo file',
+                description: 'Description',
+                prelude: 'Prelude',
+                learningObjectives: 'Learning objectives',
+                chapters: 'Chapters',
+                add: 'Add a course',
+                generate: 'Generate',
+            }
+        },
+        fr: {
+            courses: {
+                pageTitle: 'Cours',
+                name: 'Nom',
+                format: 'Format',
+                authorEmail: 'Email de l\'auteur',
+                category: 'Categorie',
+                version: 'Version',
+                title: 'Titre',
+                subTitle: 'Sous-titre',
+                header: 'En-tête',
+                footer: 'Pied de page',
+                logo: 'Fichier du logo',
+                description: 'Description',
+                prelude: 'Préambule',
+                learningObjectives: 'Objectifs pédagogiques',
+                chapters: 'Chapitres',
+                add: 'Ajouter un cours',
+                generate: 'Générer',
+            }
+        }
+    })
 
     const fieldList = new Map<string, any>([
         ["name", { label: t('courses.name'), type: "input", display: true, toBeSet: true, toBeEdited: true }],

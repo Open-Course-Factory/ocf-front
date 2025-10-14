@@ -123,66 +123,65 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
+import { useTranslations } from '../../composables/useTranslations'
 
-const { t } = useI18n()
+const { t } = useTranslations({
+  en: {
+    checkoutCanceled: {
+      title: 'Payment Canceled',
+      subtitle: 'Your payment was not completed. No charges were made to your account.',
+      whyTitle: 'Why might this happen?',
+      reason1: 'Payment method issue or insufficient funds',
+      reason2: 'Session timeout or browser back button',
+      reason3: 'Security verification required',
+      whatNext: 'What would you like to do?',
+      action1Title: 'Try Again',
+      action1Description: 'Retry the payment with the same plan and settings.',
+      action2Title: 'Choose Different Plan',
+      action2Description: 'Browse our subscription plans and select another option.',
+      action3Title: 'Get Help',
+      action3Description: 'Contact our support team for assistance.',
+      retryPayment: 'Retry Payment',
+      viewPlans: 'View Plans',
+      contactSupport: 'Contact Support',
+      securityTitle: 'Your Security is Important',
+      securityDescription: 'All payment processing is handled securely by Stripe. We never store your payment information.',
+      alternativeText: 'In the meantime, you can explore our platform:',
+      exploreCourses: 'Explore Courses',
+      viewDashboard: 'View Dashboard'
+    }
+  },
+  fr: {
+    checkoutCanceled: {
+      title: 'Paiement Annulé',
+      subtitle: 'Votre paiement n\'a pas été finalisé. Aucun débit n\'a été effectué sur votre compte.',
+      whyTitle: 'Pourquoi cela peut-il arriver ?',
+      reason1: 'Problème de méthode de paiement ou fonds insuffisants',
+      reason2: 'Session expirée ou bouton retour du navigateur',
+      reason3: 'Vérification de sécurité requise',
+      whatNext: 'Que souhaitez-vous faire ?',
+      action1Title: 'Réessayer',
+      action1Description: 'Relancer le paiement avec le même plan et paramètres.',
+      action2Title: 'Choisir un Autre Plan',
+      action2Description: 'Parcourir nos plans d\'abonnement et sélectionner une autre option.',
+      action3Title: 'Obtenir de l\'Aide',
+      action3Description: 'Contacter notre équipe support pour assistance.',
+      retryPayment: 'Réessayer le Paiement',
+      viewPlans: 'Voir les Plans',
+      contactSupport: 'Contacter le Support',
+      securityTitle: 'Votre Sécurité est Importante',
+      securityDescription: 'Tous les paiements sont traités de manière sécurisée par Stripe. Nous ne stockons jamais vos informations de paiement.',
+      alternativeText: 'En attendant, vous pouvez explorer notre plateforme :',
+      exploreCourses: 'Explorer les Cours',
+      viewDashboard: 'Voir le Tableau de Bord'
+    }
+  }
+})
+
 const route = useRoute()
 const router = useRouter()
 
 const lastPlanId = ref('')
-
-// Traductions
-useI18n().mergeLocaleMessage('en', {
-  checkoutCanceled: {
-    title: 'Payment Canceled',
-    subtitle: 'Your payment was not completed. No charges were made to your account.',
-    whyTitle: 'Why might this happen?',
-    reason1: 'Payment method issue or insufficient funds',
-    reason2: 'Session timeout or browser back button',
-    reason3: 'Security verification required',
-    whatNext: 'What would you like to do?',
-    action1Title: 'Try Again',
-    action1Description: 'Retry the payment with the same plan and settings.',
-    action2Title: 'Choose Different Plan',
-    action2Description: 'Browse our subscription plans and select another option.',
-    action3Title: 'Get Help',
-    action3Description: 'Contact our support team for assistance.',
-    retryPayment: 'Retry Payment',
-    viewPlans: 'View Plans',
-    contactSupport: 'Contact Support',
-    securityTitle: 'Your Security is Important',
-    securityDescription: 'All payment processing is handled securely by Stripe. We never store your payment information.',
-    alternativeText: 'In the meantime, you can explore our platform:',
-    exploreCourses: 'Explore Courses',
-    viewDashboard: 'View Dashboard'
-  }
-})
-
-useI18n().mergeLocaleMessage('fr', {
-  checkoutCanceled: {
-    title: 'Paiement Annulé',
-    subtitle: 'Votre paiement n\'a pas été finalisé. Aucun débit n\'a été effectué sur votre compte.',
-    whyTitle: 'Pourquoi cela peut-il arriver ?',
-    reason1: 'Problème de méthode de paiement ou fonds insuffisants',
-    reason2: 'Session expirée ou bouton retour du navigateur',
-    reason3: 'Vérification de sécurité requise',
-    whatNext: 'Que souhaitez-vous faire ?',
-    action1Title: 'Réessayer',
-    action1Description: 'Relancer le paiement avec le même plan et paramètres.',
-    action2Title: 'Choisir un Autre Plan',
-    action2Description: 'Parcourir nos plans d\'abonnement et sélectionner une autre option.',
-    action3Title: 'Obtenir de l\'Aide',
-    action3Description: 'Contacter notre équipe support pour assistance.',
-    retryPayment: 'Réessayer le Paiement',
-    viewPlans: 'Voir les Plans',
-    contactSupport: 'Contacter le Support',
-    securityTitle: 'Votre Sécurité est Importante',
-    securityDescription: 'Tous les paiements sont traités de manière sécurisée par Stripe. Nous ne stockons jamais vos informations de paiement.',
-    alternativeText: 'En attendant, vous pouvez explorer notre plateforme :',
-    exploreCourses: 'Explorer les Cours',
-    viewDashboard: 'Voir le Tableau de Bord'
-  }
-})
 
 onMounted(() => {
   // Récupérer l'ID du plan depuis les paramètres d'URL ou le localStorage

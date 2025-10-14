@@ -20,41 +20,45 @@
  */
 
 import { defineStore } from "pinia"
-import { useI18n } from "vue-i18n"
 import { useBaseStore } from "./baseStore"
 import { useSectionsStore } from "./sections"
 import { useCoursesStore } from "./courses"
+import { useStoreTranslations } from '../composables/useTranslations'
 
 
 export const useChaptersStore = defineStore('chapters', () => {
 
     const base = useBaseStore();
-    const { t } = useI18n()
-
-    useI18n().mergeLocaleMessage('en', { chapters : { 
-        id : "id",
-        pageTitle: 'Chapters',
-        courses: 'Course',
-        title: 'Chapter Title',
-        number: 'Number',
-        introduction: 'Introduction',
-        footer: 'Footer',
-        sections: 'Sections',
-        modify: 'Modify the chapter', 
-        add: 'Add a chapter',
-    }})
-    useI18n().mergeLocaleMessage('fr', { chapters : { 
-        id : "id",
-        pageTitle: 'Chapitres',
-        courses: 'Cours',
-        title: 'Titre du chapitre',
-        number: 'Numero',
-        introduction: 'Introduction',
-        footer: 'Pied de page',
-        sections: 'Sections',
-        modify: 'Modifier le chapitre', 
-        add: 'Ajouter un chapitre',
-     }})
+    const { t } = useStoreTranslations({
+        en: {
+            chapters: {
+                id: "id",
+                pageTitle: 'Chapters',
+                courses: 'Course',
+                title: 'Chapter Title',
+                number: 'Number',
+                introduction: 'Introduction',
+                footer: 'Footer',
+                sections: 'Sections',
+                modify: 'Modify the chapter',
+                add: 'Add a chapter',
+            }
+        },
+        fr: {
+            chapters: {
+                id: "id",
+                pageTitle: 'Chapitres',
+                courses: 'Cours',
+                title: 'Titre du chapitre',
+                number: 'Numero',
+                introduction: 'Introduction',
+                footer: 'Pied de page',
+                sections: 'Sections',
+                modify: 'Modifier le chapitre',
+                add: 'Ajouter un chapitre',
+            }
+        }
+    })
 
     const fieldList = new Map<string, any>([
         ["id", { label: t('chapters.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],

@@ -130,68 +130,67 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
-import { useI18n } from 'vue-i18n'
+import { useTranslations } from '../../composables/useTranslations'
 
-const { t } = useI18n()
+const { t } = useTranslations({
+  en: {
+    checkoutSuccess: {
+      title: 'Welcome to Open Course Factory!',
+      subtitle: 'Your subscription has been activated successfully.',
+      subscriptionDetails: 'Subscription Details',
+      plan: 'Plan',
+      amount: 'Amount',
+      billingInterval: 'Billing Cycle',
+      trialActive: 'Your free trial is active until {date}',
+      nextBilling: 'Next billing on {date}',
+      nextSteps: 'What\'s Next?',
+      step1Title: 'Explore Your Dashboard',
+      step1Description: 'View your subscription details, usage, and recent invoices.',
+      step2Title: 'Create Your First Course',
+      step2Description: 'Start building interactive courses with integrated labs.',
+      step3Title: 'Need Help?',
+      step3Description: 'Our support team is here to help you get started.',
+      viewDashboard: 'View Dashboard',
+      startCreating: 'Start Creating',
+      contactSupport: 'Contact Support',
+      goToDashboard: 'Go to Dashboard',
+      createFirstCourse: 'Create First Course',
+      emailConfirmation: 'A confirmation email has been sent to your inbox.'
+    }
+  },
+  fr: {
+    checkoutSuccess: {
+      title: 'Bienvenue dans Open Course Factory !',
+      subtitle: 'Votre abonnement a été activé avec succès.',
+      subscriptionDetails: 'Détails de l\'Abonnement',
+      plan: 'Plan',
+      amount: 'Montant',
+      billingInterval: 'Cycle de Facturation',
+      trialActive: 'Votre essai gratuit est actif jusqu\'au {date}',
+      nextBilling: 'Prochaine facturation le {date}',
+      nextSteps: 'Et Maintenant ?',
+      step1Title: 'Explorez Votre Tableau de Bord',
+      step1Description: 'Consultez vos détails d\'abonnement, utilisation et factures récentes.',
+      step2Title: 'Créez Votre Premier Cours',
+      step2Description: 'Commencez à créer des cours interactifs avec des labs intégrés.',
+      step3Title: 'Besoin d\'Aide ?',
+      step3Description: 'Notre équipe support est là pour vous aider à démarrer.',
+      viewDashboard: 'Voir le Tableau de Bord',
+      startCreating: 'Commencer à Créer',
+      contactSupport: 'Contacter le Support',
+      goToDashboard: 'Aller au Tableau de Bord',
+      createFirstCourse: 'Créer le Premier Cours',
+      emailConfirmation: 'Un email de confirmation a été envoyé dans votre boîte mail.'
+    }
+  }
+})
+
 useRoute()
 const subscriptionsStore = useSubscriptionsStore()
 const subscriptionPlansStore = useSubscriptionPlansStore()
 
 const subscriptionDetails = ref(null)
 const isLoading = ref(true)
-
-// Traductions
-useI18n().mergeLocaleMessage('en', {
-  checkoutSuccess: {
-    title: 'Welcome to Open Course Factory!',
-    subtitle: 'Your subscription has been activated successfully.',
-    subscriptionDetails: 'Subscription Details',
-    plan: 'Plan',
-    amount: 'Amount',
-    billingInterval: 'Billing Cycle',
-    trialActive: 'Your free trial is active until {date}',
-    nextBilling: 'Next billing on {date}',
-    nextSteps: 'What\'s Next?',
-    step1Title: 'Explore Your Dashboard',
-    step1Description: 'View your subscription details, usage, and recent invoices.',
-    step2Title: 'Create Your First Course',
-    step2Description: 'Start building interactive courses with integrated labs.',
-    step3Title: 'Need Help?',
-    step3Description: 'Our support team is here to help you get started.',
-    viewDashboard: 'View Dashboard',
-    startCreating: 'Start Creating',
-    contactSupport: 'Contact Support',
-    goToDashboard: 'Go to Dashboard',
-    createFirstCourse: 'Create First Course',
-    emailConfirmation: 'A confirmation email has been sent to your inbox.'
-  }
-})
-
-useI18n().mergeLocaleMessage('fr', {
-  checkoutSuccess: {
-    title: 'Bienvenue dans Open Course Factory !',
-    subtitle: 'Votre abonnement a été activé avec succès.',
-    subscriptionDetails: 'Détails de l\'Abonnement',
-    plan: 'Plan',
-    amount: 'Montant',
-    billingInterval: 'Cycle de Facturation',
-    trialActive: 'Votre essai gratuit est actif jusqu\'au {date}',
-    nextBilling: 'Prochaine facturation le {date}',
-    nextSteps: 'Et Maintenant ?',
-    step1Title: 'Explorez Votre Tableau de Bord',
-    step1Description: 'Consultez vos détails d\'abonnement, utilisation et factures récentes.',
-    step2Title: 'Créez Votre Premier Cours',
-    step2Description: 'Commencez à créer des cours interactifs avec des labs intégrés.',
-    step3Title: 'Besoin d\'Aide ?',
-    step3Description: 'Notre équipe support est là pour vous aider à démarrer.',
-    viewDashboard: 'Voir le Tableau de Bord',
-    startCreating: 'Commencer à Créer',
-    contactSupport: 'Contacter le Support',
-    goToDashboard: 'Aller au Tableau de Bord',
-    createFirstCourse: 'Créer le Premier Cours',
-    emailConfirmation: 'Un email de confirmation a été envoyé dans votre boîte mail.'
-  }
-})
 
 onMounted(async () => {
   // Récupérer les détails de l'abonnement depuis l'API
