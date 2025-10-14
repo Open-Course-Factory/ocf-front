@@ -338,7 +338,7 @@ export const useBaseStore = () => {
                     }
                 }
             } else {
-                response = await axios.put(`${endpoint}/${entityId}`, processedData)
+                response = await axios.patch(`${endpoint}/${entityId}`, processedData)
             }
 
             // Update in local entities

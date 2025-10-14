@@ -22,6 +22,7 @@
 import { defineStore } from "pinia"
 import {useBaseStore} from "./baseStore"
 import { useStoreTranslations } from '../composables/useTranslations'
+import { field, buildFieldList } from '../utils/fieldBuilder'
 
 
 export const useThemesStore = defineStore('themes', () => {
@@ -56,13 +57,12 @@ export const useThemesStore = defineStore('themes', () => {
     })
 
     
-    const fieldList = new Map<string, any>([
-        ["id", { label: t('themes.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["name", { label: t('themes.name'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["repository", { label: t('themes.repository'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["repositoryBranch", { label: t('themes.repositoryBranch'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["size", { label: t('themes.size'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        
+    const fieldList = buildFieldList([
+        field('id', t('themes.id')).input().hidden().readonly(),
+        field('name', t('themes.name')).input().visible().editable(),
+        field('repository', t('themes.repository')).input().visible().editable(),
+        field('repositoryBranch', t('themes.repositoryBranch')).input().visible().editable(),
+        field('size', t('themes.size')).input().visible().editable(),
     ])
 
     

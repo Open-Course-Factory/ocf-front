@@ -23,6 +23,7 @@ import { defineStore } from "pinia"
 import { useBaseStore } from "./baseStore"
 import { formatStorageSize, formatNumber, formatDate as formatDateUtil } from '../utils/formatters'
 import { useStoreTranslations } from '../composables/useTranslations'
+import { field, buildFieldList } from '../utils/fieldBuilder'
 
 export const useUsageMetricsStore = defineStore('usageMetrics', () => {
 
@@ -94,16 +95,16 @@ export const useUsageMetricsStore = defineStore('usageMetrics', () => {
         }
     })
 
-    const fieldList = new Map<string, any>([
-        ["id", { label: "ID", type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["metric_type", { label: t('usageMetrics.metric_type'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["current_value", { label: t('usageMetrics.current_value'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["limit_value", { label: t('usageMetrics.limit_value'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["usage_percent", { label: t('usageMetrics.usage_percent'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["period_start", { label: t('usageMetrics.period_start'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["period_end", { label: t('usageMetrics.period_end'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["last_updated", { label: t('usageMetrics.last_updated'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["user_id", { label: "User ID", type: "input", display: false, toBeSet: false, toBeEdited: false }],
+    const fieldList = buildFieldList([
+        field('id', 'ID').input().hidden().readonly(),
+        field('metric_type', t('usageMetrics.metric_type')).input().visible().readonly(),
+        field('current_value', t('usageMetrics.current_value')).input().visible().readonly(),
+        field('limit_value', t('usageMetrics.limit_value')).input().visible().readonly(),
+        field('usage_percent', t('usageMetrics.usage_percent')).input().visible().readonly(),
+        field('period_start', t('usageMetrics.period_start')).input().visible().readonly(),
+        field('period_end', t('usageMetrics.period_end')).input().visible().readonly(),
+        field('last_updated', t('usageMetrics.last_updated')).input().visible().readonly(),
+        field('user_id', 'User ID').input().hidden().readonly(),
     ])
 
     // Obtenir la classe CSS selon le pourcentage d'usage

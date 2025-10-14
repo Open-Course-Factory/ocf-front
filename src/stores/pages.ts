@@ -25,6 +25,7 @@ import { useCoursesStore } from "./courses"
 import { useChaptersStore } from "./chapters"
 import { useSectionsStore } from "./sections"
 import { useStoreTranslations } from '../composables/useTranslations'
+import { field, buildFieldList } from '../utils/fieldBuilder'
 
 
 export const usePagesStore = defineStore('pages', () => {
@@ -61,18 +62,18 @@ export const usePagesStore = defineStore('pages', () => {
         }
     })
 
-    const fieldList = new Map<string, any>([
-        ["id", { label: t('pages.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["number", { label: t('pages.number'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["parentSectionTitle", { label: t('pages.parent_section_title'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["courseId", { label: "Course", type: "select", display: false, toBeSet: false, toBeEdited: false }],
-        ["chapterId", { label: "Chapter", type: "select", display: false, toBeSet: false, toBeEdited: false }],
-        ["sectionId", { label: "Section", type: "select", display: false, toBeSet: false, toBeEdited: false }],
-        ["toc", { label: t('pages.toc'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["content", { label: t('pages.content'), type: "advanced-textarea", display: true, toBeSet: true, toBeEdited: true }],
-        ["hide", { label: t('pages.hide'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["created_at", { label: t('created_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["updated_at", { label: t('updated_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+    const fieldList = buildFieldList([
+        field('id', t('pages.id')).input().hidden().readonly(),
+        field('number', t('pages.number')).input().hidden().readonly(),
+        field('parentSectionTitle', t('pages.parent_section_title')).input().hidden().readonly(),
+        field('courseId', 'Course').type('select').hidden().readonly(),
+        field('chapterId', 'Chapter').type('select').hidden().readonly(),
+        field('sectionId', 'Section').type('select').hidden().readonly(),
+        field('toc', t('pages.toc')).input().hidden().readonly(),
+        field('content', t('pages.content')).type('advanced-textarea').visible().creatable().updatable(),
+        field('hide', t('pages.hide')).input().hidden().readonly(),
+        field('created_at', t('created_at')).input().visible().readonly(),
+        field('updated_at', t('updated_at')).input().visible().readonly(),
     ])
 
     base.subEntitiesStores = new Map<string, any>([

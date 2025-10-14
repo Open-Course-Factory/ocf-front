@@ -22,6 +22,7 @@
 import { defineStore } from "pinia"
 import { useBaseStore } from "./baseStore";
 import { useStoreTranslations } from '../composables/useTranslations'
+import { field, buildFieldList } from '../utils/fieldBuilder'
 
 export const useSshKeysStore = defineStore('SshKeys', () => {
 
@@ -59,11 +60,11 @@ export const useSshKeysStore = defineStore('SshKeys', () => {
         }
     })
     
-    const fieldList = new Map<string, any>([
-        ["id", { label: t('sshkeys.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["name", { label: t('sshkeys.name'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["private_key", { label: t('sshkeys.value'), type: "textarea", display: false, toBeSet: true, toBeEdited: false }],
-        ["created_at", { label: t('created_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+    const fieldList = buildFieldList([
+        field('id', t('sshkeys.id')).input().hidden().readonly(),
+        field('name', t('sshkeys.name')).input().visible().editable(),
+        field('private_key', t('sshkeys.value')).textarea().hidden().creatable(),
+        field('created_at', t('created_at')).input().visible().readonly(),
     ])
 
     // Enable prevention of last object deletion for SSH keys

@@ -23,6 +23,7 @@ import { defineStore } from "pinia"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { useBaseStore } from "./baseStore"
 import { createAsyncWrapper } from '../utils/asyncWrapper'
+import { field, buildFieldList } from '../utils/fieldBuilder'
 import { ref } from 'vue'
 import axios from 'axios'
 
@@ -281,14 +282,14 @@ export const useTerminalsStore = defineStore('terminals', () => {
         }
     })
 
-    const fieldList = new Map<string, any>([
-        ["id", { label: "ID", type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["session_id", { label: t('terminals.session_id'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["status", { label: t('terminals.status'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["expires_at", { label: t('terminals.expires_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["terms", { label: t('terminals.terms'), type: "textarea", display: false, toBeSet: true, toBeEdited: false, required: true }],
-        ["expiry", { label: t('terminals.expiry'), type: "input", display: false, toBeSet: true, toBeEdited: false }],
-        ["created_at", { label: "Created at", type: "input", display: true, toBeSet: false, toBeEdited: false }],
+    const fieldList = buildFieldList([
+        field('id', 'ID').input().visible().readonly(),
+        field('session_id', t('terminals.session_id')).input().visible().readonly(),
+        field('status', t('terminals.status')).input().visible().readonly(),
+        field('expires_at', t('terminals.expires_at')).input().visible().readonly(),
+        field('terms', t('terminals.terms')).textarea().hidden().creatable().required(),
+        field('expiry', t('terminals.expiry')).input().hidden().creatable(),
+        field('created_at', 'Created at').input().visible().readonly(),
     ])
 
     // Actions spécifiques aux terminaux

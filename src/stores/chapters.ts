@@ -24,6 +24,7 @@ import { useBaseStore } from "./baseStore"
 import { useSectionsStore } from "./sections"
 import { useCoursesStore } from "./courses"
 import { useStoreTranslations } from '../composables/useTranslations'
+import { field, buildFieldList } from '../utils/fieldBuilder'
 
 
 export const useChaptersStore = defineStore('chapters', () => {
@@ -60,16 +61,16 @@ export const useChaptersStore = defineStore('chapters', () => {
         }
     })
 
-    const fieldList = new Map<string, any>([
-        ["id", { label: t('chapters.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["courseIDs", { label: t('chapters.courses'), type: "multi-select", display: false, toBeSet: false, toBeEdited: false }],
-        ["title", { label: t('chapters.title'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["introduction", { label: t('chapters.introduction'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["footer", { label: t('chapters.footer'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["number", { label: t('chapters.number'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["sections", { label: t('chapters.sections'), type: "advanced-textarea", display: true, toBeSet: false, toBeEdited: false }],
-        ["created_at", { label: t('created_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["updated_at", { label: t('updated_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+    const fieldList = buildFieldList([
+        field('id', t('chapters.id')).input().hidden().readonly(),
+        field('courseIDs', t('chapters.courses')).type('multi-select').hidden().readonly(),
+        field('title', t('chapters.title')).input().visible().editable(),
+        field('introduction', t('chapters.introduction')).input().visible().editable(),
+        field('footer', t('chapters.footer')).input().visible().editable(),
+        field('number', t('chapters.number')).input().hidden().readonly(),
+        field('sections', t('chapters.sections')).type('advanced-textarea').visible().readonly(),
+        field('created_at', t('created_at')).input().visible().readonly(),
+        field('updated_at', t('updated_at')).input().visible().readonly(),
     ])
 
     base.subEntitiesStores = new Map<string, any>([

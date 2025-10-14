@@ -23,6 +23,7 @@ import { defineStore } from "pinia"
 import { useBaseStore } from "./baseStore"
 import { useChaptersStore } from "./chapters"
 import { useStoreTranslations } from '../composables/useTranslations'
+import { field, buildFieldList } from '../utils/fieldBuilder'
 
 export const useCoursesStore = defineStore('courses', () => {
 
@@ -73,21 +74,21 @@ export const useCoursesStore = defineStore('courses', () => {
         }
     })
 
-    const fieldList = new Map<string, any>([
-        ["name", { label: t('courses.name'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["format", { label: t('courses.format'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["authorEmail", { label: t('courses.authorEmail'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["category", { label: t('courses.category'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["version", { label: t('courses.version'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["title", { label: t('courses.title'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["subTitle", { label: t('courses.subTitle'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["header", { label: t('courses.header'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["footer", { label: t('courses.footer'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["logo", { label: t('courses.logo'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["description", { label: t('courses.description'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["prelude", { label: t('courses.prelude'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["learningObjectives", { label: t('courses.learningObjectives'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["chapters", { label: t('courses.chapters'), type: "subentity", display: true, toBeSet: false, toBeEdited: false }],
+    const fieldList = buildFieldList([
+        field('name', t('courses.name')).input().visible().creatable().updatable(),
+        field('format', t('courses.format')).input().visible().readonly(),
+        field('authorEmail', t('courses.authorEmail')).input().visible().creatable().updatable(),
+        field('category', t('courses.category')).input().visible().creatable().updatable(),
+        field('version', t('courses.version')).input().visible().creatable().updatable(),
+        field('title', t('courses.title')).input().visible().creatable().updatable(),
+        field('subTitle', t('courses.subTitle')).input().visible().creatable().updatable(),
+        field('header', t('courses.header')).input().visible().creatable().updatable(),
+        field('footer', t('courses.footer')).input().visible().creatable().updatable(),
+        field('logo', t('courses.logo')).input().visible().creatable().updatable(),
+        field('description', t('courses.description')).input().visible().creatable().updatable(),
+        field('prelude', t('courses.prelude')).input().visible().creatable().updatable(),
+        field('learningObjectives', t('courses.learningObjectives')).input().visible().creatable().updatable(),
+        field('chapters', t('courses.chapters')).type('subentity').visible().readonly(),
     ])
 
     base.subEntitiesStores = new Map<string, any>([

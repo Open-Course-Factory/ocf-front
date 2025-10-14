@@ -28,6 +28,7 @@ import { useCoursesStore } from "./courses";
 import { ref } from 'vue';
 import { nextTick } from 'vue';
 import axios from 'axios';
+import { field, buildFieldList } from '../utils/fieldBuilder';
 
 export const useGenerationsStore = defineStore('generations', () => {
 
@@ -93,20 +94,20 @@ export const useGenerationsStore = defineStore('generations', () => {
         }
     })
 
-    const fieldList = new Map<string, any>([
-        ["id", { label: t('generations.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["name", { label: t('generations.name'), type: "input", display: true, toBeSet: true, toBeEdited: true, required: true }],
-        ["format", { label: t('generations.format'), type: "input", display: true, toBeSet: true, toBeEdited: true, required: true }],
-        ["courses", { label: t('generations.courses'), type: "subentity", display: true, toBeSet: true, toBeEdited: false, required: true }],
-        ["themes", { label: t('generations.themes'), type: "subentity", display: true, toBeSet: true, toBeEdited: false, required: true }],
-        ["schedules", { label: t('generations.schedules'), type: "subentity", display: true, toBeSet: true, toBeEdited: false, required: true }],
-        ["status", { label: t('generations.status'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["progress", { label: t('generations.progress'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["started_at", { label: t('generations.started_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["completed_at", { label: t('generations.completed_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["error_message", { label: t('generations.error_message'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["worker_job_id", { label: t('generations.worker_job_id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["result_urls", { label: t('generations.result_urls'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
+    const fieldList = buildFieldList([
+        field('id', t('generations.id')).hidden().readonly(),
+        field('name', t('generations.name')).input().visible().creatable().updatable().required(),
+        field('format', t('generations.format')).input().visible().creatable().updatable().required(),
+        field('courses', t('generations.courses')).type('subentity').visible().creatable().required(),
+        field('themes', t('generations.themes')).type('subentity').visible().creatable().required(),
+        field('schedules', t('generations.schedules')).type('subentity').visible().creatable().required(),
+        field('status', t('generations.status')).input().visible().readonly(),
+        field('progress', t('generations.progress')).input().visible().readonly(),
+        field('started_at', t('generations.started_at')).input().visible().readonly(),
+        field('completed_at', t('generations.completed_at')).input().visible().readonly(),
+        field('error_message', t('generations.error_message')).input().visible().readonly(),
+        field('worker_job_id', t('generations.worker_job_id')).input().hidden().readonly(),
+        field('result_urls', t('generations.result_urls')).input().hidden().readonly(),
     ])
 
     base.subEntitiesStores = new Map<string, any>([

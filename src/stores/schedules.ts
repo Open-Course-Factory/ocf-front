@@ -22,6 +22,7 @@
 import { defineStore } from "pinia"
 import { useBaseStore } from "./baseStore";
 import { useStoreTranslations } from '../composables/useTranslations'
+import { field, buildFieldList } from '../utils/fieldBuilder'
 
 
 export const useSchedulesStore = defineStore('schedules', () => {
@@ -50,12 +51,12 @@ export const useSchedulesStore = defineStore('schedules', () => {
         }
     })
 
-    const fieldList = new Map<string, any>([
-        ["id", { label: t('schedules.id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["name", { label: t('schedules.name'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["front_matter_content", { label: t('schedules.front_matter_content'), type: "advanced-textarea", display: true, toBeSet: true, toBeEdited: true }],
-        ["created_at", { label: t('created_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["updated_at", { label: t('updated_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+    const fieldList = buildFieldList([
+        field('id', t('schedules.id')).input().hidden().readonly(),
+        field('name', t('schedules.name')).input().visible().editable(),
+        field('front_matter_content', t('schedules.front_matter_content')).type('advanced-textarea').visible().editable(),
+        field('created_at', t('created_at')).input().visible().readonly(),
+        field('updated_at', t('updated_at')).input().visible().readonly(),
     ])
 
     base.subEntitiesStores = new Map<string, any>([

@@ -27,6 +27,7 @@ import axios from 'axios'
 import { formatCurrency } from '../utils/formatters'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
 import { useStoreTranslations } from '../composables/useTranslations'
+import { field, buildFieldList } from '../utils/fieldBuilder'
 
 export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => {
 
@@ -164,24 +165,24 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
     // Create async wrapper with base store state
     const baseAsync = createAsyncWrapper({ isLoading: base.isLoading, error: base.error })
 
-    const fieldList = new Map<string, any>([
-        ["id", { label: "ID", type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["name", { label: t('subscriptionPlans.name'), type: "input", display: true, toBeSet: true, toBeEdited: true, required: true }],
-        ["description", { label: t('subscriptionPlans.description'), type: "textarea", display: true, toBeSet: true, toBeEdited: true }],
-        ["price_amount", { label: t('subscriptionPlans.price_amount'), type: "input", display: true, toBeSet: true, toBeEdited: false, required: true }],
-        ["billing_interval", { label: t('subscriptionPlans.billing_interval'), type: "input", display: true, toBeSet: true, toBeEdited: false, required: true }],
-        ["currency", { label: t('subscriptionPlans.currency'), type: "input", display: true, toBeSet: true, toBeEdited: false }],
-        ["features", { label: t('subscriptionPlans.features'), type: "advanced-textarea", display: true, toBeSet: true, toBeEdited: true }],
-        ["max_courses", { label: t('subscriptionPlans.max_courses'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["max_concurrent_users", { label: t('subscriptionPlans.max_concurrent_users'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["max_lab_sessions", { label: t('subscriptionPlans.max_lab_sessions'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["trial_days", { label: t('subscriptionPlans.trial_days'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["required_role", { label: t('subscriptionPlans.required_role'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["is_active", { label: t('subscriptionPlans.is_active'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["stripe_product_id", { label: t('subscriptionPlans.stripe_product_id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["stripe_price_id", { label: t('subscriptionPlans.stripe_price_id'), type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["created_at", { label: t('created_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["updated_at", { label: t('updated_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+    const fieldList = buildFieldList([
+        field('id').hidden().readonly(),
+        field('name', t('subscriptionPlans.name')).input().visible().creatable().updatable().required(),
+        field('description', t('subscriptionPlans.description')).textarea().visible().creatable().updatable(),
+        field('price_amount', t('subscriptionPlans.price_amount')).input().visible().creatable().required(),
+        field('billing_interval', t('subscriptionPlans.billing_interval')).input().visible().creatable().required(),
+        field('currency', t('subscriptionPlans.currency')).input().visible().creatable(),
+        field('features', t('subscriptionPlans.features')).type('advanced-textarea').visible().creatable().updatable(),
+        field('max_courses', t('subscriptionPlans.max_courses')).input().visible().creatable().updatable(),
+        field('max_concurrent_users', t('subscriptionPlans.max_concurrent_users')).input().visible().creatable().updatable(),
+        field('max_lab_sessions', t('subscriptionPlans.max_lab_sessions')).input().visible().creatable().updatable(),
+        field('trial_days', t('subscriptionPlans.trial_days')).input().visible().creatable().updatable(),
+        field('required_role', t('subscriptionPlans.required_role')).input().visible().creatable().updatable(),
+        field('is_active', t('subscriptionPlans.is_active')).input().visible().readonly(),
+        field('stripe_product_id', t('subscriptionPlans.stripe_product_id')).input().hidden().readonly(),
+        field('stripe_price_id', t('subscriptionPlans.stripe_price_id')).input().hidden().readonly(),
+        field('created_at', 'Created At').input().visible().readonly(),
+        field('updated_at', 'Updated At').input().visible().readonly()
     ])
 
     // Formatage du prix pour affichage

@@ -23,6 +23,7 @@ import { defineStore } from "pinia"
 import { useBaseStore } from "./baseStore"
 import { getCountryOptions, getCountryName } from '../services/countries'
 import { useStoreTranslations } from '../composables/useTranslations'
+import { field, buildFieldList } from '../utils/fieldBuilder'
 
 export const useBillingAddressesStore = defineStore('billingAddresses', () => {
 
@@ -67,28 +68,25 @@ export const useBillingAddressesStore = defineStore('billingAddresses', () => {
         }
     })
 
-    const fieldList = new Map<string, any>([
-        ["id", { label: "ID", type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["line1", { label: t('billingAddresses.line1'), type: "input", display: true, toBeSet: true, toBeEdited: true, required: true }],
-        ["line2", { label: t('billingAddresses.line2'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["city", { label: t('billingAddresses.city'), type: "input", display: true, toBeSet: true, toBeEdited: true, required: true }],
-        ["state", { label: t('billingAddresses.state'), type: "input", display: true, toBeSet: true, toBeEdited: true }],
-        ["postal_code", { label: t('billingAddresses.postal_code'), type: "input", display: true, toBeSet: true, toBeEdited: true, required: true }],
-        ["country", {
-            label: t('billingAddresses.country'),
-            type: "select",
-            display: true,
-            toBeSet: true,
-            toBeEdited: true,
-            required: true,
-            options: getCountrySelectOptions(),
-            displayValue: (value: string) => getCountryName(value, 'fr') // Display function for showing full name instead of code
-        }],
-        ["is_default", { label: t('billingAddresses.is_default'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["set_default", { label: t('billingAddresses.set_default'), type: "input", display: false, toBeSet: true, toBeEdited: false }],
-        ["user_id", { label: "User ID", type: "input", display: false, toBeSet: false, toBeEdited: false }],
-        ["created_at", { label: t('created_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["updated_at", { label: t('updated_at'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
+    const fieldList = buildFieldList([
+        field('id', 'ID').input().hidden().readonly(),
+        field('line1', t('billingAddresses.line1')).input().visible().editable().required(),
+        field('line2', t('billingAddresses.line2')).input().visible().editable(),
+        field('city', t('billingAddresses.city')).input().visible().editable().required(),
+        field('state', t('billingAddresses.state')).input().visible().editable(),
+        field('postal_code', t('billingAddresses.postal_code')).input().visible().editable().required(),
+        field('country', t('billingAddresses.country'))
+            .select()
+            .visible()
+            .editable()
+            .required()
+            .withOptions(getCountrySelectOptions())
+            .custom('displayValue', (value: string) => getCountryName(value, 'fr')),
+        field('is_default', t('billingAddresses.is_default')).input().visible().readonly(),
+        field('set_default', t('billingAddresses.set_default')).input().hidden().creatable(),
+        field('user_id', 'User ID').input().hidden().readonly(),
+        field('created_at', t('created_at')).input().visible().readonly(),
+        field('updated_at', t('updated_at')).input().visible().readonly(),
     ])
 
     // Formatage de l'adresse pour affichage

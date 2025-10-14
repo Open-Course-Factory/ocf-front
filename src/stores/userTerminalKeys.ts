@@ -24,6 +24,7 @@ import { useBaseStore } from "./baseStore"
 import { ref } from 'vue'
 import axios from 'axios'
 import { useStoreTranslations } from '../composables/useTranslations'
+import { field, buildFieldList } from '../utils/fieldBuilder'
 
 export const useUserTerminalKeysStore = defineStore('userTerminalKeys', () => {
 
@@ -70,12 +71,12 @@ export const useUserTerminalKeysStore = defineStore('userTerminalKeys', () => {
         }
     })
 
-    const fieldList = new Map<string, any>([
-        ["id", { label: "ID", type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["key_name", { label: t('userTerminalKeys.key_name'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["is_active", { label: t('userTerminalKeys.is_active'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["max_sessions", { label: t('userTerminalKeys.max_sessions'), type: "input", display: true, toBeSet: false, toBeEdited: false }],
-        ["created_at", { label: "Created at", type: "input", display: true, toBeSet: false, toBeEdited: false }],
+    const fieldList = buildFieldList([
+        field('id', 'ID').input().visible().readonly(),
+        field('key_name', t('userTerminalKeys.key_name')).input().visible().readonly(),
+        field('is_active', t('userTerminalKeys.is_active')).input().visible().readonly(),
+        field('max_sessions', t('userTerminalKeys.max_sessions')).input().visible().readonly(),
+        field('created_at', 'Created at').input().visible().readonly(),
     ])
 
     // Actions spécifiques aux clés terminal
