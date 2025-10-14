@@ -49,6 +49,13 @@ export interface Subscription extends BaseEntity {
   current_period_end?: string
   cancel_at_period_end?: boolean
   stripe_subscription_id?: string
+  subscription_plan?: {
+    allowed_machine_sizes?: string[]
+  }
+  plan_features?: {
+    session_duration_hours?: number
+    concurrent_terminals?: number
+  }
 }
 
 /**

@@ -71,10 +71,12 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useUserSettingsStore } from '../../stores/userSettings'
+import { useFormatters } from '../../composables/useFormatters'
 import SettingsCard from '../UI/SettingsCard.vue'
 
 const { t } = useI18n()
 const settingsStore = useUserSettingsStore()
+const { formatDate: formatDateTz } = useFormatters()
 
 const passwordForm = ref({
   current_password: '',
@@ -87,7 +89,7 @@ const successMessage = ref('')
 
 function formatDate(dateString: string | undefined): string {
   if (!dateString) return t('userSettings.security.never')
-  return new Date(dateString).toLocaleDateString()
+  return formatDateTz(dateString)
 }
 
 async function handleChangePassword() {

@@ -45,7 +45,7 @@ export interface TranslationMessages {
  */
 export function useTranslations(messages: TranslationMessages, immediate: boolean = false) {
   const i18n = useI18n()
-  const { t, locale } = i18n
+  const { t, te, locale } = i18n
 
   const registerTranslations = () => {
     Object.entries(messages).forEach(([localeKey, translations]) => {
@@ -65,6 +65,7 @@ export function useTranslations(messages: TranslationMessages, immediate: boolea
 
   return {
     t,
+    te,
     locale,
     i18n
   }

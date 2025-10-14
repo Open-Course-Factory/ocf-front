@@ -21,13 +21,15 @@
     </div>
     <div class="form-group">
       <label>{{ t('userSettings.localization.timezone') }}</label>
-      <input
-        type="text"
+      <select
         v-model="localSettings.timezone"
-        @blur="saveSettings"
+        @change="saveSettings"
         class="form-control"
-        :placeholder="t('userSettings.localization.timezonePlaceholder')"
-      />
+      >
+        <option v-for="tz in settingsStore.availableTimezones" :key="tz.value" :value="tz.value">
+          {{ tz.label }}
+        </option>
+      </select>
     </div>
   </SettingsCard>
 </template>

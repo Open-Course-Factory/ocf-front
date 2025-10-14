@@ -25,6 +25,7 @@ import axios from "axios"
 import { useFeatureFlags } from "../composables/useFeatureFlags"
 import { createAsyncWrapper } from '../utils/asyncWrapper'
 import { useStoreTranslations } from '../composables/useTranslations'
+import { COMMON_TIMEZONES } from '../utils/formatters'
 
 export interface UserSettings {
     id?: string
@@ -228,6 +229,8 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
         { value: 'auto', label: t('userSettings.themes.auto') }
     ]
 
+    const availableTimezones = COMMON_TIMEZONES
+
     // API Calls
     async function loadSettings() {
         return withAsync(async () => {
@@ -260,6 +263,7 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
         availablePages,
         availableLanguages,
         availableThemes,
+        availableTimezones,
         loadSettings,
         updateSettings,
         changePassword

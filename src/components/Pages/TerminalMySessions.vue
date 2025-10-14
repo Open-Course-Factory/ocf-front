@@ -342,8 +342,10 @@ import axios from 'axios'
 import { terminalService } from '../../services/terminalService'
 import { useNotification } from '../../composables/useNotification'
 import { useTranslations } from '../../composables/useTranslations'
+import { useFormatters } from '../../composables/useFormatters'
 
 const { showConfirm } = useNotification()
+const { formatDateTime: formatDateTimeTz } = useFormatters()
 const { t } = useTranslations({
   en: {
     terminalMySessions: {
@@ -694,11 +696,7 @@ async function stopSession(sessionId: string) {
 
 function formatDate(dateString: string) {
   if (!dateString) return '-'
-  try {
-    return new Date(dateString).toLocaleString('fr-FR')
-  } catch (e) {
-    return dateString
-  }
+  return formatDateTimeTz(dateString)
 }
 
 function getStatusClass(status: string) {
@@ -737,7 +735,7 @@ async function copyUrlToClipboard(sessionId: string) {
 }
 
 // Function temporarily unused but may be needed for future iframe preview feature
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// @ts-expect-error - Function reserved for future iframe preview feature
 function toggleIframePreview(sessionId: string) {
   if (showPreviews.value.has(sessionId)) {
     showPreviews.value.delete(sessionId)
@@ -868,14 +866,14 @@ async function checkExpiredSessions() {
 
 // Utilitaires pour l'affichage
 // Function temporarily unused but may be needed for sync results display
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// @ts-expect-error - Function reserved for future sync results display
 function getSyncResultForSession(sessionId: string) {
   return syncResults.value.get(sessionId)
 }
 
 function formatSyncTime(time: Date | string) {
   if (!time) return ''
-  return new Date(time).toLocaleTimeString('fr-FR')
+  return formatDateTimeTz(time.toString())
 }
 
 async function loadInstanceTypes() {

@@ -193,7 +193,7 @@ export class FeatureFlagService {
    * LocalStorage values are only written when admin manually toggles flags
    * Note: Currently unused as we prefer default values over potentially stale localStorage
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // @ts-expect-error - Method reserved for emergency localStorage fallback
   private loadLocalStorageFlags(): void {
     try {
       const stored = localStorage.getItem(this.STORAGE_KEY)

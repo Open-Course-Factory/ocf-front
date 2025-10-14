@@ -4,6 +4,38 @@
  */
 
 /**
+ * Common timezone options for user selection
+ */
+export const COMMON_TIMEZONES = [
+  { value: 'UTC', label: 'UTC' },
+  { value: 'America/New_York', label: 'Eastern Time (US & Canada)' },
+  { value: 'America/Chicago', label: 'Central Time (US & Canada)' },
+  { value: 'America/Denver', label: 'Mountain Time (US & Canada)' },
+  { value: 'America/Los_Angeles', label: 'Pacific Time (US & Canada)' },
+  { value: 'America/Anchorage', label: 'Alaska' },
+  { value: 'Pacific/Honolulu', label: 'Hawaii' },
+  { value: 'Europe/London', label: 'London' },
+  { value: 'Europe/Paris', label: 'Paris' },
+  { value: 'Europe/Berlin', label: 'Berlin' },
+  { value: 'Europe/Rome', label: 'Rome' },
+  { value: 'Europe/Madrid', label: 'Madrid' },
+  { value: 'Europe/Amsterdam', label: 'Amsterdam' },
+  { value: 'Europe/Brussels', label: 'Brussels' },
+  { value: 'Europe/Zurich', label: 'Zurich' },
+  { value: 'Europe/Stockholm', label: 'Stockholm' },
+  { value: 'Europe/Moscow', label: 'Moscow' },
+  { value: 'Asia/Dubai', label: 'Dubai' },
+  { value: 'Asia/Kolkata', label: 'Mumbai, Kolkata, New Delhi' },
+  { value: 'Asia/Shanghai', label: 'Beijing, Shanghai' },
+  { value: 'Asia/Tokyo', label: 'Tokyo' },
+  { value: 'Asia/Seoul', label: 'Seoul' },
+  { value: 'Asia/Singapore', label: 'Singapore' },
+  { value: 'Australia/Sydney', label: 'Sydney' },
+  { value: 'Australia/Melbourne', label: 'Melbourne' },
+  { value: 'Pacific/Auckland', label: 'Auckland' },
+]
+
+/**
  * Format a monetary amount from cents to a currency string
  * @param amount - Amount in cents (e.g., 1999 for $19.99)
  * @param currency - Currency code (default: 'EUR')
@@ -30,20 +62,24 @@ export function formatCurrency(
  * @param dateString - ISO date string or timestamp
  * @param locale - Locale for formatting (default: 'fr-FR')
  * @param fallback - Fallback value if date is invalid (default: '-')
+ * @param timezone - IANA timezone string (e.g., 'America/New_York', 'Europe/Paris')
  * @returns Formatted date string (e.g., "13/10/2025")
  *
  * @example
  * formatDate('2025-10-13T12:00:00Z') // "13/10/2025"
+ * formatDate('2025-10-13T12:00:00Z', 'fr-FR', '-', 'America/New_York') // "13/10/2025" (in NY time)
  * formatDate('invalid', 'fr-FR', 'N/A') // "N/A"
  */
 export function formatDate(
   dateString: string | null | undefined,
   locale: string = 'fr-FR',
-  fallback: string = '-'
+  fallback: string = '-',
+  timezone?: string
 ): string {
   if (!dateString) return fallback
   try {
-    return new Date(dateString).toLocaleDateString(locale)
+    const options: Intl.DateTimeFormatOptions = timezone ? { timeZone: timezone } : {}
+    return new Date(dateString).toLocaleDateString(locale, options)
   } catch (e) {
     return dateString
   }
@@ -54,19 +90,23 @@ export function formatDate(
  * @param dateString - ISO date string or timestamp
  * @param locale - Locale for formatting (default: 'fr-FR')
  * @param fallback - Fallback value if date is invalid (default: '-')
+ * @param timezone - IANA timezone string (e.g., 'America/New_York', 'Europe/Paris')
  * @returns Formatted date and time string (e.g., "13/10/2025 12:30:45")
  *
  * @example
  * formatDateTime('2025-10-13T12:30:45Z') // "13/10/2025 12:30:45"
+ * formatDateTime('2025-10-13T12:30:45Z', 'fr-FR', '-', 'America/New_York') // "13/10/2025 08:30:45" (in NY time)
  */
 export function formatDateTime(
   dateString: string | null | undefined,
   locale: string = 'fr-FR',
-  fallback: string = '-'
+  fallback: string = '-',
+  timezone?: string
 ): string {
   if (!dateString) return fallback
   try {
-    return new Date(dateString).toLocaleString(locale)
+    const options: Intl.DateTimeFormatOptions = timezone ? { timeZone: timezone } : {}
+    return new Date(dateString).toLocaleString(locale, options)
   } catch (e) {
     return dateString
   }
