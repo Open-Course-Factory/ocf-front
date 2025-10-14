@@ -6,19 +6,17 @@
 -->
 
 <template>
-  <div v-if="show" class="modal-overlay" @click="closeModal">
-    <div class="modal-content" @click.stop>
-      <div class="modal-header">
-        <h3>
-          <i class="fas fa-users-cog"></i>
-          Gérer les Accès - {{ terminalInfo?.terminal.session_id }}
-        </h3>
-        <button class="modal-close" @click="closeModal">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-
-      <div class="modal-body">
+  <BaseModal
+    :visible="show"
+    :title="`Gérer les Accès - ${terminalInfo?.terminal.session_id || ''}`"
+    title-icon="fas fa-users-cog"
+    size="large"
+    :close-on-overlay-click="true"
+    :no-padding="false"
+    @close="closeModal"
+  >
+    <template #default>
+      <div class="access-modal-wrapper">
         <div v-if="terminalInfo" class="terminal-info">
           <div class="info-item">
             <strong><i class="fas fa-terminal"></i> {{ t('terminals.terminal') }}</strong>
@@ -119,20 +117,20 @@
           <i class="fas fa-exclamation-triangle"></i>
           {{ error }}
         </div>
-
-        <div class="modal-actions">
-          <button class="btn btn-primary" @click="openSharingModal">
-            <i class="fas fa-plus"></i>
-            Ajouter un utilisateur
-          </button>
-          <button class="btn btn-secondary" @click="closeModal">
-            <i class="fas fa-times"></i>
-            Fermer
-          </button>
-        </div>
       </div>
-    </div>
-  </div>
+    </template>
+
+    <template #footer>
+      <button class="btn btn-primary" @click="openSharingModal">
+        <i class="fas fa-plus"></i>
+        Ajouter un utilisateur
+      </button>
+      <button class="btn btn-secondary" @click="closeModal">
+        <i class="fas fa-times"></i>
+        Fermer
+      </button>
+    </template>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
@@ -140,6 +138,7 @@ import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { terminalService, type TerminalShareOutput, type SharedTerminalInfo } from '../../services/terminalService'
 import { userService, type User } from '../../services/userService'
+import BaseModal from '../Modals/BaseModal.vue'
 
 const { t } = useI18n()
 
@@ -332,69 +331,8 @@ function getUserDisplayName(userId: string): string {
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: var(--z-index-modal);
-}
-
-.modal-content {
-  background: var(--color-bg-primary);
-  border-radius: var(--border-radius-lg);
-  width: 90%;
-  max-width: 700px;
-  max-height: 80vh;
-  overflow: auto;
-  box-shadow: var(--shadow-xl);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-lg);
-  border-bottom: var(--border-width-thin) solid var(--color-border-light);
-  background-color: var(--color-bg-tertiary);
-}
-
-.modal-header h3 {
-  margin: 0;
-  color: var(--color-text-secondary);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  font-size: var(--font-size-lg);
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: var(--font-size-xl);
-  cursor: pointer;
-  color: var(--color-text-muted);
-  padding: 0;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--border-radius-sm);
-  transition: background-color var(--transition-base);
-}
-
-.modal-close:hover {
-  background-color: var(--color-bg-secondary);
-}
-
-.modal-body {
-  padding: var(--spacing-lg);
+.access-modal-wrapper {
+  width: 100%;
 }
 
 .terminal-info {
@@ -544,14 +482,6 @@ function getUserDisplayName(userId: string): string {
   color: var(--color-text-secondary);
 }
 
-.modal-actions {
-  display: flex;
-  gap: var(--spacing-md);
-  justify-content: flex-end;
-  padding-top: var(--spacing-md);
-  border-top: var(--border-width-thin) solid var(--color-border-light);
-}
-
 .btn {
   display: inline-flex;
   align-items: center;
@@ -626,30 +556,16 @@ function getUserDisplayName(userId: string): string {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .modal-content {
-    width: 95%;
-    margin: 10px;
-  }
-
   .user-info {
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    gap: var(--spacing-sm);
   }
 
   .meta-row {
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
-  }
-
-  .modal-actions {
-    flex-direction: column;
-  }
-
-  .btn {
-    width: 100%;
-    justify-content: center;
+    gap: var(--spacing-xs);
   }
 }
 </style>

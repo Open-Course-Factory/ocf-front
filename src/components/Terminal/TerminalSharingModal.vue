@@ -6,19 +6,19 @@
 -->
 
 <template>
-  <div v-if="show" class="modal-overlay" @click="closeModal">
-    <div class="modal-content" @click.stop>
-      <div class="modal-header">
-        <h3>
-          <i class="fas fa-share-alt"></i>
-          {{ t('terminalSharing.title') }}
-        </h3>
-        <button class="modal-close" @click="closeModal">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-
-      <div class="modal-body">
+  <BaseModal
+    :visible="show"
+    :title="t('terminalSharing.title')"
+    title-icon="fas fa-share-alt"
+    size="medium"
+    :is-loading="isSharing"
+    :loading-text="t('terminalSharing.buttonSharing')"
+    :success-message="successMessage"
+    :error-message="error"
+    :close-on-overlay-click="true"
+    @close="closeModal"
+  >
+    <template #default>
         <div v-if="terminalInfo" class="terminal-info">
           <h4>{{ t('terminalSharing.terminalLabel') }}: {{ terminalInfo.terminal.session_id }}</h4>
           <p class="text-muted">
@@ -99,31 +99,21 @@
             </small>
           </div>
 
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary" :disabled="isSharing">
-              <i v-if="isSharing" class="fas fa-spinner fa-spin"></i>
-              <i v-else class="fas fa-share-alt"></i>
-              {{ isSharing ? t('terminalSharing.buttonSharing') : t('terminalSharing.buttonShare') }}
-            </button>
-            <button type="button" class="btn btn-secondary" @click="closeModal" :disabled="isSharing">
-              <i class="fas fa-times"></i>
-              {{ t('terminalSharing.buttonCancel') }}
-            </button>
-          </div>
         </form>
+    </template>
 
-        <div v-if="successMessage" class="alert alert-success">
-          <i class="fas fa-check-circle"></i>
-          {{ successMessage }}
-        </div>
-
-        <div v-if="error" class="alert alert-danger">
-          <i class="fas fa-exclamation-triangle"></i>
-          {{ error }}
-        </div>
-      </div>
-    </div>
-  </div>
+    <template #footer>
+      <button type="submit" class="btn btn-primary" @click="shareTerminal" :disabled="isSharing">
+        <i v-if="isSharing" class="fas fa-spinner fa-spin"></i>
+        <i v-else class="fas fa-share-alt"></i>
+        {{ isSharing ? t('terminalSharing.buttonSharing') : t('terminalSharing.buttonShare') }}
+      </button>
+      <button type="button" class="btn btn-secondary" @click="closeModal" :disabled="isSharing">
+        <i class="fas fa-times"></i>
+        {{ t('terminalSharing.buttonCancel') }}
+      </button>
+    </template>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
@@ -131,6 +121,7 @@ import { ref, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { terminalService, type ShareTerminalRequest, type SharedTerminalInfo } from '../../services/terminalService'
 import { userService, type User } from '../../services/userService'
+import BaseModal from '../Modals/BaseModal.vue'
 
 const { t } = useTranslations({
   en: {
@@ -332,69 +323,6 @@ function getStatusClass(status: string) {
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 500px;
-  max-height: 80vh;
-  overflow: auto;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #dee2e6;
-  background-color: #f8f9fa;
-}
-
-.modal-header h3 {
-  margin: 0;
-  color: #495057;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  color: #6c757d;
-  padding: 0;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.modal-close:hover {
-  background-color: #e9ecef;
-}
-
-.modal-body {
-  padding: 20px;
-}
 
 .terminal-info {
   margin-bottom: 20px;
@@ -514,14 +442,6 @@ function getStatusClass(status: string) {
   color: #6c757d;
 }
 
-.form-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  padding-top: 10px;
-  border-top: 1px solid #dee2e6;
-}
-
 .btn {
   display: inline-flex;
   align-items: center;
@@ -563,46 +483,9 @@ function getStatusClass(status: string) {
   color: #fff;
 }
 
-.alert {
-  padding: 12px 15px;
-  border-radius: 6px;
-  margin-top: 15px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.alert-success {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-.alert-danger {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
-
 .text-success { color: #28a745 !important; }
 .text-danger { color: #dc3545 !important; }
 .text-warning { color: #ffc107 !important; }
 .text-muted { color: #6c757d !important; }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .modal-content {
-    width: 95%;
-    margin: 10px;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-
-  .btn {
-    width: 100%;
-    justify-content: center;
-  }
-}
 </style>

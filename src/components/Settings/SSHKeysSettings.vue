@@ -46,45 +46,39 @@
     </ul>
 
     <!-- Modal for Add/Edit -->
-    <div v-if="showModal" class="modal-overlay" @click="closeModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>{{ editingKey ? t('sshkeys.modify') : t('sshkeys.add') }}</h3>
-          <button class="close-button" @click="closeModal">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label>{{ t('sshkeys.name') }}</label>
-            <input
-              type="text"
-              v-model="keyForm.name"
-              class="form-control"
-              required
-            />
-          </div>
-          <div v-if="!editingKey" class="form-group">
-            <label>{{ t('sshkeys.value') }}</label>
-            <textarea
-              v-model="keyForm.private_key"
-              class="form-control"
-              rows="8"
-              required
-              placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
-            ></textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" @click="closeModal">
-            {{ t('cancel') }}
-          </button>
-          <button class="btn btn-primary" @click="saveKey" :disabled="sshKeysStore.isLoading">
-            {{ sshKeysStore.isLoading ? t('sshkeys.saving') : t('save') }}
-          </button>
-        </div>
+    <BaseModal
+      :visible="showModal"
+      :title="editingKey ? t('sshkeys.modify') : t('sshkeys.add')"
+      :title-icon="editingKey ? 'fas fa-edit' : 'fas fa-plus'"
+      size="medium"
+      :show-default-footer="true"
+      :confirm-text="sshKeysStore.isLoading ? t('sshkeys.saving') : t('save')"
+      confirm-icon="fas fa-save"
+      :confirm-disabled="sshKeysStore.isLoading"
+      :cancel-text="t('cancel')"
+      @close="closeModal"
+      @confirm="saveKey"
+    >
+      <div class="form-group">
+        <label>{{ t('sshkeys.name') }}</label>
+        <input
+          type="text"
+          v-model="keyForm.name"
+          class="form-control"
+          required
+        />
       </div>
-    </div>
+      <div v-if="!editingKey" class="form-group">
+        <label>{{ t('sshkeys.value') }}</label>
+        <textarea
+          v-model="keyForm.private_key"
+          class="form-control ssh-key-textarea"
+          rows="8"
+          required
+          placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
+        ></textarea>
+      </div>
+    </BaseModal>
   </SettingsCard>
 </template>
 
@@ -93,6 +87,7 @@ import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSshKeysStore } from '../../stores/sshKeys'
 import SettingsCard from '../UI/SettingsCard.vue'
+import BaseModal from '../Modals/BaseModal.vue'
 import { useNotification } from '../../composables/useNotification'
 
 const { t } = useI18n()
@@ -209,22 +204,7 @@ async function deleteKey(id: string) {
   font-size: var(--font-size-xs);
 }
 
-.close-button {
-  background: none;
-  border: none;
-  color: var(--color-text-primary);
-  font-size: var(--font-size-2xl);
-  cursor: pointer;
-  padding: 0;
-  opacity: 0.7;
-  transition: opacity var(--transition-base);
-}
-
-.close-button:hover {
-  opacity: 1;
-}
-
-textarea.form-control {
+.ssh-key-textarea {
   resize: vertical;
   min-height: 150px;
   font-family: var(--font-family-monospace);

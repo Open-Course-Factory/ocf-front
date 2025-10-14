@@ -25,6 +25,7 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { useNotification } from '../../composables/useNotification';
+import BaseModal from '../Modals/BaseModal.vue';
 
 const { showSuccess, showError } = useNotification();
 
@@ -142,20 +143,21 @@ function formatDate(dateString: string) {
       </div>
 
       <!-- Modal de confirmation simple -->
-      <div v-if="showConfirm" class="modal-overlay" @click="showConfirm = false">
-        <div class="modal-content" @click.stop>
-          <h3>Confirmation</h3>
-          <p>Êtes-vous sûr de vouloir régénérer votre clé terminal ? Cela invalidera la clé actuelle.</p>
-          <div class="modal-actions">
-            <button class="btn btn-warning" @click="regenerateKey" :disabled="isRegenerating">
-              Confirmer
-            </button>
-            <button class="btn btn-secondary" @click="showConfirm = false">
-              Annuler
-            </button>
-          </div>
-        </div>
-      </div>
+      <BaseModal
+        :visible="showConfirm"
+        title="Confirmation"
+        title-icon="fas fa-exclamation-triangle"
+        size="small"
+        :show-default-footer="true"
+        confirm-text="Confirmer"
+        confirm-icon="fas fa-check"
+        :confirm-disabled="isRegenerating"
+        cancel-text="Annuler"
+        @close="showConfirm = false"
+        @confirm="regenerateKey"
+      >
+        <p>Êtes-vous sûr de vouloir régénérer votre clé terminal ? Cela invalidera la clé actuelle.</p>
+      </BaseModal>
     </div>
   </div>
 </template>
@@ -277,33 +279,5 @@ function formatDate(dateString: string) {
 .btn-secondary {
   background-color: #6c757d;
   color: white;
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  max-width: 400px;
-  width: 90%;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  margin-top: 20px;
 }
 </style>

@@ -6,16 +6,16 @@
 -->
 
 <template>
-  <div v-if="visible" class="modal-overlay" @click="closeModal">
-    <div class="modal-body" @click.stop>
-      <button class="close-button" @click="closeModal">
-        <i class="fas fa-times"></i>
-      </button>
-      <div class="modal-content">
-        <h2>
-          <i class="fas fa-map-marker-alt"></i>
-          {{ address ? t('billingAddresses.modify') : t('billingAddresses.add') }}
-        </h2>
+  <BaseModal
+    :visible="visible"
+    :title="address ? t('billingAddresses.modify') : t('billingAddresses.add')"
+    title-icon="fas fa-map-marker-alt"
+    size="large"
+    :is-loading="isLoading"
+    :close-on-overlay-click="false"
+    @close="closeModal"
+  >
+    <template #default>
         <form @submit.prevent="handleSubmit" class="address-form">
           <div class="form-row">
             <div class="form-group">
@@ -126,26 +126,27 @@
             </div>
           </div>
 
-          <div class="modal-actions">
-            <button type="submit" class="btn btn-primary" :disabled="isLoading">
-              <i :class="isLoading ? 'fas fa-spinner fa-spin' : 'fas fa-save'"></i>
-              {{ address ? t('edit', 'Update') : t('add', 'Add') }}
-            </button>
-            <button type="button" class="btn btn-secondary" @click="closeModal">
-              <i class="fas fa-times"></i>
-              {{ t('cancel', 'Cancel') }}
-            </button>
-          </div>
         </form>
-      </div>
-    </div>
-  </div>
+    </template>
+
+    <template #footer>
+      <button type="button" class="btn btn-primary" @click="handleSubmit" :disabled="isLoading">
+        <i :class="isLoading ? 'fas fa-spinner fa-spin' : 'fas fa-save'"></i>
+        {{ address ? t('edit', 'Update') : t('add', 'Add') }}
+      </button>
+      <button type="button" class="btn btn-secondary" @click="closeModal" :disabled="isLoading">
+        <i class="fas fa-times"></i>
+        {{ t('cancel', 'Cancel') }}
+      </button>
+    </template>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
 import { reactive, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getCountryOptions } from '../../services/countries'
+import BaseModal from './BaseModal.vue'
 
 const { t } = useI18n()
 
@@ -295,78 +296,6 @@ function handleSubmit() {
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.modal-body {
-  background: white;
-  border-radius: 12px;
-  max-width: 600px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  position: relative;
-  animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.close-button {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  background: none;
-  border: none;
-  font-size: 18px;
-  color: #666;
-  cursor: pointer;
-  padding: 5px;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-}
-
-.close-button:hover {
-  color: #333;
-  background-color: #f5f5f5;
-}
-
-.modal-content {
-  padding: 25px;
-}
-
-.modal-content h2 {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0 0 25px 0;
-  color: #333;
-  font-size: 1.5rem;
-}
 
 .address-form {
   display: flex;
@@ -435,15 +364,6 @@ function handleSubmit() {
   margin: 0;
 }
 
-.modal-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  margin-top: 25px;
-  padding-top: 20px;
-  border-top: 1px solid #e9ecef;
-}
-
 .btn {
   display: inline-flex;
   align-items: center;
@@ -492,15 +412,6 @@ function handleSubmit() {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .modal-body {
-    width: 95%;
-    margin: 10px;
-  }
-
-  .modal-content {
-    padding: 20px;
-  }
-
   .form-row {
     flex-direction: column;
     gap: 10px;
@@ -508,14 +419,6 @@ function handleSubmit() {
 
   .form-group.col-md-6 {
     flex: 1;
-  }
-
-  .modal-actions {
-    flex-direction: column;
-  }
-
-  .modal-content h2 {
-    font-size: 1.25rem;
   }
 }
 </style>

@@ -247,87 +247,76 @@
     </div>
 
     <!-- Modal pour le code iframe -->
-    <div v-if="showIframeModal" class="modal-overlay" @click="showIframeModal = false">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>{{ t('terminalMySessions.iframeCodeTitle') }}</h3>
-          <button class="modal-close" @click="showIframeModal = false">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="modal-body">
-          <p>{{ t('terminalMySessions.iframeCodeDesc') }}</p>
-          <textarea
-            :value="currentIframeCode"
-            readonly
-            class="iframe-code"
-            rows="4"
-            ref="iframeCodeRef"
-          ></textarea>
-          <div class="modal-actions">
-            <button class="btn btn-primary" @click="copyIframeCodeToClipboard">
-              <i class="fas fa-copy"></i>
-              {{ t('terminalMySessions.buttonCopyCode') }}
-            </button>
-            <button class="btn btn-secondary" @click="showIframeModal = false">
-              <i class="fas fa-times"></i>
-              {{ t('terminalMySessions.buttonClose') }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <BaseModal
+      :visible="showIframeModal"
+      :title="t('terminalMySessions.iframeCodeTitle')"
+      title-icon="fas fa-code"
+      size="medium"
+      @close="showIframeModal = false"
+    >
+      <p>{{ t('terminalMySessions.iframeCodeDesc') }}</p>
+      <textarea
+        :value="currentIframeCode"
+        readonly
+        class="iframe-code"
+        rows="4"
+        ref="iframeCodeRef"
+      ></textarea>
+
+      <template #footer>
+        <button class="btn btn-primary" @click="copyIframeCodeToClipboard">
+          <i class="fas fa-copy"></i>
+          {{ t('terminalMySessions.buttonCopyCode') }}
+        </button>
+        <button class="btn btn-secondary" @click="showIframeModal = false">
+          <i class="fas fa-times"></i>
+          {{ t('terminalMySessions.buttonClose') }}
+        </button>
+      </template>
+    </BaseModal>
 
     <!-- Modal de résultats de sync -->
-    <div v-if="showSyncModal" class="modal-overlay" @click="showSyncModal = false">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>
-            <i class="fas fa-sync-alt"></i>
-            {{ t('terminalMySessions.syncResultsTitle') }}
-          </h3>
-          <button class="modal-close" @click="showSyncModal = false">
-            <i class="fas fa-times"></i>
-          </button>
+    <BaseModal
+      :visible="showSyncModal"
+      :title="t('terminalMySessions.syncResultsTitle')"
+      title-icon="fas fa-sync-alt"
+      size="medium"
+      :show-default-footer="true"
+      :confirm-text="t('terminalMySessions.buttonOK')"
+      confirm-icon="fas fa-check"
+      @close="showSyncModal = false"
+      @confirm="showSyncModal = false"
+    >
+      <div v-if="syncAllResults">
+        <div class="sync-summary">
+          <div class="summary-item">
+            <span class="label">{{ t('terminalMySessions.totalSessions') }}:</span>
+            <span class="value">{{ syncAllResults.total_sessions }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="label">{{ t('terminalMySessions.syncedSessions') }}:</span>
+            <span class="value">{{ syncAllResults.synced_sessions }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="label">{{ t('terminalMySessions.updatedSessions') }}:</span>
+            <span class="value">{{ syncAllResults.updated_sessions || 0 }}</span>
+          </div>
+          <div class="summary-item" v-if="syncAllResults.error_count > 0">
+            <span class="label">{{ t('terminalMySessions.errors') }}:</span>
+            <span class="value text-danger">{{ syncAllResults.error_count }}</span>
+          </div>
         </div>
-        <div class="modal-body" v-if="syncAllResults">
-          <div class="sync-summary">
-            <div class="summary-item">
-              <span class="label">{{ t('terminalMySessions.totalSessions') }}:</span>
-              <span class="value">{{ syncAllResults.total_sessions }}</span>
-            </div>
-            <div class="summary-item">
-              <span class="label">{{ t('terminalMySessions.syncedSessions') }}:</span>
-              <span class="value">{{ syncAllResults.synced_sessions }}</span>
-            </div>
-            <div class="summary-item">
-              <span class="label">{{ t('terminalMySessions.updatedSessions') }}:</span>
-              <span class="value">{{ syncAllResults.updated_sessions || 0 }}</span>
-            </div>
-            <div class="summary-item" v-if="syncAllResults.error_count > 0">
-              <span class="label">{{ t('terminalMySessions.errors') }}:</span>
-              <span class="value text-danger">{{ syncAllResults.error_count }}</span>
-            </div>
-          </div>
 
-          <div v-if="syncAllResults.errors && syncAllResults.errors.length > 0" class="sync-errors">
-            <h4>{{ t('terminalMySessions.encounterededErrors') }}</h4>
-            <ul>
-              <li v-for="error in syncAllResults.errors" :key="error" class="text-danger">
-                {{ error }}
-              </li>
-            </ul>
-          </div>
-
-          <div class="modal-actions">
-            <button class="btn btn-primary" @click="showSyncModal = false">
-              <i class="fas fa-check"></i>
-              {{ t('terminalMySessions.buttonOK') }}
-            </button>
-          </div>
+        <div v-if="syncAllResults.errors && syncAllResults.errors.length > 0" class="sync-errors">
+          <h4>{{ t('terminalMySessions.encounterededErrors') }}</h4>
+          <ul>
+            <li v-for="error in syncAllResults.errors" :key="error" class="text-danger">
+              {{ error }}
+            </li>
+          </ul>
         </div>
       </div>
-    </div>
+    </BaseModal>
 
     <!-- Modals de partage -->
     <TerminalSharingModal
@@ -511,6 +500,7 @@ const { t } = useTranslations({
 })
 
 // Import dynamique des composants
+import BaseModal from '../Modals/BaseModal.vue'
 const TerminalSharingModal = defineAsyncComponent(() => import('../Terminal/TerminalSharingModal.vue'))
 const TerminalAccessModal = defineAsyncComponent(() => import('../Terminal/TerminalAccessModal.vue'))
 
@@ -1337,64 +1327,7 @@ async function hideAllInactiveSessions() {
   box-shadow: var(--shadow-sm);
 }
 
-
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: var(--z-index-modal);
-}
-
-.modal-content {
-  background: var(--color-bg-primary);
-  border-radius: var(--border-radius-lg);
-  width: 90%;
-  max-width: 600px;
-  max-height: 80vh;
-  overflow: auto;
-  box-shadow: var(--shadow-xl);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-lg);
-  border-bottom: var(--border-width-thin) solid var(--color-border-light);
-}
-
-.modal-header h3 {
-  margin: 0;
-  color: var(--color-text-primary);
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-semibold);
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: var(--font-size-xl);
-  cursor: pointer;
-  color: var(--color-text-muted);
-  padding: var(--spacing-xs);
-  transition: color var(--transition-fast);
-}
-
-.modal-close:hover {
-  color: var(--color-text-primary);
-}
-
-.modal-body {
-  padding: var(--spacing-lg);
-}
-
+/* iframe code textarea - specific style for modal content */
 .iframe-code {
   width: 100%;
   font-family: var(--font-family-monospace);
@@ -1405,13 +1338,6 @@ async function hideAllInactiveSessions() {
   resize: vertical;
   background-color: var(--color-bg-secondary);
   color: var(--color-text-primary);
-}
-
-.modal-actions {
-  display: flex;
-  gap: var(--spacing-sm);
-  justify-content: flex-end;
-  margin-top: var(--spacing-md);
 }
 
 /* Alert Styles */

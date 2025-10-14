@@ -306,7 +306,8 @@
   background-color: var(--color-bg-primary);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-xl);
-  max-width: 90%;
+  width: auto;
+  max-width: 90vw;
   max-height: 90vh;
   overflow-y: auto;
   z-index: var(--z-index-modal);
