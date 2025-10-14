@@ -74,6 +74,94 @@ Each domain has a dedicated store (e.g., `subscriptionPlans`, `subscriptions`, `
 - Domain-specific components override generic behavior when needed
 - Example: `SubscriptionPlansCustomer.vue` provides customer-facing UI while `SubscriptionPlans.vue` provides admin CRUD
 
+**BaseModal Component:**
+
+OCF Front uses a centralized modal system to ensure consistency and reduce duplication:
+
+- `BaseModal.vue` (367 lines) - Foundation modal with 18 configurable props and 3 slots
+- **18 Props**: `visible`, `title`, `titleIcon`, `size`, `isLoading`, `showClose`, `showDefaultFooter`, `confirmText`, `confirmIcon`, `confirmDisabled`, `cancelText`, `allowOutsideClose`, `noPadding`, `maxHeight`, `fullHeight`, `zIndex`, `trapFocus`, `showOverlay`
+- **3 Slots**: `header` (custom title), `default` (content), `footer` (custom buttons)
+- **4 Size Variants**: small (400px), medium (600px), large (800px), xlarge (1200px)
+- **CSS Safety**: All classes use `base-modal-` prefix to avoid global conflicts
+
+**Usage Pattern - BaseModal:**
+
+```vue
+<template>
+  <BaseModal
+    :visible="isVisible"
+    :title="t('myModal.title')"
+    title-icon="fas fa-user"
+    size="medium"
+    :is-loading="isSubmitting"
+    :show-default-footer="true"
+    :confirm-text="t('myModal.confirm')"
+    confirm-icon="fas fa-check"
+    :confirm-disabled="!isValid"
+    :cancel-text="t('myModal.cancel')"
+    @close="handleClose"
+    @confirm="handleConfirm"
+  >
+    <p>{{ t('myModal.description') }}</p>
+    <input v-model="formData.name" />
+  </BaseModal>
+</template>
+
+<script setup lang="ts">
+import BaseModal from '../Modals/BaseModal.vue'
+
+// Custom header/footer using slots:
+// <template #header>Custom Title</template>
+// <template #footer>Custom Buttons</template>
+</script>
+```
+
+**Guidelines:**
+
+- ✅ **Always use BaseModal** for new modals instead of creating custom modal wrappers
+- ✅ **Use `base-modal-` CSS prefix** if you need to override styles (scoped CSS)
+- ✅ **Leverage slots** for complex header/footer requirements
+- ✅ **Use size variants** instead of custom width styles
+- ❌ **Never create new modal base components** - extend BaseModal instead
+- ❌ **Never use generic class names** like `.modal-content` (causes conflicts)
+
+**SettingsPageWrapper Pattern:**
+
+OCF Front uses a dynamic component loader for settings pages to eliminate duplication:
+
+- `SettingsPageWrapper.vue` (43 lines) - Generic wrapper with `defineAsyncComponent()`
+- Replaces 6 duplicate wrapper files with a single reusable component
+- Uses router props to specify which settings component to load
+
+**Usage Pattern - Settings Routes:**
+
+```typescript
+// In router/index.ts
+{
+  path: 'settings/navigation',
+  name: 'SettingsNavigation',
+  component: () => import('../components/UI/SettingsPageWrapper.vue'),
+  props: { componentName: 'NavigationSettings' },  // Specify component name
+  meta: { requiresAuth: true, isSettings: true }
+}
+```
+
+**Available Settings Components:**
+
+- `NavigationSettings` - Navigation preferences
+- `LocalizationSettings` - Language and locale
+- `UISettings` - Theme and appearance
+- `NotificationSettings` - Notification preferences
+- `SecuritySettings` - Password and security
+- `SSHKeysSettings` - SSH key management
+
+**Guidelines:**
+
+- ✅ **Use SettingsPageWrapper** for all settings routes
+- ✅ **Pass `componentName` prop** matching the component map in SettingsPageWrapper.vue
+- ✅ **Add new settings** to the `componentMap` in SettingsPageWrapper.vue
+- ❌ **Never create new settings page wrappers** - use the generic wrapper
+
 **Layout System:**
 
 - `Layout.vue` wraps authenticated pages with navigation
@@ -343,10 +431,89 @@ export const useMyStore = defineStore('myStore', () => {
 
 When creating new entity stores, extend baseStore and define:
 
-- `fieldList` Map with field configurations
-- Translation messages for both languages
-- Domain-specific utility methods
+- `fieldList` Map with field configurations using FieldBuilder
+- Translation messages for both languages using `useStoreTranslations()`
+- Domain-specific utility methods wrapped with AsyncWrapper
 - Hook implementations for custom business logic
+
+**FieldBuilder Pattern:**
+
+OCF Front provides a fluent API for building field configurations:
+
+```typescript
+import { fieldBuilder } from '../utils/fieldBuilder'
+
+const fieldList = new Map([
+  ['name', fieldBuilder('name')
+    .label('Name')
+    .required()
+    .minLength(3)
+    .maxLength(100)
+    .build()
+  ],
+  ['email', fieldBuilder('email')
+    .label('Email')
+    .type('email')
+    .required()
+    .build()
+  ],
+  ['status', fieldBuilder('status')
+    .label('Status')
+    .type('select')
+    .options([
+      { label: 'Active', value: 'active' },
+      { label: 'Inactive', value: 'inactive' }
+    ])
+    .build()
+  ]
+])
+```
+
+**Available field types**: `text`, `email`, `password`, `number`, `select`, `checkbox`, `textarea`, `date`, `datetime`, `file`
+
+**AsyncWrapper Pattern:**
+
+OCF Front provides a utility to reduce boilerplate in async operations:
+
+```typescript
+import { asyncWrapper } from '../utils/asyncWrapper'
+
+// Before (verbose):
+const loadData = async () => {
+  try {
+    base.isLoading.value = true
+    base.error.value = ''
+    const response = await axios.get('/endpoint')
+    return response.data
+  } catch (err: any) {
+    console.error('Error loading data:', err)
+    base.error.value = err.response?.data?.error_message ||
+                       err.response?.data?.message ||
+                       t('myStore.loadError')
+    throw err
+  } finally {
+    base.isLoading.value = false
+  }
+}
+
+// After (concise):
+const loadData = asyncWrapper(
+  async () => {
+    const response = await axios.get('/endpoint')
+    return response.data
+  },
+  base,
+  'myStore.loadError',
+  'Loading data'
+)
+```
+
+**AsyncWrapper Benefits:**
+
+- ✅ Automatic loading state management
+- ✅ Consistent error handling with i18n fallback
+- ✅ Console logging with descriptive context
+- ✅ Reduces 15+ lines to 5 lines per async function
 
 **Component Development:**
 
@@ -483,6 +650,152 @@ Available formatters:
 - `formatPercentage(value, decimals, locale)` - Format decimal as percentage
 - `formatDuration(seconds)` - Format seconds to "2h 30m" format
 - `truncate(text, maxLength, ellipsis)` - Truncate long strings
+
+### Type Definitions
+
+**Centralized Type System:**
+
+OCF Front uses a centralized type system in `/src/types/` for consistent type definitions across the application:
+
+```plaintext
+src/types/
+├── index.ts         # Central export file (import from here)
+├── api.ts           # API request/response types
+├── entities.ts      # Domain entity types (15+ entities)
+├── services.ts      # Service layer types
+├── errors.ts        # Error types
+└── help.ts          # Help system types
+```
+
+**Import Pattern:**
+
+```typescript
+// ✅ CORRECT - Import from central types file
+import { User, SubscriptionPlan, ApiResponse, PaginatedResponse } from '../types'
+
+// ❌ WRONG - Don't import from individual files
+import { User } from '../types/entities'
+import { ApiResponse } from '../types/api'
+```
+
+**API Types (`/src/types/api.ts`):**
+
+```typescript
+// Generic API response wrapper
+export interface ApiResponse<T> {
+  data: T
+  message?: string
+  success?: boolean
+}
+
+// Paginated response
+export interface PaginatedResponse<T> {
+  data: T[]
+  total: number
+  currentPage: number
+  lastPage: number
+  perPage: number
+}
+
+// Usage example:
+const response: ApiResponse<User> = await axios.get('/users/current')
+const users: PaginatedResponse<User> = await axios.get('/users')
+```
+
+**Entity Types (`/src/types/entities.ts`):**
+
+All domain entities extend `BaseEntity` for consistency:
+
+```typescript
+export interface BaseEntity {
+  id: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface User extends BaseEntity {
+  email: string
+  username?: string
+  display_name?: string
+  roles?: string[]
+  is_active?: boolean
+  last_login?: string
+}
+
+export interface SubscriptionPlan extends BaseEntity {
+  name: string
+  description?: string
+  price: number
+  currency: string
+  billing_interval: 'month' | 'year'
+  features?: Record<string, any>
+  is_active?: boolean
+  stripe_price_id?: string
+}
+
+// ... 15+ more entity types (TerminalSession, SshKey, Course, etc.)
+```
+
+**Service Types (`/src/types/services.ts`):**
+
+```typescript
+// Async state management
+export interface AsyncState<T = any> {
+  isLoading: boolean
+  error: string
+  data?: T
+  lastLoaded?: Date
+}
+
+// Server metrics
+export interface ServerMetrics {
+  cpu_percent: number
+  ram_total_gb: number
+  ram_available_gb: number
+  disk_total_gb?: number
+  disk_available_gb?: number
+  active_terminals?: number
+  max_terminals?: number
+  timestamp?: string
+}
+
+// Instance types
+export interface InstanceType {
+  prefix: string
+  name: string
+  description: string
+  size: string
+  ram_gb?: number
+  cpu_cores?: number
+  display_order?: number
+}
+```
+
+**Type Safety Guidelines:**
+
+- ✅ **Use types from `/src/types/`** for all API responses and entities
+- ✅ **Import from central index file** (`from '../types'`)
+- ✅ **Extend `BaseEntity`** for new domain entities
+- ✅ **Use generic types** like `ApiResponse<T>` and `PaginatedResponse<T>`
+- ✅ **Define new types in appropriate file** (api.ts, entities.ts, or services.ts)
+- ❌ **Avoid `any` type** - use proper types from `/src/types/` instead
+- ❌ **Don't duplicate types** - add to centralized files
+
+**Adding New Types:**
+
+```typescript
+// 1. Add entity to /src/types/entities.ts
+export interface MyEntity extends BaseEntity {
+  name: string
+  status: 'active' | 'inactive'
+}
+
+// 2. Types are automatically exported via /src/types/index.ts
+// No changes needed - index.ts uses export * from './entities'
+
+// 3. Use in components/stores
+import { MyEntity } from '../types'
+```
 
 ## Feature Flags System
 
