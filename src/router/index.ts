@@ -154,37 +154,43 @@ const basicRoutes = [
       {
         path: 'settings/navigation',
         name: 'SettingsNavigation',
-        component: () => import('../components/Pages/Settings/NavigationSettingsPage.vue'),
+        component: () => import('../components/UI/SettingsPageWrapper.vue'),
+        props: { componentName: 'NavigationSettings' },
         meta: { requiresAuth: true, isSettings: true }
       },
       {
         path: 'settings/localization',
         name: 'SettingsLocalization',
-        component: () => import('../components/Pages/Settings/LocalizationSettingsPage.vue'),
+        component: () => import('../components/UI/SettingsPageWrapper.vue'),
+        props: { componentName: 'LocalizationSettings' },
         meta: { requiresAuth: true, isSettings: true }
       },
       {
         path: 'settings/ui',
         name: 'SettingsUI',
-        component: () => import('../components/Pages/Settings/UISettingsPage.vue'),
+        component: () => import('../components/UI/SettingsPageWrapper.vue'),
+        props: { componentName: 'UISettings' },
         meta: { requiresAuth: true, isSettings: true }
       },
       {
         path: 'settings/notifications',
         name: 'SettingsNotifications',
-        component: () => import('../components/Pages/Settings/NotificationSettingsPage.vue'),
+        component: () => import('../components/UI/SettingsPageWrapper.vue'),
+        props: { componentName: 'NotificationSettings' },
         meta: { requiresAuth: true, isSettings: true }
       },
       {
         path: 'settings/security',
         name: 'SettingsSecurity',
-        component: () => import('../components/Pages/Settings/SecuritySettingsPage.vue'),
+        component: () => import('../components/UI/SettingsPageWrapper.vue'),
+        props: { componentName: 'SecuritySettings' },
         meta: { requiresAuth: true, isSettings: true }
       },
       {
         path: 'settings/ssh-keys',
         name: 'SettingsSSHKeys',
-        component: () => import('../components/Pages/Settings/SSHKeysSettingsPage.vue'),
+        component: () => import('../components/UI/SettingsPageWrapper.vue'),
+        props: { componentName: 'SSHKeysSettings' },
         meta: { requiresAuth: true, isSettings: true }
       },
       { path: 'subscription-plans', name: 'SubscriptionPlans', component: () => import('../components/Pages/SubscriptionPlansCustomer.vue'), meta: { requiresAuth: true } },

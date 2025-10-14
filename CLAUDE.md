@@ -5,16 +5,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 **Development Server:**
+
 ```bash
 npm run dev    # Starts Vite dev server on http://localhost:4000
 ```
 
 **Build:**
+
 ```bash
 npm run build  # TypeScript compilation followed by Vite build
 ```
 
 **Preview:**
+
 ```bash
 npm run preview  # Preview production build on http://localhost:4000
 ```
@@ -22,6 +25,7 @@ npm run preview  # Preview production build on http://localhost:4000
 ## Architecture Overview
 
 ### Core Technologies
+
 - **Vue 3** with Composition API and TypeScript
 - **Pinia** for state management with persistence plugin
 - **Vue Router 4** for routing with authentication guards
@@ -34,6 +38,7 @@ npm run preview  # Preview production build on http://localhost:4000
 
 **BaseStore Pattern:**
 All entity stores extend `useBaseStore()` which provides:
+
 - Generic CRUD operations (`create`, `update`, `delete`, `getOne`)
 - Loading states (`isLoading`, `error`, `lastLoaded`)
 - Hook system for entity-specific actions (`afterCreate`, `beforeCreate`, `afterUpdate`, `afterDelete`)
@@ -42,12 +47,14 @@ All entity stores extend `useBaseStore()` which provides:
 
 **Entity Stores:**
 Each domain has a dedicated store (e.g., `subscriptionPlans`, `subscriptions`, `invoices`, `usageMetrics`) that:
+
 - Extends baseStore functionality
 - Defines field configurations for forms (`fieldList` Map)
 - Includes domain-specific translations via `useI18n().mergeLocaleMessage()`
 - Implements custom business logic and utility methods
 
 **Translation Management:**
+
 - Translations are embedded directly in stores, not separate files
 - Each store adds its translations to the global i18n instance using the `useStoreTranslations()` composable
 - Pattern: `const { t } = useStoreTranslations({ en: {...}, fr: {...} })`
@@ -107,14 +114,18 @@ Each domain has a dedicated store (e.g., `subscriptionPlans`, `subscriptions`, `
 **API Endpoint Guidelines:**
 
 - ✅ **Correct**: Use relative paths without version prefix
+
   ```javascript
   axios.get('/user-subscriptions/current')
   axios.post('/terminals/start-session', data)
   ```
+
 - ❌ **Incorrect**: Do NOT include `/api/v1/` prefix
+
   ```javascript
   axios.get('/api/v1/user-subscriptions/current')  // WRONG - double prefix
   ```
+
 - **Exception**: Only use full URLs for external services or when bypassing interceptors
 
 ### Subscription System
@@ -153,6 +164,7 @@ Each domain has a dedicated store (e.g., `subscriptionPlans`, `subscriptions`, `
 The application uses Vue i18n with an embedded translation pattern where translations are defined directly in components and stores rather than separate locale files. OCF Front provides two composables for cleaner translation registration:
 
 **For Components** - `useTranslations()` (registers in onMounted):
+
 ```typescript
 import { useTranslations } from '../composables/useTranslations'
 
@@ -175,6 +187,7 @@ const { t } = useTranslations({
 ```
 
 **For Stores** - `useStoreTranslations()` (registers immediately):
+
 ```typescript
 import { useStoreTranslations } from '../composables/useTranslations'
 
@@ -204,38 +217,46 @@ const { t } = useStoreTranslations({
 **Fully Translated Components:**
 
 **Authentication Pages:**
+
 - `/src/components/Pages/Login.vue` (9 strings)
 - `/src/components/Pages/Register.vue` (20 strings)
 - `/src/components/Pages/PasswordReset.vue` (35 strings)
 
 **Terminal Components:**
+
 - `/src/components/Pages/TerminalCreation.vue` (3 strings)
 - `/src/components/Pages/TerminalMySessions.vue` (70+ strings)
 - `/src/components/Terminal/TerminalStarter.vue` (62+ strings)
 - `/src/components/Terminal/TerminalSharingModal.vue` (already had i18n)
 
 **Modals & Flows:**
+
 - `/src/components/Modals/EntityModal.vue` (8 strings)
 - `/src/components/Flows/CheckoutFlow.vue` (7 error strings)
 
 **Settings Components:**
+
 - `/src/components/Settings/SecuritySettings.vue` (6 strings)
 - `/src/components/Settings/SSHKeysSettings.vue` (5 strings)
 - `/src/components/Settings/LocalizationSettings.vue` (1 string)
 
 **Help System:**
+
 - `/src/components/Pages/Help.vue` (fully translated)
 - `/src/locales/help/en.ts` (comprehensive English help documentation)
 - `/src/locales/help/fr.ts` (comprehensive French help documentation)
 
 **Demo Components:**
+
 - `/src/components/Demo/DemoPortal.vue` (18 strings)
 - `/src/components/Demo/DemoCheckout.vue` (12 strings)
 
 **Utility Components:**
+
 - `/src/components/Buttons/GenerationActions.vue` (5 error strings)
 
 **Store Translations:**
+
 - `/src/stores/userSettings.ts` (9 translation keys)
 - `/src/stores/sshKeys.ts` (6 translation keys)
 
@@ -375,6 +396,7 @@ try {
 - ❌ **Never show** raw error objects to users
 
 **Error Message Priority:**
+
 1. `err.response?.data?.error_message` - Backend-provided user-friendly message
 2. `err.response?.data?.message` - Alternative backend message field
 3. `t('domain.errorKey')` - Translated fallback message
@@ -424,6 +446,7 @@ import { useBaseStore } from './baseStore'
 ```
 
 **Path Resolution Rules:**
+
 - Always use **relative paths** (`./`, `../`, `../../`)
 - Count directory levels carefully
 - From stores → utils: `'../utils/formatters'`
@@ -451,6 +474,7 @@ const displayPrice = new Intl.NumberFormat('fr-FR', {
 ```
 
 Available formatters:
+
 - `formatCurrency(amount, currency, locale)` - Format money (amount in cents)
 - `formatDate(dateString, locale, fallback)` - Format date only
 - `formatDateTime(dateString, locale, fallback)` - Format date and time
@@ -512,6 +536,7 @@ async waitForInitialization() {
 ```
 
 **If feature flags fail on page reload but work after login:**
+
 - Check that axios baseURL is set BEFORE feature flag initialization
 - Verify request goes to `http://localhost:8080/api/v1/features` (not `http://localhost:4000/features`)
 - Check browser Network tab: should return JSON, not HTML
