@@ -2,6 +2,7 @@ import { reactive, ref } from 'vue'
 import axios from 'axios'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { isDemoMode, logDemoAction, simulateDelay } from '../services/demoConfig'
+import { createAsyncWrapper } from '../utils/asyncWrapper'
 
 export const useBaseStore = () => {
     // Add pagination translations (shared by all entities)
@@ -55,6 +56,9 @@ export const useBaseStore = () => {
     const isLoading = ref(false)
     const error = ref('')
     const lastLoaded = ref(null as Date | null)
+
+    // Create async wrapper with store state
+    const withAsync = createAsyncWrapper({ isLoading, error })
 
     // Prevent deletion of last object (configurable per store)
     const preventLastObjectDeletion = ref(false)
@@ -156,10 +160,7 @@ export const useBaseStore = () => {
 
     // API Loading Methods
     const loadEntities = async (endpoint: string, demoDataProvider?: () => any[]) => {
-        isLoading.value = true
-        error.value = ''
-
-        try {
+        return withAsync(async () => {
             let data: any[]
 
             if (isDemoMode() && demoDataProvider) {
@@ -184,21 +185,16 @@ export const useBaseStore = () => {
             lastLoaded.value = new Date()
 
             return data
-        } catch (err: any) {
-            error.value = err.response?.data?.error_message || err.message || 'Error loading data'
-            logDemoAction(`Error loading data: ${error.value}`)
-            throw err
-        } finally {
-            isLoading.value = false
-        }
+        }, 'errors.loadData', {
+            onError: () => {
+                logDemoAction(`Error loading data: ${error.value}`)
+            }
+        })
     }
 
     // Cursor-based pagination methods
     const loadEntitiesWithCursor = async (endpoint: string, cursor?: string, limit: number = 20, filters: Record<string, string> = {}, demoDataProvider?: () => any[]) => {
-        isLoading.value = true
-        error.value = ''
-
-        try {
+        return withAsync(async () => {
             let response: any
 
             if (isDemoMode() && demoDataProvider) {
@@ -274,13 +270,11 @@ export const useBaseStore = () => {
                 hasMore,
                 total
             }
-        } catch (err: any) {
-            error.value = err.response?.data?.error_message || err.message || 'Error loading data'
-            logDemoAction(`Error loading data with cursor: ${error.value}`)
-            throw err
-        } finally {
-            isLoading.value = false
-        }
+        }, 'errors.loadData', {
+            onError: () => {
+                logDemoAction(`Error loading data with cursor: ${error.value}`)
+            }
+        })
     }
 
     const refreshEntities = async (endpoint: string, demoDataProvider?: () => any[]) => {
@@ -295,10 +289,7 @@ export const useBaseStore = () => {
 
     // Generic CRUD operations
     const createEntity = async (endpoint: string, entityData: any) => {
-        isLoading.value = true
-        error.value = ''
-
-        try {
+        return withAsync(async () => {
             const processedData = await executeBeforeCreateHook(entityData)
 
             let response: any
@@ -325,19 +316,11 @@ export const useBaseStore = () => {
             await executeAfterCreateHook(response.data, entityData)
 
             return response.data
-        } catch (err: any) {
-            error.value = err.response?.data?.error_message || err.message || 'Error creating entity'
-            throw err
-        } finally {
-            isLoading.value = false
-        }
+        }, 'errors.createEntity')
     }
 
     const updateEntity = async (endpoint: string, entityId: string, entityData: any) => {
-        isLoading.value = true
-        error.value = ''
-
-        try {
+        return withAsync(async () => {
             // Process data through before update hook
             const processedData = await executeBeforeUpdateHook(entityData)
 
@@ -367,19 +350,11 @@ export const useBaseStore = () => {
             await executeAfterUpdateHook(response.data, entityData)
 
             return response.data
-        } catch (err: any) {
-            error.value = err.response?.data?.error_message || err.message || 'Error updating entity'
-            throw err
-        } finally {
-            isLoading.value = false
-        }
+        }, 'errors.updateEntity')
     }
 
     const deleteEntity = async (endpoint: string, entityId: string) => {
-        isLoading.value = true
-        error.value = ''
-
-        try {
+        return withAsync(async () => {
             if (isDemoMode()) {
                 logDemoAction(`Deleting demo entity ${entityId} at ${endpoint}`)
                 await simulateDelay(600)
@@ -396,12 +371,7 @@ export const useBaseStore = () => {
             await executeAfterDeleteHook(entityId)
 
             return true
-        } catch (err: any) {
-            error.value = err.response?.data?.error_message || err.message || 'Error deleting entity'
-            throw err
-        } finally {
-            isLoading.value = false
-        }
+        }, 'errors.deleteEntity')
     }
 
     return {

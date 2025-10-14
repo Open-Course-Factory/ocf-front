@@ -23,7 +23,7 @@ import { defineStore } from "pinia"
 import { ref, computed } from "vue"
 import axios from "axios"
 import { useFeatureFlags } from "../composables/useFeatureFlags"
-import { handleStoreError } from '../services/errorHandler'
+import { createAsyncWrapper } from '../utils/asyncWrapper'
 import { useStoreTranslations } from '../composables/useTranslations'
 
 export interface UserSettings {
@@ -197,6 +197,9 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
     const isLoading = ref(false)
     const error = ref('')
 
+    // Create async wrapper with store state
+    const withAsync = createAsyncWrapper({ isLoading, error })
+
     // Available options (with feature flags)
     const allPages = [
         { value: '/courses', label: 'Courses', featureFlag: 'course_conception' },
@@ -227,48 +230,27 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
 
     // API Calls
     async function loadSettings() {
-        isLoading.value = true
-        error.value = ''
-        try {
+        return withAsync(async () => {
             const response = await axios.get('/users/me/settings')
             settings.value = response.data
             return response.data
-        } catch (err: any) {
-            error.value = handleStoreError(err, 'userSettings.loadError')
-            throw err
-        } finally {
-            isLoading.value = false
-        }
+        }, 'userSettings.loadError')
     }
 
     async function updateSettings(data: Partial<UserSettings>) {
-        isLoading.value = true
-        error.value = ''
-        try {
+        return withAsync(async () => {
             const response = await axios.patch('/users/me/settings', data)
             settings.value = { ...settings.value, ...response.data }
             return response.data
-        } catch (err: any) {
-            error.value = handleStoreError(err, 'userSettings.saveError')
-            throw err
-        } finally {
-            isLoading.value = false
-        }
+        }, 'userSettings.saveError')
     }
 
     async function changePassword(data: ChangePasswordData) {
-        isLoading.value = true
-        error.value = ''
-        try {
+        return withAsync(async () => {
             await axios.post('/users/me/change-password', data)
             // Update password last changed date
             await loadSettings()
-        } catch (err: any) {
-            error.value = handleStoreError(err, 'userSettings.security.errorChangingPassword')
-            throw err
-        } finally {
-            isLoading.value = false
-        }
+        }, 'userSettings.security.errorChangingPassword')
     }
 
     return {

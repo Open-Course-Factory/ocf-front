@@ -28,7 +28,7 @@ import { demoPayments } from '../services/demoPayments'
 import { getDemoCurrentSubscription, getDemoUsageMetrics } from '../services/demoData'
 import { featureFlagService } from '../services/featureFlags'
 import { formatDate as formatDateUtil } from '../utils/formatters'
-import { handleStoreError } from '../services/errorHandler'
+import { createAsyncWrapper } from '../utils/asyncWrapper'
 
 export const useSubscriptionsStore = defineStore('subscriptions', () => {
 
@@ -171,12 +171,12 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     const error = ref('')
     const usageMetrics = ref([])
 
+    // Create async wrapper with store state
+    const withAsync = createAsyncWrapper({ isLoading, error })
+
     // Récupérer l'abonnement actuel
     const getCurrentSubscription = async () => {
-        isLoading.value = true
-        error.value = ''
-
-        try {
+        return withAsync(async () => {
             let data: any
 
             if (isDemoMode()) {
@@ -190,25 +190,19 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
 
             currentSubscription.value = data
             return data
-        } catch (err: any) {
-            if (err.response?.status === 404) {
-                // Pas d'abonnement actif
-                currentSubscription.value = null
-            } else {
-                error.value = handleStoreError(err, 'subscriptions.loadError')
+        }, 'subscriptions.loadError', {
+            onError: (err: any) => {
+                if (err.response?.status === 404) {
+                    // Pas d'abonnement actif
+                    currentSubscription.value = null
+                }
             }
-            throw err
-        } finally {
-            isLoading.value = false
-        }
+        })
     }
 
     // Créer une session de checkout Stripe
     const createCheckoutSession = async (planId: string, successUrl: string, cancelUrl: string, couponCode?: string, allowReplace: boolean = false) => {
-        isLoading.value = true
-        error.value = ''
-
-        try {
+        return withAsync(async () => {
             let response: any
 
             if (isDemoMode()) {
@@ -250,20 +244,12 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
             }
 
             return response
-        } catch (err: any) {
-            error.value = handleStoreError(err, 'subscriptions.checkoutError')
-            throw err
-        } finally {
-            isLoading.value = false
-        }
+        }, 'subscriptions.checkoutError')
     }
 
     // Créer une session portail client Stripe
     const createPortalSession = async (returnUrl: string) => {
-        isLoading.value = true
-        error.value = ''
-
-        try {
+        return withAsync(async () => {
             let response: any
 
             if (isDemoMode()) {
@@ -282,53 +268,32 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
             }
 
             return response
-        } catch (err: any) {
-            error.value = handleStoreError(err, 'subscriptions.portalError')
-            throw err
-        } finally {
-            isLoading.value = false
-        }
+        }, 'subscriptions.portalError')
     }
 
     // Annuler l'abonnement
     const cancelSubscription = async (subscriptionId: string, cancelImmediately: boolean = false) => {
-        isLoading.value = true
-        error.value = ''
-        
-        try {
+        return withAsync(async () => {
             const params = cancelImmediately ? '?cancel_immediately=true' : ''
             await axios.post(`/user-subscriptions/${subscriptionId}/cancel${params}`)
-            
+
             // Recharger l'abonnement actuel
             await getCurrentSubscription()
-            
+
             return true
-        } catch (err: any) {
-            error.value = handleStoreError(err, 'subscriptions.cancelError')
-            throw err
-        } finally {
-            isLoading.value = false
-        }
+        }, 'subscriptions.cancelError')
     }
 
     // Réactiver l'abonnement
     const reactivateSubscription = async (subscriptionId: string) => {
-        isLoading.value = true
-        error.value = ''
-        
-        try {
+        return withAsync(async () => {
             await axios.post(`/user-subscriptions/${subscriptionId}/reactivate`)
-            
+
             // Recharger l'abonnement actuel
             await getCurrentSubscription()
-            
+
             return true
-        } catch (err: any) {
-            error.value = handleStoreError(err, 'subscriptions.reactivateError')
-            throw err
-        } finally {
-            isLoading.value = false
-        }
+        }, 'subscriptions.reactivateError')
     }
 
     // Récupérer les métriques d'utilisation
@@ -366,10 +331,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         newPlanId: string,
         prorationBehavior: 'always_invoice' | 'create_prorations' | 'none' = 'always_invoice'
     ) => {
-        isLoading.value = true
-        error.value = ''
-
-        try {
+        return withAsync(async () => {
             let result: any
 
             if (isDemoMode()) {
@@ -409,22 +371,20 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
             console.log('Updated usage metrics:', usageMetrics.value)
 
             return result
-        } catch (err: any) {
-            // Enhanced error handling for Stripe-specific errors
-            const errorMessage = err.response?.data?.error_message || ''
+        }, 'subscriptions.upgradeError', {
+            onError: (err: any) => {
+                // Enhanced error handling for Stripe-specific errors
+                const errorMessage = err.response?.data?.error_message || ''
 
-            if (errorMessage.includes('Stripe price')) {
-                error.value = t('subscriptions.planNotAvailableError')
-            } else if (errorMessage.includes('Stripe')) {
-                error.value = t('subscriptions.paymentProviderError')
-            } else {
-                error.value = errorMessage || t('subscriptions.upgradeError')
+                if (errorMessage.includes('Stripe price')) {
+                    error.value = t('subscriptions.planNotAvailableError')
+                } else if (errorMessage.includes('Stripe')) {
+                    error.value = t('subscriptions.paymentProviderError')
+                } else if (errorMessage) {
+                    error.value = errorMessage
+                }
             }
-
-            throw err
-        } finally {
-            isLoading.value = false
-        }
+        })
     }
 
     // Vérifier les limites d'utilisation
@@ -444,7 +404,9 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
                 return response.data.allowed
             }
         } catch (err: any) {
-            error.value = handleStoreError(err, 'subscriptions.usageLimitError')
+            error.value = err.response?.data?.error_message ||
+                         err.response?.data?.message ||
+                         t('subscriptions.usageLimitError')
             return false
         }
     }

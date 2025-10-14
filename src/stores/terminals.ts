@@ -22,7 +22,7 @@
 import { defineStore } from "pinia"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { useBaseStore } from "./baseStore"
-import { handleStoreError } from '../services/errorHandler'
+import { createAsyncWrapper } from '../utils/asyncWrapper'
 import { ref } from 'vue'
 import axios from 'axios'
 
@@ -34,6 +34,9 @@ export const useTerminalsStore = defineStore('terminals', () => {
     const activeSessions = ref([])
     const isLoading = ref(false)
     const error = ref('')
+
+    // Create async wrapper with store state
+    const withAsync = createAsyncWrapper({ isLoading, error })
 
     const { t } = useStoreTranslations({
         en: {
@@ -290,54 +293,33 @@ export const useTerminalsStore = defineStore('terminals', () => {
 
     // Actions spécifiques aux terminaux
     const startTerminalSession = async (sessionData: { terms: string, expiry?: number, instance_type?: string, name?: string }) => {
-        isLoading.value = true
-        error.value = ''
-
-        try {
+        return withAsync(async () => {
             const response = await axios.post('/terminals/start-session', sessionData)
             await getUserSessions()
             return response.data
-        } catch (err: any) {
-            error.value = handleStoreError(err, 'terminals.startError')
-            throw err
-        } finally {
-            isLoading.value = false
-        }
+        }, 'terminals.startError')
     }
 
     const stopTerminalSession = async (terminalId: string) => {
-        isLoading.value = true
-        error.value = ''
-        
-        try {
+        return withAsync(async () => {
             await axios.post(`/terminals/${terminalId}/stop`)
             await getUserSessions()
             return true
-        } catch (err: any) {
-            error.value = handleStoreError(err, 'terminals.stopError')
-            throw err
-        } finally {
-            isLoading.value = false
-        }
+        }, 'terminals.stopError')
     }
 
     const getUserSessions = async () => {
-        isLoading.value = true
-        error.value = ''
-        
-        try {
+        return withAsync(async () => {
             const response = await axios.get('/terminals/user-sessions')
             activeSessions.value = response.data || []
             base.entities = activeSessions.value
             return activeSessions.value
-        } catch (err: any) {
-            error.value = handleStoreError(err, 'terminals.loadError')
-            activeSessions.value = []
-            base.entities = []
-            throw err
-        } finally {
-            isLoading.value = false
-        }
+        }, 'terminals.loadError', {
+            onError: () => {
+                activeSessions.value = []
+                base.entities = []
+            }
+        })
     }
 
     // const getConsoleWebSocketUrl = (terminalId: string, width?: number, height?: number) => {
