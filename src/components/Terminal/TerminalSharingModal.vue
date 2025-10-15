@@ -119,8 +119,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
-import { terminalService, type ShareTerminalRequest, type SharedTerminalInfo } from '../../services/terminalService'
-import { userService, type User } from '../../services/userService'
+import { terminalService, type ShareTerminalRequest, type SharedTerminalInfo } from '../../services/domain/terminal'
+import { userService, type User } from '../../services/domain/user'
 import BaseModal from '../Modals/BaseModal.vue'
 
 const { t } = useTranslations({

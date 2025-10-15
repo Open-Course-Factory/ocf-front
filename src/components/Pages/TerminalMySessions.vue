@@ -339,7 +339,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, defineAsyncComponent, computed } from 'vue'
 import axios from 'axios'
-import { terminalService } from '../../services/terminalService'
+import { terminalService } from '../../services/domain/terminal'
 import { useNotification } from '../../composables/useNotification'
 import { useTranslations } from '../../composables/useTranslations'
 import { useFormatters } from '../../composables/useFormatters'

@@ -21,8 +21,7 @@
 
 import { defineStore } from "pinia"
 import { useBaseStore } from "./baseStore"
-import { getDemoSubscriptionPlans } from '../services/demoData'
-import { isDemoMode, logDemoAction, simulateDelay } from '../services/demoConfig'
+import { getDemoSubscriptionPlans, isDemoMode, logDemoAction, simulateDelay } from '../services/demo'
 import axios from 'axios'
 import { formatCurrency } from '../utils/formatters'
 import { createAsyncWrapper } from '../utils/asyncWrapper'

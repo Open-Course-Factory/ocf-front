@@ -50,7 +50,7 @@
  */
 
 import { Ref } from 'vue'
-import { handleStoreError } from '../services/errorHandler'
+import { handleStoreError } from '../services/core/error'
 
 /**
  * State refs for async operations

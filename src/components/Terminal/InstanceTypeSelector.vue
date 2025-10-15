@@ -77,12 +77,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
-import { instanceUtils } from '../../services/terminalService'
+import { instanceUtils } from '../../services/domain/terminal'
 import InstanceCard from './InstanceCard.vue'
 import FormGroup from '../UI/FormGroup.vue'
 import Button from '../UI/Button.vue'
 import type { InstanceType } from '../../types'
-import type { InstanceAvailability } from '../../services/terminalService'
+import type { InstanceAvailability } from '../../services/domain/terminal'
 
 interface Props {
   instanceTypes: InstanceType[]

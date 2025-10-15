@@ -145,7 +145,7 @@
 <script setup lang="ts">
 import { reactive, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getCountryOptions } from '../../services/countries'
+import { getCountryOptions } from '../../services/data'
 import BaseModal from './BaseModal.vue'
 
 const { t } = useI18n()

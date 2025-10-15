@@ -116,7 +116,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
-import { logDemoAction, simulateDelay } from '../../services/demoConfig'
+import { logDemoAction, simulateDelay } from '../../services/demo'
 
 const route = useRoute()
 

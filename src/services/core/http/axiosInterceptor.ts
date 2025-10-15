@@ -1,6 +1,6 @@
 import axios, { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
-import { tokenService } from './tokenService';
-import { useCurrentUserStore } from '../stores/currentUser';
+import { tokenService } from '../../auth/tokenService';
+import { useCurrentUserStore } from '../../../stores/currentUser';
 
 // Request deduplication cache
 const pendingRequests = new Map<string, Promise<AxiosResponse>>();

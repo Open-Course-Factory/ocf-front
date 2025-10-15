@@ -20,9 +20,9 @@
  */
 
 import axios from 'axios';
-import type { HelpTranslations } from '../types/help';
-import { helpFr } from '../locales/help/fr';
-import { helpEn } from '../locales/help/en';
+import type { HelpTranslations } from '../../../types/help';
+import { helpFr } from '../../../locales/help/fr';
+import { helpEn } from '../../../locales/help/en';
 
 export interface HelpService {
   getTranslations(locale: string): Promise<HelpTranslations>;

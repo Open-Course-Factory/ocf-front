@@ -23,10 +23,8 @@ import { defineStore } from "pinia"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { ref } from 'vue'
 import axios from 'axios'
-import { isDemoMode, logDemoAction, simulateDelay } from '../services/demoConfig'
-import { demoPayments } from '../services/demoPayments'
-import { getDemoCurrentSubscription, getDemoUsageMetrics } from '../services/demoData'
-import { featureFlagService } from '../services/featureFlags'
+import { isDemoMode, logDemoAction, simulateDelay, demoPayments, getDemoCurrentSubscription, getDemoUsageMetrics } from '../services/demo'
+import { featureFlagService } from '../services/features'
 import { formatDate as formatDateUtil } from '../utils/formatters'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
 

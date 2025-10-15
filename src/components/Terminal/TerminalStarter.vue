@@ -107,7 +107,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import axios from 'axios'
-import { terminalService } from '../../services/terminalService'
+import { terminalService } from '../../services/domain/terminal'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTerminalMetricsStore } from '../../stores/terminalMetrics'
 import { useNotification } from '../../composables/useNotification'

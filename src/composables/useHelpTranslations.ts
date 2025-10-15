@@ -20,8 +20,8 @@
  */
 
 import { useI18n } from 'vue-i18n';
-import { helpService } from '../services/helpService';
-import { isDemoMode } from '../services/demoConfig';
+import { helpService } from '../services/domain/help';
+import { isDemoMode } from '../services/demo';
 
 export function useHelpTranslations() {
   const { mergeLocaleMessage, locale } = useI18n();

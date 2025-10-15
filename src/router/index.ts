@@ -21,7 +21,7 @@
 
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import { useCurrentUserStore } from '../stores/currentUser';
-import { featureFlagService } from '../services/featureFlags';
+import { featureFlagService } from '../services/features';
 import { useSettingsNavigation } from '../composables/useSettingsNavigation';
 import Layout from '../components/Layout.vue';
 import Courses from '../components/Pages/Courses.vue';

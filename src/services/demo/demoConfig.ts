@@ -26,7 +26,7 @@
  * allowing safe testing of subscription flows without real payments.
  */
 
-import { logger } from './logger'
+import { logger } from '../core/logging/logger'
 
 export class DemoConfigService {
   private static instance: DemoConfigService

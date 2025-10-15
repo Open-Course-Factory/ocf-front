@@ -325,7 +325,7 @@ import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTranslations } from '../../composables/useTranslations'
 import axios from 'axios'
-import { getCountryName } from '../../services/countries'
+import { getCountryName } from '../../services/data'
 import BillingAddressModal from '../Modals/BillingAddressModal.vue'
 
 const { t } = useTranslations({

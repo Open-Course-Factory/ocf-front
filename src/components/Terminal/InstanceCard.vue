@@ -65,9 +65,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
-import { instanceUtils } from '../../services/terminalService'
+import { instanceUtils } from '../../services/domain/terminal'
 import type { InstanceType } from '../../types'
-import type { InstanceAvailability } from '../../services/terminalService'
+import type { InstanceAvailability } from '../../services/domain/terminal'
 
 interface Props {
   instance: InstanceType

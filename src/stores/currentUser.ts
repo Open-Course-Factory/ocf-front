@@ -20,7 +20,7 @@
  */
 
 import { defineStore } from "pinia"
-import { tokenService } from "../services/tokenService"
+import { tokenService } from "../services/auth"
 import router from "../router/index"
 
 export const useCurrentUserStore = defineStore('currentUser', {

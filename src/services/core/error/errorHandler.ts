@@ -12,7 +12,7 @@ import {
   HttpStatusCode,
   ErrorSeverity,
   BackendErrorResponse,
-} from '../types/errors';
+} from '../../../types/errors';
 
 /**
  * Options for error handling

@@ -21,7 +21,7 @@
 
 import { useI18n } from 'vue-i18n'
 import { computed } from 'vue'
-import { saveLocale, getSupportedLocales, isValidLocale } from '../services/localeStorage'
+import { saveLocale, getSupportedLocales, isValidLocale } from '../services/core/storage'
 
 /**
  * Composable for managing locale/language settings

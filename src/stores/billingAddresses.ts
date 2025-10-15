@@ -21,7 +21,7 @@
 
 import { defineStore } from "pinia"
 import { useBaseStore } from "./baseStore"
-import { getCountryOptions, getCountryName } from '../services/countries'
+import { getCountryOptions, getCountryName } from '../services/data'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
 

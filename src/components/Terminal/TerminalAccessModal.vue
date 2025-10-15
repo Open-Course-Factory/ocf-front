@@ -136,8 +136,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { terminalService, type TerminalShareOutput, type SharedTerminalInfo } from '../../services/terminalService'
-import { userService, type User } from '../../services/userService'
+import { terminalService, type TerminalShareOutput, type SharedTerminalInfo } from '../../services/domain/terminal'
+import { userService, type User } from '../../services/domain/user'
 import BaseModal from '../Modals/BaseModal.vue'
 
 const { t } = useI18n()

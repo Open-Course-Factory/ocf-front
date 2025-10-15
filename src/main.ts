@@ -30,9 +30,9 @@ import 'element-plus/dist/index.css'
 import ElementPlus from 'element-plus'
 import { piniaPluginPersist } from './piniaPluginPersist'
 import { useCurrentUserStore } from './stores/currentUser'
-import { setupAxiosInterceptors, setupAxiosDefaults } from './services/axiosInterceptor'
-import { getSavedLocale } from './services/localeStorage'
-import { featureFlagService } from './services/featureFlags'
+import { setupAxiosInterceptors, setupAxiosDefaults } from './services/core/http'
+import { getSavedLocale } from './services/core/storage'
+import { featureFlagService } from './services/features'
 
 // Vuetify
 import 'vuetify/styles'

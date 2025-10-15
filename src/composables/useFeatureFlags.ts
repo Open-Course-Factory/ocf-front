@@ -20,7 +20,7 @@
  */
 
 import { computed, inject, provide } from 'vue'
-import { featureFlagService, isFeatureEnabled, type FeatureFlagConfig } from '../services/featureFlags'
+import { featureFlagService, isFeatureEnabled, type FeatureFlagConfig } from '../services/features'
 import { useCurrentUserStore } from '../stores/currentUser'
 
 // Feature flags context key for provide/inject

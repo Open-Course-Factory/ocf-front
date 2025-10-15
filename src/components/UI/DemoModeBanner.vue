@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { demoConfig } from '../../services/demoConfig'
+import { demoConfig } from '../../services/demo'
 
 const showBanner = ref(false)
 const bannerText = ref('')

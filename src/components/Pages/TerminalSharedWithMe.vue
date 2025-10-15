@@ -211,8 +211,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { terminalService, type SharedTerminalInfo } from '../../services/terminalService'
-import { userService, type User } from '../../services/userService'
+import { terminalService, type SharedTerminalInfo } from '../../services/domain/terminal'
+import { userService, type User } from '../../services/domain/user'
 import axios from 'axios'
 import { useNotification } from '../../composables/useNotification'
 

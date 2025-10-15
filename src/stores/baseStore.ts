@@ -1,7 +1,7 @@
 import { reactive, ref } from 'vue'
 import axios from 'axios'
 import { useStoreTranslations } from '../composables/useTranslations'
-import { isDemoMode, logDemoAction, simulateDelay } from '../services/demoConfig'
+import { isDemoMode, logDemoAction, simulateDelay } from '../services/demo'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
 
 export const useBaseStore = () => {
