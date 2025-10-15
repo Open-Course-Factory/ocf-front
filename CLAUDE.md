@@ -1110,6 +1110,6 @@ Feature flags can be disabled instantly via environment variables for emergency 
 # Disable core course functionality
 VITE_FEATURE_FLAG_COURSE_CONCEPTION=false
 
-# Disable all terminal/lab features
+# Disable all terminal features
 VITE_FEATURE_FLAG_TERMINAL_MANAGEMENT=false
 ```

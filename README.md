@@ -5,7 +5,7 @@ Vue.js frontend application for [Open Course Factory](https://usine.solution-lib
 ## 🚀 Features
 
 - **Course Design & Management** - Complete course creation workflow with chapters, sections, and pages
-- **Terminal/Lab Management** - Interactive terminal sessions with sharing capabilities
+- **Terminal Management** - Interactive terminal sessions with sharing capabilities
 - **Subscription System** - Stripe-integrated billing and subscription management
 - **Multi-language Support** - French and English with embedded translations
 - **Demo Mode** - Safe testing environment with mock data
@@ -78,7 +78,7 @@ OCF Front includes a GitLab-style feature flags system for safe feature deployme
 # Disable course management features
 VITE_FEATURE_FLAG_COURSE_CONCEPTION=false
 
-# Disable terminal/lab functionality
+# Disable terminal functionality
 VITE_FEATURE_FLAG_TERMINAL_MANAGEMENT=false
 ```
 

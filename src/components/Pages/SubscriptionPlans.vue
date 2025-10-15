@@ -274,11 +274,10 @@ const syncWithStripe = async () => {
                                 <strong>{{ entityStore.formatPrice(entity.price_amount, entity.currency) }}</strong>
                                 <span class="billing-period">/ {{ entity.billing_interval }}</span>
                             </div>
-                            <div class="plan-limits" v-if="entity.max_courses || entity.max_concurrent_users || entity.max_lab_sessions">
+                            <div class="plan-limits" v-if="entity.max_courses || entity.max_concurrent_users">
                                 <small class="text-muted">
                                     <span v-if="entity.max_courses">{{ entity.max_courses }} cours max</span>
                                     <span v-if="entity.max_concurrent_users"> • {{ entity.max_concurrent_users }} utilisateurs</span>
-                                    <span v-if="entity.max_lab_sessions"> • {{ entity.max_lab_sessions }} sessions lab</span>
                                 </small>
                             </div>
                             <div class="plan-trial" v-if="entity.trial_days > 0">

@@ -53,7 +53,6 @@ export class DemoDataService {
         features: [
           'Create up to 5 courses',
           '2 concurrent users in labs',
-          '10 lab sessions per month',
           'Basic support',
           'Community access'
         ],
@@ -76,7 +75,6 @@ export class DemoDataService {
         features: [
           'Create up to 25 courses',
           '10 concurrent users in labs',
-          '100 lab sessions per month',
           'Priority support',
           'Advanced analytics',
           'Custom branding'
@@ -100,7 +98,6 @@ export class DemoDataService {
         features: [
           'Unlimited courses',
           'Unlimited concurrent users',
-          'Unlimited lab sessions',
           'Dedicated support',
           'Custom integrations',
           'SLA guarantee',

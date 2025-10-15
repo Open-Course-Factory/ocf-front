@@ -104,7 +104,6 @@ export class DemoPaymentService {
     // Mock different scenarios based on metric type
     const mockLimits = {
       courses_created: { current: 3, limit: 25 },
-      lab_sessions: { current: 85, limit: 100 },
       concurrent_users: { current: 7, limit: 10 },
       storage_used: { current: 1500, limit: 5000 }
     }

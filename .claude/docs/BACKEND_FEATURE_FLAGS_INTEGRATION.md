@@ -92,7 +92,7 @@ Sync user usage limits after toggling features that affect metrics (courses, ter
 **Auto-triggered when:**
 
 - Toggling `course_conception` (affects `courses` metric)
-- Toggling `terminal_management` (affects `concurrent_terminals`, `lab_sessions` metrics)
+- Toggling `terminal_management` (affects `concurrent_terminals` metrics)
 
 ## Caching Strategy
 

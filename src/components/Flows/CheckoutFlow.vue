@@ -75,10 +75,6 @@
                     <i class="fas fa-users"></i>
                     {{ selectedPlan.max_concurrent_users === -1 ? t('checkout.unlimited') : selectedPlan.max_concurrent_users }} {{ t('checkout.users') }}
                   </div>
-                  <div v-if="selectedPlan.max_lab_sessions" class="limit-item">
-                    <i class="fas fa-flask"></i>
-                    {{ selectedPlan.max_lab_sessions === -1 ? t('checkout.unlimited') : selectedPlan.max_lab_sessions }} {{ t('checkout.labSessions') }}
-                  </div>
                 </div>
                 
                 <div v-if="selectedPlan.trial_days > 0" class="trial-info">
@@ -350,7 +346,6 @@ const { t } = useTranslations({
       unlimited: 'Unlimited',
       courses: 'courses',
       users: 'concurrent users',
-      labSessions: 'lab sessions',
       trialDays: '{days} days free trial',
       couponCode: 'Coupon Code',
       couponPlaceholder: 'Enter coupon code',
@@ -403,7 +398,6 @@ const { t } = useTranslations({
       unlimited: 'Illimité',
       courses: 'cours',
       users: 'utilisateurs concurrents',
-      labSessions: 'sessions lab',
       trialDays: '{days} jours d\'essai gratuit',
       couponCode: 'Code promo',
       couponPlaceholder: 'Entrez votre code promo',

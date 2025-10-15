@@ -136,8 +136,8 @@ Edit `src/services/featureFlags.ts`:
 terminal_management: {
   enabled: true,
   description: 'Enable terminal features',
-  controlledMetrics: ['concurrent_terminals', 'lab_sessions'],
-  controlledFeatures: ['terminal_access', 'lab_management']
+  controlledMetrics: ['concurrent_terminals'],
+  controlledFeatures: ['terminal_access']
 }
 ```
 
@@ -150,7 +150,7 @@ The system automatically filters metrics based on the configuration. No addition
 | Feature Flag          | Controlled Metrics                       | Controlled Features                    |
 |-----------------------|------------------------------------------|----------------------------------------|
 | `course_conception`   | `courses`                                | `course_creation`, `course_editing`    |
-| `terminal_management` | `concurrent_terminals`, `lab_sessions`   | `terminal_access`, `lab_management`    |
+| `terminal_management` | `concurrent_terminals`                   | `terminal_access`                      |
 
 ## Benefits of This Approach
 
