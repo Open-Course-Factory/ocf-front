@@ -61,10 +61,19 @@
             <i class="fas fa-eye-slash"></i>
             {{ t('terminalMySessions.buttonHideAllInactive') }}
           </button>
+          <!-- Toggle pour afficher/masquer les sessions cachées -->
+          <label class="toggle-hidden-label">
+            <input
+              type="checkbox"
+              v-model="showHiddenTerminals"
+              class="toggle-hidden-checkbox"
+            />
+            <span>{{ t('terminalMySessions.buttonShowHidden') }}</span>
+          </label>
         </div>
       </div>
 
-      <div v-if="isLoading && sessions.length === 0" class="loading-section">
+      <div v-if="isLoading && allSessions.length === 0" class="loading-section">
         <i class="fas fa-spinner fa-spin"></i> {{ t('terminalMySessions.loadingSessions') }}
       </div>
 
@@ -75,7 +84,7 @@
         </button>
       </div>
 
-      <div v-if="sessions.length > 0" class="sessions-grid">
+      <div v-if="allSessions.length > 0" class="sessions-grid">
         <template v-for="(session, index) in sortedSessions" :key="session.id || session.session_id">
           <!-- Separator between active and inactive sessions -->
           <div
@@ -361,7 +370,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, defineAsyncComponent, computed } from 'vue'
+import { ref, onMounted, onUnmounted, defineAsyncComponent, computed, watch } from 'vue'
 import axios from 'axios'
 import { terminalService } from '../../services/domain/terminal'
 import { useNotification } from '../../composables/useNotification'
@@ -382,8 +391,11 @@ const { t } = useTranslations({
       buttonRefresh: 'Refresh',
       buttonNewSession: 'New Session',
       buttonHideAllInactive: 'Hide All Inactive',
+      buttonShowHidden: 'Show Hidden',
       loadingSessions: 'Loading sessions...',
       errorRetry: 'Retry',
+      errorHidingActive: 'Cannot hide active terminals. Please stop the terminal first.',
+      errorHidingPermission: 'You do not have permission to hide this terminal.',
       synchronized: 'Synchronized',
       upToDate: 'Up to date',
       terminalId: 'Terminal ID',
@@ -464,8 +476,11 @@ const { t } = useTranslations({
       buttonRefresh: 'Actualiser',
       buttonNewSession: 'Nouvelle Session',
       buttonHideAllInactive: 'Masquer toutes les inactives',
+      buttonShowHidden: 'Afficher les masquées',
       loadingSessions: 'Chargement des sessions...',
       errorRetry: 'Réessayer',
+      errorHidingActive: 'Impossible de masquer un terminal actif. Veuillez d\'abord l\'arrêter.',
+      errorHidingPermission: 'Vous n\'avez pas la permission de masquer ce terminal.',
       synchronized: 'Synchronisé',
       upToDate: 'À jour',
       terminalId: 'Terminal ID',
@@ -546,6 +561,7 @@ const sessions = ref([])
 const sharedSessions = ref([])
 const isLoading = ref(false)
 const error = ref('')
+const showHiddenTerminals = ref(false)
 
 // Snapshot of shared session IDs for tracking changes
 const sharedSessionIdsSnapshot = ref(new Set<string>())
@@ -591,12 +607,21 @@ const allSessions = computed(() => {
   const ownedWithFlag = sessions.value.map(s => ({ ...s, isShared: false }))
 
   // Mark shared sessions and extract terminal data
-  const sharedWithFlag = sharedSessions.value.map(shared => ({
-    ...shared.terminal,
-    isShared: true,
-    shared_by: shared.shared_by_display_name || shared.shared_by, // Use display name, fallback to ID
-    access_level: shared.access_level
-  }))
+  const sharedWithFlag = sharedSessions.value.map(shared => {
+    const session = {
+      ...shared.terminal,
+      isShared: true,
+      shared_by: shared.shared_by_display_name || shared.shared_by, // Use display name, fallback to ID
+      access_level: shared.access_level
+    }
+
+    // Debug: Log shared session structure to check if id exists
+    if (shared.terminal && !shared.terminal.id) {
+      console.warn('Shared terminal missing id field:', shared.terminal)
+    }
+
+    return session
+  })
 
   return [...ownedWithFlag, ...sharedWithFlag]
 })
@@ -606,7 +631,7 @@ const activeSessionsCount = computed(() => {
   return allSessions.value.filter(session => !isTerminalInactive(session.status)).length
 })
 
-// Computed property to count inactive sessions
+// Computed property to count all inactive sessions (owned + shared)
 const inactiveSessionsCount = computed(() => {
   return allSessions.value.filter(session => isTerminalInactive(session.status)).length
 })
@@ -626,6 +651,11 @@ const sortedSessions = computed(() => {
     const bDate = new Date(b.created_at || 0).getTime()
     return bDate - aDate
   })
+})
+
+// Watch for toggle changes to reload sessions
+watch(showHiddenTerminals, () => {
+  loadSessions()
 })
 
 // Dropdown management functions
@@ -691,7 +721,9 @@ async function loadSessions() {
 
   try {
     console.log('Loading sessions...')
-    const response = await axios.get('/terminals/user-sessions')
+    // Include hidden terminals if toggle is on
+    const params = showHiddenTerminals.value ? { include_hidden: true } : {}
+    const response = await axios.get('/terminals/user-sessions', { params })
     sessions.value = response.data || []
     console.log('Sessions loaded:', sessions.value)
   } catch (err: any) {
@@ -1088,6 +1120,16 @@ function closeAccessModal() {
 }
 
 async function discardTerminal(terminalId: string) {
+  // Find the terminal in both owned and shared sessions to check its status
+  const terminal = sessions.value.find(s => s.id === terminalId) ||
+                   sharedSessions.value.find(s => s.terminal?.id === terminalId)?.terminal
+
+  // Prevent hiding active terminals
+  if (terminal && terminal.status === 'active') {
+    error.value = t('terminalMySessions.errorHidingActive')
+    return
+  }
+
   const confirmed = await showConfirm(
     t('terminalMySessions.confirmHide'),
     t('terminalMySessions.confirmHideTitle')
@@ -1099,18 +1141,31 @@ async function discardTerminal(terminalId: string) {
   try {
     console.log('Hiding terminal:', terminalId)
     await axios.post(`/terminals/${terminalId}/hide`)
-
-    // Remove from local display after successful API call
-    sessions.value = sessions.value.filter(session => session.id !== terminalId)
     console.log('Terminal successfully hidden:', terminalId)
+
+    // Reload both owned and shared sessions to get updated list from backend
+    await Promise.all([
+      loadSessions(),
+      loadSharedSessions()
+    ])
   } catch (err: any) {
     console.error('Erreur lors du masquage du terminal:', err)
-    error.value = err.response?.data?.error_message || t('terminalMySessions.errorHiding')
+
+    if (err.response?.status === 400) {
+      error.value = t('terminalMySessions.errorHidingActive')
+    } else if (err.response?.status === 403) {
+      error.value = t('terminalMySessions.errorHidingPermission')
+    } else {
+      error.value = err.response?.data?.error_message || t('terminalMySessions.errorHiding')
+    }
   }
 }
 
 async function hideAllInactiveSessions() {
-  const inactive = sessions.value.filter(session => isTerminalInactive(session.status))
+  // Get all inactive sessions (both owned and shared)
+  const inactive = allSessions.value.filter(session =>
+    isTerminalInactive(session.status)
+  )
   if (inactive.length === 0) return
 
   const confirmed = await showConfirm(
@@ -1120,12 +1175,19 @@ async function hideAllInactiveSessions() {
   if (!confirmed) return
 
   try {
-    for (const session of inactive) {
-      await axios.post(`/terminals/${session.id}/hide`)
-    }
-    // Remove all inactive from local display
-    sessions.value = sessions.value.filter(session => !isTerminalInactive(session.status))
+    // Hide all inactive terminals (both owned and shared)
+    const hidePromises = inactive.map(session =>
+      axios.post(`/terminals/${session.id}/hide`)
+    )
+    await Promise.all(hidePromises)
+
     console.log('All inactive terminals successfully hidden')
+
+    // Reload both owned and shared sessions to get updated list from backend
+    await Promise.all([
+      loadSessions(),
+      loadSharedSessions()
+    ])
   } catch (err: any) {
     console.error('Erreur lors du masquage global:', err)
     error.value = err.response?.data?.error_message || t('terminalMySessions.errorHidingAll')
@@ -1868,5 +1930,62 @@ async function hideAllInactiveSessions() {
   height: 1px;
   background-color: var(--color-border-light);
   margin: var(--spacing-xs) 0;
+}
+
+/* Toggle Hidden Checkbox Styles */
+.toggle-hidden-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-md);
+  background-color: var(--color-bg-secondary);
+  border: var(--border-width-medium) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-base);
+  user-select: none;
+}
+
+.toggle-hidden-label:hover {
+  background-color: var(--color-bg-tertiary);
+  border-color: var(--color-border-medium);
+}
+
+.toggle-hidden-checkbox {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: var(--border-width-medium) solid var(--color-border-medium);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--color-bg-primary);
+  cursor: pointer;
+  position: relative;
+  transition: all var(--transition-base);
+  flex-shrink: 0;
+}
+
+.toggle-hidden-checkbox:checked {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.toggle-hidden-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--color-white);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.toggle-hidden-checkbox:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus-primary);
 }
 </style>
