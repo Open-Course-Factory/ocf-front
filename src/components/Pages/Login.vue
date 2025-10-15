@@ -96,7 +96,7 @@ const currentUserStore = useCurrentUserStore();
 const settingsStore = useUserSettingsStore();
 const { setLocale } = useLocale();
 const { setTheme } = useTheme();
-const { isEnabled, refreshAfterLogin } = useFeatureFlags();
+const { isEnabled, refreshAfterLogin, waitForInitialization } = useFeatureFlags();
 const errorMessage = ref('');
 
 async function handleSubmit() {
@@ -128,6 +128,10 @@ async function redirect() {
       await refreshAfterLogin()
       console.log('🏴 Feature flags refreshed successfully after login')
 
+      // Wait for feature flags to be fully initialized before proceeding
+      await waitForInitialization()
+      console.log('🏴 Feature flags fully initialized, proceeding with redirect')
+
       // Load user settings
       const settings = await settingsStore.loadSettings();
 
@@ -155,22 +159,17 @@ async function redirect() {
 
       // If no valid landing page, find first available enabled route
       if (!landingPage) {
-        // Priority order: dashboard > terminals > courses
-        if (isEnabled('terminal_management')) {
-          landingPage = '/subscription-dashboard';
-        } else if (isEnabled('course_conception')) {
-          landingPage = '/courses';
-        } else {
-          // Fallback to subscription dashboard (always available)
-          landingPage = '/subscription-dashboard';
-        }
+        // Priority order: terminal sessions > subscription dashboard
+        landingPage = '/terminal-sessions';
       }
 
-      router.push(landingPage);
+      console.log('🔐 Redirecting to:', landingPage)
+      await router.push(landingPage);
+      console.log('🔐 Navigation completed successfully')
     } catch (error) {
-      console.error('Error loading settings, using fallback route:', error);
-      // Fallback to subscription dashboard (always available)
-      router.push({ name: "SubscriptionDashboard" });
+      console.error('Error during redirect:', error);
+      // Fallback to terminal sessions (always available)
+      await router.push('/terminal-sessions');
     }
   }
 }

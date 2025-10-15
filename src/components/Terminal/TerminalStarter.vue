@@ -430,6 +430,16 @@ async function startNewSession() {
     return
   }
 
+  // Sync sessions first to ensure finished sessions are updated
+  try {
+    await syncAllSessions()
+    // Refresh usage count after syncing
+    await loadCurrentTerminalUsage()
+  } catch (syncError) {
+    console.error('Failed to sync sessions before launch:', syncError)
+    // Continue anyway - this is a best-effort sync
+  }
+
   // Check usage limits
   startStatus.value = t('terminalStarter.checkingLimits')
 

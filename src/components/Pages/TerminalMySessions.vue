@@ -288,22 +288,21 @@
       @confirm="showSyncModal = false"
     >
       <div v-if="syncAllResults">
+        <p v-if="syncAllResults.updated_sessions > 0" class="sync-description">
+          {{ t('terminalMySessions.syncDescription') }}
+        </p>
+        <p v-else class="sync-description">
+          {{ t('terminalMySessions.syncDescriptionNoChanges') }}
+        </p>
+
         <div class="sync-summary">
-          <div class="summary-item">
-            <span class="label">{{ t('terminalMySessions.totalSessions') }}:</span>
-            <span class="value">{{ syncAllResults.total_sessions }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="label">{{ t('terminalMySessions.syncedSessions') }}:</span>
-            <span class="value">{{ syncAllResults.synced_sessions }}</span>
-          </div>
-          <div class="summary-item">
+          <div class="summary-item" v-if="syncAllResults.updated_sessions > 0">
             <span class="label">{{ t('terminalMySessions.updatedSessions') }}:</span>
-            <span class="value">{{ syncAllResults.updated_sessions || 0 }}</span>
+            <span class="value highlight-success">{{ syncAllResults.updated_sessions }}</span>
           </div>
           <div class="summary-item" v-if="syncAllResults.error_count > 0">
             <span class="label">{{ t('terminalMySessions.errors') }}:</span>
-            <span class="value text-danger">{{ syncAllResults.error_count }}</span>
+            <span class="value highlight-danger">{{ syncAllResults.error_count }}</span>
           </div>
         </div>
 
@@ -397,10 +396,10 @@ const { t } = useTranslations({
       iframeCodeDesc: 'Copy this code to embed the terminal in your page:',
       buttonCopyCode: 'Copy code',
       buttonClose: 'Close',
-      syncResultsTitle: 'Synchronization Results',
-      totalSessions: 'Total sessions',
-      syncedSessions: 'Synced sessions',
-      updatedSessions: 'Updated sessions',
+      syncResultsTitle: 'Synchronization Complete',
+      syncDescription: 'Some sessions have been updated with their latest status from the server.',
+      syncDescriptionNoChanges: 'All sessions are already up to date. No changes detected.',
+      updatedSessions: 'Sessions updated',
       errors: 'Errors',
       encounterededErrors: 'Encountered errors:',
       buttonOK: 'OK',
@@ -473,9 +472,9 @@ const { t } = useTranslations({
       iframeCodeDesc: 'Copiez ce code pour intégrer le terminal dans votre page :',
       buttonCopyCode: 'Copier le code',
       buttonClose: 'Fermer',
-      syncResultsTitle: 'Résultats de la synchronisation',
-      totalSessions: 'Sessions totales',
-      syncedSessions: 'Sessions synchronisées',
+      syncResultsTitle: 'Synchronisation terminée',
+      syncDescription: 'Certaines sessions ont été mises à jour avec leur dernier statut depuis le serveur.',
+      syncDescriptionNoChanges: 'Toutes les sessions sont déjà à jour. Aucun changement détecté.',
       updatedSessions: 'Sessions mises à jour',
       errors: 'Erreurs',
       encounterededErrors: 'Erreurs rencontrées:',
@@ -1479,28 +1478,56 @@ async function hideAllInactiveSessions() {
 }
 
 
+.sync-description {
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: var(--color-bg-secondary);
+  border-left: 3px solid var(--color-info);
+  border-radius: var(--border-radius-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+}
+
 .sync-summary {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: var(--spacing-md);
   margin-bottom: var(--spacing-lg);
+}
+
+.sync-summary:has(.summary-item:nth-child(2)) {
+  grid-template-columns: 1fr 1fr;
 }
 
 .summary-item {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+  padding: var(--spacing-md);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-thin) solid var(--color-border-light);
 }
 
 .summary-item .label {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
 }
 
 .summary-item .value {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
+}
+
+.summary-item .value.highlight-success {
+  color: var(--color-success);
+}
+
+.summary-item .value.highlight-danger {
+  color: var(--color-danger);
 }
 
 .sync-errors {

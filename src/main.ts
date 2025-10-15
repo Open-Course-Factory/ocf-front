@@ -117,6 +117,7 @@ async function initializeApp() {
     // Step 2: Now that Pinia is registered, stores can access persisted data
     // Initialize currentUser store to ensure token is loaded from localStorage
     const userStore = useCurrentUserStore()
+    userStore.initializeAuth() // Initialize auth state from stored token
     console.log('🏴 Current user authenticated:', userStore.isAuthenticated)
 
     // Step 3: Clear any stale localStorage flags to prevent conflicts with backend

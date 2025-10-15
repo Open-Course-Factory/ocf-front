@@ -30,20 +30,13 @@ export const useCurrentUserStore = defineStore('currentUser', {
             userDisplayName: "",
             userId: "",
             userRoles: [],
+            _isAuthenticated: false, // Internal reactive flag
         }
     },
     getters: {
         isAuthenticated(): boolean {
-            // Vérifier si le token est valide ET non expiré
-            const hasToken = tokenService.hasValidToken();
-            
-            // Si le token est expiré, déconnecter automatiquement
-            if (!hasToken && this.userName) {
-                console.log('Token expiré, déconnexion automatique');
-                this.autoLogout();
-            }
-            
-            return hasToken;
+            // Use the internal reactive flag instead of calling tokenService
+            return this._isAuthenticated;
         },
         secretToken(): string {
             return tokenService.getAccessToken() || "";
@@ -53,28 +46,43 @@ export const useCurrentUserStore = defineStore('currentUser', {
         // Modifier la méthode de sauvegarde du token
         setSecretToken(token: string, rememberMe: boolean = false) {
             tokenService.setAccessToken(token, rememberMe);
+            this._isAuthenticated = true; // Update reactive flag
         },
 
         autoLogout() {
+            this._isAuthenticated = false; // Clear auth flag immediately
             this.$reset();
-            // Rediriger vers login seulement si on n'y est pas déjà
-            if (router.currentRoute.value.name !== 'Login') {
-                router.push({ name: 'Login' });
+            // Rediriger vers landing page seulement si on n'y est pas déjà
+            if (router.currentRoute.value.name !== 'LandingPage') {
+                router.push({ name: 'LandingPage' });
             }
         },
 
-        logout() {
+        async logout() {
+            console.log('🔐 logout() called');
             this.$reset();
-            router.push({ name: 'Login' });
+            console.log('🔐 After $reset, isAuthenticated:', this.isAuthenticated);
+            // Use nextTick to ensure reactivity has updated before navigation
+            await new Promise(resolve => setTimeout(resolve, 0));
+            console.log('🔐 After delay, isAuthenticated:', this.isAuthenticated);
+            await router.push({ name: 'LandingPage' });
         },
         
         // Modifier le reset pour utiliser tokenService
         $reset() {
+            this._isAuthenticated = false; // Clear auth flag immediately
             this.userName = "";
             this.userDisplayName = "";
             this.userId = "";
             this.userRoles = [];
             tokenService.clearTokens();
+        },
+
+        // Initialize authentication state from stored token
+        initializeAuth() {
+            const hasValidToken = tokenService.hasValidToken();
+            this._isAuthenticated = hasValidToken;
+            console.log('🔐 initializeAuth: hasValidToken=', hasValidToken);
         },
 
         startTokenExpiryCheck() {
@@ -86,7 +94,7 @@ export const useCurrentUserStore = defineStore('currentUser', {
                     clearInterval(interval);
                 }
             }, 60000); // 60 secondes
-            
+
             return interval;
         }
     }

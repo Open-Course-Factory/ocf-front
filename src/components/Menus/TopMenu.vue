@@ -139,7 +139,7 @@ function closeUserMenu() {
 function handleDisconnect() {
   closeUserMenu();
   currentUser.logout();
-  router.push('/login');
+  // Router redirect is handled by logout() action
 }
 
 async function navigateToHome() {

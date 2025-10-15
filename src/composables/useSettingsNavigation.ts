@@ -5,6 +5,7 @@
 
 import { ref } from 'vue'
 import { useRouter, type RouteLocationNormalizedLoaded } from 'vue-router'
+import { useUserSettingsStore } from '../stores/userSettings'
 
 const previousRoute = ref<string | null>(null)
 
@@ -22,8 +23,10 @@ export function useSettingsNavigation() {
     if (previousRoute.value) {
       router.push(previousRoute.value)
     } else {
-      // Fallback to a safe default if no previous route
-      router.push('/')
+      // Use the user's default landing page from settings, or terminal sessions as fallback
+      const settingsStore = useUserSettingsStore()
+      const defaultPage = settingsStore.settings.default_landing_page || '/terminal-sessions'
+      router.push(defaultPage)
     }
   }
 

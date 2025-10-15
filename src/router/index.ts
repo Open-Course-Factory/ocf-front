@@ -39,8 +39,8 @@ import TerminalMySessions from '../components/Pages/TerminalMySessions.vue';
 import UserTerminalKeys from '../components/Pages/UserTerminalKeys.vue';
 
 const basicRoutes = [
-  { path: '/', name: 'LandingPage', component: LandingPage },
-  { path: '/login', name: 'Login', component: () => import('../components/Pages/Login.vue') },
+  { path: '/', name: 'LandingPage', component: LandingPage, meta: { requiresAuth: false } },
+  { path: '/login', name: 'Login', component: () => import('../components/Pages/Login.vue'), meta: { requiresAuth: false } },
   { 
     path: '/register', 
     name: 'Register', 
@@ -336,7 +336,23 @@ router.beforeEach(async (to, from, next) => {
     storePreviousRoute(from);
   }
 
-  // Check authentication first
+  // Redirect authenticated users away from login/register pages
+  if (to.name === 'Login' || to.name === 'Register') {
+    console.log('🔐 Navigation to', to.name, '- isAuthenticated:', currentUserStore.isAuthenticated);
+    if (currentUserStore.isAuthenticated) {
+      console.log('🔐 Blocking access, redirecting to /terminal-sessions');
+      next({ path: '/terminal-sessions' });
+      return;
+    }
+  }
+
+  // Allow access if requiresAuth is explicitly false (public routes)
+  if (to.meta.requiresAuth === false) {
+    next();
+    return;
+  }
+
+  // Check authentication for protected routes
   if (to.matched.some(record => record.meta.requiresAuth)) {
     if (!currentUserStore.isAuthenticated) {
       next({ name: 'Login' });
