@@ -13,7 +13,6 @@
     size="medium"
     :is-loading="isSharing"
     :loading-text="t('terminalSharing.buttonSharing')"
-    :success-message="successMessage"
     :error-message="error"
     :close-on-overlay-click="true"
     @close="closeModal"
@@ -119,6 +118,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
+import { useNotification } from '../../composables/useNotification'
 import { terminalService, type ShareTerminalRequest, type SharedTerminalInfo } from '../../services/domain/terminal'
 import { userService, type User } from '../../services/domain/user'
 import BaseModal from '../Modals/BaseModal.vue'
@@ -146,6 +146,7 @@ const { t } = useTranslations({
       buttonShare: 'Share',
       buttonCancel: 'Cancel',
       successMessage: 'Terminal successfully shared!',
+      successTitle: 'Success',
       errorLoading: 'Error loading terminal information',
       errorSharing: 'Error sharing the terminal'
     }
@@ -172,11 +173,14 @@ const { t } = useTranslations({
       buttonShare: 'Partager',
       buttonCancel: 'Annuler',
       successMessage: 'Terminal partagé avec succès!',
+      successTitle: 'Succès',
       errorLoading: 'Erreur lors du chargement des informations du terminal',
       errorSharing: 'Erreur lors du partage du terminal'
     }
   }
 })
+
+const { showSuccess } = useNotification()
 
 interface Props {
   show: boolean
@@ -198,7 +202,6 @@ const shareData = ref<ShareTerminalRequest>({
 
 const isSharing = ref(false)
 const error = ref('')
-const successMessage = ref('')
 const userSearchQuery = ref('')
 const searchResults = ref<User[]>([])
 const isSearching = ref(false)
@@ -240,13 +243,17 @@ async function shareTerminal() {
     }
 
     await terminalService.shareTerminal(props.terminalId, requestData)
-    successMessage.value = t('terminalSharing.successMessage')
-    emit('shared', props.terminalId)
 
-    // Show success message briefly before closing
-    setTimeout(() => {
-      closeModal()
-    }, 1500)
+    // Close modal immediately
+    closeModal()
+
+    // Show success notification
+    showSuccess(
+      t('terminalSharing.successMessage'),
+      t('terminalSharing.successTitle')
+    )
+
+    emit('shared', props.terminalId)
   } catch (err: any) {
     console.error('Error sharing terminal:', err)
     error.value = err.response?.data?.error_message || t('terminalSharing.errorSharing')
@@ -298,7 +305,6 @@ function resetForm() {
   searchResults.value = []
   showSearchDropdown.value = false
   error.value = ''
-  successMessage.value = ''
 }
 
 function closeModal() {

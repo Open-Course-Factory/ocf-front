@@ -95,12 +95,20 @@
                 <div v-if="!editingNames.has(session.id)" class="session-title-display">
                   <h5 class="session-name">{{ getTerminalDisplayName(session) }}</h5>
                   <button
+                    v-if="canEditName(session)"
                     class="btn-icon btn-edit-name"
                     @click="startEditingName(session.id, session.name)"
                     :title="t('terminals.editName')"
                   >
                     <i class="fas fa-pencil-alt"></i>
                   </button>
+                  <span
+                    v-else-if="session.isShared && session.access_level === 'read'"
+                    class="read-only-indicator"
+                    :title="t('terminalMySessions.readOnlyAccess')"
+                  >
+                    <i class="fas fa-lock"></i>
+                  </span>
                 </div>
                 <div v-else class="session-title-edit">
                   <input
@@ -297,13 +305,30 @@
 
         <div class="sync-summary">
           <div class="summary-item" v-if="syncAllResults.updated_sessions > 0">
-            <span class="label">{{ t('terminalMySessions.updatedSessions') }}:</span>
+            <span class="label">{{ t('terminalMySessions.updatedOwnedSessions') }}:</span>
             <span class="value highlight-success">{{ syncAllResults.updated_sessions }}</span>
           </div>
           <div class="summary-item" v-if="syncAllResults.error_count > 0">
             <span class="label">{{ t('terminalMySessions.errors') }}:</span>
             <span class="value highlight-danger">{{ syncAllResults.error_count }}</span>
           </div>
+        </div>
+
+        <!-- Shared sessions info note -->
+        <div v-if="syncAllResults.shared_sessions_added > 0 || syncAllResults.shared_sessions_removed > 0" class="sync-info-note">
+          <i class="fas fa-info-circle"></i>
+          <span v-if="syncAllResults.shared_sessions_added > 0 && syncAllResults.shared_sessions_removed > 0">
+            {{ t('terminalMySessions.sharedSessionsAddedAndRemoved', {
+              added: syncAllResults.shared_sessions_added,
+              removed: syncAllResults.shared_sessions_removed
+            }) }}
+          </span>
+          <span v-else-if="syncAllResults.shared_sessions_added > 0">
+            {{ t('terminalMySessions.sharedSessionsAdded', { count: syncAllResults.shared_sessions_added }) }}
+          </span>
+          <span v-else-if="syncAllResults.shared_sessions_removed > 0">
+            {{ t('terminalMySessions.sharedSessionsRemoved', { count: syncAllResults.shared_sessions_removed }) }}
+          </span>
         </div>
 
         <div v-if="syncAllResults.errors && syncAllResults.errors.length > 0" class="sync-errors">
@@ -397,15 +422,20 @@ const { t } = useTranslations({
       buttonCopyCode: 'Copy code',
       buttonClose: 'Close',
       syncResultsTitle: 'Synchronization Complete',
-      syncDescription: 'Some sessions have been updated with their latest status from the server.',
-      syncDescriptionNoChanges: 'All sessions are already up to date. No changes detected.',
+      syncDescription: 'Some owned sessions have been updated with their latest status from the server.',
+      syncDescriptionNoChanges: 'All owned sessions are already up to date. No changes detected.',
+      updatedOwnedSessions: 'Owned sessions updated',
       updatedSessions: 'Sessions updated',
+      sharedSessionsRefreshed: 'Shared sessions have also been refreshed ({count} session(s)).',
+      sharedSessionsAdded: '{count} new shared session(s) added.',
+      sharedSessionsRemoved: '{count} shared session(s) removed.',
+      sharedSessionsAddedAndRemoved: '{added} shared session(s) added, {removed} removed.',
       errors: 'Errors',
       encounterededErrors: 'Encountered errors:',
       buttonOK: 'OK',
       confirmHide: 'Are you sure you want to hide this inactive session?',
       confirmHideTitle: 'Hide session',
-      confirmHideAll: 'Are you sure you want to hide all inactive sessions ({count})?',
+      confirmHideAll: 'Are you sure you want to hide all inactive sessions ({count}) ?',
       confirmHideAllTitle: 'Hide all inactive sessions',
       errorHiding: 'Error hiding the terminal',
       errorHidingAll: 'Error hiding inactive terminals',
@@ -419,7 +449,8 @@ const { t } = useTranslations({
       copied: 'Copied!',
       copiedIframe: 'Iframe code copied!',
       copyIframeCode: 'Copy iframe code',
-      manageAccess: 'Manage access'
+      manageAccess: 'Manage access',
+      readOnlyAccess: 'Read-only access - cannot edit name'
     }
   },
   fr: {
@@ -473,15 +504,20 @@ const { t } = useTranslations({
       buttonCopyCode: 'Copier le code',
       buttonClose: 'Fermer',
       syncResultsTitle: 'Synchronisation terminée',
-      syncDescription: 'Certaines sessions ont été mises à jour avec leur dernier statut depuis le serveur.',
-      syncDescriptionNoChanges: 'Toutes les sessions sont déjà à jour. Aucun changement détecté.',
+      syncDescription: 'Certaines sessions possédées ont été mises à jour avec leur dernier statut depuis le serveur.',
+      syncDescriptionNoChanges: 'Toutes les sessions possédées sont déjà à jour. Aucun changement détecté.',
+      updatedOwnedSessions: 'Sessions possédées mises à jour',
       updatedSessions: 'Sessions mises à jour',
+      sharedSessionsRefreshed: 'Les sessions partagées ont également été actualisées ({count} session(s)).',
+      sharedSessionsAdded: '{count} nouvelle(s) session(s) partagée(s) ajoutée(s).',
+      sharedSessionsRemoved: '{count} session(s) partagée(s) supprimée(s).',
+      sharedSessionsAddedAndRemoved: '{added} session(s) partagée(s) ajoutée(s), {removed} supprimée(s).',
       errors: 'Erreurs',
       encounterededErrors: 'Erreurs rencontrées:',
       buttonOK: 'OK',
-      confirmHide: 'Êtes-vous sûr de vouloir masquer cette session inactive ?',
+      confirmHide: 'Êtes-vous sûr de vouloir masquer cette session inactive\u00A0?',
       confirmHideTitle: 'Masquer la session',
-      confirmHideAll: 'Êtes-vous sûr de vouloir masquer toutes les sessions inactives ({count}) ?',
+      confirmHideAll: 'Êtes-vous sûr de vouloir masquer toutes les sessions inactives ({count})\u00A0?',
       confirmHideAllTitle: 'Masquer toutes les sessions inactives',
       errorHiding: 'Erreur lors du masquage du terminal',
       errorHidingAll: 'Erreur lors du masquage des terminaux inactifs',
@@ -495,7 +531,8 @@ const { t } = useTranslations({
       copied: 'Copié !',
       copiedIframe: 'Code iframe copié !',
       copyIframeCode: 'Copier le code iframe',
-      manageAccess: 'Gérer les accès'
+      manageAccess: 'Gérer les accès',
+      readOnlyAccess: 'Accès en lecture seule - impossible de modifier le nom'
     }
   }
 })
@@ -509,6 +546,9 @@ const sessions = ref([])
 const sharedSessions = ref([])
 const isLoading = ref(false)
 const error = ref('')
+
+// Snapshot of shared session IDs for tracking changes
+const sharedSessionIdsSnapshot = ref(new Set<string>())
 
 // États pour les fonctionnalités iframe
 const showPreviews = ref(new Set())
@@ -665,14 +705,21 @@ async function loadSessions() {
 
 async function loadSharedSessions() {
   try {
-    console.log('Loading shared sessions...')
     const data = await terminalService.getSharedTerminals()
     sharedSessions.value = data || []
-    console.log('Shared sessions loaded:', sharedSessions.value)
+
+    // Update snapshot for change tracking (only if not in the middle of a sync)
+    const validTerminalIds = sharedSessions.value.map(s => s.terminal?.id).filter(id => id)
+    if (!isSyncing.value) {
+      sharedSessionIdsSnapshot.value = new Set(validTerminalIds)
+    }
   } catch (err: any) {
     console.error('Erreur lors du chargement des sessions partagées:', err)
     // Don't show error for shared sessions as they're optional
     sharedSessions.value = []
+    if (!isSyncing.value) {
+      sharedSessionIdsSnapshot.value = new Set()
+    }
   }
 }
 
@@ -789,7 +836,11 @@ async function syncSession(sessionId: string) {
       timestamp: new Date()
     })
 
-    await loadSessions()
+    // Reload both owned and shared sessions (in case the synced session is shared)
+    await Promise.all([
+      loadSessions(),
+      loadSharedSessions()
+    ])
 
     if (response.data.updated) {
       console.log(`Session ${sessionId} synchronized: ${response.data.previous_status} -> ${response.data.current_status}`)
@@ -807,16 +858,50 @@ async function syncSession(sessionId: string) {
 async function syncAllSessions() {
   isSyncing.value = true
   try {
-    console.log('Syncing all sessions...')
+    // Use the snapshot from the last MANUAL sync (or initial load)
+    // This represents the state from the last time the user clicked sync
+    const sharedSessionIdsBefore = new Set(sharedSessionIdsSnapshot.value)
+
     const response = await axios.post('/terminals/sync-all')
 
     syncAllResults.value = response.data
-    showSyncModal.value = true
     lastSyncTime.value = new Date()
 
-    await loadSessions()
+    // Reload both owned and shared sessions
+    // loadSharedSessions will NOT update snapshot during sync (isSyncing.value = true)
+    await Promise.all([
+      loadSessions(),
+      loadSharedSessions()
+    ])
 
-    console.log('All sessions synchronized:', response.data)
+    // Calculate shared sessions changes (only new additions or removals)
+    const sharedSessionIdsAfter = new Set(
+      sharedSessions.value.map(s => s.terminal?.id).filter(id => id)
+    )
+
+    // Find sessions that were added (in after but not in before snapshot)
+    const addedSessions = [...sharedSessionIdsAfter].filter(id => !sharedSessionIdsBefore.has(id))
+
+    // Find sessions that were removed (in before snapshot but not in after)
+    const removedSessions = [...sharedSessionIdsBefore].filter(id => !sharedSessionIdsAfter.has(id))
+
+    const sharedSessionsAdded = addedSessions.length
+    const sharedSessionsRemoved = removedSessions.length
+
+    // Add shared sessions info to results
+    syncAllResults.value = {
+      ...response.data,
+      shared_sessions_count: sharedSessionIdsAfter.size,
+      shared_sessions_added: sharedSessionsAdded,
+      shared_sessions_removed: sharedSessionsRemoved
+    }
+
+    // Update snapshot AFTER we've calculated the changes
+    // This becomes the baseline for the NEXT manual sync
+    sharedSessionIdsSnapshot.value = sharedSessionIdsAfter
+
+    showSyncModal.value = true
+
     return response.data
   } catch (err: any) {
     console.error('Erreur lors de la synchronisation globale:', err)
@@ -902,6 +987,16 @@ function getTerminalDisplayName(session: any): string {
   return `Terminal ${prefix}`
 }
 
+function canEditName(session: any): boolean {
+  // Owner can always edit
+  if (!session.isShared) {
+    return true
+  }
+
+  // For shared sessions, only 'write' and 'admin' access levels can edit
+  return ['write', 'admin'].includes(session.access_level)
+}
+
 function startEditingName(terminalId: string, currentName: string | undefined) {
   editingNames.value.set(terminalId, { value: currentName || '' })
 }
@@ -916,26 +1011,47 @@ async function saveName(terminalId: string) {
 
   const newName = editData.value.trim()
 
-  // Optimistic update
-  const session = sessions.value.find(s => s.id === terminalId)
-  const previousName = session?.name
+  // Optimistic update - update both owned and shared sessions
+  const ownedSession = sessions.value.find(s => s.id === terminalId)
+  const sharedSession = sharedSessions.value.find(s => s.terminal.id === terminalId)
 
-  if (session) {
-    session.name = newName
+  const previousNameOwned = ownedSession?.name
+  const previousNameShared = sharedSession?.terminal?.name
+
+  if (ownedSession) {
+    ownedSession.name = newName
+  }
+
+  if (sharedSession?.terminal) {
+    sharedSession.terminal.name = newName
   }
 
   savingNames.value.add(terminalId)
 
   try {
-    await axios.patch(`/terminals/${terminalId}`, { name: newName })
+    const response = await axios.patch(`/terminals/${terminalId}`, { name: newName })
+
+    // Update with server response to ensure consistency
+    if (response.data && response.data.name !== undefined) {
+      if (ownedSession) {
+        ownedSession.name = response.data.name
+      }
+      if (sharedSession?.terminal) {
+        sharedSession.terminal.name = response.data.name
+      }
+    }
+
     editingNames.value.delete(terminalId)
   } catch (err: any) {
     console.error('Erreur lors de la mise à jour du nom:', err)
     error.value = err.response?.data?.error_message || 'Erreur lors de la mise à jour du nom'
 
     // Rollback on error
-    if (session) {
-      session.name = previousName
+    if (ownedSession) {
+      ownedSession.name = previousNameOwned
+    }
+    if (sharedSession?.terminal) {
+      sharedSession.terminal.name = previousNameShared
     }
   } finally {
     savingNames.value.delete(terminalId)
@@ -998,7 +1114,7 @@ async function hideAllInactiveSessions() {
   if (inactive.length === 0) return
 
   const confirmed = await showConfirm(
-    t('terminalMySessions.confirmHideAll').replace('{count}', inactive.length.toString()),
+    t('terminalMySessions.confirmHideAll', { count: inactive.length }),
     t('terminalMySessions.confirmHideAllTitle')
   )
   if (!confirmed) return
@@ -1489,6 +1605,24 @@ async function hideAllInactiveSessions() {
   line-height: var(--line-height-relaxed);
 }
 
+.sync-info-note {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: rgba(23, 162, 184, 0.1);
+  border-left: 3px solid var(--color-info);
+  border-radius: var(--border-radius-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.sync-info-note i {
+  color: var(--color-info);
+  font-size: var(--font-size-base);
+}
+
 .sync-summary {
   display: grid;
   grid-template-columns: 1fr;
@@ -1589,6 +1723,20 @@ async function hideAllInactiveSessions() {
 
 .session-title-display:hover .btn-edit-name {
   opacity: 1;
+}
+
+.read-only-indicator {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  opacity: 0.6;
+  margin-left: var(--spacing-xs);
+  cursor: help;
+}
+
+.read-only-indicator i {
+  font-size: var(--font-size-xs);
 }
 
 .session-title-edit {
