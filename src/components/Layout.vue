@@ -106,9 +106,9 @@ onUnmounted(() => {
   height: calc(100vh - 60px); /* Full height minus the TopMenu height */
   width: 250px; /* Adjust width as needed */
   overflow-y: auto; /* Allow scrolling within the menu */
-  background-color: #343a40; /* Match your menu background color */
+  background-color: var(--color-bg-dark);
   z-index: 999; /* Ensure it stays above other content */
-  transition: width 0.3s ease;
+  transition: width var(--transition-base) ease;
   -ms-overflow-style: none;  /* Internet Explorer 10+ */
   scrollbar-width: none;  /* Firefox */
 }
@@ -137,10 +137,10 @@ onUnmounted(() => {
 
 .content-area {
   flex-grow: 1;
-  padding: 0px 20px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 0px var(--spacing-lg);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
   overflow-y: auto; /* Allow scrolling within the content area */
   -ms-overflow-style: none;  /* Internet Explorer 10+ */
   scrollbar-width: none;  /* Firefox */

@@ -182,14 +182,14 @@ async function redirect() {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background-color: #f8f9fa;
+  background-color: var(--color-bg-secondary);
 }
 
 .connection-form {
-  background-color: #fff;
+  background-color: var(--color-bg-primary);
   padding: 40px;
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
   width: 100%;
   max-width: 400px;
 }
@@ -202,14 +202,14 @@ async function redirect() {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #6c757d;
+  color: var(--color-text-muted);
   text-decoration: none;
   font-size: 0.9rem;
   transition: color 0.3s ease;
 }
 
 .btn-back:hover {
-  color: #007bff;
+  color: var(--color-primary);
 }
 
 .btn-back i {
@@ -238,7 +238,7 @@ async function redirect() {
 }
 
 .forgot-password {
-  color: #007bff;
+  color: var(--color-primary);
   text-decoration: none;
 }
 
@@ -256,7 +256,7 @@ async function redirect() {
 }
 
 .register-link a {
-  color: #007bff;
+  color: var(--color-primary);
   text-decoration: none;
 }
 

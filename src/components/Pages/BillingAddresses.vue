@@ -136,37 +136,37 @@ const setAsDefault = async (addressId: string) => {
 }
 
 .info-banner {
-    background-color: #e3f2fd;
-    border: 1px solid #bbdefb;
-    border-radius: 4px;
-    padding: 15px;
-    margin-bottom: 20px;
+    background-color: var(--color-info-bg);
+    border: var(--border-width-thin) solid var(--color-info);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
     display: flex;
     align-items: center;
-    gap: 10px;
-    color: #1976d2;
+    gap: var(--spacing-sm);
+    color: var(--color-info-text);
 }
 
 .alert {
-    padding: 12px 15px;
-    border-radius: 4px;
-    margin: 15px 0;
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    margin: var(--spacing-md) 0;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--spacing-sm);
     justify-content: space-between;
 }
 
 .alert-danger {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background-color: var(--color-danger-bg);
+    border: var(--border-width-thin) solid var(--color-danger);
+    color: var(--color-danger-text);
 }
 
 .address-actions {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: var(--spacing-md);
     min-width: 250px;
     align-items: flex-end;
 }
@@ -175,16 +175,17 @@ const setAsDefault = async (addressId: string) => {
     text-align: right;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--spacing-sm);
 }
 
 .formatted-address {
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    padding: 10px;
-    background-color: #fafafa;
-    font-size: 0.9rem;
-    line-height: 1.4;
+    border: var(--border-width-thin) solid var(--color-border-light);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-sm);
+    background-color: var(--color-bg-secondary);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
+    color: var(--color-text-primary);
 }
 
 .formatted-address div {
@@ -201,20 +202,20 @@ const setAsDefault = async (addressId: string) => {
 
 .badge {
     padding: 0.25em 0.5em;
-    font-size: 0.75em;
-    border-radius: 0.25rem;
-    color: white;
+    font-size: var(--font-size-xs);
+    border-radius: var(--border-radius-full);
+    color: var(--color-white);
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: var(--spacing-xs);
 }
 
 .badge-primary {
-    background-color: #007bff;
+    background-color: var(--color-primary);
 }
 
 .text-muted {
-    color: #6c757d;
+    color: var(--color-text-muted);
 }
 
 /* Actions boutons */
@@ -223,15 +224,15 @@ const setAsDefault = async (addressId: string) => {
 }
 
 .btn-outline-primary {
-    color: #007bff;
-    border-color: #007bff;
+    color: var(--color-primary);
+    border: var(--border-width-thin) solid var(--color-primary);
     background-color: transparent;
 }
 
 .btn-outline-primary:hover:not(:disabled) {
-    color: #fff;
-    background-color: #007bff;
-    border-color: #007bff;
+    color: var(--color-white);
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
 }
 
 .btn:disabled {

@@ -56,6 +56,14 @@ watch(() => settingsStore.settings, (newSettings) => {
   localSettings.value.compact_mode = newSettings.compact_mode || false
 }, { deep: true })
 
+function applyCompactMode(enabled: boolean) {
+  if (enabled) {
+    document.documentElement.setAttribute('data-compact', 'true')
+  } else {
+    document.documentElement.removeAttribute('data-compact')
+  }
+}
+
 async function saveSettings() {
   try {
     await settingsStore.updateSettings({
@@ -65,6 +73,9 @@ async function saveSettings() {
 
     // Apply theme immediately
     setTheme(localSettings.value.theme as 'light' | 'dark' | 'auto')
+
+    // Apply compact mode immediately
+    applyCompactMode(localSettings.value.compact_mode)
 
     toast.success(t('userSettings.saveSuccess'))
   } catch (error) {

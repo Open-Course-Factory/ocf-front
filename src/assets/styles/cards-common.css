@@ -1,0 +1,503 @@
+/*
+ * Open Course Factory - Common Card & List Item Styles
+ * Copyright (C) 2023-2025 Solution Libre
+ *
+ * Shared card and list item styles used across all components
+ * Import this in components that use cards or list items
+ */
+
+/* === CARD BASE STYLES === */
+
+.card {
+  background-color: var(--color-bg-primary);
+  border-radius: var(--card-border-radius);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+  color: var(--color-text-primary);
+}
+
+.card-header {
+  padding: var(--card-header-padding);
+  border-bottom: var(--border-width-thin) solid var(--color-border-light);
+  background-color: var(--color-bg-secondary);
+}
+
+.card-header h2,
+.card-header h3 {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.card-header h4 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.card-body {
+  padding: var(--card-padding);
+  color: var(--color-text-primary);
+}
+
+.card-body p {
+  color: var(--color-text-primary);
+}
+
+.card-body h1,
+.card-body h2,
+.card-body h3,
+.card-body h4,
+.card-body h5,
+.card-body h6 {
+  color: var(--color-text-primary);
+}
+
+.card-footer {
+  padding: var(--card-header-padding);
+  border-top: var(--border-width-thin) solid var(--color-border-light);
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+/* === ENTITY CARD === */
+
+.entity-card {
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-lg);
+  background-color: var(--color-bg-primary);
+  box-shadow: var(--shadow-sm);
+  width: 100%;
+  color: var(--color-text-primary);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.entity-name {
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-2xl);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.entity-name i {
+  color: var(--color-primary);
+}
+
+.entity-properties {
+  display: flex;
+  flex-direction: column;
+}
+
+.property {
+  margin-bottom: var(--spacing-sm);
+  color: var(--color-text-primary);
+}
+
+.property-item {
+  display: flex;
+  align-items: center;
+  color: var(--color-text-primary);
+}
+
+.property-name {
+  font-weight: var(--font-weight-semibold);
+  margin-right: var(--spacing-sm);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.property-name i {
+  color: var(--color-primary);
+}
+
+.property-value {
+  color: var(--color-text-primary);
+  font-weight: normal;
+}
+
+.subentity-title {
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--spacing-sm);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.subentity-title i {
+  color: var(--color-primary);
+}
+
+/* === LIST ITEM CARDS === */
+
+/* Generic list item card pattern */
+.list-item-card,
+.ssh-key-item,
+.terminal-session-item,
+.invoice-item,
+.user-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
+  border-left: var(--border-width-thick) solid var(--color-primary);
+  transition: all var(--transition-base);
+  color: var(--color-text-primary);
+}
+
+.list-item-card:hover,
+.ssh-key-item:hover,
+.terminal-session-item:hover,
+.invoice-item:hover,
+.user-item:hover {
+  background-color: var(--color-bg-tertiary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Info section within list items */
+.item-info,
+.key-info,
+.session-info {
+  flex: 1;
+}
+
+.item-info h4,
+.key-info h4,
+.session-info h4 {
+  margin: 0 0 var(--spacing-xs) 0;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.item-info p,
+.key-info p,
+.session-info p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Actions section within list items */
+.item-actions,
+.key-actions,
+.session-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+/* === INSTANCE CARD (Terminal) === */
+
+.instance-card {
+  border: var(--border-width-medium) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+.instance-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.instance-card.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.instance-card.available {
+  border-left: var(--border-width-thick) solid var(--color-success);
+}
+
+.instance-card.restricted {
+  border-left: var(--border-width-thick) solid var(--color-warning);
+  opacity: 0.8;
+}
+
+.instance-card.restricted:hover {
+  border-color: var(--color-warning);
+  cursor: not-allowed;
+}
+
+.instance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-xs);
+}
+
+.instance-info h5 {
+  margin: 0 0 2px 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.instance-info p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: 1.3;
+}
+
+.instance-status {
+  font-size: var(--font-size-lg);
+  line-height: 1;
+}
+
+/* === SIZE BADGES === */
+
+.size-badges {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.size-badge {
+  padding: 2px 6px;
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.size-badge.available {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  border: var(--border-width-thin) solid var(--color-success);
+}
+
+.size-badge.restricted {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  border: var(--border-width-thin) solid var(--color-warning);
+}
+
+/* === SUBSCRIPTION CARD === */
+
+.subscription-card {
+  background-color: var(--color-bg-primary);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+  color: var(--color-text-primary);
+}
+
+.subscription-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.subscription-card-header {
+  border-bottom: var(--border-width-thin) solid var(--color-border-light);
+  padding-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.subscription-card-header h3 {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.subscription-card-body {
+  margin-bottom: var(--spacing-md);
+}
+
+.subscription-card-footer {
+  padding-top: var(--spacing-md);
+  border-top: var(--border-width-thin) solid var(--color-border-light);
+}
+
+/* === PLAN CARD === */
+
+.plan-card {
+  background-color: var(--color-bg-primary);
+  border: var(--border-width-medium) solid var(--color-border-light);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-2xl);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+  color: var(--color-text-primary);
+  text-align: center;
+}
+
+.plan-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+}
+
+.plan-card.featured {
+  border-color: var(--color-primary);
+  border-width: var(--border-width-thick);
+  box-shadow: var(--shadow-lg);
+}
+
+.plan-card-header {
+  margin-bottom: var(--spacing-lg);
+}
+
+.plan-card-header h3 {
+  margin: 0 0 var(--spacing-sm) 0;
+  font-size: var(--font-size-2xl);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.plan-card-price {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  margin: var(--spacing-lg) 0;
+}
+
+.plan-card-features {
+  list-style: none;
+  padding: 0;
+  margin: var(--spacing-lg) 0;
+  text-align: left;
+}
+
+.plan-card-features li {
+  padding: var(--spacing-sm) 0;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.plan-card-features li i {
+  color: var(--color-success);
+}
+
+/* === METRIC CARD === */
+
+.metric-card {
+  background-color: var(--color-bg-primary);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-text-primary);
+}
+
+.metric-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.metric-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--border-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-2xl);
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.metric-card-title {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metric-card-value {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.metric-card-footer {
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* === EMPTY STATE === */
+
+.empty-state {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-text-muted);
+}
+
+.empty-state i {
+  font-size: var(--font-size-4xl);
+  margin-bottom: var(--spacing-lg);
+  opacity: 0.5;
+  color: var(--color-text-muted);
+}
+
+.empty-state p {
+  font-size: var(--font-size-lg);
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+/* === ANIMATIONS === */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* === RESPONSIVE === */
+
+@media (max-width: 768px) {
+  .list-item-card,
+  .ssh-key-item,
+  .terminal-session-item,
+  .invoice-item,
+  .user-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
+
+  .item-actions,
+  .key-actions,
+  .session-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .instance-header {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .plan-card {
+    padding: var(--spacing-lg);
+  }
+}

@@ -1,0 +1,234 @@
+/*
+ * Open Course Factory - Common Modal Styles
+ * Copyright (C) 2023-2025 Solution Libre
+ *
+ * Shared modal styles used across all components
+ * Note: BaseModal.vue has its own scoped styles with base-modal- prefix
+ * This file is for legacy modal support and common patterns
+ */
+
+/* === MODAL OVERLAY & CONTAINER === */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-index-modal-backdrop);
+  animation: fadeIn var(--transition-base);
+}
+
+.modal-container,
+.modal-content {
+  background-color: var(--color-bg-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+  width: auto;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  z-index: var(--z-index-modal);
+  animation: slideIn var(--transition-slow);
+  display: flex;
+  flex-direction: column;
+  color: var(--color-text-primary);
+}
+
+/* === MODAL SIZES === */
+
+.modal-small {
+  width: min(400px, 90vw);
+}
+
+.modal-medium {
+  width: min(600px, 90vw);
+}
+
+.modal-large {
+  width: min(800px, 90vw);
+}
+
+.modal-xlarge {
+  width: min(1200px, 90vw);
+}
+
+/* === MODAL HEADER === */
+
+.modal-header {
+  padding: var(--spacing-lg);
+  border-bottom: var(--border-width-thin) solid var(--color-border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--color-bg-secondary);
+  flex-shrink: 0;
+}
+
+.modal-header h2,
+.modal-header h3 {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.modal-header h2 i,
+.modal-header h3 i {
+  font-size: var(--font-size-lg);
+  color: var(--color-primary);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+/* === MODAL BODY === */
+
+.modal-body {
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  flex: 1;
+  color: var(--color-text-primary);
+}
+
+.modal-body p {
+  color: var(--color-text-primary);
+}
+
+.modal-body h1,
+.modal-body h2,
+.modal-body h3,
+.modal-body h4,
+.modal-body h5,
+.modal-body h6 {
+  color: var(--color-text-primary);
+}
+
+/* === MODAL FOOTER === */
+
+.modal-footer {
+  padding: var(--spacing-lg);
+  border-top: var(--border-width-thin) solid var(--color-border-light);
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: flex-end;
+  background-color: var(--color-bg-secondary);
+  flex-shrink: 0;
+}
+
+/* === MODAL CLOSE BUTTON === */
+
+.modal-close {
+  position: absolute;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  background: none;
+  border: none;
+  font-size: var(--font-size-2xl);
+  cursor: pointer;
+  transition: color var(--transition-base);
+  color: var(--color-text-primary);
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-sm);
+  padding: 0;
+}
+
+.modal-close:hover {
+  color: var(--color-danger);
+  background-color: var(--color-bg-tertiary);
+}
+
+/* === MODAL STATES === */
+
+.modal-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  gap: var(--spacing-md);
+}
+
+.modal-loading i {
+  animation: spin 1s linear infinite;
+}
+
+/* === ANIMATIONS === */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* === RESPONSIVE === */
+
+@media (max-width: 768px) {
+  .modal-small,
+  .modal-medium,
+  .modal-large,
+  .modal-xlarge {
+    width: 95vw;
+  }
+
+  .modal-container,
+  .modal-content {
+    max-height: 95vh;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+  }
+
+  .modal-footer button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .modal-header {
+    padding: var(--spacing-md);
+  }
+
+  .modal-body {
+    padding: var(--spacing-md);
+  }
+}

@@ -119,11 +119,11 @@ function getDisplayValue(key: string, value: any) {
 
 <style scoped>
 .entity-card {
-  border: 1px solid #e0e0e0;
+  border: var(--border-width-thin) solid var(--color-border-light);
   border-radius: 8px;
   padding: 24px;
-  background-color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: var(--color-bg-primary);
+  box-shadow: var(--shadow-sm);
   animation: fadeIn 0.3s ease-in-out;
   width: 100%;
 }
@@ -131,10 +131,14 @@ function getDisplayValue(key: string, value: any) {
 .entity-name {
   margin-bottom: 16px;
   font-size: 24px;
-  color: #333;
+  color: var(--color-text-primary);
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.entity-name i {
+  color: var(--color-primary);
 }
 
 .entity-properties {
@@ -144,33 +148,44 @@ function getDisplayValue(key: string, value: any) {
 
 .property {
   margin-bottom: 12px;
+  color: var(--color-text-primary);
 }
 
 .subentity-title {
   font-size: 20px;
   margin-bottom: 8px;
-  color: #555;
+  color: var(--color-text-primary);
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.subentity-title i {
+  color: var(--color-primary);
 }
 
 .property-item {
   display: flex;
   align-items: center;
+  color: var(--color-text-primary);
 }
 
 .property-name {
   font-weight: 600;
   margin-right: 8px;
-  color: #444;
+  color: var(--color-text-primary);
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+.property-name i {
+  color: var(--color-primary);
+}
+
 .property-value {
-  color: #666;
+  color: var(--color-text-primary);
+  font-weight: normal;
 }
 
 .property-item:not(:last-child) {

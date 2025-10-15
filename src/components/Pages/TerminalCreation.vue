@@ -88,20 +88,20 @@ function onSessionStarted() {
 }
 
 .page-header {
-  margin-bottom: 30px;
+  margin-bottom: var(--spacing-2xl);
   text-align: center;
 }
 
 .page-header h2 {
-  margin: 0 0 15px 0;
-  color: #333;
-  font-size: 2rem;
+  margin: 0 0 var(--spacing-md) 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-3xl);
 }
 
 .page-description {
-  color: #6c757d;
-  font-size: 1.1rem;
-  line-height: 1.6;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
   max-width: 600px;
   margin: 0 auto;
 }

@@ -797,6 +797,138 @@ export interface MyEntity extends BaseEntity {
 import { MyEntity } from '../types'
 ```
 
+### CSS Architecture & Shared Stylesheets
+
+**Overview:**
+
+OCF Front uses a centralized CSS architecture with shared stylesheets to reduce duplication, ensure consistent styling, and support dark mode across all components.
+
+**Shared Stylesheets:**
+
+```plaintext
+src/assets/styles/
+├── main.css              # Entry point (imports all stylesheets)
+├── variables.css         # Design tokens (colors, spacing, fonts)
+├── components.css        # Generic utilities (buttons, alerts, tables)
+├── forms-common.css      # Shared form styles
+├── modals-common.css     # Shared modal styles
+├── cards-common.css      # Shared card/list item styles
+└── help-article.css      # Help documentation styles
+```
+
+**Import Order (in main.css):**
+
+1. Design tokens (variables.css)
+2. Generic components (components.css)
+3. Shared patterns (forms, modals, cards)
+4. Domain-specific (help articles)
+
+**Shared Form Styles (`forms-common.css`):**
+
+All form-related styles used across 50+ components:
+
+- `.form-group` - Form field container
+- `.form-control` - Input/select/textarea base styles
+- `.form-select` - Select dropdown with custom arrow
+- `.checkbox-label`, `.radio-label` - Checkbox/radio styles
+- `.invalid-feedback` - Error message styles
+- Focus states, disabled states, invalid states
+
+**Shared Modal Styles (`modals-common.css`):**
+
+All modal-related styles for consistent dialogs:
+
+- `.modal-overlay` - Modal backdrop
+- `.modal-container`, `.modal-content` - Modal container
+- `.modal-header` - Modal title section
+- `.modal-body` - Modal content area
+- `.modal-footer` - Modal action buttons
+- Size variants (small, medium, large, xlarge)
+
+**Shared Card Styles (`cards-common.css`):**
+
+All card and list item patterns:
+
+- `.card`, `.card-header`, `.card-body`, `.card-footer` - Generic card
+- `.entity-card` - Entity display cards (admin pages)
+- `.list-item-card`, `.ssh-key-item`, `.terminal-session-item` - List items
+- `.instance-card` - Terminal instance cards
+- `.subscription-card`, `.plan-card` - Subscription/plan cards
+- `.metric-card` - Metric display cards
+- `.empty-state` - Empty state messages
+- Responsive patterns for mobile
+
+**Dark Mode Support:**
+
+All shared stylesheets use CSS variables for colors:
+
+```css
+/* Light mode (default) */
+--color-text-primary: #2c3e50;
+--color-bg-primary: #ffffff;
+
+/* Dark mode (data-theme="dark") */
+--color-text-primary: #f5f5f5;
+--color-bg-primary: #1a1a1a;
+```
+
+**Key CSS Variables:**
+
+- `var(--color-text-primary)` - Main text (#f5f5f5 in dark mode)
+- `var(--color-text-secondary)` - Labels
+- `var(--color-text-muted)` - Secondary info
+- `var(--color-bg-primary)` - Main background
+- `var(--color-bg-secondary)` - Card/modal backgrounds
+- `var(--color-bg-tertiary)` - Hover states
+- `var(--color-border-light)` - Border colors
+- `var(--color-primary)` - Icons, accents
+
+**Usage Pattern:**
+
+All shared styles are automatically available to all components via `main.css`. No need to import them explicitly:
+
+```vue
+<template>
+  <!-- Shared classes work automatically -->
+  <div class="card">
+    <div class="card-header">
+      <h3>{{ title }}</h3>
+    </div>
+    <div class="card-body">
+      <form class="form-group">
+        <label>Name</label>
+        <input class="form-control" v-model="name" />
+      </form>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+/* Add only component-specific overrides */
+.card {
+  max-width: 800px; /* Component-specific constraint */
+}
+</style>
+```
+
+**Guidelines:**
+
+- ✅ **Use shared classes** (`.card`, `.form-control`, `.modal-overlay`, etc.)
+- ✅ **Use CSS variables** for all colors (never hardcode)
+- ✅ **Add component-specific styles only** when needed
+- ✅ **Follow responsive patterns** from shared stylesheets
+- ❌ **Never duplicate** styles from shared stylesheets
+- ❌ **Never hardcode colors** (use CSS variables)
+- ❌ **Never create new base modal/form/card components**
+
+**Benefits:**
+
+- Reduced CSS duplication by ~40-50% (~650 lines)
+- Consistent styling across all pages
+- Unified dark mode support
+- Easier maintenance - update one place, changes propagate everywhere
+- Better developer experience - clear patterns to follow
+
 ## Feature Flags System
 
 **GitLab-style Implementation:**

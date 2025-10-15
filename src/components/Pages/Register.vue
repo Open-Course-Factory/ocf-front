@@ -429,15 +429,15 @@ const handleSubmit = async () => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #f8f9fa;
+  background-color: var(--color-bg-secondary);
   padding: 20px;
 }
 
 .register-form {
-  background-color: #fff;
+  background-color: var(--color-bg-primary);
   padding: 40px;
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
   width: 100%;
   max-width: 500px;
 }
@@ -450,14 +450,14 @@ const handleSubmit = async () => {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #6c757d;
+  color: var(--color-text-muted);
   text-decoration: none;
   font-size: 0.9rem;
   transition: color 0.3s ease;
 }
 
 .btn-back:hover {
-  color: #007bff;
+  color: var(--color-primary);
 }
 
 .btn-back i {
@@ -468,7 +468,7 @@ const handleSubmit = async () => {
   margin-bottom: 24px;
   font-size: 2rem;
   text-align: center;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .form-row {
@@ -515,7 +515,7 @@ const handleSubmit = async () => {
 }
 
 .login-link a {
-  color: #007bff;
+  color: var(--color-primary);
   text-decoration: none;
 }
 
@@ -530,21 +530,21 @@ const handleSubmit = async () => {
 }
 
 .alert-danger {
-  background-color: #f8d7da;
-  border-color: #f5c6cb;
-  color: #721c24;
+  background-color: var(--color-danger-bg);
+  border-color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .alert-success {
-  background-color: #d4edda;
-  border-color: #c3e6cb;
-  color: #155724;
+  background-color: var(--color-success-bg);
+  border-color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .tos-acceptance {
   margin-top: 24px;
   padding: 16px;
-  background-color: #f8f9fa;
+  background-color: var(--color-bg-secondary);
   border-radius: 4px;
 }
 
@@ -563,8 +563,8 @@ const handleSubmit = async () => {
 }
 
 .tos-checkbox input[type="checkbox"].is-invalid {
-  border-color: #dc3545;
-  outline: 2px solid #dc3545;
+  border-color: var(--color-danger);
+  outline: 2px solid var(--color-danger);
 }
 
 .tos-checkbox label {
@@ -577,7 +577,7 @@ const handleSubmit = async () => {
 .tos-link {
   background: none;
   border: none;
-  color: #007bff;
+  color: var(--color-primary);
   text-decoration: underline;
   cursor: pointer;
   padding: 0;
@@ -587,7 +587,7 @@ const handleSubmit = async () => {
 }
 
 .tos-link:hover {
-  color: #0056b3;
+  color: var(--color-primary-hover);
 }
 
 .d-block {

@@ -250,15 +250,15 @@ function handleLocaleChange(event: Event) {
 .btn-back {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  color: #6c757d;
+  gap: var(--spacing-sm);
+  color: var(--color-text-muted);
   text-decoration: none;
-  font-size: 0.9rem;
-  transition: color 0.3s ease;
+  font-size: var(--font-size-sm);
+  transition: color var(--transition-base);
 }
 
 .btn-back:hover {
-  color: #007bff;
+  color: var(--color-primary);
 }
 
 .btn-back i {
@@ -271,7 +271,7 @@ function handleLocaleChange(event: Event) {
 }
 
 .help-header h1 {
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 2.5rem;
   margin: 0 0 15px 0;
   display: flex;
@@ -281,11 +281,11 @@ function handleLocaleChange(event: Event) {
 }
 
 .help-header h1 i {
-  color: #007bff;
+  color: var(--color-primary);
 }
 
 .help-description {
-  color: #6c757d;
+  color: var(--color-text-muted);
   font-size: 1.2rem;
   max-width: 600px;
   margin: 0 auto;
@@ -299,11 +299,11 @@ function handleLocaleChange(event: Event) {
 }
 
 .help-section {
-  border: 1px solid #e9ecef;
+  border: var(--border-width-thin) solid var(--color-border-light);
   border-radius: 8px;
   overflow: hidden;
-  background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: var(--color-bg-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .section-card {
@@ -313,7 +313,7 @@ function handleLocaleChange(event: Event) {
 }
 
 .section-card:hover {
-  background-color: #f8f9fa;
+  background-color: var(--color-bg-secondary);
 }
 
 .section-header {
@@ -331,17 +331,17 @@ function handleLocaleChange(event: Event) {
 
 .section-title i {
   font-size: 1.5rem;
-  color: #007bff;
+  color: var(--color-primary);
 }
 
 .section-title h3 {
   margin: 0;
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 1.3rem;
 }
 
 .section-toggle i {
-  color: #6c757d;
+  color: var(--color-text-muted);
   transition: transform 0.3s ease;
 }
 
@@ -350,14 +350,14 @@ function handleLocaleChange(event: Event) {
 }
 
 .section-description {
-  color: #6c757d;
+  color: var(--color-text-muted);
   margin: 0;
   font-size: 1rem;
 }
 
 .section-content {
-  border-top: 1px solid #e9ecef;
-  background-color: #f8f9fa;
+  border-top: var(--border-width-thin) solid var(--color-border-light);
+  background-color: var(--color-bg-secondary);
 }
 
 .help-items {
@@ -372,13 +372,13 @@ function handleLocaleChange(event: Event) {
   padding: 20px 25px;
   text-decoration: none;
   color: inherit;
-  background: white;
+  background: var(--color-bg-primary);
   transition: all 0.3s ease;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: var(--border-width-thin) solid var(--color-border-light);
 }
 
 .help-item:hover {
-  background-color: #e3f2fd;
+  background-color: var(--color-primary-light);
   transform: translateX(5px);
 }
 
@@ -389,7 +389,7 @@ function handleLocaleChange(event: Event) {
 
 .item-icon i {
   font-size: 1.3rem;
-  color: #007bff;
+  color: var(--color-primary);
   width: 30px;
   text-align: center;
 }
@@ -400,13 +400,13 @@ function handleLocaleChange(event: Event) {
 
 .item-content h4 {
   margin: 0 0 5px 0;
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 1.1rem;
 }
 
 .item-content p {
   margin: 0;
-  color: #6c757d;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
 }
 
@@ -416,19 +416,19 @@ function handleLocaleChange(event: Event) {
 }
 
 .item-arrow i {
-  color: #6c757d;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
 }
 
 .help-footer {
   text-align: center;
   padding: 40px 20px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: var(--color-bg-secondary);
   border-radius: 8px;
 }
 
 .contact-support h3 {
-  color: #333;
+  color: var(--color-text-primary);
   margin: 0 0 15px 0;
   display: flex;
   align-items: center;
@@ -437,11 +437,11 @@ function handleLocaleChange(event: Event) {
 }
 
 .contact-support h3 i {
-  color: #007bff;
+  color: var(--color-primary);
 }
 
 .contact-support p {
-  color: #6c757d;
+  color: var(--color-text-muted);
   margin: 0 0 25px 0;
   font-size: 1.1rem;
 }
@@ -461,14 +461,14 @@ function handleLocaleChange(event: Event) {
 }
 
 .btn-primary {
-  background-color: #007bff;
-  color: white;
+  background-color: var(--color-primary);
+  color: var(--color-white);
 }
 
 .btn-primary:hover {
-  background-color: #0056b3;
+  background-color: var(--color-primary-hover);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 .header-controls {
@@ -486,8 +486,9 @@ function handleLocaleChange(event: Event) {
 .help-language-select {
   padding: 8px 12px;
   border-radius: 6px;
-  border: 1px solid #d1d5db;
-  background-color: white;
+  border: var(--border-width-thin) solid var(--color-border-medium);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
   font-size: 14px;
   cursor: pointer;
   transition: border-color 0.2s ease;
@@ -495,13 +496,13 @@ function handleLocaleChange(event: Event) {
 }
 
 .help-language-select:hover {
-  border-color: #9ca3af;
+  border-color: var(--color-border-dark);
 }
 
 .help-language-select:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus-primary);
 }
 
 .help-language-select option {

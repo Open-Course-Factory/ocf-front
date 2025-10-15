@@ -4,12 +4,17 @@
  *
  * Import order:
  * 1. Design tokens (variables)
- * 2. Component styles
- * 3. Global styles
+ * 2. Component styles (generic)
+ * 3. Shared pattern styles (forms, modals, cards)
+ * 4. Domain-specific styles (help articles)
  */
 
 @import './variables.css';
 @import './components.css';
+@import './forms-common.css';
+@import './modals-common.css';
+@import './cards-common.css';
+@import './help-article.css';
 
 /* === GLOBAL STYLES === */
 
@@ -21,6 +26,7 @@ html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-bg-secondary);
 }
 
 body {

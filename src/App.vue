@@ -22,6 +22,43 @@
 -->
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
+import { useTheme } from './composables/useTheme'
+import { useUserSettingsStore } from './stores/userSettings'
+
+const { initTheme, setTheme } = useTheme()
+const settingsStore = useUserSettingsStore()
+
+// Apply compact mode to document
+function applyCompactMode(enabled: boolean) {
+  if (enabled) {
+    document.documentElement.setAttribute('data-compact', 'true')
+  } else {
+    document.documentElement.removeAttribute('data-compact')
+  }
+}
+
+onMounted(async () => {
+  // Load user settings from backend
+  try {
+    await settingsStore.loadSettings()
+
+    // Apply user's theme preference if available
+    if (settingsStore.settings.theme) {
+      setTheme(settingsStore.settings.theme as 'light' | 'dark' | 'auto')
+    } else {
+      // Fallback to localStorage or default
+      initTheme()
+    }
+
+    // Apply compact mode if enabled
+    applyCompactMode(settingsStore.settings.compact_mode || false)
+  } catch (error) {
+    // If settings fail to load, use localStorage or default
+    console.warn('Failed to load user settings, using default theme')
+    initTheme()
+  }
+})
 </script>
 
 <template>

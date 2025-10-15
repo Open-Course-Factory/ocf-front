@@ -145,6 +145,11 @@
   --sidebar-collapsed-width: 60px;
   --topbar-height: 60px;
 
+  /* === COMPACT MODE === */
+  /* Normal spacing (default) */
+  --spacing-scale: 1;
+  --padding-scale: 1;
+
   /* === COMPONENT SPECIFIC === */
 
   /* Buttons */
@@ -165,15 +170,16 @@
 }
 
 /* === DARK THEME VARIABLES === */
-/* These will be used when implementing dark mode */
 [data-theme="dark"] {
   --color-bg-primary: #1a1a1a;
   --color-bg-secondary: #2d2d2d;
   --color-bg-tertiary: #3a3a3a;
+  --color-bg-dark: #1a1a1a;
 
-  --color-text-primary: #e0e0e0;
-  --color-text-secondary: #b0b0b0;
-  --color-text-muted: #8a8a8a;
+  --color-text-primary: #f5f5f5;
+  --color-text-secondary: #d0d0d0;
+  --color-text-muted: #a0a0a0;
+  --color-text-disabled: #707070;
 
   --color-border-light: #404040;
   --color-border-medium: #505050;
@@ -182,8 +188,56 @@
   --color-gray-50: #2d2d2d;
   --color-gray-100: #3a3a3a;
   --color-gray-200: #4a4a4a;
+  --color-gray-300: #5a5a5a;
+  --color-gray-400: #6a6a6a;
+  --color-gray-500: #7a7a7a;
+  --color-gray-600: #8a8a8a;
+  --color-gray-700: #6a6a6a;
+  --color-gray-800: #4a4a4a;
+
+  /* Status colors - dark mode backgrounds */
+  --color-success-bg: #1a3a2a;
+  --color-success-text: #7dffb3;
+
+  --color-danger-bg: #3a1a1a;
+  --color-danger-text: #ffb3b3;
+
+  --color-warning-bg: #3a3a1a;
+  --color-warning-text: #ffe066;
+
+  --color-info-bg: #1a2a3a;
+  --color-info-text: #7dd3ff;
 
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
+/* === COMPACT MODE === */
+/* Reduce spacing and padding by ~30% for a more compact interface */
+[data-compact="true"] {
+  --spacing-xs: 3px;
+  --spacing-sm: 6px;
+  --spacing-md: 12px;
+  --spacing-lg: 18px;
+  --spacing-xl: 24px;
+  --spacing-2xl: 36px;
+
+  --card-padding: 20px;
+  --card-header-padding: 14px 20px;
+
+  --btn-padding-sm: 6px 12px;
+  --btn-padding-md: 8px 16px;
+  --btn-padding-lg: 10px 20px;
+
+  --input-padding: 8px 12px;
+
+  --font-size-xs: 0.7rem;
+  --font-size-sm: 0.8rem;
+  --font-size-base: 0.9rem;
+  --font-size-md: 0.95rem;
+  --font-size-lg: 1.05rem;
+  --font-size-xl: 1.15rem;
+  --font-size-2xl: 1.35rem;
+  --font-size-3xl: 1.65rem;
 }

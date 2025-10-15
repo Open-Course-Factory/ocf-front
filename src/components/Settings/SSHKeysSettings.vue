@@ -199,9 +199,10 @@ async function deleteKey(id: string) {
   font-weight: var(--font-weight-medium);
 }
 
-.key-date {
+.key-info .key-date {
   margin: 0;
   font-size: var(--font-size-xs);
+  color: var(--color-text-muted) !important;
 }
 
 .ssh-key-textarea {

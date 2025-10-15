@@ -564,16 +564,16 @@ watch(() => route.path, () => {
   left: 85px;
   top: 50%;
   transform: translateY(-50%);
-  background-color: #343a40;
-  color: #e7e7e7;
-  padding: 8px 12px;
-  border-radius: 4px;
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-primary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-sm);
   white-space: nowrap;
   opacity: 1;
   z-index: 5000;
-  border: 1px solid #495057;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  font-size: 0.85rem;
+  border: var(--border-width-thin) solid var(--color-border-medium);
+  box-shadow: var(--shadow-md);
+  font-size: var(--font-size-sm);
   pointer-events: none;
 }
 
@@ -597,10 +597,10 @@ watch(() => route.path, () => {
 .main-menu.collapsed .category-items {
   position: fixed !important;
   min-width: 220px;
-  background-color: #343a40;
-  border: 1px solid #495057;
-  border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  background-color: var(--color-bg-dark);
+  border: var(--border-width-thin) solid var(--color-border-medium);
+  border-radius: var(--border-radius-sm);
+  box-shadow: var(--shadow-lg);
   z-index: 9999 !important;
   overflow: visible;
   max-height: none !important;
