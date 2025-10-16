@@ -90,6 +90,7 @@
 <script setup lang="ts">
 import { Store } from 'pinia';
 import { getTranslationKey } from '../../utils';
+import { formatDateTime, formatCurrency, formatStorageSize, formatDuration, formatNumber } from '../../utils/formatters';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
@@ -169,18 +170,60 @@ function shouldDisplayProperty(key: string) {
 }
 
 function getDisplayValue(key: string, value: any) {
-  // If fieldList is not available, return the raw value
-  if (!props.entityStore.fieldList) {
-    return value;
+  // Handle null/undefined values
+  if (value === null || value === undefined) {
+    return '-';
   }
 
-  const field =
-    props.entityStore.fieldList.get(key) ||
-    props.entityStore.fieldList.get(`${key}Id`);
+  // If fieldList exists, check for custom formatter first
+  if (props.entityStore.fieldList) {
+    const field =
+      props.entityStore.fieldList.get(key) ||
+      props.entityStore.fieldList.get(`${key}Id`);
 
-  // If field has a displayValue function, use it
-  if (field?.displayValue && typeof field.displayValue === 'function') {
-    return field.displayValue(value);
+    // If field has a displayValue function, use it (takes precedence)
+    if (field?.displayValue && typeof field.displayValue === 'function') {
+      return field.displayValue(value);
+    }
+  }
+
+  // Auto-format based on field name patterns
+
+  // Date/time fields
+  if (isDateField(key)) {
+    return formatDateTime(value);
+  }
+
+  // Currency fields (assumed to be in cents)
+  if (isCurrencyField(key) && typeof value === 'number') {
+    // Detect currency from field name or entity
+    const currency = props.entity.currency || 'EUR';
+    return formatCurrency(value, currency);
+  }
+
+  // Storage size fields
+  if (isStorageField(key) && typeof value === 'number') {
+    // Check if field name indicates GB (already in GB, not bytes)
+    if (key.includes('_gb')) {
+      return `${value} GB`;
+    }
+    // Otherwise assume bytes and convert
+    return formatStorageSize(value);
+  }
+
+  // Duration fields
+  if (isDurationField(key) && typeof value === 'number') {
+    // Check if field name indicates minutes
+    if (key.includes('_minutes')) {
+      return formatDuration(value * 60); // Convert minutes to seconds
+    }
+    // Otherwise assume seconds
+    return formatDuration(value);
+  }
+
+  // Count/number fields with thousand separators
+  if (isCountField(key) && typeof value === 'number') {
+    return formatNumber(value);
   }
 
   // Otherwise return the original value
@@ -208,8 +251,28 @@ function getEntityIcon(): string {
 // Get icon for specific field types
 function getFieldIcon(key: string): string {
   // Date/time fields
-  if (key.includes('_at') || key.includes('date') || key === 'expires_at' || key === 'joined_at') {
+  if (isDateField(key)) {
     return 'far fa-calendar';
+  }
+
+  // Currency/price fields
+  if (isCurrencyField(key)) {
+    return 'fas fa-euro-sign';
+  }
+
+  // Storage size fields
+  if (isStorageField(key)) {
+    return 'fas fa-database';
+  }
+
+  // Duration fields
+  if (isDurationField(key)) {
+    return 'far fa-clock';
+  }
+
+  // Count/number fields
+  if (isCountField(key)) {
+    return 'fas fa-sort-numeric-up';
   }
 
   // Boolean fields
@@ -220,11 +283,6 @@ function getFieldIcon(key: string): string {
   // ID/reference fields
   if (key.includes('_id') || key === 'id') {
     return 'fas fa-hashtag';
-  }
-
-  // Count/number fields
-  if (key.includes('count') || key.includes('number') || key.includes('max_')) {
-    return 'fas fa-sort-numeric-up';
   }
 
   // User/owner fields
@@ -253,6 +311,22 @@ function getFieldClass(key: string, value: any): string {
     classes.push('date-field');
   }
 
+  if (isCurrencyField(key)) {
+    classes.push('currency-field');
+  }
+
+  if (isStorageField(key)) {
+    classes.push('storage-field');
+  }
+
+  if (isDurationField(key)) {
+    classes.push('duration-field');
+  }
+
+  if (isCountField(key)) {
+    classes.push('count-field');
+  }
+
   if (typeof value === 'number') {
     classes.push('number-field');
   }
@@ -272,6 +346,41 @@ function isDateField(key: string): boolean {
          key.includes('date') ||
          key === 'expires_at' ||
          key === 'joined_at';
+}
+
+// Check if field is a currency/price field
+function isCurrencyField(key: string): boolean {
+  return key.includes('price') ||
+         key.includes('amount') ||
+         key.includes('cost') ||
+         key === 'total' ||
+         key === 'subtotal';
+}
+
+// Check if field is a storage size field
+function isStorageField(key: string): boolean {
+  return key.includes('_gb') ||
+         key.includes('_mb') ||
+         key.includes('_bytes') ||
+         key.includes('storage') ||
+         key.includes('size');
+}
+
+// Check if field is a duration field (in minutes or seconds)
+function isDurationField(key: string): boolean {
+  return key.includes('duration') ||
+         key.includes('_minutes') ||
+         key.includes('_seconds') ||
+         key.includes('timeout');
+}
+
+// Check if field is a count/number field that should have thousand separators
+function isCountField(key: string): boolean {
+  return key.includes('count') ||
+         key.includes('number') ||
+         key.includes('max_') ||
+         key.includes('limit') ||
+         key.includes('total_');
 }
 </script>
 
@@ -477,6 +586,34 @@ function isDateField(key: string): boolean {
 .number-field {
   font-variant-numeric: tabular-nums;
   font-weight: var(--font-weight-medium);
+}
+
+/* Currency fields */
+.currency-field {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-success-text);
+}
+
+/* Storage size fields */
+.storage-field {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-info-text);
+}
+
+/* Duration fields */
+.duration-field {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+/* Count fields */
+.count-field {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
 }
 
 /* === SUB-ENTITIES === */
