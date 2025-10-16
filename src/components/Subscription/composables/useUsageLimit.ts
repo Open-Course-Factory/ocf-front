@@ -91,11 +91,6 @@ export function useCreateCourseUsageLimit() {
   return useUsageLimit('courses_created')
 }
 
-// Example usage for lab sessions
-export function useLabSessionUsageLimit() {
-  return useUsageLimit('lab_sessions')
-}
-
 // Example usage for storage
 export function useStorageUsageLimit() {
   return useUsageLimit('storage_used')

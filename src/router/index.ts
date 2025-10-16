@@ -43,15 +43,22 @@ import GroupMembers from '../components/Pages/GroupMembers.vue';
 const basicRoutes = [
   { path: '/', name: 'LandingPage', component: LandingPage, meta: { requiresAuth: false } },
   { path: '/login', name: 'Login', component: () => import('../components/Pages/Login.vue'), meta: { requiresAuth: false } },
-  { 
-    path: '/register', 
-    name: 'Register', 
+  {
+    path: '/register',
+    name: 'Register',
     component: () => import('../components/Pages/Register.vue')
   },
   {
     path: '/password-reset',
     name: 'PasswordReset',
     component: () => import('../components/Pages/PasswordReset.vue')
+  },
+  // Legal notices (public, no auth required)
+  {
+    path: '/legal',
+    name: 'Legal',
+    component: () => import('../components/Pages/Legal.vue'),
+    meta: { requiresAuth: false }
   },
   // Public help route for non-authenticated users
   {

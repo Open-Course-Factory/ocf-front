@@ -2,80 +2,115 @@
   <div class="landing-page">
     <!-- Hero Section -->
     <header class="hero-section">
+      <!-- Animated background elements -->
+      <div class="hero-bg-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+      </div>
+
       <div class="hero-content">
-        <div class="hero-badge">
-          <span class="badge">🚀 {{ t('landing.platformReady') }}</span>
+        <div class="hero-badge pulse-animation">
+          <span class="badge">
+            <span class="badge-icon">✨</span>
+            {{ t('landing.platformReady') }}
+          </span>
         </div>
-        <h1 class="hero-title">{{ t('landing.heroTitle') }}</h1>
+        <h1 class="hero-title">
+          <span class="title-gradient">{{ t('landing.heroTitle') }}</span>
+        </h1>
         <p class="hero-subtitle">{{ t('landing.heroSubtitle') }}</p>
         <div class="cta-buttons">
-          <router-link to="/login" class="btn btn-primary btn-lg">
+          <router-link to="/login" class="btn btn-primary btn-lg glow-on-hover">
             <i class="fas fa-sign-in-alt"></i>
-            {{ t('landing.login') }}
+            <span>{{ t('landing.login') }}</span>
           </router-link>
-          <router-link to="/register" class="btn btn-outline-light btn-lg">
+          <router-link to="/register" class="btn btn-glass btn-lg">
             <i class="fas fa-user-plus"></i>
-            {{ t('landing.register') }}
+            <span>{{ t('landing.register') }}</span>
           </router-link>
-          <router-link to="/help-public" class="btn btn-help btn-lg">
+          <router-link to="/help-public" class="btn btn-outline-glow btn-lg">
             <i class="fas fa-question-circle"></i>
-            {{ t('landing.help') }}
+            <span>{{ t('landing.help') }}</span>
           </router-link>
-        </div>
-      </div>
-      <div class="hero-animation">
-        <div class="floating-cards">
-          <div class="card card-1">🖥️ {{ t('landing.terminals') }}</div>
-          <div class="card card-2">💳 {{ t('landing.subscriptions') }}</div>
-          <div class="card card-3">🌍 {{ t('landing.multiLanguage') }}</div>
         </div>
       </div>
 
+      <div class="hero-animation">
+        <div class="floating-cards">
+          <div class="card card-1 glass-card">
+            <div class="card-icon">🌐</div>
+            <div class="card-text">{{ t('landing.browserBased') }}</div>
+          </div>
+          <div class="card card-2 glass-card">
+            <div class="card-icon">⚡</div>
+            <div class="card-text">{{ t('landing.zeroSetup') }}</div>
+          </div>
+          <div class="card card-3 glass-card">
+            <div class="card-icon">🛡️</div>
+            <div class="card-text">{{ t('landing.safeExperiment') }}</div>
+          </div>
+        </div>
+      </div>
     </header>
 
 
     <!-- Main Features -->
     <section class="features-section">
       <div class="container">
-        <h2 class="section-title">{{ t('landing.features.title') }}</h2>
+        <div class="section-header">
+          <h2 class="section-title animate-on-scroll">
+            <span class="title-underline">{{ t('landing.features.title') }}</span>
+          </h2>
+        </div>
         <div class="features-grid">
-
           <!-- Terminal Management -->
-          <div class="feature-card feature-terminal">
-            <div class="feature-icon">🖥️</div>
-            <h3>{{ t('landing.features.terminals.title') }}</h3>
-            <p>{{ t('landing.features.terminals.description') }}</p>
+          <div class="feature-card feature-terminal glass-effect animate-on-scroll" style="--delay: 0.1s">
+            <div class="feature-card-bg"></div>
+            <div class="feature-icon icon-float">
+              <span class="icon-glow">🖥️</span>
+            </div>
+            <h3 class="feature-title">{{ t('landing.features.terminals.title') }}</h3>
+            <p class="feature-desc">{{ t('landing.features.terminals.description') }}</p>
             <ul class="feature-list">
-              <li>{{ t('landing.features.terminals.interactive') }}</li>
-              <li>{{ t('landing.features.terminals.sharing') }}</li>
-              <li>{{ t('landing.features.terminals.ssh') }}</li>
-              <li>{{ t('landing.features.terminals.realTime') }}</li>
+              <li><span class="check-icon">✨</span> {{ t('landing.features.terminals.interactive') }}</li>
+              <li><span class="check-icon">✨</span> {{ t('landing.features.terminals.sharing') }}</li>
+              <li><span class="check-icon">✨</span> {{ t('landing.features.terminals.ssh') }}</li>
+              <li><span class="check-icon">✨</span> {{ t('landing.features.terminals.realTime') }}</li>
             </ul>
           </div>
 
           <!-- Subscription System -->
-          <div class="feature-card feature-billing">
-            <div class="feature-icon">💳</div>
-            <h3>{{ t('landing.features.billing.title') }}</h3>
-            <p>{{ t('landing.features.billing.description') }}</p>
+          <div class="feature-card feature-billing glass-effect animate-on-scroll" style="--delay: 0.2s">
+            <div class="feature-card-bg"></div>
+            <div class="feature-icon icon-float">
+              <span class="icon-glow">💳</span>
+            </div>
+            <h3 class="feature-title">{{ t('landing.features.billing.title') }}</h3>
+            <p class="feature-desc">{{ t('landing.features.billing.description') }}</p>
             <ul class="feature-list">
-              <li>{{ t('landing.features.billing.flexible') }}</li>
-              <li>{{ t('landing.features.billing.plans') }}</li>
-              <li>{{ t('landing.features.billing.invoices') }}</li>
-              <li>{{ t('landing.features.billing.portal') }}</li>
+              <li><span class="check-icon">✨</span> {{ t('landing.features.billing.flexible') }}</li>
+              <li><span class="check-icon">✨</span> {{ t('landing.features.billing.plans') }}</li>
+              <li><span class="check-icon">✨</span> {{ t('landing.features.billing.invoices') }}</li>
+              <li><span class="check-icon">✨</span> {{ t('landing.features.billing.portal') }}</li>
             </ul>
           </div>
 
           <!-- Multi-language -->
-          <div class="feature-card feature-i18n">
-            <div class="feature-icon">🌍</div>
-            <h3>{{ t('landing.features.i18n.title') }}</h3>
-            <p>{{ t('landing.features.i18n.description') }}</p>
+          <div class="feature-card feature-i18n glass-effect animate-on-scroll" style="--delay: 0.3s">
+            <div class="feature-card-bg"></div>
+            <div class="feature-icon icon-float">
+              <span class="icon-glow">🌍</span>
+            </div>
+            <h3 class="feature-title">{{ t('landing.features.i18n.title') }}</h3>
+            <p class="feature-desc">{{ t('landing.features.i18n.description') }}</p>
             <ul class="feature-list">
-              <li>{{ t('landing.features.i18n.french') }}</li>
-              <li>{{ t('landing.features.i18n.english') }}</li>
-              <li>{{ t('landing.features.i18n.embedded') }}</li>
-              <li>{{ t('landing.features.i18n.dynamic') }}</li>
+              <li><span class="check-icon">✨</span> {{ t('landing.features.i18n.french') }}</li>
+              <li><span class="check-icon">✨</span> {{ t('landing.features.i18n.english') }}</li>
+              <li><span class="check-icon">✨</span> {{ t('landing.features.i18n.embedded') }}</li>
+              <li><span class="check-icon">✨</span> {{ t('landing.features.i18n.dynamic') }}</li>
             </ul>
           </div>
         </div>
@@ -148,25 +183,31 @@
     </section>
 
     <!-- Footer -->
-    <footer class="footer-section">
+    <footer class="footer-section" id="footer">
       <div class="container">
         <div class="footer-content">
           <div class="footer-brand">
             <h3>Open Course Factory</h3>
             <p>{{ t('landing.footer.description') }}</p>
+            <p class="footer-contact">
+              <i class="fas fa-envelope"></i>
+              <a href="mailto:contact@labinux.com">contact@labinux.com</a>
+            </p>
           </div>
           <div class="footer-links">
             <div class="link-group">
-              <h4>{{ t('landing.footer.product') }}</h4>
-              <a href="#features">{{ t('landing.footer.features') }}</a>
-              <a href="#tech">{{ t('landing.footer.technology') }}</a>
-              <a href="#demo">{{ t('landing.footer.demo') }}</a>
+              <h4>{{ t('landing.footer.platform') }}</h4>
+              <a href="#" @click.prevent="scrollToSection('.features-section')">{{ t('landing.footer.features') }}</a>
+              <a href="#" @click.prevent="scrollToSection('.tech-section')">{{ t('landing.footer.technology') }}</a>
+              <a href="#" @click.prevent="scrollToSection('.getting-started-section')">{{ t('landing.footer.getStarted') }}</a>
             </div>
             <div class="link-group">
               <h4>{{ t('landing.footer.resources') }}</h4>
-              <a href="/help" target="_blank">{{ t('landing.footer.documentation') }}</a>
-              <a href="https://github.com" target="_blank">{{ t('landing.footer.github') }}</a>
-              <a href="/help" target="_blank">{{ t('landing.footer.support') }}</a>
+              <a href="/help-public">{{ t('landing.footer.documentation') }}</a>
+              <a href="https://usine.solution-libre.fr/open-course-factory/" target="_blank" rel="noopener noreferrer">
+                <i class="fab fa-gitlab"></i> {{ t('landing.footer.gitlab') }}
+              </a>
+              <router-link to="/legal">{{ t('landing.footer.legal') }}</router-link>
             </div>
           </div>
         </div>
@@ -204,43 +245,43 @@ import packageJson from '../../../package.json'
 const { t } = useTranslations({
   en: {
     landing: {
-      platformReady: 'Free Trial Available',
-      heroTitle: 'Open Course Factory',
-      heroSubtitle: 'Test for free without credit card! SSH terminals, flexible subscription system, and multilingual interface',
-      login: 'Login',
-      register: 'Sign Up Free',
-      help: 'Help',
-      terminals: 'Terminals',
-      subscriptions: 'Subscriptions',
-      multiLanguage: 'Multi-language',
+      platformReady: 'Alpha • Launch Your Terminal Now',
+      heroTitle: 'Level Up Your Shell',
+      heroSubtitle: 'Master Linux commands in a secure, interactive environment. Access real terminals directly in your browser—no installation required.',
+      login: 'Start Now',
+      register: 'Start for Free',
+      help: 'Documentation',
+      browserBased: 'Browser-Based',
+      zeroSetup: 'Zero Setup',
+      safeExperiment: 'Break Without Risk',
       scrollDown: 'Discover more',
       backToTop: 'Back to top',
 
       features: {
-        title: 'Core Features',
+        title: 'Why Choose Open Course Factory?',
         terminals: {
-          title: 'Interactive Terminals',
-          description: 'Access secure SSH terminals with XTerm.js and real-time sharing',
-          interactive: 'Interactive terminal sessions',
-          sharing: 'Real-time session sharing',
-          ssh: 'SSH key management',
-          realTime: 'Instant collaboration'
+          title: 'Real Linux Terminals',
+          description: 'Actual Linux distributions (Alpine, Debian, Ubuntu) accessible directly in your browser. Zero configuration required.',
+          interactive: 'Launch terminal in seconds',
+          sharing: 'Browser-based access, anywhere',
+          ssh: 'Multiple distributions available',
+          realTime: 'Secure, isolated sessions'
         },
         billing: {
-          title: 'Free Plan & Subscriptions',
-          description: 'Start free without credit card, then choose a plan for more features',
-          flexible: 'Free plan to test the platform',
-          plans: 'Paid plans for advanced features',
-          invoices: 'Secure billing with Stripe',
-          portal: 'No card required to start'
+          title: 'Safe Experimentation',
+          description: 'Break things without risk! Ephemeral instances reset automatically, giving you freedom to learn and explore.',
+          flexible: 'Instances reset after 15 minutes',
+          plans: 'No damage to your system',
+          invoices: 'Perfect for learning and testing',
+          portal: 'Start fresh anytime'
         },
         i18n: {
-          title: 'Multi-language Support',
-          description: 'Fully translated interface in French and English',
-          french: 'French (default language)',
-          english: 'English (alternative language)',
-          embedded: 'Component-embedded translations',
-          dynamic: 'Instant language switching'
+          title: 'Instant Setup',
+          description: 'No installation, no SSH keys, no hassle. Just click and start typing commands in a real Linux environment.',
+          french: 'Zero configuration needed',
+          english: 'Works on any modern browser',
+          embedded: 'Authenticated user sessions',
+          dynamic: 'Educational & professional use'
         }
       },
 
@@ -256,74 +297,74 @@ const { t } = useTranslations({
       },
 
       gettingStarted: {
-        title: 'Getting Started',
+        title: 'Get Started in 3 Steps',
         step1: {
-          title: 'Create Free Account',
-          description: '2-minute signup, no credit card required'
+          title: 'Create Your Account',
+          description: 'Quick signup—no credit card needed'
         },
         step2: {
-          title: 'Test for Free',
-          description: 'Explore all features of the free plan'
+          title: 'Launch a Terminal',
+          description: 'Choose your distribution and start coding'
         },
         step3: {
-          title: 'Upgrade to Paid Plan (Optional)',
-          description: 'Unlock more features when you\'re ready'
+          title: 'Learn & Experiment',
+          description: 'Practice Linux commands without fear'
         }
       },
 
       footer: {
-        description: 'Management platform with integrated terminals and subscriptions',
-        product: 'Product',
+        description: 'Learn Linux commands in a secure, browser-based environment. Designed for students, trainers, and developers.',
+        platform: 'Platform',
         features: 'Features',
         technology: 'Technology',
-        demo: 'Demo',
+        getStarted: 'Get Started',
         resources: 'Resources',
         documentation: 'Documentation',
-        github: 'GitHub',
-        support: 'Support',
+        gitlab: 'GitLab',
+        legal: 'Legal Notices',
         rights: 'All rights reserved'
       }
     }
   },
   fr: {
     landing: {
-      platformReady: 'Essai gratuit disponible',
-      heroTitle: 'Open Course Factory',
-      heroSubtitle: 'Testez gratuitement sans carte bancaire ! Terminaux SSH, système d\'abonnement flexible et interface multilingue',
-      login: 'Se connecter',
-      register: "S'inscrire gratuitement",
-      help: 'Aide',
-      terminals: 'Terminaux',
-      subscriptions: 'Abonnements',
-      multiLanguage: 'Multilingue',
+      platformReady: 'Alpha • Lancez votre terminal maintenant',
+      heroTitle: 'Montez en compétence',
+      heroSubtitle: 'Maîtrisez les commandes Linux dans un environnement sécurisé et interactif. Accédez à de vrais terminaux directement dans votre navigateur — sans installation.',
+      login: 'Commencer',
+      register: 'Démarrer gratuitement',
+      help: 'Documentation',
+      browserBased: 'Dans le navigateur',
+      zeroSetup: 'Zéro configuration',
+      safeExperiment: 'Cassez sans risque',
       scrollDown: 'Découvrir plus',
       backToTop: 'Retour en haut',
 
       features: {
-        title: 'Fonctionnalités Principales',
+        title: 'Pourquoi choisir Open Course Factory ?',
         terminals: {
-          title: 'Terminaux Interactifs',
-          description: 'Accédez à des terminaux SSH sécurisés avec XTerm.js et partage en temps réel',
-          interactive: 'Sessions terminaux interactives',
-          sharing: 'Partage de sessions en temps réel',
-          ssh: 'Gestion des clés SSH',
-          realTime: 'Collaboration instantanée'
+          title: 'Vrais terminaux Linux',
+          description: 'Vraies distributions Linux (Alpine, Debian, Ubuntu) accessibles directement dans votre navigateur. Zéro configuration requise.',
+          interactive: 'Lancez un terminal en quelques secondes',
+          sharing: 'Accès depuis n\'importe quel navigateur',
+          ssh: 'Plusieurs distributions disponibles',
+          realTime: 'Sessions sécurisées et isolées'
         },
         billing: {
-          title: 'Plan Gratuit & Abonnements',
-          description: 'Commencez gratuitement sans carte bancaire, puis choisissez un plan pour plus de fonctionnalités',
-          flexible: 'Plan gratuit pour tester la plateforme',
-          plans: 'Plans payants pour fonctionnalités avancées',
-          invoices: 'Facturation sécurisée avec Stripe',
-          portal: 'Aucune carte requise pour débuter'
+          title: 'Expérimentation sans risque',
+          description: 'Cassez tout sans danger ! Les instances éphémères se réinitialisent automatiquement, vous donnant la liberté d\'apprendre.',
+          flexible: 'Réinitialisation après 15 minutes',
+          plans: 'Aucun dommage à votre système',
+          invoices: 'Parfait pour l\'apprentissage',
+          portal: 'Recommencez à zéro quand vous voulez'
         },
         i18n: {
-          title: 'Support Multi-langues',
-          description: 'Interface entièrement traduite en français et anglais',
-          french: 'Français (langue par défaut)',
-          english: 'Anglais (langue alternative)',
-          embedded: 'Traductions intégrées aux composants',
-          dynamic: 'Changement de langue instantané'
+          title: 'Configuration instantanée',
+          description: 'Pas d\'installation, pas de clés SSH, pas de tracas. Cliquez et commencez à taper des commandes dans un vrai Linux.',
+          french: 'Zéro configuration nécessaire',
+          english: 'Fonctionne sur tout navigateur moderne',
+          embedded: 'Sessions utilisateur authentifiées',
+          dynamic: 'Usage éducatif & professionnel'
         }
       },
 
@@ -339,31 +380,31 @@ const { t } = useTranslations({
       },
 
       gettingStarted: {
-        title: 'Commencer',
+        title: 'Commencez en 3 étapes',
         step1: {
-          title: 'Créer un compte gratuit',
-          description: 'Inscription en 2 minutes, sans carte bancaire'
+          title: 'Créez votre compte',
+          description: 'Inscription rapide—sans carte bancaire'
         },
         step2: {
-          title: 'Tester gratuitement',
-          description: 'Explorez toutes les fonctionnalités du plan gratuit'
+          title: 'Lancez un terminal',
+          description: 'Choisissez votre distribution et codez'
         },
         step3: {
-          title: 'Passer à un plan payant (optionnel)',
-          description: 'Débloquez plus de fonctionnalités quand vous êtes prêt'
+          title: 'Apprenez & expérimentez',
+          description: 'Pratiquez les commandes Linux sans crainte'
         }
       },
 
       footer: {
-        description: 'Plateforme de gestion avec terminaux et abonnements intégrés',
-        product: 'Produit',
+        description: 'Apprenez les commandes Linux dans un environnement sécurisé accessible via navigateur. Conçu pour étudiants, formateurs et développeurs.',
+        platform: 'Plateforme',
         features: 'Fonctionnalités',
         technology: 'Technologies',
-        demo: 'Démo',
+        getStarted: 'Commencer',
         resources: 'Ressources',
         documentation: 'Documentation',
-        github: 'GitHub',
-        support: 'Support',
+        gitlab: 'GitLab',
+        legal: 'Mentions légales',
         rights: 'Tous droits réservés'
       }
     }
@@ -377,6 +418,13 @@ const isAtBottom = ref(false)
 const toggleLanguage = () => {
   const newLocale = currentLocale.value === 'en' ? 'fr' : 'en'
   setLocale(newLocale)
+}
+
+const scrollToSection = (selector: string) => {
+  const element = document.querySelector(selector)
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 }
 
 
@@ -525,7 +573,7 @@ onUnmounted(() => {
 /* Reset and base styles */
 .landing-page {
   font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: var(--color-bg-primary);
+  color: var(--color-text-primary);
   line-height: 1.6;
   overflow-x: hidden;
 }
@@ -538,7 +586,9 @@ onUnmounted(() => {
 
 /* Hero Section */
 .hero-section {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 15s ease infinite;
   color: var(--color-white);
   min-height: 100vh;
   display: flex;
@@ -549,38 +599,135 @@ onUnmounted(() => {
   padding: 0 20px;
 }
 
+/* Animated background shapes */
+.hero-bg-shapes {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.shape {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.1;
+  filter: blur(80px);
+  animation: shapeFloat 20s ease-in-out infinite;
+}
+
+.shape-1 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+  top: -10%;
+  left: -10%;
+  animation-delay: 0s;
+}
+
+.shape-2 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(240,147,251,0.4) 0%, transparent 70%);
+  bottom: -10%;
+  right: -5%;
+  animation-delay: 5s;
+}
+
+.shape-3 {
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(102,126,234,0.3) 0%, transparent 70%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation-delay: 10s;
+}
+
+.gradient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.3;
+  animation: orbFloat 25s ease-in-out infinite;
+}
+
+.orb-1 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, #667eea 0%, transparent 70%);
+  top: 20%;
+  right: 10%;
+  animation-delay: 2s;
+}
+
+.orb-2 {
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, #f093fb 0%, transparent 70%);
+  bottom: 30%;
+  left: 15%;
+  animation-delay: 7s;
+}
+
 .hero-content {
-  max-width: 700px;
+  max-width: 800px;
   text-align: center;
   z-index: 2;
-  animation: fadeInUp 0.8s ease-out;
+  animation: fadeInUp 1s ease-out;
 }
 
 .hero-badge {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+}
+
+.pulse-animation {
+  animation: pulse 2s ease-in-out infinite;
 }
 
 .badge {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 8px 16px;
-  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 10px 24px;
+  border-radius: 30px;
   font-size: 14px;
-  font-weight: 500;
-  backdrop-filter: blur(10px);
+  font-weight: 600;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.5px;
+}
+
+.badge-icon {
+  animation: sparkle 2s ease-in-out infinite;
 }
 
 .hero-title {
-  font-size: 3.5rem;
-  font-weight: 700;
-  margin-bottom: 20px;
-  line-height: 1.2;
+  font-size: 4.5rem;
+  font-weight: 800;
+  margin-bottom: 25px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.title-gradient {
+  background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 50%, #ffffff 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: textShimmer 3s ease-in-out infinite;
+  text-shadow: 0 0 40px rgba(255, 255, 255, 0.3);
 }
 
 .hero-subtitle {
-  font-size: 1.3rem;
-  margin-bottom: 40px;
-  opacity: 0.9;
-  font-weight: 300;
+  font-size: 1.4rem;
+  margin-bottom: 50px;
+  opacity: 0.95;
+  font-weight: 400;
+  line-height: 1.6;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 .cta-buttons {
@@ -592,80 +739,160 @@ onUnmounted(() => {
 }
 
 .btn {
-  padding: 15px 30px;
-  border-radius: 8px;
+  padding: 16px 38px;
+  border-radius: 50px;
   text-decoration: none;
   font-weight: 600;
-  transition: all 0.3s ease;
+  font-size: 16px;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.3px;
 }
 
+.btn i {
+  transition: transform 0.4s ease;
+}
+
+.btn:hover i {
+  transform: scale(1.2) rotate(5deg);
+}
+
+/* Primary Button with Glow Effect */
 .btn-primary {
-  background: var(--color-white);
-  color: var(--color-primary);
+  background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+  color: #667eea;
+  box-shadow: 0 10px 40px rgba(255, 255, 255, 0.3);
+}
+
+.glow-on-hover {
+  position: relative;
+}
+
+.glow-on-hover::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50px;
+  background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #667eea);
+  background-size: 400%;
+  z-index: -1;
+  filter: blur(8px);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  animation: glowRotate 8s linear infinite;
+}
+
+.glow-on-hover:hover::before {
+  opacity: 0.7;
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(255, 255, 255, 0.3);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 20px 60px rgba(255, 255, 255, 0.4);
 }
 
-.btn-outline-light {
-  border: 2px solid var(--color-white);
+/* Glass Button */
+.btn-glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: var(--color-white);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.btn-glass:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 48px rgba(255, 255, 255, 0.2);
+}
+
+/* Outline Glow Button */
+.btn-outline-glow {
+  border: 2px solid rgba(255, 255, 255, 0.5);
   color: var(--color-white);
   background: transparent;
+  position: relative;
 }
 
-.btn-outline-light:hover {
-  background: var(--color-white);
-  color: var(--color-primary);
-  transform: translateY(-2px);
-}
-
-.btn-help {
-  border: 2px solid rgba(255, 255, 255, 0.8);
-  color: rgba(255, 255, 255, 0.9);
+.btn-outline-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50px;
   background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  opacity: 0;
+  transition: opacity 0.4s ease;
 }
 
-.btn-help:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: var(--color-white);
+.btn-outline-glow:hover::after {
+  opacity: 1;
+}
+
+.btn-outline-glow:hover {
   border-color: var(--color-white);
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 40px rgba(255, 255, 255, 0.3);
 }
 
 
 .hero-animation {
   position: absolute;
-  right: 5%;
+  right: 8%;
   top: 50%;
   transform: translateY(-50%);
   z-index: 1;
-  opacity: 0.7;
 }
 
 .floating-cards {
   position: relative;
 }
 
-.card {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 20px;
-  border-radius: 12px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  margin: 20px 0;
-  animation: float 3s ease-in-out infinite;
+.glass-card {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 24px 28px;
+  border-radius: 20px;
+  backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  margin: 25px 0;
+  animation: float 4s ease-in-out infinite;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-width: 240px;
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateX(-10px) scale(1.05);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.2),
+    inset 0 1px 1px rgba(255, 255, 255, 0.3);
+}
+
+.card-icon {
+  font-size: 2rem;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+.card-text {
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.3px;
 }
 
 .card-1 { animation-delay: 0s; }
-.card-2 { animation-delay: 1s; }
-.card-3 { animation-delay: 2s; }
+.card-2 { animation-delay: 1.3s; }
+.card-3 { animation-delay: 2.6s; }
 
 /* Floating Scroll Indicator */
 .floating-scroll-indicator {
@@ -818,14 +1045,14 @@ onUnmounted(() => {
   font-weight: 700;
   text-align: center;
   margin-bottom: 20px;
-  color: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
 .section-subtitle {
   font-size: 1.2rem;
   text-align: center;
   margin-bottom: 60px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   max-width: 600px;
   margin-left: auto;
   margin-right: auto;
@@ -834,72 +1061,147 @@ onUnmounted(() => {
 
 /* Features Section */
 .features-section {
-  padding: 60px 0;
-  background: var(--color-white);
+  padding: 100px 0;
+  background: linear-gradient(180deg, var(--color-bg-secondary) 0%, var(--color-bg-primary) 100%);
+  position: relative;
+}
+
+.section-header {
+  margin-bottom: 70px;
+}
+
+.title-underline {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 15px;
+}
+
+.title-underline::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-primary), #f093fb);
+  border-radius: 2px;
 }
 
 .features-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 30px;
+  gap: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.glass-effect {
+  position: relative;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .feature-card {
-  padding: 30px;
-  border-radius: 12px;
-  background: var(--color-white);
-  border: 1px solid #e5e7eb;
-  transition: all 0.3s ease;
+  padding: 45px 35px;
+  border-radius: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-card-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.03) 0%, rgba(240, 147, 251, 0.03) 100%);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.feature-card:hover .feature-card-bg {
+  opacity: 1;
 }
 
 .feature-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  border-color: var(--color-primary);
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 20px 60px rgba(102, 126, 234, 0.15);
+  border-color: rgba(102, 126, 234, 0.3);
 }
 
 .feature-icon {
-  font-size: 3rem;
-  margin-bottom: 20px;
-  display: block;
+  font-size: 4rem;
+  margin-bottom: 25px;
+  display: flex;
+  justify-content: center;
 }
 
-.feature-card h3 {
-  font-size: 1.5rem;
-  font-weight: 600;
+.icon-float {
+  animation: iconFloat 3s ease-in-out infinite;
+}
+
+.icon-glow {
+  display: inline-block;
+  filter: drop-shadow(0 0 20px rgba(102, 126, 234, 0.4));
+  transition: filter 0.4s ease;
+}
+
+.feature-card:hover .icon-glow {
+  filter: drop-shadow(0 0 30px rgba(102, 126, 234, 0.6));
+  animation: iconBounce 0.6s ease;
+}
+
+.feature-title {
+  font-size: 1.75rem;
+  font-weight: 700;
   margin-bottom: 15px;
-  color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
 }
 
-.feature-card p {
-  color: #6b7280;
-  margin-bottom: 20px;
+.feature-desc {
+  color: var(--color-text-secondary);
+  margin-bottom: 25px;
+  line-height: 1.7;
+  font-size: 1rem;
 }
 
 .feature-list {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
 .feature-list li {
-  padding: 8px 0;
-  color: #4b5563;
-  position: relative;
-  padding-left: 20px;
+  padding: 12px 0;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
 }
 
-.feature-list li::before {
-  content: '✓';
-  position: absolute;
-  left: 0;
-  color: #10b981;
-  font-weight: bold;
+.feature-list li:hover {
+  color: var(--color-text-primary);
+  transform: translateX(5px);
+}
+
+.check-icon {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+
+.feature-list li:hover .check-icon {
+  opacity: 1;
+  transform: scale(1.2);
 }
 
 /* Technology Section */
 .tech-section {
   padding: 80px 0;
-  background: #1f2937;
+  background: var(--color-bg-dark);
   color: var(--color-white);
 }
 
@@ -942,15 +1244,16 @@ onUnmounted(() => {
 }
 
 .tech-card p {
-  color: var(--color-border-medium);
+  color: var(--color-text-muted);
   font-size: 0.9rem;
+  opacity: 0.9;
 }
 
 
 /* Getting Started Section */
 .getting-started-section {
   padding: 80px 0;
-  background: #f8fafc;
+  background: var(--color-bg-tertiary);
 }
 
 .steps-grid {
@@ -982,17 +1285,17 @@ onUnmounted(() => {
   font-size: 1.3rem;
   font-weight: 600;
   margin-bottom: 15px;
-  color: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
 .step p {
-  color: #6b7280;
+  color: var(--color-text-secondary);
   line-height: 1.6;
 }
 
 /* Footer */
 .footer-section {
-  background: #1f2937;
+  background: var(--color-bg-dark);
   color: var(--color-white);
   padding: 60px 0 20px;
 }
@@ -1012,8 +1315,26 @@ onUnmounted(() => {
 }
 
 .footer-brand p {
-  color: var(--color-border-medium);
+  color: var(--color-text-muted);
   line-height: 1.6;
+  opacity: 0.9;
+}
+
+.footer-contact {
+  margin-top: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.footer-contact a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: opacity 0.3s ease;
+}
+
+.footer-contact a:hover {
+  opacity: 0.8;
 }
 
 .footer-links {
@@ -1031,30 +1352,34 @@ onUnmounted(() => {
 
 .link-group a {
   display: block;
-  color: var(--color-border-medium);
+  color: var(--color-text-muted);
   text-decoration: none;
   padding: 5px 0;
   transition: color 0.3s ease;
+  opacity: 0.9;
 }
 
 .link-group a:hover {
   color: var(--color-primary);
+  opacity: 1;
 }
 
 .footer-bottom {
-  border-top: 1px solid #374151;
+  border-top: 1px solid var(--color-border-dark);
   padding-top: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 20px;
-  color: var(--color-border-medium);
+  color: var(--color-text-muted);
+  opacity: 0.9;
 }
 
 .version {
-  color: #9ca3af;
+  color: var(--color-text-muted);
   font-weight: normal;
+  opacity: 0.8;
 }
 
 .language-toggle {
@@ -1075,7 +1400,7 @@ onUnmounted(() => {
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(40px);
   }
   to {
     opacity: 1;
@@ -1083,12 +1408,103 @@ onUnmounted(() => {
   }
 }
 
+@keyframes gradientShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes shapeFloat {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  33% {
+    transform: translate(30px, -30px) rotate(120deg);
+  }
+  66% {
+    transform: translate(-30px, 20px) rotate(240deg);
+  }
+}
+
+@keyframes orbFloat {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(40px, -40px) scale(1.1);
+  }
+  66% {
+    transform: translate(-40px, 30px) scale(0.9);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2) rotate(90deg);
+  }
+}
+
+@keyframes textShimmer {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes glowRotate {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
 @keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-15px) rotate(2deg);
+  }
+}
+
+@keyframes iconFloat {
   0%, 100% {
     transform: translateY(0);
   }
   50% {
     transform: translateY(-10px);
+  }
+}
+
+@keyframes iconBounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15) rotate(5deg);
   }
 }
 
@@ -1125,6 +1541,26 @@ onUnmounted(() => {
   60% {
     transform: translateY(4px);
   }
+}
+
+/* Dark Mode Adjustments */
+:global([data-theme="dark"]) .tech-section {
+  background: var(--color-bg-secondary);
+}
+
+:global([data-theme="dark"]) .footer-section {
+  background: var(--color-bg-primary);
+  border-top: 1px solid var(--color-border-medium);
+}
+
+:global([data-theme="dark"]) .glass-effect {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+:global([data-theme="dark"]) .glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 /* Responsive Design */
