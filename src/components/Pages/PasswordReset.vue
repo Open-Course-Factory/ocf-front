@@ -394,12 +394,12 @@ const startResendCooldown = () => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #f8f9fa;
+  background-color: var(--color-gray-50);
   padding: 20px;
 }
 
 .password-reset-form {
-  background-color: #fff;
+  background-color: var(--color-white);
   padding: 40px;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -411,11 +411,11 @@ const startResendCooldown = () => {
 .password-reset-form h2 {
   margin-bottom: 16px;
   font-size: 1.8rem;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .text-muted {
-  color: #6c757d;
+  color: var(--color-gray-600);
   margin-bottom: 24px;
 }
 
@@ -456,7 +456,7 @@ const startResendCooldown = () => {
 }
 
 .back-to-login a {
-  color: #007bff;
+  color: var(--color-primary);
   text-decoration: none;
   font-size: 0.9rem;
 }
@@ -467,20 +467,20 @@ const startResendCooldown = () => {
 
 .success-icon {
   font-size: 4rem;
-  color: #28a745;
+  color: var(--color-success);
   margin-bottom: 16px;
 }
 
 .resend-section {
   margin: 24px 0;
   padding: 20px;
-  background-color: #f8f9fa;
+  background-color: var(--color-gray-50);
   border-radius: 8px;
 }
 
 .resend-section p {
   margin-bottom: 12px;
-  color: #6c757d;
+  color: var(--color-gray-600);
 }
 
 .alert {
@@ -491,9 +491,9 @@ const startResendCooldown = () => {
 }
 
 .alert-danger {
-  background-color: #f8d7da;
-  border-color: #f5c6cb;
-  color: #721c24;
+  background-color: var(--color-danger-bg);
+  border-color: var(--color-danger-border);
+  color: var(--color-danger-text);
 }
 
 .btn i {

@@ -302,9 +302,9 @@ if (!isAdmin.value) {
   max-width: 1200px;
   margin: 20px auto;
   padding: 20px;
-  background: #f8f9fa;
+  background: var(--color-gray-50);
   border-radius: 8px;
-  border: 2px dashed #dee2e6;
+  border: 2px dashed var(--color-gray-300);
 }
 
 .debug-header {
@@ -314,11 +314,11 @@ if (!isAdmin.value) {
 
 .debug-header h3 {
   margin: 0 0 10px 0;
-  color: #495057;
+  color: var(--color-gray-700);
 }
 
 .debug-note {
-  color: #6c757d;
+  color: var(--color-gray-600);
   margin: 0;
   font-size: 0.9rem;
 }
@@ -334,17 +334,17 @@ if (!isAdmin.value) {
   background: white;
   border-radius: 8px;
   padding: 20px;
-  border: 2px solid #e9ecef;
+  border: 2px solid var(--color-gray-200);
   transition: all 0.3s ease;
 }
 
 .flag-card.flag-enabled {
-  border-color: #28a745;
+  border-color: var(--color-success);
   box-shadow: 0 2px 4px rgba(40, 167, 69, 0.1);
 }
 
 .flag-card.flag-disabled {
-  border-color: #dc3545;
+  border-color: var(--color-danger);
   box-shadow: 0 2px 4px rgba(220, 53, 69, 0.1);
 }
 
@@ -358,7 +358,7 @@ if (!isAdmin.value) {
 .flag-header h4 {
   margin: 0;
   font-size: 1.1rem;
-  color: #495057;
+  color: var(--color-gray-700);
   font-family: monospace;
 }
 
@@ -400,7 +400,7 @@ if (!isAdmin.value) {
 }
 
 input:checked + .slider {
-  background-color: #28a745;
+  background-color: var(--color-success);
 }
 
 input:checked + .slider:before {
@@ -413,7 +413,7 @@ input:checked + .slider:before {
 
 .flag-description {
   margin: 0 0 10px 0;
-  color: #6c757d;
+  color: var(--color-gray-600);
   font-size: 0.9rem;
 }
 
@@ -431,41 +431,41 @@ input:checked + .slider:before {
 }
 
 .type-development {
-  background: #fff3cd;
-  color: #856404;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
 }
 
 .type-ops {
-  background: #d1ecf1;
-  color: #0c5460;
+  background: var(--color-info-bg);
+  color: var(--color-info-text);
 }
 
 .type-experiment {
-  background: #f8d7da;
-  color: #721c24;
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
 }
 
 .status-enabled {
-  background: #d4edda;
-  color: #155724;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .status-disabled {
-  background: #f8d7da;
-  color: #721c24;
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
 }
 
 .flag-test {
   padding-top: 10px;
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid var(--color-gray-200);
 }
 
 .text-success {
-  color: #28a745;
+  color: var(--color-success);
 }
 
 .text-danger {
-  color: #dc3545;
+  color: var(--color-danger);
 }
 
 .debug-info {
@@ -477,7 +477,7 @@ input:checked + .slider:before {
 
 .debug-info h4 {
   margin: 0 0 15px 0;
-  color: #495057;
+  color: var(--color-gray-700);
 }
 
 .env-vars {
@@ -491,19 +491,19 @@ input:checked + .slider:before {
   align-items: center;
   margin: 0;
   padding: 8px;
-  background: #f8f9fa;
+  background: var(--color-gray-50);
   border-radius: 4px;
 }
 
 .env-var code {
   font-family: 'Courier New', monospace;
   font-size: 0.85rem;
-  color: #495057;
+  color: var(--color-gray-700);
 }
 
 .env-value {
   font-weight: 600;
-  color: #6c757d;
+  color: var(--color-gray-600);
 }
 
 .debug-actions {
@@ -531,23 +531,23 @@ input:checked + .slider:before {
 }
 
 .btn-primary {
-  background: #007bff;
+  background: var(--color-primary);
   color: white;
 }
 
 .btn-secondary {
-  background: #6c757d;
+  background: var(--color-gray-600);
   color: white;
 }
 
 .btn-info {
-  background: #17a2b8;
+  background: var(--color-info);
   color: white;
 }
 
 .btn-warning {
-  background: #ffc107;
-  color: #212529;
+  background: var(--color-warning);
+  color: var(--color-gray-900);
 }
 
 .btn:hover:not(:disabled) {
@@ -567,9 +567,9 @@ input:checked + .slider:before {
 }
 
 .alert-danger {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger-text);
+  border: 1px solid var(--color-danger-border);
 }
 
 .btn-close {
@@ -598,12 +598,12 @@ input:checked + .slider:before {
 }
 
 .loading-overlay i {
-  color: #007bff;
+  color: var(--color-primary);
   margin-bottom: 15px;
 }
 
 .loading-overlay p {
-  color: #6c757d;
+  color: var(--color-gray-600);
   margin: 0;
 }
 </style>

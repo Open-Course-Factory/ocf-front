@@ -122,7 +122,7 @@ function formatDate(dateString: string) {
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--color-gray-200);
 }
 
 .recent-invoices h3 {
@@ -130,7 +130,7 @@ function formatDate(dateString: string) {
   align-items: center;
   justify-content: space-between;
   margin: 0 0 20px 0;
-  color: #495057;
+  color: var(--color-gray-700);
   font-size: 1.25rem;
   gap: 10px;
 }
@@ -146,9 +146,9 @@ function formatDate(dateString: string) {
   justify-content: space-between;
   align-items: center;
   padding: 15px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--color-border-light);
   border-radius: 8px;
-  background: #fafafa;
+  background: var(--color-bg-secondary);
   transition: background-color 0.2s ease;
 }
 
@@ -177,12 +177,12 @@ function formatDate(dateString: string) {
   display: flex;
   gap: 20px;
   font-size: 0.9rem;
-  color: #6c757d;
+  color: var(--color-gray-600);
 }
 
 .invoice-amount {
   font-weight: 600;
-  color: #495057;
+  color: var(--color-gray-700);
 }
 
 .invoice-actions {
@@ -193,7 +193,7 @@ function formatDate(dateString: string) {
 .no-invoices {
   text-align: center;
   padding: 40px 20px;
-  color: #6c757d;
+  color: var(--color-gray-600);
 }
 
 .no-invoices i {
@@ -250,33 +250,33 @@ function formatDate(dateString: string) {
 }
 
 .btn-outline-primary {
-  color: #007bff;
-  border-color: #007bff;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
   background-color: transparent;
 }
 
 .btn-outline-primary:hover:not(:disabled) {
-  color: #fff;
-  background-color: #007bff;
+  color: var(--color-white);
+  background-color: var(--color-primary);
 }
 
 .btn-outline-secondary {
-  color: #6c757d;
-  border-color: #6c757d;
+  color: var(--color-gray-600);
+  border-color: var(--color-gray-600);
   background-color: transparent;
 }
 
 .btn-outline-secondary:hover:not(:disabled) {
-  color: #fff;
-  background-color: #6c757d;
+  color: var(--color-white);
+  background-color: var(--color-gray-600);
 }
 
 /* Text utilities */
-.text-success { color: #28a745 !important; }
-.text-info { color: #17a2b8 !important; }
-.text-warning { color: #ffc107 !important; }
-.text-danger { color: #dc3545 !important; }
-.text-muted { color: #6c757d !important; }
+.text-success { color: var(--color-success) !important; }
+.text-info { color: var(--color-info) !important; }
+.text-warning { color: var(--color-warning) !important; }
+.text-danger { color: var(--color-danger) !important; }
+.text-muted { color: var(--color-gray-600) !important; }
 
 /* Responsive */
 @media (max-width: 768px) {

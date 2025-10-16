@@ -289,40 +289,40 @@ onUnmounted(() => {
 }
 
 .status-success {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+  background-color: var(--color-success-bg);
+  color: var(--color-success-text);
+  border: 1px solid var(--color-success-border);
 }
 
 .status-error {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger-text);
+  border: 1px solid var(--color-danger-border);
 }
 
 .status-warning {
-  background-color: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeaa7;
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  border: 1px solid var(--color-warning-bg);
 }
 
 .status-info {
-  background-color: #d1ecf1;
-  color: #0c5460;
-  border: 1px solid #bee5eb;
+  background-color: var(--color-info-bg);
+  color: var(--color-info-text);
+  border: 1px solid var(--color-info-border);
 }
 
 .progress-bar {
   position: relative;
   height: 20px;
-  background-color: #e9ecef;
+  background-color: var(--color-gray-200);
   border-radius: 4px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background-color: #007bff;
+  background-color: var(--color-primary);
   transition: width 0.3s ease;
 }
 
@@ -332,7 +332,7 @@ onUnmounted(() => {
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 0.75rem;
-  color: #212529;
+  color: var(--color-gray-900);
   font-weight: 500;
 }
 
@@ -350,7 +350,7 @@ onUnmounted(() => {
 .error-details {
   margin-top: 15px;
   padding: 10px;
-  background-color: #f8f9fa;
+  background-color: var(--color-gray-50);
   border-radius: 4px;
 }
 

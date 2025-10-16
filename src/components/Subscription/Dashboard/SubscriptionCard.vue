@@ -306,7 +306,7 @@ function formatDate(dateString: string) {
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--color-gray-200);
   min-width: 600px;
 }
 
@@ -321,7 +321,7 @@ function formatDate(dateString: string) {
   align-items: center;
   gap: 10px;
   margin: 0 0 15px 0;
-  color: #495057;
+  color: var(--color-gray-700);
   font-size: 1.25rem;
 }
 
@@ -329,7 +329,7 @@ function formatDate(dateString: string) {
 .no-subscription-card {
   text-align: center;
   padding: 30px 15px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   color: white;
   border-radius: 12px;
 }
@@ -345,7 +345,7 @@ function formatDate(dateString: string) {
 
 /* Active subscription styles */
 .subscription-card {
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--color-border-light);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -355,24 +355,24 @@ function formatDate(dateString: string) {
   justify-content: space-between;
   align-items: center;
   padding: 15px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-bottom: 1px solid #e0e0e0;
+  background: linear-gradient(135deg, var(--color-gray-50) 0%, var(--color-gray-200) 100%);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .plan-info h4 {
   margin: 0 0 8px 0;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .plan-price {
   font-size: 1.5rem;
   font-weight: bold;
-  color: #28a745;
+  color: var(--color-success);
 }
 
 .billing-period {
   font-size: 0.9rem;
-  color: #666;
+  color: var(--color-text-muted);
   font-weight: normal;
 }
 
@@ -402,12 +402,12 @@ function formatDate(dateString: string) {
 
 .trial-card {
   background-color: #e1f5fe;
-  border-left: 4px solid #17a2b8;
+  border-left: 4px solid var(--color-info);
 }
 
 .cancellation-card {
-  background-color: #fff3cd;
-  border-left: 4px solid #ffc107;
+  background-color: var(--color-warning-bg);
+  border-left: 4px solid var(--color-warning);
 }
 
 .detail-row {
@@ -419,7 +419,7 @@ function formatDate(dateString: string) {
 
 .detail-row .label {
   font-weight: 600;
-  color: #495057;
+  color: var(--color-gray-700);
   display: flex;
   align-items: center;
   gap: 5px;
@@ -436,7 +436,7 @@ function formatDate(dateString: string) {
 .plan-features {
   margin: 20px 0;
   padding: 20px;
-  background: #f8f9fa;
+  background: var(--color-gray-50);
   border-radius: 8px;
 }
 
@@ -445,7 +445,7 @@ function formatDate(dateString: string) {
   align-items: center;
   gap: 8px;
   margin: 0 0 15px 0;
-  color: #495057;
+  color: var(--color-gray-700);
   font-size: 1rem;
 }
 
@@ -462,18 +462,18 @@ function formatDate(dateString: string) {
   padding: 8px;
   background: white;
   border-radius: 6px;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--color-gray-200);
 }
 
 .feature-item i {
-  color: #6c757d;
+  color: var(--color-gray-600);
   width: 16px;
   text-align: center;
 }
 
 .feature-item span {
   font-size: 14px;
-  color: #495057;
+  color: var(--color-gray-700);
 }
 
 /* Responsive */
@@ -534,33 +534,33 @@ function formatDate(dateString: string) {
 }
 
 .btn-primary {
-  background-color: #007bff;
-  border-color: #007bff;
-  color: #fff;
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-white);
 }
 
 .btn-success {
-  background-color: #28a745;
-  border-color: #28a745;
-  color: #fff;
+  background-color: var(--color-success);
+  border-color: var(--color-success);
+  color: var(--color-white);
 }
 
 .btn-outline-primary {
-  color: #007bff;
-  border-color: #007bff;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
   background-color: transparent;
 }
 
 .btn-outline-warning {
-  color: #ffc107;
-  border-color: #ffc107;
+  color: var(--color-warning);
+  border-color: var(--color-warning);
   background-color: transparent;
 }
 
 /* Text utilities */
-.text-success { color: #28a745 !important; }
-.text-info { color: #17a2b8 !important; }
-.text-warning { color: #ffc107 !important; }
-.text-danger { color: #dc3545 !important; }
-.text-muted { color: #6c757d !important; }
+.text-success { color: var(--color-success) !important; }
+.text-info { color: var(--color-info) !important; }
+.text-warning { color: var(--color-warning) !important; }
+.text-danger { color: var(--color-danger) !important; }
+.text-muted { color: var(--color-gray-600) !important; }
 </style>

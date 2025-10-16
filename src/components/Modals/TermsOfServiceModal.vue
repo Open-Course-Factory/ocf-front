@@ -96,7 +96,7 @@ onBeforeUnmount(() => {
 }
 
 .modal-container {
-  background-color: #fff;
+  background-color: var(--color-white);
   border-radius: 8px;
   max-width: 900px;
   width: 100%;
@@ -111,20 +111,20 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--color-gray-200);
 }
 
 .modal-header h2 {
   margin: 0;
   font-size: 1.5rem;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .close-button {
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: #6c757d;
+  color: var(--color-gray-600);
   cursor: pointer;
   padding: 0;
   width: 32px;
@@ -137,8 +137,8 @@ onBeforeUnmount(() => {
 }
 
 .close-button:hover {
-  background-color: #f8f9fa;
-  color: #333;
+  background-color: var(--color-gray-50);
+  color: var(--color-text-primary);
 }
 
 .modal-body {
@@ -149,7 +149,7 @@ onBeforeUnmount(() => {
 
 .modal-footer {
   padding: 16px 24px;
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid var(--color-gray-200);
   display: flex;
   justify-content: flex-end;
   gap: 12px;
@@ -165,11 +165,11 @@ onBeforeUnmount(() => {
 }
 
 .btn-secondary {
-  background-color: #6c757d;
-  color: #fff;
+  background-color: var(--color-gray-600);
+  color: var(--color-white);
 }
 
 .btn-secondary:hover {
-  background-color: #5a6268;
+  background-color: var(--color-secondary-hover);
 }
 </style>

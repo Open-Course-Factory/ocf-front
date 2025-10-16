@@ -398,7 +398,7 @@ function getUserDisplayName(userId: string): string {
 
 .access-item.owner {
   background-color: var(--color-warning-bg);
-  border-color: #ffeaa7;
+  border-color: var(--color-warning-bg);
 }
 
 .user-info {
@@ -425,9 +425,9 @@ function getUserDisplayName(userId: string): string {
 }
 
 .owner-badge {
-  background-color: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeaa7;
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  border: 1px solid var(--color-warning-bg);
 }
 
 .read-badge {
@@ -437,15 +437,15 @@ function getUserDisplayName(userId: string): string {
 }
 
 .write-badge {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+  background-color: var(--color-success-bg);
+  color: var(--color-success-text);
+  border: 1px solid var(--color-success-border);
 }
 
 .admin-badge {
-  background-color: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeaa7;
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  border: 1px solid var(--color-warning-bg);
 }
 
 .user-meta {
@@ -545,8 +545,8 @@ function getUserDisplayName(userId: string): string {
 
 .alert-danger {
   background-color: var(--color-danger-bg);
-  color: #721c24;
-  border: var(--border-width-thin) solid #f5c6cb;
+  color: var(--color-danger-text);
+  border: var(--border-width-thin) solid var(--color-danger-border);
 }
 
 .text-success { color: var(--color-success) !important; }

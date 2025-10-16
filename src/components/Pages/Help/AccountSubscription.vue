@@ -411,25 +411,25 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #007bff;
+  color: var(--color-primary);
   text-decoration: none;
   font-weight: 500;
   transition: color 0.3s ease;
 }
 
 .back-link:hover {
-  color: #0056b3;
+  color: var(--color-primary-hover);
 }
 
 .article-header {
   text-align: center;
   margin-bottom: 40px;
   padding-bottom: 30px;
-  border-bottom: 2px solid #e9ecef;
+  border-bottom: 2px solid var(--color-gray-200);
 }
 
 .article-header h1 {
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 2.5rem;
   margin: 0 0 15px 0;
   display: flex;
@@ -439,11 +439,11 @@ onMounted(async () => {
 }
 
 .article-header h1 i {
-  color: #007bff;
+  color: var(--color-primary);
 }
 
 .article-description {
-  color: #6c757d;
+  color: var(--color-gray-600);
   font-size: 1.2rem;
   margin: 0;
 }
@@ -454,19 +454,19 @@ onMounted(async () => {
 
 .help-section {
   margin-bottom: 40px;
-  background: white;
+  background: var(--color-bg-primary);
   padding: 30px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .help-section.info {
-  background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
-  border-left: 4px solid #17a2b8;
+  background: linear-gradient(135deg, var(--color-info-bg) 0%, var(--color-info-border) 100%);
+  border-left: 4px solid var(--color-info);
 }
 
 .help-section h2 {
-  color: #333;
+  color: var(--color-text-primary);
   margin: 0 0 20px 0;
   font-size: 1.5rem;
   display: flex;
@@ -475,21 +475,21 @@ onMounted(async () => {
 }
 
 .help-section h2 i {
-  color: #007bff;
+  color: var(--color-primary);
 }
 
 .help-section.info h2 i {
-  color: #17a2b8;
+  color: var(--color-info);
 }
 
 .help-section h3 {
-  color: #333;
+  color: var(--color-text-primary);
   margin: 25px 0 15px 0;
   font-size: 1.2rem;
 }
 
 .help-section p {
-  color: #555;
+  color: var(--color-text-secondary);
   margin-bottom: 15px;
 }
 
@@ -503,31 +503,31 @@ onMounted(async () => {
 .overview-card {
   text-align: center;
   padding: 25px;
-  background: #f8f9fa;
+  background: var(--color-gray-50);
   border-radius: 8px;
-  border: 2px solid #e9ecef;
+  border: 2px solid var(--color-gray-200);
   transition: all 0.3s ease;
 }
 
 .overview-card:hover {
-  border-color: #007bff;
+  border-color: var(--color-primary);
   transform: translateY(-5px);
 }
 
 .overview-card i {
   font-size: 2.5rem;
-  color: #007bff;
+  color: var(--color-primary);
   margin-bottom: 15px;
 }
 
 .overview-card h4 {
   margin: 0 0 10px 0;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .overview-card p {
   margin: 0;
-  color: #6c757d;
+  color: var(--color-gray-600);
   font-size: 0.9rem;
   line-height: 1.5;
 }
@@ -544,16 +544,16 @@ onMounted(async () => {
   align-items: flex-start;
   gap: 20px;
   padding: 20px;
-  background: #f8f9fa;
+  background: var(--color-gray-50);
   border-radius: 8px;
-  border-left: 4px solid #007bff;
+  border-left: 4px solid var(--color-primary);
 }
 
 .step-icon {
   flex-shrink: 0;
   width: 50px;
   height: 50px;
-  background: #007bff;
+  background: var(--color-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -568,13 +568,13 @@ onMounted(async () => {
 
 .step-content h4 {
   margin: 0 0 10px 0;
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 1.1rem;
 }
 
 .step-content p {
   margin: 0 0 15px 0;
-  color: #555;
+  color: var(--color-text-secondary);
 }
 
 .plan-change-workflow {
@@ -589,13 +589,13 @@ onMounted(async () => {
   align-items: flex-start;
   gap: 20px;
   padding: 20px;
-  background: #f8f9fa;
+  background: var(--color-gray-50);
   border-radius: 8px;
-  border-left: 4px solid #28a745;
+  border-left: 4px solid var(--color-success);
 }
 
 .step-number {
-  background: #28a745;
+  background: var(--color-success);
   color: white;
   width: 40px;
   height: 40px;
@@ -614,13 +614,13 @@ onMounted(async () => {
 
 .workflow-step .step-content h4 {
   margin: 0 0 10px 0;
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 1.1rem;
 }
 
 .workflow-step .step-content p {
   margin: 0 0 15px 0;
-  color: #555;
+  color: var(--color-text-secondary);
 }
 
 .change-tips {
@@ -639,27 +639,27 @@ onMounted(async () => {
   align-items: flex-start;
   gap: 15px;
   padding: 15px;
-  background: #fff3cd;
+  background: var(--color-warning-bg);
   border-radius: 8px;
-  border-left: 4px solid #ffc107;
+  border-left: 4px solid var(--color-warning);
 }
 
 .tip-item i {
   font-size: 1.3rem;
-  color: #856404;
+  color: var(--color-warning-text);
   margin-top: 5px;
   flex-shrink: 0;
 }
 
 .tip-item h4 {
   margin: 0 0 5px 0;
-  color: #856404;
+  color: var(--color-warning-text);
   font-size: 1rem;
 }
 
 .tip-item p {
   margin: 0;
-  color: #856404;
+  color: var(--color-warning-text);
   font-size: 0.9rem;
 }
 
@@ -673,8 +673,8 @@ onMounted(async () => {
 .optimization-card {
   text-align: center;
   padding: 20px;
-  background: #e8f5e8;
-  border: 2px solid #28a745;
+  background: var(--color-success-bg);
+  border: 2px solid var(--color-success);
   border-radius: 8px;
   transition: all 0.3s ease;
 }
@@ -686,18 +686,18 @@ onMounted(async () => {
 
 .optimization-card i {
   font-size: 2rem;
-  color: #28a745;
+  color: var(--color-success);
   margin-bottom: 15px;
 }
 
 .optimization-card h4 {
   margin: 0 0 10px 0;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .optimization-card p {
   margin: 0;
-  color: #555;
+  color: var(--color-text-secondary);
   font-size: 0.9rem;
   line-height: 1.5;
 }
@@ -721,11 +721,11 @@ onMounted(async () => {
 }
 
 .option-card.pause {
-  border-color: #ffc107;
+  border-color: var(--color-warning);
 }
 
 .option-card.cancel {
-  border-color: #dc3545;
+  border-color: var(--color-danger);
 }
 
 .option-header {
@@ -737,13 +737,13 @@ onMounted(async () => {
 }
 
 .option-card.pause .option-header {
-  background: #fff3cd;
-  color: #856404;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
 }
 
 .option-card.cancel .option-header {
-  background: #f8d7da;
-  color: #721c24;
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
 }
 
 .option-header i {
@@ -757,18 +757,18 @@ onMounted(async () => {
 
 .option-content {
   padding: 20px;
-  background: white;
+  background: var(--color-bg-primary);
 }
 
 .option-content p {
   margin: 0 0 15px 0;
-  color: #555;
+  color: var(--color-text-secondary);
 }
 
 .option-content ul {
   margin: 0;
   padding-left: 20px;
-  color: #555;
+  color: var(--color-text-secondary);
 }
 
 .option-content li {
@@ -777,8 +777,8 @@ onMounted(async () => {
 }
 
 .warning-box {
-  background: #f8d7da;
-  border: 2px solid #dc3545;
+  background: var(--color-danger-bg);
+  border: 2px solid var(--color-danger);
   border-radius: 8px;
   padding: 15px;
   margin: 20px 0;
@@ -786,7 +786,7 @@ onMounted(async () => {
 
 .warning-box h4 {
   margin: 0 0 10px 0;
-  color: #721c24;
+  color: var(--color-danger-text);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -794,7 +794,7 @@ onMounted(async () => {
 
 .warning-box p {
   margin: 0;
-  color: #721c24;
+  color: var(--color-danger-text);
 }
 
 .evolution-notice {
@@ -818,13 +818,13 @@ onMounted(async () => {
 
 .upcoming-features h4 {
   margin: 0 0 10px 0;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .upcoming-features ul {
   margin: 0;
   padding-left: 20px;
-  color: #555;
+  color: var(--color-text-secondary);
 }
 
 .upcoming-features li {
@@ -842,31 +842,31 @@ onMounted(async () => {
 .support-card {
   text-align: center;
   padding: 25px;
-  background: #f8f9fa;
-  border: 2px solid #e9ecef;
+  background: var(--color-gray-50);
+  border: 2px solid var(--color-gray-200);
   border-radius: 8px;
   transition: all 0.3s ease;
 }
 
 .support-card:hover {
-  border-color: #007bff;
+  border-color: var(--color-primary);
   transform: translateY(-5px);
 }
 
 .support-card i {
   font-size: 2rem;
-  color: #007bff;
+  color: var(--color-primary);
   margin-bottom: 15px;
 }
 
 .support-card h4 {
   margin: 0 0 10px 0;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .support-card p {
   margin: 0 0 15px 0;
-  color: #6c757d;
+  color: var(--color-gray-600);
   font-size: 0.9rem;
 }
 
@@ -880,8 +880,8 @@ onMounted(async () => {
 .next-step-card {
   display: block;
   padding: 20px;
-  background: white;
-  border: 2px solid #e9ecef;
+  background: var(--color-bg-primary);
+  border: 2px solid var(--color-gray-200);
   border-radius: 8px;
   text-decoration: none;
   color: inherit;
@@ -890,26 +890,26 @@ onMounted(async () => {
 }
 
 .next-step-card:hover {
-  border-color: #007bff;
+  border-color: var(--color-primary);
   transform: translateY(-5px);
   box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
 }
 
 .next-step-card i {
   font-size: 2rem;
-  color: #007bff;
+  color: var(--color-primary);
   margin-bottom: 15px;
 }
 
 .next-step-card h4 {
   margin: 0 0 10px 0;
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 1.1rem;
 }
 
 .next-step-card p {
   margin: 0;
-  color: #6c757d;
+  color: var(--color-gray-600);
   font-size: 0.9rem;
 }
 
@@ -928,23 +928,23 @@ onMounted(async () => {
 }
 
 .btn-primary {
-  background-color: #007bff;
+  background-color: var(--color-primary);
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #0056b3;
+  background-color: var(--color-primary-hover);
   transform: translateY(-1px);
 }
 
 .btn-outline {
   background-color: transparent;
-  color: #007bff;
-  border: 2px solid #007bff;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
 }
 
 .btn-outline:hover {
-  background-color: #007bff;
+  background-color: var(--color-primary);
   color: white;
 }
 

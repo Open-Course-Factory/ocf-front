@@ -246,7 +246,7 @@ function formatDate(dateString: string) {
 <style scoped>
 .checkout-success {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -284,7 +284,7 @@ function formatDate(dateString: string) {
   position: relative;
   display: inline-block;
   vertical-align: top;
-  border: 4px solid #28a745;
+  border: 4px solid var(--color-success);
   border-radius: 50%;
   animation: checkmark-scale 0.3s ease-in-out 0.9s both;
 }
@@ -293,7 +293,7 @@ function formatDate(dateString: string) {
   position: absolute;
   width: 5px;
   height: 18px;
-  background-color: #28a745;
+  background-color: var(--color-success);
   left: 32px;
   top: 28px;
   transform: rotate(45deg);
@@ -304,7 +304,7 @@ function formatDate(dateString: string) {
   position: absolute;
   width: 12px;
   height: 5px;
-  background-color: #28a745;
+  background-color: var(--color-success);
   left: 25px;
   top: 35px;
   transform: rotate(-45deg);
@@ -332,7 +332,7 @@ function formatDate(dateString: string) {
 }
 
 .success-message h1 {
-  color: #333;
+  color: var(--color-text-primary);
   margin: 0 0 15px 0;
   font-size: 2.5rem;
   font-weight: 300;
@@ -340,7 +340,7 @@ function formatDate(dateString: string) {
 
 .success-message .lead {
   font-size: 1.3rem;
-  color: #666;
+  color: var(--color-text-muted);
   margin: 0;
 }
 
@@ -350,7 +350,7 @@ function formatDate(dateString: string) {
 }
 
 .details-card {
-  background: #f8f9fa;
+  background: var(--color-gray-50);
   border-radius: 12px;
   padding: 25px;
   margin: 0 auto;
@@ -359,7 +359,7 @@ function formatDate(dateString: string) {
 
 .details-card h3 {
   margin: 0 0 20px 0;
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 1.3rem;
 }
 
@@ -373,11 +373,11 @@ function formatDate(dateString: string) {
 
 .detail-row .label {
   font-weight: 600;
-  color: #666;
+  color: var(--color-text-muted);
 }
 
 .detail-row .value {
-  color: #333;
+  color: var(--color-text-primary);
   font-weight: 500;
 }
 
@@ -392,13 +392,13 @@ function formatDate(dateString: string) {
 }
 
 .trial-info {
-  background-color: #d4edda;
-  color: #155724;
+  background-color: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .billing-info {
-  background-color: #d1ecf1;
-  color: #0c5460;
+  background-color: var(--color-info-bg);
+  color: var(--color-info-text);
 }
 
 /* Étapes suivantes */
@@ -408,7 +408,7 @@ function formatDate(dateString: string) {
 
 .next-steps h3 {
   margin: 0 0 25px 0;
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 1.5rem;
 }
 
@@ -420,7 +420,7 @@ function formatDate(dateString: string) {
 }
 
 .step-card {
-  background: #f8f9fa;
+  background: var(--color-gray-50);
   border-radius: 12px;
   padding: 20px;
   text-align: center;
@@ -435,7 +435,7 @@ function formatDate(dateString: string) {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -446,13 +446,13 @@ function formatDate(dateString: string) {
 
 .step-content h4 {
   margin: 0 0 10px 0;
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 1.1rem;
 }
 
 .step-content p {
   margin: 0 0 15px 0;
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
   line-height: 1.4;
 }
@@ -471,7 +471,7 @@ function formatDate(dateString: string) {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
   margin-top: 20px;
 }
@@ -496,27 +496,27 @@ function formatDate(dateString: string) {
 }
 
 .btn-primary {
-  background-color: #007bff;
-  border-color: #007bff;
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
   color: white;
 }
 
 .btn-success {
-  background-color: #28a745;
-  border-color: #28a745;
+  background-color: var(--color-success);
+  border-color: var(--color-success);
   color: white;
 }
 
 .btn-outline-primary {
   background-color: transparent;
-  border-color: #007bff;
-  color: #007bff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .btn-outline-secondary {
   background-color: transparent;
-  border-color: #6c757d;
-  color: #6c757d;
+  border-color: var(--color-gray-600);
+  color: var(--color-gray-600);
 }
 
 .btn:hover {

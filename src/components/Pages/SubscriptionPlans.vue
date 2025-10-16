@@ -355,15 +355,15 @@ const syncWithStripe = async () => {
 }
 
 .info-banner {
-    background-color: #e3f2fd;
-    border: 1px solid #bbdefb;
+    background-color: var(--color-info-bg);
+    border: 1px solid var(--color-info-bg);
     border-radius: 4px;
     padding: 15px;
     margin-bottom: 20px;
     display: flex;
     align-items: center;
     gap: 10px;
-    color: #1976d2;
+    color: var(--color-primary);
 }
 
 .plan-actions {
@@ -381,13 +381,13 @@ const syncWithStripe = async () => {
 
 .price-display {
     font-size: 1.5rem;
-    color: #2e7d32;
+    color: var(--color-success-text);
     margin-bottom: 5px;
 }
 
 .billing-period {
     font-size: 0.9rem;
-    color: #666;
+    color: var(--color-text-muted);
     font-weight: normal;
 }
 
@@ -411,10 +411,10 @@ const syncWithStripe = async () => {
     align-items: center;
     gap: 8px;
     padding: 8px 12px;
-    background: #d4edda;
-    border: 1px solid #c3e6cb;
+    background: var(--color-success-bg);
+    border: 1px solid var(--color-success-border);
     border-radius: 6px;
-    color: #155724;
+    color: var(--color-success-text);
     font-weight: 500;
     font-size: 14px;
 }
@@ -434,19 +434,19 @@ const syncWithStripe = async () => {
 }
 
 .badge-success {
-    background-color: #28a745;
+    background-color: var(--color-success);
 }
 
 .badge-secondary {
-    background-color: #6c757d;
+    background-color: var(--color-gray-600);
 }
 
 .text-muted {
-    color: #6c757d;
+    color: var(--color-gray-600);
 }
 
 .text-success {
-    color: #28a745;
+    color: var(--color-success);
 }
 
 /* Actions boutons */
@@ -459,8 +459,8 @@ const syncWithStripe = async () => {
 .admin-controls {
   margin-bottom: 20px;
   padding: 15px;
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-gray-300);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -484,15 +484,15 @@ const syncWithStripe = async () => {
 }
 
 .alert-success {
-  background-color: #d4edda;
-  border-color: #c3e6cb;
-  color: #155724;
+  background-color: var(--color-success-bg);
+  border-color: var(--color-success-border);
+  color: var(--color-success-text);
 }
 
 .alert-danger {
-  background-color: #f8d7da;
-  border-color: #f5c6cb;
-  color: #721c24;
+  background-color: var(--color-danger-bg);
+  border-color: var(--color-danger-border);
+  color: var(--color-danger-text);
 }
 
 .result-header {
@@ -532,15 +532,15 @@ const syncWithStripe = async () => {
 }
 
 .value.success {
-  color: #28a745;
+  color: var(--color-success);
 }
 
 .value.info {
-  color: #17a2b8;
+  color: var(--color-info);
 }
 
 .value.danger {
-  color: #dc3545;
+  color: var(--color-danger);
 }
 
 .result-details {
@@ -570,24 +570,24 @@ const syncWithStripe = async () => {
 }
 
 .btn-outline-success {
-  color: #28a745;
-  border-color: #28a745;
+  color: var(--color-success);
+  border-color: var(--color-success);
   background-color: transparent;
 }
 
 .btn-outline-success:hover {
-  background-color: #28a745;
+  background-color: var(--color-success);
   color: white;
 }
 
 .btn-outline-danger {
-  color: #dc3545;
-  border-color: #dc3545;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
   background-color: transparent;
 }
 
 .btn-outline-danger:hover {
-  background-color: #dc3545;
+  background-color: var(--color-danger);
   color: white;
 }
 </style>

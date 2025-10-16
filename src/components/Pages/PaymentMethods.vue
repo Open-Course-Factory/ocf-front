@@ -208,7 +208,7 @@ const addPaymentMethod = async () => {
 }
 
 .info-banner {
-    background-color: #e8f5e9;
+    background-color: var(--color-success-bg);
     border: 1px solid #c8e6c9;
     border-radius: 4px;
     padding: 15px;
@@ -217,7 +217,7 @@ const addPaymentMethod = async () => {
     justify-content: space-between;
     align-items: center;
     gap: 15px;
-    color: #2e7d32;
+    color: var(--color-success-text);
 }
 
 .info-content {
@@ -234,12 +234,12 @@ const addPaymentMethod = async () => {
     padding: 6px 12px;
     font-size: 0.85rem;
     white-space: nowrap;
-    color: #2e7d32;
-    border-color: #2e7d32;
+    color: var(--color-success-text);
+    border-color: var(--color-success-text);
 }
 
 .refresh-btn:hover:not(:disabled) {
-    background-color: #2e7d32;
+    background-color: var(--color-success-text);
     color: white;
 }
 
@@ -254,25 +254,25 @@ const addPaymentMethod = async () => {
 }
 
 .alert-danger {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background-color: var(--color-danger-bg);
+    color: var(--color-danger-text);
+    border: 1px solid var(--color-danger-border);
 }
 
 .empty-state {
     text-align: center;
     padding: 60px 20px;
-    color: #6c757d;
+    color: var(--color-gray-600);
 }
 
 .empty-state i {
-    color: #dee2e6;
+    color: var(--color-gray-300);
     margin-bottom: 20px;
 }
 
 .empty-state h4 {
     margin: 20px 0 10px 0;
-    color: #495057;
+    color: var(--color-gray-700);
 }
 
 .payment-method-actions {
@@ -294,10 +294,10 @@ const addPaymentMethod = async () => {
     display: flex;
     align-items: center;
     gap: 15px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--color-border-light);
     border-radius: 8px;
     padding: 15px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
     color: white;
     min-width: 260px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -355,11 +355,11 @@ const addPaymentMethod = async () => {
 }
 
 .badge-primary {
-    background-color: #007bff;
+    background-color: var(--color-primary);
 }
 
 .badge-secondary {
-    background-color: #6c757d;
+    background-color: var(--color-gray-600);
 }
 
 .action-buttons {
@@ -397,24 +397,24 @@ const addPaymentMethod = async () => {
 }
 
 .btn-primary {
-    background-color: #007bff;
+    background-color: var(--color-primary);
     color: white;
 }
 
 .btn-success {
-    background-color: #28a745;
+    background-color: var(--color-success);
     color: white;
 }
 
 .btn-outline-primary {
-    color: #007bff;
-    border: 1px solid #007bff;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
     background-color: transparent;
 }
 
 .btn-outline-primary:hover:not(:disabled) {
-    color: #fff;
-    background-color: #007bff;
+    color: var(--color-white);
+    background-color: var(--color-primary);
 }
 
 .btn:disabled {

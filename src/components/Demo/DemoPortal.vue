@@ -200,7 +200,7 @@ async function returnToDashboard() {
 <style scoped>
 .demo-portal {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -222,7 +222,7 @@ async function returnToDashboard() {
 }
 
 .demo-badge {
-  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+  background: linear-gradient(135deg, var(--color-info) 0%, #138496 100%);
   color: white;
   padding: 8px 16px;
   border-radius: 20px;
@@ -236,7 +236,7 @@ async function returnToDashboard() {
 
 .demo-header h1 {
   margin: 0;
-  color: #333;
+  color: var(--color-text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -244,7 +244,7 @@ async function returnToDashboard() {
 }
 
 .current-subscription {
-  background: #f8f9fa;
+  background: var(--color-gray-50);
   padding: 30px;
   border-radius: 15px;
   margin-bottom: 40px;
@@ -253,7 +253,7 @@ async function returnToDashboard() {
 
 .current-subscription h2 {
   margin: 0 0 20px 0;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .subscription-info {
@@ -267,12 +267,12 @@ async function returnToDashboard() {
 .plan-name {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .plan-price {
   font-size: 1.2rem;
-  color: #28a745;
+  color: var(--color-success);
   font-weight: 600;
 }
 
@@ -284,8 +284,8 @@ async function returnToDashboard() {
 }
 
 .plan-status.active {
-  background: #d4edda;
-  color: #155724;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .portal-sections {
@@ -296,32 +296,32 @@ async function returnToDashboard() {
 }
 
 .portal-section {
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--color-gray-200);
   border-radius: 10px;
   padding: 25px;
-  background: #fafafa;
+  background: var(--color-bg-secondary);
 }
 
 .portal-section.danger {
-  border-color: #dc3545;
-  background: #f8f9fa;
+  border-color: var(--color-danger);
+  background: var(--color-gray-50);
 }
 
 .portal-section h3 {
   margin: 0 0 15px 0;
-  color: #333;
+  color: var(--color-text-primary);
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
 .portal-section.danger h3 {
-  color: #dc3545;
+  color: var(--color-danger);
 }
 
 .portal-section p {
   margin: 0 0 15px 0;
-  color: #666;
+  color: var(--color-text-muted);
 }
 
 .payment-method {
@@ -336,7 +336,7 @@ async function returnToDashboard() {
 }
 
 .default-badge {
-  background: #007bff;
+  background: var(--color-primary);
   color: white;
   padding: 2px 8px;
   border-radius: 10px;
@@ -355,7 +355,7 @@ async function returnToDashboard() {
   justify-content: space-between;
   align-items: center;
   padding: 12px 15px;
-  border-bottom: 1px solid #f8f9fa;
+  border-bottom: 1px solid var(--color-gray-50);
 }
 
 .invoice-item:last-child {
@@ -370,8 +370,8 @@ async function returnToDashboard() {
 }
 
 .status.paid {
-  background: #d4edda;
-  color: #155724;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .btn {
@@ -395,21 +395,21 @@ async function returnToDashboard() {
 }
 
 .btn-primary {
-  background: #007bff;
+  background: var(--color-primary);
   color: white;
-  border-color: #007bff;
+  border-color: var(--color-primary);
 }
 
 .btn-outline-primary {
   background: transparent;
-  color: #007bff;
-  border-color: #007bff;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .btn-outline-danger {
   background: transparent;
-  color: #dc3545;
-  border-color: #dc3545;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
 }
 
 .btn:hover {
@@ -423,8 +423,8 @@ async function returnToDashboard() {
 }
 
 .demo-info {
-  background: #e3f2fd;
-  border: 1px solid #bbdefb;
+  background: var(--color-info-bg);
+  border: 1px solid var(--color-info-bg);
   border-radius: 10px;
   padding: 20px;
   text-align: left;
@@ -432,7 +432,7 @@ async function returnToDashboard() {
 
 .demo-info h4 {
   margin: 0 0 15px 0;
-  color: #1976d2;
+  color: var(--color-primary);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -441,7 +441,7 @@ async function returnToDashboard() {
 .demo-info ul {
   margin: 0;
   padding-left: 20px;
-  color: #1976d2;
+  color: var(--color-primary);
 }
 
 .demo-info li {

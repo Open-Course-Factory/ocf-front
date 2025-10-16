@@ -192,8 +192,8 @@ onUnmounted(() => {
 }
 
 .settings-menu {
-  background-color: #343a40;
-  color: #e7e7e7;
+  background-color: var(--color-gray-800);
+  color: var(--color-border-light);
   height: 100vh;
   width: 400px;
   padding: 0;
@@ -208,7 +208,7 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 1px solid #495057;
+  border-bottom: 1px solid var(--color-gray-700);
   background-color: #2c3136;
 }
 
@@ -223,7 +223,7 @@ onUnmounted(() => {
 .close-button {
   background: none;
   border: none;
-  color: #e7e7e7;
+  color: var(--color-border-light);
   font-size: 1.5rem;
   cursor: pointer;
   padding: 5px 10px;
@@ -231,7 +231,7 @@ onUnmounted(() => {
 }
 
 .close-button:hover {
-  color: #fff;
+  color: var(--color-white);
 }
 
 .settings-nav {
@@ -254,8 +254,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   padding: 15px;
-  color: #e7e7e7;
-  background-color: #495057;
+  color: var(--color-border-light);
+  background-color: var(--color-gray-700);
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.3s, transform 0.3s;
@@ -263,12 +263,12 @@ onUnmounted(() => {
 }
 
 .category-header:hover {
-  background-color: #5a6268;
+  background-color: var(--color-secondary-hover);
   transform: translateX(3px);
 }
 
 .category-header.active {
-  background-color: #6c757d;
+  background-color: var(--color-gray-600);
 }
 
 .category-header i:first-child {

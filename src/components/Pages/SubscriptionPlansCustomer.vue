@@ -430,13 +430,13 @@ async function selectPlan(plan: any) {
   justify-content: center;
   gap: 15px;
   margin: 0 0 15px 0;
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 2.5rem;
 }
 
 .page-description {
   font-size: 1.2rem;
-  color: #666;
+  color: var(--color-text-muted);
   margin: 0;
 }
 
@@ -445,11 +445,11 @@ async function selectPlan(plan: any) {
 .no-plans-container {
   text-align: center;
   padding: 60px 20px;
-  color: #666;
+  color: var(--color-text-muted);
 }
 
 .error-message {
-  color: #dc3545;
+  color: var(--color-danger);
   margin: 20px 0;
 }
 
@@ -463,7 +463,7 @@ async function selectPlan(plan: any) {
 
 .plan-card-compact {
   background: white;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--color-gray-200);
   border-radius: 10px;
   padding: 0;
   position: relative;
@@ -478,14 +478,14 @@ async function selectPlan(plan: any) {
 }
 
 .plan-card-compact.current-plan {
-  border-color: #28a745;
-  background: linear-gradient(135deg, #f8fff9 0%, #e8f5e9 100%);
+  border-color: var(--color-success);
+  background: linear-gradient(135deg, #f8fff9 0%, var(--color-success-bg) 100%);
   box-shadow: 0 4px 15px rgba(40, 167, 69, 0.2);
 }
 
 .plan-card-compact.coming-soon-plan {
   opacity: 0.7;
-  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+  background: linear-gradient(135deg, var(--color-bg-tertiary) 0%, #e8e8e8 100%);
   position: relative;
 }
 
@@ -499,7 +499,7 @@ async function selectPlan(plan: any) {
   position: absolute;
   top: 12px;
   right: 12px;
-  background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+  background: linear-gradient(135deg, var(--color-warning) 0%, var(--color-warning) 100%);
   color: white;
   padding: 4px 12px;
   border-radius: 12px;
@@ -519,7 +519,7 @@ async function selectPlan(plan: any) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f8f9fa;
+  background: var(--color-gray-50);
 }
 
 .plan-title-section {
@@ -532,11 +532,11 @@ async function selectPlan(plan: any) {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .current-badge {
-  background: #28a745;
+  background: var(--color-success);
   color: white;
   padding: 2px 8px;
   border-radius: 12px;
@@ -554,13 +554,13 @@ async function selectPlan(plan: any) {
 .price-amount-compact {
   font-size: 1.4rem;
   font-weight: bold;
-  color: #28a745;
+  color: var(--color-success);
   display: block;
 }
 
 .billing-period-compact {
   font-size: 0.8rem;
-  color: #666;
+  color: var(--color-text-muted);
 }
 
 /* Compact Content */
@@ -586,12 +586,12 @@ async function selectPlan(plan: any) {
   align-items: center;
   gap: 8px;
   font-size: 0.85rem;
-  color: #555;
+  color: var(--color-text-secondary);
 }
 
 .feature-item i {
   width: 14px;
-  color: #007bff;
+  color: var(--color-primary);
   font-size: 0.8rem;
 }
 
@@ -617,31 +617,31 @@ async function selectPlan(plan: any) {
 }
 
 .btn-subscribe-compact {
-  background: #007bff;
+  background: var(--color-primary);
   color: white;
 }
 
 .btn-subscribe-compact:hover:not(:disabled) {
-  background: #0056b3;
+  background: var(--color-primary-hover);
   transform: translateY(-1px);
 }
 
 .btn-subscribe-compact:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: #6c757d;
-  color: #fff;
+  background: var(--color-gray-600);
+  color: var(--color-white);
 }
 
 .coming-soon-plan .btn-subscribe-compact:disabled {
-  background: #adb5bd;
+  background: var(--color-gray-500);
 }
 
 .current-plan-indicator {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #28a745;
+  color: var(--color-success);
   font-size: 0.9rem;
   font-weight: 600;
 }
@@ -649,7 +649,7 @@ async function selectPlan(plan: any) {
 .plan-description-compact {
   padding: 0 15px 15px 15px;
   font-size: 0.85rem;
-  color: #666;
+  color: var(--color-text-muted);
   line-height: 1.4;
   border-top: 1px solid #f1f3f4;
   background: #fafbfc;
@@ -659,8 +659,8 @@ async function selectPlan(plan: any) {
 /* Planned Features Section */
 .planned-features-section {
   padding: 15px;
-  border-top: 1px solid #e9ecef;
-  background: #f8f9fa;
+  border-top: 1px solid var(--color-gray-200);
+  background: var(--color-gray-50);
   margin-top: 10px;
 }
 
@@ -670,12 +670,12 @@ async function selectPlan(plan: any) {
   gap: 6px;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #6c757d;
+  color: var(--color-gray-600);
   margin-bottom: 10px;
 }
 
 .planned-features-header i {
-  color: #ffc107;
+  color: var(--color-warning);
 }
 
 .planned-features-list {
@@ -698,14 +698,14 @@ async function selectPlan(plan: any) {
 .planned-feature-item::before {
   content: '•';
   margin-right: 6px;
-  color: #adb5bd;
+  color: var(--color-gray-500);
 }
 
 
 /* Utilities */
-.text-success { color: #28a745 !important; }
-.text-info { color: #17a2b8 !important; }
-.text-muted { color: #6c757d !important; }
+.text-success { color: var(--color-success) !important; }
+.text-info { color: var(--color-info) !important; }
+.text-muted { color: var(--color-gray-600) !important; }
 
 .btn {
   display: inline-flex;
@@ -721,8 +721,8 @@ async function selectPlan(plan: any) {
 }
 
 .btn-primary {
-  background-color: #007bff;
-  border-color: #007bff;
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
   color: white;
 }
 

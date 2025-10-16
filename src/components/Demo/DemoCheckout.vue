@@ -193,7 +193,7 @@ async function simulateError() {
 <style scoped>
 .demo-checkout {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -235,7 +235,7 @@ async function simulateError() {
 
 .demo-header h1 {
   margin: 0;
-  color: #333;
+  color: var(--color-text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -247,7 +247,7 @@ async function simulateError() {
 }
 
 .plan-summary {
-  background: #f8f9fa;
+  background: var(--color-gray-50);
   padding: 30px;
   border-radius: 15px;
   margin-bottom: 40px;
@@ -255,18 +255,18 @@ async function simulateError() {
 
 .plan-summary h2 {
   margin: 0 0 15px 0;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .amount {
   font-size: 2.5rem;
   font-weight: bold;
-  color: #28a745;
+  color: var(--color-success);
 }
 
 .billing-cycle {
   font-size: 1rem;
-  color: #666;
+  color: var(--color-text-muted);
   font-weight: normal;
 }
 
@@ -276,7 +276,7 @@ async function simulateError() {
 
 .demo-actions h3 {
   margin: 0 0 25px 0;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .demo-actions .btn {
@@ -305,18 +305,18 @@ async function simulateError() {
 }
 
 .btn-success {
-  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  background: linear-gradient(135deg, var(--color-success) 0%, #20c997 100%);
   color: white;
 }
 
 .btn-danger {
-  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  background: linear-gradient(135deg, var(--color-danger) 0%, var(--color-danger-hover) 100%);
   color: white;
 }
 
 .btn-warning {
-  background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
-  color: #212529;
+  background: linear-gradient(135deg, var(--color-warning) 0%, var(--color-warning-hover) 100%);
+  color: var(--color-gray-900);
 }
 
 .btn-lg {
@@ -325,7 +325,7 @@ async function simulateError() {
 }
 
 .processing {
-  color: #007bff;
+  color: var(--color-primary);
   margin: 30px 0;
 }
 
@@ -334,8 +334,8 @@ async function simulateError() {
 }
 
 .demo-info {
-  background: #e3f2fd;
-  border: 1px solid #bbdefb;
+  background: var(--color-info-bg);
+  border: 1px solid var(--color-info-bg);
   border-radius: 10px;
   padding: 20px;
   text-align: left;
@@ -343,7 +343,7 @@ async function simulateError() {
 
 .demo-info h4 {
   margin: 0 0 15px 0;
-  color: #1976d2;
+  color: var(--color-primary);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -352,7 +352,7 @@ async function simulateError() {
 .demo-info ul {
   margin: 0;
   padding-left: 20px;
-  color: #1976d2;
+  color: var(--color-primary);
 }
 
 .demo-info li {

@@ -360,13 +360,13 @@ async function downloadInvoice(invoiceId: string) {
   justify-content: center;
   gap: 10px;
   margin: 0 0 10px 0;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .loading-section {
   text-align: center;
   padding: 40px 20px;
-  color: #6c757d;
+  color: var(--color-gray-600);
 }
 
 .dashboard-content {
@@ -385,9 +385,9 @@ async function downloadInvoice(invoiceId: string) {
 }
 
 .alert-danger {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger-text);
+  border: 1px solid var(--color-danger-border);
 }
 
 /* Button */
@@ -410,14 +410,14 @@ async function downloadInvoice(invoiceId: string) {
 }
 
 .btn-outline-danger {
-  color: #dc3545;
-  border-color: #dc3545;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
   background-color: transparent;
 }
 
 /* Text utilities */
 .text-muted {
-  color: #6c757d !important;
+  color: var(--color-gray-600) !important;
 }
 
 /* Responsive */

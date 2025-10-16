@@ -226,7 +226,7 @@ function retryCheckout() {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background-color: #dc3545;
+  background-color: var(--color-danger);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -247,7 +247,7 @@ function retryCheckout() {
 }
 
 .canceled-message h1 {
-  color: #333;
+  color: var(--color-text-primary);
   margin: 0 0 15px 0;
   font-size: 2.5rem;
   font-weight: 300;
@@ -255,7 +255,7 @@ function retryCheckout() {
 
 .canceled-message .lead {
   font-size: 1.2rem;
-  color: #666;
+  color: var(--color-text-muted);
   margin: 0;
 }
 
@@ -271,7 +271,7 @@ function retryCheckout() {
 .canceled-reasons h3 {
   text-align: center;
   margin: 0 0 25px 0;
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 1.5rem;
 }
 
@@ -286,10 +286,10 @@ function retryCheckout() {
   align-items: center;
   gap: 15px;
   padding: 15px;
-  background: #f8f9fa;
+  background: var(--color-gray-50);
   border-radius: 8px;
   font-size: 1rem;
-  color: #495057;
+  color: var(--color-gray-700);
 }
 
 .reason-item i {
@@ -305,7 +305,7 @@ function retryCheckout() {
 
 .next-actions h3 {
   margin: 0 0 25px 0;
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 1.5rem;
 }
 
@@ -317,7 +317,7 @@ function retryCheckout() {
 }
 
 .action-card {
-  background: #f8f9fa;
+  background: var(--color-gray-50);
   border-radius: 12px;
   padding: 25px;
   text-align: center;
@@ -331,15 +331,15 @@ function retryCheckout() {
 }
 
 .action-card.primary {
-  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-  border-color: #2196f3;
+  background: linear-gradient(135deg, var(--color-info-bg) 0%, var(--color-info-bg) 100%);
+  border-color: var(--color-info);
 }
 
 .action-icon {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -350,13 +350,13 @@ function retryCheckout() {
 
 .action-content h4 {
   margin: 0 0 10px 0;
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 1.2rem;
 }
 
 .action-content p {
   margin: 0 0 20px 0;
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 0.95rem;
   line-height: 1.4;
 }
@@ -381,32 +381,32 @@ function retryCheckout() {
 
 .security-card i {
   font-size: 2rem;
-  color: #007bff;
+  color: var(--color-primary);
   min-width: 40px;
 }
 
 .security-text h4 {
   margin: 0 0 8px 0;
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 1.1rem;
 }
 
 .security-text p {
   margin: 0;
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
   line-height: 1.4;
 }
 
 /* Navigation alternative */
 .alternative-navigation {
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid var(--color-gray-200);
   padding-top: 30px;
 }
 
 .alternative-navigation p {
   margin: 0 0 20px 0;
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 1rem;
 }
 
@@ -437,33 +437,33 @@ function retryCheckout() {
 }
 
 .btn-primary {
-  background-color: #007bff;
-  border-color: #007bff;
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
   color: white;
 }
 
 .btn-outline-primary {
   background-color: transparent;
-  border-color: #007bff;
-  color: #007bff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .btn-outline-secondary {
   background-color: transparent;
-  border-color: #6c757d;
-  color: #6c757d;
+  border-color: var(--color-gray-600);
+  color: var(--color-gray-600);
 }
 
 .btn-outline-success {
   background-color: transparent;
-  border-color: #28a745;
-  color: #28a745;
+  border-color: var(--color-success);
+  color: var(--color-success);
 }
 
 .btn-outline-info {
   background-color: transparent;
-  border-color: #17a2b8;
-  color: #17a2b8;
+  border-color: var(--color-info);
+  color: var(--color-info);
 }
 
 .btn:hover:not(:disabled) {
@@ -472,9 +472,9 @@ function retryCheckout() {
 }
 
 /* Couleurs des textes */
-.text-warning { color: #ffc107; }
-.text-info { color: #17a2b8; }
-.text-primary { color: #007bff; }
+.text-warning { color: var(--color-warning); }
+.text-info { color: var(--color-info); }
+.text-primary { color: var(--color-primary); }
 
 /* Responsive */
 @media (max-width: 768px) {

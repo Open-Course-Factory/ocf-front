@@ -333,14 +333,14 @@ function getStatusClass(status: string) {
 .terminal-info {
   margin-bottom: 20px;
   padding: 15px;
-  background-color: #f8f9fa;
+  background-color: var(--color-gray-50);
   border-radius: 6px;
-  border-left: 4px solid #007bff;
+  border-left: 4px solid var(--color-primary);
 }
 
 .terminal-info h4 {
   margin: 0 0 8px 0;
-  color: #495057;
+  color: var(--color-gray-700);
   font-size: 16px;
 }
 
@@ -363,17 +363,17 @@ function getStatusClass(status: string) {
 
 .form-group label {
   font-weight: 600;
-  color: #495057;
+  color: var(--color-gray-700);
   font-size: 14px;
 }
 
 .form-control {
   padding: 10px 12px;
-  border: 2px solid #ced4da;
+  border: 2px solid var(--color-gray-400);
   border-radius: 6px;
   font-size: 14px;
-  color: #495057;
-  background-color: #fff;
+  color: var(--color-gray-700);
+  background-color: var(--color-white);
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 
@@ -385,7 +385,7 @@ function getStatusClass(status: string) {
 
 .form-text {
   font-size: 12px;
-  color: #6c757d;
+  color: var(--color-gray-600);
   margin-top: 4px;
 }
 
@@ -399,7 +399,7 @@ function getStatusClass(status: string) {
   left: 0;
   right: 0;
   background: white;
-  border: 1px solid #ced4da;
+  border: 1px solid var(--color-gray-400);
   border-top: none;
   border-radius: 0 0 6px 6px;
   max-height: 200px;
@@ -412,19 +412,19 @@ function getStatusClass(status: string) {
 .search-empty {
   padding: 12px 15px;
   text-align: center;
-  color: #6c757d;
+  color: var(--color-gray-600);
   font-size: 14px;
 }
 
 .search-result {
   padding: 10px 15px;
   cursor: pointer;
-  border-bottom: 1px solid #f8f9fa;
+  border-bottom: 1px solid var(--color-gray-50);
   transition: background-color 0.2s;
 }
 
 .search-result:hover {
-  background-color: #f8f9fa;
+  background-color: var(--color-gray-50);
 }
 
 .search-result:last-child {
@@ -439,13 +439,13 @@ function getStatusClass(status: string) {
 
 .search-result .user-name {
   font-weight: 500;
-  color: #495057;
+  color: var(--color-gray-700);
   font-size: 14px;
 }
 
 .search-result .user-email {
   font-size: 12px;
-  color: #6c757d;
+  color: var(--color-gray-600);
 }
 
 .btn {
@@ -478,20 +478,20 @@ function getStatusClass(status: string) {
 }
 
 .btn-primary {
-  background-color: #007bff;
-  border-color: #007bff;
-  color: #fff;
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-white);
 }
 
 .btn-secondary {
-  background-color: #6c757d;
-  border-color: #6c757d;
-  color: #fff;
+  background-color: var(--color-gray-600);
+  border-color: var(--color-gray-600);
+  color: var(--color-white);
 }
 
-.text-success { color: #28a745 !important; }
-.text-danger { color: #dc3545 !important; }
-.text-warning { color: #ffc107 !important; }
-.text-muted { color: #6c757d !important; }
+.text-success { color: var(--color-success) !important; }
+.text-danger { color: var(--color-danger) !important; }
+.text-warning { color: var(--color-warning) !important; }
+.text-muted { color: var(--color-gray-600) !important; }
 
 </style>

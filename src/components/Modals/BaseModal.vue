@@ -272,15 +272,15 @@ function handleOverlayClick() {
 }
 
 .alert-success {
-  background-color: var(--color-success-bg, #d4edda);
-  color: var(--color-success-text, #155724);
-  border: 1px solid var(--color-success-border, #c3e6cb);
+  background-color: var(--color-success-bg, var(--color-success-bg));
+  color: var(--color-success-text, var(--color-success-text));
+  border: 1px solid var(--color-success-border, var(--color-success-border));
 }
 
 .alert-danger {
-  background-color: var(--color-danger-bg, #f8d7da);
-  color: var(--color-danger-text, #721c24);
-  border: 1px solid var(--color-danger-border, #f5c6cb);
+  background-color: var(--color-danger-bg, var(--color-danger-bg));
+  color: var(--color-danger-text, var(--color-danger-text));
+  border: 1px solid var(--color-danger-border, var(--color-danger-border));
 }
 
 .btn {
@@ -314,16 +314,16 @@ function handleOverlayClick() {
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: var(--color-primary-dark, #0056b3);
+  background-color: var(--color-primary-dark, var(--color-primary-hover));
 }
 
 .btn-secondary {
-  background-color: var(--color-secondary, #6c757d);
+  background-color: var(--color-secondary, var(--color-gray-600));
   color: white;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: var(--color-secondary-dark, #5a6268);
+  background-color: var(--color-secondary-dark, var(--color-secondary-hover));
 }
 
 @keyframes fadeIn {

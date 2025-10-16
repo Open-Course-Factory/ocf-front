@@ -514,20 +514,20 @@ async function discardTerminal(terminalId: string) {
 
 .section-header h3 {
   margin: 0;
-  color: #495057;
+  color: var(--color-gray-700);
 }
 
 .loading-section {
   text-align: center;
   padding: 40px;
-  color: #6c757d;
+  color: var(--color-gray-600);
   font-size: 16px;
 }
 
 .empty-section {
   text-align: center;
   padding: 60px 20px;
-  color: #6c757d;
+  color: var(--color-gray-600);
 }
 
 .empty-section i {
@@ -546,7 +546,7 @@ async function discardTerminal(terminalId: string) {
 }
 
 .session-card {
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--color-gray-200);
   border-radius: 8px;
   background: white;
   overflow: hidden;
@@ -559,7 +559,7 @@ async function discardTerminal(terminalId: string) {
 
 /* Styles pour les fonctionnalités de partage */
 .shared-terminal {
-  border-left: 4px solid #17a2b8;
+  border-left: 4px solid var(--color-info);
 }
 
 .shared-terminal .card-header {
@@ -569,13 +569,13 @@ async function discardTerminal(terminalId: string) {
 /* Styles pour les terminaux inactifs */
 .inactive-terminal {
   opacity: 0.7;
-  border-left-color: #6c757d !important;
-  background-color: #f8f9fa;
+  border-left-color: var(--color-gray-600) !important;
+  background-color: var(--color-gray-50);
 }
 
 .inactive-terminal .card-header {
-  background-color: #e9ecef !important;
-  color: #6c757d;
+  background-color: var(--color-gray-200) !important;
+  color: var(--color-gray-600);
 }
 
 .inactive-terminal::before {
@@ -583,7 +583,7 @@ async function discardTerminal(terminalId: string) {
   position: absolute;
   top: 10px;
   left: 10px;
-  background: #6c757d;
+  background: var(--color-gray-600);
   color: white;
   padding: 3px 8px;
   border-radius: 12px;
@@ -599,8 +599,8 @@ async function discardTerminal(terminalId: string) {
 
 .card-header {
   padding: 15px 20px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
+  background-color: var(--color-gray-50);
+  border-bottom: 1px solid var(--color-gray-200);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -610,7 +610,7 @@ async function discardTerminal(terminalId: string) {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: #495057;
+  color: var(--color-gray-700);
 }
 
 .status-badge {
@@ -640,12 +640,12 @@ async function discardTerminal(terminalId: string) {
 
 .detail-row .label {
   font-weight: 600;
-  color: #6c757d;
+  color: var(--color-gray-600);
   font-size: 14px;
 }
 
 .detail-row .value {
-  color: #495057;
+  color: var(--color-gray-700);
   font-size: 14px;
   word-break: break-all;
 }
@@ -674,15 +674,15 @@ async function discardTerminal(terminalId: string) {
 }
 
 .write-badge {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+  background-color: var(--color-success-bg);
+  color: var(--color-success-text);
+  border: 1px solid var(--color-success-border);
 }
 
 .admin-badge {
-  background-color: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeaa7;
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  border: 1px solid var(--color-warning-bg);
 }
 
 .owner-badge {
@@ -695,7 +695,7 @@ async function discardTerminal(terminalId: string) {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #6c757d;
+  color: var(--color-gray-600);
   font-size: 12px;
   font-style: italic;
 }
@@ -704,16 +704,16 @@ async function discardTerminal(terminalId: string) {
 .iframe-section {
   margin-top: 20px;
   padding: 15px;
-  background-color: #f8f9fa;
+  background-color: var(--color-gray-50);
   border-radius: 6px;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--color-gray-300);
 }
 
 .iframe-title {
   margin: 0 0 15px 0;
   font-size: 14px;
   font-weight: 600;
-  color: #495057;
+  color: var(--color-gray-700);
   display: flex;
   align-items: center;
   gap: 5px;
@@ -734,9 +734,9 @@ async function discardTerminal(terminalId: string) {
   flex: 1;
   padding: 6px 10px;
   font-size: 12px;
-  border: 1px solid #ced4da;
+  border: 1px solid var(--color-gray-400);
   border-radius: 4px;
-  background-color: #fff;
+  background-color: var(--color-white);
   font-family: monospace;
 }
 
@@ -751,7 +751,7 @@ async function discardTerminal(terminalId: string) {
 }
 
 .iframe-container {
-  border: 2px solid #dee2e6;
+  border: 2px solid var(--color-gray-300);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -759,7 +759,7 @@ async function discardTerminal(terminalId: string) {
 .iframe-info {
   margin: 10px 0 0 0;
   font-size: 12px;
-  color: #6c757d;
+  color: var(--color-gray-600);
   display: flex;
   align-items: center;
   gap: 5px;
@@ -767,8 +767,8 @@ async function discardTerminal(terminalId: string) {
 
 .card-actions {
   padding: 15px 20px;
-  background-color: #f8f9fa;
-  border-top: 1px solid #e9ecef;
+  background-color: var(--color-gray-50);
+  border-top: 1px solid var(--color-gray-200);
   text-align: right;
 }
 
@@ -782,9 +782,9 @@ async function discardTerminal(terminalId: string) {
 }
 
 .alert-danger {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger-text);
+  border: 1px solid var(--color-danger-border);
 }
 
 .btn {
@@ -823,39 +823,39 @@ async function discardTerminal(terminalId: string) {
 }
 
 .btn-primary {
-  background-color: #007bff;
-  border-color: #007bff;
-  color: #fff;
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-white);
 }
 
 .btn-secondary {
-  background-color: #6c757d;
-  border-color: #6c757d;
-  color: #fff;
+  background-color: var(--color-gray-600);
+  border-color: var(--color-gray-600);
+  color: var(--color-white);
 }
 
 .btn-info {
-  background-color: #17a2b8;
-  border-color: #17a2b8;
-  color: #fff;
+  background-color: var(--color-info);
+  border-color: var(--color-info);
+  color: var(--color-white);
 }
 
 .btn-danger {
-  background-color: #dc3545;
-  border-color: #dc3545;
-  color: #fff;
+  background-color: var(--color-danger);
+  border-color: var(--color-danger);
+  color: var(--color-white);
 }
 
 .btn-outline-secondary {
   background-color: transparent;
-  border-color: #6c757d;
-  color: #6c757d;
+  border-color: var(--color-gray-600);
+  color: var(--color-gray-600);
 }
 
 .btn-outline-danger {
   background-color: transparent;
-  border-color: #dc3545;
-  color: #dc3545;
+  border-color: var(--color-danger);
+  color: var(--color-danger);
 }
 
 .header-actions {
@@ -870,21 +870,21 @@ async function discardTerminal(terminalId: string) {
   gap: 4px;
 }
 
-.text-success { color: #28a745 !important; }
-.text-danger { color: #dc3545 !important; }
-.text-warning { color: #ffc107 !important; }
-.text-muted { color: #6c757d !important; }
+.text-success { color: var(--color-success) !important; }
+.text-danger { color: var(--color-danger) !important; }
+.text-warning { color: var(--color-warning) !important; }
+.text-muted { color: var(--color-gray-600) !important; }
 
 .instance-type {
   display: flex;
   align-items: center;
   gap: 6px;
   font-weight: 500;
-  color: #17a2b8;
+  color: var(--color-info);
 }
 
 .instance-type i {
-  color: #6c757d;
+  color: var(--color-gray-600);
   opacity: 0.7;
 }
 

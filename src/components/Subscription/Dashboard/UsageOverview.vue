@@ -141,7 +141,7 @@ function getMetricDisplayName(metricType: string) {
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--color-gray-200);
 }
 
 .usage-overview h3 {
@@ -149,7 +149,7 @@ function getMetricDisplayName(metricType: string) {
   align-items: center;
   justify-content: space-between;
   margin: 0 0 20px 0;
-  color: #495057;
+  color: var(--color-gray-700);
   font-size: 1.25rem;
   gap: 10px;
 }
@@ -161,10 +161,10 @@ function getMetricDisplayName(metricType: string) {
 }
 
 .usage-card {
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--color-border-light);
   border-radius: 8px;
   padding: 15px;
-  background: #fafafa;
+  background: var(--color-bg-secondary);
 }
 
 .usage-header {
@@ -179,7 +179,7 @@ function getMetricDisplayName(metricType: string) {
   align-items: center;
   gap: 8px;
   font-weight: 600;
-  color: #495057;
+  color: var(--color-gray-700);
 }
 
 .usage-status {
@@ -193,7 +193,7 @@ function getMetricDisplayName(metricType: string) {
 
 .progress {
   height: 8px;
-  background-color: #e9ecef;
+  background-color: var(--color-gray-200);
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 8px;
@@ -204,18 +204,18 @@ function getMetricDisplayName(metricType: string) {
   transition: width 0.3s ease;
 }
 
-.bg-success { background-color: #28a745; }
-.bg-info { background-color: #17a2b8; }
-.bg-warning { background-color: #ffc107; }
-.bg-danger { background-color: #dc3545; }
+.bg-success { background-color: var(--color-success); }
+.bg-info { background-color: var(--color-info); }
+.bg-warning { background-color: var(--color-warning); }
+.bg-danger { background-color: var(--color-danger); }
 
 .usage-text {
   font-size: 0.9rem;
-  color: #495057;
+  color: var(--color-gray-700);
 }
 
 .usage-percent {
-  color: #6c757d;
+  color: var(--color-gray-600);
   font-weight: 500;
 }
 
@@ -226,7 +226,7 @@ function getMetricDisplayName(metricType: string) {
 .no-usage-data {
   text-align: center;
   padding: 30px 15px;
-  color: #6c757d;
+  color: var(--color-gray-600);
 }
 
 .no-usage-data i {
@@ -271,22 +271,22 @@ function getMetricDisplayName(metricType: string) {
 }
 
 .btn-outline-secondary {
-  color: #6c757d;
-  border-color: #6c757d;
+  color: var(--color-gray-600);
+  border-color: var(--color-gray-600);
   background-color: transparent;
 }
 
 .btn-outline-secondary:hover:not(:disabled) {
-  background-color: #6c757d;
+  background-color: var(--color-gray-600);
   color: white;
 }
 
 /* Text utilities */
-.text-success { color: #28a745 !important; }
-.text-info { color: #17a2b8 !important; }
-.text-warning { color: #ffc107 !important; }
-.text-danger { color: #dc3545 !important; }
-.text-muted { color: #6c757d !important; }
+.text-success { color: var(--color-success) !important; }
+.text-info { color: var(--color-info) !important; }
+.text-warning { color: var(--color-warning) !important; }
+.text-danger { color: var(--color-danger) !important; }
+.text-muted { color: var(--color-gray-600) !important; }
 
 /* Responsive */
 @media (max-width: 768px) {

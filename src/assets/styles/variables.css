@@ -20,20 +20,24 @@
   --color-success: #28a745;
   --color-success-bg: #f0fdf4;
   --color-success-text: #155724;
+  --color-success-border: #c3e6cb;
 
   --color-danger: #dc3545;
   --color-danger-hover: #c82333;
   --color-danger-bg: #fff5f5;
   --color-danger-text: #721c24;
+  --color-danger-border: #f5c6cb;
 
   --color-warning: #ffc107;
   --color-warning-hover: #e0a800;
   --color-warning-bg: #fff9e6;
   --color-warning-text: #856404;
+  --color-warning-border: #ffeeba;
 
   --color-info: #17a2b8;
   --color-info-bg: #e6f7f9;
   --color-info-text: #0c5460;
+  --color-info-border: #bee5eb;
 
   /* Neutral Colors */
   --color-white: #ffffff;
@@ -198,15 +202,19 @@
   /* Status colors - dark mode backgrounds */
   --color-success-bg: #1a3a2a;
   --color-success-text: #7dffb3;
+  --color-success-border: #2d5a3d;
 
   --color-danger-bg: #3a1a1a;
   --color-danger-text: #ffb3b3;
+  --color-danger-border: #5a2d2d;
 
   --color-warning-bg: #3a3a1a;
   --color-warning-text: #ffe066;
+  --color-warning-border: #5a5a2d;
 
   --color-info-bg: #1a2a3a;
   --color-info-text: #7dd3ff;
+  --color-info-border: #2d3d5a;
 
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);

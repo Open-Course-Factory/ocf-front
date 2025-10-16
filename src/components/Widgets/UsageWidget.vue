@@ -256,7 +256,7 @@ function getMetricDisplayName(metricType: string) {
 /* Variantes */
 .usage-widget.card {
   background: white;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--color-gray-200);
   border-radius: 8px;
   padding: 20px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -264,7 +264,7 @@ function getMetricDisplayName(metricType: string) {
 
 .usage-widget.inline {
   display: inline-block;
-  background: #f8f9fa;
+  background: var(--color-gray-50);
   border-radius: 6px;
   padding: 10px 15px;
 }
@@ -286,13 +286,13 @@ function getMetricDisplayName(metricType: string) {
 .compact-header i {
   width: 16px;
   text-align: center;
-  color: #6c757d;
+  color: var(--color-gray-600);
 }
 
 .metric-label {
   flex: 1;
   font-weight: 500;
-  color: #495057;
+  color: var(--color-gray-700);
 }
 
 .usage-status {
@@ -311,7 +311,7 @@ function getMetricDisplayName(metricType: string) {
 .progress-mini {
   flex: 1;
   height: 4px;
-  background-color: #e9ecef;
+  background-color: var(--color-gray-200);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -323,7 +323,7 @@ function getMetricDisplayName(metricType: string) {
 
 .usage-text-mini {
   font-size: 0.75rem;
-  color: #6c757d;
+  color: var(--color-gray-600);
   white-space: nowrap;
 }
 
@@ -349,7 +349,7 @@ function getMetricDisplayName(metricType: string) {
 
 .metric-info i {
   font-size: 1.5rem;
-  color: #6c757d;
+  color: var(--color-gray-600);
   width: 24px;
   text-align: center;
 }
@@ -362,12 +362,12 @@ function getMetricDisplayName(metricType: string) {
   margin: 0 0 4px 0;
   font-size: 1.1rem;
   font-weight: 600;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .metric-description {
   font-size: 0.875rem;
-  color: #6c757d;
+  color: var(--color-gray-600);
   line-height: 1.3;
 }
 
@@ -379,7 +379,7 @@ function getMetricDisplayName(metricType: string) {
 
 .progress {
   height: 8px;
-  background-color: #e9ecef;
+  background-color: var(--color-gray-200);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -398,11 +398,11 @@ function getMetricDisplayName(metricType: string) {
 
 .usage-text {
   font-size: 0.9rem;
-  color: #495057;
+  color: var(--color-gray-700);
 }
 
 .usage-percent {
-  color: #6c757d;
+  color: var(--color-gray-600);
   font-weight: 500;
 }
 
@@ -422,15 +422,15 @@ function getMetricDisplayName(metricType: string) {
 }
 
 .usage-alert.text-danger {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger-text);
+  border: 1px solid var(--color-danger-border);
 }
 
 .usage-alert.text-warning {
-  background-color: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeaa7;
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  border: 1px solid var(--color-warning-bg);
 }
 
 /* Actions */
@@ -441,17 +441,17 @@ function getMetricDisplayName(metricType: string) {
 }
 
 /* Classes d'état */
-.text-success { color: #28a745; background-color: #d4edda; }
-.text-info { color: #17a2b8; background-color: #d1ecf1; }
-.text-warning { color: #856404; background-color: #fff3cd; }
-.text-danger { color: #721c24; background-color: #f8d7da; }
-.text-muted { color: #6c757d; }
+.text-success { color: var(--color-success); background-color: var(--color-success-bg); }
+.text-info { color: var(--color-info); background-color: var(--color-info-bg); }
+.text-warning { color: var(--color-warning-text); background-color: var(--color-warning-bg); }
+.text-danger { color: var(--color-danger-text); background-color: var(--color-danger-bg); }
+.text-muted { color: var(--color-gray-600); }
 
 /* Classes de barre de progression */
-.bg-success { background-color: #28a745; }
-.bg-info { background-color: #17a2b8; }
-.bg-warning { background-color: #ffc107; }
-.bg-danger { background-color: #dc3545; }
+.bg-success { background-color: var(--color-success); }
+.bg-info { background-color: var(--color-info); }
+.bg-warning { background-color: var(--color-warning); }
+.bg-danger { background-color: var(--color-danger); }
 
 /* Buttons */
 .btn {
@@ -478,19 +478,19 @@ function getMetricDisplayName(metricType: string) {
 }
 
 .btn-primary {
-  background-color: #007bff;
-  border-color: #007bff;
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
   color: white;
 }
 
 .btn-outline-secondary {
-  color: #6c757d;
-  border-color: #6c757d;
+  color: var(--color-gray-600);
+  border-color: var(--color-gray-600);
   background-color: transparent;
 }
 
 .btn-outline-secondary:hover:not(:disabled) {
-  background-color: #6c757d;
+  background-color: var(--color-gray-600);
   color: white;
 }
 

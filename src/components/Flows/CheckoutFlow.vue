@@ -644,7 +644,7 @@ async function processCheckout() {
 <style scoped>
 .checkout-flow {
   min-height: 100vh;
-  background-color: #f8f9fa;
+  background-color: var(--color-gray-50);
   padding: 20px 0;
 }
 
@@ -661,7 +661,7 @@ async function processCheckout() {
 
 .checkout-header h1 {
   margin: 0 0 30px 0;
-  color: #333;
+  color: var(--color-text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -694,34 +694,34 @@ async function processCheckout() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #e9ecef;
-  color: #6c757d;
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-600);
   font-weight: 600;
   transition: all 0.3s ease;
 }
 
 .step.active .step-number {
-  background-color: #007bff;
+  background-color: var(--color-primary);
   color: white;
 }
 
 .step.completed .step-number {
-  background-color: #28a745;
+  background-color: var(--color-success);
   color: white;
 }
 
 .step-label {
   font-size: 14px;
   font-weight: 500;
-  color: #6c757d;
+  color: var(--color-gray-600);
 }
 
 .step.active .step-label {
-  color: #007bff;
+  color: var(--color-primary);
 }
 
 .step.completed .step-label {
-  color: #28a745;
+  color: var(--color-success);
 }
 
 .checkout-content {
@@ -739,14 +739,14 @@ async function processCheckout() {
 
 .step-content h2 {
   margin: 0 0 25px 0;
-  color: #333;
-  border-bottom: 2px solid #f8f9fa;
+  color: var(--color-text-primary);
+  border-bottom: 2px solid var(--color-gray-50);
   padding-bottom: 15px;
 }
 
 /* Plan summary */
 .plan-card {
-  border: 2px solid #e9ecef;
+  border: 2px solid var(--color-gray-200);
   border-radius: 12px;
   padding: 25px;
   margin-bottom: 25px;
@@ -761,18 +761,18 @@ async function processCheckout() {
 
 .plan-header h3 {
   margin: 0;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .plan-price {
   font-size: 1.8rem;
   font-weight: bold;
-  color: #28a745;
+  color: var(--color-success);
 }
 
 .billing-interval {
   font-size: 1rem;
-  color: #6c757d;
+  color: var(--color-gray-600);
   font-weight: normal;
 }
 
@@ -800,12 +800,12 @@ async function processCheckout() {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #495057;
+  color: var(--color-gray-700);
   font-size: 14px;
 }
 
 .trial-info {
-  background-color: #e8f5e9;
+  background-color: var(--color-success-bg);
   border: 1px solid #c8e6c9;
   border-radius: 6px;
   padding: 15px;
@@ -813,12 +813,12 @@ async function processCheckout() {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #2e7d32;
+  color: var(--color-success-text);
 }
 
 /* Coupon section */
 .coupon-section {
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid var(--color-gray-200);
   padding-top: 25px;
   margin-top: 25px;
 }
@@ -848,7 +848,7 @@ async function processCheckout() {
 }
 
 .address-option {
-  border: 2px solid #e9ecef;
+  border: 2px solid var(--color-gray-200);
   border-radius: 8px;
   padding: 20px;
   cursor: pointer;
@@ -859,13 +859,13 @@ async function processCheckout() {
 }
 
 .address-option:hover {
-  border-color: #007bff;
-  background-color: #f8f9fa;
+  border-color: var(--color-primary);
+  background-color: var(--color-gray-50);
 }
 
 .address-option.selected {
-  border-color: #007bff;
-  background-color: #e3f2fd;
+  border-color: var(--color-primary);
+  background-color: var(--color-info-bg);
 }
 
 .address-content {
@@ -880,7 +880,7 @@ async function processCheckout() {
 }
 
 .default-badge .badge {
-  background-color: #007bff;
+  background-color: var(--color-primary);
   color: white;
   padding: 4px 8px;
   border-radius: 4px;
@@ -911,20 +911,20 @@ async function processCheckout() {
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
-  color: #495057;
+  color: var(--color-gray-700);
 }
 
 .form-control {
   width: 100%;
   padding: 10px 12px;
-  border: 2px solid #ced4da;
+  border: 2px solid var(--color-gray-400);
   border-radius: 6px;
   transition: border-color 0.3s ease;
 }
 
 .form-control:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
@@ -942,14 +942,14 @@ async function processCheckout() {
 }
 
 .order-summary {
-  border: 2px solid #e9ecef;
+  border: 2px solid var(--color-gray-200);
   border-radius: 12px;
   padding: 25px;
 }
 
 .order-summary h4 {
   margin: 0 0 20px 0;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .summary-item {
@@ -957,7 +957,7 @@ async function processCheckout() {
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid #f8f9fa;
+  border-bottom: 1px solid var(--color-gray-50);
 }
 
 .summary-item:last-of-type {
@@ -965,7 +965,7 @@ async function processCheckout() {
 }
 
 .summary-item.discount {
-  color: #28a745;
+  color: var(--color-success);
 }
 
 .summary-total {
@@ -974,13 +974,13 @@ async function processCheckout() {
   align-items: center;
   padding: 20px 0 0 0;
   margin-top: 20px;
-  border-top: 2px solid #e9ecef;
+  border-top: 2px solid var(--color-gray-200);
   font-size: 1.3rem;
   font-weight: bold;
 }
 
 .trial-notice {
-  background-color: #e8f5e9;
+  background-color: var(--color-success-bg);
   border: 1px solid #c8e6c9;
   border-radius: 6px;
   padding: 15px;
@@ -988,23 +988,23 @@ async function processCheckout() {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #2e7d32;
+  color: var(--color-success-text);
 }
 
 .selected-billing {
-  border: 2px solid #e9ecef;
+  border: 2px solid var(--color-gray-200);
   border-radius: 12px;
   padding: 25px;
 }
 
 .selected-billing h4 {
   margin: 0 0 15px 0;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .address-display {
   line-height: 1.6;
-  color: #495057;
+  color: var(--color-gray-700);
 }
 
 /* Sidebar */
@@ -1040,7 +1040,7 @@ async function processCheckout() {
 }
 
 .checkout-help a {
-  color: #007bff;
+  color: var(--color-primary);
   text-decoration: none;
 }
 
@@ -1074,33 +1074,33 @@ async function processCheckout() {
 }
 
 .btn-primary {
-  background-color: #007bff;
-  border-color: #007bff;
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
   color: white;
 }
 
 .btn-success {
-  background-color: #28a745;
-  border-color: #28a745;
+  background-color: var(--color-success);
+  border-color: var(--color-success);
   color: white;
 }
 
 .btn-secondary {
-  background-color: #6c757d;
-  border-color: #6c757d;
+  background-color: var(--color-gray-600);
+  border-color: var(--color-gray-600);
   color: white;
 }
 
 .btn-outline-secondary {
   background-color: transparent;
-  border-color: #6c757d;
-  color: #6c757d;
+  border-color: var(--color-gray-600);
+  color: var(--color-gray-600);
 }
 
 .btn-outline-primary {
   background-color: transparent;
-  border-color: #007bff;
-  color: #007bff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 /* Utilities */
@@ -1114,25 +1114,25 @@ async function processCheckout() {
 }
 
 .alert-danger {
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
-  color: #721c24;
+  background-color: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger-text);
 }
 
 .alert-success {
-  background-color: #d4edda;
-  border: 1px solid #c3e6cb;
-  color: #155724;
+  background-color: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
+  color: var(--color-success-text);
 }
 
-.text-success { color: #28a745; }
-.text-primary { color: #007bff; }
-.text-muted { color: #6c757d; }
+.text-success { color: var(--color-success); }
+.text-primary { color: var(--color-primary); }
+.text-muted { color: var(--color-gray-600); }
 
 .loading-plan {
   text-align: center;
   padding: 60px 20px;
-  color: #6c757d;
+  color: var(--color-gray-600);
 }
 
 /* Responsive */

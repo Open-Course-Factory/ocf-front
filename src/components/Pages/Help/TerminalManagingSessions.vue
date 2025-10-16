@@ -303,25 +303,25 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #007bff;
+  color: var(--color-primary);
   text-decoration: none;
   font-weight: 500;
   transition: color 0.3s ease;
 }
 
 .back-link:hover {
-  color: #0056b3;
+  color: var(--color-primary-hover);
 }
 
 .article-header {
   text-align: center;
   margin-bottom: 40px;
   padding-bottom: 30px;
-  border-bottom: 2px solid #e9ecef;
+  border-bottom: 2px solid var(--color-gray-200);
 }
 
 .article-header h1 {
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 2.5rem;
   margin: 0 0 15px 0;
   display: flex;
@@ -331,11 +331,11 @@ onMounted(async () => {
 }
 
 .article-header h1 i {
-  color: #007bff;
+  color: var(--color-primary);
 }
 
 .article-description {
-  color: #6c757d;
+  color: var(--color-gray-600);
   font-size: 1.2rem;
   margin: 0;
 }
@@ -346,14 +346,14 @@ onMounted(async () => {
 
 .help-section {
   margin-bottom: 40px;
-  background: white;
+  background: var(--color-bg-primary);
   padding: 30px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .help-section h2 {
-  color: #333;
+  color: var(--color-text-primary);
   margin: 0 0 20px 0;
   font-size: 1.5rem;
   display: flex;
@@ -362,22 +362,22 @@ onMounted(async () => {
 }
 
 .help-section h2 i {
-  color: #007bff;
+  color: var(--color-primary);
 }
 
 .help-section h3 {
-  color: #333;
+  color: var(--color-text-primary);
   margin: 25px 0 15px 0;
   font-size: 1.2rem;
 }
 
 .help-section p {
-  color: #555;
+  color: var(--color-text-secondary);
   margin-bottom: 15px;
 }
 
 .help-section ul {
-  color: #555;
+  color: var(--color-text-secondary);
   margin-left: 20px;
 }
 
@@ -386,8 +386,8 @@ onMounted(async () => {
 }
 
 .info-card {
-  background: #e3f2fd;
-  border: 2px solid #2196f3;
+  background: var(--color-info-bg);
+  border: 2px solid var(--color-info);
   border-radius: 8px;
   padding: 20px;
   margin: 20px 0;
@@ -395,12 +395,12 @@ onMounted(async () => {
 
 .info-card h4 {
   margin: 0 0 10px 0;
-  color: #1976d2;
+  color: var(--color-primary);
 }
 
 .info-card p {
   margin: 0 0 15px 0;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .feature-grid {
@@ -413,31 +413,31 @@ onMounted(async () => {
 .feature-card {
   text-align: center;
   padding: 20px;
-  background: #f8f9fa;
+  background: var(--color-gray-50);
   border-radius: 8px;
-  border: 2px solid #e9ecef;
+  border: 2px solid var(--color-gray-200);
 }
 
 .feature-card i {
   font-size: 2rem;
-  color: #007bff;
+  color: var(--color-primary);
   margin-bottom: 15px;
 }
 
 .feature-card h4 {
   margin: 0 0 10px 0;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .feature-card p {
   margin: 0;
-  color: #6c757d;
+  color: var(--color-gray-600);
   font-size: 0.9rem;
 }
 
 .tip-box {
-  background: #fff3cd;
-  border: 2px solid #ffc107;
+  background: var(--color-warning-bg);
+  border: 2px solid var(--color-warning);
   border-radius: 8px;
   padding: 15px;
   margin: 20px 0;
@@ -445,7 +445,7 @@ onMounted(async () => {
 
 .tip-box h4 {
   margin: 0 0 10px 0;
-  color: #856404;
+  color: var(--color-warning-text);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -453,7 +453,7 @@ onMounted(async () => {
 
 .tip-box p {
   margin: 0;
-  color: #856404;
+  color: var(--color-warning-text);
 }
 
 .access-methods {
@@ -468,26 +468,26 @@ onMounted(async () => {
   align-items: center;
   gap: 20px;
   padding: 20px;
-  background: #f8f9fa;
+  background: var(--color-gray-50);
   border-radius: 8px;
-  border-left: 4px solid #007bff;
+  border-left: 4px solid var(--color-primary);
 }
 
 .method-icon i {
   font-size: 1.5rem;
-  color: #007bff;
+  color: var(--color-primary);
   width: 30px;
   text-align: center;
 }
 
 .method-content h4 {
   margin: 0 0 8px 0;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .method-content p {
   margin: 0;
-  color: #555;
+  color: var(--color-text-secondary);
   font-size: 0.9rem;
 }
 
@@ -496,14 +496,14 @@ onMounted(async () => {
   align-items: flex-start;
   gap: 20px;
   padding: 20px;
-  background: #f8f9fa;
+  background: var(--color-gray-50);
   border-radius: 8px;
   margin: 20px 0;
-  border-left: 4px solid #007bff;
+  border-left: 4px solid var(--color-primary);
 }
 
 .step-number {
-  background: #007bff;
+  background: var(--color-primary);
   color: white;
   width: 40px;
   height: 40px;
@@ -522,18 +522,18 @@ onMounted(async () => {
 
 .step-content h4 {
   margin: 0 0 10px 0;
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 1.1rem;
 }
 
 .step-content p {
   margin: 0;
-  color: #555;
+  color: var(--color-text-secondary);
 }
 
 .code-example {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
   border-radius: 8px;
   padding: 20px;
   margin: 20px 0;
@@ -541,7 +541,7 @@ onMounted(async () => {
 
 .code-example h4 {
   margin: 0 0 15px 0;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .code-example pre {
@@ -572,13 +572,13 @@ onMounted(async () => {
 }
 
 .action-card.danger {
-  background: #f8d7da;
-  border-color: #dc3545;
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger);
 }
 
 .action-card.warning {
-  background: #fff3cd;
-  border-color: #ffc107;
+  background: var(--color-warning-bg);
+  border-color: var(--color-warning);
 }
 
 .action-card i {
@@ -588,27 +588,27 @@ onMounted(async () => {
 }
 
 .action-card.danger i {
-  color: #dc3545;
+  color: var(--color-danger);
 }
 
 .action-card.warning i {
-  color: #ffc107;
+  color: var(--color-warning);
 }
 
 .action-card h4 {
   margin: 0 0 10px 0;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .action-card p {
   margin: 0;
-  color: #555;
+  color: var(--color-text-secondary);
   font-size: 0.9rem;
 }
 
 .warning-box {
-  background: #f8d7da;
-  border: 2px solid #dc3545;
+  background: var(--color-danger-bg);
+  border: 2px solid var(--color-danger);
   border-radius: 8px;
   padding: 15px;
   margin: 20px 0;
@@ -616,7 +616,7 @@ onMounted(async () => {
 
 .warning-box h4 {
   margin: 0 0 10px 0;
-  color: #721c24;
+  color: var(--color-danger-text);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -624,7 +624,7 @@ onMounted(async () => {
 
 .warning-box p {
   margin: 0;
-  color: #721c24;
+  color: var(--color-danger-text);
 }
 
 .best-practices {
@@ -639,25 +639,25 @@ onMounted(async () => {
   align-items: flex-start;
   gap: 15px;
   padding: 15px;
-  background: #f8f9fa;
+  background: var(--color-gray-50);
   border-radius: 8px;
 }
 
 .practice-item i {
   font-size: 1.3rem;
-  color: #007bff;
+  color: var(--color-primary);
   margin-top: 5px;
 }
 
 .practice-item h4 {
   margin: 0 0 5px 0;
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 1rem;
 }
 
 .practice-item p {
   margin: 0;
-  color: #555;
+  color: var(--color-text-secondary);
   font-size: 0.9rem;
 }
 
@@ -671,8 +671,8 @@ onMounted(async () => {
 .next-step-card {
   display: block;
   padding: 20px;
-  background: white;
-  border: 2px solid #e9ecef;
+  background: var(--color-bg-primary);
+  border: 2px solid var(--color-gray-200);
   border-radius: 8px;
   text-decoration: none;
   color: inherit;
@@ -681,26 +681,26 @@ onMounted(async () => {
 }
 
 .next-step-card:hover {
-  border-color: #007bff;
+  border-color: var(--color-primary);
   transform: translateY(-5px);
   box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
 }
 
 .next-step-card i {
   font-size: 2rem;
-  color: #007bff;
+  color: var(--color-primary);
   margin-bottom: 15px;
 }
 
 .next-step-card h4 {
   margin: 0 0 10px 0;
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 1.1rem;
 }
 
 .next-step-card p {
   margin: 0;
-  color: #6c757d;
+  color: var(--color-gray-600);
   font-size: 0.9rem;
 }
 
@@ -719,12 +719,12 @@ onMounted(async () => {
 }
 
 .btn-primary {
-  background-color: #007bff;
+  background-color: var(--color-primary);
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #0056b3;
+  background-color: var(--color-primary-hover);
   transform: translateY(-1px);
 }
 

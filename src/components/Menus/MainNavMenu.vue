@@ -728,7 +728,7 @@ watch(() => route.path, () => {
 }
 
 .menu-category[data-category="admin"] .category-items li a {
-  color: #f8d7da;
+  color: var(--color-text-primary);
 }
 
 .menu-category[data-category="admin"] .category-items li a:hover {

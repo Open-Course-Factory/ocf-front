@@ -121,7 +121,7 @@ function onSessionStarted() {
   justify-content: center;
   padding: 60px;
   font-size: 18px;
-  color: #6c757d;
+  color: var(--color-gray-600);
 }
 
 .loading-fallback i {

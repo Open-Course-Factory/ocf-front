@@ -285,13 +285,13 @@ const getInvoiceStats = computed(() => {
 }
 
 .alert-danger {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background-color: var(--color-danger-bg);
+    color: var(--color-danger-text);
+    border: 1px solid var(--color-danger-border);
 }
 
 .stats-panel {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
     color: white;
     border-radius: 8px;
     padding: 20px;
@@ -351,7 +351,7 @@ const getInvoiceStats = computed(() => {
 
 .filter-select {
     padding: 8px 12px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--color-border-medium);
     border-radius: 4px;
     background: white;
 }
@@ -368,17 +368,17 @@ const getInvoiceStats = computed(() => {
 .empty-state {
     text-align: center;
     padding: 60px 20px;
-    color: #6c757d;
+    color: var(--color-gray-600);
 }
 
 .empty-state i {
-    color: #dee2e6;
+    color: var(--color-gray-300);
     margin-bottom: 20px;
 }
 
 .empty-state h4 {
     margin: 20px 0 10px 0;
-    color: #495057;
+    color: var(--color-gray-700);
 }
 
 .invoice-actions {
@@ -402,21 +402,21 @@ const getInvoiceStats = computed(() => {
 
 .invoice-number {
     font-size: 1.1rem;
-    color: #495057;
+    color: var(--color-gray-700);
     margin-bottom: 8px;
 }
 
 .amount-value {
     font-size: 1.4rem;
     font-weight: bold;
-    color: #2e7d32;
+    color: var(--color-success-text);
 }
 
 .invoice-details {
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--color-border-light);
     border-radius: 4px;
     padding: 12px;
-    background-color: #fafafa;
+    background-color: var(--color-bg-secondary);
     min-width: 250px;
 }
 
@@ -432,16 +432,16 @@ const getInvoiceStats = computed(() => {
 }
 
 .label {
-    color: #6c757d;
+    color: var(--color-gray-600);
     font-weight: 500;
 }
 
 .value {
-    color: #495057;
+    color: var(--color-gray-700);
 }
 
 .value.overdue {
-    color: #dc3545;
+    color: var(--color-danger);
     font-weight: 600;
 }
 
@@ -459,14 +459,14 @@ const getInvoiceStats = computed(() => {
     gap: 5px;
 }
 
-.text-success { color: #28a745 !important; background-color: #d4edda; }
-.text-warning { color: #856404 !important; background-color: #fff3cd; }
-.text-danger { color: #721c24 !important; background-color: #f8d7da; }
-.text-muted { color: #6c757d !important; background-color: #f8f9fa; }
-.text-secondary { color: #6c757d !important; background-color: #e2e3e5; }
+.text-success { color: var(--color-success) !important; background-color: var(--color-success-bg); }
+.text-warning { color: var(--color-warning-text) !important; background-color: var(--color-warning-bg); }
+.text-danger { color: var(--color-danger-text) !important; background-color: var(--color-danger-bg); }
+.text-muted { color: var(--color-gray-600) !important; background-color: var(--color-gray-50); }
+.text-secondary { color: var(--color-gray-600) !important; background-color: #e2e3e5; }
 
 .overdue-warning {
-    color: #dc3545;
+    color: var(--color-danger);
     display: flex;
     align-items: center;
     gap: 5px;
@@ -493,19 +493,19 @@ const getInvoiceStats = computed(() => {
 }
 
 .btn-primary {
-    background-color: #007bff;
+    background-color: var(--color-primary);
     color: white;
 }
 
 .btn-outline-secondary {
-    color: #6c757d;
-    border: 1px solid #6c757d;
+    color: var(--color-gray-600);
+    border: 1px solid var(--color-gray-600);
     background-color: transparent;
 }
 
 .btn-outline-secondary:hover:not(:disabled) {
     color: white;
-    background-color: #6c757d;
+    background-color: var(--color-gray-600);
 }
 
 .btn:disabled {

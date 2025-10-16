@@ -107,8 +107,8 @@ const settingsMenuItems = computed(() => [
 
 <style scoped>
 .settings-menu {
-  background-color: #343a40;
-  color: #e7e7e7;
+  background-color: var(--color-gray-800);
+  color: var(--color-border-light);
   height: 100vh;
   padding: 20px;
   animation: fadeIn 0.5s ease-in-out;
@@ -130,7 +130,7 @@ const settingsMenuItems = computed(() => [
 
 .menu-header h1 a {
   font-size: 1.5rem;
-  color: #e7e7e7;
+  color: var(--color-border-light);
   text-decoration: none;
   display: flex;
   align-items: center;
@@ -139,7 +139,7 @@ const settingsMenuItems = computed(() => [
 }
 
 .menu-header h1 a:hover {
-  color: #fff;
+  color: var(--color-white);
 }
 
 .menu-header h1 a i {
@@ -187,7 +187,7 @@ const settingsMenuItems = computed(() => [
 
 .menu-item:hover {
   background-color: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  color: var(--color-white);
   transform: translateX(5px);
 }
 
@@ -219,14 +219,14 @@ const settingsMenuItems = computed(() => [
   left: 85px;
   top: 50%;
   transform: translateY(-50%);
-  background-color: #343a40;
-  color: #e7e7e7;
+  background-color: var(--color-gray-800);
+  color: var(--color-border-light);
   padding: 8px 12px;
   border-radius: 4px;
   white-space: nowrap;
   opacity: 1;
   z-index: 5000;
-  border: 1px solid #495057;
+  border: 1px solid var(--color-gray-700);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   font-size: 0.85rem;
   pointer-events: none;
@@ -235,16 +235,16 @@ const settingsMenuItems = computed(() => [
 /* Active link style */
 .menu-item.router-link-active,
 .menu-item.router-link-exact-active {
-  background-color: #007bff !important;
-  color: #fff !important;
+  background-color: var(--color-primary) !important;
+  color: var(--color-white) !important;
   font-weight: 600;
-  border-left: 4px solid #0056b3;
+  border-left: 4px solid var(--color-primary-hover);
   transform: translateX(0) !important;
 }
 
 .menu-item.router-link-active:hover,
 .menu-item.router-link-exact-active:hover {
-  background-color: #0056b3 !important;
+  background-color: var(--color-primary-hover) !important;
   transform: translateX(0) !important;
 }
 

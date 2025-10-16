@@ -82,14 +82,14 @@ onMounted(async () => {
 .user-settings-page h1 {
   font-size: 2rem;
   margin-bottom: 30px;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .loading {
   text-align: center;
   padding: 40px;
   font-size: 1.1rem;
-  color: #666;
+  color: var(--color-text-muted);
 }
 
 .loading i {
@@ -104,11 +104,11 @@ onMounted(async () => {
 }
 
 .settings-card {
-  background-color: #fff;
+  background-color: var(--color-white);
   border-radius: 8px;
   padding: 25px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--color-border-light);
 }
 
 .settings-card:hover {

@@ -644,19 +644,19 @@ const contactEmail = 'legal@your-organization.com';
 
 .terms-header h2 {
   font-size: 2rem;
-  color: #333;
+  color: var(--color-text-primary);
   margin-bottom: 8px;
 }
 
 .last-updated {
-  color: #6c757d;
+  color: var(--color-gray-600);
   font-size: 0.9rem;
   font-style: italic;
 }
 
 .terms-content {
   line-height: 1.6;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .terms-content section {
@@ -665,7 +665,7 @@ const contactEmail = 'legal@your-organization.com';
 
 .terms-content h3 {
   font-size: 1.3rem;
-  color: #007bff;
+  color: var(--color-primary);
   margin-bottom: 12px;
 }
 
@@ -684,6 +684,6 @@ const contactEmail = 'legal@your-organization.com';
 
 .contact-info {
   font-weight: 600;
-  color: #007bff;
+  color: var(--color-primary);
 }
 </style>
