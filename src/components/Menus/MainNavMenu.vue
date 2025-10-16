@@ -749,7 +749,7 @@ watch(() => route.path, () => {
 }
 
 .menu-category[data-category="admin"] .category-items li a {
-  color: var(--color-text-primary);
+  color: var(--color-gray-400);
 }
 
 .menu-category[data-category="admin"] .category-items li a:hover {
@@ -760,6 +760,10 @@ watch(() => route.path, () => {
 .main-menu.collapsed .menu-category[data-category="admin"] .category-items {
   background-color: var(--color-danger);
   border-color: var(--color-danger-hover);
+}
+
+.main-menu.collapsed .menu-category[data-category="admin"] .category-items li a {
+  color: var(--color-white);
 }
 
 /* Adaptation pour le mode collapsed */
