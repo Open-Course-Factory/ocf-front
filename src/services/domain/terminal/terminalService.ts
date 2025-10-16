@@ -30,8 +30,10 @@ export interface UpdateTerminalRequest {
 export interface TerminalShareOutput {
   id: string
   terminal_id: string
-  shared_with_user_id: string
+  shared_with_user_id?: string
+  shared_with_group_id?: string
   shared_by_user_id: string
+  share_type: 'user' | 'group'
   access_level: 'read' | 'write' | 'admin'
   expires_at?: string
   is_active: boolean
@@ -58,7 +60,8 @@ export interface SharedTerminalInfo {
 }
 
 export interface ShareTerminalRequest {
-  shared_with_user_id: string
+  shared_with_user_id?: string
+  shared_with_group_id?: string
   access_level: 'read' | 'write' | 'admin'
   expires_at?: string
 }

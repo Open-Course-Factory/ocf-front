@@ -176,3 +176,50 @@ export interface UsageMetric extends BaseEntity {
   period_start?: string
   period_end?: string
 }
+
+/**
+ * Class Group entity (for team/class management)
+ */
+export interface ClassGroup extends BaseEntity {
+  name: string
+  display_name: string
+  description?: string
+  owner_user_id: string
+  subscription_plan_id?: string
+  max_members: number
+  member_count: number
+  expires_at?: string
+  casdoor_group_name?: string
+  is_active: boolean
+  is_expired?: boolean
+  is_full?: boolean
+  metadata?: Record<string, any>
+}
+
+/**
+ * Group Member entity (join table for class group membership)
+ */
+export interface GroupMember extends BaseEntity {
+  group_id: string
+  user_id: string
+  role: 'owner' | 'admin' | 'assistant' | 'member'
+  invited_by?: string
+  joined_at?: string
+  is_active: boolean
+  metadata?: Record<string, any>
+}
+
+/**
+ * Terminal Share entity (extended to support group sharing)
+ */
+export interface TerminalShare extends BaseEntity {
+  terminal_id: string
+  shared_with_user_id?: string
+  shared_with_group_id?: string
+  shared_by_user_id: string
+  share_type: 'user' | 'group'
+  access_level: 'read' | 'write' | 'admin'
+  expires_at?: string
+  is_active: boolean
+  metadata?: Record<string, any>
+}

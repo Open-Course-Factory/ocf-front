@@ -194,6 +194,48 @@ export class FieldBuilder {
   }
 
   /**
+   * Add a display value formatter function
+   * This function will be used to format the value for display in entity cards
+   */
+  withDisplayFormatter(formatter: (value: any) => string): this {
+    this.config.displayValue = formatter
+    return this
+  }
+
+  /**
+   * Auto-format dates using the formatDate utility
+   * Automatically adds date formatting for date/datetime fields
+   */
+  withDateFormat(locale: string = 'fr-FR'): this {
+    // Import is done dynamically to avoid circular dependencies
+    this.config.displayValue = (value: any) => {
+      if (!value) return '-'
+      try {
+        return new Date(value).toLocaleDateString(locale)
+      } catch (e) {
+        return value
+      }
+    }
+    return this
+  }
+
+  /**
+   * Auto-format datetime using the formatDateTime utility
+   * Automatically adds datetime formatting for datetime fields
+   */
+  withDateTimeFormat(locale: string = 'fr-FR'): this {
+    this.config.displayValue = (value: any) => {
+      if (!value) return '-'
+      try {
+        return new Date(value).toLocaleString(locale)
+      } catch (e) {
+        return value
+      }
+    }
+    return this
+  }
+
+  /**
    * Build the final configuration
    */
   build(): [string, FieldConfig] {

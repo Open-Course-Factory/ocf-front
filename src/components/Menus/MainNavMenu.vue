@@ -63,6 +63,8 @@ import { useBillingAddressesStore } from '../../stores/billingAddresses.ts';
 import { usePaymentMethodsStore } from '../../stores/paymentMethods.ts';
 import { useInvoicesStore } from '../../stores/invoices.ts';
 import { useSubscriptionsStore } from '../../stores/subscriptions.ts';
+import { useClassGroupsStore } from '../../stores/classGroups.ts';
+import { useGroupMembersStore } from '../../stores/groupMembers.ts';
 import { useRoute } from 'vue-router';
 import { useHelpTranslations } from '../../composables/useHelpTranslations';
 import { useFeatureFlags } from '../../composables/useFeatureFlags';
@@ -84,6 +86,8 @@ useBillingAddressesStore();
 usePaymentMethodsStore();
 useInvoicesStore();
 useSubscriptionsStore();
+useClassGroupsStore();
+useGroupMembersStore();
 
 // Load help translations
 const { loadHelpTranslations } = useHelpTranslations();
@@ -101,6 +105,7 @@ const themeCustomizationEnabled = createReactiveFlag('theme_customization')
 const archiveGenerationsEnabled = createReactiveFlag('archive_generations')
 const sshKeyManagementEnabled = createReactiveFlag('ssh_key_management')
 const terminalManagementEnabled = createReactiveFlag('terminal_management')
+const classGroupsEnabled = createReactiveFlag('class_groups')
 const helpDocumentationEnabled = createReactiveFlag('help_documentation')
 
 // Track initialization state
@@ -119,6 +124,8 @@ const isFeatureEnabled = (flagName: string): boolean => {
       return sshKeyManagementEnabled.value
     case 'terminal_management':
       return terminalManagementEnabled.value
+    case 'class_groups':
+      return classGroupsEnabled.value
     case 'help_documentation':
       return helpDocumentationEnabled.value
     default:
@@ -226,6 +233,20 @@ const menuCategories = computed((): MenuCategory[] => [
         label: t('navigation.mySessions'),
         title: t('navigation.manageAllTerminalSessions'),
         icon: 'fas fa-terminal'
+      },
+      {
+        route: '/class-groups',
+        label: t('classGroups.pageTitle'),
+        title: t('classGroups.groupInfo'),
+        icon: 'fas fa-users',
+        featureFlag: 'class_groups'
+      },
+      {
+        route: '/group-members',
+        label: t('groupMembers.pageTitle'),
+        title: t('groupMembers.memberInfo'),
+        icon: 'fas fa-user-friends',
+        featureFlag: 'class_groups'
       }
     ]
   },

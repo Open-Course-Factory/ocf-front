@@ -61,6 +61,9 @@ export interface FeatureFlags {
   // Terminal/Labs features
   terminal_management: FeatureFlagConfig
 
+  // Group management features
+  class_groups: FeatureFlagConfig
+
   // Documentation features
   help_documentation: FeatureFlagConfig
 
@@ -116,6 +119,14 @@ export class FeatureFlagService {
         allowedRoles: ['administrator', 'teacher', 'student'],
         controlledMetrics: ['concurrent_terminals'], // Hide terminal-related metrics when disabled
         controlledFeatures: ['terminal_access']
+      },
+      // Group Management Features (start disabled to prevent flashing)
+      class_groups: {
+        enabled: false,
+        description: 'Enable class/group management features',
+        type: 'ops',
+        allowedRoles: ['administrator', 'teacher'],
+        controlledFeatures: ['group_creation', 'group_management']
       },
       // Documentation Features (can start enabled)
       help_documentation: {
@@ -384,6 +395,7 @@ export class FeatureFlagService {
     const keyMap: Record<string, string> = {
       'course_conception': 'course_conception', // Direct match
       'terminals': 'terminal_management', // Backend "terminals" -> Frontend "terminal_management"
+      'class_groups': 'class_groups', // Direct match
       // Add more mappings as needed
     }
 
