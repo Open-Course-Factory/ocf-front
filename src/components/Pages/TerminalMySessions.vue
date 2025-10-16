@@ -224,7 +224,7 @@
                       <button
                         v-if="!session.isShared"
                         class="dropdown-item"
-                        @click="openAccessModal(session.session_id); closeDropdown(session.id || session.session_id)"
+                        @click="openAccessModal(session.session_id)"
                       >
                         <i class="fas fa-users-cog"></i>
                         <span>{{ t('terminalMySessions.manageAccess') }}</span>
@@ -370,7 +370,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, defineAsyncComponent, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, defineAsyncComponent, computed, watch, nextTick } from 'vue'
 import axios from 'axios'
 import { terminalService } from '../../services/domain/terminal'
 import { useNotification } from '../../composables/useNotification'
@@ -1091,7 +1091,11 @@ async function saveName(terminalId: string) {
 }
 
 // Fonctions pour les fonctionnalités de partage
-function openSharingModal(terminalId: string) {
+async function openSharingModal(terminalId: string) {
+  // Close any open dropdowns first to prevent z-index issues
+  openDropdowns.value.clear()
+  // Wait for DOM to update (remove dropdown-open class from card)
+  await nextTick()
   selectedTerminalId.value = terminalId
   showSharingModal.value = true
 }
@@ -1109,7 +1113,11 @@ function onTerminalShared(terminalId: string) {
   }
 }
 
-function openAccessModal(terminalId: string) {
+async function openAccessModal(terminalId: string) {
+  // Close any open dropdowns first to prevent z-index issues
+  openDropdowns.value.clear()
+  // Wait for DOM to update (remove dropdown-open class from card)
+  await nextTick()
   selectedTerminalId.value = terminalId
   showAccessModal.value = true
 }
@@ -1317,7 +1325,7 @@ async function hideAllInactiveSessions() {
 }
 
 .session-card.dropdown-open {
-  z-index: 10000 !important;
+  z-index: 100 !important;
 }
 
 .session-card:hover {
