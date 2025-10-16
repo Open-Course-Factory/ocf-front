@@ -1096,6 +1096,14 @@ async function openSharingModal(terminalId: string) {
   openDropdowns.value.clear()
   // Wait for DOM to update (remove dropdown-open class from card)
   await nextTick()
+
+  // If opening from AccessModal, close it temporarily
+  const wasAccessModalOpen = showAccessModal.value
+  if (wasAccessModalOpen) {
+    showAccessModal.value = false
+    await nextTick() // Wait for AccessModal to close
+  }
+
   selectedTerminalId.value = terminalId
   showSharingModal.value = true
 }
@@ -1108,8 +1116,10 @@ function closeSharingModal() {
 function onTerminalShared(terminalId: string) {
   console.log('Terminal shared:', terminalId)
   loadSessions()
-  if (showAccessModal.value && selectedTerminalId.value === terminalId) {
+  // Reopen AccessModal and refresh its data after sharing
+  if (selectedTerminalId.value === terminalId) {
     accessModalRefreshTrigger.value++
+    showAccessModal.value = true
   }
 }
 
