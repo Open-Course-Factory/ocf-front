@@ -5,9 +5,17 @@ import { isDemoMode, logDemoAction, simulateDelay } from '../services/demo'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
 
 export const useBaseStore = () => {
-    // Add pagination translations (shared by all entities)
+    // Add common translations (shared by all entities)
     useStoreTranslations({
         en: {
+            common: {
+                yes: 'Yes',
+                no: 'No',
+                active: 'Active',
+                inactive: 'Inactive',
+                expired: 'Expired',
+                full: 'Full',
+            },
             pagination: {
                 showing: 'Showing',
                 of: 'of',
@@ -28,6 +36,14 @@ export const useBaseStore = () => {
             }
         },
         fr: {
+            common: {
+                yes: 'Oui',
+                no: 'Non',
+                active: 'Actif',
+                inactive: 'Inactif',
+                expired: 'Expiré',
+                full: 'Complet',
+            },
             pagination: {
                 showing: 'Affichage',
                 of: 'de',
