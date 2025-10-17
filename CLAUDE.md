@@ -169,6 +169,139 @@ import BaseModal from '../Modals/BaseModal.vue'
 - ❌ **Never create new modal base components** - extend BaseModal instead
 - ❌ **Never use generic class names** like `.modal-content` (causes conflicts)
 
+**EntityModal Component:**
+
+OCF Front provides a generic CRUD modal that dynamically renders forms based on store field configurations:
+
+- `EntityModal.vue` - Generic create/edit modal for all entities
+- Automatically renders fields based on `store.fieldList` configuration
+- **Supported Field Types**: `input`, `textarea`, `advanced-textarea`, `select`, `number`, `date`, `checkbox`, `subentity`
+- Automatic validation (required fields, min/max for numbers, uniqueness checks)
+- Bilingual error messages (French/English)
+
+**Supported Field Types:**
+
+| Field Type | HTML Element | Features | Example Use Case |
+|------------|--------------|----------|------------------|
+| `input` | `<input type="text">` | Basic text input | Name, email, slug |
+| `textarea` | `<textarea>` | Multi-line text (250px height) | Description, notes |
+| `advanced-textarea` | `<textarea>` | Line-based array conversion | List of items (one per line) |
+| `select` | `<select>` | Dropdown with options | Status, role, category |
+| `number` | `<input type="number">` | Numeric input with min/max/step | Age, count, price |
+| `date` | `<input type="date">` | Date picker (250px width) | Expiration date, birth date |
+| `checkbox` | `<input type="checkbox">` | Boolean toggle (20px) | Active status, enabled flag |
+| `subentity` | `<v-autocomplete>` | Related entity selection | Parent entity, foreign key |
+
+**Usage Pattern - EntityModal:**
+
+```vue
+<template>
+  <EntityModal
+    :visible="showModal"
+    :entity="selectedEntity"
+    :entity-store="myEntityStore"
+    entity-name="my-entities"
+    @submit="handleCreate"
+    @modify="handleUpdate"
+    @close="showModal = false"
+  />
+</template>
+
+<script setup lang="ts">
+import EntityModal from '../Modals/EntityModal.vue'
+import { useMyEntityStore } from '../../stores/myEntity'
+
+const myEntityStore = useMyEntityStore()
+const showModal = ref(false)
+const selectedEntity = ref(null)
+
+const handleCreate = async (data) => {
+  await myEntityStore.createEntity('/my-entities', data)
+  showModal.value = false
+}
+
+const handleUpdate = async (data) => {
+  await myEntityStore.updateEntity('/my-entities', data.id, data)
+  showModal.value = false
+}
+</script>
+```
+
+**Field Configuration Examples:**
+
+```typescript
+import { field, buildFieldList } from '../utils/fieldBuilder'
+
+const fieldList = buildFieldList([
+  // Text input
+  field('name', t('entity.name'))
+    .input()
+    .visible()
+    .creatable()
+    .editable()
+    .required(),
+
+  // Number with constraints
+  field('max_members', t('entity.maxMembers'))
+    .number()
+    .visible()
+    .editable()
+    .withMin(1)
+    .withMax(100)
+    .withStep(1),
+
+  // Date picker
+  field('expires_at', t('entity.expiresAt'))
+    .date()
+    .visible()
+    .editable()
+    .withDateFormat(),
+
+  // Checkbox
+  field('is_active', t('entity.isActive'))
+    .checkbox()
+    .visible()
+    .editable(),
+
+  // Select dropdown
+  field('status', t('entity.status'))
+    .select()
+    .withOptions([
+      { label: 'Active', value: 'active' },
+      { label: 'Inactive', value: 'inactive' }
+    ])
+    .visible()
+    .editable(),
+
+  // Readonly field (not shown in forms)
+  field('created_at', t('entity.createdAt'))
+    .input()
+    .visible()
+    .readonly()
+    .withDateTimeFormat()
+])
+```
+
+**Validation Rules:**
+
+- **Required Fields**: Shows "{field} is required" error if empty
+- **Number Constraints**:
+  - `min`: "Value must be at least {min}"
+  - `max`: "Value must be at most {max}"
+  - Invalid number: "Please enter a valid number"
+- **Uniqueness**: Checks `name` field against existing entities (optional)
+- **Checkbox**: Never considered empty (boolean value)
+
+**Guidelines:**
+
+- ✅ **Always use EntityModal** for entity CRUD operations
+- ✅ **Define fieldList** with proper types in your entity store
+- ✅ **Use field visibility flags** (`.creatable()`, `.editable()`, `.hidden()`)
+- ✅ **Add validation constraints** (`.required()`, `.withMin()`, `.withMax()`)
+- ✅ **Leverage existing field types** - don't create custom form components
+- ❌ **Never create custom entity forms** - extend EntityModal if needed
+- ❌ **Never hardcode form validation** - use fieldBuilder constraints
+
 **SettingsPageWrapper Pattern:**
 
 OCF Front uses a dynamic component loader for settings pages to eliminate duplication:

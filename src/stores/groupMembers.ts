@@ -117,7 +117,7 @@ export const useGroupMembersStore = defineStore('groupMembers', () => {
 
     // Override loadEntities to use correct endpoint
     const loadEntities = async () => {
-        return await base.loadEntities('/class-group-members')
+        return await base.loadEntities('/group-members')
     }
 
     return {

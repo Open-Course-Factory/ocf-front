@@ -38,13 +38,18 @@
     <div class="checkout-form">
       <div v-for="[name, field] of entityStore.fieldList" class="form-group">
         <span v-if="field.type != 'subentity' && ((!entity && field.toBeSet) || (entity && field.toBeEdited))">
-          <label :for="name">{{ field.label }}</label>
+          <!-- Label (not shown for checkbox - handled inside wrapper) -->
+          <label v-if="field.type !== 'checkbox'" :for="name">{{ field.label }}</label>
+
+          <!-- Textarea -->
           <textarea
             v-if="field.type == 'textarea' || field.type == 'advanced-textarea'"
             :id="name"
             v-model="data[name]"
             :class="['form-control', { 'is-invalid': errors[name] }]"
           />
+
+          <!-- Select -->
           <select
             v-else-if="field.type == 'select'"
             :id="name"
@@ -60,12 +65,47 @@
               {{ option.text }}
             </option>
           </select>
+
+          <!-- Number -->
+          <input
+            v-else-if="field.type == 'number'"
+            type="number"
+            :id="name"
+            v-model.number="data[name]"
+            :min="field.min"
+            :max="field.max"
+            :step="field.step || 1"
+            :class="['form-control', { 'is-invalid': errors[name] }]"
+          />
+
+          <!-- Date -->
+          <input
+            v-else-if="field.type == 'date'"
+            type="date"
+            :id="name"
+            v-model="data[name]"
+            :class="['form-control', { 'is-invalid': errors[name] }]"
+          />
+
+          <!-- Checkbox -->
+          <div v-else-if="field.type == 'checkbox'" class="checkbox-wrapper">
+            <input
+              type="checkbox"
+              :id="name"
+              v-model="data[name]"
+              :class="['form-checkbox', { 'is-invalid': errors[name] }]"
+            />
+            <label :for="name" class="checkbox-label">{{ field.label }}</label>
+          </div>
+
+          <!-- Text Input (default) -->
           <input
             v-else-if="field.type == 'input'"
             :id="name"
             v-model="data[name]"
             :class="['form-control', { 'is-invalid': errors[name] }]"
           />
+
           <div v-if="errors[name]" class="invalid-feedback">
             {{ errors[name] }}
           </div>
@@ -105,7 +145,10 @@ const { t } = useTranslations({
       buttonAdd: 'Add',
       buttonCancel: 'Cancel',
       fieldRequired: '{field} is required.',
-      nameAlreadyUsed: 'This name is already used.'
+      nameAlreadyUsed: 'This name is already used.',
+      invalidNumber: 'Please enter a valid number.',
+      numberTooSmall: 'Value must be at least {min}.',
+      numberTooLarge: 'Value must be at most {max}.'
     }
   },
   fr: {
@@ -117,7 +160,10 @@ const { t } = useTranslations({
       buttonAdd: 'Ajouter',
       buttonCancel: 'Annuler',
       fieldRequired: '{field} est requis.',
-      nameAlreadyUsed: 'Ce nom est déjà utilisé.'
+      nameAlreadyUsed: 'Ce nom est déjà utilisé.',
+      invalidNumber: 'Veuillez entrer un nombre valide.',
+      numberTooSmall: 'La valeur doit être au moins {min}.',
+      numberTooLarge: 'La valeur doit être au plus {max}.'
     }
   }
 });
@@ -148,10 +194,18 @@ function validateFields() {
 
   props.entityStore.fieldList.forEach((value, key) => {
     if ((!props.entity && value.toBeSet) || (props.entity && value.toBeEdited)) {
-      if (isFieldRequired(value) && (data[key]?.toString().trim() === '' || data[key] === undefined)) {
+      // Check if field is required and empty
+      const isEmpty = value.type === 'checkbox'
+        ? false // Checkboxes are never empty (they're boolean)
+        : value.type === 'number'
+        ? (data[key] === undefined || data[key] === null || data[key] === '')
+        : (data[key]?.toString().trim() === '' || data[key] === undefined);
+
+      if (isFieldRequired(value) && isEmpty) {
         errors[key] = t('entityModal.fieldRequired', { field: key });
         res = false;
       } else if (
+        key === 'name' && // Only check uniqueness for 'name' field
         props.entityStore.entities.some(
           (storeEntity) => storeEntity.name === data[key]?.toString().trim() &&
           (!props.entity || storeEntity.id !== props.entity.id)
@@ -159,6 +213,21 @@ function validateFields() {
       ) {
         errors[key] = t('entityModal.nameAlreadyUsed');
         res = false;
+      } else if (value.type === 'number' && data[key] !== undefined && data[key] !== null && data[key] !== '') {
+        // Validate number constraints
+        const num = Number(data[key]);
+        if (isNaN(num)) {
+          errors[key] = t('entityModal.invalidNumber');
+          res = false;
+        } else if (value.min !== undefined && num < value.min) {
+          errors[key] = t('entityModal.numberTooSmall', { min: value.min });
+          res = false;
+        } else if (value.max !== undefined && num > value.max) {
+          errors[key] = t('entityModal.numberTooLarge', { max: value.max });
+          res = false;
+        } else {
+          errors[key] = null;
+        }
       } else {
         errors[key] = null;
       }
@@ -218,6 +287,10 @@ function populateDataFromEntity() {
     if (value.toBeEdited) {
       if (value.type === 'advanced-textarea') {
         data[key] = props.entity[key]?.join('\n') || '';
+      } else if (value.type === 'checkbox') {
+        data[key] = props.entity[key] === true || props.entity[key] === 'true';
+      } else if (value.type === 'number') {
+        data[key] = props.entity[key] !== undefined ? Number(props.entity[key]) : '';
       } else {
         data[key] = props.entity[key] || '';
       }
@@ -228,7 +301,14 @@ function populateDataFromEntity() {
 function prepareNeededField() {
   props.entityStore.fieldList.forEach((value, key) => {
     if ((!props.entity && value.toBeSet) || (props.entity && value.toBeEdited)) {
-      data[key] = '';
+      // Initialize with appropriate default value based on type
+      if (value.type === 'checkbox') {
+        data[key] = false;
+      } else if (value.type === 'number') {
+        data[key] = value.min !== undefined ? value.min : '';
+      } else {
+        data[key] = '';
+      }
       errors[key] = null;
     }
   });
@@ -254,5 +334,36 @@ function prepareNeededField() {
 
 textarea {
   height: 250px;
+}
+
+/* Checkbox styles */
+.checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) 0;
+}
+
+.form-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.checkbox-label {
+  margin: 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Number input styles */
+input[type="number"] {
+  max-width: 200px;
+}
+
+/* Date input styles */
+input[type="date"] {
+  max-width: 250px;
 }
 </style>

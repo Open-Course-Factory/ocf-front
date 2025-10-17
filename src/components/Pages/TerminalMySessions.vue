@@ -37,6 +37,23 @@
       <div class="section-header">
         <h3>{{ t('terminalMySessions.activeSessions') }} ({{ activeSessionsCount }})</h3>
         <div class="header-actions">
+          <!-- Group Filter (only if feature flag is enabled) -->
+          <select
+            v-if="canFilterByGroups"
+            v-model="selectedGroupFilter"
+            class="group-filter-select"
+            :title="t('terminalMySessions.filterByGroup')"
+          >
+            <option value="all">{{ t('terminalMySessions.allGroups') }}</option>
+            <option
+              v-for="group in groupStore.entities"
+              :key="group.id"
+              :value="group.id"
+            >
+              {{ group.display_name || group.name }}
+            </option>
+          </select>
+
           <!-- Bouton de synchronisation globale -->
           <button
             class="btn btn-info"
@@ -376,9 +393,13 @@ import { terminalService } from '../../services/domain/terminal'
 import { useNotification } from '../../composables/useNotification'
 import { useTranslations } from '../../composables/useTranslations'
 import { useFormatters } from '../../composables/useFormatters'
+import { useFeatureFlags } from '../../composables/useFeatureFlags'
+import { useClassGroupsStore } from '../../stores/classGroups'
 
 const { showConfirm } = useNotification()
 const { formatDateTime: formatDateTimeTz } = useFormatters()
+const { isEnabled } = useFeatureFlags()
+const groupStore = useClassGroupsStore()
 const { t } = useTranslations({
   en: {
     terminalMySessions: {
@@ -392,6 +413,8 @@ const { t } = useTranslations({
       buttonNewSession: 'New Session',
       buttonHideAllInactive: 'Hide All Inactive',
       buttonShowHidden: 'Show Hidden',
+      filterByGroup: 'Filter by group',
+      allGroups: 'All groups',
       loadingSessions: 'Loading sessions...',
       errorRetry: 'Retry',
       errorHidingActive: 'Cannot hide active terminals. Please stop the terminal first.',
@@ -477,6 +500,8 @@ const { t } = useTranslations({
       buttonNewSession: 'Nouvelle Session',
       buttonHideAllInactive: 'Masquer toutes les inactives',
       buttonShowHidden: 'Afficher les masquées',
+      filterByGroup: 'Filtrer par groupe',
+      allGroups: 'Tous les groupes',
       loadingSessions: 'Chargement des sessions...',
       errorRetry: 'Réessayer',
       errorHidingActive: 'Impossible de masquer un terminal actif. Veuillez d\'abord l\'arrêter.',
@@ -562,6 +587,7 @@ const sharedSessions = ref([])
 const isLoading = ref(false)
 const error = ref('')
 const showHiddenTerminals = ref(false)
+const selectedGroupFilter = ref<string>('all')
 
 // Snapshot of shared session IDs for tracking changes
 const sharedSessionIdsSnapshot = ref(new Set<string>())
@@ -636,9 +662,30 @@ const inactiveSessionsCount = computed(() => {
   return allSessions.value.filter(session => isTerminalInactive(session.status)).length
 })
 
+// Feature flag check for group filtering
+const canFilterByGroups = computed(() => isEnabled('class_groups'))
+
+// Filtered sessions based on selected group
+const filteredSessionsByGroup = computed(() => {
+  if (!canFilterByGroups.value || selectedGroupFilter.value === 'all') {
+    return allSessions.value
+  }
+
+  // Filter sessions that are shared with the selected group
+  return allSessions.value.filter(session => {
+    // Check if this session is shared with the selected group
+    // This requires the backend to include group share information in the terminal shares
+    // For now, we'll check if the session has a shares array with the group_id
+    if (session.shares) {
+      return session.shares.some((share: any) => share.shared_with_group_id === selectedGroupFilter.value)
+    }
+    return false
+  })
+})
+
 // Computed property to sort sessions with active ones at the top
 const sortedSessions = computed(() => {
-  return [...allSessions.value].sort((a, b) => {
+  return [...filteredSessionsByGroup.value].sort((a, b) => {
     const aActive = !isTerminalInactive(a.status)
     const bActive = !isTerminalInactive(b.status)
 
@@ -698,6 +745,11 @@ onMounted(() => {
   loadSessions()
   loadSharedSessions()
   loadInstanceTypes()
+
+  // Load groups if feature flag is enabled
+  if (canFilterByGroups.value) {
+    groupStore.loadEntities()
+  }
 
   // Rafraîchir les sessions toutes les 30 secondes et vérifier les expirations
   const interval = setInterval(() => {
@@ -1641,6 +1693,29 @@ async function hideAllInactiveSessions() {
   display: flex;
   gap: var(--spacing-sm);
   flex-wrap: wrap;
+}
+
+.group-filter-select {
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: var(--border-width-medium) solid var(--color-border-medium);
+  border-radius: var(--border-radius-md);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  max-width: 200px;
+}
+
+.group-filter-select:hover {
+  border-color: var(--color-primary);
+}
+
+.group-filter-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus-primary);
 }
 
 .status-group {

@@ -98,9 +98,15 @@
       <!-- Normal entity list (hidden during sequential navigation) -->
       <div v-else-if="displayedEntities.length > 0">
         <ul>
-          <li v-for="entity in displayedEntities" :key="entity.id" class="entity-item">
+          <li
+            v-for="entity in displayedEntities"
+            :key="entity.id"
+            class="entity-item"
+            :class="{ 'entity-item-clickable': isGroupEntity }"
+            @click="handleEntityClick(entity)"
+          >
             <EntityCard :entity="entity" :entityStore="props.entityStore" />
-            <div class="actions">
+            <div class="actions" @click.stop>
               <!-- Slot pour les actions spécifiques -->
               <slot name="actions" :entity="entity"></slot>
               <button
@@ -379,6 +385,18 @@ const totalPages = computed(() => {
 const shouldPreventLastObjectDeletion = computed(() => {
   return (props.entityStore as any).preventLastObjectDeletion?.value || false;
 });
+
+// Check if current entity is groups (for click-to-detail navigation)
+const isGroupEntity = computed(() => {
+  return props.entityName === 'class-groups';
+});
+
+// Handle entity click for navigation
+function handleEntityClick(entity: any) {
+  if (isGroupEntity.value && entity.id) {
+    router.push({ name: 'GroupDetail', params: { id: entity.id } });
+  }
+}
 
 // Fonction pour appliquer les filtres
 function applyFilters() {
@@ -1047,6 +1065,16 @@ ul {
 .entity-item:hover {
   background-color: var(--color-bg-tertiary);
   transform: scale(1.02);
+}
+
+.entity-item-clickable {
+  cursor: pointer;
+}
+
+.entity-item-clickable:hover {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  box-shadow: var(--shadow-md);
 }
 
 .actions :deep(button) {

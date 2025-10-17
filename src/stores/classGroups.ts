@@ -166,9 +166,15 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
         return await base.loadEntities('/class-groups')
     }
 
+    // Override getOne to use correct endpoint
+    const getOne = async (groupId: string) => {
+        return await base.getOne('/class-groups', groupId)
+    }
+
     return {
         ...base,
         fieldList,
-        loadEntities
+        loadEntities,
+        getOne
     }
 })

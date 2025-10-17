@@ -390,6 +390,33 @@ export const useBaseStore = () => {
         }, 'errors.deleteEntity')
     }
 
+    const getOne = async (endpoint: string, entityId: string, demoDataProvider?: () => any[]) => {
+        return withAsync(async () => {
+            let data: any
+
+            if (isDemoMode() && demoDataProvider) {
+                logDemoAction(`Loading demo entity ${entityId} from ${endpoint}`)
+                await simulateDelay(800)
+                // Find entity in demo data
+                const allData = demoDataProvider()
+                data = allData.find((e: any) => e.id === entityId)
+                if (!data) {
+                    throw new Error(`Entity ${entityId} not found`)
+                }
+            } else {
+                logDemoAction(`Loading real entity ${entityId} from ${endpoint}`)
+                const response = await axios.get(`${endpoint}/${entityId}`)
+                data = response.data
+            }
+
+            return data
+        }, 'errors.loadEntity', {
+            onError: () => {
+                logDemoAction(`Error loading entity ${entityId}: ${error.value}`)
+            }
+        })
+    }
+
     return {
         // Original exports
         entities,
@@ -424,6 +451,7 @@ export const useBaseStore = () => {
         clearEntities,
         createEntity,
         updateEntity,
-        deleteEntity
+        deleteEntity,
+        getOne
     }
 }

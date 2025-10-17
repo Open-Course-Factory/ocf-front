@@ -28,7 +28,21 @@
         </div>
 
         <form @submit.prevent="shareTerminal" class="sharing-form">
-          <div class="form-group">
+          <!-- Share Type Selector (only if groups feature is enabled) -->
+          <div v-if="canShareWithGroups" class="form-group">
+            <label for="shareType">{{ t('terminalSharing.shareType') }}</label>
+            <select
+              id="shareType"
+              v-model="shareType"
+              class="form-control"
+            >
+              <option value="user">{{ t('terminalSharing.shareTypeUser') }}</option>
+              <option value="group">{{ t('terminalSharing.shareTypeGroup') }}</option>
+            </select>
+          </div>
+
+          <!-- User Search (shown when shareType is 'user') -->
+          <div v-if="shareType === 'user'" class="form-group">
             <label for="userSearch">{{ t('terminalSharing.userToAdd') }}</label>
             <div class="user-search-container">
               <input
@@ -68,6 +82,42 @@
             </small>
           </div>
 
+          <!-- Group Search (shown when shareType is 'group') -->
+          <div v-else-if="shareType === 'group'" class="form-group">
+            <label for="groupSearch">{{ t('terminalSharing.groupToAdd') }}</label>
+            <div class="user-search-container">
+              <input
+                id="groupSearch"
+                v-model="groupSearchQuery"
+                type="text"
+                class="form-control"
+                :placeholder="t('terminalSharing.groupSearchPlaceholder')"
+                @focus="showSearchDropdown = true"
+                @blur="onSearchBlur"
+                required
+              />
+              <div v-if="showSearchDropdown && filteredGroups.length > 0" class="search-dropdown">
+                <div v-if="filteredGroups.length === 0 && groupSearchQuery.trim()" class="search-empty">
+                  {{ t('terminalSharing.noGroupFound') }}
+                </div>
+                <div
+                  v-for="group in filteredGroups"
+                  :key="group.id"
+                  class="search-result"
+                  @click="selectGroup(group)"
+                >
+                  <div class="user-info">
+                    <div class="user-name">{{ group.display_name || group.name }}</div>
+                    <div class="user-email" v-if="group.description">{{ group.description }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <small class="form-text text-muted">
+              {{ t('terminalSharing.groupSearchHelp') }}
+            </small>
+          </div>
+
           <div class="form-group">
             <label for="accessLevel">{{ t('terminalSharing.accessLevel') }}</label>
             <select
@@ -81,7 +131,7 @@
               <option value="admin">{{ t('terminalSharing.adminAccess') }}</option>
             </select>
             <small class="form-text text-muted">
-              {{ t('terminalSharing.accessLevelHelp') }}
+              {{ shareType === 'group' ? t('terminalSharing.groupAccessLevelHelp') : t('terminalSharing.accessLevelHelp') }}
             </small>
           </div>
 
@@ -116,9 +166,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
+import { useFeatureFlags } from '../../composables/useFeatureFlags'
+import { useClassGroupsStore } from '../../stores/classGroups'
 import { terminalService, type ShareTerminalRequest, type SharedTerminalInfo } from '../../services/domain/terminal'
 import { userService, type User } from '../../services/domain/user'
 import BaseModal from '../Modals/BaseModal.vue'
@@ -130,16 +182,24 @@ const { t } = useTranslations({
       terminalLabel: 'Terminal',
       instance: 'Instance',
       status: 'Status',
+      shareType: 'Share with',
+      shareTypeUser: 'Individual User',
+      shareTypeGroup: 'Group',
       userToAdd: 'User to Add',
+      groupToAdd: 'Group to Add',
       searchPlaceholder: 'Search by name or email...',
+      groupSearchPlaceholder: 'Search groups...',
       searchInProgress: 'Searching...',
       noUserFound: 'No user found',
+      noGroupFound: 'No group found',
       userSearchHelp: 'Search and select the user to share this terminal with.',
+      groupSearchHelp: 'Search and select the group to share this terminal with.',
       accessLevel: 'Access Level',
       readAccess: 'Read (View only)',
       writeAccess: 'Write (Can execute commands)',
       adminAccess: 'Admin (Full control)',
       accessLevelHelp: 'Select the permission level for this user.',
+      groupAccessLevelHelp: 'Select the permission level for all group members.',
       expirationDate: 'Expiration Date (Optional)',
       expirationHelp: 'Leave empty for permanent access (until terminal is stopped).',
       buttonSharing: 'Sharing...',
@@ -157,16 +217,24 @@ const { t } = useTranslations({
       terminalLabel: 'Terminal',
       instance: 'Instance',
       status: 'Statut',
+      shareType: 'Partager avec',
+      shareTypeUser: 'Utilisateur individuel',
+      shareTypeGroup: 'Groupe',
       userToAdd: 'Utilisateur à ajouter',
+      groupToAdd: 'Groupe à ajouter',
       searchPlaceholder: 'Rechercher par nom ou email...',
+      groupSearchPlaceholder: 'Rechercher des groupes...',
       searchInProgress: 'Recherche...',
       noUserFound: 'Aucun utilisateur trouvé',
+      noGroupFound: 'Aucun groupe trouvé',
       userSearchHelp: 'Recherchez et sélectionnez l\'utilisateur avec qui partager ce terminal.',
+      groupSearchHelp: 'Recherchez et sélectionnez le groupe avec qui partager ce terminal.',
       accessLevel: 'Niveau d\'accès',
       readAccess: 'Lecture (Visualisation uniquement)',
       writeAccess: 'Écriture (Peut exécuter des commandes)',
       adminAccess: 'Admin (Contrôle total)',
       accessLevelHelp: 'Sélectionnez le niveau d\'autorisation pour cet utilisateur.',
+      groupAccessLevelHelp: 'Sélectionnez le niveau d\'autorisation pour tous les membres du groupe.',
       expirationDate: 'Date d\'expiration (Optionnel)',
       expirationHelp: 'Laissez vide pour un accès permanent (jusqu\'à l\'arrêt du terminal).',
       buttonSharing: 'Partage...',
@@ -181,6 +249,8 @@ const { t } = useTranslations({
 })
 
 const { showSuccess } = useNotification()
+const { isEnabled } = useFeatureFlags()
+const groupStore = useClassGroupsStore()
 
 interface Props {
   show: boolean
@@ -194,6 +264,7 @@ const emit = defineEmits<{
 }>()
 
 const terminalInfo = ref<SharedTerminalInfo | null>(null)
+const shareType = ref<'user' | 'group'>('user')
 const shareData = ref<ShareTerminalRequest>({
   shared_with_user_id: '',
   access_level: 'read',
@@ -203,13 +274,34 @@ const shareData = ref<ShareTerminalRequest>({
 const isSharing = ref(false)
 const error = ref('')
 const userSearchQuery = ref('')
+const groupSearchQuery = ref('')
 const searchResults = ref<User[]>([])
 const isSearching = ref(false)
 const showSearchDropdown = ref(false)
 
+// Feature flag check for group sharing
+const canShareWithGroups = computed(() => isEnabled('class_groups'))
+
+// Filtered groups based on search
+const filteredGroups = computed(() => {
+  if (!groupSearchQuery.value.trim()) {
+    return groupStore.entities
+  }
+  const query = groupSearchQuery.value.toLowerCase()
+  return groupStore.entities.filter(group =>
+    group.display_name?.toLowerCase().includes(query) ||
+    group.name?.toLowerCase().includes(query) ||
+    group.description?.toLowerCase().includes(query)
+  )
+})
+
 watch(() => props.show, async (newShow) => {
   if (newShow && props.terminalId) {
     await loadTerminalInfo()
+    // Load groups if feature flag is enabled
+    if (canShareWithGroups.value && groupStore.entities.length === 0) {
+      await groupStore.loadEntities()
+    }
     resetForm()
   }
 })
@@ -232,14 +324,20 @@ async function shareTerminal() {
   error.value = ''
 
   try {
-    // Prepare the data with proper datetime formatting
-    const requestData = {
-      shared_with_user_id: shareData.value.shared_with_user_id,
+    // Prepare the data based on share type
+    const requestData: ShareTerminalRequest = {
       access_level: shareData.value.access_level,
       // Only include expires_at if it's provided, and format it properly
       ...(shareData.value.expires_at && {
         expires_at: new Date(shareData.value.expires_at).toISOString()
       })
+    }
+
+    // Add user_id or group_id based on share type
+    if (shareType.value === 'user') {
+      requestData.shared_with_user_id = shareData.value.shared_with_user_id
+    } else {
+      requestData.shared_with_group_id = shareData.value.shared_with_group_id
     }
 
     await terminalService.shareTerminal(props.terminalId, requestData)
@@ -288,6 +386,12 @@ function selectUser(user: User) {
   showSearchDropdown.value = false
 }
 
+function selectGroup(group: any) {
+  shareData.value.shared_with_group_id = group.id
+  groupSearchQuery.value = group.display_name || group.name
+  showSearchDropdown.value = false
+}
+
 function onSearchBlur() {
   // Delay hiding dropdown to allow click events to fire
   setTimeout(() => {
@@ -296,12 +400,15 @@ function onSearchBlur() {
 }
 
 function resetForm() {
+  shareType.value = 'user'
   shareData.value = {
     shared_with_user_id: '',
+    shared_with_group_id: '',
     access_level: 'read',
     expires_at: ''
   }
   userSearchQuery.value = ''
+  groupSearchQuery.value = ''
   searchResults.value = []
   showSearchDropdown.value = false
   error.value = ''
