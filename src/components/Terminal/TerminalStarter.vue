@@ -37,7 +37,7 @@
             variant="primary"
             size="md"
             :icon="isStarting ? 'fas fa-spinner fa-spin' : 'fas fa-rocket'"
-            :disabled="!selectedInstanceType || isStarting"
+            :disabled="!isFormValid || isStarting"
             :loading="isStarting"
             @click="startNewSession"
           >
@@ -45,6 +45,54 @@
           </Button>
         </div>
       </template>
+
+      <!-- Creation Mode Selection (Single vs Bulk for Group) -->
+      <div v-if="canUseGroups" class="creation-mode-selector">
+        <label class="mode-label">{{ t('terminalStarter.creationMode') }}</label>
+        <div class="mode-options">
+          <button
+            type="button"
+            :class="['mode-option', { active: creationMode === 'single' }]"
+            @click="creationMode = 'single'"
+          >
+            <i class="fas fa-desktop"></i>
+            {{ t('terminalStarter.singleTerminal') }}
+          </button>
+          <button
+            type="button"
+            :class="['mode-option', { active: creationMode === 'bulk' }]"
+            @click="creationMode = 'bulk'"
+          >
+            <i class="fas fa-users"></i>
+            {{ t('terminalStarter.bulkForGroup') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Group Selection (only if bulk mode) -->
+      <div v-if="creationMode === 'bulk'" class="group-selector">
+        <label for="group-select" class="form-label">
+          {{ t('terminalStarter.selectGroup') }}
+        </label>
+        <select
+          id="group-select"
+          v-model="selectedGroupId"
+          class="form-control"
+          :disabled="isStarting"
+        >
+          <option value="">{{ t('terminalStarter.chooseGroup') }}</option>
+          <option
+            v-for="group in availableGroups"
+            :key="group.id"
+            :value="group.id"
+          >
+            {{ group.display_name || group.name }} ({{ getGroupMemberCount(group) }} {{ t('terminalStarter.members') }})
+          </option>
+        </select>
+        <small v-if="selectedGroupId && selectedGroupMemberCount > 0" class="form-text">
+          {{ t('terminalStarter.willCreate', { count: selectedGroupMemberCount }) }}
+        </small>
+      </div>
 
       <!-- Instance Type Selection -->
       <InstanceTypeSelector
@@ -105,13 +153,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { terminalService } from '../../services/domain/terminal'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTerminalMetricsStore } from '../../stores/terminalMetrics'
+import { useClassGroupsStore } from '../../stores/classGroups'
 import { useNotification } from '../../composables/useNotification'
 import { useTranslations } from '../../composables/useTranslations'
+import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
 import InstanceTypeSelector from './InstanceTypeSelector.vue'
@@ -121,12 +172,19 @@ import TerminalSessionInfo from './TerminalSessionInfo.vue'
 import TerminalConsole from './TerminalConsole.vue'
 import type { InstanceType } from '../../types'
 
+// Router
+const route = useRoute()
+
 // Emit events
 const emit = defineEmits(['session-started'])
 
 // Stores
 const subscriptionsStore = useSubscriptionsStore()
 const metricsStore = useTerminalMetricsStore()
+const groupsStore = useClassGroupsStore()
+
+// Feature flags
+const { isEnabled } = useFeatureFlags()
 
 // i18n setup
 const { t } = useTranslations({
@@ -140,13 +198,24 @@ const { t } = useTranslations({
       readyToLaunch: 'Ready to Launch',
       capacityIssue: 'Capacity Issue',
       checkingCapacity: 'Checking...',
+      creationMode: 'Creation Mode',
+      singleTerminal: 'Single Terminal',
+      bulkForGroup: 'Bulk for Group',
+      selectGroup: 'Select Group',
+      chooseGroup: 'Choose a group...',
+      members: 'members',
+      willCreate: 'Will create {count} terminals (1 per member)',
       startingSession: 'Starting terminal session...',
+      startingBulkSessions: 'Creating terminals for group members...',
       checkingLimits: 'Checking usage limits...',
       sendingRequest: 'Sending request to server...',
       sessionCreated: 'Session created, initializing terminal...',
+      bulkSessionsCreated: '{count} terminals created successfully',
+      bulkSessionsPartial: '{successCount} of {totalCount} terminals created ({failedCount} failed)',
       sessionExpired: 'Your terminal session has expired',
       sessionExpiredTitle: 'Session Expired',
       errorValidationInstance: 'Please select an instance type',
+      errorValidationGroup: 'Please select a group for bulk creation',
       errorLimitReached: 'You have reached your limit of concurrent terminals. Please stop an existing terminal or upgrade your plan.',
       errorLimitReachedTitle: 'Limit Reached',
       errorInstanceNotAvailable: 'The selected instance is not available with your current plan. Please choose another instance or upgrade your plan.',
@@ -172,13 +241,24 @@ const { t } = useTranslations({
       readyToLaunch: 'Prêt à Lancer',
       capacityIssue: 'Problème de Capacité',
       checkingCapacity: 'Vérification...',
+      creationMode: 'Mode de Création',
+      singleTerminal: 'Terminal Unique',
+      bulkForGroup: 'En Masse pour Groupe',
+      selectGroup: 'Sélectionner un Groupe',
+      chooseGroup: 'Choisir un groupe...',
+      members: 'membres',
+      willCreate: '{count} terminaux seront créés (1 par membre)',
       startingSession: 'Démarrage de la session terminal...',
+      startingBulkSessions: 'Création des terminaux pour les membres du groupe...',
       checkingLimits: 'Vérification des limites d\'utilisation...',
       sendingRequest: 'Envoi de la requête au serveur...',
       sessionCreated: 'Session créée, initialisation du terminal...',
+      bulkSessionsCreated: '{count} terminaux créés avec succès',
+      bulkSessionsPartial: '{successCount} sur {totalCount} terminaux créés ({failedCount} échecs)',
       sessionExpired: 'Votre session terminal a expiré',
       sessionExpiredTitle: 'Session expirée',
       errorValidationInstance: 'Veuillez sélectionner un type d\'instance',
+      errorValidationGroup: 'Veuillez sélectionner un groupe pour la création en masse',
       errorLimitReached: 'Vous avez atteint votre limite de terminaux simultanés. Veuillez arrêter un terminal existant ou mettre à niveau votre plan.',
       errorLimitReachedTitle: 'Limite atteinte',
       errorInstanceNotAvailable: 'L\'instance sélectionnée n\'est pas disponible avec votre plan actuel. Veuillez choisir une autre instance ou mettre à niveau votre plan.',
@@ -221,9 +301,16 @@ const USAGE_REFRESH_INTERVAL = 600000 // 10 minutes
 // Form
 const selectedInstanceType = ref('')
 const nameInput = ref('')
+const creationMode = ref<'single' | 'bulk'>('single')
+const selectedGroupId = ref('')
 
 // Instance types
 const instanceTypes = ref<InstanceType[]>([])
+
+// Groups
+const availableGroups = computed(() => groupsStore.entities)
+const canUseGroups = computed(() => isEnabled('class_groups'))
+const selectedGroupMemberCount = ref(0)
 
 // Subscription and usage state
 const currentSubscription = computed(() => subscriptionsStore.currentSubscription)
@@ -315,6 +402,13 @@ const capacityStatusText = computed(() => {
   return canLaunchInstance.value
     ? t('terminalStarter.readyToLaunch')
     : t('terminalStarter.capacityIssue')
+})
+
+// Form validation
+const isFormValid = computed(() => {
+  if (!selectedInstanceType.value) return false
+  if (creationMode.value === 'bulk' && !selectedGroupId.value) return false
+  return true
 })
 
 // Helper functions
@@ -421,10 +515,47 @@ function selectInstance(instance: InstanceType) {
 
 function resetForm() {
   nameInput.value = ''
+  creationMode.value = 'single'
+  selectedGroupId.value = ''
   setDefaultInstanceSelection()
 }
 
+function getGroupMemberCount(group: any): number {
+  return group.member_count || 0
+}
+
+async function loadGroupMembers(groupId: string) {
+  try {
+    const response = await axios.get(`/group-members`, {
+      params: { group_id: groupId }
+    })
+    return response.data?.data || response.data || []
+  } catch (error) {
+    console.error('Failed to load group members:', error)
+    return []
+  }
+}
+
+// Watch for group selection changes to update member count
+watch(selectedGroupId, async (newGroupId) => {
+  if (newGroupId) {
+    const members = await loadGroupMembers(newGroupId)
+    selectedGroupMemberCount.value = members.length
+  } else {
+    selectedGroupMemberCount.value = 0
+  }
+})
+
 async function startNewSession() {
+  // Route to appropriate creation method
+  if (creationMode.value === 'bulk') {
+    return await startBulkSessions()
+  } else {
+    return await startSingleSession()
+  }
+}
+
+async function startSingleSession() {
   if (!selectedInstanceType.value) {
     showErrorNotification(t('terminalStarter.errorValidationInstance'), t('terminalStarter.errorStarting'))
     return
@@ -554,6 +685,99 @@ async function startNewSession() {
   }
 }
 
+async function startBulkSessions() {
+  if (!selectedInstanceType.value) {
+    showErrorNotification(t('terminalStarter.errorValidationInstance'), t('terminalStarter.errorStarting'))
+    return
+  }
+
+  if (!selectedGroupId.value) {
+    showErrorNotification(t('terminalStarter.errorValidationGroup'), t('terminalStarter.errorStarting'))
+    return
+  }
+
+  isStarting.value = true
+  startStatus.value = t('terminalStarter.startingBulkSessions')
+
+  try {
+    // Load group members
+    const members = await loadGroupMembers(selectedGroupId.value)
+
+    if (members.length === 0) {
+      showErrorNotification('No members found in the selected group', t('terminalStarter.errorStarting'))
+      return
+    }
+
+    // Get group details for naming
+    const selectedGroup = availableGroups.value.find(g => g.id === selectedGroupId.value)
+    const groupName = selectedGroup?.display_name || selectedGroup?.name || 'Group'
+
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: [] as string[]
+    }
+
+    // Create terminals for each member
+    for (const member of members) {
+      try {
+        const memberEmail = member.user?.email || member.user_id
+        const sessionData = {
+          terms: 'J\'accepte les conditions d\'utilisation du service terminal.',
+          expiry: sessionDurationCap.value,
+          instance_type: selectedInstanceType.value,
+          name: `${groupName} - ${memberEmail}`
+        }
+
+        await axios.post('/terminals/start-session', sessionData)
+        results.success++
+      } catch (err: any) {
+        results.failed++
+        const errorMsg = err.response?.data?.error_message || err.message || 'Unknown error'
+        results.errors.push(`${member.user?.email || member.user_id}: ${errorMsg}`)
+      }
+    }
+
+    // Show results
+    if (results.success === members.length) {
+      showWarning(
+        t('terminalStarter.bulkSessionsCreated', { count: results.success }),
+        'Success'
+      )
+    } else if (results.success > 0) {
+      showWarning(
+        t('terminalStarter.bulkSessionsPartial', {
+          successCount: results.success,
+          totalCount: members.length,
+          failedCount: results.failed
+        }),
+        'Partial Success'
+      )
+    } else {
+      showErrorNotification(
+        `Failed to create terminals: ${results.errors.join(', ')}`,
+        t('terminalStarter.errorStarting')
+      )
+    }
+
+    // Refresh terminal count
+    await loadCurrentTerminalUsage()
+
+    // Emit event
+    emit('session-started')
+
+  } catch (error: any) {
+    console.error('Error starting bulk sessions:', error)
+    showErrorNotification(
+      error.response?.data?.error_message || error.message || 'Error creating bulk terminals',
+      t('terminalStarter.errorStarting')
+    )
+  } finally {
+    isStarting.value = false
+    startStatus.value = ''
+  }
+}
+
 async function stopSession() {
   if (!sessionInfo.value) return
 
@@ -624,15 +848,48 @@ function cleanup() {
 }
 
 onMounted(async () => {
-  await Promise.all([
+  const promises = [
     loadInstanceTypes(),
     subscriptionsStore.getCurrentSubscription(),
     loadCurrentTerminalUsage()
-  ])
+  ]
+
+  // Load groups if feature is enabled
+  if (canUseGroups.value) {
+    promises.push(groupsStore.loadEntities())
+  }
+
+  await Promise.all(promises)
 
   await nextTick(() => {
     setDefaultInstanceSelection()
   })
+
+  // Check for query parameters to set bulk mode and group
+  if (route.query.mode === 'bulk' && route.query.groupId) {
+    console.log('[TerminalStarter] Detected bulk mode query params:', {
+      mode: route.query.mode,
+      groupId: route.query.groupId,
+      availableGroupsCount: availableGroups.value.length
+    })
+
+    creationMode.value = 'bulk'
+    selectedGroupId.value = route.query.groupId as string
+
+    // Manually trigger the member count load since watcher might not fire in time
+    await nextTick(async () => {
+      if (selectedGroupId.value) {
+        const members = await loadGroupMembers(selectedGroupId.value)
+        selectedGroupMemberCount.value = members.length
+
+        console.log('[TerminalStarter] Bulk mode configured:', {
+          creationMode: creationMode.value,
+          selectedGroupId: selectedGroupId.value,
+          memberCount: selectedGroupMemberCount.value
+        })
+      }
+    })
+  }
 
   // Start periodic refresh of usage metrics
   usageRefreshInterval = setInterval(async () => {
@@ -774,6 +1031,97 @@ onBeforeUnmount(() => {
   color: var(--color-text-muted);
 }
 
+/* Creation mode selector */
+.creation-mode-selector {
+  margin-bottom: var(--spacing-lg);
+}
+
+.mode-label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.mode-options {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.mode-option {
+  flex: 1;
+  padding: var(--spacing-md);
+  border: var(--border-width-md) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+}
+
+.mode-option:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+.mode-option.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
+}
+
+.mode-option i {
+  font-size: var(--font-size-lg);
+}
+
+/* Group selector */
+.group-selector {
+  margin-bottom: var(--spacing-lg);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.form-control {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width-md) solid var(--color-border-medium);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  transition: border-color var(--transition-fast);
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.form-control:disabled {
+  background: var(--color-bg-secondary);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-text {
+  display: block;
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
 @media (max-width: 768px) {
   .header-actions-group {
     flex-direction: column;
@@ -784,6 +1132,14 @@ onBeforeUnmount(() => {
 
   .capacity-check-inline {
     justify-content: center;
+  }
+
+  .mode-options {
+    flex-direction: column;
+  }
+
+  .mode-option {
+    width: 100%;
   }
 }
 </style>

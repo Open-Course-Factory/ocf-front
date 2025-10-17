@@ -32,8 +32,10 @@ import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import { useGroupMembers } from '../../composables/useGroupMembers'
 import { withAsync } from '../../utils/asyncWrapper'
 import { formatDate, formatDateTime } from '../../utils/formatters'
+import { userService, type User } from '../../services/domain/user'
 import type { ClassGroup } from '../../types'
 import BaseModal from '../Modals/BaseModal.vue'
+import EntityModal from '../Modals/EntityModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -100,6 +102,8 @@ const { t } = useTranslations({
       changeRole: 'Change Role',
       saveChanges: 'Save Changes',
       cancel: 'Cancel',
+      createTerminalsForAll: 'Create Terminals for All Members',
+      bulkCreateTerminals: 'Bulk Create Terminals',
 
       // Modals
       addMemberTitle: 'Add Member to {groupName}',
@@ -107,6 +111,11 @@ const { t } = useTranslations({
       selectRole: 'Select Role',
       deleteConfirmTitle: 'Delete Group?',
       deleteConfirmMessage: 'This action cannot be undone. All members will be removed and the group will be permanently deleted.',
+      bulkTerminalTitle: 'Create Terminals for All Members',
+      bulkTerminalMessage: 'This will create {count} terminal sessions (one for each member). Continue?',
+      instanceTypeLabel: 'Instance Type',
+      expirySecondsLabel: 'Expiry (seconds, optional)',
+      termsLabel: 'Terms of Service',
 
       // Messages
       memberAddedSuccess: 'Member added successfully',
@@ -114,6 +123,8 @@ const { t } = useTranslations({
       memberRoleUpdatedSuccess: 'Member role updated successfully',
       groupUpdatedSuccess: 'Group updated successfully',
       groupDeletedSuccess: 'Group deleted successfully',
+      bulkTerminalsCreatedSuccess: '{count} terminal sessions created successfully',
+      bulkTerminalsPartialSuccess: '{successCount} of {totalCount} terminals created ({failureCount} failed)',
 
       // Errors
       groupLoadError: 'Failed to load group details',
@@ -123,6 +134,7 @@ const { t } = useTranslations({
       memberRoleError: 'Failed to update member role',
       groupUpdateError: 'Failed to update group',
       groupDeleteError: 'Failed to delete group',
+      bulkTerminalsError: 'Failed to create terminals for members',
       cannotRemoveOwner: 'Cannot remove the group owner',
       cannotManageNotAdmin: 'You do not have permission to manage members',
       userAlreadyMember: 'User is already a member of this group',
@@ -191,6 +203,8 @@ const { t } = useTranslations({
       changeRole: 'Changer le rôle',
       saveChanges: 'Enregistrer',
       cancel: 'Annuler',
+      createTerminalsForAll: 'Créer des Terminaux pour Tous les Membres',
+      bulkCreateTerminals: 'Création en Masse de Terminaux',
 
       // Modals
       addMemberTitle: 'Ajouter un membre à {groupName}',
@@ -198,6 +212,11 @@ const { t } = useTranslations({
       selectRole: 'Sélectionner un rôle',
       deleteConfirmTitle: 'Supprimer le groupe ?',
       deleteConfirmMessage: 'Cette action ne peut pas être annulée. Tous les membres seront retirés et le groupe sera définitivement supprimé.',
+      bulkTerminalTitle: 'Créer des Terminaux pour Tous les Membres',
+      bulkTerminalMessage: 'Ceci créera {count} sessions terminales (une pour chaque membre). Continuer ?',
+      instanceTypeLabel: 'Type d\'Instance',
+      expirySecondsLabel: 'Expiration (secondes, optionnel)',
+      termsLabel: 'Conditions d\'Utilisation',
 
       // Messages
       memberAddedSuccess: 'Membre ajouté avec succès',
@@ -205,6 +224,8 @@ const { t } = useTranslations({
       memberRoleUpdatedSuccess: 'Rôle du membre mis à jour avec succès',
       groupUpdatedSuccess: 'Groupe mis à jour avec succès',
       groupDeletedSuccess: 'Groupe supprimé avec succès',
+      bulkTerminalsCreatedSuccess: '{count} sessions terminales créées avec succès',
+      bulkTerminalsPartialSuccess: '{successCount} sur {totalCount} terminaux créés ({failureCount} échoués)',
 
       // Errors
       groupLoadError: 'Échec du chargement des détails du groupe',
@@ -214,6 +235,7 @@ const { t } = useTranslations({
       memberRoleError: 'Échec de la mise à jour du rôle',
       groupUpdateError: 'Échec de la mise à jour du groupe',
       groupDeleteError: 'Échec de la suppression du groupe',
+      bulkTerminalsError: 'Échec de la création des terminaux pour les membres',
       cannotRemoveOwner: 'Impossible de retirer le propriétaire du groupe',
       cannotManageNotAdmin: 'Vous n\'avez pas la permission de gérer les membres',
       userAlreadyMember: 'L\'utilisateur est déjà membre de ce groupe',
@@ -235,6 +257,13 @@ const error = ref('')
 const activeTab = ref<'overview' | 'members' | 'settings'>('overview')
 const showAddMemberModal = ref(false)
 const showDeleteConfirm = ref(false)
+const showEditGroupModal = ref(false)
+
+// User search for Add Member modal
+const userSearchQuery = ref('')
+const userSearchResults = ref<User[]>([])
+const isSearchingUsers = ref(false)
+const showUserSearchDropdown = ref(false)
 
 // Group ID for composable
 const groupId = computed(() => route.params.id as string | null)
@@ -280,6 +309,11 @@ const memberCountPercentage = computed(() => {
   return Math.round((currentGroup.value.member_count / currentGroup.value.max_members) * 100)
 })
 
+const actualMemberPercentage = computed(() => {
+  if (!currentGroup.value) return 0
+  return Math.round((groupMembersComposable.members.value.length / currentGroup.value.max_members) * 100)
+})
+
 // Use Group Members composable
 const groupMembersComposable = useGroupMembers({
   groupId,
@@ -317,7 +351,60 @@ const handleAddMember = async () => {
       currentGroup.value.member_count++
     }
     showAddMemberModal.value = false
+    // Reset search
+    userSearchQuery.value = ''
+    userSearchResults.value = []
   }
+}
+
+async function onUserSearchInput() {
+  const query = userSearchQuery.value.trim()
+
+  if (query.length < 2) {
+    userSearchResults.value = []
+    return
+  }
+
+  isSearchingUsers.value = true
+
+  try {
+    userSearchResults.value = await userService.searchUsers(query)
+  } catch (err: any) {
+    console.error('Error searching users:', err)
+    userSearchResults.value = []
+  } finally {
+    isSearchingUsers.value = false
+  }
+}
+
+function selectUser(user: User) {
+  groupMembersComposable.newMemberData.value.user_id = user.id
+  userSearchQuery.value = `${user.name}${user.email ? ` (${user.email})` : ''}`
+  showUserSearchDropdown.value = false
+}
+
+function onUserSearchBlur() {
+  // Delay hiding dropdown to allow click events to fire
+  setTimeout(() => {
+    showUserSearchDropdown.value = false
+  }, 200)
+}
+
+const handleEditGroup = async (data: any) => {
+  return await withAsync(
+    { isLoading, error },
+    async () => {
+      if (!currentGroup.value) return
+
+      await groupStore.updateEntity('/class-groups', currentGroup.value.id, data)
+
+      // Reload group to reflect changes
+      await loadGroup()
+
+      showEditGroupModal.value = false
+    },
+    'groupDetail.groupUpdateError'
+  )
 }
 
 const handleDeleteGroup = async () => {
@@ -413,7 +500,7 @@ watch(() => route.params.id, async () => {
         <div class="status-item">
           <i class="fas fa-users"></i>
           <span>{{ t('groupDetail.memberCountLabel', {
-            current: currentGroup.member_count,
+            current: groupMembersComposable.members.value.length,
             max: currentGroup.max_members
           }) }}</span>
         </div>
@@ -421,12 +508,12 @@ watch(() => route.params.id, async () => {
           <div class="progress-bar">
             <div
               class="progress-fill"
-              :style="{ width: memberCountPercentage + '%' }"
-              :class="{ 'progress-warning': memberCountPercentage >= 80 }"
+              :style="{ width: actualMemberPercentage + '%' }"
+              :class="{ 'progress-warning': actualMemberPercentage >= 80 }"
             ></div>
           </div>
           <span class="capacity-text">
-            {{ t('groupDetail.memberCapacity', { percentage: memberCountPercentage }) }}
+            {{ t('groupDetail.memberCapacity', { percentage: actualMemberPercentage }) }}
           </span>
         </div>
         <div v-if="currentGroup.expires_at" class="status-item">
@@ -483,7 +570,7 @@ watch(() => route.params.id, async () => {
           </div>
           <div class="info-item">
             <label>{{ t('groupDetail.currentMembers') }}</label>
-            <p>{{ currentGroup.member_count }}</p>
+            <p>{{ groupMembersComposable.members.value.length }}</p>
           </div>
           <div class="info-item">
             <label>{{ t('groupDetail.createdAt') }}</label>
@@ -509,14 +596,25 @@ watch(() => route.params.id, async () => {
             :placeholder="t('groupDetail.searchMembers')"
             class="search-input"
           />
-          <button
-            v-if="groupMembersComposable.canManageMembers.value"
-            @click="showAddMemberModal = true"
-            class="btn btn-primary"
-          >
-            <i class="fas fa-plus"></i>
-            {{ t('groupDetail.addMember') }}
-          </button>
+          <div class="toolbar-actions">
+            <router-link
+              v-if="groupMembersComposable.canManageMembers.value && groupMembersComposable.members.value.length > 0"
+              :to="`/terminal-creation?mode=bulk&groupId=${currentGroup.id}`"
+              class="btn btn-secondary"
+              :title="t('groupDetail.createTerminalsForAll')"
+            >
+              <i class="fas fa-terminal"></i>
+              {{ t('groupDetail.bulkCreateTerminals') }}
+            </router-link>
+            <button
+              v-if="groupMembersComposable.canManageMembers.value"
+              @click="showAddMemberModal = true"
+              class="btn btn-primary"
+            >
+              <i class="fas fa-plus"></i>
+              {{ t('groupDetail.addMember') }}
+            </button>
+          </div>
         </div>
 
         <div v-if="groupMembersComposable.sortedMembers.value.length === 0" class="empty-state">
@@ -573,11 +671,41 @@ watch(() => route.params.id, async () => {
 
       <!-- Tab Content: Settings -->
       <div v-show="activeTab === 'settings'" class="tab-content settings-tab">
-        <div v-if="canEditGroup" class="settings-form">
-          <p class="info-message">
-            <i class="fas fa-info-circle"></i>
-            Settings editing will be implemented in Step 3 (GroupForm component)
-          </p>
+        <div v-if="canEditGroup" class="settings-content">
+          <div class="settings-header">
+            <h3>{{ t('groupDetail.tabSettings') }}</h3>
+            <button @click="showEditGroupModal = true" class="btn btn-primary">
+              <i class="fas fa-edit"></i>
+              {{ t('groupDetail.editGroup') }}
+            </button>
+          </div>
+
+          <div class="info-grid">
+            <div class="info-item">
+              <label>{{ t('groupDetail.displayName') }}</label>
+              <p>{{ currentGroup.display_name }}</p>
+            </div>
+            <div class="info-item">
+              <label>{{ t('groupDetail.description') }}</label>
+              <p>{{ currentGroup.description || t('groupDetail.noDescription') }}</p>
+            </div>
+            <div class="info-item">
+              <label>{{ t('groupDetail.maxMembers') }}</label>
+              <p>{{ currentGroup.max_members }}</p>
+            </div>
+            <div v-if="currentGroup.expires_at" class="info-item">
+              <label>{{ t('groupDetail.expiresAt') }}</label>
+              <p>{{ formatDate(currentGroup.expires_at) }}</p>
+            </div>
+            <div class="info-item">
+              <label>{{ t('groupDetail.statusActive') }}</label>
+              <p>
+                <span :class="['status-badge', `badge-${currentGroup.is_active ? 'success' : 'danger'}`]">
+                  {{ currentGroup.is_active ? t('groupDetail.statusActive') : t('groupDetail.statusInactive') }}
+                </span>
+              </p>
+            </div>
+          </div>
         </div>
         <div v-else class="permission-denied">
           <i class="fas fa-lock"></i>
@@ -596,18 +724,46 @@ watch(() => route.params.id, async () => {
       :confirm-text="t('groupDetail.addMember')"
       :cancel-text="t('groupDetail.cancel')"
       @confirm="handleAddMember"
-      @close="showAddMemberModal = false"
+      @close="showAddMemberModal = false; userSearchQuery = ''; userSearchResults = []"
     >
       <form @submit.prevent="handleAddMember">
         <div class="form-group">
           <label>{{ t('groupDetail.selectUser') }}</label>
-          <input
-            v-model="groupMembersComposable.newMemberData.value.user_id"
-            type="text"
-            placeholder="user@example.com"
-            class="form-control"
-            required
-          />
+          <div class="user-search-container">
+            <input
+              v-model="userSearchQuery"
+              type="text"
+              class="form-control"
+              placeholder="Search by name or email..."
+              @input="onUserSearchInput"
+              @focus="showUserSearchDropdown = true"
+              @blur="onUserSearchBlur"
+              required
+            />
+            <div v-if="showUserSearchDropdown && (userSearchResults.length > 0 || isSearchingUsers)" class="search-dropdown">
+              <div v-if="isSearchingUsers" class="search-loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                Searching...
+              </div>
+              <div v-else-if="userSearchResults.length === 0 && userSearchQuery.trim()" class="search-empty">
+                No user found
+              </div>
+              <div
+                v-for="user in userSearchResults"
+                :key="user.id"
+                class="search-result"
+                @click="selectUser(user)"
+              >
+                <div class="user-info">
+                  <div class="user-name">{{ user.name }}</div>
+                  <div class="user-email" v-if="user.email">{{ user.email }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <small class="form-text text-muted">
+            Search and select the user to add to this group
+          </small>
         </div>
         <div class="form-group">
           <label>{{ t('groupDetail.selectRole') }}</label>
@@ -636,6 +792,17 @@ watch(() => route.params.id, async () => {
     >
       <p>{{ t('groupDetail.deleteConfirmMessage') }}</p>
     </BaseModal>
+
+    <!-- Edit Group Modal -->
+    <EntityModal
+      :visible="showEditGroupModal"
+      :entity="currentGroup"
+      :entity-store="groupStore"
+      entity-name="class-groups"
+      @modify="handleEditGroup"
+      @close="showEditGroupModal = false"
+    />
+
   </div>
 </template>
 
@@ -842,6 +1009,11 @@ watch(() => route.params.id, async () => {
   margin-bottom: var(--spacing-lg);
 }
 
+.toolbar-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
 .search-input {
   flex: 1;
   padding: var(--spacing-sm) var(--spacing-md);
@@ -959,7 +1131,25 @@ watch(() => route.params.id, async () => {
 }
 
 /* Settings Tab */
-.settings-form,
+.settings-content {
+  padding: 0;
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.settings-header h3 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xl);
+}
+
 .permission-denied {
   padding: var(--spacing-lg);
   background-color: var(--color-bg-secondary);
@@ -1002,6 +1192,71 @@ watch(() => route.params.id, async () => {
   color: var(--color-text-primary);
 }
 
+.user-search-container {
+  position: relative;
+}
+
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-medium);
+  border-top: none;
+  border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: var(--shadow-md);
+}
+
+.search-loading,
+.search-empty {
+  padding: var(--spacing-md);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.search-result {
+  padding: var(--spacing-sm) var(--spacing-md);
+  cursor: pointer;
+  border-bottom: 1px solid var(--color-border-light);
+  transition: background-color var(--transition-fast);
+}
+
+.search-result:hover {
+  background-color: var(--color-bg-secondary);
+}
+
+.search-result:last-child {
+  border-bottom: none;
+}
+
+.search-result .user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.search-result .user-name {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.search-result .user-email {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.form-text {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--spacing-xs);
+}
+
 .alert {
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--border-radius-md);
@@ -1012,6 +1267,15 @@ watch(() => route.params.id, async () => {
   background-color: var(--color-danger-bg);
   color: var(--color-danger-text);
   border: 1px solid var(--color-danger-border);
+}
+
+.modal-info {
+  background-color: var(--color-info-bg);
+  color: var(--color-info-text);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-md);
+  border-left: 4px solid var(--color-info);
 }
 
 /* Responsive */

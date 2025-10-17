@@ -665,27 +665,10 @@ const inactiveSessionsCount = computed(() => {
 // Feature flag check for group filtering
 const canFilterByGroups = computed(() => isEnabled('class_groups'))
 
-// Filtered sessions based on selected group
-const filteredSessionsByGroup = computed(() => {
-  if (!canFilterByGroups.value || selectedGroupFilter.value === 'all') {
-    return allSessions.value
-  }
-
-  // Filter sessions that are shared with the selected group
-  return allSessions.value.filter(session => {
-    // Check if this session is shared with the selected group
-    // This requires the backend to include group share information in the terminal shares
-    // For now, we'll check if the session has a shares array with the group_id
-    if (session.shares) {
-      return session.shares.some((share: any) => share.shared_with_group_id === selectedGroupFilter.value)
-    }
-    return false
-  })
-})
-
 // Computed property to sort sessions with active ones at the top
+// Backend now handles group filtering via query parameter, so we work with allSessions directly
 const sortedSessions = computed(() => {
-  return [...filteredSessionsByGroup.value].sort((a, b) => {
+  return [...allSessions.value].sort((a, b) => {
     const aActive = !isTerminalInactive(a.status)
     const bActive = !isTerminalInactive(b.status)
 
@@ -702,6 +685,11 @@ const sortedSessions = computed(() => {
 
 // Watch for toggle changes to reload sessions
 watch(showHiddenTerminals, () => {
+  loadSessions()
+})
+
+// Watch for group filter changes to reload sessions (backend filtering)
+watch(selectedGroupFilter, () => {
   loadSessions()
 })
 
@@ -773,8 +761,19 @@ async function loadSessions() {
 
   try {
     console.log('Loading sessions...')
+    // Build query parameters
+    const params: any = {}
+
     // Include hidden terminals if toggle is on
-    const params = showHiddenTerminals.value ? { include_hidden: true } : {}
+    if (showHiddenTerminals.value) {
+      params.include_hidden = true
+    }
+
+    // Apply group filter if enabled and selected (backend filtering - NEW!)
+    if (canFilterByGroups.value && selectedGroupFilter.value !== 'all') {
+      params.group_id = selectedGroupFilter.value
+    }
+
     const response = await axios.get('/terminals/user-sessions', { params })
     sessions.value = response.data || []
     console.log('Sessions loaded:', sessions.value)
