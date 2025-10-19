@@ -119,6 +119,24 @@
             </div>
           </div>
 
+          <!-- Bulk Purchase Option -->
+          <div v-if="hasBulkPurchaseFeature(plan)" class="bulk-purchase-section">
+            <div class="bulk-header">
+              <i class="fas fa-layer-group"></i>
+              <span>Volume Pricing Available</span>
+            </div>
+            <p class="bulk-description">
+              Purchase multiple licenses and save with volume discounts. Perfect for classes and teams.
+            </p>
+            <button
+              class="btn-bulk-purchase"
+              @click="navigateToBulkPurchase(plan.id)"
+            >
+              <i class="fas fa-shopping-cart"></i>
+              View Bulk Pricing
+            </button>
+          </div>
+
           <!-- Description (if any) -->
           <div v-if="plan.description" class="plan-description-compact">
             {{ plan.description }}
@@ -264,6 +282,22 @@ async function checkCurrentSubscription() {
 
 function formatPrice(amount: number, currency: string = 'EUR') {
   return entityStore.formatPrice(amount, currency)
+}
+
+function hasBulkPurchaseFeature(plan: any): boolean {
+  // Simplified: any plan with tiered pricing supports bulk purchase
+  return plan.use_tiered_pricing === true
+}
+
+function navigateToBulkPurchase(planId?: string) {
+  if (planId) {
+    router.push({
+      name: 'BulkLicensePurchase',
+      query: { planId }
+    })
+  } else {
+    router.push({ name: 'BulkLicensePurchase' })
+  }
 }
 
 async function selectPlan(plan: any) {
@@ -654,6 +688,62 @@ async function selectPlan(plan: any) {
   border-top: 1px solid #f1f3f4;
   background: #fafbfc;
   margin-top: 10px;
+}
+
+/* Bulk Purchase Section */
+.bulk-purchase-section {
+  padding: 15px;
+  border-top: 1px solid var(--color-primary-light);
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, #e3f2fd 100%);
+  margin-top: 10px;
+}
+
+.bulk-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: 8px;
+}
+
+.bulk-header i {
+  font-size: 1rem;
+}
+
+.bulk-description {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+}
+
+.btn-bulk-purchase {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  justify-content: center;
+}
+
+.btn-bulk-purchase:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-bulk-purchase i {
+  font-size: 0.9rem;
 }
 
 /* Planned Features Section */

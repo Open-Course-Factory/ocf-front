@@ -65,6 +65,7 @@ import { useInvoicesStore } from '../../stores/invoices.ts';
 import { useSubscriptionsStore } from '../../stores/subscriptions.ts';
 import { useClassGroupsStore } from '../../stores/classGroups.ts';
 import { useGroupMembersStore } from '../../stores/groupMembers.ts';
+import { useSubscriptionBatchesStore } from '../../stores/subscriptionBatches.ts';
 import { useRoute } from 'vue-router';
 import { useHelpTranslations } from '../../composables/useHelpTranslations';
 import { useFeatureFlags } from '../../composables/useFeatureFlags';
@@ -88,6 +89,7 @@ useInvoicesStore();
 useSubscriptionsStore();
 useClassGroupsStore();
 useGroupMembersStore();
+useSubscriptionBatchesStore();
 
 // Load help translations
 const { loadHelpTranslations } = useHelpTranslations();
@@ -155,6 +157,8 @@ interface MenuCategory {
 const expandedCategories = ref<Record<string, boolean>>({
   courses: false,
   labs: false,
+  subscription: false,
+  help: false,
   admin: false
 });
 
@@ -251,6 +255,44 @@ const menuCategories = computed((): MenuCategory[] => [
     ]
   },
   {
+    key: 'subscription',
+    label: t('navigation.subscriptionManagement'),
+    icon: 'fas fa-credit-card',
+    allowedRoles: ['administrator', 'teacher', 'student'],
+    items: [
+      {
+        route: '/subscription-dashboard',
+        label: t('navigation.mySubscription'),
+        title: t('navigation.mySubscriptionTitle'),
+        icon: 'fas fa-tachometer-alt'
+      },
+      {
+        route: '/subscription-plans',
+        label: t('navigation.subscriptionPlans'),
+        title: t('navigation.subscriptionPlansTitle'),
+        icon: 'fas fa-tags'
+      },
+      {
+        route: '/bulk-license-purchase',
+        label: t('navigation.bulkPurchase'),
+        title: t('navigation.bulkPurchaseTitle'),
+        icon: 'fas fa-shopping-cart'
+      },
+      {
+        route: '/license-management',
+        label: t('navigation.licenseManagement'),
+        title: t('navigation.licenseManagementTitle'),
+        icon: 'fas fa-layer-group'
+      },
+      {
+        route: '/invoices',
+        label: t('navigation.invoices'),
+        title: t('navigation.invoicesTitle'),
+        icon: 'fas fa-file-invoice-dollar'
+      }
+    ]
+  },
+  {
     key: 'help',
     label: t('help.title'),
     icon: 'fas fa-question-circle',
@@ -302,6 +344,12 @@ const menuCategories = computed((): MenuCategory[] => [
         label: t('navigation.allInvoices'),
         title: t('navigation.viewAllSystemInvoices'),
         icon: 'fas fa-file-invoice-dollar'
+      },
+      {
+        route: '/admin/invoice-cleanup',
+        label: t('navigation.invoiceCleanup'),
+        title: t('navigation.invoiceCleanupTitle'),
+        icon: 'fas fa-broom'
       },
       {
         route: '/admin/terminal-metrics',

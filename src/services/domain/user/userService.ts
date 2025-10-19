@@ -4,12 +4,7 @@
  */
 
 import axios from 'axios'
-
-export interface User {
-  id: string
-  name: string
-  email?: string
-}
+import type { User } from '../../../types/entities'
 
 export const userService = {
   async getUserById(userId: string): Promise<User> {

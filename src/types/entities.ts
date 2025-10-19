@@ -24,17 +24,30 @@ export interface User extends BaseEntity {
 }
 
 /**
+ * Pricing Tier for volume-based pricing
+ */
+export interface PricingTier {
+  min_quantity: number
+  max_quantity: number // 0 = unlimited
+  unit_amount: number // Price per license in cents
+  description: string
+}
+
+/**
  * Subscription Plan entity
  */
 export interface SubscriptionPlan extends BaseEntity {
   name: string
   description?: string
   price: number
+  price_amount?: number // Price in cents (alternative naming)
   currency: string
   billing_interval: 'month' | 'year'
-  features?: Record<string, any>
+  features?: string[] | Record<string, any> // Can be array or object
   is_active?: boolean
   stripe_price_id?: string
+  use_tiered_pricing?: boolean
+  pricing_tiers?: PricingTier[]
 }
 
 /**
@@ -222,4 +235,72 @@ export interface TerminalShare extends BaseEntity {
   expires_at?: string
   is_active: boolean
   metadata?: Record<string, any>
+}
+
+/**
+ * Subscription Batch entity (bulk license purchase)
+ */
+export interface SubscriptionBatch extends BaseEntity {
+  purchaser_user_id: string
+  subscription_plan_id: string
+  subscription_plan?: SubscriptionPlan
+  group_id?: string
+  stripe_subscription_id: string
+  stripe_subscription_item_id?: string
+  total_quantity: number
+  assigned_quantity: number
+  available_quantity: number // Calculated: total - assigned
+  status: 'active' | 'cancelled' | 'expired' | 'past_due'
+  current_period_start?: string
+  current_period_end?: string
+  cancelled_at?: string
+}
+
+/**
+ * User Subscription entity (individual license in a batch)
+ */
+export interface UserSubscription extends BaseEntity {
+  user_id?: string
+  subscription_batch_id?: string
+  subscription_plan_id: string
+  subscription_plan?: SubscriptionPlan
+  status: 'unassigned' | 'active' | 'cancelled' | 'past_due'
+  current_period_start?: string
+  current_period_end?: string
+  cancelled_at?: string
+  stripe_subscription_id?: string
+}
+
+/**
+ * Tier Cost breakdown for pricing preview
+ */
+export interface TierCost {
+  range: string // "1-10", "11-25", "26+"
+  quantity: number
+  unit_price: number // In cents
+  subtotal: number // In cents
+}
+
+/**
+ * Pricing Breakdown response
+ */
+export interface PricingBreakdown {
+  plan_name: string
+  total_quantity: number
+  tier_breakdown: TierCost[]
+  total_monthly_cost: number // In cents
+  average_per_license: number // In currency (e.g., 9.33)
+  savings_vs_individual: number // In cents
+  currency: string
+}
+
+/**
+ * Bulk Purchase Input
+ */
+export interface BulkPurchaseInput {
+  subscription_plan_id: string
+  quantity: number
+  group_id?: string
+  payment_method_id?: string
+  coupon_code?: string
 }

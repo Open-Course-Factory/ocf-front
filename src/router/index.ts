@@ -212,6 +212,27 @@ const basicRoutes = [
       { path: 'payment-methods', name: 'PaymentMethods', component: () => import('../components/Pages/PaymentMethods.vue'), meta: { requiresAuth: true, isSettings: true } },
       { path: 'invoices', name: 'Invoices', component: () => import('../components/Pages/Invoices.vue'), meta: { requiresAuth: true } },
       { path: 'subscription-dashboard', name: 'SubscriptionDashboard', component: () => import('../components/Pages/SubscriptionDashboard.vue'), meta: { requiresAuth: true } },
+
+      // Bulk License Management Routes
+      {
+        path: 'bulk-license-purchase',
+        name: 'BulkLicensePurchase',
+        component: () => import('../components/Pages/BulkLicensePurchase.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'license-management',
+        name: 'LicenseManagement',
+        component: () => import('../components/Pages/LicenseManagementDashboard.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'license-management/:id',
+        name: 'BatchDetails',
+        component: () => import('../components/Pages/BatchDetails.vue'),
+        meta: { requiresAuth: true }
+      },
+
       // Route pour le checkout avec planId
       { 
         path: 'checkout/:planId', 
@@ -270,6 +291,12 @@ const basicRoutes = [
         path: 'admin/terminal-metrics',
         name: 'AdminTerminalMetrics',
         component: () => import('../components/Pages/Admin/TerminalMetrics.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'admin/invoice-cleanup',
+        name: 'AdminInvoiceCleanup',
+        component: () => import('../components/Pages/Admin/InvoiceCleanup.vue'),
         meta: { requiresAuth: true, requiresAdmin: true }
       },
 
