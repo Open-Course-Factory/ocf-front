@@ -129,11 +129,24 @@ export interface SshKey extends BaseEntity {
  * Course entity
  */
 export interface Course extends BaseEntity {
+  name: string
+  version: string
   title: string
+  subtitle?: string
+  header?: string
+  footer?: string
   description?: string
-  user_id: string
+  learning_objectives?: string
+  format?: string
+  author_email?: string
+  category?: string
+  logo?: string
+  prelude?: string
+  user_id?: string
+  owner_id?: string
   is_published?: boolean
   slug?: string
+  chapters?: Chapter[]
 }
 
 /**
@@ -144,6 +157,7 @@ export interface Chapter extends BaseEntity {
   title: string
   description?: string
   order?: number
+  sections?: Section[]
 }
 
 /**
@@ -154,6 +168,7 @@ export interface Section extends BaseEntity {
   title: string
   content?: string
   order?: number
+  pages?: Page[]
 }
 
 /**

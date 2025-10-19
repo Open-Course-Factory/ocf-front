@@ -157,7 +157,7 @@ const basicRoutes = [
       { path: 'class-groups', name: 'ClassGroups', component: ClassGroups, meta: { requiresAuth: true, requiresFeature: 'class_groups' } },
       { path: 'class-groups/:id', name: 'GroupDetail', component: GroupDetail, meta: { requiresAuth: true, requiresFeature: 'class_groups' } },
       { path: 'group-members', name: 'GroupMembers', component: GroupMembers, meta: { requiresAuth: true, requiresFeature: 'class_groups' } },
-      { path: 'course/:id', component: CourseDetails, meta: { requiresAuth: true } },
+      { path: 'course/:id', name: 'CourseDetails', component: CourseDetails, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
       {
         path: 'user',
         meta: { requiresAuth: true },

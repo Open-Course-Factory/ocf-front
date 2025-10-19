@@ -20,10 +20,13 @@
  */
 
 import { defineStore } from "pinia"
+import { ref } from "vue"
+import axios from "axios"
 import { useBaseStore } from "./baseStore"
 import { useChaptersStore } from "./chapters"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
+import type { Course } from '../types/entities'
 
 export const useCoursesStore = defineStore('courses', () => {
 
@@ -49,6 +52,17 @@ export const useCoursesStore = defineStore('courses', () => {
                 chapters: 'Chapters',
                 add: 'Add a course',
                 generate: 'Generate',
+                versionSelector: 'Version',
+                allVersions: 'All versions',
+                latestVersion: 'Latest',
+                selectVersion: 'Select a version',
+                deleteVersion: 'Delete this version',
+                confirmDeleteVersion: 'Are you sure you want to delete version {version}?',
+                versionDeleted: 'Version deleted successfully',
+                errorLoadingVersions: 'Error loading course versions',
+                errorLoadingVersion: 'Error loading course version',
+                errorDeletingVersion: 'Error deleting course version',
+                versionNotFound: 'Course version not found',
             }
         },
         fr: {
@@ -70,6 +84,17 @@ export const useCoursesStore = defineStore('courses', () => {
                 chapters: 'Chapitres',
                 add: 'Ajouter un cours',
                 generate: 'Générer',
+                versionSelector: 'Version',
+                allVersions: 'Toutes les versions',
+                latestVersion: 'Dernière',
+                selectVersion: 'Sélectionner une version',
+                deleteVersion: 'Supprimer cette version',
+                confirmDeleteVersion: 'Êtes-vous sûr de vouloir supprimer la version {version} ?',
+                versionDeleted: 'Version supprimée avec succès',
+                errorLoadingVersions: 'Erreur lors du chargement des versions du cours',
+                errorLoadingVersion: 'Erreur lors du chargement de la version du cours',
+                errorDeletingVersion: 'Erreur lors de la suppression de la version du cours',
+                versionNotFound: 'Version du cours introuvable',
             }
         }
     })
@@ -95,5 +120,129 @@ export const useCoursesStore = defineStore('courses', () => {
         ["chapters", useChaptersStore()],
     ])
 
-    return {...base, fieldList }
+    // Version management state
+    const courseVersions = ref<Course[]>([])
+    const isLoadingVersions = ref(false)
+    const versionError = ref('')
+
+    /**
+     * Fetch all versions of a course by name
+     * @param courseName - The name of the course
+     * @returns Array of course versions
+     */
+    const fetchCourseVersions = async (courseName: string): Promise<Course[]> => {
+        isLoadingVersions.value = true
+        versionError.value = ''
+
+        try {
+            const response = await axios.get('/courses/versions', {
+                params: { name: courseName }
+            })
+            courseVersions.value = response.data || []
+            return courseVersions.value
+        } catch (err: any) {
+            versionError.value = err.response?.data?.error ||
+                               err.response?.data?.message ||
+                               t('courses.errorLoadingVersions')
+            console.error('Error fetching course versions:', err)
+            return []
+        } finally {
+            isLoadingVersions.value = false
+        }
+    }
+
+    /**
+     * Fetch a specific version of a course
+     * @param courseName - The name of the course
+     * @param version - The version to fetch
+     * @returns The course version or null if not found
+     */
+    const fetchCourseByVersion = async (courseName: string, version: string): Promise<Course | null> => {
+        base.isLoading.value = true
+        base.error.value = ''
+
+        try {
+            const response = await axios.get('/courses/by-version', {
+                params: {
+                    name: courseName,
+                    version: version
+                }
+            })
+            return response.data
+        } catch (err: any) {
+            if (err.response?.status === 404) {
+                base.error.value = t('courses.versionNotFound')
+            } else {
+                base.error.value = err.response?.data?.error ||
+                                  err.response?.data?.message ||
+                                  t('courses.errorLoadingVersion')
+            }
+            console.error('Error fetching course by version:', err)
+            return null
+        } finally {
+            base.isLoading.value = false
+        }
+    }
+
+    /**
+     * Fetch a single course by ID
+     * @param courseId - The ID of the course
+     * @returns The course or null if not found
+     */
+    const fetchCourseById = async (courseId: string): Promise<Course | null> => {
+        base.isLoading.value = true
+        base.error.value = ''
+
+        try {
+            const response = await axios.get(`/courses/${courseId}`)
+            return response.data
+        } catch (err: any) {
+            if (err.response?.status === 404) {
+                base.error.value = t('courses.versionNotFound')
+            } else {
+                base.error.value = err.response?.data?.error ||
+                                  err.response?.data?.message ||
+                                  t('courses.errorLoadingVersion')
+            }
+            console.error('Error fetching course by ID:', err)
+            return null
+        } finally {
+            base.isLoading.value = false
+        }
+    }
+
+    /**
+     * Delete a specific course version
+     * @param courseId - The ID of the course version to delete
+     * @returns boolean indicating success
+     */
+    const deleteCourseVersion = async (courseId: string): Promise<boolean> => {
+        base.isLoading.value = true
+        base.error.value = ''
+
+        try {
+            await axios.delete(`/courses/${courseId}`)
+            return true
+        } catch (err: any) {
+            base.error.value = err.response?.data?.error ||
+                              err.response?.data?.message ||
+                              t('courses.errorDeletingVersion')
+            console.error('Error deleting course version:', err)
+            return false
+        } finally {
+            base.isLoading.value = false
+        }
+    }
+
+    return {
+        ...base,
+        fieldList,
+        courseVersions,
+        isLoadingVersions,
+        versionError,
+        fetchCourseVersions,
+        fetchCourseByVersion,
+        fetchCourseById,
+        deleteCourseVersion
+    }
 })

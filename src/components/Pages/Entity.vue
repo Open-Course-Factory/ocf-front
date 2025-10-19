@@ -102,7 +102,7 @@
             v-for="entity in displayedEntities"
             :key="entity.id"
             class="entity-item"
-            :class="{ 'entity-item-clickable': isGroupEntity }"
+            :class="{ 'entity-item-clickable': isClickableEntity }"
             @click="handleEntityClick(entity)"
           >
             <EntityCard :entity="entity" :entityStore="props.entityStore" />
@@ -391,10 +391,20 @@ const isGroupEntity = computed(() => {
   return props.entityName === 'class-groups';
 });
 
+const isCourseEntity = computed(() => {
+  return props.entityName === 'courses';
+});
+
+const isClickableEntity = computed(() => {
+  return isGroupEntity.value || isCourseEntity.value;
+});
+
 // Handle entity click for navigation
 function handleEntityClick(entity: any) {
   if (isGroupEntity.value && entity.id) {
     router.push({ name: 'GroupDetail', params: { id: entity.id } });
+  } else if (isCourseEntity.value && entity.id) {
+    router.push({ name: 'CourseDetails', params: { id: entity.id } });
   }
 }
 
