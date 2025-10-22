@@ -32,6 +32,7 @@ import Schedules from '../components/Pages/Schedules.vue';
 import CourseDetails from '../components/Pages/CourseDetails.vue';
 import ChapterDetails from '../components/Pages/ChapterDetails.vue';
 import SectionDetails from '../components/Pages/SectionDetails.vue';
+import CourseEditor from '../components/Pages/CourseEditor.vue';
 import LandingPage from '../components/Pages/LandingPage.vue';
 import User from '../components/Pages/User.vue';
 import Generations from '../components/Pages/Generations.vue';
@@ -146,6 +147,7 @@ const basicRoutes = [
     children: [
       //{ path: 'dashboard', name: 'Dashboard', component: Dashboard, meta: { requiresAuth: true } },
       { path: 'courses', name: 'Courses', component: Courses, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
+      { path: 'course-editor', name: 'CourseEditor', component: CourseEditor, meta: { requiresAuth: true, requiresFeature: 'course_conception', collapseNav: true } },
       { path: 'chapters', name: 'Chapters', component: Chapters, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
       { path: 'sections', name: 'Sections', component: Sections, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
       { path: 'pages', name: 'Pages', component: Pages, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },

@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import MainNavMenu from './Menus/MainNavMenu.vue'
 import SettingsNavMenu from './Menus/SettingsNavMenu.vue'
@@ -46,6 +46,13 @@ const { setTheme } = useTheme()
 
 // Check if we're in a settings route
 const isInSettings = computed(() => route.meta.isSettings === true)
+
+// Watch for route changes with collapseNav meta
+watch(() => route.meta.collapseNav, (shouldCollapse) => {
+  if (shouldCollapse === true) {
+    isMenuCollapsed.value = true
+  }
+}, { immediate: true })
 
 function toggleMenu() {
   isMenuCollapsed.value = !isMenuCollapsed.value;
@@ -76,9 +83,10 @@ onMounted(() => {
 })
 
 function handleResize() {
+  // Don't auto-expand menu on large screens if route has collapseNav meta
   if (window.innerWidth <= 768 && !isMenuCollapsed.value) {
     isMenuCollapsed.value = true;
-  } else if (window.innerWidth > 768 && isMenuCollapsed.value) {
+  } else if (window.innerWidth > 768 && isMenuCollapsed.value && !route.meta.collapseNav) {
     isMenuCollapsed.value = false;
   }
 }
