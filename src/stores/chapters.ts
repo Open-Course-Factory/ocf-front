@@ -20,11 +20,13 @@
  */
 
 import { defineStore } from "pinia"
+import axios from "axios"
 import { useBaseStore } from "./baseStore"
 import { useSectionsStore } from "./sections"
 import { useCoursesStore } from "./courses"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
+import type { Chapter } from '../types/entities'
 
 
 export const useChaptersStore = defineStore('chapters', () => {
@@ -43,6 +45,8 @@ export const useChaptersStore = defineStore('chapters', () => {
                 sections: 'Sections',
                 modify: 'Modify the chapter',
                 add: 'Add a chapter',
+                errorLoadingChapter: 'Error loading chapter',
+                chapterNotFound: 'Chapter not found',
             }
         },
         fr: {
@@ -57,6 +61,8 @@ export const useChaptersStore = defineStore('chapters', () => {
                 sections: 'Sections',
                 modify: 'Modifier le chapitre',
                 add: 'Ajouter un chapitre',
+                errorLoadingChapter: 'Erreur lors du chargement du chapitre',
+                chapterNotFound: 'Chapitre introuvable',
             }
         }
     })
@@ -68,7 +74,7 @@ export const useChaptersStore = defineStore('chapters', () => {
         field('introduction', t('chapters.introduction')).input().visible().editable(),
         field('footer', t('chapters.footer')).input().visible().editable(),
         field('number', t('chapters.number')).input().hidden().readonly(),
-        field('sections', t('chapters.sections')).type('advanced-textarea').visible().readonly(),
+        field('sections', t('chapters.sections')).type('subentity').visible().readonly(),
         field('created_at', t('created_at')).input().visible().readonly(),
         field('updated_at', t('updated_at')).input().visible().readonly(),
     ])
@@ -81,5 +87,54 @@ export const useChaptersStore = defineStore('chapters', () => {
         ["courseIDs", useCoursesStore()],
     ])
 
-    return {...base, fieldList}
+    // Configure include parameters for API calls
+    // Using dot notation for multi-level nesting
+    base.includeParams.children = ['sections.pages']
+    base.includeParams.parents = ['courses']
+
+    /**
+     * Fetch a single chapter by ID with nested sections and parent course
+     * @param chapterId - The ID of the chapter
+     * @returns The chapter or null if not found
+     */
+    const fetchChapterById = async (chapterId: string): Promise<Chapter | null> => {
+        base.isLoading.value = true
+        base.error.value = ''
+
+        try {
+            // Build include parameter from store configuration
+            const includeList = [...base.includeParams.children, ...base.includeParams.parents]
+            const includeParam = includeList.length > 0 ? `?include=${includeList.join(',')}` : ''
+
+            // Try with include parameter first
+            let response;
+            try {
+                response = await axios.get(`/chapters/${chapterId}${includeParam}`)
+            } catch (includeError: any) {
+                // If 404 with include param, try without it (backend might not support it on detail endpoint)
+                if (includeError.response?.status === 404 && includeParam) {
+                    console.warn('Backend does not support include parameter on detail endpoint, fetching without it')
+                    response = await axios.get(`/chapters/${chapterId}`)
+                } else {
+                    throw includeError
+                }
+            }
+
+            return response.data
+        } catch (err: any) {
+            if (err.response?.status === 404) {
+                base.error.value = t('chapters.chapterNotFound')
+            } else {
+                base.error.value = err.response?.data?.error ||
+                                  err.response?.data?.message ||
+                                  t('chapters.errorLoadingChapter')
+            }
+            console.error('Error fetching chapter by ID:', err)
+            return null
+        } finally {
+            base.isLoading.value = false
+        }
+    }
+
+    return {...base, fieldList, fetchChapterById}
 })

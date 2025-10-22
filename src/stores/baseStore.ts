@@ -15,6 +15,13 @@ export const useBaseStore = () => {
                 inactive: 'Inactive',
                 expired: 'Expired',
                 full: 'Full',
+                noItems: 'No items',
+                notLoaded: 'Not loaded',
+                loadItems: 'Load items',
+                loading: 'Loading...',
+                course: 'Course',
+                chapter: 'Chapter',
+                section: 'Section',
             },
             pagination: {
                 showing: 'Showing',
@@ -43,6 +50,13 @@ export const useBaseStore = () => {
                 inactive: 'Inactif',
                 expired: 'Expiré',
                 full: 'Complet',
+                noItems: 'Aucun élément',
+                notLoaded: 'Non chargé',
+                loadItems: 'Charger les éléments',
+                loading: 'Chargement...',
+                course: 'Cours',
+                chapter: 'Chapitre',
+                section: 'Section',
             },
             pagination: {
                 showing: 'Affichage',
@@ -110,6 +124,12 @@ export const useBaseStore = () => {
 
     const subEntitiesStores = new Map<string, any>([])
     const parentEntitiesStores = new Map<string, any>([])
+
+    // Configuration for API include parameters (reactive)
+    const includeParams = reactive({
+        children: [] as string[], // Child entities to include (e.g., ['chapters', 'sections'])
+        parents: [] as string[],  // Parent entities to include (e.g., ['courses', 'chapters'])
+    })
 
     // Système de hooks pour les actions spécifiques aux entités
     const hooks = {
@@ -259,6 +279,12 @@ export const useBaseStore = () => {
                 params.append('cursor', cursor || '') // ✅ Always include cursor param, even if empty
                 params.append('limit', limit.toString())
 
+                // Add include parameter for nested data from store configuration
+                const includeList = [...includeParams.children, ...includeParams.parents]
+                if (includeList.length > 0) {
+                    params.append('include', includeList.join(','))
+                }
+
                 // Add filter parameters
                 Object.entries(filters).forEach(([key, value]) => {
                     if (value && value !== '') {
@@ -266,8 +292,10 @@ export const useBaseStore = () => {
                     }
                 })
 
+                const fullUrl = `${endpoint}?${params}`
+                console.log(`[BaseStore LIST] Loading: ${fullUrl}`)
                 logDemoAction(`Loading real data with cursor from ${endpoint}`)
-                response = await axios.get(`${endpoint}?${params}`)
+                response = await axios.get(fullUrl)
             }
 
             const result = response.data?.data || response.data || []
@@ -428,6 +456,7 @@ export const useBaseStore = () => {
 
         // Configuration options
         preventLastObjectDeletion,
+        includeParams,
 
         // Hook methods
         setAfterCreateHook,

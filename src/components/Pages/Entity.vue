@@ -102,13 +102,21 @@
             v-for="entity in displayedEntities"
             :key="entity.id"
             class="entity-item"
-            :class="{ 'entity-item-clickable': isClickableEntity }"
-            @click="handleEntityClick(entity)"
           >
             <EntityCard :entity="entity" :entityStore="props.entityStore" />
-            <div class="actions" @click.stop>
+            <div class="actions">
               <!-- Slot pour les actions spécifiques -->
               <slot name="actions" :entity="entity"></slot>
+              <!-- View Details button for clickable entities -->
+              <button
+                v-if="isClickableEntity"
+                class="btn btn-info"
+                @click="handleEntityClick(entity)"
+              >
+                <i class="fas fa-eye"></i>
+                <br>
+                {{ t('viewDetails') }}
+              </button>
               <button
                 class="btn btn-primary"
                 v-if="isEditable(props.entityStore)"
@@ -395,8 +403,16 @@ const isCourseEntity = computed(() => {
   return props.entityName === 'courses';
 });
 
+const isChapterEntity = computed(() => {
+  return props.entityName === 'chapters';
+});
+
+const isSectionEntity = computed(() => {
+  return props.entityName === 'sections';
+});
+
 const isClickableEntity = computed(() => {
-  return isGroupEntity.value || isCourseEntity.value;
+  return isGroupEntity.value || isCourseEntity.value || isChapterEntity.value || isSectionEntity.value;
 });
 
 // Handle entity click for navigation
@@ -405,6 +421,10 @@ function handleEntityClick(entity: any) {
     router.push({ name: 'GroupDetail', params: { id: entity.id } });
   } else if (isCourseEntity.value && entity.id) {
     router.push({ name: 'CourseDetails', params: { id: entity.id } });
+  } else if (isChapterEntity.value && entity.id) {
+    router.push({ name: 'ChapterDetails', params: { id: entity.id } });
+  } else if (isSectionEntity.value && entity.id) {
+    router.push({ name: 'SectionDetails', params: { id: entity.id } });
   }
 }
 
@@ -774,6 +794,17 @@ async function getEntitiesWithCursor(entityName: string, store: any, cursor: str
       cursorParams.append('cursor', cursor || ''); // ✅ Always include cursor param, even if empty
       cursorParams.append('limit', size.toString());
 
+      // Add include parameter from store configuration (generic approach)
+      if (props.entityStore.includeParams) {
+        const includeList = [
+          ...props.entityStore.includeParams.children,
+          ...props.entityStore.includeParams.parents
+        ];
+        if (includeList.length > 0) {
+          cursorParams.append('include', includeList.join(','));
+        }
+      }
+
       // Add filter parameters
       Object.entries(filters).forEach(([key, value]) => {
         if (value && value !== '') {
@@ -1064,7 +1095,8 @@ ul {
 .entity-item {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: stretch;
+  gap: var(--spacing-md);
   margin-bottom: var(--spacing-md);
   padding: var(--spacing-md);
   border: var(--border-width-thin) solid var(--color-border-medium);
@@ -1077,6 +1109,11 @@ ul {
   transform: scale(1.02);
 }
 
+.entity-item :deep(.entity-card) {
+  flex: 1;
+  min-width: 0;
+}
+
 .entity-item-clickable {
   cursor: pointer;
 }
@@ -1087,11 +1124,19 @@ ul {
   box-shadow: var(--shadow-md);
 }
 
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+  width: 140px;
+  align-self: center;
+}
+
 .actions :deep(button) {
-  margin-left: var(--spacing-md);
-  margin-bottom: 2px;
-  width: -moz-available;          /* WebKit-based browsers will ignore this. */
-  width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+  margin-left: 0;
+  margin-bottom: 0;
+  width: 100%;
 }
 
 .actions .btn i {

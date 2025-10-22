@@ -120,6 +120,11 @@ export const useCoursesStore = defineStore('courses', () => {
         ["chapters", useChaptersStore()],
     ])
 
+    // Configure include parameters for API calls
+    // Using dot notation for multi-level nesting: chapters.sections.pages
+    base.includeParams.children = ['chapters.sections.pages']
+    base.includeParams.parents = [] // Courses have no parent entities
+
     // Version management state
     const courseVersions = ref<Course[]>([])
     const isLoadingVersions = ref(false)
@@ -185,7 +190,7 @@ export const useCoursesStore = defineStore('courses', () => {
     }
 
     /**
-     * Fetch a single course by ID
+     * Fetch a single course by ID with nested chapters
      * @param courseId - The ID of the course
      * @returns The course or null if not found
      */
@@ -194,7 +199,32 @@ export const useCoursesStore = defineStore('courses', () => {
         base.error.value = ''
 
         try {
-            const response = await axios.get(`/courses/${courseId}`)
+            // Build include parameter from store configuration
+            const includeList = [...base.includeParams.children, ...base.includeParams.parents]
+            const includeParam = includeList.length > 0 ? `?include=${includeList.join(',')}` : ''
+
+            console.log(`[CourseStore] Fetching course with include parameter: /courses/${courseId}${includeParam}`)
+
+            // Try with include parameter first
+            let response;
+            try {
+                response = await axios.get(`/courses/${courseId}${includeParam}`)
+            } catch (includeError: any) {
+                // Only retry without include if we get a 404 AND the entity actually exists
+                // This handles backends that don't support include on detail endpoints
+                if (includeError.response?.status === 404 && includeParam) {
+                    console.warn(`Retrying /courses/${courseId} without include parameter`)
+                    try {
+                        response = await axios.get(`/courses/${courseId}`)
+                    } catch (retryError: any) {
+                        // If still 404, the entity really doesn't exist
+                        throw retryError
+                    }
+                } else {
+                    throw includeError
+                }
+            }
+
             return response.data
         } catch (err: any) {
             if (err.response?.status === 404) {

@@ -85,5 +85,9 @@ export const usePagesStore = defineStore('pages', () => {
         ["sectionId", useSectionsStore()],
     ])
 
+    // Configure include parameters for API calls
+    base.includeParams.children = [] // Pages have no child entities
+    base.includeParams.parents = ['sections']
+
     return {...base, fieldList}
 })

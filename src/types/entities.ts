@@ -154,6 +154,7 @@ export interface Course extends BaseEntity {
  */
 export interface Chapter extends BaseEntity {
   course_id: string
+  course?: Course  // Optional: full course object if loaded
   title: string
   description?: string
   order?: number
@@ -165,6 +166,7 @@ export interface Chapter extends BaseEntity {
  */
 export interface Section extends BaseEntity {
   chapter_id: string
+  chapter?: Chapter  // Optional: full chapter object if loaded
   title: string
   content?: string
   order?: number
@@ -176,6 +178,7 @@ export interface Section extends BaseEntity {
  */
 export interface Page extends BaseEntity {
   section_id: string
+  section?: Section  // Optional: full section object if loaded
   title: string
   content?: string
   order?: number

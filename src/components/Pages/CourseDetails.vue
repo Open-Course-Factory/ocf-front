@@ -27,7 +27,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useCoursesStore } from '../../stores/courses'
 import { useTranslations } from '../../composables/useTranslations'
 import VersionSelector from '../Course/VersionSelector.vue'
-import type { Course, Chapter, Section } from '../../types/entities'
+import HierarchicalContent from '../Course/HierarchicalContent.vue'
+import EntityModal from '../Modals/EntityModal.vue'
+import type { Course } from '../../types/entities'
 
 const route = useRoute()
 const router = useRouter()
@@ -46,7 +48,9 @@ const { t } = useTranslations({
             learningObjectives: 'Learning objectives',
             chapters: 'Chapters',
             noSectionsInChapter: 'No sections in this chapter',
-            noPagesInSection: 'No pages in this section'
+            noPagesInSection: 'No pages in this section',
+            edit: 'Edit',
+            updateSuccess: 'Course updated successfully'
         }
     },
     fr: {
@@ -61,7 +65,9 @@ const { t } = useTranslations({
             learningObjectives: 'Objectifs pédagogiques',
             chapters: 'Chapitres',
             noSectionsInChapter: 'Aucune section dans ce chapitre',
-            noPagesInSection: 'Aucune page dans cette section'
+            noPagesInSection: 'Aucune page dans cette section',
+            edit: 'Modifier',
+            updateSuccess: 'Cours mis à jour avec succès'
         }
     }
 })
@@ -69,97 +75,47 @@ const { t } = useTranslations({
 const currentCourse = ref<Course | null>(null)
 const selectedVersion = ref<string>('')
 const isLoadingCourse = ref(false)
+const showEditModal = ref(false)
 
-// Expand/collapse state for chapters and sections
-const expandedChapters = ref<Set<string>>(new Set())
-const expandedSections = ref<Set<string>>(new Set())
+// Open edit modal
+function openEditModal() {
+    showEditModal.value = true
+}
 
-// Get course from store by ID (for backward compatibility)
-const courseFromStore = computed(() => {
-    return courseStore.entities.find(c => c.id === route.params.id)
-})
+// Handle course update
+async function updateCourse(updatedCourse: Course) {
+    if (!currentCourse.value?.id) return
 
-// Sorted chapters by order
-const sortedChapters = computed(() => {
-    if (!currentCourse.value?.chapters) return []
-    return [...currentCourse.value.chapters].sort((a, b) => {
-        const orderA = a.order ?? 0
-        const orderB = b.order ?? 0
-        return orderA - orderB
-    })
-})
+    const success = await courseStore.update(currentCourse.value.id, updatedCourse)
 
-// Helper functions for expand/collapse
-function toggleChapter(chapterId: string) {
-    if (expandedChapters.value.has(chapterId)) {
-        expandedChapters.value.delete(chapterId)
-    } else {
-        expandedChapters.value.add(chapterId)
+    if (success) {
+        // Refresh the course data
+        const courseData = await courseStore.fetchCourseById(currentCourse.value.id)
+        if (courseData) {
+            currentCourse.value = courseData
+        }
+        showEditModal.value = false
     }
-}
-
-function toggleSection(sectionId: string) {
-    if (expandedSections.value.has(sectionId)) {
-        expandedSections.value.delete(sectionId)
-    } else {
-        expandedSections.value.add(sectionId)
-    }
-}
-
-function isChapterExpanded(chapterId: string): boolean {
-    return expandedChapters.value.has(chapterId)
-}
-
-function isSectionExpanded(sectionId: string): boolean {
-    return expandedSections.value.has(sectionId)
-}
-
-function getSortedSections(chapter: Chapter) {
-    if (!chapter.sections) return []
-    return [...chapter.sections].sort((a, b) => {
-        const orderA = a.order ?? 0
-        const orderB = b.order ?? 0
-        return orderA - orderB
-    })
-}
-
-function getSortedPages(section: Section) {
-    if (!section.pages) return []
-    return [...section.pages].sort((a, b) => {
-        const orderA = a.order ?? 0
-        const orderB = b.order ?? 0
-        return orderA - orderB
-    })
 }
 
 onMounted(async () => {
-    // Try to get course from store first
-    if (courseFromStore.value) {
-        currentCourse.value = courseFromStore.value
-        selectedVersion.value = courseFromStore.value.version
+    // Always fetch full course data from backend to ensure we have chapters/sections/pages
+    // The store's entity list doesn't include nested data, only basic course info
+    isLoadingCourse.value = true
+    const courseId = route.params.id as string
+    const courseData = await courseStore.fetchCourseById(courseId)
+
+    if (courseData) {
+        currentCourse.value = courseData
+        selectedVersion.value = courseData.version
 
         // Load all versions for this course
-        if (courseFromStore.value.name) {
-            await courseStore.fetchCourseVersions(courseFromStore.value.name)
+        if (courseData.name) {
+            await courseStore.fetchCourseVersions(courseData.name)
         }
-    } else {
-        // If not in store, fetch by ID from backend
-        isLoadingCourse.value = true
-        const courseId = route.params.id as string
-        const courseData = await courseStore.fetchCourseById(courseId)
-
-        if (courseData) {
-            currentCourse.value = courseData
-            selectedVersion.value = courseData.version
-
-            // Load all versions for this course
-            if (courseData.name) {
-                await courseStore.fetchCourseVersions(courseData.name)
-            }
-        }
-
-        isLoadingCourse.value = false
     }
+
+    isLoadingCourse.value = false
 })
 
 async function handleVersionChange(version: string) {
@@ -220,8 +176,16 @@ const canDeleteCourse = computed(() => {
                     <p class="course-author">{{ t('courseDetails.author') }}: {{ currentCourse.author_email }}</p>
                 </div>
 
+                <div class="header-actions">
+                    <button class="btn btn-primary" @click="openEditModal">
+                        <i class="fas fa-edit"></i>
+                        {{ t('courseDetails.edit') }}
+                    </button>
+                </div>
+            </div>
+
+            <div class="version-section" v-if="courseStore.courseVersions.length > 0">
                 <VersionSelector
-                    v-if="courseStore.courseVersions.length > 0"
                     :versions="courseStore.courseVersions"
                     :selected-version="selectedVersion"
                     :is-loading="courseStore.isLoadingVersions || isLoadingCourse"
@@ -255,72 +219,11 @@ const canDeleteCourse = computed(() => {
 
                 <div v-if="currentCourse.chapters && currentCourse.chapters.length > 0" class="info-section">
                     <h3>{{ t('courseDetails.chapters') }}</h3>
-                    <div class="course-structure">
-                        <div
-                            v-for="chapter in sortedChapters"
-                            :key="chapter.id"
-                            class="chapter-block"
-                        >
-                            <div
-                                class="chapter-header"
-                                @click="toggleChapter(chapter.id)"
-                            >
-                                <i
-                                    class="fas"
-                                    :class="isChapterExpanded(chapter.id) ? 'fa-chevron-down' : 'fa-chevron-right'"
-                                ></i>
-                                <h4>{{ chapter.title }}</h4>
-                            </div>
-
-                            <div v-if="isChapterExpanded(chapter.id)" class="chapter-content">
-                                <p v-if="chapter.description" class="chapter-description">
-                                    {{ chapter.description }}
-                                </p>
-
-                                <div
-                                    v-for="section in getSortedSections(chapter)"
-                                    :key="section.id"
-                                    class="section-block"
-                                >
-                                    <div
-                                        class="section-header"
-                                        @click="toggleSection(section.id)"
-                                    >
-                                        <i
-                                            class="fas"
-                                            :class="isSectionExpanded(section.id) ? 'fa-chevron-down' : 'fa-chevron-right'"
-                                        ></i>
-                                        <h5>{{ section.title }}</h5>
-                                    </div>
-
-                                    <div v-if="isSectionExpanded(section.id)" class="section-content">
-                                        <p v-if="section.content" class="section-description">
-                                            {{ section.content }}
-                                        </p>
-
-                                        <div
-                                            v-for="page in getSortedPages(section)"
-                                            :key="page.id"
-                                            class="page-block"
-                                        >
-                                            <h6 class="page-title">{{ page.title }}</h6>
-                                            <div v-if="page.content" class="page-content">
-                                                {{ page.content }}
-                                            </div>
-                                        </div>
-
-                                        <div v-if="!section.pages || section.pages.length === 0" class="empty-state">
-                                            {{ t('courseDetails.noPagesInSection') }}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div v-if="!chapter.sections || chapter.sections.length === 0" class="empty-state">
-                                    {{ t('courseDetails.noSectionsInChapter') }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <HierarchicalContent
+                        :chapters="currentCourse.chapters"
+                        :no-sections-message="t('courseDetails.noSectionsInChapter')"
+                        :no-pages-message="t('courseDetails.noPagesInSection')"
+                    />
                 </div>
             </div>
         </div>
@@ -331,6 +234,16 @@ const canDeleteCourse = computed(() => {
         <div v-else class="not-found">
             <p>{{ t('courseDetails.courseNotFound') }}</p>
         </div>
+
+        <EntityModal
+            :visible="showEditModal"
+            :entity="currentCourse"
+            :entity-store="courseStore"
+            entity-name="courses"
+            :fieldList="courseStore.fieldList"
+            @modify="updateCourse"
+            @close="showEditModal = false"
+        />
     </div>
 </template>
 
@@ -350,9 +263,13 @@ const canDeleteCourse = computed(() => {
     align-items: flex-start;
     justify-content: space-between;
     gap: var(--spacing-lg);
-    margin-bottom: var(--spacing-xl);
+    margin-bottom: var(--spacing-lg);
     padding-bottom: var(--spacing-lg);
     border-bottom: var(--border-width-thin) solid var(--color-border-light);
+}
+
+.version-section {
+    margin-bottom: var(--spacing-lg);
 }
 
 .header-main {
@@ -390,13 +307,6 @@ const canDeleteCourse = computed(() => {
     line-height: 1.6;
 }
 
-.chapters-list {
-    margin: 0;
-    padding-left: var(--spacing-lg);
-    color: var(--color-text-secondary);
-    line-height: 1.8;
-}
-
 .loading-state,
 .not-found {
     display: flex;
@@ -414,145 +324,6 @@ const canDeleteCourse = computed(() => {
     color: var(--color-primary);
 }
 
-.not-found p {
-    font-size: var(--font-size-lg);
-}
-
-/* Course structure hierarchy */
-.course-structure {
-    margin-top: var(--spacing-md);
-}
-
-.chapter-block {
-    margin-bottom: var(--spacing-lg);
-    border: var(--border-width-thin) solid var(--color-border-light);
-    border-radius: var(--border-radius-md);
-    overflow: hidden;
-}
-
-.chapter-header {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-md);
-    background: var(--color-background-secondary);
-    cursor: pointer;
-    transition: background 0.2s ease;
-}
-
-.chapter-header:hover {
-    background: var(--color-background-tertiary);
-}
-
-.chapter-header i {
-    color: var(--color-primary);
-    font-size: var(--font-size-sm);
-    min-width: 16px;
-}
-
-.chapter-header h4 {
-    margin: 0;
-    color: var(--color-text-primary);
-    font-size: var(--font-size-lg);
-    font-weight: 600;
-}
-
-.chapter-content {
-    padding: var(--spacing-md);
-    background: var(--color-background);
-}
-
-.chapter-description {
-    margin: 0 0 var(--spacing-md) 0;
-    padding: var(--spacing-sm) var(--spacing-md);
-    background: var(--color-background-secondary);
-    border-left: 3px solid var(--color-primary);
-    border-radius: var(--border-radius-sm);
-    color: var(--color-text-secondary);
-    font-style: italic;
-}
-
-.section-block {
-    margin-bottom: var(--spacing-md);
-    margin-left: var(--spacing-lg);
-    border-left: 2px solid var(--color-border-light);
-    padding-left: var(--spacing-md);
-}
-
-.section-header {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-sm) var(--spacing-md);
-    background: var(--color-background-secondary);
-    border-radius: var(--border-radius-sm);
-    cursor: pointer;
-    transition: background 0.2s ease;
-}
-
-.section-header:hover {
-    background: var(--color-background-tertiary);
-}
-
-.section-header i {
-    color: var(--color-primary);
-    font-size: var(--font-size-xs);
-    min-width: 12px;
-}
-
-.section-header h5 {
-    margin: 0;
-    color: var(--color-text-primary);
-    font-size: var(--font-size-base);
-    font-weight: 600;
-}
-
-.section-content {
-    margin-top: var(--spacing-sm);
-}
-
-.section-description {
-    margin: 0 0 var(--spacing-sm) 0;
-    padding: var(--spacing-sm);
-    color: var(--color-text-secondary);
-}
-
-.page-block {
-    margin-bottom: var(--spacing-md);
-    margin-left: var(--spacing-lg);
-    padding: var(--spacing-md);
-    background: var(--color-background);
-    border: var(--border-width-thin) solid var(--color-border-light);
-    border-radius: var(--border-radius-sm);
-}
-
-.page-title {
-    margin: 0 0 var(--spacing-sm) 0;
-    color: var(--color-text-primary);
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-}
-
-.page-content {
-    margin: 0;
-    padding: var(--spacing-sm);
-    background: var(--color-background-secondary);
-    border-radius: var(--border-radius-sm);
-    color: var(--color-text-secondary);
-    line-height: 1.6;
-    white-space: pre-wrap;
-    font-family: var(--font-family-mono, monospace);
-    font-size: var(--font-size-sm);
-}
-
-.empty-state {
-    padding: var(--spacing-md);
-    text-align: center;
-    color: var(--color-text-muted);
-    font-style: italic;
-    font-size: var(--font-size-sm);
-}
-
 @media (max-width: 768px) {
     .wrapper {
         padding: var(--spacing-md);
@@ -565,23 +336,6 @@ const canDeleteCourse = computed(() => {
 
     .header-main h2 {
         font-size: var(--font-size-xl);
-    }
-
-    .section-block,
-    .page-block {
-        margin-left: var(--spacing-sm);
-    }
-
-    .chapter-header h4 {
-        font-size: var(--font-size-base);
-    }
-
-    .section-header h5 {
-        font-size: var(--font-size-sm);
-    }
-
-    .page-content {
-        font-size: var(--font-size-xs);
     }
 }
 </style>
