@@ -190,7 +190,17 @@ const hasCurrentSubscription = ref(false)
 // Computed
 const filteredPlans = computed(() => {
   // Show all plans to everyone, but mark inactive ones as "Coming Soon"
-  return entityStore.entities
+  const plans = [...entityStore.entities]
+
+  // Sort to put current plan first
+  return plans.sort((a, b) => {
+    const aIsCurrent = isCurrentPlan(a)
+    const bIsCurrent = isCurrentPlan(b)
+
+    if (aIsCurrent && !bIsCurrent) return -1
+    if (!aIsCurrent && bIsCurrent) return 1
+    return 0 // Keep original order for non-current plans
+  })
 })
 
 const currentPlanId = computed(() => {
@@ -273,6 +283,7 @@ async function loadPlans() {
 async function checkCurrentSubscription() {
   try {
     await subscriptionsStore.getCurrentSubscription()
+    await subscriptionsStore.getAllSubscriptions() // Load all subscriptions for stacking logic
     hasCurrentSubscription.value = subscriptionsStore.hasActiveSubscription()
   } catch (error) {
     // No current subscription is fine
@@ -309,6 +320,54 @@ async function selectPlan(plan: any) {
     if (hasCurrentSubscription.value) {
       const currentPlan = filteredPlans.value.find((p: any) => isCurrentPlan(p))
       const isCurrentlyOnFreePlan = currentPlan?.price_amount === 0
+      const currentSubscription = subscriptionsStore.currentSubscription
+
+      // Check if current subscription is assigned (gift)
+      const isAssignedSubscription = currentSubscription?.subscription_type === 'assigned' ||
+                                      currentSubscription?.subscription_batch_id
+
+      // Check if user has ever purchased a personal subscription
+      const allSubs = subscriptionsStore.allSubscriptions || []
+      const hasPersonalSubscription = allSubs.some(sub => sub.subscription_type === 'personal')
+
+      // RULE: Cannot downgrade from assigned subscription
+      // EXCEPTION: Can always access free trial if never purchased anything personal
+      if (isAssignedSubscription) {
+        const currentPriority = currentSubscription?.subscription_plan?.priority ?? 0
+        const targetPriority = plan.priority ?? 0
+
+        // Check if it's a downgrade (lower priority)
+        const isDowngrade = targetPriority < currentPriority
+
+        // Exception: Allow free trial if user never purchased anything personal
+        const isFreeTrial = plan.price_amount === 0
+        const canActivateFreeTrial = isFreeTrial && !hasPersonalSubscription
+
+        if (isDowngrade && !canActivateFreeTrial) {
+          showError(
+            t('subscriptionPlans.cannotDowngradeFromAssigned'),
+            'Cannot Downgrade'
+          )
+          isSubscribing.value = false
+          return
+        }
+
+        // If user wants to upgrade from assigned subscription with a personal one
+        if (!isDowngrade) {
+          const message = t('subscriptionPlans.upgradeFromAssignedConfirm')
+            .replace('{newPlan}', plan.name)
+
+          const confirmed = await showConfirm(
+            message,
+            'Start Personal Subscription'
+          )
+
+          if (!confirmed) {
+            isSubscribing.value = false
+            return
+          }
+        }
+      }
 
       // Special case: downgrade to free plan requires cancellation first
       if (plan.price_amount === 0) {
@@ -450,22 +509,22 @@ async function selectPlan(plan: any) {
 .subscription-plans-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: var(--spacing-lg);
 }
 
 .page-header {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: var(--spacing-2xl);
 }
 
 .page-header h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 15px;
-  margin: 0 0 15px 0;
+  gap: var(--spacing-md);
+  margin: 0 0 var(--spacing-md) 0;
   color: var(--color-text-primary);
-  font-size: 2.5rem;
+  font-size: var(--font-size-4xl);
 }
 
 .page-description {
@@ -478,78 +537,78 @@ async function selectPlan(plan: any) {
 .error-container,
 .no-plans-container {
   text-align: center;
-  padding: 60px 20px;
+  padding: var(--spacing-3xl) var(--spacing-lg);
   color: var(--color-text-muted);
 }
 
 .error-message {
   color: var(--color-danger);
-  margin: 20px 0;
+  margin: var(--spacing-lg) 0;
 }
 
 /* Compact Plans Grid */
 .plans-grid-compact {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
 }
 
 .plan-card-compact {
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-gray-200);
-  border-radius: 10px;
+  border-radius: var(--border-radius-lg);
   padding: 0;
   position: relative;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 
 .plan-card-compact:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
 }
 
 .plan-card-compact.current-plan {
   border-color: var(--color-success);
-  background: linear-gradient(135deg, #f8fff9 0%, var(--color-success-bg) 100%);
-  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.2);
+  background: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-success-bg) 100%);
+  box-shadow: var(--shadow-lg);
 }
 
 .plan-card-compact.coming-soon-plan {
   opacity: 0.7;
-  background: linear-gradient(135deg, var(--color-bg-tertiary) 0%, #e8e8e8 100%);
+  background: linear-gradient(135deg, var(--color-bg-tertiary) 0%, var(--color-bg-secondary) 100%);
   position: relative;
 }
 
 .plan-card-compact.coming-soon-plan:hover {
   transform: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Coming Soon Badge */
 .coming-soon-badge {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  background: linear-gradient(135deg, var(--color-warning) 0%, var(--color-warning) 100%);
-  color: white;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  background: var(--color-warning);
+  color: var(--color-white);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--border-radius-xl);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--spacing-xs);
   z-index: 10;
-  box-shadow: 0 2px 6px rgba(255, 152, 0, 0.3);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Compact Header */
 .plan-header-compact {
-  padding: 15px;
-  border-bottom: 1px solid #f1f3f4;
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border-light);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -559,7 +618,7 @@ async function selectPlan(plan: any) {
 .plan-title-section {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--spacing-sm);
 }
 
 .plan-name-compact {
@@ -571,14 +630,14 @@ async function selectPlan(plan: any) {
 
 .current-badge {
   background: var(--color-success);
-  color: white;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  color: var(--color-white);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-xl);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--spacing-xs);
 }
 
 .plan-price-compact {
@@ -599,10 +658,10 @@ async function selectPlan(plan: any) {
 
 /* Compact Content */
 .plan-content-compact {
-  padding: 15px;
+  padding: var(--spacing-md);
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 15px;
+  gap: var(--spacing-md);
   align-items: center;
 }
 
@@ -612,21 +671,21 @@ async function selectPlan(plan: any) {
 
 .key-features {
   display: grid;
-  gap: 6px;
+  gap: var(--spacing-xs);
 }
 
 .feature-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 }
 
 .feature-item i {
   width: 14px;
   color: var(--color-primary);
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
 }
 
 .action-column {
@@ -636,23 +695,23 @@ async function selectPlan(plan: any) {
 }
 
 .btn-compact {
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 600;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-base);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--spacing-xs);
   min-width: 100px;
   justify-content: center;
 }
 
 .btn-subscribe-compact {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-white);
 }
 
 .btn-subscribe-compact:hover:not(:disabled) {
@@ -674,94 +733,94 @@ async function selectPlan(plan: any) {
 .current-plan-indicator {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--spacing-xs);
   color: var(--color-success);
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
 }
 
 .plan-description-compact {
-  padding: 0 15px 15px 15px;
-  font-size: 0.85rem;
+  padding: 0 var(--spacing-md) var(--spacing-md) var(--spacing-md);
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   line-height: 1.4;
-  border-top: 1px solid #f1f3f4;
-  background: #fafbfc;
-  margin-top: 10px;
+  border-top: 1px solid var(--color-border-light);
+  background: var(--color-bg-secondary);
+  margin-top: var(--spacing-sm);
 }
 
 /* Bulk Purchase Section */
 .bulk-purchase-section {
-  padding: 15px;
+  padding: var(--spacing-md);
   border-top: 1px solid var(--color-primary-light);
-  background: linear-gradient(135deg, var(--color-primary-light) 0%, #e3f2fd 100%);
-  margin-top: 10px;
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-info-bg) 100%);
+  margin-top: var(--spacing-sm);
 }
 
 .bulk-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-primary);
-  margin-bottom: 8px;
+  margin-bottom: var(--spacing-sm);
 }
 
 .bulk-header i {
-  font-size: 1rem;
+  font-size: var(--font-size-md);
 }
 
 .bulk-description {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  margin: 0 0 12px 0;
+  margin: 0 0 var(--spacing-md) 0;
   line-height: 1.4;
 }
 
 .btn-bulk-purchase {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
   background: var(--color-primary);
-  color: white;
+  color: var(--color-white);
   border: none;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-base);
   width: 100%;
   justify-content: center;
 }
 
 .btn-bulk-purchase:hover {
-  background: var(--color-primary-dark);
+  background: var(--color-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-bulk-purchase i {
-  font-size: 0.9rem;
+  font-size: var(--font-size-base);
 }
 
 /* Planned Features Section */
 .planned-features-section {
-  padding: 15px;
+  padding: var(--spacing-md);
   border-top: 1px solid var(--color-gray-200);
   background: var(--color-gray-50);
-  margin-top: 10px;
+  margin-top: var(--spacing-sm);
 }
 
 .planned-features-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-gray-600);
-  margin-bottom: 10px;
+  margin-bottom: var(--spacing-sm);
 }
 
 .planned-features-header i {
@@ -774,20 +833,20 @@ async function selectPlan(plan: any) {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--spacing-xs);
 }
 
 .planned-feature-item {
-  font-size: 0.8rem;
-  color: #868e96;
-  padding-left: 8px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  padding-left: var(--spacing-sm);
   line-height: 1.4;
   font-style: italic;
 }
 
 .planned-feature-item::before {
   content: '•';
-  margin-right: 6px;
+  margin-right: var(--spacing-xs);
   color: var(--color-gray-500);
 }
 
@@ -797,45 +856,26 @@ async function selectPlan(plan: any) {
 .text-info { color: var(--color-info) !important; }
 .text-muted { color: var(--color-gray-600) !important; }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border: 2px solid transparent;
-  border-radius: 6px;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn-primary {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
-  color: white;
-}
-
 /* Responsive */
 @media (max-width: 768px) {
   .subscription-plans-page {
-    padding: 20px 15px;
+    padding: var(--spacing-lg) var(--spacing-md);
   }
 
   .page-header h1 {
-    font-size: 2rem;
+    font-size: var(--font-size-3xl);
     flex-direction: column;
-    gap: 10px;
+    gap: var(--spacing-sm);
   }
 
   .plans-grid-compact {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: var(--spacing-sm);
   }
 
   .plan-content-compact {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: var(--spacing-sm);
   }
 
   .action-column {
@@ -847,7 +887,7 @@ async function selectPlan(plan: any) {
   }
 
   .price-amount {
-    font-size: 2rem;
+    font-size: var(--font-size-3xl);
   }
 }
 </style>

@@ -325,27 +325,31 @@ const handlePurchase = async () => {
   error.value = ''
 
   try {
-    const result = await batchStore.purchaseBulkLicenses({
-      subscription_plan_id: selectedPlanId.value,
-      quantity: quantity.value,
-      group_id: selectedGroupId.value || undefined,
-      coupon_code: couponCode.value || undefined
-    })
+    // Create checkout URLs
+    const successUrl = `${window.location.origin}/license-management?success=true`
+    const cancelUrl = `${window.location.origin}/bulk-license-purchase`
 
+    // Create Stripe checkout session (will redirect to Stripe)
+    await batchStore.createBulkCheckoutSession(
+      selectedPlanId.value,
+      quantity.value,
+      successUrl,
+      cancelUrl,
+      selectedGroupId.value || undefined,
+      couponCode.value || undefined
+    )
+
+    // The store will redirect to Stripe automatically
+    // If we reach here without redirect, show success (e.g., for free plans in future)
     successMessage.value = t('bulkPurchase.purchaseSuccess')
-
-    // Redirect to license management after 2 seconds
-    setTimeout(() => {
-      router.push(`/license-management/${result.id}`)
-    }, 2000)
   } catch (err: any) {
     console.error('Purchase error:', err)
     error.value = err.response?.data?.error_message ||
                   err.response?.data?.message ||
                   t('bulkPurchase.purchaseError')
-  } finally {
     isPurchasing.value = false
   }
+  // Don't set isPurchasing to false here - redirect will happen
 }
 
 const resetForm = () => {
@@ -638,7 +642,7 @@ onMounted(async () => {
 
 .form-control {
   padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-border-default);
+  border: 1px solid var(--color-border-medium);
   border-radius: var(--border-radius-sm);
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
@@ -649,7 +653,7 @@ onMounted(async () => {
 .form-control:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+  box-shadow: var(--shadow-focus);
 }
 
 /* Purchase Summary */
@@ -724,7 +728,7 @@ onMounted(async () => {
 .btn-cancel {
   background: var(--color-bg-secondary);
   color: var(--color-text-secondary);
-  border: 1px solid var(--color-border-default);
+  border: 1px solid var(--color-border-medium);
 }
 
 .btn-cancel:hover {

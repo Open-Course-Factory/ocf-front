@@ -12,7 +12,7 @@
       @drop="handleDrop"
       @dragover="handleDragOver"
       @node-click="handleNodeClick"
-      @node-double-click="handleNodeDoubleClick"
+      @pane-click="handlePaneClick"
       @nodes-change="handleNodesChange"
       @edges-change="handleEdgesChange"
     >
@@ -20,20 +20,20 @@
       <Controls />
       <MiniMap />
 
-      <template #node-course="{ data }">
-        <CourseNode :data="data" @edit="handleEditNode" @delete="handleDeleteNode" @toggle-expand="handleToggleExpand" />
+      <template #node-course="{ data, selected }">
+        <CourseNode :data="data" :selected="selected" @edit="handleEditNode" @delete="handleDeleteNode" @toggle-expand="handleToggleExpand" @select-tree="handleSelectTree" />
       </template>
 
-      <template #node-chapter="{ data }">
-        <ChapterNode :data="data" @edit="handleEditNode" @delete="handleDeleteNode" @toggle-expand="handleToggleExpand" />
+      <template #node-chapter="{ data, selected }">
+        <ChapterNode :data="data" :selected="selected" @edit="handleEditNode" @delete="handleDeleteNode" @toggle-expand="handleToggleExpand" @select-tree="handleSelectTree" />
       </template>
 
-      <template #node-section="{ data }">
-        <SectionNode :data="data" @edit="handleEditNode" @delete="handleDeleteNode" @toggle-expand="handleToggleExpand" />
+      <template #node-section="{ data, selected }">
+        <SectionNode :data="data" :selected="selected" @edit="handleEditNode" @delete="handleDeleteNode" @toggle-expand="handleToggleExpand" @select-tree="handleSelectTree" />
       </template>
 
-      <template #node-page="{ data }">
-        <PageNode :data="data" @edit="handleEditNode" @delete="handleDeleteNode" />
+      <template #node-page="{ data, selected }">
+        <PageNode :data="data" :selected="selected" @edit="handleEditNode" @delete="handleDeleteNode" @select-tree="handleSelectTree" />
       </template>
     </VueFlow>
 
@@ -83,25 +83,58 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'nodes-change', changes: any[]): void
   (e: 'edges-change', changes: any[]): void
+  (e: 'update:nodes', nodes: any[]): void
   (e: 'node-click', event: any): void
-  (e: 'node-double-click', event: any): void
+  (e: 'pane-click', event: any): void
   (e: 'node-added', node: any): void
+  (e: 'node-edit', node: any): void
   (e: 'node-delete', node: any): void
   (e: 'toggle-expand', nodeData: any): void
+  (e: 'select-tree', nodeData: any): void
 }>()
 
 // Local reactive state
 const nodesData = ref(props.nodes)
 const edgesData = ref(props.edges)
 
-// Watch for prop changes
-watch(() => props.nodes, (newNodes) => {
-  nodesData.value = newNodes
-}, { deep: true })
+// Watch for prop changes - but preserve Vue Flow's internal state
+watch(() => props.nodes, (newNodes, oldNodes) => {
+  // Only update if:
+  // 1. Number of nodes changed (add/remove), OR
+  // 2. Node IDs changed (different course loaded), OR
+  // 3. Hidden property changed (expand/collapse)
+  const lengthChanged = newNodes.length !== nodesData.value.length
+  const idsChanged = !oldNodes ||
+    newNodes.length !== oldNodes.length ||
+    newNodes.some((node, idx) => node.id !== oldNodes[idx]?.id)
 
-watch(() => props.edges, (newEdges) => {
-  edgesData.value = newEdges
-}, { deep: true })
+  // Check if hidden state changed (for expand/collapse)
+  const hiddenChanged = newNodes.some((node, idx) => {
+    const oldNode = nodesData.value.find(n => n.id === node.id)
+    return oldNode && oldNode.hidden !== node.hidden
+  })
+
+  if (lengthChanged || idsChanged || hiddenChanged) {
+    nodesData.value = newNodes
+  }
+})
+
+watch(() => props.edges, (newEdges, oldEdges) => {
+  const lengthChanged = newEdges.length !== edgesData.value.length
+  const idsChanged = !oldEdges ||
+    newEdges.length !== oldEdges.length ||
+    newEdges.some((edge, idx) => edge.id !== oldEdges[idx]?.id)
+
+  // Check if hidden state changed (for expand/collapse)
+  const hiddenChanged = newEdges.some((edge, idx) => {
+    const oldEdge = edgesData.value.find(e => e.id === edge.id)
+    return oldEdge && oldEdge.hidden !== edge.hidden
+  })
+
+  if (lengthChanged || idsChanged || hiddenChanged) {
+    edgesData.value = newEdges
+  }
+})
 
 // Drag and drop handling
 let dragCounter = 0
@@ -158,12 +191,22 @@ const handleNodeClick = (event: any) => {
   emit('node-click', event)
 }
 
-const handleNodeDoubleClick = (event: any) => {
-  emit('node-double-click', event)
+const handlePaneClick = (event: any) => {
+  emit('pane-click', event)
 }
 
 const handleNodesChange = (changes: any[]) => {
+  // Sync the updated nodes back to parent
+  // This ensures position changes are reflected in CourseEditor's nodes.value
   emit('nodes-change', changes)
+
+  // Also emit the full updated nodes array for proper sync
+  if (changes.some(c => c.type === 'position')) {
+    // Use nextTick to ensure Vue Flow has updated nodesData
+    Promise.resolve().then(() => {
+      emit('update:nodes', nodesData.value)
+    })
+  }
 }
 
 const handleEdgesChange = (changes: any[]) => {
@@ -172,10 +215,12 @@ const handleEdgesChange = (changes: any[]) => {
 
 // Node action handlers
 const handleEditNode = (nodeData: any) => {
-  // Find the node and emit double-click event to open edit modal
+  console.log('FlowCanvas: handleEditNode called', nodeData)
+  // Find the node and emit edit event to open edit modal
   const node = nodesData.value.find(n => n.data === nodeData)
   if (node) {
-    emit('node-double-click', { node })
+    console.log('FlowCanvas: emitting node-edit', node)
+    emit('node-edit', node)
   }
 }
 
@@ -189,6 +234,11 @@ const handleDeleteNode = (nodeData: any) => {
 
 const handleToggleExpand = (nodeData: any) => {
   emit('toggle-expand', nodeData)
+}
+
+const handleSelectTree = (nodeData: any) => {
+  console.log('FlowCanvas: handleSelectTree called', nodeData)
+  emit('select-tree', nodeData)
 }
 </script>
 

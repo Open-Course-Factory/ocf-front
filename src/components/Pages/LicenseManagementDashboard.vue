@@ -27,6 +27,24 @@
         </button>
       </div>
 
+      <!-- Bulk Actions Bar -->
+      <div v-if="selectedBatchIds.length > 0" class="bulk-actions-bar">
+        <div class="selection-info">
+          <i class="fas fa-check-circle"></i>
+          {{ t('licenseDashboard.selectedCount', { count: selectedBatchIds.length }) }}
+        </div>
+        <div class="bulk-buttons">
+          <button class="btn-secondary" @click="clearSelection">
+            <i class="fas fa-times"></i>
+            {{ t('licenseDashboard.clearSelection') }}
+          </button>
+          <button class="btn-danger" @click="confirmBulkDelete">
+            <i class="fas fa-trash"></i>
+            {{ t('licenseDashboard.deleteSelected', { count: selectedBatchIds.length }) }}
+          </button>
+        </div>
+      </div>
+
       <!-- Loading state -->
       <div v-if="isLoading && batches.length === 0" class="loading-section">
         <i class="fas fa-spinner fa-spin fa-2x"></i>
@@ -50,7 +68,21 @@
           v-for="batch in batches"
           :key="batch.id"
           class="batch-card"
+          :class="{ 'selected': selectedBatchIds.includes(batch.id) }"
         >
+          <!-- Checkbox for canceled batches -->
+          <div
+            v-if="batch.status === 'cancelled' || batch.status === 'canceled'"
+            class="batch-checkbox"
+          >
+            <input
+              type="checkbox"
+              :checked="selectedBatchIds.includes(batch.id)"
+              @change="toggleBatchSelection(batch.id)"
+              class="checkbox-input"
+            />
+          </div>
+
           <div class="batch-header">
             <div class="batch-title-section">
               <h3 class="batch-title">
@@ -129,7 +161,7 @@
               {{ t('licenseDashboard.viewDetails') }}
             </button>
             <button
-              v-if="batch.available_quantity > 0"
+              v-if="batch.available_quantity > 0 && batch.status === 'active'"
               class="btn-action success"
               @click="viewBatchDetails(batch.id)"
             >
@@ -143,6 +175,14 @@
             >
               <i class="fas fa-plus"></i>
               {{ t('licenseDashboard.addMore') }}
+            </button>
+            <button
+              v-if="batch.status === 'cancelled' || batch.status === 'canceled'"
+              class="btn-action danger"
+              @click="confirmDeleteBatch(batch)"
+            >
+              <i class="fas fa-trash"></i>
+              {{ t('licenseDashboard.deleteBatch') }}
             </button>
           </div>
         </div>
@@ -161,7 +201,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
 import { useSubscriptionBatchesStore } from '../../stores/subscriptionBatches'
 import { useNotification } from '../../composables/useNotification'
@@ -191,11 +231,23 @@ const { t } = useTranslations({
       viewDetails: 'View Details',
       assignLicenses: 'Assign Licenses',
       addMore: 'Add More',
+      deleteBatch: 'Delete Batch',
+      selectedCount: '{count} batches selected',
+      clearSelection: 'Clear Selection',
+      deleteSelected: 'Delete Selected ({count})',
+      confirmDelete: 'Are you sure you want to permanently delete this canceled batch? This action cannot be undone.',
+      confirmBulkDelete: 'Are you sure you want to permanently delete {count} canceled batches? This action cannot be undone.',
       addSuccess: 'Licenses added successfully',
+      deleteSuccess: 'Batch deleted successfully',
+      bulkDeleteSuccess: '{count} batches deleted successfully',
+      deleteError: 'Failed to delete batch',
+      batchCancelledExternally: 'This batch was already cancelled in Stripe. The status has been updated.',
       refreshSuccess: 'License batches refreshed successfully',
+      purchaseComplete: 'Bulk license purchase completed successfully!',
       status: {
         active: 'Active',
         cancelled: 'Cancelled',
+        canceled: 'Canceled',
         expired: 'Expired',
         past_due: 'Past Due'
       }
@@ -222,11 +274,23 @@ const { t } = useTranslations({
       viewDetails: 'Voir les Détails',
       assignLicenses: 'Assigner des Licences',
       addMore: 'Ajouter Plus',
+      deleteBatch: 'Supprimer le Lot',
+      selectedCount: '{count} lots sélectionnés',
+      clearSelection: 'Effacer la Sélection',
+      deleteSelected: 'Supprimer la Sélection ({count})',
+      confirmDelete: 'Êtes-vous sûr de vouloir supprimer définitivement ce lot annulé ? Cette action ne peut pas être annulée.',
+      confirmBulkDelete: 'Êtes-vous sûr de vouloir supprimer définitivement {count} lots annulés ? Cette action ne peut pas être annulée.',
       addSuccess: 'Licences ajoutées avec succès',
+      deleteSuccess: 'Lot supprimé avec succès',
+      bulkDeleteSuccess: '{count} lots supprimés avec succès',
+      deleteError: 'Échec de la suppression du lot',
+      batchCancelledExternally: 'Ce lot a déjà été annulé dans Stripe. Le statut a été mis à jour.',
       refreshSuccess: 'Lots de licences actualisés avec succès',
+      purchaseComplete: 'Achat de licences en gros terminé avec succès !',
       status: {
         active: 'Actif',
         cancelled: 'Annulé',
+        canceled: 'Annulé',
         expired: 'Expiré',
         past_due: 'En Retard'
       }
@@ -235,21 +299,28 @@ const { t } = useTranslations({
 })
 
 const router = useRouter()
+const route = useRoute()
 const batchStore = useSubscriptionBatchesStore()
-const { showError, showSuccess } = useNotification()
+const { showError, showSuccess, showConfirm } = useNotification()
 
 const isLoading = ref(false)
 const showAddLicensesModal = ref(false)
 const selectedBatch = ref<SubscriptionBatch | null>(null)
+const selectedBatchIds = ref<string[]>([])
 
-const batches = computed(() => batchStore.batches)
+const batches = computed(() => {
+  console.log('Batches computed:', batchStore.batches)
+  return batchStore.batches
+})
 
 // Methods
 const loadBatches = async () => {
+  console.log('loadBatches called')
   isLoading.value = true
 
   try {
     await batchStore.loadBatches()
+    console.log('Batches loaded successfully:', batchStore.batches.length, 'batches')
   } catch (err: any) {
     console.error('Error loading batches:', err)
     showError(
@@ -259,6 +330,7 @@ const loadBatches = async () => {
     )
   } finally {
     isLoading.value = false
+    console.log('isLoading set to false, batches.length:', batchStore.batches.length)
   }
 }
 
@@ -308,6 +380,79 @@ const handleAddLicenses = async (newQuantity: number) => {
   }
 }
 
+const toggleBatchSelection = (batchId: string) => {
+  const index = selectedBatchIds.value.indexOf(batchId)
+  if (index === -1) {
+    selectedBatchIds.value.push(batchId)
+  } else {
+    selectedBatchIds.value.splice(index, 1)
+  }
+}
+
+const clearSelection = () => {
+  selectedBatchIds.value = []
+}
+
+const confirmDeleteBatch = async (batch: SubscriptionBatch) => {
+  const confirmed = await showConfirm(t('licenseDashboard.confirmDelete'))
+  if (!confirmed) {
+    return
+  }
+
+  try {
+    await batchStore.deleteBatch(batch.id)
+    showSuccess(t('licenseDashboard.deleteSuccess'))
+  } catch (err: any) {
+    console.error('Error deleting batch:', err)
+    const errorMessage = err.response?.data?.error_message || err.response?.data?.message || ''
+
+    // Check if this is a "cancelled externally" error
+    if (errorMessage.includes('cancelled externally') || errorMessage.includes('cancelled locally')) {
+      // Batch was already cancelled in Stripe, refresh data and stay on page
+      showError(t('licenseDashboard.batchCancelledExternally'))
+      await loadBatches() // Refresh to show updated status
+      return
+    }
+
+    showError(errorMessage || t('licenseDashboard.deleteError'))
+  }
+}
+
+const confirmBulkDelete = async () => {
+  const count = selectedBatchIds.value.length
+  const confirmed = await showConfirm(
+    t('licenseDashboard.confirmBulkDelete', { count })
+  )
+  if (!confirmed) {
+    return
+  }
+
+  try {
+    // Delete all selected batches
+    const deletePromises = selectedBatchIds.value.map(batchId =>
+      batchStore.deleteBatch(batchId)
+    )
+    await Promise.all(deletePromises)
+
+    showSuccess(t('licenseDashboard.bulkDeleteSuccess', { count }))
+    selectedBatchIds.value = []
+  } catch (err: any) {
+    console.error('Error deleting batches:', err)
+    const errorMessage = err.response?.data?.error_message || err.response?.data?.message || ''
+
+    // Check if this is a "cancelled externally" error
+    if (errorMessage.includes('cancelled externally') || errorMessage.includes('cancelled locally')) {
+      // Some batches were already cancelled in Stripe, refresh data
+      showError(t('licenseDashboard.batchCancelledExternally'))
+      await loadBatches() // Refresh to show updated status
+      selectedBatchIds.value = []
+      return
+    }
+
+    showError(errorMessage || t('licenseDashboard.deleteError'))
+  }
+}
+
 const getUsagePercentage = (batch: SubscriptionBatch): number => {
   if (batch.total_quantity === 0) return 0
   return Math.round((batch.assigned_quantity / batch.total_quantity) * 100)
@@ -319,8 +464,15 @@ const formatDate = (dateString: string | undefined): string => {
 }
 
 // Lifecycle
-onMounted(() => {
-  loadBatches()
+onMounted(async () => {
+  await loadBatches()
+
+  // Check for success parameter in URL (from payment redirect)
+  if (route.query.success === 'true') {
+    showSuccess(t('licenseDashboard.purchaseComplete'))
+    // Clean up URL
+    router.replace({ query: {} })
+  }
 })
 </script>
 
@@ -367,10 +519,11 @@ onMounted(() => {
   padding: var(--spacing-sm) var(--spacing-lg);
   border: none;
   border-radius: var(--border-radius-md);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition: all var(--transition-base);
+  white-space: nowrap;
 }
 
 .btn-primary {
@@ -388,12 +541,53 @@ onMounted(() => {
 .btn-secondary {
   background: var(--color-bg-secondary);
   color: var(--color-text-primary);
-  border: 1px solid var(--color-border-default);
+  border: 1px solid var(--color-border-medium);
 }
 
 .btn-secondary:hover {
   background: var(--color-bg-tertiary);
   border-color: var(--color-border-dark);
+}
+
+.btn-danger {
+  background: var(--color-danger);
+  color: var(--color-white);
+  border: none;
+}
+
+.btn-danger:hover {
+  background: var(--color-danger-dark);
+}
+
+/* Bulk Actions Bar */
+.bulk-actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  background: var(--color-primary-light);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.selection-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+}
+
+.selection-info i {
+  font-size: var(--font-size-lg);
+}
+
+.bulk-buttons {
+  display: flex;
+  gap: var(--spacing-md);
 }
 
 /* Loading */
@@ -439,6 +633,7 @@ onMounted(() => {
 }
 
 .batch-card {
+  position: relative;
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-light);
   border-radius: var(--border-radius-lg);
@@ -450,6 +645,25 @@ onMounted(() => {
 .batch-card:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
+}
+
+.batch-card.selected {
+  border: 2px solid var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.batch-checkbox {
+  position: absolute;
+  top: var(--spacing-md);
+  left: var(--spacing-md);
+  z-index: 10;
+}
+
+.checkbox-input {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
 }
 
 .batch-header {
@@ -486,7 +700,8 @@ onMounted(() => {
   color: var(--color-success-text);
 }
 
-.batch-status-badge.status-cancelled {
+.batch-status-badge.status-cancelled,
+.batch-status-badge.status-canceled {
   background: var(--color-danger-bg);
   color: var(--color-danger-text);
 }
@@ -617,7 +832,7 @@ onMounted(() => {
 /* Batch Actions */
 .batch-actions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: var(--spacing-sm);
 }
 
@@ -626,9 +841,9 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   gap: var(--spacing-xs);
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-lg);
   border: none;
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--border-radius-md);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
@@ -657,12 +872,21 @@ onMounted(() => {
 .btn-action.secondary {
   background: var(--color-bg-secondary);
   color: var(--color-text-primary);
-  border: 1px solid var(--color-border-default);
+  border: 1px solid var(--color-border-medium);
 }
 
 .btn-action.secondary:hover {
   background: var(--color-bg-tertiary);
   border-color: var(--color-border-dark);
+}
+
+.btn-action.danger {
+  background: var(--color-danger);
+  color: var(--color-white);
+}
+
+.btn-action.danger:hover {
+  background: var(--color-danger-dark);
 }
 
 /* Responsive */
@@ -697,6 +921,20 @@ onMounted(() => {
   .btn-secondary {
     width: 100%;
     justify-content: center;
+  }
+
+  .bulk-actions-bar {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .bulk-buttons {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .bulk-buttons button {
+    width: 100%;
   }
 }
 </style>

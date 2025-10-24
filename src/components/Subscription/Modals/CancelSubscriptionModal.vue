@@ -98,10 +98,10 @@ function handleConfirm() {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
-  padding: var(--btn-padding-md);
+  padding: var(--spacing-sm) var(--spacing-md);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
-  border: var(--border-width-thin) solid transparent;
+  border: 1px solid transparent;
   border-radius: var(--border-radius-md);
   cursor: pointer;
   transition: all var(--transition-base);

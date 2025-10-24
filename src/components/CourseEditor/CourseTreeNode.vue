@@ -273,19 +273,26 @@ const handleMove = () => {
 /* Entity type colors */
 .tree-node-course > .node-header {
   font-weight: 600;
+  border-left: 3px solid #4A90E2;
+  background: #E8F0FB;
 }
 
 .tree-node-chapter > .node-header {
   font-weight: 500;
+  border-left: 3px solid #7B68EE;
+  background: #EBE8F5;
 }
 
 .tree-node-section > .node-header {
   font-weight: 400;
+  border-left: 3px solid #50C878;
+  background: #E6F5ED;
 }
 
 .tree-node-page > .node-header {
   font-weight: 400;
-  opacity: 0.9;
+  border-left: 3px solid #FFA500;
+  background: #FFF3E6;
 }
 
 /* Dragging state */

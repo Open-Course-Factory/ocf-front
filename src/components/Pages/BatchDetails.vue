@@ -277,9 +277,11 @@ const { t } = useTranslations({
       revokeError: 'Failed to revoke license',
       deleteError: 'Failed to delete licenses',
       cannotDeleteAssigned: 'Cannot delete licenses: some are assigned to users. Revoke them first.',
+      batchCancelledExternally: 'This batch was already cancelled in Stripe. Redirecting to license management...',
       status: {
         active: 'Active',
         cancelled: 'Cancelled',
+        canceled: 'Canceled',
         expired: 'Expired',
         past_due: 'Past Due'
       },
@@ -287,6 +289,7 @@ const { t } = useTranslations({
         unassigned: 'Available',
         active: 'Active',
         cancelled: 'Cancelled',
+        canceled: 'Canceled',
         past_due: 'Past Due'
       }
     }
@@ -333,9 +336,11 @@ const { t } = useTranslations({
       revokeError: 'Échec de la révocation de la licence',
       deleteError: 'Échec de la suppression des licences',
       cannotDeleteAssigned: 'Impossible de supprimer les licences : certaines sont assignées à des utilisateurs. Révoquez-les d\'abord.',
+      batchCancelledExternally: 'Ce lot a déjà été annulé dans Stripe. Redirection vers la gestion des licences...',
       status: {
         active: 'Actif',
         cancelled: 'Annulé',
+        canceled: 'Annulé',
         expired: 'Expiré',
         past_due: 'En Retard'
       },
@@ -343,6 +348,7 @@ const { t } = useTranslations({
         unassigned: 'Disponible',
         active: 'Active',
         cancelled: 'Annulée',
+        canceled: 'Annulée',
         past_due: 'En Retard'
       }
     }
@@ -363,7 +369,16 @@ const selectedFilter = ref('all')
 const searchQuery = ref('')
 const selectedLicenses = ref<string[]>([])
 
-const batch = computed(() => batchStore.currentBatch)
+// Get batch from the batches list instead of currentBatch (which may be "not implemented")
+const batch = computed(() => {
+  // First try to find it in the batches list
+  const batchFromList = batchStore.batches.find(b => b.id === batchId)
+  if (batchFromList) {
+    return batchFromList
+  }
+  // Fallback to currentBatch if not found in list
+  return batchStore.currentBatch
+})
 const licenses = computed(() => batchStore.currentBatchLicenses)
 
 const userCache = ref<Map<string, any>>(new Map())
@@ -447,7 +462,7 @@ const loadBatch = async () => {
 }
 
 const loadBatchWithFeedback = async () => {
-  await loadBatch()
+  await batchStore.loadBatches()
   if (!batchStore.error) {
     showSuccess(t('batchDetails.refreshSuccess'))
   }
@@ -473,7 +488,7 @@ const loadLicenses = async () => {
 }
 
 const refreshLicenses = async () => {
-  await loadBatch()
+  await batchStore.loadBatches()
   await loadLicenses()
   showSuccess(t('batchDetails.refreshSuccess'))
 }
@@ -602,16 +617,25 @@ const confirmBulkDelete = async () => {
     showSuccess(t('batchDetails.bulkDeleteSuccess', { count }))
     selectedLicenses.value = []
 
-    // Reload batch and licenses to update the table
-    await loadBatch()
+    // Reload all batches (since loadBatch is not implemented on backend)
+    await batchStore.loadBatches()
     await loadLicenses()
   } catch (err: any) {
     console.error('Error deleting licenses:', err)
-    showError(
-      err.response?.data?.error_message ||
-      err.response?.data?.message ||
-      t('batchDetails.deleteError')
-    )
+    const errorMessage = err.response?.data?.error_message || err.response?.data?.message || ''
+
+    // Check if this is a "cancelled externally" error
+    if (errorMessage.includes('cancelled externally') || errorMessage.includes('cancelled locally')) {
+      // Batch was already cancelled in Stripe, show message and redirect
+      showError(t('batchDetails.batchCancelledExternally'))
+      // Wait 2 seconds for user to read the message, then redirect
+      setTimeout(() => {
+        router.push('/license-management')
+      }, 2000)
+      return
+    }
+
+    showError(errorMessage || t('batchDetails.deleteError'))
   }
 }
 
@@ -643,6 +667,10 @@ const formatDate = (dateString: string | undefined): string => {
 
 // Lifecycle
 onMounted(async () => {
+  // Load all batches first to populate the list
+  if (batchStore.batches.length === 0) {
+    await batchStore.loadBatches()
+  }
   await loadBatch()
   await loadLicenses()
 })
@@ -663,9 +691,9 @@ onMounted(async () => {
   margin-bottom: var(--spacing-lg);
   background: var(--color-bg-secondary);
   color: var(--color-text-primary);
-  border: 1px solid var(--color-border-default);
+  border: 1px solid var(--color-border-medium);
   border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition: all var(--transition-base);
@@ -728,7 +756,8 @@ onMounted(async () => {
   color: var(--color-success-text);
 }
 
-.status-badge.status-cancelled {
+.status-badge.status-cancelled,
+.status-badge.status-canceled {
   background: var(--color-danger-bg);
   color: var(--color-danger-text);
 }
@@ -868,17 +897,20 @@ onMounted(async () => {
 }
 
 .btn-primary,
-.btn-secondary {
+.btn-secondary,
+.btn-warning,
+.btn-danger {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-lg);
   border: none;
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--border-radius-md);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition: all var(--transition-base);
+  white-space: nowrap;
 }
 
 .btn-primary {
@@ -893,11 +925,12 @@ onMounted(async () => {
 .btn-secondary {
   background: var(--color-bg-secondary);
   color: var(--color-text-primary);
-  border: 1px solid var(--color-border-default);
+  border: 1px solid var(--color-border-medium);
 }
 
 .btn-secondary:hover {
   background: var(--color-bg-tertiary);
+  border-color: var(--color-border-dark);
 }
 
 .btn-warning {
@@ -964,7 +997,7 @@ onMounted(async () => {
 
 .form-control {
   padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-border-default);
+  border: 1px solid var(--color-border-medium);
   border-radius: var(--border-radius-sm);
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
@@ -988,7 +1021,7 @@ onMounted(async () => {
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
   background: var(--color-bg-secondary);
-  border-bottom: 2px solid var(--color-border-default);
+  border-bottom: 2px solid var(--color-border-medium);
 }
 
 .licenses-table tbody tr {

@@ -45,7 +45,24 @@ export const bulkLicenseService = {
   },
 
   /**
-   * Purchase bulk licenses
+   * Create Stripe checkout session for bulk purchase
+   * @param input Purchase details with redirect URLs
+   * @returns Checkout session with URL to redirect to Stripe
+   */
+  async createBulkCheckoutSession(input: {
+    subscription_plan_id: string
+    quantity: number
+    success_url: string
+    cancel_url: string
+    group_id?: string
+    coupon_code?: string
+  }): Promise<{ session_id: string; url: string }> {
+    const response = await axios.post('/subscription-batches/create-checkout-session', input)
+    return response.data
+  },
+
+  /**
+   * Purchase bulk licenses (direct - used if payment already handled)
    * @param input Purchase details (plan, quantity, group, payment method)
    * @returns Created subscription batch
    */
@@ -128,6 +145,16 @@ export const bulkLicenseService = {
    */
   async cancelBatch(batchId: string): Promise<{ message: string }> {
     const response = await axios.delete(`/subscription-batches/${batchId}`)
+    return response.data
+  },
+
+  /**
+   * Permanently delete a canceled batch
+   * @param batchId Batch ID
+   * @returns Success message
+   */
+  async deleteBatch(batchId: string): Promise<{ message: string }> {
+    const response = await axios.delete(`/subscription-batches/${batchId}/permanent`)
     return response.data
   }
 }

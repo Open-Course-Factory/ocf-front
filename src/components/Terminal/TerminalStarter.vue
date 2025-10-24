@@ -193,7 +193,7 @@ const { t } = useTranslations({
       startNewSession: 'Start New Session'
     },
     terminalStarter: {
-      launchTerminal: 'Launch Terminal',
+      launchTerminal: 'Create session',
       buttonStarting: 'Starting...',
       readyToLaunch: 'Ready to Launch',
       capacityIssue: 'Capacity Issue',
@@ -236,7 +236,7 @@ const { t } = useTranslations({
       startNewSession: 'Démarrer une Nouvelle Session'
     },
     terminalStarter: {
-      launchTerminal: 'Lancer le Terminal',
+      launchTerminal: 'Créer une session',
       buttonStarting: 'Démarrage...',
       readyToLaunch: 'Prêt à Lancer',
       capacityIssue: 'Problème de Capacité',

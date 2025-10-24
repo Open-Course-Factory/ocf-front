@@ -174,9 +174,9 @@
 
               <div class="header-right">
                 <!-- Status indicator -->
-                <span :class="['status-badge', getStatusClass(session.status)]" :title="session.status">
+                <span :class="['status-badge', getStatusClass(session.status)]" :title="getStatusLabel(session.status)">
                   <i class="fas fa-circle"></i>
-                  {{ session.status }}
+                  {{ getStatusLabel(session.status) }}
                 </span>
 
                 <!-- Action buttons -->
@@ -485,7 +485,14 @@ const { t } = useTranslations({
       copiedIframe: 'Iframe code copied!',
       copyIframeCode: 'Copy iframe code',
       manageAccess: 'Manage access',
-      readOnlyAccess: 'Read-only access - cannot edit name'
+      readOnlyAccess: 'Read-only access - cannot edit name',
+      statusActive: 'Active',
+      statusStopped: 'Terminated',
+      statusExpired: 'Expired',
+      statusTerminated: 'Terminated',
+      statusPending: 'Pending',
+      statusStarting: 'Starting',
+      statusUnknown: 'Unknown'
     }
   },
   fr: {
@@ -572,7 +579,14 @@ const { t } = useTranslations({
       copiedIframe: 'Code iframe copié !',
       copyIframeCode: 'Copier le code iframe',
       manageAccess: 'Gérer les accès',
-      readOnlyAccess: 'Accès en lecture seule - impossible de modifier le nom'
+      readOnlyAccess: 'Accès en lecture seule - impossible de modifier le nom',
+      statusActive: 'Actif',
+      statusStopped: 'Terminé',
+      statusExpired: 'Expiré',
+      statusTerminated: 'Terminé',
+      statusPending: 'En attente',
+      statusStarting: 'Démarrage',
+      statusUnknown: 'Inconnu'
     }
   }
 })
@@ -835,6 +849,17 @@ function getStatusClass(status: string) {
     case 'stopped': return 'text-muted'
     default: return 'text-warning'
   }
+}
+
+function getStatusLabel(status: string): string {
+  if (!status) return t('terminalMySessions.statusUnknown')
+
+  const statusKey = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
+  const translationKey = `terminalMySessions.status${statusKey}`
+
+  // Check if translation exists, otherwise return the original status
+  const translated = t(translationKey)
+  return translated !== translationKey ? translated : status
 }
 
 // Fonctions pour les fonctionnalités iframe

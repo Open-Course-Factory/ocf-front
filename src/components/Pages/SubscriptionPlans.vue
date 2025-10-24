@@ -173,7 +173,7 @@ const syncWithStripe = async () => {
             <!-- Admin controls -->
             <div v-if="isAdmin" class="admin-controls">
                 <button
-                    class="btn btn-info"
+                    class="btn btn-primary"
                     @click="syncWithStripe"
                     :disabled="isSyncing"
                 >
@@ -322,7 +322,7 @@ const syncWithStripe = async () => {
                             <!-- Downgrade button -->
                             <button
                                 v-else-if="getPlanRelationship(entity) === 'downgrade'"
-                                class="btn btn-warning"
+                                class="btn btn-secondary"
                                 @click="upgradePlan(entity)"
                                 :disabled="isUpgrading && upgradingPlanId === entity.id"
                             >
@@ -357,26 +357,26 @@ const syncWithStripe = async () => {
 .info-banner {
     background-color: var(--color-info-bg);
     border: 1px solid var(--color-info-bg);
-    border-radius: 4px;
-    padding: 15px;
-    margin-bottom: 20px;
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--spacing-sm);
     color: var(--color-primary);
 }
 
 .plan-actions {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--spacing-sm);
     min-width: 200px;
     align-items: flex-end;
 }
 
 .plan-info {
     text-align: right;
-    margin-bottom: 10px;
+    margin-bottom: var(--spacing-sm);
 }
 
 .price-display {
@@ -392,37 +392,37 @@ const syncWithStripe = async () => {
 }
 
 .plan-limits {
-    margin: 5px 0;
+    margin: var(--spacing-xs) 0;
 }
 
 .plan-trial {
-    margin-top: 5px;
+    margin-top: var(--spacing-xs);
 }
 
 .plan-buttons {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--spacing-sm);
     align-items: flex-end;
 }
 
 .current-plan-badge {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
     background: var(--color-success-bg);
     border: 1px solid var(--color-success-border);
-    border-radius: 6px;
+    border-radius: var(--border-radius-md);
     color: var(--color-success-text);
-    font-weight: 500;
-    font-size: 14px;
+    font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-sm);
 }
 
 .admin-badges {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: var(--spacing-xs);
 }
 
 .badge {
@@ -457,14 +457,14 @@ const syncWithStripe = async () => {
 
 /* Admin controls */
 .admin-controls {
-  margin-bottom: 20px;
-  padding: 15px;
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
   background: var(--color-gray-50);
   border: 1px solid var(--color-gray-300);
-  border-radius: 8px;
+  border-radius: var(--border-radius-lg);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .admin-controls .btn {
@@ -473,12 +473,12 @@ const syncWithStripe = async () => {
 
 /* Sync Results */
 .sync-results {
-  margin-top: 15px;
+  margin-top: var(--spacing-md);
 }
 
 .alert {
-  padding: 15px;
-  border-radius: 8px;
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-lg);
   border: 1px solid;
   position: relative;
 }
@@ -499,27 +499,27 @@ const syncWithStripe = async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 15px;
+  margin-bottom: var(--spacing-md);
 }
 
 .result-header i {
-  margin-right: 8px;
+  margin-right: var(--spacing-sm);
 }
 
 .result-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-  margin-bottom: 15px;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
 }
 
 .summary-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: var(--spacing-sm) var(--spacing-md);
   background: rgba(255, 255, 255, 0.6);
-  border-radius: 6px;
+  border-radius: var(--border-radius-md);
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
@@ -545,28 +545,28 @@ const syncWithStripe = async () => {
 
 .result-details {
   border-top: 1px solid rgba(0, 0, 0, 0.1);
-  padding-top: 15px;
+  padding-top: var(--spacing-md);
 }
 
 .detail-section {
-  margin-bottom: 15px;
+  margin-bottom: var(--spacing-md);
 }
 
 .detail-section h6 {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 0 8px 0;
-  font-weight: 600;
+  gap: var(--spacing-sm);
+  margin: 0 0 var(--spacing-sm) 0;
+  font-weight: var(--font-weight-semibold);
 }
 
 .detail-section ul {
   margin: 0;
-  padding-left: 20px;
+  padding-left: var(--spacing-lg);
 }
 
 .detail-section li {
-  margin-bottom: 4px;
+  margin-bottom: var(--spacing-xs);
 }
 
 .btn-outline-success {

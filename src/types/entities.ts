@@ -48,6 +48,7 @@ export interface SubscriptionPlan extends BaseEntity {
   stripe_price_id?: string
   use_tiered_pricing?: boolean
   pricing_tiers?: PricingTier[]
+  priority?: number // Priority level for stacked subscriptions (0=Free, 10=Basic, 20=Pro, 30=Premium, 40=Enterprise)
 }
 
 /**
@@ -64,11 +65,23 @@ export interface Subscription extends BaseEntity {
   stripe_subscription_id?: string
   subscription_plan?: {
     allowed_machine_sizes?: string[]
+    priority?: number // Priority level for stacked subscriptions (higher = better tier)
   }
   plan_features?: {
     session_duration_hours?: number
     concurrent_terminals?: number
   }
+  // Stacked subscriptions - Priority-based system
+  subscription_type?: 'personal' | 'assigned' // Type of subscription
+  is_primary?: boolean // True if this is the active subscription being used
+
+  // Bulk license batch information (when assigned from bulk purchase)
+  subscription_batch_id?: string
+  batch_owner_id?: string
+  batch_owner_name?: string
+  batch_owner_email?: string
+  assigned_at?: string
+  assigned_by?: string
 }
 
 /**
@@ -268,7 +281,7 @@ export interface SubscriptionBatch extends BaseEntity {
   total_quantity: number
   assigned_quantity: number
   available_quantity: number // Calculated: total - assigned
-  status: 'active' | 'cancelled' | 'expired' | 'past_due'
+  status: 'active' | 'canceled' | 'cancelled' | 'expired' | 'past_due'
   current_period_start?: string
   current_period_end?: string
   cancelled_at?: string
@@ -282,7 +295,7 @@ export interface UserSubscription extends BaseEntity {
   subscription_batch_id?: string
   subscription_plan_id: string
   subscription_plan?: SubscriptionPlan
-  status: 'unassigned' | 'active' | 'cancelled' | 'past_due'
+  status: 'unassigned' | 'active' | 'canceled' | 'cancelled' | 'past_due'
   current_period_start?: string
   current_period_end?: string
   cancelled_at?: string

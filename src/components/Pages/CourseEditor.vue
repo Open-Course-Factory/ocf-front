@@ -57,21 +57,30 @@
         :dragged-node-type="draggedNodeType"
         @nodes-change="handleNodesChange"
         @edges-change="handleEdgesChange"
+        @update:nodes="nodes = $event"
         @node-click="handleNodeClick"
-        @node-double-click="handleNodeDoubleClick"
+        @pane-click="handlePaneClick"
         @node-added="handleNodeAdded"
+        @node-edit="openEditModal"
         @node-delete="openDeleteModal"
         @toggle-expand="handleToggleExpand"
+        @select-tree="handleSelectTree"
       />
 
       <!-- Right Panel: Course Tree -->
-      <CourseTreePanel
-        class="panel tree-panel"
-        :courses="courses"
-        @entity-drag-start="handleEntityDragStart"
-        @duplicate-entity="handleDuplicateEntity"
-        @move-entity="handleMoveEntity"
-      />
+      <div class="panel tree-panel" :style="{ width: treePanelWidth + 'px' }">
+        <div
+          class="resize-handle"
+          :class="{ resizing: isResizing }"
+          @mousedown="startResize"
+        ></div>
+        <CourseTreePanel
+          :courses="courses"
+          @entity-drag-start="handleEntityDragStart"
+          @duplicate-entity="handleDuplicateEntity"
+          @move-entity="handleMoveEntity"
+        />
+      </div>
     </div>
 
     <!-- Edit Entity Modal -->
@@ -79,6 +88,7 @@
       :visible="showEditModal"
       :title="editModalTitle"
       size="large"
+      :show-default-footer="true"
       :confirm-text="t('courseEditor.saveEntity')"
       :cancel-text="t('courseEditor.cancel')"
       :is-loading="isSaving"
@@ -144,6 +154,7 @@
       :visible="showDeleteModal"
       :title="t('courseEditor.confirmDelete')"
       size="small"
+      :show-default-footer="true"
       :confirm-text="t('courseEditor.delete')"
       :cancel-text="t('courseEditor.cancel')"
       confirm-icon="fas fa-trash"
@@ -156,7 +167,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCoursesStore } from '../../stores/courses'
 import { useChaptersStore } from '../../stores/chapters'
@@ -256,6 +267,12 @@ const deletingNode = ref<any>(null)
 const isSaving = ref(false)
 const modalError = ref('')
 
+// Resize state
+const treePanelWidth = ref(280)
+const isResizing = ref(false)
+const resizeStartX = ref(0)
+const resizeStartWidth = ref(0)
+
 const editModalTitle = computed(() => {
   if (!editingEntity.value?.entityType) return ''
   const type = editingEntity.value.entityType
@@ -274,6 +291,25 @@ onMounted(async () => {
     selectedCourseId.value = courseIdFromUrl
     await handleCourseSelect()
   }
+
+  // Load saved panel width from localStorage
+  const savedWidth = localStorage.getItem('courseEditor_treePanelWidth')
+  if (savedWidth) {
+    const width = parseInt(savedWidth)
+    if (width >= 200 && width <= 600) {
+      treePanelWidth.value = width
+    }
+  }
+
+  // Add global mouse event listeners for resizing
+  document.addEventListener('mousemove', handleResize)
+  document.addEventListener('mouseup', stopResize)
+})
+
+// Cleanup on unmount
+onUnmounted(() => {
+  document.removeEventListener('mousemove', handleResize)
+  document.removeEventListener('mouseup', stopResize)
 })
 
 // Handle course selection
@@ -319,6 +355,10 @@ const handleCourseSelect = async () => {
 
     currentCourse.value = course
     convertCourseToNodes(course)
+    // Load saved positions from localStorage (do this in next tick after nodes are set)
+    setTimeout(() => {
+      loadNodePositions()
+    }, 0)
   } catch (err) {
     console.error('Error loading course:', err)
   }
@@ -604,6 +644,16 @@ const handleNodesChange = (changes: any[]) => {
   // Handle node position changes, additions, deletions
   // Vue Flow handles this automatically, we just track it
   console.log('Nodes changed:', changes)
+
+  // Check if any position changes occurred
+  const hasPositionChanges = changes.some(change =>
+    change.type === 'position' && change.dragging === false
+  )
+
+  // Save positions to localStorage when nodes are moved
+  if (hasPositionChanges && selectedCourseId.value) {
+    saveNodePositions()
+  }
 }
 
 const handleEdgesChange = (changes: any[]) => {
@@ -616,12 +666,14 @@ const handleNodeClick = (event: any) => {
   console.log('Node clicked:', event)
 }
 
-const handleNodeDoubleClick = (event: any) => {
-  // Open edit modal for the entity
-  const node = nodes.value.find(n => n.id === event.node.id)
-  if (node) {
-    openEditModal(node)
-  }
+const handlePaneClick = (event: any) => {
+  console.log('Pane clicked - clearing all selections')
+  // Clear all selections when clicking on empty canvas
+  nodes.value.forEach(node => {
+    node.selected = false
+  })
+  // Force reactivity update
+  nodes.value = [...nodes.value]
 }
 
 // Toggle expand/collapse for nodes with children
@@ -637,6 +689,10 @@ const handleToggleExpand = (nodeData: any) => {
 
   // Show/hide child nodes and edges
   toggleChildVisibility(node.id, node.data.entityType, node.data.isExpanded)
+
+  // Force Vue reactivity by creating new array reference
+  nodes.value = [...nodes.value]
+  edges.value = [...edges.value]
 }
 
 // Helper to show/hide child nodes
@@ -730,6 +786,9 @@ const closeEditModal = () => {
 }
 
 const handleSaveEntity = async () => {
+  console.log('=== handleSaveEntity called ===')
+  console.log('editingEntity:', editingEntity.value)
+
   isSaving.value = true
   modalError.value = ''
 
@@ -742,43 +801,54 @@ const handleSaveEntity = async () => {
       description: editingEntity.value.description
     }
 
+    console.log('Entity data to save:', entityData)
+
     let result
     const entityType = editingEntity.value.entityType
+    console.log('Entity type:', entityType, 'isNew:', editingEntity.value.isNew)
 
     if (editingEntity.value.isNew) {
       // Create new entity
+      console.log('Creating new entity...')
       switch (entityType) {
         case 'course':
-          result = await coursesStore.create(entityData)
+          result = await coursesStore.createEntity('/courses', entityData)
           break
         case 'chapter':
-          result = await chaptersStore.create(entityData)
+          result = await chaptersStore.createEntity('/chapters', entityData)
           break
         case 'section':
-          result = await sectionsStore.create(entityData)
+          result = await sectionsStore.createEntity('/sections', entityData)
           break
         case 'page':
-          result = await pagesStore.create(entityData)
+          result = await pagesStore.createEntity('/pages', entityData)
           break
+        default:
+          throw new Error(`Unknown entity type: ${entityType}`)
       }
     } else {
       // Update existing entity
       const entityId = editingEntity.value.entityId
+      console.log('Updating existing entity with ID:', entityId)
       switch (entityType) {
         case 'course':
-          result = await coursesStore.update(entityId, entityData)
+          result = await coursesStore.updateEntity('/courses', entityId, entityData)
           break
         case 'chapter':
-          result = await chaptersStore.update(entityId, entityData)
+          result = await chaptersStore.updateEntity('/chapters', entityId, entityData)
           break
         case 'section':
-          result = await sectionsStore.update(entityId, entityData)
+          result = await sectionsStore.updateEntity('/sections', entityId, entityData)
           break
         case 'page':
-          result = await pagesStore.update(entityId, entityData)
+          result = await pagesStore.updateEntity('/pages', entityId, entityData)
           break
+        default:
+          throw new Error(`Unknown entity type: ${entityType}`)
       }
     }
+
+    console.log('Save successful, result:', result)
 
     // Update node in canvas
     const nodeIndex = nodes.value.findIndex(n => n.id === editingEntity.value.nodeId)
@@ -797,8 +867,15 @@ const handleSaveEntity = async () => {
 
     closeEditModal()
   } catch (err: any) {
+    console.error('=== Save entity error ===', err)
+    console.error('Error details:', {
+      message: err.message,
+      response: err.response,
+      stack: err.stack
+    })
     modalError.value = err.response?.data?.error_message ||
                        err.response?.data?.message ||
+                       err.message ||
                        t('courseEditor.saveError')
   } finally {
     isSaving.value = false
@@ -865,27 +942,165 @@ const handleMoveEntity = async (entity: any, targetParent: any) => {
   // TODO: Implement move logic
 }
 
-// Save/Reset handlers
-const handleSave = async () => {
-  // Save all node positions and structure changes
-  console.log('Saving changes...')
+// Position persistence helpers
+const saveNodePositions = () => {
+  if (!selectedCourseId.value) return
 
-  // TODO: Persist node positions to localStorage or backend
   const nodePositions = nodes.value.map(node => ({
     id: node.id,
     entityId: node.data.entityId,
     position: node.position
   }))
 
-  localStorage.setItem('courseEditorPositions', JSON.stringify(nodePositions))
-  console.log('Saved node positions:', nodePositions.length)
+  const storageKey = `courseEditor_positions_${selectedCourseId.value}`
+  localStorage.setItem(storageKey, JSON.stringify(nodePositions))
+  console.log('Auto-saved node positions:', nodePositions.length)
+}
+
+const loadNodePositions = () => {
+  if (!selectedCourseId.value) return
+
+  const storageKey = `courseEditor_positions_${selectedCourseId.value}`
+  const saved = localStorage.getItem(storageKey)
+
+  if (!saved) return
+
+  try {
+    const savedPositions = JSON.parse(saved)
+    const positionMap = new Map(savedPositions.map((p: any) => [p.id, p.position]))
+
+    // Apply saved positions to nodes - directly mutate to preserve Vue Flow state
+    nodes.value.forEach(node => {
+      const savedPosition = positionMap.get(node.id)
+      if (savedPosition) {
+        node.position = savedPosition
+      }
+    })
+
+    console.log('Loaded node positions:', savedPositions.length)
+  } catch (err) {
+    console.error('Failed to load node positions:', err)
+  }
+}
+
+// Save/Reset handlers
+const handleSave = async () => {
+  // Save all node positions
+  saveNodePositions()
+  alert('Node positions saved!')
 }
 
 const handleReset = () => {
   // Reset to default auto-layout
   if (currentCourse.value) {
+    // Clear saved positions from localStorage
+    if (selectedCourseId.value) {
+      const storageKey = `courseEditor_positions_${selectedCourseId.value}`
+      localStorage.removeItem(storageKey)
+      console.log('Cleared saved positions')
+    }
+
+    // Regenerate layout
     convertCourseToNodes(currentCourse.value)
   }
+}
+
+// Panel resize handlers
+const startResize = (event: MouseEvent) => {
+  isResizing.value = true
+  resizeStartX.value = event.clientX
+  resizeStartWidth.value = treePanelWidth.value
+  event.preventDefault()
+}
+
+const handleResize = (event: MouseEvent) => {
+  if (!isResizing.value) return
+
+  // Calculate new width (resize from left edge, so we subtract)
+  const deltaX = resizeStartX.value - event.clientX
+  const newWidth = resizeStartWidth.value + deltaX
+
+  // Constrain to min/max
+  if (newWidth >= 200 && newWidth <= 600) {
+    treePanelWidth.value = newWidth
+  }
+}
+
+const stopResize = () => {
+  if (isResizing.value) {
+    isResizing.value = false
+    // Save to localStorage
+    localStorage.setItem('courseEditor_treePanelWidth', treePanelWidth.value.toString())
+  }
+}
+
+// Select node and all its descendants
+const handleSelectTree = (nodeData: any) => {
+  console.log('Select tree for node:', nodeData)
+
+  // Find the parent node
+  const parentNode = nodes.value.find(n => n.data.entityId === nodeData.entityId)
+  if (!parentNode) return
+
+  // Collect all node IDs to select (parent + all descendants)
+  const nodeIdsToSelect: string[] = []
+
+  const collectDescendants = (nodeId: string, entityType: string) => {
+    nodeIdsToSelect.push(nodeId)
+
+    // Find the node to get its children
+    const node = nodes.value.find(n => n.id === nodeId)
+    if (!node) return
+
+    // Determine child entity key based on type
+    let childrenKey: string | null = null
+    if (entityType === 'course') childrenKey = 'chapters'
+    else if (entityType === 'chapter') childrenKey = 'sections'
+    else if (entityType === 'section') childrenKey = 'pages'
+
+    if (!childrenKey || !node.data[childrenKey]) return
+
+    // Get child type
+    const childType = getChildType(entityType)
+    if (!childType) return
+
+    // Recursively collect all descendants
+    const children = node.data[childrenKey]
+    children.forEach((child: any, idx: number) => {
+      let childNodeId = `${childType}-${child.id}`
+
+      // Handle pages that might not have IDs (same logic as in convertCourseToNodes)
+      if (childType === 'page' && !child.id) {
+        childNodeId = `page-temp-${nodeId}-${idx}`
+      }
+
+      collectDescendants(childNodeId, childType)
+    })
+  }
+
+  const getChildType = (parentType: string): string | null => {
+    const typeMap: Record<string, string> = {
+      'course': 'chapter',
+      'chapter': 'section',
+      'section': 'page'
+    }
+    return typeMap[parentType] || null
+  }
+
+  // Collect all descendants starting from parent
+  collectDescendants(parentNode.id, parentNode.data.entityType)
+
+  // Update selected state - directly mutate to preserve positions
+  nodes.value.forEach(node => {
+    if (nodeIdsToSelect.includes(node.id)) {
+      node.selected = true
+    }
+  })
+
+  // Force reactivity update
+  nodes.value = [...nodes.value]
+
+  console.log('Selected nodes:', nodeIdsToSelect)
 }
 </script>
 
@@ -993,26 +1208,47 @@ const handleReset = () => {
   display: flex;
   flex-direction: column;
   background: var(--color-surface);
-  border-right: 1px solid var(--color-border);
+  border-right: 2px solid var(--color-border);
   overflow: hidden;
+  position: relative;
 }
 
 .library-panel {
   width: 180px;
   min-width: 150px;
-  max-width: 220px;
+  max-width: 300px;
+  flex-shrink: 0;
 }
 
 .canvas-panel {
   flex: 1;
-  border-right: 1px solid var(--color-border);
+  border-right: 2px solid var(--color-border);
+  min-width: 400px;
 }
 
 .tree-panel {
-  width: 220px;
-  min-width: 180px;
-  max-width: 280px;
+  min-width: 200px;
+  max-width: 600px;
   border-right: none;
+  flex-shrink: 0;
+}
+
+/* Resize handle for tree panel */
+.resize-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: ew-resize;
+  background: transparent;
+  transition: background 0.2s;
+  z-index: 10;
+}
+
+.resize-handle:hover,
+.resize-handle.resizing {
+  background: var(--color-primary);
 }
 
 .btn-primary,

@@ -162,32 +162,34 @@ const handleDragEnd = () => {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  background: var(--color-surface-variant);
-  border: 2px dashed var(--color-border);
+  border: 2px solid;
   border-radius: 8px;
   transition: all 0.2s;
 }
 
 .node-type-item:hover .node-preview {
-  border-style: solid;
-  border-color: var(--color-primary);
-  background: var(--color-surface-hover);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
 }
 
 .node-preview.node-course {
-  --node-color: #4A90E2;
+  border-color: #4A90E2;
+  background: #E8F0FB;
 }
 
 .node-preview.node-chapter {
-  --node-color: #7B68EE;
+  border-color: #7B68EE;
+  background: #EBE8F5;
 }
 
 .node-preview.node-section {
-  --node-color: #50C878;
+  border-color: #50C878;
+  background: #E6F5ED;
 }
 
 .node-preview.node-page {
-  --node-color: #FFA500;
+  border-color: #FFA500;
+  background: #FFF3E6;
 }
 
 .node-icon {

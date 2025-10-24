@@ -35,6 +35,7 @@
         <!-- Composant Abonnement -->
         <SubscriptionCard
           :subscription="subscriptionsStore.currentSubscription"
+          :all-subscriptions="subscriptionsStore.allSubscriptions"
           :has-active-subscription="subscriptionsStore.hasActiveSubscription()"
           :last-canceled-subscription="lastCanceledSubscription"
           :is-managing="isManaging"
@@ -44,6 +45,13 @@
           @cancel="showCancelModal = true"
           @reactivate="showReactivateModal = true"
           @activate-free-plan="activateFreePlan"
+        />
+
+        <!-- All Subscriptions (Stacked View) -->
+        <AllSubscriptions
+          v-if="subscriptionsStore.hasActiveSubscription() && subscriptionsStore.allSubscriptions.length > 0"
+          :subscriptions="subscriptionsStore.allSubscriptions"
+          :is-loading="isLoadingAllSubs"
         />
 
         <!-- Composant Utilisation (seulement si abonnement actif) -->
@@ -90,7 +98,7 @@ import { useSubscriptionsStore } from '../../stores/subscriptions'
 import axios from 'axios'
 
 // Import des composants modulaires
-import { SubscriptionCard, UsageOverview, RecentInvoices } from '../Subscription/Dashboard'
+import { SubscriptionCard, UsageOverview, RecentInvoices, AllSubscriptions } from '../Subscription/Dashboard'
 import { CancelSubscriptionModal, ReactivateModal } from '../Subscription/Modals'
 
 const { t } = useI18n()
@@ -112,6 +120,7 @@ const showReactivateModal = ref(false)
 // Loading states for components
 const isLoadingUsage = ref(false)
 const isLoadingInvoices = ref(false)
+const isLoadingAllSubs = ref(false)
 
 // Données réactives
 const usageMetrics = ref([])
@@ -137,12 +146,14 @@ async function loadDashboardData() {
   // Set loading states immediately for all components
   isLoadingUsage.value = true
   isLoadingInvoices.value = true
+  isLoadingAllSubs.value = true
 
   try {
     await loadCurrentSubscription()
 
     if (subscriptionsStore.hasActiveSubscription()) {
       await Promise.allSettled([
+        loadAllSubscriptions(),
         loadUsageMetrics(),
         loadRecentInvoices()
       ])
@@ -150,6 +161,7 @@ async function loadDashboardData() {
       // If no active subscription, stop loading these components
       isLoadingUsage.value = false
       isLoadingInvoices.value = false
+      isLoadingAllSubs.value = false
       await loadLastCanceledSubscription()
     }
   } catch (err: any) {
@@ -158,6 +170,7 @@ async function loadDashboardData() {
     // Make sure to stop loading on error
     isLoadingUsage.value = false
     isLoadingInvoices.value = false
+    isLoadingAllSubs.value = false
   } finally {
     isLoading.value = false
   }
@@ -170,6 +183,16 @@ async function loadCurrentSubscription() {
     if (err.response?.status !== 404) {
       throw err
     }
+  }
+}
+
+async function loadAllSubscriptions() {
+  try {
+    await subscriptionsStore.getAllSubscriptions()
+  } catch (err) {
+    console.warn('Impossible de charger tous les abonnements:', err)
+  } finally {
+    isLoadingAllSubs.value = false
   }
 }
 
@@ -346,39 +369,39 @@ async function downloadInvoice(invoiceId: string) {
 .subscription-dashboard {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: var(--spacing-lg);
 }
 
 .dashboard-header {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-lg);
 }
 
 .dashboard-header h2 {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  margin: 0 0 10px 0;
+  gap: var(--spacing-sm);
+  margin: 0 0 var(--spacing-sm) 0;
   color: var(--color-text-primary);
 }
 
 .loading-section {
   text-align: center;
-  padding: 40px 20px;
+  padding: var(--spacing-2xl) var(--spacing-lg);
   color: var(--color-gray-600);
 }
 
 .dashboard-content {
   display: grid;
-  gap: 15px;
+  gap: var(--spacing-md);
 }
 
 /* Alert */
 .alert {
-  padding: 15px 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
+  margin-bottom: var(--spacing-lg);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -390,31 +413,6 @@ async function downloadInvoice(invoiceId: string) {
   border: 1px solid var(--color-danger-border);
 }
 
-/* Button */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 8px;
-  font-size: 12px;
-  font-weight: 500;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-sm {
-  padding: 4px 8px;
-  font-size: 12px;
-}
-
-.btn-outline-danger {
-  color: var(--color-danger);
-  border-color: var(--color-danger);
-  background-color: transparent;
-}
-
 /* Text utilities */
 .text-muted {
   color: var(--color-gray-600) !important;
@@ -423,7 +421,7 @@ async function downloadInvoice(invoiceId: string) {
 /* Responsive */
 @media (max-width: 768px) {
   .subscription-dashboard {
-    padding: 10px;
+    padding: var(--spacing-sm);
   }
 }
 </style>

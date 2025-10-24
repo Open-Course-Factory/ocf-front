@@ -303,7 +303,7 @@ onMounted(() => {
 
 .quantity-slider::-webkit-slider-thumb:hover {
   transform: scale(1.1);
-  box-shadow: 0 0 0 8px rgba(var(--color-primary-rgb), 0.1);
+  box-shadow: 0 0 0 8px var(--color-primary-light);
 }
 
 .quantity-slider::-moz-range-thumb {
@@ -318,7 +318,7 @@ onMounted(() => {
 
 .quantity-slider::-moz-range-thumb:hover {
   transform: scale(1.1);
-  box-shadow: 0 0 0 8px rgba(var(--color-primary-rgb), 0.1);
+  box-shadow: 0 0 0 8px var(--color-primary-light);
 }
 
 .quantity-number {

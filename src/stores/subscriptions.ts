@@ -165,6 +165,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
 
     // État local
     const currentSubscription = ref(null)
+    const allSubscriptions = ref([]) // All active subscriptions (stacked)
     const isLoading = ref(false)
     const error = ref('')
     const usageMetrics = ref([])
@@ -193,6 +194,33 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
                 if (err.response?.status === 404) {
                     // Pas d'abonnement actif
                     currentSubscription.value = null
+                }
+            }
+        })
+    }
+
+    // Récupérer tous les abonnements (stacked subscriptions)
+    const getAllSubscriptions = async () => {
+        return withAsync(async () => {
+            let data: any
+
+            if (isDemoMode()) {
+                logDemoAction('Getting all demo subscriptions')
+                await simulateDelay(800)
+                // For demo, return array with current subscription
+                data = currentSubscription.value ? [currentSubscription.value] : []
+            } else {
+                const response = await axios.get('/user-subscriptions/all')
+                data = response.data
+            }
+
+            allSubscriptions.value = data
+            return data
+        }, 'subscriptions.loadError', {
+            onError: (err: any) => {
+                if (err.response?.status === 404) {
+                    // Pas d'abonnements
+                    allSubscriptions.value = []
                 }
             }
         })
@@ -481,12 +509,14 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     return {
         // État
         currentSubscription,
+        allSubscriptions,
         isLoading,
         error,
         usageMetrics,
 
         // Actions
         getCurrentSubscription,
+        getAllSubscriptions,
         createCheckoutSession,
         createPortalSession,
         cancelSubscription,

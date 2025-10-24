@@ -43,8 +43,15 @@
     <div v-else class="subscription-card">
       <div class="subscription-header">
         <div class="plan-info">
-          <h4>{{ planName }}</h4>
-          <div class="plan-price" v-if="currentPlan?.price_amount || subscription?.plan_price">
+          <div class="plan-title-row">
+            <h4>{{ planName }}</h4>
+            <!-- Subscription Type Badge -->
+            <span v-if="subscription?.subscription_type" :class="['type-badge', `type-${subscription.subscription_type}`]">
+              <i :class="subscription.subscription_type === 'personal' ? 'fas fa-user' : 'fas fa-users'"></i>
+              {{ t(`subscriptionPlans.subscriptionType_${subscription.subscription_type}`) }}
+            </span>
+          </div>
+          <div class="plan-price" v-if="!isBulkLicense && (currentPlan?.price_amount || subscription?.plan_price)">
             {{ formatPrice(currentPlan?.price_amount || subscription?.plan_price, currentPlan?.currency || subscription?.currency) }}
             <span class="billing-period">/ {{ currentPlan?.billing_interval || subscription?.billing_interval }}</span>
           </div>
@@ -59,6 +66,27 @@
       </div>
 
       <div class="subscription-details">
+        <!-- Bulk License Assignment Info -->
+        <div v-if="isBulkLicense" class="bulk-license-info">
+          <div class="bulk-license-card">
+            <i class="fas fa-users text-primary"></i>
+            <div class="bulk-license-details">
+              <strong>{{ t('subscriptionPlans.bulkLicenseAssigned') }}</strong>
+              <div class="bulk-license-meta">
+                <span v-if="subscription?.batch_owner_name">
+                  {{ t('subscriptionPlans.providedBy') }}: <strong>{{ subscription.batch_owner_name }}</strong>
+                </span>
+                <span v-else-if="subscription?.batch_owner_email">
+                  {{ t('subscriptionPlans.providedBy') }}: <strong>{{ subscription.batch_owner_email }}</strong>
+                </span>
+                <span v-if="subscription?.assigned_at" class="assigned-date">
+                  • {{ t('subscriptionPlans.assignedOn') }} {{ formatDate(subscription.assigned_at) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Période d'essai -->
         <div v-if="isTrialing" class="trial-info">
           <div class="trial-card">
@@ -117,8 +145,8 @@
           </div>
         </div>
 
-        <!-- Prochaine facturation -->
-        <div v-else-if="subscription?.current_period_end" class="billing-info">
+        <!-- Prochaine facturation - Hide for bulk licenses -->
+        <div v-else-if="subscription?.current_period_end && !isBulkLicense" class="billing-info">
           <div class="detail-row">
             <span class="label">
               <i class="fas fa-calendar-alt"></i>
@@ -129,10 +157,10 @@
         </div>
 
         <!-- Actions rapides -->
-        <div class="subscription-actions">
+        <div v-if="!isBulkLicense" class="subscription-actions">
           <!-- Manage Subscription - Only for paid plans -->
           <button
-            v-if="!isFreePlan"
+            v-if="!isFreePlan && isPersonalSubscription"
             class="btn btn-primary"
             @click="$emit('manage')"
             :disabled="isManaging"
@@ -141,15 +169,15 @@
             {{ t('subscriptionPlans.manageSubscription') }}
           </button>
 
-          <!-- Change Plan - Available for all plans -->
-          <router-link to="/subscription-plans" class="btn btn-outline-primary">
+          <!-- Change Plan - Only for personal subscriptions -->
+          <router-link v-if="isPersonalSubscription" to="/subscription-plans" class="btn btn-outline-primary">
             <i class="fas fa-exchange-alt"></i>
             {{ t('subscriptionPlans.changePlan') }}
           </router-link>
 
-          <!-- Cancel Subscription - Only for paid plans that aren't already canceled -->
+          <!-- Cancel Subscription - Only for personal paid plans that aren't already canceled -->
           <button
-            v-if="!isFreePlan && !isCanceled"
+            v-if="!isFreePlan && !isCanceled && isPersonalSubscription"
             class="btn btn-outline-warning"
             @click="$emit('cancel')"
           >
@@ -157,9 +185,9 @@
             {{ t('subscriptionPlans.cancelSubscription') }}
           </button>
 
-          <!-- Reactivate Subscription - Only for paid plans that are canceled -->
+          <!-- Reactivate Subscription - Only for personal paid plans that are canceled -->
           <button
-            v-if="!isFreePlan && isCanceled"
+            v-if="!isFreePlan && isCanceled && isPersonalSubscription"
             class="btn btn-success"
             @click="$emit('reactivate')"
             :disabled="isReactivating"
@@ -167,6 +195,23 @@
             <i :class="isReactivating ? 'fas fa-spinner fa-spin' : 'fas fa-undo'"></i>
             {{ t('subscriptionPlans.reactivateSubscription') }}
           </button>
+        </div>
+
+        <!-- Assigned License Info - Read-only with option to start personal subscription -->
+        <div v-else class="bulk-license-actions">
+          <div class="info-message">
+            <i class="fas fa-info-circle"></i>
+            <p>{{ t('subscriptionPlans.bulkLicenseReadOnly') }}</p>
+          </div>
+
+          <!-- Allow free trial if user never purchased anything -->
+          <div v-if="neverPurchasedPersonal" class="personal-subscription-option">
+            <p class="option-description">{{ t('subscriptionPlans.canStartPersonalSubscription') }}</p>
+            <router-link to="/subscription-plans" class="btn btn-outline-primary">
+              <i class="fas fa-plus-circle"></i>
+              {{ t('subscriptionPlans.viewPlans') }}
+            </router-link>
+          </div>
         </div>
       </div>
     </div>
@@ -184,6 +229,7 @@ interface Props {
   subscription: any | null
   hasActiveSubscription: boolean
   lastCanceledSubscription: any | null
+  allSubscriptions?: any[]
   isManaging?: boolean
   isReactivating?: boolean
   isActivatingFreePlan?: boolean
@@ -192,7 +238,8 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   isManaging: false,
   isReactivating: false,
-  isActivatingFreePlan: false
+  isActivatingFreePlan: false,
+  allSubscriptions: () => []
 })
 
 const emit = defineEmits<{
@@ -218,6 +265,30 @@ const formatPrice = computed(() => subscriptionPlansStore.formatPrice)
 
 const isTrialing = computed(() => props.subscription?.status === 'trialing')
 const isCanceled = computed(() => props.subscription?.cancel_at_period_end === true)
+
+// Check if subscription is from a bulk license batch
+const isBulkLicense = computed(() => {
+  return !!(props.subscription?.subscription_batch_id)
+})
+
+// Check if current subscription is personal (not assigned)
+const isPersonalSubscription = computed(() => {
+  return props.subscription?.subscription_type === 'personal' || !props.subscription?.subscription_type
+})
+
+// Check if user has EVER purchased a personal subscription
+const neverPurchasedPersonal = computed(() => {
+  if (!props.allSubscriptions || props.allSubscriptions.length === 0) {
+    return true // No subscriptions at all, user can start free trial
+  }
+
+  // Check if there's any personal subscription in the list
+  const hasPersonalSubscription = props.allSubscriptions.some(
+    sub => sub.subscription_type === 'personal'
+  )
+
+  return !hasPersonalSubscription
+})
 
 // Check if current plan is free (price_amount === 0)
 const isFreePlan = computed(() => {
@@ -302,10 +373,10 @@ function formatDate(dateString: string) {
 
 <style scoped>
 .subscription-overview {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: var(--color-bg-primary);
+  border-radius: var(--border-radius-xl);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
   border: 1px solid var(--color-gray-200);
   min-width: 600px;
 }
@@ -319,34 +390,34 @@ function formatDate(dateString: string) {
 .subscription-overview h3 {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 0 0 15px 0;
+  gap: var(--spacing-sm);
+  margin: 0 0 var(--spacing-md) 0;
   color: var(--color-gray-700);
-  font-size: 1.25rem;
+  font-size: var(--font-size-xl);
 }
 
 /* No subscription styles */
 .no-subscription-card {
   text-align: center;
-  padding: 30px 15px;
+  padding: var(--spacing-2xl) var(--spacing-md);
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
-  color: white;
-  border-radius: 12px;
+  color: var(--color-white);
+  border-radius: var(--border-radius-xl);
 }
 
 .no-subscription-content i {
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-lg);
   opacity: 0.9;
 }
 
 .no-subscription-content h4 {
-  margin: 20px 0 10px 0;
+  margin: var(--spacing-lg) 0 var(--spacing-sm) 0;
 }
 
 /* Active subscription styles */
 .subscription-card {
   border: 1px solid var(--color-border-light);
-  border-radius: 8px;
+  border-radius: var(--border-radius-lg);
   overflow: hidden;
 }
 
@@ -354,20 +425,56 @@ function formatDate(dateString: string) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px;
+  padding: var(--spacing-md);
   background: linear-gradient(135deg, var(--color-gray-50) 0%, var(--color-gray-200) 100%);
   border-bottom: 1px solid var(--color-border-light);
 }
 
+.plan-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
 .plan-info h4 {
-  margin: 0 0 8px 0;
+  margin: 0;
   color: var(--color-text-primary);
 }
 
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-xl);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.type-badge.type-personal {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.type-badge.type-assigned {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-medium);
+}
+
+.type-badge i {
+  font-size: var(--font-size-xs);
+}
+
 .plan-price {
-  font-size: 1.5rem;
-  font-weight: bold;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
   color: var(--color-success);
+  margin-top: var(--spacing-sm);
 }
 
 .billing-period {
@@ -379,29 +486,30 @@ function formatDate(dateString: string) {
 .status-badge {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
 }
 
 .subscription-details {
-  padding: 15px;
+  padding: var(--spacing-md);
 }
 
 .trial-card,
-.cancellation-card {
+.cancellation-card,
+.bulk-license-card {
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 15px;
-  border-radius: 8px;
-  margin-bottom: 20px;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-lg);
+  margin-bottom: var(--spacing-lg);
 }
 
 .trial-card {
-  background-color: #e1f5fe;
+  background-color: var(--color-info-bg);
   border-left: 4px solid var(--color-info);
 }
 
@@ -410,58 +518,135 @@ function formatDate(dateString: string) {
   border-left: 4px solid var(--color-warning);
 }
 
+.bulk-license-card {
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-bg-secondary) 100%);
+  border-left: 4px solid var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.bulk-license-details {
+  flex: 1;
+}
+
+.bulk-license-details strong {
+  display: block;
+  color: var(--color-primary);
+  font-size: var(--font-size-md);
+  margin-bottom: var(--spacing-xs);
+}
+
+.bulk-license-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.bulk-license-meta .assigned-date {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.bulk-license-card i {
+  font-size: var(--font-size-2xl);
+  color: var(--color-primary);
+}
+
 .detail-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: var(--spacing-md);
 }
 
 .detail-row .label {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--color-gray-700);
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--spacing-xs);
 }
 
 .subscription-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--spacing-sm);
   flex-wrap: wrap;
-  margin-top: 20px;
+  margin-top: var(--spacing-lg);
+}
+
+.bulk-license-actions {
+  margin-top: var(--spacing-lg);
+}
+
+.info-message {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-bg-secondary) 100%);
+  border-left: 4px solid var(--color-info);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--color-info);
+}
+
+.info-message i {
+  color: var(--color-info);
+  font-size: var(--font-size-xl);
+  margin-top: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+.info-message p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+}
+
+.personal-subscription-option {
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.option-description {
+  margin: 0 0 var(--spacing-md) 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
 }
 
 /* Plan features */
 .plan-features {
-  margin: 20px 0;
-  padding: 20px;
+  margin: var(--spacing-lg) 0;
+  padding: var(--spacing-lg);
   background: var(--color-gray-50);
-  border-radius: 8px;
+  border-radius: var(--border-radius-lg);
 }
 
 .plan-features h5 {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 0 15px 0;
+  gap: var(--spacing-sm);
+  margin: 0 0 var(--spacing-md) 0;
   color: var(--color-gray-700);
-  font-size: 1rem;
+  font-size: var(--font-size-md);
 }
 
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
+  gap: var(--spacing-md);
 }
 
 .feature-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px;
-  background: white;
-  border-radius: 6px;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--color-bg-primary);
+  border-radius: var(--border-radius-md);
   border: 1px solid var(--color-gray-200);
 }
 
@@ -472,7 +657,7 @@ function formatDate(dateString: string) {
 }
 
 .feature-item span {
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   color: var(--color-gray-700);
 }
 
@@ -480,7 +665,7 @@ function formatDate(dateString: string) {
 @media (max-width: 768px) {
   .subscription-header {
     flex-direction: column;
-    gap: 15px;
+    gap: var(--spacing-md);
     text-align: center;
   }
 
@@ -488,73 +673,9 @@ function formatDate(dateString: string) {
     flex-direction: column;
   }
 
-  .subscription-actions .btn {
-    width: 100%;
-    justify-content: center;
-  }
-
   .features-grid {
     grid-template-columns: 1fr;
   }
-}
-
-/* Button styles */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 8px 16px;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.5;
-  text-align: center;
-  white-space: nowrap;
-  vertical-align: middle;
-  cursor: pointer;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.btn-lg {
-  padding: 12px 24px;
-  font-size: 16px;
-}
-
-.btn-primary {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-white);
-}
-
-.btn-success {
-  background-color: var(--color-success);
-  border-color: var(--color-success);
-  color: var(--color-white);
-}
-
-.btn-outline-primary {
-  color: var(--color-primary);
-  border-color: var(--color-primary);
-  background-color: transparent;
-}
-
-.btn-outline-warning {
-  color: var(--color-warning);
-  border-color: var(--color-warning);
-  background-color: transparent;
 }
 
 /* Text utilities */

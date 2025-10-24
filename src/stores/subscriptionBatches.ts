@@ -69,6 +69,7 @@ export const useSubscriptionBatchesStore = defineStore('subscriptionBatches', ()
         revokeError: 'Failed to revoke license',
         updateError: 'Failed to update quantity',
         cancelError: 'Failed to cancel batch',
+        deleteError: 'Failed to delete batch',
         purchaseSuccess: 'Licenses purchased successfully',
         assignSuccess: 'License assigned successfully',
         revokeSuccess: 'License revoked successfully',
@@ -78,6 +79,7 @@ export const useSubscriptionBatchesStore = defineStore('subscriptionBatches', ()
         confirmCancel: 'Are you sure you want to cancel this batch?',
         active: 'Active',
         cancelled: 'Cancelled',
+        canceled: 'Canceled',
         expired: 'Expired',
         past_due: 'Past Due'
       }
@@ -114,6 +116,7 @@ export const useSubscriptionBatchesStore = defineStore('subscriptionBatches', ()
         revokeError: 'Échec de la révocation de la licence',
         updateError: 'Échec de la mise à jour de la quantité',
         cancelError: 'Échec de l\'annulation du lot',
+        deleteError: 'Échec de la suppression du lot',
         purchaseSuccess: 'Licences achetées avec succès',
         assignSuccess: 'Licence assignée avec succès',
         revokeSuccess: 'Licence révoquée avec succès',
@@ -123,6 +126,7 @@ export const useSubscriptionBatchesStore = defineStore('subscriptionBatches', ()
         confirmCancel: 'Êtes-vous sûr de vouloir annuler ce lot ?',
         active: 'Actif',
         cancelled: 'Annulé',
+        canceled: 'Annulé',
         expired: 'Expiré',
         past_due: 'En Retard'
       }
@@ -162,7 +166,11 @@ export const useSubscriptionBatchesStore = defineStore('subscriptionBatches', ()
   const pricingPreview = ref<PricingBreakdown | null>(null)
 
   // Computed properties
-  const batches = computed(() => base.entities as SubscriptionBatch[])
+  const batches = computed(() => {
+    console.log('Store batches computed called, base.entities:', base.entities)
+    console.log('Store batches computed, length:', base.entities.length)
+    return base.entities as SubscriptionBatch[]
+  })
   const activeBatches = computed(() =>
     batches.value.filter((batch) => batch.status === 'active')
   )
@@ -172,8 +180,16 @@ export const useSubscriptionBatchesStore = defineStore('subscriptionBatches', ()
    */
   const loadBatches = async () => {
     return await baseAsync(async () => {
+      console.log('Store: calling bulkLicenseService.getMyBatches()')
       const data = await bulkLicenseService.getMyBatches()
-      base.entities = data
+      console.log('Store: received data from API:', data)
+      console.log('Store: data length:', data?.length)
+
+      // Update reactive array properly - don't replace the reference!
+      base.entities.splice(0, base.entities.length, ...data)
+
+      console.log('Store: base.entities after assignment:', base.entities)
+      console.log('Store: base.entities length:', base.entities.length)
       return data
     }, 'subscriptionBatches.loadError')
   }
@@ -215,7 +231,37 @@ export const useSubscriptionBatchesStore = defineStore('subscriptionBatches', ()
   }
 
   /**
-   * Purchase bulk licenses
+   * Create checkout session for bulk purchase
+   */
+  const createBulkCheckoutSession = async (
+    planId: string,
+    quantity: number,
+    successUrl: string,
+    cancelUrl: string,
+    groupId?: string,
+    couponCode?: string
+  ) => {
+    return await baseAsync(async () => {
+      const response = await bulkLicenseService.createBulkCheckoutSession({
+        subscription_plan_id: planId,
+        quantity,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        group_id: groupId,
+        coupon_code: couponCode
+      })
+
+      // Redirect to Stripe checkout
+      if (response.url) {
+        window.location.href = response.url
+      }
+
+      return response
+    }, 'subscriptionBatches.purchaseError')
+  }
+
+  /**
+   * Purchase bulk licenses (direct - for when payment is already handled)
    */
   const purchaseBulkLicenses = async (input: BulkPurchaseInput) => {
     return await baseAsync(async () => {
@@ -313,6 +359,25 @@ export const useSubscriptionBatchesStore = defineStore('subscriptionBatches', ()
   }
 
   /**
+   * Permanently delete a canceled batch
+   */
+  const deleteBatch = async (batchId: string) => {
+    return await baseAsync(async () => {
+      const result = await bulkLicenseService.deleteBatch(batchId)
+      // Remove from batches list
+      const batchIndex = batches.value.findIndex((b) => b.id === batchId)
+      if (batchIndex !== -1) {
+        batches.value.splice(batchIndex, 1)
+      }
+      // Clear current batch if it's the one being deleted
+      if (currentBatch.value && currentBatch.value.id === batchId) {
+        currentBatch.value = null
+      }
+      return result
+    }, 'subscriptionBatches.deleteError')
+  }
+
+  /**
    * Get unassigned licenses count for a batch
    */
   const getUnassignedCount = (batchId: string): number => {
@@ -354,11 +419,13 @@ export const useSubscriptionBatchesStore = defineStore('subscriptionBatches', ()
     loadBatch,
     loadBatchLicenses,
     getPricingPreview,
+    createBulkCheckoutSession,
     purchaseBulkLicenses,
     assignLicense,
     revokeLicense,
     updateBatchQuantity,
     cancelBatch,
+    deleteBatch,
     getUnassignedCount
   }
 })
