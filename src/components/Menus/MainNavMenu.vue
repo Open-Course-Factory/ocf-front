@@ -156,7 +156,8 @@ interface MenuCategory {
 // État pour gérer l'expansion des catégories et leur position
 const expandedCategories = ref<Record<string, boolean>>({
   courses: false,
-  labs: false,
+  terminals: false,
+  groups: false,
   subscription: false,
   help: false,
   admin: false
@@ -216,12 +217,19 @@ const menuCategories = computed((): MenuCategory[] => [
         title: t('generations.pageTitle'),
         icon: 'fas fa-archive',
         featureFlag: 'archive_generations'
+      },
+      {
+        route: '/settings/ssh-keys',
+        label: t('navigation.sshKeys'),
+        title: t('navigation.sshKeysTitle'),
+        icon: 'fas fa-key',
+        featureFlag: 'ssh_key_management'
       }
     ]
   },
   {
-    key: 'labs',
-    label: t('navigation.practicalWork'),
+    key: 'terminals',
+    label: t('navigation.terminals'),
     icon: 'fas fa-laptop-code',
     allowedRoles: ['administrator', 'teacher', 'student'],
     featureFlag: 'terminal_management',
@@ -237,26 +245,33 @@ const menuCategories = computed((): MenuCategory[] => [
         label: t('navigation.mySessions'),
         title: t('navigation.manageAllTerminalSessions'),
         icon: 'fas fa-terminal'
-      },
+      }
+    ]
+  },
+  {
+    key: 'groups',
+    label: t('navigation.groups'),
+    icon: 'fas fa-users',
+    allowedRoles: ['administrator', 'teacher', 'student'],
+    featureFlag: 'class_groups',
+    items: [
       {
         route: '/class-groups',
         label: t('classGroups.pageTitle'),
         title: t('classGroups.groupInfo'),
-        icon: 'fas fa-users',
-        featureFlag: 'class_groups'
+        icon: 'fas fa-users'
       },
       {
         route: '/group-members',
         label: t('groupMembers.pageTitle'),
         title: t('groupMembers.memberInfo'),
-        icon: 'fas fa-user-friends',
-        featureFlag: 'class_groups'
+        icon: 'fas fa-user-friends'
       }
     ]
   },
   {
     key: 'subscription',
-    label: t('navigation.subscriptionManagement'),
+    label: t('navigation.subscriptionLicenses'),
     icon: 'fas fa-credit-card',
     allowedRoles: ['administrator', 'teacher', 'student'],
     items: [
@@ -268,27 +283,21 @@ const menuCategories = computed((): MenuCategory[] => [
       },
       {
         route: '/subscription-plans',
-        label: t('navigation.subscriptionPlans'),
-        title: t('navigation.subscriptionPlansTitle'),
+        label: t('navigation.availablePlans'),
+        title: t('navigation.availablePlansTitle'),
         icon: 'fas fa-tags'
       },
       {
         route: '/bulk-license-purchase',
-        label: t('navigation.bulkPurchase'),
-        title: t('navigation.bulkPurchaseTitle'),
+        label: t('navigation.purchaseLicenses'),
+        title: t('navigation.purchaseLicensesTitle'),
         icon: 'fas fa-shopping-cart'
       },
       {
         route: '/license-management',
-        label: t('navigation.licenseManagement'),
-        title: t('navigation.licenseManagementTitle'),
+        label: t('navigation.manageLicenses'),
+        title: t('navigation.manageLicensesTitle'),
         icon: 'fas fa-layer-group'
-      },
-      {
-        route: '/invoices',
-        label: t('navigation.invoices'),
-        title: t('navigation.invoicesTitle'),
-        icon: 'fas fa-file-invoice-dollar'
       }
     ]
   },

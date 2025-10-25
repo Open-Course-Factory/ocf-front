@@ -13,10 +13,6 @@
             <label>{{ t('userSettings.security.passwordLastChanged') }}</label>
             <p>{{ formatDate(settingsStore.settings.password_last_changed) }}</p>
           </div>
-          <div class="info-item">
-            <label>{{ t('userSettings.security.twoFactorEnabled') }}</label>
-            <p>{{ settingsStore.settings.two_factor_enabled ? t('userSettings.security.yes') : t('userSettings.security.no') }}</p>
-          </div>
         </div>
       </div>
 
@@ -58,7 +54,7 @@
             <i class="fas fa-check-circle"></i>
             {{ successMessage }}
           </div>
-          <button type="submit" class="btn-primary" :disabled="settingsStore.isLoading">
+          <button type="submit" class="btn btn-primary" :disabled="settingsStore.isLoading">
             <i class="fas fa-key"></i>
             {{ settingsStore.isLoading ? t('userSettings.security.changing') : t('userSettings.security.changePassword') }}
           </button>

@@ -395,64 +395,64 @@ const startResendCooldown = () => {
   align-items: center;
   min-height: 100vh;
   background-color: var(--color-gray-50);
-  padding: 20px;
+  padding: var(--spacing-lg);
 }
 
 .password-reset-form {
   background-color: var(--color-white);
-  padding: 40px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: var(--spacing-2xl);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
   width: 100%;
   max-width: 400px;
   text-align: center;
 }
 
 .password-reset-form h2 {
-  margin-bottom: 16px;
+  margin-bottom: var(--spacing-md);
   font-size: 1.8rem;
   color: var(--color-text-primary);
 }
 
 .text-muted {
   color: var(--color-gray-600);
-  margin-bottom: 24px;
+  margin-bottom: var(--spacing-lg);
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-lg);
   text-align: left;
 }
 
 .form-group label {
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: var(--spacing-sm);
   display: block;
 }
 
 .password-requirements {
-  margin-top: 8px;
+  margin-top: var(--spacing-sm);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--spacing-xs);
   text-align: left;
 }
 
 .password-requirements small {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   font-size: 0.875rem;
 }
 
 .btn-block {
   width: 100%;
-  padding: 12px;
-  margin-top: 16px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-top: var(--spacing-md);
 }
 
 .back-to-login {
-  margin-top: 24px;
+  margin-top: var(--spacing-lg);
 }
 
 .back-to-login a {
@@ -468,25 +468,25 @@ const startResendCooldown = () => {
 .success-icon {
   font-size: 4rem;
   color: var(--color-success);
-  margin-bottom: 16px;
+  margin-bottom: var(--spacing-md);
 }
 
 .resend-section {
-  margin: 24px 0;
-  padding: 20px;
+  margin: var(--spacing-lg) 0;
+  padding: var(--spacing-lg);
   background-color: var(--color-gray-50);
-  border-radius: 8px;
+  border-radius: var(--border-radius-lg);
 }
 
 .resend-section p {
-  margin-bottom: 12px;
+  margin-bottom: var(--spacing-sm);
   color: var(--color-gray-600);
 }
 
 .alert {
-  margin: 16px 0;
-  padding: 12px;
-  border-radius: 4px;
+  margin: var(--spacing-md) 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-sm);
   text-align: left;
 }
 
@@ -497,6 +497,6 @@ const startResendCooldown = () => {
 }
 
 .btn i {
-  margin-right: 8px;
+  margin-right: var(--spacing-sm);
 }
 </style>

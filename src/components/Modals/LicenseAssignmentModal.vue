@@ -220,12 +220,13 @@ watch(() => props.visible, (newVisible) => {
 
 .form-control {
   padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-border-default);
+  border: 2px solid var(--color-border-medium);
   border-radius: var(--border-radius-sm);
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
   font-size: var(--font-size-base);
   transition: all var(--transition-fast);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .form-control:focus {

@@ -140,7 +140,7 @@
                   </th>
                   <th>{{ t('batchDetails.licenseId') }}</th>
                   <th>{{ t('batchDetails.assignedTo') }}</th>
-                  <th>{{ t('batchDetails.licenseStatus') }}</th>
+                  <th>{{ t('batchDetails.statusColumn') }}</th>
                   <th>{{ t('batchDetails.assignedDate') }}</th>
                   <th>{{ t('batchDetails.actions') }}</th>
                 </tr>
@@ -256,7 +256,7 @@ const { t } = useTranslations({
       noLicenses: 'No licenses found',
       licenseId: 'License ID',
       assignedTo: 'Assigned To',
-      licenseStatus: 'Status',
+      statusColumn: 'Status',
       assignedDate: 'Assigned Date',
       actions: 'Actions',
       unassigned: 'Unassigned',
@@ -315,7 +315,7 @@ const { t } = useTranslations({
       noLicenses: 'Aucune licence trouvée',
       licenseId: 'ID de Licence',
       assignedTo: 'Assignée à',
-      licenseStatus: 'Statut',
+      statusColumn: 'Statut',
       assignedDate: 'Date d\'Assignation',
       actions: 'Actions',
       unassigned: 'Non assignée',
@@ -919,7 +919,10 @@ onMounted(async () => {
 }
 
 .btn-primary:hover {
-  background: var(--color-primary-dark);
+  background: var(--color-primary);
+  color: var(--color-white);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .btn-secondary {
@@ -929,8 +932,11 @@ onMounted(async () => {
 }
 
 .btn-secondary:hover {
-  background: var(--color-bg-tertiary);
-  border-color: var(--color-border-dark);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-medium);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .btn-warning {
@@ -939,7 +945,10 @@ onMounted(async () => {
 }
 
 .btn-warning:hover {
-  background: var(--color-warning-dark);
+  background: var(--color-warning);
+  color: var(--color-white);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .btn-danger {
@@ -948,7 +957,10 @@ onMounted(async () => {
 }
 
 .btn-danger:hover {
-  background: var(--color-danger-dark);
+  background: var(--color-danger);
+  color: var(--color-white);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Checkboxes */
@@ -1134,8 +1146,10 @@ onMounted(async () => {
 }
 
 .btn-action.assign:hover {
-  background: var(--color-success);
-  color: var(--color-white);
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .btn-action.revoke {
@@ -1144,8 +1158,10 @@ onMounted(async () => {
 }
 
 .btn-action.revoke:hover {
-  background: var(--color-danger);
-  color: var(--color-white);
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .empty-state {

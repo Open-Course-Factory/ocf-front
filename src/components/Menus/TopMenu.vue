@@ -51,22 +51,33 @@
           <i class="fas fa-chevron-down chevron-icon" :class="{ rotated: isUserMenuOpen }"></i>
         </button>
         <div v-if="isUserMenuOpen" class="user-dropdown">
+          <div class="dropdown-user-header">
+            <div class="user-name">@{{ currentUser.userName }}</div>
+          </div>
+          <div class="dropdown-divider"></div>
           <div class="dropdown-section">
             <div class="dropdown-section-title">{{ t('topMenu.account') }}</div>
-            <router-link to="/subscription-dashboard" class="dropdown-item" @click="closeUserMenu">
-              <i class="fas fa-tachometer-alt"></i>
-              <span>{{ t('topMenu.subscriptionDashboard') }}</span>
-            </router-link>
-            <router-link to="/subscription-plans" class="dropdown-item" @click="closeUserMenu">
-              <i class="fas fa-calendar"></i>
-              <span>{{ t('topMenu.subscriptionPlans') }}</span>
+            <router-link to="/settings/navigation" class="dropdown-item" @click="closeUserMenu">
+              <i class="fas fa-cog"></i>
+              <span>{{ t('topMenu.settings') }}</span>
             </router-link>
           </div>
           <div class="dropdown-divider"></div>
-          <router-link to="/settings/navigation" class="dropdown-item" @click="closeUserMenu">
-            <i class="fas fa-cog"></i>
-            <span>{{ t('topMenu.settings') }}</span>
-          </router-link>
+          <div class="dropdown-section">
+            <div class="dropdown-section-title">{{ t('topMenu.billingPayment') }}</div>
+            <router-link to="/payment-methods" class="dropdown-item" @click="closeUserMenu">
+              <i class="fas fa-credit-card"></i>
+              <span>{{ t('topMenu.paymentMethods') }}</span>
+            </router-link>
+            <router-link to="/billing-addresses" class="dropdown-item" @click="closeUserMenu">
+              <i class="fas fa-map-marker-alt"></i>
+              <span>{{ t('topMenu.billingAddresses') }}</span>
+            </router-link>
+            <router-link to="/invoices" class="dropdown-item" @click="closeUserMenu">
+              <i class="fas fa-file-invoice-dollar"></i>
+              <span>{{ t('topMenu.invoices') }}</span>
+            </router-link>
+          </div>
           <div class="dropdown-divider"></div>
           <button class="dropdown-item disconnect-item" @click="handleDisconnect">
             <i class="fas fa-sign-out-alt"></i>
@@ -91,18 +102,22 @@ const { t } = useTranslations({
   en: {
     topMenu: {
       account: 'Account',
-      subscriptionDashboard: 'Subscription Dashboard',
-      subscriptionPlans: 'Subscription Plans',
       settings: 'Settings',
+      billingPayment: 'Billing & Payment',
+      paymentMethods: 'Payment Methods',
+      billingAddresses: 'Billing Addresses',
+      invoices: 'Invoices',
       disconnect: 'Disconnect'
     }
   },
   fr: {
     topMenu: {
       account: 'Compte',
-      subscriptionDashboard: 'Tableau de bord abonnement',
-      subscriptionPlans: 'Plans d\'abonnement',
       settings: 'Paramètres',
+      billingPayment: 'Facturation et Paiement',
+      paymentMethods: 'Moyens de paiement',
+      billingAddresses: 'Adresses de facturation',
+      invoices: 'Factures',
       disconnect: 'Déconnexion'
     }
   }
@@ -356,7 +371,7 @@ onUnmounted(() => {
   position: absolute;
   top: calc(100% + var(--spacing-xs));
   right: 0;
-  min-width: 200px;
+  min-width: 280px;
   background-color: var(--color-bg-primary);
   border: var(--border-width-thin) solid var(--color-border-light);
   border-radius: var(--border-radius-md);
@@ -443,5 +458,19 @@ onUnmounted(() => {
   to {
     transform: translateY(0);
   }
+}
+
+.dropdown-user-header {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: var(--color-bg-secondary);
+}
+
+.user-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>
