@@ -27,16 +27,16 @@ import { useI18n } from 'vue-i18n'
 import Entity from './Entity.vue'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
-import { useCurrentUserStore } from '../../stores/currentUser.ts'
-import router from '../../router/index.ts'
 import { useNotification } from '../../composables/useNotification'
+import { useAdminViewMode } from '../../composables/useAdminViewMode'
+import router from '../../router/index.ts'
 
 const { t } = useI18n()
 const { showError } = useNotification()
 
 const entityStore = useSubscriptionPlansStore()
 const subscriptionsStore = useSubscriptionsStore()
-const currentUser = useCurrentUserStore()
+const { isAdmin, shouldFilterAsStandardUser, shouldShowAllData } = useAdminViewMode()
 
 // État pour les actions
 const isUpgrading = ref(false)
@@ -45,18 +45,14 @@ const isSyncing = ref(false)
 const syncResult = ref<any>(null)
 const showSyncResult = ref(false)
 
-// Seuls les administrateurs peuvent modifier les plans
-const isAdmin = computed(() => 
-    currentUser.userRoles.includes('administrator')
-);
-
-// Filtrer les plans actifs pour les utilisateurs non-admin
+// Filtrer les plans selon le mode de vue
 const filteredPlans = computed(() => {
-    if (isAdmin.value) {
-        return entityStore.entities;
+    // Si pas admin OU admin en mode "vue utilisateur", filtrer pour ne montrer que les plans actifs
+    if (!isAdmin.value || shouldFilterAsStandardUser.value) {
+        return entityStore.entities.filter((plan: any) => plan.is_active);
     }
-    // Les utilisateurs normaux ne voient que les plans actifs
-    return entityStore.entities.filter((plan: any) => plan.is_active);
+    // Admin en mode "vue admin" : montrer tous les plans
+    return entityStore.entities;
 });
 
 // Surcharger temporairement les entités filtrées
@@ -164,14 +160,14 @@ const syncWithStripe = async () => {
 <template>
     <div class="wrapper">
         <div class="subscription-plans-page">
-            <!-- Message informatif pour les non-admins -->
-            <div v-if="!isAdmin" class="info-banner">
+            <!-- Message informatif pour les non-admins ou admins en vue utilisateur -->
+            <div v-if="!isAdmin || shouldFilterAsStandardUser" class="info-banner">
                 <i class="fas fa-info-circle"></i>
                 <span>{{ t('ui.availablePlans') }}</span>
             </div>
 
-            <!-- Admin controls -->
-            <div v-if="isAdmin" class="admin-controls">
+            <!-- Admin controls (visible uniquement en mode admin complet) -->
+            <div v-if="shouldShowAllData" class="admin-controls">
                 <button
                     class="btn btn-primary"
                     @click="syncWithStripe"
@@ -262,9 +258,9 @@ const syncWithStripe = async () => {
             </div>
 
             <!-- Vue générique utilisant le composant Entity -->
-            <Entity 
-                :entity-name='"subscription-plans"' 
-                :entity-store="isAdmin ? entityStore : entityStoreWithFiltering"
+            <Entity
+                :entity-name='"subscription-plans"'
+                :entity-store="entityStoreWithFiltering"
             >
                 <template #actions="{ entity }">
                     <!-- Actions spécifiques pour les plans d'abonnement -->
@@ -288,8 +284,8 @@ const syncWithStripe = async () => {
                             </div>
                         </div>
                         
-                        <!-- Buttons for plan actions (non-admins) -->
-                        <div v-if="!isAdmin && entity.is_active" class="plan-buttons">
+                        <!-- Buttons for plan actions (non-admins or admins viewing as user) -->
+                        <div v-if="(!isAdmin || shouldFilterAsStandardUser) && entity.is_active" class="plan-buttons">
                             <!-- Current plan indicator -->
                             <div v-if="getPlanRelationship(entity) === 'current'" class="current-plan-badge">
                                 <i class="fas fa-check-circle"></i>
@@ -331,9 +327,9 @@ const syncWithStripe = async () => {
                                 {{ t('subscriptionPlans.downgrade') }}
                             </button>
                         </div>
-                        
-                        <!-- Badge de statut pour les admins -->
-                        <div v-if="isAdmin" class="admin-badges">
+
+                        <!-- Badge de statut pour les admins (en mode admin complet seulement) -->
+                        <div v-if="shouldShowAllData" class="admin-badges">
                             <span 
                                 :class="['badge', entity.is_active ? 'badge-success' : 'badge-secondary']"
                             >

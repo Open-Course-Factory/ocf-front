@@ -493,7 +493,7 @@ const { t } = useTranslations({
 const { showSuccess, showError } = useNotification()
 
 // Configuration
-const today = new Date().toISOString().split('T')[0]
+const _today = new Date().toISOString().split('T')[0]
 
 const config = ref({
   action: 'void',
@@ -776,7 +776,7 @@ const formatDate = (dateString: string): string => {
   return formatDateTime(dateString).split(' ')[0]
 }
 
-const capitalize = (str: string): string => {
+const _capitalize = (str: string): string => {
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
 

@@ -42,6 +42,17 @@
           </option>
         </select>
       </div>
+      <!-- Admin View Mode Toggle -->
+      <div v-if="isAdmin" class="view-mode-toggle" :title="viewAsStandardUser ? t('topMenu.viewingAsUser') : t('topMenu.viewingAsAdmin')">
+        <button
+          class="toggle-button"
+          :class="{ active: viewAsStandardUser }"
+          @click="toggleViewMode"
+        >
+          <i :class="viewAsStandardUser ? 'fas fa-user' : 'fas fa-user-shield'"></i>
+          <span class="toggle-text">{{ viewAsStandardUser ? t('topMenu.userView') : t('topMenu.adminView') }}</span>
+        </button>
+      </div>
       <div class="user-menu" ref="userMenuRef">
         <button class="user-info" @click="toggleUserMenu">
           <div class="profile-picture">
@@ -97,6 +108,7 @@ import { useCurrentUserStore } from '../../stores/currentUser.ts';
 import { useUserSettingsStore } from '../../stores/userSettings.ts';
 import { useLocale } from '../../composables/useLocale';
 import { useFeatureFlags } from '../../composables/useFeatureFlags';
+import { useAdminViewMode } from '../../composables/useAdminViewMode';
 
 const { t } = useTranslations({
   en: {
@@ -107,7 +119,11 @@ const { t } = useTranslations({
       paymentMethods: 'Payment Methods',
       billingAddresses: 'Billing Addresses',
       invoices: 'Invoices',
-      disconnect: 'Disconnect'
+      disconnect: 'Disconnect',
+      adminView: 'Admin',
+      userView: 'User',
+      viewingAsAdmin: 'Viewing as admin (all data)',
+      viewingAsUser: 'Viewing as standard user (filtered data)'
     }
   },
   fr: {
@@ -118,7 +134,11 @@ const { t } = useTranslations({
       paymentMethods: 'Moyens de paiement',
       billingAddresses: 'Adresses de facturation',
       invoices: 'Factures',
-      disconnect: 'Déconnexion'
+      disconnect: 'Déconnexion',
+      adminView: 'Admin',
+      userView: 'Utilisateur',
+      viewingAsAdmin: 'Vue administrateur (toutes les données)',
+      viewingAsUser: 'Vue utilisateur standard (données filtrées)'
     }
   }
 })
@@ -128,11 +148,16 @@ const currentUser = useCurrentUserStore();
 const settingsStore = useUserSettingsStore();
 const { currentLocale, supportedLocales, setLocale, getLocaleInfo } = useLocale();
 const { isEnabled } = useFeatureFlags();
+const { isAdmin, viewAsStandardUser, toggleViewMode: toggleViewModeComposable, initViewMode } = useAdminViewMode();
 
 const emit = defineEmits(['toggle-menu']);
 
 const isUserMenuOpen = ref(false);
 const userMenuRef = ref<HTMLElement | null>(null);
+
+function toggleViewMode() {
+  toggleViewModeComposable();
+}
 
 function toggleMenu() {
   emit('toggle-menu');
@@ -206,6 +231,8 @@ function handleClickOutside(event: Event) {
 onMounted(() => {
   // Add click outside listener
   document.addEventListener('click', handleClickOutside);
+  // Initialize admin view mode from localStorage
+  initViewMode();
 });
 
 onUnmounted(() => {
@@ -311,6 +338,52 @@ onUnmounted(() => {
 
 .flag-select option {
   padding: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.view-mode-toggle {
+  display: flex;
+  align-items: center;
+}
+
+.toggle-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-thin) solid var(--color-border-medium);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.toggle-button:hover {
+  border-color: var(--color-primary);
+  background-color: var(--color-bg-secondary);
+  color: var(--color-primary);
+}
+
+.toggle-button.active {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  border-color: var(--color-primary);
+}
+
+.toggle-button.active:hover {
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.toggle-button i {
+  font-size: var(--font-size-base);
+}
+
+.toggle-text {
   font-size: var(--font-size-sm);
 }
 

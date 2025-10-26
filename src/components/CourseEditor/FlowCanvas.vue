@@ -46,8 +46,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
-import { VueFlow, useVueFlow } from '@vue-flow/core'
+import { ref, watch } from 'vue'
+import { VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
@@ -109,7 +109,7 @@ watch(() => props.nodes, (newNodes, oldNodes) => {
     newNodes.some((node, idx) => node.id !== oldNodes[idx]?.id)
 
   // Check if hidden state changed (for expand/collapse)
-  const hiddenChanged = newNodes.some((node, idx) => {
+  const hiddenChanged = newNodes.some((node) => {
     const oldNode = nodesData.value.find(n => n.id === node.id)
     return oldNode && oldNode.hidden !== node.hidden
   })
@@ -126,7 +126,7 @@ watch(() => props.edges, (newEdges, oldEdges) => {
     newEdges.some((edge, idx) => edge.id !== oldEdges[idx]?.id)
 
   // Check if hidden state changed (for expand/collapse)
-  const hiddenChanged = newEdges.some((edge, idx) => {
+  const hiddenChanged = newEdges.some((edge) => {
     const oldEdge = edgesData.value.find(e => e.id === edge.id)
     return oldEdge && oldEdge.hidden !== edge.hidden
   })
@@ -137,8 +137,6 @@ watch(() => props.edges, (newEdges, oldEdges) => {
 })
 
 // Drag and drop handling
-let dragCounter = 0
-
 const handleDragOver = (event: DragEvent) => {
   event.preventDefault()
   if (event.dataTransfer) {

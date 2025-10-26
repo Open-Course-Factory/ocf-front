@@ -83,20 +83,20 @@
               <i class="fas fa-folder-open"></i>
               {{ t(`${translationKey}.${key}`) }}
               <span v-if="Array.isArray(value)" class="subentity-count">
-                ({{ value.length }})
+                ({{ (value as any[]).length }})
               </span>
             </dt>
             <dd class="subentity-container" colspan="2">
               <!-- Handle array of subentities -->
               <div v-if="Array.isArray(value)" class="subentity-list">
-                <div v-if="value.length === 0" class="empty-subentity">
+                <div v-if="(value as any[]).length === 0" class="empty-subentity">
                   {{ t('common.noItems') }}
                 </div>
                 <div v-else class="subentity-items">
-                  <div v-for="(item, index) in value" :key="item.id || index" class="subentity-item">
+                  <div v-for="(item, index) in (value as any[])" :key="(item as any)?.id || index" class="subentity-item">
                     <i class="fas fa-circle subentity-icon"></i>
                     <span class="subentity-name">{{ getSubEntityDisplayName(item) }}</span>
-                    <span v-if="item.description" class="subentity-description">{{ truncateText(item.description, 50) }}</span>
+                    <span v-if="(item as any)?.description" class="subentity-description">{{ truncateText((item as any).description, 50) }}</span>
                   </div>
                 </div>
               </div>
@@ -140,7 +140,12 @@ const translationKey = computed(() => getTranslationKey(props.entityStore.$id ||
 
 const props = defineProps<{
   entity: Record<string, any>;
-  entityStore: Store;
+  entityStore: Store & {
+    includeParams?: { parents?: string[], children?: string[] };
+    fieldList?: Map<string, any>;
+    fetchById?: (id: string) => Promise<any>;
+    subEntitiesStores?: Map<string, any>;
+  };
 }>();
 
 const emit = defineEmits<{

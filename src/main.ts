@@ -96,7 +96,10 @@ const i18n = createI18n({
                 manageLicenses: 'Manage Licenses',
                 manageLicensesTitle: 'Manage your purchased bulk licenses',
                 invoices: 'Invoices',
-                invoicesTitle: 'View your invoices and billing history'
+                invoicesTitle: 'View your invoices and billing history',
+                organizations: 'Organizations',
+                myOrganizations: 'My Organizations',
+                myOrganizationsTitle: 'View and manage your organizations'
             }
          },
         fr: {
@@ -149,7 +152,10 @@ const i18n = createI18n({
                 manageLicenses: 'Gérer les Licences',
                 manageLicensesTitle: 'Gérer vos licences achetées en gros',
                 invoices: 'Factures',
-                invoicesTitle: 'Voir vos factures et l\'historique de facturation'
+                invoicesTitle: 'Voir vos factures et l\'historique de facturation',
+                organizations: 'Organisations',
+                myOrganizations: 'Mes Organisations',
+                myOrganizationsTitle: 'Voir et gérer vos organisations'
             }
         }
     }

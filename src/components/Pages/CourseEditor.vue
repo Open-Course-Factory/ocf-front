@@ -167,7 +167,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCoursesStore } from '../../stores/courses'
 import { useChaptersStore } from '../../stores/chapters'
@@ -398,7 +398,7 @@ const convertCourseToNodes = (course: Course) => {
     return
   }
 
-  const chapters = [...course.chapters].sort((a, b) => (a.order || a.number || 0) - (b.order || b.number || 0))
+  const chapters = [...course.chapters].sort((a, b) => (a.order || 0) - (b.order || 0))
   console.log('Processing chapters:', chapters.length)
 
   // Layout configuration - NEW VERTICAL LAYOUT
@@ -422,7 +422,7 @@ const convertCourseToNodes = (course: Course) => {
         label: chapter.title,
         entityId: chapter.id,
         entityType: 'chapter',
-        number: chapter.order || chapter.number || chapterIdx + 1,
+        number: chapter.order || chapterIdx + 1,
         sections: chapter.sections,
         isNew: false,
         isExpanded: false, // Chapters collapsed by default
@@ -460,7 +460,7 @@ const convertCourseToNodes = (course: Course) => {
 
     // Process sections (HORIZONTAL layout from chapter)
     if (chapter.sections && chapter.sections.length > 0) {
-      const sections = [...chapter.sections].sort((a, b) => (a.order || a.number || 0) - (b.order || b.number || 0))
+      const sections = [...chapter.sections].sort((a, b) => (a.order || 0) - (b.order || 0))
       let sectionX = chapterX + LEVEL_SPACING_X // Start to the right of chapter
       let previousSectionId: string | null = null
 
@@ -476,7 +476,7 @@ const convertCourseToNodes = (course: Course) => {
             label: section.title,
             entityId: section.id,
             entityType: 'section',
-            number: section.order || section.number || sectionIdx + 1,
+            number: section.order || sectionIdx + 1,
             pages: section.pages,
             isNew: false,
             isExpanded: false, // Sections collapsed by default
@@ -516,7 +516,7 @@ const convertCourseToNodes = (course: Course) => {
 
         // Process pages (VERTICAL layout from section)
         if (section.pages && section.pages.length > 0) {
-          const pages = [...section.pages].sort((a, b) => (a.order || a.number || 0) - (b.order || b.number || 0))
+          const pages = [...section.pages].sort((a, b) => (a.order || 0) - (b.order || 0))
           const pageX = sectionX // Same X as section (pages stack vertically below)
           let pageY = currentY + 160 // Start below section (offset for section node height)
           let previousPageId: string | null = null
@@ -544,7 +544,7 @@ const convertCourseToNodes = (course: Course) => {
                 label: page.title || `Page ${pageIdx + 1}`,
                 entityId: page.id || null,
                 entityType: 'page',
-                number: page.order || page.number || pageIdx + 1,
+                number: page.order || pageIdx + 1,
                 content: contentStr,
                 isNew: false,
                 ...page,

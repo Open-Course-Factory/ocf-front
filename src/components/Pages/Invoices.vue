@@ -22,21 +22,16 @@
 -->
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import Entity from './Entity.vue';
 import { useInvoicesStore } from '../../stores/invoices';
-import { useCurrentUserStore } from '../../stores/currentUser.ts';
+import { useAdminViewMode } from '../../composables/useAdminViewMode';
 
 const entityStore = useInvoicesStore();
-const currentUser = useCurrentUserStore();
+const { isAdmin, shouldFilterAsStandardUser, shouldShowAllData } = useAdminViewMode();
 const isDownloading = ref(false);
 const error = ref('');
 const filter = ref('all');
-
-// Seuls les admins peuvent voir toutes les factures
-const isAdmin = computed(() => 
-    currentUser.userRoles.includes('administrator')
-);
 
 // Filtrer les factures selon le statut
 const filteredInvoices = computed(() => {
@@ -52,26 +47,32 @@ const entityStoreWithFiltering = computed(() => ({
     entities: filteredInvoices.value
 }));
 
-// Charger les factures selon le rôle de l'utilisateur
-onMounted(async () => {
-    await loadInvoices();
-});
-
 // Fonction pour charger les factures
 const loadInvoices = async () => {
     try {
-        if (isAdmin.value) {
-            // Admin: charger toutes les factures
-            await entityStore.loadEntities('/invoices');
-        } else {
-            // Utilisateur normal: synchroniser et charger ses factures
+        // Si pas admin OU admin en mode "vue utilisateur", charger uniquement ses factures
+        if (!isAdmin.value || shouldFilterAsStandardUser.value) {
+            // Utilisateur normal ou admin en vue utilisateur: synchroniser et charger ses factures
             await entityStore.syncAndLoadInvoices();
+        } else {
+            // Admin en mode "vue admin": charger toutes les factures
+            await entityStore.loadEntities('/invoices');
         }
     } catch (err) {
         console.error('Erreur lors du chargement des factures:', err);
         error.value = 'Erreur lors du chargement des factures';
     }
 };
+
+// Charger les factures selon le rôle de l'utilisateur
+onMounted(async () => {
+    await loadInvoices();
+});
+
+// Recharger les factures quand le mode de vue change
+watch(shouldFilterAsStandardUser, async () => {
+    await loadInvoices();
+});
 
 // Action pour télécharger une facture
 const downloadInvoice = async (invoiceId: string) => {
@@ -126,8 +127,8 @@ const getInvoiceStats = computed(() => {
                 </button>
             </div>
 
-            <!-- Statistiques pour les admins -->
-            <div v-if="isAdmin" class="stats-panel">
+            <!-- Statistiques pour les admins (en mode admin complet seulement) -->
+            <div v-if="shouldShowAllData" class="stats-panel">
                 <h4><i class="fas fa-chart-bar"></i> Statistiques des Factures</h4>
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -178,7 +179,7 @@ const getInvoiceStats = computed(() => {
             <div v-if="entityStore.entities.length === 0" class="empty-state">
                 <i class="fas fa-file-invoice fa-3x"></i>
                 <h4>Aucune facture</h4>
-                <p v-if="!isAdmin">Vos factures apparaîtront ici une fois que vous aurez effectué des achats.</p>
+                <p v-if="!isAdmin || shouldFilterAsStandardUser">Vos factures apparaîtront ici une fois que vous aurez effectué des achats.</p>
                 <p v-else>Aucune facture n'a encore été générée dans le système.</p>
             </div>
             

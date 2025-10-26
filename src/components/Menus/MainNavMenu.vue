@@ -66,6 +66,7 @@ import { useSubscriptionsStore } from '../../stores/subscriptions.ts';
 import { useClassGroupsStore } from '../../stores/classGroups.ts';
 import { useGroupMembersStore } from '../../stores/groupMembers.ts';
 import { useSubscriptionBatchesStore } from '../../stores/subscriptionBatches.ts';
+import { useOrganizationsStore } from '../../stores/organizations.ts';
 import { useRoute } from 'vue-router';
 import { useHelpTranslations } from '../../composables/useHelpTranslations';
 import { useFeatureFlags } from '../../composables/useFeatureFlags';
@@ -90,6 +91,7 @@ useSubscriptionsStore();
 useClassGroupsStore();
 useGroupMembersStore();
 useSubscriptionBatchesStore();
+useOrganizationsStore();
 
 // Load help translations
 const { loadHelpTranslations } = useHelpTranslations();
@@ -158,6 +160,7 @@ const expandedCategories = ref<Record<string, boolean>>({
   courses: false,
   terminals: false,
   groups: false,
+  organizations: false,
   subscription: false,
   help: false,
   admin: false
@@ -266,6 +269,20 @@ const menuCategories = computed((): MenuCategory[] => [
         label: t('groupMembers.pageTitle'),
         title: t('groupMembers.memberInfo'),
         icon: 'fas fa-user-friends'
+      }
+    ]
+  },
+  {
+    key: 'organizations',
+    label: t('navigation.organizations'),
+    icon: 'fas fa-building',
+    allowedRoles: ['administrator', 'teacher', 'student'],
+    items: [
+      {
+        route: '/organizations',
+        label: t('navigation.myOrganizations'),
+        title: t('navigation.myOrganizationsTitle'),
+        icon: 'fas fa-building'
       }
     ]
   },

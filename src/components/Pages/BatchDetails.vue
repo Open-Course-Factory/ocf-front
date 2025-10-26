@@ -405,11 +405,11 @@ const filteredLicenses = computed(() => {
   return result
 })
 
-const assignedLicenses = computed(() => {
+const _assignedLicenses = computed(() => {
   return filteredLicenses.value.filter(l => l.status === 'active' && l.user_id)
 })
 
-const unassignedLicenses = computed(() => {
+const _unassignedLicenses = computed(() => {
   return filteredLicenses.value.filter(l => l.status === 'unassigned')
 })
 
@@ -461,7 +461,7 @@ const loadBatch = async () => {
   }
 }
 
-const loadBatchWithFeedback = async () => {
+const _loadBatchWithFeedback = async () => {
   await batchStore.loadBatches()
   if (!batchStore.error) {
     showSuccess(t('batchDetails.refreshSuccess'))

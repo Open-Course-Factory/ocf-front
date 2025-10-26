@@ -40,7 +40,7 @@ import EntityModal from '../Modals/EntityModal.vue'
 const route = useRoute()
 const router = useRouter()
 const groupStore = useClassGroupsStore()
-const memberStore = useGroupMembersStore()
+const _memberStore = useGroupMembersStore()
 const currentUser = useCurrentUserStore()
 const { isEnabled } = useFeatureFlags()
 
@@ -304,7 +304,7 @@ const statusColor = computed(() => {
   }
 })
 
-const memberCountPercentage = computed(() => {
+const _memberCountPercentage = computed(() => {
   if (!currentGroup.value) return 0
   return Math.round((currentGroup.value.member_count / currentGroup.value.max_members) * 100)
 })

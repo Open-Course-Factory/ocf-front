@@ -6,6 +6,9 @@
 import axios from 'axios'
 import type { User } from '../../../types/entities'
 
+// Re-export User type
+export type { User } from '../../../types/entities'
+
 export const userService = {
   async getUserById(userId: string): Promise<User> {
     const response = await axios.get(`/users/${userId}`)

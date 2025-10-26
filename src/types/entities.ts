@@ -12,15 +12,53 @@ export interface BaseEntity {
 }
 
 /**
+ * Role entity (Phase 3 - simplified system)
+ */
+export interface Role {
+  id: string
+  name: 'member' | 'administrator' // Only 2 system roles
+  description?: string
+}
+
+/**
+ * User Summary (simplified user info from API responses)
+ */
+export interface UserSummary {
+  id: string
+  name: string
+  display_name: string
+  email: string
+}
+
+/**
  * User entity
  */
 export interface User extends BaseEntity {
   email: string
   username?: string
+  name?: string // For compatibility with API responses that use 'name' instead of 'username'
   display_name?: string
-  roles?: string[]
+  roles?: Role[]
   is_active?: boolean
   last_login?: string
+
+  // Organization memberships (if preloaded with ?includes=organization_memberships)
+  organization_memberships?: OrganizationMembership[]
+
+  // Group memberships (if preloaded with ?includes=group_memberships)
+  group_memberships?: GroupMembership[]
+
+  // Effective features from subscriptions (aggregated across all organizations)
+  max_courses?: number
+  max_terminals?: number
+  can_export_courses?: boolean
+  can_use_api?: boolean
+  max_concurrent_terminals?: number
+  max_session_duration_minutes?: number
+  allowed_machine_sizes?: string[]
+  network_access_enabled?: boolean
+  data_persistence_enabled?: boolean
+  data_persistence_gb?: number
 }
 
 /**
@@ -39,41 +77,52 @@ export interface PricingTier {
 export interface SubscriptionPlan extends BaseEntity {
   name: string
   description?: string
-  price: number
-  price_amount?: number // Price in cents (alternative naming)
+  priority: number // Higher = better tier (for feature aggregation)
+  stripe_product_id: string
+  stripe_price_id: string
+  price_amount: number // Price in cents (e.g., 900 = €9.00)
+  price?: number // Deprecated: use price_amount instead
   currency: string
   billing_interval: 'month' | 'year'
-  features?: string[] | Record<string, any> // Can be array or object
-  is_active?: boolean
-  stripe_price_id?: string
-  use_tiered_pricing?: boolean
+  trial_days: number
+  features: string[] // Human-readable features
+  max_concurrent_users: number
+  max_courses: number // -1 = unlimited
+  max_lab_sessions: number
+  is_active: boolean
+  required_role: string
+
+  // Terminal-specific limits
+  max_session_duration_minutes: number
+  max_concurrent_terminals: number
+  allowed_machine_sizes: string[] // ["XS", "S", "M", "L"]
+  network_access_enabled: boolean
+  data_persistence_enabled: boolean
+  data_persistence_gb: number
+  allowed_templates: string[]
+
+  // Tiered pricing (for bulk purchases)
+  use_tiered_pricing: boolean
   pricing_tiers?: PricingTier[]
-  priority?: number // Priority level for stacked subscriptions (0=Free, 10=Basic, 20=Pro, 30=Premium, 40=Enterprise)
 }
 
 /**
- * Subscription entity
+ * Subscription entity (Individual User Subscription)
  */
 export interface Subscription extends BaseEntity {
   user_id: string
-  plan_id: string
-  plan_name?: string
-  status: 'active' | 'canceled' | 'past_due' | 'incomplete'
-  current_period_start?: string
-  current_period_end?: string
-  cancel_at_period_end?: boolean
-  stripe_subscription_id?: string
-  subscription_plan?: {
-    allowed_machine_sizes?: string[]
-    priority?: number // Priority level for stacked subscriptions (higher = better tier)
-  }
-  plan_features?: {
-    session_duration_hours?: number
-    concurrent_terminals?: number
-  }
-  // Stacked subscriptions - Priority-based system
-  subscription_type?: 'personal' | 'assigned' // Type of subscription
-  is_primary?: boolean // True if this is the active subscription being used
+  subscription_plan_id: string
+  subscription_plan?: SubscriptionPlan
+  stripe_subscription_id: string
+  stripe_customer_id: string
+  status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid'
+  subscription_type: 'personal' | 'assigned'
+  is_primary: boolean // True if this is the active subscription being used
+  current_period_start: string
+  current_period_end: string
+  trial_end?: string
+  cancel_at_period_end: boolean
+  cancelled_at?: string
 
   // Bulk license batch information (when assigned from bulk purchase)
   subscription_batch_id?: string
@@ -81,7 +130,10 @@ export interface Subscription extends BaseEntity {
   batch_owner_name?: string
   batch_owner_email?: string
   assigned_at?: string
-  assigned_by?: string
+
+  // Deprecated fields (for backward compatibility)
+  plan_id?: string
+  plan_name?: string
 }
 
 /**
@@ -213,12 +265,13 @@ export interface Generation extends BaseEntity {
  */
 export interface UsageMetric extends BaseEntity {
   user_id: string
-  subscription_id?: string
-  metric_type: string
+  metric_type: 'concurrent_terminals' | 'courses' | 'lab_sessions'
   current_value: number
-  limit_value?: number
-  period_start?: string
-  period_end?: string
+  limit_value: number
+  period_start: string
+  period_end: string
+  last_updated: string
+  usage_percent: number // Calculated: (current_value / limit_value) * 100
 }
 
 /**
@@ -269,7 +322,7 @@ export interface TerminalShare extends BaseEntity {
 }
 
 /**
- * Subscription Batch entity (bulk license purchase)
+ * Subscription Batch entity (bulk license purchase - Phase 3)
  */
 export interface SubscriptionBatch extends BaseEntity {
   purchaser_user_id: string
@@ -277,13 +330,13 @@ export interface SubscriptionBatch extends BaseEntity {
   subscription_plan?: SubscriptionPlan
   group_id?: string
   stripe_subscription_id: string
-  stripe_subscription_item_id?: string
+  stripe_subscription_item_id: string
   total_quantity: number
   assigned_quantity: number
   available_quantity: number // Calculated: total - assigned
-  status: 'active' | 'canceled' | 'cancelled' | 'expired' | 'past_due'
-  current_period_start?: string
-  current_period_end?: string
+  status: 'pending_payment' | 'active' | 'cancelled'
+  current_period_start: string
+  current_period_end: string
   cancelled_at?: string
 }
 
@@ -334,4 +387,148 @@ export interface BulkPurchaseInput {
   group_id?: string
   payment_method_id?: string
   coupon_code?: string
+}
+
+// ==========================================
+// ORGANIZATION-RELATED TYPES (Phase 2 & 3)
+// ==========================================
+
+/**
+ * Organization entity
+ */
+export interface Organization extends BaseEntity {
+  name: string
+  display_name: string
+  description?: string
+  owner_user_id: string
+  subscription_plan_id?: string
+  is_personal: boolean // Auto-created personal org for each user
+  max_groups: number
+  max_members: number
+  is_active: boolean
+  metadata?: Record<string, any>
+
+  // Counts (if preloaded)
+  group_count?: number
+  member_count?: number
+
+  // Related data (if preloaded with ?includes=members,groups)
+  members?: OrganizationMember[]
+  groups?: GroupSummary[]
+}
+
+/**
+ * Organization Membership entity (Phase 3 - business roles)
+ */
+export interface OrganizationMembership extends BaseEntity {
+  organization_id: string
+  user_id: string
+  role: 'owner' | 'manager' | 'member'
+  invited_by?: string
+  joined_at: string
+  is_active: boolean
+}
+
+/**
+ * Organization Member entity (with user details)
+ */
+export interface OrganizationMember extends OrganizationMembership {
+  user?: User // Populated when ?includes=user
+  organization?: Organization // Populated when ?includes=organization
+}
+
+/**
+ * Group Membership entity (Phase 3 - business roles)
+ */
+export interface GroupMembership extends BaseEntity {
+  group_id: string
+  user_id: string
+  role: 'owner' | 'admin' | 'assistant' | 'member'
+  joined_at: string
+}
+
+/**
+ * Group Summary (lightweight group info)
+ */
+export interface GroupSummary extends BaseEntity {
+  name: string
+  display_name: string
+  description?: string
+  member_count?: number
+}
+
+/**
+ * Organization Subscription entity (Phase 2)
+ */
+export interface OrganizationSubscription extends BaseEntity {
+  organization_id: string
+  subscription_plan_id: string
+  subscription_plan?: SubscriptionPlan
+  stripe_subscription_id: string
+  stripe_customer_id: string
+  status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'pending_payment'
+  current_period_start: string
+  current_period_end: string
+  cancel_at_period_end: boolean
+  quantity: number // Always 1 for org subscriptions
+}
+
+/**
+ * Usage Limits (from subscription plan)
+ */
+export interface UsageLimits {
+  max_concurrent_terminals: number
+  max_session_duration_minutes: number
+  max_courses: number
+  allowed_machine_sizes: string[]
+  network_access_enabled: boolean
+  data_persistence_enabled: boolean
+  data_persistence_gb: number
+}
+
+/**
+ * Organization Features (includes subscription + usage limits)
+ */
+export interface OrganizationFeatures {
+  organization_id: string
+  organization_name: string
+  subscription_plan?: SubscriptionPlan
+  has_active_subscription: boolean
+  features: string[]
+  usage_limits: UsageLimits
+}
+
+/**
+ * Organization Feature Source (for effective features calculation)
+ */
+export interface OrganizationFeatureSource {
+  organization_id: string
+  organization_name: string
+  role: 'owner' | 'manager' | 'member'
+  contributing_features: string[]
+}
+
+/**
+ * User Effective Features (aggregated from all organizations)
+ */
+export interface UserEffectiveFeatures {
+  user_id: string
+  effective_features: SubscriptionPlan // Aggregated maximum features
+  source_organizations: OrganizationFeatureSource[]
+  has_personal_subscription: boolean
+  personal_subscription?: Subscription
+}
+
+/**
+ * Audit Log entity
+ */
+export interface AuditLog extends BaseEntity {
+  user_id: string
+  organization_id?: string
+  action: string
+  entity_type: string
+  entity_id: string
+  changes?: Record<string, any>
+  ip_address?: string
+  user_agent?: string
 }

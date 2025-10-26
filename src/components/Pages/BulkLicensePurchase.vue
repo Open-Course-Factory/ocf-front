@@ -264,7 +264,7 @@ const { t } = useTranslations({
   }
 })
 
-const router = useRouter()
+const _router = useRouter()
 const route = useRoute()
 const plansStore = useSubscriptionPlansStore()
 const batchStore = useSubscriptionBatchesStore()
