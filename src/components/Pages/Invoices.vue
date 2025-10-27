@@ -24,13 +24,17 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import Entity from './Entity.vue';
+import ErrorAlert from '../UI/ErrorAlert.vue';
 import { useInvoicesStore } from '../../stores/invoices';
 import { useCurrentUserStore } from '../../stores/currentUser.ts';
+import { usePageLoad } from '../../composables/usePageLoad';
+import { useLoadingState } from '../../composables/useLoadingState';
+import { extractErrorMessage } from '../../utils/formatters';
 
 const entityStore = useInvoicesStore();
 const currentUser = useCurrentUserStore();
-const isDownloading = ref(false);
-const error = ref('');
+const { error, withErrorHandling } = usePageLoad();
+const { isLoading: isDownloading, withLoading } = useLoadingState();
 const filter = ref('all');
 
 // Seuls les admins peuvent voir toutes les factures
@@ -57,35 +61,32 @@ onMounted(async () => {
     await loadInvoices();
 });
 
-// Fonction pour charger les factures
+// Fonction pour charger les factures (utilise le nouveau composable usePageLoad)
 const loadInvoices = async () => {
-    try {
-        if (isAdmin.value) {
-            // Admin: charger toutes les factures
-            await entityStore.loadEntities('/invoices');
-        } else {
-            // Utilisateur normal: synchroniser et charger ses factures
-            await entityStore.syncAndLoadInvoices();
-        }
-    } catch (err) {
-        console.error('Erreur lors du chargement des factures:', err);
-        error.value = 'Erreur lors du chargement des factures';
-    }
+    await withErrorHandling(
+        async () => {
+            if (isAdmin.value) {
+                // Admin: charger toutes les factures
+                await entityStore.loadEntities('/invoices');
+            } else {
+                // Utilisateur normal: synchroniser et charger ses factures
+                await entityStore.syncAndLoadInvoices();
+            }
+        },
+        'Erreur lors du chargement des factures'
+    );
 };
 
-// Action pour télécharger une facture
+// Action pour télécharger une facture (utilise le nouveau composable useLoadingState)
 const downloadInvoice = async (invoiceId: string) => {
-    isDownloading.value = true;
-    error.value = '';
-    
-    try {
-        await entityStore.downloadInvoice(invoiceId);
-    } catch (err: any) {
-        console.error('Erreur lors du téléchargement:', err);
-        error.value = err.response?.data?.error_message || 'Erreur lors du téléchargement';
-    } finally {
-        isDownloading.value = false;
-    }
+    await withLoading(async () => {
+        try {
+            await entityStore.downloadInvoice(invoiceId);
+        } catch (err: any) {
+            console.error('Erreur lors du téléchargement:', err);
+            error.value = extractErrorMessage(err, 'Erreur lors du téléchargement');
+        }
+    });
 };
 
 // Ouvrir la facture dans Stripe
@@ -117,14 +118,11 @@ const getInvoiceStats = computed(() => {
 <template>
     <div class="wrapper">
         <div class="invoices-page">
-            <!-- Message d'erreur global -->
-            <div v-if="error" class="alert alert-danger">
-                <i class="fas fa-exclamation-triangle"></i>
-                {{ error }}
-                <button class="btn btn-sm btn-outline-danger" @click="error = ''">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
+            <!-- Message d'erreur global (utilise le nouveau composant ErrorAlert) -->
+            <ErrorAlert
+                :message="error"
+                @dismiss="error = ''"
+            />
 
             <!-- Statistiques pour les admins -->
             <div v-if="isAdmin" class="stats-panel">

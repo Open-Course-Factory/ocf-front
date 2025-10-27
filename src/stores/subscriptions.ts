@@ -27,6 +27,7 @@ import { isDemoMode, logDemoAction, simulateDelay, demoPayments, getDemoCurrentS
 import { featureFlagService } from '../services/features'
 import { formatDate as formatDateUtil } from '../utils/formatters'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
+import { useStatusFormatters } from '../composables/useStatusFormatters'
 
 export const useSubscriptionsStore = defineStore('subscriptions', () => {
 
@@ -455,29 +456,8 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     }
 
     // Utilitaires pour l'affichage
-    const getStatusClass = (status: string) => {
-        switch (status?.toLowerCase()) {
-            case 'active': return 'text-success'
-            case 'trialing': return 'text-info'
-            case 'canceled': return 'text-warning'
-            case 'past_due': return 'text-danger'
-            case 'unpaid': return 'text-danger'
-            case 'incomplete': return 'text-muted'
-            default: return 'text-secondary'
-        }
-    }
-
-    const getStatusIcon = (status: string) => {
-        switch (status?.toLowerCase()) {
-            case 'active': return 'fas fa-check-circle'
-            case 'trialing': return 'fas fa-gift'
-            case 'canceled': return 'fas fa-times-circle'
-            case 'past_due': return 'fas fa-exclamation-triangle'
-            case 'unpaid': return 'fas fa-credit-card'
-            case 'incomplete': return 'fas fa-hourglass-half'
-            default: return 'fas fa-question-circle'
-        }
-    }
+    // Use shared status formatters (utilise le composable réutilisable)
+    const { getStatusClass, getStatusIcon } = useStatusFormatters('subscription')
 
     const formatDate = (dateString: string) => {
         return formatDateUtil(dateString, 'fr-FR', '-')

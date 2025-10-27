@@ -16,14 +16,11 @@
         <p class="text-muted">{{ t('subscriptions.dashboardSubtitle') }}</p>
       </div>
 
-      <!-- Messages d'erreur globaux -->
-      <div v-if="error" class="alert alert-danger">
-        <i class="fas fa-exclamation-triangle"></i>
-        {{ error }}
-        <button class="btn btn-sm btn-outline-danger" @click="error = ''">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
+      <!-- Messages d'erreur globaux (utilise le nouveau composant ErrorAlert) -->
+      <ErrorAlert
+        :message="error"
+        @dismiss="error = ''"
+      />
 
       <!-- Indicateur de chargement principal -->
       <div v-if="isLoading && !subscriptionsStore.currentSubscription" class="loading-section">
@@ -95,11 +92,13 @@
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
+import { extractErrorMessage } from '../../utils/formatters'
 import axios from 'axios'
 
 // Import des composants modulaires
 import { SubscriptionCard, UsageOverview, RecentInvoices, AllSubscriptions } from '../Subscription/Dashboard'
 import { CancelSubscriptionModal, ReactivateModal } from '../Subscription/Modals'
+import ErrorAlert from '../UI/ErrorAlert.vue'
 
 const { t } = useI18n()
 
@@ -166,7 +165,7 @@ async function loadDashboardData() {
     }
   } catch (err: any) {
     console.error('Erreur lors du chargement du dashboard:', err)
-    error.value = 'Erreur lors du chargement du tableau de bord'
+    error.value = extractErrorMessage(err, 'Erreur lors du chargement du tableau de bord')
     // Make sure to stop loading on error
     isLoadingUsage.value = false
     isLoadingInvoices.value = false
@@ -272,7 +271,7 @@ async function openStripePortal() {
     await subscriptionsStore.createPortalSession(returnUrl)
   } catch (err: any) {
     console.error('Erreur ouverture portail:', err)
-    error.value = err.response?.data?.error_message || 'Impossible d\'ouvrir le portail de gestion'
+    error.value = extractErrorMessage(err, 'Impossible d\'ouvrir le portail de gestion')
   } finally {
     isManaging.value = false
   }
@@ -289,7 +288,7 @@ async function confirmCancellation(cancelImmediately: boolean) {
     )
   } catch (err: any) {
     console.error('Error canceling subscription:', err)
-    error.value = err.response?.data?.error_message || 'Failed to cancel subscription'
+    error.value = extractErrorMessage(err, 'Failed to cancel subscription')
   } finally {
     isCanceling.value = false
     showCancelModal.value = false
@@ -304,7 +303,7 @@ async function confirmReactivation() {
     await subscriptionsStore.reactivateSubscription(subscriptionsStore.currentSubscription.id)
   } catch (err: any) {
     console.error('Error reactivating subscription:', err)
-    error.value = err.response?.data?.error_message || 'Failed to reactivate subscription'
+    error.value = extractErrorMessage(err, 'Failed to reactivate subscription')
   } finally {
     isReactivating.value = false
     showReactivateModal.value = false
@@ -344,7 +343,7 @@ async function activateFreePlan() {
     }
   } catch (err: any) {
     console.error('Error activating free plan:', err)
-    error.value = err.response?.data?.error_message || 'Failed to activate free plan'
+    error.value = extractErrorMessage(err, 'Failed to activate free plan')
   } finally {
     isActivatingFreePlan.value = false
   }

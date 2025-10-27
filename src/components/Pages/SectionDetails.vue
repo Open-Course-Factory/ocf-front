@@ -69,7 +69,7 @@ function openEditModal() {
 }
 
 // Handle section update
-async function updateSection(updatedSection: Section) {
+async function updateSection(updatedSection: Record<string, any>) {
     if (!currentSection.value?.id) return
 
     const success = await sectionStore.update(currentSection.value.id, updatedSection)

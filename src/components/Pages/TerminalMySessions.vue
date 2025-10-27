@@ -90,15 +90,14 @@
         </div>
       </div>
 
+      <!-- Message d'erreur global (utilise le nouveau composant ErrorAlert) -->
+      <ErrorAlert
+        :message="error"
+        @dismiss="error = ''; loadSessions()"
+      />
+
       <div v-if="isLoading && allSessions.length === 0" class="loading-section">
         <i class="fas fa-spinner fa-spin"></i> {{ t('terminalMySessions.loadingSessions') }}
-      </div>
-
-      <div v-else-if="error" class="alert alert-danger">
-        {{ error }}
-        <button class="btn btn-sm btn-outline-danger" @click="error = ''; loadSessions()">
-          {{ t('terminalMySessions.errorRetry') }}
-        </button>
       </div>
 
       <div v-if="allSessions.length > 0" class="sessions-grid">
@@ -395,6 +394,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useFormatters } from '../../composables/useFormatters'
 import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import { useClassGroupsStore } from '../../stores/classGroups'
+import { extractErrorMessage } from '../../utils/formatters'
 
 const { showConfirm } = useNotification()
 const { formatDateTime: formatDateTimeTz } = useFormatters()
@@ -593,6 +593,7 @@ const { t } = useTranslations({
 
 // Import dynamique des composants
 import BaseModal from '../Modals/BaseModal.vue'
+import ErrorAlert from '../UI/ErrorAlert.vue'
 const TerminalSharingModal = defineAsyncComponent(() => import('../Terminal/TerminalSharingModal.vue'))
 const TerminalAccessModal = defineAsyncComponent(() => import('../Terminal/TerminalAccessModal.vue'))
 
@@ -957,7 +958,7 @@ async function syncSession(sessionId: string) {
     return response.data
   } catch (err: any) {
     console.error('Erreur lors de la synchronisation:', err)
-    error.value = err.response?.data?.error_message || 'Erreur lors de la synchronisation'
+    error.value = extractErrorMessage(err, 'Erreur lors de la synchronisation')
     throw err
   }
 }
@@ -1013,7 +1014,7 @@ async function syncAllSessions() {
     return response.data
   } catch (err: any) {
     console.error('Erreur lors de la synchronisation globale:', err)
-    error.value = err.response?.data?.error_message || 'Erreur lors de la synchronisation globale'
+    error.value = extractErrorMessage(err, 'Erreur lors de la synchronisation globale')
     throw err
   } finally {
     isSyncing.value = false
@@ -1119,19 +1120,29 @@ async function saveName(terminalId: string) {
 
   const newName = editData.value.trim()
 
-  // Optimistic update - update both owned and shared sessions
-  const ownedSession = sessions.value.find(s => s.id === terminalId)
-  const sharedSession = sharedSessions.value.find(s => s.terminal.id === terminalId)
+  // Find the session to update
+  const ownedIndex = sessions.value.findIndex(s => s.id === terminalId)
+  const sharedIndex = sharedSessions.value.findIndex(s => s.terminal.id === terminalId)
 
-  const previousNameOwned = ownedSession?.name
-  const previousNameShared = sharedSession?.terminal?.name
+  const previousNameOwned = ownedIndex !== -1 ? sessions.value[ownedIndex].name : undefined
+  const previousNameShared = sharedIndex !== -1 ? sharedSessions.value[sharedIndex].terminal?.name : undefined
 
-  if (ownedSession) {
-    ownedSession.name = newName
+  // Optimistic update - create new objects to trigger reactivity
+  if (ownedIndex !== -1) {
+    sessions.value[ownedIndex] = {
+      ...sessions.value[ownedIndex],
+      name: newName
+    }
   }
 
-  if (sharedSession?.terminal) {
-    sharedSession.terminal.name = newName
+  if (sharedIndex !== -1 && sharedSessions.value[sharedIndex].terminal) {
+    sharedSessions.value[sharedIndex] = {
+      ...sharedSessions.value[sharedIndex],
+      terminal: {
+        ...sharedSessions.value[sharedIndex].terminal,
+        name: newName
+      }
+    }
   }
 
   savingNames.value.add(terminalId)
@@ -1141,25 +1152,43 @@ async function saveName(terminalId: string) {
 
     // Update with server response to ensure consistency
     if (response.data && response.data.name !== undefined) {
-      if (ownedSession) {
-        ownedSession.name = response.data.name
+      if (ownedIndex !== -1) {
+        sessions.value[ownedIndex] = {
+          ...sessions.value[ownedIndex],
+          name: response.data.name
+        }
       }
-      if (sharedSession?.terminal) {
-        sharedSession.terminal.name = response.data.name
+      if (sharedIndex !== -1 && sharedSessions.value[sharedIndex].terminal) {
+        sharedSessions.value[sharedIndex] = {
+          ...sharedSessions.value[sharedIndex],
+          terminal: {
+            ...sharedSessions.value[sharedIndex].terminal,
+            name: response.data.name
+          }
+        }
       }
     }
 
     editingNames.value.delete(terminalId)
   } catch (err: any) {
     console.error('Erreur lors de la mise à jour du nom:', err)
-    error.value = err.response?.data?.error_message || 'Erreur lors de la mise à jour du nom'
+    error.value = extractErrorMessage(err, 'Erreur lors de la mise à jour du nom')
 
-    // Rollback on error
-    if (ownedSession) {
-      ownedSession.name = previousNameOwned
+    // Rollback on error - restore previous state
+    if (ownedIndex !== -1) {
+      sessions.value[ownedIndex] = {
+        ...sessions.value[ownedIndex],
+        name: previousNameOwned
+      }
     }
-    if (sharedSession?.terminal) {
-      sharedSession.terminal.name = previousNameShared
+    if (sharedIndex !== -1 && sharedSessions.value[sharedIndex].terminal) {
+      sharedSessions.value[sharedIndex] = {
+        ...sharedSessions.value[sharedIndex],
+        terminal: {
+          ...sharedSessions.value[sharedIndex].terminal,
+          name: previousNameShared
+        }
+      }
     }
   } finally {
     savingNames.value.delete(terminalId)

@@ -178,6 +178,7 @@ import { ref, computed, reactive, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
 import { useTranslations } from '../../composables/useTranslations';
+import { extractErrorMessage } from '../../utils/formatters';
 
 const route = useRoute();
 
@@ -339,7 +340,7 @@ const handleRequestReset = async () => {
     startResendCooldown();
   } catch (error: any) {
     if (error.response?.status === 404) {
-      errorMessage.value = t('passwordReset.errorNoAccount');
+      errorMessage.value = extractErrorMessage(error, t('passwordReset.errorNoAccount'));
     } else {
       errorMessage.value = t('passwordReset.errorSendingEmail');
     }
@@ -367,7 +368,7 @@ const handlePasswordReset = async () => {
     step.value = 'success';
   } catch (error: any) {
     if (error.response?.status === 400) {
-      errorMessage.value = t('passwordReset.errorInvalidToken');
+      errorMessage.value = extractErrorMessage(error, t('passwordReset.errorInvalidToken'));
     } else {
       errorMessage.value = t('passwordReset.errorUpdatingPassword');
     }

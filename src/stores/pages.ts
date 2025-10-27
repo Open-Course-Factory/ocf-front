@@ -89,5 +89,12 @@ export const usePagesStore = defineStore('pages', () => {
     base.includeParams.children = [] // Pages have no child entities
     base.includeParams.parents = ['sections']
 
-    return {...base, fieldList}
+    /**
+     * Delete a page
+     */
+    const deletePage = async (pageId: string) => {
+        return await base.deleteEntity('/pages', pageId)
+    }
+
+    return {...base, fieldList, delete: deletePage}
 })

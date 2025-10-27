@@ -83,7 +83,7 @@ function openEditModal() {
 }
 
 // Handle course update
-async function updateCourse(updatedCourse: Course) {
+async function updateCourse(updatedCourse: Record<string, any>) {
     if (!currentCourse.value?.id) return
 
     const success = await courseStore.update(currentCourse.value.id, updatedCourse)

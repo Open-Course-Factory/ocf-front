@@ -267,7 +267,10 @@ useBaseStore();
 
 const props = defineProps<{
   entityName: string;
-  entityStore: Store;
+  entityStore: Store & {
+    includeParams?: { children?: string[]; parents?: string[] };
+    [key: string]: any;
+  };
 }>();
 
 const showModal = ref(false);
@@ -956,17 +959,16 @@ async function deleteEntity(keyId: string) {
 
 async function updateEntity(data: Record<string, string>) {
   try {
-    await axios.patch(`/${props.entityName}/${data['id']}`, data);
-    
-    // Recharger les entités
-    loadEntities();
-    
-    // Exécuter le hook afterUpdate si défini (générique)
-    if (props.entityStore.executeAfterUpdateHook) {
-      const updatedEntity = props.entityStore.entities.find((e: any) => e.id === data['id']);
-      await props.entityStore.executeAfterUpdateHook(updatedEntity, data);
-    }
-    
+    // Use baseStore's updateEntity method for proper reactivity
+    await props.entityStore.updateEntity(
+      `/${props.entityName}`,
+      data['id'],
+      data
+    );
+
+    // Reload to ensure pagination state is correct
+    await loadEntities();
+
     showModal.value = false;
   } catch (error) {
     console.error('Error while updating ' + props.entityName, error);

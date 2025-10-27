@@ -25,7 +25,6 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useClassGroupsStore } from '../../stores/classGroups'
-import { useGroupMembersStore } from '../../stores/groupMembers'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import { useTranslations } from '../../composables/useTranslations'
 import { useFeatureFlags } from '../../composables/useFeatureFlags'
@@ -40,7 +39,6 @@ import EntityModal from '../Modals/EntityModal.vue'
 const route = useRoute()
 const router = useRouter()
 const groupStore = useClassGroupsStore()
-const memberStore = useGroupMembersStore()
 const currentUser = useCurrentUserStore()
 const { isEnabled } = useFeatureFlags()
 
@@ -302,11 +300,6 @@ const statusColor = computed(() => {
     case 'inactive': return 'danger'
     default: return 'secondary'
   }
-})
-
-const memberCountPercentage = computed(() => {
-  if (!currentGroup.value) return 0
-  return Math.round((currentGroup.value.member_count / currentGroup.value.max_members) * 100)
 })
 
 const actualMemberPercentage = computed(() => {
@@ -1098,7 +1091,7 @@ watch(() => route.params.id, async () => {
 
 .role-badge.role-owner {
   background-color: #ffd700;
-  color: #000;
+  color: var(--color-black);
 }
 
 .role-badge.role-admin {

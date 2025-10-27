@@ -6,7 +6,7 @@
     node-class="page-node"
     default-label="New Page"
     border-color="#FFA500"
-    background-color="#FFF3E6"
+    background-color="var(--color-white)3E6"
     @edit="emit('edit', $event)"
     @delete="emit('delete', $event)"
     @toggle-expand="emit('toggle-expand', $event)"

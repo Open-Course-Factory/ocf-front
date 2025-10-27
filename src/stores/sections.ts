@@ -142,5 +142,19 @@ export const useSectionsStore = defineStore('sections', () => {
         }
     }
 
-    return {...base, fieldList, fetchSectionById}
+    /**
+     * Update a section
+     */
+    const update = async (sectionId: string, sectionData: Partial<any>) => {
+        return await base.updateEntity('/sections', sectionId, sectionData)
+    }
+
+    /**
+     * Delete a section
+     */
+    const deleteSection = async (sectionId: string) => {
+        return await base.deleteEntity('/sections', sectionId)
+    }
+
+    return {...base, fieldList, fetchSectionById, update, delete: deleteSection}
 })

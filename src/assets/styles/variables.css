@@ -249,3 +249,85 @@
   --font-size-2xl: 1.35rem;
   --font-size-3xl: 1.65rem;
 }
+
+/* === DOMAIN-SPECIFIC COLORS === */
+
+/* Course Editor Node Colors */
+:root {
+  --course-node-course: #4A90E2;
+  --course-node-course-bg: #E8F0FB;
+  --course-node-chapter: #7B68EE;
+  --course-node-chapter-bg: #EBE8F5;
+  --course-node-section: #50C878;
+  --course-node-section-bg: #E6F5ED;
+  --course-node-page: #FFA500;
+  --course-node-page-bg: #FFF3E6;
+}
+
+/* Terminal Theme Colors (XTerm.js) */
+:root {
+  --terminal-bg: #1e1e1e;
+  --terminal-fg: #d4d4d4;
+  --terminal-cursor: #ffffff;
+  --terminal-selection: #264f78;
+  --terminal-border: #333333;
+
+  /* ANSI Colors */
+  --terminal-ansi-black: #000000;
+  --terminal-ansi-red: #f44747;
+  --terminal-ansi-green: #6a9955;
+  --terminal-ansi-yellow: #dcdcaa;
+  --terminal-ansi-blue: #569cd6;
+  --terminal-ansi-magenta: #c586c0;
+  --terminal-ansi-cyan: #4ec9b0;
+  --terminal-ansi-white: #d4d4d4;
+  --terminal-ansi-bright-black: #6a6a6a;
+  --terminal-ansi-bright-white: #ffffff;
+}
+
+/* === OVERLAY & MODAL COLORS === */
+:root {
+  --overlay-bg: rgba(0, 0, 0, 0.5);
+  --overlay-bg-light: rgba(0, 0, 0, 0.3);
+  --overlay-bg-dark: rgba(0, 0, 0, 0.7);
+
+  /* Semi-transparent overlays for light backgrounds */
+  --overlay-white-10: rgba(255, 255, 255, 0.1);
+  --overlay-white-15: rgba(255, 255, 255, 0.15);
+  --overlay-white-20: rgba(255, 255, 255, 0.2);
+
+  /* Semi-transparent overlays for dark backgrounds */
+  --overlay-black-03: rgba(0, 0, 0, 0.03);
+  --overlay-black-05: rgba(0, 0, 0, 0.05);
+  --overlay-black-10: rgba(0, 0, 0, 0.1);
+}
+
+/* === SHADOW EXTENSIONS === */
+:root {
+  /* Additional shadow variants for specific use cases */
+  --shadow-2xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-button: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-card: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --shadow-modal: 0 20px 40px rgba(0, 0, 0, 0.15);
+  --shadow-dropdown: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  /* Colored shadows for course nodes */
+  --shadow-course-node: 0 4px 16px rgba(74, 144, 226, 0.3);
+  --shadow-chapter-node: 0 4px 16px rgba(123, 104, 238, 0.3);
+  --shadow-section-node: 0 4px 16px rgba(80, 200, 120, 0.3);
+  --shadow-page-node: 0 4px 16px rgba(255, 165, 0, 0.3);
+}
+
+/* Dark mode adjustments for domain-specific colors */
+[data-theme="dark"] {
+  --course-node-course-bg: rgba(74, 144, 226, 0.2);
+  --course-node-chapter-bg: rgba(123, 104, 238, 0.2);
+  --course-node-section-bg: rgba(80, 200, 120, 0.2);
+  --course-node-page-bg: rgba(255, 165, 0, 0.2);
+
+  --terminal-bg: #1a1a1a;
+  --terminal-border: #404040;
+
+  --overlay-bg: rgba(0, 0, 0, 0.7);
+  --shadow-modal: 0 20px 40px rgba(0, 0, 0, 0.5);
+}

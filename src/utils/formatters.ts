@@ -220,3 +220,30 @@ export function truncate(
   if (!text || text.length <= maxLength) return text
   return text.substring(0, maxLength - ellipsis.length) + ellipsis
 }
+
+/**
+ * Extract error message from axios error response
+ * Provides consistent error message extraction across the application
+ * @param error - Error object (typically from axios)
+ * @param fallback - Fallback message if no error message found (default: 'An error occurred')
+ * @returns Extracted error message
+ *
+ * @example
+ * try {
+ *   await axios.get('/api/endpoint')
+ * } catch (err) {
+ *   const message = extractErrorMessage(err, t('myStore.loadError'))
+ *   error.value = message
+ * }
+ */
+export function extractErrorMessage(
+  error: any,
+  fallback: string = 'An error occurred'
+): string {
+  return (
+    error?.response?.data?.error_message ||
+    error?.response?.data?.message ||
+    error?.message ||
+    fallback
+  )
+}

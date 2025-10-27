@@ -83,6 +83,7 @@
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCurrentUserStore } from '../../stores/currentUser'
+import { getTerminalTheme } from '../../utils/terminalTheme'
 
 // Props
 const props = defineProps({
@@ -177,12 +178,7 @@ async function initXterm() {
       cursorBlink: true,
       fontFamily: '"Cascadia Code", "Fira Code", "SF Mono", Monaco, monospace',
       fontSize: 14,
-      theme: {
-        background: '#1e1e1e',
-        foreground: '#d4d4d4',
-        cursor: '#ffffff',
-        selection: '#264f78'
-      },
+      theme: getTerminalTheme(),
       scrollback: 1000,
       convertEol: true
     })
@@ -247,7 +243,7 @@ async function connectToTerminal() {
     // Construire l'URL WebSocket vers le backend (proxy)
     const protocol = import.meta.env.VITE_PROTOCOL === 'https' ? 'wss' : 'ws'
     const apiUrl = import.meta.env.VITE_API_URL
-    
+
     // Construire l'URL de base
     let wsUrl = `${protocol}://${apiUrl}/api/v1/terminals/${sessionId.value}/console?width=${terminal.value.cols}&height=${terminal.value.rows}`
     
@@ -362,8 +358,8 @@ defineExpose({
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #1e1e1e;
-  color: #d4d4d4;
+  background-color: var(--terminal-bg);
+  color: var(--terminal-fg);
   font-family: monospace;
 }
 
@@ -371,40 +367,40 @@ defineExpose({
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
-  background-color: #2d2d30;
-  border-bottom: 1px solid #3e3e42;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-bg-secondary);
+  border-bottom: var(--border-width-thin) solid var(--color-border-medium);
   flex-shrink: 0;
 }
 
 .session-info {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: var(--spacing-md);
 }
 
 .session-id {
-  font-size: 14px;
-  font-weight: 500;
-  color: #cccccc;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--spacing-sm);
 }
 
 .connection-status {
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--spacing-xs);
 }
 
 .status-connected {
-  color: #4caf50;
+  color: var(--color-success);
 }
 
 .status-disconnected {
-  color: #f44336;
+  color: var(--color-danger);
 }
 
 .terminal-controls {
@@ -425,28 +421,28 @@ defineExpose({
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
-  color: #cccccc;
+  color: var(--color-text-secondary);
 }
 
 .terminal-loading p,
 .terminal-error p {
-  margin: 15px 0;
-  font-size: 16px;
+  margin: var(--spacing-md) 0;
+  font-size: var(--font-size-md);
 }
 
 .terminal-error {
-  color: #f44336;
+  color: var(--color-danger);
 }
 
 .terminal-error h3 {
-  margin: 15px 0;
-  color: #f44336;
+  margin: var(--spacing-md) 0;
+  color: var(--color-danger);
 }
 
 .terminal-footer {
-  padding: 8px 12px;
-  background-color: #2d2d30;
-  border-top: 1px solid #3e3e42;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-bg-secondary);
+  border-top: var(--border-width-thin) solid var(--color-border-medium);
   text-align: center;
   flex-shrink: 0;
 }
@@ -454,14 +450,14 @@ defineExpose({
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 8px;
-  font-size: 12px;
-  border: 1px solid transparent;
-  border-radius: 3px;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  border: var(--border-width-thin) solid transparent;
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
 }
 
 .btn-sm {
@@ -470,15 +466,15 @@ defineExpose({
 }
 
 .btn-primary {
-  background-color: #007acc;
-  color: white;
-  border-color: #007acc;
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  border-color: var(--color-primary);
 }
 
 .btn-warning {
-  background-color: #ff9800;
-  color: white;
-  border-color: #ff9800;
+  background-color: var(--color-warning);
+  color: var(--color-white);
+  border-color: var(--color-warning);
 }
 
 .btn:hover {
@@ -487,7 +483,7 @@ defineExpose({
 }
 
 .text-muted {
-  color: #888888;
+  color: var(--color-text-muted);
 }
 
 /* Responsive pour iframe */

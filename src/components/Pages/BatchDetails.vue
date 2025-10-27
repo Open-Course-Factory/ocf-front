@@ -229,7 +229,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
 import { useSubscriptionBatchesStore } from '../../stores/subscriptionBatches'
 import { userService } from '../../services/domain/user'
-import { formatDateTime } from '../../utils/formatters'
+import { formatDateTime, extractErrorMessage } from '../../utils/formatters'
 import { useNotification } from '../../composables/useNotification'
 import LicenseAssignmentModal from '../Modals/LicenseAssignmentModal.vue'
 import type { UserSubscription } from '../../types/entities'
@@ -405,14 +405,6 @@ const filteredLicenses = computed(() => {
   return result
 })
 
-const assignedLicenses = computed(() => {
-  return filteredLicenses.value.filter(l => l.status === 'active' && l.user_id)
-})
-
-const unassignedLicenses = computed(() => {
-  return filteredLicenses.value.filter(l => l.status === 'unassigned')
-})
-
 const selectedAssignedLicenses = computed(() => {
   return selectedLicenses.value.filter(id => {
     const license = licenses.value.find(l => l.id === id)
@@ -451,20 +443,9 @@ const loadBatch = async () => {
     await batchStore.loadBatch(batchId)
   } catch (err: any) {
     console.error('Error loading batch:', err)
-    showError(
-      err.response?.data?.error_message ||
-      err.response?.data?.message ||
-      t('batchDetails.loadingBatch')
-    )
+    showError(extractErrorMessage(err, t('batchDetails.loadingBatch')))
   } finally {
     isLoading.value = false
-  }
-}
-
-const loadBatchWithFeedback = async () => {
-  await batchStore.loadBatches()
-  if (!batchStore.error) {
-    showSuccess(t('batchDetails.refreshSuccess'))
   }
 }
 
@@ -477,11 +458,7 @@ const loadLicenses = async () => {
     await loadUsersData()
   } catch (err: any) {
     console.error('Error loading licenses:', err)
-    showError(
-      err.response?.data?.error_message ||
-      err.response?.data?.message ||
-      t('batchDetails.loadingLicenses')
-    )
+    showError(extractErrorMessage(err, t('batchDetails.loadingLicenses')))
   } finally {
     isLoadingLicenses.value = false
   }
@@ -528,11 +505,7 @@ const handleLicenseAssigned = async (userId: string) => {
     await loadLicenses()
   } catch (err: any) {
     console.error('Error assigning license:', err)
-    showError(
-      err.response?.data?.error_message ||
-      err.response?.data?.message ||
-      t('batchDetails.assignError')
-    )
+    showError(extractErrorMessage(err, t('batchDetails.assignError')))
   }
 }
 
@@ -581,11 +554,7 @@ const confirmBulkRevoke = async () => {
     await loadLicenses()
   } catch (err: any) {
     console.error('Error revoking licenses:', err)
-    showError(
-      err.response?.data?.error_message ||
-      err.response?.data?.message ||
-      t('batchDetails.revokeError')
-    )
+    showError(extractErrorMessage(err, t('batchDetails.revokeError')))
   }
 }
 
@@ -622,7 +591,7 @@ const confirmBulkDelete = async () => {
     await loadLicenses()
   } catch (err: any) {
     console.error('Error deleting licenses:', err)
-    const errorMessage = err.response?.data?.error_message || err.response?.data?.message || ''
+    const errorMessage = extractErrorMessage(err, '')
 
     // Check if this is a "cancelled externally" error
     if (errorMessage.includes('cancelled externally') || errorMessage.includes('cancelled locally')) {
@@ -652,11 +621,7 @@ const confirmRevoke = async (license: UserSubscription) => {
     await loadLicenses()
   } catch (err: any) {
     console.error('Error revoking license:', err)
-    showError(
-      err.response?.data?.error_message ||
-      err.response?.data?.message ||
-      t('batchDetails.revokeError')
-    )
+    showError(extractErrorMessage(err, t('batchDetails.revokeError')))
   }
 }
 

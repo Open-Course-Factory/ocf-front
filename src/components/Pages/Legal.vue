@@ -360,7 +360,7 @@ const { t } = useTranslations({
   padding: 10px 20px;
   margin: 10px 10px 0 0;
   background: var(--color-primary) !important;
-  color: #ffffff !important;
+  color: var(--color-white) !important;
   text-decoration: none !important;
   border-radius: var(--border-radius-md);
   transition: all 0.3s ease;
@@ -369,7 +369,7 @@ const { t } = useTranslations({
 
 .license-link:hover {
   background: var(--color-primary-hover) !important;
-  color: #ffffff !important;
+  color: var(--color-white) !important;
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
   text-decoration: none !important;
@@ -377,7 +377,7 @@ const { t } = useTranslations({
 }
 
 .license-link i {
-  color: #ffffff !important;
+  color: var(--color-white) !important;
 }
 
 .legal-footer {

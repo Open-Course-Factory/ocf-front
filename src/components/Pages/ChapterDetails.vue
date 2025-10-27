@@ -70,7 +70,7 @@ function openEditModal() {
 }
 
 // Handle chapter update
-async function updateChapter(updatedChapter: Chapter) {
+async function updateChapter(updatedChapter: Record<string, any>) {
     if (!currentChapter.value?.id) return
 
     const success = await chapterStore.update(currentChapter.value.id, updatedChapter)

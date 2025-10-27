@@ -292,7 +292,7 @@ const handleMove = () => {
 .tree-node-page > .node-header {
   font-weight: 400;
   border-left: 3px solid #FFA500;
-  background: #FFF3E6;
+  background: var(--color-white)3E6;
 }
 
 /* Dragging state */

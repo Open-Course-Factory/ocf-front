@@ -25,14 +25,17 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { useNotification } from '../../composables/useNotification';
+import { usePageLoad } from '../../composables/usePageLoad';
+import { useLoadingState } from '../../composables/useLoadingState';
+import { extractErrorMessage } from '../../utils/formatters';
 import BaseModal from '../Modals/BaseModal.vue';
+import ErrorAlert from '../UI/ErrorAlert.vue';
 
 const { showSuccess, showError } = useNotification();
+const { error, withErrorHandling } = usePageLoad();
+const { isLoading: isRegenerating, withLoading } = useLoadingState();
 
 const currentKey = ref(null);
-const isLoading = ref(false);
-const error = ref('');
-const isRegenerating = ref(false);
 const showConfirm = ref(false);
 
 onMounted(() => {
@@ -40,17 +43,13 @@ onMounted(() => {
 });
 
 async function loadKey() {
-  isLoading.value = true;
-  try {
-    const response = await axios.get('/user-terminal-keys/my-key');
-    currentKey.value = response.data;
-  } catch (err: any) {
-    if (err.response?.status !== 404) {
-      error.value = 'Erreur lors du chargement de la clé';
-    }
-  } finally {
-    isLoading.value = false;
-  }
+  await withErrorHandling(
+    async () => {
+      const response = await axios.get('/user-terminal-keys/my-key');
+      currentKey.value = response.data;
+    },
+    'Erreur lors du chargement de la clé'
+  );
 }
 
 function confirmRegenerate() {
@@ -58,17 +57,17 @@ function confirmRegenerate() {
 }
 
 async function regenerateKey() {
-  isRegenerating.value = true;
-  try {
-    await axios.post('/user-terminal-keys/regenerate');
-    await loadKey();
-    showConfirm.value = false;
-    showSuccess('Clé régénérée avec succès');
-  } catch (err) {
-    showError('Erreur lors de la régénération', 'Erreur');
-  } finally {
-    isRegenerating.value = false;
-  }
+  await withLoading(async () => {
+    try {
+      await axios.post('/user-terminal-keys/regenerate');
+      await loadKey();
+      showConfirm.value = false;
+      showSuccess('Clé régénérée avec succès');
+    } catch (err: any) {
+      console.error('Erreur lors de la régénération:', err);
+      showError(extractErrorMessage(err, 'Erreur lors de la régénération'), 'Erreur');
+    }
+  });
 }
 
 function formatDate(dateString: string) {
@@ -82,8 +81,8 @@ function formatDate(dateString: string) {
     <div class="content">
       <div class="header">
         <h2>Clés d'accès Terminal</h2>
-        <button 
-          class="btn btn-warning" 
+        <button
+          class="btn btn-warning"
           @click="confirmRegenerate"
           :disabled="isRegenerating"
         >
@@ -93,15 +92,13 @@ function formatDate(dateString: string) {
         </button>
       </div>
 
-      <div v-if="isLoading" class="loading">
-        <i class="fas fa-spinner fa-spin"></i> Chargement...
-      </div>
+      <!-- Message d'erreur global (utilise le nouveau composant ErrorAlert) -->
+      <ErrorAlert
+        :message="error"
+        @dismiss="error = ''"
+      />
 
-      <div v-else-if="error" class="alert alert-danger">
-        {{ error }}
-      </div>
-
-      <div v-else-if="currentKey" class="key-details">
+      <div v-if="currentKey" class="key-details">
         <div class="alert alert-info">
           <i class="fas fa-info-circle"></i>
           Gardez votre clé terminal sécurisée. Elle donne accès aux sessions terminal.

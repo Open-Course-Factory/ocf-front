@@ -189,7 +189,7 @@ const handleDragEnd = () => {
 
 .node-preview.node-page {
   border-color: #FFA500;
-  background: #FFF3E6;
+  background: var(--color-white)3E6;
 }
 
 .node-icon {

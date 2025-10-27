@@ -278,3 +278,108 @@ export async function withAsyncParallel<T extends any[]>(
     state.isLoading.value = false
   }
 }
+
+/**
+ * Interface for entities storage (part of baseStore)
+ */
+export interface EntitiesState {
+  entities: any[]
+  lastLoaded: Ref<Date | null>
+}
+
+/**
+ * Create sync-and-load wrapper functions for stores that need Stripe-style sync
+ * Eliminates duplication of sync + load + syncAndLoad pattern
+ *
+ * @param state - Async state refs (isLoading, error)
+ * @param entitiesState - Entities storage state
+ * @param syncEndpoint - API endpoint for sync operation (e.g., '/invoices/sync')
+ * @param loadEndpoint - API endpoint for load operation (e.g., '/invoices/user')
+ * @param syncErrorKey - Translation key for sync errors
+ * @param loadErrorKey - Translation key for load errors
+ * @returns Object with sync, load, and syncAndLoad functions
+ *
+ * @example
+ * // In invoices store:
+ * const { sync, load, syncAndLoad } = createSyncAndLoadWrapper(
+ *   { isLoading: base.isLoading, error: base.error },
+ *   { entities: base.entities, lastLoaded: base.lastLoaded },
+ *   '/invoices/sync',
+ *   '/invoices/user',
+ *   'invoices.syncError',
+ *   'invoices.loadError'
+ * )
+ *
+ * // Now use these methods:
+ * const syncInvoices = sync
+ * const loadUserInvoices = load
+ * const syncAndLoadInvoices = syncAndLoad
+ */
+export function createSyncAndLoadWrapper(
+  state: AsyncState,
+  entitiesState: EntitiesState,
+  syncEndpoint: string,
+  loadEndpoint: string,
+  syncErrorKey: string,
+  loadErrorKey: string
+) {
+  const baseAsync = createAsyncWrapper(state)
+
+  /**
+   * Sync data from external service (e.g., Stripe)
+   */
+  const sync = async () => {
+    return await baseAsync(
+      async () => {
+        // Lazy import axios to avoid circular dependencies
+        const { default: axios } = await import('axios')
+        const response = await axios.post(syncEndpoint)
+        console.log(`Sync result for ${syncEndpoint}:`, response.data)
+        return response.data
+      },
+      syncErrorKey
+    )
+  }
+
+  /**
+   * Load data from backend
+   */
+  const load = async () => {
+    return await baseAsync(
+      async () => {
+        // Lazy import axios to avoid circular dependencies
+        const { default: axios } = await import('axios')
+        const response = await axios.get(loadEndpoint)
+        return response.data || []
+      },
+      loadErrorKey,
+      {
+        onSuccess: (data) => {
+          // Update entities store
+          entitiesState.entities.splice(0, entitiesState.entities.length, ...data)
+          entitiesState.lastLoaded.value = new Date()
+        }
+      }
+    )
+  }
+
+  /**
+   * Sync from external service then load from backend
+   * Common pattern for Stripe-integrated entities
+   */
+  const syncAndLoad = async () => {
+    try {
+      await sync()
+      return await load()
+    } catch (error) {
+      console.error('Error during sync and load:', error)
+      throw error
+    }
+  }
+
+  return {
+    sync,
+    load,
+    syncAndLoad
+  }
+}

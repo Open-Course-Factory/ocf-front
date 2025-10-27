@@ -21,11 +21,12 @@
 
 import { defineStore } from "pinia"
 import { useBaseStore } from "./baseStore"
-import axios from 'axios'
 import { formatCurrency, formatDate as formatDateUtil } from '../utils/formatters'
-import { createAsyncWrapper } from '../utils/asyncWrapper'
+import { createSyncAndLoadWrapper } from '../utils/asyncWrapper'
 import { buildFieldList, field, systemFields } from '../utils/fieldBuilder'
+import { buildSelectData } from '../utils'
 import { useStoreTranslations } from '../composables/useTranslations'
+import { useStatusFormatters } from '../composables/useStatusFormatters'
 
 export const useInvoicesStore = defineStore('invoices', () => {
 
@@ -93,9 +94,6 @@ export const useInvoicesStore = defineStore('invoices', () => {
         }
     })
 
-    // Create async wrapper with base store state
-    const baseAsync = createAsyncWrapper({ isLoading: base.isLoading, error: base.error })
-
     const fieldList = buildFieldList([
         ...systemFields(['id', 'user_id', 'created_at'], { created_at: t('created_at') }),
         field('invoice_number', t('invoices.invoice_number')).readonly(),
@@ -116,27 +114,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
         return formatCurrency(amount, currency)
     }
 
-    // Obtenir la classe CSS pour le statut
-    const getStatusClass = (status: string) => {
-        switch (status?.toLowerCase()) {
-            case 'paid': return 'text-success';
-            case 'unpaid': return 'text-warning';
-            case 'draft': return 'text-muted';
-            case 'void': return 'text-danger';
-            default: return 'text-secondary';
-        }
-    }
-
-    // Obtenir l'icône pour le statut
-    const getStatusIcon = (status: string) => {
-        switch (status?.toLowerCase()) {
-            case 'paid': return 'fas fa-check-circle';
-            case 'unpaid': return 'fas fa-clock';
-            case 'draft': return 'fas fa-edit';
-            case 'void': return 'fas fa-times-circle';
-            default: return 'fas fa-file-invoice';
-        }
-    }
+    // Use shared status formatters (utilise le composable réutilisable)
+    const { getStatusClass, getStatusIcon } = useStatusFormatters('invoice')
 
     // Vérifier si la facture est en retard
     const isOverdue = (invoice: any) => {
@@ -152,47 +131,15 @@ export const useInvoicesStore = defineStore('invoices', () => {
         return formatDateUtil(dateString, 'fr-FR', '-')
     }
 
-    // Synchroniser les factures avec Stripe
-    const syncInvoices = async () => {
-        return await baseAsync(
-            async () => {
-                const response = await axios.post('/invoices/sync');
-                console.log('Invoice sync result:', response.data);
-                return response.data;
-            },
-            'invoices.syncError'
-        );
-    }
-
-    // Charger les factures de l'utilisateur
-    const loadUserInvoices = async () => {
-        return await baseAsync(
-            async () => {
-                const response = await axios.get('/invoices/user');
-                return response.data || [];
-            },
-            'invoices.loadError',
-            {
-                onSuccess: (data) => {
-                    base.entities.splice(0, base.entities.length, ...data);
-                    base.lastLoaded.value = new Date();
-                }
-            }
-        );
-    }
-
-    // Synchroniser puis charger les factures (méthode recommandée)
-    const syncAndLoadInvoices = async () => {
-        try {
-            // D'abord synchroniser avec Stripe
-            await syncInvoices();
-            // Puis charger les factures
-            return await loadUserInvoices();
-        } catch (error) {
-            console.error('Erreur lors de la synchronisation et du chargement:', error);
-            throw error;
-        }
-    }
+    // Synchroniser et charger les factures (utilise le wrapper réutilisable)
+    const { sync: syncInvoices, load: loadUserInvoices, syncAndLoad: syncAndLoadInvoices } = createSyncAndLoadWrapper(
+        { isLoading: base.isLoading, error: base.error },
+        { entities: base.entities, lastLoaded: base.lastLoaded },
+        '/invoices/sync',
+        '/invoices/user',
+        'invoices.syncError',
+        'invoices.loadError'
+    )
 
     // Action pour télécharger une facture (utilise la nouvelle API)
     const downloadInvoice = async (invoiceId: string) => {
@@ -211,21 +158,13 @@ export const useInvoicesStore = defineStore('invoices', () => {
         }
     }
 
-    // Fonction personnalisée pour les données de sélection
+    // Fonction personnalisée pour les données de sélection (utilise l'utilitaire réutilisable)
     const getSelectDatas = (inputEntities: any[]) => {
-        let res: Array<{text: string, value: string}> = []
-        if (inputEntities.length > 0) {
-            inputEntities.forEach((invoice) => {
-                const amount = formatAmount(invoice.amount, invoice.currency);
-                const date = formatDate(invoice.invoice_date);
-                const displayName = `${invoice.invoice_number} - ${amount} (${date})`;
-                res.push({ 
-                    text: displayName, 
-                    value: invoice.id 
-                })
-            })
-        }
-        return res
+        return buildSelectData(inputEntities, (invoice) => {
+            const amount = formatAmount(invoice.amount, invoice.currency);
+            const date = formatDate(invoice.invoice_date);
+            return `${invoice.invoice_number} - ${amount} (${date})`;
+        })
     }
 
     return {

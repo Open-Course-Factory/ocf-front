@@ -16,14 +16,11 @@
         <p class="text-muted">{{ t('bulkPurchase.subtitle') }}</p>
       </div>
 
-      <!-- Error message -->
-      <div v-if="error" class="alert alert-danger">
-        <i class="fas fa-exclamation-triangle"></i>
-        {{ error }}
-        <button class="btn btn-sm btn-outline-danger" @click="error = ''">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
+      <!-- Error message (utilise le nouveau composant ErrorAlert) -->
+      <ErrorAlert
+        :message="error"
+        @dismiss="error = ''"
+      />
 
       <!-- Success message -->
       <div v-if="successMessage" class="alert alert-success">
@@ -193,13 +190,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionBatchesStore } from '../../stores/subscriptionBatches'
 import { useClassGroupsStore } from '../../stores/classGroups'
 import PricingCalculator from '../Subscription/PricingCalculator.vue'
-import { formatCurrency as formatCurrencyUtil } from '../../utils/formatters'
+import { formatCurrency as formatCurrencyUtil, extractErrorMessage } from '../../utils/formatters'
+import ErrorAlert from '../UI/ErrorAlert.vue'
 
 const { t } = useTranslations({
   en: {
@@ -264,7 +262,6 @@ const { t } = useTranslations({
   }
 })
 
-const router = useRouter()
 const route = useRoute()
 const plansStore = useSubscriptionPlansStore()
 const batchStore = useSubscriptionBatchesStore()
@@ -344,9 +341,7 @@ const handlePurchase = async () => {
     successMessage.value = t('bulkPurchase.purchaseSuccess')
   } catch (err: any) {
     console.error('Purchase error:', err)
-    error.value = err.response?.data?.error_message ||
-                  err.response?.data?.message ||
-                  t('bulkPurchase.purchaseError')
+    error.value = extractErrorMessage(err, t('bulkPurchase.purchaseError'))
     isPurchasing.value = false
   }
   // Don't set isPurchasing to false here - redirect will happen
@@ -367,7 +362,7 @@ onMounted(async () => {
     isLoadingPlans.value = true
     await Promise.all([
       plansStore.loadPlans(),
-      groupsStore.loadEntities('/class-groups')
+      groupsStore.loadEntities()
     ])
 
     // Check for planId in query parameters

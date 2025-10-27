@@ -24,6 +24,7 @@ import { useBaseStore } from "./baseStore"
 import { formatStorageSize, formatNumber, formatDate as formatDateUtil } from '../utils/formatters'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
+import { buildSelectData } from '../utils'
 
 export const useUsageMetricsStore = defineStore('usageMetrics', () => {
 
@@ -192,21 +193,13 @@ export const useUsageMetricsStore = defineStore('usageMetrics', () => {
         return 'bg-success'; // Vert si < 60%
     }
 
-    // Fonction personnalisée pour les données de sélection
+    // Fonction personnalisée pour les données de sélection (utilise l'utilitaire réutilisable)
     const getSelectDatas = (inputEntities: any[]) => {
-        let res: Array<{text: string, value: string}> = []
-        if (inputEntities.length > 0) {
-            inputEntities.forEach((metric) => {
-                const current = formatValue(metric.current_value, metric.metric_type);
-                const limit = formatLimit(metric.limit_value, metric.metric_type);
-                const displayName = `${metric.metric_type}: ${current}/${limit} (${metric.usage_percent?.toFixed(1)}%)`;
-                res.push({ 
-                    text: displayName, 
-                    value: metric.id 
-                })
-            })
-        }
-        return res
+        return buildSelectData(inputEntities, (metric) => {
+            const current = formatValue(metric.current_value, metric.metric_type);
+            const limit = formatLimit(metric.limit_value, metric.metric_type);
+            return `${metric.metric_type}: ${current}/${limit} (${metric.usage_percent?.toFixed(1)}%)`;
+        })
     }
 
     return {

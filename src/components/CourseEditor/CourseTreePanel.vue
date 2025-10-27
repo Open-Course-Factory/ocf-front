@@ -106,8 +106,8 @@ const handleDuplicate = (entity: any, entityType: string) => {
   emit('duplicate-entity', entity, entityType)
 }
 
-const handleMove = (entity: any, targetParent: any, entityType: string) => {
-  emit('move-entity', entity, targetParent, entityType)
+const handleMove = (entity: any, targetParent?: any, entityType?: string) => {
+  emit('move-entity', entity, targetParent, entityType || 'unknown')
 }
 </script>
 

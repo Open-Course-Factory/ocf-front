@@ -264,6 +264,20 @@ export const useCoursesStore = defineStore('courses', () => {
         }
     }
 
+    /**
+     * Update a course
+     */
+    const update = async (courseId: string, courseData: Partial<any>) => {
+        return await base.updateEntity('/courses', courseId, courseData)
+    }
+
+    /**
+     * Delete a course (alias for deleteEntity for consistency with CourseEditor)
+     */
+    const deleteCourse = async (courseId: string) => {
+        return await base.deleteEntity('/courses', courseId)
+    }
+
     return {
         ...base,
         fieldList,
@@ -273,6 +287,8 @@ export const useCoursesStore = defineStore('courses', () => {
         fetchCourseVersions,
         fetchCourseByVersion,
         fetchCourseById,
-        deleteCourseVersion
+        deleteCourseVersion,
+        update,
+        delete: deleteCourse
     }
 })

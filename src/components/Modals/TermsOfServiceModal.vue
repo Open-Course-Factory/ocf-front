@@ -1,27 +1,27 @@
 <template>
-  <div v-if="isOpen" class="modal-overlay" @click.self="closeModal">
-    <div class="modal-container">
-      <div class="modal-header">
-        <h2>{{ t('tosModal.title') }}</h2>
-        <button class="close-button" @click="closeModal" type="button">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="modal-body">
-        <TermsOfService />
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" @click="closeModal" type="button">
-          {{ t('tosModal.close') }}
-        </button>
-      </div>
-    </div>
-  </div>
+  <BaseModal
+    :visible="isOpen"
+    :title="t('tosModal.title')"
+    size="large"
+    :show-close="true"
+    :close-on-overlay-click="true"
+    @close="closeModal"
+  >
+    <template #default>
+      <TermsOfService />
+    </template>
+
+    <template #footer>
+      <button class="btn btn-secondary" @click="closeModal" type="button">
+        {{ t('tosModal.close') }}
+      </button>
+    </template>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
-import { watch, onMounted, onBeforeUnmount } from 'vue';
 import { useTranslations } from '../../composables/useTranslations';
+import BaseModal from './BaseModal.vue';
 import TermsOfService from '../Legal/TermsOfService.vue';
 
 interface Props {
@@ -32,7 +32,7 @@ interface Emits {
   (e: 'close'): void;
 }
 
-const props = defineProps<Props>();
+defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const { t } = useTranslations({
@@ -53,119 +53,21 @@ const { t } = useTranslations({
 const closeModal = () => {
   emit('close');
 };
-
-// Prevent body scroll when modal is open
-watch(() => props.isOpen, (isOpen) => {
-  if (isOpen) {
-    document.body.style.overflow = 'hidden';
-  } else {
-    document.body.style.overflow = '';
-  }
-});
-
-// Handle ESC key
-const handleKeydown = (e: KeyboardEvent) => {
-  if (e.key === 'Escape' && props.isOpen) {
-    closeModal();
-  }
-};
-
-onMounted(() => {
-  window.addEventListener('keydown', handleKeydown);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', handleKeydown);
-  document.body.style.overflow = '';
-});
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  padding: 20px;
-}
-
-.modal-container {
-  background-color: var(--color-white);
-  border-radius: 8px;
-  max-width: 900px;
-  width: 100%;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--color-gray-200);
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.5rem;
-  color: var(--color-text-primary);
-}
-
-.close-button {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  color: var(--color-gray-600);
-  cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: background-color 0.2s, color 0.2s;
-}
-
-.close-button:hover {
-  background-color: var(--color-gray-50);
-  color: var(--color-text-primary);
-}
-
-.modal-body {
-  padding: 24px;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.modal-footer {
-  padding: 16px 24px;
-  border-top: 1px solid var(--color-gray-200);
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
+/* All modal styling is now handled by BaseModal */
 .btn {
-  padding: 8px 16px;
-  border-radius: 4px;
+  padding: var(--btn-padding-md);
+  border-radius: var(--border-radius-md);
   border: none;
   cursor: pointer;
-  font-size: 0.95rem;
-  transition: background-color 0.2s;
+  font-size: var(--font-size-base);
+  transition: background-color var(--transition-fast);
 }
 
 .btn-secondary {
-  background-color: var(--color-gray-600);
+  background-color: var(--color-secondary);
   color: var(--color-white);
 }
 

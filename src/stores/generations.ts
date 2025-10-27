@@ -176,20 +176,18 @@ export const useGenerationsStore = defineStore('generations', () => {
     // Fonction pour vérifier le statut d'une génération
     const checkGenerationStatus = async (generationId: string) => {
         try {
-            const apiUrl = import.meta.env.VITE_API_URL;
-            const protocol = import.meta.env.VITE_PROTOCOL;
             const { useCurrentUserStore } = await import('./currentUser');
             const currentUserStore = useCurrentUserStore();
-            
-            const response = await fetch(`${protocol}://${apiUrl}/api/v1/generations/${generationId}/status`, {
+
+            const response = await axios.get(`/generations/${generationId}/status`, {
                 headers: {
                     'Authorization': currentUserStore.secretToken,
                     'Content-Type': 'application/json'
                 }
             });
-            
-            if (response.ok) {
-                const statusData = await response.json();
+
+            if (response.status === 200) {
+                const statusData = response.data;
                 
                 console.log(`[Polling] Génération ${generationId}: ${statusData.status} (${statusData.progress || 0}%)`);
                 
@@ -218,11 +216,13 @@ export const useGenerationsStore = defineStore('generations', () => {
                 }
                 
                 return statusData;
-            } else {
-                console.error(`[Polling] Erreur HTTP ${response.status} pour génération ${generationId}`);
             }
-        } catch (error) {
-            console.error('Erreur lors de la vérification du statut:', error);
+        } catch (error: any) {
+            if (error.response) {
+                console.error(`[Polling] Erreur HTTP ${error.response.status} pour génération ${generationId}`);
+            } else {
+                console.error('Erreur lors de la vérification du statut:', error);
+            }
             // Ne pas arrêter le polling en cas d'erreur réseau temporaire
             // stopStatusPolling(generationId);
         }
@@ -233,8 +233,6 @@ export const useGenerationsStore = defineStore('generations', () => {
     // Fonction spécifique pour déclencher une génération après création
     const triggerGeneration = async (entity: any, originalData: any) => {
         try {
-            const apiUrl = import.meta.env.VITE_API_URL;
-            const protocol = import.meta.env.VITE_PROTOCOL;
             const { useCurrentUserStore } = await import('./currentUser');
             const { useLoginStore } = await import('./login');
             const currentUserStore = useCurrentUserStore();
@@ -249,7 +247,7 @@ export const useGenerationsStore = defineStore('generations', () => {
 
             console.log('Déclenchement de la génération avec:', generatePayload);
 
-            const generateResponse = await axios.post(`${protocol}://${apiUrl}/api/v1/courses/generate`, generatePayload, {
+            const generateResponse = await axios.post('/courses/generate', generatePayload, {
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': currentUserStore.secretToken,

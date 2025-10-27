@@ -56,3 +56,41 @@ export function formatDate(dateString: string): string {
     return dateString;
   }
 }
+
+/**
+ * Build select data (options) from an array of entities
+ * Provides consistent select option generation across stores
+ *
+ * @template T - Entity type with id property
+ * @param entities - Array of entities to convert to select options
+ * @param formatter - Function to format entity to display text
+ * @returns Array of select options with text and value properties
+ *
+ * @example
+ * // In a store:
+ * const getSelectDatas = (inputEntities: Invoice[]) => {
+ *   return buildSelectData(inputEntities, (invoice) => {
+ *     const amount = formatCurrency(invoice.amount, invoice.currency)
+ *     const date = formatDate(invoice.invoice_date)
+ *     return `${invoice.invoice_number} - ${amount} (${date})`
+ *   })
+ * }
+ *
+ * @example
+ * // For payment methods:
+ * const getSelectDatas = (inputEntities: PaymentMethod[]) => {
+ *   return buildSelectData(inputEntities, (method) => {
+ *     const displayName = formatPaymentMethod(method)
+ *     return method.is_default ? `${displayName} (Défaut)` : displayName
+ *   })
+ * }
+ */
+export function buildSelectData<T extends { id: string }>(
+  entities: T[],
+  formatter: (item: T) => string
+): Array<{ text: string; value: string }> {
+  return entities.map((entity) => ({
+    text: formatter(entity),
+    value: entity.id,
+  }))
+}

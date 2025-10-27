@@ -493,8 +493,6 @@ const { t } = useTranslations({
 const { showSuccess, showError } = useNotification()
 
 // Configuration
-const today = new Date().toISOString().split('T')[0]
-
 const config = ref({
   action: 'void',
   olderThanDays: 90,
@@ -588,18 +586,18 @@ const runCleanup = async () => {
 
   isProcessing.value = true
 
+  const requestBody: any = {
+    action: config.value.action,              // "void" or "uncollectible"
+    older_than_days: Number(config.value.olderThanDays), // Ensure it's a number
+    dry_run: config.value.dryRun             // boolean
+  }
+
+  // Add optional status field only if not "all"
+  if (config.value.statusFilter !== 'all') {
+    requestBody.status = config.value.statusFilter
+  }
+
   try {
-    const requestBody: any = {
-      action: config.value.action,              // "void" or "uncollectible"
-      older_than_days: Number(config.value.olderThanDays), // Ensure it's a number
-      dry_run: config.value.dryRun             // boolean
-    }
-
-    // Add optional status field only if not "all"
-    if (config.value.statusFilter !== 'all') {
-      requestBody.status = config.value.statusFilter
-    }
-
     console.log('Sending cleanup request:', requestBody) // Debug log
     const response = await axios.post('/invoices/admin/cleanup', requestBody)
 
@@ -774,10 +772,6 @@ const exportResults = () => {
 const formatDate = (dateString: string): string => {
   if (!dateString) return '-'
   return formatDateTime(dateString).split(' ')[0]
-}
-
-const capitalize = (str: string): string => {
-  return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
 const getStatusLabel = (status: string): string => {

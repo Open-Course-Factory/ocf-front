@@ -42,15 +42,14 @@
         </div>
       </div>
 
+      <!-- Message d'erreur global (utilise le nouveau composant ErrorAlert) -->
+      <ErrorAlert
+        :message="error"
+        @dismiss="error = ''; loadSharedSessions()"
+      />
+
       <div v-if="isLoadingShared && (sharedSessions?.length || 0) === 0" class="loading-section">
         <i class="fas fa-spinner fa-spin"></i> Chargement des sessions partagées...
-      </div>
-
-      <div v-else-if="error" class="alert alert-danger">
-        {{ error }}
-        <button class="btn btn-sm btn-outline-danger" @click="error = ''; loadSharedSessions()">
-          Réessayer
-        </button>
       </div>
 
       <div v-if="(sharedSessions?.length || 0) > 0" class="sessions-grid">
@@ -215,6 +214,8 @@ import { terminalService, type SharedTerminalInfo } from '../../services/domain/
 import { userService, type User } from '../../services/domain/user'
 import axios from 'axios'
 import { useNotification } from '../../composables/useNotification'
+import { extractErrorMessage } from '../../utils/formatters'
+import ErrorAlert from '../UI/ErrorAlert.vue'
 
 const { showConfirm } = useNotification()
 
@@ -264,7 +265,7 @@ async function loadSharedSessions() {
     }
   } catch (err: any) {
     console.error('Erreur lors du chargement des sessions partagées:', err)
-    error.value = err.response?.data?.error_message || 'Erreur lors du chargement des sessions partagées'
+    error.value = extractErrorMessage(err, 'Erreur lors du chargement des sessions partagées')
     sharedSessions.value = []
   } finally {
     isLoadingShared.value = false
@@ -317,7 +318,7 @@ async function stopSession(sessionId: string) {
     console.log('Session stopped successfully')
   } catch (err: any) {
     console.error('Erreur lors de l\'arrêt:', err)
-    error.value = err.response?.data?.error_message || 'Erreur lors de l\'arrêt de la session'
+    error.value = extractErrorMessage(err, 'Erreur lors de l\'arrêt de la session')
   }
 }
 
@@ -469,7 +470,7 @@ async function discardTerminal(terminalId: string) {
     console.log('Terminal successfully hidden:', terminalId)
   } catch (err: any) {
     console.error('Erreur lors du masquage du terminal:', err)
-    error.value = err.response?.data?.error_message || 'Erreur lors du masquage du terminal'
+    error.value = extractErrorMessage(err, 'Erreur lors du masquage du terminal')
   }
 }
 </script>

@@ -136,5 +136,19 @@ export const useChaptersStore = defineStore('chapters', () => {
         }
     }
 
-    return {...base, fieldList, fetchChapterById}
+    /**
+     * Update a chapter
+     */
+    const update = async (chapterId: string, chapterData: Partial<Chapter>) => {
+        return await base.updateEntity('/chapters', chapterId, chapterData)
+    }
+
+    /**
+     * Delete a chapter
+     */
+    const deleteChapter = async (chapterId: string) => {
+        return await base.deleteEntity('/chapters', chapterId)
+    }
+
+    return {...base, fieldList, fetchChapterById, update, delete: deleteChapter}
 })

@@ -1,7 +1,7 @@
 <template>
   <div
     class="custom-node"
-    :class="[nodeClass, { 'is-new': data.isNew, 'is-selected': selected }]"
+    :class="[nodeClass, { 'is-new': dataIsNew, 'is-selected': selected }]"
     :style="{ borderColor: borderColor, backgroundColor: backgroundColor }"
   >
     <!-- Connection handles on all 4 sides -->
@@ -20,16 +20,16 @@
         <span class="node-icon">{{ icon }}</span>
         <div class="node-title-container">
           <slot name="header">
-            <div class="node-title">{{ data.label || defaultLabel }}</div>
+            <div class="node-title">{{ dataLabel }}</div>
             <div v-if="subtitle" class="node-subtitle">{{ subtitle }}</div>
           </slot>
         </div>
         <span v-if="isExpandable" class="expand-indicator">
-          {{ data.isExpanded ? '▼' : '▶' }}
+          {{ dataIsExpanded ? '▼' : '▶' }}
         </span>
       </div>
 
-      <div v-if="data.isNew" class="node-badge new-badge">New</div>
+      <div v-if="dataIsNew" class="node-badge new-badge">New</div>
 
       <!-- Slot for custom metadata -->
       <slot name="metadata"></slot>
@@ -79,14 +79,16 @@
 import { computed, ref } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
 
+interface NodeData {
+  label?: string
+  isNew?: boolean
+  entityId?: string
+  isExpanded?: boolean
+  [key: string]: any
+}
+
 interface Props {
-  data: {
-    label?: string
-    isNew?: boolean
-    entityId?: string
-    isExpanded?: boolean
-    [key: string]: any
-  }
+  data: NodeData
   selected?: boolean
   icon: string
   nodeClass: string
@@ -96,7 +98,10 @@ interface Props {
   childrenKey?: string
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  selected: false,
+  childrenKey: undefined
+})
 
 const emit = defineEmits<{
   (e: 'edit', data: any): void
@@ -107,6 +112,12 @@ const emit = defineEmits<{
 
 // Click delay timer to distinguish single from double click
 const clickTimer = ref<number | null>(null)
+
+// Computed properties for data access (helps with type checking)
+const nodeData = computed(() => props.data as NodeData)
+const dataIsNew = computed(() => nodeData.value.isNew ?? false)
+const dataLabel = computed(() => nodeData.value.label ?? props.defaultLabel)
+const dataIsExpanded = computed(() => nodeData.value.isExpanded ?? false)
 
 const isExpandable = computed(() => {
   if (!props.childrenKey) return false
@@ -367,6 +378,6 @@ const handleContentDoubleClick = (event: MouseEvent) => {
 
 .delete-btn:hover {
   background: #fee;
-  border-color: #f44336;
+  border-color: var(--color-danger);
 }
 </style>

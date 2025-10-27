@@ -25,36 +25,37 @@
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Entity from './Entity.vue';
+import ErrorAlert from '../UI/ErrorAlert.vue';
 import { useBillingAddressesStore } from '../../stores/billingAddresses';
+import { useLoadingState } from '../../composables/useLoadingState';
+import { extractErrorMessage } from '../../utils/formatters';
 import axios from 'axios';
 
 const { t } = useI18n();
 
 const entityStore = useBillingAddressesStore();
-const isSettingDefault = ref(false);
+const { isLoading: isSettingDefault, withLoading } = useLoadingState();
 const error = ref('');
 
 // Action pour définir une adresse comme défaut
 const setAsDefault = async (addressId: string) => {
-    isSettingDefault.value = true;
-    error.value = '';
-    
-    try {
-        // L'API attend set_default: true dans le PATCH
-        await axios.patch(`/billing-addresses/${addressId}`, {
-            set_default: true
-        });
-        
-        // Recharger les adresses pour voir les changements
-        const response = await axios.get('/billing-addresses');
-        entityStore.entities = response.data || [];
-        
-    } catch (err: any) {
-        console.error('Erreur lors de la définition comme défaut:', err);
-        error.value = err.response?.data?.error_message || 'Erreur lors de la mise à jour';
-    } finally {
-        isSettingDefault.value = false;
-    }
+    await withLoading(async () => {
+        try {
+            error.value = '';
+            // L'API attend set_default: true dans le PATCH
+            await axios.patch(`/billing-addresses/${addressId}`, {
+                set_default: true
+            });
+
+            // Recharger les adresses pour voir les changements
+            const response = await axios.get('/billing-addresses');
+            entityStore.entities = response.data || [];
+
+        } catch (err: any) {
+            console.error('Erreur lors de la définition comme défaut:', err);
+            error.value = extractErrorMessage(err, 'Erreur lors de la mise à jour');
+        }
+    });
 };
 
 // Obtenir les pays les plus courants pour l'autocomplétion
@@ -70,14 +71,11 @@ const setAsDefault = async (addressId: string) => {
 <template>
     <div class="wrapper">
         <div class="billing-addresses-page">
-            <!-- Message d'erreur global -->
-            <div v-if="error" class="alert alert-danger">
-                <i class="fas fa-exclamation-triangle"></i>
-                {{ error }}
-                <button class="btn btn-sm btn-outline-danger" @click="error = ''">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
+            <!-- Message d'erreur global (utilise le nouveau composant ErrorAlert) -->
+            <ErrorAlert
+                :message="error"
+                @dismiss="error = ''"
+            />
 
             <!-- Informations utiles -->
             <div class="info-banner">

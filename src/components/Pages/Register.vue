@@ -190,6 +190,7 @@ import { useRouter } from 'vue-router';
 import axios from 'axios';
 import TermsOfServiceModal from '../../components/Modals/TermsOfServiceModal.vue';
 import { useTranslations } from '../../composables/useTranslations';
+import { extractErrorMessage } from '../../utils/formatters';
 
 const router = useRouter();
 const showTosModal = ref(false);
@@ -410,12 +411,11 @@ const handleSubmit = async () => {
     }, 2000);
 
   } catch (error: any) {
-    if (error.response?.data?.error_message) {
-      errorMessage.value = error.response.data.error_message;
-    } else if (error.response?.status === 409) {
+    // Handle specific 409 error for email already exists
+    if (error.response?.status === 409) {
       errorMessage.value = t('register.errorEmailExists');
     } else {
-      errorMessage.value = t('register.errorGeneric');
+      errorMessage.value = extractErrorMessage(error, t('register.errorGeneric'));
     }
   } finally {
     isLoading.value = false;

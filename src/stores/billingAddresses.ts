@@ -24,6 +24,7 @@ import { useBaseStore } from "./baseStore"
 import { getCountryOptions, getCountryName } from '../services/data'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
+import { buildSelectData } from '../utils'
 
 export const useBillingAddressesStore = defineStore('billingAddresses', () => {
 
@@ -102,20 +103,12 @@ export const useBillingAddressesStore = defineStore('billingAddresses', () => {
         return parts.join(', ');
     }
 
-    // Fonction personnalisée pour les données de sélection
+    // Fonction personnalisée pour les données de sélection (utilise l'utilitaire réutilisable)
     const getSelectDatas = (inputEntities: any[]) => {
-        let res: Array<{text: string, value: string}> = []
-        if (inputEntities.length > 0) {
-            inputEntities.forEach((address) => {
-                const displayName = formatAddress(address);
-                const label = address.is_default ? `${displayName} (Défaut)` : displayName;
-                res.push({ 
-                    text: label, 
-                    value: address.id 
-                })
-            })
-        }
-        return res
+        return buildSelectData(inputEntities, (address) => {
+            const displayName = formatAddress(address);
+            return address.is_default ? `${displayName} (Défaut)` : displayName;
+        })
     }
 
     // No hooks needed - the select field handles ISO codes directly

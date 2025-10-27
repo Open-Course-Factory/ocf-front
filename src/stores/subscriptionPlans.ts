@@ -27,6 +27,7 @@ import { formatCurrency } from '../utils/formatters'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
+import { buildSelectData } from '../utils'
 
 export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => {
 
@@ -222,20 +223,12 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
         return formatCurrency(amount, currency)
     }
 
-    // Fonction personnalisée pour les données de sélection
+    // Fonction personnalisée pour les données de sélection (utilise l'utilitaire réutilisable)
     const getSelectDatas = (inputEntities: any[]) => {
-        let res: Array<{text: string, value: string}> = []
-        if (inputEntities.length > 0) {
-            inputEntities.forEach((plan) => {
-                const price = formatPrice(plan.price_amount, plan.currency)
-                const displayName = `${plan.name} - ${price}/${plan.billing_interval}`
-                res.push({ 
-                    text: displayName, 
-                    value: plan.id 
-                })
-            })
-        }
-        return res
+        return buildSelectData(inputEntities, (plan) => {
+            const price = formatPrice(plan.price_amount, plan.currency)
+            return `${plan.name} - ${price}/${plan.billing_interval}`
+        })
     }
 
     // Load subscription plans on store initialization

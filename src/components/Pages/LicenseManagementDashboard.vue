@@ -205,7 +205,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
 import { useSubscriptionBatchesStore } from '../../stores/subscriptionBatches'
 import { useNotification } from '../../composables/useNotification'
-import { formatDateTime } from '../../utils/formatters'
+import { formatDateTime, extractErrorMessage } from '../../utils/formatters'
 import AddLicensesModal from '../Modals/AddLicensesModal.vue'
 import type { SubscriptionBatch } from '../../types/entities'
 
@@ -323,11 +323,7 @@ const loadBatches = async () => {
     console.log('Batches loaded successfully:', batchStore.batches.length, 'batches')
   } catch (err: any) {
     console.error('Error loading batches:', err)
-    showError(
-      err.response?.data?.error_message ||
-      err.response?.data?.message ||
-      t('licenseDashboard.loadingBatches')
-    )
+    showError(extractErrorMessage(err, t('licenseDashboard.loadingBatches')))
   } finally {
     isLoading.value = false
     console.log('isLoading set to false, batches.length:', batchStore.batches.length)
@@ -372,11 +368,7 @@ const handleAddLicenses = async (newQuantity: number) => {
     closeAddLicensesModal()
   } catch (err: any) {
     console.error('Error adding licenses:', err)
-    showError(
-      err.response?.data?.error_message ||
-      err.response?.data?.message ||
-      'Failed to add licenses'
-    )
+    showError(extractErrorMessage(err, 'Failed to add licenses'))
   }
 }
 
@@ -404,7 +396,7 @@ const confirmDeleteBatch = async (batch: SubscriptionBatch) => {
     showSuccess(t('licenseDashboard.deleteSuccess'))
   } catch (err: any) {
     console.error('Error deleting batch:', err)
-    const errorMessage = err.response?.data?.error_message || err.response?.data?.message || ''
+    const errorMessage = extractErrorMessage(err, '')
 
     // Check if this is a "cancelled externally" error
     if (errorMessage.includes('cancelled externally') || errorMessage.includes('cancelled locally')) {
@@ -438,7 +430,7 @@ const confirmBulkDelete = async () => {
     selectedBatchIds.value = []
   } catch (err: any) {
     console.error('Error deleting batches:', err)
-    const errorMessage = err.response?.data?.error_message || err.response?.data?.message || ''
+    const errorMessage = extractErrorMessage(err, '')
 
     // Check if this is a "cancelled externally" error
     if (errorMessage.includes('cancelled externally') || errorMessage.includes('cancelled locally')) {

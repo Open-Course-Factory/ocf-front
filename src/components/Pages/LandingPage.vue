@@ -586,7 +586,7 @@ onUnmounted(() => {
 
 /* Hero Section */
 .hero-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 50%, #f093fb 100%);
   background-size: 200% 200%;
   animation: gradientShift 15s ease infinite;
   color: var(--color-white);
@@ -654,7 +654,7 @@ onUnmounted(() => {
 .orb-1 {
   width: 300px;
   height: 300px;
-  background: radial-gradient(circle, #667eea 0%, transparent 70%);
+  background: radial-gradient(circle, var(--color-primary) 0%, transparent 70%);
   top: 20%;
   right: 10%;
   animation-delay: 2s;
@@ -712,7 +712,7 @@ onUnmounted(() => {
 }
 
 .title-gradient {
-  background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 50%, #ffffff 100%);
+  background: linear-gradient(135deg, var(--color-white) 0%, #f0f0f0 50%, var(--color-white) 100%);
   background-size: 200% 200%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -764,8 +764,8 @@ onUnmounted(() => {
 
 /* Primary Button with Glow Effect */
 .btn-primary {
-  background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
-  color: #667eea;
+  background: linear-gradient(135deg, var(--color-white) 0%, var(--color-bg-tertiary) 100%);
+  color: var(--color-primary);
   box-shadow: 0 10px 40px rgba(255, 255, 255, 0.3);
 }
 
@@ -778,7 +778,7 @@ onUnmounted(() => {
   position: absolute;
   inset: -2px;
   border-radius: 50px;
-  background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #667eea);
+  background: linear-gradient(45deg, var(--color-primary), var(--color-primary-hover), #f093fb, var(--color-primary));
   background-size: 400%;
   z-index: -1;
   filter: blur(8px);

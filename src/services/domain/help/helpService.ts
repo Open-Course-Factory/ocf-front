@@ -37,7 +37,7 @@ class HelpServiceImpl implements HelpService {
     if (this.useBackend) {
       // Future backend implementation
       try {
-        const response = await axios.get(`/api/help/translations/${locale}`);
+        const response = await axios.get(`/help/translations/${locale}`);
         return response.data;
       } catch (error) {
         console.warn(`Failed to fetch help translations from backend for locale ${locale}, falling back to local files`);
@@ -52,7 +52,7 @@ class HelpServiceImpl implements HelpService {
   async updateTranslations(locale: string, translations: HelpTranslations): Promise<void> {
     if (this.useBackend) {
       // Future backend implementation
-      await axios.put(`/api/help/translations/${locale}`, translations);
+      await axios.put(`/help/translations/${locale}`, translations);
     } else {
       // Local implementation - would require file system access
       throw new Error('Updating translations is not supported in local mode');
@@ -62,7 +62,7 @@ class HelpServiceImpl implements HelpService {
   async getAvailableLocales(): Promise<string[]> {
     if (this.useBackend) {
       // Future backend implementation
-      const response = await axios.get('/api/help/locales');
+      const response = await axios.get('/help/locales');
       return response.data;
     } else {
       // Current local implementation

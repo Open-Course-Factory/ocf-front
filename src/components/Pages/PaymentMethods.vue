@@ -22,48 +22,48 @@
 -->
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Entity from './Entity.vue';
+import ErrorAlert from '../UI/ErrorAlert.vue';
 import { usePaymentMethodsStore } from '../../stores/paymentMethods';
 import { useSubscriptionsStore } from '../../stores/subscriptions';
+import { usePageLoad } from '../../composables/usePageLoad';
+import { useLoadingState } from '../../composables/useLoadingState';
+import { extractErrorMessage } from '../../utils/formatters';
 
 const { t } = useI18n();
 
 const entityStore = usePaymentMethodsStore();
 const subscriptionsStore = useSubscriptionsStore();
-const isSettingDefault = ref(false);
-const error = ref('');
+const { error, withErrorHandling } = usePageLoad();
+const { isLoading: isSettingDefault, withLoading } = useLoadingState();
 
 // Charger les méthodes de paiement au montage
 onMounted(async () => {
     await loadPaymentMethods();
 });
 
-// Fonction pour charger les méthodes de paiement
+// Fonction pour charger les méthodes de paiement (utilise le nouveau composable usePageLoad)
 const loadPaymentMethods = async () => {
-    try {
-        error.value = '';
-        await entityStore.syncAndLoadPaymentMethods();
-    } catch (err: any) {
-        console.error('Erreur lors du chargement des méthodes de paiement:', err);
-        error.value = 'Erreur lors du chargement des méthodes de paiement';
-    }
+    await withErrorHandling(
+        async () => {
+            await entityStore.syncAndLoadPaymentMethods();
+        },
+        'Erreur lors du chargement des méthodes de paiement'
+    );
 };
 
-// Action pour définir une méthode comme défaut
+// Action pour définir une méthode comme défaut (utilise le nouveau composable useLoadingState)
 const setAsDefault = async (paymentMethodId: string) => {
-    isSettingDefault.value = true;
-    error.value = '';
-
-    try {
-        await entityStore.setAsDefault(paymentMethodId);
-    } catch (err: any) {
-        console.error('Erreur lors de la définition comme défaut:', err);
-        error.value = err.response?.data?.error_message || 'Erreur lors de la mise à jour';
-    } finally {
-        isSettingDefault.value = false;
-    }
+    await withLoading(async () => {
+        try {
+            await entityStore.setAsDefault(paymentMethodId);
+        } catch (err: any) {
+            console.error('Erreur lors de la définition comme défaut:', err);
+            error.value = extractErrorMessage(err, 'Erreur lors de la mise à jour');
+        }
+    });
 };
 
 // Ouvrir le portail Stripe pour gérer les méthodes de paiement
@@ -84,14 +84,11 @@ const addPaymentMethod = async () => {
 <template>
     <div class="wrapper">
         <div class="payment-methods-page">
-            <!-- Message d'erreur global -->
-            <div v-if="error" class="alert alert-danger">
-                <i class="fas fa-exclamation-triangle"></i>
-                {{ error }}
-                <button class="btn btn-sm btn-outline-danger" @click="error = ''">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
+            <!-- Message d'erreur global (utilise le nouveau composant ErrorAlert) -->
+            <ErrorAlert
+                :message="error"
+                @dismiss="error = ''"
+            />
 
             <!-- Informations utiles et actions -->
             <div class="info-banner">

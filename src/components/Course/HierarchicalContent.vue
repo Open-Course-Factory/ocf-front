@@ -23,7 +23,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { Chapter, Section, Page } from '../../types/entities'
+import type { Chapter, Section } from '../../types/entities'
 
 interface Props {
     chapters?: Chapter[]
