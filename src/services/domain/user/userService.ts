@@ -9,6 +9,8 @@ import type { User } from '../../../types/entities'
 // Re-export the User type so it can be imported from the service
 export type { User }
 
+
+
 export const userService = {
   async getUserById(userId: string): Promise<User> {
     const response = await axios.get(`/users/${userId}`)

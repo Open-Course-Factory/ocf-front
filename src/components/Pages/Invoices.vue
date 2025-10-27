@@ -22,25 +22,23 @@
 -->
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import Entity from './Entity.vue';
 import ErrorAlert from '../UI/ErrorAlert.vue';
 import { useInvoicesStore } from '../../stores/invoices';
-import { useCurrentUserStore } from '../../stores/currentUser.ts';
-import { usePageLoad } from '../../composables/usePageLoad';
-import { useLoadingState } from '../../composables/useLoadingState';
+
 import { extractErrorMessage } from '../../utils/formatters';
 
-const entityStore = useInvoicesStore();
-const currentUser = useCurrentUserStore();
-const { error, withErrorHandling } = usePageLoad();
-const { isLoading: isDownloading, withLoading } = useLoadingState();
-const filter = ref('all');
+import { useAdminViewMode } from '../../composables/useAdminViewMode';
+import { usePageLoad } from '../../composables/usePageLoad';
+import { useLoadingState } from '../../composables/useLoadingState';
 
-// Seuls les admins peuvent voir toutes les factures
-const isAdmin = computed(() => 
-    currentUser.userRoles.includes('administrator')
-);
+const entityStore = useInvoicesStore();
+const { isAdmin, shouldFilterAsStandardUser, shouldShowAllData } = useAdminViewMode();
+const isDownloading = ref(false);
+const filter = ref('all');
+const { error, withErrorHandling } = usePageLoad();
+const { withLoading } = useLoadingState();
 
 // Filtrer les factures selon le statut
 const filteredInvoices = computed(() => {
@@ -77,7 +75,12 @@ const loadInvoices = async () => {
     );
 };
 
-// Action pour télécharger une facture (utilise le nouveau composable useLoadingState)
+// Recharger les factures quand le mode de vue change
+watch(shouldFilterAsStandardUser, async () => {
+    await loadInvoices();
+});
+
+// Action pour télécharger une facture
 const downloadInvoice = async (invoiceId: string) => {
     await withLoading(async () => {
         try {
@@ -124,8 +127,8 @@ const getInvoiceStats = computed(() => {
                 @dismiss="error = ''"
             />
 
-            <!-- Statistiques pour les admins -->
-            <div v-if="isAdmin" class="stats-panel">
+            <!-- Statistiques pour les admins (en mode admin complet seulement) -->
+            <div v-if="shouldShowAllData" class="stats-panel">
                 <h4><i class="fas fa-chart-bar"></i> Statistiques des Factures</h4>
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -176,7 +179,7 @@ const getInvoiceStats = computed(() => {
             <div v-if="entityStore.entities.length === 0" class="empty-state">
                 <i class="fas fa-file-invoice fa-3x"></i>
                 <h4>Aucune facture</h4>
-                <p v-if="!isAdmin">Vos factures apparaîtront ici une fois que vous aurez effectué des achats.</p>
+                <p v-if="!isAdmin || shouldFilterAsStandardUser">Vos factures apparaîtront ici une fois que vous aurez effectué des achats.</p>
                 <p v-else>Aucune facture n'a encore été générée dans le système.</p>
             </div>
             

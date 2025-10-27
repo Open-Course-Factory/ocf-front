@@ -93,10 +93,10 @@
                   {{ t('common.noItems') }}
                 </div>
                 <div v-else class="subentity-items">
-                  <div v-for="(item, index) in (value as any[])" :key="(item as any).id || index" class="subentity-item">
+                  <div v-for="(item, index) in (value as any[])" :key="(item as any)?.id || index" class="subentity-item">
                     <i class="fas fa-circle subentity-icon"></i>
                     <span class="subentity-name">{{ getSubEntityDisplayName(item) }}</span>
-                    <span v-if="(item as any).description" class="subentity-description">{{ truncateText((item as any).description, 50) }}</span>
+                    <span v-if="(item as any)?.description" class="subentity-description">{{ truncateText((item as any).description, 50) }}</span>
                   </div>
                 </div>
               </div>
@@ -141,9 +141,10 @@ const translationKey = computed(() => getTranslationKey(props.entityStore.$id ||
 const props = defineProps<{
   entity: Record<string, any>;
   entityStore: Store & {
-    includeParams?: { parents?: string[] };
+    includeParams?: { parents?: string[], children?: string[] };
+    fieldList?: Map<string, any>;
     fetchById?: (id: string) => Promise<any>;
-    [key: string]: any;
+    subEntitiesStores?: Map<string, any>;
   };
 }>();
 

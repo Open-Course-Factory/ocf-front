@@ -43,6 +43,8 @@ import UserTerminalKeys from '../components/Pages/UserTerminalKeys.vue';
 import ClassGroups from '../components/Pages/ClassGroups.vue';
 import GroupMembers from '../components/Pages/GroupMembers.vue';
 import GroupDetail from '../components/Pages/GroupDetail.vue';
+import Organizations from '../components/Pages/Organizations.vue';
+import OrganizationDetail from '../components/Pages/OrganizationDetail.vue';
 
 const basicRoutes = [
   { path: '/', name: 'LandingPage', component: LandingPage, meta: { requiresAuth: false } },
@@ -161,6 +163,10 @@ const basicRoutes = [
       { path: 'class-groups', name: 'ClassGroups', component: ClassGroups, meta: { requiresAuth: true, requiresFeature: 'class_groups' } },
       { path: 'class-groups/:id', name: 'GroupDetail', component: GroupDetail, meta: { requiresAuth: true, requiresFeature: 'class_groups' } },
       { path: 'group-members', name: 'GroupMembers', component: GroupMembers, meta: { requiresAuth: true, requiresFeature: 'class_groups' } },
+
+      // Organization routes
+      { path: 'organizations', name: 'Organizations', component: Organizations, meta: { requiresAuth: true } },
+      { path: 'organizations/:id', name: 'OrganizationDetail', component: OrganizationDetail, meta: { requiresAuth: true } },
       { path: 'course/:id', name: 'CourseDetails', component: CourseDetails, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
       { path: 'chapter/:id', name: 'ChapterDetails', component: ChapterDetails, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
       { path: 'section/:id', name: 'SectionDetails', component: SectionDetails, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },

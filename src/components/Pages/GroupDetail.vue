@@ -39,6 +39,7 @@ import EntityModal from '../Modals/EntityModal.vue'
 const route = useRoute()
 const router = useRouter()
 const groupStore = useClassGroupsStore()
+
 const currentUser = useCurrentUserStore()
 const { isEnabled } = useFeatureFlags()
 
