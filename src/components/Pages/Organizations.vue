@@ -6,6 +6,7 @@
       :error="organizationsStore.error"
       :can-manage-organization="permissionsStore.canManageOrganization"
       @create="openCreateModal"
+      @bulkImport="navigateToBulkImport"
       @manage="navigateToOrganization"
       @view="navigateToOrganization"
       @reload="loadOrganizations"
@@ -127,6 +128,10 @@ const handleSubmit = async (data: CreateOrganizationRequest | UpdateOrganization
 
 const navigateToOrganization = (organizationId: string) => {
   router.push({ name: 'OrganizationDetail', params: { id: organizationId } })
+}
+
+const navigateToBulkImport = (organizationId: string) => {
+  router.push({ name: 'BulkImport', params: { id: organizationId } })
 }
 </script>
 

@@ -627,7 +627,8 @@ watch(() => route.params.id, async () => {
                 {{ (member.user?.display_name || member.user?.email || member.user_id).charAt(0).toUpperCase() }}
               </div>
               <div class="member-details">
-                <div class="member-email">{{ member.user?.display_name || member.user?.email || member.user_id }}</div>
+                <div class="member-name">{{ member.user?.display_name || member.user_id }}</div>
+                <div class="member-email" v-if="member.user?.email">{{ member.user.email }}</div>
                 <div class="member-meta">
                   <span :class="['role-badge', `role-${member.role}`]">
                     {{ t(`groupDetail.role${member.role.charAt(0).toUpperCase() + member.role.slice(1)}`) }}
@@ -1070,9 +1071,15 @@ watch(() => route.params.id, async () => {
   gap: var(--spacing-xs);
 }
 
-.member-email {
+.member-name {
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+}
+
+.member-email {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
 }
 
 .member-meta {

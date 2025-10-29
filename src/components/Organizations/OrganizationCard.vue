@@ -45,6 +45,15 @@
     <div class="organization-actions">
       <button
         v-if="canManage"
+        class="btn btn-secondary"
+        @click="$emit('bulkImport', organization.id)"
+        :title="t('organizations.bulkImport')"
+      >
+        <i class="fas fa-file-import"></i>
+        {{ t('organizations.import') }}
+      </button>
+      <button
+        v-if="canManage"
         class="btn btn-primary"
         @click="$emit('manage', organization.id)"
       >
@@ -79,6 +88,7 @@ withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
+  (e: 'bulkImport', id: string): void
   (e: 'manage', id: string): void
   (e: 'view', id: string): void
 }>()
@@ -92,6 +102,8 @@ const { t } = useTranslations({
       subscription: 'Subscription',
       subscribed: 'Active',
       free: 'Free',
+      import: 'Import',
+      bulkImport: 'Bulk Import Users & Groups',
       manage: 'Manage',
       view: 'View',
     }
@@ -104,6 +116,8 @@ const { t } = useTranslations({
       subscription: 'Abonnement',
       subscribed: 'Actif',
       free: 'Gratuit',
+      import: 'Importer',
+      bulkImport: 'Importation groupée d\'utilisateurs et groupes',
       manage: 'Gérer',
       view: 'Voir',
     }

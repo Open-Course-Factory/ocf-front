@@ -48,6 +48,7 @@
         :organization="org"
         :can-manage="canManageOrganization(org.id)"
         :has-subscription="!!org.subscription_plan_id"
+        @bulkImport="$emit('bulkImport', $event)"
         @manage="$emit('manage', $event)"
         @view="$emit('view', $event)"
       />
@@ -75,6 +76,7 @@ withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   (e: 'create'): void
+  (e: 'bulkImport', id: string): void
   (e: 'manage', id: string): void
   (e: 'view', id: string): void
   (e: 'reload'): void

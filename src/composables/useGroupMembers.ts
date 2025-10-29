@@ -123,7 +123,9 @@ export function useGroupMembers({ groupId, currentUserId, isOwner }: UseGroupMem
       { isLoading, error },
       async () => {
         const response = await axios.get(`/group-members`, {
-          params: { group_id: groupId.value }
+          params: {
+            group_id: groupId.value
+          }
         })
         members.value = response.data?.data || response.data || []
         return members.value
@@ -164,13 +166,15 @@ export function useGroupMembers({ groupId, currentUserId, isOwner }: UseGroupMem
         }
 
         const response = await axios.post('/group-members', newMember)
-        members.value.push(response.data)
 
         // Reset form
         newMemberData.value = {
           user_id: '',
           role: 'member'
         }
+
+        // Reload members to get full user details
+        await loadMembers()
 
         return response.data
       },

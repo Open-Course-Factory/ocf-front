@@ -45,6 +45,7 @@ import GroupMembers from '../components/Pages/GroupMembers.vue';
 import GroupDetail from '../components/Pages/GroupDetail.vue';
 import Organizations from '../components/Pages/Organizations.vue';
 import OrganizationDetail from '../components/Pages/OrganizationDetail.vue';
+import BulkImport from '../components/Pages/BulkImport.vue';
 
 const basicRoutes = [
   { path: '/', name: 'LandingPage', component: LandingPage, meta: { requiresAuth: false } },
@@ -167,6 +168,7 @@ const basicRoutes = [
       // Organization routes
       { path: 'organizations', name: 'Organizations', component: Organizations, meta: { requiresAuth: true } },
       { path: 'organizations/:id', name: 'OrganizationDetail', component: OrganizationDetail, meta: { requiresAuth: true } },
+      { path: 'organizations/:id/import', name: 'BulkImport', component: BulkImport, meta: { requiresAuth: true } },
       { path: 'course/:id', name: 'CourseDetails', component: CourseDetails, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
       { path: 'chapter/:id', name: 'ChapterDetails', component: ChapterDetails, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
       { path: 'section/:id', name: 'SectionDetails', component: SectionDetails, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
@@ -299,6 +301,12 @@ const basicRoutes = [
       },
 
       // Admin routes
+      {
+        path: 'admin/bulk-import',
+        name: 'AdminBulkImport',
+        component: () => import('../components/Pages/Admin/BulkImportAdmin.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
       {
         path: 'admin/terminal-metrics',
         name: 'AdminTerminalMetrics',

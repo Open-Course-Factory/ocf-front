@@ -1,7 +1,7 @@
 <template>
   <div class="organization-detail-page">
-    <!-- Loading State -->
-    <div v-if="isLoading" class="loading-container">
+    <!-- Loading State (Initial Load Only) -->
+    <div v-if="isInitialLoading" class="loading-container">
       <div class="spinner">
         <i class="fas fa-spinner fa-spin fa-3x"></i>
       </div>
@@ -12,14 +12,14 @@
     <div v-else-if="error" class="error-container">
       <i class="fas fa-exclamation-circle fa-3x"></i>
       <p>{{ error }}</p>
-      <button class="btn btn-primary" @click="loadOrganization">
+      <button class="btn btn-primary" @click="loadOrganization(true)">
         <i class="fas fa-redo"></i>
         {{ t('organizations.retry') }}
       </button>
     </div>
 
     <!-- Not Found State -->
-    <div v-else-if="!isLoading && !organization" class="error-container">
+    <div v-else-if="!isInitialLoading && !organization" class="error-container">
       <i class="fas fa-exclamation-circle fa-3x"></i>
       <p>{{ t('organizations.notFound') }}</p>
       <button class="btn btn-primary" @click="goBack">
@@ -38,7 +38,10 @@
           </div>
           <div class="organization-info">
             <div class="title-row">
-              <h1>{{ organization.display_name }}</h1>
+              <h1>
+                {{ organization.display_name }}
+                <i v-if="isRefreshing" class="fas fa-spinner fa-spin refresh-spinner" title="Refreshing..."></i>
+              </h1>
               <span v-if="organization.is_personal" class="badge badge-info">
                 <i class="fas fa-user"></i>
                 {{ t('organizations.personal') }}
@@ -58,6 +61,14 @@
           </div>
         </div>
         <div class="header-actions">
+          <button
+            v-if="canManage"
+            class="btn btn-primary"
+            @click="goToBulkImport"
+          >
+            <i class="fas fa-file-import"></i>
+            {{ t('organizations.bulkImport') }}
+          </button>
           <button
             v-if="canManage"
             class="btn btn-outline-primary"
@@ -89,6 +100,13 @@
           >
             <i class="fas fa-users"></i>
             {{ t('organizations.members') }}
+          </button>
+          <button
+            :class="['tab', { active: activeTab === 'groups' }]"
+            @click="changeTab('groups')"
+          >
+            <i class="fas fa-layer-group"></i>
+            {{ t('organizations.groups') }}
           </button>
           <button
             :class="['tab', { active: activeTab === 'subscription' }]"
@@ -172,6 +190,15 @@
             />
           </div>
 
+          <!-- Groups Tab -->
+          <div v-if="activeTab === 'groups'" class="tab-panel">
+            <OrganizationGroupsManager
+              :organization-id="organizationId"
+              :can-manage="canManage"
+              :max-groups="organization?.max_groups || 20"
+            />
+          </div>
+
           <!-- Subscription Tab -->
           <div v-if="activeTab === 'subscription'" class="tab-panel">
             <OrganizationSubscriptionManager
@@ -219,6 +246,7 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   OrganizationModal,
   OrganizationMembersManager,
+  OrganizationGroupsManager,
   OrganizationSubscriptionManager
 } from '../Organizations'
 import { useOrganizationsStore } from '../../stores/organizations'
@@ -231,7 +259,8 @@ const router = useRouter()
 const organizationsStore = useOrganizationsStore()
 const permissionsStore = usePermissionsStore()
 
-const isLoading = ref(true) // Start with loading state
+const isInitialLoading = ref(true) // Initial page load
+const isRefreshing = ref(false) // Refreshing data (don't show full screen loader)
 const error = ref('')
 const organization = ref<Organization | null>(null) // Store loaded organization locally
 const activeTab = ref((route.query.tab as string) || 'overview')
@@ -248,6 +277,7 @@ const { t } = useTranslations({
       business: 'Business',
       members: 'Members',
       groups: 'Groups',
+      bulkImport: 'Bulk Import',
       edit: 'Edit',
       back: 'Back',
       overview: 'Overview',
@@ -280,6 +310,7 @@ const { t } = useTranslations({
       business: 'Entreprise',
       members: 'Membres',
       groups: 'Groupes',
+      bulkImport: 'Importation groupée',
       edit: 'Modifier',
       back: 'Retour',
       overview: 'Aperçu',
@@ -311,13 +342,17 @@ const canManage = computed(() => permissionsStore.canManageOrganization(organiza
 
 onMounted(async () => {
   await Promise.all([
-    loadOrganization(),
+    loadOrganization(true), // Initial load
     permissionsStore.loadCurrentUser()
   ])
 })
 
-const loadOrganization = async () => {
-  isLoading.value = true
+const loadOrganization = async (isInitial = false) => {
+  if (isInitial) {
+    isInitialLoading.value = true
+  } else {
+    isRefreshing.value = true
+  }
   error.value = ''
   try {
     const result = await organizationsStore.loadOrganization(organizationId.value, 'members,groups')
@@ -325,7 +360,11 @@ const loadOrganization = async () => {
   } catch (err: any) {
     error.value = err.response?.data?.error_message || err.message || 'Failed to load organization'
   } finally {
-    isLoading.value = false
+    if (isInitial) {
+      isInitialLoading.value = false
+    } else {
+      isRefreshing.value = false
+    }
   }
 }
 
@@ -347,7 +386,7 @@ const handleEdit = async (data: UpdateOrganizationRequest) => {
     const updated = await organizationsStore.updateOrganization(organizationId.value, data)
     organization.value = updated || organization.value // Update local ref
     closeEditModal()
-    await loadOrganization() // Reload to get fresh data
+    await loadOrganization(false) // Reload to get fresh data (refresh, not initial load)
   } catch (err: any) {
     modalError.value = err.response?.data?.error_message || err.message || 'An error occurred'
   } finally {
@@ -374,21 +413,19 @@ const goBack = () => {
   router.push({ name: 'Organizations' })
 }
 
-const changeTab = (tab: string) => {
-  activeTab.value = tab
-  router.push({
-    name: route.name as string,
-    params: route.params,
-    query: { tab }
-  })
+const goToBulkImport = () => {
+  router.push({ name: 'BulkImport', params: { id: organizationId.value } })
 }
 
-// Watch for route query changes (browser back/forward)
-watch(() => route.query.tab, (newTab) => {
-  if (newTab && typeof newTab === 'string') {
-    activeTab.value = newTab
+const changeTab = (tab: string) => {
+  activeTab.value = tab
+  // Optionally update URL for bookmarking, but without navigation
+  if (history.replaceState) {
+    const url = new URL(window.location.href)
+    url.searchParams.set('tab', tab)
+    history.replaceState({}, '', url)
   }
-})
+}
 </script>
 
 <style scoped>
@@ -468,6 +505,15 @@ watch(() => route.query.tab, (newTab) => {
   font-size: 2rem;
   font-weight: 700;
   color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.refresh-spinner {
+  font-size: 1.25rem;
+  color: var(--color-primary);
+  opacity: 0.7;
 }
 
 .badge {

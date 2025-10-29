@@ -360,6 +360,12 @@ const menuCategories = computed((): MenuCategory[] => [
     allowedRoles: ['administrator'],
     items: [
       {
+        route: '/admin/bulk-import',
+        label: t('navigation.bulkImport'),
+        title: t('navigation.bulkImportTitle'),
+        icon: 'fas fa-file-import'
+      },
+      {
         route: '/admin/subscription-plans',
         label: t('navigation.adminSubscriptionPlans'),
         title: t('navigation.adminSubscriptionPlansTitle'),

@@ -35,9 +35,8 @@ export interface UserSummary {
  */
 export interface User extends BaseEntity {
   email: string
-  name?: string
+  name?: string // Unified name field (compatible with 'username' from API)
   username?: string
-  name?: string // For compatibility with API responses that use 'name' instead of 'username'
   display_name?: string
   roles?: Role[]
   is_active?: boolean
@@ -456,6 +455,24 @@ export interface GroupSummary extends BaseEntity {
   display_name: string
   description?: string
   member_count?: number
+}
+
+/**
+ * Organization Group entity (bulk import feature)
+ */
+export interface OrganizationGroup extends BaseEntity {
+  organization_id: string
+  name: string
+  display_name: string
+  description?: string
+  parent_group_id?: string
+  parent_group?: OrganizationGroup
+  max_members?: number
+  member_count: number
+  expires_at?: string
+  external_id?: string
+  is_active: boolean
+  metadata?: Record<string, any>
 }
 
 /**
