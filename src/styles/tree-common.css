@@ -1,0 +1,255 @@
+/**
+ * Open Course Factory - Front
+ * Copyright (C) 2023-2025 Solution Libre
+ *
+ * Shared Tree UI Patterns
+ * Common CSS for tree-based interfaces (course editor, group hierarchy, etc.)
+ */
+
+/* Tree Container */
+.tree-container {
+  --tree-indent: 1.25rem;
+  --tree-gap: 0.25rem;
+  --tree-border-color: var(--color-border-light, #e2e8f0);
+  --tree-hover-bg: var(--color-surface-hover, rgba(0, 0, 0, 0.05));
+}
+
+/* Tree Node Indentation */
+.tree-node-indent {
+  padding-left: calc(var(--tree-level, 0) * var(--tree-indent));
+}
+
+/* Tree Expand/Collapse Icon */
+.tree-expand-icon {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  font-size: 0.625rem;
+  text-align: center;
+  color: var(--color-text-secondary, #718096);
+  transition: transform 0.2s ease;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.tree-expand-icon.expanded {
+  transform: rotate(90deg);
+}
+
+.tree-expand-icon:hover {
+  color: var(--color-text-primary, #2d3748);
+}
+
+/* Tree Expand Placeholder (for nodes without children) */
+.tree-expand-placeholder {
+  width: 0.75rem;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Tree Node Header */
+.tree-node-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 0.5rem);
+  padding: var(--spacing-xs, 0.25rem) var(--spacing-sm, 0.5rem);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease;
+  border-radius: var(--border-radius-sm, 4px);
+}
+
+.tree-node-header:hover {
+  background: var(--tree-hover-bg);
+}
+
+.tree-node-header:active {
+  background: var(--color-surface-active, rgba(0, 0, 0, 0.1));
+}
+
+/* Tree Node Label */
+.tree-node-label {
+  flex: 1;
+  color: var(--color-text-primary, #2d3748);
+  font-weight: var(--font-weight-medium, 500);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.5;
+}
+
+/* Tree Node Icon */
+.tree-node-icon {
+  font-size: 1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* Tree Node Actions */
+.tree-node-actions {
+  display: flex;
+  gap: var(--spacing-xs, 0.25rem);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+}
+
+.tree-node-header:hover .tree-node-actions {
+  opacity: 1;
+}
+
+.tree-action-button {
+  background: none;
+  border: none;
+  padding: var(--spacing-xs, 0.25rem);
+  cursor: pointer;
+  font-size: 0.875rem;
+  border-radius: var(--border-radius-sm, 3px);
+  transition: background 0.15s ease;
+  line-height: 1;
+  color: var(--color-text-secondary, #718096);
+}
+
+.tree-action-button:hover {
+  background: var(--color-surface-variant, rgba(0, 0, 0, 0.08));
+  color: var(--color-text-primary, #2d3748);
+}
+
+.tree-action-button:active {
+  transform: scale(0.95);
+}
+
+/* Tree Node Children Container */
+.tree-node-children {
+  margin-top: var(--tree-gap);
+}
+
+/* Drag and Drop States */
+.tree-node[draggable="true"] {
+  cursor: grab;
+}
+
+.tree-node[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.tree-node.dragging {
+  opacity: 0.5;
+}
+
+.tree-node.dragging-over > .tree-node-header {
+  background: var(--color-primary-bg, rgba(66, 153, 225, 0.1));
+  border: 2px dashed var(--color-primary, #4299e1);
+}
+
+.tree-node.drop-target {
+  background: var(--color-success-bg, rgba(72, 187, 120, 0.1));
+  border-left: 3px solid var(--color-success, #48bb78);
+}
+
+/* Tree Loading State */
+.tree-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl, 2rem);
+  color: var(--color-text-secondary, #718096);
+}
+
+.tree-loading-spinner {
+  font-size: 2rem;
+  margin-bottom: var(--spacing-sm, 0.5rem);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Tree Empty State */
+.tree-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl, 2rem);
+  text-align: center;
+  color: var(--color-text-secondary, #718096);
+}
+
+.tree-empty-icon {
+  font-size: 3rem;
+  margin-bottom: var(--spacing-md, 1rem);
+  opacity: 0.5;
+}
+
+.tree-empty-text {
+  font-size: var(--font-size-md, 1rem);
+  margin: 0;
+}
+
+/* Tree Search/Filter */
+.tree-search {
+  padding: var(--spacing-md, 1rem);
+  border-bottom: 1px solid var(--tree-border-color);
+}
+
+.tree-search-input {
+  width: 100%;
+  padding: var(--spacing-sm, 0.5rem) var(--spacing-md, 1rem);
+  border: 1px solid var(--color-border-medium, #cbd5e0);
+  border-radius: var(--border-radius-md, 6px);
+  font-size: var(--font-size-sm, 0.875rem);
+  transition: border-color 0.15s ease;
+}
+
+.tree-search-input:focus {
+  outline: none;
+  border-color: var(--color-primary, #4299e1);
+  box-shadow: 0 0 0 3px var(--color-primary-bg, rgba(66, 153, 225, 0.1));
+}
+
+/* Tree Toolbar */
+.tree-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md, 1rem);
+  border-bottom: 1px solid var(--tree-border-color);
+  background: var(--color-surface, #fff);
+}
+
+.tree-toolbar-title {
+  font-size: var(--font-size-lg, 1.125rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-primary, #2d3748);
+  margin: 0;
+}
+
+.tree-toolbar-actions {
+  display: flex;
+  gap: var(--spacing-sm, 0.5rem);
+}
+
+/* Accessibility */
+.tree-node-header:focus-visible {
+  outline: 2px solid var(--color-primary, #4299e1);
+  outline-offset: 2px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .tree-container {
+    --tree-indent: 1rem;
+  }
+
+  .tree-node-label {
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+}
