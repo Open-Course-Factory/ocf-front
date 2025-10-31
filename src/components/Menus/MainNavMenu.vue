@@ -265,6 +265,12 @@ const menuCategories = computed((): MenuCategory[] => [
         icon: 'fas fa-users'
       },
       {
+        route: '/class-groups-hierarchy',
+        label: t('navigation.groupHierarchy'),
+        title: t('navigation.groupHierarchyTitle'),
+        icon: 'fas fa-sitemap'
+      },
+      {
         route: '/group-members',
         label: t('groupMembers.pageTitle'),
         title: t('groupMembers.memberInfo'),

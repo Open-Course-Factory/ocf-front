@@ -101,7 +101,9 @@ const i18n = createI18n({
                 invoicesTitle: 'View your invoices and billing history',
                 organizations: 'Organizations',
                 myOrganizations: 'My Organizations',
-                myOrganizationsTitle: 'View and manage your organizations'
+                myOrganizationsTitle: 'View and manage your organizations',
+                groupHierarchy: 'Group Hierarchy',
+                groupHierarchyTitle: 'Manage group hierarchy and relationships'
             }
          },
         fr: {
@@ -159,7 +161,9 @@ const i18n = createI18n({
                 invoicesTitle: 'Voir vos factures et l\'historique de facturation',
                 organizations: 'Organisations',
                 myOrganizations: 'Mes Organisations',
-                myOrganizationsTitle: 'Voir et gérer vos organisations'
+                myOrganizationsTitle: 'Voir et gérer vos organisations',
+                groupHierarchy: 'Hiérarchie des Groupes',
+                groupHierarchyTitle: 'Gérer la hiérarchie et les relations entre groupes'
             }
         }
     }

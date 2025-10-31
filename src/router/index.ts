@@ -43,6 +43,7 @@ import UserTerminalKeys from '../components/Pages/UserTerminalKeys.vue';
 import ClassGroups from '../components/Pages/ClassGroups.vue';
 import GroupMembers from '../components/Pages/GroupMembers.vue';
 import GroupDetail from '../components/Pages/GroupDetail.vue';
+import GroupHierarchyEditor from '../components/Pages/GroupHierarchyEditor.vue';
 import Organizations from '../components/Pages/Organizations.vue';
 import OrganizationDetail from '../components/Pages/OrganizationDetail.vue';
 import BulkImport from '../components/Pages/BulkImport.vue';
@@ -162,6 +163,7 @@ const basicRoutes = [
       { path: 'terminal-shared', redirect: '/terminal-sessions' }, // Redirect old route to unified sessions page
       { path: 'user-terminal-keys', name: 'UserTerminalKeys', component: UserTerminalKeys, meta: { requiresAuth: true, isSettings: true } },
       { path: 'class-groups', name: 'ClassGroups', component: ClassGroups, meta: { requiresAuth: true, requiresFeature: 'class_groups' } },
+      { path: 'class-groups-hierarchy', name: 'GroupHierarchyEditor', component: GroupHierarchyEditor, meta: { requiresAuth: true, requiresFeature: 'class_groups' } },
       { path: 'class-groups/:id', name: 'GroupDetail', component: GroupDetail, meta: { requiresAuth: true, requiresFeature: 'class_groups' } },
       { path: 'group-members', name: 'GroupMembers', component: GroupMembers, meta: { requiresAuth: true, requiresFeature: 'class_groups' } },
 
