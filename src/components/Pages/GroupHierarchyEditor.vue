@@ -183,10 +183,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { useOrganizationsStore } from '../../stores/organizations'
+import { usePermissionsStore } from '../../stores/permissions'
+import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useTranslations } from '../../composables/useTranslations'
 import { useTreeExpand } from '../../composables/useTreeExpand'
 import TreeNode from '../Common/TreeNode.vue'
@@ -195,6 +197,8 @@ import type { Organization, OrganizationGroup } from '../../types'
 
 const router = useRouter()
 const organizationsStore = useOrganizationsStore()
+const permissionsStore = usePermissionsStore()
+const { isAdmin, shouldFilterAsStandardUser } = useAdminViewMode()
 
 const { t } = useTranslations({
   en: {
@@ -263,7 +267,31 @@ const organizationGroups = ref<Map<string, OrganizationGroup[]>>(new Map())
 const treeExpand = useTreeExpand([], 0) // Auto-expand first level
 
 // Computed
-const organizations = computed(() => organizationsStore.organizations)
+const allOrganizations = computed(() => organizationsStore.organizations)
+
+// Filter organizations based on view mode
+const organizations = computed(() => {
+  // If not admin OR admin viewing as standard user
+  if (!isAdmin.value || shouldFilterAsStandardUser.value) {
+    // Show only organizations where the user is a member
+    const currentUserId = permissionsStore.currentUser?.id
+    if (!currentUserId) return []
+
+    return allOrganizations.value.filter(org => {
+      // Show if user is owner
+      if (org.owner_user_id === currentUserId) return true
+
+      // Show if user is a member
+      const userMemberships = permissionsStore.currentUser?.organization_memberships || []
+      return userMemberships.some(membership =>
+        membership.organization_id === org.id && membership.is_active
+      )
+    })
+  }
+
+  // Admin in full admin mode: show all organizations
+  return allOrganizations.value
+})
 
 const allGroups = computed(() => {
   const groups: OrganizationGroup[] = []
@@ -429,7 +457,16 @@ const handleDrop = async (payload: { entity: TreeNode; target: TreeNode }) => {
 
 // Lifecycle
 onMounted(async () => {
-  await refreshHierarchy()
+  await Promise.all([
+    refreshHierarchy(),
+    permissionsStore.loadCurrentUser()
+  ])
+})
+
+// Reload when view mode changes
+watch(shouldFilterAsStandardUser, () => {
+  // The computed property will automatically update
+  // No need to reload from backend
 })
 </script>
 
