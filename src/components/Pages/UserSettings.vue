@@ -14,6 +14,9 @@
     </div>
 
     <div v-else class="settings-sections">
+      <!-- Upgrade to Team Banner -->
+      <UpgradeToTeamBanner />
+
       <!-- Navigation Section -->
       <section class="settings-card">
         <NavigationSettings />
@@ -51,6 +54,7 @@
 import { onMounted } from 'vue'
 import { useUserSettingsStore } from '../../stores/userSettings'
 import { useTranslations } from '../../composables/useTranslations'
+import UpgradeToTeamBanner from '../Common/UpgradeToTeamBanner.vue'
 import NavigationSettings from '../Settings/NavigationSettings.vue'
 import LocalizationSettings from '../Settings/LocalizationSettings.vue'
 import UISettings from '../Settings/UISettings.vue'

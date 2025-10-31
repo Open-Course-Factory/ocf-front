@@ -16,6 +16,9 @@
         <p class="text-muted">{{ t('subscriptions.dashboardSubtitle') }}</p>
       </div>
 
+      <!-- Upgrade to Team Banner -->
+      <UpgradeToTeamBanner />
+
       <!-- Messages d'erreur globaux (utilise le nouveau composant ErrorAlert) -->
       <ErrorAlert
         :message="error"
@@ -99,6 +102,7 @@ import axios from 'axios'
 import { SubscriptionCard, UsageOverview, RecentInvoices, AllSubscriptions } from '../Subscription/Dashboard'
 import { CancelSubscriptionModal, ReactivateModal } from '../Subscription/Modals'
 import ErrorAlert from '../UI/ErrorAlert.vue'
+import UpgradeToTeamBanner from '../Common/UpgradeToTeamBanner.vue'
 
 const { t } = useI18n()
 

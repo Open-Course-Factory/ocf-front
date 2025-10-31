@@ -46,20 +46,13 @@
     <div class="editor-toolbar">
       <!-- Search -->
       <div class="toolbar-search">
-        <i class="fas fa-search search-icon"></i>
         <input
           v-model="searchQuery"
           type="text"
           :placeholder="t('hierarchyEditor.searchPlaceholder')"
           class="search-input"
         />
-        <button
-          v-if="searchQuery"
-          @click="searchQuery = ''"
-          class="search-clear"
-        >
-          <i class="fas fa-times"></i>
-        </button>
+        <i class="fas fa-search search-icon"></i>
       </div>
 
       <!-- View Options -->
@@ -92,21 +85,15 @@
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="filteredOrganizations.length === 0 && !searchQuery" class="tree-empty">
+      <div v-else-if="organizations.length === 0" class="tree-empty">
         <div class="empty-icon">🏢</div>
         <p class="empty-text">{{ t('hierarchyEditor.noOrganizations') }}</p>
-      </div>
-
-      <!-- Search No Results -->
-      <div v-else-if="filteredOrganizations.length === 0 && searchQuery" class="tree-empty">
-        <div class="empty-icon">🔍</div>
-        <p class="empty-text">{{ t('hierarchyEditor.noResults', { query: searchQuery }) }}</p>
       </div>
 
       <!-- Tree View -->
       <div v-else class="tree-view">
         <TreeNode
-          v-for="org in filteredOrganizations"
+          v-for="org in organizations"
           :key="org.id"
           :entity="org"
           :level="0"
@@ -128,7 +115,9 @@
 
           <!-- Label Slot -->
           <template #label="{ entity }">
-            <span class="node-label">{{ entity.display_name }}</span>
+            <span class="node-label">
+              {{ entity.display_name }}
+            </span>
 
             <!-- For Groups: Show member counts -->
             <template v-if="!isOrganization(entity)">
@@ -283,10 +272,10 @@ type TreeNode = Organization | OrganizationGroup
 
 // State
 const isLoading = ref(false)
-const searchQuery = ref('')
 const showDeleteConfirm = ref(false)
 const deletingGroup = ref<OrganizationGroup | null>(null)
 const organizationGroups = ref<Map<string, OrganizationGroup[]>>(new Map())
+const searchQuery = ref('')
 
 // Tree expansion
 const treeExpand = useTreeExpand([], 0) // Auto-expand first level
@@ -294,15 +283,18 @@ const treeExpand = useTreeExpand([], 0) // Auto-expand first level
 // Computed
 const allOrganizations = computed(() => organizationsStore.organizations)
 
-// Filter organizations based on view mode
+// Filter organizations based on view mode and search
 const organizations = computed(() => {
+  let filtered = allOrganizations.value
+
+  // Apply permission filtering
   // If not admin OR admin viewing as standard user
   if (!isAdmin.value || shouldFilterAsStandardUser.value) {
     // Show only organizations where the user is a member
     const currentUserId = permissionsStore.currentUser?.id
     if (!currentUserId) return []
 
-    return allOrganizations.value.filter(org => {
+    filtered = filtered.filter(org => {
       // Show if user is owner
       if (org.owner_user_id === currentUserId) return true
 
@@ -314,8 +306,26 @@ const organizations = computed(() => {
     })
   }
 
-  // Admin in full admin mode: show all organizations
-  return allOrganizations.value
+  // Apply search filter
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(org => {
+      // Check organization name
+      if (org.display_name?.toLowerCase().includes(query) ||
+          org.name?.toLowerCase().includes(query)) {
+        return true
+      }
+
+      // Check if any groups in this organization match
+      const groups = organizationGroups.value.get(org.id) || []
+      return groups.some(group =>
+        group.display_name?.toLowerCase().includes(query) ||
+        group.name?.toLowerCase().includes(query)
+      )
+    })
+  }
+
+  return filtered
 })
 
 const allGroups = computed(() => {
@@ -326,36 +336,12 @@ const allGroups = computed(() => {
   return groups
 })
 
-const filteredOrganizations = computed(() => {
-  if (!searchQuery.value) return organizations.value
-
-  const query = searchQuery.value.toLowerCase()
-
-  // Filter organizations and groups
-  return organizations.value.filter(org => {
-    // Check if organization name matches
-    const orgMatches = org.display_name?.toLowerCase().includes(query) ||
-      org.name?.toLowerCase().includes(query) ||
-      org.description?.toLowerCase().includes(query)
-
-    if (orgMatches) return true
-
-    // Check if any of organization's groups match
-    const orgGroups = organizationGroups.value.get(org.id) || []
-    return orgGroups.some(group =>
-      group.display_name?.toLowerCase().includes(query) ||
-      group.name?.toLowerCase().includes(query) ||
-      group.description?.toLowerCase().includes(query)
-    )
-  })
-})
-
 // Helper to check if a node is an Organization
 const isOrganization = (node: TreeNode): node is Organization => {
   return 'is_personal' in node
 }
 
-// Methods to get children of a tree node
+// Get children of a tree node
 const getChildren = (node: TreeNode): TreeNode[] => {
   if (isOrganization(node)) {
     // For organizations, return root groups (groups with no parent)
@@ -659,6 +645,15 @@ watch(shouldFilterAsStandardUser, () => {
 
 .group-label {
   font-weight: var(--font-weight-medium);
+}
+
+/* Search Highlighting */
+.node-label.search-match {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+  font-weight: var(--font-weight-semibold);
 }
 
 .member-count {

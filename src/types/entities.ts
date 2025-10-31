@@ -410,7 +410,8 @@ export interface Organization extends BaseEntity {
   description?: string
   owner_user_id: string
   subscription_plan_id?: string
-  is_personal: boolean // Auto-created personal org for each user
+  organization_type: 'personal' | 'team' // Type of organization
+  is_personal?: boolean // Deprecated: use organization_type instead
   max_groups: number
   max_members: number
   is_active: boolean
@@ -418,7 +419,7 @@ export interface Organization extends BaseEntity {
 
   // Counts (if preloaded)
   group_count?: number
-  member_count?: number
+  member_count: number // Number of members in organization
 
   // Related data (if preloaded with ?includes=members,groups)
   members?: OrganizationMember[]

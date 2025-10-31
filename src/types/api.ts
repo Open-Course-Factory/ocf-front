@@ -96,6 +96,13 @@ export interface UpdateOrganizationRequest {
 }
 
 /**
+ * Convert Organization to Team Request
+ */
+export interface ConvertOrganizationToTeamRequest {
+  name?: string // Optional new name for the team
+}
+
+/**
  * Subscribe Organization Request
  */
 export interface SubscribeOrganizationRequest {

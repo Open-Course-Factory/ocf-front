@@ -67,6 +67,7 @@ import { useClassGroupsStore } from '../../stores/classGroups.ts';
 import { useGroupMembersStore } from '../../stores/groupMembers.ts';
 import { useSubscriptionBatchesStore } from '../../stores/subscriptionBatches.ts';
 import { useOrganizationsStore } from '../../stores/organizations.ts';
+import { storeToRefs } from 'pinia';
 import { useRoute } from 'vue-router';
 import { useHelpTranslations } from '../../composables/useHelpTranslations';
 import { useFeatureFlags } from '../../composables/useFeatureFlags';
@@ -91,7 +92,10 @@ useSubscriptionsStore();
 useClassGroupsStore();
 useGroupMembersStore();
 useSubscriptionBatchesStore();
-useOrganizationsStore();
+
+// Get organizations store and check if current org is personal
+const organizationsStore = useOrganizationsStore();
+const { isPersonalOrganization } = storeToRefs(organizationsStore);
 
 // Load help translations
 const { loadHelpTranslations } = useHelpTranslations();
@@ -410,6 +414,10 @@ const filteredCategories = computed(() => {
   const userRole = currentUser.userRoles[0];
   return menuCategories.value
     .filter(category => {
+      // Hide organizations menu for personal organizations
+      if (category.key === 'organizations' && isPersonalOrganization.value) {
+        return false
+      }
       // Check role access
       if (!category.allowedRoles.includes(userRole)) {
         return false

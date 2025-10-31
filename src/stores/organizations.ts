@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useBaseStore } from './baseStore'
 import { useStoreTranslations } from '../composables/useTranslations'
-import type { Organization, CreateOrganizationRequest, UpdateOrganizationRequest } from '../types'
+import { createAsyncWrapper } from '../utils/asyncWrapper'
+import axios from 'axios'
+import type { Organization, CreateOrganizationRequest, UpdateOrganizationRequest, ConvertOrganizationToTeamRequest } from '../types'
 
 export const useOrganizationsStore = defineStore('organizations', () => {
   const base = useBaseStore()
@@ -23,6 +25,8 @@ export const useOrganizationsStore = defineStore('organizations', () => {
         notFound: 'Organization not found',
         nameRequired: 'Organization name is required',
         displayNameRequired: 'Display name is required',
+        convertSuccess: 'Organization converted to team successfully',
+        convertError: 'Failed to convert organization to team',
       }
     },
     fr: {
@@ -39,20 +43,41 @@ export const useOrganizationsStore = defineStore('organizations', () => {
         notFound: 'Organisation introuvable',
         nameRequired: 'Le nom de l\'organisation est requis',
         displayNameRequired: 'Le nom d\'affichage est requis',
+        convertSuccess: 'Organisation convertie en équipe avec succès',
+        convertError: 'Échec de la conversion de l\'organisation en équipe',
       }
     }
   })
 
   const apiEndpoint = '/organizations'
 
+  // Current organization (for multi-org support)
+  const currentOrganizationId = ref<string | null>(null)
+
   // Computed properties
   const organizations = computed(() => base.getEntities() as Organization[])
+
   const personalOrganization = computed(() =>
-    organizations.value.find(org => org.is_personal)
+    organizations.value.find(org => org.organization_type === 'personal')
   )
+
   const businessOrganizations = computed(() =>
-    organizations.value.filter(org => !org.is_personal)
+    organizations.value.filter(org => org.organization_type === 'team')
   )
+
+  const currentOrganization = computed(() => {
+    if (!currentOrganizationId.value) {
+      // Default to first organization
+      return organizations.value[0] || null
+    }
+    return organizations.value.find(org => org.id === currentOrganizationId.value) || null
+  })
+
+  const isPersonalOrganization = computed(() => {
+    if (!currentOrganization.value) return false
+    return currentOrganization.value.organization_type === 'personal' &&
+           currentOrganization.value.member_count === 1
+  })
 
   // Demo data provider
   const getDemoOrganizations = (): Organization[] => [
@@ -62,7 +87,8 @@ export const useOrganizationsStore = defineStore('organizations', () => {
       display_name: 'Personal Organization',
       description: 'Auto-created personal organization',
       owner_user_id: 'demo-user-1',
-      is_personal: true,
+      organization_type: 'personal',
+      is_personal: true, // Backward compatibility
       max_groups: 5,
       max_members: 10,
       is_active: true,
@@ -77,7 +103,8 @@ export const useOrganizationsStore = defineStore('organizations', () => {
       display_name: 'ACME Corporation',
       description: 'Training organization for ACME employees',
       owner_user_id: 'demo-user-1',
-      is_personal: false,
+      organization_type: 'team',
+      is_personal: false, // Backward compatibility
       max_groups: 20,
       max_members: 100,
       is_active: true,
@@ -127,12 +154,45 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     return org?.owner_user_id === userId
   }
 
+  // Convert personal organization to team organization
+  const convertToTeamOrganization = async (organizationId: string, newName?: string) => {
+    const withAsync = createAsyncWrapper({ isLoading: base.isLoading, error: base.error })
+
+    return await withAsync(
+      async () => {
+        const data: ConvertOrganizationToTeamRequest = {}
+        if (newName) {
+          data.name = newName
+        }
+
+        const response = await axios.post(
+          `/organizations/${organizationId}/convert-to-team`,
+          data
+        )
+
+        // Refresh organizations list to get updated data
+        await loadOrganizations()
+
+        return response.data
+      },
+      'organizations.convertError'
+    )
+  }
+
+  // Set current organization
+  const setCurrentOrganization = (organizationId: string) => {
+    currentOrganizationId.value = organizationId
+  }
+
   return {
     // State
     ...base,
     organizations,
     personalOrganization,
     businessOrganizations,
+    currentOrganization,
+    isPersonalOrganization,
+    currentOrganizationId,
 
     // Actions
     loadOrganizations,
@@ -142,6 +202,8 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     deleteOrganization,
     getOrganizationById,
     isOwner,
+    convertToTeamOrganization,
+    setCurrentOrganization,
 
     // Translations
     t,
