@@ -1,0 +1,89 @@
+{
+  "description": "Mapping of hardcoded hex colors to CSS variables",
+  "mappings": {
+    "#007bff": "var(--color-primary)",
+    "#0056b3": "var(--color-primary-hover)",
+    "#6c757d": "var(--color-secondary)",
+    "#5a6268": "var(--color-secondary-hover)",
+
+    "#28a745": "var(--color-success)",
+    "#155724": "var(--color-success-text)",
+    "#d4edda": "var(--color-success-bg)",
+    "#c3e6cb": "var(--color-success-border)",
+    "#e8f5e9": "var(--color-success-bg)",
+    "#e8f5e8": "var(--color-success-bg)",
+    "#2e7d32": "var(--color-success-text)",
+
+    "#dc3545": "var(--color-danger)",
+    "#c82333": "var(--color-danger-hover)",
+    "#721c24": "var(--color-danger-text)",
+    "#f8d7da": "var(--color-danger-bg)",
+    "#f5c6cb": "var(--color-danger-border)",
+    "#f44336": "var(--color-danger)",
+
+    "#ffc107": "var(--color-warning)",
+    "#e0a800": "var(--color-warning-hover)",
+    "#856404": "var(--color-warning-text)",
+    "#fff3cd": "var(--color-warning-bg)",
+    "#ffeaa7": "var(--color-warning-bg)",
+
+    "#17a2b8": "var(--color-info)",
+    "#0c5460": "var(--color-info-text)",
+    "#d1ecf1": "var(--color-info-bg)",
+    "#bee5eb": "var(--color-info-border)",
+    "#e3f2fd": "var(--color-info-bg)",
+    "#bbdefb": "var(--color-info-bg)",
+    "#2196f3": "var(--color-info)",
+
+    "#ffffff": "var(--color-white)",
+    "#fff": "var(--color-white)",
+    "#000000": "var(--color-black)",
+    "#000": "var(--color-black)",
+
+    "#f8f9fa": "var(--color-gray-50)",
+    "#f1f3f5": "var(--color-gray-100)",
+    "#e9ecef": "var(--color-gray-200)",
+    "#dee2e6": "var(--color-gray-300)",
+    "#ced4da": "var(--color-gray-400)",
+    "#adb5bd": "var(--color-gray-500)",
+    "#6c757d": "var(--color-gray-600)",
+    "#495057": "var(--color-gray-700)",
+    "#343a40": "var(--color-gray-800)",
+    "#212529": "var(--color-gray-900)",
+
+    "#333333": "var(--color-text-primary)",
+    "#333": "var(--color-text-primary)",
+    "#555555": "var(--color-text-secondary)",
+    "#555": "var(--color-text-secondary)",
+    "#666666": "var(--color-text-muted)",
+    "#666": "var(--color-text-muted)",
+
+    "#e0e0e0": "var(--color-border-light)",
+    "#e7e7e7": "var(--color-border-light)",
+    "#dddddd": "var(--color-border-medium)",
+    "#ddd": "var(--color-border-medium)",
+    "#d1d5db": "var(--color-border-medium)",
+
+    "#fafafa": "var(--color-bg-secondary)",
+    "#f5f5f5": "var(--color-bg-tertiary)",
+
+    "#1a1a1a": "var(--color-bg-primary)",
+    "#1e1e1e": "var(--color-bg-dark)",
+    "#2d2d2d": "var(--color-bg-secondary)",
+    "#3a3a3a": "var(--color-bg-tertiary)",
+
+    "#1976d2": "var(--color-primary)",
+    "#667eea": "var(--color-primary)",
+    "#764ba2": "var(--color-primary-hover)",
+    "#ff9800": "var(--color-warning)"
+  },
+  "contextual": {
+    "note": "These colors may need manual review based on context",
+    "special_cases": [
+      "rgba() colors need alpha channel preservation",
+      "Gradients need special handling",
+      "XTerm terminal colors should not be replaced",
+      "Chart/graph colors may be intentionally hardcoded"
+    ]
+  }
+}
