@@ -62,11 +62,17 @@ const { t } = useTranslations({
       displayName: 'Display Name',
       description: 'Description',
       owner: 'Owner',
+      parentGroup: 'Parent Group',
+      subGroups: 'Subgroups',
       createdAt: 'Created',
       updatedAt: 'Updated',
       expiresAt: 'Expires',
       maxMembers: 'Maximum Members',
       currentMembers: 'Current Members',
+      noParentGroup: 'None (top-level group)',
+      noSubGroups: 'No subgroups',
+      viewGroup: 'View',
+      mainGroup: 'Main Group',
 
       // Status
       statusActive: 'Active',
@@ -103,6 +109,8 @@ const { t } = useTranslations({
       cancel: 'Cancel',
       createTerminalsForAll: 'Create Terminals for All Members',
       bulkCreateTerminals: 'Bulk Create Terminals',
+      createSubgroup: 'Create Subgroup',
+      addSubgroup: 'Add Subgroup',
 
       // Modals
       addMemberTitle: 'Add Member to {groupName}',
@@ -163,11 +171,17 @@ const { t } = useTranslations({
       displayName: 'Nom d\'affichage',
       description: 'Description',
       owner: 'Propriétaire',
+      parentGroup: 'Groupe parent',
+      subGroups: 'Sous-groupes',
       createdAt: 'Créé',
       updatedAt: 'Modifié',
       expiresAt: 'Expire',
+      mainGroup: 'Groupe Principal',
       maxMembers: 'Membres maximum',
       currentMembers: 'Membres actuels',
+      noParentGroup: 'Aucun (groupe de niveau supérieur)',
+      noSubGroups: 'Aucun sous-groupe',
+      viewGroup: 'Voir',
 
       // Status
       statusActive: 'Actif',
@@ -204,6 +218,8 @@ const { t } = useTranslations({
       cancel: 'Annuler',
       createTerminalsForAll: 'Créer des Terminaux pour Tous les Membres',
       bulkCreateTerminals: 'Création en Masse de Terminaux',
+      createSubgroup: 'Créer un Sous-groupe',
+      addSubgroup: 'Ajouter un Sous-groupe',
 
       // Modals
       addMemberTitle: 'Ajouter un membre à {groupName}',
@@ -251,12 +267,17 @@ const { t } = useTranslations({
 
 // State
 const currentGroup = ref<ClassGroup | null>(null)
+const ownerUser = ref<User | null>(null)
 const isLoading = ref(true)
 const error = ref('')
-const activeTab = ref<'overview' | 'members' | 'settings'>('overview')
+// Initialize activeTab from URL query parameter
+const activeTab = ref<'overview' | 'members' | 'settings'>(
+  (route.query.tab as 'overview' | 'members' | 'settings') || 'overview'
+)
 const showAddMemberModal = ref(false)
 const showDeleteConfirm = ref(false)
 const showEditGroupModal = ref(false)
+const showCreateSubgroupModal = ref(false)
 
 // User search for Add Member modal
 const userSearchQuery = ref('')
@@ -308,6 +329,10 @@ const actualMemberPercentage = computed(() => {
   return Math.round((groupMembersComposable.members.value.length / currentGroup.value.max_members) * 100)
 })
 
+const subgroups = computed(() => {
+  return currentGroup.value?.subGroups || currentGroup.value?.sub_groups || []
+})
+
 // Use Group Members composable
 const groupMembersComposable = useGroupMembers({
   groupId,
@@ -323,8 +348,20 @@ const loadGroup = async () => {
       const groupId = route.params.id as string
       if (!groupId) return
 
-      const data = await groupStore.getOne(groupId)
+      // Load group with parent and subgroups
+      const data = await groupStore.getOne(groupId, ['ParentGroup', 'SubGroups'])
       currentGroup.value = data
+
+      // Load owner user information
+      if (data.owner_user_id) {
+        try {
+          ownerUser.value = await userService.getUserById(data.owner_user_id)
+        } catch (err) {
+          console.error('Failed to load owner user:', err)
+          ownerUser.value = null
+        }
+      }
+
       return data
     },
     'groupDetail.groupLoadError'
@@ -414,6 +451,26 @@ const handleDeleteGroup = async () => {
   )
 }
 
+const handleCreateSubgroup = async (data: any) => {
+  return await withAsync(
+    { isLoading, error },
+    async () => {
+      if (!currentGroup.value) return
+
+      // Set parent_group_id to current group
+      data.parent_group_id = currentGroup.value.id
+
+      await groupStore.createEntity('/class-groups', data)
+
+      // Reload group to refresh subgroups list
+      await loadGroup()
+
+      showCreateSubgroupModal.value = false
+    },
+    'groupDetail.groupCreateError'
+  )
+}
+
 // Lifecycle
 onMounted(async () => {
   // Check feature flag
@@ -424,15 +481,34 @@ onMounted(async () => {
 
   isLoading.value = true
   await loadGroup()
-  await groupMembersComposable.loadMembers()
+  // Load members with subgroups included
+  await groupMembersComposable.loadMembers(true, subgroups.value)
   isLoading.value = false
 })
 
 watch(() => route.params.id, async () => {
   isLoading.value = true
   await loadGroup()
-  await groupMembersComposable.loadMembers()
+  // Load members with subgroups included
+  await groupMembersComposable.loadMembers(true, subgroups.value)
   isLoading.value = false
+})
+
+// Sync activeTab with URL query parameter (for browser back/forward)
+watch(() => route.query.tab, (newTab) => {
+  if (newTab && typeof newTab === 'string' && ['overview', 'members', 'settings'].includes(newTab)) {
+    activeTab.value = newTab as 'overview' | 'members' | 'settings'
+  }
+})
+
+// Update URL when tab changes
+watch(activeTab, (newTab) => {
+  if (route.query.tab !== newTab) {
+    router.push({
+      path: route.path,
+      query: { ...route.query, tab: newTab }
+    })
+  }
 })
 </script>
 
@@ -556,7 +632,24 @@ watch(() => route.params.id, async () => {
           </div>
           <div class="info-item">
             <label>{{ t('groupDetail.owner') }}</label>
-            <p>{{ currentGroup.owner_user_id }}</p>
+            <p v-if="ownerUser">
+              <span class="owner-name">{{ ownerUser.display_name || ownerUser.name }}</span>
+              <span v-if="ownerUser.email" class="owner-email">({{ ownerUser.email }})</span>
+            </p>
+            <p v-else class="text-muted">{{ currentGroup.owner_user_id }}</p>
+          </div>
+          <div class="info-item">
+            <label>{{ t('groupDetail.parentGroup') }}</label>
+            <p v-if="currentGroup.parentGroup || currentGroup.parent_group">
+              <router-link
+                :to="`/class-groups/${currentGroup.parentGroup?.id || currentGroup.parent_group?.id}`"
+                class="parent-group-link"
+              >
+                {{ currentGroup.parentGroup?.display_name || currentGroup.parent_group?.display_name }}
+                <i class="fas fa-external-link-alt"></i>
+              </router-link>
+            </p>
+            <p v-else class="text-muted">{{ t('groupDetail.noParentGroup') }}</p>
           </div>
           <div class="info-item">
             <label>{{ t('groupDetail.maxMembers') }}</label>
@@ -578,6 +671,40 @@ watch(() => route.params.id, async () => {
             <label>{{ t('groupDetail.expiresAt') }}</label>
             <p>{{ formatDate(currentGroup.expires_at) }}</p>
           </div>
+        </div>
+
+        <!-- Subgroups Section -->
+        <div class="subgroups-section">
+          <div class="subgroups-header">
+            <h3>{{ t('groupDetail.subGroups') }}</h3>
+            <button
+              v-if="canEditGroup"
+              @click="showCreateSubgroupModal = true"
+              class="btn btn-primary btn-sm"
+            >
+              <i class="fas fa-plus"></i>
+              {{ t('groupDetail.addSubgroup') }}
+            </button>
+          </div>
+          <div v-if="(currentGroup.subGroups?.length || currentGroup.sub_groups?.length || 0) > 0" class="subgroups-list">
+            <div
+              v-for="subgroup in (currentGroup.subGroups || currentGroup.sub_groups)"
+              :key="subgroup.id"
+              class="subgroup-card"
+            >
+              <div class="subgroup-info">
+                <h4>{{ subgroup.display_name }}</h4>
+                <p v-if="subgroup.description" class="subgroup-description">{{ subgroup.description }}</p>
+              </div>
+              <div class="subgroup-actions">
+                <router-link :to="`/class-groups/${subgroup.id}`" class="btn btn-sm btn-primary">
+                  {{ t('groupDetail.viewGroup') }}
+                  <i class="fas fa-arrow-right"></i>
+                </router-link>
+              </div>
+            </div>
+          </div>
+          <p v-else class="text-muted">{{ t('groupDetail.noSubGroups') }}</p>
         </div>
       </div>
 
@@ -632,6 +759,14 @@ watch(() => route.params.id, async () => {
                 <div class="member-meta">
                   <span :class="['role-badge', `role-${member.role}`]">
                     {{ t(`groupDetail.role${member.role.charAt(0).toUpperCase() + member.role.slice(1)}`) }}
+                  </span>
+                  <span v-if="member.source_group" class="source-group-badge">
+                    <i class="fas fa-layer-group"></i>
+                    {{ member.source_group.display_name }}
+                  </span>
+                  <span v-else class="source-group-badge main-group">
+                    <i class="fas fa-star"></i>
+                    {{ t('groupDetail.mainGroup') }}
                   </span>
                   <span v-if="member.joined_at" class="member-joined">
                     {{ t('groupDetail.memberJoinedAt') }}: {{ formatDate(member.joined_at) }}
@@ -796,6 +931,15 @@ watch(() => route.params.id, async () => {
       entity-name="class-groups"
       @modify="handleEditGroup"
       @close="showEditGroupModal = false"
+    />
+
+    <!-- Create Subgroup Modal -->
+    <EntityModal
+      :visible="showCreateSubgroupModal"
+      :entity-store="groupStore"
+      entity-name="class-groups"
+      @submit="handleCreateSubgroup"
+      @close="showCreateSubgroupModal = false"
     />
 
   </div>
@@ -1117,6 +1261,29 @@ watch(() => route.params.id, async () => {
   color: var(--color-white);
 }
 
+.source-group-badge {
+  padding: 2px 8px;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  background-color: var(--color-info-bg);
+  color: var(--color-info);
+  border: 1px solid var(--color-info);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.source-group-badge.main-group {
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.source-group-badge i {
+  font-size: 10px;
+}
+
 .member-actions {
   display: flex;
   align-items: center;
@@ -1279,6 +1446,109 @@ watch(() => route.params.id, async () => {
   border-left: 4px solid var(--color-info);
 }
 
+/* Owner Display */
+.owner-name {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.owner-email {
+  margin-left: var(--spacing-xs);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* Parent Group Link */
+.parent-group-link {
+  color: var(--color-primary);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  transition: var(--transition-base);
+}
+
+.parent-group-link:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}
+
+.parent-group-link i {
+  font-size: var(--font-size-xs);
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* Subgroups Section */
+.subgroups-section {
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.subgroups-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.subgroups-section h3 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.subgroups-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.subgroup-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: var(--spacing-md);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  transition: var(--transition-base);
+}
+
+.subgroup-card:hover {
+  border-color: var(--color-border-medium);
+  box-shadow: var(--shadow-sm);
+}
+
+.subgroup-info {
+  flex: 1;
+}
+
+.subgroup-info h4 {
+  margin: 0 0 var(--spacing-xs) 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+}
+
+.subgroup-description {
+  margin: 0 0 var(--spacing-sm) 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+}
+
+.subgroup-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .group-detail {
@@ -1315,6 +1585,23 @@ watch(() => route.params.id, async () => {
 
   .info-grid {
     grid-template-columns: 1fr;
+  }
+
+  .subgroups-list {
+    grid-template-columns: 1fr;
+  }
+
+  .subgroup-card {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .subgroup-actions {
+    width: 100%;
+  }
+
+  .subgroup-actions .btn {
+    width: 100%;
   }
 }
 </style>

@@ -20,6 +20,7 @@
  */
 
 import { defineStore } from "pinia"
+import axios from "axios"
 import { useBaseStore } from "./baseStore"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
@@ -52,6 +53,7 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
                 description: "Description",
                 owner_user_id: "Owner",
                 subscription_plan_id: "Subscription plan",
+                parent_group_id: "Parent group",
                 max_members: "Maximum members",
                 member_count: "Current members",
                 expires_at: "Expiration date",
@@ -78,12 +80,16 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
                 groupInfo: "Manage your classes and teams",
                 nameHelp: "Auto-generated from display name (lowercase, hyphens only)",
                 displayNameHelp: "Human-readable name for the group",
+                parentGroupHelp: "Optional parent group for hierarchical organization",
                 maxMembersHelp: "Maximum number of members allowed in this group",
                 expiresAtHelp: "Optional expiration date for the group",
                 statusActive: "Active",
                 statusInactive: "Inactive",
                 statusFull: "FULL",
-                statusExpired: "EXPIRED"
+                statusExpired: "EXPIRED",
+                noneParentGroup: "None (top-level group)",
+                subgroupNames: "Subgroups (one per line)",
+                subgroupNamesHelp: "Enter subgroup names, one per line. They will be created automatically."
             }
         },
         fr: {
@@ -95,6 +101,7 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
                 description: "Description",
                 owner_user_id: "Propriétaire",
                 subscription_plan_id: "Plan d'abonnement",
+                parent_group_id: "Groupe parent",
                 max_members: "Membres maximum",
                 member_count: "Membres actuels",
                 expires_at: "Date d'expiration",
@@ -121,12 +128,16 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
                 groupInfo: "Gérez vos classes et équipes",
                 nameHelp: "Auto-généré depuis le nom d'affichage (minuscules, tirets uniquement)",
                 displayNameHelp: "Nom lisible pour le groupe",
+                parentGroupHelp: "Groupe parent optionnel pour une organisation hiérarchique",
                 maxMembersHelp: "Nombre maximum de membres autorisés dans ce groupe",
                 expiresAtHelp: "Date d'expiration optionnelle pour le groupe",
                 statusActive: "Actif",
                 statusInactive: "Inactif",
                 statusFull: "COMPLET",
-                statusExpired: "EXPIRÉ"
+                statusExpired: "EXPIRÉ",
+                noneParentGroup: "Aucun (groupe de niveau supérieur)",
+                subgroupNames: "Sous-groupes (un par ligne)",
+                subgroupNamesHelp: "Entrez les noms des sous-groupes, un par ligne. Ils seront créés automatiquement."
             }
         }
     })
@@ -136,9 +147,34 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
         field('name', t('classGroups.name')).input().visible().readonly(), // Auto-generated from display_name
         field('display_name', t('classGroups.display_name')).input().visible().editable(),
         field('description', t('classGroups.description')).textarea().visible().editable(),
+        field('parent_group_id', t('classGroups.parent_group_id'))
+            .searchableSelect()
+            .visible()
+            .editable()
+            .withOptionsLoader(async () => {
+                try {
+                    const groups = await base.loadEntities('/class-groups')
+                    return [
+                        { id: null, display_name: t('classGroups.noneParentGroup') },
+                        ...groups
+                    ]
+                } catch (error) {
+                    console.error('Failed to load parent groups:', error)
+                    return [{ id: null, display_name: t('classGroups.noneParentGroup') }]
+                }
+            })
+            .withItemValue('id')
+            .withItemText('display_name')
+            .placeholder(t('classGroups.parentGroupHelp')),
         field('max_members', t('classGroups.max_members')).number().visible().editable(),
         field('expires_at', t('classGroups.expires_at')).date().visible().editable().withDateFormat(),
         field('is_active', t('classGroups.is_active')).checkbox().visible().editable(),
+        field('subgroup_names', t('classGroups.subgroupNames'))
+            .textarea()
+            .visible()
+            .creatable()  // Only show during creation, not editing
+            .placeholder(t('classGroups.subgroupNamesHelp'))
+            .hint(t('classGroups.subgroupNamesHelp')),
         field('member_count', t('classGroups.member_count')).number().visible().readonly(),
         field('owner_user_id', t('classGroups.owner_user_id')).input().hidden().readonly(),
         field('created_at', t('classGroups.created_at')).input().visible().readonly().withDateTimeFormat(),
@@ -150,13 +186,50 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
         if (data.display_name && !data.name) {
             data.name = generateSlug(data.display_name)
         }
-        return data
+        // Handle parent_group_id conversion to backend camelCase
+        if (data.parent_group_id !== undefined) {
+            data.parentGroupID = data.parent_group_id
+        }
+        // Remove subgroup_names from data sent to backend (it's UI-only)
+        const { subgroup_names, ...cleanData } = data
+        return cleanData
+    })
+
+    // Hook to create subgroups after parent group is created
+    base.setAfterCreateHook(async (createdGroup: any, originalData: any) => {
+        // Check if subgroup names were provided
+        if (originalData.subgroup_names && typeof originalData.subgroup_names === 'string') {
+            const subgroupNames = originalData.subgroup_names
+                .split('\n')
+                .map((name: string) => name.trim())
+                .filter((name: string) => name.length > 0)
+
+            // Create each subgroup
+            for (const displayName of subgroupNames) {
+                try {
+                    await base.createEntity('/class-groups', {
+                        display_name: displayName,
+                        name: generateSlug(displayName),
+                        parent_group_id: createdGroup.id,
+                        parentGroupID: createdGroup.id,
+                        max_members: originalData.max_members || 30,
+                        is_active: true
+                    })
+                } catch (error) {
+                    console.error(`Failed to create subgroup "${displayName}":`, error)
+                }
+            }
+        }
     })
 
     // Hook to auto-generate slug from display_name before updating (if display_name changed)
     base.setBeforeUpdateHook(async (data: any) => {
         if (data.display_name && !data.name) {
             data.name = generateSlug(data.display_name)
+        }
+        // Handle parent_group_id conversion to backend camelCase
+        if (data.parent_group_id !== undefined) {
+            data.parentGroupID = data.parent_group_id
         }
         return data
     })
@@ -166,9 +239,30 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
         return await base.loadEntities('/class-groups')
     }
 
-    // Override getOne to use correct endpoint
-    const getOne = async (groupId: string) => {
-        return await base.getOne('/class-groups', groupId)
+    // Override getOne to use correct endpoint with optional includes
+    const getOne = async (groupId: string, includes?: string[]) => {
+        if (!includes || includes.length === 0) {
+            return await base.getOne('/class-groups', groupId)
+        }
+
+        // Custom implementation with includes parameter
+        try {
+            base.isLoading.value = true
+            base.error.value = ''
+
+            const includeParam = includes.join(',')
+            const url = `/class-groups/${groupId}?include=${includeParam}`
+
+            const response = await axios.get(url)
+            return response.data
+        } catch (err: any) {
+            base.error.value = err.response?.data?.error_message ||
+                               err.response?.data?.message ||
+                               t('classGroups.loadError')
+            throw err
+        } finally {
+            base.isLoading.value = false
+        }
     }
 
     return {

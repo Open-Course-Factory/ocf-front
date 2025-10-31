@@ -35,6 +35,11 @@ export interface GroupMember {
     username?: string
     display_name?: string
   }
+  source_group?: {
+    id: string
+    name: string
+    display_name: string
+  }
 }
 
 export interface NewMemberData {
@@ -116,18 +121,57 @@ export function useGroupMembers({ groupId, currentUserId, isOwner }: UseGroupMem
   })
 
   // Methods
-  const loadMembers = async () => {
+  const loadMembers = async (includeSubgroups: boolean = false, subgroups: any[] = []) => {
     if (!groupId.value) return
 
     return await withAsync(
       { isLoading, error },
       async () => {
+        // Fetch members from the main group
         const response = await axios.get(`/group-members`, {
           params: {
             group_id: groupId.value
           }
         })
-        members.value = response.data?.data || response.data || []
+        const mainGroupMembers = (response.data?.data || response.data || []).map((member: GroupMember) => ({
+          ...member,
+          source_group: null // Main group members don't have a source_group
+        }))
+
+        // If includeSubgroups is false, return only main group members
+        if (!includeSubgroups || subgroups.length === 0) {
+          members.value = mainGroupMembers
+          return members.value
+        }
+
+        // Fetch members from all subgroups
+        const subgroupMembersPromises = subgroups.map(async (subgroup) => {
+          try {
+            const subResponse = await axios.get(`/group-members`, {
+              params: {
+                group_id: subgroup.id
+              }
+            })
+            const subMembers = (subResponse.data?.data || subResponse.data || []).map((member: GroupMember) => ({
+              ...member,
+              source_group: {
+                id: subgroup.id,
+                name: subgroup.name,
+                display_name: subgroup.display_name
+              }
+            }))
+            return subMembers
+          } catch (err) {
+            console.error(`Failed to load members for subgroup ${subgroup.display_name}:`, err)
+            return []
+          }
+        })
+
+        const subgroupMembersArrays = await Promise.all(subgroupMembersPromises)
+        const allSubgroupMembers = subgroupMembersArrays.flat()
+
+        // Combine main group and subgroup members
+        members.value = [...mainGroupMembers, ...allSubgroupMembers]
         return members.value
       },
       'groupMembers.loadError'
