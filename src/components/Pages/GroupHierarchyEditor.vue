@@ -129,11 +129,32 @@
           <!-- Label Slot -->
           <template #label="{ entity }">
             <span class="node-label">{{ entity.display_name }}</span>
-            <span v-if="!isOrganization(entity) && (entity as OrganizationGroup).member_count" class="member-count">
-              <i class="fas fa-users"></i>
-              {{ (entity as OrganizationGroup).member_count }}
-            </span>
-            <span v-else-if="isOrganization(entity) && (entity as Organization).group_count" class="group-count-badge">
+
+            <!-- For Groups: Show member counts -->
+            <template v-if="!isOrganization(entity)">
+              <!-- Direct members count -->
+              <span
+                v-if="(entity as OrganizationGroup).member_count"
+                class="member-count direct"
+                :title="t('hierarchyEditor.directMembersTooltip')"
+              >
+                <i class="fas fa-user"></i>
+                {{ (entity as OrganizationGroup).member_count }}
+              </span>
+
+              <!-- Total members count (including subgroups) -->
+              <span
+                v-if="getTotalMemberCount(entity as OrganizationGroup) > (entity as OrganizationGroup).member_count"
+                class="member-count total"
+                :title="t('hierarchyEditor.totalMembersTooltip')"
+              >
+                <i class="fas fa-users"></i>
+                {{ getTotalMemberCount(entity as OrganizationGroup) }}
+              </span>
+            </template>
+
+            <!-- For Organizations: Show group count -->
+            <span v-else-if="(entity as Organization).group_count" class="group-count-badge">
               <i class="fas fa-layer-group"></i>
               {{ (entity as Organization).group_count }}
             </span>
@@ -223,7 +244,9 @@ const { t } = useTranslations({
       deleteSuccess: 'Group deleted successfully',
       moveSuccess: 'Group moved successfully',
       errorDelete: 'Failed to delete group',
-      errorMove: 'Failed to move group'
+      errorMove: 'Failed to move group',
+      directMembersTooltip: 'Direct members of this group',
+      totalMembersTooltip: 'Total members including all subgroups'
     }
   },
   fr: {
@@ -248,7 +271,9 @@ const { t } = useTranslations({
       deleteSuccess: 'Groupe supprimé avec succès',
       moveSuccess: 'Groupe déplacé avec succès',
       errorDelete: 'Échec de la suppression du groupe',
-      errorMove: 'Échec du déplacement du groupe'
+      errorMove: 'Échec du déplacement du groupe',
+      directMembersTooltip: 'Membres directs de ce groupe',
+      totalMembersTooltip: 'Total des membres incluant tous les sous-groupes'
     }
   }
 })
@@ -342,6 +367,20 @@ const getChildren = (node: TreeNode): TreeNode[] => {
     const groups = organizationGroups.value.get(organizationId) || []
     return groups.filter(g => g.parent_group_id === node.id)
   }
+}
+
+// Calculate total member count including all subgroups recursively
+const getTotalMemberCount = (group: OrganizationGroup): number => {
+  // Start with direct members
+  let total = group.member_count || 0
+
+  // Add members from all subgroups recursively
+  const subgroups = getChildren(group) as OrganizationGroup[]
+  for (const subgroup of subgroups) {
+    total += getTotalMemberCount(subgroup)
+  }
+
+  return total
 }
 
 const loadOrganizationGroups = async (organizationId: string) => {
@@ -627,11 +666,32 @@ watch(shouldFilterAsStandardUser, () => {
   align-items: center;
   gap: var(--spacing-xs);
   padding: 2px 6px;
-  background: var(--color-info-bg);
-  color: var(--color-info);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
+  cursor: help;
+  transition: all 0.2s ease;
+}
+
+.member-count.direct {
+  background: var(--color-info-bg);
+  color: var(--color-info);
+}
+
+.member-count.direct:hover {
+  background: var(--color-info);
+  color: var(--color-surface);
+}
+
+.member-count.total {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  margin-left: var(--spacing-xs);
+}
+
+.member-count.total:hover {
+  background: var(--color-success);
+  color: var(--color-surface);
 }
 
 .tree-action-button.delete {
