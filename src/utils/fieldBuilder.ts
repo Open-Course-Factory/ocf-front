@@ -52,6 +52,10 @@ export interface FieldConfig {
   toBeEdited: boolean
   required?: boolean
   options?: any[]
+  optionsLoader?: () => Promise<any[]>  // Async options loading
+  searchFunction?: (query: string) => Promise<any[]>  // Search function for searchable-select
+  itemValue?: string  // Property name for option value (default: 'value')
+  itemText?: string   // Property name for option text (default: 'label' or 'text')
   placeholder?: string
   hint?: string
   validation?: any
@@ -99,6 +103,10 @@ export class FieldBuilder {
 
   select(): this {
     return this.type('select')
+  }
+
+  searchableSelect(): this {
+    return this.type('searchable-select')
   }
 
   checkbox(): this {
@@ -169,6 +177,42 @@ export class FieldBuilder {
    */
   withOptions(options: any[]): this {
     this.config.options = options
+    return this
+  }
+
+  /**
+   * Async options loader for searchable-select fields
+   * Loads all available options asynchronously
+   */
+  withOptionsLoader(loader: () => Promise<any[]>): this {
+    this.config.optionsLoader = loader
+    return this
+  }
+
+  /**
+   * Search function for searchable-select fields
+   * Enables dynamic search/filtering of options
+   */
+  withSearchFunction(searchFn: (query: string) => Promise<any[]>): this {
+    this.config.searchFunction = searchFn
+    return this
+  }
+
+  /**
+   * Configure which property to use as the value
+   * Default: 'value' or 'id'
+   */
+  withItemValue(propertyName: string): this {
+    this.config.itemValue = propertyName
+    return this
+  }
+
+  /**
+   * Configure which property to use as the display text
+   * Default: 'label' or 'text'
+   */
+  withItemText(propertyName: string): this {
+    this.config.itemText = propertyName
     return this
   }
 

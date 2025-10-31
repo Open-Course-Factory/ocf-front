@@ -291,6 +291,14 @@ export interface ClassGroup extends BaseEntity {
   is_expired?: boolean
   is_full?: boolean
   metadata?: Record<string, any>
+
+  // Nested groups (hierarchical structure)
+  parent_group_id?: string | null
+  parentGroupID?: string | null // Backend uses camelCase
+  parent_group?: ClassGroup // Populated when ?includes=ParentGroup
+  parentGroup?: ClassGroup // Backend uses camelCase
+  sub_groups?: ClassGroup[] // Populated when ?includes=SubGroups
+  subGroups?: ClassGroup[] // Backend uses camelCase
 }
 
 /**

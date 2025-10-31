@@ -87,6 +87,40 @@
             :class="['form-control', { 'is-invalid': errors[name] }]"
           />
 
+          <!-- Searchable Select -->
+          <div v-else-if="field.type == 'searchable-select'" class="searchable-select-container">
+            <input
+              :id="name"
+              v-model="searchQueries[name]"
+              type="text"
+              :class="['form-control', { 'is-invalid': errors[name] }]"
+              :placeholder="field.placeholder || t('entityModal.searchPlaceholder')"
+              @input="onSearchInput(name, field)"
+              @focus="onSearchableFocus(name)"
+              @blur="onSearchableBlur(name)"
+              autocomplete="off"
+            />
+            <div v-if="showDropdown[name] && (searchResults[name]?.length > 0 || isSearching[name])" class="search-dropdown">
+              <div v-if="isSearching[name]" class="search-loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                {{ t('entityModal.searching') }}
+              </div>
+              <div v-else-if="searchResults[name]?.length === 0 && searchQueries[name]?.trim()" class="search-empty">
+                {{ t('entityModal.noResults') }}
+              </div>
+              <div
+                v-for="(item, idx) in searchResults[name]"
+                :key="item[field.itemValue || 'value'] || item.value || item.id || idx"
+                class="search-result"
+                @click="selectSearchableItem(name, item, field)"
+              >
+                <div class="search-result-text">
+                  {{ item[field.itemText || 'label'] || item.label || item.text || item.display_name }}
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Checkbox -->
           <div v-else-if="field.type == 'checkbox'" class="checkbox-wrapper">
             <input
@@ -148,7 +182,11 @@ const { t } = useTranslations({
       nameAlreadyUsed: 'This name is already used.',
       invalidNumber: 'Please enter a valid number.',
       numberTooSmall: 'Value must be at least {min}.',
-      numberTooLarge: 'Value must be at most {max}.'
+      numberTooLarge: 'Value must be at most {max}.',
+      searchPlaceholder: 'Search...',
+      searching: 'Searching...',
+      noResults: 'No results found',
+      loading: 'Loading...'
     }
   },
   fr: {
@@ -163,13 +201,25 @@ const { t } = useTranslations({
       nameAlreadyUsed: 'Ce nom est déjà utilisé.',
       invalidNumber: 'Veuillez entrer un nombre valide.',
       numberTooSmall: 'La valeur doit être au moins {min}.',
-      numberTooLarge: 'La valeur doit être au plus {max}.'
+      numberTooLarge: 'La valeur doit être au plus {max}.',
+      searchPlaceholder: 'Rechercher...',
+      searching: 'Recherche en cours...',
+      noResults: 'Aucun résultat trouvé',
+      loading: 'Chargement...'
     }
   }
 });
 
 const data = reactive({});
 const errors = reactive({});
+
+// State for searchable-select fields
+const searchQueries = reactive<Record<string, string>>({});
+const searchResults = reactive<Record<string, any[]>>({});
+const searchableOptions = reactive<Record<string, any[]>>({});
+const isSearching = reactive<Record<string, boolean>>({});
+const showDropdown = reactive<Record<string, boolean>>({});
+const selectedItemText = reactive<Record<string, string>>({});
 
 const props = defineProps<{
   visible: boolean;
@@ -291,6 +341,14 @@ function populateDataFromEntity() {
         data[key] = props.entity[key] === true || props.entity[key] === 'true';
       } else if (value.type === 'number') {
         data[key] = props.entity[key] !== undefined ? Number(props.entity[key]) : '';
+      } else if (value.type === 'searchable-select') {
+        const entityValue = props.entity[key];
+        data[key] = entityValue || null;
+        // Set display text from loaded options
+        if (entityValue && searchableOptions[key]) {
+          selectedItemText[key] = getItemDisplayText(key, value, entityValue);
+          searchQueries[key] = selectedItemText[key];
+        }
       } else {
         data[key] = props.entity[key] || '';
       }
@@ -306,6 +364,18 @@ function prepareNeededField() {
         data[key] = false;
       } else if (value.type === 'number') {
         data[key] = value.min !== undefined ? value.min : '';
+      } else if (value.type === 'searchable-select') {
+        data[key] = null;
+        searchQueries[key] = '';
+        searchResults[key] = [];
+        searchableOptions[key] = [];
+        isSearching[key] = false;
+        showDropdown[key] = false;
+        selectedItemText[key] = '';
+        // Load options if optionsLoader is provided
+        if (value.optionsLoader) {
+          loadSearchableOptions(key, value);
+        }
       } else {
         data[key] = '';
       }
@@ -319,6 +389,101 @@ function prepareNeededField() {
       errors[subKey] = null;
     });
   }
+}
+
+// Load options for searchable-select field
+async function loadSearchableOptions(fieldName: string, fieldConfig: any) {
+  if (!fieldConfig.optionsLoader) return;
+
+  try {
+    isSearching[fieldName] = true;
+    const options = await fieldConfig.optionsLoader();
+    searchableOptions[fieldName] = options;
+    searchResults[fieldName] = options; // Initially show all options
+  } catch (error) {
+    console.error(`Failed to load options for ${fieldName}:`, error);
+    searchableOptions[fieldName] = [];
+    searchResults[fieldName] = [];
+  } finally {
+    isSearching[fieldName] = false;
+  }
+}
+
+// Handle search input for searchable-select field
+async function onSearchInput(fieldName: string, fieldConfig: any) {
+  const query = searchQueries[fieldName]?.trim() || '';
+
+  // If using searchFunction, call it
+  if (fieldConfig.searchFunction) {
+    if (query.length < 2) {
+      searchResults[fieldName] = [];
+      return;
+    }
+
+    isSearching[fieldName] = true;
+    try {
+      const results = await fieldConfig.searchFunction(query);
+      searchResults[fieldName] = results;
+    } catch (error) {
+      console.error(`Search error for ${fieldName}:`, error);
+      searchResults[fieldName] = [];
+    } finally {
+      isSearching[fieldName] = false;
+    }
+  } else {
+    // Filter local options
+    const options = searchableOptions[fieldName] || [];
+    if (query.length === 0) {
+      searchResults[fieldName] = options;
+    } else {
+      const itemText = fieldConfig.itemText || 'label';
+      searchResults[fieldName] = options.filter((option: any) => {
+        const text = option[itemText] || option.label || option.text || '';
+        return text.toLowerCase().includes(query.toLowerCase());
+      });
+    }
+  }
+}
+
+// Select an item from searchable-select dropdown
+function selectSearchableItem(fieldName: string, item: any, fieldConfig: any) {
+  const itemValue = fieldConfig.itemValue || 'value';
+  const itemText = fieldConfig.itemText || 'label';
+
+  data[fieldName] = item[itemValue] || item.value || item.id;
+  selectedItemText[fieldName] = item[itemText] || item.label || item.text || item.display_name || '';
+  searchQueries[fieldName] = selectedItemText[fieldName];
+  showDropdown[fieldName] = false;
+}
+
+// Handle focus on searchable-select field
+function onSearchableFocus(fieldName: string) {
+  showDropdown[fieldName] = true;
+  // Show all options if no search query
+  const fieldConfig = props.entityStore.fieldList.get(fieldName);
+  if (!searchQueries[fieldName] && fieldConfig) {
+    searchResults[fieldName] = searchableOptions[fieldName] || [];
+  }
+}
+
+// Handle blur on searchable-select field
+function onSearchableBlur(fieldName: string) {
+  // Delay hiding dropdown to allow click events to fire
+  setTimeout(() => {
+    showDropdown[fieldName] = false;
+  }, 200);
+}
+
+// Get display text for a selected value
+function getItemDisplayText(fieldName: string, fieldConfig: any, value: any): string {
+  if (!value) return '';
+
+  const options = searchableOptions[fieldName] || [];
+  const itemValue = fieldConfig.itemValue || 'value';
+  const itemText = fieldConfig.itemText || 'label';
+
+  const item = options.find((opt: any) => (opt[itemValue] || opt.value || opt.id) === value);
+  return item ? (item[itemText] || item.label || item.text || item.display_name || '') : '';
 }
 </script>
 
@@ -365,5 +530,58 @@ input[type="number"] {
 /* Date input styles */
 input[type="date"] {
   max-width: 250px;
+}
+
+/* Searchable Select styles */
+.searchable-select-container {
+  position: relative;
+}
+
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-medium);
+  border-top: none;
+  border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: var(--shadow-md);
+  margin-top: -1px;
+}
+
+.search-loading,
+.search-empty {
+  padding: var(--spacing-md);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.search-loading i {
+  margin-right: var(--spacing-xs);
+}
+
+.search-result {
+  padding: var(--spacing-sm) var(--spacing-md);
+  cursor: pointer;
+  border-bottom: 1px solid var(--color-border-light);
+  transition: background-color var(--transition-fast);
+}
+
+.search-result:hover {
+  background-color: var(--color-bg-secondary);
+}
+
+.search-result:last-child {
+  border-bottom: none;
+}
+
+.search-result-text {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
 }
 </style>
