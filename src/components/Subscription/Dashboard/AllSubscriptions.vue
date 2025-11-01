@@ -1,5 +1,5 @@
 <template>
-  <div class="all-subscriptions">
+  <div id="all-subscriptions" class="all-subscriptions">
     <h3>
       <i class="fas fa-layer-group"></i>
       {{ t('subscriptionPlans.allSubscriptionsTitle') }}

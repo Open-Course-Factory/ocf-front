@@ -47,9 +47,16 @@
           @activate-free-plan="activateFreePlan"
         />
 
+        <!-- Active Subscription Source -->
+        <ActiveSubscriptionSource
+          v-if="subscriptionsStore.hasActiveSubscription() && primarySubscription"
+          :primary-subscription="primarySubscription"
+          :total-subscriptions="subscriptionsStore.allSubscriptions.length"
+        />
+
         <!-- All Subscriptions (Stacked View) -->
         <AllSubscriptions
-          v-if="subscriptionsStore.hasActiveSubscription() && subscriptionsStore.allSubscriptions.length > 0"
+          v-if="subscriptionsStore.hasActiveSubscription() && subscriptionsStore.allSubscriptions.length > 1"
           :subscriptions="subscriptionsStore.allSubscriptions"
           :is-loading="isLoadingAllSubs"
         />
@@ -92,14 +99,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { extractErrorMessage } from '../../utils/formatters'
 import axios from 'axios'
 
 // Import des composants modulaires
-import { SubscriptionCard, UsageOverview, RecentInvoices, AllSubscriptions } from '../Subscription/Dashboard'
+import { SubscriptionCard, UsageOverview, RecentInvoices, AllSubscriptions, ActiveSubscriptionSource } from '../Subscription/Dashboard'
 import { CancelSubscriptionModal, ReactivateModal } from '../Subscription/Modals'
 import ErrorAlert from '../UI/ErrorAlert.vue'
 import UpgradeToTeamBanner from '../Common/UpgradeToTeamBanner.vue'
@@ -135,6 +142,14 @@ const downloadingInvoices = ref<Set<string>>(new Set())
 const lastUsageLoad = ref<number>(0)
 const lastInvoicesLoad = ref<number>(0)
 const CACHE_DURATION = 60 * 1000 // 1 minute
+
+// Computed
+const primarySubscription = computed(() => {
+  if (!subscriptionsStore.allSubscriptions || subscriptionsStore.allSubscriptions.length === 0) {
+    return subscriptionsStore.currentSubscription
+  }
+  return subscriptionsStore.allSubscriptions.find((sub: any) => sub.is_primary) || subscriptionsStore.currentSubscription
+})
 
 // Lifecycle
 onMounted(async () => {
