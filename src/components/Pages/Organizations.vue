@@ -82,8 +82,6 @@ watch(shouldFilterAsStandardUser, async () => {
 const loadOrganizations = async () => {
   try {
     await organizationsStore.loadOrganizations('members,groups')
-    console.log('Loaded organizations:', organizationsStore.organizations)
-    console.log('Total count:', organizationsStore.organizations.length)
   } catch (err) {
     console.error('Failed to load organizations:', err)
   }

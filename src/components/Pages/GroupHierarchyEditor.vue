@@ -57,20 +57,24 @@
 
       <!-- View Options -->
       <div class="toolbar-options">
-        <button
-          @click="expandAll"
-          class="btn btn-sm btn-ghost"
-          :title="t('hierarchyEditor.expandAll')"
-        >
-          <i class="fas fa-plus-square"></i>
-        </button>
-        <button
-          @click="collapseAll"
-          class="btn btn-sm btn-ghost"
-          :title="t('hierarchyEditor.collapseAll')"
-        >
-          <i class="fas fa-minus-square"></i>
-        </button>
+        <div class="expand-collapse-group">
+          <button
+            @click="expandAll"
+            class="expand-collapse-btn expand-btn"
+            :title="t('hierarchyEditor.expandAllTooltip')"
+          >
+            <i class="fas fa-expand-alt"></i>
+            <span class="btn-text">{{ t('hierarchyEditor.expandAll') }}</span>
+          </button>
+          <button
+            @click="collapseAll"
+            class="expand-collapse-btn collapse-btn"
+            :title="t('hierarchyEditor.collapseAllTooltip')"
+          >
+            <i class="fas fa-compress-alt"></i>
+            <span class="btn-text">{{ t('hierarchyEditor.collapseAll') }}</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -220,6 +224,8 @@ const { t } = useTranslations({
       searchPlaceholder: 'Search organizations and groups...',
       expandAll: 'Expand All',
       collapseAll: 'Collapse All',
+      expandAllTooltip: 'Expand all organizations and groups',
+      collapseAllTooltip: 'Collapse all organizations and groups',
       loading: 'Loading hierarchy...',
       noOrganizations: 'No organizations available.',
       noResults: 'No results match "{query}"',
@@ -247,6 +253,8 @@ const { t } = useTranslations({
       searchPlaceholder: 'Rechercher des organisations et groupes...',
       expandAll: 'Tout Développer',
       collapseAll: 'Tout Réduire',
+      expandAllTooltip: 'Développer toutes les organisations et groupes',
+      collapseAllTooltip: 'Réduire toutes les organisations et groupes',
       loading: 'Chargement de la hiérarchie...',
       noOrganizations: 'Aucune organisation disponible.',
       noResults: 'Aucun résultat pour "{query}"',
@@ -648,6 +656,67 @@ watch(shouldFilterAsStandardUser, () => {
   gap: var(--spacing-xs);
 }
 
+/* Expand/Collapse Button Group */
+.expand-collapse-group {
+  display: inline-flex;
+  gap: 1px;
+  background: var(--color-border-medium);
+  border-radius: var(--border-radius-md);
+  padding: 1px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.expand-collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.expand-collapse-btn:first-child {
+  border-radius: var(--border-radius-md) 0 0 var(--border-radius-md);
+}
+
+.expand-collapse-btn:last-child {
+  border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+}
+
+.expand-collapse-btn i {
+  font-size: var(--font-size-md);
+  transition: transform 0.2s ease;
+}
+
+.expand-collapse-btn:hover {
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+.expand-collapse-btn:hover i {
+  transform: scale(1.1);
+}
+
+.expand-collapse-btn:active {
+  transform: translateY(1px);
+}
+
+.expand-btn:hover {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.collapse-btn:hover {
+  background: var(--color-info-bg);
+  color: var(--color-info);
+}
+
 /* Tree Container */
 .tree-container {
   flex: 1;
@@ -788,6 +857,14 @@ watch(shouldFilterAsStandardUser, () => {
 
   .toolbar-search {
     max-width: 100%;
+  }
+
+  .expand-collapse-btn .btn-text {
+    display: none;
+  }
+
+  .expand-collapse-btn {
+    padding: var(--spacing-sm);
   }
 }
 </style>
