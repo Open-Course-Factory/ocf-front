@@ -7,9 +7,15 @@
           <i class="fas fa-users"></i>
           {{ t('members.title') }}
         </h3>
-        <p class="member-count">
-          {{ members.length }} / {{ maxMembers }} {{ t('members.members') }}
-        </p>
+        <div class="header-meta">
+          <p class="member-count">
+            {{ members.length }} / {{ maxMembers }} {{ t('members.members') }}
+          </p>
+          <button class="help-link" @click="goToRolesHelp">
+            <i class="fas fa-question-circle"></i>
+            {{ t('members.rolesHelp') }}
+          </button>
+        </div>
       </div>
       <button
         v-if="canManage"
@@ -164,6 +170,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
 import type { OrganizationMember } from '../../types'
@@ -178,6 +185,8 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   maxMembers: 100
 })
+
+const router = useRouter()
 
 const { t } = useTranslations({
   en: {
@@ -205,6 +214,7 @@ const { t } = useTranslations({
       roleUpdated: 'Member role updated successfully',
       memberRemoved: 'Member removed successfully',
       memberInvited: 'Member invited successfully',
+      rolesHelp: 'Learn about roles',
     }
   },
   fr: {
@@ -232,6 +242,7 @@ const { t } = useTranslations({
       roleUpdated: 'Rôle du membre mis à jour avec succès',
       memberRemoved: 'Membre retiré avec succès',
       memberInvited: 'Membre invité avec succès',
+      rolesHelp: 'En savoir plus sur les rôles',
     }
   }
 })
@@ -342,6 +353,10 @@ const formatDate = (dateString: string): string => {
   const date = new Date(dateString)
   return date.toLocaleDateString()
 }
+
+const goToRolesHelp = () => {
+  router.push({ name: 'HelpRolesAndPermissions' })
+}
 </script>
 
 <style scoped>
@@ -366,9 +381,39 @@ const formatDate = (dateString: string): string => {
   gap: 0.75rem;
 }
 
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .member-count {
   margin: 0;
   color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.help-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.help-link:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.help-link i {
   font-size: 0.875rem;
 }
 

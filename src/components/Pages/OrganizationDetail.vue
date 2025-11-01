@@ -215,6 +215,20 @@
                 <i class="fas fa-cog"></i>
                 {{ t('organizations.organizationSettings') }}
               </h3>
+
+              <!-- Help Section -->
+              <div class="help-section">
+                <h4>
+                  <i class="fas fa-question-circle"></i>
+                  {{ t('organizations.needHelp') }}
+                </h4>
+                <p>{{ t('organizations.rolesHelpText') }}</p>
+                <button class="btn btn-outline-primary" @click="goToRolesHelp">
+                  <i class="fas fa-book"></i>
+                  {{ t('organizations.viewRolesGuide') }}
+                </button>
+              </div>
+
               <div class="danger-zone">
                 <h4>{{ t('organizations.dangerZone') }}</h4>
                 <p>{{ t('organizations.deleteWarning') }}</p>
@@ -306,6 +320,9 @@ const { t } = useTranslations({
       deleteOrganization: 'Delete Organization',
       deleteOwnerOnly: 'Only organization owners can delete the organization.',
       notFound: 'Organization not found',
+      needHelp: 'Need Help?',
+      rolesHelpText: 'Learn about organization roles and what each role can do.',
+      viewRolesGuide: 'View Roles & Permissions Guide',
     }
   },
   fr: {
@@ -340,6 +357,9 @@ const { t } = useTranslations({
       deleteOrganization: 'Supprimer l\'organisation',
       deleteOwnerOnly: 'Seuls les propriétaires de l\'organisation peuvent la supprimer.',
       notFound: 'Organisation introuvable',
+      needHelp: 'Besoin d\'aide ?',
+      rolesHelpText: 'Apprenez-en plus sur les rôles d\'organisation et ce que chaque rôle peut faire.',
+      viewRolesGuide: 'Voir le guide des rôles et permissions',
     }
   }
 })
@@ -424,6 +444,10 @@ const goBack = () => {
 
 const goToBulkImport = () => {
   router.push({ name: 'BulkImport', params: { id: organizationId.value } })
+}
+
+const goToRolesHelp = () => {
+  router.push({ name: 'HelpRolesAndPermissions' })
 }
 
 const changeTab = (tab: string) => {
@@ -679,6 +703,35 @@ const changeTab = (tab: string) => {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.help-section {
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  margin-bottom: 2rem;
+}
+
+.help-section h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.help-section h4 i {
+  color: var(--color-primary);
+}
+
+.help-section p {
+  margin: 0 0 1rem 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.5;
 }
 
 .danger-zone {
