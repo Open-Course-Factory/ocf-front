@@ -341,18 +341,52 @@ const isOrganization = (node: TreeNode): node is Organization => {
   return 'is_personal' in node
 }
 
-// Get children of a tree node
+// Check if a group matches the search query
+const groupMatches = (group: OrganizationGroup, query: string): boolean => {
+  if (!query) return true
+  const lowerQuery = query.toLowerCase()
+  return group.display_name?.toLowerCase().includes(lowerQuery) ||
+         group.name?.toLowerCase().includes(lowerQuery) || false
+}
+
+// Check if a group or any of its descendants match the search
+const groupOrDescendantsMatch = (group: OrganizationGroup, query: string, allGroups: OrganizationGroup[]): boolean => {
+  if (!query) return true
+
+  // Check if this group matches
+  if (groupMatches(group, query)) return true
+
+  // Check if any descendants match
+  const children = allGroups.filter(g => g.parent_group_id === group.id)
+  return children.some(child => groupOrDescendantsMatch(child, query, allGroups))
+}
+
+// Get children of a tree node (with search filtering)
 const getChildren = (node: TreeNode): TreeNode[] => {
+  let children: TreeNode[]
+  let organizationId: string
+
   if (isOrganization(node)) {
     // For organizations, return root groups (groups with no parent)
     const groups = organizationGroups.value.get(node.id) || []
-    return groups.filter(g => !g.parent_group_id)
+    children = groups.filter(g => !g.parent_group_id)
+    organizationId = node.id
   } else {
     // For groups, return subgroups
-    const organizationId = (node as OrganizationGroup).organization_id
+    organizationId = (node as OrganizationGroup).organization_id
     const groups = organizationGroups.value.get(organizationId) || []
-    return groups.filter(g => g.parent_group_id === node.id)
+    children = groups.filter(g => g.parent_group_id === node.id)
   }
+
+  // Apply search filter if query exists (for both org and group children)
+  if (searchQuery.value) {
+    const allGroups = organizationGroups.value.get(organizationId) || []
+    children = children.filter(child =>
+      groupOrDescendantsMatch(child as OrganizationGroup, searchQuery.value, allGroups)
+    )
+  }
+
+  return children
 }
 
 // Calculate total member count including all subgroups recursively
