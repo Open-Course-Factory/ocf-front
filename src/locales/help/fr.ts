@@ -50,7 +50,8 @@ export const helpFr = {
         title: "👤 Gestion du Compte",
         description: "Gérez votre abonnement, facturation et paramètres de compte",
         subscription: "Abonnement et Plans",
-        billing: "Facturation et Paiements"
+        billing: "Facturation et Paiements",
+        rolesAndPermissions: "Rôles et Permissions"
       }
     },
 
@@ -1470,6 +1471,11 @@ export const helpFr = {
             description: "Configurer vos informations de facturation"
           }
         }
+      },
+
+      rolesAndPermissions: {
+        title: "Rôles et Permissions",
+        intro: "Comprendre les rôles d'organisation et ce que chaque rôle peut faire."
       }
     }
   }

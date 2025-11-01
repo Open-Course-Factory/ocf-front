@@ -50,7 +50,8 @@ export const helpEn = {
         title: "👤 Account Management",
         description: "Manage your subscription, billing and account settings",
         subscription: "Subscription & Plans",
-        billing: "Billing & Payments"
+        billing: "Billing & Payments",
+        rolesAndPermissions: "Roles & Permissions"
       }
     },
 
@@ -1470,6 +1471,11 @@ export const helpEn = {
             description: "Configure your billing information"
           }
         }
+      },
+
+      rolesAndPermissions: {
+        title: "Roles & Permissions",
+        intro: "Understand organization roles and what each role can do."
       }
     }
   }
