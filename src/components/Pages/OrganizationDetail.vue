@@ -186,6 +186,7 @@
             <OrganizationMembersManager
               :organization-id="organizationId"
               :can-manage="canManage"
+              :is-owner="isOwner"
               :max-members="organization?.max_members || 100"
             />
           </div>
@@ -217,10 +218,14 @@
               <div class="danger-zone">
                 <h4>{{ t('organizations.dangerZone') }}</h4>
                 <p>{{ t('organizations.deleteWarning') }}</p>
-                <button class="btn btn-danger" @click="confirmDelete">
+                <button v-if="canDelete" class="btn btn-danger" @click="confirmDelete">
                   <i class="fas fa-trash"></i>
                   {{ t('organizations.deleteOrganization') }}
                 </button>
+                <p v-else class="permission-notice">
+                  <i class="fas fa-info-circle"></i>
+                  {{ t('organizations.deleteOwnerOnly') }}
+                </p>
               </div>
             </div>
           </div>
@@ -241,7 +246,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   OrganizationModal,
@@ -299,6 +304,7 @@ const { t } = useTranslations({
       dangerZone: 'Danger Zone',
       deleteWarning: 'Deleting an organization is permanent and cannot be undone.',
       deleteOrganization: 'Delete Organization',
+      deleteOwnerOnly: 'Only organization owners can delete the organization.',
       notFound: 'Organization not found',
     }
   },
@@ -332,6 +338,7 @@ const { t } = useTranslations({
       dangerZone: 'Zone dangereuse',
       deleteWarning: 'La suppression d\'une organisation est permanente et ne peut pas être annulée.',
       deleteOrganization: 'Supprimer l\'organisation',
+      deleteOwnerOnly: 'Seuls les propriétaires de l\'organisation peuvent la supprimer.',
       notFound: 'Organisation introuvable',
     }
   }
@@ -339,6 +346,8 @@ const { t } = useTranslations({
 
 const organizationId = computed(() => route.params.id as string)
 const canManage = computed(() => permissionsStore.canManageOrganization(organizationId.value))
+const isOwner = computed(() => permissionsStore.isOrganizationOwner(organizationId.value))
+const canDelete = computed(() => permissionsStore.canDeleteOrganization(organizationId.value))
 
 onMounted(async () => {
   await Promise.all([
@@ -687,6 +696,22 @@ const changeTab = (tab: string) => {
 .danger-zone p {
   margin: 0 0 1rem 0;
   color: var(--color-text-secondary);
+}
+
+.permission-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-bg-tertiary);
+  border-radius: 6px;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.permission-notice i {
+  color: var(--color-info);
 }
 
 .btn {

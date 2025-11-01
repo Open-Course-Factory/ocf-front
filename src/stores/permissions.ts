@@ -279,6 +279,26 @@ export const usePermissionsStore = defineStore('permissions', () => {
     return isSystemAdmin.value || isOrganizationMember(organizationId)
   }
 
+  // ==========================================
+  // OWNER-ONLY PERMISSION CHECKS
+  // ==========================================
+
+  const canDeleteOrganization = (organizationId: string): boolean => {
+    return isSystemAdmin.value || isOrganizationOwner(organizationId)
+  }
+
+  const canTransferOwnership = (organizationId: string): boolean => {
+    return isSystemAdmin.value || isOrganizationOwner(organizationId)
+  }
+
+  const canPromoteToOwner = (organizationId: string): boolean => {
+    return isSystemAdmin.value || isOrganizationOwner(organizationId)
+  }
+
+  const canConvertOrganizationType = (organizationId: string): boolean => {
+    return isSystemAdmin.value || isOrganizationOwner(organizationId)
+  }
+
   return {
     // State
     currentUser,
@@ -319,6 +339,12 @@ export const usePermissionsStore = defineStore('permissions', () => {
     canManageOrganizationBilling,
     canManageOrganizationMembers,
     canViewOrganization,
+
+    // Owner-only permission checks
+    canDeleteOrganization,
+    canTransferOwnership,
+    canPromoteToOwner,
+    canConvertOrganizationType,
 
     // Translations
     t,

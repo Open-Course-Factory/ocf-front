@@ -73,7 +73,7 @@
             >
               <option value="member">{{ t('members.roleMember') }}</option>
               <option value="manager">{{ t('members.roleManager') }}</option>
-              <option value="owner">{{ t('members.roleOwner') }}</option>
+              <option v-if="props.isOwner" value="owner">{{ t('members.roleOwner') }}</option>
             </select>
             <span v-else :class="['role-badge', `role-${member.role}`]">
               {{ getRoleLabel(member.role) }}
@@ -139,6 +139,7 @@
             <select id="userRole" v-model="inviteRole" class="form-control">
               <option value="member">{{ t('members.roleMember') }}</option>
               <option value="manager">{{ t('members.roleManager') }}</option>
+              <option v-if="props.isOwner" value="owner">{{ t('members.roleOwner') }}</option>
             </select>
           </div>
         </div>
@@ -170,6 +171,7 @@ import type { OrganizationMember } from '../../types'
 interface Props {
   organizationId: string
   canManage: boolean
+  isOwner: boolean
   maxMembers?: number
 }
 
@@ -239,7 +241,7 @@ const isLoading = ref(false)
 const error = ref('')
 const showInviteModal = ref(false)
 const inviteEmail = ref('')
-const inviteRole = ref<'member' | 'manager'>('member')
+const inviteRole = ref<'member' | 'manager' | 'owner'>('member')
 const isInviting = ref(false)
 const inviteError = ref('')
 
