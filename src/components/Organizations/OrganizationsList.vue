@@ -11,6 +11,9 @@
       </button>
     </div>
 
+    <!-- Organization Types Comparison -->
+    <OrganizationTypesComparison v-if="!isLoading && !error && organizations && organizations.length > 0" />
+
     <!-- Loading State -->
     <div v-if="isLoading" class="loading-container">
       <div class="spinner">
@@ -59,6 +62,7 @@
 <script setup lang="ts">
 import { useTranslations } from '../../composables/useTranslations'
 import OrganizationCard from './OrganizationCard.vue'
+import OrganizationTypesComparison from './OrganizationTypesComparison.vue'
 import type { Organization } from '../../types'
 
 interface Props {
