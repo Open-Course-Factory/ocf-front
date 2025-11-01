@@ -124,6 +124,12 @@ const basicRoutes = [
     component: () => import('../components/Pages/Help/AccountBilling.vue'),
     meta: { requiresAuth: false }
   },
+  {
+    path: '/help-public/account/roles-and-permissions',
+    name: 'HelpPublicRolesAndPermissions',
+    component: () => import('../components/Pages/Help/RolesAndPermissions.vue'),
+    meta: { requiresAuth: false }
+  },
   // Route spéciale pour l'affichage du terminal en iframe (sans layout)
   {
     path: '/terminal/:sessionId',
