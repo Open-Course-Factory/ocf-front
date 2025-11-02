@@ -1,9 +1,15 @@
 <template>
   <div id="all-subscriptions" class="all-subscriptions">
-    <h3>
-      <i class="fas fa-layer-group"></i>
-      {{ t('subscriptionPlans.allSubscriptionsTitle') }}
-    </h3>
+    <div class="collapsible-header" @click="isExpanded = !isExpanded">
+      <h3>
+        <i class="fas fa-layer-group"></i>
+        {{ t('subscriptionPlans.advancedDetails') }}
+      </h3>
+      <button class="collapse-toggle" :aria-expanded="isExpanded">
+        <i :class="isExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
+        {{ isExpanded ? t('subscriptionPlans.hideDetails') : t('subscriptionPlans.showDetails') }}
+      </button>
+    </div>
 
     <div v-if="isLoading" class="loading-state">
       <i class="fas fa-spinner fa-spin"></i>
@@ -15,11 +21,11 @@
       <p>{{ t('subscriptionPlans.noSubscriptions') }}</p>
     </div>
 
-    <div v-else class="subscriptions-list">
+    <div v-else-if="isExpanded" class="subscriptions-list">
       <!-- Info banner for stacked subscriptions -->
       <div v-if="subscriptions.length > 1" class="stacked-info-banner">
         <i class="fas fa-info-circle"></i>
-        <p>{{ t('subscriptionPlans.stackedSubscriptionsInfo') }}</p>
+        <p>{{ t('subscriptionPlans.stackedSubscriptionsExplanation') }}</p>
       </div>
 
       <!-- Subscription cards -->
@@ -88,10 +94,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useSubscriptionTranslations } from '../composables/useSubscriptionTranslations'
 
 const { t } = useSubscriptionTranslations()
+
+const isExpanded = ref(false)
 
 interface Props {
   subscriptions: any[]
@@ -171,9 +179,49 @@ function getStatusText(status: string) {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 0 0 20px 0;
+  margin: 0;
   color: var(--color-gray-700);
   font-size: 1.25rem;
+}
+
+.collapsible-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 10px;
+  margin: -10px -10px 20px -10px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.collapsible-header:hover {
+  background-color: var(--color-gray-50);
+}
+
+.collapse-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.collapse-toggle:hover {
+  background: var(--color-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.collapse-toggle i {
+  font-size: 0.75rem;
 }
 
 .loading-state,
