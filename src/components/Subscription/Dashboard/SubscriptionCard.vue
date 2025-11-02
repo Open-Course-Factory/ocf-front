@@ -426,7 +426,7 @@ function formatDate(dateString: string) {
   justify-content: space-between;
   align-items: center;
   padding: var(--spacing-md);
-  background: linear-gradient(135deg, var(--color-gray-50) 0%, var(--color-gray-200) 100%);
+  background: linear-gradient(135deg, rgba(13, 110, 253, 0.08) 0%, var(--color-bg-secondary) 100%);
   border-bottom: 1px solid var(--color-border-light);
 }
 

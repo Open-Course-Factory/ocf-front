@@ -161,7 +161,7 @@ function getStatusText(status: string) {
 
 <style scoped>
 .all-subscriptions {
-  background: white;
+  background: var(--color-bg-primary);
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);

@@ -177,11 +177,11 @@ function formatDuration(minutes: number): string {
 
 <style scoped>
 .active-subscription-source {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   border-radius: 16px;
   padding: 0;
   box-shadow: 0 8px 24px rgba(13, 110, 253, 0.25);
-  color: white;
+  color: var(--color-white);
   overflow: hidden;
 }
 
@@ -210,7 +210,7 @@ function formatDuration(minutes: number): string {
   margin: 0 0 4px 0;
   font-size: 1.5rem;
   font-weight: 700;
-  color: white;
+  color: var(--color-white);
 }
 
 .header-text p {
@@ -241,7 +241,7 @@ function formatDuration(minutes: number): string {
   margin: 0;
   font-size: 1.375rem;
   font-weight: 600;
-  color: white;
+  color: var(--color-white);
 }
 
 .type-badge {
@@ -255,7 +255,7 @@ function formatDuration(minutes: number): string {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   background: rgba(255, 255, 255, 0.2);
-  color: white;
+  color: var(--color-white);
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
@@ -289,7 +289,7 @@ function formatDuration(minutes: number): string {
 
 .detail-value {
   font-weight: 600;
-  color: white;
+  color: var(--color-white);
 }
 
 .priority-context {
@@ -327,7 +327,7 @@ function formatDuration(minutes: number): string {
   border-radius: 10px;
   font-size: 0.875rem;
   font-weight: 500;
-  color: white;
+  color: var(--color-white);
   backdrop-filter: blur(5px);
 }
 
@@ -360,7 +360,7 @@ function formatDuration(minutes: number): string {
 }
 
 .view-all-link {
-  color: white;
+  color: var(--color-white);
   font-weight: 600;
   text-decoration: underline;
   margin-left: 6px;
