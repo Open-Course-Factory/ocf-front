@@ -40,6 +40,43 @@ export const useBaseStore = () => {
                 invalidPage: 'Please enter a valid page number',
                 pageNotExist: 'doesn\'t exist. Maximum page is',
                 go: 'Go'
+            },
+            emptyStates: {
+                terminals: {
+                    title: 'No terminals yet',
+                    description: 'Create your first terminal to get started with remote access. Terminals provide secure SSH access to your virtual machines.',
+                    action: 'Create Terminal'
+                },
+                groups: {
+                    title: 'No groups yet',
+                    description: 'Groups help you organize and share resources with team members. Create your first group to start collaborating.',
+                    action: 'Create Group'
+                },
+                sshKeys: {
+                    title: 'No SSH keys yet',
+                    description: 'SSH keys provide secure authentication for your terminals. Add an SSH key to enhance security.',
+                    action: 'Add SSH Key'
+                },
+                themes: {
+                    title: 'No themes yet',
+                    description: 'Customize your terminal appearance with themes. Create your first theme to personalize your experience.',
+                    action: 'Create Theme'
+                },
+                invoices: {
+                    title: 'No invoices yet',
+                    description: 'Your invoices will appear here once you have billing activity. Invoices are generated automatically for your subscriptions.',
+                    action: 'View Plans'
+                },
+                paymentMethods: {
+                    title: 'No payment methods yet',
+                    description: 'Add a payment method to subscribe to plans and manage your billing. Your payment information is securely stored with Stripe.',
+                    action: 'Add Payment Method'
+                },
+                default: {
+                    title: 'No items yet',
+                    description: 'Get started by creating your first item.',
+                    action: 'Create Item'
+                }
             }
         },
         fr: {
@@ -75,6 +112,43 @@ export const useBaseStore = () => {
                 invalidPage: 'Veuillez saisir un numéro de page valide',
                 pageNotExist: 'n\'existe pas. La page maximum est',
                 go: 'Aller'
+            },
+            emptyStates: {
+                terminals: {
+                    title: 'Aucun terminal pour le moment',
+                    description: 'Créez votre premier terminal pour commencer avec l\'accès à distance. Les terminaux fournissent un accès SSH sécurisé à vos machines virtuelles.',
+                    action: 'Créer un terminal'
+                },
+                groups: {
+                    title: 'Aucun groupe pour le moment',
+                    description: 'Les groupes vous aident à organiser et partager des ressources avec les membres de l\'équipe. Créez votre premier groupe pour commencer à collaborer.',
+                    action: 'Créer un groupe'
+                },
+                sshKeys: {
+                    title: 'Aucune clé SSH pour le moment',
+                    description: 'Les clés SSH fournissent une authentification sécurisée pour vos terminaux. Ajoutez une clé SSH pour renforcer la sécurité.',
+                    action: 'Ajouter une clé SSH'
+                },
+                themes: {
+                    title: 'Aucun thème pour le moment',
+                    description: 'Personnalisez l\'apparence de votre terminal avec des thèmes. Créez votre premier thème pour personnaliser votre expérience.',
+                    action: 'Créer un thème'
+                },
+                invoices: {
+                    title: 'Aucune facture pour le moment',
+                    description: 'Vos factures apparaîtront ici une fois que vous aurez une activité de facturation. Les factures sont générées automatiquement pour vos abonnements.',
+                    action: 'Voir les plans'
+                },
+                paymentMethods: {
+                    title: 'Aucun moyen de paiement pour le moment',
+                    description: 'Ajoutez un moyen de paiement pour souscrire à des plans et gérer votre facturation. Vos informations de paiement sont stockées de manière sécurisée avec Stripe.',
+                    action: 'Ajouter un moyen de paiement'
+                },
+                default: {
+                    title: 'Aucun élément pour le moment',
+                    description: 'Commencez par créer votre premier élément.',
+                    action: 'Créer un élément'
+                }
             }
         }
     });

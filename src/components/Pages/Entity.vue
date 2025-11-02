@@ -223,10 +223,14 @@
         </p>
       </div>
       <div v-else-if="totalItems === 0 && !isLoadingEntities">
-        <p class="empty-state">
-          <i class="fas fa-inbox"></i>
-          {{ t('empty') }}
-        </p>
+        <EmptyState
+          :icon-class="emptyStateConfig.iconClass"
+          :title="t(emptyStateConfig.titleKey)"
+          :description="t(emptyStateConfig.descriptionKey)"
+          :action-text="t(emptyStateConfig.actionTextKey)"
+          :action-icon="emptyStateConfig.actionIcon"
+          @action="openModal(null)"
+        />
       </div>
     </div>
 
@@ -249,6 +253,7 @@ import { ref, onBeforeMount, computed, reactive, watch } from 'vue';
 import EntityModal from '../Modals/EntityModal.vue';
 import EntityCard from '../Cards/EntityCard.vue';
 import EntityListSkeleton from '../Generic/EntityListSkeleton.vue';
+import EmptyState from '../Common/EmptyState.vue';
 import { useI18n } from 'vue-i18n';
 import { Store } from 'pinia';
 import { getTranslationKey } from '../../utils';
@@ -1075,6 +1080,68 @@ function openModal(entity: any) {
 }
 
 const translationKey = computed(() => getTranslationKey(props.entityName));
+
+// Empty state configuration for different entity types
+const emptyStateConfig = computed(() => {
+  const configs: Record<string, {
+    iconClass: string;
+    titleKey: string;
+    descriptionKey: string;
+    actionTextKey: string;
+    actionIcon: string;
+  }> = {
+    terminals: {
+      iconClass: 'fas fa-terminal',
+      titleKey: 'emptyStates.terminals.title',
+      descriptionKey: 'emptyStates.terminals.description',
+      actionTextKey: 'emptyStates.terminals.action',
+      actionIcon: 'fas fa-plus'
+    },
+    classGroups: {
+      iconClass: 'fas fa-users',
+      titleKey: 'emptyStates.groups.title',
+      descriptionKey: 'emptyStates.groups.description',
+      actionTextKey: 'emptyStates.groups.action',
+      actionIcon: 'fas fa-plus'
+    },
+    sshKeys: {
+      iconClass: 'fas fa-key',
+      titleKey: 'emptyStates.sshKeys.title',
+      descriptionKey: 'emptyStates.sshKeys.description',
+      actionTextKey: 'emptyStates.sshKeys.action',
+      actionIcon: 'fas fa-plus'
+    },
+    themes: {
+      iconClass: 'fas fa-palette',
+      titleKey: 'emptyStates.themes.title',
+      descriptionKey: 'emptyStates.themes.description',
+      actionTextKey: 'emptyStates.themes.action',
+      actionIcon: 'fas fa-plus'
+    },
+    invoices: {
+      iconClass: 'fas fa-file-invoice',
+      titleKey: 'emptyStates.invoices.title',
+      descriptionKey: 'emptyStates.invoices.description',
+      actionTextKey: 'emptyStates.invoices.action',
+      actionIcon: 'fas fa-shopping-cart'
+    },
+    paymentMethods: {
+      iconClass: 'fas fa-credit-card',
+      titleKey: 'emptyStates.paymentMethods.title',
+      descriptionKey: 'emptyStates.paymentMethods.description',
+      actionTextKey: 'emptyStates.paymentMethods.action',
+      actionIcon: 'fas fa-plus'
+    }
+  };
+
+  return configs[props.entityName] || {
+    iconClass: 'fas fa-inbox',
+    titleKey: 'emptyStates.default.title',
+    descriptionKey: 'emptyStates.default.description',
+    actionTextKey: 'add',
+    actionIcon: 'fas fa-plus'
+  };
+});
 </script>
 
 <style scoped>
