@@ -22,6 +22,7 @@
 import { defineStore } from "pinia"
 import { tokenService } from "../services/auth"
 import router from "../router/index"
+import axios from "axios"
 
 export const useCurrentUserStore = defineStore('currentUser', {
     state() {
@@ -29,7 +30,8 @@ export const useCurrentUserStore = defineStore('currentUser', {
             userName: "",
             userDisplayName: "",
             userId: "",
-            userRoles: [],
+            userRoles: [] as string[],
+            permissions: [] as string[], // User permissions from backend
             _isAuthenticated: false, // Internal reactive flag
         }
     },
@@ -40,6 +42,30 @@ export const useCurrentUserStore = defineStore('currentUser', {
         },
         secretToken(): string {
             return tokenService.getAccessToken() || "";
+        },
+        /**
+         * Check if user has a specific permission
+         */
+        hasPermission(): (permission: string) => boolean {
+            return (permission: string) => {
+                return this.permissions.includes(permission);
+            }
+        },
+        /**
+         * Check if user has any of the specified permissions
+         */
+        hasAnyPermission(): (permissions: string[]) => boolean {
+            return (permissions: string[]) => {
+                return permissions.some(p => this.permissions.includes(p));
+            }
+        },
+        /**
+         * Check if user has all specified permissions
+         */
+        hasAllPermissions(): (permissions: string[]) => boolean {
+            return (permissions: string[]) => {
+                return permissions.every(p => this.permissions.includes(p));
+            }
         }
     },
     actions: {
@@ -75,6 +101,7 @@ export const useCurrentUserStore = defineStore('currentUser', {
             this.userDisplayName = "";
             this.userId = "";
             this.userRoles = [];
+            this.permissions = []; // Clear permissions
             tokenService.clearTokens();
         },
 
@@ -83,6 +110,102 @@ export const useCurrentUserStore = defineStore('currentUser', {
             const hasValidToken = tokenService.hasValidToken();
             this._isAuthenticated = hasValidToken;
             console.log('🔐 initializeAuth: hasValidToken=', hasValidToken);
+        },
+
+        /**
+         * Generic HTTP method to action mapping
+         * Converts resource-based permissions to action-based permissions
+         */
+        transformResourcePermissions(backendData: any): string[] {
+            const permissions = new Set<string>();
+            const resourcePermissions = backendData.permissions || [];
+
+            console.log('🔐 Transforming', resourcePermissions.length, 'resource permissions...');
+
+            resourcePermissions.forEach((perm: any) => {
+                const resource = perm.resource || '';
+                const methods = perm.methods || [];
+
+                // Extract resource name from path
+                // Examples:
+                //   "/api/v1/class-groups/*" → "groups"
+                //   "/api/v1/terminals/*" → "terminals"
+                //   "/api/v1/courses/*" → "courses"
+                const pathParts = resource.split('/').filter((p: string) => p && p !== 'api' && p !== 'v1' && p !== '*');
+                if (pathParts.length === 0) return;
+
+                const resourceName = pathParts[pathParts.length - 1]
+                    .replace('class-', '')  // "class-groups" → "groups"
+                    .replace('user-', '')   // "user-terminal-keys" → "terminal-keys"
+                    .replace(/-/g, '_');    // "terminal-keys" → "terminal_keys"
+
+                // Map HTTP methods to CRUD actions
+                if (methods.includes('GET')) {
+                    permissions.add(`view_${resourceName}`);
+                }
+                if (methods.includes('POST')) {
+                    permissions.add(`create_${resourceName}`);
+                }
+                if (methods.includes('PATCH') || methods.includes('PUT')) {
+                    permissions.add(`update_${resourceName}`);
+                    permissions.add(`manage_${resourceName}`);
+                }
+                if (methods.includes('DELETE')) {
+                    permissions.add(`delete_${resourceName}`);
+                }
+            });
+
+            const result = Array.from(permissions);
+            console.log('🔐 Generated', result.length, 'action permissions:', result.slice(0, 10), '...');
+            return result;
+        },
+
+        /**
+         * Load user permissions from backend
+         * This should be called after authentication
+         */
+        async loadPermissions() {
+            try {
+                console.log('🔐 Loading user permissions from backend...');
+                console.log('🔐 Request URL: /auth/permissions');
+                console.log('🔐 Current user:', {
+                    userId: this.userId,
+                    userName: this.userName,
+                    userRoles: this.userRoles
+                });
+
+                const response = await axios.get('/auth/permissions');
+
+                console.log('🔐 Backend response status:', response.status);
+                console.log('🔐 Backend response data (raw):', JSON.stringify(response.data, null, 2));
+
+                // Transform resource permissions to action permissions
+                this.permissions = this.transformResourcePermissions(response.data);
+
+                console.log('✅ User permissions loaded (transformed):', this.permissions);
+                console.log('✅ Permissions count:', this.permissions.length);
+                console.log('✅ Has view_groups permission:', this.permissions.includes('view_groups'));
+
+                return this.permissions;
+            } catch (error: any) {
+                console.error('❌ Failed to load permissions:', error);
+                console.error('❌ Error details:', {
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    data: error.response?.data,
+                    message: error.message
+                });
+
+                // If endpoint doesn't exist yet, silently continue with empty permissions
+                if (error.response?.status === 404) {
+                    console.warn('⚠️ Permissions endpoint not available yet, using empty permissions');
+                    this.permissions = [];
+                } else {
+                    // For other errors, rethrow
+                    throw error;
+                }
+                return [];
+            }
         },
 
         startTokenExpiryCheck() {

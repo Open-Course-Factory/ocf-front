@@ -71,6 +71,7 @@ import { storeToRefs } from 'pinia';
 import { useRoute } from 'vue-router';
 import { useHelpTranslations } from '../../composables/useHelpTranslations';
 import { useFeatureFlags } from '../../composables/useFeatureFlags';
+import { usePermissions } from '../../composables/usePermissions';
 
 // Props
 const props = defineProps<{
@@ -106,6 +107,9 @@ const route = useRoute();
 
 // Feature flags
 const { createReactiveFlag, waitForInitialization } = useFeatureFlags();
+
+// Permissions
+const { hasPermission } = usePermissions();
 
 // Create reactive computed values for each flag we need to check
 const courseConceptionEnabled = createReactiveFlag('course_conception')
@@ -409,6 +413,23 @@ const menuCategories = computed((): MenuCategory[] => [
   }
 ]);
 
+// Custom visibility check for groups menu
+// Now powered by backend-calculated permissions
+// Backend determines access based on: role + org ownership + group membership
+const shouldShowGroupsMenu = computed(() => {
+  const result = hasPermission('view_groups')
+
+  console.log('🔐 Groups menu visibility check:', {
+    hasViewGroupsPermission: result,
+    allPermissions: currentUser.permissions,
+    permissionsCount: currentUser.permissions.length,
+    userId: currentUser.userId,
+    userRoles: currentUser.userRoles
+  })
+
+  return result
+})
+
 // Catégories filtrées selon le rôle de l'utilisateur et les feature flags
 const filteredCategories = computed(() => {
   const userRole = currentUser.userRoles[0];
@@ -417,6 +438,10 @@ const filteredCategories = computed(() => {
       // Hide organizations menu for personal organizations
       if (category.key === 'organizations' && isPersonalOrganization.value) {
         return false
+      }
+      // Custom visibility logic for groups menu
+      if (category.key === 'groups') {
+        return shouldShowGroupsMenu.value
       }
       // Check role access
       if (!category.allowedRoles.includes(userRole)) {
@@ -541,6 +566,7 @@ onMounted(async () => {
   featureFlagsReady.value = true;
 
   await loadHelpTranslations();
+
   openActiveCategoryOnMount();
   document.addEventListener('click', handleOutsideClick);
 });

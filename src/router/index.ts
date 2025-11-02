@@ -168,10 +168,10 @@ const basicRoutes = [
       { path: 'terminal-sessions', name: 'TerminalSessions', component: TerminalMySessions, meta: { requiresAuth: true } },
       { path: 'terminal-shared', redirect: '/terminal-sessions' }, // Redirect old route to unified sessions page
       { path: 'user-terminal-keys', name: 'UserTerminalKeys', component: UserTerminalKeys, meta: { requiresAuth: true, isSettings: true } },
-      { path: 'class-groups', name: 'ClassGroups', component: ClassGroups, meta: { requiresAuth: true, requiresFeature: 'class_groups' } },
-      { path: 'class-groups-hierarchy', name: 'GroupHierarchyEditor', component: GroupHierarchyEditor, meta: { requiresAuth: true, requiresFeature: 'class_groups' } },
-      { path: 'class-groups/:id', name: 'GroupDetail', component: GroupDetail, meta: { requiresAuth: true, requiresFeature: 'class_groups' } },
-      { path: 'group-members', name: 'GroupMembers', component: GroupMembers, meta: { requiresAuth: true, requiresFeature: 'class_groups' } },
+      { path: 'class-groups', name: 'ClassGroups', component: ClassGroups, meta: { requiresAuth: true, requiredPermissions: ['view_groups'] } },
+      { path: 'class-groups-hierarchy', name: 'GroupHierarchyEditor', component: GroupHierarchyEditor, meta: { requiresAuth: true, requiredPermissions: ['view_groups'] } },
+      { path: 'class-groups/:id', name: 'GroupDetail', component: GroupDetail, meta: { requiresAuth: true, requiredPermissions: ['view_groups'] } },
+      { path: 'group-members', name: 'GroupMembers', component: GroupMembers, meta: { requiresAuth: true, requiredPermissions: ['view_groups'] } },
 
       // Organization routes
       { path: 'organizations', name: 'Organizations', component: Organizations, meta: { requiresAuth: true } },
@@ -465,6 +465,47 @@ router.beforeEach(async (to, from, next) => {
       });
       return;
     }
+  }
+
+  // Check permissions (if route requires specific permissions)
+  const requiredPermissions = to.meta.requiredPermissions as string[] | undefined;
+  if (requiredPermissions && requiredPermissions.length > 0) {
+    console.log('🔐 Route permission check:', {
+      route: to.path,
+      requiredPermissions,
+      userPermissions: currentUserStore.permissions,
+      permissionsCount: currentUserStore.permissions.length,
+      userId: currentUserStore.userId,
+      userRoles: currentUserStore.userRoles
+    });
+
+    const hasAnyPermission = requiredPermissions.some(permission =>
+      currentUserStore.permissions.includes(permission)
+    );
+
+    console.log('🔐 Permission check result:', {
+      hasAccess: hasAnyPermission,
+      requiredPermissions,
+      userPermissions: currentUserStore.permissions
+    });
+
+    if (!hasAnyPermission) {
+      console.warn(`❌ Access denied to ${to.path}: Missing required permissions`, requiredPermissions);
+      console.warn(`❌ User permissions:`, currentUserStore.permissions);
+      console.warn(`❌ User info:`, {
+        userId: currentUserStore.userId,
+        userName: currentUserStore.userName,
+        roles: currentUserStore.userRoles
+      });
+      // Redirect to dashboard or home
+      next({
+        name: 'TerminalMySessions', // Default page for authenticated users
+        query: { error: 'insufficient_permissions' }
+      });
+      return;
+    }
+
+    console.log('✅ Permission check passed for', to.path);
   }
 
   next();

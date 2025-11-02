@@ -132,6 +132,11 @@ async function redirect() {
       await waitForInitialization()
       console.log('🏴 Feature flags fully initialized, proceeding with redirect')
 
+      // Load user permissions
+      console.log('🔐 Loading user permissions after login...')
+      await currentUserStore.loadPermissions()
+      console.log('🔐 User permissions loaded successfully after login')
+
       // Load user settings
       const settings = await settingsStore.loadSettings();
 

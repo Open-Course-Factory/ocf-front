@@ -235,11 +235,20 @@ async function initializeApp() {
         console.warn('⚠️ Feature flags initialization failed, using defaults:', err?.message || err)
     }
 
-    // Step 5: Mount the app
+    // Step 5: Load user permissions if authenticated
+    if (userStore.isAuthenticated) {
+        try {
+            await userStore.loadPermissions()
+        } catch (err: any) {
+            console.warn('⚠️ Permissions loading failed:', err?.message || err)
+        }
+    }
+
+    // Step 6: Mount the app
     app.mount('#app')
     console.log('✅ App mounted successfully')
 
-    // Step 6: Start token expiry monitoring if authenticated
+    // Step 7: Start token expiry monitoring if authenticated
     if (userStore.isAuthenticated) {
         userStore.startTokenExpiryCheck()
         console.log('🏴 Token expiry monitoring started')
