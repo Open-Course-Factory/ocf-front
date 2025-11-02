@@ -92,11 +92,75 @@
           <span class="summary-label">{{ t('pricingCalculator.averagePerLicense') }}</span>
           <span class="summary-value">{{ formatCurrency(preview.average_per_license) }}</span>
         </div>
+
+        <!-- Discount Percentage Badge -->
+        <div v-if="discountPercentage > 0" class="discount-badge">
+          <i class="fas fa-tag"></i>
+          {{ discountPercentage }}% {{ t('pricingCalculator.discount') }}
+        </div>
+
+        <!-- Savings vs Individual -->
         <div v-if="preview.savings_vs_individual > 0" class="savings-badge">
           <i class="fas fa-piggy-bank"></i>
           {{ t('pricingCalculator.save') }} {{ formatCents(preview.savings_vs_individual) }}
           {{ t('pricingCalculator.vsIndividual') }}
         </div>
+      </div>
+
+      <!-- Comparison Table -->
+      <div v-if="preview.savings_vs_individual > 0" class="comparison-table">
+        <h4 class="comparison-title">{{ t('pricingCalculator.comparisonTitle') }}</h4>
+        <table class="price-comparison">
+          <thead>
+            <tr>
+              <th>{{ t('pricingCalculator.purchaseType') }}</th>
+              <th>{{ t('pricingCalculator.pricePerLicense') }}</th>
+              <th>{{ t('pricingCalculator.totalCost') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="individual-row">
+              <td>{{ t('pricingCalculator.individualPurchase', { count: localQuantity }) }}</td>
+              <td>{{ formatCents(preview.individual_unit_price || 0) }}</td>
+              <td>{{ formatCents((preview.total_monthly_cost || 0) + (preview.savings_vs_individual || 0)) }}</td>
+            </tr>
+            <tr class="bulk-row">
+              <td>
+                <strong>{{ t('pricingCalculator.bulkPurchase', { count: localQuantity }) }}</strong>
+                <span class="recommended-badge">{{ t('pricingCalculator.recommended') }}</span>
+              </td>
+              <td><strong>{{ formatCurrency(preview.average_per_license) }}</strong></td>
+              <td>
+                <strong>{{ formatCents(preview.total_monthly_cost) }}</strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="comparison-savings">
+          <i class="fas fa-check-circle"></i>
+          {{ t('pricingCalculator.youSave') }} <strong>{{ formatCents(preview.savings_vs_individual) }}/{{ t('pricingCalculator.month') }}</strong> {{ t('pricingCalculator.withBulkPricing') }}
+        </div>
+      </div>
+
+      <!-- Use Case -->
+      <div v-if="localQuantity >= 15" class="use-case-section">
+        <div class="use-case-card">
+          <div class="use-case-icon">
+            <i class="fas fa-graduation-cap"></i>
+          </div>
+          <div class="use-case-content">
+            <h5 class="use-case-title">{{ t('pricingCalculator.useCaseTitle') }}</h5>
+            <p class="use-case-text">{{ t('pricingCalculator.useCaseDescription') }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Help Link -->
+      <div class="help-link-section">
+        <a href="/help/bulk-licensing" class="help-link">
+          <i class="fas fa-question-circle"></i>
+          {{ t('pricingCalculator.learnMore') }}
+        </a>
       </div>
 
       <div v-if="showPurchaseButton" class="action-section">
@@ -110,7 +174,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useSubscriptionBatchesStore } from '../../stores/subscriptionBatches'
 import type { PricingBreakdown } from '../../types/entities'
@@ -142,7 +206,20 @@ const { t } = useTranslations({
       averagePerLicense: 'Average per License',
       save: 'Save',
       vsIndividual: 'vs individual pricing',
-      purchaseLicenses: 'Purchase {count} Licenses'
+      purchaseLicenses: 'Purchase {count} Licenses',
+      discount: 'OFF',
+      comparisonTitle: 'Price Comparison',
+      purchaseType: 'Purchase Type',
+      pricePerLicense: 'Price per License',
+      totalCost: 'Total Monthly Cost',
+      individualPurchase: '{count} individual licenses',
+      bulkPurchase: '{count} licenses (bulk)',
+      recommended: 'Recommended',
+      youSave: 'You save',
+      withBulkPricing: 'with bulk pricing',
+      useCaseTitle: 'Perfect for classrooms',
+      useCaseDescription: 'Many educators use bulk licensing to provide terminals to all their students at a discounted rate.',
+      learnMore: 'Learn more about bulk licensing'
     }
   },
   fr: {
@@ -158,7 +235,20 @@ const { t } = useTranslations({
       averagePerLicense: 'Moyenne par Licence',
       save: 'Économisez',
       vsIndividual: 'vs prix individuel',
-      purchaseLicenses: 'Acheter {count} Licences'
+      purchaseLicenses: 'Acheter {count} Licences',
+      discount: 'DE RÉDUCTION',
+      comparisonTitle: 'Comparaison des Prix',
+      purchaseType: 'Type d\'Achat',
+      pricePerLicense: 'Prix par Licence',
+      totalCost: 'Coût Mensuel Total',
+      individualPurchase: '{count} licences individuelles',
+      bulkPurchase: '{count} licences (groupé)',
+      recommended: 'Recommandé',
+      youSave: 'Vous économisez',
+      withBulkPricing: 'avec la tarification groupée',
+      useCaseTitle: 'Parfait pour les salles de classe',
+      useCaseDescription: 'De nombreux éducateurs utilisent les licences groupées pour fournir des terminaux à tous leurs étudiants à un tarif réduit.',
+      learnMore: 'En savoir plus sur les licences groupées'
     }
   }
 })
@@ -169,6 +259,16 @@ const localQuantity = ref(props.initialQuantity || props.minQuantity || 10)
 const preview = ref<PricingBreakdown | null>(null)
 const isLoading = ref(false)
 const error = ref<string | null>(null)
+
+// Calculate discount percentage
+const discountPercentage = computed(() => {
+  if (!preview.value || !preview.value.savings_vs_individual || preview.value.savings_vs_individual <= 0) {
+    return 0
+  }
+  const totalWithoutDiscount = preview.value.total_monthly_cost + preview.value.savings_vs_individual
+  const percentage = (preview.value.savings_vs_individual / totalWithoutDiscount) * 100
+  return Math.round(percentage)
+})
 
 // Debounce timer for quantity changes
 let debounceTimer: NodeJS.Timeout | null = null
@@ -529,6 +629,177 @@ onMounted(() => {
   font-size: var(--font-size-base);
 }
 
+/* Discount Badge */
+.discount-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  color: var(--color-white);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  box-shadow: var(--shadow-md);
+  margin-top: var(--spacing-md);
+}
+
+.discount-badge i {
+  font-size: var(--font-size-base);
+}
+
+/* Comparison Table */
+.comparison-table {
+  margin-top: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--color-border-light);
+}
+
+.comparison-title {
+  margin: 0 0 var(--spacing-md) 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.price-comparison {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: var(--spacing-md);
+}
+
+.price-comparison th {
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-align: left;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  border-bottom: 2px solid var(--color-border-medium);
+}
+
+.price-comparison td {
+  padding: var(--spacing-md);
+  font-size: var(--font-size-base);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.individual-row {
+  background: var(--color-bg-primary);
+}
+
+.bulk-row {
+  background: linear-gradient(135deg, rgba(var(--color-primary-rgb), 0.05) 0%, rgba(var(--color-primary-rgb), 0.1) 100%);
+  color: var(--color-text-primary);
+}
+
+.recommended-badge {
+  display: inline-block;
+  margin-left: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-success);
+  color: var(--color-white);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+}
+
+.comparison-savings {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: linear-gradient(135deg, rgba(var(--color-success-rgb), 0.1) 0%, rgba(var(--color-success-rgb), 0.15) 100%);
+  border-radius: var(--border-radius-sm);
+  color: var(--color-success-dark);
+  font-size: var(--font-size-base);
+  border: 1px solid rgba(var(--color-success-rgb), 0.3);
+}
+
+.comparison-savings i {
+  font-size: var(--font-size-lg);
+  color: var(--color-success);
+}
+
+.comparison-savings strong {
+  color: var(--color-success-dark);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Use Case Section */
+.use-case-section {
+  margin-top: var(--spacing-xl);
+}
+
+.use-case-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  background: linear-gradient(135deg, rgba(var(--color-info-rgb), 0.05) 0%, rgba(var(--color-info-rgb), 0.1) 100%);
+  border-radius: var(--border-radius-md);
+  border-left: 4px solid var(--color-info);
+}
+
+.use-case-icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-info);
+  color: var(--color-white);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-xl);
+}
+
+.use-case-content {
+  flex: 1;
+}
+
+.use-case-title {
+  margin: 0 0 var(--spacing-xs) 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.use-case-text {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+/* Help Link Section */
+.help-link-section {
+  margin-top: var(--spacing-lg);
+  text-align: center;
+}
+
+.help-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  transition: color var(--transition-fast);
+}
+
+.help-link:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}
+
+.help-link i {
+  font-size: var(--font-size-base);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .pricing-calculator {
@@ -551,6 +822,25 @@ onMounted(() => {
 
   .quantity-number {
     width: 100%;
+  }
+
+  .price-comparison {
+    font-size: var(--font-size-sm);
+  }
+
+  .price-comparison th,
+  .price-comparison td {
+    padding: var(--spacing-sm);
+  }
+
+  .use-case-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .recommended-badge {
+    display: block;
+    margin: var(--spacing-xs) 0 0 0;
   }
 }
 </style>
