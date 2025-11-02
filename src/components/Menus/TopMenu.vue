@@ -65,6 +65,28 @@
           <div class="dropdown-user-header">
             <div class="user-name">@{{ currentUser.userName }}</div>
           </div>
+
+          <!-- Organization Section - Always show so users can discover and upgrade -->
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-section">
+            <div class="dropdown-section-title">{{ t('topMenu.organization') }}</div>
+            <div v-if="currentOrganization" class="current-organization-info">
+              <div class="org-icon" :class="currentOrganization.organization_type === 'personal' ? 'org-icon-personal' : 'org-icon-team'">
+                <i :class="currentOrganization.organization_type === 'personal' ? 'fas fa-user' : 'fas fa-building'"></i>
+              </div>
+              <div class="org-details">
+                <div class="org-name">{{ currentOrganization.display_name || currentOrganization.name }}</div>
+                <div class="org-type">
+                  {{ currentOrganization.organization_type === 'personal' ? t('topMenu.personalOrg') : t('topMenu.teamOrg') }}
+                </div>
+              </div>
+            </div>
+            <router-link to="/organizations" class="dropdown-item dropdown-item-highlighted" @click="closeUserMenu">
+              <i class="fas fa-building"></i>
+              <span>{{ hasTeamOrganizations ? t('topMenu.manageOrganizations') : t('topMenu.learnAboutOrganizations') }}</span>
+            </router-link>
+          </div>
+
           <div class="dropdown-divider"></div>
           <div class="dropdown-section">
             <div class="dropdown-section-title">{{ t('topMenu.account') }}</div>
@@ -101,11 +123,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTranslations } from '../../composables/useTranslations';
 import { useCurrentUserStore } from '../../stores/currentUser.ts';
 import { useUserSettingsStore } from '../../stores/userSettings.ts';
+import { useOrganizationsStore } from '../../stores/organizations.ts';
 import { useLocale } from '../../composables/useLocale';
 import { useFeatureFlags } from '../../composables/useFeatureFlags';
 import { useAdminViewMode } from '../../composables/useAdminViewMode';
@@ -123,7 +146,12 @@ const { t } = useTranslations({
       adminView: 'Admin',
       userView: 'User',
       viewingAsAdmin: 'Viewing as admin (all data)',
-      viewingAsUser: 'Viewing as standard user (filtered data)'
+      viewingAsUser: 'Viewing as standard user (filtered data)',
+      organization: 'Organization',
+      personalOrg: 'Personal',
+      teamOrg: 'Team',
+      manageOrganizations: 'Manage Organizations',
+      learnAboutOrganizations: 'Learn About Organizations'
     }
   },
   fr: {
@@ -138,7 +166,12 @@ const { t } = useTranslations({
       adminView: 'Admin',
       userView: 'Utilisateur',
       viewingAsAdmin: 'Vue administrateur (toutes les données)',
-      viewingAsUser: 'Vue utilisateur standard (données filtrées)'
+      viewingAsUser: 'Vue utilisateur standard (données filtrées)',
+      organization: 'Organisation',
+      personalOrg: 'Personnel',
+      teamOrg: 'Équipe',
+      manageOrganizations: 'Gérer les organisations',
+      learnAboutOrganizations: 'En savoir plus sur les organisations'
     }
   }
 })
@@ -146,9 +179,17 @@ const { t } = useTranslations({
 const router = useRouter();
 const currentUser = useCurrentUserStore();
 const settingsStore = useUserSettingsStore();
+const organizationsStore = useOrganizationsStore();
 const { currentLocale, supportedLocales, setLocale, getLocaleInfo } = useLocale();
 const { isEnabled } = useFeatureFlags();
 const { isAdmin, viewAsStandardUser, toggleViewMode: toggleViewModeComposable, initViewMode } = useAdminViewMode();
+
+// Organization computed properties
+const currentOrganization = computed(() => organizationsStore.currentOrganization);
+const hasTeamOrganizations = computed(() =>
+  organizationsStore.businessOrganizations.length > 0 ||
+  organizationsStore.organizations.length > 1
+);
 
 const emit = defineEmits(['toggle-menu']);
 
@@ -228,11 +269,17 @@ function handleClickOutside(event: Event) {
 }
 
 // Register event listeners
-onMounted(() => {
+onMounted(async () => {
   // Add click outside listener
   document.addEventListener('click', handleClickOutside);
   // Initialize admin view mode from localStorage
   initViewMode();
+  // Load organizations for the switcher
+  try {
+    await organizationsStore.loadOrganizations();
+  } catch (error) {
+    console.error('Failed to load organizations:', error);
+  }
 });
 
 onUnmounted(() => {
@@ -545,5 +592,72 @@ onUnmounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Organization Section Styles */
+.current-organization-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
+  margin: 0 var(--spacing-lg) var(--spacing-sm) var(--spacing-lg);
+}
+
+.org-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--border-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.org-icon-personal {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(96, 165, 250, 0.2) 100%);
+  color: var(--color-primary);
+}
+
+.org-icon-team {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(52, 211, 153, 0.2) 100%);
+  color: var(--color-success);
+}
+
+.org-icon i {
+  font-size: var(--font-size-base);
+}
+
+.org-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.org-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.org-type {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+.dropdown-item-highlighted {
+  background-color: rgba(59, 130, 246, 0.05);
+  border-left: 3px solid var(--color-primary);
+}
+
+.dropdown-item-highlighted:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-left-color: var(--color-primary-hover);
 }
 </style>

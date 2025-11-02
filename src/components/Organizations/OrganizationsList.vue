@@ -11,8 +11,8 @@
       </button>
     </div>
 
-    <!-- Organization Types Comparison -->
-    <OrganizationTypesComparison v-if="!isLoading && !error && organizations && organizations.length > 0" />
+    <!-- Organization Types Comparison - Always show to help users understand options -->
+    <OrganizationTypesComparison v-if="!isLoading && !error" />
 
     <!-- Loading State -->
     <div v-if="isLoading" class="loading-container">
