@@ -125,6 +125,9 @@ export const useCoursesStore = defineStore('courses', () => {
     base.includeParams.children = ['chapters.sections.pages']
     base.includeParams.parents = [] // Courses have no parent entities
 
+    // Configure detail view route
+    base.detailRouteName.value = 'CourseDetails'
+
     // Version management state
     const courseVersions = ref<Course[]>([])
     const isLoadingVersions = ref(false)

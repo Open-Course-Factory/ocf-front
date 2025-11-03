@@ -205,6 +205,10 @@ export const useBaseStore = () => {
         parents: [] as string[],  // Parent entities to include (e.g., ['courses', 'chapters'])
     })
 
+    // Detail view configuration (optional)
+    // Set this to enable "View Details" button with routing to detail page
+    const detailRouteName = ref<string | undefined>(undefined)
+
     // Système de hooks pour les actions spécifiques aux entités
     const hooks = {
         afterCreate: null as ((entity: any, originalData: any) => Promise<void>) | null,
@@ -531,6 +535,7 @@ export const useBaseStore = () => {
         // Configuration options
         preventLastObjectDeletion,
         includeParams,
+        detailRouteName,
 
         // Hook methods
         setAfterCreateHook,

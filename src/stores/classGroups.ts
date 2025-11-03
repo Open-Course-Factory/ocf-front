@@ -295,6 +295,9 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
         }
     }
 
+    // Configure detail view route
+    base.detailRouteName.value = 'GroupDetails'
+
     return {
         ...base,
         fieldList,

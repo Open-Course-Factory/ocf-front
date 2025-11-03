@@ -402,37 +402,16 @@ const shouldPreventLastObjectDeletion = computed(() => {
   return (props.entityStore as any).preventLastObjectDeletion?.value || false;
 });
 
-// Check if current entity is groups (for click-to-detail navigation)
-const isGroupEntity = computed(() => {
-  return props.entityName === 'class-groups';
-});
-
-const isCourseEntity = computed(() => {
-  return props.entityName === 'courses';
-});
-
-const isChapterEntity = computed(() => {
-  return props.entityName === 'chapters';
-});
-
-const isSectionEntity = computed(() => {
-  return props.entityName === 'sections';
-});
-
+// Check if entity has a detail view configured (generic)
 const isClickableEntity = computed(() => {
-  return isGroupEntity.value || isCourseEntity.value || isChapterEntity.value || isSectionEntity.value;
+  return !!props.entityStore.detailRouteName?.value;
 });
 
-// Handle entity click for navigation
+// Handle entity click for navigation (generic)
 function handleEntityClick(entity: any) {
-  if (isGroupEntity.value && entity.id) {
-    router.push({ name: 'GroupDetails', params: { id: entity.id } });
-  } else if (isCourseEntity.value && entity.id) {
-    router.push({ name: 'CourseDetails', params: { id: entity.id } });
-  } else if (isChapterEntity.value && entity.id) {
-    router.push({ name: 'ChapterDetails', params: { id: entity.id } });
-  } else if (isSectionEntity.value && entity.id) {
-    router.push({ name: 'SectionDetails', params: { id: entity.id } });
+  const routeName = props.entityStore.detailRouteName?.value;
+  if (routeName && entity.id) {
+    router.push({ name: routeName, params: { id: entity.id } });
   }
 }
 

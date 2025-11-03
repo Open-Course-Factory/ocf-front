@@ -98,6 +98,9 @@ export const useSectionsStore = defineStore('sections', () => {
     base.includeParams.children = ['pages']
     base.includeParams.parents = ['chapters.courses'] // Multi-level: chapter with its parent course
 
+    // Configure detail view route
+    base.detailRouteName.value = 'SectionDetails'
+
     /**
      * Fetch a single section by ID with nested pages and parent chapter
      * @param sectionId - The ID of the section
