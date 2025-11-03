@@ -116,7 +116,7 @@ export class FeatureFlagService {
         enabled: false,
         description: 'Enable terminal and practical work features',
         type: 'ops',
-        allowedRoles: ['administrator'],
+        allowedRoles: ['administrator', 'member'],
         controlledMetrics: ['concurrent_terminals'], // Hide terminal-related metrics when disabled
         controlledFeatures: ['terminal_access']
       },
