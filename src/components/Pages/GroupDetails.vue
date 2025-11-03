@@ -46,7 +46,7 @@ const { isEnabled } = useFeatureFlags()
 // Translations
 const { t } = useTranslations({
   en: {
-    groupDetail: {
+    groupDetails: {
       // Page & Navigation
       pageTitle: 'Group Details',
       backToGroups: 'Back to Groups',
@@ -155,7 +155,7 @@ const { t } = useTranslations({
     }
   },
   fr: {
-    groupDetail: {
+    groupDetails: {
       // Page & Navigation
       pageTitle: 'Détails du groupe',
       backToGroups: 'Retour aux groupes',
@@ -364,14 +364,14 @@ const loadGroup = async () => {
 
       return data
     },
-    'groupDetail.groupLoadError'
+    'groupDetails.groupLoadError'
   )
 }
 
 const handleAddMember = async () => {
   // Check group capacity
   if (currentGroup.value?.is_full) {
-    error.value = t('groupDetail.groupFull')
+    error.value = t('groupDetails.groupFull')
     return
   }
 
@@ -434,7 +434,7 @@ const handleEditGroup = async (data: any) => {
 
       showEditGroupModal.value = false
     },
-    'groupDetail.groupUpdateError'
+    'groupDetails.groupUpdateError'
   )
 }
 
@@ -447,7 +447,7 @@ const handleDeleteGroup = async () => {
       await groupStore.deleteEntity('/class-groups', currentGroup.value.id)
       router.push('/class-groups')
     },
-    'groupDetail.groupDeleteError'
+    'groupDetails.groupDeleteError'
   )
 }
 
@@ -467,7 +467,7 @@ const handleCreateSubgroup = async (data: any) => {
 
       showCreateSubgroupModal.value = false
     },
-    'groupDetail.groupCreateError'
+    'groupDetails.groupCreateError'
   )
 }
 
@@ -475,6 +475,7 @@ const handleCreateSubgroup = async (data: any) => {
 onMounted(async () => {
   // Check feature flag
   if (!isEnabled('class_groups')) {
+    //TODO use default user route
     router.push('/dashboard')
     return
   }
@@ -517,7 +518,7 @@ watch(activeTab, (newTab) => {
     <!-- Loading State -->
     <div v-if="isLoading" class="loading-state">
       <i class="fas fa-spinner fa-spin"></i>
-      {{ t('groupDetail.loading') }}
+      {{ t('groupDetails.loading') }}
     </div>
 
     <!-- Error State -->
@@ -525,7 +526,7 @@ watch(activeTab, (newTab) => {
       <i class="fas fa-exclamation-triangle"></i>
       <p>{{ error }}</p>
       <router-link to="/class-groups" class="btn btn-primary">
-        {{ t('groupDetail.backToGroups') }}
+        {{ t('groupDetails.backToGroups') }}
       </router-link>
     </div>
 
@@ -535,13 +536,13 @@ watch(activeTab, (newTab) => {
       <div class="group-detail-header">
         <router-link to="/class-groups" class="back-link">
           <i class="fas fa-arrow-left"></i>
-          {{ t('groupDetail.backToGroups') }}
+          {{ t('groupDetails.backToGroups') }}
         </router-link>
 
         <div class="header-title">
           <h1>{{ currentGroup.display_name }}</h1>
           <span class="status-badge" :class="`badge-${statusColor}`">
-            {{ t(`groupDetail.status${groupStatus.charAt(0).toUpperCase() + groupStatus.slice(1)}`) }}
+            {{ t(`groupDetails.status${groupStatus.charAt(0).toUpperCase() + groupStatus.slice(1)}`) }}
           </span>
         </div>
 
@@ -552,7 +553,7 @@ watch(activeTab, (newTab) => {
             class="btn btn-secondary"
           >
             <i class="fas fa-edit"></i>
-            {{ t('groupDetail.editGroup') }}
+            {{ t('groupDetails.editGroup') }}
           </button>
           <button
             v-if="canDeleteGroup"
@@ -560,7 +561,7 @@ watch(activeTab, (newTab) => {
             class="btn btn-danger"
           >
             <i class="fas fa-trash"></i>
-            {{ t('groupDetail.deleteGroup') }}
+            {{ t('groupDetails.deleteGroup') }}
           </button>
         </div>
       </div>
@@ -569,7 +570,7 @@ watch(activeTab, (newTab) => {
       <div class="group-status-bar">
         <div class="status-item">
           <i class="fas fa-users"></i>
-          <span>{{ t('groupDetail.memberCountLabel', {
+          <span>{{ t('groupDetails.memberCountLabel', {
             current: groupMembersComposable.members.value.length,
             max: currentGroup.max_members
           }) }}</span>
@@ -583,12 +584,12 @@ watch(activeTab, (newTab) => {
             ></div>
           </div>
           <span class="capacity-text">
-            {{ t('groupDetail.memberCapacity', { percentage: actualMemberPercentage }) }}
+            {{ t('groupDetails.memberCapacity', { percentage: actualMemberPercentage }) }}
           </span>
         </div>
         <div v-if="currentGroup.expires_at" class="status-item">
           <i class="fas fa-calendar"></i>
-          <span>{{ t('groupDetail.expiresAt') }}: {{ formatDate(currentGroup.expires_at) }}</span>
+          <span>{{ t('groupDetails.expiresAt') }}: {{ formatDate(currentGroup.expires_at) }}</span>
         </div>
       </div>
 
@@ -599,14 +600,14 @@ watch(activeTab, (newTab) => {
           :class="['tab-button', { active: activeTab === 'overview' }]"
         >
           <i class="fas fa-info-circle"></i>
-          {{ t('groupDetail.tabOverview') }}
+          {{ t('groupDetails.tabOverview') }}
         </button>
         <button
           @click="activeTab = 'members'"
           :class="['tab-button', { active: activeTab === 'members' }]"
         >
           <i class="fas fa-users"></i>
-          {{ t('groupDetail.tabMembers') }}
+          {{ t('groupDetails.tabMembers') }}
           <span class="badge">{{ groupMembersComposable.members.value.length }}</span>
         </button>
         <button
@@ -615,7 +616,7 @@ watch(activeTab, (newTab) => {
           :class="['tab-button', { active: activeTab === 'settings' }]"
         >
           <i class="fas fa-cog"></i>
-          {{ t('groupDetail.tabSettings') }}
+          {{ t('groupDetails.tabSettings') }}
         </button>
       </div>
 
@@ -623,15 +624,15 @@ watch(activeTab, (newTab) => {
       <div v-show="activeTab === 'overview'" class="tab-content overview-tab">
         <div class="info-grid">
           <div class="info-item">
-            <label>{{ t('groupDetail.displayName') }}</label>
+            <label>{{ t('groupDetails.displayName') }}</label>
             <p>{{ currentGroup.display_name }}</p>
           </div>
           <div class="info-item">
-            <label>{{ t('groupDetail.description') }}</label>
-            <p>{{ currentGroup.description || t('groupDetail.noDescription') }}</p>
+            <label>{{ t('groupDetails.description') }}</label>
+            <p>{{ currentGroup.description || t('groupDetails.noDescription') }}</p>
           </div>
           <div class="info-item">
-            <label>{{ t('groupDetail.owner') }}</label>
+            <label>{{ t('groupDetails.owner') }}</label>
             <p v-if="ownerUser">
               <span class="owner-name">{{ ownerUser.display_name || ownerUser.name }}</span>
               <span v-if="ownerUser.email" class="owner-email">({{ ownerUser.email }})</span>
@@ -639,7 +640,7 @@ watch(activeTab, (newTab) => {
             <p v-else class="text-muted">{{ currentGroup.owner_user_id }}</p>
           </div>
           <div class="info-item">
-            <label>{{ t('groupDetail.parentGroup') }}</label>
+            <label>{{ t('groupDetails.parentGroup') }}</label>
             <p v-if="currentGroup.parentGroup || currentGroup.parent_group">
               <router-link
                 :to="`/class-groups/${currentGroup.parentGroup?.id || currentGroup.parent_group?.id}`"
@@ -649,26 +650,26 @@ watch(activeTab, (newTab) => {
                 <i class="fas fa-external-link-alt"></i>
               </router-link>
             </p>
-            <p v-else class="text-muted">{{ t('groupDetail.noParentGroup') }}</p>
+            <p v-else class="text-muted">{{ t('groupDetails.noParentGroup') }}</p>
           </div>
           <div class="info-item">
-            <label>{{ t('groupDetail.maxMembers') }}</label>
+            <label>{{ t('groupDetails.maxMembers') }}</label>
             <p>{{ currentGroup.max_members }}</p>
           </div>
           <div class="info-item">
-            <label>{{ t('groupDetail.currentMembers') }}</label>
+            <label>{{ t('groupDetails.currentMembers') }}</label>
             <p>{{ groupMembersComposable.members.value.length }}</p>
           </div>
           <div class="info-item">
-            <label>{{ t('groupDetail.createdAt') }}</label>
+            <label>{{ t('groupDetails.createdAt') }}</label>
             <p>{{ formatDateTime(currentGroup.created_at) }}</p>
           </div>
           <div class="info-item">
-            <label>{{ t('groupDetail.updatedAt') }}</label>
+            <label>{{ t('groupDetails.updatedAt') }}</label>
             <p>{{ formatDateTime(currentGroup.updated_at) }}</p>
           </div>
           <div v-if="currentGroup.expires_at" class="info-item">
-            <label>{{ t('groupDetail.expiresAt') }}</label>
+            <label>{{ t('groupDetails.expiresAt') }}</label>
             <p>{{ formatDate(currentGroup.expires_at) }}</p>
           </div>
         </div>
@@ -676,14 +677,14 @@ watch(activeTab, (newTab) => {
         <!-- Subgroups Section -->
         <div class="subgroups-section">
           <div class="subgroups-header">
-            <h3>{{ t('groupDetail.subGroups') }}</h3>
+            <h3>{{ t('groupDetails.subGroups') }}</h3>
             <button
               v-if="canEditGroup"
               @click="showCreateSubgroupModal = true"
               class="btn btn-primary btn-sm"
             >
               <i class="fas fa-plus"></i>
-              {{ t('groupDetail.addSubgroup') }}
+              {{ t('groupDetails.addSubgroup') }}
             </button>
           </div>
           <div v-if="(currentGroup.subGroups?.length || currentGroup.sub_groups?.length || 0) > 0" class="subgroups-list">
@@ -698,13 +699,13 @@ watch(activeTab, (newTab) => {
               </div>
               <div class="subgroup-actions">
                 <router-link :to="`/class-groups/${subgroup.id}`" class="btn btn-sm btn-primary">
-                  {{ t('groupDetail.viewGroup') }}
+                  {{ t('groupDetails.viewGroup') }}
                   <i class="fas fa-arrow-right"></i>
                 </router-link>
               </div>
             </div>
           </div>
-          <p v-else class="text-muted">{{ t('groupDetail.noSubGroups') }}</p>
+          <p v-else class="text-muted">{{ t('groupDetails.noSubGroups') }}</p>
         </div>
       </div>
 
@@ -714,7 +715,7 @@ watch(activeTab, (newTab) => {
           <input
             v-model="groupMembersComposable.memberSearchQuery.value"
             type="text"
-            :placeholder="t('groupDetail.searchMembers')"
+            :placeholder="t('groupDetails.searchMembers')"
             class="search-input"
           />
           <div class="toolbar-actions">
@@ -722,10 +723,10 @@ watch(activeTab, (newTab) => {
               v-if="groupMembersComposable.canManageMembers.value && groupMembersComposable.members.value.length > 0"
               :to="`/terminal-creation?mode=bulk&groupId=${currentGroup.id}`"
               class="btn btn-secondary"
-              :title="t('groupDetail.createTerminalsForAll')"
+              :title="t('groupDetails.createTerminalsForAll')"
             >
               <i class="fas fa-terminal"></i>
-              {{ t('groupDetail.bulkCreateTerminals') }}
+              {{ t('groupDetails.bulkCreateTerminals') }}
             </router-link>
             <button
               v-if="groupMembersComposable.canManageMembers.value"
@@ -733,14 +734,14 @@ watch(activeTab, (newTab) => {
               class="btn btn-primary"
             >
               <i class="fas fa-plus"></i>
-              {{ t('groupDetail.addMember') }}
+              {{ t('groupDetails.addMember') }}
             </button>
           </div>
         </div>
 
         <div v-if="groupMembersComposable.sortedMembers.value.length === 0" class="empty-state">
           <i class="fas fa-users"></i>
-          <p>{{ t('groupDetail.noMembers') }}</p>
+          <p>{{ t('groupDetails.noMembers') }}</p>
         </div>
 
         <div v-else class="members-list">
@@ -758,7 +759,7 @@ watch(activeTab, (newTab) => {
                 <div class="member-email" v-if="member.user?.email">{{ member.user.email }}</div>
                 <div class="member-meta">
                   <span :class="['role-badge', `role-${member.role}`]">
-                    {{ t(`groupDetail.role${member.role.charAt(0).toUpperCase() + member.role.slice(1)}`) }}
+                    {{ t(`groupDetails.role${member.role.charAt(0).toUpperCase() + member.role.slice(1)}`) }}
                   </span>
                   <span v-if="member.source_group" class="source-group-badge">
                     <i class="fas fa-layer-group"></i>
@@ -766,10 +767,10 @@ watch(activeTab, (newTab) => {
                   </span>
                   <span v-else class="source-group-badge main-group">
                     <i class="fas fa-star"></i>
-                    {{ t('groupDetail.mainGroup') }}
+                    {{ t('groupDetails.mainGroup') }}
                   </span>
                   <span v-if="member.joined_at" class="member-joined">
-                    {{ t('groupDetail.memberJoinedAt') }}: {{ formatDate(member.joined_at) }}
+                    {{ t('groupDetails.memberJoinedAt') }}: {{ formatDate(member.joined_at) }}
                   </span>
                 </div>
               </div>
@@ -780,9 +781,9 @@ watch(activeTab, (newTab) => {
                 @change="groupMembersComposable.updateMemberRole(member)"
                 class="role-select"
               >
-                <option value="admin">{{ t('groupDetail.roleAdmin') }}</option>
-                <option value="assistant">{{ t('groupDetail.roleAssistant') }}</option>
-                <option value="member">{{ t('groupDetail.roleMember') }}</option>
+                <option value="admin">{{ t('groupDetails.roleAdmin') }}</option>
+                <option value="assistant">{{ t('groupDetails.roleAssistant') }}</option>
+                <option value="member">{{ t('groupDetails.roleMember') }}</option>
               </select>
               <button
                 v-if="groupMembersComposable.canRemoveMember(member)"
@@ -803,35 +804,35 @@ watch(activeTab, (newTab) => {
       <div v-show="activeTab === 'settings'" class="tab-content settings-tab">
         <div v-if="canEditGroup" class="settings-content">
           <div class="settings-header">
-            <h3>{{ t('groupDetail.tabSettings') }}</h3>
+            <h3>{{ t('groupDetails.tabSettings') }}</h3>
             <button @click="showEditGroupModal = true" class="btn btn-primary">
               <i class="fas fa-edit"></i>
-              {{ t('groupDetail.editGroup') }}
+              {{ t('groupDetails.editGroup') }}
             </button>
           </div>
 
           <div class="info-grid">
             <div class="info-item">
-              <label>{{ t('groupDetail.displayName') }}</label>
+              <label>{{ t('groupDetails.displayName') }}</label>
               <p>{{ currentGroup.display_name }}</p>
             </div>
             <div class="info-item">
-              <label>{{ t('groupDetail.description') }}</label>
-              <p>{{ currentGroup.description || t('groupDetail.noDescription') }}</p>
+              <label>{{ t('groupDetails.description') }}</label>
+              <p>{{ currentGroup.description || t('groupDetails.noDescription') }}</p>
             </div>
             <div class="info-item">
-              <label>{{ t('groupDetail.maxMembers') }}</label>
+              <label>{{ t('groupDetails.maxMembers') }}</label>
               <p>{{ currentGroup.max_members }}</p>
             </div>
             <div v-if="currentGroup.expires_at" class="info-item">
-              <label>{{ t('groupDetail.expiresAt') }}</label>
+              <label>{{ t('groupDetails.expiresAt') }}</label>
               <p>{{ formatDate(currentGroup.expires_at) }}</p>
             </div>
             <div class="info-item">
-              <label>{{ t('groupDetail.statusActive') }}</label>
+              <label>{{ t('groupDetails.statusActive') }}</label>
               <p>
                 <span :class="['status-badge', `badge-${currentGroup.is_active ? 'success' : 'danger'}`]">
-                  {{ currentGroup.is_active ? t('groupDetail.statusActive') : t('groupDetail.statusInactive') }}
+                  {{ currentGroup.is_active ? t('groupDetails.statusActive') : t('groupDetails.statusInactive') }}
                 </span>
               </p>
             </div>
@@ -839,7 +840,7 @@ watch(activeTab, (newTab) => {
         </div>
         <div v-else class="permission-denied">
           <i class="fas fa-lock"></i>
-          <p>{{ t('groupDetail.cannotManageNotAdmin') }}</p>
+          <p>{{ t('groupDetails.cannotManageNotAdmin') }}</p>
         </div>
       </div>
     </div>
@@ -847,18 +848,18 @@ watch(activeTab, (newTab) => {
     <!-- Add Member Modal -->
     <BaseModal
       :visible="showAddMemberModal"
-      :title="t('groupDetail.addMemberTitle', { groupName: currentGroup?.display_name })"
+      :title="t('groupDetails.addMemberTitle', { groupName: currentGroup?.display_name })"
       size="medium"
       :is-loading="groupMembersComposable.isLoading.value"
       :show-default-footer="true"
-      :confirm-text="t('groupDetail.addMember')"
-      :cancel-text="t('groupDetail.cancel')"
+      :confirm-text="t('groupDetails.addMember')"
+      :cancel-text="t('groupDetails.cancel')"
       @confirm="handleAddMember"
       @close="showAddMemberModal = false; userSearchQuery = ''; userSearchResults = []"
     >
       <form @submit.prevent="handleAddMember">
         <div class="form-group">
-          <label>{{ t('groupDetail.selectUser') }}</label>
+          <label>{{ t('groupDetails.selectUser') }}</label>
           <div class="user-search-container">
             <input
               v-model="userSearchQuery"
@@ -896,11 +897,11 @@ watch(activeTab, (newTab) => {
           </small>
         </div>
         <div class="form-group">
-          <label>{{ t('groupDetail.selectRole') }}</label>
+          <label>{{ t('groupDetails.selectRole') }}</label>
           <select v-model="groupMembersComposable.newMemberData.value.role" class="form-control">
-            <option value="member">{{ t('groupDetail.roleMember') }}</option>
-            <option value="assistant">{{ t('groupDetail.roleAssistant') }}</option>
-            <option value="admin">{{ t('groupDetail.roleAdmin') }}</option>
+            <option value="member">{{ t('groupDetails.roleMember') }}</option>
+            <option value="assistant">{{ t('groupDetails.roleAssistant') }}</option>
+            <option value="admin">{{ t('groupDetails.roleAdmin') }}</option>
           </select>
         </div>
         <div v-if="groupMembersComposable.error.value" class="alert alert-danger">
@@ -912,15 +913,15 @@ watch(activeTab, (newTab) => {
     <!-- Delete Confirmation Modal -->
     <BaseModal
       :visible="showDeleteConfirm"
-      :title="t('groupDetail.deleteConfirmTitle')"
+      :title="t('groupDetails.deleteConfirmTitle')"
       size="small"
       :show-default-footer="true"
-      :confirm-text="t('groupDetail.deleteGroup')"
-      :cancel-text="t('groupDetail.cancel')"
+      :confirm-text="t('groupDetails.deleteGroup')"
+      :cancel-text="t('groupDetails.cancel')"
       @confirm="handleDeleteGroup"
       @close="showDeleteConfirm = false"
     >
-      <p>{{ t('groupDetail.deleteConfirmMessage') }}</p>
+      <p>{{ t('groupDetails.deleteConfirmMessage') }}</p>
     </BaseModal>
 
     <!-- Edit Group Modal -->

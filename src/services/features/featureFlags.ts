@@ -107,7 +107,7 @@ export class FeatureFlagService {
         enabled: false,
         description: 'Enable course conception and design features',
         type: 'ops',
-        allowedRoles: ['administrator', 'teacher'],
+        allowedRoles: ['administrator', 'member'],
         controlledMetrics: ['courses'], // Hide course-related usage metrics when disabled
         controlledFeatures: ['course_creation', 'course_editing']
       },
@@ -116,7 +116,7 @@ export class FeatureFlagService {
         enabled: false,
         description: 'Enable terminal and practical work features',
         type: 'ops',
-        allowedRoles: ['administrator', 'teacher', 'student'],
+        allowedRoles: ['administrator'],
         controlledMetrics: ['concurrent_terminals'], // Hide terminal-related metrics when disabled
         controlledFeatures: ['terminal_access']
       },
@@ -125,7 +125,7 @@ export class FeatureFlagService {
         enabled: false,
         description: 'Enable class/group management features',
         type: 'ops',
-        allowedRoles: ['administrator', 'teacher'],
+        allowedRoles: ['administrator', 'member'],
         controlledFeatures: ['group_creation', 'group_management']
       },
       // Documentation Features (can start enabled)
@@ -507,10 +507,10 @@ export class FeatureFlagService {
     }
 
     // Check rollout percentage (simple implementation)
-    if (flag.rolloutPercentage !== undefined && actor?.userId) {
-      const userHash = this.simpleHash(actor.userId)
-      return (userHash % 100) < flag.rolloutPercentage
-    }
+    // if (flag.rolloutPercentage !== undefined && actor?.userId) {
+    //   const userHash = this.simpleHash(actor.userId)
+    //   return (userHash % 100) < flag.rolloutPercentage
+    // }
 
     return flag.enabled
   }

@@ -282,6 +282,8 @@ export interface ClassGroup extends BaseEntity {
   display_name: string
   description?: string
   owner_user_id: string
+  organization_id: string // Required: group must belong to an organization
+  organizationID?: string // Backend uses camelCase
   subscription_plan_id?: string
   max_members: number
   member_count: number

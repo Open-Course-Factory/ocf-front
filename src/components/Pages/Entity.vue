@@ -426,7 +426,7 @@ const isClickableEntity = computed(() => {
 // Handle entity click for navigation
 function handleEntityClick(entity: any) {
   if (isGroupEntity.value && entity.id) {
-    router.push({ name: 'GroupDetail', params: { id: entity.id } });
+    router.push({ name: 'GroupDetails', params: { id: entity.id } });
   } else if (isCourseEntity.value && entity.id) {
     router.push({ name: 'CourseDetails', params: { id: entity.id } });
   } else if (isChapterEntity.value && entity.id) {

@@ -42,7 +42,7 @@ import TerminalMySessions from '../components/Pages/TerminalMySessions.vue';
 import UserTerminalKeys from '../components/Pages/UserTerminalKeys.vue';
 import ClassGroups from '../components/Pages/ClassGroups.vue';
 import GroupMembers from '../components/Pages/GroupMembers.vue';
-import GroupDetail from '../components/Pages/GroupDetail.vue';
+import GroupDetails from '../components/Pages/GroupDetails.vue';
 import GroupHierarchyEditor from '../components/Pages/GroupHierarchyEditor.vue';
 import Organizations from '../components/Pages/Organizations.vue';
 import OrganizationDetail from '../components/Pages/OrganizationDetail.vue';
@@ -170,7 +170,7 @@ const basicRoutes = [
       { path: 'user-terminal-keys', name: 'UserTerminalKeys', component: UserTerminalKeys, meta: { requiresAuth: true, isSettings: true } },
       { path: 'class-groups', name: 'ClassGroups', component: ClassGroups, meta: { requiresAuth: true, requiredPermissions: ['view_groups'] } },
       { path: 'class-groups-hierarchy', name: 'GroupHierarchyEditor', component: GroupHierarchyEditor, meta: { requiresAuth: true, requiredPermissions: ['view_groups'] } },
-      { path: 'class-groups/:id', name: 'GroupDetail', component: GroupDetail, meta: { requiresAuth: true, requiredPermissions: ['view_groups'] } },
+      { path: 'class-groups/:id', name: 'GroupDetails', component: GroupDetails, meta: { requiresAuth: true, requiredPermissions: ['view_groups'] } },
       { path: 'group-members', name: 'GroupMembers', component: GroupMembers, meta: { requiresAuth: true, requiredPermissions: ['view_groups'] } },
 
       // Organization routes

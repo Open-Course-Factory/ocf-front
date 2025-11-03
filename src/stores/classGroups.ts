@@ -52,6 +52,7 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
                 display_name: "Display name",
                 description: "Description",
                 owner_user_id: "Owner",
+                organization_id: "Organization",
                 subscription_plan_id: "Subscription plan",
                 parent_group_id: "Parent group",
                 max_members: "Maximum members",
@@ -80,6 +81,7 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
                 groupInfo: "Manage your classes and teams",
                 nameHelp: "Auto-generated from display name (lowercase, hyphens only)",
                 displayNameHelp: "Human-readable name for the group",
+                organizationHelp: "Select the organization for this group (you must be manager or owner)",
                 parentGroupHelp: "Optional parent group for hierarchical organization",
                 maxMembersHelp: "Maximum number of members allowed in this group",
                 expiresAtHelp: "Optional expiration date for the group",
@@ -100,6 +102,7 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
                 display_name: "Nom d'affichage",
                 description: "Description",
                 owner_user_id: "Propriétaire",
+                organization_id: "Organisation",
                 subscription_plan_id: "Plan d'abonnement",
                 parent_group_id: "Groupe parent",
                 max_members: "Membres maximum",
@@ -128,6 +131,7 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
                 groupInfo: "Gérez vos classes et équipes",
                 nameHelp: "Auto-généré depuis le nom d'affichage (minuscules, tirets uniquement)",
                 displayNameHelp: "Nom lisible pour le groupe",
+                organizationHelp: "Sélectionnez l'organisation pour ce groupe (vous devez être gestionnaire ou propriétaire)",
                 parentGroupHelp: "Groupe parent optionnel pour une organisation hiérarchique",
                 maxMembersHelp: "Nombre maximum de membres autorisés dans ce groupe",
                 expiresAtHelp: "Date d'expiration optionnelle pour le groupe",
@@ -147,6 +151,22 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
         field('name', t('classGroups.name')).input().visible().readonly(), // Auto-generated from display_name
         field('display_name', t('classGroups.display_name')).input().visible().editable(),
         field('description', t('classGroups.description')).textarea().visible().editable(),
+        field('organization_id', t('classGroups.organization_id'))
+            .searchableSelect()
+            .visible()
+            .editable()
+            .withOptionsLoader(async () => {
+                try {
+                    const organizations = await base.loadEntities('/organizations')
+                    return organizations
+                } catch (error) {
+                    console.error('Failed to load organizations:', error)
+                    return []
+                }
+            })
+            .withItemValue('id')
+            .withItemText('display_name')
+            .placeholder(t('classGroups.organizationHelp')),
         field('parent_group_id', t('classGroups.parent_group_id'))
             .searchableSelect()
             .visible()
@@ -186,6 +206,10 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
         if (data.display_name && !data.name) {
             data.name = generateSlug(data.display_name)
         }
+        // Handle organization_id conversion to backend camelCase
+        if (data.organization_id !== undefined) {
+            data.organizationID = data.organization_id
+        }
         // Handle parent_group_id conversion to backend camelCase
         if (data.parent_group_id !== undefined) {
             data.parentGroupID = data.parent_group_id
@@ -210,6 +234,8 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
                     await base.createEntity('/class-groups', {
                         display_name: displayName,
                         name: generateSlug(displayName),
+                        organization_id: originalData.organization_id || createdGroup.organization_id,
+                        organizationID: originalData.organization_id || createdGroup.organization_id,
                         parent_group_id: createdGroup.id,
                         parentGroupID: createdGroup.id,
                         max_members: originalData.max_members || 30,
@@ -226,6 +252,10 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
     base.setBeforeUpdateHook(async (data: any) => {
         if (data.display_name && !data.name) {
             data.name = generateSlug(data.display_name)
+        }
+        // Handle organization_id conversion to backend camelCase
+        if (data.organization_id !== undefined) {
+            data.organizationID = data.organization_id
         }
         // Handle parent_group_id conversion to backend camelCase
         if (data.parent_group_id !== undefined) {

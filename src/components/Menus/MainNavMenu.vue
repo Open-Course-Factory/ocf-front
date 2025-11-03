@@ -182,7 +182,7 @@ const menuCategories = computed((): MenuCategory[] => [
     key: 'courses',
     label: t('navigation.courseDesign'),
     icon: 'fas fa-graduation-cap',
-    allowedRoles: ['administrator', 'teacher', 'student'],
+    allowedRoles: ['administrator', 'member'],
     featureFlag: 'course_conception',
     items: [
       {
@@ -242,7 +242,7 @@ const menuCategories = computed((): MenuCategory[] => [
     key: 'terminals',
     label: t('navigation.terminals'),
     icon: 'fas fa-laptop-code',
-    allowedRoles: ['administrator', 'teacher', 'student'],
+    allowedRoles: ['administrator', 'member'],
     featureFlag: 'terminal_management',
     items: [
       {
@@ -263,7 +263,7 @@ const menuCategories = computed((): MenuCategory[] => [
     key: 'groups',
     label: t('navigation.groups'),
     icon: 'fas fa-users',
-    allowedRoles: ['administrator', 'teacher', 'student'],
+    allowedRoles: ['administrator', 'member'],
     featureFlag: 'class_groups',
     items: [
       {
@@ -290,7 +290,7 @@ const menuCategories = computed((): MenuCategory[] => [
     key: 'organizations',
     label: t('navigation.organizations'),
     icon: 'fas fa-building',
-    allowedRoles: ['administrator', 'teacher', 'student'],
+    allowedRoles: ['administrator', 'member'],
     items: [
       {
         route: '/organizations',
@@ -304,7 +304,7 @@ const menuCategories = computed((): MenuCategory[] => [
     key: 'subscription',
     label: t('navigation.subscriptionLicenses'),
     icon: 'fas fa-credit-card',
-    allowedRoles: ['administrator', 'teacher', 'student'],
+    allowedRoles: ['administrator', 'member'],
     items: [
       {
         route: '/subscription-dashboard',
@@ -336,7 +336,7 @@ const menuCategories = computed((): MenuCategory[] => [
     key: 'help',
     label: t('help.title'),
     icon: 'fas fa-question-circle',
-    allowedRoles: ['administrator', 'teacher', 'student'],
+    allowedRoles: ['administrator', 'member'],
     featureFlag: 'help_documentation',
     items: [
       {
