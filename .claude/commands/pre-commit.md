@@ -51,7 +51,7 @@ MODIFIED_FILES=$(git diff HEAD --name-only)
 - Changes in `package.json` = Dependency subject
 
 **Examples of single-subject commits (GOOD):**
-- ✅ Only files in `src/components/Pages/GroupDetail.vue` + `src/composables/useGroupMembers.ts` = Group detail feature
+- ✅ Only files in `src/components/Pages/GroupDetails.vue` + `src/composables/useGroupMembers.ts` = Group detail feature
 - ✅ Only files in `src/stores/users.ts` + `src/types/entities.ts` = User store enhancement
 - ✅ Only files in `src/services/domain/terminal/` = Terminal service refactoring
 
@@ -74,7 +74,7 @@ You're trying to commit changes across different domains:
 📋 RECOMMENDATION: Split into atomic commits:
 
 Commit 1 (Group management):
-  - src/components/Pages/GroupDetail.vue
+  - src/components/Pages/GroupDetails.vue
   - src/composables/useGroupMembers.ts
   - src/stores/classGroups.ts
 
@@ -665,7 +665,7 @@ git diff HEAD --name-only
 ### Step 3: Stage Files by Subject
 ```bash
 # Example: Committing only group-related changes
-git add src/components/Pages/GroupDetail.vue
+git add src/components/Pages/GroupDetails.vue
 git add src/composables/useGroupMembers.ts
 git add src/stores/classGroups.ts
 git add src/types/entities.ts  # Only if it has group-related types
@@ -682,7 +682,7 @@ git diff --cached --name-only
 ### Step 5: Commit with Atomic Message
 ```bash
 # Single-subject commit message
-git commit -m "feat: add subgroup member display in GroupDetail"
+git commit -m "feat: add subgroup member display in GroupDetails"
 ```
 
 ### Step 6: Repeat for Other Subjects
@@ -700,7 +700,7 @@ git commit -m "refactor: improve field builder type safety"
 ```bash
 # All files relate to one feature
 Modified files:
-  - src/components/Pages/GroupDetail.vue
+  - src/components/Pages/GroupDetails.vue
   - src/composables/useGroupMembers.ts
   - src/stores/classGroups.ts
 
@@ -711,7 +711,7 @@ Commit message: "feat: add member list to group detail page"
 ```bash
 # Files span multiple unrelated features
 Modified files:
-  - src/components/Pages/GroupDetail.vue  # Group feature
+  - src/components/Pages/GroupDetails.vue  # Group feature
   - src/components/Auth/Login.vue         # Auth feature
   - src/stores/terminals.ts               # Terminal feature
   - package.json                          # Dependencies
@@ -722,7 +722,7 @@ Modified files:
 ### ✅ GOOD: Split Into Atomic Commits
 ```bash
 # Commit 1: Group feature
-git add src/components/Pages/GroupDetail.vue src/composables/useGroupMembers.ts
+git add src/components/Pages/GroupDetails.vue src/composables/useGroupMembers.ts
 git commit -m "feat: add member list to group detail page"
 
 # Commit 2: Auth improvement

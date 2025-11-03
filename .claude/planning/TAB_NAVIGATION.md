@@ -2,16 +2,16 @@
 
 ## Overview
 
-The GroupDetail page now preserves the active tab state in the URL query parameters, ensuring that browser navigation (back/forward buttons) maintains the user's tab selection.
+The GroupDetails page now preserves the active tab state in the URL query parameters, ensuring that browser navigation (back/forward buttons) maintains the user's tab selection.
 
 ## Implementation
 
 ### Location
-`/src/components/Pages/GroupDetail.vue:273-276, 497-512`
+`/src/components/Pages/GroupDetails.vue:273-276, 497-512`
 
 ### How It Works
 
-#### 1. Initialize Tab from URL (`GroupDetail.vue:273-276`)
+#### 1. Initialize Tab from URL (`GroupDetails.vue:273-276`)
 
 ```typescript
 const activeTab = ref<'overview' | 'members' | 'settings'>(
@@ -21,7 +21,7 @@ const activeTab = ref<'overview' | 'members' | 'settings'>(
 
 When the component loads, it reads the `tab` query parameter from the URL and sets the active tab accordingly. Defaults to 'overview' if no parameter is present.
 
-#### 2. Sync URL Query with Tab State (`GroupDetail.vue:497-502`)
+#### 2. Sync URL Query with Tab State (`GroupDetails.vue:497-502`)
 
 ```typescript
 watch(() => route.query.tab, (newTab) => {
@@ -33,7 +33,7 @@ watch(() => route.query.tab, (newTab) => {
 
 This watcher responds to URL changes (e.g., browser back/forward buttons) and updates the active tab to match the URL.
 
-#### 3. Update URL When Tab Changes (`GroupDetail.vue:504-512`)
+#### 3. Update URL When Tab Changes (`GroupDetails.vue:504-512`)
 
 ```typescript
 watch(activeTab, (newTab) => {
@@ -209,7 +209,7 @@ This feature uses standard Vue Router functionality and works in all modern brow
 For cases where users prefer persistent tabs across sessions:
 
 ```typescript
-const savedTab = localStorage.getItem('groupDetail.lastTab')
+const savedTab = localStorage.getItem('groupDetails.lastTab')
 const activeTab = ref(route.query.tab || savedTab || 'overview')
 ```
 
@@ -241,7 +241,7 @@ watch(activeTab, (newTab) => {
 
 ## Related Files
 
-- `/src/components/Pages/GroupDetail.vue` - Main implementation
+- `/src/components/Pages/GroupDetails.vue` - Main implementation
 
 ## Related Features
 

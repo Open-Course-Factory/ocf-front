@@ -150,17 +150,17 @@ const menuCategories = [
   {
     key: 'courses',
     label: 'Course Design',
-    allowedRoles: ['administrator', 'teacher', 'student']
+    allowedRoles: ['administrator', 'member']
   },
   {
     key: 'labs',
     label: 'Practical Work',
-    allowedRoles: ['administrator', 'teacher', 'student']
+    allowedRoles: ['administrator', 'member']
   },
   {
     key: 'subscription',
     label: 'Subscription & Licenses',
-    allowedRoles: ['administrator', 'teacher', 'student']
+    allowedRoles: ['administrator', 'member']
   },
   {
     key: 'admin',

@@ -31,7 +31,7 @@ This directory contains **comprehensive specification documents** for implementi
 ---
 
 ### 2. **GROUP_DETAIL_SPECIFICATION.md** (25 KB)
-**Purpose**: Complete detailed specification for GroupDetail.vue component
+**Purpose**: Complete detailed specification for GroupDetails.vue component
 
 **What you'll learn**:
 - Comprehensive component architecture
@@ -49,7 +49,7 @@ This directory contains **comprehensive specification documents** for implementi
 - Accessibility standards
 - Integration points
 
-**Read this while implementing Step 1** (GroupDetail.vue component).
+**Read this while implementing Step 1** (GroupDetails.vue component).
 
 ---
 
@@ -129,7 +129,7 @@ npm run dev                    # Start dev server
 
 # Step 3: Start implementing
 # Follow GROUP_DETAIL_SPECIFICATION.md
-# Write Step 1: GroupDetail.vue (1.5-2 days)
+# Write Step 1: GroupDetails.vue (1.5-2 days)
 # Write Step 2: Route addition (15 min)
 # Write Step 3: GroupForm.vue (0.75-1 day)
 # ... (follow implementation plan)
@@ -161,7 +161,7 @@ npm run dev                    # Start dev server
 
 ### Phase 1: Core Components (Days 1-2)
 ```
-✓ Step 1: GroupDetail.vue (600-800 LOC)
+✓ Step 1: GroupDetails.vue (600-800 LOC)
 ✓ Step 2: Route addition (10 LOC)
 ✓ Step 3: GroupForm.vue (250-350 LOC)
 ```
@@ -205,7 +205,7 @@ Estimated Effort:             2-3 weeks (with reviews/testing)
 ### Breakdown
 | Component | LOC | Days | Complexity |
 |-----------|-----|------|-----------|
-| GroupDetail.vue | 600-800 | 1.5-2 | High |
+| GroupDetails.vue | 600-800 | 1.5-2 | High |
 | GroupForm.vue | 250-350 | 0.75-1 | Medium |
 | useGroupMembers | 200-300 | 0.75-1 | Medium |
 | Terminal Sharing | +150-250 | 0.75-1 | Medium |
@@ -231,7 +231,7 @@ src/services/features/featureFlags.ts (class_groups flag)
 
 ### To Implement 📝
 ```
-src/components/Pages/GroupDetail.vue           (NEW - Step 1)
+src/components/Pages/GroupDetails.vue           (NEW - Step 1)
 src/components/Forms/GroupForm.vue             (NEW - Step 3)
 src/composables/useGroupMembers.ts             (NEW - Step 4)
 
@@ -285,7 +285,7 @@ const canManageMembers = computed(() => {
 // Always check permissions before action
 const removeMember = async (member) => {
   if (member.role === 'owner') {
-    error.value = t('groupDetail.cannotRemoveOwner')
+    error.value = t('groupDetails.cannotRemoveOwner')
     return
   }
   // ... proceed with removal
@@ -297,8 +297,8 @@ const removeMember = async (member) => {
 ## 🚀 Recommended Implementation Order
 
 ### Why This Order?
-1. **GroupDetail.vue** - Critical path, everything else depends on it
-2. **Route** - Need this to navigate to GroupDetail
+1. **GroupDetails.vue** - Critical path, everything else depends on it
+2. **Route** - Need this to navigate to GroupDetails
 3. **GroupForm.vue** - Reusable component, clean separation
 4. **useGroupMembers** - Business logic layer
 5. **Terminal Sharing** - Feature expansion
@@ -307,7 +307,7 @@ const removeMember = async (member) => {
 
 ### Critical Path
 ```
-GroupDetail.vue → Route → GroupForm.vue → useGroupMembers
+GroupDetails.vue → Route → GroupForm.vue → useGroupMembers
     ↓
 Terminal Sharing Integration → Terminal Filtering → Entity.vue
 ```
@@ -322,7 +322,7 @@ Terminal Sharing Integration → Terminal Filtering → Entity.vue
 - [ ] Validation functions
 
 ### Component Tests
-- [ ] GroupDetail tab switching
+- [ ] GroupDetails tab switching
 - [ ] Modal open/close
 - [ ] Form submission
 - [ ] Permission-based UI rendering
@@ -395,7 +395,7 @@ A: See GROUPS_QUICK_REFERENCE.md for testing instructions.
 // ✓ Use asyncWrapper for all async operations
 const loadMembers = asyncWrapper(async () => {
   // ...
-}, store, 'groupDetail.loadError', 'Loading members')
+}, store, 'groupDetails.loadError', 'Loading members')
 
 // ✓ Use useTranslations for i18n
 const { t } = useTranslations({ en: {...}, fr: {...} })
@@ -512,7 +512,7 @@ ocf-front/
 │   │   ├── Pages/
 │   │   │   ├── ClassGroups.vue ✅ (already done)
 │   │   │   ├── GroupMembers.vue ✅ (already done)
-│   │   │   └── GroupDetail.vue 📝 (TODO - Step 1)
+│   │   │   └── GroupDetails.vue 📝 (TODO - Step 1)
 │   │   ├── Forms/
 │   │   │   └── GroupForm.vue 📝 (TODO - Step 3)
 │   │   └── Modals/
@@ -545,7 +545,7 @@ PREPARATION
   ✓ Tested existing groups functionality
 
 IMPLEMENTATION
-  ✓ Step 1: GroupDetail.vue created
+  ✓ Step 1: GroupDetails.vue created
   ✓ Step 2: Route added
   ✓ Step 3: GroupForm.vue created
   ✓ Step 4: useGroupMembers created

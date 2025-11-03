@@ -28,7 +28,7 @@ src/services/features/
 ### 📋 To Be Implemented
 
 ```
-Step 1: src/components/Pages/GroupDetail.vue         (NEW - 600-800 LOC)
+Step 1: src/components/Pages/GroupDetails.vue         (NEW - 600-800 LOC)
 Step 2: src/router/index.ts                          (MODIFY - add route)
 Step 3: src/components/Forms/GroupForm.vue           (NEW - 250-350 LOC)
 Step 4: src/composables/useGroupMembers.ts           (NEW - 200-300 LOC)
@@ -46,7 +46,7 @@ Step 7: src/components/Pages/Entity.vue              (MODIFY - group enhancement
          COMPLEXITY
             Low    Med    High
 PRIORITY  ┌─────┬────┬─────┐
-High      │  6  │ 3  │  1  │  (GroupDetail, Entity enhancements)
+High      │  6  │ 3  │  1  │  (GroupDetails, Entity enhancements)
           ├─────┼────┼─────┤
 Medium    │  2  │ 4  │  5  │  (Route, useGroupMembers, Terminal Share)
           ├─────┼────┼─────┤
@@ -89,7 +89,7 @@ src/types/entities.ts
 ```
 📝 TO CREATE
 
-src/components/Pages/GroupDetail.vue
+src/components/Pages/GroupDetails.vue
 ├── Size: 600-800 LOC
 ├── Purpose: Detail view + member management
 ├── Tabs: Overview, Members, Terminals, Settings
@@ -101,13 +101,13 @@ src/components/Forms/GroupForm.vue
 ├── Purpose: Create/Edit group with validation
 ├── Fields: displayName, description, maxMembers, expiresAt, isActive
 ├── Features: Auto-slug preview, date validation
-└── Reusable: Yes (used by GroupDetail + create flow)
+└── Reusable: Yes (used by GroupDetails + create flow)
 
 src/composables/useGroupMembers.ts
 ├── Size: 200-300 LOC
 ├── Purpose: Member management logic
 ├── Functions: add, update, remove, validate, permission checks
-└── Reusable: Yes (used by GroupDetail + GroupMembers page)
+└── Reusable: Yes (used by GroupDetails + GroupMembers page)
 
 src/composables/useTerminalShare.ts (MODIFY)
 ├── Size: +100-150 LOC
@@ -126,7 +126,7 @@ src/components/Modals/TerminalShareModal.vue (MODIFY)
 🔧 MODIFICATIONS NEEDED
 
 src/router/index.ts
-├── Add: GroupDetail import
+├── Add: GroupDetails import
 └── Add: Route for /class-groups/:id
 
 src/components/Pages/TerminalMySessions.vue
@@ -197,9 +197,9 @@ type ShareType = 'user' | 'group'
 
 ## 📝 Translation Keys Structure
 
-### GroupDetail Keys
+### GroupDetails Keys
 ```typescript
-groupDetail: {
+groupDetails: {
   // Sections
   pageTitle: string
   tabOverview: string
@@ -298,7 +298,7 @@ POST /terminal-shares
 
 ## 🧩 Component Dependencies
 
-### GroupDetail.vue Requires
+### GroupDetails.vue Requires
 ```typescript
 ✅ classGroupsStore         // Load group data
 ✅ groupMembersStore        // Load members
@@ -331,7 +331,7 @@ POST /terminal-shares
 
 ## 🧪 Testing Checklist Per Step
 
-### Step 1: GroupDetail.vue
+### Step 1: GroupDetails.vue
 ```
 ✓ Component loads group data correctly
 ✓ Tabs switch without errors
@@ -351,7 +351,7 @@ POST /terminal-shares
 
 ### Step 2: Route Addition
 ```
-✓ Route /class-groups/:id loads GroupDetail
+✓ Route /class-groups/:id loads GroupDetails
 ✓ Invalid ID shows not found error
 ✓ Back button navigates to /class-groups
 ✓ URL updates when selecting group
@@ -402,7 +402,7 @@ POST /terminal-shares
 ```
 ✓ Group list shows member count progress
 ✓ Status badges display (expired, full, inactive)
-✓ Clicking row navigates to GroupDetail
+✓ Clicking row navigates to GroupDetails
 ✓ Column layout works on mobile
 ```
 
@@ -454,7 +454,7 @@ const loadMembers = asyncWrapper(
     members.value = response
   },
   memberStore,
-  'groupDetail.memberLoadError',
+  'groupDetails.memberLoadError',
   'Loading members'
 )
 ```
@@ -494,7 +494,7 @@ const isFormValid = computed(() => {
 memberCountLabel: '{current} / {max} members'
 
 // Use in template
-{{ t('groupDetail.memberCountLabel', {
+{{ t('groupDetails.memberCountLabel', {
   current: currentGroup?.member_count,
   max: currentGroup?.max_members
 }) }}
@@ -511,7 +511,7 @@ Total New Files: 4
 Total Modified Files: 5
 
 Breakdown:
-GroupDetail.vue        600-800 LOC  (new)
+GroupDetails.vue        600-800 LOC  (new)
 GroupForm.vue          250-350 LOC  (new)
 useGroupMembers        200-300 LOC  (new)
 Entity.vue            +100-200 LOC  (modify)
@@ -528,13 +528,13 @@ TOTAL               ~1500-2200 LOC
 ## ⏱️ Time Estimates
 
 ```
-Minimal Setup (Just GroupDetail):        6-8 hours
+Minimal Setup (Just GroupDetails):        6-8 hours
 Standard Implementation (All Steps):     2-3 days
 With Testing:                            3-4 days
 With Code Review Iterations:             1 additional day
 
 Per Component Breakdown:
-GroupDetail.vue + Route            4-6 hours
+GroupDetails.vue + Route            4-6 hours
 GroupForm.vue                      2-3 hours
 useGroupMembers                    2-3 hours
 Terminal Sharing Integration       3-4 hours
@@ -547,7 +547,7 @@ Testing & Validation              2-4 hours
 
 ## 🚀 Getting Started Checklist
 
-Before implementing Step 1 (GroupDetail.vue):
+Before implementing Step 1 (GroupDetails.vue):
 
 ```
 ✓ Read GROUP_DETAIL_SPECIFICATION.md
@@ -620,4 +620,4 @@ This specification provides everything needed to implement groups management on 
 - ✅ Integration diagrams
 - ✅ Estimated timelines
 
-**Next Step**: Review the GroupDetail specification and start implementing! 🚀
+**Next Step**: Review the GroupDetails specification and start implementing! 🚀

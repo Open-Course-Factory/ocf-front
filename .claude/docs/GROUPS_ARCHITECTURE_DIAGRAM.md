@@ -10,7 +10,7 @@ App.vue
 │       │   └── Entity.vue (generic wrapper)
 │       │       └── Group list with CRUD
 │       │
-│       ├── GroupDetail.vue (DETAIL PAGE - NEW)
+│       ├── GroupDetails.vue (DETAIL PAGE - NEW)
 │       │   ├── Tabs Navigation
 │       │   │   ├── Overview Tab
 │       │   │   ├── Members Tab
@@ -72,12 +72,12 @@ Store updates (classGroupsStore.create())
     ↓
 Show success message
     ↓
-Navigate to /class-groups/:id (GroupDetail)
+Navigate to /class-groups/:id (GroupDetails)
 ```
 
 ### Member Addition Flow
 ```
-User is in GroupDetail (Members tab)
+User is in GroupDetails (Members tab)
     ↓
 Clicks "Add Member" button (if admin/owner)
     ↓
@@ -139,7 +139,7 @@ In TerminalMySessions, show group badge on terminal card
 
 ### Group Member Viewing Flow
 ```
-User (any role) in GroupDetail (Members tab)
+User (any role) in GroupDetails (Members tab)
     ↓
 System loads:
   ├── classGroupsStore.getOne(id)           → Group data
@@ -242,7 +242,7 @@ Based on result, enable/disable UI buttons
 │ Vue Components                                        │
 ├─────────────────────────────────────────────────────┤
 │                                                      │
-│ GroupDetail.vue                                     │
+│ GroupDetails.vue                                     │
 │ ├── Computed: canManageMembers, isOwner, etc.     │
 │ ├── State: activeTab, showAddMemberModal, etc.    │
 │ ├── Methods: loadGroup, loadMembers, addMember()  │
@@ -345,7 +345,7 @@ In Router Guards
     └─ else
        └─ Allow navigation (no feature flag required)
     ↓
-In GroupDetail.vue
+In GroupDetails.vue
     ├─ if (!isEnabled('class_groups'))
     │  └─ Show access denied message
     └─ else
@@ -375,13 +375,13 @@ try {
     ├─ error.response?.status === 400
     │  │
     │  ├─ error.response.data.code === 'GROUP_FULL'
-    │  │  └─ t('groupDetail.groupFull')
+    │  │  └─ t('groupDetails.groupFull')
     │  │
     │  ├─ error.response.data.code === 'GROUP_EXPIRED'
-    │  │  └─ t('groupDetail.groupExpired')
+    │  │  └─ t('groupDetails.groupExpired')
     │  │
     │  ├─ error.response.data.code === 'USER_ALREADY_MEMBER'
-    │  │  └─ t('groupDetail.userAlreadyMember')
+    │  │  └─ t('groupDetails.userAlreadyMember')
     │  │
     │  └─ other validation error
     │     └─ Show error from data.error_message or data.message
@@ -390,7 +390,7 @@ try {
     │  └─ "Failed to connect. Please try again."
     │
     └─ Unknown error
-       └─ t('groupDetail.memberAddError')
+       └─ t('groupDetails.memberAddError')
 }
     ↓
 Display error message to user
@@ -405,7 +405,7 @@ Store error state: base.error.value = message
 ## 8. Pagination for Large Member Lists
 
 ```
-GroupDetail.vue (Members Tab)
+GroupDetails.vue (Members Tab)
     ↓
 Load all members:
   groupMembers.loadEntities()
@@ -511,7 +511,7 @@ const canDemoteRole = (currentRole, targetRole) => {
 └─────────────────────────────────────────────────────┘
                         ↓
 ┌─────────────────────────────────────────────────────┐
-│ GroupDetail.vue mounted                             │
+│ GroupDetails.vue mounted                             │
 │   - Initialize refs and computed properties         │
 └─────────────────────────────────────────────────────┘
                         ↓

@@ -301,7 +301,7 @@ if (subscription.status === 'trialing' && action === 'bulk_purchase') {
 }
 
 // 4. Time-based restrictions for student accounts
-if (user.account_type === 'student' && isOutsideLabHours()) {
+if (user.account_type === 'member' && isOutsideLabHours()) {
   throw new Error('Lab access is restricted to scheduled hours')
 }
 ```

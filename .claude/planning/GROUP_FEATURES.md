@@ -338,14 +338,14 @@ subgroupNamesHelp: 'Entrez les noms des sous-groupes, un par ligne (ex: "Section
 
 ### Workflow 2: Manual Subgroup Creation
 
-**Location:** GroupDetail Members tab
+**Location:** GroupDetails Members tab
 
 **Implementation:**
 - "Create Subgroup" button in Members tab header
 - Opens standard EntityModal with `parent_group_id` pre-filled
 - Uses regular group creation flow
 
-**Code Reference:** `src/components/Pages/GroupDetail.vue`
+**Code Reference:** `src/components/Pages/GroupDetails.vue`
 
 ### Error Handling
 
@@ -461,7 +461,7 @@ const loadMembers = async (
 
 ### UI Integration
 
-**Location:** `src/components/Pages/GroupDetail.vue` (Members tab)
+**Location:** `src/components/Pages/GroupDetails.vue` (Members tab)
 
 **Toggle Control:**
 

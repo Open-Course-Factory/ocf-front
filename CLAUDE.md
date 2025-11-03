@@ -239,5 +239,5 @@ For detailed information, see:
 - [GROUPS_QUICK_REFERENCE.md](.claude/docs/GROUPS_QUICK_REFERENCE.md) - Quick reference
 - [GROUPS_ARCHITECTURE_DIAGRAM.md](.claude/docs/GROUPS_ARCHITECTURE_DIAGRAM.md) - Architecture
 - [GROUPS_IMPLEMENTATION_PLAN.md](.claude/docs/GROUPS_IMPLEMENTATION_PLAN.md) - Implementation details
-- [GROUP_DETAIL_SPECIFICATION.md](.claude/docs/GROUP_DETAIL_SPECIFICATION.md) - GroupDetail component spec
+- [GROUP_DETAIL_SPECIFICATION.md](.claude/docs/GROUP_DETAIL_SPECIFICATION.md) - GroupDetails component spec
 - [README_GROUPS_IMPLEMENTATION.md](.claude/docs/README_GROUPS_IMPLEMENTATION.md) - Complete implementation summary
