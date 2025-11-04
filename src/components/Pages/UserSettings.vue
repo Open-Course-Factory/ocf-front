@@ -46,12 +46,21 @@
       <section class="settings-card">
         <SSHKeysSettings />
       </section>
+
+      <!-- Version Section -->
+      <section class="settings-card version-section">
+        <h3>{{ t('version.title') }}</h3>
+        <p class="version-info">
+          <span class="version-label">{{ t('version.label') }}:</span>
+          <span class="version-value">{{ appVersion }}</span>
+        </p>
+      </section>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useUserSettingsStore } from '../../stores/userSettings'
 import { useTranslations } from '../../composables/useTranslations'
 import UpgradeToTeamBanner from '../Common/UpgradeToTeamBanner.vue'
@@ -64,14 +73,23 @@ import SSHKeysSettings from '../Settings/SSHKeysSettings.vue'
 
 const { t } = useTranslations({
   en: {
-    loading: 'Loading...'
+    loading: 'Loading...',
+    version: {
+      title: 'Application Version',
+      label: 'Version'
+    }
   },
   fr: {
-    loading: 'Chargement...'
+    loading: 'Chargement...',
+    version: {
+      title: 'Version de l\'application',
+      label: 'Version'
+    }
   }
 })
 
 const settingsStore = useUserSettingsStore()
+const appVersion = computed(() => __APP_VERSION__)
 
 onMounted(async () => {
   await settingsStore.loadSettings()
@@ -118,6 +136,41 @@ onMounted(async () => {
 .settings-card:hover {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   transition: box-shadow 0.3s ease;
+}
+
+.version-section {
+  text-align: center;
+  background-color: var(--color-background-secondary);
+}
+
+.version-section h3 {
+  font-size: 1.2rem;
+  color: var(--color-text-primary);
+  margin-bottom: 10px;
+}
+
+.version-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.version-label {
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.version-value {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: var(--color-primary);
+  background-color: var(--color-background-primary);
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 
 /* Responsive */

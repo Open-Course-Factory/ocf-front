@@ -2,5 +2,211 @@ default:
   tags:
     - ocf-core
 
-include:
-  - template: Jobs/Build.gitlab-ci.yml
+# ============================================================================
+# Variables
+# ============================================================================
+
+variables:
+  NODE_VERSION: "18"
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+
+# ============================================================================
+# Stages
+# ============================================================================
+
+stages:
+  - check    # Version validation and auto-tagging
+  - build    # Docker image creation on release tags
+  - release  # Release creation
+
+# ============================================================================
+# Cache Configuration
+# ============================================================================
+
+.npm_cache:
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}-npm"
+    paths:
+      - node_modules/
+      - .npm/
+
+# ============================================================================
+# Check Stage
+# ============================================================================
+
+# Check version and auto-tag if changed
+# When the VERSION file is updated on main branch, this job:
+# 1. Compares VERSION file content with latest git tag
+# 2. Creates and pushes a new tag if version changed
+# 3. Triggers the build pipeline via the new tag
+check:version:
+  stage: check
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache git curl jq
+    # Configure git for tagging
+    - git config --global user.email "ci@ocf.soli.fr"
+    - git config --global user.name "OCF CI"
+  script:
+    - |
+      # Get current version from VERSION file
+      CURRENT_VERSION=$(cat VERSION | tr -d '[:space:]')
+      echo "Current version in code: $CURRENT_VERSION"
+
+      # Get latest tag from REMOTE (not local cache which may be stale)
+      echo "🔍 Checking remote tags..."
+      git fetch --tags --prune-tags  # Sync local tags with remote, remove stale local tags
+
+      # Query remote directly to avoid stale local tags
+      REMOTE_TAGS=$(git ls-remote --tags origin | grep -v '\^{}' | cut -d/ -f3 | sort -V)
+      LATEST_TAG=$(echo "$REMOTE_TAGS" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
+
+      if [ -z "$LATEST_TAG" ]; then
+        LATEST_TAG="v0.0.0"
+        echo "No version tags found on remote, using default: $LATEST_TAG"
+      else
+        echo "Latest tag on remote: $LATEST_TAG"
+      fi
+
+      # Also check local tags for comparison
+      LOCAL_LATEST=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
+      if [ "$LOCAL_LATEST" != "$LATEST_TAG" ]; then
+        echo "⚠️  Local tag cache mismatch:"
+        echo "    Local:  $LOCAL_LATEST"
+        echo "    Remote: $LATEST_TAG"
+        echo "    Using remote as source of truth"
+      fi
+
+      # Remove 'v' prefix if present
+      LATEST_VERSION=${LATEST_TAG#v}
+
+      # Check if version changed
+      if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
+        echo "🎉 Version changed from $LATEST_VERSION to $CURRENT_VERSION"
+
+        # Check if tag already exists ON REMOTE (not just locally)
+        if git ls-remote --tags origin | grep -q "refs/tags/v${CURRENT_VERSION}$"; then
+          echo "⚠️  Tag v${CURRENT_VERSION} already exists on remote, skipping"
+        else
+          echo "Creating and pushing tag v$CURRENT_VERSION..."
+
+          # Delete stale local tag if it exists (from previous failed push)
+          if git rev-parse "v${CURRENT_VERSION}" >/dev/null 2>&1; then
+            echo "🧹 Removing stale local tag v${CURRENT_VERSION}..."
+            git tag -d "v${CURRENT_VERSION}"
+          fi
+
+          # Create annotated tag
+          git tag -a "v${CURRENT_VERSION}" -m "Release v${CURRENT_VERSION}"
+
+          # Push tag using token (try CI_PUSH_TOKEN first, fallback to CI_JOB_TOKEN)
+          TOKEN=${CI_PUSH_TOKEN:-$CI_JOB_TOKEN}
+
+          # Configure remote with authentication
+          git remote set-url origin https://gitlab-ci-token:${TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git
+
+          # Push tag with error handling
+          if git push origin "v${CURRENT_VERSION}" 2>&1; then
+            echo "✅ Tag v$CURRENT_VERSION created and pushed successfully"
+            echo "⏳ A new pipeline will start for the tag..."
+          else
+            echo "❌ Failed to push tag v$CURRENT_VERSION"
+            echo "⚠️  Possible causes:"
+            echo "   - CI_PUSH_TOKEN not configured (using CI_JOB_TOKEN which may lack permissions)"
+            echo "   - Protected tags not allowing CI to push"
+            echo "   - Insufficient token permissions"
+            echo ""
+            echo "💡 Solution: Configure CI_PUSH_TOKEN in CI/CD variables with write_repository scope"
+            exit 1
+          fi
+        fi
+      else
+        echo "ℹ️  Version unchanged ($CURRENT_VERSION)"
+      fi
+  rules:
+    # Only auto-tag on main branch to prevent accidental releases from feature branches
+    - if: $CI_COMMIT_BRANCH == "main"
+
+# ============================================================================
+# Build Stage
+# ============================================================================
+
+# Build application artifacts
+build:app:
+  stage: build
+  image: node:${NODE_VERSION}
+  extends: .npm_cache
+  before_script:
+    - export APP_VERSION=${CI_COMMIT_TAG#v}
+    - echo "Building version $APP_VERSION"
+  script:
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
+  rules:
+    # Only run on version tags (v0.1.0, v1.2.3, etc.)
+    - if: $CI_COMMIT_TAG =~ /^v/
+
+# Build Docker image and push to registry
+# Only runs when version tags are pushed (triggered by check:version job)
+# Tags image with both the version number and 'latest'
+build:docker:
+  stage: build
+  image: docker:24
+  services:
+    - docker:24-dind
+  before_script:
+    - export APP_VERSION=${CI_COMMIT_TAG#v}
+    - echo "Building Docker image for version $APP_VERSION"
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE:$APP_VERSION -t $CI_REGISTRY_IMAGE:latest .
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push $CI_REGISTRY_IMAGE:$APP_VERSION
+    - docker push $CI_REGISTRY_IMAGE:latest
+  rules:
+    # Only run on version tags (v0.1.0, v1.2.3, etc.)
+    - if: $CI_COMMIT_TAG =~ /^v/
+
+# ============================================================================
+# Release Stage
+# ============================================================================
+
+release:create:
+  stage: release
+  image: alpine:latest
+  variables:
+    GIT_DEPTH: 0  # Fetch full history for accurate release notes
+  before_script:
+    - apk add --no-cache git glab
+    # Ensure all tags are fetched for finding previous release
+    - git fetch --tags --force
+  script:
+    - chmod +x ./scripts/generate-release-notes.sh
+    - export RELEASE_NOTES=$(./scripts/generate-release-notes.sh $CI_COMMIT_TAG)
+    - echo "$RELEASE_NOTES"  # Show release notes in CI log for debugging
+    - glab release create $CI_COMMIT_TAG -N "$RELEASE_NOTES"
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v/
+
+release:manual:
+  stage: release
+  image: alpine:latest
+  variables:
+    TAG_NAME: ""
+  before_script:
+    - apk add --no-cache git glab
+    - glab auth login --job-token $CI_JOB_TOKEN --hostname $CI_SERVER_HOST --api-protocol $CI_SERVER_PROTOCOL
+  script:
+    - |
+      if [ -z "$TAG_NAME" ]; then
+        echo "Please provide a tag name to the TAG_NAME variable."
+        exit 1
+      fi
+    - chmod +x ./scripts/generate-release-notes.sh
+    - export RELEASE_NOTES=$(./scripts/generate-release-notes.sh $TAG_NAME)
+    - glab release create $TAG_NAME -N "$RELEASE_NOTES"
+  when: manual
