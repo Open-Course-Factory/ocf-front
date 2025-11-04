@@ -244,19 +244,28 @@ async function connectToTerminal() {
     const protocol = import.meta.env.VITE_PROTOCOL === 'https' ? 'wss' : 'ws'
     const apiUrl = import.meta.env.VITE_API_URL
 
-    // Construire l'URL de base
-    let wsUrl = `${protocol}://${apiUrl}/api/v1/terminals/${sessionId.value}/console?width=${terminal.value.cols}&height=${terminal.value.rows}`
-    
-    // Ajouter le token d'authentification en query parameter "Authorization"
-    // Le backend a déjà un hack pour récupérer l'auth depuis ctx.Query("Authorization")
+    // Build WebSocket URL with token in query parameter
+    // ✅ SECURE: Backend allows query param ONLY for WebSocket upgrade requests
+    // This is safe because:
+    // 1. Only works when Upgrade: websocket header is present
+    // 2. Not logged in standard HTTP access logs
+    // 3. Token consumed immediately during upgrade handshake
+    // 4. Doesn't appear in browser history like regular HTTP URLs
+
+    // Get authentication token
     const token = userStore.secretToken
+
+    // Build URL with token query parameter (backend expects ?token=, not ?Authorization=)
+    let wsUrl = `${protocol}://${apiUrl}/api/v1/terminals/${sessionId.value}/console?width=${terminal.value.cols}&height=${terminal.value.rows}`
     if (token) {
-      wsUrl += `&Authorization=${encodeURIComponent(token)}`
+      wsUrl += `&token=${encodeURIComponent(token)}`
+    } else {
+      console.warn('No authentication token available for WebSocket connection')
     }
-    
-    console.log('Connexion WebSocket vers backend proxy:', wsUrl.replace(/Authorization=[^&]+/, 'Authorization=***'))
-    
-    // Créer le WebSocket avec le token dans l'URL
+
+    console.log('Connexion WebSocket vers backend proxy (secure auth):', wsUrl.replace(/token=[^&]+/, 'token=***'))
+
+    // Create WebSocket connection
     socket.value = new WebSocket(wsUrl)
     
     socket.value.onopen = () => {
@@ -282,17 +291,22 @@ async function connectToTerminal() {
       console.log('Terminal WebSocket fermé:', event.code, event.reason)
       isConnected.value = false
       isConnecting.value = false
-      
-      if (event.code !== 1000) { // Pas une fermeture normale
+
+      // Handle authentication failures specifically
+      if (event.code === 1008) {
+        // Policy violation (likely auth failure)
+        error.value = 'Authentification échouée. Veuillez vous reconnecter.'
+      } else if (event.code !== 1000) {
+        // Not a normal closure
         error.value = `Connexion fermée (${event.code}): ${event.reason || 'Raison inconnue'}`
       }
     }
-    
+
     socket.value.onerror = (err) => {
       console.error('Erreur WebSocket:', err)
       isConnected.value = false
       isConnecting.value = false
-      error.value = 'Erreur de connexion WebSocket'
+      error.value = 'Erreur de connexion WebSocket. Vérifiez votre authentification.'
     }
     
   } catch (err) {

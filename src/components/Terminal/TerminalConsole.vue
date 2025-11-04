@@ -54,6 +54,7 @@
 import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
+import { useCurrentUserStore } from '../../stores/currentUser'
 import { getTerminalTheme } from '../../utils/terminalTheme'
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
@@ -84,7 +85,10 @@ const { t } = useTranslations({
       errorInitialization: 'Initialization Error',
       errorInitializationMessage: 'Unable to load the terminal. Please check that xterm.js dependencies are installed.',
       errorWebsocket: 'Connection Error',
-      errorWebsocketMessage: 'Unable to connect to the terminal: {message}'
+      errorWebsocketMessage: 'Unable to connect to the terminal: {message}',
+      authenticationFailed: 'Authentication Failed',
+      authenticationFailedMessage: 'Your session has expired. Please log in again.',
+      connectionClosed: 'Connection closed'
     }
   },
   fr: {
@@ -99,12 +103,16 @@ const { t } = useTranslations({
       errorInitialization: 'Erreur d\'initialisation',
       errorInitializationMessage: 'Impossible de charger le terminal. Vérifiez que les dépendances xterm.js sont installées.',
       errorWebsocket: 'Erreur de connexion',
-      errorWebsocketMessage: 'Impossible de se connecter au terminal: {message}'
+      errorWebsocketMessage: 'Impossible de se connecter au terminal: {message}',
+      authenticationFailed: 'Échec de l\'authentification',
+      authenticationFailedMessage: 'Votre session a expiré. Veuillez vous reconnecter.',
+      connectionClosed: 'Connexion fermée'
     }
   }
 })
 
 const { showError: showErrorNotification } = useNotification()
+const userStore = useCurrentUserStore()
 
 // xterm.js modules (lazy loaded)
 let Terminal: any = null
@@ -210,12 +218,28 @@ async function connectWebSocket() {
   try {
     const sessionId = props.sessionInfo.session_id
 
-    // Build WebSocket URL
+    // Build WebSocket URL with token in query parameter
+    // ✅ SECURE: Backend allows query param ONLY for WebSocket upgrade requests
+    // This is safe because:
+    // 1. Only works when Upgrade: websocket header is present
+    // 2. Not logged in standard HTTP access logs
+    // 3. Token consumed immediately during upgrade handshake
+    // 4. Doesn't appear in browser history like regular HTTP URLs
     const protocol = import.meta.env.VITE_PROTOCOL === 'https' ? 'wss' : 'ws'
     const apiUrl = import.meta.env.VITE_API_URL
     const width = terminal.value ? terminal.value.cols : 80
     const height = terminal.value ? terminal.value.rows : 24
-    const wsUrl = `${protocol}://${apiUrl}/api/v1/terminals/${sessionId}/console?width=${width}&height=${height}`
+
+    // Get authentication token
+    const token = userStore.secretToken
+
+    // Build URL with token query parameter (backend expects ?token=, not ?Authorization=)
+    let wsUrl = `${protocol}://${apiUrl}/api/v1/terminals/${sessionId}/console?width=${width}&height=${height}`
+    if (token) {
+      wsUrl += `&token=${encodeURIComponent(token)}`
+    } else {
+      console.warn('No authentication token available for WebSocket connection')
+    }
 
     socket = new WebSocket(wsUrl)
 
@@ -230,15 +254,30 @@ async function connectWebSocket() {
       }
     }
 
-    socket.onclose = () => {
+    socket.onclose = (event) => {
+      console.log('WebSocket closed:', event.code, event.reason)
       isConnected.value = false
       showReconnectButton.value = true
+
+      // Handle authentication failures specifically
+      if (event.code === 1008) {
+        // Policy violation (likely auth failure)
+        error.value = t('terminalStarter.authenticationFailed')
+        showErrorNotification(
+          t('terminalStarter.authenticationFailedMessage'),
+          t('terminalStarter.authenticationFailed')
+        )
+      } else if (event.code !== 1000) {
+        // Not a normal closure
+        error.value = `${t('terminalStarter.connectionClosed')} (${event.code})`
+      }
     }
 
     socket.onerror = (err) => {
       console.error('WebSocket error:', err)
       isConnected.value = false
       showReconnectButton.value = true
+      error.value = t('terminalStarter.errorWebsocketMessage', { message: 'Connection failed' })
     }
 
   } catch (err: any) {
