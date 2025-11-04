@@ -56,7 +56,7 @@ check:version:
 
       # Get latest tag from REMOTE (not local cache which may be stale)
       echo "🔍 Checking remote tags..."
-      git fetch --tags --prune-tags  # Sync local tags with remote, remove stale local tags
+      git fetch --tags --prune-tags 2>/dev/null || true  # Sync local tags with remote, remove stale local tags
 
       # Query remote directly to avoid stale local tags
       REMOTE_TAGS=$(git ls-remote --tags origin | grep -v '\^{}' | cut -d/ -f3 | sort -V)
