@@ -50,6 +50,7 @@ check:version:
     - git config --global user.name "OCF CI"
   script:
     - |
+      set +e  # Don't exit on error - we handle errors explicitly
       # Get current version from VERSION file
       CURRENT_VERSION=$(cat VERSION | tr -d '[:space:]')
       echo "Current version in code: $CURRENT_VERSION"
@@ -59,8 +60,8 @@ check:version:
       git fetch --tags --prune-tags 2>/dev/null || true  # Sync local tags with remote, remove stale local tags
 
       # Query remote directly to avoid stale local tags
-      REMOTE_TAGS=$(git ls-remote --tags origin | grep -v '\^{}' | cut -d/ -f3 | sort -V)
-      LATEST_TAG=$(echo "$REMOTE_TAGS" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
+      REMOTE_TAGS=$(git ls-remote --tags origin | grep -v '\^{}' | cut -d/ -f3 | sort -V || true)
+      LATEST_TAG=$(echo "$REMOTE_TAGS" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' | tail -1 || true)
 
       if [ -z "$LATEST_TAG" ]; then
         LATEST_TAG="v0.0.0"
