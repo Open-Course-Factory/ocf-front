@@ -16,6 +16,7 @@ variables:
 # ============================================================================
 
 stages:
+  - test     # Used in release component
   - check    # Version validation and auto-tagging
   - build    # Docker image creation on release tags
   - release  # Release creation
