@@ -213,7 +213,16 @@
         </div>
         <div class="footer-bottom">
           <div class="footer-left">
-            <p>&copy; 2023-2025 Solution Libre. {{ t('landing.footer.rights') }} - <span class="version">v{{ packageJson.version }}</span></p>
+            <p>&copy; 2023-2025 Solution Libre. {{ t('landing.footer.rights') }}</p>
+            <div class="version-info">
+              <AlphaBadge size="large" />
+              <span class="version-divider">•</span>
+              <span class="version-item">Frontend: v{{ versions.frontend }}</span>
+              <span class="version-divider">•</span>
+              <span class="version-item">API: v{{ versions.api }}</span>
+              <span class="version-divider">•</span>
+              <span class="version-item">Terminal Trainer: v{{ versions.terminalTrainer }}</span>
+            </div>
           </div>
           <div class="footer-language">
             <button @click="toggleLanguage" class="language-toggle">
@@ -240,7 +249,8 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useLocale } from '../../composables/useLocale'
-import packageJson from '../../../package.json'
+import { useVersionInfo } from '../../composables/useVersionInfo'
+import AlphaBadge from '../Common/AlphaBadge.vue'
 
 const { t } = useTranslations({
   en: {
@@ -412,6 +422,7 @@ const { t } = useTranslations({
 })
 
 const { currentLocale, setLocale } = useLocale()
+const { versions } = useVersionInfo()
 const showScrollIndicator = ref(true)
 const isAtBottom = ref(false)
 
@@ -1382,6 +1393,24 @@ onUnmounted(() => {
   opacity: 0.8;
 }
 
+.version-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 0.85rem;
+}
+
+.version-item {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+.version-divider {
+  color: var(--color-text-muted);
+  opacity: 0.5;
+}
+
 .language-toggle {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -1627,6 +1656,12 @@ onUnmounted(() => {
     flex-direction: column;
     text-align: center;
     gap: 15px;
+  }
+
+  .version-info {
+    flex-wrap: wrap;
+    justify-content: center;
+    font-size: 0.8rem;
   }
 
 

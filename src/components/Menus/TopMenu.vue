@@ -31,6 +31,7 @@
         <a href="#" @click.prevent="navigateToHome">
           <i class="fas fa-book"></i>
           <span>OCF</span>
+          <AlphaBadge size="medium" />
         </a>
       </h1>
     </div>
@@ -112,6 +113,27 @@
             </router-link>
           </div>
           <div class="dropdown-divider"></div>
+          <div class="dropdown-section">
+            <div class="dropdown-section-title">
+              {{ t('topMenu.about') }}
+              <AlphaBadge size="small" />
+            </div>
+            <div class="version-details">
+              <div class="version-row">
+                <span class="version-label">{{ t('topMenu.frontend') }}:</span>
+                <span class="version-value">v{{ versions.frontend }}</span>
+              </div>
+              <div class="version-row">
+                <span class="version-label">{{ t('topMenu.api') }}:</span>
+                <span class="version-value">v{{ versions.api }}</span>
+              </div>
+              <div class="version-row">
+                <span class="version-label">{{ t('topMenu.terminalTrainer') }}:</span>
+                <span class="version-value">v{{ versions.terminalTrainer }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="dropdown-divider"></div>
           <button class="dropdown-item disconnect-item" @click="handleDisconnect">
             <i class="fas fa-sign-out-alt"></i>
             <span>{{ t('topMenu.disconnect') }}</span>
@@ -132,6 +154,8 @@ import { useOrganizationsStore } from '../../stores/organizations.ts';
 import { useLocale } from '../../composables/useLocale';
 import { useFeatureFlags } from '../../composables/useFeatureFlags';
 import { useAdminViewMode } from '../../composables/useAdminViewMode';
+import { useVersionInfo } from '../../composables/useVersionInfo';
+import AlphaBadge from '../Common/AlphaBadge.vue';
 
 const { t } = useTranslations({
   en: {
@@ -151,7 +175,11 @@ const { t } = useTranslations({
       personalOrg: 'Personal',
       teamOrg: 'Team',
       manageOrganizations: 'Manage Organizations',
-      learnAboutOrganizations: 'Learn About Organizations'
+      learnAboutOrganizations: 'Learn About Organizations',
+      about: 'About',
+      frontend: 'Frontend',
+      api: 'API',
+      terminalTrainer: 'Terminal Trainer'
     }
   },
   fr: {
@@ -171,7 +199,11 @@ const { t } = useTranslations({
       personalOrg: 'Personnel',
       teamOrg: 'Équipe',
       manageOrganizations: 'Gérer les organisations',
-      learnAboutOrganizations: 'En savoir plus sur les organisations'
+      learnAboutOrganizations: 'En savoir plus sur les organisations',
+      about: 'À propos',
+      frontend: 'Interface',
+      api: 'API',
+      terminalTrainer: 'Terminal Trainer'
     }
   }
 })
@@ -183,6 +215,7 @@ const organizationsStore = useOrganizationsStore();
 const { currentLocale, supportedLocales, setLocale, getLocaleInfo } = useLocale();
 const { isEnabled } = useFeatureFlags();
 const { isAdmin, viewAsStandardUser, toggleViewMode: toggleViewModeComposable, initViewMode } = useAdminViewMode();
+const { versions } = useVersionInfo();
 
 // Organization computed properties
 const currentOrganization = computed(() => organizationsStore.currentOrganization);
@@ -353,6 +386,10 @@ onUnmounted(() => {
 
 .app-title i {
   font-size: var(--font-size-lg);
+}
+
+.app-title .alpha-badge {
+  margin-left: var(--spacing-sm);
 }
 
 .right-controls {
@@ -550,6 +587,9 @@ onUnmounted(() => {
   text-transform: uppercase;
   color: var(--color-text-muted);
   letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .dropdown-divider {
@@ -659,5 +699,32 @@ onUnmounted(() => {
 .dropdown-item-highlighted:hover {
   background-color: rgba(59, 130, 246, 0.1);
   border-left-color: var(--color-primary-hover);
+}
+
+/* Version Details Styles */
+.version-details {
+  padding: var(--spacing-sm) var(--spacing-lg);
+}
+
+.version-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-xs) 0;
+  font-size: var(--font-size-sm);
+}
+
+.version-label {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.version-value {
+  color: var(--color-text-primary);
+  font-family: 'Courier New', monospace;
+  font-size: var(--font-size-xs);
+  background-color: var(--color-bg-secondary);
+  padding: 2px 8px;
+  border-radius: var(--border-radius-sm);
 }
 </style>
