@@ -36,8 +36,8 @@
     @confirm="handleEvent(entity ? 'modify' : 'submit')"
   >
     <div class="checkout-form">
-      <div v-for="[name, field] of entityStore.fieldList" class="form-group">
-        <span v-if="field.type != 'subentity' && ((!entity && field.toBeSet) || (entity && field.toBeEdited))">
+      <template v-for="[name, field] of entityStore.fieldList" :key="name">
+        <div v-if="field.type != 'subentity' && ((!entity && field.toBeSet) || (entity && field.toBeEdited))" class="form-group">
           <!-- Label (not shown for checkbox - handled inside wrapper) -->
           <label v-if="field.type !== 'checkbox'" :for="name">{{ field.label }}</label>
 
@@ -143,10 +143,10 @@
           <div v-if="errors[name]" class="invalid-feedback">
             {{ errors[name] }}
           </div>
-        </span>
-      </div>
+        </div>
+      </template>
       <div v-if="entityStore.subEntitiesStores.size > 0" v-for="[name, store] of entityStore.subEntitiesStores" class="form-group">
-        <span v-if="entityStore.fieldList.get(name).toBeSet">
+        <template v-if="entityStore.fieldList.get(name).toBeSet">
           <label :for="name">{{ name }}</label>
           <v-autocomplete
             label="Autocomplete"
@@ -157,7 +157,7 @@
             item-title="text"
             :class="['form-control', { 'is-invalid': errors[name] }]"
           />
-        </span>
+        </template>
       </div>
     </div>
   </BaseModal>
@@ -491,10 +491,20 @@ function getItemDisplayText(fieldName: string, fieldConfig: any, value: any): st
 .checkout-form {
   display: flex;
   flex-direction: column;
+  margin: 0;
+  padding: 0;
 }
 
 .form-group {
   margin-bottom: var(--spacing-lg);
+}
+
+.form-group:first-child {
+  margin-top: 0;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
 }
 
 textarea {
