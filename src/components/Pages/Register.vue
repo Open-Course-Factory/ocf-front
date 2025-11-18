@@ -222,7 +222,7 @@ const { t } = useTranslations({
       userNameInvalidChars: 'Username can only contain letters, numbers, hyphens and underscores',
       passwordInvalid: 'Password does not meet requirements',
       passwordMismatch: 'Passwords do not match',
-      successMessage: 'Account created successfully! You can now log in.',
+      successMessage: 'Account created successfully! You will be redirected to login page.',
       errorEmailExists: 'A user with this email address already exists',
       errorGeneric: 'Error creating account. Please try again.'
     }
@@ -253,7 +253,7 @@ const { t } = useTranslations({
       userNameInvalidChars: 'Le nom d\'utilisateur ne peut contenir que des lettres, chiffres, tirets et underscores',
       passwordInvalid: 'Le mot de passe ne respecte pas les critères requis',
       passwordMismatch: 'Les mots de passe ne correspondent pas',
-      successMessage: 'Compte créé avec succès ! Vous pouvez maintenant vous connecter.',
+      successMessage: 'Compte créé avec succès ! Vous allez être redirigé vers la page de connexion.',
       errorEmailExists: 'Un utilisateur avec cette adresse email existe déjà',
       errorGeneric: 'Erreur lors de la création du compte. Veuillez réessayer.'
     }
