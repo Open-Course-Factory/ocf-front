@@ -37,7 +37,7 @@
             <input class="form-check-input" type="checkbox" id="rememberMe" v-model="loginStore.rememberMe" />
             <label class="form-check-label" for="rememberMe">{{ t('login.rememberMe') }}</label>
           </div>
-          <router-link to="/password-reset" class="forgot-password">{{ t('login.forgotPassword') }}</router-link>
+          <router-link to="/forgot-password" class="forgot-password">{{ t('login.forgotPassword') }}</router-link>
         </div>
         <button type="submit" class="btn btn-primary btn-block">{{ t('login.submitButton') }}</button>
         <div class="register-link">

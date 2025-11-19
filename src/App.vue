@@ -23,11 +23,15 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useTheme } from './composables/useTheme'
 import { useUserSettingsStore } from './stores/userSettings'
+import { useCurrentUserStore } from './stores/currentUser'
 
+const route = useRoute()
 const { initTheme, setTheme } = useTheme()
 const settingsStore = useUserSettingsStore()
+const currentUserStore = useCurrentUserStore()
 
 // Apply compact mode to document
 function applyCompactMode(enabled: boolean) {
@@ -39,23 +43,32 @@ function applyCompactMode(enabled: boolean) {
 }
 
 onMounted(async () => {
-  // Load user settings from backend
-  try {
-    await settingsStore.loadSettings()
+  // Don't load settings on public pages (login, register, password reset, etc.)
+  const publicPages = ['Login', 'Register', 'PasswordReset', 'ForgotPassword', 'ResetPassword', 'LandingPage', 'Legal', 'HelpPublic']
+  const isPublicPage = publicPages.includes(route.name as string) || route.name?.toString().startsWith('HelpPublic')
 
-    // Apply user's theme preference if available
-    if (settingsStore.settings.theme) {
-      setTheme(settingsStore.settings.theme as 'light' | 'dark' | 'auto')
-    } else {
-      // Fallback to localStorage or default
+  // Only load settings if user is authenticated
+  if (!isPublicPage && currentUserStore.isAuthenticated) {
+    try {
+      await settingsStore.loadSettings()
+
+      // Apply user's theme preference if available
+      if (settingsStore.settings.theme) {
+        setTheme(settingsStore.settings.theme as 'light' | 'dark' | 'auto')
+      } else {
+        // Fallback to localStorage or default
+        initTheme()
+      }
+
+      // Apply compact mode if enabled
+      applyCompactMode(settingsStore.settings.compact_mode || false)
+    } catch (error) {
+      // If settings fail to load, use localStorage or default
+      console.warn('Failed to load user settings, using default theme')
       initTheme()
     }
-
-    // Apply compact mode if enabled
-    applyCompactMode(settingsStore.settings.compact_mode || false)
-  } catch (error) {
-    // If settings fail to load, use localStorage or default
-    console.warn('Failed to load user settings, using default theme')
+  } else {
+    // On public pages, just use localStorage or default theme
     initTheme()
   }
 })

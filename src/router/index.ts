@@ -54,12 +54,26 @@ const basicRoutes = [
   {
     path: '/register',
     name: 'Register',
-    component: () => import('../components/Pages/Register.vue')
+    component: () => import('../components/Pages/Register.vue'),
+    meta: { requiresAuth: false }
   },
   {
     path: '/password-reset',
     name: 'PasswordReset',
-    component: () => import('../components/Pages/PasswordReset.vue')
+    component: () => import('../components/Pages/PasswordReset.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('../components/Pages/PasswordReset.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: () => import('../components/Pages/PasswordReset.vue'),
+    meta: { requiresAuth: false }
   },
   // Legal notices (public, no auth required)
   {
@@ -407,7 +421,7 @@ router.beforeEach(async (to, from, next) => {
     storePreviousRoute(from);
   }
 
-  // Redirect authenticated users away from login/register pages
+  // Redirect authenticated users away from login/register pages (but allow password reset)
   if (to.name === 'Login' || to.name === 'Register') {
     console.log('🔐 Navigation to', to.name, '- isAuthenticated:', currentUserStore.isAuthenticated);
     if (currentUserStore.isAuthenticated) {
@@ -415,6 +429,12 @@ router.beforeEach(async (to, from, next) => {
       next({ path: '/terminal-sessions' });
       return;
     }
+  }
+
+  // Always allow password reset pages (even for authenticated users)
+  if (to.name === 'PasswordReset' || to.name === 'ForgotPassword' || to.name === 'ResetPassword') {
+    next();
+    return;
   }
 
   // Allow access if requiresAuth is explicitly false (public routes)

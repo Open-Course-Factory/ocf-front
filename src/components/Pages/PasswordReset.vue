@@ -88,18 +88,32 @@
         <p class="text-muted">
           {{ t('passwordReset.resetDescription') }}
         </p>
+        <div class="token-expiry-notice">
+          <i class="fas fa-clock"></i>
+          {{ t('passwordReset.linkExpiresIn') }}
+        </div>
 
         <form @submit.prevent="handlePasswordReset">
           <div class="form-group">
             <label for="newPassword">{{ t('passwordReset.newPasswordLabel') }}</label>
-            <input
-              type="password"
-              id="newPassword"
-              v-model="newPassword"
-              :class="['form-control', { 'is-invalid': passwordError }]"
-              @input="validatePassword"
-              required
-            />
+            <div class="password-input-wrapper">
+              <input
+                :type="showPassword ? 'text' : 'password'"
+                id="newPassword"
+                v-model="newPassword"
+                :class="['form-control', { 'is-invalid': passwordError }]"
+                @input="validatePassword"
+                required
+              />
+              <button
+                type="button"
+                class="password-toggle"
+                @click="showPassword = !showPassword"
+                :aria-label="showPassword ? t('passwordReset.hidePassword') : t('passwordReset.showPassword')"
+              >
+                <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+              </button>
+            </div>
 
             <div class="password-requirements">
               <small :class="{ 'text-success': passwordValidations.length, 'text-muted': !passwordValidations.length }">
@@ -123,14 +137,24 @@
 
           <div class="form-group">
             <label for="confirmPassword">{{ t('passwordReset.confirmPasswordLabel') }}</label>
-            <input
-              type="password"
-              id="confirmPassword"
-              v-model="confirmPassword"
-              :class="['form-control', { 'is-invalid': confirmPasswordError }]"
-              @blur="validateConfirmPassword"
-              required
-            />
+            <div class="password-input-wrapper">
+              <input
+                :type="showConfirmPassword ? 'text' : 'password'"
+                id="confirmPassword"
+                v-model="confirmPassword"
+                :class="['form-control', { 'is-invalid': confirmPasswordError }]"
+                @blur="validateConfirmPassword"
+                required
+              />
+              <button
+                type="button"
+                class="password-toggle"
+                @click="showConfirmPassword = !showConfirmPassword"
+                :aria-label="showConfirmPassword ? t('passwordReset.hidePassword') : t('passwordReset.showPassword')"
+              >
+                <i :class="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+              </button>
+            </div>
             <div v-if="confirmPasswordError" class="invalid-feedback">
               {{ confirmPasswordError }}
             </div>
@@ -178,7 +202,6 @@ import { ref, computed, reactive, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
 import { useTranslations } from '../../composables/useTranslations';
-import { extractErrorMessage } from '../../utils/formatters';
 
 const route = useRoute();
 
@@ -192,17 +215,20 @@ const { t } = useTranslations({
       sendLink: 'Send link',
       backToLogin: 'Back to login',
       emailSent: 'Email sent!',
-      emailSentDescription: 'A reset link has been sent to {email}. Check your mailbox and follow the instructions.',
+      emailSentDescription: 'If an account with {email} exists, a reset link has been sent. Please check your inbox and spam folder.',
       didntReceive: 'Didn\'t receive the email?',
       resendIn: 'Resend in {seconds}s',
       resendEmail: 'Resend email',
       resetTitle: 'New password',
       resetDescription: 'Choose a new secure password for your account.',
+      linkExpiresIn: 'This link expires in 1 hour',
       newPasswordLabel: 'New password',
       passwordReq8Chars: 'At least 8 characters',
       passwordReqUppercase: 'One uppercase letter',
       passwordReqNumber: 'One number',
       confirmPasswordLabel: 'Confirm password',
+      showPassword: 'Show password',
+      hidePassword: 'Hide password',
       updating: 'Updating...',
       updatePassword: 'Update password',
       successTitle: 'Password updated!',
@@ -211,7 +237,6 @@ const { t } = useTranslations({
       invalidEmail: 'Invalid email address',
       passwordInvalid: 'Password does not meet requirements',
       passwordMismatch: 'Passwords do not match',
-      errorNoAccount: 'No account associated with this email address',
       errorSendingEmail: 'Error sending email. Please try again.',
       errorInvalidToken: 'Reset link expired or invalid',
       errorUpdatingPassword: 'Error updating password. Please try again.'
@@ -226,17 +251,20 @@ const { t } = useTranslations({
       sendLink: 'Envoyer le lien',
       backToLogin: 'Retour à la connexion',
       emailSent: 'Email envoyé !',
-      emailSentDescription: 'Un lien de réinitialisation a été envoyé à {email}. Vérifiez votre boîte mail et suivez les instructions.',
+      emailSentDescription: 'Si un compte avec {email} existe, un lien de réinitialisation a été envoyé. Veuillez vérifier votre boîte de réception et votre dossier spam.',
       didntReceive: 'Vous n\'avez pas reçu l\'email ?',
       resendIn: 'Renvoyer dans {seconds}s',
       resendEmail: 'Renvoyer l\'email',
       resetTitle: 'Nouveau mot de passe',
       resetDescription: 'Choisissez un nouveau mot de passe sécurisé pour votre compte.',
+      linkExpiresIn: 'Ce lien expire dans 1 heure',
       newPasswordLabel: 'Nouveau mot de passe',
       passwordReq8Chars: 'Au moins 8 caractères',
       passwordReqUppercase: 'Une majuscule',
       passwordReqNumber: 'Un chiffre',
       confirmPasswordLabel: 'Confirmer le mot de passe',
+      showPassword: 'Afficher le mot de passe',
+      hidePassword: 'Masquer le mot de passe',
       updating: 'Mise à jour...',
       updatePassword: 'Mettre à jour le mot de passe',
       successTitle: 'Mot de passe mis à jour !',
@@ -245,7 +273,6 @@ const { t } = useTranslations({
       invalidEmail: 'Adresse email invalide',
       passwordInvalid: 'Le mot de passe ne respecte pas les critères requis',
       passwordMismatch: 'Les mots de passe ne correspondent pas',
-      errorNoAccount: 'Aucun compte associé à cette adresse email',
       errorSendingEmail: 'Erreur lors de l\'envoi de l\'email. Veuillez réessayer.',
       errorInvalidToken: 'Lien de réinitialisation expiré ou invalide',
       errorUpdatingPassword: 'Erreur lors de la mise à jour du mot de passe. Veuillez réessayer.'
@@ -265,6 +292,10 @@ const confirmPasswordError = ref('');
 const errorMessage = ref('');
 const isLoading = ref(false);
 const resendCooldown = ref(0);
+
+// Password visibility toggles
+const showPassword = ref(false);
+const showConfirmPassword = ref(false);
 
 const passwordValidations = reactive({
   length: false,
@@ -333,18 +364,15 @@ const handleRequestReset = async () => {
   errorMessage.value = '';
 
   try {
-    // Requête simplifiée - NOTE: Cet endpoint n'existe pas encore dans votre API
-    await axios.post('/auth/password-reset-request', { email: email.value });
+    // Backend always returns success for security (don't reveal if email exists)
+    await axios.post('/auth/password-reset/request', { email: email.value });
 
     step.value = 'sent';
     startResendCooldown();
   } catch (error: any) {
-    if (error.response?.status === 404) {
-      errorMessage.value = extractErrorMessage(error, t('passwordReset.errorNoAccount'));
-    } else {
-      errorMessage.value = t('passwordReset.errorSendingEmail');
-    }
-    console.error('Erreur reset password request:', error);
+    // Even on error, show generic message for security
+    errorMessage.value = t('passwordReset.errorSendingEmail');
+    console.error('Error requesting password reset:', error);
   } finally {
     isLoading.value = false;
   }
@@ -359,20 +387,25 @@ const handlePasswordReset = async () => {
   errorMessage.value = '';
 
   try {
-    // Requête simplifiée - NOTE: Cet endpoint n'existe pas encore dans votre API
-    await axios.post('/auth/password-reset', {
+    await axios.post('/auth/password-reset/confirm', {
       token: resetToken.value,
       new_password: newPassword.value
     });
 
+    // On success, clear token from memory for security
+    resetToken.value = '';
     step.value = 'success';
   } catch (error: any) {
-    if (error.response?.status === 400) {
-      errorMessage.value = extractErrorMessage(error, t('passwordReset.errorInvalidToken'));
+    // Backend returns specific error messages
+    const errorMsg = error.response?.data?.message;
+    if (errorMsg) {
+      errorMessage.value = errorMsg;
+    } else if (error.response?.status === 400) {
+      errorMessage.value = t('passwordReset.errorInvalidToken');
     } else {
       errorMessage.value = t('passwordReset.errorUpdatingPassword');
     }
-    console.error('Erreur password reset:', error);
+    console.error('Error resetting password:', error);
   } finally {
     isLoading.value = false;
   }
@@ -499,5 +532,53 @@ const startResendCooldown = () => {
 
 .btn i {
   margin-right: var(--spacing-sm);
+}
+
+.token-expiry-notice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.875rem;
+  margin-bottom: var(--spacing-lg);
+}
+
+.token-expiry-notice i {
+  font-size: 1rem;
+}
+
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  padding-right: 40px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.password-toggle:hover {
+  color: var(--color-primary);
+}
+
+.password-toggle i {
+  font-size: 1rem;
 }
 </style>
