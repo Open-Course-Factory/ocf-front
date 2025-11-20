@@ -474,7 +474,7 @@ router.beforeEach(async (to, from, next) => {
   const requiredFeature = to.meta.requiresFeature as string | undefined;
   if (requiredFeature) {
     // Use centralized helper for consistent role handling
-    const actor = currentUserStore.userId ? getCurrentActorRoles() : undefined;
+    const actor = currentUserStore.userId ? getCurrentActorRoles().value : undefined;
 
     // Check cache first
     let isFeatureEnabled: boolean;

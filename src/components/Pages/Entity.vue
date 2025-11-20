@@ -260,6 +260,8 @@ import { getTranslationKey } from '../../utils';
 import { useRoute, useRouter } from 'vue-router';
 import { useBaseStore } from '../../stores/baseStore';
 import { useNotification } from '../../composables/useNotification';
+import { useAdminViewMode } from '../../composables/useAdminViewMode';
+import { useCurrentUserStore } from '../../stores/currentUser';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -378,8 +380,28 @@ const parentFilters = computed(() => {
 });
 
 // Entités affichées (viennent directement du serveur, déjà filtrées)
+// Additional client-side filtering for admin view mode
 const displayedEntities = computed(() => {
-  return props.entityStore.entities || [];
+  const entities = props.entityStore.entities || [];
+
+  // Check if admin is viewing as standard user
+  const { shouldFilterAsStandardUser } = useAdminViewMode();
+  const currentUser = useCurrentUserStore();
+
+  // If admin is viewing as standard user, filter entities to only show owned ones
+  if (shouldFilterAsStandardUser.value && currentUser.userId) {
+    // Filter based on owner_user_id field (for groups and other owned entities)
+    return entities.filter((entity: any) => {
+      // If entity has owner_user_id, only show entities owned by current user
+      if ('owner_user_id' in entity) {
+        return entity.owner_user_id === currentUser.userId;
+      }
+      // For entities without owner_user_id, show all (no filtering)
+      return true;
+    });
+  }
+
+  return entities;
 });
 
 // Vérifier s'il y a des filtres actifs

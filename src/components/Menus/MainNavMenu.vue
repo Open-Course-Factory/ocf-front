@@ -439,8 +439,10 @@ const shouldShowGroupsMenu = computed(() => {
 
 // Catégories filtrées selon le rôle de l'utilisateur et les feature flags
 const filteredCategories = computed(() => {
-  // Use reactive ref with .value to ensure reactivity
-  const userRolesList = userRoles.value || [];
+  // Use getCurrentActorRoles to respect admin view mode
+  const { getCurrentActor } = useFeatureFlags();
+  const actor = getCurrentActor();
+  const userRolesList = actor.roles || [];
 
   console.log('🔄 filteredCategories recomputing:', {
     userRolesList,

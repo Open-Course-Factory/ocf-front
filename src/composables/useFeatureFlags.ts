@@ -31,30 +31,32 @@ export const FEATURE_FLAGS_KEY = Symbol('featureFlags')
  * Centralized helper to get current actor with all roles
  * This ensures consistent role handling across the entire application
  *
- * @returns Actor object with userId and all roles (respecting admin view mode)
+ * @returns Computed actor object with userId and all roles (respecting admin view mode)
  */
 export function getCurrentActorRoles() {
   const currentUser = useCurrentUserStore()
   const { shouldFilterAsStandardUser } = useAdminViewMode()
 
-  let roles = currentUser.userRoles && currentUser.userRoles.length > 0
-    ? currentUser.userRoles
-    : ['member']
+  return computed(() => {
+    let roles = currentUser.userRoles && currentUser.userRoles.length > 0
+      ? currentUser.userRoles
+      : ['member']
 
-  // If admin is viewing as standard user, remove 'administrator' from roles
-  if (shouldFilterAsStandardUser.value) {
-    roles = roles.filter(role => role !== 'administrator')
-    // If no 'member' role exists after filtering, add it (standard users typically have 'member')
-    if (!roles.includes('member')) {
-      roles.push('member')
+    // If admin is viewing as standard user, remove 'administrator' from roles
+    if (shouldFilterAsStandardUser.value) {
+      roles = roles.filter(role => role !== 'administrator')
+      // If no 'member' role exists after filtering, add it (standard users typically have 'member')
+      if (!roles.includes('member')) {
+        roles.push('member')
+      }
     }
-  }
 
-  return {
-    userId: currentUser.userId,
-    role: roles[0] || 'member', // Backward compatibility
-    roles: roles
-  }
+    return {
+      userId: currentUser.userId,
+      role: roles[0] || 'member', // Backward compatibility
+      roles: roles
+    }
+  })
 }
 
 /**
@@ -63,13 +65,13 @@ export function getCurrentActorRoles() {
  */
 export function useFeatureFlags() {
   // Use centralized helper for consistent role handling
-  const getCurrentActor = getCurrentActorRoles
+  const currentActorComputed = getCurrentActorRoles()
 
   /**
    * Check if a feature is enabled for current user (reactive)
    */
   const isEnabled = (flagName: string) => {
-    return isFeatureEnabled(flagName, getCurrentActor())
+    return isFeatureEnabled(flagName, currentActorComputed.value)
   }
 
   /**
@@ -77,7 +79,7 @@ export function useFeatureFlags() {
    */
   const createReactiveFlag = (flagName: string) => {
     return computed(() => {
-      return isFeatureEnabled(flagName, getCurrentActor())
+      return isFeatureEnabled(flagName, currentActorComputed.value)
     })
   }
 
@@ -90,7 +92,7 @@ export function useFeatureFlags() {
    * Update a feature flag (admin only)
    */
   const updateFlag = async (flagName: string, config: Partial<FeatureFlagConfig>) => {
-    const actor = getCurrentActor()
+    const actor = currentActorComputed.value
     if (actor.role === 'administrator') {
       await featureFlagService.updateFlag(flagName, config)
     } else {
@@ -151,7 +153,7 @@ export function useFeatureFlags() {
    * Check if a metric type is visible (for filtering)
    */
   const isMetricVisible = (metricType: string) => {
-    const actor = getCurrentActor()
+    const actor = currentActorComputed.value
     return featureFlagService.isMetricVisible(metricType, actor)
   }
 
@@ -159,7 +161,7 @@ export function useFeatureFlags() {
    * Check if a feature is visible (for filtering)
    */
   const isFeatureVisible = (featureName: string) => {
-    const actor = getCurrentActor()
+    const actor = currentActorComputed.value
     return featureFlagService.isFeatureVisible(featureName, actor)
   }
 
@@ -167,7 +169,7 @@ export function useFeatureFlags() {
    * Get all visible metric types
    */
   const getVisibleMetricTypes = () => {
-    const actor = getCurrentActor()
+    const actor = currentActorComputed.value
     return featureFlagService.getVisibleMetricTypes(actor)
   }
 
@@ -178,7 +180,7 @@ export function useFeatureFlags() {
     entities: T[],
     typeField: keyof T
   ): T[] => {
-    const actor = getCurrentActor()
+    const actor = currentActorComputed.value
     return entities.filter(entity => {
       const entityType = entity[typeField]
       if (!entityType) return true // If no type field, always show
@@ -202,7 +204,7 @@ export function useFeatureFlags() {
     isFeatureVisible,
     getVisibleMetricTypes,
     filterByFeatureFlags,
-    getCurrentActor
+    getCurrentActor: () => currentActorComputed.value
   }
 }
 
