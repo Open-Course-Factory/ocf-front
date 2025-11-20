@@ -561,3 +561,27 @@ export interface AuditLog extends BaseEntity {
   ip_address?: string
   user_agent?: string
 }
+
+/**
+ * Email Template Variable
+ */
+export interface EmailTemplateVariable {
+  name: string
+  description: string
+  example: string
+}
+
+/**
+ * Email Template entity
+ */
+export interface EmailTemplate extends BaseEntity {
+  name: string
+  display_name: string
+  description?: string
+  subject: string
+  html_body: string
+  variables: string // JSON string of EmailTemplateVariable[]
+  is_active: boolean
+  is_system: boolean
+  last_tested_at?: string
+}

@@ -344,6 +344,24 @@ const basicRoutes = [
         component: () => import('../components/Pages/Admin/InvoiceCleanup.vue'),
         meta: { requiresAuth: true, requiresAdmin: true }
       },
+      {
+        path: 'admin/email-templates',
+        name: 'EmailTemplates',
+        component: () => import('../components/Pages/EmailTemplates.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'admin/email-templates/new',
+        name: 'EmailTemplateCreate',
+        component: () => import('../components/Pages/EmailTemplateEditor.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'admin/email-templates/:id/edit',
+        name: 'EmailTemplateEdit',
+        component: () => import('../components/Pages/EmailTemplateEditor.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
 
       // Help and Documentation routes
       {
@@ -459,7 +477,7 @@ router.beforeEach(async (to, from, next) => {
   if (requiredFeature) {
     const actor = currentUserStore.userId ? {
       userId: currentUserStore.userId,
-      role: currentUserStore.userRoles[0]
+      role: currentUserStore.userRoles?.[0] || 'member'
     } : undefined;
 
     // Create cache key combining route and user
