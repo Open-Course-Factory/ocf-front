@@ -22,6 +22,7 @@
 import { computed, inject, provide } from 'vue'
 import { featureFlagService, isFeatureEnabled, type FeatureFlagConfig } from '../services/features'
 import { useCurrentUserStore } from '../stores/currentUser'
+import { useAdminViewMode } from './useAdminViewMode'
 
 // Feature flags context key for provide/inject
 export const FEATURE_FLAGS_KEY = Symbol('featureFlags')
@@ -32,12 +33,30 @@ export const FEATURE_FLAGS_KEY = Symbol('featureFlags')
  */
 export function useFeatureFlags() {
   const currentUser = useCurrentUserStore()
+  const { shouldFilterAsStandardUser } = useAdminViewMode()
 
   // Get current user context for actor-based checking
-  const getCurrentActor = () => ({
-    userId: currentUser.userId,
-    role: currentUser.userRoles?.[0] || 'member'
-  })
+  // If admin is viewing as standard user, filter out 'administrator' role
+  const getCurrentActor = () => {
+    let roles = currentUser.userRoles && currentUser.userRoles.length > 0
+      ? currentUser.userRoles
+      : ['member']
+
+    // If admin is viewing as standard user, remove 'administrator' from roles
+    if (shouldFilterAsStandardUser.value) {
+      roles = roles.filter(role => role !== 'administrator')
+      // If no 'member' role exists after filtering, add it (standard users typically have 'member')
+      if (!roles.includes('member')) {
+        roles.push('member')
+      }
+    }
+
+    return {
+      userId: currentUser.userId,
+      role: roles[0] || 'member', // Backward compatibility
+      roles: roles
+    }
+  }
 
   /**
    * Check if a feature is enabled for current user (reactive)
