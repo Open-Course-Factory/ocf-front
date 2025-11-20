@@ -473,7 +473,7 @@ export class FeatureFlagService {
    */
   isEnabled(
     flagName: string,
-    actor?: { userId?: string, role?: string, projectId?: string }
+    actor?: { userId?: string, role?: string, roles?: string[], projectId?: string }
   ): boolean {
     const flag = this.flags[flagName]
 
@@ -483,27 +483,55 @@ export class FeatureFlagService {
       return false
     }
 
-    // Debug logging for troubleshooting
+    // Check base enabled state first
     if (!flag.enabled) {
       console.debug(`🏴 Feature flag "${flagName}" is DISABLED (enabled=${flag.enabled}, initialized=${this.isInitialized}, lastFetch=${this.lastFetch})`)
       return false
     }
 
-    console.debug(`🏴 Feature flag "${flagName}" is ENABLED (enabled=${flag.enabled}, actor role=${actor?.role})`)
+    const actorRoles = actor?.roles || (actor?.role ? [actor.role] : [])
+    console.debug(`🏴 Feature flag "${flagName}" is ENABLED (enabled=${flag.enabled}, actor roles=${actorRoles.join(', ')})`)
 
-    // Check base enabled state
-    if (!flag.enabled) {
-      return false
+    // If no restrictions are defined, the flag is globally enabled
+    const hasRoleRestrictions = flag.allowedRoles && flag.allowedRoles.length > 0
+    const hasUserRestrictions = flag.allowedUsers && flag.allowedUsers.length > 0
+
+    // If no restrictions exist, flag is globally enabled
+    if (!hasRoleRestrictions && !hasUserRestrictions) {
+      console.debug(`🏴 Feature flag "${flagName}" allowed: no restrictions (globally enabled)`)
+      return true
     }
 
-    // Check role-based restrictions
-    if (flag.allowedRoles && actor?.role) {
-      return flag.allowedRoles.includes(actor.role)
+    // If there are role restrictions, check them
+    if (hasRoleRestrictions) {
+      if (actorRoles.length === 0) {
+        console.debug(`🏴 Feature flag "${flagName}" blocked: role restrictions exist but no actor roles provided`)
+        return false
+      }
+      // Check if ANY of the actor's roles matches ANY of the allowed roles
+      const roleAllowed = actorRoles.some(actorRole => flag.allowedRoles!.includes(actorRole))
+      if (!roleAllowed) {
+        console.debug(`🏴 Feature flag "${flagName}" blocked: actor roles [${actorRoles.join(', ')}] not in allowedRoles [${flag.allowedRoles!.join(', ')}]`)
+        return false
+      }
+      const matchedRole = actorRoles.find(actorRole => flag.allowedRoles!.includes(actorRole))
+      console.debug(`🏴 Feature flag "${flagName}" allowed: role "${matchedRole}" matches`)
+      return true
     }
 
-    // Check user-based restrictions
-    if (flag.allowedUsers && actor?.userId) {
-      return flag.allowedUsers.includes(actor.userId)
+    // If there are user restrictions, check them
+    if (hasUserRestrictions) {
+      if (!actor?.userId) {
+        console.debug(`🏴 Feature flag "${flagName}" blocked: user restrictions exist but no actor userId provided`)
+        return false
+      }
+      const userAllowed = flag.allowedUsers!.includes(actor.userId)
+      if (!userAllowed) {
+        console.debug(`🏴 Feature flag "${flagName}" blocked: user "${actor.userId}" not in allowedUsers`)
+        return false
+      }
+      console.debug(`🏴 Feature flag "${flagName}" allowed: user "${actor.userId}" matches`)
+      return true
     }
 
     // Check rollout percentage (simple implementation)
@@ -512,7 +540,8 @@ export class FeatureFlagService {
     //   return (userHash % 100) < flag.rolloutPercentage
     // }
 
-    return flag.enabled
+    // Fallback: flag is globally enabled
+    return true
   }
 
   /**
