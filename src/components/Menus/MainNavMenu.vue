@@ -102,6 +102,7 @@ const { isPersonalOrganization } = storeToRefs(organizationsStore);
 const { loadHelpTranslations } = useHelpTranslations();
 
 const currentUser = useCurrentUserStore();
+const { userRoles, permissions } = storeToRefs(currentUser); // Make roles and permissions reactive
 const { t } = useI18n();
 const route = useRoute();
 
@@ -427,10 +428,10 @@ const shouldShowGroupsMenu = computed(() => {
 
   console.log('🔐 Groups menu visibility check:', {
     hasViewGroupsPermission: result,
-    allPermissions: currentUser.permissions,
-    permissionsCount: currentUser.permissions.length,
+    allPermissions: permissions.value,
+    permissionsCount: permissions.value.length,
     userId: currentUser.userId,
-    userRoles: currentUser.userRoles
+    userRoles: userRoles.value
   })
 
   return result
@@ -438,7 +439,24 @@ const shouldShowGroupsMenu = computed(() => {
 
 // Catégories filtrées selon le rôle de l'utilisateur et les feature flags
 const filteredCategories = computed(() => {
-  const userRole = currentUser.userRoles[0];
+  // Use reactive ref with .value to ensure reactivity
+  const userRolesList = userRoles.value || [];
+
+  console.log('🔄 filteredCategories recomputing:', {
+    userRolesList,
+    permissionsCount: permissions.value.length,
+    hasViewGroups: permissions.value.includes('view_groups')
+  });
+
+  /**
+   * Check if user has any of the allowed roles
+   * Handles multi-role users (e.g., ["organization:xxx", "organization_manager:xxx", "administrator"])
+   */
+  const hasAnyAllowedRole = (allowedRoles: string[]): boolean => {
+    // Check if ANY user role matches ANY allowed role
+    return userRolesList.some(userRole => allowedRoles.includes(userRole));
+  };
+
   return menuCategories.value
     .filter(category => {
       // Hide organizations menu for personal organizations
@@ -449,14 +467,20 @@ const filteredCategories = computed(() => {
       if (category.key === 'groups') {
         return shouldShowGroupsMenu.value
       }
-      // Check role access
-      if (!category.allowedRoles.includes(userRole)) {
+      // Check role access - user must have at least ONE of the allowed roles
+      if (!hasAnyAllowedRole(category.allowedRoles)) {
+        console.log(`  ❌ Category "${category.key}" filtered out: user roles`, userRolesList, 'not in', category.allowedRoles);
         return false
       }
       // Check category-level feature flag
       if (category.featureFlag) {
-        return isFeatureEnabled(category.featureFlag)
+        const enabled = isFeatureEnabled(category.featureFlag);
+        if (!enabled) {
+          console.log(`  ❌ Category "${category.key}" filtered out: feature flag "${category.featureFlag}" disabled`);
+        }
+        return enabled
       }
+      console.log(`  ✅ Category "${category.key}" visible`);
       return true
     })
     .map(category => ({
