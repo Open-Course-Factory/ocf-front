@@ -36,7 +36,7 @@ export function useFeatureFlags() {
   // Get current user context for actor-based checking
   const getCurrentActor = () => ({
     userId: currentUser.userId,
-    role: currentUser.userRoles[0] || 'member'
+    role: currentUser.userRoles?.[0] || 'member'
   })
 
   /**
