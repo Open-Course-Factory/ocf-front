@@ -404,6 +404,12 @@ const menuCategories = computed((): MenuCategory[] => [
         icon: 'fas fa-chart-line'
       },
       {
+        route: '/email-templates',
+        label: t('navigation.emailTemplates'),
+        title: t('navigation.emailTemplatesTitle'),
+        icon: 'fas fa-envelope'
+      },
+      {
         route: '/debug/feature-flags',
         label: t('navigation.featureFlags'),
         title: t('navigation.featureFlagsTitle'),
