@@ -23,6 +23,7 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import { useCurrentUserStore } from '../stores/currentUser';
 import { featureFlagService } from '../services/features';
 import { useSettingsNavigation } from '../composables/useSettingsNavigation';
+import { getCurrentActorRoles } from '../composables/useFeatureFlags';
 import Layout from '../components/Layout.vue';
 import Courses from '../components/Pages/Courses.vue';
 import Chapters from '../components/Pages/Chapters.vue';
@@ -472,13 +473,8 @@ router.beforeEach(async (to, from, next) => {
   // Check feature flags (deep link protection) with per-route caching
   const requiredFeature = to.meta.requiresFeature as string | undefined;
   if (requiredFeature) {
-    const actor = currentUserStore.userId ? {
-      userId: currentUserStore.userId,
-      role: currentUserStore.userRoles?.[0] || 'member',
-      roles: currentUserStore.userRoles && currentUserStore.userRoles.length > 0
-        ? currentUserStore.userRoles
-        : ['member']
-    } : undefined;
+    // Use centralized helper for consistent role handling
+    const actor = currentUserStore.userId ? getCurrentActorRoles() : undefined;
 
     // Check cache first
     let isFeatureEnabled: boolean;

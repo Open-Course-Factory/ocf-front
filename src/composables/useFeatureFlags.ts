@@ -28,35 +28,42 @@ import { useAdminViewMode } from './useAdminViewMode'
 export const FEATURE_FLAGS_KEY = Symbol('featureFlags')
 
 /**
+ * Centralized helper to get current actor with all roles
+ * This ensures consistent role handling across the entire application
+ *
+ * @returns Actor object with userId and all roles (respecting admin view mode)
+ */
+export function getCurrentActorRoles() {
+  const currentUser = useCurrentUserStore()
+  const { shouldFilterAsStandardUser } = useAdminViewMode()
+
+  let roles = currentUser.userRoles && currentUser.userRoles.length > 0
+    ? currentUser.userRoles
+    : ['member']
+
+  // If admin is viewing as standard user, remove 'administrator' from roles
+  if (shouldFilterAsStandardUser.value) {
+    roles = roles.filter(role => role !== 'administrator')
+    // If no 'member' role exists after filtering, add it (standard users typically have 'member')
+    if (!roles.includes('member')) {
+      roles.push('member')
+    }
+  }
+
+  return {
+    userId: currentUser.userId,
+    role: roles[0] || 'member', // Backward compatibility
+    roles: roles
+  }
+}
+
+/**
  * Vue 3 Composable for Feature Flags
  * GitLab-style implementation with provide/inject pattern
  */
 export function useFeatureFlags() {
-  const currentUser = useCurrentUserStore()
-  const { shouldFilterAsStandardUser } = useAdminViewMode()
-
-  // Get current user context for actor-based checking
-  // If admin is viewing as standard user, filter out 'administrator' role
-  const getCurrentActor = () => {
-    let roles = currentUser.userRoles && currentUser.userRoles.length > 0
-      ? currentUser.userRoles
-      : ['member']
-
-    // If admin is viewing as standard user, remove 'administrator' from roles
-    if (shouldFilterAsStandardUser.value) {
-      roles = roles.filter(role => role !== 'administrator')
-      // If no 'member' role exists after filtering, add it (standard users typically have 'member')
-      if (!roles.includes('member')) {
-        roles.push('member')
-      }
-    }
-
-    return {
-      userId: currentUser.userId,
-      role: roles[0] || 'member', // Backward compatibility
-      roles: roles
-    }
-  }
+  // Use centralized helper for consistent role handling
+  const getCurrentActor = getCurrentActorRoles
 
   /**
    * Check if a feature is enabled for current user (reactive)
