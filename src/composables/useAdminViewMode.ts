@@ -35,7 +35,7 @@ export function useAdminViewMode() {
    * Check if user is an admin
    */
   const isAdmin = computed(() =>
-    currentUser.userRoles.includes('administrator')
+    currentUser.userRoles?.includes('administrator') ?? false
   )
 
   /**

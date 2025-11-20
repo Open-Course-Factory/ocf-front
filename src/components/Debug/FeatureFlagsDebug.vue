@@ -140,7 +140,7 @@ const isSyncing = ref(false)
 const error = ref<string | null>(null)
 
 // Only show for administrators
-const isAdmin = computed(() => currentUser.userRoles[0] === 'administrator')
+const isAdmin = computed(() => currentUser.userRoles?.[0] === 'administrator')
 
 // Load from backend on mount
 onMounted(async () => {
