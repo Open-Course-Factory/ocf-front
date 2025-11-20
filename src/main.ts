@@ -235,12 +235,19 @@ async function initializeApp() {
         console.warn('⚠️ Feature flags initialization failed, using defaults:', err?.message || err)
     }
 
-    // Step 5: Load user permissions if authenticated
+    // Step 5: Load user data and permissions if authenticated
     if (userStore.isAuthenticated) {
         try {
+            // Load user data first (userName, userRoles, etc.)
+            console.log('🔐 Loading user data...')
+            await userStore.loadUserData()
+            console.log('✅ User data loaded successfully')
+
+            // Then load permissions
             await userStore.loadPermissions()
+            console.log('✅ Permissions loaded successfully')
         } catch (err: any) {
-            console.warn('⚠️ Permissions loading failed:', err?.message || err)
+            console.warn('⚠️ User data/permissions loading failed:', err?.message || err)
         }
     }
 

@@ -113,6 +113,85 @@ export const useCurrentUserStore = defineStore('currentUser', {
         },
 
         /**
+         * Load user data from backend (for page refresh with existing token)
+         * This reloads userName, userDisplayName, userId, and userRoles
+         */
+        async loadUserData() {
+            try {
+                console.log('🔐 Loading user data from backend...');
+
+                // Try /auth/me first (should return user_roles like /auth/login does)
+                let response;
+                let userData;
+
+                try {
+                    response = await axios.get('/auth/me');
+                    userData = response.data.data || response.data;
+                    console.log('🔐 Using /auth/me endpoint');
+                } catch (authMeError: any) {
+                    // If /auth/me doesn't exist (404), fall back to /users/me
+                    if (authMeError.response?.status === 404) {
+                        console.log('🔐 /auth/me not found, trying /users/me');
+                        response = await axios.get('/users/me');
+                        userData = response.data.data || response.data;
+                    } else {
+                        throw authMeError;
+                    }
+                }
+
+                console.log('🔐 Raw backend response:', JSON.stringify(response.data, null, 2));
+                console.log('🔐 User data received:', userData);
+                console.log('🔐 userData.roles:', userData.roles);
+                console.log('🔐 userData.user_roles:', userData.user_roles);
+
+                // Populate user store from backend response
+                this.userId = userData.id || userData.user_id;
+                this.userName = userData.username || userData.user_name || userData.name || userData.email;
+                this.userDisplayName = userData.display_name || this.userName;
+
+                // Extract role names from roles array or user_roles field
+                if (userData.user_roles && Array.isArray(userData.user_roles)) {
+                    // Direct user_roles field (from /auth/me or /auth/login)
+                    this.userRoles = userData.user_roles;
+                    console.log('🔐 Using user_roles field directly:', this.userRoles);
+                } else if (userData.roles && Array.isArray(userData.roles)) {
+                    // Roles as objects (from /users/me)
+                    this.userRoles = userData.roles.map((role: any) => role.name);
+                    console.log('🔐 Extracted userRoles from roles array:', this.userRoles);
+                } else {
+                    console.warn('⚠️ No roles found in user data! userData:', userData);
+                    this.userRoles = [];
+                }
+
+                console.log('✅ User data loaded:', {
+                    userId: this.userId,
+                    userName: this.userName,
+                    userDisplayName: this.userDisplayName,
+                    userRoles: this.userRoles
+                });
+
+                return userData;
+            } catch (error: any) {
+                console.error('❌ Failed to load user data:', error);
+                console.error('❌ Error details:', {
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    data: error.response?.data,
+                    message: error.message
+                });
+
+                // If we can't load user data, the token might be invalid
+                // Clear authentication state
+                if (error.response?.status === 401 || error.response?.status === 403) {
+                    console.warn('⚠️ Unauthorized - clearing auth state');
+                    this.autoLogout();
+                }
+
+                throw error;
+            }
+        },
+
+        /**
          * Generic HTTP method to action mapping
          * Converts resource-based permissions to action-based permissions
          */
@@ -179,11 +258,24 @@ export const useCurrentUserStore = defineStore('currentUser', {
                 console.log('🔐 Backend response status:', response.status);
                 console.log('🔐 Backend response data (raw):', JSON.stringify(response.data, null, 2));
 
+                // Extract user ID if not already set
+                if (response.data.user_id && !this.userId) {
+                    this.userId = response.data.user_id;
+                    console.log('🔐 User ID extracted from /auth/permissions:', this.userId);
+                }
+
+                // Extract user roles from response
+                if (response.data.roles && Array.isArray(response.data.roles)) {
+                    this.userRoles = response.data.roles;
+                    console.log('🔐 User roles extracted from /auth/permissions:', this.userRoles);
+                }
+
                 // Transform resource permissions to action permissions
                 this.permissions = this.transformResourcePermissions(response.data);
 
                 console.log('✅ User permissions loaded (transformed):', this.permissions);
                 console.log('✅ Permissions count:', this.permissions.length);
+                console.log('✅ User roles:', this.userRoles);
                 console.log('✅ Has view_groups permission:', this.permissions.includes('view_groups'));
 
                 return this.permissions;
