@@ -152,7 +152,7 @@
     </template>
 
     <template #footer>
-      <button type="submit" class="btn btn-primary" @click="shareTerminal" :disabled="isSharing">
+      <button type="submit" class="btn btn-primary" @click="shareTerminal" :disabled="isSharing || !isFormValid">
         <i v-if="isSharing" class="fas fa-spinner fa-spin"></i>
         <i v-else class="fas fa-share-alt"></i>
         {{ isSharing ? t('terminalSharing.buttonSharing') : t('terminalSharing.buttonShare') }}
@@ -208,7 +208,9 @@ const { t } = useTranslations({
       successMessage: 'Terminal successfully shared!',
       successTitle: 'Success',
       errorLoading: 'Error loading terminal information',
-      errorSharing: 'Error sharing the terminal'
+      errorSharing: 'Error sharing the terminal',
+      errorNoUserSelected: 'Please select a user to share the terminal with',
+      errorNoGroupSelected: 'Please select a group to share the terminal with'
     }
   },
   fr: {
@@ -243,7 +245,9 @@ const { t } = useTranslations({
       successMessage: 'Terminal partagé avec succès!',
       successTitle: 'Succès',
       errorLoading: 'Erreur lors du chargement des informations du terminal',
-      errorSharing: 'Erreur lors du partage du terminal'
+      errorSharing: 'Erreur lors du partage du terminal',
+      errorNoUserSelected: 'Veuillez sélectionner un utilisateur avec qui partager le terminal',
+      errorNoGroupSelected: 'Veuillez sélectionner un groupe avec qui partager le terminal'
     }
   }
 })
@@ -295,6 +299,15 @@ const filteredGroups = computed(() => {
   )
 })
 
+// Check if form is valid (user or group selected)
+const isFormValid = computed(() => {
+  if (shareType.value === 'user') {
+    return !!shareData.value.shared_with_user_id
+  } else {
+    return !!shareData.value.shared_with_group_id
+  }
+})
+
 watch(() => props.show, async (newShow) => {
   if (newShow && props.terminalId) {
     await loadTerminalInfo()
@@ -319,6 +332,17 @@ async function loadTerminalInfo() {
 
 async function shareTerminal() {
   if (!props.terminalId) return
+
+  // Validate that a user or group has been selected
+  if (shareType.value === 'user' && !shareData.value.shared_with_user_id) {
+    error.value = t('terminalSharing.errorNoUserSelected')
+    return
+  }
+
+  if (shareType.value === 'group' && !shareData.value.shared_with_group_id) {
+    error.value = t('terminalSharing.errorNoGroupSelected')
+    return
+  }
 
   isSharing.value = true
   error.value = ''
