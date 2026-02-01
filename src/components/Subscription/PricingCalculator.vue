@@ -157,10 +157,10 @@
 
       <!-- Help Link -->
       <div class="help-link-section">
-        <a href="/help/bulk-licensing" class="help-link">
+        <router-link to="/help-public/account/billing" class="help-link">
           <i class="fas fa-question-circle"></i>
           {{ t('pricingCalculator.learnMore') }}
-        </a>
+        </router-link>
       </div>
 
       <div v-if="showPurchaseButton" class="action-section">
