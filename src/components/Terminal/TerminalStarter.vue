@@ -34,7 +34,7 @@
 
           <Button
             type="button"
-            variant="primary"
+            variant="outline-primary"
             size="md"
             :icon="isStarting ? 'fas fa-spinner fa-spin' : 'fas fa-rocket'"
             :disabled="!isFormValid || isStarting"
