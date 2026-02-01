@@ -26,6 +26,12 @@
     <SettingsCard v-show="showStartPanel" :title="t('terminals.startNewSession')">
       <template #headerActions>
         <div class="header-actions-group">
+          <!-- Session Count Badge -->
+          <div v-if="currentTerminalCount > 0" class="session-count-badge">
+            <i class="fas fa-terminal"></i>
+            <span>{{ t('terminalStarter.activeSessions', { count: currentTerminalCount }) }}</span>
+          </div>
+
           <!-- Compact Capacity Check -->
           <div v-if="selectedInstanceType" class="capacity-check-inline" :class="`status-${capacityStatusLevel}`">
             <i :class="capacityStatusIcon"></i>
@@ -228,7 +234,8 @@ const { t } = useTranslations({
       errorStopping: 'Error stopping',
       errorStoppingMessage: 'Error stopping the session',
       errorServerCapacity: 'Server at Capacity',
-      errorServerCapacityMessage: 'The server does not have enough resources to create a new terminal session. Please try again in a few minutes or stop an existing terminal.'
+      errorServerCapacityMessage: 'The server does not have enough resources to create a new terminal session. Please try again in a few minutes or stop an existing terminal.',
+      activeSessions: '{count} active session | {count} active sessions'
     }
   },
   fr: {
@@ -271,7 +278,8 @@ const { t } = useTranslations({
       errorStopping: 'Erreur d\'arrêt',
       errorStoppingMessage: 'Erreur lors de l\'arrêt de la session',
       errorServerCapacity: 'Serveur à Capacité Maximale',
-      errorServerCapacityMessage: 'Le serveur n\'a pas suffisamment de ressources pour créer une nouvelle session terminal. Veuillez réessayer dans quelques minutes ou arrêter un terminal existant.'
+      errorServerCapacityMessage: 'Le serveur n\'a pas suffisamment de ressources pour créer une nouvelle session terminal. Veuillez réessayer dans quelques minutes ou arrêter un terminal existant.',
+      activeSessions: '{count} session active | {count} sessions actives'
     }
   }
 })
@@ -408,6 +416,8 @@ const capacityStatusText = computed(() => {
 const isFormValid = computed(() => {
   if (!selectedInstanceType.value) return false
   if (creationMode.value === 'bulk' && !selectedGroupId.value) return false
+  // Check if user has reached terminal limit
+  if (creationMode.value === 'single' && currentTerminalCount.value >= maxTerminals.value) return false
   return true
 })
 
@@ -947,6 +957,22 @@ onBeforeUnmount(() => {
   gap: var(--spacing-md);
 }
 
+.session-count-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  background-color: var(--color-info-bg);
+  color: var(--color-info-text);
+}
+
+.session-count-badge i {
+  color: var(--color-info);
+}
+
 .capacity-check-inline {
   display: flex;
   align-items: center;
@@ -1128,6 +1154,10 @@ onBeforeUnmount(() => {
     align-items: stretch;
     gap: var(--spacing-sm);
     width: 100%;
+  }
+
+  .session-count-badge {
+    justify-content: center;
   }
 
   .capacity-check-inline {
