@@ -1,4 +1,4 @@
-<!-- 
+<!--
 /*
  * Open Course Factory - Front
  * Copyright (C) 2023-2025 Solution Libre
@@ -7,36 +7,81 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
-
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
-
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * Copyright (c) - All Rights Reserved.
- * 
+ *
  * See the LICENSE file for more information.
- */ 
+ */
 -->
 
 <template>
-  <div class="terminal-viewer">
-    <!-- Barre d'état minimale -->
+  <!-- SettingsCard wrapper mode -->
+  <SettingsCard v-if="useSettingsCard" :title="title">
+    <template #headerActions>
+      <Button
+        variant="warning"
+        size="sm"
+        icon="fas fa-sync"
+        v-show="showReconnectButton"
+        @click="reconnect"
+      >
+        {{ t('terminal.reconnect') }}
+      </Button>
+
+      <div class="connection-status">
+        <span v-if="isConnected" class="status-connected">
+          <i class="fas fa-circle"></i> {{ t('terminal.connected') }}
+        </span>
+        <span v-else class="status-disconnected">
+          <i class="fas fa-circle"></i> {{ t('terminal.disconnected') }}
+        </span>
+      </div>
+    </template>
+
+    <div class="terminal-wrapper">
+      <div ref="terminalRef" class="terminal-container" :class="{ 'terminal-full-height': fullHeight }"></div>
+      <div v-if="!terminal" class="terminal-placeholder">
+        <i class="fas fa-terminal fa-3x"></i>
+        <p>{{ loadingMessage }}</p>
+        <p v-if="error" class="text-danger">{{ error }}</p>
+      </div>
+    </div>
+
+    <div class="terminal-footer" v-if="sessionInfo">
+      <div class="terminal-info">
+        <small class="text-muted">
+          Session: {{ sessionInfo.session_id }} |
+          {{ t('terminal.status') }}: {{ sessionInfo.status }} |
+          <span v-if="isConnected" class="text-success">{{ t('terminal.websocketConnected') }}</span>
+          <span v-else class="text-danger">{{ t('terminal.websocketDisconnected') }}</span>
+        </small>
+      </div>
+    </div>
+  </SettingsCard>
+
+  <!-- Standalone mode (iframe/viewer) -->
+  <div v-else class="terminal-viewer" :class="{ 'terminal-full-height': fullHeight }">
+    <!-- Header -->
     <div class="terminal-header" v-if="showHeader">
       <div class="session-info">
         <span class="session-id">
           <i class="fas fa-terminal"></i>
-          {{ sessionId }}
+          {{ displaySessionId }}
         </span>
         <div class="connection-status">
           <span v-if="isConnected" class="status-connected">
-            <i class="fas fa-circle"></i> {{ t('terminalViewer.connected') }}
+            <i class="fas fa-circle"></i> {{ t('terminal.connected') }}
           </span>
           <span v-else class="status-disconnected">
             <i class="fas fa-circle"></i>
-            {{ isConnecting ? t('terminalViewer.connecting') : t('terminalViewer.disconnected') }}
+            {{ isConnecting ? t('terminal.connecting') : t('terminal.disconnected') }}
           </span>
         </div>
       </div>
@@ -45,63 +90,114 @@
           class="btn btn-sm btn-warning"
           @click="reconnect"
           v-if="!isConnected && !isConnecting"
-          :title="t('terminalViewer.reconnect')"
+          :title="t('terminal.reconnect')"
         >
           <i class="fas fa-sync"></i>
         </button>
       </div>
     </div>
 
-    <!-- Terminal principal -->
+    <!-- Terminal container -->
     <div class="terminal-container" ref="terminalRef">
       <div v-if="!terminal && !error" class="terminal-loading">
         <i class="fas fa-spinner fa-spin fa-2x"></i>
         <p>{{ loadingMessage }}</p>
       </div>
-      
+
       <div v-if="error" class="terminal-error">
         <i class="fas fa-exclamation-triangle fa-2x"></i>
-        <h3>{{ t('terminals.connectionError') }}</h3>
+        <h3>{{ t('terminal.connectionError') }}</h3>
         <p>{{ error }}</p>
         <button class="btn btn-primary" @click="retry">
           <i class="fas fa-redo"></i>
-          {{ t('ui.retry') }}
+          {{ t('terminal.retry') }}
         </button>
       </div>
     </div>
 
-    <!-- Footer optionnel -->
+    <!-- Footer -->
     <div class="terminal-footer" v-if="showFooter">
       <small class="text-muted">
-        Terminal OCF - Session: {{ sessionId }}
+        Terminal OCF - Session: {{ displaySessionId }}
       </small>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+<script setup lang="ts">
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCurrentUserStore } from '../../stores/currentUser'
-import { getTerminalTheme } from '../../utils/terminalTheme'
-import { terminalService } from '../../services/domain/terminal/terminalService'
 import { useTranslations } from '../../composables/useTranslations'
+import { useNotification } from '../../composables/useNotification'
+import { getTerminalTheme } from '../../utils/terminalTheme'
+import { terminalService, type SharedTerminalInfo } from '../../services/domain/terminal/terminalService'
+import SettingsCard from '../UI/SettingsCard.vue'
+import Button from '../UI/Button.vue'
+
+interface SessionInfo {
+  session_id: string
+  console_url?: string
+  expires_at?: string
+  status?: string
+}
+
+// Helper to convert SharedTerminalInfo to SessionInfo
+function toSessionInfo(shared: SharedTerminalInfo): SessionInfo {
+  return {
+    session_id: shared.terminal.session_id,
+    expires_at: shared.terminal.expires_at,
+    status: shared.terminal.status
+  }
+}
+
+interface Props {
+  // Session identification - provide either sessionId or sessionInfo
+  sessionId?: string | null
+  sessionInfo?: SessionInfo | null
+  // Display options
+  showHeader?: boolean
+  showFooter?: boolean
+  hideControls?: boolean
+  autoConnect?: boolean
+  // Layout options
+  useSettingsCard?: boolean
+  title?: string
+  fullHeight?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  sessionId: null,
+  sessionInfo: null,
+  showHeader: true,
+  showFooter: false,
+  hideControls: false,
+  autoConnect: true,
+  useSettingsCard: false,
+  title: 'Console Terminal',
+  fullHeight: true
+})
 
 // Translations
 const { t } = useTranslations({
   en: {
-    terminalViewer: {
+    terminal: {
+      reconnect: 'Reconnect',
       connected: 'Connected',
       disconnected: 'Disconnected',
       connecting: 'Connecting...',
-      reconnect: 'Reconnect',
-      sessionMissing: 'Session ID missing',
-      terminalInitError: 'Unable to initialize terminal',
-      loadingModules: 'Loading terminal modules...',
+      status: 'Status',
+      websocketConnected: 'WebSocket connected',
+      websocketDisconnected: 'WebSocket disconnected',
+      initializingTerminal: 'Initializing terminal...',
+      loadingModules: 'Loading xterm.js modules...',
       terminalInitialized: 'Terminal initialized, connecting...',
-      xtermLoadError: 'Unable to load xterm.js: {message}',
+      sessionMissing: 'Session ID missing',
       terminalNotInitialized: 'Terminal not initialized or session missing',
       connectionError: 'Connection Error',
+      errorInitialization: 'Initialization Error',
+      errorInitializationMessage: 'Unable to load the terminal. Please check that xterm.js dependencies are installed.',
+      xtermLoadError: 'Unable to load xterm.js: {message}',
       authenticationFailed: 'Authentication failed. Please log in again.',
       connectionClosed: 'Connection closed ({code}): {reason}',
       connectionClosedNoReason: 'Connection closed ({code}): Unknown reason',
@@ -110,27 +206,26 @@ const { t } = useTranslations({
       sessionExpired: 'This session has expired. Please start a new terminal session.',
       sessionInfoError: 'Unable to verify session: {message}',
       retry: 'Retry'
-    },
-    ui: {
-      retry: 'Retry'
-    },
-    terminals: {
-      connectionError: 'Connection Error'
     }
   },
   fr: {
-    terminalViewer: {
+    terminal: {
+      reconnect: 'Reconnecter',
       connected: 'Connecté',
       disconnected: 'Déconnecté',
       connecting: 'Connexion...',
-      reconnect: 'Reconnecter',
-      sessionMissing: 'ID de session manquant',
-      terminalInitError: 'Impossible d\'initialiser le terminal',
-      loadingModules: 'Chargement des modules terminal...',
+      status: 'Statut',
+      websocketConnected: 'WebSocket connecté',
+      websocketDisconnected: 'WebSocket déconnecté',
+      initializingTerminal: 'Initialisation du terminal...',
+      loadingModules: 'Chargement des modules xterm.js...',
       terminalInitialized: 'Terminal initialisé, connexion en cours...',
-      xtermLoadError: 'Impossible de charger xterm.js: {message}',
+      sessionMissing: 'ID de session manquant',
       terminalNotInitialized: 'Terminal non initialisé ou session manquante',
       connectionError: 'Erreur de connexion',
+      errorInitialization: 'Erreur d\'initialisation',
+      errorInitializationMessage: 'Impossible de charger le terminal. Vérifiez que les dépendances xterm.js sont installées.',
+      xtermLoadError: 'Impossible de charger xterm.js: {message}',
       authenticationFailed: 'Authentification échouée. Veuillez vous reconnecter.',
       connectionClosed: 'Connexion fermée ({code}): {reason}',
       connectionClosedNoReason: 'Connexion fermée ({code}): Raison inconnue',
@@ -139,92 +234,74 @@ const { t } = useTranslations({
       sessionExpired: 'Cette session a expiré. Veuillez démarrer une nouvelle session de terminal.',
       sessionInfoError: 'Impossible de vérifier la session: {message}',
       retry: 'Réessayer'
-    },
-    ui: {
-      retry: 'Réessayer'
-    },
-    terminals: {
-      connectionError: 'Erreur de connexion'
     }
   }
 })
 
-// Props
-const props = defineProps({
-  sessionId: {
-    type: String,
-    default: null
-  },
-  showHeader: {
-    type: Boolean,
-    default: true
-  },
-  showFooter: {
-    type: Boolean,
-    default: false
-  },
-  hideControls: {
-    type: Boolean,
-    default: false
-  },
-  autoConnect: {
-    type: Boolean,
-    default: true
-  }
-})
-
-// Route pour récupérer les paramètres
+const { showError: showErrorNotification } = useNotification()
 const route = useRoute()
 const userStore = useCurrentUserStore()
 
-// État
-const terminal = ref(null)
-const terminalRef = ref(null)
-const socket = ref(null)
-const isConnected = ref(false)
+// State
+const terminal = ref<any>(null)
+const terminalRef = ref<HTMLElement | null>(null)
+const socket = ref<WebSocket | null>(null)
+const isWsOpen = ref(false)
 const isConnecting = ref(false)
+const showReconnectButton = ref(false)
 const error = ref('')
-const loadingMessage = ref('Initialisation du terminal...')
+const loadingMessage = ref(t('terminal.initializingTerminal'))
+const fetchedSessionInfo = ref<SessionInfo | null>(null)
 
-// Modules xterm
-let Terminal, FitAddon, AttachAddon
-let fitAddon = null
-let attachAddon = null
+// xterm.js modules (lazy loaded)
+let Terminal: any = null
+let FitAddon: any = null
+let AttachAddon: any = null
+let fitAddon: any = null
+let attachAddon: any = null
 
-// ID de session (depuis props ou route)
-const sessionId = ref(props.sessionId || route.params.sessionId || route.query.sessionId)
+// Resize observer
+let resizeObserver: ResizeObserver | null = null
+let sessionExpirationCheckInterval: ReturnType<typeof setInterval> | null = null
 
-// Gestion du redimensionnement
-let resizeObserver = null
+// Computed: active session info (prefer prop, fallback to fetched)
+const sessionInfo = computed(() => props.sessionInfo || fetchedSessionInfo.value)
 
-onMounted(async () => {
-  console.log('TerminalViewer monté, sessionId:', sessionId.value)
-
-  if (!sessionId.value) {
-    error.value = t('terminalViewer.sessionMissing')
-    return
-  }
-
-  try {
-    await initXterm()
-    if (props.autoConnect) {
-      await connectToTerminal()
-    }
-  } catch (err) {
-    console.error('Erreur lors de l\'initialisation:', err)
-    error.value = t('terminalViewer.terminalInitError')
-  }
+// Computed: session ID for display and connection
+const displaySessionId = computed(() => {
+  const id = sessionInfo.value?.session_id || props.sessionId || route.params.sessionId || route.query.sessionId
+  // Handle case where route params might be an array
+  return Array.isArray(id) ? id[0] : id
 })
 
-onBeforeUnmount(() => {
-  cleanup()
+// Computed: true connection status (WebSocket open AND session not expired)
+const isConnected = computed(() => {
+  if (!isWsOpen.value) return false
+
+  // If no sessionInfo, can't verify expiration - trust WebSocket state
+  if (!sessionInfo.value) return true
+
+  // Check session status
+  const validStatuses = ['running', 'active', 'starting']
+  if (sessionInfo.value.status && !validStatuses.includes(sessionInfo.value.status.toLowerCase())) {
+    return false
+  }
+
+  // Check expiration date if available
+  if (sessionInfo.value.expires_at) {
+    const expiresAt = new Date(sessionInfo.value.expires_at)
+    const now = new Date()
+    if (expiresAt <= now) return false
+  }
+
+  return true
 })
 
-// Initialisation de xterm.js
-async function initXterm() {
-  if (terminal.value) return
+// Initialize xterm.js modules
+async function initXterm(): Promise<boolean> {
+  if (terminal.value) return true
 
-  loadingMessage.value = t('terminalViewer.loadingModules')
+  loadingMessage.value = t('terminal.loadingModules')
 
   try {
     const [xtermModule, fitModule, attachModule] = await Promise.all([
@@ -237,11 +314,13 @@ async function initXterm() {
     FitAddon = fitModule.FitAddon
     AttachAddon = attachModule.AttachAddon
 
-    // Configuration du terminal optimisée pour iframe
+    // Create terminal instance
     terminal.value = new Terminal({
       cursorBlink: true,
-      fontFamily: '"Cascadia Code", "Fira Code", "SF Mono", Monaco, monospace',
+      fontFamily: '"Cascadia Code", "Fira Code", "SF Mono", Monaco, "Inconsolata", "Roboto Mono", "Source Code Pro", Menlo, "DejaVu Sans Mono", "Lucida Console", monospace',
       fontSize: 14,
+      rows: 24,
+      cols: 80,
       theme: getTerminalTheme(),
       scrollback: 1000,
       convertEol: true
@@ -250,47 +329,93 @@ async function initXterm() {
     fitAddon = new FitAddon()
     terminal.value.loadAddon(fitAddon)
 
-    await nextTick()
-
-    if (terminalRef.value) {
-      terminal.value.open(terminalRef.value)
-
-      // Ajustement initial
-      setTimeout(() => {
-        if (fitAddon && terminal.value) {
-          fitAddon.fit()
-        }
-      }, 100)
-
-      // Observer les changements de taille
-      setupResizeObserver()
+    error.value = ''
+    return true
+  } catch (err: any) {
+    console.error('Error initializing xterm.js:', err)
+    error.value = t('terminal.xtermLoadError', { message: err.message })
+    if (props.useSettingsCard) {
+      showErrorNotification(
+        t('terminal.errorInitializationMessage'),
+        t('terminal.errorInitialization')
+      )
     }
-
-    loadingMessage.value = t('terminalViewer.terminalInitialized')
-
-  } catch (err) {
-    console.error('Erreur lors du chargement xterm:', err)
-    throw new Error(t('terminalViewer.xtermLoadError', { message: err.message }))
+    return false
   }
 }
 
-// Configuration de l'observer de redimensionnement
+// Initialize terminal in the DOM
+async function initializeTerminal() {
+  // Ensure xterm is initialized
+  if (!terminal.value) {
+    const success = await initXterm()
+    if (!success) return
+  }
+
+  // Fetch session info if not provided
+  if (!props.sessionInfo && displaySessionId.value) {
+    try {
+      const sharedInfo = await terminalService.getTerminalInfo(displaySessionId.value)
+      fetchedSessionInfo.value = toSessionInfo(sharedInfo)
+    } catch (err: any) {
+      console.error('Error fetching session info:', err)
+      // Continue anyway - we can still try to connect
+    }
+  }
+
+  if (!displaySessionId.value) {
+    error.value = t('terminal.sessionMissing')
+    return
+  }
+
+  await nextTick()
+
+  if (!terminalRef.value) return
+
+  // Close existing WebSocket if any
+  if (socket.value) {
+    socket.value.close()
+    socket.value = null
+  }
+
+  // Open terminal in the DOM (only once)
+  if (!terminal.value.element) {
+    terminal.value.open(terminalRef.value)
+
+    // Fit terminal after delay
+    setTimeout(() => {
+      if (fitAddon && terminal.value) {
+        fitAddon.fit()
+      }
+    }, props.useSettingsCard ? 200 : 100)
+
+    // Setup resize observer
+    setupResizeObserver()
+  }
+
+  loadingMessage.value = t('terminal.terminalInitialized')
+
+  // Establish WebSocket connection
+  await connectToTerminal()
+}
+
+// Setup resize observer
 function setupResizeObserver() {
   if (!window.ResizeObserver || !terminalRef.value) return
-  
+
   resizeObserver = new ResizeObserver(() => {
     if (fitAddon && terminal.value) {
       fitAddon.fit()
     }
   })
-  
+
   resizeObserver.observe(terminalRef.value)
 }
 
-// Connexion au terminal via WebSocket
+// Connect to terminal via WebSocket
 async function connectToTerminal() {
-  if (!sessionId.value || !terminal.value) {
-    error.value = t('terminalViewer.terminalNotInitialized')
+  if (!displaySessionId.value || !terminal.value) {
+    error.value = t('terminal.terminalNotInitialized')
     return
   }
 
@@ -298,136 +423,126 @@ async function connectToTerminal() {
   error.value = ''
 
   try {
-    // Fetch session info to check if session is expired BEFORE attempting connection
-    let sessionInfo
-    try {
-      sessionInfo = await terminalService.getTerminalInfo(sessionId.value)
-    } catch (err) {
-      console.error('Error fetching session info:', err)
-      error.value = t('terminalViewer.sessionInfoError', {
-        message: err.response?.data?.error_message || err.message
-      })
-      isConnecting.value = false
-      return
-    }
+    // Check if session is expired BEFORE attempting connection
+    if (sessionInfo.value) {
+      // Check expiration
+      if (sessionInfo.value.expires_at) {
+        const expiresAt = new Date(sessionInfo.value.expires_at)
+        const now = new Date()
 
-    // Check if session is expired
-    if (sessionInfo.expires_at) {
-      const expiresAt = new Date(sessionInfo.expires_at)
-      const now = new Date()
+        if (expiresAt <= now) {
+          error.value = t('terminal.sessionExpired')
+          isConnecting.value = false
+          return
+        }
+      }
 
-      if (expiresAt <= now) {
-        console.log('Session expired:', {
-          expiresAt: expiresAt.toISOString(),
-          now: now.toISOString()
-        })
-        error.value = t('terminalViewer.sessionExpired')
+      // Check status
+      const validStatuses = ['running', 'active', 'starting']
+      if (sessionInfo.value.status && !validStatuses.includes(sessionInfo.value.status.toLowerCase())) {
+        error.value = t('terminal.sessionExpired')
         isConnecting.value = false
         return
       }
     }
 
-    // Check session status
-    const validStatuses = ['running', 'active', 'starting']
-    if (sessionInfo.status && !validStatuses.includes(sessionInfo.status.toLowerCase())) {
-      console.log('Invalid session status:', sessionInfo.status)
-      error.value = t('terminalViewer.sessionExpired')
-      isConnecting.value = false
-      return
-    }
-
-    // Fermer la connexion existante
+    // Close existing connection
     if (socket.value) {
       socket.value.close()
       socket.value = null
     }
 
-    // Construire l'URL WebSocket vers le backend (proxy)
+    // Build WebSocket URL
     const protocol = import.meta.env.VITE_PROTOCOL === 'https' ? 'wss' : 'ws'
     const apiUrl = import.meta.env.VITE_API_URL
-
-    // Build WebSocket URL with token in query parameter
-    // ✅ SECURE: Backend allows query param ONLY for WebSocket upgrade requests
-    // This is safe because:
-    // 1. Only works when Upgrade: websocket header is present
-    // 2. Not logged in standard HTTP access logs
-    // 3. Token consumed immediately during upgrade handshake
-    // 4. Doesn't appear in browser history like regular HTTP URLs
-
-    // Get authentication token
     const token = userStore.secretToken
 
-    // Build URL with token query parameter (backend expects ?token=, not ?Authorization=)
-    let wsUrl = `${protocol}://${apiUrl}/api/v1/terminals/${sessionId.value}/console?width=${terminal.value.cols}&height=${terminal.value.rows}`
+    let wsUrl = `${protocol}://${apiUrl}/api/v1/terminals/${displaySessionId.value}/console?width=${terminal.value.cols}&height=${terminal.value.rows}`
     if (token) {
       wsUrl += `&token=${encodeURIComponent(token)}`
     } else {
       console.warn('No authentication token available for WebSocket connection')
     }
 
-    console.log('Connexion WebSocket vers backend proxy (secure auth):', wsUrl.replace(/token=[^&]+/, 'token=***'))
+    console.log('Connexion WebSocket (secure auth):', wsUrl.replace(/token=[^&]+/, 'token=***'))
 
     // Create WebSocket connection
     socket.value = new WebSocket(wsUrl)
-    
+
     socket.value.onopen = () => {
-      console.log('Terminal WebSocket connecté')
-      isConnected.value = true
+      console.log('Terminal WebSocket opened')
+      isWsOpen.value = true
       isConnecting.value = false
+      showReconnectButton.value = false
       error.value = ''
-      
-      // Attacher le socket au terminal
+
+      // Attach socket to terminal
       if (attachAddon) {
-        terminal.value.dispose()
+        attachAddon.dispose()
         attachAddon = null
       }
-      
-      attachAddon = new AttachAddon(socket.value)
+
+      attachAddon = new AttachAddon(socket.value!)
       terminal.value.loadAddon(attachAddon)
-      
-      // Focus sur le terminal
+
+      // Focus terminal
       terminal.value.focus()
     }
-    
-    socket.value.onclose = (event) => {
-      console.log('Terminal WebSocket fermé:', event.code, event.reason)
-      isConnected.value = false
-      isConnecting.value = false
 
-      // Handle authentication failures specifically
+    socket.value.onclose = (event) => {
+      console.log('Terminal WebSocket closed:', event.code, event.reason)
+      isWsOpen.value = false
+      isConnecting.value = false
+      showReconnectButton.value = true
+
+      // Handle authentication failures
       if (event.code === 1008) {
-        // Policy violation (likely auth failure)
-        error.value = t('terminalViewer.authenticationFailed')
+        error.value = t('terminal.authenticationFailed')
+        if (props.useSettingsCard) {
+          showErrorNotification(
+            t('terminal.authenticationFailed'),
+            t('terminal.connectionError')
+          )
+        }
       } else if (event.code !== 1000) {
         // Not a normal closure
-        error.value = t('terminalViewer.connectionClosed', {
-          code: event.code,
-          reason: event.reason || t('terminalViewer.connectionClosedNoReason', { code: event.code })
-        })
+        error.value = event.reason
+          ? t('terminal.connectionClosed', { code: event.code, reason: event.reason })
+          : t('terminal.connectionClosedNoReason', { code: event.code })
       }
     }
 
     socket.value.onerror = (err) => {
-      console.error('Erreur WebSocket:', err)
-      isConnected.value = false
+      console.error('WebSocket error:', err)
+      isWsOpen.value = false
       isConnecting.value = false
-      error.value = t('terminalViewer.websocketError')
+      showReconnectButton.value = true
+      error.value = t('terminal.websocketError')
     }
 
-  } catch (err) {
-    console.error('Erreur lors de la connexion:', err)
+  } catch (err: any) {
+    console.error('Error connecting:', err)
     isConnecting.value = false
-    error.value = t('terminalViewer.connectionFailed', { message: err.message })
+    error.value = t('terminal.connectionFailed', { message: err.message })
+    if (props.useSettingsCard) {
+      showErrorNotification(
+        t('terminal.connectionFailed', { message: err.message }),
+        t('terminal.connectionError')
+      )
+    }
   }
 }
 
-// Reconnexion
+// Reconnect terminal
 async function reconnect() {
-  console.log('Reconnexion du terminal...')
+  console.log('Reconnecting terminal...')
+  if (socket.value) {
+    socket.value.close()
+  }
   await connectToTerminal()
 }
 
-// Retry en cas d'erreur
+// Retry on error
 async function retry() {
   error.value = ''
   if (!terminal.value) {
@@ -436,50 +551,106 @@ async function retry() {
   await connectToTerminal()
 }
 
-// Nettoyage
+// Cleanup
 function cleanup() {
   if (resizeObserver) {
     resizeObserver.disconnect()
     resizeObserver = null
   }
-  
+
+  if (sessionExpirationCheckInterval) {
+    clearInterval(sessionExpirationCheckInterval)
+    sessionExpirationCheckInterval = null
+  }
+
   if (socket.value) {
     socket.value.close()
     socket.value = null
   }
-  
+
   if (terminal.value) {
-    terminal.value.dispose()
+    try {
+      terminal.value.dispose()
+    } catch (err) {
+      console.error('Error disposing terminal:', err)
+    }
     terminal.value = null
   }
-  
+
   fitAddon = null
   attachAddon = null
 }
 
-// Exposition des méthodes pour usage externe
+// Watch for sessionInfo changes
+watch(() => props.sessionInfo, async (newSessionInfo, oldSessionInfo) => {
+  if (newSessionInfo && newSessionInfo.session_id !== oldSessionInfo?.session_id) {
+    await initializeTerminal()
+  }
+}, { immediate: false })
+
+onMounted(async () => {
+  console.log('TerminalViewer mounted, sessionId:', displaySessionId.value)
+
+  if (!displaySessionId.value) {
+    error.value = t('terminal.sessionMissing')
+    return
+  }
+
+  try {
+    await initXterm()
+    if (props.autoConnect) {
+      await initializeTerminal()
+    }
+  } catch (err) {
+    console.error('Error during initialization:', err)
+    error.value = t('terminal.errorInitializationMessage')
+  }
+
+  // Check session expiration every 5 seconds
+  sessionExpirationCheckInterval = setInterval(() => {
+    if (sessionInfo.value?.expires_at && isWsOpen.value) {
+      const expiresAt = new Date(sessionInfo.value.expires_at)
+      const now = new Date()
+
+      if (expiresAt <= now) {
+        showReconnectButton.value = true
+        if (socket.value) {
+          socket.value.close()
+        }
+      }
+    }
+  }, 5000)
+})
+
+onBeforeUnmount(() => {
+  cleanup()
+})
+
+// Expose methods for parent component
 defineExpose({
   connect: connectToTerminal,
-  disconnect: () => {
-    if (socket.value) {
-      socket.value.close()
-    }
-  },
+  disconnect: cleanup,
   reconnect,
   isConnected: () => isConnected.value,
-  getSessionId: () => sessionId.value
+  getSessionId: () => displaySessionId.value
 })
 </script>
 
 <style scoped>
+/* ========================================
+   Standalone Viewer Mode Styles
+   ======================================== */
 .terminal-viewer {
   width: 100%;
-  height: 100vh;
   display: flex;
   flex-direction: column;
   background-color: var(--terminal-bg);
   color: var(--terminal-fg);
   font-family: monospace;
+}
+
+.terminal-viewer.terminal-full-height {
+  height: 100vh;
 }
 
 .terminal-header {
@@ -527,7 +698,7 @@ defineExpose({
   gap: 5px;
 }
 
-.terminal-container {
+.terminal-viewer .terminal-container {
   flex: 1;
   position: relative;
   overflow: hidden;
@@ -558,7 +729,7 @@ defineExpose({
   color: var(--color-danger);
 }
 
-.terminal-footer {
+.terminal-viewer .terminal-footer {
   padding: var(--spacing-sm) var(--spacing-md);
   background-color: var(--color-bg-secondary);
   border-top: var(--border-width-thin) solid var(--color-border-medium);
@@ -566,6 +737,58 @@ defineExpose({
   flex-shrink: 0;
 }
 
+/* ========================================
+   SettingsCard Mode Styles
+   ======================================== */
+.terminal-wrapper {
+  min-height: 500px;
+  background-color: #1e1e1e;
+  position: relative;
+  border: var(--border-width-medium) solid #333;
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+}
+
+.terminal-wrapper .terminal-container {
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+}
+
+.terminal-wrapper .terminal-container.terminal-full-height {
+  height: 100vh;
+}
+
+.terminal-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 500px;
+  color: var(--color-text-muted);
+}
+
+.terminal-placeholder i {
+  margin-bottom: var(--spacing-lg);
+  opacity: 0.5;
+}
+
+.terminal-footer {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-bg-secondary);
+  border-top: var(--border-width-thin) solid var(--color-border-medium);
+  margin-top: var(--spacing-md);
+  border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
+}
+
+.terminal-info {
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-sm);
+}
+
+/* ========================================
+   Shared Styles
+   ======================================== */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -605,31 +828,57 @@ defineExpose({
   color: var(--color-text-muted);
 }
 
-/* Responsive pour iframe */
-@media (max-width: 600px) {
+.text-success {
+  color: var(--color-success);
+}
+
+.text-danger {
+  color: var(--color-danger);
+}
+
+/* ========================================
+   Responsive
+   ======================================== */
+@media (max-width: 768px) {
+  .terminal-wrapper {
+    min-height: 300px;
+  }
+
+  .terminal-wrapper .terminal-container {
+    min-height: 300px;
+  }
+
+  .terminal-placeholder {
+    height: 300px;
+  }
+
   .terminal-header {
     padding: 6px 8px;
   }
-  
+
   .session-info {
     gap: 10px;
   }
-  
+
   .session-id {
     font-size: 12px;
   }
-  
+
   .connection-status {
     font-size: 11px;
   }
 }
 
-/* Assurer que le terminal prend toute la place disponible */
-.terminal-viewer :deep(.xterm) {
+/* ========================================
+   XTerm Integration
+   ======================================== */
+.terminal-viewer :deep(.xterm),
+.terminal-wrapper :deep(.xterm) {
   height: 100% !important;
 }
 
-.terminal-viewer :deep(.xterm-viewport) {
+.terminal-viewer :deep(.xterm-viewport),
+.terminal-wrapper :deep(.xterm-viewport) {
   overflow-y: auto;
 }
 </style>

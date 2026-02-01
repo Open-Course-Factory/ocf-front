@@ -150,10 +150,13 @@
     />
 
     <!-- Terminal Console Panel -->
-    <TerminalConsole
+    <TerminalViewer
       v-if="showTerminalPanel"
       ref="terminalConsoleRef"
       :session-info="sessionInfo"
+      use-settings-card
+      title="Console Terminal"
+      :full-height="false"
     />
   </div>
 </template>
@@ -175,7 +178,7 @@ import InstanceTypeSelector from './InstanceTypeSelector.vue'
 import TerminalAdvancedOptions from './TerminalAdvancedOptions.vue'
 import TerminalUsagePanel from './TerminalUsagePanel.vue'
 import TerminalSessionInfo from './TerminalSessionInfo.vue'
-import TerminalConsole from './TerminalConsole.vue'
+import TerminalViewer from './TerminalViewer.vue'
 import type { InstanceType } from '../../types'
 
 // Router
