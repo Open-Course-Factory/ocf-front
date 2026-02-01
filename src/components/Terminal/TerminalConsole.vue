@@ -51,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { useCurrentUserStore } from '../../stores/currentUser'
@@ -127,9 +127,42 @@ let socket: WebSocket | null = null
 
 // Component state
 const terminalRef = ref<HTMLElement | null>(null)
-const isConnected = ref(false)
+const isWsOpen = ref(false)
 const showReconnectButton = ref(false)
 const error = ref('')
+let sessionExpirationCheckInterval: ReturnType<typeof setInterval> | null = null
+
+// Computed: true connection status (WebSocket open AND session not expired)
+const isConnected = computed(() => {
+  if (!isWsOpen.value) return false
+
+  // If no sessionInfo, can't verify - return false
+  if (!props.sessionInfo) return false
+
+  // Check session status - must be 'running' or 'active'
+  const validStatuses = ['running', 'active', 'starting']
+  if (props.sessionInfo.status && !validStatuses.includes(props.sessionInfo.status.toLowerCase())) {
+    console.log('Session status is not valid:', props.sessionInfo.status)
+    return false
+  }
+
+  // Check expiration date if available
+  if (props.sessionInfo.expires_at) {
+    const expiresAt = new Date(props.sessionInfo.expires_at)
+    const now = new Date()
+    const isExpired = expiresAt <= now
+
+    console.log('Session expiration check:', {
+      expiresAt: expiresAt.toISOString(),
+      now: now.toISOString(),
+      isExpired
+    })
+
+    if (isExpired) return false
+  }
+
+  return true
+})
 
 // Initialize xterm.js modules
 async function initXterm(): Promise<boolean> {
@@ -244,7 +277,7 @@ async function connectWebSocket() {
     socket = new WebSocket(wsUrl)
 
     socket.onopen = () => {
-      isConnected.value = true
+      isWsOpen.value = true
       showReconnectButton.value = false
 
       // Attach socket to terminal
@@ -256,7 +289,7 @@ async function connectWebSocket() {
 
     socket.onclose = (event) => {
       console.log('WebSocket closed:', event.code, event.reason)
-      isConnected.value = false
+      isWsOpen.value = false
       showReconnectButton.value = true
 
       // Handle authentication failures specifically
@@ -275,7 +308,7 @@ async function connectWebSocket() {
 
     socket.onerror = (err) => {
       console.error('WebSocket error:', err)
-      isConnected.value = false
+      isWsOpen.value = false
       showReconnectButton.value = true
       error.value = t('terminalStarter.errorWebsocketMessage', { message: 'Connection failed' })
     }
@@ -286,7 +319,7 @@ async function connectWebSocket() {
       t('terminalStarter.errorWebsocketMessage', { message: err.message }),
       t('terminalStarter.errorWebsocket')
     )
-    isConnected.value = false
+    isWsOpen.value = false
     showReconnectButton.value = true
   }
 }
@@ -339,9 +372,30 @@ onMounted(async () => {
   if (props.sessionInfo) {
     await initializeTerminal()
   }
+
+  // Check session expiration every 5 seconds
+  sessionExpirationCheckInterval = setInterval(() => {
+    if (props.sessionInfo?.expires_at && isWsOpen.value) {
+      const expiresAt = new Date(props.sessionInfo.expires_at)
+      const now = new Date()
+
+      if (expiresAt <= now) {
+        // Session has expired but WebSocket is still open
+        showReconnectButton.value = true
+        if (socket) {
+          socket.close()
+        }
+      }
+    }
+  }, 5000) // Check every 5 seconds
 })
 
 onBeforeUnmount(() => {
+  // Clear session expiration check interval
+  if (sessionExpirationCheckInterval) {
+    clearInterval(sessionExpirationCheckInterval)
+    sessionExpirationCheckInterval = null
+  }
   cleanup()
 })
 

@@ -32,20 +32,20 @@
         </span>
         <div class="connection-status">
           <span v-if="isConnected" class="status-connected">
-            <i class="fas fa-circle"></i> Connecté
+            <i class="fas fa-circle"></i> {{ t('terminalViewer.connected') }}
           </span>
           <span v-else class="status-disconnected">
-            <i class="fas fa-circle"></i> 
-            {{ isConnecting ? 'Connexion...' : 'Déconnecté' }}
+            <i class="fas fa-circle"></i>
+            {{ isConnecting ? t('terminalViewer.connecting') : t('terminalViewer.disconnected') }}
           </span>
         </div>
       </div>
       <div class="terminal-controls" v-if="!hideControls">
-        <button 
-          class="btn btn-sm btn-warning" 
-          @click="reconnect" 
+        <button
+          class="btn btn-sm btn-warning"
+          @click="reconnect"
           v-if="!isConnected && !isConnecting"
-          :title="'Reconnecter'"
+          :title="t('terminalViewer.reconnect')"
         >
           <i class="fas fa-sync"></i>
         </button>
@@ -84,6 +84,70 @@ import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import { getTerminalTheme } from '../../utils/terminalTheme'
+import { terminalService } from '../../services/domain/terminal/terminalService'
+import { useTranslations } from '../../composables/useTranslations'
+
+// Translations
+const { t } = useTranslations({
+  en: {
+    terminalViewer: {
+      connected: 'Connected',
+      disconnected: 'Disconnected',
+      connecting: 'Connecting...',
+      reconnect: 'Reconnect',
+      sessionMissing: 'Session ID missing',
+      terminalInitError: 'Unable to initialize terminal',
+      loadingModules: 'Loading terminal modules...',
+      terminalInitialized: 'Terminal initialized, connecting...',
+      xtermLoadError: 'Unable to load xterm.js: {message}',
+      terminalNotInitialized: 'Terminal not initialized or session missing',
+      connectionError: 'Connection Error',
+      authenticationFailed: 'Authentication failed. Please log in again.',
+      connectionClosed: 'Connection closed ({code}): {reason}',
+      connectionClosedNoReason: 'Connection closed ({code}): Unknown reason',
+      websocketError: 'WebSocket connection error. Check your authentication.',
+      connectionFailed: 'Unable to connect: {message}',
+      sessionExpired: 'This session has expired. Please start a new terminal session.',
+      sessionInfoError: 'Unable to verify session: {message}',
+      retry: 'Retry'
+    },
+    ui: {
+      retry: 'Retry'
+    },
+    terminals: {
+      connectionError: 'Connection Error'
+    }
+  },
+  fr: {
+    terminalViewer: {
+      connected: 'Connecté',
+      disconnected: 'Déconnecté',
+      connecting: 'Connexion...',
+      reconnect: 'Reconnecter',
+      sessionMissing: 'ID de session manquant',
+      terminalInitError: 'Impossible d\'initialiser le terminal',
+      loadingModules: 'Chargement des modules terminal...',
+      terminalInitialized: 'Terminal initialisé, connexion en cours...',
+      xtermLoadError: 'Impossible de charger xterm.js: {message}',
+      terminalNotInitialized: 'Terminal non initialisé ou session manquante',
+      connectionError: 'Erreur de connexion',
+      authenticationFailed: 'Authentification échouée. Veuillez vous reconnecter.',
+      connectionClosed: 'Connexion fermée ({code}): {reason}',
+      connectionClosedNoReason: 'Connexion fermée ({code}): Raison inconnue',
+      websocketError: 'Erreur de connexion WebSocket. Vérifiez votre authentification.',
+      connectionFailed: 'Impossible de se connecter: {message}',
+      sessionExpired: 'Cette session a expiré. Veuillez démarrer une nouvelle session de terminal.',
+      sessionInfoError: 'Impossible de vérifier la session: {message}',
+      retry: 'Réessayer'
+    },
+    ui: {
+      retry: 'Réessayer'
+    },
+    terminals: {
+      connectionError: 'Erreur de connexion'
+    }
+  }
+})
 
 // Props
 const props = defineProps({
@@ -135,9 +199,9 @@ let resizeObserver = null
 
 onMounted(async () => {
   console.log('TerminalViewer monté, sessionId:', sessionId.value)
-  
+
   if (!sessionId.value) {
-    error.value = 'ID de session manquant'
+    error.value = t('terminalViewer.sessionMissing')
     return
   }
 
@@ -148,7 +212,7 @@ onMounted(async () => {
     }
   } catch (err) {
     console.error('Erreur lors de l\'initialisation:', err)
-    error.value = 'Impossible d\'initialiser le terminal'
+    error.value = t('terminalViewer.terminalInitError')
   }
 })
 
@@ -159,20 +223,20 @@ onBeforeUnmount(() => {
 // Initialisation de xterm.js
 async function initXterm() {
   if (terminal.value) return
-  
-  loadingMessage.value = 'Chargement des modules terminal...'
-  
+
+  loadingMessage.value = t('terminalViewer.loadingModules')
+
   try {
     const [xtermModule, fitModule, attachModule] = await Promise.all([
       import('@xterm/xterm'),
       import('@xterm/addon-fit'),
       import('xterm-addon-attach')
     ])
-    
+
     Terminal = xtermModule.Terminal
     FitAddon = fitModule.FitAddon
     AttachAddon = attachModule.AttachAddon
-    
+
     // Configuration du terminal optimisée pour iframe
     terminal.value = new Terminal({
       cursorBlink: true,
@@ -182,31 +246,31 @@ async function initXterm() {
       scrollback: 1000,
       convertEol: true
     })
-    
+
     fitAddon = new FitAddon()
     terminal.value.loadAddon(fitAddon)
-    
+
     await nextTick()
-    
+
     if (terminalRef.value) {
       terminal.value.open(terminalRef.value)
-      
+
       // Ajustement initial
       setTimeout(() => {
         if (fitAddon && terminal.value) {
           fitAddon.fit()
         }
       }, 100)
-      
+
       // Observer les changements de taille
       setupResizeObserver()
     }
-    
-    loadingMessage.value = 'Terminal initialisé, connexion en cours...'
-    
+
+    loadingMessage.value = t('terminalViewer.terminalInitialized')
+
   } catch (err) {
     console.error('Erreur lors du chargement xterm:', err)
-    throw new Error(`Impossible de charger xterm.js: ${err.message}`)
+    throw new Error(t('terminalViewer.xtermLoadError', { message: err.message }))
   }
 }
 
@@ -226,20 +290,58 @@ function setupResizeObserver() {
 // Connexion au terminal via WebSocket
 async function connectToTerminal() {
   if (!sessionId.value || !terminal.value) {
-    error.value = 'Terminal non initialisé ou session manquante'
+    error.value = t('terminalViewer.terminalNotInitialized')
     return
   }
-  
+
   isConnecting.value = true
   error.value = ''
-  
+
   try {
+    // Fetch session info to check if session is expired BEFORE attempting connection
+    let sessionInfo
+    try {
+      sessionInfo = await terminalService.getTerminalInfo(sessionId.value)
+    } catch (err) {
+      console.error('Error fetching session info:', err)
+      error.value = t('terminalViewer.sessionInfoError', {
+        message: err.response?.data?.error_message || err.message
+      })
+      isConnecting.value = false
+      return
+    }
+
+    // Check if session is expired
+    if (sessionInfo.expires_at) {
+      const expiresAt = new Date(sessionInfo.expires_at)
+      const now = new Date()
+
+      if (expiresAt <= now) {
+        console.log('Session expired:', {
+          expiresAt: expiresAt.toISOString(),
+          now: now.toISOString()
+        })
+        error.value = t('terminalViewer.sessionExpired')
+        isConnecting.value = false
+        return
+      }
+    }
+
+    // Check session status
+    const validStatuses = ['running', 'active', 'starting']
+    if (sessionInfo.status && !validStatuses.includes(sessionInfo.status.toLowerCase())) {
+      console.log('Invalid session status:', sessionInfo.status)
+      error.value = t('terminalViewer.sessionExpired')
+      isConnecting.value = false
+      return
+    }
+
     // Fermer la connexion existante
     if (socket.value) {
       socket.value.close()
       socket.value = null
     }
-    
+
     // Construire l'URL WebSocket vers le backend (proxy)
     const protocol = import.meta.env.VITE_PROTOCOL === 'https' ? 'wss' : 'ws'
     const apiUrl = import.meta.env.VITE_API_URL
@@ -295,10 +397,13 @@ async function connectToTerminal() {
       // Handle authentication failures specifically
       if (event.code === 1008) {
         // Policy violation (likely auth failure)
-        error.value = 'Authentification échouée. Veuillez vous reconnecter.'
+        error.value = t('terminalViewer.authenticationFailed')
       } else if (event.code !== 1000) {
         // Not a normal closure
-        error.value = `Connexion fermée (${event.code}): ${event.reason || 'Raison inconnue'}`
+        error.value = t('terminalViewer.connectionClosed', {
+          code: event.code,
+          reason: event.reason || t('terminalViewer.connectionClosedNoReason', { code: event.code })
+        })
       }
     }
 
@@ -306,13 +411,13 @@ async function connectToTerminal() {
       console.error('Erreur WebSocket:', err)
       isConnected.value = false
       isConnecting.value = false
-      error.value = 'Erreur de connexion WebSocket. Vérifiez votre authentification.'
+      error.value = t('terminalViewer.websocketError')
     }
-    
+
   } catch (err) {
     console.error('Erreur lors de la connexion:', err)
     isConnecting.value = false
-    error.value = `Impossible de se connecter: ${err.message}`
+    error.value = t('terminalViewer.connectionFailed', { message: err.message })
   }
 }
 
