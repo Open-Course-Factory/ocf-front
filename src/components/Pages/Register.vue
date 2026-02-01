@@ -43,8 +43,10 @@
           <input
             type="text"
             id="userName"
+            name="username"
             v-model="formData.userName"
             :class="['form-control', { 'is-invalid': errors.userName }]"
+            autocomplete="username"
             @blur="validateUserName"
             required
           />
@@ -72,8 +74,10 @@
           <input
             type="email"
             id="email"
+            name="email"
             v-model="formData.email"
             :class="['form-control', { 'is-invalid': errors.email }]"
+            autocomplete="email"
             @blur="validateEmail"
             required
           />
@@ -87,8 +91,10 @@
           <input
             type="password"
             id="password"
+            name="password"
             v-model="formData.password"
             :class="['form-control', { 'is-invalid': errors.password }]"
+            autocomplete="new-password"
             @input="validatePassword"
             required
           />
@@ -116,8 +122,10 @@
           <input
             type="password"
             id="confirmPassword"
+            name="confirmPassword"
             v-model="formData.confirmPassword"
             :class="['form-control', { 'is-invalid': errors.confirmPassword }]"
+            autocomplete="new-password"
             @blur="validateConfirmPassword"
             required
           />
