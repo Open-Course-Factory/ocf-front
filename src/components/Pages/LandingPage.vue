@@ -1,7 +1,29 @@
 <template>
   <div class="landing-page">
+    <!-- Floating Navigation -->
+    <nav class="floating-nav" :class="{ 'visible': showNav }">
+      <div class="nav-container">
+        <a href="#hero" class="nav-link" @click.prevent="scrollToSection('hero')">
+          <i class="fas fa-home"></i>
+          <span>{{ t('landing.nav.home') }}</span>
+        </a>
+        <a href="#features" class="nav-link" @click.prevent="scrollToSection('features')">
+          <i class="fas fa-star"></i>
+          <span>{{ t('landing.nav.features') }}</span>
+        </a>
+        <a href="#use-cases" class="nav-link" @click.prevent="scrollToSection('use-cases')">
+          <i class="fas fa-users"></i>
+          <span>{{ t('landing.nav.useCases') }}</span>
+        </a>
+        <a href="#contact" class="nav-link" @click.prevent="scrollToSection('contact')">
+          <i class="fas fa-envelope"></i>
+          <span>{{ t('landing.nav.contact') }}</span>
+        </a>
+      </div>
+    </nav>
+
     <!-- Hero Section with Terminal Theme -->
-    <header class="hero-section">
+    <header id="hero" class="hero-section">
       <!-- Animated terminal grid background -->
       <div class="terminal-grid"></div>
       <div class="scanline"></div>
@@ -71,7 +93,7 @@
     </header>
 
     <!-- Learning Features Section -->
-    <section class="learning-features">
+    <section id="features" class="learning-features">
       <div class="container">
         <div class="section-header">
           <h2 class="section-title">{{ t('landing.learning.title') }}</h2>
@@ -151,7 +173,7 @@
     </section>
 
     <!-- Use Cases -->
-    <section class="use-cases">
+    <section id="use-cases" class="use-cases">
       <div class="container">
         <h2 class="section-title">{{ t('landing.useCases.title') }}</h2>
 
@@ -184,7 +206,7 @@
     </section>
 
     <!-- Footer -->
-    <footer class="footer-section">
+    <footer id="contact" class="footer-section">
       <div class="container">
         <div class="footer-content">
           <div class="footer-brand">
@@ -237,15 +259,70 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useVersionInfo } from '../../composables/useVersionInfo'
 import AlphaBadge from '../Common/AlphaBadge.vue'
 import LanguageSelector from '../UI/LanguageSelector.vue'
 
+// State for floating nav visibility
+const showNav = ref(false)
+let rafId: number | null = null
+
+// Check scroll position continuously
+function checkScroll() {
+  const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0
+  showNav.value = scrollY > 300
+
+  // Continue checking
+  rafId = requestAnimationFrame(checkScroll)
+}
+
+// Smooth scroll to section
+function scrollToSection(sectionId: string) {
+  const element = document.getElementById(sectionId)
+  if (element) {
+    element.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    })
+    // Update URL hash
+    window.history.pushState(null, '', `#${sectionId}`)
+  }
+}
+
+// Setup continuous scroll monitoring
+onMounted(() => {
+  // Start continuous scroll checking
+  rafId = requestAnimationFrame(checkScroll)
+
+  // Check if there's a hash in URL on mount
+  if (window.location.hash) {
+    const sectionId = window.location.hash.substring(1)
+    // Delay to ensure page is loaded
+    setTimeout(() => {
+      scrollToSection(sectionId)
+    }, 100)
+  }
+})
+
+onBeforeUnmount(() => {
+  // Stop scroll checking
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+  }
+})
+
 const { t } = useTranslations({
   en: {
     landing: {
       promptText: 'initializing learning environment...',
+      nav: {
+        home: 'Home',
+        features: 'Features',
+        useCases: 'Use Cases',
+        contact: 'Contact'
+      },
       heroTitle: 'Learn Linux, Docker, Kubernetes & More—Right in Your Browser',
       heroSubtitle: 'Hands-on training for DevOps technologies without breaking anything. Practice Linux, Docker, GitLab, Kubernetes, and other essential tools in safe, isolated environments that reset automatically.',
       terminalTitle: 'terminal — bash',
@@ -343,6 +420,12 @@ const { t } = useTranslations({
   fr: {
     landing: {
       promptText: 'initialisation environnement d\'apprentissage...',
+      nav: {
+        home: 'Accueil',
+        features: 'Fonctionnalités',
+        useCases: 'Cas d\'usage',
+        contact: 'Contact'
+      },
       heroTitle: 'Apprenez Linux, Docker, Kubernetes & Plus—Dans Votre Navigateur',
       heroSubtitle: 'Formation pratique aux technologies DevOps sans rien casser. Pratiquez Linux, Docker, GitLab, Kubernetes et d\'autres outils essentiels dans des environnements sûrs et isolés qui se réinitialisent automatiquement.',
       terminalTitle: 'terminal — bash',
@@ -448,6 +531,84 @@ const { versions } = useVersionInfo()
    Monospace brutalism meets educational polish
    ============================================ */
 
+/* ============================================
+   FLOATING NAVIGATION
+   ============================================ */
+.floating-nav {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: opacity var(--transition-slow), transform var(--transition-slow);
+  pointer-events: none;
+}
+
+.floating-nav.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.nav-container {
+  background: var(--color-bg-primary);
+  border: var(--border-width-thin) solid var(--color-border-medium);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-sm);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  color: var(--color-text-primary);
+  text-decoration: none;
+  border-radius: var(--border-radius-md);
+  transition: all var(--transition-fast);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.nav-link:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-primary);
+  transform: translateX(-2px);
+}
+
+.nav-link i {
+  width: 18px;
+  text-align: center;
+  font-size: var(--font-size-sm);
+}
+
+/* Responsive - hide on mobile */
+@media (max-width: 768px) {
+  .floating-nav {
+    top: 10px;
+    right: 10px;
+  }
+
+  .nav-link span {
+    display: none;
+  }
+
+  .nav-container {
+    padding: var(--spacing-xs);
+  }
+
+  .nav-link {
+    padding: var(--spacing-sm);
+    justify-content: center;
+  }
+}
+
 /* Base & Typography */
 .landing-page {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
@@ -455,6 +616,15 @@ const { versions } = useVersionInfo()
   line-height: 1.6;
   overflow-x: hidden;
   background: var(--color-bg-primary);
+  scroll-behavior: smooth;
+}
+
+/* Scroll margin for anchor targets */
+#hero,
+#features,
+#use-cases,
+#contact {
+  scroll-margin-top: 20px;
 }
 
 .container {
