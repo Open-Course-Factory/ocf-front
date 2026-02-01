@@ -36,13 +36,7 @@
       </h1>
     </div>
     <div class="right-controls">
-      <div class="locale-changer">
-        <select :value="currentLocale" @change="handleLocaleChange" class="flag-select">
-          <option v-for="localeCode in supportedLocales" :key="`locale-${localeCode}`" :value="localeCode">
-            {{ getLocaleInfo(localeCode).flag }} {{ getLocaleInfo(localeCode).name }}
-          </option>
-        </select>
-      </div>
+      <LanguageSelector />
       <!-- Admin View Mode Toggle -->
       <div v-if="isAdmin" class="view-mode-toggle" :title="viewAsStandardUser ? t('topMenu.viewingAsUser') : t('topMenu.viewingAsAdmin')">
         <button
@@ -151,11 +145,11 @@ import { useTranslations } from '../../composables/useTranslations';
 import { useCurrentUserStore } from '../../stores/currentUser.ts';
 import { useUserSettingsStore } from '../../stores/userSettings.ts';
 import { useOrganizationsStore } from '../../stores/organizations.ts';
-import { useLocale } from '../../composables/useLocale';
 import { useFeatureFlags } from '../../composables/useFeatureFlags';
 import { useAdminViewMode } from '../../composables/useAdminViewMode';
 import { useVersionInfo } from '../../composables/useVersionInfo';
 import AlphaBadge from '../Common/AlphaBadge.vue';
+import LanguageSelector from '../UI/LanguageSelector.vue';
 
 const { t } = useTranslations({
   en: {
@@ -212,7 +206,6 @@ const router = useRouter();
 const currentUser = useCurrentUserStore();
 const settingsStore = useUserSettingsStore();
 const organizationsStore = useOrganizationsStore();
-const { currentLocale, supportedLocales, setLocale, getLocaleInfo } = useLocale();
 const { isEnabled } = useFeatureFlags();
 const { isAdmin, viewAsStandardUser, toggleViewMode: toggleViewModeComposable, initViewMode } = useAdminViewMode();
 const { versions } = useVersionInfo();
@@ -235,11 +228,6 @@ function toggleViewMode() {
 
 function toggleMenu() {
   emit('toggle-menu');
-}
-
-function handleLocaleChange(event: Event) {
-  const target = event.target as HTMLSelectElement;
-  setLocale(target.value);
 }
 
 function toggleUserMenu() {
@@ -396,33 +384,6 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-}
-
-.locale-changer select {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--border-radius-md);
-  border: var(--border-width-thin) solid var(--color-border-medium);
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  transition: border-color var(--transition-base), box-shadow var(--transition-base);
-  min-width: 140px;
-}
-
-.locale-changer select:hover {
-  border-color: var(--color-border-dark);
-}
-
-.locale-changer select:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-focus-primary);
-}
-
-.flag-select option {
-  padding: var(--spacing-sm);
-  font-size: var(--font-size-sm);
 }
 
 .view-mode-toggle {

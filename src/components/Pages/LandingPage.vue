@@ -228,9 +228,7 @@
             </div>
           </div>
           <div class="footer-language">
-            <button @click="toggleLanguage" class="language-toggle">
-              🌍 {{ currentLocale.toUpperCase() }}
-            </button>
+            <LanguageSelector />
           </div>
         </div>
       </div>
@@ -240,9 +238,9 @@
 
 <script setup lang="ts">
 import { useTranslations } from '../../composables/useTranslations'
-import { useLocale } from '../../composables/useLocale'
 import { useVersionInfo } from '../../composables/useVersionInfo'
 import AlphaBadge from '../Common/AlphaBadge.vue'
+import LanguageSelector from '../UI/LanguageSelector.vue'
 
 const { t } = useTranslations({
   en: {
@@ -441,13 +439,7 @@ const { t } = useTranslations({
   }
 })
 
-const { currentLocale, setLocale } = useLocale()
 const { versions } = useVersionInfo()
-
-const toggleLanguage = () => {
-  const newLocale = currentLocale.value === 'en' ? 'fr' : 'en'
-  setLocale(newLocale)
-}
 </script>
 
 <style scoped>
@@ -1086,22 +1078,6 @@ const toggleLanguage = () => {
 
 .version-divider {
   opacity: 0.5;
-}
-
-.language-toggle {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 14px;
-}
-
-.language-toggle:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
 }
 
 /* ============================================
