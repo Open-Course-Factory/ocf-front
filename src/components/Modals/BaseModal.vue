@@ -235,12 +235,28 @@ function handleOverlayClick() {
   padding: var(--spacing-lg);
   overflow-y: auto;
   flex: 1;
-  -ms-overflow-style: none;  /* IE 10+ */
-  scrollbar-width: none;  /* Firefox */
+  /* Styled scrollbar for Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
 }
 
+/* Styled scrollbar for WebKit browsers (Chrome, Safari, Edge) */
 .base-modal-content::-webkit-scrollbar {
-  display: none;  /* WebKit */
+  width: 8px;
+}
+
+.base-modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.base-modal-content::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.base-modal-content::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-primary);
 }
 
 .base-modal-footer {
