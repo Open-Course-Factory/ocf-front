@@ -14,8 +14,10 @@
           <input
             type="email"
             id="email"
+            name="email"
             class="form-control"
             v-model="loginStore.email"
+            autocomplete="email"
             required
           />
         </div>
@@ -24,8 +26,10 @@
           <input
             type="password"
             id="password"
+            name="password"
             class="form-control"
             v-model="loginStore.password"
+            autocomplete="current-password"
             required
           />
         </div>

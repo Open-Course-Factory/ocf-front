@@ -15,8 +15,10 @@
             <input
               type="text"
               id="firstName"
+              name="given-name"
               v-model="formData.firstName"
               :class="['form-control', { 'is-invalid': errors.firstName }]"
+              autocomplete="given-name"
               required
             />
             <div v-if="errors.firstName" class="invalid-feedback">
@@ -28,8 +30,10 @@
             <input
               type="text"
               id="lastName"
+              name="family-name"
               v-model="formData.lastName"
               :class="['form-control', { 'is-invalid': errors.lastName }]"
+              autocomplete="family-name"
               required
             />
             <div v-if="errors.lastName" class="invalid-feedback">
@@ -60,8 +64,10 @@
           <input
             type="text"
             id="displayName"
+            name="nickname"
             v-model="formData.displayName"
             :class="['form-control', { 'is-invalid': errors.displayName }]"
+            autocomplete="nickname"
             required
           />
           <div v-if="errors.displayName" class="invalid-feedback">
