@@ -12,6 +12,13 @@ npm run build    # TypeScript compilation + Vite build
 npm run preview  # Preview production build
 ```
 
+**Version Control:**
+
+- **GitLab** (NOT GitHub) - Use `glab` CLI for all Git operations
+- Issues: `glab issue list`, `glab issue view <id>`
+- MRs: `glab mr create`, `glab mr view <id>`
+- Never use `gh` commands - this project uses GitLab
+
 **Tech Stack:**
 
 - Vue 3 (Composition API + TypeScript)
