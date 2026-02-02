@@ -782,7 +782,7 @@ onMounted(async () => {
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: var(--breakpoint-md)) {
   .bulk-purchase-page {
     padding: var(--spacing-lg);
   }
