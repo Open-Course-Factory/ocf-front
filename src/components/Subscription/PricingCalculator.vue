@@ -57,17 +57,17 @@
       </div>
     </div>
 
-    <div v-if="isLoading" class="loading-state">
-      <i class="fas fa-spinner fa-spin"></i>
-      {{ t('pricingCalculator.calculating') }}
-    </div>
-
-    <div v-else-if="error" class="error-state">
+    <div v-if="error && !preview" class="error-state">
       <i class="fas fa-exclamation-circle"></i>
       {{ error }}
     </div>
 
-    <div v-else-if="preview" class="pricing-preview">
+    <div v-else-if="!preview && isLoading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      {{ t('pricingCalculator.calculating') }}
+    </div>
+
+    <div v-if="preview" class="pricing-preview" :class="{ 'loading-overlay': isLoading }">
       <div class="tier-breakdown">
         <h4 class="breakdown-title">{{ t('pricingCalculator.pricingBreakdown') }}</h4>
         <div class="tier-list">
@@ -108,7 +108,10 @@
       </div>
 
       <!-- Comparison Table -->
-      <div v-if="preview.savings_vs_individual > 0" class="comparison-table">
+      <div
+        class="comparison-table"
+        :class="{ 'comparison-hidden': !preview.savings_vs_individual || preview.savings_vs_individual <= 0 }"
+      >
         <h4 class="comparison-title">{{ t('pricingCalculator.comparisonTitle') }}</h4>
         <table class="price-comparison">
           <thead>
@@ -143,7 +146,7 @@
       </div>
 
       <!-- Use Case -->
-      <div v-if="localQuantity >= 15" class="use-case-section">
+      <div class="use-case-section" :class="{ 'use-case-hidden': localQuantity < 15 }">
         <div class="use-case-card">
           <div class="use-case-icon">
             <i class="fas fa-graduation-cap"></i>
@@ -339,6 +342,9 @@ onMounted(() => {
   border-radius: var(--border-radius-lg);
   padding: var(--spacing-xl);
   box-shadow: var(--shadow-sm);
+  min-width: 400px;
+  max-width: 100%;
+  transition: all var(--transition-base);
 }
 
 .calculator-header {
@@ -473,12 +479,20 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
+  transition: opacity var(--transition-base);
+  min-height: 600px;
+}
+
+.pricing-preview.loading-overlay {
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .tier-breakdown {
   padding: var(--spacing-lg);
   background: var(--color-bg-secondary);
   border-radius: var(--border-radius-md);
+  min-height: 180px;
 }
 
 .breakdown-title {
@@ -496,13 +510,14 @@ onMounted(() => {
 
 .tier-row {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: minmax(120px, 1fr) minmax(100px, auto) minmax(100px, auto);
   align-items: center;
   gap: var(--spacing-md);
   padding: var(--spacing-sm);
   border-radius: var(--border-radius-sm);
   background: var(--color-bg-primary);
   font-size: var(--font-size-sm);
+  transition: all var(--transition-fast);
 }
 
 .tier-range {
@@ -655,6 +670,14 @@ onMounted(() => {
   background: var(--color-bg-secondary);
   border-radius: var(--border-radius-md);
   border: 1px solid var(--color-border-light);
+  transition: opacity var(--transition-base);
+  height: 250px;
+  overflow: hidden;
+}
+
+.comparison-table.comparison-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .comparison-title {
@@ -731,6 +754,13 @@ onMounted(() => {
 /* Use Case Section */
 .use-case-section {
   margin-top: var(--spacing-xl);
+  height: 120px;
+  transition: opacity var(--transition-base);
+}
+
+.use-case-section.use-case-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .use-case-card {
@@ -801,9 +831,27 @@ onMounted(() => {
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+  .comparison-table {
+    height: auto;
+    min-height: 250px;
+    overflow: visible;
+  }
+
+  .comparison-savings {
+    flex-wrap: wrap;
+  }
+
+  .use-case-section {
+    height: auto;
+    min-height: 120px;
+  }
+}
+
 @media (max-width: 768px) {
   .pricing-calculator {
     padding: var(--spacing-lg);
+    min-width: 320px;
   }
 
   .tier-row {
@@ -830,7 +878,28 @@ onMounted(() => {
 
   .price-comparison th,
   .price-comparison td {
-    padding: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
+  }
+
+  .comparison-table {
+    height: auto;
+    min-height: 250px;
+    overflow: visible;
+  }
+
+  .comparison-title {
+    font-size: var(--font-size-base);
+  }
+
+  .comparison-savings {
+    font-size: var(--font-size-sm);
+    flex-wrap: wrap;
+  }
+
+  .recommended-badge {
+    display: block;
+    margin: var(--spacing-xs) 0 0 0;
   }
 
   .use-case-card {
@@ -838,9 +907,13 @@ onMounted(() => {
     text-align: center;
   }
 
-  .recommended-badge {
-    display: block;
-    margin: var(--spacing-xs) 0 0 0;
+  .use-case-section {
+    height: auto;
+    min-height: 120px;
+  }
+
+  .pricing-preview {
+    min-height: auto;
   }
 }
 </style>

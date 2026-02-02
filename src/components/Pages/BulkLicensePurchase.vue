@@ -82,7 +82,7 @@
         </div>
 
         <!-- Step 2: Quantity and Pricing -->
-        <div v-if="selectedPlanId" class="purchase-section">
+        <div class="purchase-section calculator-section" :class="{ 'section-disabled': !selectedPlanId }">
           <div class="section-header">
             <h3>
               <span class="step-number">2</span>
@@ -90,14 +90,21 @@
             </h3>
           </div>
 
-          <PricingCalculator
-            :plan-id="selectedPlanId"
-            :initial-quantity="quantity"
-            :min-quantity="1"
-            :max-quantity="200"
-            :show-purchase-button="false"
-            @quantity-change="handleQuantityChange"
-          />
+          <div class="calculator-content">
+            <PricingCalculator
+              v-if="selectedPlanId"
+              :plan-id="selectedPlanId"
+              :initial-quantity="quantity"
+              :min-quantity="1"
+              :max-quantity="200"
+              :show-purchase-button="false"
+              @quantity-change="handleQuantityChange"
+            />
+            <div v-else class="section-placeholder">
+              <i class="fas fa-calculator"></i>
+              <p>{{ t('bulkPurchase.selectPlanFirst') }}</p>
+            </div>
+          </div>
         </div>
 
         <!-- Step 3: Additional Options -->
@@ -206,6 +213,7 @@ const { t } = useTranslations({
       subtitle: 'Buy multiple licenses with volume discounts',
       loadingPlans: 'Loading subscription plans...',
       selectPlan: 'Select a Plan',
+      selectPlanFirst: 'Please select a plan above to see pricing',
       chooseQuantity: 'Choose Quantity',
       additionalOptions: 'Additional Options',
       confirmPurchase: 'Confirm Purchase',
@@ -236,6 +244,7 @@ const { t } = useTranslations({
       subtitle: 'Achetez plusieurs licences avec des remises sur volume',
       loadingPlans: 'Chargement des plans...',
       selectPlan: 'Sélectionner un Plan',
+      selectPlanFirst: 'Veuillez sélectionner un plan ci-dessus pour voir les prix',
       chooseQuantity: 'Choisir la Quantité',
       additionalOptions: 'Options Supplémentaires',
       confirmPurchase: 'Confirmer l\'Achat',
@@ -484,6 +493,42 @@ onMounted(async () => {
   border-radius: var(--border-radius-lg);
   padding: var(--spacing-xl);
   box-shadow: var(--shadow-sm);
+  min-height: 200px;
+}
+
+.purchase-section.calculator-section {
+  min-height: 850px;
+}
+
+.purchase-section.section-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.calculator-content {
+  min-height: 750px;
+}
+
+.section-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-3xl);
+  color: var(--color-text-muted);
+  height: 750px;
+  text-align: center;
+}
+
+.section-placeholder i {
+  font-size: var(--font-size-4xl);
+  opacity: 0.5;
+}
+
+.section-placeholder p {
+  font-size: var(--font-size-base);
+  margin: 0;
 }
 
 .section-header {
@@ -515,13 +560,18 @@ onMounted(async () => {
 
 /* Plans Grid */
 .plans-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--spacing-lg);
+  max-width: 900px;
+  margin: 0 auto;
+  justify-content: center;
 }
 
 .plan-card {
   position: relative;
+  flex: 0 0 280px;
+  max-width: 280px;
   padding: var(--spacing-lg);
   background: var(--color-bg-secondary);
   border: 2px solid var(--color-border-light);
