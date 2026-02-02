@@ -19,6 +19,7 @@
         @toggle-menu="toggleMenu"
       />
       <div class="content-area">
+        <EmailVerificationBanner />
         <router-view :key="route.fullPath" />
       </div>
     </div>
@@ -34,6 +35,7 @@ import SettingsNavMenu from './Menus/SettingsNavMenu.vue'
 import TopMenu from './Menus/TopMenu.vue'
 import DemoModeBanner from './UI/DemoModeBanner.vue'
 import ToastContainer from './UI/ToastContainer.vue'
+import EmailVerificationBanner from './Auth/EmailVerificationBanner.vue'
 import { useUserSettingsStore } from '../stores/userSettings'
 import { useLocale } from '../composables/useLocale'
 import { useTheme } from '../composables/useTheme'

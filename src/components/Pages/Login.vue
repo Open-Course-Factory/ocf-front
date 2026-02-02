@@ -116,6 +116,40 @@ async function handleSubmit() {
     currentUserStore.userDisplayName = responseLogin.data.display_name || responseLogin.data.user_name;
     currentUserStore.userId = responseLogin.data.user_id;
     currentUserStore.userRoles = responseLogin.data.user_roles;
+    currentUserStore.userEmail = responseLogin.data.email || loginStore.email;
+    currentUserStore.emailVerified = responseLogin.data.email_verified || false;
+    currentUserStore.emailVerifiedAt = responseLogin.data.email_verified_at || null;
+
+    // Check if email is verified
+    if (!currentUserStore.emailVerified) {
+      console.log('🔐 User email not verified, redirecting to verification page');
+      const currentPath = router.currentRoute.value.path;
+      console.log('🔐 Current route:', currentPath);
+      console.log('🔐 Is authenticated:', currentUserStore.isAuthenticated);
+
+      // Only navigate if not already on verify-email page
+      if (currentPath !== '/verify-email') {
+        console.log('🔐 Attempting navigation to /verify-email...');
+        try {
+          const navigationResult = await router.push({ name: 'VerifyEmail' });
+          console.log('🔐 Navigation completed. Result:', navigationResult);
+          console.log('🔐 New path:', router.currentRoute.value.path);
+        } catch (navError: any) {
+          console.error('🔐 Navigation error occurred:', navError);
+          console.error('🔐 Error message:', navError.message);
+          console.error('🔐 Error type:', navError.type);
+
+          // Try alternative navigation method
+          console.log('🔐 Trying window.location.href as fallback...');
+          setTimeout(() => {
+            window.location.href = '/verify-email';
+          }, 100);
+        }
+      } else {
+        console.log('🔐 Already on verify-email page, staying here');
+      }
+      return;
+    }
 
     await redirect();
   } catch (error) {

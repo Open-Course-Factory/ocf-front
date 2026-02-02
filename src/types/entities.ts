@@ -41,6 +41,8 @@ export interface User extends BaseEntity {
   roles?: Role[]
   is_active?: boolean
   last_login?: string
+  email_verified?: boolean
+  email_verified_at?: string
 
   // Organization memberships (if preloaded with ?includes=organization_memberships)
   organization_memberships?: OrganizationMembership[]

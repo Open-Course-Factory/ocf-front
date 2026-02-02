@@ -20,7 +20,7 @@
  */
 
 import { defineStore } from "pinia"
-import { tokenService } from "../services/auth"
+import { tokenService, authService } from "../services/auth"
 import router from "../router/index"
 import axios from "axios"
 
@@ -30,9 +30,12 @@ export const useCurrentUserStore = defineStore('currentUser', {
             userName: "",
             userDisplayName: "",
             userId: "",
+            userEmail: "",
             userRoles: [] as string[],
             permissions: [] as string[], // User permissions from backend
             _isAuthenticated: false, // Internal reactive flag
+            emailVerified: false,
+            emailVerifiedAt: null as string | null
         }
     },
     getters: {
@@ -66,6 +69,18 @@ export const useCurrentUserStore = defineStore('currentUser', {
             return (permissions: string[]) => {
                 return permissions.every(p => this.permissions.includes(p));
             }
+        },
+        /**
+         * Check if user's email is verified
+         */
+        isEmailVerified(): boolean {
+            return this.emailVerified;
+        },
+        /**
+         * Check if user needs email verification (logged in but not verified)
+         */
+        needsEmailVerification(): boolean {
+            return this._isAuthenticated && !this.emailVerified;
         }
     },
     actions: {
@@ -148,6 +163,9 @@ export const useCurrentUserStore = defineStore('currentUser', {
                 this.userId = userData.id || userData.user_id;
                 this.userName = userData.username || userData.user_name || userData.name || userData.email;
                 this.userDisplayName = userData.display_name || this.userName;
+                this.userEmail = userData.email || "";
+                this.emailVerified = userData.email_verified || false;
+                this.emailVerifiedAt = userData.email_verified_at || null;
 
                 // Extract role names from roles array or user_roles field
                 if (userData.user_roles && Array.isArray(userData.user_roles)) {
@@ -311,6 +329,26 @@ export const useCurrentUserStore = defineStore('currentUser', {
             }, 60000); // 60 secondes
 
             return interval;
+        },
+
+        /**
+         * Refresh email verification status from backend
+         */
+        async refreshVerificationStatus() {
+            try {
+                const status = await authService.getVerificationStatus();
+                this.emailVerified = status.verified;
+                this.emailVerifiedAt = status.verified_at || null;
+                this.userEmail = status.email;
+                console.log('✅ Email verification status refreshed:', {
+                    verified: this.emailVerified,
+                    verifiedAt: this.emailVerifiedAt
+                });
+                return status;
+            } catch (error: any) {
+                console.error('❌ Failed to refresh verification status:', error);
+                throw error;
+            }
         }
     }
 })

@@ -59,6 +59,12 @@ const basicRoutes = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/verify-email',
+    name: 'VerifyEmail',
+    component: () => import('../components/Pages/VerifyEmail.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/password-reset',
     name: 'PasswordReset',
     component: () => import('../components/Pages/PasswordReset.vue'),
