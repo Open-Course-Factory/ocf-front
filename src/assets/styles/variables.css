@@ -149,6 +149,15 @@
   --sidebar-collapsed-width: 60px;
   --topbar-height: 60px;
 
+  /* === RESPONSIVE BREAKPOINTS === */
+  /* Use these in media queries: @media (max-width: var(--breakpoint-*)) */
+  --breakpoint-xs: 480px;   /* Extra small devices (phones) */
+  --breakpoint-sm: 600px;   /* Small tablets */
+  --breakpoint-md: 768px;   /* Tablets */
+  --breakpoint-lg: 1024px;  /* Small desktops */
+  --breakpoint-xl: 1280px;  /* Medium desktops */
+  --breakpoint-2xl: 1536px; /* Large desktops */
+
   /* === COMPACT MODE === */
   /* Normal spacing (default) */
   --spacing-scale: 1;
