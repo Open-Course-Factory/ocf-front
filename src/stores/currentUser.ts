@@ -93,8 +93,9 @@ export const useCurrentUserStore = defineStore('currentUser', {
         autoLogout() {
             this._isAuthenticated = false; // Clear auth flag immediately
             this.$reset();
-            // Rediriger vers landing page seulement si on n'y est pas déjà
-            if (router.currentRoute.value.name !== 'LandingPage') {
+            // Only redirect if on a protected page — don't kick users off public pages
+            const currentRoute = router.currentRoute.value;
+            if (currentRoute.meta.requiresAuth !== false && currentRoute.name !== 'LandingPage') {
                 router.push({ name: 'LandingPage' });
             }
         },
