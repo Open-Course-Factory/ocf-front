@@ -21,9 +21,9 @@
           <i class="fas fa-info-circle"></i>
           {{ t('verifyEmail.success.redirecting', { seconds: redirectCountdown }) }}
         </div>
-        <router-link to="/terminal-sessions" class="btn-primary">
+        <button class="btn-primary" @click="redirectAfterVerification">
           {{ t('verifyEmail.success.goToDashboard') }}
-        </router-link>
+        </button>
       </div>
 
       <!-- Error States -->
@@ -268,6 +268,14 @@ const verifyManualToken = async () => {
   await performVerification(manualToken.value)
 }
 
+function redirectAfterVerification() {
+  if (redirectTimer) {
+    clearInterval(redirectTimer)
+  }
+  const redirect = route.query.redirect as string
+  router.push(redirect || '/terminal-sessions')
+}
+
 const startRedirectCountdown = () => {
   redirectCountdown.value = 5
 
@@ -278,8 +286,7 @@ const startRedirectCountdown = () => {
       if (redirectTimer) {
         clearInterval(redirectTimer)
       }
-      // Redirect to terminal sessions (main landing page)
-      router.push('/terminal-sessions')
+      redirectAfterVerification()
     }
   }, 1000)
 }
