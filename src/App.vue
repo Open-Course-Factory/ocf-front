@@ -44,7 +44,7 @@ function applyCompactMode(enabled: boolean) {
 
 onMounted(async () => {
   // Don't load settings on public pages (login, register, password reset, etc.)
-  const publicPages = ['Login', 'Register', 'PasswordReset', 'ForgotPassword', 'ResetPassword', 'LandingPage', 'Legal', 'HelpPublic']
+  const publicPages = ['Login', 'Register', 'PasswordReset', 'ForgotPassword', 'ResetPassword', 'VerifyEmail', 'LandingPage', 'Legal', 'HelpPublic']
   const isPublicPage = publicPages.includes(route.name as string) || route.name?.toString().startsWith('HelpPublic')
 
   // Only load settings if user is authenticated

@@ -134,8 +134,8 @@ const dismiss = () => {
 
 <style scoped>
 .verification-banner {
-  background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
-  border: 1px solid #ffc107;
+  background-color: var(--color-warning-bg);
+  border: 1px solid var(--color-warning);
   border-radius: var(--border-radius-md);
   padding: var(--spacing-md);
   margin-bottom: var(--spacing-lg);
@@ -157,7 +157,7 @@ const dismiss = () => {
   justify-content: center;
   background: rgba(255, 193, 7, 0.2);
   border-radius: var(--border-radius-full);
-  color: #856404;
+  color: var(--color-warning-text);
   font-size: var(--font-size-xl);
 }
 
@@ -168,14 +168,14 @@ const dismiss = () => {
 
 .banner-message strong {
   display: block;
-  color: #856404;
+  color: var(--color-warning-text);
   font-size: var(--font-size-base);
   margin-bottom: var(--spacing-xs);
 }
 
 .banner-email {
   margin: 0;
-  color: #856404;
+  color: var(--color-warning-text);
   font-size: var(--font-size-sm);
   opacity: 0.9;
 }
@@ -193,8 +193,8 @@ const dismiss = () => {
   align-items: center;
   gap: var(--spacing-xs);
   padding: var(--spacing-xs) var(--spacing-sm);
-  background: #856404;
-  color: #fff;
+  background: var(--color-warning);
+  color: var(--color-white);
   border: none;
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-sm);
@@ -206,7 +206,7 @@ const dismiss = () => {
 
 .btn-resend:hover:not(:disabled),
 .btn-refresh:hover:not(:disabled) {
-  background: #6c4e03;
+  background: var(--color-warning-hover);
 }
 
 .btn-resend:disabled,
@@ -218,7 +218,7 @@ const dismiss = () => {
 .btn-dismiss {
   padding: var(--spacing-xs);
   background: transparent;
-  color: #856404;
+  color: var(--color-warning-text);
   border: none;
   cursor: pointer;
   font-size: var(--font-size-lg);
@@ -241,13 +241,13 @@ const dismiss = () => {
 }
 
 .banner-success {
-  background: rgba(40, 167, 69, 0.1);
-  color: #155724;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .banner-error {
-  background: rgba(220, 53, 69, 0.1);
-  color: #721c24;
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
 }
 
 @media (max-width: var(--breakpoint-md)) {
