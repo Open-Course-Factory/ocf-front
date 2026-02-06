@@ -251,8 +251,8 @@ const basicRoutes = [
       },
       { path: 'subscription-plans', name: 'SubscriptionPlans', component: () => import('../components/Pages/SubscriptionPlansCustomer.vue'), meta: { requiresAuth: true } },
       { path: 'admin/subscription-plans', name: 'AdminSubscriptionPlans', component: () => import('../components/Pages/SubscriptionPlans.vue'), meta: { requiresAuth: true } },
-      { path: 'billing-addresses', name: 'BillingAddresses', component: () => import('../components/Pages/BillingAddresses.vue'), meta: { requiresAuth: true, isSettings: true } },
-      { path: 'payment-methods', name: 'PaymentMethods', component: () => import('../components/Pages/PaymentMethods.vue'), meta: { requiresAuth: true, isSettings: true } },
+      { path: 'billing-addresses', name: 'BillingAddresses', component: () => import('../components/Pages/BillingAddresses.vue'), meta: { requiresAuth: true, isSettings: true, requiresEmailVerification: true } },
+      { path: 'payment-methods', name: 'PaymentMethods', component: () => import('../components/Pages/PaymentMethods.vue'), meta: { requiresAuth: true, isSettings: true, requiresEmailVerification: true } },
       { path: 'invoices', name: 'Invoices', component: () => import('../components/Pages/Invoices.vue'), meta: { requiresAuth: true } },
       { path: 'subscription-dashboard', name: 'SubscriptionDashboard', component: () => import('../components/Pages/SubscriptionDashboard.vue'), meta: { requiresAuth: true } },
 
@@ -264,7 +264,7 @@ const basicRoutes = [
         path: 'bulk-license-purchase',
         name: 'BulkLicensePurchase',
         component: () => import('../components/Pages/BulkLicensePurchase.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true, requiresEmailVerification: true }
       },
       {
         path: 'license-management',
@@ -280,20 +280,20 @@ const basicRoutes = [
       },
 
       // Route pour le checkout avec planId
-      { 
-        path: 'checkout/:planId', 
-        name: 'Checkout', 
-        component: () => import('../components/Flows/CheckoutFlow.vue'), 
-        meta: { requiresAuth: true },
+      {
+        path: 'checkout/:planId',
+        name: 'Checkout',
+        component: () => import('../components/Flows/CheckoutFlow.vue'),
+        meta: { requiresAuth: true, requiresEmailVerification: true },
         props: true
       },
 
       // Route pour le checkout sans planId (sélection depuis la page des plans)
-      { 
-        path: 'checkout', 
-        name: 'CheckoutSelect', 
-        component: () => import('../components/Flows/CheckoutFlow.vue'), 
-        meta: { requiresAuth: true }
+      {
+        path: 'checkout',
+        name: 'CheckoutSelect',
+        component: () => import('../components/Flows/CheckoutFlow.vue'),
+        meta: { requiresAuth: true, requiresEmailVerification: true }
       },
 
       // Route pour le succès de paiement (retour depuis Stripe)
@@ -453,8 +453,8 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // Always allow password reset pages (even for authenticated users)
-  if (to.name === 'PasswordReset' || to.name === 'ForgotPassword' || to.name === 'ResetPassword') {
+  // Always allow password reset and email verification pages (even for authenticated users)
+  if (to.name === 'PasswordReset' || to.name === 'ForgotPassword' || to.name === 'ResetPassword' || to.name === 'VerifyEmail') {
     next();
     return;
   }
@@ -536,6 +536,16 @@ router.beforeEach(async (to, from, next) => {
     }
 
     console.log('✅ Permission check passed for', to.path);
+  }
+
+  // Check email verification for payment-related routes
+  if (to.meta.requiresEmailVerification && !currentUserStore.emailVerified) {
+    console.warn(`📧 Access denied to ${to.path}: Email not verified`);
+    next({
+      name: 'VerifyEmail',
+      query: { redirect: to.fullPath }
+    });
+    return;
   }
 
   next();
