@@ -624,6 +624,7 @@ const { versions } = useVersionInfo()
   --terminal-text-faint: rgba(255, 255, 255, 0.5);
   --terminal-border-subtle: rgba(255, 255, 255, 0.1);
   --terminal-border-faint: rgba(255, 255, 255, 0.08);
+  --terminal-blue: #5eb3f6;
 }
 
 /* ============================================
@@ -880,7 +881,7 @@ const { versions } = useVersionInfo()
 }
 
 .terminal-path {
-  color: #5eb3f6;
+  color: var(--terminal-blue);
   font-weight: 600;
 }
 
