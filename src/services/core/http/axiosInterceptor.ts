@@ -1,7 +1,6 @@
 import axios, { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { tokenService } from '../../auth/tokenService';
 import { useCurrentUserStore } from '../../../stores/currentUser';
-import { ElNotification } from 'element-plus';
 import router from '../../../router';
 
 // Request deduplication cache
@@ -74,20 +73,13 @@ export const setupAxiosInterceptors = () => {
         userStore.autoLogout();
       }
 
-      // Handle email verification required error
+      // Handle email verification required error - redirect to verify page
       if (error.response?.status === 403 && error.response?.data?.error === 'EMAIL_NOT_VERIFIED') {
-        console.log('Email verification required');
-
-        ElNotification({
-          title: 'Email Verification Required',
-          message: 'Please verify your email address to access this feature',
-          type: 'warning',
-          duration: 8000,
-          showClose: true,
-          onClick: () => {
-            router.push('/verify-email');
-          }
-        });
+        console.log('📧 Email not verified (403), redirecting to verification page...');
+        const currentRoute = router.currentRoute.value;
+        if (currentRoute.name !== 'VerifyEmail') {
+          router.push({ name: 'VerifyEmail', query: { redirect: currentRoute.fullPath } });
+        }
       }
 
       return Promise.reject(error);
