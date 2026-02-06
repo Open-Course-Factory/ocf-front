@@ -1,22 +1,22 @@
 <template>
   <div class="landing-page">
     <!-- Floating Navigation -->
-    <nav class="floating-nav" :class="{ 'visible': showNav }">
+    <nav class="floating-nav" :class="{ 'visible': showNav }" aria-label="Page navigation">
       <div class="nav-container">
         <a href="#hero" class="nav-link" @click.prevent="scrollToSection('hero')">
-          <i class="fas fa-home"></i>
+          <i class="fas fa-home" aria-hidden="true"></i>
           <span>{{ t('landing.nav.home') }}</span>
         </a>
         <a href="#features" class="nav-link" @click.prevent="scrollToSection('features')">
-          <i class="fas fa-star"></i>
+          <i class="fas fa-star" aria-hidden="true"></i>
           <span>{{ t('landing.nav.features') }}</span>
         </a>
         <a href="#use-cases" class="nav-link" @click.prevent="scrollToSection('use-cases')">
-          <i class="fas fa-users"></i>
+          <i class="fas fa-users" aria-hidden="true"></i>
           <span>{{ t('landing.nav.useCases') }}</span>
         </a>
         <a href="#contact" class="nav-link" @click.prevent="scrollToSection('contact')">
-          <i class="fas fa-envelope"></i>
+          <i class="fas fa-envelope" aria-hidden="true"></i>
           <span>{{ t('landing.nav.contact') }}</span>
         </a>
       </div>
@@ -25,8 +25,8 @@
     <!-- Hero Section with Terminal Theme -->
     <header id="hero" class="hero-section">
       <!-- Animated terminal grid background -->
-      <div class="terminal-grid"></div>
-      <div class="scanline"></div>
+      <div class="terminal-grid" aria-hidden="true"></div>
+      <div class="scanline" aria-hidden="true"></div>
 
       <div class="hero-content">
         <!-- Terminal-style badge -->
@@ -39,6 +39,8 @@
         <h1 class="hero-title">
           {{ t('landing.heroTitle') }}
         </h1>
+
+        <p class="hero-subtitle">{{ t('landing.heroSubtitle') }}</p>
 
         <div class="cta-buttons">
           <router-link to="/register" class="btn btn-primary">
@@ -53,23 +55,22 @@
           </router-link>
         </div>
 
-        <p class="hero-subtitle">{{ t('landing.heroSubtitle') }}</p>
-
-        <!-- Simulated terminal snippet -->
+        <!-- Simulated terminal snippet with typing animation -->
         <div class="terminal-demo">
           <div class="terminal-header">
             <span class="terminal-user">user@opencourse-factory</span>
           </div>
           <div class="terminal-body">
-            <div class="terminal-line">
+            <div class="terminal-line" v-if="terminalStep >= 1">
               <span class="prompt">$</span>
-              <span class="command">{{ t('landing.demo.command1') }}</span>
+              <span class="command typing-anim">{{ typedCommand1 }}</span>
+              <span class="cursor-static" v-if="terminalStep === 1">_</span>
             </div>
-            <div class="terminal-line output">{{ t('landing.demo.output1') }}</div>
-            <div class="terminal-line">
+            <div class="terminal-line output" v-if="terminalStep >= 2">{{ t('landing.demo.output1') }}</div>
+            <div class="terminal-line" v-if="terminalStep >= 3">
               <span class="prompt">$</span>
-              <span class="command">{{ t('landing.demo.command2') }}</span>
-              <span class="cursor-static">_</span>
+              <span class="command typing-anim">{{ typedCommand2 }}</span>
+              <span class="cursor-static" v-if="terminalStep >= 3">_</span>
             </div>
           </div>
         </div>
@@ -77,7 +78,7 @@
         <!-- Trust indicators -->
         <div class="trust-badges">
           <div class="badge-item">
-            <div class="badge-number">15min</div>
+            <div class="badge-number">1-8h</div>
             <div class="badge-label">{{ t('landing.badges.sessionReset') }}</div>
           </div>
           <div class="badge-item">
@@ -102,7 +103,7 @@
 
         <div class="features-grid">
           <!-- Feature 1: Safe Practice Environment -->
-          <div class="feature-card" style="--card-delay: 0.1s">
+          <div class="feature-card scroll-reveal" style="--card-delay: 0s">
             <h3 class="feature-title">
               <span class="feature-icon">🛡️</span>
               {{ t('landing.learning.safe.title') }}
@@ -116,7 +117,7 @@
           </div>
 
           <!-- Feature 2: Real Linux -->
-          <div class="feature-card" style="--card-delay: 0.2s">
+          <div class="feature-card scroll-reveal" style="--card-delay: 0.15s">
             <h3 class="feature-title">
               <span class="feature-icon">💻</span>
               {{ t('landing.learning.realLinux.title') }}
@@ -130,7 +131,7 @@
           </div>
 
           <!-- Feature 3: Instant Access -->
-          <div class="feature-card" style="--card-delay: 0.3s">
+          <div class="feature-card scroll-reveal" style="--card-delay: 0.3s">
             <h3 class="feature-title">
               <span class="feature-icon">⚡</span>
               {{ t('landing.learning.instant.title') }}
@@ -152,7 +153,7 @@
         <h2 class="section-title">{{ t('landing.howItWorks.title') }}</h2>
 
         <div class="workflow">
-          <div class="workflow-step" v-for="index in 3" :key="index">
+          <div class="workflow-step scroll-reveal" v-for="index in 3" :key="index" :style="{ '--card-delay': `${(index - 1) * 0.15}s` }">
             <div class="step-visual">
               <div class="step-number">{{ index }}</div>
               <div class="step-connector" v-if="index < 3"></div>
@@ -178,25 +179,25 @@
         <h2 class="section-title">{{ t('landing.useCases.title') }}</h2>
 
         <div class="use-case-grid">
-          <div class="use-case-card">
+          <div class="use-case-card scroll-reveal" style="--card-delay: 0s">
             <div class="use-case-icon">🎓</div>
             <h3>{{ t('landing.useCases.students.title') }}</h3>
             <p>{{ t('landing.useCases.students.description') }}</p>
           </div>
 
-          <div class="use-case-card">
+          <div class="use-case-card scroll-reveal" style="--card-delay: 0.1s">
             <div class="use-case-icon">👨‍🏫</div>
             <h3>{{ t('landing.useCases.educators.title') }}</h3>
             <p>{{ t('landing.useCases.educators.description') }}</p>
           </div>
 
-          <div class="use-case-card">
+          <div class="use-case-card scroll-reveal" style="--card-delay: 0.2s">
             <div class="use-case-icon">👨‍💻</div>
             <h3>{{ t('landing.useCases.developers.title') }}</h3>
             <p>{{ t('landing.useCases.developers.description') }}</p>
           </div>
 
-          <div class="use-case-card">
+          <div class="use-case-card scroll-reveal" style="--card-delay: 0.3s">
             <div class="use-case-icon">🔬</div>
             <h3>{{ t('landing.useCases.testers.title') }}</h3>
             <p>{{ t('landing.useCases.testers.description') }}</p>
@@ -213,7 +214,7 @@
             <h3>Open Course Factory</h3>
             <p>{{ t('landing.footer.description') }}</p>
             <p class="footer-contact">
-              <i class="fas fa-envelope"></i>
+              <i class="fas fa-envelope" aria-hidden="true"></i>
               <a href="mailto:contact@labinux.com">contact@labinux.com</a>
             </p>
           </div>
@@ -259,7 +260,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useVersionInfo } from '../../composables/useVersionInfo'
 import AlphaBadge from '../Common/AlphaBadge.vue'
@@ -267,15 +268,55 @@ import LanguageSelector from '../UI/LanguageSelector.vue'
 
 // State for floating nav visibility
 const showNav = ref(false)
-let rafId: number | null = null
+let navObserver: IntersectionObserver | null = null
+let scrollRevealObserver: IntersectionObserver | null = null
 
-// Check scroll position continuously
-function checkScroll() {
-  const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0
-  showNav.value = scrollY > 300
+// Terminal typing animation state
+const terminalStep = ref(0)
+const typedCommand1 = ref('')
+const typedCommand2 = ref('')
+let typingTimeouts: number[] = []
 
-  // Continue checking
-  rafId = requestAnimationFrame(checkScroll)
+function typeText(text: string, target: typeof typedCommand1, speed: number = 50): Promise<void> {
+  return new Promise((resolve) => {
+    let i = 0
+    function typeChar() {
+      if (i < text.length) {
+        target.value = text.substring(0, i + 1)
+        i++
+        const timeout = window.setTimeout(typeChar, speed + Math.random() * 30)
+        typingTimeouts.push(timeout)
+      } else {
+        resolve()
+      }
+    }
+    typeChar()
+  })
+}
+
+async function startTerminalAnimation() {
+  // Step 1: type first command
+  terminalStep.value = 1
+  await typeText('docker ps -a', typedCommand1, 60)
+
+  // Pause before showing output
+  await new Promise(r => {
+    const t = window.setTimeout(r, 400)
+    typingTimeouts.push(t)
+  })
+
+  // Step 2: show output
+  terminalStep.value = 2
+
+  // Pause before second command
+  await new Promise(r => {
+    const t = window.setTimeout(r, 600)
+    typingTimeouts.push(t)
+  })
+
+  // Step 3: type second command
+  terminalStep.value = 3
+  await typeText('kubectl get pods', typedCommand2, 60)
 }
 
 // Smooth scroll to section
@@ -291,15 +332,46 @@ function scrollToSection(sectionId: string) {
   }
 }
 
-// Setup continuous scroll monitoring
-onMounted(() => {
-  // Start continuous scroll checking
-  rafId = requestAnimationFrame(checkScroll)
+// Use IntersectionObserver to show/hide floating nav
+// When hero is visible => hide nav, when hero leaves => show nav
+onMounted(async () => {
+  const heroEl = document.getElementById('hero')
+  if (heroEl) {
+    navObserver = new IntersectionObserver(
+      ([entry]) => {
+        showNav.value = !entry.isIntersecting
+      },
+      { threshold: 0.1 }
+    )
+    navObserver.observe(heroEl)
+  }
+
+  // Setup scroll-reveal observer for cards and sections
+  await nextTick()
+  scrollRevealObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('revealed')
+          scrollRevealObserver?.unobserve(entry.target)
+        }
+      })
+    },
+    { threshold: 0.15, rootMargin: '0px 0px -50px 0px' }
+  )
+
+  document.querySelectorAll('.scroll-reveal').forEach((el) => {
+    scrollRevealObserver?.observe(el)
+  })
+
+  // Start terminal typing animation after a short delay
+  setTimeout(() => {
+    startTerminalAnimation()
+  }, 800)
 
   // Check if there's a hash in URL on mount
   if (window.location.hash) {
     const sectionId = window.location.hash.substring(1)
-    // Delay to ensure page is loaded
     setTimeout(() => {
       scrollToSection(sectionId)
     }, 100)
@@ -307,10 +379,13 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  // Stop scroll checking
-  if (rafId !== null) {
-    cancelAnimationFrame(rafId)
+  if (navObserver) {
+    navObserver.disconnect()
   }
+  if (scrollRevealObserver) {
+    scrollRevealObserver.disconnect()
+  }
+  typingTimeouts.forEach(t => clearTimeout(t))
 })
 
 const { t } = useTranslations({
@@ -320,10 +395,10 @@ const { t } = useTranslations({
       nav: {
         home: 'Home',
         features: 'Features',
-        useCases: 'Use Cases',
+        useCases: 'Use cases',
         contact: 'Contact'
       },
-      heroTitle: 'Learn Linux, Docker, Kubernetes & More—Right in Your Browser',
+      heroTitle: 'Learn Linux, Docker, Kubernetes & more, right in your browser',
       heroSubtitle: 'Hands-on training for DevOps technologies without breaking anything. Practice Linux, Docker, GitLab, Kubernetes, and other essential tools in safe, isolated environments that reset automatically.',
       terminalTitle: 'terminal — bash',
       demo: {
@@ -331,34 +406,34 @@ const { t } = useTranslations({
         output1: 'CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS\nabc123def456   nginx     "nginx"   2m ago    Up 2m',
         command2: 'kubectl get pods'
       },
-      startLearning: 'Start Learning Free',
-      login: 'Sign In',
-      learnMore: 'View Documentation',
+      startLearning: 'Start learning free',
+      login: 'Sign in',
+      learnMore: 'View documentation',
       badges: {
-        sessionReset: 'Auto-reset sessions',
+        sessionReset: 'Session duration',
         isolated: 'Isolated & safe',
         installation: 'Setup required'
       },
 
       learning: {
-        title: 'Master DevOps Technologies Through Practice',
+        title: 'Master DevOps technologies through practice',
         subtitle: 'Everything runs in your browser. Experiment freely with real tools in safe, ephemeral environments.',
         safe: {
-          title: 'Experiment Without Breaking Anything',
-          description: 'Isolated environments reset every 15 minutes. Try risky commands, test configurations, make mistakes—your system stays perfectly safe.',
+          title: 'Experiment without breaking anything',
+          description: 'Isolated environments with sessions from 1 to 8 hours depending on your plan. Try risky commands, test configurations, make mistakes: your system stays perfectly safe.',
           benefit1: 'Fully isolated containers',
           benefit2: 'Zero risk to your machine',
           benefit3: 'Fresh environment on demand'
         },
         realLinux: {
-          title: 'Real Tools, Real Technologies',
-          description: 'Learn Linux, Docker, Kubernetes, GitLab CI/CD, and more. Not simulators—actual production tools running in the cloud.',
+          title: 'Real tools, real technologies',
+          description: 'Learn Linux, Docker, Kubernetes, GitLab CI/CD, and more. Not simulators, actual production tools running in the cloud.',
           benefit1: 'Linux (Alpine, Debian, Ubuntu)',
           benefit2: 'Docker & Kubernetes',
           benefit3: 'GitLab, CI/CD & DevOps tools'
         },
         instant: {
-          title: 'Zero Setup, Browser-Based',
+          title: 'Zero setup, browser-based',
           description: 'No installations, no virtual machines, no SSH keys. Launch a terminal in seconds and start learning immediately.',
           benefit1: 'Works in any modern browser',
           benefit2: 'No downloads or installations',
@@ -367,31 +442,31 @@ const { t } = useTranslations({
       },
 
       howItWorks: {
-        title: 'Start Learning in 3 Simple Steps',
+        title: 'Start learning in 3 simple steps',
         step1: {
-          title: 'Create Your Free Account',
-          description: 'Sign up in seconds—no credit card required, no commitments'
+          title: 'Create your free account',
+          description: 'Sign up in seconds, no credit card required, no commitments'
         },
         step2: {
-          title: 'Create Your Terminal',
+          title: 'Create your terminal',
           description: 'Choose your Linux distribution (Alpine, Debian, Ubuntu) and launch a real terminal instantly. Templates with pre-installed tools coming soon!'
         },
         step3: {
-          title: 'Learn & Experiment',
-          description: 'Practice in real terminals, run actual commands, break things safely—reset and try again anytime'
+          title: 'Learn & experiment',
+          description: 'Practice in real terminals, run actual commands, break things safely. Reset and try again anytime'
         }
       },
 
-      readyToStart: 'Start Your Learning Journey',
+      readyToStart: 'Start your learning journey',
 
       useCases: {
-        title: 'Built for Learners and Educators',
+        title: 'Built for learners and educators',
         students: {
           title: 'Students',
           description: 'Learn Linux, Docker, and Kubernetes without complex setup. Practice DevOps skills safely before using them in production.'
         },
         educators: {
-          title: 'Educators & Trainers',
+          title: 'Educators & trainers',
           description: 'Deliver hands-on courses with zero infrastructure setup. Students get consistent environments for Linux, Docker, GitLab, and more.'
         },
         developers: {
@@ -405,13 +480,13 @@ const { t } = useTranslations({
       },
 
       footer: {
-        description: 'Open Course Factory provides browser-based terminals for hands-on DevOps learning. Practice Linux, Docker, Kubernetes, GitLab, and more—safely and instantly.',
+        description: 'Open Course Factory provides browser-based terminals for hands-on DevOps learning. Practice Linux, Docker, Kubernetes, GitLab, and more, safely and instantly.',
         platform: 'Platform',
         documentation: 'Documentation',
-        gitlab: 'GitLab Repository',
-        legal: 'Legal Notices',
-        resources: 'Learning Resources',
-        gettingStarted: 'Getting Started Guide',
+        gitlab: 'GitLab repository',
+        legal: 'Legal notices',
+        resources: 'Learning resources',
+        gettingStarted: 'Getting started guide',
         troubleshooting: 'Troubleshooting',
         rights: 'All rights reserved'
       }
@@ -426,7 +501,7 @@ const { t } = useTranslations({
         useCases: 'Cas d\'usage',
         contact: 'Contact'
       },
-      heroTitle: 'Apprenez Linux, Docker, Kubernetes & Plus—Dans Votre Navigateur',
+      heroTitle: 'Apprenez Linux, Docker, Kubernetes & plus, dans votre navigateur',
       heroSubtitle: 'Formation pratique aux technologies DevOps sans rien casser. Pratiquez Linux, Docker, GitLab, Kubernetes et d\'autres outils essentiels dans des environnements sûrs et isolés qui se réinitialisent automatiquement.',
       terminalTitle: 'terminal — bash',
       demo: {
@@ -434,34 +509,34 @@ const { t } = useTranslations({
         output1: 'CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS\nabc123def456   nginx     "nginx"   2m ago    Up 2m',
         command2: 'kubectl get pods'
       },
-      startLearning: 'Commencer Gratuitement',
+      startLearning: 'Commencer gratuitement',
       login: 'Se connecter',
       learnMore: 'Voir la documentation',
       badges: {
-        sessionReset: 'Sessions auto-reset',
+        sessionReset: 'Durée de session',
         isolated: 'Isolé & sûr',
         installation: 'Installation requise'
       },
 
       learning: {
-        title: 'Maîtrisez les Technologies DevOps par la Pratique',
+        title: 'Maîtrisez les technologies DevOps par la pratique',
         subtitle: 'Tout fonctionne dans votre navigateur. Expérimentez librement avec de vrais outils dans des environnements sûrs et éphémères.',
         safe: {
-          title: 'Expérimentez Sans Rien Casser',
-          description: 'Environnements isolés qui se réinitialisent toutes les 15 minutes. Essayez des commandes risquées, testez des configurations, faites des erreurs—votre système reste parfaitement sûr.',
+          title: 'Expérimentez sans rien casser',
+          description: 'Environnements isolés avec des sessions de 1 à 8 heures selon votre plan. Essayez des commandes risquées, testez des configurations, faites des erreurs : votre système reste parfaitement sûr.',
           benefit1: 'Conteneurs totalement isolés',
           benefit2: 'Zéro risque pour votre machine',
           benefit3: 'Environnement frais à la demande'
         },
         realLinux: {
-          title: 'Vrais Outils, Vraies Technologies',
-          description: 'Apprenez Linux, Docker, Kubernetes, GitLab CI/CD et plus. Pas de simulateurs—de vrais outils de production qui tournent dans le cloud.',
+          title: 'Vrais outils, vraies technologies',
+          description: 'Apprenez Linux, Docker, Kubernetes, GitLab CI/CD et plus. Pas de simulateurs, de vrais outils de production qui tournent dans le cloud.',
           benefit1: 'Linux (Alpine, Debian, Ubuntu)',
           benefit2: 'Docker & Kubernetes',
           benefit3: 'GitLab, CI/CD & outils DevOps'
         },
         instant: {
-          title: 'Zéro Configuration, Dans le Navigateur',
+          title: 'Zéro configuration, dans le navigateur',
           description: 'Pas d\'installations, pas de machines virtuelles, pas de clés SSH. Lancez un terminal en secondes et commencez à apprendre immédiatement.',
           benefit1: 'Fonctionne dans tout navigateur moderne',
           benefit2: 'Aucun téléchargement ni installation',
@@ -470,31 +545,31 @@ const { t } = useTranslations({
       },
 
       howItWorks: {
-        title: 'Commencez à Apprendre en 3 Étapes',
+        title: 'Commencez à apprendre en 3 étapes',
         step1: {
-          title: 'Créez Votre Compte Gratuit',
-          description: 'Inscrivez-vous en quelques secondes—sans carte bancaire, sans engagement'
+          title: 'Créez votre compte gratuit',
+          description: 'Inscrivez-vous en quelques secondes, sans carte bancaire ni engagement'
         },
         step2: {
-          title: 'Créez Votre Terminal',
+          title: 'Créez votre terminal',
           description: 'Choisissez votre distribution Linux (Alpine, Debian, Ubuntu) et lancez un vrai terminal instantanément. Templates avec outils préinstallés bientôt disponibles !'
         },
         step3: {
-          title: 'Apprenez & Expérimentez',
-          description: 'Pratiquez dans de vrais terminaux, exécutez de vraies commandes, cassez en toute sécurité—réinitialisez et réessayez à tout moment'
+          title: 'Apprenez & expérimentez',
+          description: 'Pratiquez dans de vrais terminaux, exécutez de vraies commandes, cassez en toute sécurité. Réinitialisez et réessayez à tout moment'
         }
       },
 
-      readyToStart: 'Commencez Votre Apprentissage',
+      readyToStart: 'Commencez votre apprentissage',
 
       useCases: {
-        title: 'Conçu Pour Apprenants et Formateurs',
+        title: 'Conçu pour apprenants et formateurs',
         students: {
           title: 'Étudiants',
           description: 'Apprenez Linux, Docker et Kubernetes sans configuration complexe. Pratiquez les compétences DevOps en toute sécurité avant de les utiliser en production.'
         },
         educators: {
-          title: 'Formateurs & Enseignants',
+          title: 'Formateurs & enseignants',
           description: 'Délivrez des cours pratiques sans infrastructure à gérer. Les étudiants obtiennent des environnements cohérents pour Linux, Docker, GitLab et plus.'
         },
         developers: {
@@ -508,12 +583,12 @@ const { t } = useTranslations({
       },
 
       footer: {
-        description: 'Open Course Factory fournit des terminaux dans le navigateur pour l\'apprentissage pratique du DevOps. Pratiquez Linux, Docker, Kubernetes, GitLab et plus—en toute sécurité et instantanément.',
+        description: 'Open Course Factory fournit des terminaux dans le navigateur pour l\'apprentissage pratique du DevOps. Pratiquez Linux, Docker, Kubernetes, GitLab et plus, en toute sécurité et instantanément.',
         platform: 'Plateforme',
         documentation: 'Documentation',
         gitlab: 'Dépôt GitLab',
         legal: 'Mentions légales',
-        resources: 'Ressources d\'Apprentissage',
+        resources: 'Ressources d\'apprentissage',
         gettingStarted: 'Guide de démarrage',
         troubleshooting: 'Dépannage',
         rights: 'Tous droits réservés'
@@ -530,6 +605,26 @@ const { versions } = useVersionInfo()
    TERMINAL ACADEMY DESIGN SYSTEM
    Monospace brutalism meets educational polish
    ============================================ */
+
+/* Landing page color tokens */
+.landing-page {
+  --terminal-green: #00ff41;
+  --terminal-green-hover: #00d936;
+  --terminal-green-muted: #8ae68d;
+  --terminal-green-bg: rgba(0, 255, 65, 0.08);
+  --terminal-green-border: rgba(0, 255, 65, 0.3);
+  --terminal-green-glow: rgba(0, 255, 65, 0.15);
+  --terminal-green-shadow: rgba(0, 255, 65, 0.3);
+  --terminal-dark-bg: #0a0e1a;
+  --terminal-dark-surface: #1a1f2e;
+  --terminal-dark-surface-alt: #151a26;
+  --terminal-text-white: #ffffff;
+  --terminal-text-light: rgba(255, 255, 255, 0.8);
+  --terminal-text-muted: rgba(255, 255, 255, 0.75);
+  --terminal-text-faint: rgba(255, 255, 255, 0.5);
+  --terminal-border-subtle: rgba(255, 255, 255, 0.1);
+  --terminal-border-faint: rgba(255, 255, 255, 0.08);
+}
 
 /* ============================================
    FLOATING NAVIGATION
@@ -637,7 +732,7 @@ const { versions } = useVersionInfo()
    HERO SECTION - Terminal Theme
    ============================================ */
 .hero-section {
-  background: #0a0e1a;
+  background: var(--terminal-dark-bg);
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -652,8 +747,8 @@ const { versions } = useVersionInfo()
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(0, 255, 65, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 65, 0.04) 1px, transparent 1px);
   background-size: 40px 40px;
   animation: gridPulse 4s ease-in-out infinite;
 }
@@ -695,30 +790,30 @@ const { versions } = useVersionInfo()
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(0, 255, 65, 0.08);
-  border: 1px solid rgba(0, 255, 65, 0.3);
+  background: var(--terminal-green-bg);
+  border: 1px solid var(--terminal-green-border);
   padding: 8px 20px;
   border-radius: 6px;
-  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  font-family: 'JetBrains Mono', 'Monaco', 'Menlo', 'Courier New', monospace;
   font-size: 13px;
-  color: #00ff41;
+  color: var(--terminal-green);
   margin-bottom: 32px;
-  box-shadow: 0 0 20px rgba(0, 255, 65, 0.15);
+  box-shadow: 0 0 20px var(--terminal-green-glow);
 }
 
 .prompt-char {
-  color: #00ff41;
+  color: var(--terminal-green);
   font-weight: bold;
   font-size: 16px;
 }
 
 .typing-text {
-  color: #8ae68d;
+  color: var(--terminal-green-muted);
 }
 
 .cursor {
   animation: blink 1s step-end infinite;
-  color: #00ff41;
+  color: var(--terminal-green);
 }
 
 @keyframes blink {
@@ -727,59 +822,61 @@ const { versions } = useVersionInfo()
 }
 
 .hero-title {
-  font-size: clamp(2.5rem, 5vw, 4rem);
-  font-weight: 900;
-  line-height: 1.1;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(2.2rem, 4.5vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1.15;
   margin-bottom: 24px;
-  color: #ffffff;
-  letter-spacing: -0.02em;
+  color: var(--terminal-text-white);
+  letter-spacing: -0.03em;
 }
 
 .hero-subtitle {
   font-size: clamp(1.1rem, 2vw, 1.4rem);
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 48px;
+  color: var(--terminal-text-light);
+  margin-bottom: 32px;
+  max-width: 750px;
   margin-left: auto;
   margin-right: auto;
 }
 
 /* Terminal Demo */
 .terminal-demo {
-  background: #1a1f2e;
+  background: var(--terminal-dark-surface);
   border-radius: 12px;
   overflow: hidden;
   margin: 48px auto;
   max-width: 680px;
   box-shadow:
     0 20px 60px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
+    0 0 0 1px var(--terminal-border-subtle);
   animation: terminalGlow 3s ease-in-out infinite;
 }
 
 @keyframes terminalGlow {
-  0%, 100% { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1), 0 0 30px rgba(0, 255, 65, 0.1); }
-  50% { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1), 0 0 40px rgba(0, 255, 65, 0.2); }
+  0%, 100% { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--terminal-border-subtle), 0 0 30px rgba(0, 255, 65, 0.1); }
+  50% { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--terminal-border-subtle), 0 0 40px rgba(0, 255, 65, 0.2); }
 }
 
 .terminal-header {
-  background: #151a26;
+  background: var(--terminal-dark-surface-alt);
   padding: 10px 20px;
   display: flex;
   align-items: center;
   gap: 4px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  border-bottom: 1px solid var(--terminal-border-faint);
+  font-family: 'JetBrains Mono', 'Monaco', 'Menlo', 'Courier New', monospace;
   font-size: 14px;
 }
 
 .terminal-user {
-  color: #00ff41;
+  color: var(--terminal-green);
   font-weight: 600;
 }
 
 .terminal-separator {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--terminal-text-muted);
 }
 
 .terminal-path {
@@ -789,7 +886,7 @@ const { versions } = useVersionInfo()
 
 .terminal-body {
   padding: 24px;
-  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  font-family: 'JetBrains Mono', 'Monaco', 'Menlo', 'Courier New', monospace;
   font-size: 14px;
   line-height: 1.8;
 }
@@ -802,21 +899,21 @@ const { versions } = useVersionInfo()
 }
 
 .prompt {
-  color: #00ff41;
+  color: var(--terminal-green);
 }
 
 .command {
-  color: #8ae68d;
+  color: var(--terminal-green-muted);
 }
 
 .cursor-static {
-  color: #00ff41;
+  color: var(--terminal-green);
   margin-left: 2px;
   animation: blink 1.2s step-end infinite;
 }
 
 .output {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--terminal-text-light);
   font-size: 13px;
   padding-left: 20px;
   white-space: pre;
@@ -847,14 +944,14 @@ const { versions } = useVersionInfo()
 }
 
 .btn-primary {
-  background: #00ff41;
-  color: #0a0e1a;
-  border-color: #00ff41;
-  box-shadow: 0 4px 20px rgba(0, 255, 65, 0.3);
+  background: var(--terminal-green);
+  color: var(--terminal-dark-bg);
+  border-color: var(--terminal-green);
+  box-shadow: 0 4px 20px var(--terminal-green-shadow);
 }
 
 .btn-primary:hover {
-  background: #00d936;
+  background: var(--terminal-green-hover);
   transform: translateY(-2px);
   box-shadow: 0 8px 30px rgba(0, 255, 65, 0.4);
 }
@@ -866,23 +963,23 @@ const { versions } = useVersionInfo()
 
 .btn-secondary {
   background: transparent;
-  color: #00ff41;
-  border-color: #00ff41;
+  color: var(--terminal-green);
+  border-color: var(--terminal-green);
 }
 
 .btn-secondary:hover {
-  background: rgba(0, 255, 65, 0.1);
+  background: var(--terminal-green-bg);
   transform: translateY(-2px);
 }
 
 .btn-ghost {
   background: transparent;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--terminal-text-light);
   border-color: rgba(255, 255, 255, 0.2);
 }
 
 .btn-ghost:hover {
-  color: #ffffff;
+  color: var(--terminal-text-white);
   border-color: rgba(255, 255, 255, 0.4);
   transform: translateY(-2px);
 }
@@ -906,15 +1003,15 @@ const { versions } = useVersionInfo()
 
 .badge-number {
   font-size: 32px;
-  font-weight: 900;
-  color: #00ff41;
-  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  font-weight: 800;
+  color: var(--terminal-green);
+  font-family: 'JetBrains Mono', monospace;
   margin-bottom: 8px;
 }
 
 .badge-label {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--terminal-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -923,7 +1020,7 @@ const { versions } = useVersionInfo()
    LEARNING FEATURES SECTION
    ============================================ */
 .learning-features {
-  padding: 120px 0;
+  padding: 120px 0 100px;
   background: var(--color-bg-primary);
 }
 
@@ -933,10 +1030,12 @@ const { versions } = useVersionInfo()
 }
 
 .section-title {
-  font-size: clamp(2rem, 4vw, 3rem);
-  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+  font-weight: 700;
   margin-bottom: 16px;
   color: var(--color-text-primary);
+  letter-spacing: -0.02em;
 }
 
 .section-description {
@@ -957,10 +1056,7 @@ const { versions } = useVersionInfo()
   border: 2px solid var(--color-border-light);
   border-radius: 16px;
   padding: 40px 32px;
-  transition: all 0.3s ease;
-  animation: fadeInUp 0.6s ease-out;
-  animation-delay: var(--card-delay, 0s);
-  animation-fill-mode: both;
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   position: relative;
   overflow: hidden;
 }
@@ -972,7 +1068,7 @@ const { versions } = useVersionInfo()
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--color-primary), #00ff41);
+  background: linear-gradient(90deg, var(--terminal-green-muted), var(--terminal-green));
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.4s ease;
@@ -984,8 +1080,8 @@ const { versions } = useVersionInfo()
 
 .feature-card:hover {
   transform: translateY(-8px);
-  border-color: var(--color-primary);
-  box-shadow: 0 20px 50px rgba(102, 126, 234, 0.15);
+  border-color: var(--terminal-green);
+  box-shadow: 0 20px 50px var(--terminal-green-glow);
 }
 
 .feature-icon {
@@ -993,7 +1089,7 @@ const { versions } = useVersionInfo()
   margin-right: 16px;
   display: inline-block;
   vertical-align: middle;
-  filter: drop-shadow(0 4px 12px rgba(0, 255, 65, 0.2));
+  filter: drop-shadow(0 4px 12px var(--terminal-green-glow));
 }
 
 .feature-title {
@@ -1029,7 +1125,7 @@ const { versions } = useVersionInfo()
   content: '›';
   position: absolute;
   left: 0;
-  color: #00ff41;
+  color: var(--terminal-green);
   font-weight: bold;
   font-size: 20px;
 }
@@ -1038,8 +1134,35 @@ const { versions } = useVersionInfo()
    HOW IT WORKS
    ============================================ */
 .how-it-works {
-  padding: 120px 0;
-  background: var(--color-bg-secondary);
+  padding: 100px 0;
+  background: var(--terminal-dark-bg);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle grid background to echo the hero */
+.how-it-works::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0, 255, 65, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 65, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.how-it-works .section-title {
+  color: var(--terminal-text-white);
+}
+
+.how-it-works .step-content h3 {
+  color: var(--terminal-text-white);
+}
+
+.how-it-works .step-content p {
+  color: var(--terminal-text-light);
 }
 
 .workflow {
@@ -1066,14 +1189,15 @@ const { versions } = useVersionInfo()
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary), #00ff41);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--terminal-green-muted), var(--terminal-green));
+  color: var(--terminal-dark-bg);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
   font-size: 32px;
-  font-weight: 900;
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+  font-weight: 800;
+  box-shadow: 0 8px 24px var(--terminal-green-shadow);
   position: relative;
   z-index: 2;
 }
@@ -1081,7 +1205,7 @@ const { versions } = useVersionInfo()
 .step-connector {
   width: 3px;
   height: 80px;
-  background: linear-gradient(180deg, var(--color-primary), var(--color-border-medium));
+  background: linear-gradient(180deg, var(--terminal-green), rgba(255, 255, 255, 0.1));
   margin-top: 8px;
 }
 
@@ -1106,7 +1230,7 @@ const { versions } = useVersionInfo()
    USE CASES
    ============================================ */
 .use-cases {
-  padding: 120px 0;
+  padding: 100px 0 120px;
   background: var(--color-bg-primary);
 }
 
@@ -1129,8 +1253,8 @@ const { versions } = useVersionInfo()
 
 .use-case-card:hover {
   transform: translateY(-4px);
-  border-color: var(--color-primary);
-  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.1);
+  border-color: var(--terminal-green);
+  box-shadow: 0 12px 32px var(--terminal-green-glow);
 }
 
 .use-case-icon {
@@ -1156,10 +1280,10 @@ const { versions } = useVersionInfo()
    FOOTER
    ============================================ */
 .footer-section {
-  background: #0a0e1a;
-  color: rgba(255, 255, 255, 0.8);
+  background: var(--terminal-dark-bg);
+  color: var(--terminal-text-light);
   padding: 80px 0 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--terminal-border-subtle);
 }
 
 .footer-content {
@@ -1170,10 +1294,11 @@ const { versions } = useVersionInfo()
 }
 
 .footer-brand h3 {
+  font-family: 'JetBrains Mono', monospace;
   font-size: 1.5rem;
   font-weight: 700;
   margin-bottom: 16px;
-  color: #ffffff;
+  color: var(--terminal-text-white);
 }
 
 .footer-brand p {
@@ -1188,7 +1313,7 @@ const { versions } = useVersionInfo()
 }
 
 .footer-contact a {
-  color: #00ff41;
+  color: var(--terminal-green);
   text-decoration: none;
   transition: opacity 0.3s ease;
 }
@@ -1207,12 +1332,12 @@ const { versions } = useVersionInfo()
   font-size: 1rem;
   font-weight: 600;
   margin-bottom: 16px;
-  color: #ffffff;
+  color: var(--terminal-text-white);
 }
 
 .link-group a {
   display: block;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--terminal-text-light);
   text-decoration: none;
   padding: 6px 0;
   transition: color 0.3s ease;
@@ -1220,11 +1345,11 @@ const { versions } = useVersionInfo()
 }
 
 .link-group a:hover {
-  color: #00ff41;
+  color: var(--terminal-green);
 }
 
 .footer-bottom {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--terminal-border-subtle);
   padding-top: 24px;
   display: flex;
   justify-content: space-between;
@@ -1239,7 +1364,7 @@ const { versions } = useVersionInfo()
   gap: 10px;
   margin-top: 8px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--terminal-text-faint);
 }
 
 .version-item {
@@ -1248,6 +1373,21 @@ const { versions } = useVersionInfo()
 
 .version-divider {
   opacity: 0.5;
+}
+
+/* ============================================
+   SCROLL-REVEAL ANIMATIONS
+   ============================================ */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+  transition-delay: var(--card-delay, 0s);
+}
+
+.scroll-reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* ============================================
@@ -1261,6 +1401,50 @@ const { versions } = useVersionInfo()
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* ============================================
+   REDUCED MOTION
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  .terminal-grid,
+  .scanline {
+    animation: none;
+  }
+
+  .cursor,
+  .cursor-static {
+    animation: none;
+    opacity: 1;
+  }
+
+  .terminal-demo {
+    animation: none;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--terminal-border-subtle);
+  }
+
+  .hero-content {
+    animation: none;
+  }
+
+  .feature-card {
+    animation: none;
+  }
+
+  .feature-card::before {
+    transition: none;
+  }
+
+  .btn,
+  .nav-link,
+  .use-case-card,
+  .feature-card {
+    transition: none;
+  }
+
+  .floating-nav {
+    transition: none;
   }
 }
 
