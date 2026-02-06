@@ -30,15 +30,21 @@ export const useCurrentUserStore = defineStore('currentUser', {
             userName: "",
             userDisplayName: "",
             userId: "",
+            userEmail: "",
             userRoles: [] as string[],
             permissions: [] as string[], // User permissions from backend
             _isAuthenticated: false, // Internal reactive flag
+            emailVerified: false,
+            emailVerifiedAt: null as string | null,
         }
     },
     getters: {
         isAuthenticated(): boolean {
             // Use the internal reactive flag instead of calling tokenService
             return this._isAuthenticated;
+        },
+        isEmailVerified(): boolean {
+            return this.emailVerified;
         },
         secretToken(): string {
             return tokenService.getAccessToken() || "";
@@ -100,8 +106,11 @@ export const useCurrentUserStore = defineStore('currentUser', {
             this.userName = "";
             this.userDisplayName = "";
             this.userId = "";
+            this.userEmail = "";
             this.userRoles = [];
             this.permissions = []; // Clear permissions
+            this.emailVerified = false;
+            this.emailVerifiedAt = null;
             tokenService.clearTokens();
         },
 
@@ -148,6 +157,9 @@ export const useCurrentUserStore = defineStore('currentUser', {
                 this.userId = userData.id || userData.user_id;
                 this.userName = userData.username || userData.user_name || userData.name || userData.email;
                 this.userDisplayName = userData.display_name || this.userName;
+                this.userEmail = userData.email || '';
+                this.emailVerified = !!userData.email_verified;
+                this.emailVerifiedAt = userData.email_verified_at || null;
 
                 // Extract role names from roles array or user_roles field
                 if (userData.user_roles && Array.isArray(userData.user_roles)) {
@@ -297,6 +309,19 @@ export const useCurrentUserStore = defineStore('currentUser', {
                     throw error;
                 }
                 return [];
+            }
+        },
+
+        async refreshEmailVerificationStatus() {
+            try {
+                const response = await axios.get('/auth/verify-status');
+                const data = response.data.data || response.data;
+                this.emailVerified = !!data.email_verified;
+                this.emailVerifiedAt = data.email_verified_at || null;
+                return this.emailVerified;
+            } catch (error: any) {
+                console.error('Failed to refresh email verification status:', error);
+                return this.emailVerified;
             }
         },
 
