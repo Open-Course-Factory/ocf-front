@@ -115,8 +115,11 @@ export const useCurrentUserStore = defineStore('currentUser', {
             this.userName = "";
             this.userDisplayName = "";
             this.userId = "";
+            this.userEmail = "";
             this.userRoles = [];
             this.permissions = []; // Clear permissions
+            this.emailVerified = false;
+            this.emailVerifiedAt = null;
             tokenService.clearTokens();
         },
 
