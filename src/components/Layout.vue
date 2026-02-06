@@ -18,7 +18,8 @@
       <TopMenu
         @toggle-menu="toggleMenu"
       />
-      <div class="content-area">
+      <EmailVerificationBanner @visible="(v: boolean) => emailBannerVisible = v" />
+      <div class="content-area" :class="{ 'has-banner': emailBannerVisible }">
         <router-view :key="route.fullPath" />
       </div>
     </div>
@@ -33,6 +34,7 @@ import MainNavMenu from './Menus/MainNavMenu.vue'
 import SettingsNavMenu from './Menus/SettingsNavMenu.vue'
 import TopMenu from './Menus/TopMenu.vue'
 import DemoModeBanner from './UI/DemoModeBanner.vue'
+import EmailVerificationBanner from './UI/EmailVerificationBanner.vue'
 import ToastContainer from './UI/ToastContainer.vue'
 import { useUserSettingsStore } from '../stores/userSettings'
 import { useLocale } from '../composables/useLocale'
@@ -40,6 +42,7 @@ import { useTheme } from '../composables/useTheme'
 
 const route = useRoute()
 const isMenuCollapsed = ref(false);
+const emailBannerVisible = ref(false);
 const settingsStore = useUserSettingsStore()
 const { setLocale } = useLocale()
 const { setTheme } = useTheme()
@@ -153,6 +156,10 @@ onUnmounted(() => {
   -ms-overflow-style: none;  /* Internet Explorer 10+ */
   scrollbar-width: none;  /* Firefox */
   margin-top: 60px;
+}
+
+.content-area.has-banner {
+  margin-top: 0;
 }
 
 /* Hide scrollbars for WebKit browsers */

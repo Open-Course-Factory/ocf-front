@@ -127,6 +127,11 @@ async function handleSubmit() {
 async function redirect() {
   if (currentUserStore.secretToken) {
     try {
+      // Load full user data (email, verification status, etc.)
+      console.log('🔐 Loading user data after login...')
+      await currentUserStore.loadUserData()
+      console.log('🔐 User data loaded successfully after login')
+
       // Force refresh feature flags from backend after login
       console.log('🏴 Refreshing feature flags after login...')
       await refreshAfterLogin()
