@@ -43,7 +43,12 @@
           </div>
           <router-link to="/forgot-password" class="forgot-password">{{ t('login.forgotPassword') }}</router-link>
         </div>
-        <button type="submit" class="btn btn-primary btn-block">{{ t('login.submitButton') }}</button>
+        <button type="submit" class="btn btn-primary btn-block" :disabled="isLoading">
+          <span v-if="isLoading">
+            <i class="fas fa-spinner fa-spin"></i> {{ t('login.signingIn') }}
+          </span>
+          <span v-else>{{ t('login.submitButton') }}</span>
+        </button>
         <div class="register-link">
           <p>{{ t('login.noAccount') }} <router-link to="/register">{{ t('login.registerLink') }}</router-link></p>
         </div>
@@ -74,6 +79,7 @@ const { t } = useTranslations({
       rememberMe: 'Remember me',
       forgotPassword: 'Forgot password?',
       submitButton: 'Sign in',
+      signingIn: 'Signing in...',
       noAccount: 'No account yet?',
       registerLink: 'Sign up',
       invalidCredentials: 'Invalid email or password, please try again'
@@ -88,6 +94,7 @@ const { t } = useTranslations({
       rememberMe: 'Se souvenir de moi',
       forgotPassword: 'Mot de passe oublié ?',
       submitButton: 'Se connecter',
+      signingIn: 'Connexion en cours...',
       noAccount: 'Pas encore de compte ?',
       registerLink: 'S\'inscrire',
       invalidCredentials: 'Email ou mot de passe invalide, merci de réessayer'
@@ -102,9 +109,11 @@ const { setLocale } = useLocale();
 const { setTheme } = useTheme();
 const { isEnabled, refreshAfterLogin, waitForInitialization } = useFeatureFlags();
 const errorMessage = ref('');
+const isLoading = ref(false);
 
 async function handleSubmit() {
   errorMessage.value = '';
+  isLoading.value = true;
   try {
     const responseLogin = await axios.post('/auth/login', {
       email: loginStore.email,
@@ -119,12 +128,16 @@ async function handleSubmit() {
     currentUserStore.userEmail = responseLogin.data.email || loginStore.email;
     currentUserStore.emailVerified = responseLogin.data.email_verified || false;
     currentUserStore.emailVerifiedAt = responseLogin.data.email_verified_at || null;
-
-    await redirect();
   } catch (error) {
     console.error('Error during login:', error);
     errorMessage.value = t('login.invalidCredentials');
+    isLoading.value = false;
+    return;
   }
+
+  // Redirect separately so redirect errors don't show "invalid credentials"
+  // Don't reset isLoading: the component unmounts on successful navigation
+  await redirect();
 }
 
 async function redirect() {
@@ -180,13 +193,11 @@ async function redirect() {
         landingPage = '/terminal-sessions';
       }
 
-      console.log('🔐 Redirecting to:', landingPage)
-      await router.push(landingPage);
-      console.log('🔐 Navigation completed successfully')
+      // Full page reload to cleanly transition from public to authenticated app shell
+      window.location.href = landingPage;
     } catch (error) {
       console.error('Error during redirect:', error);
-      // Fallback to terminal sessions (always available)
-      await router.push('/terminal-sessions');
+      window.location.href = '/terminal-sessions';
     }
   }
 }

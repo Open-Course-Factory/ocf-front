@@ -34,12 +34,14 @@ const { t } = useI18n()
 const settingsStore = useUserSettingsStore()
 const toast = useToast()
 
+const defaultPage = () => settingsStore.availablePages[0]?.value || '/terminal-sessions'
+
 const localSettings = ref({
-  default_landing_page: settingsStore.settings.default_landing_page || '/courses'
+  default_landing_page: settingsStore.settings.default_landing_page || defaultPage()
 })
 
 watch(() => settingsStore.settings, (newSettings) => {
-  localSettings.value.default_landing_page = newSettings.default_landing_page || '/courses'
+  localSettings.value.default_landing_page = newSettings.default_landing_page || defaultPage()
 }, { deep: true })
 
 async function saveSettings() {
