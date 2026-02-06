@@ -120,37 +120,6 @@ async function handleSubmit() {
     currentUserStore.emailVerified = responseLogin.data.email_verified || false;
     currentUserStore.emailVerifiedAt = responseLogin.data.email_verified_at || null;
 
-    // Check if email is verified
-    if (!currentUserStore.emailVerified) {
-      console.log('🔐 User email not verified, redirecting to verification page');
-      const currentPath = router.currentRoute.value.path;
-      console.log('🔐 Current route:', currentPath);
-      console.log('🔐 Is authenticated:', currentUserStore.isAuthenticated);
-
-      // Only navigate if not already on verify-email page
-      if (currentPath !== '/verify-email') {
-        console.log('🔐 Attempting navigation to /verify-email...');
-        try {
-          const navigationResult = await router.push({ name: 'VerifyEmail' });
-          console.log('🔐 Navigation completed. Result:', navigationResult);
-          console.log('🔐 New path:', router.currentRoute.value.path);
-        } catch (navError: any) {
-          console.error('🔐 Navigation error occurred:', navError);
-          console.error('🔐 Error message:', navError.message);
-          console.error('🔐 Error type:', navError.type);
-
-          // Try alternative navigation method
-          console.log('🔐 Trying window.location.href as fallback...');
-          setTimeout(() => {
-            window.location.href = '/verify-email';
-          }, 100);
-        }
-      } else {
-        console.log('🔐 Already on verify-email page, staying here');
-      }
-      return;
-    }
-
     await redirect();
   } catch (error) {
     console.error('Error during login:', error);
@@ -161,6 +130,11 @@ async function handleSubmit() {
 async function redirect() {
   if (currentUserStore.secretToken) {
     try {
+      // Load full user data (email, verification status, etc.)
+      console.log('🔐 Loading user data after login...')
+      await currentUserStore.loadUserData()
+      console.log('🔐 User data loaded successfully after login')
+
       // Force refresh feature flags from backend after login
       console.log('🏴 Refreshing feature flags after login...')
       await refreshAfterLogin()
