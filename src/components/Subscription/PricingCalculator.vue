@@ -831,7 +831,7 @@ onMounted(() => {
 }
 
 /* Responsive */
-@media (max-width: var(--breakpoint-lg)) {
+@media (max-width: 1024px) {
   .comparison-table {
     height: auto;
     min-height: 250px;
@@ -848,7 +848,7 @@ onMounted(() => {
   }
 }
 
-@media (max-width: var(--breakpoint-md)) {
+@media (max-width: 768px) {
   .pricing-calculator {
     padding: var(--spacing-lg);
     min-width: 320px;

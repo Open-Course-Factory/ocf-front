@@ -150,7 +150,7 @@
   --topbar-height: 60px;
 
   /* === RESPONSIVE BREAKPOINTS === */
-  /* Use these in media queries: @media (max-width: var(--breakpoint-*)) */
+  /* NOTE: CSS variables cannot be used in @media queries. Use raw values instead. */
   --breakpoint-xs: 480px;   /* Extra small devices (phones) */
   --breakpoint-sm: 600px;   /* Small tablets */
   --breakpoint-md: 768px;   /* Tablets */

@@ -250,7 +250,7 @@ const dismiss = () => {
   color: var(--color-danger-text);
 }
 
-@media (max-width: var(--breakpoint-md)) {
+@media (max-width: 768px) {
   .banner-content {
     flex-direction: column;
     align-items: stretch;

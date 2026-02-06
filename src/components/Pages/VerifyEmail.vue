@@ -455,7 +455,7 @@ const handleResendSuccess = () => {
   font-weight: var(--font-weight-medium);
 }
 
-@media (max-width: var(--breakpoint-md)) {
+@media (max-width: 768px) {
   .state-container {
     padding: var(--spacing-xl);
   }
