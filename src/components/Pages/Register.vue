@@ -94,16 +94,26 @@
 
         <div class="form-group">
           <label for="password">{{ t('register.passwordLabel') }}</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            v-model="formData.password"
-            :class="['form-control', { 'is-invalid': errors.password }]"
-            autocomplete="new-password"
-            @input="validatePassword"
-            required
-          />
+          <div class="password-input-wrapper">
+            <input
+              :type="showPassword ? 'text' : 'password'"
+              id="password"
+              name="password"
+              v-model="formData.password"
+              :class="['form-control', { 'is-invalid': errors.password }]"
+              autocomplete="new-password"
+              @input="validatePassword"
+              required
+            />
+            <button
+              type="button"
+              class="password-toggle"
+              @click="showPassword = !showPassword"
+              :aria-label="showPassword ? t('register.hidePassword') : t('register.showPassword')"
+            >
+              <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+            </button>
+          </div>
           <div class="password-requirements">
             <small :class="{ 'text-success': passwordValidations.length, 'text-muted': !passwordValidations.length }">
               <i :class="passwordValidations.length ? 'fas fa-check' : 'fas fa-times'"></i>
@@ -237,7 +247,9 @@ const { t } = useTranslations({
       passwordMismatch: 'Passwords do not match',
       successMessage: 'Account created successfully! You will be redirected to login page.',
       errorEmailExists: 'A user with this email address already exists',
-      errorGeneric: 'Error creating account. Please try again.'
+      errorGeneric: 'Error creating account. Please try again.',
+      showPassword: 'Show password',
+      hidePassword: 'Hide password'
     }
   },
   fr: {
@@ -267,7 +279,9 @@ const { t } = useTranslations({
       passwordMismatch: 'Les mots de passe ne correspondent pas',
       successMessage: 'Compte créé avec succès ! Vous allez être redirigé vers la page de connexion.',
       errorEmailExists: 'Un utilisateur avec cette adresse email existe déjà',
-      errorGeneric: 'Erreur lors de la création du compte. Veuillez réessayer.'
+      errorGeneric: 'Erreur lors de la création du compte. Veuillez réessayer.',
+      showPassword: 'Afficher le mot de passe',
+      hidePassword: 'Masquer le mot de passe'
     }
   }
 });
@@ -303,6 +317,7 @@ const passwordValidations = reactive({
 const errorMessage = ref('');
 const successMessage = ref('');
 const isLoading = ref(false);
+const showPassword = ref(false);
 
 const isFormValid = computed(() => {
   const allFieldsFilled = formData.firstName !== '' &&
@@ -497,6 +512,34 @@ const handleSubmit = async () => {
 
 .form-group {
   margin-bottom: 16px;
+}
+
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  padding-right: 40px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition-fast);
+}
+
+.password-toggle:hover {
+  color: var(--color-text-primary);
 }
 
 .form-group label {

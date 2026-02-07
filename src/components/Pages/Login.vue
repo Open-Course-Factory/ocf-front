@@ -23,15 +23,25 @@
         </div>
         <div class="form-group">
           <label for="password">{{ t('login.passwordLabel') }}</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            class="form-control"
-            v-model="loginStore.password"
-            autocomplete="current-password"
-            required
-          />
+          <div class="password-input-wrapper">
+            <input
+              :type="showPassword ? 'text' : 'password'"
+              id="password"
+              name="password"
+              class="form-control"
+              v-model="loginStore.password"
+              autocomplete="current-password"
+              required
+            />
+            <button
+              type="button"
+              class="password-toggle"
+              @click="showPassword = !showPassword"
+              :aria-label="showPassword ? t('login.hidePassword') : t('login.showPassword')"
+            >
+              <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+            </button>
+          </div>
         </div>
         <div v-if="errorMessage" class="alert alert-danger" role="alert">
           {{ errorMessage }}
@@ -81,7 +91,9 @@ const { t } = useTranslations({
       signingIn: 'Signing in...',
       noAccount: 'No account yet?',
       registerLink: 'Sign up',
-      invalidCredentials: 'Invalid email or password, please try again'
+      invalidCredentials: 'Invalid email or password, please try again',
+      showPassword: 'Show password',
+      hidePassword: 'Hide password'
     }
   },
   fr: {
@@ -95,7 +107,9 @@ const { t } = useTranslations({
       signingIn: 'Connexion en cours...',
       noAccount: 'Pas encore de compte ?',
       registerLink: 'S\'inscrire',
-      invalidCredentials: 'Email ou mot de passe invalide, merci de réessayer'
+      invalidCredentials: 'Email ou mot de passe invalide, merci de réessayer',
+      showPassword: 'Afficher le mot de passe',
+      hidePassword: 'Masquer le mot de passe'
     }
   }
 });
@@ -107,6 +121,7 @@ const { setLocale } = useLocale();
 const { setTheme } = useTheme();
 const { isEnabled, refreshAfterLogin, waitForInitialization } = useFeatureFlags();
 const errorMessage = ref('');
+const showPassword = ref(false);
 const isLoading = ref(false);
 
 async function handleSubmit() {
@@ -256,6 +271,34 @@ async function redirect() {
 
 .form-group label {
   font-weight: bold;
+}
+
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  padding-right: 40px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition-fast);
+}
+
+.password-toggle:hover {
+  color: var(--color-text-primary);
 }
 
 .form-options {
