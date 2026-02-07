@@ -1,10 +1,10 @@
 <template>
   <div class="connection-page">
     <div class="connection-form">
-      <div class="back-button">
-        <router-link to="/" class="btn-back">
-          <i class="fas fa-arrow-left"></i>
-          {{ t('login.backToHome') }}
+      <div class="auth-brand">
+        <router-link to="/">
+          <i class="fas fa-book"></i>
+          <span>OCF</span>
         </router-link>
       </div>
       <h2>{{ t('login.title') }}</h2>
@@ -72,7 +72,6 @@ import { useTranslations } from '../../composables/useTranslations';
 const { t } = useTranslations({
   en: {
     login: {
-      backToHome: 'Back to home',
       title: 'Login',
       emailLabel: 'Email address',
       passwordLabel: 'Password',
@@ -87,7 +86,6 @@ const { t } = useTranslations({
   },
   fr: {
     login: {
-      backToHome: 'Retour à l\'accueil',
       title: 'Connexion',
       emailLabel: 'Adresse mail',
       passwordLabel: 'Mot de passe',
@@ -221,26 +219,29 @@ async function redirect() {
   max-width: 400px;
 }
 
-.back-button {
-  margin-bottom: 16px;
+.auth-brand {
+  text-align: center;
+  margin-bottom: 24px;
 }
 
-.btn-back {
+.auth-brand a {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  color: var(--color-text-muted);
+  gap: 10px;
   text-decoration: none;
-  font-size: 0.9rem;
-  transition: color 0.3s ease;
-}
-
-.btn-back:hover {
   color: var(--color-primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  transition: opacity var(--transition-fast);
 }
 
-.btn-back i {
-  font-size: 0.8rem;
+.auth-brand a:hover {
+  opacity: 0.8;
+}
+
+.auth-brand i {
+  font-size: 1.3rem;
 }
 
 .connection-form h2 {

@@ -1,10 +1,10 @@
 <template>
   <div class="register-page">
     <div class="register-form">
-      <div class="back-button">
-        <router-link to="/" class="btn-back">
-          <i class="fas fa-arrow-left"></i>
-          {{ t('register.backToHome') }}
+      <div class="auth-brand">
+        <router-link to="/">
+          <i class="fas fa-book"></i>
+          <span>OCF</span>
         </router-link>
       </div>
       <h2>{{ t('register.title') }}</h2>
@@ -212,7 +212,6 @@ const showTosModal = ref(false);
 const { t } = useTranslations({
   en: {
     register: {
-      backToHome: 'Back to home',
       title: 'Create an account',
       firstNameLabel: 'First name *',
       lastNameLabel: 'Last name *',
@@ -243,7 +242,6 @@ const { t } = useTranslations({
   },
   fr: {
     register: {
-      backToHome: 'Retour à l\'accueil',
       title: 'Créer un compte',
       firstNameLabel: 'Prénom *',
       lastNameLabel: 'Nom *',
@@ -456,26 +454,29 @@ const handleSubmit = async () => {
   max-width: 500px;
 }
 
-.back-button {
-  margin-bottom: 16px;
+.auth-brand {
+  text-align: center;
+  margin-bottom: 24px;
 }
 
-.btn-back {
+.auth-brand a {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  color: var(--color-text-muted);
+  gap: 10px;
   text-decoration: none;
-  font-size: 0.9rem;
-  transition: color 0.3s ease;
-}
-
-.btn-back:hover {
   color: var(--color-primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  transition: opacity var(--transition-fast);
 }
 
-.btn-back i {
-  font-size: 0.8rem;
+.auth-brand a:hover {
+  opacity: 0.8;
+}
+
+.auth-brand i {
+  font-size: 1.3rem;
 }
 
 .register-form h2 {

@@ -1,6 +1,12 @@
 <template>
   <div class="password-reset-page">
     <div class="password-reset-form">
+      <div class="auth-brand">
+        <router-link to="/">
+          <i class="fas fa-book"></i>
+          <span>OCF</span>
+        </router-link>
+      </div>
       <!-- Étape 1: Demande de reset -->
       <div v-if="step === 'request'" class="reset-request">
         <h2>{{ t('passwordReset.requestTitle') }}</h2>
@@ -430,6 +436,31 @@ const startResendCooldown = () => {
   min-height: 100vh;
   background-color: var(--color-gray-50);
   padding: var(--spacing-lg);
+}
+
+.auth-brand {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.auth-brand a {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--color-primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  transition: opacity var(--transition-fast);
+}
+
+.auth-brand a:hover {
+  opacity: 0.8;
+}
+
+.auth-brand i {
+  font-size: 1.3rem;
 }
 
 .password-reset-form {
