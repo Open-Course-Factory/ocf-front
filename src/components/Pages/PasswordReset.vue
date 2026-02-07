@@ -10,7 +10,7 @@
       <!-- Étape 1: Demande de reset -->
       <div v-if="step === 'request'" class="reset-request">
         <h2>{{ t('passwordReset.requestTitle') }}</h2>
-        <p class="text-muted">
+        <p class="form-description">
           {{ t('passwordReset.requestDescription') }}
         </p>
 
@@ -22,7 +22,7 @@
               id="email"
               v-model="email"
               :class="['form-control', { 'is-invalid': emailError }]"
-              placeholder="votre@email.com"
+              :placeholder="t('passwordReset.emailPlaceholder')"
               required
             />
             <div v-if="emailError" class="invalid-feedback">
@@ -61,7 +61,7 @@
           <i class="fas fa-check-circle"></i>
         </div>
         <h2>{{ t('passwordReset.emailSent') }}</h2>
-        <p class="text-muted">
+        <p class="form-description">
           {{ t('passwordReset.emailSentDescription', { email }) }}
         </p>
 
@@ -91,7 +91,7 @@
       <!-- Étape 3: Nouveau mot de passe (si token dans l'URL) -->
       <div v-if="step === 'reset'" class="password-reset">
         <h2>{{ t('passwordReset.resetTitle') }}</h2>
-        <p class="text-muted">
+        <p class="form-description">
           {{ t('passwordReset.resetDescription') }}
         </p>
         <div class="token-expiry-notice">
@@ -191,7 +191,7 @@
           <i class="fas fa-check-circle"></i>
         </div>
         <h2>{{ t('passwordReset.successTitle') }}</h2>
-        <p class="text-muted">
+        <p class="form-description">
           {{ t('passwordReset.successDescription') }}
         </p>
 
@@ -217,6 +217,7 @@ const { t } = useTranslations({
       requestTitle: 'Reset password',
       requestDescription: 'Enter your email address and we will send you a link to reset your password.',
       emailLabel: 'Email address',
+      emailPlaceholder: 'your@email.com',
       sending: 'Sending...',
       sendLink: 'Send link',
       backToLogin: 'Back to login',
@@ -253,6 +254,7 @@ const { t } = useTranslations({
       requestTitle: 'Réinitialiser le mot de passe',
       requestDescription: 'Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.',
       emailLabel: 'Adresse email',
+      emailPlaceholder: 'votre@email.com',
       sending: 'Envoi en cours...',
       sendLink: 'Envoyer le lien',
       backToLogin: 'Retour à la connexion',
@@ -434,7 +436,7 @@ const startResendCooldown = () => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: var(--color-gray-50);
+  background-color: var(--color-bg-secondary);
   padding: var(--spacing-lg);
 }
 
@@ -464,7 +466,7 @@ const startResendCooldown = () => {
 }
 
 .password-reset-form {
-  background-color: var(--color-white);
+  background-color: var(--color-bg-primary);
   padding: var(--spacing-2xl);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-md);
@@ -479,8 +481,8 @@ const startResendCooldown = () => {
   color: var(--color-text-primary);
 }
 
-.text-muted {
-  color: var(--color-gray-600);
+.form-description {
+  color: var(--color-text-muted);
   margin-bottom: var(--spacing-lg);
 }
 
@@ -539,7 +541,7 @@ const startResendCooldown = () => {
 .resend-section {
   margin: var(--spacing-lg) 0;
   padding: var(--spacing-lg);
-  background-color: var(--color-gray-50);
+  background-color: var(--color-bg-tertiary);
   border-radius: var(--border-radius-lg);
 }
 
