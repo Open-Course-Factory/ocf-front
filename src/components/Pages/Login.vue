@@ -156,24 +156,10 @@ async function handleSubmit() {
 async function redirect() {
   if (currentUserStore.secretToken) {
     try {
-      // Load full user data (email, verification status, etc.)
-      console.log('🔐 Loading user data after login...')
       await currentUserStore.loadUserData()
-      console.log('🔐 User data loaded successfully after login')
-
-      // Force refresh feature flags from backend after login
-      console.log('🏴 Refreshing feature flags after login...')
       await refreshAfterLogin()
-      console.log('🏴 Feature flags refreshed successfully after login')
-
-      // Wait for feature flags to be fully initialized before proceeding
       await waitForInitialization()
-      console.log('🏴 Feature flags fully initialized, proceeding with redirect')
-
-      // Load user permissions
-      console.log('🔐 Loading user permissions after login...')
       await currentUserStore.loadPermissions()
-      console.log('🔐 User permissions loaded successfully after login')
 
       // Load user settings
       const settings = await settingsStore.loadSettings();
