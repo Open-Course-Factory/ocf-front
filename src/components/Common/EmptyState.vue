@@ -63,7 +63,7 @@ interface Emits {
   (e: 'action'): void
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   iconClass: 'fas fa-inbox',
   actionIcon: ''
 })

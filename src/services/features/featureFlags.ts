@@ -618,6 +618,7 @@ export class FeatureFlagService {
   /**
    * Simple hash function for rollout percentage
    */
+  // @ts-expect-error reserved for future rollout percentage feature
   private simpleHash(str: string): number {
     let hash = 0
     for (let i = 0; i < str.length; i++) {

@@ -158,7 +158,7 @@ async function parseCSV(file: File) {
   }
 }
 
-watch(() => [props.visible, props.file], ([visible, file]) => {
+watch(() => [props.visible, props.file] as const, ([visible, file]) => {
   if (visible && file) {
     parseCSV(file)
   }
