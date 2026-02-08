@@ -34,7 +34,7 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   token: string
-  user: import('./entities').User
+  user: import('./user').User
 }
 
 export interface RegisterRequest {
@@ -46,5 +46,5 @@ export interface RegisterRequest {
 export interface RegisterResponse {
   success: boolean
   message: string
-  user?: import('./entities').User
+  user?: import('./user').User
 }
