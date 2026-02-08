@@ -133,6 +133,12 @@ export interface Subscription extends BaseEntity {
   batch_owner_email?: string
   assigned_at?: string
 
+  // Plan features (aggregated from subscription plan)
+  plan_features?: {
+    session_duration_hours?: number
+    [key: string]: any
+  }
+
   // Deprecated fields (for backward compatibility)
   plan_id?: string
   plan_name?: string
@@ -168,6 +174,17 @@ export interface PaymentMethod extends BaseEntity {
 }
 
 /**
+ * Backend (Incus server) entity
+ */
+export interface Backend {
+  id: string
+  name: string
+  description?: string
+  connected: boolean
+  is_default: boolean
+}
+
+/**
  * Terminal Session entity
  */
 export interface TerminalSession extends BaseEntity {
@@ -179,6 +196,8 @@ export interface TerminalSession extends BaseEntity {
   console_url?: string
   expires_at?: string
   terms?: string
+  backend?: string
+  organization_id?: string
 }
 
 /**
@@ -346,7 +365,7 @@ export interface SubscriptionBatch extends BaseEntity {
   total_quantity: number
   assigned_quantity: number
   available_quantity: number // Calculated: total - assigned
-  status: 'pending_payment' | 'active' | 'cancelled'
+  status: 'pending_payment' | 'active' | 'cancelled' | 'canceled'
   current_period_start: string
   current_period_end: string
   cancelled_at?: string
@@ -387,6 +406,7 @@ export interface PricingBreakdown {
   total_monthly_cost: number // In cents
   average_per_license: number // In currency (e.g., 9.33)
   savings_vs_individual: number // In cents
+  individual_unit_price?: number // In cents (individual price per license for comparison)
   currency: string
 }
 

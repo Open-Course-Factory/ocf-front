@@ -4,6 +4,7 @@
  */
 
 import axios from 'axios'
+import type { Backend } from '../../../types/entities'
 
 export interface InstanceType {
   name: string
@@ -21,6 +22,8 @@ export interface StartSessionData {
   expiry?: number
   instance_type?: string
   name?: string
+  backend?: string
+  organization_id?: string
 }
 
 export interface UpdateTerminalRequest {
@@ -175,6 +178,17 @@ export const terminalService = {
 
   async updateTerminal(terminalId: string, data: UpdateTerminalRequest): Promise<any> {
     const response = await axios.patch(`/terminals/${terminalId}`, data)
+    return response.data
+  },
+
+  async getBackends(organizationId?: string): Promise<Backend[]> {
+    const params = organizationId ? { organization_id: organizationId } : {}
+    const response = await axios.get('/terminals/backends', { params })
+    return response.data
+  },
+
+  async setDefaultBackend(backendId: string): Promise<Backend> {
+    const response = await axios.patch(`/terminals/backends/${backendId}/set-default`)
     return response.data
   }
 }

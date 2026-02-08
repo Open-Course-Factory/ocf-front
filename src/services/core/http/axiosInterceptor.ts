@@ -73,6 +73,11 @@ export const setupAxiosInterceptors = () => {
         userStore.autoLogout();
       }
 
+      // Log 503 errors for backend capacity issues
+      if (error.response?.status === 503) {
+        console.warn('503 Service Unavailable:', error.response?.data?.error_message || error.message);
+      }
+
       // Handle email verification required error - redirect to verify page
       if (error.response?.status === 403 && error.response?.data?.error === 'EMAIL_NOT_VERIFIED') {
         console.log('📧 Email not verified (403), redirecting to verification page...');
