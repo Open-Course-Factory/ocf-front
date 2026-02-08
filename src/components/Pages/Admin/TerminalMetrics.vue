@@ -10,6 +10,20 @@
     <div class="page-header">
       <h2>{{ t('terminalMetrics.pageTitle') }}</h2>
       <div class="header-actions">
+        <select
+          v-if="backendsStore.backends.length > 1"
+          v-model="selectedBackendFilter"
+          class="backend-filter-select"
+        >
+          <option value="">{{ t('terminalMetrics.allBackends') }}</option>
+          <option
+            v-for="backend in backendsStore.backends"
+            :key="backend.id"
+            :value="backend.id"
+          >
+            {{ backend.name || backend.id }}
+          </option>
+        </select>
         <Button
           variant="primary"
           size="md"
@@ -151,26 +165,41 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTerminalMetricsStore } from '../../../stores/terminalMetrics'
+import { useTerminalBackendsStore } from '../../../stores/terminalBackends'
 import Button from '../../UI/Button.vue'
 
 const { t } = useI18n()
 const metricsStore = useTerminalMetricsStore()
+const backendsStore = useTerminalBackendsStore()
+const selectedBackendFilter = ref('')
+
+watch(selectedBackendFilter, async (backendId) => {
+  metricsStore.clearCache()
+  await metricsStore.fetchMetrics(true, backendId || undefined)
+})
 
 // Auto-refresh configuration (30 seconds)
 const autoRefreshInterval = 30000
 let refreshIntervalId: NodeJS.Timeout | null = null
 
 onMounted(async () => {
+  // Load backends for filter (no org filter for admin)
+  try {
+    await backendsStore.fetchBackends()
+  } catch {
+    // Non-critical: filter just won't be available
+  }
+
   // Initial fetch
   await metricsStore.fetchMetrics()
 
   // Setup auto-refresh
   refreshIntervalId = setInterval(async () => {
     try {
-      await metricsStore.fetchMetrics(false) // Use cache when auto-refreshing
+      await metricsStore.fetchMetrics(false, selectedBackendFilter.value || undefined)
     } catch (error) {
       console.error('Auto-refresh failed:', error)
     }
@@ -184,7 +213,7 @@ onBeforeUnmount(() => {
 })
 
 async function handleRefresh() {
-  await metricsStore.refreshMetrics() // Bypass cache on manual refresh
+  await metricsStore.refreshMetrics(selectedBackendFilter.value || undefined)
 }
 
 function getStatusIcon() {
@@ -237,7 +266,25 @@ function formatTimestamp(timestamp: number) {
 
 .header-actions {
   display: flex;
+  align-items: center;
   gap: var(--spacing-md);
+}
+
+.backend-filter-select {
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: var(--border-width-medium) solid var(--color-border-medium);
+  border-radius: var(--border-radius-md);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.backend-filter-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus-primary);
 }
 
 /* Status Banner */

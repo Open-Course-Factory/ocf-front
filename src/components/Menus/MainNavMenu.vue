@@ -405,6 +405,12 @@ const menuCategories = computed((): MenuCategory[] => [
         icon: 'fas fa-chart-line'
       },
       {
+        route: '/admin/terminal-backends',
+        label: t('navigation.terminalBackends'),
+        title: t('navigation.terminalBackendsTitle'),
+        icon: 'fas fa-server'
+      },
+      {
         route: '/email-templates',
         label: t('navigation.emailTemplates'),
         title: t('navigation.emailTemplatesTitle'),

@@ -346,6 +346,12 @@ const basicRoutes = [
         meta: { requiresAuth: true, requiresAdmin: true }
       },
       {
+        path: 'admin/terminal-backends',
+        name: 'AdminTerminalBackends',
+        component: () => import('../components/Pages/Admin/TerminalBackends.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
         path: 'admin/invoice-cleanup',
         name: 'AdminInvoiceCleanup',
         component: () => import('../components/Pages/Admin/InvoiceCleanup.vue'),
