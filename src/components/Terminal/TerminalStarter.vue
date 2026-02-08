@@ -100,6 +100,36 @@
         </small>
       </div>
 
+      <!-- Organization Selector (only if multiple orgs) -->
+      <div v-if="hasMultipleOrgs" class="org-selector">
+        <label for="org-select" class="form-label">
+          {{ t('terminalStarter.organization') }}
+        </label>
+        <select
+          id="org-select"
+          v-model="selectedOrganizationId"
+          class="form-control"
+          :disabled="isStarting"
+        >
+          <option value="">{{ t('terminalStarter.selectOrganization') }}</option>
+          <option
+            v-for="org in organizations"
+            :key="org.id"
+            :value="org.id"
+          >
+            {{ org.display_name || org.name }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Backend Selector (only if multiple backends available) -->
+      <BackendSelector
+        v-if="backendsStore.hasMultipleBackends"
+        v-model="selectedBackendId"
+        :backends="backends"
+        :disabled="isStarting"
+      />
+
       <!-- Instance Type Selection -->
       <InstanceTypeSelector
         v-model="selectedInstanceType"
@@ -169,12 +199,15 @@ import { terminalService } from '../../services/domain/terminal'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTerminalMetricsStore } from '../../stores/terminalMetrics'
 import { useClassGroupsStore } from '../../stores/classGroups'
+import { useOrganizationsStore } from '../../stores/organizations'
+import { useTerminalBackendsStore } from '../../stores/terminalBackends'
 import { useNotification } from '../../composables/useNotification'
 import { useTranslations } from '../../composables/useTranslations'
 import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
 import InstanceTypeSelector from './InstanceTypeSelector.vue'
+import BackendSelector from './BackendSelector.vue'
 import TerminalAdvancedOptions from './TerminalAdvancedOptions.vue'
 import TerminalUsagePanel from './TerminalUsagePanel.vue'
 import TerminalSessionInfo from './TerminalSessionInfo.vue'
@@ -191,6 +224,8 @@ const emit = defineEmits(['session-started'])
 const subscriptionsStore = useSubscriptionsStore()
 const metricsStore = useTerminalMetricsStore()
 const groupsStore = useClassGroupsStore()
+const organizationsStore = useOrganizationsStore()
+const backendsStore = useTerminalBackendsStore()
 
 // Feature flags
 const { isEnabled } = useFeatureFlags()
@@ -238,7 +273,10 @@ const { t } = useTranslations({
       errorStoppingMessage: 'Error stopping the session',
       errorServerCapacity: 'Server at Capacity',
       errorServerCapacityMessage: 'The server does not have enough resources to create a new terminal session. Please try again in a few minutes or stop an existing terminal.',
-      activeSessions: '{count} active session | {count} active sessions'
+      activeSessions: '{count} active session | {count} active sessions',
+      organization: 'Organization',
+      selectOrganization: 'Select an organization',
+      backendOffline: 'Backend "{name}" is offline. Please select another backend or try again later.'
     }
   },
   fr: {
@@ -282,7 +320,10 @@ const { t } = useTranslations({
       errorStoppingMessage: 'Erreur lors de l\'arrêt de la session',
       errorServerCapacity: 'Serveur à Capacité Maximale',
       errorServerCapacityMessage: 'Le serveur n\'a pas suffisamment de ressources pour créer une nouvelle session terminal. Veuillez réessayer dans quelques minutes ou arrêter un terminal existant.',
-      activeSessions: '{count} session active | {count} sessions actives'
+      activeSessions: '{count} session active | {count} sessions actives',
+      organization: 'Organisation',
+      selectOrganization: 'Sélectionner une organisation',
+      backendOffline: 'Le backend « {name} » est hors ligne. Veuillez sélectionner un autre backend ou réessayer plus tard.'
     }
   }
 })
@@ -314,6 +355,16 @@ const selectedInstanceType = ref('')
 const nameInput = ref('')
 const creationMode = ref<'single' | 'bulk'>('single')
 const selectedGroupId = ref('')
+const selectedOrganizationId = ref('')
+
+// Organizations & Backends
+const organizations = computed(() => organizationsStore.organizations)
+const hasMultipleOrgs = computed(() => organizations.value.length > 1)
+const backends = computed(() => backendsStore.backends)
+const selectedBackendId = computed({
+  get: () => backendsStore.selectedBackendId || '',
+  set: (val: string) => backendsStore.selectBackend(val)
+})
 
 // Instance types
 const instanceTypes = ref<InstanceType[]>([])
@@ -326,6 +377,7 @@ const selectedGroupMemberCount = ref(0)
 // Subscription and usage state
 const currentSubscription = computed(() => subscriptionsStore.currentSubscription)
 const currentTerminalCount = ref(0)
+const terminalLimitFromMetrics = ref<number | null>(null)
 const loadingUsage = ref(false)
 const refreshingUsage = ref(false)
 
@@ -355,6 +407,11 @@ const sessionDurationCap = computed(() => {
 })
 
 const maxTerminals = computed(() => {
+  // Prefer limit from usage metrics (works with org subscriptions too)
+  if (terminalLimitFromMetrics.value !== null) {
+    return terminalLimitFromMetrics.value
+  }
+  // Fallback to subscription plan_features if available
   return currentSubscription.value?.plan_features?.concurrent_terminals || 1
 })
 
@@ -474,6 +531,9 @@ async function loadCurrentTerminalUsage() {
 
     if (terminalMetric) {
       currentTerminalCount.value = terminalMetric.current_value || 0
+      if (terminalMetric.limit_value > 0) {
+        terminalLimitFromMetrics.value = terminalMetric.limit_value
+      }
     } else {
       currentTerminalCount.value = 0
     }
@@ -549,6 +609,17 @@ async function loadGroupMembers(groupId: string) {
   }
 }
 
+// Watch for organization changes to re-fetch backends
+watch(selectedOrganizationId, async (newOrgId) => {
+  if (newOrgId) {
+    try {
+      await backendsStore.fetchBackends(newOrgId)
+    } catch {
+      // Error is stored in backendsStore.error
+    }
+  }
+})
+
 // Watch for group selection changes to update member count
 watch(selectedGroupId, async (newGroupId) => {
   if (newGroupId) {
@@ -616,7 +687,9 @@ async function startSingleSession() {
       terms: 'J\'accepte les conditions d\'utilisation du service terminal.',
       expiry: sessionDurationCap.value,
       ...(selectedInstanceType.value && { instance_type: selectedInstanceType.value }),
-      ...(nameInput.value.trim() && { name: nameInput.value.trim() })
+      ...(nameInput.value.trim() && { name: nameInput.value.trim() }),
+      ...(backendsStore.selectedBackendId && { backend: backendsStore.selectedBackendId }),
+      ...(selectedOrganizationId.value && { organization_id: selectedOrganizationId.value })
     }
 
     startStatus.value = t('terminalStarter.sendingRequest')
@@ -654,7 +727,15 @@ async function startSingleSession() {
     const errorMsg = error.response?.data?.error_message || error.message || 'Error starting session'
 
     if (error.response?.status === 503) {
-      showErrorNotification(errorMsg, t('terminalStarter.errorServerCapacity'))
+      const backendName = error.response?.data?.backend_name || backendsStore.selectedBackend?.name
+      if (backendName) {
+        showErrorNotification(
+          t('terminalStarter.backendOffline', { name: backendName }),
+          t('terminalStarter.errorServerCapacity')
+        )
+      } else {
+        showErrorNotification(errorMsg, t('terminalStarter.errorServerCapacity'))
+      }
     } else if (error.response?.status === 400 && errorMsg.includes('not allowed in your plan')) {
       const instanceMatch = errorMsg.match(/instance '([^']+)'/)
       const sizesMatch = errorMsg.match(/sizes \[([^\]]+)\]/)
@@ -713,62 +794,41 @@ async function startBulkSessions() {
   startStatus.value = t('terminalStarter.startingBulkSessions')
 
   try {
-    // Load group members
-    const members = await loadGroupMembers(selectedGroupId.value)
-
-    if (members.length === 0) {
-      showErrorNotification('No members found in the selected group', t('terminalStarter.errorStarting'))
-      return
+    const bulkData = {
+      terms: 'J\'accepte les conditions d\'utilisation du service terminal.',
+      expiry: sessionDurationCap.value,
+      instance_type: selectedInstanceType.value,
+      ...(backendsStore.selectedBackendId && { backend: backendsStore.selectedBackendId }),
+      ...(selectedOrganizationId.value && { organization_id: selectedOrganizationId.value })
     }
 
-    // Get group details for naming
-    const selectedGroup = availableGroups.value.find(g => g.id === selectedGroupId.value)
-    const groupName = selectedGroup?.display_name || selectedGroup?.name || 'Group'
+    const response = await axios.post(
+      `/class-groups/${selectedGroupId.value}/bulk-create-terminals`,
+      bulkData
+    )
 
-    const results = {
-      success: 0,
-      failed: 0,
-      errors: [] as string[]
-    }
+    const result = response.data
+    const successCount = result.created_count || result.success_count || 0
+    const failedCount = result.failed_count || 0
+    const totalCount = result.total_count || successCount + failedCount
 
-    // Create terminals for each member
-    for (const member of members) {
-      try {
-        const memberEmail = member.user?.email || member.user_id
-        const sessionData = {
-          terms: 'J\'accepte les conditions d\'utilisation du service terminal.',
-          expiry: sessionDurationCap.value,
-          instance_type: selectedInstanceType.value,
-          name: `${groupName} - ${memberEmail}`
-        }
-
-        await axios.post('/terminals/start-session', sessionData)
-        results.success++
-      } catch (err: any) {
-        results.failed++
-        const errorMsg = err.response?.data?.error_message || err.message || 'Unknown error'
-        results.errors.push(`${member.user?.email || member.user_id}: ${errorMsg}`)
-      }
-    }
-
-    // Show results
-    if (results.success === members.length) {
+    if (failedCount === 0 && successCount > 0) {
       showWarning(
-        t('terminalStarter.bulkSessionsCreated', { count: results.success }),
+        t('terminalStarter.bulkSessionsCreated', { count: successCount }),
         'Success'
       )
-    } else if (results.success > 0) {
+    } else if (successCount > 0) {
       showWarning(
         t('terminalStarter.bulkSessionsPartial', {
-          successCount: results.success,
-          totalCount: members.length,
-          failedCount: results.failed
+          successCount,
+          totalCount,
+          failedCount
         }),
         'Partial Success'
       )
     } else {
       showErrorNotification(
-        `Failed to create terminals: ${results.errors.join(', ')}`,
+        result.error_message || 'Failed to create terminals',
         t('terminalStarter.errorStarting')
       )
     }
@@ -861,7 +921,7 @@ function cleanup() {
 }
 
 onMounted(async () => {
-  const promises = [
+  const promises: Promise<any>[] = [
     loadInstanceTypes(),
     subscriptionsStore.getCurrentSubscription(),
     loadCurrentTerminalUsage()
@@ -873,6 +933,29 @@ onMounted(async () => {
   }
 
   await Promise.all(promises)
+
+  // Load organizations separately (must not break Promise.all if it fails)
+  try {
+    await organizationsStore.loadOrganizations()
+  } catch {
+    // Non-critical: org loading failure should not block terminal creation
+  }
+
+  // Auto-select organization and fetch backends
+  if (organizations.value.length === 1) {
+    selectedOrganizationId.value = organizations.value[0].id
+  } else if (organizations.value.length > 1) {
+    selectedOrganizationId.value = organizations.value[0].id
+  }
+
+  // Fetch backends for the selected org
+  if (selectedOrganizationId.value) {
+    try {
+      await backendsStore.fetchBackends(selectedOrganizationId.value)
+    } catch {
+      // Non-critical: backend loading failure should not block terminal creation
+    }
+  }
 
   await nextTick(() => {
     setDefaultInstanceSelection()
@@ -914,12 +997,12 @@ onMounted(async () => {
   }, USAGE_REFRESH_INTERVAL)
 
   // Load initial metrics for capacity check
-  metricsStore.refreshMetrics()
+  metricsStore.refreshMetrics(backendsStore.selectedBackendId || undefined)
 
   // Periodic refresh of metrics (every 30 seconds)
   const metricsRefreshInterval = setInterval(() => {
     if (selectedInstanceType.value) {
-      metricsStore.refreshMetrics()
+      metricsStore.refreshMetrics(backendsStore.selectedBackendId || undefined)
     }
   }, 30000)
 
@@ -1108,6 +1191,11 @@ onBeforeUnmount(() => {
 
 .mode-option i {
   font-size: var(--font-size-lg);
+}
+
+/* Organization selector */
+.org-selector {
+  margin-bottom: var(--spacing-lg);
 }
 
 /* Group selector */

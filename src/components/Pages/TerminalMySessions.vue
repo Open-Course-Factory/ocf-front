@@ -161,8 +161,12 @@
                     {{ session.shared_by }}
                   </span>
                   <span v-if="session.instance_type" class="metadata-item" :title="t('terminalMySessions.instanceType')">
-                    <i class="fas fa-server"></i>
+                    <i class="fas fa-microchip"></i>
                     {{ getInstanceName(session.instance_type) }}
+                  </span>
+                  <span v-if="session.backend" class="metadata-item" :title="t('terminalMySessions.backend')">
+                    <i class="fas fa-server"></i>
+                    {{ session.backend }}
                   </span>
                   <span v-if="session.expires_at" class="metadata-item" :title="t('terminalMySessions.expiresAt')">
                     <i class="fas fa-clock"></i>
@@ -427,6 +431,7 @@ const { t } = useTranslations({
       expiresAt: 'Expires on',
       userId: 'User',
       instanceType: 'Instance type',
+      backend: 'Backend',
       lastSynchronization: 'Last synchronization',
       previousStatus: 'Previous status',
       currentStatus: 'Current status',
@@ -521,6 +526,7 @@ const { t } = useTranslations({
       expiresAt: 'Expire le',
       userId: 'Utilisateur',
       instanceType: 'Type d\'instance',
+      backend: 'Serveur',
       lastSynchronization: 'Dernière synchronisation',
       previousStatus: 'Statut précédent',
       currentStatus: 'Statut actuel',
