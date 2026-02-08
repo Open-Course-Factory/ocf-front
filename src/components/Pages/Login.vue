@@ -70,7 +70,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import axios from 'axios';
-import router from "../../router/index.ts";
 import { useLoginStore } from '../../stores/login.ts';
 import { useCurrentUserStore } from '../../stores/currentUser.ts';
 import { useUserSettingsStore } from '../../stores/userSettings.ts';

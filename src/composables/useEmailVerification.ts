@@ -25,8 +25,6 @@ export function useEmailVerification() {
       return response
     } catch (err: any) {
       const status = err.response?.status
-      const errorCode = err.response?.data?.error
-
       // Map errors to user-friendly messages
       if (status === 410) {
         error.value = 'verificationExpired'
