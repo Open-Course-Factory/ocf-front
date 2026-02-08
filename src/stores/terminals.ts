@@ -157,7 +157,9 @@ export const useTerminalsStore = defineStore('terminals', () => {
                 featureFlags: 'Feature Flags',
                 featureFlagsTitle: 'Manage feature flags and experimental features',
                 terminalMetrics: 'Server Metrics',
-                terminalMetricsTitle: 'Monitor server resource usage and terminal capacity'
+                terminalMetricsTitle: 'Monitor server resource usage and terminal capacity',
+                terminalBackends: 'Terminal Backends',
+                terminalBackendsTitle: 'Manage terminal backend servers'
             }
         },
         fr: {
@@ -277,7 +279,9 @@ export const useTerminalsStore = defineStore('terminals', () => {
                 featureFlags: 'Feature Flags',
                 featureFlagsTitle: 'Gérer les feature flags et fonctionnalités expérimentales',
                 terminalMetrics: 'Métriques du Serveur',
-                terminalMetricsTitle: 'Surveiller l\'utilisation des ressources du serveur et la capacité des terminaux'
+                terminalMetricsTitle: 'Surveiller l\'utilisation des ressources du serveur et la capacité des terminaux',
+                terminalBackends: 'Backends Terminal',
+                terminalBackendsTitle: 'Gérer les serveurs backend des terminaux'
             }
         }
     })
@@ -293,7 +297,7 @@ export const useTerminalsStore = defineStore('terminals', () => {
     ])
 
     // Actions spécifiques aux terminaux
-    const startTerminalSession = async (sessionData: { terms: string, expiry?: number, instance_type?: string, name?: string }) => {
+    const startTerminalSession = async (sessionData: { terms: string, expiry?: number, instance_type?: string, name?: string, backend?: string, organization_id?: string }) => {
         return withAsync(async () => {
             const response = await axios.post('/terminals/start-session', sessionData)
             await getUserSessions()

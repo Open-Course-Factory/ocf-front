@@ -6,6 +6,11 @@ import { createAsyncWrapper } from '../utils/asyncWrapper'
 import axios from 'axios'
 import type { Organization, CreateOrganizationRequest, UpdateOrganizationRequest, ConvertOrganizationToTeamRequest } from '../types'
 
+interface OrganizationBackendConfig {
+  allowed_backends: string[]
+  default_backend: string
+}
+
 export const useOrganizationsStore = defineStore('organizations', () => {
   const base = useBaseStore()
 
@@ -27,6 +32,8 @@ export const useOrganizationsStore = defineStore('organizations', () => {
         displayNameRequired: 'Display name is required',
         convertSuccess: 'Organization converted to team successfully',
         convertError: 'Failed to convert organization to team',
+        backendConfigLoadError: 'Failed to load backend configuration',
+        backendConfigUpdateError: 'Failed to update backend configuration',
       }
     },
     fr: {
@@ -45,6 +52,8 @@ export const useOrganizationsStore = defineStore('organizations', () => {
         displayNameRequired: 'Le nom d\'affichage est requis',
         convertSuccess: 'Organisation convertie en équipe avec succès',
         convertError: 'Échec de la conversion de l\'organisation en équipe',
+        backendConfigLoadError: 'Échec du chargement de la configuration des backends',
+        backendConfigUpdateError: 'Échec de la mise à jour de la configuration des backends',
       }
     }
   })
@@ -179,6 +188,31 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     )
   }
 
+  // Get backend configuration for an organization
+  const getOrganizationBackendConfig = async (orgId: string): Promise<OrganizationBackendConfig> => {
+    const withAsync = createAsyncWrapper({ isLoading: base.isLoading, error: base.error })
+
+    return await withAsync(
+      async () => {
+        const response = await axios.get(`/organizations/${orgId}/backends`)
+        return response.data as OrganizationBackendConfig
+      },
+      'organizations.backendConfigLoadError'
+    )
+  }
+
+  // Update backend configuration for an organization
+  const updateOrganizationBackendConfig = async (orgId: string, data: OrganizationBackendConfig): Promise<void> => {
+    const withAsync = createAsyncWrapper({ isLoading: base.isLoading, error: base.error })
+
+    await withAsync(
+      async () => {
+        await axios.put(`/organizations/${orgId}/backends`, data)
+      },
+      'organizations.backendConfigUpdateError'
+    )
+  }
+
   // Set current organization
   const setCurrentOrganization = (organizationId: string) => {
     currentOrganizationId.value = organizationId
@@ -203,6 +237,8 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     getOrganizationById,
     isOwner,
     convertToTeamOrganization,
+    getOrganizationBackendConfig,
+    updateOrganizationBackendConfig,
     setCurrentOrganization,
 
     // Translations

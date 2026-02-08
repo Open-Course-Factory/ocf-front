@@ -59,7 +59,8 @@ export const useTerminalMetricsStore = defineStore('terminalMetrics', () => {
         capacityWarningMessage: 'Server resources are running low. Please try again in a few minutes.',
         insufficientRAM: 'Insufficient RAM available',
         highCPU: 'High CPU usage',
-        autoRefresh: 'Auto-refreshing every {seconds} seconds'
+        autoRefresh: 'Auto-refreshing every {seconds} seconds',
+        allBackends: 'All Backends'
       }
     },
     fr: {
@@ -78,7 +79,8 @@ export const useTerminalMetricsStore = defineStore('terminalMetrics', () => {
         capacityWarningMessage: 'Les ressources du serveur sont faibles. Veuillez réessayer dans quelques minutes.',
         insufficientRAM: 'RAM disponible insuffisante',
         highCPU: 'Utilisation CPU élevée',
-        autoRefresh: 'Actualisation automatique toutes les {seconds} secondes'
+        autoRefresh: 'Actualisation automatique toutes les {seconds} secondes',
+        allBackends: 'Tous les Backends'
       }
     }
   })
@@ -111,7 +113,7 @@ export const useTerminalMetricsStore = defineStore('terminalMetrics', () => {
   })
 
   // Actions
-  async function fetchMetrics(bypassCache = false): Promise<TerminalMetrics | null> {
+  async function fetchMetrics(bypassCache = false, backendId?: string): Promise<TerminalMetrics | null> {
     // Use cache if available and not bypassing
     if (!bypassCache && isCached.value && metrics.value) {
       return metrics.value
@@ -121,7 +123,9 @@ export const useTerminalMetricsStore = defineStore('terminalMetrics', () => {
     error.value = ''
 
     try {
-      const params = bypassCache ? { nocache: '1' } : {}
+      const params: Record<string, string> = {}
+      if (bypassCache) params.nocache = '1'
+      if (backendId) params.backend = backendId
       const response = await axios.get('/terminals/metrics', { params })
 
       metrics.value = response.data
@@ -137,8 +141,8 @@ export const useTerminalMetricsStore = defineStore('terminalMetrics', () => {
     }
   }
 
-  async function refreshMetrics(): Promise<TerminalMetrics | null> {
-    return fetchMetrics(true)
+  async function refreshMetrics(backendId?: string): Promise<TerminalMetrics | null> {
+    return fetchMetrics(true, backendId)
   }
 
   function clearCache() {
