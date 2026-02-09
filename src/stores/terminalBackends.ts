@@ -13,7 +13,7 @@ export const useTerminalBackendsStore = defineStore('terminalBackends', () => {
   const error = ref('')
 
   // Translations
-  useStoreTranslations({
+  const { t } = useStoreTranslations({
     en: {
       terminalBackends: {
         loadError: 'Failed to load backends',
@@ -63,7 +63,7 @@ export const useTerminalBackendsStore = defineStore('terminalBackends', () => {
       autoSelectDefault()
       return backends.value
     } catch (err: any) {
-      error.value = err.response?.data?.error_message || err.message || 'Failed to load backends'
+      error.value = err.response?.data?.error_message || err.message || t('terminalBackends.loadError')
       backends.value = []
       throw err
     } finally {
@@ -85,7 +85,7 @@ export const useTerminalBackendsStore = defineStore('terminalBackends', () => {
 
       return updated
     } catch (err: any) {
-      error.value = err.response?.data?.error_message || err.message || 'Failed to set default'
+      error.value = err.response?.data?.error_message || err.message || t('terminalBackends.setDefaultError')
       throw err
     }
   }
