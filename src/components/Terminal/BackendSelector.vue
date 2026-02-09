@@ -124,7 +124,7 @@ function handleSelect(backendId: string) {
 
 .backend-card:hover:not(:disabled) {
   border-color: var(--color-primary);
-  background: var(--color-primary-bg);
+  background: var(--color-primary-bg, rgba(0, 123, 255, 0.1));
 }
 
 .backend-card.selected {

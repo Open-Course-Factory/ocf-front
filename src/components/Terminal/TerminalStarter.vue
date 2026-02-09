@@ -1179,7 +1179,7 @@ onBeforeUnmount(() => {
 
 .mode-option:hover {
   border-color: var(--color-primary);
-  background: var(--color-primary-bg);
+  background: var(--color-primary-bg, rgba(0, 123, 255, 0.1));
   color: var(--color-primary);
 }
 
