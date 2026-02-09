@@ -1163,7 +1163,7 @@ onBeforeUnmount(() => {
 .mode-option {
   flex: 1;
   padding: var(--spacing-md);
-  border: var(--border-width-md) solid var(--color-border-light);
+  border: var(--border-width-medium) solid var(--color-border-light);
   border-radius: var(--border-radius-md);
   background: var(--color-bg-primary);
   color: var(--color-text-secondary);
@@ -1213,7 +1213,7 @@ onBeforeUnmount(() => {
 .form-control {
   width: 100%;
   padding: var(--spacing-sm) var(--spacing-md);
-  border: var(--border-width-md) solid var(--color-border-medium);
+  border: var(--border-width-medium) solid var(--color-border-medium);
   border-radius: var(--border-radius-md);
   background: var(--color-bg-primary);
   color: var(--color-text-primary);

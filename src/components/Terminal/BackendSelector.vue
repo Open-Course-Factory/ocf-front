@@ -111,7 +111,7 @@ function handleSelect(backendId: string) {
   display: block;
   width: 100%;
   padding: var(--spacing-md);
-  border: var(--border-width-md) solid var(--color-border-light);
+  border: var(--border-width-medium) solid var(--color-border-light);
   border-radius: var(--border-radius-md);
   background: var(--color-bg-primary);
   cursor: pointer;
