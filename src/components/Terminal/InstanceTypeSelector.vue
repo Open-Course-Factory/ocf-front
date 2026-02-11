@@ -11,7 +11,7 @@
     id="instanceType"
     :help-text="t('terminalStarter.selectEnvironmentType')"
   >
-    <!-- Search/Filter for many instances -->
+    <!-- Search for many instances -->
     <div v-if="instanceTypes.length > 6" class="instance-search">
       <input
         v-model="searchTerm"
@@ -19,17 +19,28 @@
         :placeholder="t('terminalStarter.searchInstances')"
         @input="handleSearch"
       >
-      <div class="instance-filters">
-        <Button
-          v-for="filterOption in availableFilters"
-          :key="filterOption.key"
-          size="sm"
-          :variant="activeFilter === filterOption.key ? 'primary' : 'outline-secondary'"
-          @click="setFilter(filterOption.key)"
-        >
-          {{ filterOption.label }} ({{ filterOption.count }})
-        </Button>
-      </div>
+    </div>
+
+    <!-- Filters & Sort -->
+    <div v-if="instanceTypes.length > 1" class="instance-filters">
+      <Button
+        v-for="filterOption in availableFilters"
+        :key="filterOption.key"
+        size="sm"
+        :variant="activeFilter === filterOption.key ? 'primary' : 'outline-secondary'"
+        @click="setFilter(filterOption.key)"
+      >
+        {{ filterOption.label }} ({{ filterOption.count }})
+      </Button>
+      <span class="filter-separator">|</span>
+      <Button
+        size="sm"
+        variant="outline-secondary"
+        @click="toggleSortDirection"
+      >
+        <i :class="sortDirection === 'asc' ? 'fas fa-sort-amount-up-alt' : 'fas fa-sort-amount-down-alt'"></i>
+        {{ t('terminalStarter.sortBySize') }}
+      </Button>
     </div>
 
     <!-- Instance Type Cards -->
@@ -75,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { instanceUtils } from '../../services/domain/terminal'
 import InstanceCard from './InstanceCard.vue'
@@ -95,6 +106,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   'update:modelValue': [value: string]
   'select': [instance: InstanceType]
+  'preselect': [instance: InstanceType]
 }>()
 
 const { t, te } = useTranslations({
@@ -110,7 +122,8 @@ const { t, te } = useTranslations({
       clearFilters: 'Clear filters',
       allInstances: 'All',
       availableInstances: 'Available',
-      restrictedInstances: 'Restricted'
+      restrictedInstances: 'Restricted',
+      sortBySize: 'Size'
     }
   },
   fr: {
@@ -125,13 +138,15 @@ const { t, te } = useTranslations({
       clearFilters: 'Effacer les filtres',
       allInstances: 'Toutes',
       availableInstances: 'Disponibles',
-      restrictedInstances: 'Restreintes'
+      restrictedInstances: 'Restreintes',
+      sortBySize: 'Taille'
     }
   }
 })
 
 const searchTerm = ref('')
 const activeFilter = ref('all')
+const sortDirection = ref<'asc' | 'desc'>('asc')
 
 const instanceAvailabilityMap = computed(() => {
   const map = new Map<string, InstanceAvailability>()
@@ -170,7 +185,16 @@ const displayedInstances = computed(() => {
     })
   }
 
-  return instances
+  // Sort: available first, then by size order
+  return [...instances].sort((a, b) => {
+    const aAvailable = instanceAvailabilityMap.value.get(a.prefix)?.available ? 0 : 1
+    const bAvailable = instanceAvailabilityMap.value.get(b.prefix)?.available ? 0 : 1
+    if (aAvailable !== bAvailable) return aAvailable - bAvailable
+
+    const aSize = instanceUtils.getMinSizeOrder(a.size)
+    const bSize = instanceUtils.getMinSizeOrder(b.size)
+    return sortDirection.value === 'asc' ? aSize - bSize : bSize - aSize
+  })
 })
 
 const availableFilters = computed(() => {
@@ -225,14 +249,24 @@ function clearFilters() {
   searchTerm.value = ''
   activeFilter.value = 'all'
 }
+
+function toggleSortDirection() {
+  sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+}
+
+// Emit preselection whenever the sorted/filtered list changes
+watch(displayedInstances, (instances) => {
+  const firstAvailable = instances.find(inst =>
+    instanceAvailabilityMap.value.get(inst.prefix)?.available
+  )
+  if (firstAvailable) {
+    emit('preselect', firstAvailable)
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>
 .instance-search {
-  margin-bottom: var(--spacing-lg);
-}
-
-.instance-search input {
   margin-bottom: var(--spacing-sm);
 }
 
@@ -240,6 +274,14 @@ function clearFilters() {
   display: flex;
   gap: var(--spacing-sm);
   flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.filter-separator {
+  color: var(--color-border-medium);
+  margin: 0 var(--spacing-xs);
+  user-select: none;
 }
 
 .instance-types-grid {
