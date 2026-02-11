@@ -11,77 +11,101 @@
     id="instanceType"
     :help-text="t('terminalStarter.selectEnvironmentType')"
   >
-    <!-- Search for many instances -->
-    <div v-if="instanceTypes.length > 6" class="instance-search">
-      <input
-        v-model="searchTerm"
-        type="text"
-        :placeholder="t('terminalStarter.searchInstances')"
-        @input="handleSearch"
-      >
+    <!-- Single instance: inline text with checkmark -->
+    <div v-if="instanceTypes.length === 1" class="single-instance">
+      <i class="fas fa-check-circle"></i>
+      <span>{{ getTranslatedName(instanceTypes[0]) }}</span>
     </div>
 
-    <!-- Filters & Sort -->
-    <div v-if="instanceTypes.length > 1" class="instance-filters">
-      <Button
-        v-for="filterOption in availableFilters"
-        :key="filterOption.key"
-        size="sm"
-        :variant="activeFilter === filterOption.key ? 'primary' : 'outline-secondary'"
-        @click="setFilter(filterOption.key)"
-      >
-        {{ filterOption.label }} ({{ filterOption.count }})
-      </Button>
-      <span class="filter-separator">|</span>
-      <Button
-        size="sm"
-        variant="outline-secondary"
-        @click="toggleSortDirection"
-      >
-        <i :class="sortDirection === 'asc' ? 'fas fa-sort-amount-up-alt' : 'fas fa-sort-amount-down-alt'"></i>
-        {{ t('terminalStarter.sortBySize') }}
-      </Button>
-    </div>
+    <!-- 2-4 instances: horizontal flex row, no filters -->
+    <template v-else-if="instanceTypes.length >= 2 && instanceTypes.length <= 4">
+      <div class="instance-types-row">
+        <InstanceCard
+          v-for="instance in displayedInstances"
+          :key="instance.prefix"
+          :instance="instance"
+          :is-selected="modelValue === instance.prefix"
+          :availability="instanceAvailabilityMap.get(instance.prefix) || null"
+          :allowed-sizes="allowedSizes"
+          @select="handleSelect"
+        />
+      </div>
+    </template>
 
-    <!-- Instance Type Cards -->
-    <div
-      class="instance-types-grid"
-      :class="{ 'compact': instanceTypes.length > 10 }"
-    >
-      <!-- Empty state when no instances match filters -->
-      <div v-if="displayedInstances.length === 0" class="no-instances-found">
-        <i class="fas fa-search"></i>
-        <h5>{{ t('terminalStarter.noInstancesFound') }}</h5>
-        <p v-if="searchTerm">
-          {{ t('terminalStarter.noMatchingInstances', { searchTerm }) }}
-        </p>
-        <p v-else-if="activeFilter === 'available'">
-          {{ t('terminalStarter.noAvailableInstances') }}
-        </p>
-        <p v-else-if="activeFilter === 'restricted'">
-          {{ t('terminalStarter.allInstancesAvailable') }}
-        </p>
-        <Button
-          v-if="searchTerm || activeFilter !== 'all'"
-          size="sm"
-          variant="primary"
-          @click="clearFilters"
+    <!-- 5+ instances: full grid with search, filters, sort -->
+    <template v-else>
+      <!-- Search for many instances -->
+      <div v-if="instanceTypes.length > 6" class="instance-search">
+        <input
+          v-model="searchTerm"
+          type="text"
+          :placeholder="t('terminalStarter.searchInstances')"
+          @input="handleSearch"
         >
-          {{ t('terminalStarter.clearFilters') }}
+      </div>
+
+      <!-- Filters & Sort -->
+      <div v-if="instanceTypes.length > 1" class="instance-filters">
+        <Button
+          v-for="filterOption in availableFilters"
+          :key="filterOption.key"
+          size="sm"
+          :variant="activeFilter === filterOption.key ? 'primary' : 'outline-secondary'"
+          @click="setFilter(filterOption.key)"
+        >
+          {{ filterOption.label }} ({{ filterOption.count }})
+        </Button>
+        <span class="filter-separator">|</span>
+        <Button
+          size="sm"
+          variant="outline-secondary"
+          @click="toggleSortDirection"
+        >
+          <i :class="sortDirection === 'asc' ? 'fas fa-sort-amount-up-alt' : 'fas fa-sort-amount-down-alt'"></i>
+          {{ t('terminalStarter.sortBySize') }}
         </Button>
       </div>
 
-      <!-- Instance cards -->
-      <InstanceCard
-        v-for="instance in displayedInstances"
-        :key="instance.prefix"
-        :instance="instance"
-        :is-selected="modelValue === instance.prefix"
-        :availability="instanceAvailabilityMap.get(instance.prefix) || null"
-        :allowed-sizes="allowedSizes"
-        @select="handleSelect"
-      />
-    </div>
+      <!-- Instance Type Cards -->
+      <div
+        class="instance-types-grid"
+        :class="{ 'compact': instanceTypes.length > 10 }"
+      >
+        <!-- Empty state when no instances match filters -->
+        <div v-if="displayedInstances.length === 0" class="no-instances-found">
+          <i class="fas fa-search"></i>
+          <h5>{{ t('terminalStarter.noInstancesFound') }}</h5>
+          <p v-if="searchTerm">
+            {{ t('terminalStarter.noMatchingInstances', { searchTerm }) }}
+          </p>
+          <p v-else-if="activeFilter === 'available'">
+            {{ t('terminalStarter.noAvailableInstances') }}
+          </p>
+          <p v-else-if="activeFilter === 'restricted'">
+            {{ t('terminalStarter.allInstancesAvailable') }}
+          </p>
+          <Button
+            v-if="searchTerm || activeFilter !== 'all'"
+            size="sm"
+            variant="primary"
+            @click="clearFilters"
+          >
+            {{ t('terminalStarter.clearFilters') }}
+          </Button>
+        </div>
+
+        <!-- Instance cards -->
+        <InstanceCard
+          v-for="instance in displayedInstances"
+          :key="instance.prefix"
+          :instance="instance"
+          :is-selected="modelValue === instance.prefix"
+          :availability="instanceAvailabilityMap.get(instance.prefix) || null"
+          :allowed-sizes="allowedSizes"
+          @select="handleSelect"
+        />
+      </div>
+    </template>
   </FormGroup>
 </template>
 
@@ -254,6 +278,14 @@ function toggleSortDirection() {
   sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
 }
 
+// Auto-select and emit when only 1 instance exists
+watch(() => props.instanceTypes, (types) => {
+  if (types.length === 1) {
+    emit('update:modelValue', types[0].prefix)
+    emit('select', types[0])
+  }
+}, { immediate: true })
+
 // Emit preselection whenever the sorted/filtered list changes
 watch(displayedInstances, (instances) => {
   const firstAvailable = instances.find(inst =>
@@ -266,6 +298,37 @@ watch(displayedInstances, (instances) => {
 </script>
 
 <style scoped>
+/* Single instance inline display */
+.single-instance {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--color-success-bg);
+  border: var(--border-width-thin) solid var(--color-success);
+  border-radius: var(--border-radius-md);
+  color: var(--color-success-text);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-md);
+}
+
+.single-instance i {
+  color: var(--color-success);
+  font-size: var(--font-size-lg);
+}
+
+/* 2-4 instances horizontal row */
+.instance-types-row {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.instance-types-row > * {
+  flex: 1;
+  min-width: 0;
+}
+
 .instance-search {
   margin-bottom: var(--spacing-sm);
 }
@@ -316,6 +379,10 @@ watch(displayedInstances, (instances) => {
 }
 
 @media (max-width: 768px) {
+  .instance-types-row {
+    flex-direction: column;
+  }
+
   .instance-types-grid {
     grid-template-columns: 1fr;
     max-height: 300px;
