@@ -6,6 +6,7 @@ import { createAsyncWrapper } from '../utils/asyncWrapper'
 import { useAdminViewMode } from '../composables/useAdminViewMode'
 import { usePermissionsStore } from './permissions'
 import axios from 'axios'
+import { isDemoMode } from '../services/demo'
 import type { Organization, CreateOrganizationRequest, UpdateOrganizationRequest, ConvertOrganizationToTeamRequest } from '../types'
 
 interface OrganizationBackendConfig {
@@ -143,11 +144,47 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     }
   ]
 
-  // Load all organizations for current user
+  // Load all organizations for current user (follows cursor pagination to get all pages)
   const loadOrganizations = async (_includes?: string) => {
-    const result = await base.loadEntities(apiEndpoint, getDemoOrganizations)
-    initCurrentOrganization()
-    return result
+    if (isDemoMode()) {
+      const result = await base.loadEntities(apiEndpoint, getDemoOrganizations)
+      initCurrentOrganization()
+      return result
+    }
+
+    base.isLoading.value = true
+    base.error.value = ''
+
+    try {
+      const allOrgs: Organization[] = []
+      let cursor: string | null = null
+      let hasMore = true
+
+      while (hasMore) {
+        const params = new URLSearchParams()
+        params.append('cursor', cursor || '')
+        params.append('limit', '100')
+
+        const response = await axios.get(`${apiEndpoint}?${params}`)
+        const data = response.data?.data || response.data || []
+        const orgs = Array.isArray(data) ? data : []
+
+        allOrgs.push(...orgs)
+
+        cursor = response.data?.nextCursor || null
+        hasMore = response.data?.hasMore || false
+      }
+
+      base.entities.splice(0, base.entities.length, ...allOrgs)
+      base.lastLoaded.value = new Date()
+      initCurrentOrganization()
+      return allOrgs
+    } catch (err: any) {
+      base.error.value = t('organizations.loadError')
+      throw err
+    } finally {
+      base.isLoading.value = false
+    }
   }
 
   // Get single organization by ID
