@@ -16,6 +16,15 @@
       {{ t('terminalStarter.advancedOptions') }}
     </button>
     <div v-show="isExpanded" class="collapsible-content">
+      <!-- Backend Selector -->
+      <BackendSelector
+        v-if="showBackendSelector"
+        :model-value="selectedBackendId"
+        :backends="backends"
+        :disabled="disabled"
+        @update:model-value="emit('update:selectedBackendId', $event)"
+      />
+
       <FormGroup
         :label="t('terminalStarter.nameOptional')"
         id="terminalName"
@@ -56,16 +65,26 @@ import { ref } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import FormGroup from '../UI/FormGroup.vue'
 import Button from '../UI/Button.vue'
+import BackendSelector from './BackendSelector.vue'
+import type { Backend } from '../../types/entities'
 
 interface Props {
   modelValue: string
   disabled?: boolean
+  backends?: Backend[]
+  selectedBackendId?: string
+  showBackendSelector?: boolean
 }
 
-defineProps<Props>()
+withDefaults(defineProps<Props>(), {
+  backends: () => [],
+  selectedBackendId: '',
+  showBackendSelector: false
+})
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
+  'update:selectedBackendId': [value: string]
   reset: []
 }>()
 
