@@ -38,17 +38,6 @@
             <span class="capacity-text">{{ capacityStatusText }}</span>
           </div>
 
-          <Button
-            type="button"
-            variant="primary"
-            size="md"
-            :icon="isStarting ? 'fas fa-spinner fa-spin' : 'fas fa-rocket'"
-            :disabled="!isFormValid || isStarting"
-            :loading="isStarting"
-            @click="startNewSession"
-          >
-            {{ isStarting ? t('terminalStarter.buttonStarting') : t('terminalStarter.launchTerminal') }}
-          </Button>
         </div>
       </template>
 
@@ -142,6 +131,22 @@
         :refresh-interval-minutes="refreshIntervalMinutes"
         @refresh="refreshUsage"
       />
+
+      <!-- Launch CTA -->
+      <div class="launch-section">
+        <Button
+          type="button"
+          variant="primary"
+          size="lg"
+          class="launch-button"
+          :icon="isStarting ? 'fas fa-spinner fa-spin' : 'fas fa-rocket'"
+          :disabled="!isFormValid || isStarting"
+          :loading="isStarting"
+          @click="startNewSession"
+        >
+          {{ isStarting ? t('terminalStarter.buttonStarting') : t('terminalStarter.launchTerminal') }}
+        </Button>
+      </div>
     </SettingsCard>
 
     <!-- Session Info Panel -->
@@ -1190,6 +1195,21 @@ onBeforeUnmount(() => {
   margin-top: var(--spacing-xs);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
+}
+
+/* Launch CTA */
+.launch-section {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: var(--border-width-thin) solid var(--color-border-light);
+  display: flex;
+  justify-content: center;
+}
+
+.launch-button {
+  width: 100%;
+  max-width: 400px;
+  font-size: var(--font-size-lg);
 }
 
 @media (max-width: 768px) {
