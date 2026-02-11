@@ -109,9 +109,9 @@ function onSessionStarted() {
 .creation-container {
   width: 100%;
   min-height: 400px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background: var(--color-bg-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 
@@ -119,13 +119,13 @@ function onSessionStarted() {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 60px;
-  font-size: 18px;
-  color: var(--color-gray-600);
+  padding: var(--spacing-2xl);
+  font-size: var(--font-size-lg);
+  color: var(--color-text-muted);
 }
 
 .loading-fallback i {
-  margin-right: 10px;
+  margin-right: var(--spacing-sm);
 }
 
 /* Responsive */
