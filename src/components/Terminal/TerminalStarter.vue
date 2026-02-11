@@ -176,7 +176,7 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
-import { terminalService } from '../../services/domain/terminal'
+import { terminalService, instanceUtils } from '../../services/domain/terminal'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTerminalMetricsStore } from '../../stores/terminalMetrics'
 import { useClassGroupsStore } from '../../stores/classGroups'
@@ -326,9 +326,13 @@ let usageRefreshInterval: NodeJS.Timeout | null = null
 // Usage refresh configuration
 const USAGE_REFRESH_INTERVAL = 600000 // 10 minutes
 
+// localStorage key for last selected instance
+const LAST_INSTANCE_KEY = 'terminal_last_instance_type'
+
 // Form
 const selectedInstanceType = ref('')
 const userManuallySelected = ref(false)
+const restoredFromStorage = ref(false)
 const nameInput = ref('')
 const creationMode = ref<'single' | 'bulk'>('single')
 const selectedGroupId = ref('')
@@ -550,13 +554,38 @@ async function refreshUsage() {
 function selectInstance(instance: InstanceType) {
   userManuallySelected.value = true
   selectedInstanceType.value = instance.prefix
+  try {
+    localStorage.setItem(LAST_INSTANCE_KEY, instance.prefix)
+  } catch {
+    // localStorage may be unavailable
+  }
 }
 
 function preselectInstance(instance: InstanceType) {
   // Only preselect if user hasn't manually clicked on an instance
-  if (!userManuallySelected.value) {
-    selectedInstanceType.value = instance.prefix
+  if (userManuallySelected.value) return
+
+  // Try to restore from localStorage on first preselect call
+  if (!restoredFromStorage.value) {
+    restoredFromStorage.value = true
+    try {
+      const stored = localStorage.getItem(LAST_INSTANCE_KEY)
+      if (stored) {
+        const storedInstance = instanceTypes.value.find(i => i.prefix === stored)
+        if (storedInstance) {
+          const availability = instanceUtils.checkAvailability(storedInstance, allowedMachineSizes.value)
+          if (availability.available) {
+            selectedInstanceType.value = stored
+            return
+          }
+        }
+      }
+    } catch {
+      // localStorage may be unavailable
+    }
   }
+
+  selectedInstanceType.value = instance.prefix
 }
 
 function resetForm() {
@@ -564,6 +593,7 @@ function resetForm() {
   creationMode.value = 'single'
   selectedGroupId.value = ''
   userManuallySelected.value = false
+  restoredFromStorage.value = false
   selectedInstanceType.value = ''
 }
 
