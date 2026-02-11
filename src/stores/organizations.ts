@@ -3,6 +3,8 @@ import { computed, ref } from 'vue'
 import { useBaseStore } from './baseStore'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
+import { useAdminViewMode } from '../composables/useAdminViewMode'
+import { usePermissionsStore } from './permissions'
 import axios from 'axios'
 import type { Organization, CreateOrganizationRequest, UpdateOrganizationRequest, ConvertOrganizationToTeamRequest } from '../types'
 
@@ -74,12 +76,29 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     organizations.value.filter(org => org.organization_type === 'team')
   )
 
-  const currentOrganization = computed(() => {
-    if (!currentOrganizationId.value) {
-      // Default to first organization
-      return organizations.value[0] || null
+  // Admin-mode-aware filtered organizations
+  // This is the list all UI components should use when showing orgs to the user
+  const userOrganizations = computed(() => {
+    const { isAdmin, shouldFilterAsStandardUser } = useAdminViewMode()
+    if (!isAdmin.value || shouldFilterAsStandardUser.value) {
+      const permissionsStore = usePermissionsStore()
+      const currentUserId = permissionsStore.currentUser?.id
+      if (!currentUserId) return organizations.value
+      return organizations.value.filter(org => {
+        if (org.owner_user_id === currentUserId) return true
+        const memberships = permissionsStore.currentUser?.organization_memberships || []
+        return memberships.some(m => m.organization_id === org.id && m.is_active)
+      })
     }
-    return organizations.value.find(org => org.id === currentOrganizationId.value) || null
+    return organizations.value
+  })
+
+  const currentOrganization = computed(() => {
+    if (currentOrganizationId.value) {
+      const found = userOrganizations.value.find(org => org.id === currentOrganizationId.value)
+      if (found) return found
+    }
+    return userOrganizations.value[0] || null
   })
 
   const isPersonalOrganization = computed(() => {
@@ -126,7 +145,9 @@ export const useOrganizationsStore = defineStore('organizations', () => {
 
   // Load all organizations for current user
   const loadOrganizations = async (_includes?: string) => {
-    return await base.loadEntities(apiEndpoint, getDemoOrganizations)
+    const result = await base.loadEntities(apiEndpoint, getDemoOrganizations)
+    initCurrentOrganization()
+    return result
   }
 
   // Get single organization by ID
@@ -213,15 +234,33 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     )
   }
 
-  // Set current organization
+  // Set current organization (persists to localStorage)
   const setCurrentOrganization = (organizationId: string) => {
     currentOrganizationId.value = organizationId
+    localStorage.setItem('currentOrganizationId', organizationId)
+  }
+
+  // Initialize current organization from localStorage, validate against userOrganizations
+  const initCurrentOrganization = () => {
+    const savedId = localStorage.getItem('currentOrganizationId')
+    if (savedId) {
+      const exists = userOrganizations.value.find(org => org.id === savedId)
+      if (exists) {
+        currentOrganizationId.value = savedId
+        return
+      }
+    }
+    // Fallback to first org
+    if (userOrganizations.value.length > 0) {
+      currentOrganizationId.value = userOrganizations.value[0].id
+    }
   }
 
   return {
     // State
     ...base,
     organizations,
+    userOrganizations,
     personalOrganization,
     businessOrganizations,
     currentOrganization,
@@ -240,6 +279,7 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     getOrganizationBackendConfig,
     updateOrganizationBackendConfig,
     setCurrentOrganization,
+    initCurrentOrganization,
 
     // Translations
     t,

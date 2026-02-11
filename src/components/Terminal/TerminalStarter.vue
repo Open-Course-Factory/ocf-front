@@ -100,42 +100,13 @@
         </small>
       </div>
 
-      <!-- Organization Selector (only if multiple orgs) -->
-      <div v-if="hasMultipleOrgs" class="org-selector">
-        <label for="org-select" class="form-label">
-          {{ t('terminalStarter.organization') }}
-        </label>
-        <select
-          id="org-select"
-          v-model="selectedOrganizationId"
-          class="form-control"
-          :disabled="isStarting"
-        >
-          <option value="">{{ t('terminalStarter.selectOrganization') }}</option>
-          <option
-            v-for="org in organizations"
-            :key="org.id"
-            :value="org.id"
-          >
-            {{ org.display_name || org.name }}
-          </option>
-        </select>
-      </div>
-
-      <!-- Backend Selector (only if multiple backends available) -->
-      <BackendSelector
-        v-if="backendsStore.hasMultipleBackends"
-        v-model="selectedBackendId"
-        :backends="backends"
-        :disabled="isStarting"
-      />
-
       <!-- Instance Type Selection -->
       <InstanceTypeSelector
         v-model="selectedInstanceType"
         :instance-types="instanceTypes"
         :allowed-sizes="allowedMachineSizes"
         @select="selectInstance"
+        @preselect="preselectInstance"
       />
 
       <!-- Progress indicator -->
@@ -153,6 +124,10 @@
       <TerminalAdvancedOptions
         v-model="nameInput"
         :disabled="isStarting"
+        :show-backend-selector="backendsStore.hasMultipleBackends"
+        :backends="backends"
+        :selected-backend-id="selectedBackendId"
+        @update:selected-backend-id="selectedBackendId = $event"
         @reset="resetForm"
       />
 
@@ -193,6 +168,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { terminalService } from '../../services/domain/terminal'
@@ -207,7 +183,6 @@ import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
 import InstanceTypeSelector from './InstanceTypeSelector.vue'
-import BackendSelector from './BackendSelector.vue'
 import TerminalAdvancedOptions from './TerminalAdvancedOptions.vue'
 import TerminalUsagePanel from './TerminalUsagePanel.vue'
 import TerminalSessionInfo from './TerminalSessionInfo.vue'
@@ -274,8 +249,6 @@ const { t } = useTranslations({
       errorServerCapacity: 'Server at Capacity',
       errorServerCapacityMessage: 'The server does not have enough resources to create a new terminal session. Please try again in a few minutes or stop an existing terminal.',
       activeSessions: '{count} active session | {count} active sessions',
-      organization: 'Organization',
-      selectOrganization: 'Select an organization',
       backendOffline: 'Backend "{name}" is offline. Please select another backend or try again later.'
     }
   },
@@ -321,8 +294,6 @@ const { t } = useTranslations({
       errorServerCapacity: 'Serveur à Capacité Maximale',
       errorServerCapacityMessage: 'Le serveur n\'a pas suffisamment de ressources pour créer une nouvelle session terminal. Veuillez réessayer dans quelques minutes ou arrêter un terminal existant.',
       activeSessions: '{count} session active | {count} sessions actives',
-      organization: 'Organisation',
-      selectOrganization: 'Sélectionner une organisation',
       backendOffline: 'Le backend « {name} » est hors ligne. Veuillez sélectionner un autre backend ou réessayer plus tard.'
     }
   }
@@ -352,14 +323,13 @@ const USAGE_REFRESH_INTERVAL = 600000 // 10 minutes
 
 // Form
 const selectedInstanceType = ref('')
+const userManuallySelected = ref(false)
 const nameInput = ref('')
 const creationMode = ref<'single' | 'bulk'>('single')
 const selectedGroupId = ref('')
-const selectedOrganizationId = ref('')
-
 // Organizations & Backends
-const organizations = computed(() => organizationsStore.organizations)
-const hasMultipleOrgs = computed(() => organizations.value.length > 1)
+const { currentOrganizationId: storeOrgId } = storeToRefs(organizationsStore)
+const selectedOrganizationId = computed(() => organizationsStore.currentOrganization?.id || '')
 const backends = computed(() => backendsStore.backends)
 const selectedBackendId = computed({
   get: () => backendsStore.selectedBackendId || '',
@@ -508,8 +478,6 @@ async function loadInstanceTypes() {
       showWarning('No instance types available. Contact the administrator.', 'No instances available')
       return
     }
-
-    setDefaultInstanceSelection()
   } catch (error: any) {
     console.error('Failed to load instance types:', error)
     showErrorNotification(`Invalid data format for instance types: ${error.message || error}`, 'Loading Error')
@@ -574,23 +542,24 @@ async function refreshUsage() {
   }
 }
 
-function setDefaultInstanceSelection() {
-  if (instanceTypes.value.length > 0) {
-    selectedInstanceType.value = instanceTypes.value[0].prefix
-  } else {
-    selectedInstanceType.value = ''
-  }
+function selectInstance(instance: InstanceType) {
+  userManuallySelected.value = true
+  selectedInstanceType.value = instance.prefix
 }
 
-function selectInstance(instance: InstanceType) {
-  selectedInstanceType.value = instance.prefix
+function preselectInstance(instance: InstanceType) {
+  // Only preselect if user hasn't manually clicked on an instance
+  if (!userManuallySelected.value) {
+    selectedInstanceType.value = instance.prefix
+  }
 }
 
 function resetForm() {
   nameInput.value = ''
   creationMode.value = 'single'
   selectedGroupId.value = ''
-  setDefaultInstanceSelection()
+  userManuallySelected.value = false
+  selectedInstanceType.value = ''
 }
 
 function getGroupMemberCount(group: any): number {
@@ -609,8 +578,8 @@ async function loadGroupMembers(groupId: string) {
   }
 }
 
-// Watch for organization changes to re-fetch backends
-watch(selectedOrganizationId, async (newOrgId) => {
+// Watch for global organization changes to re-fetch backends
+watch(storeOrgId, async (newOrgId) => {
   if (newOrgId) {
     try {
       await backendsStore.fetchBackends(newOrgId)
@@ -941,14 +910,7 @@ onMounted(async () => {
     // Non-critical: org loading failure should not block terminal creation
   }
 
-  // Auto-select organization and fetch backends
-  if (organizations.value.length === 1) {
-    selectedOrganizationId.value = organizations.value[0].id
-  } else if (organizations.value.length > 1) {
-    selectedOrganizationId.value = organizations.value[0].id
-  }
-
-  // Fetch backends for the selected org
+  // Fetch backends for the current org (selected globally via store)
   if (selectedOrganizationId.value) {
     try {
       await backendsStore.fetchBackends(selectedOrganizationId.value)
@@ -956,10 +918,6 @@ onMounted(async () => {
       // Non-critical: backend loading failure should not block terminal creation
     }
   }
-
-  await nextTick(() => {
-    setDefaultInstanceSelection()
-  })
 
   // Check for query parameters to set bulk mode and group
   if (route.query.mode === 'bulk' && route.query.groupId) {
@@ -1191,11 +1149,6 @@ onBeforeUnmount(() => {
 
 .mode-option i {
   font-size: var(--font-size-lg);
-}
-
-/* Organization selector */
-.org-selector {
-  margin-bottom: var(--spacing-lg);
 }
 
 /* Group selector */

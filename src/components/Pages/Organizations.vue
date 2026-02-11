@@ -24,59 +24,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { OrganizationsList, OrganizationModal } from '../Organizations'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { usePermissionsStore } from '../../stores/permissions'
-import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import type { Organization, CreateOrganizationRequest, UpdateOrganizationRequest } from '../../types'
 
 const router = useRouter()
 const organizationsStore = useOrganizationsStore()
 const permissionsStore = usePermissionsStore()
-const { isAdmin, shouldFilterAsStandardUser } = useAdminViewMode()
 
 const isModalOpen = ref(false)
 const selectedOrganization = ref<Organization | null>(null)
 const isSubmitting = ref(false)
 const modalError = ref('')
 
-// Filter organizations based on view mode
-const filteredOrganizations = computed(() => {
-  // If not admin OR admin viewing as standard user
-  if (!isAdmin.value || shouldFilterAsStandardUser.value) {
-    // Show only organizations where the user is a member
-    const currentUserId = permissionsStore.currentUser?.id
-    if (!currentUserId) return []
-
-    return organizationsStore.organizations.filter(org => {
-      // Show if user is owner
-      if (org.owner_user_id === currentUserId) return true
-
-      // Show if user is a member
-      const userMemberships = permissionsStore.currentUser?.organization_memberships || []
-      return userMemberships.some(membership =>
-        membership.organization_id === org.id && membership.is_active
-      )
-    })
-  }
-
-  // Admin in full admin mode: show all organizations
-  return organizationsStore.organizations
-})
+// Use centralized admin-mode-aware filtering from the store
+const filteredOrganizations = computed(() => organizationsStore.userOrganizations)
 
 onMounted(async () => {
   await Promise.all([
     loadOrganizations(),
     permissionsStore.loadCurrentUser()
   ])
-})
-
-// Reload organizations when view mode changes
-watch(shouldFilterAsStandardUser, async () => {
-  // No need to reload from backend, just recompute the filtered list
-  // The computed property will automatically update
 })
 
 const loadOrganizations = async () => {

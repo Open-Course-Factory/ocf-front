@@ -61,11 +61,13 @@
             <div class="user-name">@{{ currentUser.userName }}</div>
           </div>
 
-          <!-- Organization Section - Always show so users can discover and upgrade -->
+          <!-- Organization Section -->
           <div class="dropdown-divider"></div>
           <div class="dropdown-section">
             <div class="dropdown-section-title">{{ t('topMenu.organization') }}</div>
-            <div v-if="currentOrganization" class="current-organization-info">
+
+            <!-- Current org display (always shown) -->
+            <div v-if="currentOrganization" class="current-organization-info" :class="{ 'org-switchable': userOrganizations.length > 1 }">
               <div class="org-icon" :class="currentOrganization.organization_type === 'personal' ? 'org-icon-personal' : 'org-icon-team'">
                 <i :class="currentOrganization.organization_type === 'personal' ? 'fas fa-user' : 'fas fa-building'"></i>
               </div>
@@ -75,7 +77,40 @@
                   {{ currentOrganization.organization_type === 'personal' ? t('topMenu.personalOrg') : t('topMenu.teamOrg') }}
                 </div>
               </div>
+              <!-- Switch button (only if multiple orgs) -->
+              <button
+                v-if="userOrganizations.length > 1"
+                class="org-switch-btn"
+                @click.stop="toggleOrgSwitcher"
+                :title="t('topMenu.switchOrganization')"
+              >
+                <i class="fas fa-exchange-alt"></i>
+              </button>
             </div>
+
+            <!-- Org switcher flyout (nested dropdown) -->
+            <div v-if="isOrgSwitcherOpen" class="org-switcher-flyout">
+              <div class="org-switcher-header">{{ t('topMenu.switchOrganization') }}</div>
+              <div class="org-switcher-list">
+                <button
+                  v-for="org in userOrganizations"
+                  :key="org.id"
+                  class="org-switcher-item"
+                  :class="{ 'org-active': currentOrganization?.id === org.id }"
+                  @click="switchOrganization(org.id)"
+                >
+                  <div class="org-icon org-icon-sm" :class="org.organization_type === 'personal' ? 'org-icon-personal' : 'org-icon-team'">
+                    <i :class="org.organization_type === 'personal' ? 'fas fa-user' : 'fas fa-building'"></i>
+                  </div>
+                  <div class="org-details">
+                    <div class="org-name">{{ org.display_name || org.name }}</div>
+                    <div class="org-type">{{ org.organization_type === 'personal' ? t('topMenu.personalOrg') : t('topMenu.teamOrg') }}</div>
+                  </div>
+                  <i v-if="currentOrganization?.id === org.id" class="fas fa-check org-check"></i>
+                </button>
+              </div>
+            </div>
+
             <router-link to="/organizations" class="dropdown-item dropdown-item-highlighted" @click="closeUserMenu">
               <i class="fas fa-building"></i>
               <span>{{ hasTeamOrganizations ? t('topMenu.manageOrganizations') : t('topMenu.learnAboutOrganizations') }}</span>
@@ -168,6 +203,7 @@ const { t } = useTranslations({
       organization: 'Organization',
       personalOrg: 'Personal',
       teamOrg: 'Team',
+      switchOrganization: 'Switch Organization',
       manageOrganizations: 'Manage Organizations',
       learnAboutOrganizations: 'Learn About Organizations',
       about: 'About',
@@ -192,6 +228,7 @@ const { t } = useTranslations({
       organization: 'Organisation',
       personalOrg: 'Personnel',
       teamOrg: 'Équipe',
+      switchOrganization: 'Changer d\'organisation',
       manageOrganizations: 'Gérer les organisations',
       learnAboutOrganizations: 'En savoir plus sur les organisations',
       about: 'À propos',
@@ -212,14 +249,16 @@ const { versions } = useVersionInfo();
 
 // Organization computed properties
 const currentOrganization = computed(() => organizationsStore.currentOrganization);
+const userOrganizations = computed(() => organizationsStore.userOrganizations);
 const hasTeamOrganizations = computed(() =>
   organizationsStore.businessOrganizations.length > 0 ||
-  organizationsStore.organizations.length > 1
+  userOrganizations.value.length > 1
 );
 
 const emit = defineEmits(['toggle-menu']);
 
 const isUserMenuOpen = ref(false);
+const isOrgSwitcherOpen = ref(false);
 const userMenuRef = ref<HTMLElement | null>(null);
 
 function toggleViewMode() {
@@ -236,6 +275,16 @@ function toggleUserMenu() {
 
 function closeUserMenu() {
   isUserMenuOpen.value = false;
+  isOrgSwitcherOpen.value = false;
+}
+
+function toggleOrgSwitcher() {
+  isOrgSwitcherOpen.value = !isOrgSwitcherOpen.value;
+}
+
+function switchOrganization(orgId: string) {
+  organizationsStore.setCurrentOrganization(orgId);
+  isOrgSwitcherOpen.value = false;
 }
 
 function handleDisconnect() {
@@ -494,7 +543,6 @@ onUnmounted(() => {
   border: var(--border-width-thin) solid var(--color-border-light);
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-lg);
-  overflow: hidden;
   z-index: var(--z-index-dropdown);
   animation: dropdownSlideIn var(--transition-fast) ease-out;
 }
@@ -539,6 +587,7 @@ onUnmounted(() => {
 
 .dropdown-section {
   padding: var(--spacing-xs) 0;
+  position: relative;
 }
 
 .dropdown-section-title {
@@ -650,6 +699,113 @@ onUnmounted(() => {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-top: 2px;
+}
+
+/* Org switcher styles */
+.org-switchable {
+  cursor: default;
+}
+
+.org-switch-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  background: var(--color-bg-primary);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition-base);
+  font-size: var(--font-size-xs);
+}
+
+.org-switch-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-bg-secondary);
+}
+
+.org-switcher-flyout {
+  position: absolute;
+  right: calc(100% + var(--spacing-xs));
+  top: 0;
+  min-width: 260px;
+  max-height: 320px;
+  background-color: var(--color-bg-primary);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-index-dropdown);
+  animation: flyoutSlideIn var(--transition-fast) ease-out;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes flyoutSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.org-switcher-header {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  letter-spacing: 0.05em;
+  border-bottom: var(--border-width-thin) solid var(--color-border-light);
+  flex-shrink: 0;
+}
+
+.org-switcher-list {
+  overflow-y: auto;
+  padding: var(--spacing-xs);
+}
+
+.org-switcher-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--transition-base);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.org-switcher-item:hover {
+  background-color: var(--color-bg-secondary);
+}
+
+.org-switcher-item.org-active {
+  background-color: var(--color-bg-secondary);
+}
+
+.org-icon-sm {
+  width: 32px;
+  height: 32px;
+}
+
+.org-check {
+  margin-left: auto;
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  flex-shrink: 0;
 }
 
 .dropdown-item-highlighted {
