@@ -117,19 +117,37 @@
         <p>{{ t('terminalBackends.orgConfig.loading') }}</p>
       </div>
 
-      <div v-else-if="organizationsStore.organizations.length > 0" class="org-table-wrapper">
+      <div v-else-if="allOrganizations.length > 0" class="org-table-wrapper">
+        <div class="org-table-toolbar">
+          <div class="org-search">
+            <i class="fas fa-search"></i>
+            <input
+              v-model="orgSearchQuery"
+              type="text"
+              :placeholder="t('terminalBackends.orgConfig.searchPlaceholder')"
+              class="org-search-input"
+            />
+          </div>
+          <span class="org-count">{{ filteredOrganizations.length }} / {{ allOrganizations.length }}</span>
+        </div>
         <table class="org-table">
           <thead>
             <tr>
-              <th>{{ t('terminalBackends.orgConfig.orgName') }}</th>
-              <th>{{ t('terminalBackends.orgConfig.type') }}</th>
+              <th class="sortable-header" @click="toggleSort('display_name')">
+                {{ t('terminalBackends.orgConfig.orgName') }}
+                <i :class="getSortIcon('display_name')"></i>
+              </th>
+              <th class="sortable-header" @click="toggleSort('organization_type')">
+                {{ t('terminalBackends.orgConfig.type') }}
+                <i :class="getSortIcon('organization_type')"></i>
+              </th>
               <th>{{ t('terminalBackends.orgConfig.allowedBackends') }}</th>
               <th>{{ t('terminalBackends.orgConfig.defaultBackend') }}</th>
               <th>{{ t('terminalBackends.orgConfig.actions') }}</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="org in organizationsStore.organizations" :key="org.id">
+            <tr v-for="org in filteredOrganizations" :key="org.id">
               <td class="org-name-cell">{{ org.display_name }}</td>
               <td>
                 <span class="type-badge" :class="`type-${org.organization_type}`">
@@ -268,6 +286,9 @@ const settingDefault = ref<string | null>(null)
 // Org config state
 const orgsLoading = ref(false)
 const orgConfigs = reactive<Record<string, OrgBackendConfig>>({})
+const orgSearchQuery = ref('')
+const sortColumn = ref<'display_name' | 'organization_type'>('display_name')
+const sortDirection = ref<'asc' | 'desc'>('asc')
 const showConfigModal = ref(false)
 const editingOrg = ref<Organization | null>(null)
 const editAllowedBackends = ref<string[]>([])
@@ -310,6 +331,7 @@ const { t } = useTranslations({
         systemDefault: 'System default',
         configure: 'Configure',
         noOrgs: 'No organizations found',
+        searchPlaceholder: 'Search organizations...',
         allowedBackendsLabel: 'Allowed Backends',
         allowedBackendsHint: 'Select which backends this organization can use. If none are selected, only the system default backend is available.',
         defaultBackendLabel: 'Default Backend',
@@ -351,6 +373,7 @@ const { t } = useTranslations({
         systemDefault: 'Défaut système',
         configure: 'Configurer',
         noOrgs: 'Aucune organisation trouvée',
+        searchPlaceholder: 'Rechercher des organisations...',
         allowedBackendsLabel: 'Backends autorisés',
         allowedBackendsHint: 'Sélectionnez les backends que cette organisation peut utiliser. Si aucun n\'est sélectionné, seul le backend par défaut du système est disponible.',
         defaultBackendLabel: 'Backend par défaut',
@@ -388,6 +411,46 @@ const availableDefaultBackends = computed(() => {
   }
   return backendsStore.backends.filter(b => editAllowedBackends.value.includes(b.id))
 })
+
+const allOrganizations = computed(() => organizationsStore.organizations)
+
+const filteredOrganizations = computed(() => {
+  let orgs = [...allOrganizations.value]
+
+  // Filter by search query
+  if (orgSearchQuery.value.trim()) {
+    const query = orgSearchQuery.value.toLowerCase()
+    orgs = orgs.filter(org =>
+      org.display_name?.toLowerCase().includes(query) ||
+      org.name?.toLowerCase().includes(query)
+    )
+  }
+
+  // Sort
+  orgs.sort((a, b) => {
+    const col = sortColumn.value
+    const valA = (a[col] || '').toLowerCase()
+    const valB = (b[col] || '').toLowerCase()
+    const cmp = valA.localeCompare(valB)
+    return sortDirection.value === 'asc' ? cmp : -cmp
+  })
+
+  return orgs
+})
+
+function toggleSort(column: 'display_name' | 'organization_type') {
+  if (sortColumn.value === column) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortColumn.value = column
+    sortDirection.value = 'asc'
+  }
+}
+
+function getSortIcon(column: string): string {
+  if (sortColumn.value !== column) return 'fas fa-sort'
+  return sortDirection.value === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'
+}
 
 function getBackendName(backendId: string): string {
   const backend = backendsStore.backends.find(b => b.id === backendId)
@@ -755,6 +818,61 @@ onBeforeUnmount(() => {
 
 .org-table-wrapper {
   overflow-x: auto;
+}
+
+.org-table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  gap: var(--spacing-md);
+}
+
+.org-search {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-primary);
+  flex: 1;
+  max-width: 360px;
+}
+
+.org-search i {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.org-search-input {
+  border: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  outline: none;
+  width: 100%;
+}
+
+.org-count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  transition: color var(--transition-fast);
+}
+
+.sortable-header:hover {
+  color: var(--color-primary);
+}
+
+.sortable-header i {
+  margin-left: var(--spacing-xs);
+  font-size: var(--font-size-xs);
 }
 
 .org-table {
