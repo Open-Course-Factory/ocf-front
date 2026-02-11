@@ -17,46 +17,28 @@
   >
     <div class="instance-header">
       <div class="instance-info">
-        <h5>{{ translatedName }}</h5>
+        <div class="instance-name-row">
+          <h5>{{ translatedName }}</h5>
+          <div class="size-badges">
+            <span
+              v-for="size in displayedSizes"
+              :key="size"
+              class="size-badge"
+              :class="{
+                'available': isSizeAllowed(size),
+                'restricted': !isSizeAllowed(size)
+              }"
+            >
+              {{ size }}
+            </span>
+          </div>
+        </div>
         <p>{{ translatedDescription }}</p>
       </div>
       <div class="instance-status">
         <i v-if="availability?.available"
            class="fas fa-check-circle text-success"></i>
         <i v-else class="fas fa-lock text-warning"></i>
-      </div>
-    </div>
-
-    <!-- Size badges -->
-    <div class="size-badges">
-      <span
-        v-for="size in displayedSizes"
-        :key="size"
-        class="size-badge"
-        :class="{
-          'available': isSizeAllowed(size),
-          'restricted': !isSizeAllowed(size)
-        }"
-      >
-        {{ size }}
-      </span>
-    </div>
-
-    <!-- Availability message with upgrade button -->
-    <div class="availability-message">
-      <div v-if="availability?.available" class="available-message">
-        <small class="text-success">
-          <i class="fas fa-check"></i> {{ t('terminalStarter.availableInPlan') }}
-        </small>
-      </div>
-      <div v-else class="restricted-message">
-        <small class="text-warning">
-          <i class="fas fa-exclamation-triangle"></i> {{ t('terminalStarter.requiresUpgrade') }}
-        </small>
-        <router-link to="/subscription-plans" class="upgrade-link">
-          <i class="fas fa-arrow-up"></i>
-          {{ t('terminalStarter.upgrade') }}
-        </router-link>
       </div>
     </div>
   </div>
@@ -83,20 +65,8 @@ defineEmits<{
 }>()
 
 const { t, te } = useTranslations({
-  en: {
-    terminalStarter: {
-      availableInPlan: 'Available in your plan',
-      requiresUpgrade: 'Requires plan upgrade',
-      upgrade: 'Upgrade'
-    }
-  },
-  fr: {
-    terminalStarter: {
-      availableInPlan: 'Disponible dans votre plan',
-      requiresUpgrade: 'Nécessite une mise à niveau',
-      upgrade: 'Mettre à niveau'
-    }
-  }
+  en: {},
+  fr: {}
 })
 
 const translatedName = computed(() => {
@@ -166,18 +136,24 @@ function isSizeAllowed(size: string): boolean {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: var(--spacing-xs);
+}
+
+.instance-name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
 }
 
 .instance-info h5 {
-  margin: 0 0 2px 0;
+  margin: 0;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
 }
 
 .instance-info p {
-  margin: 0;
+  margin: 2px 0 0 0;
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
   line-height: 1.3;
@@ -191,7 +167,6 @@ function isSizeAllowed(size: string): boolean {
 .size-badges {
   display: flex;
   gap: 4px;
-  margin-bottom: 6px;
   flex-wrap: wrap;
 }
 
@@ -214,39 +189,6 @@ function isSizeAllowed(size: string): boolean {
   background: var(--color-warning-bg);
   color: var(--color-warning-text);
   border: var(--border-width-thin) solid var(--color-warning);
-}
-
-.availability-message {
-  margin-top: 6px;
-}
-
-.availability-message small {
-  font-size: 11px;
-  line-height: 1.2;
-}
-
-.restricted-message {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--spacing-xs);
-}
-
-.upgrade-link {
-  padding: 2px 6px;
-  font-size: 10px;
-  border-radius: var(--border-radius-sm);
-  text-decoration: none;
-  white-space: nowrap;
-  background-color: var(--color-primary);
-  color: var(--color-white);
-  border: var(--border-width-thin) solid var(--color-primary);
-  transition: all var(--transition-fast);
-}
-
-.upgrade-link:hover {
-  background-color: var(--color-primary-hover);
-  text-decoration: none;
 }
 
 .text-success {
