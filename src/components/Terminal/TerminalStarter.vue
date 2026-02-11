@@ -41,54 +41,6 @@
         </div>
       </template>
 
-      <!-- Creation Mode Selection (Single vs Bulk for Group) -->
-      <div v-if="canUseGroups" class="creation-mode-selector">
-        <label class="mode-label">{{ t('terminalStarter.creationMode') }}</label>
-        <div class="mode-options">
-          <button
-            type="button"
-            :class="['mode-option', { active: creationMode === 'single' }]"
-            @click="creationMode = 'single'"
-          >
-            <i class="fas fa-desktop"></i>
-            {{ t('terminalStarter.singleTerminal') }}
-          </button>
-          <button
-            type="button"
-            :class="['mode-option', { active: creationMode === 'bulk' }]"
-            @click="creationMode = 'bulk'"
-          >
-            <i class="fas fa-users"></i>
-            {{ t('terminalStarter.bulkForGroup') }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Group Selection (only if bulk mode) -->
-      <div v-if="creationMode === 'bulk'" class="group-selector">
-        <label for="group-select" class="form-label">
-          {{ t('terminalStarter.selectGroup') }}
-        </label>
-        <select
-          id="group-select"
-          v-model="selectedGroupId"
-          class="form-control"
-          :disabled="isStarting"
-        >
-          <option value="">{{ t('terminalStarter.chooseGroup') }}</option>
-          <option
-            v-for="group in availableGroups"
-            :key="group.id"
-            :value="group.id"
-          >
-            {{ group.display_name || group.name }} ({{ getGroupMemberCount(group) }} {{ t('terminalStarter.members') }})
-          </option>
-        </select>
-        <small v-if="selectedGroupId && selectedGroupMemberCount > 0" class="form-text">
-          {{ t('terminalStarter.willCreate', { count: selectedGroupMemberCount }) }}
-        </small>
-      </div>
-
       <!-- Instance Type Selection -->
       <InstanceTypeSelector
         v-model="selectedInstanceType"
@@ -116,7 +68,14 @@
         :show-backend-selector="backendsStore.hasMultipleBackends"
         :backends="backends"
         :selected-backend-id="selectedBackendId"
+        :show-bulk-mode="canUseGroups"
+        :creation-mode="creationMode"
+        :available-groups="availableGroups"
+        :selected-group-id="selectedGroupId"
+        :selected-group-member-count="selectedGroupMemberCount"
         @update:selected-backend-id="selectedBackendId = $event"
+        @update:creation-mode="creationMode = $event"
+        @update:selected-group-id="selectedGroupId = $event"
         @reset="resetForm"
       />
 
@@ -595,10 +554,6 @@ function resetForm() {
   userManuallySelected.value = false
   restoredFromStorage.value = false
   selectedInstanceType.value = ''
-}
-
-function getGroupMemberCount(group: any): number {
-  return group.member_count || 0
 }
 
 async function loadGroupMembers(groupId: string) {
@@ -1136,97 +1091,6 @@ onBeforeUnmount(() => {
   color: var(--color-text-muted);
 }
 
-/* Creation mode selector */
-.creation-mode-selector {
-  margin-bottom: var(--spacing-lg);
-}
-
-.mode-label {
-  display: block;
-  margin-bottom: var(--spacing-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
-}
-
-.mode-options {
-  display: flex;
-  gap: var(--spacing-md);
-}
-
-.mode-option {
-  flex: 1;
-  padding: var(--spacing-md);
-  border: var(--border-width-medium) solid var(--color-border-light);
-  border-radius: var(--border-radius-md);
-  background: var(--color-bg-primary);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-sm);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-medium);
-}
-
-.mode-option:hover {
-  border-color: var(--color-primary);
-  background: var(--color-primary-bg, rgba(0, 123, 255, 0.1));
-  color: var(--color-primary);
-}
-
-.mode-option.active {
-  border-color: var(--color-primary);
-  background: var(--color-primary);
-  color: white;
-}
-
-.mode-option i {
-  font-size: var(--font-size-lg);
-}
-
-/* Group selector */
-.group-selector {
-  margin-bottom: var(--spacing-lg);
-}
-
-.form-label {
-  display: block;
-  margin-bottom: var(--spacing-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
-}
-
-.form-control {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: var(--border-width-medium) solid var(--color-border-medium);
-  border-radius: var(--border-radius-md);
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-md);
-  transition: border-color var(--transition-fast);
-}
-
-.form-control:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.form-control:disabled {
-  background: var(--color-bg-secondary);
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.form-text {
-  display: block;
-  margin-top: var(--spacing-xs);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-}
-
 /* Launch CTA */
 .launch-section {
   margin-top: var(--spacing-lg);
@@ -1256,14 +1120,6 @@ onBeforeUnmount(() => {
 
   .capacity-check-inline {
     justify-content: center;
-  }
-
-  .mode-options {
-    flex-direction: column;
-  }
-
-  .mode-option {
-    width: 100%;
   }
 }
 </style>

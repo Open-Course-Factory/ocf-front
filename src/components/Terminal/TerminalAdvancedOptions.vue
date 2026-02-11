@@ -16,6 +16,55 @@
       {{ t('terminalStarter.advancedOptions') }}
     </button>
     <div v-show="isExpanded" class="collapsible-content">
+      <!-- Creation Mode (Bulk for Group) -->
+      <div v-if="showBulkMode" class="creation-mode-selector">
+        <label class="mode-label">{{ t('terminalStarter.creationMode') }}</label>
+        <div class="mode-options">
+          <button
+            type="button"
+            :class="['mode-option', { active: creationMode === 'single' }]"
+            @click="emit('update:creationMode', 'single')"
+          >
+            <i class="fas fa-desktop"></i>
+            {{ t('terminalStarter.singleTerminal') }}
+          </button>
+          <button
+            type="button"
+            :class="['mode-option', { active: creationMode === 'bulk' }]"
+            @click="emit('update:creationMode', 'bulk')"
+          >
+            <i class="fas fa-users"></i>
+            {{ t('terminalStarter.bulkForGroup') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Group Selection (only if bulk mode) -->
+      <div v-if="creationMode === 'bulk'" class="group-selector">
+        <label for="group-select" class="form-label">
+          {{ t('terminalStarter.selectGroup') }}
+        </label>
+        <select
+          id="group-select"
+          :value="selectedGroupId"
+          class="form-control"
+          :disabled="disabled"
+          @change="emit('update:selectedGroupId', ($event.target as HTMLSelectElement).value)"
+        >
+          <option value="">{{ t('terminalStarter.chooseGroup') }}</option>
+          <option
+            v-for="group in availableGroups"
+            :key="group.id"
+            :value="group.id"
+          >
+            {{ group.display_name || group.name }} ({{ group.member_count || 0 }} {{ t('terminalStarter.members') }})
+          </option>
+        </select>
+        <small v-if="selectedGroupId && selectedGroupMemberCount > 0" class="form-text">
+          {{ t('terminalStarter.willCreate', { count: selectedGroupMemberCount }) }}
+        </small>
+      </div>
+
       <!-- Backend Selector -->
       <BackendSelector
         v-if="showBackendSelector"
@@ -68,23 +117,42 @@ import Button from '../UI/Button.vue'
 import BackendSelector from './BackendSelector.vue'
 import type { Backend } from '../../types/entities'
 
+interface Group {
+  id: string
+  name: string
+  display_name?: string
+  member_count?: number
+}
+
 interface Props {
   modelValue: string
   disabled?: boolean
   backends?: Backend[]
   selectedBackendId?: string
   showBackendSelector?: boolean
+  showBulkMode?: boolean
+  creationMode?: 'single' | 'bulk'
+  availableGroups?: Group[]
+  selectedGroupId?: string
+  selectedGroupMemberCount?: number
 }
 
 withDefaults(defineProps<Props>(), {
   backends: () => [],
   selectedBackendId: '',
-  showBackendSelector: false
+  showBackendSelector: false,
+  showBulkMode: false,
+  creationMode: 'single',
+  availableGroups: () => [],
+  selectedGroupId: '',
+  selectedGroupMemberCount: 0
 })
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
   'update:selectedBackendId': [value: string]
+  'update:creationMode': [value: 'single' | 'bulk']
+  'update:selectedGroupId': [value: string]
   reset: []
 }>()
 
@@ -95,7 +163,14 @@ const { t } = useTranslations({
       nameOptional: 'Terminal Name (Optional)',
       namePlaceholder: 'My terminal...',
       nameHelp: 'Give your terminal a custom name to easily find it. Maximum 255 characters.',
-      buttonReset: 'Reset'
+      buttonReset: 'Reset',
+      creationMode: 'Creation Mode',
+      singleTerminal: 'Single Terminal',
+      bulkForGroup: 'Bulk for Group',
+      selectGroup: 'Select Group',
+      chooseGroup: 'Choose a group...',
+      members: 'members',
+      willCreate: 'Will create {count} terminals (1 per member)'
     }
   },
   fr: {
@@ -104,7 +179,14 @@ const { t } = useTranslations({
       nameOptional: 'Nom du Terminal (Optionnel)',
       namePlaceholder: 'Mon terminal...',
       nameHelp: 'Donnez un nom personnalisé à votre terminal pour le retrouver facilement. Maximum 255 caractères.',
-      buttonReset: 'Réinitialiser'
+      buttonReset: 'Réinitialiser',
+      creationMode: 'Mode de Création',
+      singleTerminal: 'Terminal Unique',
+      bulkForGroup: 'En Masse pour Groupe',
+      selectGroup: 'Sélectionner un Groupe',
+      chooseGroup: 'Choisir un groupe...',
+      members: 'membres',
+      willCreate: '{count} terminaux seront créés (1 par membre)'
     }
   }
 })
@@ -157,6 +239,97 @@ function handleInput(event: Event) {
   border-top: var(--border-width-thin) solid var(--color-border-light);
 }
 
+/* Creation mode selector */
+.creation-mode-selector {
+  margin-bottom: var(--spacing-lg);
+}
+
+.mode-label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.mode-options {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.mode-option {
+  flex: 1;
+  padding: var(--spacing-md);
+  border: var(--border-width-medium) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+}
+
+.mode-option:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-bg, rgba(0, 123, 255, 0.1));
+  color: var(--color-primary);
+}
+
+.mode-option.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
+}
+
+.mode-option i {
+  font-size: var(--font-size-lg);
+}
+
+/* Group selector */
+.group-selector {
+  margin-bottom: var(--spacing-lg);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.form-control {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width-medium) solid var(--color-border-medium);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  transition: border-color var(--transition-fast);
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.form-control:disabled {
+  background: var(--color-bg-secondary);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-text {
+  display: block;
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
 .form-actions {
   display: flex;
   gap: var(--spacing-md);
@@ -180,6 +353,14 @@ function handleInput(event: Event) {
 
   .collapsible-content {
     padding: var(--spacing-md);
+  }
+
+  .mode-options {
+    flex-direction: column;
+  }
+
+  .mode-option {
+    width: 100%;
   }
 
   .form-actions {
