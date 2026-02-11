@@ -76,11 +76,23 @@ export interface InstanceAvailability {
   hasAllSizes: boolean
 }
 
+// Size ordering for sorting (smallest to largest)
+const SIZE_ORDER: Record<string, number> = {
+  'XS': 1, 'S': 2, 'M': 3, 'L': 4, 'XL': 5, 'XXL': 6
+}
+
 // Utility functions for size handling
 export const instanceUtils = {
   // Parse size string into array
   parseSizes(sizeString: string): string[] {
     return sizeString.split('|').map(s => s.trim())
+  },
+
+  // Get the minimum size order value for sorting instances by their smallest size
+  getMinSizeOrder(sizeString: string): number {
+    const sizes = this.parseSizes(sizeString)
+    const orders = sizes.map(s => SIZE_ORDER[s.toUpperCase()] ?? 99)
+    return Math.min(...orders)
   },
 
   // Check if instance is available based on user's plan
