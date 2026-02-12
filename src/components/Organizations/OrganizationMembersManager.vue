@@ -473,7 +473,7 @@ const goToRolesHelp = () => {
 }
 
 .member-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .member-info {
@@ -616,7 +616,7 @@ const goToRolesHelp = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -630,7 +630,7 @@ const goToRolesHelp = () => {
   width: 90%;
   max-height: 90vh;
   overflow: auto;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-modal);
 }
 
 .modal-header {

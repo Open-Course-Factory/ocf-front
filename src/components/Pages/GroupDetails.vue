@@ -1243,7 +1243,7 @@ watch(activeTab, (newTab) => {
 }
 
 .role-badge.role-owner {
-  background-color: #ffd700;
+  background-color: var(--color-warning-gold);
   color: var(--color-black);
 }
 

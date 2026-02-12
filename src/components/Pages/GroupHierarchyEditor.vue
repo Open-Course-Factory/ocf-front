@@ -663,7 +663,7 @@ watch(shouldFilterAsStandardUser, () => {
   background: var(--color-border-medium);
   border-radius: var(--border-radius-md);
   padding: 1px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-xs);
 }
 
 .expand-collapse-btn {

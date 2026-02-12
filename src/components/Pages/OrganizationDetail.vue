@@ -888,7 +888,7 @@ const changeTab = (tab: string) => {
 
 .help-section {
   padding: 1.5rem;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
+  background: linear-gradient(135deg, var(--color-org-personal-bg-subtle) 0%, var(--color-org-team-bg-subtle) 100%);
   border: 1.5px solid var(--color-border);
   border-radius: 10px;
   margin-bottom: 2rem;
@@ -917,8 +917,8 @@ const changeTab = (tab: string) => {
 
 .upgrade-section {
   padding: 1.5rem;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(52, 211, 153, 0.05) 100%);
-  border: 2px solid rgba(16, 185, 129, 0.3);
+  background: linear-gradient(135deg, var(--color-org-team-bg) 0%, var(--color-org-team-bg-subtle) 100%);
+  border: 2px solid var(--color-org-team-border);
   border-radius: 10px;
   margin-bottom: 2rem;
 }
@@ -958,7 +958,7 @@ const changeTab = (tab: string) => {
   padding: 0.75rem 1rem;
   background: var(--color-bg-primary);
   border-radius: 8px;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid var(--color-org-team-bg-emphasis);
 }
 
 .benefit-item i {
@@ -976,12 +976,12 @@ const changeTab = (tab: string) => {
 .btn-success {
   background: var(--color-success);
   color: white;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 12px var(--color-org-team-border);
 }
 
 .btn-success:hover {
   background: var(--color-success-hover);
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 6px 16px var(--color-org-team-border);
   transform: translateY(-1px);
 }
 
@@ -1086,8 +1086,8 @@ const changeTab = (tab: string) => {
   align-items: flex-start;
   gap: 1rem;
   padding: 1rem 1.25rem;
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(251, 191, 36, 0.05) 100%);
-  border: 2px solid rgba(245, 158, 11, 0.3);
+  background: linear-gradient(135deg, var(--color-warning-amber-bg) 0%, var(--color-warning-amber-bg) 100%);
+  border: 2px solid var(--color-warning-amber-border);
   border-radius: 8px;
 }
 
@@ -1177,7 +1177,7 @@ const changeTab = (tab: string) => {
 .form-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px var(--color-org-personal-bg);
 }
 
 .form-input:disabled {

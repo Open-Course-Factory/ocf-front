@@ -261,6 +261,32 @@
 
 /* === DOMAIN-SPECIFIC COLORS === */
 
+/* Organization Type Colors - Personal (Blue) */
+--color-org-personal: #3b82f6;
+--color-org-personal-dark: #2563eb;
+--color-org-personal-light: #60a5fa;
+--color-org-personal-bg-subtle: rgba(59, 130, 246, 0.05);
+--color-org-personal-bg: rgba(59, 130, 246, 0.1);
+--color-org-personal-bg-emphasis: rgba(59, 130, 246, 0.15);
+--color-org-personal-border: rgba(59, 130, 246, 0.3);
+
+/* Organization Type Colors - Team (Green) */
+--color-org-team: #10b981;
+--color-org-team-dark: #059669;
+--color-org-team-light: #34d399;
+--color-org-team-bg-subtle: rgba(16, 185, 129, 0.05);
+--color-org-team-bg: rgba(16, 185, 129, 0.1);
+--color-org-team-bg-emphasis: rgba(16, 185, 129, 0.15);
+--color-org-team-border: rgba(16, 185, 129, 0.3);
+
+/* Warning Accent */
+--color-warning-gold: #ffd700;
+--color-warning-amber: #f59e0b;
+--color-warning-amber-light: #fbbf24;
+--color-warning-amber-shadow: rgba(245, 158, 11, 0.3);
+--color-warning-amber-bg: rgba(245, 158, 11, 0.08);
+--color-warning-amber-border: rgba(245, 158, 11, 0.3);
+
 /* Course Editor Node Colors */
 :root {
   --course-node-course: #4A90E2;
@@ -336,6 +362,19 @@
 
   --terminal-bg: #1a1a1a;
   --terminal-border: #404040;
+
+  /* Organization type colors - increased opacity for dark backgrounds */
+  --color-org-personal-bg-subtle: rgba(59, 130, 246, 0.08);
+  --color-org-personal-bg: rgba(59, 130, 246, 0.15);
+  --color-org-personal-bg-emphasis: rgba(59, 130, 246, 0.25);
+  --color-org-personal-border: rgba(59, 130, 246, 0.4);
+  --color-org-team-bg-subtle: rgba(16, 185, 129, 0.08);
+  --color-org-team-bg: rgba(16, 185, 129, 0.15);
+  --color-org-team-bg-emphasis: rgba(16, 185, 129, 0.25);
+  --color-org-team-border: rgba(16, 185, 129, 0.4);
+  --color-warning-amber-bg: rgba(245, 158, 11, 0.12);
+  --color-warning-amber-border: rgba(245, 158, 11, 0.4);
+  --color-warning-amber-shadow: rgba(245, 158, 11, 0.4);
 
   --overlay-bg: rgba(0, 0, 0, 0.7);
   --shadow-modal: 0 20px 40px rgba(0, 0, 0, 0.5);

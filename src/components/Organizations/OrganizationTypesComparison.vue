@@ -169,7 +169,7 @@ const { t } = useTranslations({
 
 <style scoped>
 .org-types-comparison {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.03) 0%, rgba(16, 185, 129, 0.03) 100%);
+  background: linear-gradient(135deg, var(--color-org-personal-bg-subtle) 0%, var(--color-org-team-bg-subtle) 100%);
   border: 2px solid var(--color-border);
   border-radius: 12px;
   padding: 0;
@@ -244,11 +244,11 @@ const { t } = useTranslations({
 }
 
 .personal-column {
-  border-color: rgba(59, 130, 246, 0.3);
+  border-color: var(--color-org-personal-border);
 }
 
 .team-column {
-  border-color: rgba(16, 185, 129, 0.3);
+  border-color: var(--color-org-team-border);
   position: relative;
 }
 
@@ -261,11 +261,11 @@ const { t } = useTranslations({
 }
 
 .personal-column .column-header {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(96, 165, 250, 0.05) 100%);
+  background: linear-gradient(135deg, var(--color-org-personal-bg) 0%, var(--color-org-personal-bg-subtle) 100%);
 }
 
 .team-column .column-header {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(52, 211, 153, 0.05) 100%);
+  background: linear-gradient(135deg, var(--color-org-team-bg) 0%, var(--color-org-team-bg-subtle) 100%);
 }
 
 .header-icon {
@@ -280,13 +280,13 @@ const { t } = useTranslations({
 }
 
 .personal-column .header-icon {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(96, 165, 250, 0.2) 100%);
-  color: #2563eb;
+  background: linear-gradient(135deg, var(--color-org-personal-bg-emphasis) 0%, var(--color-org-personal-border) 100%);
+  color: var(--color-org-personal-dark);
 }
 
 .team-column .header-icon {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(52, 211, 153, 0.2) 100%);
-  color: #059669;
+  background: linear-gradient(135deg, var(--color-org-team-bg-emphasis) 0%, var(--color-org-team-border) 100%);
+  color: var(--color-org-team-dark);
 }
 
 .column-header h4 {
@@ -302,14 +302,14 @@ const { t } = useTranslations({
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+  background: linear-gradient(135deg, var(--color-warning-amber) 0%, var(--color-warning-amber-light) 100%);
   color: white;
   border-radius: 12px;
   font-size: 0.6875rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 2px 6px var(--color-warning-amber-shadow);
 }
 
 .recommended-badge i {
@@ -337,11 +337,11 @@ const { t } = useTranslations({
 }
 
 .personal-column .feature-item i {
-  color: #3b82f6;
+  color: var(--color-org-personal);
 }
 
 .team-column .feature-item i {
-  color: #10b981;
+  color: var(--color-org-team);
 }
 
 .feature-item div {
@@ -368,7 +368,7 @@ const { t } = useTranslations({
   align-items: flex-start;
   gap: 1rem;
   padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
+  background: linear-gradient(135deg, var(--color-org-personal-bg-subtle) 0%, var(--color-org-team-bg-subtle) 100%);
   border: 1.5px dashed var(--color-border);
   border-radius: 10px;
 }

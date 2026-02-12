@@ -441,7 +441,7 @@ const formatLimit = (value: number): string => {
   border-radius: 6px;
   font-size: 0.875rem;
   font-weight: 500;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--overlay-white-20);
 }
 
 .status-active {
@@ -637,7 +637,7 @@ const formatLimit = (value: number): string => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -651,7 +651,7 @@ const formatLimit = (value: number): string => {
   width: 90%;
   max-height: 90vh;
   overflow: auto;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-modal);
 }
 
 .modal-header {
@@ -713,7 +713,7 @@ const formatLimit = (value: number): string => {
 
 .plan-option:hover {
   border-color: var(--color-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .plan-option.active {

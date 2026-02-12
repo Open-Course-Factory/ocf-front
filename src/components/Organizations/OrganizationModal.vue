@@ -255,7 +255,7 @@ const handleSubmit = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -270,7 +270,7 @@ const handleSubmit = () => {
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-modal);
 }
 
 .modal-header {

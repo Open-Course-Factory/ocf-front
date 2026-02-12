@@ -161,24 +161,24 @@ const getStatusIcon = (hasSubscription: boolean) => {
 }
 
 .card-personal::before {
-  background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
+  background: linear-gradient(90deg, var(--color-org-personal) 0%, var(--color-org-personal-light) 100%);
 }
 
 .card-team::before {
-  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+  background: linear-gradient(90deg, var(--color-org-team) 0%, var(--color-org-team-light) 100%);
 }
 
 .organization-card:hover {
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-lg);
   transform: translateY(-2px);
 }
 
 .card-personal:hover {
-  border-color: #3b82f6;
+  border-color: var(--color-org-personal);
 }
 
 .card-team:hover {
-  border-color: #10b981;
+  border-color: var(--color-org-team);
 }
 
 .organization-header {
@@ -200,13 +200,13 @@ const getStatusIcon = (hasSubscription: boolean) => {
 }
 
 .icon-personal {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(96, 165, 250, 0.15) 100%);
-  color: #3b82f6;
+  background: linear-gradient(135deg, var(--color-org-personal-bg) 0%, var(--color-org-personal-bg-emphasis) 100%);
+  color: var(--color-org-personal);
 }
 
 .icon-team {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(52, 211, 153, 0.15) 100%);
-  color: #10b981;
+  background: linear-gradient(135deg, var(--color-org-team-bg) 0%, var(--color-org-team-bg-emphasis) 100%);
+  color: var(--color-org-team);
 }
 
 .organization-info {
@@ -241,15 +241,15 @@ const getStatusIcon = (hasSubscription: boolean) => {
 }
 
 .badge-personal {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(96, 165, 250, 0.2) 100%);
-  color: #2563eb;
-  border: 1.5px solid rgba(59, 130, 246, 0.3);
+  background: linear-gradient(135deg, var(--color-org-personal-bg-emphasis) 0%, var(--color-org-personal-border) 100%);
+  color: var(--color-org-personal-dark);
+  border: 1.5px solid var(--color-org-personal-border);
 }
 
 .badge-team {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(52, 211, 153, 0.2) 100%);
-  color: #059669;
-  border: 1.5px solid rgba(16, 185, 129, 0.3);
+  background: linear-gradient(135deg, var(--color-org-team-bg-emphasis) 0%, var(--color-org-team-border) 100%);
+  color: var(--color-org-team-dark);
+  border: 1.5px solid var(--color-org-team-border);
 }
 
 .org-type-badge i {
