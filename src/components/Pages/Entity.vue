@@ -103,7 +103,9 @@
             :key="entity.id"
             class="entity-item"
           >
-            <EntityCard :entity="entity" :entityStore="props.entityStore" />
+            <slot name="card" :entity="entity" :entityStore="props.entityStore">
+              <EntityCard :entity="entity" :entityStore="props.entityStore" />
+            </slot>
             <div class="actions">
               <!-- Slot pour les actions spécifiques -->
               <slot name="actions" :entity="entity"></slot>

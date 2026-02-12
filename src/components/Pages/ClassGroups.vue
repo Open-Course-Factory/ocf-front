@@ -24,12 +24,17 @@
 <script setup lang="ts">
 import { useClassGroupsStore } from '../../stores/classGroups';
 import Entity from './Entity.vue';
+import GroupCard from '../Cards/GroupCard.vue';
 
 const entityStore = useClassGroupsStore();
 </script>
 
 <template>
     <div class="wrapper">
-        <Entity :entity-name='"class-groups"' :entity-store=entityStore />
+        <Entity :entity-name='"class-groups"' :entity-store=entityStore>
+            <template #card="{ entity }">
+                <GroupCard :entity="entity" />
+            </template>
+        </Entity>
     </div>
 </template>
