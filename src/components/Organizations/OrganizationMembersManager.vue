@@ -214,6 +214,7 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import BaseModal from '../Modals/BaseModal.vue'
 import { useTranslations } from '../../composables/useTranslations'
+import { useFormatters } from '../../composables/useFormatters'
 import { useClientPagination } from '../../composables/useClientPagination'
 import type { OrganizationMember } from '../../types'
 
@@ -229,6 +230,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const router = useRouter()
+const { formatDate } = useFormatters()
 
 const { t } = useTranslations({
   en: {
@@ -417,11 +419,6 @@ const getRoleLabel = (role: string): string => {
     member: t('members.roleMember')
   }
   return labels[role] || role
-}
-
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString()
 }
 
 const goToRolesHelp = () => {

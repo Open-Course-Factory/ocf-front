@@ -167,6 +167,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
+import { useFormatters } from '../../composables/useFormatters'
 import { useClientPagination } from '../../composables/useClientPagination'
 import type { OrganizationGroup } from '../../types'
 
@@ -181,6 +182,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const router = useRouter()
+const { formatDate } = useFormatters()
 
 const { t } = useTranslations({
   en: {
@@ -289,11 +291,6 @@ const loadGroups = async () => {
 const isExpired = (expiresAt?: string): boolean => {
   if (!expiresAt) return false
   return new Date(expiresAt) < new Date()
-}
-
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString()
 }
 
 const navigateToGroup = (groupId: string) => {

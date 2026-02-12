@@ -32,7 +32,7 @@
           </div>
           <div class="plan-price">
             <div class="price-amount">
-              {{ formatPrice(subscription.subscription_plan?.price_amount, subscription.subscription_plan?.currency) }}
+              {{ formatPlanPrice(subscription.subscription_plan?.price_amount, subscription.subscription_plan?.currency) }}
             </div>
             <div class="price-period">
               / {{ subscription.subscription_plan?.billing_interval === 'year' ? t('subscription.year') : t('subscription.month') }}
@@ -156,7 +156,7 @@
           <div class="plan-header">
             <h4>{{ plan.name }}</h4>
             <div class="plan-price">
-              {{ formatPrice(plan.price_amount, plan.currency) }}
+              {{ formatPlanPrice(plan.price_amount, plan.currency) }}
               <span class="plan-period">
                 / {{ plan.billing_interval === 'year' ? t('subscription.year') : t('subscription.month') }}
               </span>
@@ -174,6 +174,7 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import BaseModal from '../Modals/BaseModal.vue'
 import { useTranslations } from '../../composables/useTranslations'
+import { useFormatters } from '../../composables/useFormatters'
 import type { OrganizationSubscription, SubscriptionPlan } from '../../types'
 
 interface Props {
@@ -182,6 +183,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { formatDate, formatPrice } = useFormatters()
 
 const { t } = useTranslations({
   en: {
@@ -343,18 +345,9 @@ const getStatusLabel = (status: string): string => {
   return labels[status] || status
 }
 
-const formatPrice = (amount?: number, currency?: string): string => {
+const formatPlanPrice = (amount?: number, currency?: string): string => {
   if (!amount) return '-'
-  const price = amount / 100
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: currency || 'EUR'
-  }).format(price)
-}
-
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString()
+  return formatPrice(amount, currency || 'EUR')
 }
 
 const formatLimit = (value: number): string => {
