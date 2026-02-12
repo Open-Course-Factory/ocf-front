@@ -30,10 +30,29 @@
       </button>
     </div>
 
+    <!-- Search Bar -->
+    <div v-else-if="groups.length > 0" class="search-bar">
+      <div class="search-input-wrapper">
+        <i class="fas fa-search"></i>
+        <input
+          v-model="groupSearch"
+          type="text"
+          class="search-input"
+          :placeholder="t('groups.searchPlaceholder')"
+        />
+      </div>
+    </div>
+
+    <!-- No Search Results -->
+    <div v-if="!isLoading && !error && groups.length > 0 && filteredCount === 0" class="empty-state">
+      <i class="fas fa-search fa-2x"></i>
+      <p>{{ t('groups.noResults') }}</p>
+    </div>
+
     <!-- Groups List -->
-    <div v-else-if="groups.length > 0" class="groups-list">
+    <div v-if="!isLoading && !error && paginatedGroups.length > 0" class="groups-list">
       <div
-        v-for="group in sortedGroups"
+        v-for="group in paginatedGroups"
         :key="group.id"
         :class="['group-card', 'group-card-clickable', { 'is-child': group.parent_group_id }]"
         @click="navigateToGroup(group.id)"
@@ -108,8 +127,34 @@
       </div>
     </div>
 
+    <!-- Pagination Controls -->
+    <div v-if="!isLoading && !error && groups.length > 0 && totalPages > 1" class="pagination-controls">
+      <span class="pagination-info">
+        {{ t('groups.showing', { from: showingFrom, to: showingTo, total: filteredCount }) }}
+      </span>
+      <div class="pagination-buttons">
+        <button
+          class="btn btn-sm btn-secondary"
+          :disabled="!hasPrevious"
+          @click="previousPage"
+        >
+          <i class="fas fa-chevron-left"></i>
+          {{ t('groups.previous') }}
+        </button>
+        <span class="page-indicator">{{ currentPage }} / {{ totalPages }}</span>
+        <button
+          class="btn btn-sm btn-secondary"
+          :disabled="!hasNext"
+          @click="nextPage"
+        >
+          {{ t('groups.next') }}
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
     <!-- Empty State -->
-    <div v-else class="empty-state">
+    <div v-if="!isLoading && !error && groups.length === 0" class="empty-state">
       <i class="fas fa-layer-group fa-3x"></i>
       <h4>{{ t('groups.noGroups') }}</h4>
       <p>{{ t('groups.noGroupsDesc') }}</p>
@@ -122,6 +167,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
+import { useClientPagination } from '../../composables/useClientPagination'
 import type { OrganizationGroup } from '../../types'
 
 interface Props {
@@ -154,7 +200,12 @@ const { t } = useTranslations({
       active: 'Active',
       inactive: 'Inactive',
       full: 'Full',
-      viewGroup: 'View details'
+      viewGroup: 'View details',
+      searchPlaceholder: 'Search groups...',
+      showing: 'Showing {from}-{to} of {total}',
+      previous: 'Previous',
+      next: 'Next',
+      noResults: 'No groups match your search'
     }
   },
   fr: {
@@ -174,7 +225,12 @@ const { t } = useTranslations({
       active: 'Actif',
       inactive: 'Inactif',
       full: 'Complet',
-      viewGroup: 'Voir les détails'
+      viewGroup: 'Voir les détails',
+      searchPlaceholder: 'Rechercher des groupes...',
+      showing: 'Affichage {from}-{to} sur {total}',
+      previous: 'Précédent',
+      next: 'Suivant',
+      noResults: 'Aucun groupe ne correspond à votre recherche'
     }
   }
 })
@@ -182,6 +238,34 @@ const { t } = useTranslations({
 const groups = ref<OrganizationGroup[]>([])
 const isLoading = ref(false)
 const error = ref('')
+
+// Sort groups: parent groups first, then children
+const sortedGroups = computed(() => {
+  const sorted = [...groups.value]
+  return sorted.sort((a, b) => {
+    if (!a.parent_group_id && b.parent_group_id) return -1
+    if (a.parent_group_id && !b.parent_group_id) return 1
+    return a.display_name.localeCompare(b.display_name)
+  })
+})
+
+const {
+  searchQuery: groupSearch,
+  paginatedItems: paginatedGroups,
+  totalItems: filteredCount,
+  totalPages,
+  currentPage,
+  showingFrom,
+  showingTo,
+  hasPrevious,
+  hasNext,
+  previousPage,
+  nextPage
+} = useClientPagination({
+  items: sortedGroups,
+  searchFields: ['display_name', 'description', 'external_id'],
+  pageSize: 10
+})
 
 onMounted(() => {
   loadGroups()
@@ -201,19 +285,6 @@ const loadGroups = async () => {
     isLoading.value = false
   }
 }
-
-// Sort groups: parent groups first, then children
-const sortedGroups = computed(() => {
-  const sorted = [...groups.value]
-  return sorted.sort((a, b) => {
-    // Parent groups (no parent_group_id) come first
-    if (!a.parent_group_id && b.parent_group_id) return -1
-    if (a.parent_group_id && !b.parent_group_id) return 1
-
-    // Within same level, sort by display_name
-    return a.display_name.localeCompare(b.display_name)
-  })
-})
 
 const isExpired = (expiresAt?: string): boolean => {
   if (!expiresAt) return false
@@ -497,5 +568,83 @@ const navigateToGroup = (groupId: string) => {
 .btn-view:hover {
   background: var(--color-primary);
   color: white;
+}
+
+.btn-sm {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.btn-secondary {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-bg-quaternary);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.search-bar {
+  margin-bottom: 1.5rem;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input-wrapper i {
+  position: absolute;
+  left: 1rem;
+  color: var(--color-text-tertiary);
+  font-size: 0.875rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.pagination-info {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.page-indicator {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
 }
 </style>

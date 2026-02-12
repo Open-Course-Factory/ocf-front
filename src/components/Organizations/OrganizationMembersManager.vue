@@ -44,10 +44,29 @@
       </button>
     </div>
 
+    <!-- Search Bar -->
+    <div v-else-if="members.length > 0" class="search-bar">
+      <div class="search-input-wrapper">
+        <i class="fas fa-search"></i>
+        <input
+          v-model="memberSearch"
+          type="text"
+          class="search-input"
+          :placeholder="t('members.searchPlaceholder')"
+        />
+      </div>
+    </div>
+
+    <!-- No Search Results -->
+    <div v-if="!isLoading && !error && members.length > 0 && filteredCount === 0" class="empty-state">
+      <i class="fas fa-search fa-2x"></i>
+      <p>{{ t('members.noResults') }}</p>
+    </div>
+
     <!-- Members List -->
-    <div v-else-if="members.length > 0" class="members-list">
+    <div v-if="!isLoading && !error && paginatedMembers.length > 0" class="members-list">
       <div
-        v-for="member in members"
+        v-for="member in paginatedMembers"
         :key="member.id"
         class="member-card"
       >
@@ -98,8 +117,34 @@
       </div>
     </div>
 
+    <!-- Pagination Controls -->
+    <div v-if="!isLoading && !error && members.length > 0 && totalPages > 1" class="pagination-controls">
+      <span class="pagination-info">
+        {{ t('members.showing', { from: showingFrom, to: showingTo, total: filteredCount }) }}
+      </span>
+      <div class="pagination-buttons">
+        <button
+          class="btn btn-sm btn-secondary"
+          :disabled="!hasPrevious"
+          @click="previousPage"
+        >
+          <i class="fas fa-chevron-left"></i>
+          {{ t('members.previous') }}
+        </button>
+        <span class="page-indicator">{{ currentPage }} / {{ totalPages }}</span>
+        <button
+          class="btn btn-sm btn-secondary"
+          :disabled="!hasNext"
+          @click="nextPage"
+        >
+          {{ t('members.next') }}
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
     <!-- Empty State -->
-    <div v-else class="empty-state">
+    <div v-if="!isLoading && !error && members.length === 0" class="empty-state">
       <i class="fas fa-users fa-3x"></i>
       <h4>{{ t('members.noMembers') }}</h4>
       <p>{{ t('members.noMembersDesc') }}</p>
@@ -169,6 +214,7 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import BaseModal from '../Modals/BaseModal.vue'
 import { useTranslations } from '../../composables/useTranslations'
+import { useClientPagination } from '../../composables/useClientPagination'
 import type { OrganizationMember } from '../../types'
 
 interface Props {
@@ -211,6 +257,11 @@ const { t } = useTranslations({
       memberRemoved: 'Member removed successfully',
       memberInvited: 'Member invited successfully',
       rolesHelp: 'Learn about roles',
+      searchPlaceholder: 'Search members...',
+      showing: 'Showing {from}-{to} of {total}',
+      previous: 'Previous',
+      next: 'Next',
+      noResults: 'No members match your search',
     }
   },
   fr: {
@@ -239,6 +290,11 @@ const { t } = useTranslations({
       memberRemoved: 'Membre retiré avec succès',
       memberInvited: 'Membre invité avec succès',
       rolesHelp: 'En savoir plus sur les rôles',
+      searchPlaceholder: 'Rechercher des membres...',
+      showing: 'Affichage {from}-{to} sur {total}',
+      previous: 'Précédent',
+      next: 'Suivant',
+      noResults: 'Aucun membre ne correspond à votre recherche',
     }
   }
 })
@@ -246,6 +302,24 @@ const { t } = useTranslations({
 const members = ref<OrganizationMember[]>([])
 const isLoading = ref(false)
 const error = ref('')
+
+const {
+  searchQuery: memberSearch,
+  paginatedItems: paginatedMembers,
+  totalItems: filteredCount,
+  totalPages,
+  currentPage,
+  showingFrom,
+  showingTo,
+  hasPrevious,
+  hasNext,
+  previousPage,
+  nextPage
+} = useClientPagination({
+  items: members,
+  searchFields: ['user.display_name', 'user.name', 'user.email', 'role'],
+  pageSize: 10
+})
 const showInviteModal = ref(false)
 const inviteEmail = ref('')
 const inviteRole = ref<'member' | 'manager' | 'owner'>('member')
@@ -646,5 +720,69 @@ const goToRolesHelp = () => {
   background: var(--color-danger-light);
   color: var(--color-danger);
   border: 1px solid var(--color-danger);
+}
+
+.search-bar {
+  margin-bottom: 1.5rem;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input-wrapper i {
+  position: absolute;
+  left: 1rem;
+  color: var(--color-text-tertiary);
+  font-size: 0.875rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.pagination-info {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.page-indicator {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.btn-secondary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 </style>
