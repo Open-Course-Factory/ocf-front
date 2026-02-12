@@ -173,6 +173,22 @@ export class FieldBuilder {
   }
 
   /**
+   * Minimum value for number fields
+   */
+  withMin(min: number): this {
+    this.config.min = min
+    return this
+  }
+
+  /**
+   * Maximum value for number fields
+   */
+  withMax(max: number): this {
+    this.config.max = max
+    return this
+  }
+
+  /**
    * Options for select/radio fields
    */
   withOptions(options: any[]): this {

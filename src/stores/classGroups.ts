@@ -149,7 +149,7 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
     const fieldList = buildFieldList([
         field('id', t('classGroups.id')).input().hidden().readonly(),
         field('name', t('classGroups.name')).input().visible().readonly(), // Auto-generated from display_name
-        field('display_name', t('classGroups.display_name')).input().visible().editable(),
+        field('display_name', t('classGroups.display_name')).input().visible().editable().required(),
         field('description', t('classGroups.description')).textarea().visible().editable(),
         field('organization_id', t('classGroups.organization_id'))
             .searchableSelect()
@@ -187,7 +187,7 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
             .withItemValue('id')
             .withItemText('display_name')
             .placeholder(t('classGroups.parentGroupHelp')),
-        field('max_members', t('classGroups.max_members')).number().visible().editable(),
+        field('max_members', t('classGroups.max_members')).number().visible().editable().required().withMin(1),
         field('expires_at', t('classGroups.expires_at')).date().visible().editable().withDateFormat(),
         field('is_active', t('classGroups.is_active')).checkbox().visible().editable(),
         field('subgroup_names', t('classGroups.subgroupNames'))

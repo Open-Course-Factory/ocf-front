@@ -17,12 +17,14 @@
           id="org-name"
           v-model="formData.name"
           type="text"
-          class="form-control"
+          :class="['form-control', { 'is-invalid': nameError }]"
           :placeholder="t('organizations.namePlaceholder')"
           :disabled="isEditMode"
           required
+          @input="validateName"
         />
-        <small class="form-text">{{ t('organizations.nameHelp') }}</small>
+        <small v-if="nameError" class="field-error">{{ nameError }}</small>
+        <small v-else class="form-text">{{ t('organizations.nameHelp') }}</small>
       </div>
 
       <!-- Display Name -->
@@ -157,6 +159,8 @@ const { t } = useTranslations({
       cancel: 'Cancel',
       save: 'Save',
       saving: 'Saving...',
+      nameInvalid: 'Only lowercase letters, numbers and hyphens allowed',
+      nameRequired: 'Organization name is required',
     }
   },
   fr: {
@@ -177,6 +181,8 @@ const { t } = useTranslations({
       cancel: 'Annuler',
       save: 'Enregistrer',
       saving: 'Enregistrement...',
+      nameInvalid: 'Seuls les lettres minuscules, chiffres et tirets sont autorisés',
+      nameRequired: 'Le nom de l\'organisation est requis',
     }
   }
 })
@@ -213,8 +219,24 @@ watch(() => props.organization, (org) => {
   }
 }, { immediate: true })
 
+const NAME_PATTERN = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/
+const nameError = ref('')
+
+const validateName = () => {
+  const name = formData.value.name.trim()
+  if (!name) {
+    nameError.value = t('organizations.nameRequired')
+  } else if (!NAME_PATTERN.test(name)) {
+    nameError.value = t('organizations.nameInvalid')
+  } else {
+    nameError.value = ''
+  }
+}
+
 const isFormValid = computed(() => {
-  return formData.value.name.trim() !== '' && formData.value.display_name.trim() !== ''
+  return formData.value.name.trim() !== ''
+    && formData.value.display_name.trim() !== ''
+    && !nameError.value
 })
 
 const handleClose = () => {
@@ -283,6 +305,17 @@ const handleSubmit = () => {
   margin-top: 0.25rem;
   font-size: 0.875rem;
   color: var(--color-text-secondary);
+}
+
+.form-control.is-invalid {
+  border-color: var(--color-danger);
+}
+
+.field-error {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--color-danger);
 }
 
 textarea.form-control {

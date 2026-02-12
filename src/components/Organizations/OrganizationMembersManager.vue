@@ -176,10 +176,12 @@
           id="userEmail"
           v-model="inviteEmail"
           type="email"
-          class="form-control"
+          :class="['form-control', { 'is-invalid': emailError }]"
           :placeholder="t('members.emailPlaceholder')"
           @keyup.enter="inviteMember"
+          @input="validateEmail"
         />
+        <small v-if="emailError" class="field-error">{{ emailError }}</small>
       </div>
 
       <div class="form-group">
@@ -198,7 +200,7 @@
         <button
           class="btn btn-primary"
           @click="inviteMember"
-          :disabled="isInviting || !inviteEmail"
+          :disabled="isInviting || !inviteEmail || !!emailError"
         >
           <i :class="isInviting ? 'fas fa-spinner fa-spin' : 'fas fa-paper-plane'"></i>
           {{ isInviting ? t('members.inviting') : t('members.sendInvite') }}
@@ -250,6 +252,7 @@ const { t } = useTranslations({
       inviteFirstMember: 'Invite your first member',
       emailAddress: 'Email Address',
       emailPlaceholder: 'user@example.com',
+      emailInvalid: 'Please enter a valid email address',
       role: 'Role',
       cancel: 'Cancel',
       sendInvite: 'Send Invite',
@@ -283,6 +286,7 @@ const { t } = useTranslations({
       inviteFirstMember: 'Invitez votre premier membre',
       emailAddress: 'Adresse email',
       emailPlaceholder: 'utilisateur@exemple.com',
+      emailInvalid: 'Veuillez saisir une adresse email valide',
       role: 'Rôle',
       cancel: 'Annuler',
       sendInvite: 'Envoyer l\'invitation',
@@ -327,6 +331,20 @@ const inviteEmail = ref('')
 const inviteRole = ref<'member' | 'manager' | 'owner'>('member')
 const isInviting = ref(false)
 const inviteError = ref('')
+const emailError = ref('')
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const validateEmail = () => {
+  const email = inviteEmail.value.trim()
+  if (!email) {
+    emailError.value = ''
+  } else if (!EMAIL_PATTERN.test(email)) {
+    emailError.value = t('members.emailInvalid')
+  } else {
+    emailError.value = ''
+  }
+}
 
 onMounted(() => {
   loadMembers()
@@ -351,6 +369,7 @@ const openInviteModal = () => {
   inviteEmail.value = ''
   inviteRole.value = 'member'
   inviteError.value = ''
+  emailError.value = ''
   showInviteModal.value = true
 }
 
@@ -705,6 +724,17 @@ const goToRolesHelp = () => {
 .form-control:focus {
   outline: none;
   border-color: var(--color-primary);
+}
+
+.form-control.is-invalid {
+  border-color: var(--color-danger);
+}
+
+.field-error {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--color-danger);
 }
 
 .alert {
