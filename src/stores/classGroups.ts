@@ -157,8 +157,8 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
             .editable()
             .withOptionsLoader(async () => {
                 try {
-                    const organizations = await base.loadEntities('/organizations')
-                    return organizations
+                    const response = await axios.get('/organizations')
+                    return response.data?.data || response.data || []
                 } catch (error) {
                     console.error('Failed to load organizations:', error)
                     return []
@@ -173,7 +173,8 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
             .editable()
             .withOptionsLoader(async () => {
                 try {
-                    const groups = await base.loadEntities('/class-groups')
+                    const response = await axios.get('/class-groups')
+                    const groups = response.data?.data || response.data || []
                     return [
                         { id: null, display_name: t('classGroups.noneParentGroup') },
                         ...groups
