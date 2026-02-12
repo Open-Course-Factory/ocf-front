@@ -114,57 +114,52 @@
     </div>
 
     <!-- Invite Member Modal -->
-    <div v-if="showInviteModal" class="modal-overlay" @click="closeInviteModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>{{ t('members.inviteMember') }}</h3>
-          <button class="modal-close" @click="closeInviteModal">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-
-        <div class="modal-body">
-          <div v-if="inviteError" class="alert alert-danger">
-            {{ inviteError }}
-          </div>
-
-          <div class="form-group">
-            <label for="userEmail">{{ t('members.emailAddress') }}</label>
-            <input
-              id="userEmail"
-              v-model="inviteEmail"
-              type="email"
-              class="form-control"
-              :placeholder="t('members.emailPlaceholder')"
-              @keyup.enter="inviteMember"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="userRole">{{ t('members.role') }}</label>
-            <select id="userRole" v-model="inviteRole" class="form-control">
-              <option value="member">{{ t('members.roleMember') }}</option>
-              <option value="manager">{{ t('members.roleManager') }}</option>
-              <option v-if="props.isOwner" value="owner">{{ t('members.roleOwner') }}</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button class="btn btn-secondary" @click="closeInviteModal">
-            {{ t('members.cancel') }}
-          </button>
-          <button
-            class="btn btn-primary"
-            @click="inviteMember"
-            :disabled="isInviting || !inviteEmail"
-          >
-            <i :class="isInviting ? 'fas fa-spinner fa-spin' : 'fas fa-paper-plane'"></i>
-            {{ isInviting ? t('members.inviting') : t('members.sendInvite') }}
-          </button>
-        </div>
+    <BaseModal
+      :visible="showInviteModal"
+      :title="t('members.inviteMember')"
+      title-icon="fas fa-user-plus"
+      size="medium"
+      @close="closeInviteModal"
+    >
+      <div v-if="inviteError" class="alert alert-danger">
+        {{ inviteError }}
       </div>
-    </div>
+
+      <div class="form-group">
+        <label for="userEmail">{{ t('members.emailAddress') }}</label>
+        <input
+          id="userEmail"
+          v-model="inviteEmail"
+          type="email"
+          class="form-control"
+          :placeholder="t('members.emailPlaceholder')"
+          @keyup.enter="inviteMember"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="userRole">{{ t('members.role') }}</label>
+        <select id="userRole" v-model="inviteRole" class="form-control">
+          <option value="member">{{ t('members.roleMember') }}</option>
+          <option value="manager">{{ t('members.roleManager') }}</option>
+          <option v-if="props.isOwner" value="owner">{{ t('members.roleOwner') }}</option>
+        </select>
+      </div>
+
+      <template #footer>
+        <button class="btn btn-secondary" @click="closeInviteModal">
+          {{ t('members.cancel') }}
+        </button>
+        <button
+          class="btn btn-primary"
+          @click="inviteMember"
+          :disabled="isInviting || !inviteEmail"
+        >
+          <i :class="isInviting ? 'fas fa-spinner fa-spin' : 'fas fa-paper-plane'"></i>
+          {{ isInviting ? t('members.inviting') : t('members.sendInvite') }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -172,6 +167,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import BaseModal from '../Modals/BaseModal.vue'
 import { useTranslations } from '../../composables/useTranslations'
 import type { OrganizationMember } from '../../types'
 
@@ -607,77 +603,6 @@ const goToRolesHelp = () => {
 
 .btn-danger:hover {
   background: var(--color-danger-dark);
-}
-
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--overlay-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: var(--color-bg-primary);
-  border-radius: 12px;
-  max-width: 500px;
-  width: 90%;
-  max-height: 90vh;
-  overflow: auto;
-  box-shadow: var(--shadow-modal);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  transition: background 0.2s ease;
-}
-
-.modal-close:hover {
-  background: var(--color-bg-secondary);
-}
-
-.modal-body {
-  padding: 1.5rem;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1.5rem;
-  border-top: 1px solid var(--color-border);
 }
 
 .form-group {

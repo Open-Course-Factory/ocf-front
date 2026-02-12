@@ -136,46 +136,43 @@
     </div>
 
     <!-- Change Plan Modal -->
-    <div v-if="showChangePlanModal" class="modal-overlay" @click="showChangePlanModal = false">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>{{ t('subscription.availablePlans') }}</h3>
-          <button class="modal-close" @click="showChangePlanModal = false">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="modal-body">
-          <p class="modal-description">{{ t('subscription.selectNewPlan') }}</p>
-          <div v-if="modalError" class="alert alert-danger">{{ modalError }}</div>
+    <BaseModal
+      :visible="showChangePlanModal"
+      :title="t('subscription.availablePlans')"
+      title-icon="fas fa-exchange-alt"
+      size="large"
+      @close="showChangePlanModal = false"
+    >
+      <p class="modal-description">{{ t('subscription.selectNewPlan') }}</p>
+      <div v-if="modalError" class="alert alert-danger">{{ modalError }}</div>
 
-          <div class="plans-list">
-            <div
-              v-for="plan in availablePlans"
-              :key="plan.id"
-              :class="['plan-option', { active: subscription?.subscription_plan_id === plan.id }]"
-              @click="selectPlan(plan)"
-            >
-              <div class="plan-header">
-                <h4>{{ plan.name }}</h4>
-                <div class="plan-price">
-                  {{ formatPrice(plan.price_amount, plan.currency) }}
-                  <span class="plan-period">
-                    / {{ plan.billing_interval === 'year' ? t('subscription.year') : t('subscription.month') }}
-                  </span>
-                </div>
-              </div>
-              <p v-if="plan.description" class="plan-description">{{ plan.description }}</p>
+      <div class="plans-list">
+        <div
+          v-for="plan in availablePlans"
+          :key="plan.id"
+          :class="['plan-option', { active: subscription?.subscription_plan_id === plan.id }]"
+          @click="selectPlan(plan)"
+        >
+          <div class="plan-header">
+            <h4>{{ plan.name }}</h4>
+            <div class="plan-price">
+              {{ formatPrice(plan.price_amount, plan.currency) }}
+              <span class="plan-period">
+                / {{ plan.billing_interval === 'year' ? t('subscription.year') : t('subscription.month') }}
+              </span>
             </div>
           </div>
+          <p v-if="plan.description" class="plan-description">{{ plan.description }}</p>
         </div>
       </div>
-    </div>
+    </BaseModal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import BaseModal from '../Modals/BaseModal.vue'
 import { useTranslations } from '../../composables/useTranslations'
 import type { OrganizationSubscription, SubscriptionPlan } from '../../types'
 
@@ -628,69 +625,6 @@ const formatLimit = (value: number): string => {
 
 .btn-outline-danger:hover {
   background: var(--color-danger-light);
-}
-
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--overlay-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: var(--color-bg-primary);
-  border-radius: 12px;
-  max-width: 800px;
-  width: 90%;
-  max-height: 90vh;
-  overflow: auto;
-  box-shadow: var(--shadow-modal);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  transition: background 0.2s ease;
-}
-
-.modal-close:hover {
-  background: var(--color-bg-secondary);
-}
-
-.modal-body {
-  padding: 1.5rem;
 }
 
 .modal-description {

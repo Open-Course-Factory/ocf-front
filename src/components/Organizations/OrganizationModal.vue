@@ -1,129 +1,122 @@
 <template>
-  <div v-if="isOpen" class="modal-overlay" @click.self="handleClose">
-    <div class="modal-container">
-      <div class="modal-header">
-        <h3>
-          <i :class="isEditMode ? 'fas fa-edit' : 'fas fa-plus'"></i>
-          {{ isEditMode ? t('organizations.editOrganization') : t('organizations.createOrganization') }}
-        </h3>
-        <button class="btn-close" @click="handleClose">
-          <i class="fas fa-times"></i>
-        </button>
+  <BaseModal
+    :visible="isOpen"
+    :title="isEditMode ? t('organizations.editOrganization') : t('organizations.createOrganization')"
+    :title-icon="isEditMode ? 'fas fa-edit' : 'fas fa-plus'"
+    size="medium"
+    @close="handleClose"
+  >
+    <form @submit.prevent="handleSubmit">
+      <!-- Name -->
+      <div class="form-group">
+        <label for="org-name">
+          {{ t('organizations.name') }}
+          <span class="required">*</span>
+        </label>
+        <input
+          id="org-name"
+          v-model="formData.name"
+          type="text"
+          class="form-control"
+          :placeholder="t('organizations.namePlaceholder')"
+          :disabled="isEditMode"
+          required
+        />
+        <small class="form-text">{{ t('organizations.nameHelp') }}</small>
       </div>
 
-      <div class="modal-body">
-        <form @submit.prevent="handleSubmit">
-          <!-- Name -->
-          <div class="form-group">
-            <label for="org-name">
-              {{ t('organizations.name') }}
-              <span class="required">*</span>
-            </label>
-            <input
-              id="org-name"
-              v-model="formData.name"
-              type="text"
-              class="form-control"
-              :placeholder="t('organizations.namePlaceholder')"
-              :disabled="isEditMode"
-              required
-            />
-            <small class="form-text">{{ t('organizations.nameHelp') }}</small>
-          </div>
-
-          <!-- Display Name -->
-          <div class="form-group">
-            <label for="org-display-name">
-              {{ t('organizations.displayName') }}
-              <span class="required">*</span>
-            </label>
-            <input
-              id="org-display-name"
-              v-model="formData.display_name"
-              type="text"
-              class="form-control"
-              :placeholder="t('organizations.displayNamePlaceholder')"
-              required
-            />
-          </div>
-
-          <!-- Description -->
-          <div class="form-group">
-            <label for="org-description">
-              {{ t('organizations.description') }}
-            </label>
-            <textarea
-              id="org-description"
-              v-model="formData.description"
-              class="form-control"
-              rows="3"
-              :placeholder="t('organizations.descriptionPlaceholder')"
-            ></textarea>
-          </div>
-
-          <!-- Max Groups -->
-          <div class="form-group">
-            <label for="org-max-groups">
-              {{ t('organizations.maxGroups') }}
-            </label>
-            <input
-              id="org-max-groups"
-              v-model.number="formData.max_groups"
-              type="number"
-              class="form-control"
-              min="1"
-              :placeholder="t('organizations.maxGroupsPlaceholder')"
-            />
-          </div>
-
-          <!-- Max Members -->
-          <div class="form-group">
-            <label for="org-max-members">
-              {{ t('organizations.maxMembers') }}
-            </label>
-            <input
-              id="org-max-members"
-              v-model.number="formData.max_members"
-              type="number"
-              class="form-control"
-              min="1"
-              :placeholder="t('organizations.maxMembersPlaceholder')"
-            />
-          </div>
-
-          <!-- Error Message -->
-          <div v-if="error" class="alert alert-danger">
-            <i class="fas fa-exclamation-circle"></i>
-            {{ error }}
-          </div>
-        </form>
+      <!-- Display Name -->
+      <div class="form-group">
+        <label for="org-display-name">
+          {{ t('organizations.displayName') }}
+          <span class="required">*</span>
+        </label>
+        <input
+          id="org-display-name"
+          v-model="formData.display_name"
+          type="text"
+          class="form-control"
+          :placeholder="t('organizations.displayNamePlaceholder')"
+          required
+        />
       </div>
 
-      <div class="modal-footer">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          @click="handleClose"
-          :disabled="isSubmitting"
-        >
-          {{ t('organizations.cancel') }}
-        </button>
-        <button
-          type="submit"
-          class="btn btn-primary"
-          @click="handleSubmit"
-          :disabled="isSubmitting || !isFormValid"
-        >
-          <i :class="isSubmitting ? 'fas fa-spinner fa-spin' : 'fas fa-save'"></i>
-          {{ isSubmitting ? t('organizations.saving') : t('organizations.save') }}
-        </button>
+      <!-- Description -->
+      <div class="form-group">
+        <label for="org-description">
+          {{ t('organizations.description') }}
+        </label>
+        <textarea
+          id="org-description"
+          v-model="formData.description"
+          class="form-control"
+          rows="3"
+          :placeholder="t('organizations.descriptionPlaceholder')"
+        ></textarea>
       </div>
-    </div>
-  </div>
+
+      <!-- Max Groups -->
+      <div class="form-group">
+        <label for="org-max-groups">
+          {{ t('organizations.maxGroups') }}
+        </label>
+        <input
+          id="org-max-groups"
+          v-model.number="formData.max_groups"
+          type="number"
+          class="form-control"
+          min="1"
+          :placeholder="t('organizations.maxGroupsPlaceholder')"
+        />
+      </div>
+
+      <!-- Max Members -->
+      <div class="form-group">
+        <label for="org-max-members">
+          {{ t('organizations.maxMembers') }}
+        </label>
+        <input
+          id="org-max-members"
+          v-model.number="formData.max_members"
+          type="number"
+          class="form-control"
+          min="1"
+          :placeholder="t('organizations.maxMembersPlaceholder')"
+        />
+      </div>
+
+      <!-- Error Message -->
+      <div v-if="error" class="alert alert-danger">
+        <i class="fas fa-exclamation-circle"></i>
+        {{ error }}
+      </div>
+    </form>
+
+    <template #footer>
+      <button
+        type="button"
+        class="btn btn-secondary"
+        @click="handleClose"
+        :disabled="isSubmitting"
+      >
+        {{ t('organizations.cancel') }}
+      </button>
+      <button
+        type="submit"
+        class="btn btn-primary"
+        @click="handleSubmit"
+        :disabled="isSubmitting || !isFormValid"
+      >
+        <i :class="isSubmitting ? 'fas fa-spinner fa-spin' : 'fas fa-save'"></i>
+        {{ isSubmitting ? t('organizations.saving') : t('organizations.save') }}
+      </button>
+    </template>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import BaseModal from '../Modals/BaseModal.vue'
 import { useTranslations } from '../../composables/useTranslations'
 import type { Organization, CreateOrganizationRequest, UpdateOrganizationRequest } from '../../types'
 
@@ -249,66 +242,6 @@ const handleSubmit = () => {
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--overlay-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-}
-
-.modal-container {
-  background: var(--color-bg-primary);
-  border-radius: 12px;
-  max-width: 600px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: var(--shadow-modal);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.btn-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: var(--color-text-secondary);
-  padding: 0.5rem;
-  transition: color 0.2s ease;
-}
-
-.btn-close:hover {
-  color: var(--color-text-primary);
-}
-
-.modal-body {
-  padding: 1.5rem;
-}
-
 .form-group {
   margin-bottom: 1.5rem;
 }
@@ -369,14 +302,6 @@ textarea.form-control {
   background: var(--color-danger-light);
   color: var(--color-danger);
   border: 1px solid var(--color-danger);
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1.5rem;
-  border-top: 1px solid var(--color-border);
 }
 
 .btn {
