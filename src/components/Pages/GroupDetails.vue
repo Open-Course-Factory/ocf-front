@@ -62,6 +62,8 @@ const { t } = useTranslations({
       displayName: 'Display Name',
       description: 'Description',
       owner: 'Owner',
+      organization: 'Organization',
+      noOrganization: 'No organization',
       parentGroup: 'Parent Group',
       subGroups: 'Subgroups',
       createdAt: 'Created',
@@ -171,6 +173,8 @@ const { t } = useTranslations({
       displayName: 'Nom d\'affichage',
       description: 'Description',
       owner: 'Propriétaire',
+      organization: 'Organisation',
+      noOrganization: 'Aucune organisation',
       parentGroup: 'Groupe parent',
       subGroups: 'Sous-groupes',
       createdAt: 'Créé',
@@ -349,7 +353,7 @@ const loadGroup = async () => {
       if (!groupId) return
 
       // Load group with parent and subgroups
-      const data = await groupStore.getOne(groupId, ['ParentGroup', 'SubGroups'])
+      const data = await groupStore.getOne(groupId, ['ParentGroup', 'SubGroups', 'Organization'])
       currentGroup.value = data
 
       // Load owner user information
@@ -638,6 +642,20 @@ watch(activeTab, (newTab) => {
               <span v-if="ownerUser.email" class="owner-email">({{ ownerUser.email }})</span>
             </p>
             <p v-else class="text-muted">{{ currentGroup.owner_user_id }}</p>
+          </div>
+          <div class="info-item">
+            <label>{{ t('groupDetails.organization') }}</label>
+            <p v-if="currentGroup.organization">
+              <router-link
+                :to="{ name: 'OrganizationDetail', params: { id: currentGroup.organization.id } }"
+                class="parent-group-link"
+              >
+                <i class="fas fa-building"></i>
+                {{ currentGroup.organization.display_name || currentGroup.organization.name }}
+                <i class="fas fa-external-link-alt"></i>
+              </router-link>
+            </p>
+            <p v-else class="text-muted">{{ t('groupDetails.noOrganization') }}</p>
           </div>
           <div class="info-item">
             <label>{{ t('groupDetails.parentGroup') }}</label>

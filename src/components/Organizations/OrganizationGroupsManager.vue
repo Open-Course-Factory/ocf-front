@@ -35,7 +35,8 @@
       <div
         v-for="group in sortedGroups"
         :key="group.id"
-        :class="['group-card', { 'is-child': group.parent_group_id }]"
+        :class="['group-card', 'group-card-clickable', { 'is-child': group.parent_group_id }]"
+        @click="navigateToGroup(group.id)"
       >
         <div class="group-info">
           <div class="group-icon">
@@ -96,6 +97,13 @@
           >
             {{ t('groups.active') }}
           </span>
+          <button
+            class="btn btn-view"
+            @click.stop="navigateToGroup(group.id)"
+            :title="t('groups.viewGroup')"
+          >
+            <i class="fas fa-arrow-right"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -111,6 +119,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
 import type { OrganizationGroup } from '../../types'
@@ -124,6 +133,8 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   maxGroups: 20
 })
+
+const router = useRouter()
 
 const { t } = useTranslations({
   en: {
@@ -142,7 +153,8 @@ const { t } = useTranslations({
       noGroupsDesc: 'Groups can be created via bulk import',
       active: 'Active',
       inactive: 'Inactive',
-      full: 'Full'
+      full: 'Full',
+      viewGroup: 'View details'
     }
   },
   fr: {
@@ -161,7 +173,8 @@ const { t } = useTranslations({
       noGroupsDesc: 'Les groupes peuvent être créés via l\'importation groupée',
       active: 'Actif',
       inactive: 'Inactif',
-      full: 'Complet'
+      full: 'Complet',
+      viewGroup: 'Voir les détails'
     }
   }
 })
@@ -210,6 +223,10 @@ const isExpired = (expiresAt?: string): boolean => {
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString)
   return date.toLocaleDateString()
+}
+
+const navigateToGroup = (groupId: string) => {
+  router.push({ name: 'GroupDetails', params: { id: groupId } })
 }
 </script>
 
@@ -456,5 +473,29 @@ const formatDate = (dateString: string): string => {
 
 .btn-primary:hover {
   background: var(--color-primary-dark);
+}
+
+.group-card-clickable {
+  cursor: pointer;
+}
+
+.btn-view {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-view:hover {
+  background: var(--color-primary);
+  color: white;
 }
 </style>
