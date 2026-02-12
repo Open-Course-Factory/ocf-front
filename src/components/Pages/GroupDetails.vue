@@ -33,6 +33,8 @@ import { withAsync } from '../../utils/asyncWrapper'
 import { formatDate, formatDateTime } from '../../utils/formatters'
 import { userService, type User } from '../../services/domain/user'
 import type { ClassGroup } from '../../types'
+import type { Organization } from '../../types/organization'
+import axios from 'axios'
 import BaseModal from '../Modals/BaseModal.vue'
 import EntityModal from '../Modals/EntityModal.vue'
 
@@ -272,6 +274,7 @@ const { t } = useTranslations({
 // State
 const currentGroup = ref<ClassGroup | null>(null)
 const ownerUser = ref<User | null>(null)
+const groupOrganization = ref<Organization | null>(null)
 const isLoading = ref(true)
 const error = ref('')
 // Initialize activeTab from URL query parameter
@@ -353,7 +356,7 @@ const loadGroup = async () => {
       if (!groupId) return
 
       // Load group with parent and subgroups
-      const data = await groupStore.getOne(groupId, ['ParentGroup', 'SubGroups', 'Organization'])
+      const data = await groupStore.getOne(groupId, ['ParentGroup', 'SubGroups'])
       currentGroup.value = data
 
       // Load owner user information
@@ -363,6 +366,17 @@ const loadGroup = async () => {
         } catch (err) {
           console.error('Failed to load owner user:', err)
           ownerUser.value = null
+        }
+      }
+
+      // Load organization information
+      if (data.organization_id) {
+        try {
+          const orgResponse = await axios.get(`/organizations/${data.organization_id}`)
+          groupOrganization.value = orgResponse.data
+        } catch (err) {
+          console.error('Failed to load organization:', err)
+          groupOrganization.value = null
         }
       }
 
@@ -645,16 +659,17 @@ watch(activeTab, (newTab) => {
           </div>
           <div class="info-item">
             <label>{{ t('groupDetails.organization') }}</label>
-            <p v-if="currentGroup.organization">
+            <p v-if="groupOrganization">
               <router-link
-                :to="{ name: 'OrganizationDetail', params: { id: currentGroup.organization.id } }"
+                :to="{ name: 'OrganizationDetail', params: { id: groupOrganization.id } }"
                 class="parent-group-link"
               >
                 <i class="fas fa-building"></i>
-                {{ currentGroup.organization.display_name || currentGroup.organization.name }}
+                {{ groupOrganization.display_name || groupOrganization.name }}
                 <i class="fas fa-external-link-alt"></i>
               </router-link>
             </p>
+            <p v-else-if="currentGroup.organization_id" class="text-muted">{{ currentGroup.organization_id }}</p>
             <p v-else class="text-muted">{{ t('groupDetails.noOrganization') }}</p>
           </div>
           <div class="info-item">

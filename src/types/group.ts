@@ -31,9 +31,6 @@ export interface ClassGroup extends BaseEntity {
   parentGroup?: ClassGroup // Backend uses camelCase
   sub_groups?: ClassGroup[] // Populated when ?includes=SubGroups
   subGroups?: ClassGroup[] // Backend uses camelCase
-
-  // Organization relationship (populated when ?includes=Organization)
-  organization?: { id: string; name: string; display_name: string }
 }
 
 /**
