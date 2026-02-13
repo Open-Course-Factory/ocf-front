@@ -268,7 +268,7 @@ import { useCurrentUserStore } from '../../stores/currentUser';
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const { showError } = useNotification();
+const { showError, showConfirm } = useNotification();
 
 // Ensure baseStore is initialized to load pagination translations
 useBaseStore();
@@ -957,6 +957,24 @@ async function addEntity(data: Record<string, string>) {
 
 async function deleteEntity(keyId: string) {
   try {
+    // Check for child entities and show cascade warning
+    const entity = props.entityStore.entities.find((e: any) => e.id === keyId);
+    if (entity && props.entityStore.subEntitiesStores?.size > 0) {
+      let childCount = 0;
+      for (const [subKey] of props.entityStore.subEntitiesStores) {
+        if (Array.isArray(entity[subKey])) {
+          childCount += entity[subKey].length;
+        }
+      }
+      if (childCount > 0) {
+        const confirmed = await showConfirm(
+          t('cascadeDeleteWarning', { count: childCount }),
+          t('cascadeDeleteTitle')
+        );
+        if (!confirmed) return;
+      }
+    }
+
     await axios.delete(`/${props.entityName}/${keyId}`);
     
     props.entityStore.entities = props.entityStore.entities.filter((entity: any) => entity.id !== keyId);

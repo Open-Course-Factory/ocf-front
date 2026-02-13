@@ -163,6 +163,7 @@
       @confirm="confirmDelete"
     >
       <p>{{ t('courseEditor.deleteWarning', { type: deletingNode?.data?.entityType || 'item', name: deletingNode?.data?.label || '' }) }}</p>
+      <p v-if="deleteChildCounts" class="cascade-warning">{{ deleteChildCounts }}</p>
     </BaseModal>
   </div>
 </template>
@@ -218,7 +219,8 @@ const { t } = useTranslations({
       createEntity: 'Create {type}',
       invalidConnection: 'Invalid connection: {source} cannot connect to {target}',
       moveSuccess: 'Entity moved successfully',
-      moveError: 'Failed to move entity'
+      moveError: 'Failed to move entity',
+      cascadeChildren: 'This will also delete {count} child entity(ies).'
     }
   },
   fr: {
@@ -252,7 +254,8 @@ const { t } = useTranslations({
       createEntity: 'Créer {type}',
       invalidConnection: 'Connexion invalide : {source} ne peut pas se connecter à {target}',
       moveSuccess: 'Entité déplacée avec succès',
-      moveError: 'Échec du déplacement de l\'entité'
+      moveError: 'Échec du déplacement de l\'entité',
+      cascadeChildren: 'Cela supprimera également {count} entité(s) enfant(s).'
     }
   }
 })
@@ -291,6 +294,31 @@ const editModalTitle = computed(() => {
   return editingEntity.value.isNew
     ? t('courseEditor.createEntity', { type })
     : t('courseEditor.editEntity', { type })
+})
+
+// Count child entities of the node being deleted
+const deleteChildCounts = computed(() => {
+  if (!deletingNode.value) return ''
+  const nodeData = deletingNode.value.data
+  let count = 0
+  const countChildren = (data: any, type: string) => {
+    const childKey = type === 'course' ? 'chapters' :
+                     type === 'chapter' ? 'sections' :
+                     type === 'section' ? 'pages' : null
+    if (!childKey || !data[childKey]) return
+    count += data[childKey].length
+    const childType = type === 'course' ? 'chapter' :
+                      type === 'chapter' ? 'section' :
+                      type === 'section' ? 'page' : null
+    if (childType) {
+      for (const child of data[childKey]) {
+        countChildren(child, childType)
+      }
+    }
+  }
+  countChildren(nodeData, nodeData.entityType)
+  if (count === 0) return ''
+  return t('courseEditor.cascadeChildren', { count: String(count) })
 })
 
 // Load all courses with full hierarchy
@@ -1473,5 +1501,14 @@ textarea.form-control {
   resize: vertical;
   min-height: 80px;
   font-family: inherit;
+}
+
+.cascade-warning {
+  color: var(--color-warning-text);
+  background: var(--color-warning-bg);
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
 }
 </style>

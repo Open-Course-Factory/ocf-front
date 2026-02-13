@@ -27,6 +27,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useCoursesStore } from '../../stores/courses'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import { useTranslations } from '../../composables/useTranslations'
+import { useNotification } from '../../composables/useNotification'
 import VersionSelector from '../Course/VersionSelector.vue'
 import HierarchicalContent from '../Course/HierarchicalContent.vue'
 import EntityModal from '../Modals/EntityModal.vue'
@@ -36,6 +37,7 @@ const route = useRoute()
 const router = useRouter()
 const courseStore = useCoursesStore()
 const currentUserStore = useCurrentUserStore()
+const notification = useNotification()
 
 const { t } = useTranslations({
     en: {
@@ -53,7 +55,9 @@ const { t } = useTranslations({
             noPagesInSection: 'No pages in this section',
             edit: 'Edit',
             updateSuccess: 'Course updated successfully',
-            deleteNotAllowed: 'You do not have permission to delete this course'
+            deleteNotAllowed: 'You do not have permission to delete this course',
+            cascadeWarning: 'This will also delete {chapters} chapter(s), {sections} section(s), and {pages} page(s). Continue?',
+            cascadeWarningTitle: 'Delete Course Version'
         }
     },
     fr: {
@@ -71,7 +75,9 @@ const { t } = useTranslations({
             noPagesInSection: 'Aucune page dans cette section',
             edit: 'Modifier',
             updateSuccess: 'Cours mis à jour avec succès',
-            deleteNotAllowed: 'Vous n\'avez pas la permission de supprimer ce cours'
+            deleteNotAllowed: 'Vous n\'avez pas la permission de supprimer ce cours',
+            cascadeWarning: 'Cela supprimera également {chapters} chapitre(s), {sections} section(s) et {pages} page(s). Continuer ?',
+            cascadeWarningTitle: 'Supprimer la version du cours'
         }
     }
 })
@@ -144,6 +150,31 @@ async function handleVersionChange(version: string) {
 
 async function handleDeleteVersion(courseId: string) {
     if (!currentCourse.value?.name) return
+
+    // Count child entities for cascade warning
+    const chapters = currentCourse.value.chapters || []
+    const chapterCount = chapters.length
+    let sectionCount = 0
+    let pageCount = 0
+    for (const chapter of chapters) {
+        const sections = chapter.sections || []
+        sectionCount += sections.length
+        for (const section of sections) {
+            pageCount += (section.pages || []).length
+        }
+    }
+
+    if (chapterCount > 0) {
+        const confirmed = await notification.showConfirm(
+            t('courseDetails.cascadeWarning', {
+                chapters: String(chapterCount),
+                sections: String(sectionCount),
+                pages: String(pageCount)
+            }),
+            t('courseDetails.cascadeWarningTitle')
+        )
+        if (!confirmed) return
+    }
 
     const success = await courseStore.deleteCourseVersion(courseId)
 
