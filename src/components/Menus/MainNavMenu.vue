@@ -193,6 +193,12 @@ const menuCategories = computed((): MenuCategory[] => [
         icon: 'fas fa-book'
       },
       {
+        route: '/course-editor',
+        label: t('navigation.courseEditor'),
+        title: t('navigation.courseEditorTitle'),
+        icon: 'fas fa-project-diagram'
+      },
+      {
         route: '/chapters',
         label: t('chapters.pageTitle'),
         title: t('chapters.pageTitle'),
