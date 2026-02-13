@@ -421,6 +421,12 @@ const menuCategories = computed((): MenuCategory[] => [
         label: t('navigation.featureFlags'),
         title: t('navigation.featureFlagsTitle'),
         icon: 'fas fa-flag'
+      },
+      {
+        route: '/debug/design-system',
+        label: t('navigation.designSystem'),
+        title: t('navigation.designSystemTitle'),
+        icon: 'fas fa-palette'
       }
     ]
   }
@@ -893,12 +899,12 @@ watch(() => route.path, () => {
 }
 
 .menu-category[data-category="admin"] .category-header:hover {
-  background: linear-gradient(135deg, var(--color-danger-hover) 0%, #bd2130 100%);
+  background: linear-gradient(135deg, var(--color-danger-hover) 0%, var(--color-danger-dark) 100%);
   transform: translateX(3px);
 }
 
 .menu-category[data-category="admin"] .category-header.active {
-  background: linear-gradient(135deg, #bd2130 0%, #a71e2a 100%);
+  background: linear-gradient(135deg, var(--color-danger-dark) 0%, var(--color-danger-darker) 100%);
 }
 
 .menu-category[data-category="admin"] .category-items {

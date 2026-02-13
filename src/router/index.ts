@@ -331,6 +331,12 @@ const basicRoutes = [
         component: () => import('../components/Debug/FeatureFlagsDebug.vue'),
         meta: { requiresAuth: true, requiresAdmin: true }
       },
+      {
+        path: 'debug/design-system',
+        name: 'DesignSystemAudit',
+        component: () => import('../components/Debug/DesignSystemAudit.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
 
       // Admin routes
       {

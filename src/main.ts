@@ -108,7 +108,9 @@ const i18n = createI18n({
                 myOrganizations: 'My Organizations',
                 myOrganizationsTitle: 'View and manage your organizations',
                 groupHierarchy: 'Group Hierarchy',
-                groupHierarchyTitle: 'Manage group hierarchy and relationships'
+                groupHierarchyTitle: 'Manage group hierarchy and relationships',
+                designSystem: 'Design System',
+                designSystemTitle: 'Visual audit of CSS variables and theme'
             }
          },
         fr: {
@@ -173,7 +175,9 @@ const i18n = createI18n({
                 myOrganizations: 'Mes Organisations',
                 myOrganizationsTitle: 'Voir et gérer vos organisations',
                 groupHierarchy: 'Hiérarchie des Groupes',
-                groupHierarchyTitle: 'Gérer la hiérarchie et les relations entre groupes'
+                groupHierarchyTitle: 'Gérer la hiérarchie et les relations entre groupes',
+                designSystem: 'Système de Design',
+                designSystemTitle: 'Audit visuel des variables CSS et du thème'
             }
         }
     }
