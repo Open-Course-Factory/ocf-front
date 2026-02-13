@@ -93,7 +93,7 @@ export function useFeatureFlags() {
    */
   const updateFlag = async (flagName: string, config: Partial<FeatureFlagConfig>) => {
     const actor = currentActorComputed.value
-    if (actor.role === 'administrator') {
+    if (actor.roles?.includes('administrator')) {
       await featureFlagService.updateFlag(flagName, config)
     } else {
       console.warn('🏴 Only administrators can update feature flags')
