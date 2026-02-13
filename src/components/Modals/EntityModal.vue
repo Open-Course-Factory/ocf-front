@@ -39,7 +39,7 @@
       <template v-for="[name, field] of entityStore.fieldList" :key="name">
         <div v-if="field.type != 'subentity' && ((!entity && field.toBeSet) || (entity && field.toBeEdited))" class="form-group">
           <!-- Label (not shown for checkbox - handled inside wrapper) -->
-          <label v-if="field.type !== 'checkbox'" :for="name">{{ field.label }}</label>
+          <label v-if="field.type !== 'checkbox'" :for="name">{{ field.label }}<span v-if="field.required" class="required-mark">*</span></label>
 
           <!-- Textarea -->
           <textarea
@@ -129,7 +129,7 @@
               v-model="data[name]"
               :class="['form-checkbox', { 'is-invalid': errors[name] }]"
             />
-            <label :for="name" class="checkbox-label">{{ field.label }}</label>
+            <label :for="name" class="checkbox-label">{{ field.label }}<span v-if="field.required" class="required-mark">*</span></label>
           </div>
 
           <!-- Text Input (default) -->
@@ -145,6 +145,7 @@
           </div>
         </div>
       </template>
+      <div v-if="hasRequiredFields" class="required-legend">{{ t('entityModal.requiredLegend') }}</div>
       <div v-if="entityStore.subEntitiesStores.size > 0" v-for="[name, store] of entityStore.subEntitiesStores" class="form-group">
         <template v-if="entityStore.fieldList.get(name).toBeSet">
           <label :for="name">{{ name }}</label>
@@ -164,7 +165,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, watch } from 'vue';
+import { reactive, watch, computed } from 'vue';
 import { Store } from 'pinia';
 import { useTranslations } from '../../composables/useTranslations';
 import BaseModal from './BaseModal.vue';
@@ -186,7 +187,8 @@ const { t } = useTranslations({
       searchPlaceholder: 'Search...',
       searching: 'Searching...',
       noResults: 'No results found',
-      loading: 'Loading...'
+      loading: 'Loading...',
+      requiredLegend: '* Required field'
     }
   },
   fr: {
@@ -205,7 +207,8 @@ const { t } = useTranslations({
       searchPlaceholder: 'Rechercher...',
       searching: 'Recherche en cours...',
       noResults: 'Aucun résultat trouvé',
-      loading: 'Chargement...'
+      loading: 'Chargement...',
+      requiredLegend: '* Champ obligatoire'
     }
   }
 });
@@ -232,6 +235,16 @@ const emit = defineEmits<{
   (e: 'modify', data: Record<string, string>): void;
   (e: 'close'): void;
 }>();
+
+const hasRequiredFields = computed(() => {
+  for (const [, field] of props.entityStore.fieldList) {
+    if (field.required && field.type !== 'subentity' &&
+        ((!props.entity && field.toBeSet) || (props.entity && field.toBeEdited))) {
+      return true
+    }
+  }
+  return false
+})
 
 prepareNeededField();
 
@@ -530,6 +543,18 @@ textarea {
   margin: 0;
   cursor: pointer;
   user-select: none;
+}
+
+/* Required field indicators */
+.required-mark {
+  color: var(--color-danger);
+  margin-left: var(--spacing-xs);
+}
+
+.required-legend {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-top: var(--spacing-sm);
 }
 
 /* Number input styles */
