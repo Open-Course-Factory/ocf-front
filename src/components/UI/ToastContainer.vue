@@ -95,7 +95,7 @@ function getIcon(type: string): string {
 
 .toast-success {
   background-color: var(--color-success);
-  border-left: var(--border-width-thick) solid #1e7e34;
+  border-left: var(--border-width-thick) solid var(--color-success-hover);
 }
 
 .toast-error {
@@ -115,7 +115,7 @@ function getIcon(type: string): string {
 
 .toast-info {
   background-color: var(--color-info);
-  border-left: var(--border-width-thick) solid #117a8b;
+  border-left: var(--border-width-thick) solid var(--color-info-hover);
 }
 
 /* Transition animations */

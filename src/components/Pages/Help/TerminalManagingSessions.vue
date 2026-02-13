@@ -545,8 +545,8 @@ onMounted(async () => {
 }
 
 .code-example pre {
-  background: #2d3748;
-  color: #e2e8f0;
+  background: var(--terminal-bg);
+  color: var(--terminal-fg);
   padding: 15px;
   border-radius: 6px;
   overflow-x: auto;

@@ -806,7 +806,7 @@ async function processCheckout() {
 
 .trial-info {
   background-color: var(--color-success-bg);
-  border: 1px solid #c8e6c9;
+  border: 1px solid var(--color-success-border);
   border-radius: 6px;
   padding: 15px;
   margin-top: 20px;
@@ -981,7 +981,7 @@ async function processCheckout() {
 
 .trial-notice {
   background-color: var(--color-success-bg);
-  border: 1px solid #c8e6c9;
+  border: 1px solid var(--color-success-border);
   border-radius: 6px;
   padding: 15px;
   margin-top: 20px;

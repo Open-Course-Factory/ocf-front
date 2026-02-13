@@ -5,8 +5,8 @@
     icon="📚"
     node-class="course-node"
     default-label="New Course"
-    border-color="#4A90E2"
-    background-color="#E8F0FB"
+    border-color="var(--course-node-course)"
+    background-color="var(--course-node-course-bg)"
     children-key="chapters"
     @edit="emit('edit', $event)"
     @delete="emit('delete', $event)"
@@ -55,7 +55,7 @@ const emit = defineEmits<{
 
 <style scoped>
 .course-node {
-  border-color: #4A90E2;
+  border-color: var(--course-node-course);
   min-width: 140px;
   max-width: 200px;
 }

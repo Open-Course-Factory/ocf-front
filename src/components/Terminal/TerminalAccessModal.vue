@@ -431,9 +431,9 @@ function getUserDisplayName(userId: string): string {
 }
 
 .read-badge {
-  background-color: #cce7ff;
-  color: #004085;
-  border: 1px solid #b3d7ff;
+  background-color: var(--color-info-bg);
+  color: var(--color-info-text);
+  border: 1px solid var(--color-info-border);
 }
 
 .write-badge {

@@ -291,7 +291,7 @@ const { t } = useTranslations({
   content: '';
   width: 4px;
   height: 28px;
-  background: linear-gradient(180deg, var(--color-primary), #f093fb);
+  background: linear-gradient(180deg, var(--color-primary), var(--color-purple));
   border-radius: 2px;
 }
 

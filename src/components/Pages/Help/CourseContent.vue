@@ -642,7 +642,7 @@ onMounted(async () => {
 }
 
 .coming-soon-badge {
-  background: linear-gradient(135deg, var(--color-warning) 0%, #fd7e14 100%);
+  background: linear-gradient(135deg, var(--color-warning) 0%, var(--color-orange) 100%);
   color: white;
   padding: 6px 12px;
   border-radius: 20px;

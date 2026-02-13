@@ -85,7 +85,7 @@ console.log('Route query:', route.query)
   align-items: center;
   justify-content: center;
   background-color: var(--color-bg-dark);
-  color: #d4d4d4;
+  color: var(--terminal-fg);
 }
 
 .error-content {
@@ -100,21 +100,21 @@ console.log('Route query:', route.query)
 }
 
 .error-content h2 {
-  color: #d4d4d4;
+  color: var(--terminal-fg);
   margin: 20px 0;
 }
 
 .error-content p {
-  color: #aaa;
+  color: var(--terminal-fg);
   margin: 10px 0;
   line-height: 1.5;
 }
 
 .error-content code {
-  background-color: #2d2d30;
+  background-color: var(--terminal-bg);
   padding: 4px 8px;
   border-radius: 4px;
-  color: #4fc3f7;
+  color: var(--color-info);
   font-family: monospace;
 }
 

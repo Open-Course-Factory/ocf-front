@@ -18,12 +18,15 @@
 
   /* Status Colors */
   --color-success: #28a745;
+  --color-success-hover: #1e7e34;
   --color-success-bg: #f0fdf4;
   --color-success-text: #155724;
   --color-success-border: #c3e6cb;
 
   --color-danger: #dc3545;
   --color-danger-hover: #c82333;
+  --color-danger-dark: #bd2130;
+  --color-danger-darker: #a71e2a;
   --color-danger-bg: #fff5f5;
   --color-danger-text: #721c24;
   --color-danger-border: #f5c6cb;
@@ -35,9 +38,16 @@
   --color-warning-border: #ffeeba;
 
   --color-info: #17a2b8;
+  --color-info-hover: #117a8b;
   --color-info-bg: #e6f7f9;
   --color-info-text: #0c5460;
   --color-info-border: #bee5eb;
+
+  /* Accent Colors */
+  --color-accent-coral: #ff6b6b;
+  --color-accent-coral-dark: #ee5a52;
+  --color-orange: #fd7e14;
+  --color-purple: #6366f1;
 
   /* Neutral Colors */
   --color-white: #ffffff;
@@ -65,6 +75,18 @@
   --color-bg-secondary: #f8f9fa;
   --color-bg-tertiary: #f1f3f5;
   --color-bg-dark: #343a40;
+
+  /* Surface Colors */
+  --color-surface: #ffffff;
+  --color-surface-hover: rgba(0, 0, 0, 0.05);
+  --color-surface-active: rgba(0, 0, 0, 0.1);
+  --color-surface-variant: rgba(0, 0, 0, 0.08);
+  --color-primary-bg: rgba(0, 123, 255, 0.1);
+
+  /* Sidebar Colors (always dark background with light text) */
+  --color-sidebar-bg: #3b3e47;
+  --color-sidebar-text: #e7e7e7;
+  --color-sidebar-text-muted: #c8d1d8;
 
   /* Border Colors */
   --color-border-light: #e0e0e0;
@@ -189,6 +211,16 @@
   --color-bg-tertiary: #3a3a3a;
   --color-bg-dark: #1a1a1a;
 
+  /* Surface colors - dark mode */
+  --color-surface: #2d2d2d;
+  --color-surface-hover: rgba(255, 255, 255, 0.05);
+  --color-surface-active: rgba(255, 255, 255, 0.1);
+  --color-surface-variant: rgba(255, 255, 255, 0.08);
+  --color-primary-bg: rgba(0, 123, 255, 0.15);
+
+  /* Sidebar - darker background, text stays light */
+  --color-sidebar-bg: #1a1a1a;
+
   --color-text-primary: #f5f5f5;
   --color-text-secondary: #d0d0d0;
   --color-text-muted: #a0a0a0;
@@ -208,11 +240,15 @@
   --color-gray-700: #6a6a6a;
   --color-gray-800: #4a4a4a;
 
-  /* Status colors - dark mode backgrounds */
+  /* Status colors - dark mode */
+  --color-success-hover: #2d8a4e;
   --color-success-bg: #1a3a2a;
   --color-success-text: #7dffb3;
   --color-success-border: #2d5a3d;
 
+  --color-danger-hover: #d63a4a;
+  --color-danger-dark: #c83040;
+  --color-danger-darker: #b82838;
   --color-danger-bg: #3a1a1a;
   --color-danger-text: #ffb3b3;
   --color-danger-border: #5a2d2d;
@@ -221,9 +257,16 @@
   --color-warning-text: #ffe066;
   --color-warning-border: #5a5a2d;
 
+  --color-info-hover: #1a8fa3;
   --color-info-bg: #1a2a3a;
   --color-info-text: #7dd3ff;
   --color-info-border: #2d3d5a;
+
+  /* Accent colors - dark mode */
+  --color-accent-coral: #ff8585;
+  --color-accent-coral-dark: #f06e66;
+  --color-orange: #ff9636;
+  --color-purple: #818cf8;
 
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
@@ -260,32 +303,33 @@
 }
 
 /* === DOMAIN-SPECIFIC COLORS === */
+:root {
+  /* Organization Type Colors - Personal (Blue) */
+  --color-org-personal: #3b82f6;
+  --color-org-personal-dark: #2563eb;
+  --color-org-personal-light: #60a5fa;
+  --color-org-personal-bg-subtle: rgba(59, 130, 246, 0.05);
+  --color-org-personal-bg: rgba(59, 130, 246, 0.1);
+  --color-org-personal-bg-emphasis: rgba(59, 130, 246, 0.15);
+  --color-org-personal-border: rgba(59, 130, 246, 0.3);
 
-/* Organization Type Colors - Personal (Blue) */
---color-org-personal: #3b82f6;
---color-org-personal-dark: #2563eb;
---color-org-personal-light: #60a5fa;
---color-org-personal-bg-subtle: rgba(59, 130, 246, 0.05);
---color-org-personal-bg: rgba(59, 130, 246, 0.1);
---color-org-personal-bg-emphasis: rgba(59, 130, 246, 0.15);
---color-org-personal-border: rgba(59, 130, 246, 0.3);
+  /* Organization Type Colors - Team (Green) */
+  --color-org-team: #10b981;
+  --color-org-team-dark: #059669;
+  --color-org-team-light: #34d399;
+  --color-org-team-bg-subtle: rgba(16, 185, 129, 0.05);
+  --color-org-team-bg: rgba(16, 185, 129, 0.1);
+  --color-org-team-bg-emphasis: rgba(16, 185, 129, 0.15);
+  --color-org-team-border: rgba(16, 185, 129, 0.3);
 
-/* Organization Type Colors - Team (Green) */
---color-org-team: #10b981;
---color-org-team-dark: #059669;
---color-org-team-light: #34d399;
---color-org-team-bg-subtle: rgba(16, 185, 129, 0.05);
---color-org-team-bg: rgba(16, 185, 129, 0.1);
---color-org-team-bg-emphasis: rgba(16, 185, 129, 0.15);
---color-org-team-border: rgba(16, 185, 129, 0.3);
-
-/* Warning Accent */
---color-warning-gold: #ffd700;
---color-warning-amber: #f59e0b;
---color-warning-amber-light: #fbbf24;
---color-warning-amber-shadow: rgba(245, 158, 11, 0.3);
---color-warning-amber-bg: rgba(245, 158, 11, 0.08);
---color-warning-amber-border: rgba(245, 158, 11, 0.3);
+  /* Warning Accent */
+  --color-warning-gold: #ffd700;
+  --color-warning-amber: #f59e0b;
+  --color-warning-amber-light: #fbbf24;
+  --color-warning-amber-shadow: rgba(245, 158, 11, 0.3);
+  --color-warning-amber-bg: rgba(245, 158, 11, 0.08);
+  --color-warning-amber-border: rgba(245, 158, 11, 0.3);
+}
 
 /* Course Editor Node Colors */
 :root {

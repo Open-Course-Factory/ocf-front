@@ -209,7 +209,7 @@ onUnmounted(() => {
   align-items: center;
   padding: 20px;
   border-bottom: 1px solid var(--color-gray-700);
-  background-color: #2c3136;
+  background-color: var(--color-sidebar-bg);
 }
 
 .settings-header h2 {

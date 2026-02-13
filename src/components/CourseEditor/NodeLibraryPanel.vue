@@ -173,23 +173,23 @@ const handleDragEnd = () => {
 }
 
 .node-preview.node-course {
-  border-color: #4A90E2;
-  background: #E8F0FB;
+  border-color: var(--course-node-course);
+  background: var(--course-node-course-bg);
 }
 
 .node-preview.node-chapter {
-  border-color: #7B68EE;
-  background: #EBE8F5;
+  border-color: var(--course-node-chapter);
+  background: var(--course-node-chapter-bg);
 }
 
 .node-preview.node-section {
-  border-color: #50C878;
-  background: #E6F5ED;
+  border-color: var(--course-node-section);
+  background: var(--course-node-section-bg);
 }
 
 .node-preview.node-page {
-  border-color: #FFA500;
-  background: var(--color-white)3E6;
+  border-color: var(--course-node-page);
+  background: var(--course-node-page-bg);
 }
 
 .node-icon {

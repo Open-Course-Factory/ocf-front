@@ -157,7 +157,7 @@ const settingsMenuItems = computed(() => [
   display: flex;
   align-items: center;
   padding: 15px;
-  color: #c8d1d8;
+  color: var(--color-sidebar-text-muted);
   text-decoration: none;
   transition: background-color 0.3s, transform 0.3s, color 0.3s;
   border-radius: 4px;

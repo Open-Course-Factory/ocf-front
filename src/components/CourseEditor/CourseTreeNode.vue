@@ -273,26 +273,26 @@ const handleMove = () => {
 /* Entity type colors */
 .tree-node-course > .node-header {
   font-weight: 600;
-  border-left: 3px solid #4A90E2;
-  background: #E8F0FB;
+  border-left: 3px solid var(--course-node-course);
+  background: var(--course-node-course-bg);
 }
 
 .tree-node-chapter > .node-header {
   font-weight: 500;
-  border-left: 3px solid #7B68EE;
-  background: #EBE8F5;
+  border-left: 3px solid var(--course-node-chapter);
+  background: var(--course-node-chapter-bg);
 }
 
 .tree-node-section > .node-header {
   font-weight: 400;
-  border-left: 3px solid #50C878;
-  background: #E6F5ED;
+  border-left: 3px solid var(--course-node-section);
+  background: var(--course-node-section-bg);
 }
 
 .tree-node-page > .node-header {
   font-weight: 400;
-  border-left: 3px solid #FFA500;
-  background: var(--color-white)3E6;
+  border-left: 3px solid var(--course-node-page);
+  background: var(--course-node-page-bg);
 }
 
 /* Dragging state */

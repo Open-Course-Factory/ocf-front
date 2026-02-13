@@ -311,7 +311,7 @@ const handleContentDoubleClick = (event: MouseEvent) => {
 }
 
 .new-badge {
-  background: #50C878;
+  background: var(--course-node-section);
 }
 
 .node-actions {
@@ -377,7 +377,7 @@ const handleContentDoubleClick = (event: MouseEvent) => {
 }
 
 .delete-btn:hover {
-  background: #fee;
+  background: var(--color-danger-bg);
   border-color: var(--color-danger);
 }
 </style>

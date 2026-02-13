@@ -467,7 +467,7 @@ onMounted(async () => {
 }
 
 .level-1 { border-color: var(--color-danger); }
-.level-2 { border-color: #fd7e14; }
+.level-2 { border-color: var(--color-orange); }
 .level-3 { border-color: var(--color-warning); }
 .level-4 { border-color: var(--color-success); }
 
@@ -484,7 +484,7 @@ onMounted(async () => {
 }
 
 .level-1 .level-icon { background: var(--color-danger); }
-.level-2 .level-icon { background: #fd7e14; }
+.level-2 .level-icon { background: var(--color-orange); }
 .level-3 .level-icon { background: var(--color-warning); }
 .level-4 .level-icon { background: var(--color-success); }
 

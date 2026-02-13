@@ -1171,14 +1171,14 @@ const handleSelectTree = (nodeData: any) => {
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  background: var(--color-success, #50C878);
+  background: var(--color-success);
   color: white;
   transition: all 0.2s;
   white-space: nowrap;
 }
 
 .btn-create:hover {
-  background: #45b369;
+  background: var(--color-success-hover);
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }

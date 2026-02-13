@@ -5,8 +5,8 @@
     icon="📄"
     node-class="section-node"
     default-label="New Section"
-    border-color="#50C878"
-    background-color="#E6F5ED"
+    border-color="var(--course-node-section)"
+    background-color="var(--course-node-section-bg)"
     children-key="pages"
     @edit="emit('edit', $event)"
     @delete="emit('delete', $event)"
@@ -55,7 +55,7 @@ const emit = defineEmits<{
 
 <style scoped>
 .section-node {
-  border-color: #50C878;
+  border-color: var(--course-node-section);
   min-width: 120px;
   max-width: 170px;
 }

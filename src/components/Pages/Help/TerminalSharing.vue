@@ -596,7 +596,7 @@ onMounted(async () => {
 
 .access-card.readwrite {
   background: var(--color-success-bg);
-  border-color: #4caf50;
+  border-color: var(--color-success);
 }
 
 .access-icon {
@@ -610,7 +610,7 @@ onMounted(async () => {
 
 .access-card.readwrite .access-icon i {
   font-size: 2rem;
-  color: #388e3c;
+  color: var(--color-success-text);
 }
 
 .access-content h4 {

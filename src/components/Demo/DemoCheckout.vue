@@ -215,7 +215,7 @@ async function simulateError() {
 }
 
 .demo-badge {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+  background: linear-gradient(135deg, var(--color-accent-coral) 0%, var(--color-accent-coral-dark) 100%);
   color: white;
   padding: 8px 16px;
   border-radius: 20px;
@@ -305,7 +305,7 @@ async function simulateError() {
 }
 
 .btn-success {
-  background: linear-gradient(135deg, var(--color-success) 0%, #20c997 100%);
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-hover) 100%);
   color: white;
 }
 

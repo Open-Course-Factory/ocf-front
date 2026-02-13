@@ -510,17 +510,17 @@ const { t } = useTranslations({
 
 .level-icon.platform {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.15) 100%);
-  color: #6366f1;
+  color: var(--color-purple);
 }
 
 .level-icon.organization {
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(96, 165, 250, 0.15) 100%);
-  color: #3b82f6;
+  color: var(--color-org-personal);
 }
 
 .level-icon.group {
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(52, 211, 153, 0.15) 100%);
-  color: #10b981;
+  color: var(--color-org-team);
 }
 
 .level-content h3 {
@@ -676,19 +676,19 @@ const { t } = useTranslations({
 }
 
 .owner-header {
-  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+  background: linear-gradient(135deg, var(--color-warning-amber) 0%, var(--color-warning-amber-light) 100%);
 }
 
 .admin-header {
-  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  background: linear-gradient(135deg, var(--color-org-personal) 0%, var(--color-org-personal-light) 100%);
 }
 
 .assistant-header {
-  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  background: linear-gradient(135deg, var(--color-org-team) 0%, var(--color-org-team-light) 100%);
 }
 
 .member-header {
-  background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-gray-500) 100%);
 }
 
 .role-desc-header h3 {
@@ -734,7 +734,7 @@ const { t } = useTranslations({
 
 .admin-notice i {
   font-size: 2.5rem;
-  color: #dc2626;
+  color: var(--color-danger);
   flex-shrink: 0;
 }
 
@@ -746,7 +746,7 @@ const { t } = useTranslations({
 }
 
 .admin-notice strong {
-  color: #dc2626;
+  color: var(--color-danger);
   font-weight: 600;
   font-size: 1rem;
 }

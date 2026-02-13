@@ -5,8 +5,8 @@
     icon="📖"
     node-class="chapter-node"
     default-label="New Chapter"
-    border-color="#7B68EE"
-    background-color="#EBE8F5"
+    border-color="var(--course-node-chapter)"
+    background-color="var(--course-node-chapter-bg)"
     children-key="sections"
     @edit="emit('edit', $event)"
     @delete="emit('delete', $event)"
@@ -55,7 +55,7 @@ const emit = defineEmits<{
 
 <style scoped>
 .chapter-node {
-  border-color: #7B68EE;
+  border-color: var(--course-node-chapter);
   min-width: 130px;
   max-width: 180px;
 }

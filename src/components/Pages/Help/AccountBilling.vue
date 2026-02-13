@@ -935,8 +935,8 @@ onMounted(async () => {
 }
 
 .issue-card.suspension .issue-header {
-  background: #e2e3e5;
-  color: #383d41;
+  background: var(--color-gray-200);
+  color: var(--color-text-primary);
 }
 
 .issue-header i {

@@ -261,7 +261,7 @@ const handleDrop = (event: DragEvent) => {
 
 .tree-node.dragging-over > .tree-node-header {
   background: var(--color-primary-bg, rgba(66, 153, 225, 0.1));
-  border: 2px dashed var(--color-primary, #4299e1);
+  border: 2px dashed var(--color-primary);
 }
 
 .tree-expand-icon {

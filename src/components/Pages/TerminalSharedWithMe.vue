@@ -564,7 +564,7 @@ async function discardTerminal(terminalId: string) {
 }
 
 .shared-terminal .card-header {
-  background-color: #e1f5fe;
+  background-color: var(--color-info-bg);
 }
 
 /* Styles pour les terminaux inactifs */
@@ -669,9 +669,9 @@ async function discardTerminal(terminalId: string) {
 }
 
 .read-badge {
-  background-color: #cce7ff;
-  color: #004085;
-  border: 1px solid #b3d7ff;
+  background-color: var(--color-info-bg);
+  color: var(--color-info-text);
+  border: 1px solid var(--color-info-border);
 }
 
 .write-badge {
@@ -687,9 +687,9 @@ async function discardTerminal(terminalId: string) {
 }
 
 .owner-badge {
-  background-color: #e2e3e5;
-  color: #383d41;
-  border: 1px solid #d6d8db;
+  background-color: var(--color-gray-200);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-light);
 }
 
 .access-note {

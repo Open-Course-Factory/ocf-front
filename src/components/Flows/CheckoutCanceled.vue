@@ -200,7 +200,7 @@ function retryCheckout() {
 <style scoped>
 .checkout-canceled {
   min-height: 100vh;
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+  background: linear-gradient(135deg, var(--color-accent-coral) 0%, var(--color-accent-coral-dark) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -367,8 +367,8 @@ function retryCheckout() {
 }
 
 .security-card {
-  background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
-  border: 1px solid #b3d9ff;
+  background: linear-gradient(135deg, var(--color-info-bg) 0%, var(--color-info-bg) 100%);
+  border: 1px solid var(--color-info-border);
   border-radius: 12px;
   padding: 20px;
   display: flex;

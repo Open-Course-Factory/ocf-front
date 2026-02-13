@@ -46,7 +46,7 @@ function hideBanner() {
   left: 0;
   right: 0;
   z-index: var(--z-index-modal);
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+  background: linear-gradient(135deg, var(--color-accent-coral) 0%, var(--color-accent-coral-dark) 100%);
   color: var(--color-white);
   padding: var(--spacing-sm) var(--spacing-lg);
   box-shadow: var(--shadow-md);

@@ -464,7 +464,7 @@ const getInvoiceStats = computed(() => {
 .text-warning { color: var(--color-warning-text) !important; background-color: var(--color-warning-bg); }
 .text-danger { color: var(--color-danger-text) !important; background-color: var(--color-danger-bg); }
 .text-muted { color: var(--color-gray-600) !important; background-color: var(--color-gray-50); }
-.text-secondary { color: var(--color-gray-600) !important; background-color: #e2e3e5; }
+.text-secondary { color: var(--color-gray-600) !important; background-color: var(--color-gray-200); }
 
 .overdue-warning {
     color: var(--color-danger);

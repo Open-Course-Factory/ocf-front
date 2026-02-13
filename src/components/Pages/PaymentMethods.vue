@@ -206,7 +206,7 @@ const addPaymentMethod = async () => {
 
 .info-banner {
     background-color: var(--color-success-bg);
-    border: 1px solid #c8e6c9;
+    border: 1px solid var(--color-success-border);
     border-radius: 4px;
     padding: 15px;
     margin-bottom: 20px;
@@ -331,7 +331,7 @@ const addPaymentMethod = async () => {
 
 .expiry-warning {
     margin-top: 5px;
-    color: #ffeb3b;
+    color: var(--color-warning);
     display: flex;
     align-items: center;
     gap: 5px;

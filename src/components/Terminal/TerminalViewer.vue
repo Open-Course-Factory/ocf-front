@@ -742,9 +742,9 @@ defineExpose({
    ======================================== */
 .terminal-wrapper {
   min-height: 500px;
-  background-color: #1e1e1e;
+  background-color: var(--terminal-bg);
   position: relative;
-  border: var(--border-width-medium) solid #333;
+  border: var(--border-width-medium) solid var(--terminal-border);
   border-radius: var(--border-radius-md);
   overflow: hidden;
 }

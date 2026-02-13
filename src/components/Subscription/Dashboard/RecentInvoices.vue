@@ -153,7 +153,7 @@ function formatDate(dateString: string) {
 }
 
 .invoice-item:hover {
-  background: #f0f0f0;
+  background: var(--color-gray-100);
 }
 
 .invoice-header {

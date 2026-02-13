@@ -222,7 +222,7 @@ async function returnToDashboard() {
 }
 
 .demo-badge {
-  background: linear-gradient(135deg, var(--color-info) 0%, #138496 100%);
+  background: linear-gradient(135deg, var(--color-info) 0%, var(--color-info-hover) 100%);
   color: white;
   padding: 8px 16px;
   border-radius: 20px;

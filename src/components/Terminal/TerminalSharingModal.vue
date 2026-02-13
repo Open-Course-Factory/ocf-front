@@ -510,7 +510,7 @@ function getStatusClass(status: string) {
 
 .form-control:focus {
   outline: 0;
-  border-color: #80bdff;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 

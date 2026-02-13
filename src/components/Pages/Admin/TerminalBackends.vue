@@ -921,8 +921,8 @@ onBeforeUnmount(() => {
 }
 
 .type-badge.type-personal {
-  background-color: var(--color-info-bg, #e8f4fd);
-  color: var(--color-info-text, #1a73e8);
+  background-color: var(--color-info-bg);
+  color: var(--color-info-text);
 }
 
 .type-badge.type-team {
