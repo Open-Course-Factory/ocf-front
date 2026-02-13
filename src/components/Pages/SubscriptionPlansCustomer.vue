@@ -14,7 +14,7 @@
           <i class="fas fa-credit-card"></i>
           {{ t('subscriptionPlans.pageTitle') }}
         </h1>
-        <p class="page-description">Choose the perfect plan for your needs</p>
+        <p class="page-description">{{ t('plans.pageDescription') }}</p>
       </div>
 
       <!-- Loading State -->
@@ -29,7 +29,7 @@
         <p class="error-message">{{ entityStore.error }}</p>
         <button class="btn btn-primary" @click="loadPlans">
           <i class="fas fa-sync"></i>
-          Retry
+          {{ t('plans.retry') }}
         </button>
       </div>
 
@@ -43,7 +43,7 @@
           <!-- Coming Soon Badge -->
           <div v-if="!plan.is_active" class="coming-soon-badge">
             <i class="fas fa-clock"></i>
-            Coming Soon
+            {{ t('plans.comingSoon') }}
           </div>
 
           <!-- Plan Header with Status -->
@@ -52,7 +52,7 @@
               <h3 class="plan-name-compact">{{ plan.name }}</h3>
               <div v-if="isCurrentPlan(plan)" class="current-badge">
                 <i class="fas fa-check-circle"></i>
-                Current
+                {{ t('plans.current') }}
               </div>
             </div>
             <div v-if="plan.is_active" class="plan-price-compact">
@@ -69,7 +69,7 @@
                 <!-- Machine Size -->
                 <div v-if="plan.allowed_machine_sizes && plan.allowed_machine_sizes.length > 0" class="feature-item">
                   <i class="fas fa-server"></i>
-                  <span>{{ plan.allowed_machine_sizes.join(', ') }} machine(s)</span>
+                  <span>{{ plan.allowed_machine_sizes.join(', ') }} {{ t('plans.machines') }}</span>
                 </div>
 
                 <!-- Session Duration -->
@@ -81,7 +81,7 @@
                 <!-- Concurrent Terminals -->
                 <div v-if="plan.max_concurrent_terminals" class="feature-item">
                   <i class="fas fa-terminal"></i>
-                  <span>{{ plan.max_concurrent_terminals }} {{ plan.max_concurrent_terminals === 1 ? 'terminal' : 'terminals' }}</span>
+                  <span>{{ plan.max_concurrent_terminals }} {{ plan.max_concurrent_terminals === 1 ? t('plans.terminal') : t('plans.terminals') }}</span>
                 </div>
 
                 <!-- Storage -->
@@ -93,7 +93,7 @@
                 <!-- Network Access -->
                 <div class="feature-item">
                   <i class="fas fa-network-wired"></i>
-                  <span>{{ plan.network_access_enabled ? 'Outbound network' : 'No network access' }}</span>
+                  <span>{{ plan.network_access_enabled ? t('plans.outboundNetwork') : t('plans.noNetworkAccess') }}</span>
                 </div>
               </div>
             </div>
@@ -114,7 +114,7 @@
 
               <div v-else class="current-plan-indicator">
                 <i class="fas fa-check-circle"></i>
-                <span>Active Plan</span>
+                <span>{{ t('plans.activePlan') }}</span>
               </div>
             </div>
           </div>
@@ -123,17 +123,17 @@
           <div v-if="hasBulkPurchaseFeature(plan)" class="bulk-purchase-section">
             <div class="bulk-header">
               <i class="fas fa-layer-group"></i>
-              <span>Volume Pricing Available</span>
+              <span>{{ t('plans.volumePricing') }}</span>
             </div>
             <p class="bulk-description">
-              Purchase multiple licenses and save with volume discounts. Perfect for classes and teams.
+              {{ t('plans.volumeDescription') }}
             </p>
             <button
               class="btn-bulk-purchase"
               @click="navigateToBulkPurchase(plan.id)"
             >
               <i class="fas fa-shopping-cart"></i>
-              View Bulk Pricing
+              {{ t('plans.viewBulkPricing') }}
             </button>
           </div>
 
@@ -146,7 +146,7 @@
           <div v-if="plan.planned_features && plan.planned_features.length > 0" class="planned-features-section">
             <div class="planned-features-header">
               <i class="fas fa-clock"></i>
-              <span>Coming Soon</span>
+              <span>{{ t('plans.comingSoon') }}</span>
             </div>
             <ul class="planned-features-list">
               <li v-for="(feature, index) in plan.planned_features" :key="index" class="planned-feature-item">
@@ -160,8 +160,8 @@
       <!-- No Plans Available -->
       <div v-else class="no-plans-container">
         <i class="fas fa-inbox fa-3x"></i>
-        <h3>No subscription plans available</h3>
-        <p>Please check back later or contact support.</p>
+        <h3>{{ t('plans.noPlansTitle') }}</h3>
+        <p>{{ t('plans.noPlansDescription') }}</p>
       </div>
 
     </div>
@@ -172,11 +172,85 @@
 import { computed, onMounted, ref } from 'vue'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
-import { useI18n } from 'vue-i18n'
+import { useTranslations } from '../../composables/useTranslations'
 import router from '../../router/index'
 import { useNotification } from '../../composables/useNotification'
 
-const { t } = useI18n()
+const { t } = useTranslations({
+  en: {
+    plans: {
+      pageDescription: 'Choose the perfect plan for your needs',
+      retry: 'Retry',
+      comingSoon: 'Coming Soon',
+      current: 'Current',
+      activePlan: 'Active Plan',
+      noPlansTitle: 'No subscription plans available',
+      noPlansDescription: 'Please check back later or contact support.',
+      startTrial: 'Start Trial',
+      subscribe: 'Subscribe',
+      changePlan: 'Change Plan',
+      machines: 'machine(s)',
+      terminal: 'terminal',
+      terminals: 'terminals',
+      hourMax: '{hours} hour max | {hours} hours max',
+      oneHourMax: '1 hour max',
+      hoursMax: '{hours} hours max',
+      ephemeralOnly: 'Ephemeral only',
+      storageGb: '{gb}GB storage',
+      outboundNetwork: 'Outbound network',
+      noNetworkAccess: 'No network access',
+      volumePricing: 'Volume Pricing Available',
+      volumeDescription: 'Purchase multiple licenses and save with volume discounts. Perfect for classes and teams.',
+      viewBulkPricing: 'View Bulk Pricing',
+      cannotDowngradeTitle: 'Cannot Downgrade',
+      startPersonalSub: 'Start Personal Subscription',
+      switchToFreePlan: 'Switch to Free Plan',
+      switchToFreeConfirm: 'To switch to the free plan, we need to cancel your current subscription.\n\nYour current subscription will be cancelled immediately and you\'ll be switched to the free plan.\n\nDo you want to continue?',
+      switchedToFreeSuccess: 'Successfully switched to free plan!',
+      freeActivationError: 'There was an issue activating the free plan. Please try again or contact support.',
+      activationErrorTitle: 'Activation Error',
+      upgradeFromFree: 'Upgrade from Free Plan',
+      upgradeFromFreeConfirm: 'You\'re about to upgrade from the free plan to {plan}.\n\nYour free plan will be replaced when you complete checkout.\n\nDo you want to continue?',
+      subscriptionErrorTitle: 'Subscription Error'
+    }
+  },
+  fr: {
+    plans: {
+      pageDescription: 'Choisissez le plan parfait pour vos besoins',
+      retry: 'Réessayer',
+      comingSoon: 'Bientôt disponible',
+      current: 'Actuel',
+      activePlan: 'Plan actif',
+      noPlansTitle: 'Aucun plan d\'abonnement disponible',
+      noPlansDescription: 'Veuillez vérifier plus tard ou contacter le support.',
+      startTrial: 'Essai gratuit',
+      subscribe: 'S\'abonner',
+      changePlan: 'Changer de plan',
+      machines: 'machine(s)',
+      terminal: 'terminal',
+      terminals: 'terminaux',
+      oneHourMax: '1 heure max',
+      hoursMax: '{hours} heures max',
+      ephemeralOnly: 'Éphémère uniquement',
+      storageGb: '{gb} Go de stockage',
+      outboundNetwork: 'Réseau sortant',
+      noNetworkAccess: 'Pas d\'accès réseau',
+      volumePricing: 'Tarification en volume disponible',
+      volumeDescription: 'Achetez plusieurs licences et économisez avec des remises en volume. Idéal pour les classes et les équipes.',
+      viewBulkPricing: 'Voir les tarifs en volume',
+      cannotDowngradeTitle: 'Impossible de rétrograder',
+      startPersonalSub: 'Démarrer un abonnement personnel',
+      switchToFreePlan: 'Passer au plan gratuit',
+      switchToFreeConfirm: 'Pour passer au plan gratuit, nous devons annuler votre abonnement actuel.\n\nVotre abonnement actuel sera annulé immédiatement et vous serez basculé sur le plan gratuit.\n\nVoulez-vous continuer ?',
+      switchedToFreeSuccess: 'Passage au plan gratuit réussi !',
+      freeActivationError: 'Un problème est survenu lors de l\'activation du plan gratuit. Veuillez réessayer ou contacter le support.',
+      activationErrorTitle: 'Erreur d\'activation',
+      upgradeFromFree: 'Passer à un plan supérieur',
+      upgradeFromFreeConfirm: 'Vous êtes sur le point de passer du plan gratuit à {plan}.\n\nVotre plan gratuit sera remplacé une fois le paiement effectué.\n\nVoulez-vous continuer ?',
+      subscriptionErrorTitle: 'Erreur d\'abonnement'
+    }
+  }
+})
 const { showSuccess, showError, showConfirm } = useNotification()
 
 // Stores
@@ -231,16 +305,16 @@ const isCurrentPlan = (plan: any) => {
 const getPlanButtonText = (plan: any) => {
   // Check if plan is inactive (coming soon)
   if (!plan.is_active) {
-    return 'Coming Soon'
+    return t('plans.comingSoon')
   }
 
   if (!hasCurrentSubscription.value) {
-    return plan.trial_days > 0 ? 'Start Trial' : 'Subscribe'
+    return plan.trial_days > 0 ? t('plans.startTrial') : t('plans.subscribe')
   }
 
   const currentPlan = filteredPlans.value.find((p: any) => isCurrentPlan(p))
   if (!currentPlan) {
-    return 'Change Plan'
+    return t('plans.changePlan')
   }
 
   // Compare prices to determine if it's an upgrade or downgrade
@@ -249,21 +323,21 @@ const getPlanButtonText = (plan: any) => {
   } else if (plan.price_amount < currentPlan.price_amount) {
     return t('subscriptionPlans.downgrade')
   } else {
-    return 'Change Plan'
+    return t('plans.changePlan')
   }
 }
 
 // Format helper functions for new fields
 function formatSessionDuration(minutes: number): string {
   const hours = minutes / 60
-  return hours === 1 ? '1 hour max' : `${hours} hours max`
+  return hours === 1 ? t('plans.oneHourMax') : t('plans.hoursMax', { hours })
 }
 
 function formatStorage(plan: any): string {
   if (!plan.data_persistence_enabled) {
-    return 'Ephemeral only'
+    return t('plans.ephemeralOnly')
   }
-  return `${plan.data_persistence_gb}GB storage`
+  return t('plans.storageGb', { gb: plan.data_persistence_gb })
 }
 
 // Methods
@@ -346,7 +420,7 @@ async function selectPlan(plan: any) {
         if (isDowngrade && !canActivateFreeTrial) {
           showError(
             t('subscriptionPlans.cannotDowngradeFromAssigned'),
-            'Cannot Downgrade'
+            t('plans.cannotDowngradeTitle')
           )
           isSubscribing.value = false
           return
@@ -359,7 +433,7 @@ async function selectPlan(plan: any) {
 
           const confirmed = await showConfirm(
             message,
-            'Start Personal Subscription'
+            t('plans.startPersonalSub')
           )
 
           if (!confirmed) {
@@ -372,10 +446,8 @@ async function selectPlan(plan: any) {
       // Special case: downgrade to free plan requires cancellation first
       if (plan.price_amount === 0) {
         const confirmed = await showConfirm(
-          `To switch to the free plan, we need to cancel your current subscription.\n\n` +
-          `Your current subscription will be cancelled immediately and you'll be switched to the free plan.\n\n` +
-          `Do you want to continue?`,
-          'Switch to Free Plan'
+          t('plans.switchToFreeConfirm'),
+          t('plans.switchToFreePlan')
         )
 
         if (!confirmed) {
@@ -406,7 +478,7 @@ async function selectPlan(plan: any) {
         )
 
         if (response?.free_plan) {
-          showSuccess('Successfully switched to free plan!')
+          showSuccess(t('plans.switchedToFreeSuccess'))
           // Reload to show the new free subscription
           await checkCurrentSubscription()
           await loadPlans()
@@ -414,7 +486,7 @@ async function selectPlan(plan: any) {
         } else {
           // If no free_plan flag but no error, something went wrong
           console.error('Unexpected response:', response)
-          showError('There was an issue activating the free plan. Please try again or contact support.', 'Activation Error')
+          showError(t('plans.freeActivationError'), t('plans.activationErrorTitle'))
         }
       }
 
@@ -422,10 +494,8 @@ async function selectPlan(plan: any) {
       // This is a new subscription, not an upgrade
       if (isCurrentlyOnFreePlan && plan.price_amount > 0) {
         const confirmed = await showConfirm(
-          `You're about to upgrade from the free plan to ${plan.name}.\n\n` +
-          `Your free plan will be replaced when you complete checkout.\n\n` +
-          `Do you want to continue?`,
-          'Upgrade from Free Plan'
+          t('plans.upgradeFromFreeConfirm', { plan: plan.name }),
+          t('plans.upgradeFromFree')
         )
 
         if (!confirmed) {
@@ -449,7 +519,7 @@ async function selectPlan(plan: any) {
       const confirmed = await showConfirm(
         `${t('subscriptions.changePlanWarning')}\n\n` +
         `${t('subscriptions.prorationAlwaysInvoiceDesc')}`,
-        'Change Plan'
+        t('plans.changePlan')
       )
 
       if (!confirmed) {
@@ -497,7 +567,7 @@ async function selectPlan(plan: any) {
     console.error('Error selecting plan:', error)
     // Show error from store (already formatted with translations)
     if (subscriptionsStore.error) {
-      showError(subscriptionsStore.error, 'Subscription Error')
+      showError(subscriptionsStore.error, t('plans.subscriptionErrorTitle'))
     }
   } finally {
     isSubscribing.value = false
