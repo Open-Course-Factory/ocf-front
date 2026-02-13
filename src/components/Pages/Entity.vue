@@ -925,7 +925,16 @@ async function addEntity(data: Record<string, string>) {
   try {
     // Exécuter le hook beforeCreate si défini
     const processedData = await props.entityStore.executeBeforeCreateHook?.(data) || data;
-    
+
+    // Inject active parent filter values into creation data
+    if (props.entityStore.parentEntitiesStores?.size > 0) {
+      for (const [filterKey] of props.entityStore.parentEntitiesStores) {
+        if (activeFilters[filterKey] && !processedData[filterKey]) {
+          processedData[filterKey] = activeFilters[filterKey];
+        }
+      }
+    }
+
     const response = await axios.post(`/${props.entityName}`, processedData);
     
     const newEntity = response.data;

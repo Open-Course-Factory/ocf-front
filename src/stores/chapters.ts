@@ -69,7 +69,7 @@ export const useChaptersStore = defineStore('chapters', () => {
 
     const fieldList = buildFieldList([
         field('id', t('chapters.id')).input().hidden().readonly(),
-        field('courseIDs', t('chapters.courses')).type('multi-select').hidden().readonly(),
+        field('courseIDs', t('chapters.courses')).type('multi-select').hidden().creatable(),
         field('title', t('chapters.title')).input().visible().editable(),
         field('introduction', t('chapters.introduction')).input().visible().editable(),
         field('footer', t('chapters.footer')).input().visible().editable(),

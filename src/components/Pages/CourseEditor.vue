@@ -761,6 +761,15 @@ const getChildPrefix = (entityType: string): string | null => {
   return childMap[entityType] || null
 }
 
+const getParentFieldName = (entityType: string): string | null => {
+  const parentFieldMap: Record<string, string> = {
+    'chapter': 'courseIDs',
+    'section': 'chapterId',
+    'page': 'sectionId'
+  }
+  return parentFieldMap[entityType] || null
+}
+
 // Modal handlers
 const openEditModal = (node: any) => {
   editingEntity.value = {
@@ -792,7 +801,7 @@ const handleSaveEntity = async () => {
   modalError.value = ''
 
   try {
-    const entityData = {
+    const entityData: Record<string, any> = {
       title: editingEntity.value.title,
       name: editingEntity.value.name,
       version: editingEntity.value.version,
@@ -807,8 +816,30 @@ const handleSaveEntity = async () => {
     console.log('Entity type:', entityType, 'isNew:', editingEntity.value.isNew)
 
     if (editingEntity.value.isNew) {
-      // Create new entity
+      // Create new entity - inject parent ID from graph edges
       console.log('Creating new entity...')
+      const nodeId = editingEntity.value.nodeId
+      if (entityType !== 'course') {
+        // Find incoming edge to determine parent
+        const incomingEdge = edges.value.find(e => e.target === nodeId)
+        if (incomingEdge) {
+          const sourceNode = nodes.value.find(n => n.id === incomingEdge.source)
+          if (sourceNode?.data?.entityId) {
+            const parentField = getParentFieldName(entityType)
+            if (parentField) {
+              entityData[parentField] = sourceNode.data.entityId
+            }
+          }
+        }
+        // Also inject courseId from current course as fallback
+        if (currentCourse.value?.id && !entityData.courseId && entityType !== 'course') {
+          entityData.courseId = currentCourse.value.id
+          if (entityType === 'chapter') {
+            entityData.courseIDs = currentCourse.value.id
+          }
+        }
+      }
+
       switch (entityType) {
         case 'course':
           result = await coursesStore.createEntity('/courses', entityData)
