@@ -195,6 +195,7 @@ const { t } = useTranslations({
       saveError: 'Failed to save changes',
       loadError: 'Failed to load course',
       nodesCreated: 'Course loaded into canvas',
+      courseCreated: 'Course created successfully',
       // Modal
       saveEntity: 'Save',
       cancel: 'Cancel',
@@ -225,6 +226,7 @@ const { t } = useTranslations({
       saveError: 'Échec de l\'enregistrement',
       loadError: 'Échec du chargement du cours',
       nodesCreated: 'Cours chargé dans le canevas',
+      courseCreated: 'Cours créé avec succès',
       // Modal
       saveEntity: 'Enregistrer',
       cancel: 'Annuler',
@@ -614,8 +616,19 @@ const handleCreateNew = () => {
   currentCourse.value = null
   nodes.value = []
   edges.value = []
-  // TODO: Open modal to create new course
-  console.log('Create new course - opening modal...')
+  editingEntity.value = {
+    nodeId: null,
+    entityId: null,
+    entityType: 'course',
+    title: '',
+    name: '',
+    version: '1.0',
+    content: '',
+    description: '',
+    isNew: true
+  }
+  showEditModal.value = true
+  modalError.value = ''
 }
 
 // Drag handlers
@@ -880,18 +893,34 @@ const handleSaveEntity = async () => {
 
     console.log('Save successful, result:', result)
 
-    // Update node in canvas
-    const nodeIndex = nodes.value.findIndex(n => n.id === editingEntity.value.nodeId)
-    if (nodeIndex !== -1) {
-      nodes.value[nodeIndex].data = {
-        ...nodes.value[nodeIndex].data,
-        label: editingEntity.value.title,
-        title: editingEntity.value.title,
-        name: editingEntity.value.name,
-        version: editingEntity.value.version,
-        content: editingEntity.value.content,
-        description: editingEntity.value.description,
-        isNew: false
+    // Handle newly created course: load it into the editor
+    if (editingEntity.value.isNew && entityType === 'course' && result) {
+      const newCourseId = result.id || result.data?.id
+      if (newCourseId) {
+        selectedCourseId.value = newCourseId
+        const courseData = await coursesStore.fetchCourseById(newCourseId)
+        if (courseData) {
+          currentCourse.value = courseData
+          convertCourseToNodes(courseData)
+          router.replace({ query: { courseId: newCourseId } })
+        }
+        // Reload courses list
+        await coursesStore.loadEntities('/courses?include=chapters.sections.pages')
+      }
+    } else {
+      // Update node in canvas
+      const nodeIndex = nodes.value.findIndex(n => n.id === editingEntity.value.nodeId)
+      if (nodeIndex !== -1) {
+        nodes.value[nodeIndex].data = {
+          ...nodes.value[nodeIndex].data,
+          label: editingEntity.value.title,
+          title: editingEntity.value.title,
+          name: editingEntity.value.name,
+          version: editingEntity.value.version,
+          content: editingEntity.value.content,
+          description: editingEntity.value.description,
+          isNew: false
+        }
       }
     }
 
