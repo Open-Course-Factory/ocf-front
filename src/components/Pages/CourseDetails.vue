@@ -25,6 +25,7 @@
 import { useRoute, useRouter } from 'vue-router'
 import { ref, computed, onMounted } from 'vue'
 import { useCoursesStore } from '../../stores/courses'
+import { useCurrentUserStore } from '../../stores/currentUser'
 import { useTranslations } from '../../composables/useTranslations'
 import VersionSelector from '../Course/VersionSelector.vue'
 import HierarchicalContent from '../Course/HierarchicalContent.vue'
@@ -34,6 +35,7 @@ import type { Course } from '../../types/entities'
 const route = useRoute()
 const router = useRouter()
 const courseStore = useCoursesStore()
+const currentUserStore = useCurrentUserStore()
 
 const { t } = useTranslations({
     en: {
@@ -50,7 +52,8 @@ const { t } = useTranslations({
             noSectionsInChapter: 'No sections in this chapter',
             noPagesInSection: 'No pages in this section',
             edit: 'Edit',
-            updateSuccess: 'Course updated successfully'
+            updateSuccess: 'Course updated successfully',
+            deleteNotAllowed: 'You do not have permission to delete this course'
         }
     },
     fr: {
@@ -67,7 +70,8 @@ const { t } = useTranslations({
             noSectionsInChapter: 'Aucune section dans ce chapitre',
             noPagesInSection: 'Aucune page dans cette section',
             edit: 'Modifier',
-            updateSuccess: 'Cours mis à jour avec succès'
+            updateSuccess: 'Cours mis à jour avec succès',
+            deleteNotAllowed: 'Vous n\'avez pas la permission de supprimer ce cours'
         }
     }
 })
@@ -161,9 +165,12 @@ async function handleDeleteVersion(courseId: string) {
 
 // Computed property to check if current user can delete the course
 const canDeleteCourse = computed(() => {
-    // TODO: Add proper permission check based on user ownership
-    // For now, allow deletion if we have a current course
-    return !!currentCourse.value
+    if (!currentCourse.value) return false
+    if (currentUserStore.hasPermission('delete_courses')) return true
+    const isOwnerByEmail = currentCourse.value.author_email === currentUserStore.userEmail
+    const isOwnerById = currentCourse.value.user_id === currentUserStore.userId ||
+                        currentCourse.value.owner_id === currentUserStore.userId
+    return isOwnerByEmail || isOwnerById
 })
 </script>
 
