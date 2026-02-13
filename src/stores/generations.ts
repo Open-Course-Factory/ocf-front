@@ -28,6 +28,7 @@ import { useCoursesStore } from "./courses";
 import { ref } from 'vue';
 import { nextTick } from 'vue';
 import axios from 'axios';
+import { ElNotification } from 'element-plus';
 import { field, buildFieldList } from '../utils/fieldBuilder';
 
 export const useGenerationsStore = defineStore('generations', () => {
@@ -36,6 +37,7 @@ export const useGenerationsStore = defineStore('generations', () => {
 
     // État pour le polling des statuts
     const pollingIntervals = ref(new Map<string, NodeJS.Timeout>());
+    const previousStatuses = new Map<string, string>();
 
     const { t } = useStoreTranslations({
         en: {
@@ -63,6 +65,10 @@ export const useGenerationsStore = defineStore('generations', () => {
                 completed: 'Completed',
                 failed: 'Failed',
                 pending: 'Pending',
+                notifyCompleted: 'Generation completed successfully',
+                notifyCompletedTitle: 'Generation Complete',
+                notifyFailed: 'Generation failed',
+                notifyFailedTitle: 'Generation Error',
             }
         },
         fr: {
@@ -90,6 +96,10 @@ export const useGenerationsStore = defineStore('generations', () => {
                 completed: 'Terminé',
                 failed: 'Échec',
                 pending: 'En attente',
+                notifyCompleted: 'Génération terminée avec succès',
+                notifyCompletedTitle: 'Génération terminée',
+                notifyFailed: 'La génération a échoué',
+                notifyFailedTitle: 'Erreur de génération',
             }
         }
     })
@@ -214,7 +224,29 @@ export const useGenerationsStore = defineStore('generations', () => {
                 } else {
                     console.warn(`[Polling] Génération ${generationId} non trouvée dans le store`);
                 }
-                
+
+                // Detect status transitions and fire notifications
+                const prevStatus = previousStatuses.get(generationId);
+                const newStatus = statusData.status?.toLowerCase();
+                if (prevStatus && prevStatus !== newStatus) {
+                    if (newStatus === 'completed') {
+                        ElNotification({
+                            title: t('generations.notifyCompletedTitle'),
+                            message: t('generations.notifyCompleted'),
+                            type: 'success',
+                            duration: 5000,
+                        });
+                    } else if (['failed', 'client_error', 'tunnel_error'].includes(newStatus)) {
+                        ElNotification({
+                            title: t('generations.notifyFailedTitle'),
+                            message: statusData.error_message || t('generations.notifyFailed'),
+                            type: 'error',
+                            duration: 0, // persistent
+                        });
+                    }
+                }
+                previousStatuses.set(generationId, newStatus);
+
                 return statusData;
             }
         } catch (error: any) {

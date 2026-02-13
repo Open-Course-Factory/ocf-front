@@ -96,6 +96,7 @@ import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useGenerationsStore } from '../../stores/generations';
 import Modal from '../Modals/BaseModal.vue';
 import { useTranslations } from '../../composables/useTranslations';
+import { useNotification } from '../../composables/useNotification';
 import axios from 'axios';
 
 const props = defineProps<{
@@ -109,7 +110,8 @@ const { t } = useTranslations({
       errorDetails: 'Error details:',
       statusCheckError: 'Unable to check generation status',
       downloadError: 'Unable to download generated files',
-      retryError: 'Unable to restart generation'
+      retryError: 'Unable to restart generation',
+      retryStarted: 'Generation restarted successfully'
     }
   },
   fr: {
@@ -118,12 +120,14 @@ const { t } = useTranslations({
       errorDetails: 'Détails de l\'erreur :',
       statusCheckError: 'Impossible de vérifier le statut de la génération',
       downloadError: 'Impossible de télécharger les fichiers générés',
-      retryError: 'Impossible de relancer la génération'
+      retryError: 'Impossible de relancer la génération',
+      retryStarted: 'Génération relancée avec succès'
     }
   }
 });
 
 const generationsStore = useGenerationsStore();
+const notification = useNotification();
 
 onMounted(() => {
   // Start polling if generation is in progress
@@ -248,6 +252,7 @@ const retryGeneration = async () => {
     // Démarrer le polling pour suivre la nouvelle génération
     if (response.status === 202) {
       generationsStore.startStatusPolling(props.entity.id);
+      notification.showInfo(t('generationActions.retryStarted'));
     }
   } catch (error) {
     console.error('Erreur lors du retry:', error);
