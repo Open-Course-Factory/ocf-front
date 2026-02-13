@@ -26,6 +26,7 @@
 
 import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import i18nInstance from '../i18n'
 
 /**
  * Translation messages organized by locale
@@ -38,6 +39,8 @@ export interface TranslationMessages {
 
 /**
  * Register translations and return the translation function
+ *
+ * Must be called inside a Vue component's setup() function.
  *
  * @param messages - Translation messages organized by locale
  * @param immediate - If true, register translations immediately instead of in onMounted (default: false)
@@ -72,7 +75,8 @@ export function useTranslations(messages: TranslationMessages, immediate: boolea
 }
 
 /**
- * Simplified version for store usage (registers immediately)
+ * Simplified version for store usage - uses the global i18n instance directly
+ * so it can be called outside of a Vue component's setup() context.
  *
  * @example
  * import { useStoreTranslations } from '../composables/useTranslations'
@@ -83,5 +87,17 @@ export function useTranslations(messages: TranslationMessages, immediate: boolea
  * })
  */
 export function useStoreTranslations(messages: TranslationMessages) {
-  return useTranslations(messages, true)
+  const global = i18nInstance.global
+
+  // Register translations immediately using the global i18n instance
+  Object.entries(messages).forEach(([localeKey, translations]) => {
+    global.mergeLocaleMessage(localeKey, translations)
+  })
+
+  return {
+    t: global.t,
+    te: global.te,
+    locale: global.locale,
+    i18n: global
+  }
 }
