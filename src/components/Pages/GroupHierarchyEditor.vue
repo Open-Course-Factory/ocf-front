@@ -182,11 +182,12 @@
       title-icon="fas fa-exclamation-triangle"
       size="small"
       :show-default-footer="true"
-      :confirm-text="t('hierarchyEditor.delete')"
+      :confirm-text="isDeleting ? t('hierarchyEditor.deleting') : t('hierarchyEditor.delete')"
       confirm-icon="fas fa-trash"
       :cancel-text="t('hierarchyEditor.cancel')"
       cancel-icon="fas fa-ban"
       confirm-variant="danger"
+      :loading="isDeleting"
       @close="showDeleteConfirm = false"
       @confirm="confirmDelete"
     >
@@ -205,6 +206,7 @@ import { usePermissionsStore } from '../../stores/permissions'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useTranslations } from '../../composables/useTranslations'
 import { useTreeExpand } from '../../composables/useTreeExpand'
+import { useToast } from '../../composables/useToast'
 import TreeNode from '../Common/TreeNode.vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import type { Organization, OrganizationGroup } from '../../types'
@@ -213,6 +215,7 @@ const router = useRouter()
 const organizationsStore = useOrganizationsStore()
 const permissionsStore = usePermissionsStore()
 const { isAdmin, shouldFilterAsStandardUser } = useAdminViewMode()
+const toast = useToast()
 
 const { t } = useTranslations({
   en: {
@@ -240,6 +243,9 @@ const { t } = useTranslations({
       moveSuccess: 'Group moved successfully',
       errorDelete: 'Failed to delete group',
       errorMove: 'Failed to move group',
+      cannotMoveOrg: 'Organizations cannot be moved',
+      errorLoadGroups: 'Failed to load groups',
+      deleting: 'Deleting...',
       directMembersTooltip: 'Direct members of this group',
       totalMembersTooltip: 'Total members including all subgroups'
     }
@@ -269,6 +275,9 @@ const { t } = useTranslations({
       moveSuccess: 'Groupe déplacé avec succès',
       errorDelete: 'Échec de la suppression du groupe',
       errorMove: 'Échec du déplacement du groupe',
+      cannotMoveOrg: 'Les organisations ne peuvent pas être déplacées',
+      errorLoadGroups: 'Échec du chargement des groupes',
+      deleting: 'Suppression...',
       directMembersTooltip: 'Membres directs de ce groupe',
       totalMembersTooltip: 'Total des membres incluant tous les sous-groupes'
     }
@@ -281,6 +290,7 @@ type TreeNode = Organization | OrganizationGroup
 // State
 const isLoading = ref(false)
 const showDeleteConfirm = ref(false)
+const isDeleting = ref(false)
 const deletingGroup = ref<OrganizationGroup | null>(null)
 const organizationGroups = ref<Map<string, OrganizationGroup[]>>(new Map())
 const searchQuery = ref('')
@@ -418,7 +428,7 @@ const loadOrganizationGroups = async (organizationId: string) => {
     })
     organizationGroups.value.set(organizationId, response.data)
   } catch (err) {
-    console.error(`Failed to load groups for organization ${organizationId}:`, err)
+    toast.error(t('hierarchyEditor.errorLoadGroups'))
     organizationGroups.value.set(organizationId, [])
   }
 }
@@ -472,26 +482,29 @@ const handleDeleteGroup = (group: OrganizationGroup) => {
 const confirmDelete = async () => {
   if (!deletingGroup.value) return
 
+  isDeleting.value = true
   try {
     const orgId = deletingGroup.value.organization_id
     await axios.delete(`/organizations/${orgId}/groups/${deletingGroup.value.id}`)
     await loadOrganizationGroups(orgId)
+    toast.success(t('hierarchyEditor.deleteSuccess'))
     showDeleteConfirm.value = false
     deletingGroup.value = null
   } catch (err) {
-    console.error('Failed to delete group:', err)
+    toast.error(t('hierarchyEditor.errorDelete'))
+  } finally {
+    isDeleting.value = false
   }
 }
 
-const handleDragStart = (payload: { entity: TreeNode; level: number }) => {
-  // Store the dragged item for later
-  console.log('Drag start:', payload.entity.display_name || payload.entity.name)
+const handleDragStart = (_payload: { entity: TreeNode; level: number }) => {
+  // Drag start handled by TreeNode component
 }
 
 const handleDrop = async (payload: { entity: TreeNode; target: TreeNode }) => {
   // Only allow dropping groups onto groups or organizations
   if (isOrganization(payload.entity)) {
-    console.warn('Cannot move organizations')
+    toast.warning(t('hierarchyEditor.cannotMoveOrg'))
     return
   }
 
@@ -517,8 +530,9 @@ const handleDrop = async (payload: { entity: TreeNode; target: TreeNode }) => {
 
     // Expand the target to show the moved group
     treeExpand.expand(payload.target.id)
+    toast.success(t('hierarchyEditor.moveSuccess'))
   } catch (err) {
-    console.error('Failed to move group:', err)
+    toast.error(t('hierarchyEditor.errorMove'))
   }
 }
 
