@@ -341,102 +341,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.help-article {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.help-nav {
-  margin-bottom: 30px;
-}
-
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--color-primary);
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.3s ease;
-}
-
-.back-link:hover {
-  color: var(--color-primary-hover);
-}
-
-.article-header {
-  text-align: center;
-  margin-bottom: 40px;
-  padding-bottom: 30px;
-  border-bottom: 2px solid var(--color-gray-200);
-}
-
-.article-header h1 {
-  color: var(--color-text-primary);
-  font-size: 2.5rem;
-  margin: 0 0 15px 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
-}
-
-.article-header h1 i {
-  color: var(--color-primary);
-}
-
-.article-description {
-  color: var(--color-gray-600);
-  font-size: 1.2rem;
-  margin: 0;
-}
-
-.article-content {
-  line-height: 1.6;
-}
-
-.help-section {
-  margin-bottom: 40px;
-  background: var(--color-bg-primary);
-  padding: 30px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.help-section.info {
-  background: linear-gradient(135deg, var(--color-info-bg) 0%, var(--color-info-border) 100%);
-  border-left: 4px solid var(--color-info);
-}
-
-.help-section h2 {
-  color: var(--color-text-primary);
-  margin: 0 0 20px 0;
-  font-size: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.help-section h2 i {
-  color: var(--color-primary);
-}
-
-.help-section.info h2 i {
-  color: var(--color-info);
-}
-
-.help-section h3 {
-  color: var(--color-text-primary);
-  margin: 25px 0 15px 0;
-  font-size: 1.2rem;
-}
-
-.help-section p {
-  color: var(--color-text-secondary);
-  margin-bottom: 15px;
-}
-
 .hierarchy-diagram {
   display: flex;
   flex-direction: column;
@@ -540,35 +444,6 @@ onMounted(async () => {
   background: var(--color-gray-50);
   border-radius: 8px;
   border-left: 4px solid var(--color-primary);
-}
-
-.step-number {
-  background: var(--color-primary);
-  color: white;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 1.2rem;
-  flex-shrink: 0;
-}
-
-.step-content {
-  flex-grow: 1;
-}
-
-.step-content h4 {
-  margin: 0 0 10px 0;
-  color: var(--color-text-primary);
-  font-size: 1.1rem;
-}
-
-.step-content p {
-  margin: 0 0 15px 0;
-  color: var(--color-text-secondary);
 }
 
 .practices-grid {
@@ -693,99 +568,17 @@ onMounted(async () => {
   margin: 0;
 }
 
-.next-steps {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-  margin-top: 20px;
-}
-
-.next-step-card {
-  display: block;
-  padding: 20px;
-  background: var(--color-bg-primary);
-  border: 2px solid var(--color-gray-200);
-  border-radius: 8px;
-  text-decoration: none;
-  color: inherit;
-  transition: all 0.3s ease;
-  text-align: center;
-}
-
-.next-step-card:hover:not(.disabled) {
-  border-color: var(--color-primary);
-  transform: translateY(-5px);
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
-}
-
 .next-step-card.disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.next-step-card i {
-  font-size: 2rem;
-  color: var(--color-primary);
-  margin-bottom: 15px;
 }
 
 .next-step-card.disabled i {
   color: var(--color-gray-600);
 }
 
-.next-step-card h4 {
-  margin: 0 0 10px 0;
-  color: var(--color-text-primary);
-  font-size: 1.1rem;
-}
-
-.next-step-card p {
-  margin: 0;
-  color: var(--color-gray-600);
-  font-size: 0.9rem;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  text-decoration: none;
-  border-radius: 6px;
-  transition: all 0.3s ease;
-  border: none;
-  cursor: pointer;
-}
-
-.btn-outline {
-  background-color: transparent;
-  color: var(--color-primary);
-  border: 2px solid var(--color-primary);
-}
-
-.btn-outline:hover {
-  background-color: var(--color-primary);
-  color: white;
-}
-
 /* Responsive */
 @media (max-width: 768px) {
-  .help-article {
-    padding: 10px;
-  }
-
-  .article-header h1 {
-    font-size: 2rem;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .help-section {
-    padding: 20px;
-  }
-
   .level-card {
     flex-direction: column;
     text-align: center;

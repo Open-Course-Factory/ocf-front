@@ -299,24 +299,6 @@ onMounted(async () => {
   padding: 2rem;
 }
 
-.help-nav {
-  margin-bottom: 30px;
-}
-
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--color-primary);
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.3s ease;
-}
-
-.back-link:hover {
-  color: var(--color-primary-hover);
-}
-
 .help-header {
   text-align: center;
   margin-bottom: 3rem;
