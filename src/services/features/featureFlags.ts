@@ -462,8 +462,8 @@ export class FeatureFlagService {
       console.log('🏴 Usage limits synced:', response.data)
       return response.data
     } catch (error: any) {
-      console.error('Failed to sync usage limits:', error)
-      throw error
+      // Non-critical: don't throw, the flag toggle already succeeded
+      console.warn('Failed to sync usage limits (non-critical):', error.response?.status || error.message)
     }
   }
 
