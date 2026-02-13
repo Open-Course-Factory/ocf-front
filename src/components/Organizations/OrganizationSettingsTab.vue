@@ -63,6 +63,24 @@
     </div>
   </div>
 
+  <!-- Delete Organization Confirmation Modal -->
+  <BaseModal
+    :visible="showDeleteConfirm"
+    :title="t('settings.deleteOrganization')"
+    title-icon="fas fa-trash"
+    size="small"
+    showDefaultFooter
+    :confirmText="t('settings.confirmDeleteBtn')"
+    confirmIcon="fas fa-trash"
+    :cancelText="t('settings.cancel')"
+    :isLoading="isDeleting"
+    :loadingText="t('settings.deleting')"
+    @close="showDeleteConfirm = false"
+    @confirm="deleteOrganization"
+  >
+    <p>{{ t('settings.deleteWarning') }}</p>
+  </BaseModal>
+
   <!-- Convert to Team Confirmation Modal -->
   <BaseModal
     :visible="isConvertModalOpen"
@@ -154,6 +172,9 @@ const convertSuccess = ref('')
 const convertError = ref('')
 const newOrgName = ref('')
 
+const showDeleteConfirm = ref(false)
+const isDeleting = ref(false)
+
 const isConvertFormValid = computed(() => {
   return newOrgName.value.trim().length >= 3
 })
@@ -184,9 +205,11 @@ const { t } = useTranslations({
       convertToTeamSuccess: 'Organization successfully converted to team!',
       convertToTeamError: 'Failed to convert organization to team',
       dangerZone: 'Danger Zone',
-      deleteWarning: 'Deleting an organization is permanent and cannot be undone.',
+      deleteWarning: 'Deleting an organization is permanent and cannot be undone. All members, groups, and data will be lost.',
       deleteOrganization: 'Delete Organization',
       deleteOwnerOnly: 'Only organization owners can delete the organization.',
+      confirmDeleteBtn: 'Delete permanently',
+      deleting: 'Deleting organization...',
     }
   },
   fr: {
@@ -214,9 +237,11 @@ const { t } = useTranslations({
       convertToTeamSuccess: 'Organisation convertie en équipe avec succès !',
       convertToTeamError: 'Échec de la conversion de l\'organisation en équipe',
       dangerZone: 'Zone dangereuse',
-      deleteWarning: 'La suppression d\'une organisation est permanente et ne peut pas être annulée.',
+      deleteWarning: 'La suppression d\'une organisation est permanente et ne peut pas être annulée. Tous les membres, groupes et données seront perdus.',
       deleteOrganization: 'Supprimer l\'organisation',
       deleteOwnerOnly: 'Seuls les propriétaires de l\'organisation peuvent la supprimer.',
+      confirmDeleteBtn: 'Supprimer définitivement',
+      deleting: 'Suppression de l\'organisation...',
     }
   }
 })
@@ -263,18 +288,20 @@ const handleConvertToTeam = async () => {
 }
 
 const confirmDelete = () => {
-  if (confirm(t('settings.deleteWarning'))) {
-    deleteOrganization()
-  }
+  showDeleteConfirm.value = true
 }
 
 const deleteOrganization = async () => {
+  isDeleting.value = true
   try {
     await organizationsStore.deleteOrganization(props.organizationId)
+    showDeleteConfirm.value = false
     emit('deleted')
   } catch (err: any) {
-    // Let parent handle navigation; surface error via console
+    showDeleteConfirm.value = false
     console.error('Failed to delete organization:', err)
+  } finally {
+    isDeleting.value = false
   }
 }
 </script>

@@ -158,6 +158,27 @@
       </button>
     </div>
 
+    <!-- Remove Member Confirmation Modal -->
+    <BaseModal
+      :visible="showRemoveConfirm"
+      :title="t('members.removeMember')"
+      title-icon="fas fa-user-times"
+      size="small"
+      showDefaultFooter
+      :confirmText="t('members.confirmRemoveBtn')"
+      confirmIcon="fas fa-trash"
+      :cancelText="t('members.cancel')"
+      :isLoading="isRemoving"
+      :loadingText="t('members.removing')"
+      @close="closeRemoveConfirm"
+      @confirm="removeMember"
+    >
+      <p>{{ t('members.confirmRemove') }}</p>
+      <p v-if="memberToRemove" class="member-to-remove">
+        <strong>{{ memberToRemove.user?.display_name || memberToRemove.user?.email }}</strong>
+      </p>
+    </BaseModal>
+
     <!-- Invite Member Modal -->
     <BaseModal
       :visible="showInviteModal"
@@ -218,6 +239,7 @@ import BaseModal from '../Modals/BaseModal.vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useFormatters } from '../../composables/useFormatters'
 import { useClientPagination } from '../../composables/useClientPagination'
+import { useToast } from '../../composables/useToast'
 import type { OrganizationMember } from '../../types'
 
 interface Props {
@@ -233,6 +255,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const router = useRouter()
 const { formatDate } = useFormatters()
+const toast = useToast()
 
 const { t } = useTranslations({
   en: {
@@ -258,6 +281,8 @@ const { t } = useTranslations({
       sendInvite: 'Send Invite',
       inviting: 'Inviting...',
       confirmRemove: 'Are you sure you want to remove this member from the organization?',
+      confirmRemoveBtn: 'Remove',
+      removing: 'Removing member...',
       roleUpdated: 'Member role updated successfully',
       memberRemoved: 'Member removed successfully',
       memberInvited: 'Member invited successfully',
@@ -292,6 +317,8 @@ const { t } = useTranslations({
       sendInvite: 'Envoyer l\'invitation',
       inviting: 'Invitation en cours...',
       confirmRemove: 'Êtes-vous sûr de vouloir retirer ce membre de l\'organisation ?',
+      confirmRemoveBtn: 'Retirer',
+      removing: 'Retrait du membre...',
       roleUpdated: 'Rôle du membre mis à jour avec succès',
       memberRemoved: 'Membre retiré avec succès',
       memberInvited: 'Membre invité avec succès',
@@ -332,6 +359,9 @@ const inviteRole = ref<'member' | 'manager' | 'owner'>('member')
 const isInviting = ref(false)
 const inviteError = ref('')
 const emailError = ref('')
+const showRemoveConfirm = ref(false)
+const memberToRemove = ref<OrganizationMember | null>(null)
+const isRemoving = ref(false)
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -391,6 +421,7 @@ const inviteMember = async () => {
 
     closeInviteModal()
     await loadMembers()
+    toast.success(t('members.memberInvited'))
   } catch (err: any) {
     inviteError.value = err.response?.data?.error_message || err.message || 'Failed to invite member'
   } finally {
@@ -413,21 +444,38 @@ const updateMemberRole = async (member: OrganizationMember) => {
     await axios.patch(`/organizations/${props.organizationId}/members/${member.id}`, {
       role: member.role
     })
+    toast.success(t('members.roleUpdated'))
   } catch (err: any) {
     error.value = err.response?.data?.error_message || err.message || 'Failed to update member role'
-    // Reload to revert changes
     await loadMembers()
   }
 }
 
-const confirmRemoveMember = async (member: OrganizationMember) => {
-  if (!confirm(t('members.confirmRemove'))) return
+const confirmRemoveMember = (member: OrganizationMember) => {
+  memberToRemove.value = member
+  showRemoveConfirm.value = true
+}
 
+const closeRemoveConfirm = () => {
+  if (isRemoving.value) return
+  showRemoveConfirm.value = false
+  memberToRemove.value = null
+}
+
+const removeMember = async () => {
+  if (!memberToRemove.value) return
+
+  isRemoving.value = true
   try {
-    await axios.delete(`/organizations/${props.organizationId}/members/${member.id}`)
+    await axios.delete(`/organizations/${props.organizationId}/members/${memberToRemove.value.id}`)
+    closeRemoveConfirm()
     await loadMembers()
+    toast.success(t('members.memberRemoved'))
   } catch (err: any) {
     error.value = err.response?.data?.error_message || err.message || 'Failed to remove member'
+    closeRemoveConfirm()
+  } finally {
+    isRemoving.value = false
   }
 }
 
@@ -811,5 +859,13 @@ const goToRolesHelp = () => {
 .btn-secondary:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.member-to-remove {
+  margin: 0.5rem 0 0 0;
+  padding: 0.75rem;
+  background: var(--color-bg-secondary);
+  border-radius: 6px;
+  color: var(--color-text-primary);
 }
 </style>

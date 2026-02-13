@@ -135,6 +135,24 @@
       </button>
     </div>
 
+    <!-- Cancel Subscription Confirmation Modal -->
+    <BaseModal
+      :visible="showCancelConfirm"
+      :title="t('subscription.cancelSubscription')"
+      title-icon="fas fa-times-circle"
+      size="small"
+      showDefaultFooter
+      :confirmText="t('subscription.confirmCancelBtn')"
+      confirmIcon="fas fa-times-circle"
+      :cancelText="t('subscription.keepSubscription')"
+      :isLoading="isCanceling"
+      :loadingText="t('subscription.canceling')"
+      @close="showCancelConfirm = false"
+      @confirm="cancelSubscription"
+    >
+      <p>{{ t('subscription.confirmCancel') }}</p>
+    </BaseModal>
+
     <!-- Change Plan Modal -->
     <BaseModal
       :visible="showChangePlanModal"
@@ -175,6 +193,7 @@ import axios from 'axios'
 import BaseModal from '../Modals/BaseModal.vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useFormatters } from '../../composables/useFormatters'
+import { useToast } from '../../composables/useToast'
 import type { OrganizationSubscription, SubscriptionPlan } from '../../types'
 
 interface Props {
@@ -184,6 +203,7 @@ interface Props {
 
 const props = defineProps<Props>()
 const { formatDate, formatPrice } = useFormatters()
+const toast = useToast()
 
 const { t } = useTranslations({
   en: {
@@ -215,6 +235,12 @@ const { t } = useTranslations({
       statusCanceled: 'Canceled',
       statusPendingPayment: 'Pending Payment',
       confirmCancel: 'Are you sure you want to cancel this subscription? It will remain active until the end of the current billing period.',
+      confirmCancelBtn: 'Cancel Subscription',
+      keepSubscription: 'Keep Subscription',
+      canceling: 'Canceling subscription...',
+      subscriptionCanceled: 'Subscription canceled successfully',
+      subscriptionReactivated: 'Subscription reactivated successfully',
+      planChanged: 'Plan changed successfully',
     }
   },
   fr: {
@@ -246,6 +272,12 @@ const { t } = useTranslations({
       statusCanceled: 'Annulé',
       statusPendingPayment: 'Paiement en attente',
       confirmCancel: 'Êtes-vous sûr de vouloir annuler cet abonnement ? Il restera actif jusqu\'à la fin de la période de facturation actuelle.',
+      confirmCancelBtn: 'Annuler l\'abonnement',
+      keepSubscription: 'Garder l\'abonnement',
+      canceling: 'Annulation de l\'abonnement...',
+      subscriptionCanceled: 'Abonnement annulé avec succès',
+      subscriptionReactivated: 'Abonnement réactivé avec succès',
+      planChanged: 'Plan modifié avec succès',
     }
   }
 })
@@ -256,6 +288,8 @@ const isLoading = ref(false)
 const error = ref('')
 const showChangePlanModal = ref(false)
 const modalError = ref('')
+const showCancelConfirm = ref(false)
+const isCanceling = ref(false)
 
 onMounted(async () => {
   await Promise.all([
@@ -295,16 +329,24 @@ const loadAvailablePlans = async () => {
   }
 }
 
-const confirmCancelSubscription = async () => {
-  if (!confirm(t('subscription.confirmCancel'))) return
+const confirmCancelSubscription = () => {
+  showCancelConfirm.value = true
+}
 
+const cancelSubscription = async () => {
+  isCanceling.value = true
   try {
     await axios.post(`/organizations/${props.organizationId}/subscription/cancel`, {
       cancel_at_period_end: true
     })
+    showCancelConfirm.value = false
     await loadSubscription()
+    toast.success(t('subscription.subscriptionCanceled'))
   } catch (err: any) {
     error.value = err.response?.data?.error_message || err.message || 'Failed to cancel subscription'
+    showCancelConfirm.value = false
+  } finally {
+    isCanceling.value = false
   }
 }
 
@@ -312,6 +354,7 @@ const reactivateSubscription = async () => {
   try {
     await axios.post(`/organizations/${props.organizationId}/subscription/reactivate`)
     await loadSubscription()
+    toast.success(t('subscription.subscriptionReactivated'))
   } catch (err: any) {
     error.value = err.response?.data?.error_message || err.message || 'Failed to reactivate subscription'
   }
@@ -325,6 +368,7 @@ const selectPlan = async (plan: SubscriptionPlan) => {
     })
     showChangePlanModal.value = false
     await loadSubscription()
+    toast.success(t('subscription.planChanged'))
   } catch (err: any) {
     modalError.value = err.response?.data?.error_message || err.message || 'Failed to change plan'
   }
