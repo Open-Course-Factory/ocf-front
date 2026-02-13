@@ -15,6 +15,7 @@
       @pane-click="handlePaneClick"
       @nodes-change="handleNodesChange"
       @edges-change="handleEdgesChange"
+      @connect="handleConnect"
     >
       <Background pattern-color="#aaa" :gap="16" />
       <Controls />
@@ -91,6 +92,7 @@ const emit = defineEmits<{
   (e: 'node-delete', node: any): void
   (e: 'toggle-expand', nodeData: any): void
   (e: 'select-tree', nodeData: any): void
+  (e: 'edge-connect', connection: any): void
 }>()
 
 // Local reactive state
@@ -237,6 +239,10 @@ const handleToggleExpand = (nodeData: any) => {
 const handleSelectTree = (nodeData: any) => {
   console.log('FlowCanvas: handleSelectTree called', nodeData)
   emit('select-tree', nodeData)
+}
+
+const handleConnect = (connection: any) => {
+  emit('edge-connect', connection)
 }
 </script>
 

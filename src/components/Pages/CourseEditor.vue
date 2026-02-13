@@ -65,6 +65,7 @@
         @node-delete="openDeleteModal"
         @toggle-expand="handleToggleExpand"
         @select-tree="handleSelectTree"
+        @edge-connect="handleEdgeConnect"
       />
 
       <!-- Right Panel: Course Tree -->
@@ -178,6 +179,8 @@ import NodeLibraryPanel from '../CourseEditor/NodeLibraryPanel.vue'
 import FlowCanvas from '../CourseEditor/FlowCanvas.vue'
 import CourseTreePanel from '../CourseEditor/CourseTreePanel.vue'
 import BaseModal from '../Modals/BaseModal.vue'
+import { useNotification } from '../../composables/useNotification'
+import axios from 'axios'
 import type { Course } from '../../types/entities'
 
 const route = useRoute()
@@ -212,7 +215,10 @@ const { t } = useTranslations({
       delete: 'Delete',
       deleteWarning: 'Are you sure you want to delete this {type}: "{name}"? This action cannot be undone.',
       editEntity: 'Edit {type}',
-      createEntity: 'Create {type}'
+      createEntity: 'Create {type}',
+      invalidConnection: 'Invalid connection: {source} cannot connect to {target}',
+      moveSuccess: 'Entity moved successfully',
+      moveError: 'Failed to move entity'
     }
   },
   fr: {
@@ -243,7 +249,10 @@ const { t } = useTranslations({
       delete: 'Supprimer',
       deleteWarning: 'Êtes-vous sûr de vouloir supprimer ce {type}: "{name}"? Cette action est irréversible.',
       editEntity: 'Modifier {type}',
-      createEntity: 'Créer {type}'
+      createEntity: 'Créer {type}',
+      invalidConnection: 'Connexion invalide : {source} ne peut pas se connecter à {target}',
+      moveSuccess: 'Entité déplacée avec succès',
+      moveError: 'Échec du déplacement de l\'entité'
     }
   }
 })
@@ -252,6 +261,7 @@ const coursesStore = useCoursesStore()
 const chaptersStore = useChaptersStore()
 const sectionsStore = useSectionsStore()
 const pagesStore = usePagesStore()
+const notification = useNotification()
 
 // State
 const nodes = ref<any[]>([])
@@ -996,9 +1006,82 @@ const handleDuplicateEntity = async (entity: any, entityType: string) => {
 }
 
 const handleMoveEntity = async (entity: any, targetParent: any) => {
-  // Move entity to another parent
   console.log('Move entity:', entity, 'to', targetParent)
-  // TODO: Implement move logic
+  try {
+    const entityType = entity.entityType || entity.type
+    const parentField = getParentFieldName(entityType)
+    if (!parentField || !entity.id || !targetParent.id) return
+
+    const endpoint = entityType === 'chapter' ? '/chapters' :
+                     entityType === 'section' ? '/sections' :
+                     entityType === 'page' ? '/pages' : null
+    if (!endpoint) return
+
+    await axios.patch(`${endpoint}/${entity.id}`, { [parentField]: targetParent.id })
+
+    // Refresh course data and rebuild graph
+    if (currentCourse.value?.id) {
+      const courseData = await coursesStore.fetchCourseById(currentCourse.value.id)
+      if (courseData) {
+        currentCourse.value = courseData
+        convertCourseToNodes(courseData)
+      }
+    }
+    notification.showSuccess(t('courseEditor.moveSuccess'))
+  } catch (err) {
+    console.error('Move failed:', err)
+    notification.showError(t('courseEditor.moveError'))
+  }
+}
+
+// Valid parent→child type map for edge connections
+const VALID_CONNECTIONS: Record<string, string> = {
+  'course': 'chapter',
+  'chapter': 'section',
+  'section': 'page'
+}
+
+const handleEdgeConnect = async (connection: any) => {
+  const sourceNode = nodes.value.find(n => n.id === connection.source)
+  const targetNode = nodes.value.find(n => n.id === connection.target)
+  if (!sourceNode || !targetNode) return
+
+  const sourceType = sourceNode.data.entityType
+  const targetType = targetNode.data.entityType
+
+  // Validate type compatibility
+  if (VALID_CONNECTIONS[sourceType] !== targetType) {
+    // Remove the invalid edge
+    edges.value = edges.value.filter(e =>
+      !(e.source === connection.source && e.target === connection.target)
+    )
+    notification.showWarning(t('courseEditor.invalidConnection', { source: sourceType, target: targetType }))
+    return
+  }
+
+  // If target has a real entityId, PATCH the parent foreign key
+  if (targetNode.data.entityId && !targetNode.data.isNew) {
+    const parentField = getParentFieldName(targetType)
+    if (!parentField || !sourceNode.data.entityId) return
+
+    const endpoint = targetType === 'chapter' ? '/chapters' :
+                     targetType === 'section' ? '/sections' :
+                     targetType === 'page' ? '/pages' : null
+    if (!endpoint) return
+
+    try {
+      await axios.patch(`${endpoint}/${targetNode.data.entityId}`, {
+        [parentField]: sourceNode.data.entityId
+      })
+    } catch (err) {
+      console.error('Failed to sync edge connection:', err)
+      // Remove the edge on failure
+      edges.value = edges.value.filter(e =>
+        !(e.source === connection.source && e.target === connection.target)
+      )
+      notification.showError(t('courseEditor.moveError'))
+    }
+  }
 }
 
 // Position persistence helpers
