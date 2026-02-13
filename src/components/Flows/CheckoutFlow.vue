@@ -333,7 +333,15 @@ const { t } = useTranslations({
       errorLoadingAddresses: 'Error loading addresses',
       errorAddingAddress: 'Error adding address',
       invalidCoupon: 'Invalid coupon code',
-      errorProcessing: 'Error processing payment'
+      couponExpired: 'This coupon has expired',
+      couponAlreadyUsed: 'This coupon has already been used',
+      couponNotApplicable: 'This coupon is not applicable to the selected plan',
+      couponUsageLimitReached: 'This coupon has reached its usage limit',
+      couponMinAmountNotMet: 'The minimum order amount for this coupon has not been met',
+      errorProcessing: 'Error processing payment',
+      errorPaymentDeclined: 'Payment was declined. Please try again or use a different payment method',
+      errorSubscriptionExists: 'You already have an active subscription. Please manage it from your dashboard',
+      errorPlanUnavailable: 'This plan is no longer available'
     },
     checkout: {
       title: 'Checkout',
@@ -385,7 +393,15 @@ const { t } = useTranslations({
       errorLoadingAddresses: 'Erreur lors du chargement des adresses',
       errorAddingAddress: 'Erreur lors de l\'ajout de l\'adresse',
       invalidCoupon: 'Code promo invalide',
-      errorProcessing: 'Erreur lors du traitement du paiement'
+      couponExpired: 'Ce code promo a expiré',
+      couponAlreadyUsed: 'Ce code promo a déjà été utilisé',
+      couponNotApplicable: 'Ce code promo n\'est pas applicable au plan sélectionné',
+      couponUsageLimitReached: 'Ce code promo a atteint sa limite d\'utilisation',
+      couponMinAmountNotMet: 'Le montant minimum de commande pour ce code promo n\'est pas atteint',
+      errorProcessing: 'Erreur lors du traitement du paiement',
+      errorPaymentDeclined: 'Le paiement a été refusé. Veuillez réessayer ou utiliser un autre moyen de paiement',
+      errorSubscriptionExists: 'Vous avez déjà un abonnement actif. Veuillez le gérer depuis votre tableau de bord',
+      errorPlanUnavailable: 'Ce plan n\'est plus disponible'
     },
     checkout: {
       title: 'Commande',
@@ -547,20 +563,71 @@ async function addBillingAddress(addressData: any) {
 }
 
 
+function getCouponErrorMessage(error: any): string {
+  const errorMsg = (
+    error?.response?.data?.error_message ||
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    ''
+  ).toLowerCase()
+  const status = error?.response?.status
+
+  if (status === 404 || errorMsg.includes('not found') || errorMsg.includes('not exist')) {
+    return t('checkoutFlow.invalidCoupon')
+  }
+  if (errorMsg.includes('expir')) {
+    return t('checkoutFlow.couponExpired')
+  }
+  if (errorMsg.includes('already used') || errorMsg.includes('already been used') || errorMsg.includes('déjà utilisé')) {
+    return t('checkoutFlow.couponAlreadyUsed')
+  }
+  if (errorMsg.includes('not applicable') || errorMsg.includes('not valid for') || errorMsg.includes('non applicable')) {
+    return t('checkoutFlow.couponNotApplicable')
+  }
+  if (errorMsg.includes('usage limit') || errorMsg.includes('limit reached') || errorMsg.includes('limite')) {
+    return t('checkoutFlow.couponUsageLimitReached')
+  }
+  if (errorMsg.includes('minimum') || errorMsg.includes('min amount')) {
+    return t('checkoutFlow.couponMinAmountNotMet')
+  }
+  return t('checkoutFlow.invalidCoupon')
+}
+
+function getCheckoutErrorMessage(error: any): string {
+  const errorMsg = (
+    error?.response?.data?.error_message ||
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    ''
+  ).toLowerCase()
+
+  if (errorMsg.includes('declined') || errorMsg.includes('refusé')) {
+    return t('checkoutFlow.errorPaymentDeclined')
+  }
+  if (errorMsg.includes('already') || errorMsg.includes('existing subscription') || errorMsg.includes('déjà')) {
+    return t('checkoutFlow.errorSubscriptionExists')
+  }
+  if (errorMsg.includes('unavailable') || errorMsg.includes('not available') || errorMsg.includes('indisponible')) {
+    return t('checkoutFlow.errorPlanUnavailable')
+  }
+  return t('checkoutFlow.errorProcessing')
+}
+
 async function validateCoupon() {
   if (!couponCode.value.trim()) return
-  
+
   isValidatingCoupon.value = true
+  checkoutError.value = ''
   try {
     const response = await axios.post('/user-subscriptions/validate-coupon', {
       coupon_code: couponCode.value,
       subscription_plan_id: planId.value
     })
-    
+
     validatedCoupon.value = response.data
-  } catch (error) {
-    console.error('Erreur validation coupon:', error)
-    checkoutError.value = t('checkoutFlow.invalidCoupon')
+  } catch (error: any) {
+    console.error('Coupon validation error:', error)
+    checkoutError.value = getCouponErrorMessage(error)
   } finally {
     isValidatingCoupon.value = false
   }
@@ -632,9 +699,9 @@ async function processCheckout() {
 
     // For paid plans, redirection to Stripe happens automatically in the store
 
-  } catch (error) {
-    console.error('Erreur lors du checkout:', error)
-    checkoutError.value = t('checkoutFlow.errorProcessing')
+  } catch (error: any) {
+    console.error('Checkout error:', error)
+    checkoutError.value = getCheckoutErrorMessage(error)
   } finally {
     isProcessing.value = false
   }
