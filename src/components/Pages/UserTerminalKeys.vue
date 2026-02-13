@@ -28,8 +28,62 @@ import { useNotification } from '../../composables/useNotification';
 import { usePageLoad } from '../../composables/usePageLoad';
 import { useLoadingState } from '../../composables/useLoadingState';
 import { extractErrorMessage } from '../../utils/formatters';
+import { useTranslations } from '../../composables/useTranslations';
 import BaseModal from '../Modals/BaseModal.vue';
 import ErrorAlert from '../UI/ErrorAlert.vue';
+
+const { t } = useTranslations({
+  en: {
+    terminalKeys: {
+      title: 'Terminal Access Keys',
+      regenerate: 'Regenerate key',
+      securityNotice: 'Keep your terminal key secure. It grants access to terminal sessions.',
+      keyDetails: 'Key details',
+      labelId: 'ID:',
+      labelKeyName: 'Key name:',
+      labelStatus: 'Status:',
+      statusActive: 'Active',
+      statusInactive: 'Inactive',
+      labelMaxSessions: 'Max sessions:',
+      labelCreatedAt: 'Created at:',
+      noKeyTitle: 'No terminal key found',
+      noKeyDescription: 'Click "Regenerate key" to create one.',
+      confirmTitle: 'Confirmation',
+      confirmBtn: 'Confirm',
+      cancelBtn: 'Cancel',
+      confirmMessage: 'Are you sure you want to regenerate your terminal key? This will invalidate the current key.',
+      loadError: 'Error loading key',
+      regenerateSuccess: 'Key regenerated successfully',
+      regenerateError: 'Error regenerating key',
+      error: 'Error'
+    }
+  },
+  fr: {
+    terminalKeys: {
+      title: 'Clés d\'accès Terminal',
+      regenerate: 'Régénérer la clé',
+      securityNotice: 'Gardez votre clé terminal sécurisée. Elle donne accès aux sessions terminal.',
+      keyDetails: 'Détails de la clé',
+      labelId: 'ID :',
+      labelKeyName: 'Nom de la clé :',
+      labelStatus: 'Statut :',
+      statusActive: 'Active',
+      statusInactive: 'Inactive',
+      labelMaxSessions: 'Sessions max :',
+      labelCreatedAt: 'Créée le :',
+      noKeyTitle: 'Aucune clé terminal trouvée',
+      noKeyDescription: 'Cliquez sur "Régénérer la clé" pour en créer une.',
+      confirmTitle: 'Confirmation',
+      confirmBtn: 'Confirmer',
+      cancelBtn: 'Annuler',
+      confirmMessage: 'Êtes-vous sûr de vouloir régénérer votre clé terminal ? Cela invalidera la clé actuelle.',
+      loadError: 'Erreur lors du chargement de la clé',
+      regenerateSuccess: 'Clé régénérée avec succès',
+      regenerateError: 'Erreur lors de la régénération',
+      error: 'Erreur'
+    }
+  }
+});
 
 const { showSuccess, showError } = useNotification();
 const { error, withErrorHandling } = usePageLoad();
@@ -48,7 +102,7 @@ async function loadKey() {
       const response = await axios.get('/user-terminal-keys/my-key');
       currentKey.value = response.data;
     },
-    'Erreur lors du chargement de la clé'
+    t('terminalKeys.loadError')
   );
 }
 
@@ -62,10 +116,10 @@ async function regenerateKey() {
       await axios.post('/user-terminal-keys/regenerate');
       await loadKey();
       showConfirm.value = false;
-      showSuccess('Clé régénérée avec succès');
+      showSuccess(t('terminalKeys.regenerateSuccess'));
     } catch (err: any) {
-      console.error('Erreur lors de la régénération:', err);
-      showError(extractErrorMessage(err, 'Erreur lors de la régénération'), 'Erreur');
+      console.error('Error regenerating key:', err);
+      showError(extractErrorMessage(err, t('terminalKeys.regenerateError')), t('terminalKeys.error'));
     }
   });
 }
@@ -80,7 +134,7 @@ function formatDate(dateString: string) {
   <div class="wrapper">
     <div class="content">
       <div class="header">
-        <h2>Clés d'accès Terminal</h2>
+        <h2>{{ t('terminalKeys.title') }}</h2>
         <button
           class="btn btn-warning"
           @click="confirmRegenerate"
@@ -88,7 +142,7 @@ function formatDate(dateString: string) {
         >
           <i v-if="isRegenerating" class="fas fa-spinner fa-spin"></i>
           <i v-else class="fas fa-sync"></i>
-          Régénérer la clé
+          {{ t('terminalKeys.regenerate') }}
         </button>
       </div>
 
@@ -101,32 +155,32 @@ function formatDate(dateString: string) {
       <div v-if="currentKey" class="key-details">
         <div class="alert alert-info">
           <i class="fas fa-info-circle"></i>
-          Gardez votre clé terminal sécurisée. Elle donne accès aux sessions terminal.
+          {{ t('terminalKeys.securityNotice') }}
         </div>
 
         <div class="key-card">
-          <h3>Détails de la clé</h3>
+          <h3>{{ t('terminalKeys.keyDetails') }}</h3>
           <div class="details-grid">
             <div class="detail-item">
-              <label>ID:</label>
+              <label>{{ t('terminalKeys.labelId') }}</label>
               <span>{{ currentKey.id }}</span>
             </div>
             <div class="detail-item">
-              <label>Nom de la clé:</label>
+              <label>{{ t('terminalKeys.labelKeyName') }}</label>
               <span>{{ currentKey.key_name }}</span>
             </div>
             <div class="detail-item">
-              <label>Statut:</label>
+              <label>{{ t('terminalKeys.labelStatus') }}</label>
               <span :class="['badge', currentKey.is_active ? 'active' : 'inactive']">
-                {{ currentKey.is_active ? 'Active' : 'Inactive' }}
+                {{ currentKey.is_active ? t('terminalKeys.statusActive') : t('terminalKeys.statusInactive') }}
               </span>
             </div>
             <div class="detail-item">
-              <label>Sessions max:</label>
+              <label>{{ t('terminalKeys.labelMaxSessions') }}</label>
               <span>{{ currentKey.max_sessions === -1 ? '∞' : currentKey.max_sessions }}</span>
             </div>
             <div class="detail-item">
-              <label>Créée le:</label>
+              <label>{{ t('terminalKeys.labelCreatedAt') }}</label>
               <span>{{ formatDate(currentKey.created_at) }}</span>
             </div>
           </div>
@@ -135,25 +189,25 @@ function formatDate(dateString: string) {
 
       <div v-else class="no-key">
         <i class="fas fa-key fa-3x"></i>
-        <h4>Aucune clé terminal trouvée</h4>
-        <p>Cliquez sur "Régénérer la clé" pour en créer une.</p>
+        <h4>{{ t('terminalKeys.noKeyTitle') }}</h4>
+        <p>{{ t('terminalKeys.noKeyDescription') }}</p>
       </div>
 
       <!-- Modal de confirmation simple -->
       <BaseModal
         :visible="showConfirm"
-        title="Confirmation"
+        :title="t('terminalKeys.confirmTitle')"
         title-icon="fas fa-exclamation-triangle"
         size="small"
         :show-default-footer="true"
-        confirm-text="Confirmer"
+        :confirm-text="t('terminalKeys.confirmBtn')"
         confirm-icon="fas fa-check"
         :confirm-disabled="isRegenerating"
-        cancel-text="Annuler"
+        :cancel-text="t('terminalKeys.cancelBtn')"
         @close="showConfirm = false"
         @confirm="regenerateKey"
       >
-        <p>Êtes-vous sûr de vouloir régénérer votre clé terminal ? Cela invalidera la clé actuelle.</p>
+        <p>{{ t('terminalKeys.confirmMessage') }}</p>
       </BaseModal>
     </div>
   </div>

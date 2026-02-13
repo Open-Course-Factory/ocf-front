@@ -32,6 +32,66 @@ import { extractErrorMessage } from '../../utils/formatters';
 import { useAdminViewMode } from '../../composables/useAdminViewMode';
 import { usePageLoad } from '../../composables/usePageLoad';
 import { useLoadingState } from '../../composables/useLoadingState';
+import { useTranslations } from '../../composables/useTranslations';
+
+const { t } = useTranslations({
+  en: {
+    invoices: {
+      statsTitle: 'Invoice Statistics',
+      total: 'Total',
+      paid: 'Paid',
+      unpaid: 'Unpaid',
+      totalRevenue: 'Total Revenue',
+      filterByStatus: 'Filter by status:',
+      allInvoices: 'All invoices',
+      paidFilter: 'Paid',
+      unpaidFilter: 'Unpaid',
+      drafts: 'Drafts',
+      voided: 'Voided',
+      refreshInvoices: 'Refresh invoices',
+      refresh: 'Refresh',
+      noInvoices: 'No invoices',
+      noInvoicesUser: 'Your invoices will appear here once you have made purchases.',
+      noInvoicesAdmin: 'No invoices have been generated in the system yet.',
+      date: 'Date:',
+      dueDate: 'Due date:',
+      paidAt: 'Paid at:',
+      overdue: 'Overdue invoice',
+      download: 'Download',
+      viewInStripe: 'View in Stripe',
+      loadError: 'Error loading invoices',
+      downloadError: 'Error downloading'
+    }
+  },
+  fr: {
+    invoices: {
+      statsTitle: 'Statistiques des Factures',
+      total: 'Total',
+      paid: 'Payées',
+      unpaid: 'Non payées',
+      totalRevenue: 'CA Total',
+      filterByStatus: 'Filtrer par statut :',
+      allInvoices: 'Toutes les factures',
+      paidFilter: 'Payées',
+      unpaidFilter: 'Non payées',
+      drafts: 'Brouillons',
+      voided: 'Annulées',
+      refreshInvoices: 'Actualiser les factures',
+      refresh: 'Actualiser',
+      noInvoices: 'Aucune facture',
+      noInvoicesUser: 'Vos factures apparaîtront ici une fois que vous aurez effectué des achats.',
+      noInvoicesAdmin: 'Aucune facture n\'a encore été générée dans le système.',
+      date: 'Date :',
+      dueDate: 'Échéance :',
+      paidAt: 'Payée le :',
+      overdue: 'Facture en retard',
+      download: 'Télécharger',
+      viewInStripe: 'Voir dans Stripe',
+      loadError: 'Erreur lors du chargement des factures',
+      downloadError: 'Erreur lors du téléchargement'
+    }
+  }
+});
 
 const entityStore = useInvoicesStore();
 const { isAdmin, shouldFilterAsStandardUser, shouldShowAllData } = useAdminViewMode();
@@ -71,7 +131,7 @@ const loadInvoices = async () => {
                 await entityStore.syncAndLoadInvoices();
             }
         },
-        'Erreur lors du chargement des factures'
+        t('invoices.loadError')
     );
 };
 
@@ -86,8 +146,8 @@ const downloadInvoice = async (invoiceId: string) => {
         try {
             await entityStore.downloadInvoice(invoiceId);
         } catch (err: any) {
-            console.error('Erreur lors du téléchargement:', err);
-            error.value = extractErrorMessage(err, 'Erreur lors du téléchargement');
+            console.error('Error downloading invoice:', err);
+            error.value = extractErrorMessage(err, t('invoices.downloadError'));
         }
     });
 };
@@ -129,23 +189,23 @@ const getInvoiceStats = computed(() => {
 
             <!-- Statistiques pour les admins (en mode admin complet seulement) -->
             <div v-if="shouldShowAllData" class="stats-panel">
-                <h4><i class="fas fa-chart-bar"></i> Statistiques des Factures</h4>
+                <h4><i class="fas fa-chart-bar"></i> {{ t('invoices.statsTitle') }}</h4>
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-value">{{ getInvoiceStats.total }}</div>
-                        <div class="stat-label">Total</div>
+                        <div class="stat-label">{{ t('invoices.total') }}</div>
                     </div>
                     <div class="stat-card success">
                         <div class="stat-value">{{ getInvoiceStats.paid }}</div>
-                        <div class="stat-label">Payées</div>
+                        <div class="stat-label">{{ t('invoices.paid') }}</div>
                     </div>
                     <div class="stat-card warning">
                         <div class="stat-value">{{ getInvoiceStats.unpaid }}</div>
-                        <div class="stat-label">Non payées</div>
+                        <div class="stat-label">{{ t('invoices.unpaid') }}</div>
                     </div>
                     <div class="stat-card info">
                         <div class="stat-value">{{ getInvoiceStats.totalAmount }}</div>
-                        <div class="stat-label">CA Total</div>
+                        <div class="stat-label">{{ t('invoices.totalRevenue') }}</div>
                     </div>
                 </div>
             </div>
@@ -154,23 +214,23 @@ const getInvoiceStats = computed(() => {
             <div class="filter-section">
                 <div class="filter-controls">
                     <div class="filter-group">
-                        <label for="statusFilter">Filtrer par statut :</label>
+                        <label for="statusFilter">{{ t('invoices.filterByStatus') }}</label>
                         <select id="statusFilter" v-model="filter" class="filter-select">
-                            <option value="all">Toutes les factures</option>
-                            <option value="paid">Payées</option>
-                            <option value="unpaid">Non payées</option>
-                            <option value="draft">Brouillons</option>
-                            <option value="void">Annulées</option>
+                            <option value="all">{{ t('invoices.allInvoices') }}</option>
+                            <option value="paid">{{ t('invoices.paidFilter') }}</option>
+                            <option value="unpaid">{{ t('invoices.unpaidFilter') }}</option>
+                            <option value="draft">{{ t('invoices.drafts') }}</option>
+                            <option value="void">{{ t('invoices.voided') }}</option>
                         </select>
                     </div>
                     <button
                         class="btn btn-outline-primary refresh-btn"
                         @click="loadInvoices"
                         :disabled="entityStore.isLoading"
-                        title="Actualiser les factures"
+                        :title="t('invoices.refreshInvoices')"
                     >
                         <i :class="entityStore.isLoading ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'"></i>
-                        <span v-if="!entityStore.isLoading">Actualiser</span>
+                        <span v-if="!entityStore.isLoading">{{ t('invoices.refresh') }}</span>
                     </button>
                 </div>
             </div>
@@ -178,9 +238,9 @@ const getInvoiceStats = computed(() => {
             <!-- Message si pas de factures -->
             <div v-if="entityStore.entities.length === 0" class="empty-state">
                 <i class="fas fa-file-invoice fa-3x"></i>
-                <h4>Aucune facture</h4>
-                <p v-if="!isAdmin || shouldFilterAsStandardUser">Vos factures apparaîtront ici une fois que vous aurez effectué des achats.</p>
-                <p v-else>Aucune facture n'a encore été générée dans le système.</p>
+                <h4>{{ t('invoices.noInvoices') }}</h4>
+                <p v-if="!isAdmin || shouldFilterAsStandardUser">{{ t('invoices.noInvoicesUser') }}</p>
+                <p v-else>{{ t('invoices.noInvoicesAdmin') }}</p>
             </div>
             
             <!-- Vue générique utilisant le composant Entity -->
@@ -206,11 +266,11 @@ const getInvoiceStats = computed(() => {
                             
                             <div class="invoice-details">
                                 <div class="detail-row">
-                                    <span class="label">Date :</span>
+                                    <span class="label">{{ t('invoices.date') }}</span>
                                     <span class="value">{{ entityStore.formatDate(entity.invoice_date) }}</span>
                                 </div>
                                 <div v-if="entity.due_date" class="detail-row">
-                                    <span class="label">Échéance :</span>
+                                    <span class="label">{{ t('invoices.dueDate') }}</span>
                                     <span 
                                         :class="['value', { 'overdue': entityStore.isOverdue(entity) }]"
                                     >
@@ -218,7 +278,7 @@ const getInvoiceStats = computed(() => {
                                     </span>
                                 </div>
                                 <div v-if="entity.paid_at" class="detail-row">
-                                    <span class="label">Payée le :</span>
+                                    <span class="label">{{ t('invoices.paidAt') }}</span>
                                     <span class="value">{{ entityStore.formatDate(entity.paid_at) }}</span>
                                 </div>
                             </div>
@@ -236,7 +296,7 @@ const getInvoiceStats = computed(() => {
                             <!-- Alerte si en retard -->
                             <div v-if="entityStore.isOverdue(entity)" class="overdue-warning">
                                 <i class="fas fa-exclamation-triangle"></i>
-                                <small>Facture en retard</small>
+                                <small>{{ t('invoices.overdue') }}</small>
                             </div>
                         </div>
                         
@@ -250,7 +310,7 @@ const getInvoiceStats = computed(() => {
                                 :disabled="isDownloading"
                             >
                                 <i :class="isDownloading ? 'fas fa-spinner fa-spin' : 'fas fa-download'"></i>
-                                Télécharger
+                                {{ t('invoices.download') }}
                             </button>
                             
                             <!-- Voir dans Stripe -->
@@ -260,7 +320,7 @@ const getInvoiceStats = computed(() => {
                                 @click="openInStripe(entity)"
                             >
                                 <i class="fas fa-external-link-alt"></i>
-                                Voir dans Stripe
+                                {{ t('invoices.viewInStripe') }}
                             </button>
                         </div>
                     </div>

@@ -22,11 +22,17 @@
 -->
 
 <template>
-  <span class="alpha-badge" :class="sizeClass">Alpha</span>
+  <span class="alpha-badge" :class="sizeClass">{{ t('alpha') }}</span>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useTranslations } from '../../composables/useTranslations'
+
+const { t } = useTranslations({
+  en: { alpha: 'Alpha' },
+  fr: { alpha: 'Alpha' }
+})
 
 interface Props {
   size?: 'small' | 'medium' | 'large'

@@ -24,20 +24,19 @@
 <template>
   <div class="shared-sessions-page">
     <div class="page-header">
-      <h2>Sessions Partagées avec Moi</h2>
+      <h2>{{ t('shared.title') }}</h2>
       <p class="page-description">
-        Accédez aux terminaux que d'autres utilisateurs ont partagés avec vous.
-        Votre niveau d'accès détermine les actions que vous pouvez effectuer.
+        {{ t('shared.description') }}
       </p>
     </div>
 
     <div class="sessions-section">
       <div class="section-header">
-        <h3>Terminaux Partagés ({{ sharedSessions?.length || 0 }})</h3>
+        <h3>{{ t('shared.sharedTerminals') }} ({{ sharedSessions?.length || 0 }})</h3>
         <div class="header-actions">
           <button class="btn btn-secondary" @click="loadSharedSessions">
             <i class="fas fa-sync" :class="{ 'fa-spin': isLoadingShared }"></i>
-            Actualiser
+            {{ t('shared.refresh') }}
           </button>
         </div>
       </div>
@@ -49,7 +48,7 @@
       />
 
       <div v-if="isLoadingShared && (sharedSessions?.length || 0) === 0" class="loading-section">
-        <i class="fas fa-spinner fa-spin"></i> Chargement des sessions partagées...
+        <i class="fas fa-spinner fa-spin"></i> {{ t('shared.loading') }}
       </div>
 
       <div v-if="(sharedSessions?.length || 0) > 0" class="sessions-grid">
@@ -76,27 +75,27 @@
           <div class="card-body">
             <div class="session-details">
               <div class="detail-row">
-                <span class="label">Terminal ID:</span>
+                <span class="label">{{ t('shared.terminalId') }}</span>
                 <span class="value">{{ sharedSession.terminal.id }}</span>
               </div>
               <div class="detail-row">
-                <span class="label">Session ID:</span>
+                <span class="label">{{ t('shared.sessionId') }}</span>
                 <span class="value">{{ sharedSession.terminal.session_id }}</span>
               </div>
               <div class="detail-row">
-                <span class="label">Partagé par:</span>
+                <span class="label">{{ t('shared.sharedBy') }}</span>
                 <span class="value">{{ getUserDisplayName(sharedSession.shared_by) }}</span>
               </div>
               <div class="detail-row">
-                <span class="label">Partagé le:</span>
+                <span class="label">{{ t('shared.sharedAt') }}</span>
                 <span class="value">{{ formatDate(sharedSession.shared_at) }}</span>
               </div>
               <div class="detail-row" v-if="sharedSession.expires_at">
-                <span class="label">Expire le:</span>
+                <span class="label">{{ t('shared.expiresAt') }}</span>
                 <span class="value">{{ formatDate(sharedSession.expires_at) }}</span>
               </div>
               <div class="detail-row" v-if="sharedSession.terminal.instance_type">
-                <span class="label">Type d'instance:</span>
+                <span class="label">{{ t('shared.instanceType') }}</span>
                 <span class="value instance-type">
                   {{ getInstanceName(sharedSession.terminal.instance_type) }}
                   <i class="fas fa-server" title="Instance type"></i>
@@ -108,7 +107,7 @@
             <div class="iframe-section" v-if="sharedSession.terminal.status === 'active' && ['write', 'admin'].includes(sharedSession.access_level)">
               <h6 class="iframe-title">
                 <i class="fas fa-external-link-alt"></i>
-                Accès Terminal
+                {{ t('shared.terminalAccess') }}
               </h6>
 
               <div class="iframe-controls">
@@ -122,7 +121,7 @@
                   <button
                     class="btn btn-outline-secondary btn-sm"
                     @click="copyUrlToClipboard(sharedSession.terminal.session_id)"
-                    :title="'Copier le lien'"
+                    :title="t('shared.copyLink')"
                   >
                     <i :class="copiedSessions.has(sharedSession.terminal.session_id) ? 'fas fa-check' : 'fas fa-copy'"></i>
                   </button>
@@ -134,7 +133,7 @@
                     @click="openTerminalInNewTab(sharedSession.terminal.session_id)"
                   >
                     <i class="fas fa-external-link-alt"></i>
-                    Ouvrir
+                    {{ t('shared.open') }}
                   </button>
 
                   <button
@@ -142,7 +141,7 @@
                     @click="toggleIframePreview(sharedSession.terminal.session_id)"
                   >
                     <i :class="showPreviews.has(sharedSession.terminal.session_id) ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-                    {{ showPreviews.has(sharedSession.terminal.session_id) ? 'Masquer' : 'Aperçu' }}
+                    {{ showPreviews.has(sharedSession.terminal.session_id) ? t('shared.hide') : t('shared.preview') }}
                   </button>
                 </div>
               </div>
@@ -160,7 +159,7 @@
                 </div>
                 <p class="iframe-info">
                   <i class="fas fa-info-circle"></i>
-                  Aperçu du terminal partagé - Niveau d'accès: {{ getAccessLabel(sharedSession.access_level) }}
+                  {{ t('shared.previewInfo') }} {{ getAccessLabel(sharedSession.access_level) }}
                 </p>
               </div>
             </div>
@@ -171,23 +170,23 @@
               v-if="sharedSession.terminal.status === 'active' && sharedSession.access_level === 'admin'"
               class="btn btn-danger btn-sm"
               @click="stopSession(sharedSession.terminal.session_id)"
-              title="Arrêter le terminal (accès admin requis)"
+              :title="t('shared.stopTerminal')"
             >
               <i class="fas fa-stop"></i>
-              Arrêter
+              {{ t('shared.stop') }}
             </button>
             <button
               v-else-if="isTerminalInactive(sharedSession.terminal.status)"
               class="btn btn-warning btn-sm"
               @click="discardTerminal(sharedSession.terminal.id)"
-              title="Masquer ce terminal inactif"
+              :title="t('shared.hideInactive')"
             >
               <i class="fas fa-eye-slash"></i>
-              Masquer
+              {{ t('shared.hideBtn') }}
             </button>
             <span v-else-if="sharedSession.access_level === 'read'" class="access-note">
               <i class="fas fa-eye"></i>
-              Accès lecture seule
+              {{ t('shared.readOnlyAccess') }}
             </span>
           </div>
         </div>
@@ -195,12 +194,12 @@
 
       <div v-else class="empty-section">
         <i class="fas fa-share-alt fa-3x"></i>
-        <h4>Aucune session partagée</h4>
-        <p>Aucun terminal n'est actuellement partagé avec vous.</p>
+        <h4>{{ t('shared.noSharedSessions') }}</h4>
+        <p>{{ t('shared.noSharedDescription') }}</p>
         <p class="text-muted">
           <small>
-            Demandez à un collègue de partager un terminal avec vous ou
-            <router-link to="/terminal-creation">créez votre propre session</router-link>.
+            {{ t('shared.noSharedHelp') }}
+            <router-link to="/terminal-creation">{{ t('shared.createOwnSession') }}</router-link>.
           </small>
         </p>
       </div>
@@ -215,7 +214,89 @@ import { userService, type User } from '../../services/domain/user'
 import axios from 'axios'
 import { useNotification } from '../../composables/useNotification'
 import { extractErrorMessage } from '../../utils/formatters'
+import { useTranslations } from '../../composables/useTranslations'
 import ErrorAlert from '../UI/ErrorAlert.vue'
+
+const { t } = useTranslations({
+  en: {
+    shared: {
+      title: 'Sessions Shared with Me',
+      description: 'Access terminals that other users have shared with you. Your access level determines the actions you can perform.',
+      sharedTerminals: 'Shared Terminals',
+      refresh: 'Refresh',
+      loading: 'Loading shared sessions...',
+      terminalId: 'Terminal ID:',
+      sessionId: 'Session ID:',
+      sharedBy: 'Shared by:',
+      sharedAt: 'Shared at:',
+      expiresAt: 'Expires at:',
+      instanceType: 'Instance type:',
+      terminalAccess: 'Terminal Access',
+      copyLink: 'Copy link',
+      open: 'Open',
+      hide: 'Hide',
+      preview: 'Preview',
+      previewInfo: 'Shared terminal preview - Access level:',
+      stopTerminal: 'Stop terminal (admin access required)',
+      stop: 'Stop',
+      hideInactive: 'Hide this inactive terminal',
+      hideBtn: 'Hide',
+      readOnlyAccess: 'Read-only access',
+      noSharedSessions: 'No shared sessions',
+      noSharedDescription: 'No terminal is currently shared with you.',
+      noSharedHelp: 'Ask a colleague to share a terminal with you or',
+      createOwnSession: 'create your own session',
+      accessRead: 'Read',
+      accessWrite: 'Write',
+      accessAdmin: 'Admin',
+      accessOwner: 'Owner',
+      confirmHide: 'Are you sure you want to hide this inactive terminal?',
+      confirmHideTitle: 'Hide terminal',
+      loadError: 'Error loading shared sessions',
+      stopError: 'Error stopping session',
+      hideError: 'Error hiding terminal'
+    }
+  },
+  fr: {
+    shared: {
+      title: 'Sessions Partagées avec Moi',
+      description: 'Accédez aux terminaux que d\'autres utilisateurs ont partagés avec vous. Votre niveau d\'accès détermine les actions que vous pouvez effectuer.',
+      sharedTerminals: 'Terminaux Partagés',
+      refresh: 'Actualiser',
+      loading: 'Chargement des sessions partagées...',
+      terminalId: 'Terminal ID :',
+      sessionId: 'Session ID :',
+      sharedBy: 'Partagé par :',
+      sharedAt: 'Partagé le :',
+      expiresAt: 'Expire le :',
+      instanceType: 'Type d\'instance :',
+      terminalAccess: 'Accès Terminal',
+      copyLink: 'Copier le lien',
+      open: 'Ouvrir',
+      hide: 'Masquer',
+      preview: 'Aperçu',
+      previewInfo: 'Aperçu du terminal partagé - Niveau d\'accès :',
+      stopTerminal: 'Arrêter le terminal (accès admin requis)',
+      stop: 'Arrêter',
+      hideInactive: 'Masquer ce terminal inactif',
+      hideBtn: 'Masquer',
+      readOnlyAccess: 'Accès lecture seule',
+      noSharedSessions: 'Aucune session partagée',
+      noSharedDescription: 'Aucun terminal n\'est actuellement partagé avec vous.',
+      noSharedHelp: 'Demandez à un collègue de partager un terminal avec vous ou',
+      createOwnSession: 'créez votre propre session',
+      accessRead: 'Lecture',
+      accessWrite: 'Écriture',
+      accessAdmin: 'Admin',
+      accessOwner: 'Propriétaire',
+      confirmHide: 'Êtes-vous sûr de vouloir masquer ce terminal inactif ?',
+      confirmHideTitle: 'Masquer le terminal',
+      loadError: 'Erreur lors du chargement des sessions partagées',
+      stopError: 'Erreur lors de l\'arrêt de la session',
+      hideError: 'Erreur lors du masquage du terminal'
+    }
+  }
+})
 
 const { showConfirm } = useNotification()
 
@@ -264,8 +345,8 @@ async function loadSharedSessions() {
       await loadUserInfoForSharedSessions(sharedSessions.value)
     }
   } catch (err: any) {
-    console.error('Erreur lors du chargement des sessions partagées:', err)
-    error.value = extractErrorMessage(err, 'Erreur lors du chargement des sessions partagées')
+    console.error('Error loading shared sessions:', err)
+    error.value = extractErrorMessage(err, t('shared.loadError'))
     sharedSessions.value = []
   } finally {
     isLoadingShared.value = false
@@ -317,8 +398,8 @@ async function stopSession(sessionId: string) {
     await loadSharedSessions()
     console.log('Session stopped successfully')
   } catch (err: any) {
-    console.error('Erreur lors de l\'arrêt:', err)
-    error.value = extractErrorMessage(err, 'Erreur lors de l\'arrêt de la session')
+    console.error('Error stopping session:', err)
+    error.value = extractErrorMessage(err, t('shared.stopError'))
   }
 }
 
@@ -353,10 +434,10 @@ function getAccessIcon(level: string) {
 
 function getAccessLabel(level: string) {
   switch (level) {
-    case 'read': return 'Lecture'
-    case 'write': return 'Écriture'
-    case 'admin': return 'Admin'
-    case 'owner': return 'Propriétaire'
+    case 'read': return t('shared.accessRead')
+    case 'write': return t('shared.accessWrite')
+    case 'admin': return t('shared.accessAdmin')
+    case 'owner': return t('shared.accessOwner')
     default: return level
   }
 }
@@ -452,8 +533,8 @@ function getTerminalDisplayName(terminal: any): string {
 
 async function discardTerminal(terminalId: string) {
   const confirmed = await showConfirm(
-    'Êtes-vous sûr de vouloir masquer ce terminal inactif ?',
-    'Masquer le terminal'
+    t('shared.confirmHide'),
+    t('shared.confirmHideTitle')
   )
   if (!confirmed) {
     return
@@ -469,8 +550,8 @@ async function discardTerminal(terminalId: string) {
     )
     console.log('Terminal successfully hidden:', terminalId)
   } catch (err: any) {
-    console.error('Erreur lors du masquage du terminal:', err)
-    error.value = extractErrorMessage(err, 'Erreur lors du masquage du terminal')
+    console.error('Error hiding terminal:', err)
+    error.value = extractErrorMessage(err, t('shared.hideError'))
   }
 }
 </script>

@@ -88,7 +88,7 @@
     :loadingText="t('settings.converting')"
     :successMessage="convertSuccess"
     :errorMessage="convertError"
-    title="Convert to Team Organization"
+    :title="t('settings.convertToTeamNow')"
     titleIcon="fas fa-building"
     size="medium"
     :showClose="!isConverting"

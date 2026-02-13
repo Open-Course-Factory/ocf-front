@@ -31,8 +31,35 @@ import { useSubscriptionsStore } from '../../stores/subscriptions';
 import { usePageLoad } from '../../composables/usePageLoad';
 import { useLoadingState } from '../../composables/useLoadingState';
 import { extractErrorMessage } from '../../utils/formatters';
+import { useTranslations } from '../../composables/useTranslations';
 
-const { t } = useI18n();
+const { t: ti18n } = useI18n();
+const { t } = useTranslations({
+  en: {
+    paymentMethods: {
+      refreshTitle: 'Refresh payment methods',
+      addCard: 'Add a card',
+      default: 'Default',
+      inactive: 'Inactive',
+      setDefault: 'Set as default',
+      loadError: 'Error loading payment methods',
+      updateError: 'Error updating',
+      portalError: 'Unable to open the management portal'
+    }
+  },
+  fr: {
+    paymentMethods: {
+      refreshTitle: 'Actualiser les méthodes de paiement',
+      addCard: 'Ajouter une carte',
+      default: 'Défaut',
+      inactive: 'Inactive',
+      setDefault: 'Définir par défaut',
+      loadError: 'Erreur lors du chargement des méthodes de paiement',
+      updateError: 'Erreur lors de la mise à jour',
+      portalError: 'Impossible d\'ouvrir le portail de gestion'
+    }
+  }
+});
 
 const entityStore = usePaymentMethodsStore();
 const subscriptionsStore = useSubscriptionsStore();
@@ -50,7 +77,7 @@ const loadPaymentMethods = async () => {
         async () => {
             await entityStore.syncAndLoadPaymentMethods();
         },
-        'Erreur lors du chargement des méthodes de paiement'
+        t('paymentMethods.loadError')
     );
 };
 
@@ -60,8 +87,8 @@ const setAsDefault = async (paymentMethodId: string) => {
         try {
             await entityStore.setAsDefault(paymentMethodId);
         } catch (err: any) {
-            console.error('Erreur lors de la définition comme défaut:', err);
-            error.value = extractErrorMessage(err, 'Erreur lors de la mise à jour');
+            console.error('Error setting payment method as default:', err);
+            error.value = extractErrorMessage(err, t('paymentMethods.updateError'));
         }
     });
 };
@@ -75,8 +102,8 @@ const addPaymentMethod = async () => {
         // Note: Quand l'utilisateur reviendra du portail,
         // la page se rechargera et les méthodes seront automatiquement synchronisées
     } catch (err: any) {
-        console.error('Erreur ouverture portail:', err);
-        error.value = err.response?.data?.error_message || 'Impossible d\'ouvrir le portail de gestion';
+        console.error('Error opening portal:', err);
+        error.value = err.response?.data?.error_message || t('paymentMethods.portalError');
     }
 };
 </script>
@@ -94,27 +121,27 @@ const addPaymentMethod = async () => {
             <div class="info-banner">
                 <div class="info-content">
                     <i class="fas fa-info-circle"></i>
-                    <span>{{ t('ui.managePaymentMethods') }}</span>
+                    <span>{{ ti18n('ui.managePaymentMethods') }}</span>
                 </div>
                 <button
                     class="btn btn-outline-primary btn-sm refresh-btn"
                     @click="loadPaymentMethods"
                     :disabled="entityStore.isLoading"
-                    title="Actualiser les méthodes de paiement"
+                    :title="t('paymentMethods.refreshTitle')"
                 >
                     <i :class="entityStore.isLoading ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'"></i>
-                    <span v-if="!entityStore.isLoading">{{ t('ui.refresh') }}</span>
+                    <span v-if="!entityStore.isLoading">{{ ti18n('ui.refresh') }}</span>
                 </button>
             </div>
 
             <!-- Message si pas de méthodes de paiement -->
             <div v-if="entityStore.entities.length === 0" class="empty-state">
                 <i class="fas fa-credit-card fa-3x"></i>
-                <h4>{{ t('ui.noPaymentMethods') }}</h4>
-                <p>{{ t('ui.addCardToPurchase') }}</p>
+                <h4>{{ ti18n('ui.noPaymentMethods') }}</h4>
+                <p>{{ ti18n('ui.addCardToPurchase') }}</p>
                 <button class="btn btn-primary" @click="addPaymentMethod">
                     <i class="fas fa-plus"></i>
-                    Ajouter une carte
+                    {{ t('paymentMethods.addCard') }}
                 </button>
             </div>
             
@@ -149,7 +176,7 @@ const addPaymentMethod = async () => {
                                     <!-- Alerte d'expiration -->
                                     <div v-if="entityStore.isExpiringSoon(entity)" class="expiry-warning">
                                         <i class="fas fa-exclamation-triangle"></i>
-                                        <small>{{ t('ui.expiringSoon') }}</small>
+                                        <small>{{ ti18n('ui.expiringSoon') }}</small>
                                     </div>
                                 </div>
                             </div>
@@ -158,14 +185,14 @@ const addPaymentMethod = async () => {
                             <div v-if="entity.is_default" class="default-badge">
                                 <span class="badge badge-primary">
                                     <i class="fas fa-star"></i>
-                                    Défaut
+                                    {{ t('paymentMethods.default') }}
                                 </span>
                             </div>
 
                             <!-- Badge statut -->
                             <div v-if="!entity.is_active" class="status-badge">
                                 <span class="badge badge-secondary">
-                                    Inactive
+                                    {{ t('paymentMethods.inactive') }}
                                 </span>
                             </div>
                         </div>
@@ -180,7 +207,7 @@ const addPaymentMethod = async () => {
                                 :disabled="isSettingDefault"
                             >
                                 <i :class="isSettingDefault ? 'fas fa-spinner fa-spin' : 'fas fa-star'"></i>
-                                Définir par défaut
+                                {{ t('paymentMethods.setDefault') }}
                             </button>
                         </div>
                     </div>
@@ -191,7 +218,7 @@ const addPaymentMethod = async () => {
             <div v-if="entityStore.entities.length > 0" class="floating-add">
                 <button class="btn btn-success btn-lg" @click="addPaymentMethod">
                     <i class="fas fa-plus"></i>
-                    Ajouter une carte
+                    {{ t('paymentMethods.addCard') }}
                 </button>
             </div>
         </div>

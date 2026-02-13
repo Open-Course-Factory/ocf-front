@@ -58,6 +58,8 @@ const i18n = createI18n({
             back: 'Back',
             preview: 'Preview',
             confirmDelete: 'Are you sure you want to delete this item?',
+            all: 'All',
+            clearFilters: 'Clear filters',
             created_at: 'Created at',
             updated_at: 'Updated at',
             navigation: {
@@ -125,6 +127,8 @@ const i18n = createI18n({
             back: 'Retour',
             preview: 'Aperçu',
             confirmDelete: 'Êtes-vous sûr de vouloir supprimer cet élément ?',
+            all: 'Tout',
+            clearFilters: 'Effacer les filtres',
             created_at: 'Date de création',
             updated_at: 'Date de modification',
             navigation: {

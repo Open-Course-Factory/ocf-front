@@ -8,7 +8,7 @@
 <template>
   <BaseModal
     :visible="show"
-    :title="`Gérer les Accès - ${terminalInfo?.terminal.session_id || ''}`"
+    :title="`${t('access.manageAccess')} - ${terminalInfo?.terminal.session_id || ''}`"
     title-icon="fas fa-users-cog"
     size="large"
     :close-on-overlay-click="true"
@@ -19,15 +19,15 @@
       <div class="access-modal-wrapper">
         <div v-if="terminalInfo" class="terminal-info">
           <div class="info-item">
-            <strong><i class="fas fa-terminal"></i> {{ t('terminals.terminal') }}</strong>
+            <strong><i class="fas fa-terminal"></i> {{ ti18n('terminals.terminal') }}</strong>
             <span>{{ terminalInfo.terminal.session_id }}</span>
           </div>
           <div class="info-item">
-            <strong><i class="fas fa-server"></i> {{ t('terminals.instance') }}</strong>
+            <strong><i class="fas fa-server"></i> {{ ti18n('terminals.instance') }}</strong>
             <span>{{ terminalInfo.terminal.instance_type }}</span>
           </div>
           <div class="info-item">
-            <strong><i class="fas fa-info-circle"></i> {{ t('terminals.status') }}</strong>
+            <strong><i class="fas fa-info-circle"></i> {{ ti18n('terminals.status') }}</strong>
             <span :class="getStatusClass(terminalInfo.terminal.status)">
               {{ terminalInfo.terminal.status }}
             </span>
@@ -38,7 +38,7 @@
           <div class="section-header">
             <h4>
               <i class="fas fa-crown"></i>
-              Propriétaire
+              {{ t('access.owner') }}
             </h4>
           </div>
           <div class="access-item owner">
@@ -46,11 +46,11 @@
               <div class="user-name">{{ getUserDisplayName(terminalInfo?.terminal.user_id || '') }}</div>
               <div class="access-badge owner-badge">
                 <i class="fas fa-crown"></i>
-                Propriétaire
+                {{ t('access.ownerBadge') }}
               </div>
             </div>
             <div class="user-meta">
-              <small class="text-muted">{{ t('terminals.fullControl') }}</small>
+              <small class="text-muted">{{ ti18n('terminals.fullControl') }}</small>
             </div>
           </div>
         </div>
@@ -59,7 +59,7 @@
           <div class="section-header">
             <h4>
               <i class="fas fa-users"></i>
-              Utilisateurs partagés ({{ shares ? shares.length : 0 }})
+              {{ t('access.sharedUsers') }} ({{ shares ? shares.length : 0 }})
             </h4>
           </div>
           <div class="access-list">
@@ -75,17 +75,17 @@
                 <div class="meta-row">
                   <small class="text-muted">
                     <i class="fas fa-calendar-alt"></i>
-                    Partagé le: {{ formatDate(share.created_at) }}
+                    {{ t('access.sharedAt') }} {{ formatDate(share.created_at) }}
                   </small>
                   <small v-if="share.expires_at" class="text-warning">
                     <i class="fas fa-clock"></i>
-                    Expire le: {{ formatDate(share.expires_at) }}
+                    {{ t('access.expiresAt') }} {{ formatDate(share.expires_at) }}
                   </small>
                 </div>
                 <div class="meta-row">
                   <small :class="share.is_active ? 'text-success' : 'text-danger'">
                     <i :class="share.is_active ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
-                    {{ share.is_active ? 'Actif' : 'Inactif' }}
+                    {{ share.is_active ? t('access.active') : t('access.inactive') }}
                   </small>
                 </div>
               </div>
@@ -94,11 +94,11 @@
                   class="btn btn-danger btn-sm"
                   @click="revokeUserAccess(share.shared_with_user_id)"
                   :disabled="isRevoking"
-                  title="Révoquer l'accès"
+                  :title="t('access.revokeAccess')"
                 >
                   <i v-if="isRevoking" class="fas fa-spinner fa-spin"></i>
                   <i v-else class="fas fa-user-times"></i>
-                  Révoquer
+                  {{ t('access.revoke') }}
                 </button>
               </div>
             </div>
@@ -108,8 +108,8 @@
         <div v-else-if="!shares || shares.length === 0" class="access-section">
           <div class="empty-state">
             <i class="fas fa-users fa-3x"></i>
-            <h5>{{ t('terminals.noActiveSharing') }}</h5>
-            <p class="text-muted">{{ t('terminals.notSharedWithUsers') }}</p>
+            <h5>{{ ti18n('terminals.noActiveSharing') }}</h5>
+            <p class="text-muted">{{ ti18n('terminals.notSharedWithUsers') }}</p>
           </div>
         </div>
 
@@ -123,11 +123,11 @@
     <template #footer>
       <button class="btn btn-primary" @click="openSharingModal">
         <i class="fas fa-plus"></i>
-        Ajouter un utilisateur
+        {{ t('access.addUser') }}
       </button>
       <button class="btn btn-secondary" @click="closeModal">
         <i class="fas fa-times"></i>
-        Fermer
+        {{ t('access.close') }}
       </button>
     </template>
   </BaseModal>
@@ -138,9 +138,54 @@ import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { terminalService, type TerminalShareOutput, type SharedTerminalInfo } from '../../services/domain/terminal'
 import { userService, type User } from '../../services/domain/user'
+import { useTranslations } from '../../composables/useTranslations'
 import BaseModal from '../Modals/BaseModal.vue'
 
-const { t } = useI18n()
+const { t: ti18n } = useI18n()
+const { t } = useTranslations({
+  en: {
+    access: {
+      manageAccess: 'Manage Access',
+      owner: 'Owner',
+      ownerBadge: 'Owner',
+      sharedUsers: 'Shared users',
+      sharedAt: 'Shared at:',
+      expiresAt: 'Expires at:',
+      active: 'Active',
+      inactive: 'Inactive',
+      revokeAccess: 'Revoke access',
+      revoke: 'Revoke',
+      addUser: 'Add a user',
+      close: 'Close',
+      accessRead: 'Read',
+      accessWrite: 'Write',
+      accessAdmin: 'Admin',
+      loadError: 'Error loading access data',
+      revokeError: 'Error revoking access'
+    }
+  },
+  fr: {
+    access: {
+      manageAccess: 'Gérer les Accès',
+      owner: 'Propriétaire',
+      ownerBadge: 'Propriétaire',
+      sharedUsers: 'Utilisateurs partagés',
+      sharedAt: 'Partagé le :',
+      expiresAt: 'Expire le :',
+      active: 'Actif',
+      inactive: 'Inactif',
+      revokeAccess: 'Révoquer l\'accès',
+      revoke: 'Révoquer',
+      addUser: 'Ajouter un utilisateur',
+      close: 'Fermer',
+      accessRead: 'Lecture',
+      accessWrite: 'Écriture',
+      accessAdmin: 'Admin',
+      loadError: 'Erreur lors du chargement des données d\'accès',
+      revokeError: 'Erreur lors de la révocation de l\'accès'
+    }
+  }
+})
 
 interface Props {
   show: boolean
@@ -204,13 +249,13 @@ async function loadData() {
       shares.value = []
       // Only show error if both API calls fail
       if (!info) {
-        error.value = sharesErr.response?.data?.error_message || 'Erreur lors du chargement des données d\'accès'
+        error.value = sharesErr.response?.data?.error_message || t('access.loadError')
       }
     }
 
   } catch (err: any) {
     console.error('Error loading terminal access data:', err)
-    error.value = err.response?.data?.error_message || 'Erreur lors du chargement des données d\'accès'
+    error.value = err.response?.data?.error_message || t('access.loadError')
     // Ensure shares is always an array
     shares.value = []
   }
@@ -253,7 +298,7 @@ async function revokeUserAccess(userId: string) {
     console.log(`Access revoked for user ${userId}`)
   } catch (err: any) {
     console.error('Error revoking access:', err)
-    error.value = err.response?.data?.error_message || 'Erreur lors de la révocation de l\'accès'
+    error.value = err.response?.data?.error_message || t('access.revokeError')
   } finally {
     isRevoking.value = false
   }
@@ -296,9 +341,9 @@ function getAccessIcon(level: string) {
 
 function getAccessLabel(level: string) {
   switch (level) {
-    case 'read': return 'Lecture'
-    case 'write': return 'Écriture'
-    case 'admin': return 'Admin'
+    case 'read': return t('access.accessRead')
+    case 'write': return t('access.accessWrite')
+    case 'admin': return t('access.accessAdmin')
     default: return level
   }
 }

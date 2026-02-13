@@ -47,7 +47,7 @@
                 @change="applyFilters"
                 class="filter-select"
               >
-                <option value="">All</option>
+                <option value="">{{ t('all') }}</option>
                 <option
                   v-for="option in filter.options"
                   :key="option.value"
@@ -61,7 +61,7 @@
               v-if="hasActiveFilters"
               @click="clearFilters"
               class="btn btn-secondary btn-clear-filters"
-              title="Clear filters"
+              :title="t('clearFilters')"
             >
               <i class="fas fa-times"></i>
             </button>
