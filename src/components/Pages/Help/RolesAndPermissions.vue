@@ -1,18 +1,24 @@
 <template>
-  <div class="help-page roles-permissions">
+  <div class="help-article roles-permissions">
+    <div class="help-nav">
+      <router-link :to="helpMainRoute" class="back-link">
+        <i class="fas fa-arrow-left"></i>
+        {{ t('help.navigation.backToHelp') }}
+      </router-link>
+    </div>
     <div class="help-header">
       <h1>
         <i class="fas fa-user-shield"></i>
-        {{ t('help.rolesTitle') }}
+        {{ t('help.account.rolesAndPermissions.rolesTitle') }}
       </h1>
-      <p class="subtitle">{{ t('help.rolesSubtitle') }}</p>
+      <p class="subtitle">{{ t('help.account.rolesAndPermissions.rolesSubtitle') }}</p>
     </div>
 
     <div class="help-content">
       <!-- Overview Section -->
       <section class="help-section">
-        <h2>{{ t('help.overviewTitle') }}</h2>
-        <p>{{ t('help.overviewDescription') }}</p>
+        <h2>{{ t('help.account.rolesAndPermissions.overviewTitle') }}</h2>
+        <p>{{ t('help.account.rolesAndPermissions.overviewDescription') }}</p>
 
         <div class="role-levels">
           <div class="level-card">
@@ -20,8 +26,8 @@
               <i class="fas fa-globe"></i>
             </div>
             <div class="level-content">
-              <h3>{{ t('help.platformLevel') }}</h3>
-              <p>{{ t('help.platformLevelDesc') }}</p>
+              <h3>{{ t('help.account.rolesAndPermissions.platformLevel') }}</h3>
+              <p>{{ t('help.account.rolesAndPermissions.platformLevelDesc') }}</p>
             </div>
           </div>
 
@@ -30,8 +36,8 @@
               <i class="fas fa-building"></i>
             </div>
             <div class="level-content">
-              <h3>{{ t('help.organizationLevel') }}</h3>
-              <p>{{ t('help.organizationLevelDesc') }}</p>
+              <h3>{{ t('help.account.rolesAndPermissions.organizationLevel') }}</h3>
+              <p>{{ t('help.account.rolesAndPermissions.organizationLevelDesc') }}</p>
             </div>
           </div>
 
@@ -40,8 +46,8 @@
               <i class="fas fa-users-class"></i>
             </div>
             <div class="level-content">
-              <h3>{{ t('help.groupLevel') }}</h3>
-              <p>{{ t('help.groupLevelDesc') }}</p>
+              <h3>{{ t('help.account.rolesAndPermissions.groupLevel') }}</h3>
+              <p>{{ t('help.account.rolesAndPermissions.groupLevelDesc') }}</p>
             </div>
           </div>
         </div>
@@ -51,88 +57,88 @@
       <section class="help-section">
         <h2>
           <i class="fas fa-building"></i>
-          {{ t('help.orgRolesTitle') }}
+          {{ t('help.account.rolesAndPermissions.orgRolesTitle') }}
         </h2>
-        <p>{{ t('help.orgRolesDescription') }}</p>
+        <p>{{ t('help.account.rolesAndPermissions.orgRolesDescription') }}</p>
 
         <div class="permission-matrix">
           <table>
             <thead>
               <tr>
-                <th>{{ t('help.permission') }}</th>
+                <th>{{ t('help.account.rolesAndPermissions.permission') }}</th>
                 <th class="role-col owner-col">
                   <i class="fas fa-crown"></i>
-                  {{ t('help.owner') }}
+                  {{ t('help.account.rolesAndPermissions.owner') }}
                 </th>
                 <th class="role-col manager-col">
                   <i class="fas fa-user-tie"></i>
-                  {{ t('help.manager') }}
+                  {{ t('help.account.rolesAndPermissions.manager') }}
                 </th>
                 <th class="role-col member-col">
                   <i class="fas fa-user"></i>
-                  {{ t('help.member') }}
+                  {{ t('help.account.rolesAndPermissions.member') }}
                 </th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td class="permission-name">{{ t('help.viewOrganization') }}</td>
+                <td class="permission-name">{{ t('help.account.rolesAndPermissions.viewOrganization') }}</td>
                 <td class="permission-check"><i class="fas fa-check"></i></td>
                 <td class="permission-check"><i class="fas fa-check"></i></td>
                 <td class="permission-check"><i class="fas fa-check"></i></td>
               </tr>
               <tr>
-                <td class="permission-name">{{ t('help.inviteMembers') }}</td>
+                <td class="permission-name">{{ t('help.account.rolesAndPermissions.inviteMembers') }}</td>
                 <td class="permission-check"><i class="fas fa-check"></i></td>
                 <td class="permission-check"><i class="fas fa-check"></i></td>
                 <td class="permission-cross"><i class="fas fa-times"></i></td>
               </tr>
               <tr>
-                <td class="permission-name">{{ t('help.removeMembers') }}</td>
+                <td class="permission-name">{{ t('help.account.rolesAndPermissions.removeMembers') }}</td>
                 <td class="permission-check"><i class="fas fa-check"></i></td>
                 <td class="permission-check"><i class="fas fa-check"></i></td>
                 <td class="permission-cross"><i class="fas fa-times"></i></td>
               </tr>
               <tr>
-                <td class="permission-name">{{ t('help.changeRoles') }}</td>
+                <td class="permission-name">{{ t('help.account.rolesAndPermissions.changeRoles') }}</td>
                 <td class="permission-check"><i class="fas fa-check"></i></td>
-                <td class="permission-partial" :title="t('help.cannotPromoteToOwner')">
+                <td class="permission-partial" :title="t('help.account.rolesAndPermissions.cannotPromoteToOwner')">
                   <i class="fas fa-minus"></i>
                 </td>
                 <td class="permission-cross"><i class="fas fa-times"></i></td>
               </tr>
               <tr>
-                <td class="permission-name">{{ t('help.promoteToOwner') }}</td>
+                <td class="permission-name">{{ t('help.account.rolesAndPermissions.promoteToOwner') }}</td>
                 <td class="permission-check"><i class="fas fa-check"></i></td>
                 <td class="permission-cross"><i class="fas fa-times"></i></td>
                 <td class="permission-cross"><i class="fas fa-times"></i></td>
               </tr>
               <tr>
-                <td class="permission-name">{{ t('help.manageBilling') }}</td>
+                <td class="permission-name">{{ t('help.account.rolesAndPermissions.manageBilling') }}</td>
                 <td class="permission-check"><i class="fas fa-check"></i></td>
                 <td class="permission-check"><i class="fas fa-check"></i></td>
                 <td class="permission-cross"><i class="fas fa-times"></i></td>
               </tr>
               <tr>
-                <td class="permission-name">{{ t('help.manageSubscriptions') }}</td>
+                <td class="permission-name">{{ t('help.account.rolesAndPermissions.manageSubscriptions') }}</td>
                 <td class="permission-check"><i class="fas fa-check"></i></td>
                 <td class="permission-check"><i class="fas fa-check"></i></td>
                 <td class="permission-cross"><i class="fas fa-times"></i></td>
               </tr>
               <tr>
-                <td class="permission-name">{{ t('help.editOrgSettings') }}</td>
+                <td class="permission-name">{{ t('help.account.rolesAndPermissions.editOrgSettings') }}</td>
                 <td class="permission-check"><i class="fas fa-check"></i></td>
                 <td class="permission-check"><i class="fas fa-check"></i></td>
                 <td class="permission-cross"><i class="fas fa-times"></i></td>
               </tr>
               <tr>
-                <td class="permission-name">{{ t('help.deleteOrganization') }}</td>
+                <td class="permission-name">{{ t('help.account.rolesAndPermissions.deleteOrganization') }}</td>
                 <td class="permission-check"><i class="fas fa-check"></i></td>
                 <td class="permission-cross"><i class="fas fa-times"></i></td>
                 <td class="permission-cross"><i class="fas fa-times"></i></td>
               </tr>
               <tr>
-                <td class="permission-name">{{ t('help.transferOwnership') }}</td>
+                <td class="permission-name">{{ t('help.account.rolesAndPermissions.transferOwnership') }}</td>
                 <td class="permission-check"><i class="fas fa-check"></i></td>
                 <td class="permission-cross"><i class="fas fa-times"></i></td>
                 <td class="permission-cross"><i class="fas fa-times"></i></td>
@@ -144,15 +150,15 @@
         <div class="legend">
           <div class="legend-item">
             <i class="fas fa-check legend-icon check"></i>
-            <span>{{ t('help.allowed') }}</span>
+            <span>{{ t('help.account.rolesAndPermissions.allowed') }}</span>
           </div>
           <div class="legend-item">
             <i class="fas fa-minus legend-icon partial"></i>
-            <span>{{ t('help.partial') }}</span>
+            <span>{{ t('help.account.rolesAndPermissions.partial') }}</span>
           </div>
           <div class="legend-item">
             <i class="fas fa-times legend-icon cross"></i>
-            <span>{{ t('help.denied') }}</span>
+            <span>{{ t('help.account.rolesAndPermissions.denied') }}</span>
           </div>
         </div>
       </section>
@@ -161,60 +167,60 @@
       <section class="help-section">
         <h2>
           <i class="fas fa-users-class"></i>
-          {{ t('help.groupRolesTitle') }}
+          {{ t('help.account.rolesAndPermissions.groupRolesTitle') }}
         </h2>
-        <p>{{ t('help.groupRolesDescription') }}</p>
+        <p>{{ t('help.account.rolesAndPermissions.groupRolesDescription') }}</p>
 
         <div class="role-descriptions">
           <div class="role-desc-card">
             <div class="role-desc-header owner-header">
               <i class="fas fa-crown"></i>
-              <h3>{{ t('help.groupOwner') }}</h3>
+              <h3>{{ t('help.account.rolesAndPermissions.groupOwner') }}</h3>
             </div>
-            <p>{{ t('help.groupOwnerDesc') }}</p>
+            <p>{{ t('help.account.rolesAndPermissions.groupOwnerDesc') }}</p>
             <ul>
-              <li>{{ t('help.groupOwnerPerm1') }}</li>
-              <li>{{ t('help.groupOwnerPerm2') }}</li>
-              <li>{{ t('help.groupOwnerPerm3') }}</li>
+              <li>{{ t('help.account.rolesAndPermissions.groupOwnerPerm1') }}</li>
+              <li>{{ t('help.account.rolesAndPermissions.groupOwnerPerm2') }}</li>
+              <li>{{ t('help.account.rolesAndPermissions.groupOwnerPerm3') }}</li>
             </ul>
           </div>
 
           <div class="role-desc-card">
             <div class="role-desc-header admin-header">
               <i class="fas fa-user-shield"></i>
-              <h3>{{ t('help.groupAdmin') }}</h3>
+              <h3>{{ t('help.account.rolesAndPermissions.groupAdmin') }}</h3>
             </div>
-            <p>{{ t('help.groupAdminDesc') }}</p>
+            <p>{{ t('help.account.rolesAndPermissions.groupAdminDesc') }}</p>
             <ul>
-              <li>{{ t('help.groupAdminPerm1') }}</li>
-              <li>{{ t('help.groupAdminPerm2') }}</li>
-              <li>{{ t('help.groupAdminPerm3') }}</li>
+              <li>{{ t('help.account.rolesAndPermissions.groupAdminPerm1') }}</li>
+              <li>{{ t('help.account.rolesAndPermissions.groupAdminPerm2') }}</li>
+              <li>{{ t('help.account.rolesAndPermissions.groupAdminPerm3') }}</li>
             </ul>
           </div>
 
           <div class="role-desc-card">
             <div class="role-desc-header assistant-header">
               <i class="fas fa-hands-helping"></i>
-              <h3>{{ t('help.groupAssistant') }}</h3>
+              <h3>{{ t('help.account.rolesAndPermissions.groupAssistant') }}</h3>
             </div>
-            <p>{{ t('help.groupAssistantDesc') }}</p>
+            <p>{{ t('help.account.rolesAndPermissions.groupAssistantDesc') }}</p>
             <ul>
-              <li>{{ t('help.groupAssistantPerm1') }}</li>
-              <li>{{ t('help.groupAssistantPerm2') }}</li>
-              <li>{{ t('help.groupAssistantPerm3') }}</li>
+              <li>{{ t('help.account.rolesAndPermissions.groupAssistantPerm1') }}</li>
+              <li>{{ t('help.account.rolesAndPermissions.groupAssistantPerm2') }}</li>
+              <li>{{ t('help.account.rolesAndPermissions.groupAssistantPerm3') }}</li>
             </ul>
           </div>
 
           <div class="role-desc-card">
             <div class="role-desc-header member-header">
               <i class="fas fa-user"></i>
-              <h3>{{ t('help.groupMember') }}</h3>
+              <h3>{{ t('help.account.rolesAndPermissions.groupMember') }}</h3>
             </div>
-            <p>{{ t('help.groupMemberDesc') }}</p>
+            <p>{{ t('help.account.rolesAndPermissions.groupMemberDesc') }}</p>
             <ul>
-              <li>{{ t('help.groupMemberPerm1') }}</li>
-              <li>{{ t('help.groupMemberPerm2') }}</li>
-              <li>{{ t('help.groupMemberPerm3') }}</li>
+              <li>{{ t('help.account.rolesAndPermissions.groupMemberPerm1') }}</li>
+              <li>{{ t('help.account.rolesAndPermissions.groupMemberPerm2') }}</li>
+              <li>{{ t('help.account.rolesAndPermissions.groupMemberPerm3') }}</li>
             </ul>
           </div>
         </div>
@@ -224,13 +230,13 @@
       <section class="help-section">
         <h2>
           <i class="fas fa-user-cog"></i>
-          {{ t('help.platformAdminTitle') }}
+          {{ t('help.account.rolesAndPermissions.platformAdminTitle') }}
         </h2>
         <div class="admin-notice">
           <i class="fas fa-shield-alt"></i>
           <div>
-            <p><strong>{{ t('help.platformAdminNoticeTitle') }}</strong></p>
-            <p>{{ t('help.platformAdminNoticeDesc') }}</p>
+            <p><strong>{{ t('help.account.rolesAndPermissions.platformAdminNoticeTitle') }}</strong></p>
+            <p>{{ t('help.account.rolesAndPermissions.platformAdminNoticeDesc') }}</p>
           </div>
         </div>
       </section>
@@ -239,28 +245,28 @@
       <section class="help-section">
         <h2>
           <i class="fas fa-question-circle"></i>
-          {{ t('help.scenariosTitle') }}
+          {{ t('help.account.rolesAndPermissions.scenariosTitle') }}
         </h2>
 
         <div class="scenarios">
           <div class="scenario">
-            <h4>{{ t('help.scenario1Question') }}</h4>
-            <p>{{ t('help.scenario1Answer') }}</p>
+            <h4>{{ t('help.account.rolesAndPermissions.scenario1Question') }}</h4>
+            <p>{{ t('help.account.rolesAndPermissions.scenario1Answer') }}</p>
           </div>
 
           <div class="scenario">
-            <h4>{{ t('help.scenario2Question') }}</h4>
-            <p>{{ t('help.scenario2Answer') }}</p>
+            <h4>{{ t('help.account.rolesAndPermissions.scenario2Question') }}</h4>
+            <p>{{ t('help.account.rolesAndPermissions.scenario2Answer') }}</p>
           </div>
 
           <div class="scenario">
-            <h4>{{ t('help.scenario3Question') }}</h4>
-            <p>{{ t('help.scenario3Answer') }}</p>
+            <h4>{{ t('help.account.rolesAndPermissions.scenario3Question') }}</h4>
+            <p>{{ t('help.account.rolesAndPermissions.scenario3Answer') }}</p>
           </div>
 
           <div class="scenario">
-            <h4>{{ t('help.scenario4Question') }}</h4>
-            <p>{{ t('help.scenario4Answer') }}</p>
+            <h4>{{ t('help.account.rolesAndPermissions.scenario4Question') }}</h4>
+            <p>{{ t('help.account.rolesAndPermissions.scenario4Answer') }}</p>
           </div>
         </div>
       </section>
@@ -269,153 +275,46 @@
 </template>
 
 <script setup lang="ts">
-import { useTranslations } from '../../../composables/useTranslations'
+import { onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
+import { useHelpTranslations } from '../../../composables/useHelpTranslations'
 
-const { t } = useTranslations({
-  en: {
-    help: {
-      rolesTitle: 'Roles and Permissions',
-      rolesSubtitle: 'Understanding user roles and access control in the system',
-      overviewTitle: 'Overview',
-      overviewDescription: 'The system uses a three-tier role model to manage access and permissions at different levels.',
-      platformLevel: 'Platform Level',
-      platformLevelDesc: 'System-wide administrator access with full control',
-      organizationLevel: 'Organization Level',
-      organizationLevelDesc: 'Manage organizations, members, billing, and subscriptions',
-      groupLevel: 'Group Level',
-      groupLevelDesc: 'Manage groups (classrooms), courses, and student access',
-      orgRolesTitle: 'Organization Roles',
-      orgRolesDescription: 'These roles control access to organization management features:',
-      permission: 'Permission',
-      owner: 'Owner',
-      manager: 'Manager',
-      member: 'Member',
-      viewOrganization: 'View organization',
-      inviteMembers: 'Invite members',
-      removeMembers: 'Remove members',
-      changeRoles: 'Change member roles',
-      promoteToOwner: 'Promote members to owner',
-      manageBilling: 'Manage billing',
-      manageSubscriptions: 'Manage subscriptions',
-      editOrgSettings: 'Edit organization settings',
-      deleteOrganization: 'Delete organization',
-      transferOwnership: 'Transfer ownership',
-      allowed: 'Allowed',
-      partial: 'Partial (with restrictions)',
-      denied: 'Not allowed',
-      cannotPromoteToOwner: 'Can change roles to member or manager, but not to owner',
-      groupRolesTitle: 'Group Roles',
-      groupRolesDescription: 'Groups represent classrooms or teams within an organization:',
-      groupOwner: 'Owner',
-      groupOwnerDesc: 'The group creator with full control over the group.',
-      groupOwnerPerm1: 'Delete the group',
-      groupOwnerPerm2: 'Transfer ownership',
-      groupOwnerPerm3: 'Assign admins and assistants',
-      groupAdmin: 'Admin',
-      groupAdminDesc: 'Co-instructors with management permissions.',
-      groupAdminPerm1: 'Manage group content and courses',
-      groupAdminPerm2: 'Add/remove members',
-      groupAdminPerm3: 'View group analytics',
-      groupAssistant: 'Assistant',
-      groupAssistantDesc: 'Teaching assistants with limited management access.',
-      groupAssistantPerm1: 'Help manage group activities',
-      groupAssistantPerm2: 'View member progress',
-      groupAssistantPerm3: 'Assist with course delivery',
-      groupMember: 'Member',
-      groupMemberDesc: 'Students or participants in the group.',
-      groupMemberPerm1: 'Access group content',
-      groupMemberPerm2: 'Participate in courses',
-      groupMemberPerm3: 'Use assigned resources',
-      platformAdminTitle: 'Platform Administrator',
-      platformAdminNoticeTitle: 'System-wide access',
-      platformAdminNoticeDesc: 'Platform administrators have unrestricted access to all organizations, groups, and features. This role is reserved for system operators and bypasses all organization and group permissions.',
-      scenariosTitle: 'Common Scenarios',
-      scenario1Question: 'Can a manager delete an organization?',
-      scenario1Answer: 'No. Only organization owners can delete organizations to prevent accidental data loss.',
-      scenario2Question: 'Can a manager promote someone to owner?',
-      scenario2Answer: 'No. Only current owners can promote members to owner status. Managers can only assign member or manager roles.',
-      scenario3Question: 'What happens if an organization owner leaves?',
-      scenario3Answer: 'The owner should transfer ownership to another member before leaving. If not, contact support to reassign ownership.',
-      scenario4Question: 'Can I have multiple roles?',
-      scenario4Answer: 'Yes. You can be an owner of one organization, a manager of another, and a member of groups within different organizations.',
-    }
-  },
-  fr: {
-    help: {
-      rolesTitle: 'Rôles et permissions',
-      rolesSubtitle: 'Comprendre les rôles utilisateur et le contrôle d\'accès dans le système',
-      overviewTitle: 'Vue d\'ensemble',
-      overviewDescription: 'Le système utilise un modèle de rôles à trois niveaux pour gérer l\'accès et les permissions à différents niveaux.',
-      platformLevel: 'Niveau plateforme',
-      platformLevelDesc: 'Accès administrateur système avec contrôle total',
-      organizationLevel: 'Niveau organisation',
-      organizationLevelDesc: 'Gérer les organisations, membres, facturation et abonnements',
-      groupLevel: 'Niveau groupe',
-      groupLevelDesc: 'Gérer les groupes (classes), cours et accès des étudiants',
-      orgRolesTitle: 'Rôles d\'organisation',
-      orgRolesDescription: 'Ces rôles contrôlent l\'accès aux fonctionnalités de gestion d\'organisation :',
-      permission: 'Permission',
-      owner: 'Propriétaire',
-      manager: 'Gestionnaire',
-      member: 'Membre',
-      viewOrganization: 'Voir l\'organisation',
-      inviteMembers: 'Inviter des membres',
-      removeMembers: 'Retirer des membres',
-      changeRoles: 'Changer les rôles des membres',
-      promoteToOwner: 'Promouvoir des membres en propriétaires',
-      manageBilling: 'Gérer la facturation',
-      manageSubscriptions: 'Gérer les abonnements',
-      editOrgSettings: 'Modifier les paramètres',
-      deleteOrganization: 'Supprimer l\'organisation',
-      transferOwnership: 'Transférer la propriété',
-      allowed: 'Autorisé',
-      partial: 'Partiel (avec restrictions)',
-      denied: 'Non autorisé',
-      cannotPromoteToOwner: 'Peut changer les rôles en membre ou gestionnaire, mais pas en propriétaire',
-      groupRolesTitle: 'Rôles de groupe',
-      groupRolesDescription: 'Les groupes représentent des classes ou équipes au sein d\'une organisation :',
-      groupOwner: 'Propriétaire',
-      groupOwnerDesc: 'Le créateur du groupe avec contrôle total.',
-      groupOwnerPerm1: 'Supprimer le groupe',
-      groupOwnerPerm2: 'Transférer la propriété',
-      groupOwnerPerm3: 'Assigner des administrateurs et assistants',
-      groupAdmin: 'Administrateur',
-      groupAdminDesc: 'Co-instructeurs avec permissions de gestion.',
-      groupAdminPerm1: 'Gérer le contenu et les cours du groupe',
-      groupAdminPerm2: 'Ajouter/retirer des membres',
-      groupAdminPerm3: 'Voir les analyses du groupe',
-      groupAssistant: 'Assistant',
-      groupAssistantDesc: 'Assistants pédagogiques avec accès de gestion limité.',
-      groupAssistantPerm1: 'Aider à gérer les activités du groupe',
-      groupAssistantPerm2: 'Voir la progression des membres',
-      groupAssistantPerm3: 'Assister avec la livraison des cours',
-      groupMember: 'Membre',
-      groupMemberDesc: 'Étudiants ou participants du groupe.',
-      groupMemberPerm1: 'Accéder au contenu du groupe',
-      groupMemberPerm2: 'Participer aux cours',
-      groupMemberPerm3: 'Utiliser les ressources assignées',
-      platformAdminTitle: 'Administrateur plateforme',
-      platformAdminNoticeTitle: 'Accès système complet',
-      platformAdminNoticeDesc: 'Les administrateurs plateforme ont un accès illimité à toutes les organisations, groupes et fonctionnalités. Ce rôle est réservé aux opérateurs système et contourne toutes les permissions d\'organisation et de groupe.',
-      scenariosTitle: 'Scénarios courants',
-      scenario1Question: 'Un gestionnaire peut-il supprimer une organisation ?',
-      scenario1Answer: 'Non. Seuls les propriétaires d\'organisation peuvent supprimer des organisations pour éviter la perte accidentelle de données.',
-      scenario2Question: 'Un gestionnaire peut-il promouvoir quelqu\'un en propriétaire ?',
-      scenario2Answer: 'Non. Seuls les propriétaires actuels peuvent promouvoir des membres au statut de propriétaire. Les gestionnaires ne peuvent assigner que les rôles de membre ou gestionnaire.',
-      scenario3Question: 'Que se passe-t-il si le propriétaire d\'une organisation part ?',
-      scenario3Answer: 'Le propriétaire devrait transférer la propriété à un autre membre avant de partir. Sinon, contactez le support pour réassigner la propriété.',
-      scenario4Question: 'Puis-je avoir plusieurs rôles ?',
-      scenario4Answer: 'Oui. Vous pouvez être propriétaire d\'une organisation, gestionnaire d\'une autre, et membre de groupes dans différentes organisations.',
-    }
-  }
+const { t } = useI18n()
+const { loadHelpTranslations } = useHelpTranslations()
+const route = useRoute()
+
+const isPublicHelp = computed(() => route.path.startsWith('/help-public'))
+const helpMainRoute = computed(() => isPublicHelp.value ? '/help-public' : '/help')
+
+onMounted(async () => {
+  await loadHelpTranslations()
 })
 </script>
 
 <style scoped>
-.help-page {
+.help-article {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+}
+
+.help-nav {
+  margin-bottom: 30px;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.back-link:hover {
+  color: var(--color-primary-hover);
 }
 
 .help-header {
@@ -781,7 +680,7 @@ const { t } = useTranslations({
 
 /* Responsive */
 @media (max-width: 768px) {
-  .help-page {
+  .help-article {
     padding: 1rem;
   }
 

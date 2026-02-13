@@ -257,7 +257,7 @@ const basicRoutes = [
       { path: 'subscription-dashboard', name: 'SubscriptionDashboard', component: () => import('../components/Pages/SubscriptionDashboard.vue'), meta: { requiresAuth: true } },
 
       // Help Routes
-      { path: 'help/roles-and-permissions', name: 'HelpRolesAndPermissions', component: () => import('../components/Pages/Help/RolesAndPermissions.vue'), meta: { requiresAuth: true } },
+      { path: 'help/account/roles-and-permissions', name: 'HelpRolesAndPermissions', component: () => import('../components/Pages/Help/RolesAndPermissions.vue'), meta: { requiresAuth: true } },
 
       // Bulk License Management Routes
       {

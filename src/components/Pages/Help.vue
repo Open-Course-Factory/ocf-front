@@ -209,7 +209,7 @@ const helpSections = computed(() => {
           icon: 'fas fa-credit-card'
         },
         {
-          route: '/help/roles-and-permissions',
+          route: `${routePrefix.value}/account/roles-and-permissions`,
           title: t('help.sections.account.rolesAndPermissions'),
           description: t('help.account.rolesAndPermissions.intro'),
           icon: 'fas fa-user-shield'

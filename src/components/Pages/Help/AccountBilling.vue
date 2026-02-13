@@ -256,23 +256,23 @@
           <h3>{{ t('help.account.billing.invoices.structure.title') }}</h3>
           <div class="structure-items">
             <div class="structure-item">
-              <span class="structure-label">En-tête :</span>
+              <span class="structure-label">{{ t('help.account.billing.invoices.structure.headerLabel') }}</span>
               <span>{{ t('help.account.billing.invoices.structure.header') }}</span>
             </div>
             <div class="structure-item">
-              <span class="structure-label">Période :</span>
+              <span class="structure-label">{{ t('help.account.billing.invoices.structure.periodLabel') }}</span>
               <span>{{ t('help.account.billing.invoices.structure.period') }}</span>
             </div>
             <div class="structure-item">
-              <span class="structure-label">Détail :</span>
+              <span class="structure-label">{{ t('help.account.billing.invoices.structure.detailLabel') }}</span>
               <span>{{ t('help.account.billing.invoices.structure.detail') }}</span>
             </div>
             <div class="structure-item">
-              <span class="structure-label">Taxes :</span>
+              <span class="structure-label">{{ t('help.account.billing.invoices.structure.taxesLabel') }}</span>
               <span>{{ t('help.account.billing.invoices.structure.taxes') }}</span>
             </div>
             <div class="structure-item">
-              <span class="structure-label">Total :</span>
+              <span class="structure-label">{{ t('help.account.billing.invoices.structure.totalLabel') }}</span>
               <span>{{ t('help.account.billing.invoices.structure.total') }}</span>
             </div>
           </div>
