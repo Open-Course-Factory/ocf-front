@@ -52,6 +52,14 @@ export const helpEn = {
         subscription: "Subscription & Plans",
         billing: "Billing & Payments",
         rolesAndPermissions: "Roles & Permissions"
+      },
+      organizations: {
+        title: "🏢 Organizations & Groups",
+        description: "Manage organizations, groups, bulk imports and licenses",
+        overview: "Organizations Overview",
+        groups: "Group Management",
+        bulkImport: "Bulk Import",
+        bulkLicenses: "Bulk Licenses"
       }
     },
 
@@ -1545,6 +1553,308 @@ export const helpEn = {
         scenario3Answer: "The owner should transfer ownership to another member before leaving. If not, contact support to reassign ownership.",
         scenario4Question: "Can I have multiple roles?",
         scenario4Answer: "Yes. You can be an owner of one organization, a manager of another, and a member of groups within different organizations."
+      }
+    },
+
+    organizations: {
+      overview: {
+        title: "Organizations Overview",
+        intro: "Organizations are the top-level structure for managing teams, licenses, and content. Learn how to create and configure organizations effectively.",
+        whatAre: {
+          title: "What are Organizations?",
+          description: "An organization is a logical container that groups users, manages subscriptions, and controls access to platform features. Organizations can represent companies, schools, departments, or any team.",
+          benefit1: "Centralized user and license management",
+          benefit2: "Shared billing and subscription plans",
+          benefit3: "Group-based content assignment",
+          benefit4: "Role-based access control"
+        },
+        creating: {
+          title: "Creating & Managing Organizations",
+          description: "Learn how to set up your organization step by step.",
+          step1: {
+            title: "Create Your Organization",
+            description: "Navigate to the Organizations page and click 'Create Organization'. Provide a name and optional description."
+          },
+          step2: {
+            title: "Configure Settings",
+            description: "Set up your organization's preferences including default roles, notification settings, and branding options."
+          },
+          step3: {
+            title: "Invite Members",
+            description: "Add members by email or bulk import. Assign roles (Owner, Manager, or Member) based on responsibilities."
+          }
+        },
+        members: {
+          title: "Member Management",
+          description: "Manage your organization's members and their access levels.",
+          addMembers: "Invite new members via email or import from CSV",
+          assignRoles: "Assign Owner, Manager, or Member roles",
+          manageLicenses: "Allocate licenses to individual members",
+          removeMembers: "Remove members or transfer their data"
+        },
+        settings: {
+          title: "Organization Settings",
+          description: "Configure your organization to match your workflow.",
+          general: "General settings: name, description, and branding",
+          notifications: "Notification preferences for organization events",
+          security: "Security settings and access policies",
+          billing: "Billing information and subscription management"
+        },
+        bestPractices: {
+          title: "Best Practices",
+          description: "Follow these recommendations for effective organization management.",
+          tip1: {
+            title: "Start with Clear Roles",
+            description: "Define who should be owners, managers, and members before inviting people. This prevents permission confusion later."
+          },
+          tip2: {
+            title: "Use Groups for Structure",
+            description: "Create groups within your organization to manage classes, teams, or departments separately."
+          },
+          tip3: {
+            title: "Regular License Audits",
+            description: "Review license assignments periodically to ensure they're allocated to active users."
+          }
+        },
+        nextSteps: {
+          groups: {
+            title: "Group Management",
+            description: "Learn how to create and manage groups within your organization"
+          },
+          roles: {
+            title: "Roles & Permissions",
+            description: "Understand the permission system across organizations and groups"
+          }
+        }
+      }
+    },
+
+    groups: {
+      management: {
+        title: "Group Management",
+        intro: "Groups allow you to organize members within an organization into classes, teams, or departments. Learn how to create, configure, and manage groups effectively.",
+        overview: {
+          title: "Understanding Groups",
+          description: "Groups are subsets of an organization that help you manage members and assign content at a finer level.",
+          feature1: "Organize members into classes or teams",
+          feature2: "Assign courses and terminal access per group",
+          feature3: "Manage roles within each group independently",
+          feature4: "Support hierarchical group structures"
+        },
+        creating: {
+          title: "Creating Groups",
+          description: "Follow these steps to create a new group within your organization.",
+          step1: {
+            title: "Navigate to Groups",
+            description: "Go to the Groups page from the main navigation or from your organization detail page."
+          },
+          step2: {
+            title: "Create a New Group",
+            description: "Click 'Create Group', enter a name and description, and select the parent organization."
+          },
+          step3: {
+            title: "Add Members",
+            description: "Invite members to the group or add existing organization members. Assign group-specific roles."
+          }
+        },
+        hierarchy: {
+          title: "Group Hierarchy",
+          description: "Groups can be organized in a hierarchical structure for complex organizations.",
+          parentGroups: "Parent groups can contain sub-groups",
+          inheritance: "Settings can be inherited from parent to child groups",
+          navigation: "Use the hierarchy editor for drag-and-drop organization",
+          visualization: "View the complete hierarchy tree from the hierarchy page"
+        },
+        roles: {
+          title: "Group Member Roles",
+          description: "Each group member has a role that determines their permissions within that group.",
+          owner: {
+            title: "Group Owner",
+            description: "Full control over the group, including settings, members, and content"
+          },
+          admin: {
+            title: "Group Admin",
+            description: "Can manage members and content but cannot delete the group or change critical settings"
+          },
+          assistant: {
+            title: "Group Assistant",
+            description: "Can help manage content and view member progress but cannot modify group settings"
+          },
+          member: {
+            title: "Group Member",
+            description: "Can access assigned content and participate in group activities"
+          }
+        },
+        content: {
+          title: "Content Assignment",
+          description: "Assign courses and resources to groups so all members have access.",
+          assignCourses: "Assign courses to a group for all members",
+          terminalAccess: "Configure terminal access settings per group",
+          scheduling: "Set up schedules for content availability",
+          tracking: "Track group progress and completion rates"
+        },
+        settings: {
+          title: "Group Settings",
+          description: "Configure your group to fit your needs.",
+          general: "Name, description, and visibility settings",
+          enrollment: "Open or closed enrollment, invitation-only access",
+          notifications: "Group-level notification preferences",
+          limits: "Member limits and content restrictions"
+        },
+        nextSteps: {
+          organizations: {
+            title: "Organizations Overview",
+            description: "Learn about the organizational structure that contains your groups"
+          },
+          roles: {
+            title: "Roles & Permissions",
+            description: "Deep dive into the permission system for organizations and groups"
+          }
+        }
+      }
+    },
+
+    bulkImport: {
+      overview: {
+        title: "Bulk Import",
+        intro: "Import multiple users into your organization at once using CSV files. This guide walks you through the import process, CSV format requirements, and best practices.",
+        whatIs: {
+          title: "What is Bulk Import?",
+          description: "Bulk import allows organization managers to add many users simultaneously by uploading a CSV file. This is ideal for onboarding classes, departments, or entire organizations.",
+          benefit1: "Import dozens or hundreds of users at once",
+          benefit2: "Automatic account creation and role assignment",
+          benefit3: "Validation and error reporting before import",
+          benefit4: "Support for group assignment during import"
+        },
+        csvFormat: {
+          title: "CSV File Format",
+          description: "Your CSV file must follow a specific format for successful import.",
+          requiredFields: "Required fields: email, first_name, last_name",
+          optionalFields: "Optional fields: role, group, phone",
+          encoding: "File encoding: UTF-8 recommended",
+          delimiter: "Delimiter: comma (,) or semicolon (;)",
+          example: "email,first_name,last_name,role\njohn@example.com,John,Doe,member\njane@example.com,Jane,Smith,manager"
+        },
+        wizard: {
+          title: "Import Wizard",
+          description: "The import wizard guides you through the process step by step.",
+          step1: {
+            title: "Upload File",
+            description: "Select your CSV file and choose the delimiter format. The system will preview the first rows."
+          },
+          step2: {
+            title: "Map Columns",
+            description: "Map your CSV columns to the required fields. The system attempts auto-mapping based on column headers."
+          },
+          step3: {
+            title: "Validate Data",
+            description: "Review the validation results. Fix any errors in your CSV and re-upload if needed."
+          },
+          step4: {
+            title: "Confirm Import",
+            description: "Review the summary and confirm the import. New accounts will be created and invitation emails sent."
+          }
+        },
+        validation: {
+          title: "Validation & Error Handling",
+          description: "The system validates your data before importing to prevent issues.",
+          emailValidation: "Email addresses are checked for format and duplicates",
+          roleValidation: "Roles are validated against available options",
+          groupValidation: "Group names are matched against existing groups",
+          errorReport: "A detailed error report is generated for any issues found"
+        },
+        tips: {
+          title: "Tips & Best Practices",
+          description: "Follow these tips for a smooth import experience.",
+          tip1: {
+            title: "Test with Small Batches",
+            description: "Start with a small CSV (5-10 users) to verify your format before importing the full list."
+          },
+          tip2: {
+            title: "Prepare Your Groups First",
+            description: "Create all groups before importing so you can assign users to groups during import."
+          },
+          tip3: {
+            title: "Check for Duplicates",
+            description: "Remove duplicate email addresses from your CSV. The system will flag duplicates but won't import them."
+          }
+        },
+        nextSteps: {
+          organizations: {
+            title: "Organizations Overview",
+            description: "Learn about organization structure and management"
+          },
+          groups: {
+            title: "Group Management",
+            description: "Set up groups before importing users"
+          }
+        }
+      }
+    },
+
+    bulkLicenses: {
+      overview: {
+        title: "Bulk License Management",
+        intro: "Purchase and manage licenses in bulk for your organization. Learn about batch purchasing, license assignment, and pricing tiers.",
+        whatIs: {
+          title: "What are Bulk Licenses?",
+          description: "Bulk licenses allow organizations to purchase multiple subscription licenses at a discounted rate and distribute them to members.",
+          benefit1: "Volume discounts on license purchases",
+          benefit2: "Centralized license management dashboard",
+          benefit3: "Flexible assignment and reassignment",
+          benefit4: "Detailed usage tracking and reporting"
+        },
+        purchasing: {
+          title: "Purchasing Licenses",
+          description: "Follow these steps to purchase licenses in bulk for your organization.",
+          step1: {
+            title: "Choose a Plan",
+            description: "Select the subscription plan you want to purchase licenses for. Different plans offer different features."
+          },
+          step2: {
+            title: "Select Quantity",
+            description: "Choose the number of licenses you need. Volume discounts apply automatically at certain thresholds."
+          },
+          step3: {
+            title: "Complete Payment",
+            description: "Review the pricing breakdown and complete the purchase. Licenses are available immediately after payment."
+          }
+        },
+        batchManagement: {
+          title: "Batch Management",
+          description: "Manage your license batches from the License Management dashboard.",
+          viewBatches: "View all active and expired license batches",
+          trackUsage: "Monitor how many licenses are assigned vs available",
+          renewBatches: "Renew expiring batches before they expire",
+          exportReports: "Export usage reports for accounting purposes"
+        },
+        assignment: {
+          title: "License Assignment",
+          description: "Assign licenses to organization members.",
+          individual: "Assign licenses to individual users from the batch detail page",
+          group: "Assign licenses to all members of a group at once",
+          automatic: "Set up automatic assignment for new group members",
+          revoke: "Revoke and reassign licenses when members leave"
+        },
+        pricing: {
+          title: "Pricing & Tiers",
+          description: "Volume pricing is available for bulk license purchases.",
+          tier1: "1-10 licenses: standard pricing",
+          tier2: "11-50 licenses: 10% discount",
+          tier3: "51-100 licenses: 15% discount",
+          tier4: "100+ licenses: contact us for custom pricing",
+          note: "Pricing may vary by subscription plan. Contact sales for enterprise quotes."
+        },
+        nextSteps: {
+          organizations: {
+            title: "Organizations Overview",
+            description: "Learn about organization management features"
+          },
+          billing: {
+            title: "Billing & Payments",
+            description: "Understand the billing system and payment options"
+          }
+        }
       }
     }
   }

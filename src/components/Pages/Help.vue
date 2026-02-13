@@ -191,6 +191,40 @@ const helpSections = computed(() => {
       ]
     },
     {
+      id: 'organizations',
+      title: t('help.sections.organizations.title'),
+      description: t('help.sections.organizations.description'),
+      icon: 'fas fa-building',
+      items: [
+        {
+          route: `${routePrefix.value}/organizations/overview`,
+          title: t('help.sections.organizations.overview'),
+          description: t('help.organizations.overview.intro'),
+          icon: 'fas fa-building'
+        },
+        {
+          route: `${routePrefix.value}/groups/management`,
+          title: t('help.sections.organizations.groups'),
+          description: t('help.groups.management.intro'),
+          icon: 'fas fa-users'
+        },
+        ...(!isPublicHelp.value ? [
+          {
+            route: `${routePrefix.value}/organizations/bulk-import`,
+            title: t('help.sections.organizations.bulkImport'),
+            description: t('help.bulkImport.overview.intro'),
+            icon: 'fas fa-file-import'
+          },
+          {
+            route: `${routePrefix.value}/licenses/bulk-purchase`,
+            title: t('help.sections.organizations.bulkLicenses'),
+            description: t('help.bulkLicenses.overview.intro'),
+            icon: 'fas fa-id-badge'
+          }
+        ] : [])
+      ]
+    },
+    {
       id: 'account',
       title: t('help.sections.account.title'),
       description: t('help.sections.account.description'),

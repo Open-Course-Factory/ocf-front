@@ -151,6 +151,18 @@ const basicRoutes = [
     component: () => import('../components/Pages/Help/RolesAndPermissions.vue'),
     meta: { requiresAuth: false }
   },
+  {
+    path: '/help-public/organizations/overview',
+    name: 'HelpPublicOrganizationsOverview',
+    component: () => import('../components/Pages/Help/AccountOrganizations.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/help-public/groups/management',
+    name: 'HelpPublicGroupManagement',
+    component: () => import('../components/Pages/Help/GroupManagement.vue'),
+    meta: { requiresAuth: false }
+  },
   // Route spéciale pour l'affichage du terminal en iframe (sans layout)
   {
     path: '/terminal/:sessionId',
@@ -435,6 +447,30 @@ const basicRoutes = [
         path: 'help/account/billing',
         name: 'HelpAccountBilling',
         component: () => import('../components/Pages/Help/AccountBilling.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'help/organizations/overview',
+        name: 'HelpOrganizationsOverview',
+        component: () => import('../components/Pages/Help/AccountOrganizations.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'help/groups/management',
+        name: 'HelpGroupManagement',
+        component: () => import('../components/Pages/Help/GroupManagement.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'help/organizations/bulk-import',
+        name: 'HelpBulkImport',
+        component: () => import('../components/Pages/Help/BulkImport.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'help/licenses/bulk-purchase',
+        name: 'HelpBulkLicenses',
+        component: () => import('../components/Pages/Help/BulkLicenses.vue'),
         meta: { requiresAuth: true }
       }
     ],

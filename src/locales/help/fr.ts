@@ -52,6 +52,14 @@ export const helpFr = {
         subscription: "Abonnement et Plans",
         billing: "Facturation et Paiements",
         rolesAndPermissions: "Rôles et Permissions"
+      },
+      organizations: {
+        title: "🏢 Organisations & Groupes",
+        description: "Gérez les organisations, les groupes, les importations en masse et les licences",
+        overview: "Vue d'ensemble des Organisations",
+        groups: "Gestion des Groupes",
+        bulkImport: "Import en Masse",
+        bulkLicenses: "Licences en Volume"
       }
     },
 
@@ -1545,6 +1553,308 @@ export const helpFr = {
         scenario3Answer: "Le propriétaire devrait transférer la propriété à un autre membre avant de partir. Sinon, contactez le support pour réassigner la propriété.",
         scenario4Question: "Puis-je avoir plusieurs rôles ?",
         scenario4Answer: "Oui. Vous pouvez être propriétaire d'une organisation, gestionnaire d'une autre, et membre de groupes dans différentes organisations."
+      }
+    },
+
+    organizations: {
+      overview: {
+        title: "Vue d'ensemble des Organisations",
+        intro: "Les organisations sont la structure de base pour gérer les équipes, les licences et le contenu. Apprenez à créer et configurer efficacement vos organisations.",
+        whatAre: {
+          title: "Qu'est-ce qu'une Organisation ?",
+          description: "Une organisation est un conteneur logique qui regroupe les utilisateurs, gère les abonnements et contrôle l'accès aux fonctionnalités de la plateforme. Les organisations peuvent représenter des entreprises, des écoles, des départements ou des équipes.",
+          benefit1: "Gestion centralisée des utilisateurs et des licences",
+          benefit2: "Facturation et plans d'abonnement partagés",
+          benefit3: "Attribution de contenu par groupe",
+          benefit4: "Contrôle d'accès basé sur les rôles"
+        },
+        creating: {
+          title: "Création et Gestion des Organisations",
+          description: "Découvrez comment configurer votre organisation étape par étape.",
+          step1: {
+            title: "Créer votre Organisation",
+            description: "Naviguez vers la page Organisations et cliquez sur 'Créer une Organisation'. Fournissez un nom et une description optionnelle."
+          },
+          step2: {
+            title: "Configurer les Paramètres",
+            description: "Configurez les préférences de votre organisation, notamment les rôles par défaut, les paramètres de notification et les options de personnalisation."
+          },
+          step3: {
+            title: "Inviter des Membres",
+            description: "Ajoutez des membres par e-mail ou par import en masse. Attribuez les rôles (Propriétaire, Gestionnaire ou Membre) selon les responsabilités."
+          }
+        },
+        members: {
+          title: "Gestion des Membres",
+          description: "Gérez les membres de votre organisation et leurs niveaux d'accès.",
+          addMembers: "Invitez de nouveaux membres par e-mail ou importez depuis un CSV",
+          assignRoles: "Attribuez les rôles Propriétaire, Gestionnaire ou Membre",
+          manageLicenses: "Allouez des licences aux membres individuels",
+          removeMembers: "Supprimez des membres ou transférez leurs données"
+        },
+        settings: {
+          title: "Paramètres de l'Organisation",
+          description: "Configurez votre organisation pour qu'elle corresponde à votre flux de travail.",
+          general: "Paramètres généraux : nom, description et personnalisation",
+          notifications: "Préférences de notification pour les événements de l'organisation",
+          security: "Paramètres de sécurité et politiques d'accès",
+          billing: "Informations de facturation et gestion des abonnements"
+        },
+        bestPractices: {
+          title: "Bonnes Pratiques",
+          description: "Suivez ces recommandations pour une gestion efficace de votre organisation.",
+          tip1: {
+            title: "Commencez par des Rôles Clairs",
+            description: "Définissez qui doit être propriétaire, gestionnaire et membre avant d'inviter des personnes. Cela évite la confusion des permissions par la suite."
+          },
+          tip2: {
+            title: "Utilisez les Groupes pour la Structure",
+            description: "Créez des groupes au sein de votre organisation pour gérer les classes, les équipes ou les départements séparément."
+          },
+          tip3: {
+            title: "Audits Réguliers des Licences",
+            description: "Vérifiez périodiquement les attributions de licences pour vous assurer qu'elles sont allouées aux utilisateurs actifs."
+          }
+        },
+        nextSteps: {
+          groups: {
+            title: "Gestion des Groupes",
+            description: "Apprenez à créer et gérer les groupes au sein de votre organisation"
+          },
+          roles: {
+            title: "Rôles et Permissions",
+            description: "Comprenez le système de permissions pour les organisations et les groupes"
+          }
+        }
+      }
+    },
+
+    groups: {
+      management: {
+        title: "Gestion des Groupes",
+        intro: "Les groupes permettent d'organiser les membres au sein d'une organisation en classes, équipes ou départements. Apprenez à créer, configurer et gérer efficacement vos groupes.",
+        overview: {
+          title: "Comprendre les Groupes",
+          description: "Les groupes sont des sous-ensembles d'une organisation qui vous aident à gérer les membres et à attribuer du contenu à un niveau plus fin.",
+          feature1: "Organisez les membres en classes ou équipes",
+          feature2: "Attribuez des cours et l'accès aux terminaux par groupe",
+          feature3: "Gérez les rôles au sein de chaque groupe indépendamment",
+          feature4: "Support des structures hiérarchiques de groupes"
+        },
+        creating: {
+          title: "Création de Groupes",
+          description: "Suivez ces étapes pour créer un nouveau groupe au sein de votre organisation.",
+          step1: {
+            title: "Naviguer vers les Groupes",
+            description: "Accédez à la page Groupes depuis la navigation principale ou depuis la page détaillée de votre organisation."
+          },
+          step2: {
+            title: "Créer un Nouveau Groupe",
+            description: "Cliquez sur 'Créer un Groupe', entrez un nom et une description, et sélectionnez l'organisation parente."
+          },
+          step3: {
+            title: "Ajouter des Membres",
+            description: "Invitez des membres dans le groupe ou ajoutez des membres existants de l'organisation. Attribuez des rôles spécifiques au groupe."
+          }
+        },
+        hierarchy: {
+          title: "Hiérarchie des Groupes",
+          description: "Les groupes peuvent être organisés en structure hiérarchique pour les organisations complexes.",
+          parentGroups: "Les groupes parents peuvent contenir des sous-groupes",
+          inheritance: "Les paramètres peuvent être hérités du groupe parent vers les groupes enfants",
+          navigation: "Utilisez l'éditeur de hiérarchie pour une organisation par glisser-déposer",
+          visualization: "Visualisez l'arborescence complète depuis la page de hiérarchie"
+        },
+        roles: {
+          title: "Rôles des Membres du Groupe",
+          description: "Chaque membre d'un groupe a un rôle qui détermine ses permissions au sein de ce groupe.",
+          owner: {
+            title: "Propriétaire du Groupe",
+            description: "Contrôle total sur le groupe, y compris les paramètres, les membres et le contenu"
+          },
+          admin: {
+            title: "Administrateur du Groupe",
+            description: "Peut gérer les membres et le contenu mais ne peut pas supprimer le groupe ou modifier les paramètres critiques"
+          },
+          assistant: {
+            title: "Assistant du Groupe",
+            description: "Peut aider à gérer le contenu et consulter la progression des membres mais ne peut pas modifier les paramètres du groupe"
+          },
+          member: {
+            title: "Membre du Groupe",
+            description: "Peut accéder au contenu assigné et participer aux activités du groupe"
+          }
+        },
+        content: {
+          title: "Attribution de Contenu",
+          description: "Attribuez des cours et des ressources aux groupes pour que tous les membres y aient accès.",
+          assignCourses: "Attribuez des cours à un groupe pour tous les membres",
+          terminalAccess: "Configurez les paramètres d'accès aux terminaux par groupe",
+          scheduling: "Planifiez la disponibilité du contenu",
+          tracking: "Suivez la progression et les taux de complétion du groupe"
+        },
+        settings: {
+          title: "Paramètres du Groupe",
+          description: "Configurez votre groupe selon vos besoins.",
+          general: "Nom, description et paramètres de visibilité",
+          enrollment: "Inscription ouverte ou fermée, accès sur invitation uniquement",
+          notifications: "Préférences de notification au niveau du groupe",
+          limits: "Limites de membres et restrictions de contenu"
+        },
+        nextSteps: {
+          organizations: {
+            title: "Vue d'ensemble des Organisations",
+            description: "Découvrez la structure organisationnelle qui contient vos groupes"
+          },
+          roles: {
+            title: "Rôles et Permissions",
+            description: "Explorez en détail le système de permissions pour les organisations et les groupes"
+          }
+        }
+      }
+    },
+
+    bulkImport: {
+      overview: {
+        title: "Import en Masse",
+        intro: "Importez plusieurs utilisateurs dans votre organisation en une seule fois à l'aide de fichiers CSV. Ce guide vous accompagne dans le processus d'importation, les exigences de format CSV et les bonnes pratiques.",
+        whatIs: {
+          title: "Qu'est-ce que l'Import en Masse ?",
+          description: "L'import en masse permet aux gestionnaires d'organisation d'ajouter de nombreux utilisateurs simultanément en téléchargeant un fichier CSV. C'est idéal pour l'intégration de classes, de départements ou d'organisations entières.",
+          benefit1: "Importez des dizaines ou des centaines d'utilisateurs à la fois",
+          benefit2: "Création automatique de comptes et attribution de rôles",
+          benefit3: "Validation et rapport d'erreurs avant l'importation",
+          benefit4: "Support de l'attribution de groupes pendant l'importation"
+        },
+        csvFormat: {
+          title: "Format du Fichier CSV",
+          description: "Votre fichier CSV doit suivre un format spécifique pour une importation réussie.",
+          requiredFields: "Champs obligatoires : email, prénom, nom",
+          optionalFields: "Champs optionnels : rôle, groupe, téléphone",
+          encoding: "Encodage du fichier : UTF-8 recommandé",
+          delimiter: "Délimiteur : virgule (,) ou point-virgule (;)",
+          example: "email,prenom,nom,role\njean@exemple.com,Jean,Dupont,member\nmarie@exemple.com,Marie,Martin,manager"
+        },
+        wizard: {
+          title: "Assistant d'Importation",
+          description: "L'assistant d'importation vous guide à travers le processus étape par étape.",
+          step1: {
+            title: "Télécharger le Fichier",
+            description: "Sélectionnez votre fichier CSV et choisissez le format de délimiteur. Le système affichera un aperçu des premières lignes."
+          },
+          step2: {
+            title: "Mapper les Colonnes",
+            description: "Associez les colonnes de votre CSV aux champs requis. Le système tente un mapping automatique basé sur les en-têtes de colonnes."
+          },
+          step3: {
+            title: "Valider les Données",
+            description: "Examinez les résultats de la validation. Corrigez les erreurs dans votre CSV et re-téléchargez si nécessaire."
+          },
+          step4: {
+            title: "Confirmer l'Importation",
+            description: "Vérifiez le résumé et confirmez l'importation. Les nouveaux comptes seront créés et les e-mails d'invitation envoyés."
+          }
+        },
+        validation: {
+          title: "Validation et Gestion des Erreurs",
+          description: "Le système valide vos données avant l'importation pour éviter les problèmes.",
+          emailValidation: "Les adresses e-mail sont vérifiées pour le format et les doublons",
+          roleValidation: "Les rôles sont validés par rapport aux options disponibles",
+          groupValidation: "Les noms de groupes sont mis en correspondance avec les groupes existants",
+          errorReport: "Un rapport d'erreurs détaillé est généré pour tout problème trouvé"
+        },
+        tips: {
+          title: "Conseils et Bonnes Pratiques",
+          description: "Suivez ces conseils pour une expérience d'importation fluide.",
+          tip1: {
+            title: "Testez avec de Petits Lots",
+            description: "Commencez avec un petit CSV (5-10 utilisateurs) pour vérifier votre format avant d'importer la liste complète."
+          },
+          tip2: {
+            title: "Préparez vos Groupes d'Abord",
+            description: "Créez tous les groupes avant l'importation pour pouvoir assigner les utilisateurs aux groupes pendant l'import."
+          },
+          tip3: {
+            title: "Vérifiez les Doublons",
+            description: "Supprimez les adresses e-mail en double de votre CSV. Le système signalera les doublons mais ne les importera pas."
+          }
+        },
+        nextSteps: {
+          organizations: {
+            title: "Vue d'ensemble des Organisations",
+            description: "Découvrez la structure et la gestion des organisations"
+          },
+          groups: {
+            title: "Gestion des Groupes",
+            description: "Configurez les groupes avant d'importer les utilisateurs"
+          }
+        }
+      }
+    },
+
+    bulkLicenses: {
+      overview: {
+        title: "Gestion des Licences en Volume",
+        intro: "Achetez et gérez des licences en volume pour votre organisation. Découvrez l'achat par lots, l'attribution de licences et les niveaux de tarification.",
+        whatIs: {
+          title: "Que sont les Licences en Volume ?",
+          description: "Les licences en volume permettent aux organisations d'acheter plusieurs licences d'abonnement à un tarif réduit et de les distribuer aux membres.",
+          benefit1: "Remises sur les achats en volume",
+          benefit2: "Tableau de bord centralisé de gestion des licences",
+          benefit3: "Attribution et réattribution flexibles",
+          benefit4: "Suivi d'utilisation détaillé et rapports"
+        },
+        purchasing: {
+          title: "Achat de Licences",
+          description: "Suivez ces étapes pour acheter des licences en volume pour votre organisation.",
+          step1: {
+            title: "Choisir un Plan",
+            description: "Sélectionnez le plan d'abonnement pour lequel vous souhaitez acheter des licences. Différents plans offrent différentes fonctionnalités."
+          },
+          step2: {
+            title: "Sélectionner la Quantité",
+            description: "Choisissez le nombre de licences dont vous avez besoin. Les remises de volume s'appliquent automatiquement à certains seuils."
+          },
+          step3: {
+            title: "Finaliser le Paiement",
+            description: "Vérifiez le détail des prix et finalisez l'achat. Les licences sont disponibles immédiatement après le paiement."
+          }
+        },
+        batchManagement: {
+          title: "Gestion des Lots",
+          description: "Gérez vos lots de licences depuis le tableau de bord de gestion des licences.",
+          viewBatches: "Consultez tous les lots de licences actifs et expirés",
+          trackUsage: "Suivez le nombre de licences attribuées vs disponibles",
+          renewBatches: "Renouvelez les lots avant leur expiration",
+          exportReports: "Exportez des rapports d'utilisation à des fins comptables"
+        },
+        assignment: {
+          title: "Attribution des Licences",
+          description: "Attribuez des licences aux membres de l'organisation.",
+          individual: "Attribuez des licences à des utilisateurs individuels depuis la page de détail du lot",
+          group: "Attribuez des licences à tous les membres d'un groupe en une fois",
+          automatic: "Configurez l'attribution automatique pour les nouveaux membres de groupe",
+          revoke: "Révoquez et réattribuez les licences lorsque des membres partent"
+        },
+        pricing: {
+          title: "Tarification",
+          description: "Des tarifs dégressifs sont disponibles pour les achats de licences en volume.",
+          tier1: "1-10 licences : tarif standard",
+          tier2: "11-50 licences : réduction de 10%",
+          tier3: "51-100 licences : réduction de 15%",
+          tier4: "Plus de 100 licences : contactez-nous pour un tarif personnalisé",
+          note: "Les tarifs peuvent varier selon le plan d'abonnement. Contactez le service commercial pour les devis entreprise."
+        },
+        nextSteps: {
+          organizations: {
+            title: "Vue d'ensemble des Organisations",
+            description: "Découvrez les fonctionnalités de gestion des organisations"
+          },
+          billing: {
+            title: "Facturation et Paiements",
+            description: "Comprenez le système de facturation et les options de paiement"
+          }
+        }
       }
     }
   }
