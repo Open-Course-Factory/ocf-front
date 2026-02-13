@@ -19,6 +19,11 @@ npm run preview  # Preview production build
 - MRs: `glab mr create`, `glab mr view <id>`
 - Never use `gh` commands - this project uses GitLab
 
+**Version Bumps:**
+
+- Version must be updated in **both** `VERSION` and `package.json` — always update both files in the same commit
+- Tag triggers the release pipeline, so everything must be correct before pushing the tag
+
 **Tech Stack:**
 
 - Vue 3 (Composition API + TypeScript)
