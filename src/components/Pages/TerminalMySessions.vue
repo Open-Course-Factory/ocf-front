@@ -100,19 +100,19 @@
         <i class="fas fa-spinner fa-spin"></i> {{ t('terminalMySessions.loadingSessions') }}
       </div>
 
-      <div v-if="allSessions.length > 0" class="sessions-grid">
-        <template v-for="(session, index) in sortedSessions" :key="session.id || session.session_id">
-          <!-- Separator between active and inactive sessions -->
-          <div
-            v-if="index > 0 && !isTerminalInactive(sortedSessions[index - 1].status) && isTerminalInactive(session.status)"
-            class="sessions-separator"
-          >
-            <div class="separator-line"></div>
-            <span class="separator-label">{{ t('terminalMySessions.inactiveSessions') }}</span>
-            <div class="separator-line"></div>
-          </div>
-
-          <div :class="['session-card', { 'inactive-terminal': isTerminalInactive(session.status), 'shared-terminal': session.isShared, 'dropdown-open': openDropdowns.has(session.id || session.session_id) }]">
+      <div v-if="allSessions.length > 0">
+        <!-- Active sessions -->
+        <div v-if="activeSessions.length === 0" class="empty-active-section">
+          <i class="fas fa-check-circle"></i>
+          <span>{{ t('terminalMySessions.noActiveSessions') }}</span>
+          <router-link to="/terminal-creation" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus"></i>
+            {{ t('terminalMySessions.buttonNewSession') }}
+          </router-link>
+        </div>
+        <div v-else class="sessions-grid">
+          <template v-for="session in activeSessions" :key="session.id || session.session_id">
+            <div :class="['session-card', { 'shared-terminal': session.isShared, 'dropdown-open': openDropdowns.has(session.id || session.session_id) }]">
             <!-- Compact header with all info in one line -->
             <div class="card-header">
               <div class="header-left">
@@ -216,14 +216,6 @@
                   >
                     <i class="fas fa-stop"></i>
                   </button>
-                  <button
-                    v-if="isTerminalInactive(session.status)"
-                    class="btn-icon"
-                    @click="discardTerminal(session.id)"
-                    :title="t('terminalMySessions.tooltipHide')"
-                  >
-                    <i class="fas fa-eye-slash"></i>
-                  </button>
 
                   <!-- Dropdown menu for additional actions -->
                   <div class="dropdown-container" :ref="(el) => dropdownRefs.set(session.id || session.session_id, el as HTMLElement)">
@@ -277,7 +269,147 @@
               </div>
             </div>
           </div>
-        </template>
+          </template>
+        </div>
+
+        <!-- Collapsible inactive sessions -->
+        <div v-if="inactiveSessions.length > 0" class="inactive-section">
+          <div class="sessions-separator sessions-separator-toggle" @click="showInactiveSessions = !showInactiveSessions">
+            <div class="separator-line"></div>
+            <span class="separator-label">
+              <i class="fas fa-chevron-down separator-chevron" :class="{ rotated: !showInactiveSessions }"></i>
+              {{ t('terminalMySessions.inactiveSessions') }} ({{ inactiveSessions.length }})
+            </span>
+            <div class="separator-line"></div>
+          </div>
+
+          <div v-show="showInactiveSessions" class="sessions-grid">
+            <template v-for="session in inactiveSessions" :key="session.id || session.session_id">
+              <div :class="['session-card', 'inactive-terminal', { 'shared-terminal': session.isShared, 'dropdown-open': openDropdowns.has(session.id || session.session_id) }]">
+                <!-- Compact header with all info in one line -->
+                <div class="card-header">
+                  <div class="header-left">
+                    <!-- Terminal name with inline edit -->
+                    <div v-if="!editingNames.has(session.id)" class="session-title-display">
+                      <h5 class="session-name">{{ getTerminalDisplayName(session) }}</h5>
+                      <button
+                        v-if="canEditName(session)"
+                        class="btn-icon btn-edit-name"
+                        @click="startEditingName(session.id, session.name)"
+                        :title="t('terminals.editName')"
+                      >
+                        <i class="fas fa-pencil-alt"></i>
+                      </button>
+                      <span
+                        v-else-if="session.isShared && session.access_level === 'read'"
+                        class="read-only-indicator"
+                        :title="t('terminalMySessions.readOnlyAccess')"
+                      >
+                        <i class="fas fa-lock"></i>
+                      </span>
+                    </div>
+                    <div v-else class="session-title-edit">
+                      <input
+                        v-model="editingNames.get(session.id)!.value"
+                        type="text"
+                        class="name-input-compact"
+                        :placeholder="t('terminals.namePlaceholder')"
+                        maxlength="255"
+                        @keyup.enter="saveName(session.id)"
+                        @keyup.esc="cancelEditingName(session.id)"
+                        :disabled="savingNames.has(session.id)"
+                      />
+                      <button class="btn-icon" @click="saveName(session.id)" :disabled="savingNames.has(session.id)">
+                        <i class="fas fa-check"></i>
+                      </button>
+                      <button class="btn-icon" @click="cancelEditingName(session.id)" :disabled="savingNames.has(session.id)">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+
+                    <!-- Compact metadata -->
+                    <div class="session-metadata">
+                      <span v-if="session.isShared" class="metadata-item shared-info" :title="`${t('terminalMySessions.sharedBy')}: ${session.shared_by}`">
+                        <i class="fas fa-share-alt"></i>
+                        {{ session.shared_by }}
+                      </span>
+                      <span v-if="session.instance_type" class="metadata-item" :title="t('terminalMySessions.instanceType')">
+                        <i class="fas fa-microchip"></i>
+                        {{ getInstanceName(session.instance_type) }}
+                      </span>
+                      <span v-if="session.backend" class="metadata-item" :title="t('terminalMySessions.backend')">
+                        <i class="fas fa-server"></i>
+                        {{ session.backend }}
+                      </span>
+                      <span v-if="session.expires_at" class="metadata-item" :title="t('terminalMySessions.expiresAt')">
+                        <i class="fas fa-clock"></i>
+                        {{ formatDate(session.expires_at) }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="header-right">
+                    <!-- Status indicator -->
+                    <span :class="['status-badge', getStatusClass(session.status)]" :title="getStatusLabel(session.status)">
+                      <i class="fas fa-circle"></i>
+                      {{ getStatusLabel(session.status) }}
+                    </span>
+
+                    <!-- Action buttons -->
+                    <div class="card-actions-compact">
+                      <button
+                        class="btn-icon"
+                        @click="discardTerminal(session.id)"
+                        :title="t('terminalMySessions.tooltipHide')"
+                      >
+                        <i class="fas fa-eye-slash"></i>
+                      </button>
+
+                      <!-- Dropdown menu for additional actions -->
+                      <div class="dropdown-container" :ref="(el) => dropdownRefs.set(session.id || session.session_id, el as HTMLElement)">
+                        <button
+                          class="btn-icon"
+                          @click.stop="toggleDropdown(session.id || session.session_id)"
+                          :title="t('terminalMySessions.moreActions')"
+                        >
+                          <i class="fas fa-ellipsis-v"></i>
+                        </button>
+
+                        <div v-if="openDropdowns.has(session.id || session.session_id)" class="dropdown-menu" @click.stop>
+                          <!-- Copy URL -->
+                          <button class="dropdown-item" @click="copyUrlToClipboard(session.session_id); closeDropdown(session.id || session.session_id)">
+                            <i class="fas fa-link"></i>
+                            <span>{{ copiedSessions.has(session.session_id) ? t('terminalMySessions.copied') : t('terminalMySessions.copyLink') }}</span>
+                          </button>
+
+                          <!-- Copy iframe code -->
+                          <button class="dropdown-item" @click="copyIframeCode(session.session_id); closeDropdown(session.id || session.session_id)">
+                            <i class="fas fa-code"></i>
+                            <span>{{ copiedIframes.has(session.session_id) ? t('terminalMySessions.copiedIframe') : t('terminalMySessions.copyIframeCode') }}</span>
+                          </button>
+
+                          <!-- Divider -->
+                          <div v-if="!session.isShared" class="dropdown-divider"></div>
+
+                          <!-- Sync session -->
+                          <button
+                            v-if="!session.isShared"
+                            class="dropdown-item"
+                            @click="syncSession(session.session_id); closeDropdown(session.id || session.session_id)"
+                            :title="t('terminalMySessions.tooltipSync')"
+                          >
+                            <i class="fas fa-sync"></i>
+                            <span>{{ t('terminalMySessions.buttonSyncSession') }}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
       </div>
 
       <div v-else class="empty-section">
@@ -618,6 +750,7 @@ const sharedSessions = ref([])
 const isLoading = ref(false)
 const error = ref('')
 const showHiddenTerminals = ref(false)
+const showInactiveSessions = ref(false)
 const selectedGroupFilter = ref<string>('all')
 
 // Snapshot of shared session IDs for tracking changes
@@ -713,6 +846,14 @@ const sortedSessions = computed(() => {
     return bDate - aDate
   })
 })
+
+// Split sorted sessions into active and inactive lists
+const activeSessions = computed(() =>
+  sortedSessions.value.filter(s => !isTerminalInactive(s.status))
+)
+const inactiveSessions = computed(() =>
+  sortedSessions.value.filter(s => isTerminalInactive(s.status))
+)
 
 // Watch for toggle changes to reload sessions
 watch(showHiddenTerminals, () => {
@@ -1407,6 +1548,23 @@ async function hideAllInactiveSessions() {
   margin-top: var(--spacing-md);
 }
 
+.empty-active-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  color: var(--color-text-muted);
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-thin) dashed var(--color-border-light);
+}
+
+.empty-active-section i {
+  font-size: var(--font-size-xl);
+  opacity: 0.5;
+}
+
 /* Session Grid - Compact layout */
 .sessions-grid {
   display: flex;
@@ -1432,6 +1590,9 @@ async function hideAllInactiveSessions() {
 }
 
 .separator-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-muted);
@@ -1442,6 +1603,29 @@ async function hideAllInactiveSessions() {
   background: var(--color-bg-secondary);
   border-radius: var(--border-radius-full);
   border: var(--border-width-medium) solid var(--color-border-light);
+}
+
+.sessions-separator-toggle {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sessions-separator-toggle:hover .separator-label {
+  color: var(--color-text-secondary);
+  border-color: var(--color-border-medium);
+}
+
+.separator-chevron {
+  font-size: 10px;
+  transition: transform var(--transition-base);
+}
+
+.separator-chevron.rotated {
+  transform: rotate(-90deg);
+}
+
+.inactive-section {
+  margin-top: var(--spacing-md);
 }
 
 /* Compact Session Cards */
