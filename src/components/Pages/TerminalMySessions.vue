@@ -184,6 +184,14 @@
 
                 <!-- Action buttons -->
                 <div class="card-actions-compact">
+                  <router-link
+                    v-if="session.status === 'active'"
+                    class="btn-icon btn-view"
+                    :to="{ name: 'TerminalSessionView', params: { sessionId: session.session_id } }"
+                    :title="t('terminalMySessions.buttonOpenInPage')"
+                  >
+                    <i class="fas fa-desktop"></i>
+                  </router-link>
                   <button
                     v-if="session.status === 'active'"
                     class="btn-icon btn-primary"
@@ -438,7 +446,8 @@ const { t } = useTranslations({
       syncTime: 'Sync time',
       terminalAccess: 'Terminal Access',
       copyLink: 'Copy link',
-      buttonOpen: 'Open',
+      buttonOpen: 'Open in popup',
+      buttonOpenInPage: 'Open in page',
       buttonHide: 'Hide',
       buttonShow: 'Show',
       preview: 'Preview',
@@ -533,7 +542,8 @@ const { t } = useTranslations({
       syncTime: 'Heure de sync',
       terminalAccess: 'Accès Terminal',
       copyLink: 'Copier le lien',
-      buttonOpen: 'Ouvrir',
+      buttonOpen: 'Ouvrir dans un popup',
+      buttonOpenInPage: 'Ouvrir dans la page',
       buttonHide: 'Masquer',
       buttonShow: 'Aperçu',
       preview: 'Aperçu',
@@ -1613,6 +1623,20 @@ async function hideAllInactiveSessions() {
 
 .btn-icon.btn-stop:hover:not(:disabled) {
   background-color: var(--color-danger);
+  opacity: 0.85;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-icon.btn-view {
+  background-color: var(--color-success);
+  color: var(--color-white);
+  border-radius: var(--border-radius-sm);
+  text-decoration: none;
+}
+
+.btn-icon.btn-view:hover:not(:disabled) {
+  background-color: var(--color-success);
   opacity: 0.85;
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
