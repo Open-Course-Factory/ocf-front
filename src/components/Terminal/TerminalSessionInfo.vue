@@ -57,6 +57,10 @@
         <router-link :to="{ name: 'TerminalSessions' }">
           {{ t('terminalStarter.mySessionsLink') }}
         </router-link>
+        ·
+        <router-link :to="{ name: 'TerminalSessionView', params: { sessionId: sessionInfo?.session_id } }">
+          {{ t('terminalStarter.openDedicatedView') }}
+        </router-link>
       </span>
     </div>
   </SettingsCard>
@@ -97,7 +101,8 @@ const { t } = useTranslations({
       instanceType: 'Instance Type',
       status: 'Status',
       sessionSavedHint: 'This session is saved. You can find it anytime in',
-      mySessionsLink: 'My Sessions'
+      mySessionsLink: 'My Sessions',
+      openDedicatedView: 'Open dedicated view'
     }
   },
   fr: {
@@ -107,7 +112,8 @@ const { t } = useTranslations({
       instanceType: 'Type d\'Instance',
       status: 'Statut',
       sessionSavedHint: 'Cette session est sauvegardée. Vous pouvez la retrouver à tout moment dans',
-      mySessionsLink: 'Mes Sessions'
+      mySessionsLink: 'Mes Sessions',
+      openDedicatedView: 'Ouvrir la vue dédiée'
     }
   }
 })
