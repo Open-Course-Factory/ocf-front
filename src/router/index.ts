@@ -199,6 +199,7 @@ const basicRoutes = [
       { path: 'generations', name: 'Generations', component: Generations, meta: { requiresAuth: true } },
       { path: 'terminal-creation', name: 'TerminalCreation', component: TerminalCreation, meta: { requiresAuth: true, requiresFeature: 'terminal_management' } },
       { path: 'terminal-sessions', name: 'TerminalSessions', component: TerminalMySessions, meta: { requiresAuth: true } },
+      { path: 'terminal-session/:sessionId', name: 'TerminalSessionView', component: () => import('../components/Pages/TerminalSessionView.vue'), meta: { requiresAuth: true } },
       { path: 'terminal-shared', redirect: '/terminal-sessions' }, // Redirect old route to unified sessions page
       { path: 'user-terminal-keys', name: 'UserTerminalKeys', component: UserTerminalKeys, meta: { requiresAuth: true, isSettings: true } },
       { path: 'class-groups', name: 'ClassGroups', component: ClassGroups, meta: { requiresAuth: true, requiredPermissions: ['view_groups'] } },
