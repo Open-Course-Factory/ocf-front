@@ -1455,10 +1455,43 @@ async function hideAllInactiveSessions() {
   z-index: 1;
 }
 
+/* Active session cards - visually prominent */
+.session-card:not(.inactive-terminal) {
+  border-left: 4px solid var(--color-success);
+  border-color: var(--color-success-border);
+  background: var(--color-success-bg);
+  box-shadow: var(--shadow-sm);
+}
+
+.session-card:not(.inactive-terminal):hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-success);
+}
+
+/* Ensure metadata text is readable on tinted background */
+.session-card:not(.inactive-terminal) .metadata-item {
+  color: var(--color-text-secondary);
+}
+
+.session-card:not(.inactive-terminal) .session-name {
+  color: var(--color-success-text);
+}
+
+/* Pulse animation on active status dot */
+.session-card:not(.inactive-terminal) .status-badge.text-success i {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 .session-card.dropdown-open {
   z-index: 100 !important;
 }
 
+.session-card.inactive-terminal:hover,
 .session-card:hover {
   box-shadow: var(--shadow-sm);
   border-color: var(--color-border-medium);
@@ -1544,8 +1577,10 @@ async function hideAllInactiveSessions() {
 }
 
 .status-badge.text-success {
-  background-color: rgba(40, 167, 69, 0.1);
+  background-color: var(--color-bg-primary);
   color: var(--color-success);
+  font-weight: var(--font-weight-semibold);
+  border: var(--border-width-medium) solid var(--color-success);
 }
 
 .status-badge.text-danger {
