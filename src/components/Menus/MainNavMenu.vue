@@ -46,8 +46,12 @@
           </li>
         </ul>
       </div>
-      <div class="menu-bottom">
-        <ul>
+      <div class="menu-bottom" :class="{ 'bottom-collapsed': isBottomCollapsed }">
+        <div class="menu-bottom-toggle" @click="isBottomCollapsed = !isBottomCollapsed">
+          <span v-if="!isMenuCollapsed" class="menu-bottom-toggle-label">{{ t('navigation.more') }}</span>
+          <i class="fas fa-chevron-up menu-bottom-toggle-icon" :class="{ rotated: isBottomCollapsed }"></i>
+        </div>
+        <ul v-show="!isBottomCollapsed">
           <li v-for="category in filteredBottomCategories" :key="category.key" class="menu-category" :data-category="category.key">
             <div
               class="category-header"
@@ -222,6 +226,7 @@ const expandedCategories = ref<Record<string, boolean>>({
   admin: false
 });
 
+const isBottomCollapsed = ref(true);
 const menuPositions = ref<Record<string, { top: number; left: number }>>({});
 
 // Structure des catégories de menu
@@ -657,6 +662,10 @@ function openActiveCategoryOnMount() {
     if (hasActiveItem) {
       expandedCategories.value[category.key] = true;
       activeCategoryFound = true;
+      // Auto-expand bottom section if the active route is in a bottom category
+      if (bottomCategoryKeys.has(category.key)) {
+        isBottomCollapsed.value = false;
+      }
       break;
     }
   }
@@ -723,7 +732,32 @@ watch(() => route.path, () => {
 .menu-bottom {
   flex-shrink: 0;
   border-top: 1px solid var(--color-gray-600);
-  padding-top: var(--spacing-sm);
+}
+
+.menu-bottom-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-md);
+  cursor: pointer;
+  color: var(--color-gray-400);
+  font-size: var(--font-size-xs);
+  user-select: none;
+  transition: color var(--transition-slow);
+}
+
+.menu-bottom-toggle:hover {
+  color: var(--color-white);
+}
+
+.menu-bottom-toggle-icon {
+  transition: transform var(--transition-slow) ease;
+  font-size: 10px;
+}
+
+.menu-bottom-toggle-icon.rotated {
+  transform: rotate(180deg);
 }
 
 .main-menu.collapsed {

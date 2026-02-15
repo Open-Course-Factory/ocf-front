@@ -77,7 +77,8 @@ const i18n = createI18n({
                 designSystem: 'Design System',
                 designSystemTitle: 'Visual audit of CSS variables and theme',
                 courseEditor: 'Course Editor',
-                courseEditorTitle: 'Visual course editor with drag-and-drop'
+                courseEditorTitle: 'Visual course editor with drag-and-drop',
+                more: 'More'
             }
          },
         fr: {
@@ -150,7 +151,8 @@ const i18n = createI18n({
                 designSystem: 'Système de Design',
                 designSystemTitle: 'Audit visuel des variables CSS et du thème',
                 courseEditor: 'Éditeur de Cours',
-                courseEditorTitle: 'Éditeur visuel de cours avec glisser-déposer'
+                courseEditorTitle: 'Éditeur visuel de cours avec glisser-déposer',
+                more: 'Plus'
             }
         }
     }
