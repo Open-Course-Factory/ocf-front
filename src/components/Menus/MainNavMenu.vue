@@ -1,49 +1,96 @@
 <template>
   <div class="main-menu" :class="{ collapsed: isMenuCollapsed }">
     <nav class="menu-nav">
-      <ul>
-        <li v-for="category in filteredCategories" :key="category.key" class="menu-category" :data-category="category.key">
-          <div 
-            class="category-header"
-            @click="toggleCategory(category.key, $event)"
-            :class="{ 
-              active: expandedCategories[category.key],
-              'has-active-item': isCategoryActive[category.key]
-            }"
-            :title="isMenuCollapsed ? category.label : ''"
-          >
-            <i :class="category.icon"></i>
-            <span class="menu-text category-title">{{ category.label }}</span>
-            <i 
-              v-if="!isMenuCollapsed" 
-              class="fas fa-chevron-down chevron-icon"
-              :class="{ rotated: expandedCategories[category.key] }"
-            ></i>
-          </div>
-          <ul 
-            class="category-items" 
-            :class="{ 
-              expanded: expandedCategories[category.key]
-            }"
-            :style="isMenuCollapsed && menuPositions[category.key] ? {
-              top: menuPositions[category.key].top + 'px',
-              left: menuPositions[category.key].left + 'px'
-            } : {}"
-          >
-            <li v-for="item in category.items" :key="item.route">
-              <router-link 
-                :to="item.route" 
-                class="menu-item" 
-                :title="isMenuCollapsed ? item.title : ''"
-                @click="handleMenuItemClick"
-              >
-                <i :class="item.icon"></i>
-                <span class="menu-text">{{ item.label }}</span>
-              </router-link>
-            </li>
-          </ul>
-        </li>
-      </ul>
+      <div class="menu-top">
+        <ul>
+          <li v-for="category in filteredTopCategories" :key="category.key" class="menu-category" :data-category="category.key">
+            <div
+              class="category-header"
+              @click="toggleCategory(category.key, $event)"
+              :class="{
+                active: expandedCategories[category.key],
+                'has-active-item': isCategoryActive[category.key]
+              }"
+              :title="isMenuCollapsed ? category.label : ''"
+            >
+              <i :class="category.icon"></i>
+              <span class="menu-text category-title">{{ category.label }}</span>
+              <i
+                v-if="!isMenuCollapsed"
+                class="fas fa-chevron-down chevron-icon"
+                :class="{ rotated: expandedCategories[category.key] }"
+              ></i>
+            </div>
+            <ul
+              class="category-items"
+              :class="{
+                expanded: expandedCategories[category.key]
+              }"
+              :style="isMenuCollapsed && menuPositions[category.key] ? {
+                top: menuPositions[category.key].top + 'px',
+                left: menuPositions[category.key].left + 'px'
+              } : {}"
+            >
+              <li v-for="item in category.items" :key="item.route">
+                <router-link
+                  :to="item.route"
+                  class="menu-item"
+                  :title="isMenuCollapsed ? item.title : ''"
+                  @click="handleMenuItemClick"
+                >
+                  <i :class="item.icon"></i>
+                  <span class="menu-text">{{ item.label }}</span>
+                </router-link>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+      <div class="menu-bottom">
+        <ul>
+          <li v-for="category in filteredBottomCategories" :key="category.key" class="menu-category" :data-category="category.key">
+            <div
+              class="category-header"
+              @click="toggleCategory(category.key, $event)"
+              :class="{
+                active: expandedCategories[category.key],
+                'has-active-item': isCategoryActive[category.key]
+              }"
+              :title="isMenuCollapsed ? category.label : ''"
+            >
+              <i :class="category.icon"></i>
+              <span class="menu-text category-title">{{ category.label }}</span>
+              <i
+                v-if="!isMenuCollapsed"
+                class="fas fa-chevron-down chevron-icon"
+                :class="{ rotated: expandedCategories[category.key] }"
+              ></i>
+            </div>
+            <ul
+              class="category-items"
+              :class="{
+                expanded: expandedCategories[category.key]
+              }"
+              :style="isMenuCollapsed && menuPositions[category.key] ? {
+                top: menuPositions[category.key].top + 'px',
+                left: menuPositions[category.key].left + 'px'
+              } : {}"
+            >
+              <li v-for="item in category.items" :key="item.route">
+                <router-link
+                  :to="item.route"
+                  class="menu-item"
+                  :title="isMenuCollapsed ? item.title : ''"
+                  @click="handleMenuItemClick"
+                >
+                  <i :class="item.icon"></i>
+                  <span class="menu-text">{{ item.label }}</span>
+                </router-link>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
     </nav>
   </div>
 </template>
@@ -517,6 +564,16 @@ const filteredCategories = computed(() => {
     .filter(category => category.items.length > 0) // Remove categories with no visible items
 });
 
+// Split categories into top (functional) and bottom (utility/admin) sections
+const bottomCategoryKeys = new Set(['subscription', 'help', 'admin'])
+
+const filteredTopCategories = computed(() =>
+  filteredCategories.value.filter(c => !bottomCategoryKeys.has(c.key))
+)
+const filteredBottomCategories = computed(() =>
+  filteredCategories.value.filter(c => bottomCategoryKeys.has(c.key))
+)
+
 // Fonction pour déterminer si une catégorie contient l'élément actif
 const isCategoryActive = computed(() => {
   const activeCategories: Record<string, boolean> = {};
@@ -644,11 +701,29 @@ watch(() => route.path, () => {
 .main-menu {
   background-color: var(--color-gray-800);
   color: var(--color-white);
-  height: 100vh;
+  height: 100%;
   padding: var(--spacing-lg);
   animation: fadeIn 0.5s ease-in-out;
   transition: width var(--transition-slow) ease;
   overflow: hidden;
+}
+
+.menu-nav {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.menu-top {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.menu-bottom {
+  flex-shrink: 0;
+  border-top: 1px solid var(--color-gray-600);
+  padding-top: var(--spacing-sm);
 }
 
 .main-menu.collapsed {
