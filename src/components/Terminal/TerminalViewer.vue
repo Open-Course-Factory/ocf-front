@@ -47,10 +47,24 @@
 
     <div class="terminal-wrapper">
       <div ref="terminalRef" class="terminal-container" :class="{ 'terminal-full-height': fullHeight }"></div>
-      <div v-if="!terminal" class="terminal-placeholder">
-        <i class="fas fa-terminal fa-3x"></i>
+      <div v-if="error" class="terminal-error">
+        <i class="fas fa-exclamation-triangle fa-2x"></i>
+        <h3>{{ t('terminal.connectionError') }}</h3>
+        <p>{{ error }}</p>
+        <div class="terminal-error-actions">
+          <button v-if="showReconnectButton" class="btn btn-primary" @click="retry">
+            <i class="fas fa-redo"></i>
+            {{ t('terminal.retry') }}
+          </button>
+          <button class="btn btn-secondary" @click="reloadPage">
+            <i class="fas fa-sync-alt"></i>
+            {{ t('terminal.reloadPage') }}
+          </button>
+        </div>
+      </div>
+      <div v-if="!terminal && !error" class="terminal-loading">
+        <i class="fas fa-spinner fa-spin fa-2x"></i>
         <p>{{ loadingMessage }}</p>
-        <p v-if="error" class="text-danger">{{ error }}</p>
       </div>
     </div>
 
@@ -89,7 +103,7 @@
         <button
           class="btn btn-sm btn-warning"
           @click="reconnect"
-          v-if="!isConnected && !isConnecting"
+          v-if="showReconnectButton && !isConnected && !isConnecting"
           :title="t('terminal.reconnect')"
         >
           <i class="fas fa-sync"></i>
@@ -98,20 +112,26 @@
     </div>
 
     <!-- Terminal container -->
-    <div class="terminal-container" ref="terminalRef">
-      <div v-if="!terminal && !error" class="terminal-loading">
-        <i class="fas fa-spinner fa-spin fa-2x"></i>
-        <p>{{ loadingMessage }}</p>
-      </div>
-
+    <div class="terminal-wrapper">
+      <div class="terminal-container" ref="terminalRef"></div>
       <div v-if="error" class="terminal-error">
         <i class="fas fa-exclamation-triangle fa-2x"></i>
         <h3>{{ t('terminal.connectionError') }}</h3>
         <p>{{ error }}</p>
-        <button class="btn btn-primary" @click="retry">
-          <i class="fas fa-redo"></i>
-          {{ t('terminal.retry') }}
-        </button>
+        <div class="terminal-error-actions">
+          <button v-if="showReconnectButton" class="btn btn-primary" @click="retry">
+            <i class="fas fa-redo"></i>
+            {{ t('terminal.retry') }}
+          </button>
+          <button class="btn btn-secondary" @click="reloadPage">
+            <i class="fas fa-sync-alt"></i>
+            {{ t('terminal.reloadPage') }}
+          </button>
+        </div>
+      </div>
+      <div v-if="!terminal && !error" class="terminal-loading">
+        <i class="fas fa-spinner fa-spin fa-2x"></i>
+        <p>{{ loadingMessage }}</p>
       </div>
     </div>
 
@@ -204,8 +224,10 @@ const { t } = useTranslations({
       websocketError: 'WebSocket connection error. Check your authentication.',
       connectionFailed: 'Unable to connect: {message}',
       sessionExpired: 'This session has expired. Please start a new terminal session.',
+      sessionEnded: 'This session has ended. Please start a new terminal session.',
       sessionInfoError: 'Unable to verify session: {message}',
-      retry: 'Retry'
+      retry: 'Retry',
+      reloadPage: 'Reload Page'
     }
   },
   fr: {
@@ -232,8 +254,10 @@ const { t } = useTranslations({
       websocketError: 'Erreur de connexion WebSocket. Vérifiez votre authentification.',
       connectionFailed: 'Impossible de se connecter: {message}',
       sessionExpired: 'Cette session a expiré. Veuillez démarrer une nouvelle session de terminal.',
+      sessionEnded: 'Cette session est terminée. Veuillez démarrer une nouvelle session de terminal.',
       sessionInfoError: 'Impossible de vérifier la session: {message}',
-      retry: 'Réessayer'
+      retry: 'Réessayer',
+      reloadPage: 'Recharger la Page'
     }
   }
 })
@@ -440,7 +464,10 @@ async function connectToTerminal() {
       // Check status
       const validStatuses = ['running', 'active', 'starting']
       if (sessionInfo.value.status && !validStatuses.includes(sessionInfo.value.status.toLowerCase())) {
-        error.value = t('terminal.sessionExpired')
+        const endedStatuses = ['stopped', 'exited', 'terminated', 'system_limit']
+        error.value = endedStatuses.includes(sessionInfo.value.status.toLowerCase())
+          ? t('terminal.sessionEnded')
+          : t('terminal.sessionExpired')
         isConnecting.value = false
         return
       }
@@ -476,6 +503,9 @@ async function connectToTerminal() {
       showReconnectButton.value = false
       error.value = ''
 
+      // Clear old terminal content before attaching new session
+      terminal.value.reset()
+
       // Attach socket to terminal
       if (attachAddon) {
         attachAddon.dispose()
@@ -491,24 +521,43 @@ async function connectToTerminal() {
 
     socket.value.onclose = (event) => {
       console.log('Terminal WebSocket closed:', event.code, event.reason)
+      const wasConnected = isWsOpen.value
       isWsOpen.value = false
       isConnecting.value = false
-      showReconnectButton.value = true
 
       // Handle authentication failures
       if (event.code === 1008) {
         error.value = t('terminal.authenticationFailed')
+        showReconnectButton.value = true
         if (props.useSettingsCard) {
           showErrorNotification(
             t('terminal.authenticationFailed'),
             t('terminal.connectionError')
           )
         }
-      } else if (event.code !== 1000) {
-        // Not a normal closure
+      } else if (wasConnected) {
+        // WebSocket closed while session was active = shell exited or connection lost
+        error.value = t('terminal.sessionEnded')
+        showReconnectButton.value = false
+      } else {
+        // Connection failed before session was established - offer reconnect
         error.value = event.reason
           ? t('terminal.connectionClosed', { code: event.code, reason: event.reason })
           : t('terminal.connectionClosedNoReason', { code: event.code })
+        showReconnectButton.value = true
+      }
+
+      // Sync session status with backend after WebSocket closes
+      const sessionId = displaySessionId.value
+      if (sessionId) {
+        setTimeout(async () => {
+          try {
+            await terminalService.syncSession(sessionId)
+            console.log('Session synced after WebSocket close:', sessionId)
+          } catch (syncErr) {
+            console.warn('Failed to sync session after close:', syncErr)
+          }
+        }, 2000)
       }
     }
 
@@ -533,12 +582,33 @@ async function connectToTerminal() {
   }
 }
 
+// Reload the page
+function reloadPage() {
+  window.location.reload()
+}
+
 // Reconnect terminal
 async function reconnect() {
   console.log('Reconnecting terminal...')
   if (socket.value) {
     socket.value.close()
   }
+
+  // Sync and re-fetch session info to get current backend status
+  if (displaySessionId.value) {
+    try {
+      await terminalService.syncSession(displaySessionId.value)
+    } catch (err: any) {
+      console.warn('Could not sync session:', err)
+    }
+    try {
+      const sharedInfo = await terminalService.getTerminalInfo(displaySessionId.value)
+      fetchedSessionInfo.value = toSessionInfo(sharedInfo)
+    } catch (err: any) {
+      console.warn('Could not refresh session info:', err)
+    }
+  }
+
   await connectToTerminal()
 }
 
@@ -707,9 +777,14 @@ defineExpose({
 .terminal-loading,
 .terminal-error {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   color: var(--color-text-secondary);
 }
@@ -722,6 +797,14 @@ defineExpose({
 
 .terminal-error {
   color: var(--color-danger);
+  z-index: 100;
+  background: var(--color-bg-primary);
+}
+
+.terminal-error-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
 }
 
 .terminal-error h3 {

@@ -167,6 +167,11 @@ export const terminalService = {
     return response.data
   },
 
+  async syncSession(sessionId: string) {
+    const response = await axios.post(`/terminals/${sessionId}/sync`)
+    return response.data
+  },
+
   // Terminal Sharing API functions
   async shareTerminal(terminalId: string, data: ShareTerminalRequest): Promise<TerminalShareOutput> {
     const response = await axios.post(`/terminals/${terminalId}/share`, data)
