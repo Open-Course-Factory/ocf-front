@@ -638,6 +638,7 @@ const { t } = useTranslations({
       statusTerminated: 'Terminated',
       statusPending: 'Pending',
       statusStarting: 'Starting',
+      statusSystemLimit: 'Limit reached',
       statusUnknown: 'Unknown'
     }
   },
@@ -734,6 +735,7 @@ const { t } = useTranslations({
       statusTerminated: 'Terminé',
       statusPending: 'En attente',
       statusStarting: 'Démarrage',
+      statusSystemLimit: 'Limite atteinte',
       statusUnknown: 'Inconnu'
     }
   }
@@ -788,7 +790,7 @@ const dropdownRefs = ref(new Map<string, HTMLElement>())
 
 // Helper function to check if terminal is inactive
 function isTerminalInactive(status: string): boolean {
-  return ['expired', 'stopped', 'terminated'].includes(status?.toLowerCase())
+  return ['expired', 'stopped', 'terminated', 'system_limit'].includes(status?.toLowerCase())
 }
 
 // Computed property for all sessions (owned + shared)
@@ -1005,12 +1007,18 @@ function getStatusClass(status: string) {
     case 'active': return 'text-success'
     case 'expired': return 'text-danger'
     case 'stopped': return 'text-muted'
+    case 'system_limit': return 'text-danger'
     default: return 'text-warning'
   }
 }
 
 function getStatusLabel(status: string): string {
   if (!status) return t('terminalMySessions.statusUnknown')
+
+  // Handle snake_case statuses
+  if (status.toLowerCase() === 'system_limit') {
+    return t('terminalMySessions.statusSystemLimit')
+  }
 
   const statusKey = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
   const translationKey = `terminalMySessions.status${statusKey}`
