@@ -42,7 +42,12 @@
       </template>
 
       <!-- Instance Type Selection -->
+      <div v-if="isLoadingInstanceTypes" class="instance-types-loading">
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>{{ t('terminalStarter.loadingInstanceTypes') }}</span>
+      </div>
       <InstanceTypeSelector
+        v-else
         v-model="selectedInstanceType"
         :instance-types="instanceTypes"
         :allowed-sizes="allowedMachineSizes"
@@ -213,7 +218,9 @@ const { t } = useTranslations({
       errorServerCapacity: 'Server at Capacity',
       errorServerCapacityMessage: 'The server does not have enough resources to create a new terminal session. Please try again in a few minutes or stop an existing terminal.',
       activeSessions: '{count} active session | {count} active sessions',
-      backendOffline: 'Backend "{name}" is offline. Please select another backend or try again later.'
+      backendOffline: 'Backend "{name}" is offline. Please select another backend or try again later.',
+      loadingInstanceTypes: 'Loading instance types...',
+      noInstanceTypesForBackend: 'No instance types available for this backend.'
     }
   },
   fr: {
@@ -258,7 +265,9 @@ const { t } = useTranslations({
       errorServerCapacity: 'Serveur à Capacité Maximale',
       errorServerCapacityMessage: 'Le serveur n\'a pas suffisamment de ressources pour créer une nouvelle session terminal. Veuillez réessayer dans quelques minutes ou arrêter un terminal existant.',
       activeSessions: '{count} session active | {count} sessions actives',
-      backendOffline: 'Le backend « {name} » est hors ligne. Veuillez sélectionner un autre backend ou réessayer plus tard.'
+      backendOffline: 'Le backend « {name} » est hors ligne. Veuillez sélectionner un autre backend ou réessayer plus tard.',
+      loadingInstanceTypes: 'Chargement des types d\'instances...',
+      noInstanceTypesForBackend: 'Aucun type d\'instance disponible sur ce backend.'
     }
   }
 })
@@ -306,6 +315,8 @@ const selectedBackendId = computed({
 
 // Instance types
 const instanceTypes = ref<InstanceType[]>([])
+const isLoadingInstanceTypes = ref(false)
+const instanceTypeCache = new Map<string, InstanceType[]>()
 
 // Groups
 const availableGroups = computed(() => groupsStore.entities)
@@ -412,6 +423,7 @@ const capacityStatusText = computed(() => {
 
 // Form validation
 const isFormValid = computed(() => {
+  if (isLoadingInstanceTypes.value) return false
   if (!selectedInstanceType.value) return false
   if (creationMode.value === 'bulk' && !selectedGroupId.value) return false
   // Check if user has reached terminal limit
@@ -430,9 +442,19 @@ function getInstanceRAMRequirement(instancePrefix: string): number {
   return INSTANCE_RAM_REQUIREMENTS['default']
 }
 
-async function loadInstanceTypes() {
+async function loadInstanceTypes(backendId?: string) {
+  const cacheKey = backendId || '__default__'
+
+  // Serve from cache if available
+  const cached = instanceTypeCache.get(cacheKey)
+  if (cached) {
+    instanceTypes.value = cached
+    return
+  }
+
+  isLoadingInstanceTypes.value = true
   try {
-    const loadedTypes = await terminalService.getInstanceTypes()
+    const loadedTypes = await terminalService.getInstanceTypes(backendId)
 
     if (!Array.isArray(loadedTypes)) {
       instanceTypes.value = []
@@ -441,9 +463,10 @@ async function loadInstanceTypes() {
     }
 
     instanceTypes.value = loadedTypes
+    instanceTypeCache.set(cacheKey, loadedTypes)
 
     if (instanceTypes.value.length === 0) {
-      showWarning('No instance types available. Contact the administrator.', 'No instances available')
+      showWarning(t('terminalStarter.noInstanceTypesForBackend'), t('terminalStarter.noInstanceTypesForBackend'))
       return
     }
   } catch (error: any) {
@@ -451,6 +474,8 @@ async function loadInstanceTypes() {
     showErrorNotification(`Invalid data format for instance types: ${error.message || error}`, 'Loading Error')
     instanceTypes.value = []
     selectedInstanceType.value = ''
+  } finally {
+    isLoadingInstanceTypes.value = false
   }
 }
 
@@ -554,6 +579,7 @@ function resetForm() {
   userManuallySelected.value = false
   restoredFromStorage.value = false
   selectedInstanceType.value = ''
+  instanceTypeCache.clear()
 }
 
 async function loadGroupMembers(groupId: string) {
@@ -570,6 +596,7 @@ async function loadGroupMembers(groupId: string) {
 
 // Watch for global organization changes to re-fetch backends
 watch(storeOrgId, async (newOrgId) => {
+  instanceTypeCache.clear()
   if (newOrgId) {
     try {
       await backendsStore.fetchBackends(newOrgId)
@@ -577,6 +604,14 @@ watch(storeOrgId, async (newOrgId) => {
       // Error is stored in backendsStore.error
     }
   }
+})
+
+// Watch for backend changes to re-fetch instance types
+watch(selectedBackendId, async (newBackendId) => {
+  selectedInstanceType.value = ''
+  userManuallySelected.value = false
+  restoredFromStorage.value = false
+  await loadInstanceTypes(newBackendId || undefined)
 })
 
 // Watch for group selection changes to update member count
@@ -880,8 +915,9 @@ function cleanup() {
 }
 
 onMounted(async () => {
+  instanceTypeCache.clear()
+
   const promises: Promise<any>[] = [
-    loadInstanceTypes(),
     subscriptionsStore.getCurrentSubscription(),
     loadCurrentTerminalUsage()
   ]
@@ -908,6 +944,9 @@ onMounted(async () => {
       // Non-critical: backend loading failure should not block terminal creation
     }
   }
+
+  // Fetch instance types after backends are loaded (pass selected backend if any)
+  await loadInstanceTypes(backendsStore.selectedBackendId || undefined)
 
   // Check for query parameters to set bulk mode and group
   if (route.query.mode === 'bulk' && route.query.groupId) {
@@ -1047,6 +1086,21 @@ onBeforeUnmount(() => {
 
 .capacity-check-inline .capacity-text {
   white-space: nowrap;
+}
+
+.instance-types-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xl) var(--spacing-md);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-md);
+}
+
+.instance-types-loading i {
+  color: var(--color-primary);
+  font-size: var(--font-size-lg);
 }
 
 .progress-container {

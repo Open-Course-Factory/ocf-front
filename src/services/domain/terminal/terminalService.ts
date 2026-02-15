@@ -138,8 +138,12 @@ export const instanceUtils = {
 }
 
 export const terminalService = {
-  async getInstanceTypes(): Promise<InstanceType[]> {
-    const response = await axios.get('/terminals/instance-types')
+  async getInstanceTypes(backendId?: string): Promise<InstanceType[]> {
+    const params: Record<string, string> = {}
+    if (backendId) {
+      params.backend = backendId
+    }
+    const response = await axios.get('/terminals/instance-types', { params })
     const data = response.data
 
     // Handle both formats: direct array or wrapped in instance_types
