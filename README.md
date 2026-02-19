@@ -23,6 +23,23 @@ Vue.js frontend application for [Open Course Factory](https://usine.solution-lib
 
 ## 📦 Development Setup
 
+### Devcontainer Prerequisites
+
+OCF projects communicate through a shared Docker network. Create it once before opening the devcontainer:
+
+```bash
+docker network create ocf-shared
+```
+
+This allows ocf-front to reach other services:
+| Service | Address | Description |
+|---------|---------|-------------|
+| ocf-core | `http://ocf-core:8080` | Core API |
+| postgres | `postgres:5432` | PostgreSQL database |
+| tt-backend | `http://tt-backend:8089` | Terminal backend API |
+
+### Local Development
+
 ```bash
 # Install dependencies
 npm install
