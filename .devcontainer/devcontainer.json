@@ -21,7 +21,9 @@
 
 	"workspaceFolder": "/workspaces",
 
-	"postCreateCommand": "echo \"\nsource /usr/share/bash-completion/completions/git\" >> ~/.bashrc",
+	"postCreateCommand": "grep -q 'bash-completion/completions/git' ~/.bashrc || echo '\nsource /usr/share/bash-completion/completions/git' >> ~/.bashrc",
+
+	"postStartCommand": "sudo chown node:node ~/.claude 2>/dev/null; if [ ! -L ~/.claude.json ]; then if [ -f ~/.claude/.claude.json ]; then rm -f ~/.claude.json; elif [ -f ~/.claude.json ]; then mv ~/.claude.json ~/.claude/.claude.json; else touch ~/.claude/.claude.json && chmod 600 ~/.claude/.claude.json; fi; ln -sf ~/.claude/.claude.json ~/.claude.json; fi",
 
 	"mounts": [
 	  "type=bind,source=${localEnv:HOME}/.ssh,target=/home/node/.ssh,readonly"
