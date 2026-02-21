@@ -23,6 +23,25 @@ import { defineStore } from "pinia"
 import { tokenService, authService } from "../services/auth"
 import router from "../router/index"
 import axios from "axios"
+import { useToast } from "../composables/useToast"
+import { useStoreTranslations } from "../composables/useTranslations"
+
+const { t } = useStoreTranslations({
+    en: {
+        session: {
+            expiryWarning: 'Your session expires in {minutes} minutes.',
+            expiryUrgent: 'Your session expires in less than 1 minute!',
+            extendSession: 'Sign in again'
+        }
+    },
+    fr: {
+        session: {
+            expiryWarning: 'Votre session expire dans {minutes} minutes.',
+            expiryUrgent: 'Votre session expire dans moins d\'une minute !',
+            extendSession: 'Se reconnecter'
+        }
+    }
+})
 
 export const useCurrentUserStore = defineStore('currentUser', {
     state() {
@@ -323,16 +342,80 @@ export const useCurrentUserStore = defineStore('currentUser', {
         },
 
         startTokenExpiryCheck() {
-            // Vérifier toutes les minutes
-            const interval = setInterval(() => {
-                if (!tokenService.hasValidToken() && this.userName) {
-                    console.log('Token expiré détecté lors de la vérification périodique');
-                    this.autoLogout();
-                    clearInterval(interval);
-                }
-            }, 60000); // 60 secondes
+            const toast = useToast()
+            let warningToastId: number | null = null
+            let urgentToastId: number | null = null
+            let currentInterval = 60000
+            let intervalHandle: ReturnType<typeof setInterval>
 
-            return interval;
+            const redirectToLogin = () => {
+                const currentPath = router.currentRoute.value.fullPath
+                router.push({ name: 'Login', query: { redirect: currentPath } })
+            }
+
+            const check = () => {
+                if (!this.userName) return
+
+                if (!tokenService.hasValidToken()) {
+                    clearInterval(intervalHandle)
+                    if (warningToastId !== null) toast.remove(warningToastId)
+                    if (urgentToastId !== null) toast.remove(urgentToastId)
+                    this.autoLogout()
+                    return
+                }
+
+                const timeLeft = tokenService.getTimeUntilExpiry()
+                const minutesLeft = Math.floor(timeLeft / 60000)
+
+                // Adaptive polling: speed up when close to expiry
+                if (timeLeft <= 10 * 60 * 1000 && currentInterval !== 15000) {
+                    currentInterval = 15000
+                    clearInterval(intervalHandle)
+                    intervalHandle = setInterval(check, currentInterval)
+                }
+
+                // Urgent warning: less than 1 minute
+                if (timeLeft <= 60 * 1000 && urgentToastId === null) {
+                    if (warningToastId !== null) {
+                        toast.remove(warningToastId)
+                        warningToastId = null
+                    }
+                    urgentToastId = toast.show(
+                        t('session.expiryUrgent'),
+                        'error',
+                        0,
+                        {
+                            persistent: true,
+                            action: {
+                                label: t('session.extendSession'),
+                                callback: redirectToLogin
+                            }
+                        }
+                    )
+                }
+                // Warning: less than 5 minutes
+                else if (timeLeft <= 5 * 60 * 1000 && warningToastId === null && urgentToastId === null) {
+                    warningToastId = toast.show(
+                        t('session.expiryWarning').replace('{minutes}', String(minutesLeft)),
+                        'warning',
+                        0,
+                        {
+                            persistent: true,
+                            action: {
+                                label: t('session.extendSession'),
+                                callback: redirectToLogin
+                            }
+                        }
+                    )
+                }
+                // Update warning message with remaining minutes
+                else if (warningToastId !== null && timeLeft > 60 * 1000) {
+                    toast.update(warningToastId, t('session.expiryWarning').replace('{minutes}', String(minutesLeft)))
+                }
+            }
+
+            intervalHandle = setInterval(check, currentInterval)
+            return intervalHandle
         },
 
         /**
