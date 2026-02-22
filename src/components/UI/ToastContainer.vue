@@ -15,6 +15,13 @@
       >
         <i :class="getIcon(toast.type)"></i>
         <span class="toast-message">{{ toast.message }}</span>
+        <button
+          v-if="toast.action"
+          class="toast-action"
+          @click="toast.action.callback(); remove(toast.id)"
+        >
+          {{ toast.action.label }}
+        </button>
         <button class="toast-close" @click="remove(toast.id)">
           <i class="fas fa-times"></i>
         </button>
@@ -75,6 +82,34 @@ function getIcon(type: string): string {
 
 .toast-message {
   flex: 1;
+}
+
+.toast-action {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: var(--color-white);
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background var(--transition-base);
+}
+
+.toast-action:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.toast-warning .toast-action {
+  color: var(--color-black);
+  border-color: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.toast-warning .toast-action:hover {
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .toast-close {

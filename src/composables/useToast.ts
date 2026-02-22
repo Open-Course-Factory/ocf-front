@@ -5,26 +5,41 @@
 
 import { ref } from 'vue'
 
+interface ToastAction {
+  label: string
+  callback: () => void
+}
+
 interface Toast {
   id: number
   message: string
   type: 'success' | 'error' | 'info' | 'warning'
   duration: number
+  persistent: boolean
+  action?: ToastAction
 }
 
 const toasts = ref<Toast[]>([])
 let nextId = 0
 
 export function useToast() {
-  function show(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info', duration = 3000) {
+  function show(
+    message: string,
+    type: 'success' | 'error' | 'info' | 'warning' = 'info',
+    duration = 3000,
+    options?: { persistent?: boolean; action?: ToastAction }
+  ) {
     const id = nextId++
-    const toast: Toast = { id, message, type, duration }
+    const persistent = options?.persistent ?? false
+    const toast: Toast = { id, message, type, duration, persistent, action: options?.action }
 
     toasts.value.push(toast)
 
-    setTimeout(() => {
-      remove(id)
-    }, duration)
+    if (!persistent) {
+      setTimeout(() => {
+        remove(id)
+      }, duration)
+    }
 
     return id
   }
@@ -33,6 +48,13 @@ export function useToast() {
     const index = toasts.value.findIndex(t => t.id === id)
     if (index > -1) {
       toasts.value.splice(index, 1)
+    }
+  }
+
+  function update(id: number, message: string) {
+    const toast = toasts.value.find(t => t.id === id)
+    if (toast) {
+      toast.message = message
     }
   }
 
@@ -56,6 +78,7 @@ export function useToast() {
     toasts,
     show,
     remove,
+    update,
     success,
     error,
     info,

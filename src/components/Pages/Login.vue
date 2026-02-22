@@ -69,6 +69,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useRoute } from 'vue-router';
 import axios from 'axios';
 import { useLoginStore } from '../../stores/login.ts';
 import { useCurrentUserStore } from '../../stores/currentUser.ts';
@@ -113,6 +114,7 @@ const { t } = useTranslations({
   }
 });
 
+const route = useRoute();
 const loginStore = useLoginStore();
 const currentUserStore = useCurrentUserStore();
 const settingsStore = useUserSettingsStore();
@@ -191,8 +193,12 @@ async function redirect() {
         landingPage = '/terminal-sessions';
       }
 
+      // Check for redirect query parameter (e.g., from session expiry)
+      const redirectParam = route.query.redirect as string | undefined
+      const targetPage = redirectParam || landingPage
+
       // Full page reload to cleanly transition from public to authenticated app shell
-      window.location.href = landingPage;
+      window.location.href = targetPage;
     } catch (error) {
       console.error('Error during redirect:', error);
       window.location.href = '/terminal-sessions';
