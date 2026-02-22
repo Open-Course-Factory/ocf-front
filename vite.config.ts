@@ -13,6 +13,9 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(version)
   },
+  server: {
+    allowedHosts: true
+  },
   test: {
     environment: 'happy-dom',
     include: ['tests/**/*.test.ts'],
