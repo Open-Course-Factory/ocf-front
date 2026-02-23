@@ -147,6 +147,8 @@ async function fetchHistory() {
     const params: Record<string, string> = {}
     if (lastTimestamp) {
       params.since = lastTimestamp
+    } else {
+      params.limit = '1000'
     }
 
     const response = await axios.get(`/terminals/${props.terminalId}/history`, { params })
