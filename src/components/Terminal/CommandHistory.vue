@@ -13,13 +13,13 @@
     <div class="command-history-header">
       <h4><i class="fas fa-history"></i> {{ t('history.title') }}</h4>
       <div class="command-history-actions">
-        <button class="btn btn-sm btn-outline-primary" @click="exportCSV" :disabled="commands.length === 0">
+        <button class="btn btn-sm btn-outline-primary" @click="exportCSV" :disabled="commands.length === 0" :aria-label="t('history.exportCSV')">
           <i class="fas fa-file-csv"></i> CSV
         </button>
-        <button class="btn btn-sm btn-outline-primary" @click="exportJSON" :disabled="commands.length === 0">
+        <button class="btn btn-sm btn-outline-primary" @click="exportJSON" :disabled="commands.length === 0" :aria-label="t('history.exportJSON')">
           <i class="fas fa-file-code"></i> JSON
         </button>
-        <button class="btn btn-sm btn-outline-danger" @click="confirmDelete" :disabled="commands.length === 0">
+        <button class="btn btn-sm btn-outline-danger" @click="confirmDelete" :disabled="commands.length === 0" :aria-label="t('history.deleteAll')">
           <i class="fas fa-trash"></i> {{ t('history.delete') }}
         </button>
       </div>
@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onBeforeUnmount, nextTick } from 'vue'
+import { ref, watch, onBeforeUnmount, onMounted, nextTick } from 'vue'
 import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
@@ -97,7 +97,10 @@ const { t } = useTranslations({
       cancel: 'Cancel',
       deleteSuccess: 'Command history deleted',
       deleteError: 'Failed to delete command history',
-      exportError: 'Failed to export command history'
+      exportError: 'Failed to export command history',
+      exportCSV: 'Export as CSV',
+      exportJSON: 'Export as JSON',
+      deleteAll: 'Delete all command history'
     }
   },
   fr: {
@@ -112,7 +115,10 @@ const { t } = useTranslations({
       cancel: 'Annuler',
       deleteSuccess: 'Historique des commandes supprimé',
       deleteError: 'Échec de la suppression de l\'historique',
-      exportError: 'Échec de l\'exportation de l\'historique'
+      exportError: 'Échec de l\'exportation de l\'historique',
+      exportCSV: 'Exporter en CSV',
+      exportJSON: 'Exporter en JSON',
+      deleteAll: 'Supprimer tout l\'historique des commandes'
     }
   }
 })
@@ -123,8 +129,11 @@ const commands = ref<CommandEntry[]>([])
 const isLoading = ref(false)
 const showDeleteConfirm = ref(false)
 const commandListRef = ref<HTMLElement | null>(null)
-let pollInterval: ReturnType<typeof setInterval> | null = null
+let pollInterval: ReturnType<typeof setTimeout> | null = null
 let lastTimestamp: number | null = null
+let errorCount = 0
+const MAX_POLL_INTERVAL = 30000
+const BASE_POLL_INTERVAL = 3000
 
 function formatTime(unixSeconds: number): string {
   try {
@@ -154,16 +163,18 @@ async function fetchHistory() {
     const response = await axios.get(`/terminals/${props.terminalId}/history`, { params })
     const data = response.data
 
+    // API returns { commands: [...] } from ocf-core proxy
     let newCommands: CommandEntry[] = []
-    if (Array.isArray(data)) {
-      newCommands = data
-    } else if (data && Array.isArray(data.commands)) {
+    if (data && Array.isArray(data.commands)) {
       newCommands = data.commands
-    } else if (data && Array.isArray(data.data)) {
-      newCommands = data.data
+    } else if (Array.isArray(data)) {
+      // Fallback: direct array response
+      newCommands = data
     }
 
     if (newCommands.length > 0) {
+      errorCount = 0
+
       if (lastTimestamp) {
         // Append new commands, avoiding duplicates by sequence_num
         const existingNums = new Set(commands.value.map(c => c.sequence_num))
@@ -187,6 +198,7 @@ async function fetchHistory() {
     }
   } catch (error) {
     console.error('Failed to fetch command history:', error)
+    errorCount++
   } finally {
     isLoading.value = false
   }
@@ -198,18 +210,38 @@ function scrollToBottom() {
   }
 }
 
+function schedulePoll() {
+  stopPolling()
+  const interval = Math.min(BASE_POLL_INTERVAL * Math.pow(2, errorCount), MAX_POLL_INTERVAL)
+  pollInterval = setTimeout(async () => {
+    await fetchHistory()
+    if (props.isActive && props.terminalId) {
+      schedulePoll()
+    }
+  }, interval)
+}
+
 function startPolling() {
   stopPolling()
   lastTimestamp = null
   commands.value = []
+  errorCount = 0
   fetchHistory()
-  pollInterval = setInterval(fetchHistory, 3000)
+  schedulePoll()
 }
 
 function stopPolling() {
   if (pollInterval) {
-    clearInterval(pollInterval)
+    clearTimeout(pollInterval)
     pollInterval = null
+  }
+}
+
+function handleVisibilityChange() {
+  if (document.hidden) {
+    stopPolling()
+  } else if (props.isActive && props.terminalId) {
+    startPolling()
   }
 }
 
@@ -296,8 +328,13 @@ watch(
   { immediate: true }
 )
 
+onMounted(() => {
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+})
+
 onBeforeUnmount(() => {
   stopPolling()
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>
 
@@ -349,7 +386,7 @@ onBeforeUnmount(() => {
 }
 
 .empty-state i {
-  font-size: 2rem;
+  font-size: var(--font-size-2xl, 2rem);
   margin-bottom: var(--spacing-sm);
   opacity: 0.5;
 }

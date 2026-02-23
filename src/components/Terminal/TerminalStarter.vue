@@ -747,7 +747,7 @@ async function startSingleSession() {
     const sessionData = {
       terms: 'J\'accepte les conditions d\'utilisation du service terminal.',
       expiry: sessionDurationCap.value,
-      recording_consent: recordingConsentResult.value || 0,
+      recording_consent: recordingConsentResult.value ?? 0,
       ...(selectedInstanceType.value && { instance_type: selectedInstanceType.value }),
       ...(nameInput.value.trim() && { name: nameInput.value.trim() }),
       ...(backendsStore.selectedBackendId && { backend: backendsStore.selectedBackendId }),

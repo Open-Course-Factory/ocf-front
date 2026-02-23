@@ -42,14 +42,14 @@ const { t } = useTranslations({
 <style scoped>
 .recording-indicator {
   color: var(--color-danger);
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--spacing-xs);
 }
 
 .recording-dot {
-  font-size: 0.5rem;
+  font-size: var(--font-size-xs);
   animation: pulse 1.5s ease-in-out infinite;
 }
 
