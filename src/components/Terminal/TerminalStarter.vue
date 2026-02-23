@@ -253,7 +253,7 @@ const { t } = useTranslations({
       loadingInstanceTypes: 'Loading instance types...',
       noInstanceTypesForBackend: 'No instance types available for this backend.',
       recordingConsentTitle: 'Command Recording',
-      recordingConsentMessage: 'Your terminal commands will be recorded. Your trainer and platform admins can view your command history. Commands are retained for {days} days. You can delete your history at any time.',
+      recordingConsentMessage: 'Recording your commands helps you review your work later and enables your trainer to give personalized feedback on your progress.\n\nYour terminal commands will be recorded and retained for {days} days. Your trainer and platform admins can view your command history. You can export or delete your history at any time.',
       recordingAccept: 'Accept recording',
       recordingDecline: 'Continue without recording',
       commandHistory: 'Command History'
@@ -305,7 +305,7 @@ const { t } = useTranslations({
       loadingInstanceTypes: 'Chargement des types d\'instances...',
       noInstanceTypesForBackend: 'Aucun type d\'instance disponible sur ce backend.',
       recordingConsentTitle: 'Enregistrement des commandes',
-      recordingConsentMessage: 'Vos commandes de terminal seront enregistrées. Votre formateur et les administrateurs de la plateforme pourront consulter votre historique de commandes. Les commandes sont conservées pendant {days} jours. Vous pouvez supprimer votre historique à tout moment.',
+      recordingConsentMessage: 'L\'enregistrement de vos commandes vous permet de revoir votre travail ultérieurement et aide votre formateur à vous donner un retour personnalisé sur votre progression.\n\nVos commandes de terminal seront enregistrées et conservées pendant {days} jours. Votre formateur et les administrateurs de la plateforme pourront consulter votre historique de commandes. Vous pouvez exporter ou supprimer votre historique à tout moment.',
       recordingAccept: 'Accepter l\'enregistrement',
       recordingDecline: 'Continuer sans enregistrement',
       commandHistory: 'Historique des commandes'
@@ -1232,6 +1232,7 @@ onBeforeUnmount(() => {
   color: var(--color-text-primary);
   line-height: 1.6;
   margin: 0;
+  white-space: pre-line;
 }
 
 .command-history-panel {

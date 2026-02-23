@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2025 Solution Libre
+ * Copyright (C) 2023-2026 Solution Libre
  *
  * Command History component for terminal sessions
  * Displays recorded commands with export and delete capabilities
@@ -13,13 +13,13 @@
     <div class="command-history-header">
       <h4><i class="fas fa-history"></i> {{ t('history.title') }}</h4>
       <div class="command-history-actions">
-        <button class="btn btn-sm btn-outline" @click="exportCSV" :disabled="commands.length === 0">
+        <button class="btn btn-sm btn-outline-primary" @click="exportCSV" :disabled="commands.length === 0">
           <i class="fas fa-file-csv"></i> CSV
         </button>
-        <button class="btn btn-sm btn-outline" @click="exportJSON" :disabled="commands.length === 0">
+        <button class="btn btn-sm btn-outline-primary" @click="exportJSON" :disabled="commands.length === 0">
           <i class="fas fa-file-code"></i> JSON
         </button>
-        <button class="btn btn-sm btn-danger-outline" @click="confirmDelete" :disabled="commands.length === 0">
+        <button class="btn btn-sm btn-outline-danger" @click="confirmDelete" :disabled="commands.length === 0">
           <i class="fas fa-trash"></i> {{ t('history.delete') }}
         </button>
       </div>
@@ -65,6 +65,7 @@
 import { ref, watch, onBeforeUnmount, nextTick } from 'vue'
 import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
+import { useNotification } from '../../composables/useNotification'
 import BaseModal from '../Modals/BaseModal.vue'
 
 interface CommandEntry {
@@ -102,19 +103,21 @@ const { t } = useTranslations({
   fr: {
     history: {
       title: 'Historique des commandes',
-      empty: 'Aucune commande enregistree. Commencez a taper dans le terminal pour voir votre historique de commandes.',
+      empty: 'Aucune commande enregistrée. Commencez à taper dans le terminal pour voir votre historique de commandes.',
       loading: 'Chargement de l\'historique des commandes...',
       delete: 'Supprimer',
       deleteConfirmTitle: 'Supprimer l\'historique des commandes',
-      deleteConfirmMessage: 'Etes-vous sur de vouloir supprimer toutes les commandes enregistrees ? Cette action est irreversible.',
+      deleteConfirmMessage: 'Êtes-vous sûr de vouloir supprimer toutes les commandes enregistrées ? Cette action est irréversible.',
       deleteConfirm: 'Tout supprimer',
       cancel: 'Annuler',
-      deleteSuccess: 'Historique des commandes supprime',
-      deleteError: 'Echec de la suppression de l\'historique',
-      exportError: 'Echec de l\'exportation de l\'historique'
+      deleteSuccess: 'Historique des commandes supprimé',
+      deleteError: 'Échec de la suppression de l\'historique',
+      exportError: 'Échec de l\'exportation de l\'historique'
     }
   }
 })
+
+const { showSuccess, showError: showErrorNotification } = useNotification()
 
 const commands = ref<CommandEntry[]>([])
 const isLoading = ref(false)
@@ -195,6 +198,8 @@ function scrollToBottom() {
 
 function startPolling() {
   stopPolling()
+  lastTimestamp = ''
+  commands.value = []
   fetchHistory()
   pollInterval = setInterval(fetchHistory, 3000)
 }
@@ -233,6 +238,7 @@ async function exportCSV() {
     )
   } catch (error) {
     console.error('Failed to export CSV:', error)
+    showErrorNotification(t('history.exportError'))
   }
 }
 
@@ -251,6 +257,7 @@ async function exportJSON() {
     )
   } catch (error) {
     console.error('Failed to export JSON:', error)
+    showErrorNotification(t('history.exportError'))
   }
 }
 
@@ -266,9 +273,11 @@ async function deleteHistory() {
     commands.value = []
     lastTimestamp = ''
     showDeleteConfirm.value = false
+    showSuccess(t('history.deleteSuccess'))
   } catch (error) {
     console.error('Failed to delete command history:', error)
     showDeleteConfirm.value = false
+    showErrorNotification(t('history.deleteError'))
   }
 }
 
@@ -373,74 +382,6 @@ onBeforeUnmount(() => {
 .command-text {
   color: var(--color-text-primary);
   word-break: break-all;
-}
-
-/* Button styles */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: var(--font-size-xs);
-  border: var(--border-width-thin) solid transparent;
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  text-decoration: none;
-  transition: all var(--transition-fast);
-  background: none;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-sm {
-  padding: 3px 8px;
-  font-size: 0.75rem;
-}
-
-.btn-outline {
-  border-color: var(--color-border-medium);
-  color: var(--color-text-secondary);
-  background-color: transparent;
-}
-
-.btn-outline:hover:not(:disabled) {
-  background-color: var(--color-bg-secondary);
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.btn-danger-outline {
-  border-color: var(--color-danger);
-  color: var(--color-danger);
-  background-color: transparent;
-}
-
-.btn-danger-outline:hover:not(:disabled) {
-  background-color: var(--color-danger);
-  color: var(--color-white);
-}
-
-.btn-danger {
-  background-color: var(--color-danger);
-  color: var(--color-white);
-  border-color: var(--color-danger);
-}
-
-.btn-danger:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.btn-secondary {
-  background-color: var(--color-bg-secondary);
-  color: var(--color-text-secondary);
-  border-color: var(--color-border-medium);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background-color: var(--color-bg-tertiary);
 }
 
 @media (max-width: 768px) {

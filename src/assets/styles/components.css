@@ -84,6 +84,17 @@
   color: var(--color-white);
 }
 
+.btn-outline-danger {
+  background-color: transparent;
+  color: var(--color-danger);
+  border: var(--border-width-thin) solid var(--color-danger);
+}
+
+.btn-outline-danger:hover:not(:disabled) {
+  background-color: var(--color-danger);
+  color: var(--color-white);
+}
+
 /* === FORMS === */
 /* Note: Core form styles are in forms-common.css */
 
