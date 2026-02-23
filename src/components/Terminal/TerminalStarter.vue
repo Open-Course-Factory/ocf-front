@@ -128,10 +128,39 @@
       v-if="showTerminalPanel"
       ref="terminalConsoleRef"
       :session-info="sessionInfo"
+      :is-recording="recordingConsentResult === 1"
       use-settings-card
       title="Console Terminal"
       :full-height="false"
     />
+
+    <!-- Command History Panel -->
+    <div v-if="showHistoryPanel" class="command-history-panel">
+      <CommandHistory :terminal-id="sessionInfo?.session_id" :is-active="showTerminalPanel" />
+    </div>
+
+    <!-- Recording Consent Modal -->
+    <BaseModal
+      :visible="showRecordingConsent"
+      :title="t('terminalStarter.recordingConsentTitle')"
+      title-icon="fas fa-circle-dot"
+      size="medium"
+      :show-close="true"
+      @close="handleRecordingConsent(false)"
+    >
+      <p class="recording-consent-message">
+        {{ t('terminalStarter.recordingConsentMessage', { days: retentionDays }) }}
+      </p>
+      <template #footer>
+        <button class="btn btn-primary" @click="handleRecordingConsent(true)">
+          <i class="fas fa-check"></i>
+          {{ t('terminalStarter.recordingAccept') }}
+        </button>
+        <button class="btn btn-secondary" @click="handleRecordingConsent(false)">
+          {{ t('terminalStarter.recordingDecline') }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -156,6 +185,8 @@ import TerminalAdvancedOptions from './TerminalAdvancedOptions.vue'
 import TerminalUsagePanel from './TerminalUsagePanel.vue'
 import TerminalSessionInfo from './TerminalSessionInfo.vue'
 import TerminalViewer from './TerminalViewer.vue'
+import CommandHistory from './CommandHistory.vue'
+import BaseModal from '../Modals/BaseModal.vue'
 import type { InstanceType } from '../../types'
 
 // Router
@@ -220,7 +251,12 @@ const { t } = useTranslations({
       activeSessions: '{count} active session | {count} active sessions',
       backendOffline: 'Backend "{name}" is offline. Please select another backend or try again later.',
       loadingInstanceTypes: 'Loading instance types...',
-      noInstanceTypesForBackend: 'No instance types available for this backend.'
+      noInstanceTypesForBackend: 'No instance types available for this backend.',
+      recordingConsentTitle: 'Command Recording',
+      recordingConsentMessage: 'Your terminal commands will be recorded. Your trainer and platform admins can view your command history. Commands are retained for {days} days. You can delete your history at any time.',
+      recordingAccept: 'Accept recording',
+      recordingDecline: 'Continue without recording',
+      commandHistory: 'Command History'
     }
   },
   fr: {
@@ -267,7 +303,12 @@ const { t } = useTranslations({
       activeSessions: '{count} session active | {count} sessions actives',
       backendOffline: 'Le backend « {name} » est hors ligne. Veuillez sélectionner un autre backend ou réessayer plus tard.',
       loadingInstanceTypes: 'Chargement des types d\'instances...',
-      noInstanceTypesForBackend: 'Aucun type d\'instance disponible sur ce backend.'
+      noInstanceTypesForBackend: 'Aucun type d\'instance disponible sur ce backend.',
+      recordingConsentTitle: 'Enregistrement des commandes',
+      recordingConsentMessage: 'Vos commandes de terminal seront enregistrées. Votre formateur et les administrateurs de la plateforme pourront consulter votre historique de commandes. Les commandes sont conservées pendant {days} jours. Vous pouvez supprimer votre historique à tout moment.',
+      recordingAccept: 'Accepter l\'enregistrement',
+      recordingDecline: 'Continuer sans enregistrement',
+      commandHistory: 'Historique des commandes'
     }
   }
 })
@@ -284,6 +325,10 @@ const showDebug = ref(false)
 const isStarting = ref(false)
 const isStopping = ref(false)
 const startStatus = ref('')
+
+// Recording consent state
+const showRecordingConsent = ref(false)
+const recordingConsentResult = ref<number | null>(null)
 
 // Session information
 const sessionInfo = ref<any>(null)
@@ -419,6 +464,15 @@ const capacityStatusText = computed(() => {
   return canLaunchInstance.value
     ? t('terminalStarter.readyToLaunch')
     : t('terminalStarter.capacityIssue')
+})
+
+// Command history panel visibility
+const showHistoryPanel = computed(() => {
+  return sessionInfo.value && recordingConsentResult.value === 1
+})
+
+const retentionDays = computed(() => {
+  return currentSubscription.value?.subscription_plan?.command_history_retention_days || 0
 })
 
 // Form validation
@@ -580,6 +634,13 @@ function resetForm() {
   restoredFromStorage.value = false
   selectedInstanceType.value = ''
   instanceTypeCache.clear()
+  recordingConsentResult.value = null
+}
+
+function handleRecordingConsent(accepted: boolean) {
+  recordingConsentResult.value = accepted ? 1 : 0
+  showRecordingConsent.value = false
+  startSingleSession()
 }
 
 async function loadGroupMembers(groupId: string) {
@@ -639,6 +700,12 @@ async function startSingleSession() {
     return
   }
 
+  // Check if recording consent is needed
+  if (retentionDays.value > 0 && recordingConsentResult.value === null) {
+    showRecordingConsent.value = true
+    return // Wait for user response
+  }
+
   // Sync sessions first to ensure finished sessions are updated
   try {
     await syncAllSessions()
@@ -680,6 +747,7 @@ async function startSingleSession() {
     const sessionData = {
       terms: 'J\'accepte les conditions d\'utilisation du service terminal.',
       expiry: sessionDurationCap.value,
+      recording_consent: recordingConsentResult.value || 0,
       ...(selectedInstanceType.value && { instance_type: selectedInstanceType.value }),
       ...(nameInput.value.trim() && { name: nameInput.value.trim() }),
       ...(backendsStore.selectedBackendId && { backend: backendsStore.selectedBackendId }),
@@ -1158,6 +1226,16 @@ onBeforeUnmount(() => {
   width: 100%;
   max-width: 400px;
   font-size: var(--font-size-lg);
+}
+
+.recording-consent-message {
+  color: var(--color-text-primary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.command-history-panel {
+  margin-top: var(--spacing-lg);
 }
 
 @media (max-width: 768px) {

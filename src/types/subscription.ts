@@ -43,6 +43,9 @@ export interface SubscriptionPlan extends BaseEntity {
   data_persistence_enabled: boolean
   data_persistence_gb: number
   allowed_templates: string[]
+  allowed_backends: string[]
+  default_backend: string
+  command_history_retention_days: number // 0 = no recording, >0 = days to retain
 
   // Tiered pricing (for bulk purchases)
   use_tiered_pricing: boolean
