@@ -117,7 +117,7 @@ export const usePermissionsStore = defineStore('permissions', () => {
             allowed_templates: [],
             allowed_backends: [],
             default_backend: '',
-            command_history_retention_days: 0,
+            command_history_retention_days: 30,
             use_tiered_pricing: false,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),

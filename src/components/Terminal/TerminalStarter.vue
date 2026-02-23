@@ -136,7 +136,7 @@
 
     <!-- Command History Panel -->
     <div v-if="showHistoryPanel" class="command-history-panel">
-      <CommandHistory :terminal-id="sessionInfo?.session_id" :is-active="showTerminalPanel" />
+      <CommandHistory :session-id="sessionInfo?.session_id" :is-active="showTerminalPanel" />
     </div>
 
     <!-- Recording Consent Modal -->
@@ -326,7 +326,13 @@ const isStarting = ref(false)
 const isStopping = ref(false)
 const startStatus = ref('')
 
-// Recording consent state
+// Recording consent state:
+// - null: not yet asked (retentionDays=0 or dialog not shown yet)
+// - 0: user declined recording, or consent not applicable
+// - 1: user accepted recording
+// Note: 0 covers both "declined" and "not applicable" — the backend
+// treats both as "no recording". If RGPD audit requires distinguishing
+// these cases, a separate value (e.g. 2) should be introduced.
 const showRecordingConsent = ref(false)
 const recordingConsentResult = ref<number | null>(null)
 

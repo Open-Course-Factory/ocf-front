@@ -75,12 +75,12 @@ interface CommandEntry {
 }
 
 interface Props {
-  terminalId?: string
+  sessionId?: string
   isActive: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  terminalId: undefined,
+  sessionId: undefined,
   isActive: false
 })
 
@@ -149,7 +149,7 @@ function formatTime(unixSeconds: number): string {
 }
 
 async function fetchHistory() {
-  if (!props.terminalId) return
+  if (!props.sessionId) return
 
   try {
     isLoading.value = commands.value.length === 0
@@ -160,7 +160,7 @@ async function fetchHistory() {
       params.limit = '1000'
     }
 
-    const response = await axios.get(`/terminals/${props.terminalId}/history`, { params })
+    const response = await axios.get(`/terminals/${props.sessionId}/history`, { params })
     const data = response.data
 
     // API returns { commands: [...] } from ocf-core proxy
@@ -215,7 +215,7 @@ function schedulePoll() {
   const interval = Math.min(BASE_POLL_INTERVAL * Math.pow(2, errorCount), MAX_POLL_INTERVAL)
   pollInterval = setTimeout(async () => {
     await fetchHistory()
-    if (props.isActive && props.terminalId) {
+    if (props.isActive && props.sessionId) {
       schedulePoll()
     }
   }, interval)
@@ -240,7 +240,7 @@ function stopPolling() {
 function handleVisibilityChange() {
   if (document.hidden) {
     stopPolling()
-  } else if (props.isActive && props.terminalId) {
+  } else if (props.isActive && props.sessionId) {
     startPolling()
   }
 }
@@ -258,16 +258,21 @@ function triggerDownload(content: string, filename: string, mimeType: string) {
 }
 
 async function exportCSV() {
-  if (!props.terminalId) return
+  if (!props.sessionId) return
 
   try {
-    const response = await axios.get(`/terminals/${props.terminalId}/history`, {
+    const response = await axios.get(`/terminals/${props.sessionId}/history`, {
       params: { format: 'csv' },
       responseType: 'text'
     })
+    // Only trigger download if we actually got CSV content
+    if (typeof response.data !== 'string' || response.data.trim().startsWith('{')) {
+      showErrorNotification(t('history.exportError'))
+      return
+    }
     triggerDownload(
-      typeof response.data === 'string' ? response.data : JSON.stringify(response.data),
-      `command-history-${props.terminalId}.csv`,
+      response.data,
+      `command-history-${props.sessionId}.csv`,
       'text/csv'
     )
   } catch (error) {
@@ -277,16 +282,16 @@ async function exportCSV() {
 }
 
 async function exportJSON() {
-  if (!props.terminalId) return
+  if (!props.sessionId) return
 
   try {
-    const response = await axios.get(`/terminals/${props.terminalId}/history`, {
+    const response = await axios.get(`/terminals/${props.sessionId}/history`, {
       params: { format: 'json' }
     })
     const jsonContent = typeof response.data === 'string' ? response.data : JSON.stringify(response.data, null, 2)
     triggerDownload(
       jsonContent,
-      `command-history-${props.terminalId}.json`,
+      `command-history-${props.sessionId}.json`,
       'application/json'
     )
   } catch (error) {
@@ -300,10 +305,10 @@ function confirmDelete() {
 }
 
 async function deleteHistory() {
-  if (!props.terminalId) return
+  if (!props.sessionId) return
 
   try {
-    await axios.delete(`/terminals/${props.terminalId}/history`)
+    await axios.delete(`/terminals/${props.sessionId}/history`)
     commands.value = []
     lastTimestamp = null
     showDeleteConfirm.value = false
@@ -317,7 +322,7 @@ async function deleteHistory() {
 
 // Watch active state and terminal ID to start/stop polling
 watch(
-  () => [props.isActive, props.terminalId] as const,
+  () => [props.isActive, props.sessionId] as const,
   ([active, termId]) => {
     if (active && termId) {
       startPolling()
@@ -386,7 +391,7 @@ onBeforeUnmount(() => {
 }
 
 .empty-state i {
-  font-size: var(--font-size-2xl, 2rem);
+  font-size: var(--font-size-2xl);
   margin-bottom: var(--spacing-sm);
   opacity: 0.5;
 }
