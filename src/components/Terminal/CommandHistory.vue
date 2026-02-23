@@ -11,8 +11,13 @@
 <template>
   <div class="command-history">
     <div class="command-history-header">
-      <h4><i class="fas fa-history"></i> {{ t('history.title') }}</h4>
-      <div class="command-history-actions">
+      <h4>
+        <button class="btn-collapse" @click="toggleCollapse" :aria-label="isCollapsed ? t('history.showHistory') : t('history.hideHistory')" :title="isCollapsed ? t('history.showHistory') : t('history.hideHistory')">
+          <i :class="isCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-down'"></i>
+        </button>
+        <i class="fas fa-history"></i> {{ t('history.title') }}
+      </h4>
+      <div v-show="!isCollapsed" class="command-history-actions">
         <button class="btn btn-sm btn-outline-primary" @click="exportCSV" :disabled="commands.length === 0" :aria-label="t('history.exportCSV')">
           <i class="fas fa-file-csv"></i> CSV
         </button>
@@ -24,7 +29,7 @@
         </button>
       </div>
     </div>
-    <div class="command-list" ref="commandListRef">
+    <div v-show="!isCollapsed" class="command-list" ref="commandListRef">
       <div v-if="commands.length === 0 && !isLoading" class="empty-state">
         <i class="fas fa-terminal"></i>
         <p>{{ t('history.empty') }}</p>
@@ -100,7 +105,9 @@ const { t } = useTranslations({
       exportError: 'Failed to export command history',
       exportCSV: 'Export as CSV',
       exportJSON: 'Export as JSON',
-      deleteAll: 'Delete all command history'
+      deleteAll: 'Delete all command history',
+      showHistory: 'Show history',
+      hideHistory: 'Hide history'
     }
   },
   fr: {
@@ -118,12 +125,26 @@ const { t } = useTranslations({
       exportError: 'Échec de l\'exportation de l\'historique',
       exportCSV: 'Exporter en CSV',
       exportJSON: 'Exporter en JSON',
-      deleteAll: 'Supprimer tout l\'historique des commandes'
+      deleteAll: 'Supprimer tout l\'historique des commandes',
+      showHistory: 'Afficher l\'historique',
+      hideHistory: 'Masquer l\'historique'
     }
   }
 })
 
 const { showSuccess, showError: showErrorNotification } = useNotification()
+
+const isCollapsed = ref(true)
+const COLLAPSED_KEY = 'terminal_history_collapsed'
+const savedCollapsed = localStorage.getItem(COLLAPSED_KEY)
+if (savedCollapsed !== null) {
+  isCollapsed.value = savedCollapsed === 'true'
+}
+
+function toggleCollapse() {
+  isCollapsed.value = !isCollapsed.value
+  localStorage.setItem(COLLAPSED_KEY, String(isCollapsed.value))
+}
 
 const commands = ref<CommandEntry[]>([])
 const isLoading = ref(false)
@@ -132,6 +153,7 @@ const commandListRef = ref<HTMLElement | null>(null)
 let pollInterval: ReturnType<typeof setTimeout> | null = null
 let lastTimestamp: number | null = null
 let errorCount = 0
+let emptyResponseCount = 0
 const MAX_POLL_INTERVAL = 30000
 const BASE_POLL_INTERVAL = 3000
 
@@ -174,6 +196,7 @@ async function fetchHistory() {
 
     if (newCommands.length > 0) {
       errorCount = 0
+      emptyResponseCount = 0
 
       if (lastTimestamp) {
         // Append new commands, avoiding duplicates by sequence_num
@@ -195,6 +218,8 @@ async function fetchHistory() {
       if (lastCmd?.executed_at != null) {
         lastTimestamp = lastCmd.executed_at
       }
+    } else {
+      emptyResponseCount++
     }
   } catch (error) {
     console.error('Failed to fetch command history:', error)
@@ -212,7 +237,7 @@ function scrollToBottom() {
 
 function schedulePoll() {
   stopPolling()
-  const interval = Math.min(BASE_POLL_INTERVAL * Math.pow(2, errorCount), MAX_POLL_INTERVAL)
+  const interval = Math.min(BASE_POLL_INTERVAL * (1 + emptyResponseCount), MAX_POLL_INTERVAL)
   pollInterval = setTimeout(async () => {
     await fetchHistory()
     if (props.isActive && props.sessionId) {
@@ -226,6 +251,7 @@ function startPolling() {
   lastTimestamp = null
   commands.value = []
   errorCount = 0
+  emptyResponseCount = 0
   fetchHistory()
   schedulePoll()
 }
@@ -367,6 +393,21 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+}
+
+.btn-collapse {
+  background: none;
+  border: none;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  padding: 0;
+  font-size: var(--font-size-sm);
+  display: flex;
+  align-items: center;
+}
+
+.btn-collapse:hover {
+  color: var(--color-primary);
 }
 
 .command-history-actions {

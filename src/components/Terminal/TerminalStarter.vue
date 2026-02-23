@@ -151,6 +151,10 @@
       <p class="recording-consent-message">
         {{ t('terminalStarter.recordingConsentMessage', { days: retentionDays }) }}
       </p>
+      <label class="remember-choice-label">
+        <input type="checkbox" v-model="rememberConsent" />
+        {{ t('terminalStarter.rememberChoice') }}
+      </label>
       <template #footer>
         <button class="btn btn-primary" @click="handleRecordingConsent(true)">
           <i class="fas fa-check"></i>
@@ -256,7 +260,9 @@ const { t } = useTranslations({
       recordingConsentMessage: 'Recording your commands helps you review your work later and enables your trainer to give personalized feedback on your progress.\n\nYour terminal commands will be recorded and retained for {days} days. Your trainer and platform admins can view your command history. You can export or delete your history at any time.\n\nWarning: avoid typing passwords or tokens directly in the terminal — they may be captured in your command history.',
       recordingAccept: 'Accept recording',
       recordingDecline: 'Continue without recording',
-      commandHistory: 'Command History'
+      commandHistory: 'Command History',
+      rememberChoice: 'Remember my choice',
+      resetConsentPreference: 'Reset saved preference'
     }
   },
   fr: {
@@ -308,7 +314,9 @@ const { t } = useTranslations({
       recordingConsentMessage: 'L\'enregistrement de vos commandes vous permet de revoir votre travail ultérieurement et aide votre formateur à vous donner un retour personnalisé sur votre progression.\n\nVos commandes de terminal seront enregistrées et conservées pendant {days} jours. Votre formateur et les administrateurs de la plateforme pourront consulter votre historique de commandes. Vous pouvez exporter ou supprimer votre historique à tout moment.\n\nAttention : évitez de saisir des mots de passe ou des jetons directement dans le terminal — ils pourraient être capturés dans votre historique de commandes.',
       recordingAccept: 'Accepter l\'enregistrement',
       recordingDecline: 'Continuer sans enregistrement',
-      commandHistory: 'Historique des commandes'
+      commandHistory: 'Historique des commandes',
+      rememberChoice: 'Se souvenir de mon choix',
+      resetConsentPreference: 'Réinitialiser la préférence'
     }
   }
 })
@@ -335,6 +343,7 @@ const startStatus = ref('')
 // these cases, a separate value (e.g. 2) should be introduced.
 const showRecordingConsent = ref(false)
 const recordingConsentResult = ref<number | null>(null)
+const rememberConsent = ref(false)
 
 // Session information
 const sessionInfo = ref<any>(null)
@@ -347,6 +356,7 @@ const USAGE_REFRESH_INTERVAL = 600000 // 10 minutes
 
 // localStorage key for last selected instance
 const LAST_INSTANCE_KEY = 'terminal_last_instance_type'
+const RECORDING_CONSENT_KEY = 'terminal_recording_consent_preference'
 
 // Form
 const selectedInstanceType = ref('')
@@ -645,6 +655,9 @@ function resetForm() {
 
 function handleRecordingConsent(accepted: boolean) {
   recordingConsentResult.value = accepted ? 1 : 0
+  if (rememberConsent.value) {
+    localStorage.setItem(RECORDING_CONSENT_KEY, accepted ? 'accepted' : 'declined')
+  }
   showRecordingConsent.value = false
   startSingleSession()
 }
@@ -708,8 +721,16 @@ async function startSingleSession() {
 
   // Check if recording consent is needed
   if (retentionDays.value > 0 && recordingConsentResult.value === null) {
-    showRecordingConsent.value = true
-    return // Wait for user response
+    // Check for remembered preference
+    const savedPref = localStorage.getItem(RECORDING_CONSENT_KEY)
+    if (savedPref === 'accepted') {
+      recordingConsentResult.value = 1
+    } else if (savedPref === 'declined') {
+      recordingConsentResult.value = 0
+    } else {
+      showRecordingConsent.value = true
+      return // Wait for user response
+    }
   }
 
   // Sync sessions first to ensure finished sessions are updated
@@ -1239,6 +1260,20 @@ onBeforeUnmount(() => {
   line-height: 1.6;
   margin: 0;
   white-space: pre-line;
+}
+
+.remember-choice-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  margin-top: var(--spacing-sm);
+}
+
+.remember-choice-label input[type="checkbox"] {
+  cursor: pointer;
 }
 
 .command-history-panel {
