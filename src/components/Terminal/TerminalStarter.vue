@@ -262,7 +262,8 @@ const { t } = useTranslations({
       recordingDecline: 'Continue without recording',
       commandHistory: 'Command History',
       rememberChoice: 'Remember my choice',
-      resetConsentPreference: 'Reset saved preference'
+      resetConsentPreference: 'Reset saved preference',
+      termsAcceptance: 'I accept the terms of use for the terminal service.'
     }
   },
   fr: {
@@ -316,7 +317,8 @@ const { t } = useTranslations({
       recordingDecline: 'Continuer sans enregistrement',
       commandHistory: 'Historique des commandes',
       rememberChoice: 'Se souvenir de mon choix',
-      resetConsentPreference: 'Réinitialiser la préférence'
+      resetConsentPreference: 'Réinitialiser la préférence',
+      termsAcceptance: "J'accepte les conditions d'utilisation du service terminal."
     }
   }
 })
@@ -778,7 +780,7 @@ async function startSingleSession() {
 
   try {
     const sessionData = {
-      terms: 'J\'accepte les conditions d\'utilisation du service terminal.',
+      terms: t('terminalStarter.termsAcceptance'),
       expiry: sessionDurationCap.value,
       recording_consent: recordingConsentResult.value ?? 0,
       ...(selectedInstanceType.value && { instance_type: selectedInstanceType.value }),
@@ -885,14 +887,28 @@ async function startBulkSessions() {
     return
   }
 
+  // Check if recording consent is needed (same as single session)
+  if (retentionDays.value > 0 && recordingConsentResult.value === null) {
+    const savedPref = localStorage.getItem(RECORDING_CONSENT_KEY)
+    if (savedPref === 'accepted') {
+      recordingConsentResult.value = 1
+    } else if (savedPref === 'declined') {
+      recordingConsentResult.value = 0
+    } else {
+      showRecordingConsent.value = true
+      return
+    }
+  }
+
   isStarting.value = true
   startStatus.value = t('terminalStarter.startingBulkSessions')
 
   try {
     const bulkData = {
-      terms: 'J\'accepte les conditions d\'utilisation du service terminal.',
+      terms: t('terminalStarter.termsAcceptance'),
       expiry: sessionDurationCap.value,
       instance_type: selectedInstanceType.value,
+      recording_consent: recordingConsentResult.value ?? 0,
       ...(backendsStore.selectedBackendId && { backend: backendsStore.selectedBackendId }),
       ...(selectedOrganizationId.value && { organization_id: selectedOrganizationId.value })
     }
