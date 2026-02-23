@@ -35,7 +35,7 @@
       </div>
       <div v-for="cmd in commands" :key="cmd.sequence_num" class="command-entry">
         <span class="command-time">{{ formatTime(cmd.executed_at) }}</span>
-        <span class="command-text">{{ cmd.command }}</span>
+        <span class="command-text">{{ cmd.command_text }}</span>
       </div>
     </div>
 
@@ -70,8 +70,8 @@ import BaseModal from '../Modals/BaseModal.vue'
 
 interface CommandEntry {
   sequence_num: number
-  command: string
-  executed_at: string
+  command_text: string
+  executed_at: number
 }
 
 interface Props {
@@ -124,18 +124,18 @@ const isLoading = ref(false)
 const showDeleteConfirm = ref(false)
 const commandListRef = ref<HTMLElement | null>(null)
 let pollInterval: ReturnType<typeof setInterval> | null = null
-let lastTimestamp = ''
+let lastTimestamp: number | null = null
 
-function formatTime(isoDate: string): string {
+function formatTime(unixSeconds: number): string {
   try {
-    const date = new Date(isoDate)
+    const date = new Date(unixSeconds * 1000)
     return date.toLocaleTimeString(undefined, {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'
     })
   } catch {
-    return isoDate
+    return String(unixSeconds)
   }
 }
 
@@ -145,8 +145,8 @@ async function fetchHistory() {
   try {
     isLoading.value = commands.value.length === 0
     const params: Record<string, string> = {}
-    if (lastTimestamp) {
-      params.since = lastTimestamp
+    if (lastTimestamp !== null) {
+      params.since = String(lastTimestamp)
     } else {
       params.limit = '1000'
     }
@@ -181,7 +181,7 @@ async function fetchHistory() {
 
       // Update timestamp to last command's execution time
       const lastCmd = newCommands[newCommands.length - 1]
-      if (lastCmd?.executed_at) {
+      if (lastCmd?.executed_at != null) {
         lastTimestamp = lastCmd.executed_at
       }
     }
@@ -200,7 +200,7 @@ function scrollToBottom() {
 
 function startPolling() {
   stopPolling()
-  lastTimestamp = ''
+  lastTimestamp = null
   commands.value = []
   fetchHistory()
   pollInterval = setInterval(fetchHistory, 3000)
@@ -273,7 +273,7 @@ async function deleteHistory() {
   try {
     await axios.delete(`/terminals/${props.terminalId}/history`)
     commands.value = []
-    lastTimestamp = ''
+    lastTimestamp = null
     showDeleteConfirm.value = false
     showSuccess(t('history.deleteSuccess'))
   } catch (error) {

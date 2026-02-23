@@ -44,9 +44,7 @@
         </span>
       </div>
 
-      <span v-if="isRecording" class="recording-indicator" :title="t('terminal.recordingTooltip')">
-        <i class="fas fa-circle recording-dot"></i> {{ t('terminal.recording') }}
-      </span>
+      <RecordingIndicator :isRecording="isRecording" />
     </template>
 
     <div class="terminal-wrapper">
@@ -102,9 +100,7 @@
             {{ isConnecting ? t('terminal.connecting') : t('terminal.disconnected') }}
           </span>
         </div>
-        <span v-if="isRecording" class="recording-indicator" :title="t('terminal.recordingTooltip')">
-          <i class="fas fa-circle recording-dot"></i> {{ t('terminal.recording') }}
-        </span>
+        <RecordingIndicator :isRecording="isRecording" />
       </div>
       <div class="terminal-controls" v-if="!hideControls">
         <button
@@ -161,6 +157,7 @@ import { getTerminalTheme } from '../../utils/terminalTheme'
 import { terminalService, type SharedTerminalInfo } from '../../services/domain/terminal/terminalService'
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
+import RecordingIndicator from './RecordingIndicator.vue'
 
 interface SessionInfo {
   session_id: string
@@ -236,9 +233,7 @@ const { t } = useTranslations({
       sessionEnded: 'This session has ended. Please start a new terminal session.',
       sessionInfoError: 'Unable to verify session: {message}',
       retry: 'Retry',
-      reloadPage: 'Reload Page',
-      recording: 'REC',
-      recordingTooltip: 'Commands are being recorded'
+      reloadPage: 'Reload Page'
     }
   },
   fr: {
@@ -268,9 +263,7 @@ const { t } = useTranslations({
       sessionEnded: 'Cette session est terminée. Veuillez démarrer une nouvelle session de terminal.',
       sessionInfoError: 'Impossible de vérifier la session: {message}',
       retry: 'Réessayer',
-      reloadPage: 'Recharger la Page',
-      recording: 'ENR',
-      recordingTooltip: 'Les commandes sont enregistrées'
+      reloadPage: 'Recharger la Page'
     }
   }
 })
@@ -774,24 +767,6 @@ defineExpose({
 
 .status-disconnected {
   color: var(--color-danger);
-}
-
-.recording-indicator {
-  color: var(--color-danger);
-  font-size: 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.recording-dot {
-  font-size: 0.5rem;
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
 }
 
 .terminal-controls {
