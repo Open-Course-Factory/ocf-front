@@ -146,7 +146,7 @@
       title-icon="fas fa-circle-dot"
       size="medium"
       :show-close="true"
-      @close="handleRecordingConsent(false)"
+      @close="cancelRecordingConsent"
     >
       <p class="recording-consent-message">
         {{ t('terminalStarter.recordingConsentMessage', { days: retentionDays }) }}
@@ -659,7 +659,13 @@ function handleRecordingConsent(accepted: boolean) {
     localStorage.setItem(RECORDING_CONSENT_KEY, accepted ? 'accepted' : 'declined')
   }
   showRecordingConsent.value = false
-  startSingleSession()
+  startNewSession()
+}
+
+function cancelRecordingConsent() {
+  showRecordingConsent.value = false
+  // Don't set recordingConsentResult — leave null so next attempt re-prompts
+  // Don't call startSingleSession() or startNewSession()
 }
 
 async function loadGroupMembers(groupId: string) {
