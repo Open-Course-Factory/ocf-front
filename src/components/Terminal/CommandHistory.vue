@@ -107,7 +107,8 @@ const { t } = useTranslations({
       exportJSON: 'Export as JSON',
       deleteAll: 'Delete all command history',
       showHistory: 'Show history',
-      hideHistory: 'Hide history'
+      hideHistory: 'Hide history',
+      exportSuccess: 'Export successful'
     }
   },
   fr: {
@@ -127,7 +128,8 @@ const { t } = useTranslations({
       exportJSON: 'Exporter en JSON',
       deleteAll: 'Supprimer tout l\'historique des commandes',
       showHistory: 'Afficher l\'historique',
-      hideHistory: 'Masquer l\'historique'
+      hideHistory: 'Masquer l\'historique',
+      exportSuccess: 'Export réussi'
     }
   }
 })
@@ -307,6 +309,7 @@ async function exportCSV() {
       `command-history-${props.sessionId}.csv`,
       'text/csv'
     )
+    showSuccess(t('history.exportSuccess'))
   } catch (error) {
     console.error('Failed to export CSV:', error)
     showErrorNotification(t('history.exportError'))
@@ -326,6 +329,7 @@ async function exportJSON() {
       `command-history-${props.sessionId}.json`,
       'application/json'
     )
+    showSuccess(t('history.exportSuccess'))
   } catch (error) {
     console.error('Failed to export JSON:', error)
     showErrorNotification(t('history.exportError'))
