@@ -45,6 +45,17 @@
       </div>
 
       <RecordingIndicator :isRecording="isRecording" />
+
+      <Button
+        v-if="showStopButton && isConnected"
+        variant="danger"
+        size="sm"
+        :icon="isStopping ? 'fas fa-spinner fa-spin' : 'fas fa-stop'"
+        :disabled="isStopping"
+        @click="emit('stop')"
+      >
+        {{ t('terminal.stop') }}
+      </Button>
     </template>
 
     <div class="terminal-wrapper">
@@ -110,6 +121,15 @@
           :title="t('terminal.reconnect')"
         >
           <i class="fas fa-sync"></i>
+        </button>
+        <button
+          v-if="showStopButton && isConnected"
+          class="btn btn-sm btn-danger"
+          :disabled="isStopping"
+          :title="t('terminal.stop')"
+          @click="emit('stop')"
+        >
+          <i :class="isStopping ? 'fas fa-spinner fa-spin' : 'fas fa-stop'"></i>
         </button>
       </div>
     </div>
@@ -185,11 +205,17 @@ interface Props {
   hideControls?: boolean
   autoConnect?: boolean
   isRecording?: boolean
+  showStopButton?: boolean
+  isStopping?: boolean
   // Layout options
   useSettingsCard?: boolean
   title?: string
   fullHeight?: boolean
 }
+
+const emit = defineEmits<{
+  stop: []
+}>()
 
 const props = withDefaults(defineProps<Props>(), {
   sessionId: null,
@@ -199,6 +225,8 @@ const props = withDefaults(defineProps<Props>(), {
   hideControls: false,
   autoConnect: true,
   isRecording: false,
+  showStopButton: false,
+  isStopping: false,
   useSettingsCard: false,
   title: 'Console Terminal',
   fullHeight: true
@@ -236,7 +264,8 @@ const { t } = useTranslations({
       execFailed: 'The terminal shell encountered an error (code {code}). Please try again or contact an administrator.',
       sessionInfoError: 'Unable to verify session: {message}',
       retry: 'Retry',
-      reloadPage: 'Reload Page'
+      reloadPage: 'Reload Page',
+      stop: 'Stop'
     }
   },
   fr: {
@@ -270,6 +299,7 @@ const { t } = useTranslations({
       sessionInfoError: 'Impossible de vérifier la session: {message}',
       retry: 'Réessayer',
       reloadPage: 'Recharger la Page',
+      stop: 'Arrêter',
       recording: 'REC',
       recordingTooltip: 'Les commandes sont enregistrées'
     }
@@ -726,7 +756,8 @@ defineExpose({
   disconnect: cleanup,
   reconnect,
   isConnected: () => isConnected.value,
-  getSessionId: () => displaySessionId.value
+  getSessionId: () => displaySessionId.value,
+  pasteText: (text: string) => { terminal.value?.paste(text); terminal.value?.focus() }
 })
 </script>
 

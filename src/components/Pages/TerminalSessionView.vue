@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2025 Solution Libre
+ * Copyright (C) 2023-2026 Solution Libre
  */
 -->
 
@@ -35,40 +35,44 @@
         </router-link>
       </div>
 
-      <!-- Session Info Panel -->
-      <TerminalSessionInfo
+      <!-- Terminal + Command History (active session) -->
+      <TerminalSessionPanel
+        v-if="isSessionActive"
         :session-info="sessionInfo"
-        :instance-info="instanceInfo"
-        :time-remaining="timeRemaining"
+        :is-active="isSessionActive"
+        :is-recording="isRecording"
+        show-stop-button
         :is-stopping="isStopping"
         @stop="stopSession"
+        @recording-detected="isRecording = true"
       />
 
-      <!-- Terminal Console Panel -->
-      <TerminalViewer
-        :session-info="sessionInfo"
-        use-settings-card
-        title="Console Terminal"
-        :full-height="false"
-      />
+      <!-- Session expired: show notice + history only -->
+      <template v-else>
+        <div class="session-expired-notice">
+          <i class="fas fa-clock"></i>
+          <span>{{ t('sessionView.sessionEnded') }}</span>
+        </div>
+        <div class="command-history-panel">
+          <CommandHistory :session-id="sessionInfo?.session_id" :is-active="false" />
+        </div>
+      </template>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { terminalService } from '../../services/domain/terminal'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
-import TerminalSessionInfo from '../Terminal/TerminalSessionInfo.vue'
-import TerminalViewer from '../Terminal/TerminalViewer.vue'
-import type { InstanceType } from '../../types'
+import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
+import CommandHistory from '../Terminal/CommandHistory.vue'
 
 const route = useRoute()
-const router = useRouter()
-const { showWarning } = useNotification()
+const { showWarning, showError: showErrorNotification } = useNotification()
 
 const { t } = useTranslations({
   en: {
@@ -77,10 +81,10 @@ const { t } = useTranslations({
       backToSessions: 'Back to My Sessions',
       errorLoading: 'Unable to load session information.',
       errorNotFound: 'Session not found.',
-      errorStopping: 'Error stopping the session.',
       sessionExpired: 'Your terminal session has expired.',
       sessionExpiredTitle: 'Session Expired',
-      sessionStopped: 'Session stopped successfully.'
+      sessionEnded: 'This session has ended. You can still view the command history below.',
+      stopError: 'Failed to stop the session.'
     }
   },
   fr: {
@@ -89,10 +93,10 @@ const { t } = useTranslations({
       backToSessions: 'Retour aux sessions',
       errorLoading: 'Impossible de charger les informations de la session.',
       errorNotFound: 'Session introuvable.',
-      errorStopping: 'Erreur lors de l\'arret de la session.',
       sessionExpired: 'Votre session terminal a expire.',
       sessionExpiredTitle: 'Session expiree',
-      sessionStopped: 'Session arretee avec succes.'
+      sessionEnded: 'Cette session est terminee. Vous pouvez consulter l\'historique des commandes ci-dessous.',
+      stopError: 'Impossible d\'arrêter la session.'
     }
   }
 })
@@ -100,25 +104,49 @@ const { t } = useTranslations({
 // State
 const isLoading = ref(true)
 const error = ref('')
-const isStopping = ref(false)
 const sessionInfo = ref<any>(null)
-const instanceInfo = ref<InstanceType | null>(null)
+const isStopping = ref(false)
+const isRecording = ref(false)
 const timeRemaining = ref(0)
 let timerInterval: NodeJS.Timeout | null = null
 
 // Get session ID from route
 const sessionId = route.params.sessionId as string
 
+const isSessionActive = computed(() => {
+  if (!sessionInfo.value) return false
+  if (sessionInfo.value.status === 'expired' || sessionInfo.value.status === 'stopped') return false
+  return timeRemaining.value > 0
+})
+
+async function stopSession() {
+  if (!sessionInfo.value || isStopping.value) return
+
+  isStopping.value = true
+  try {
+    await axios.post(`/terminals/${sessionInfo.value.session_id}/stop`)
+    sessionInfo.value.status = 'stopped'
+    timeRemaining.value = 0
+    if (timerInterval) {
+      clearInterval(timerInterval)
+      timerInterval = null
+    }
+  } catch (err: any) {
+    console.error('Error stopping session:', err)
+    showErrorNotification(
+      err.response?.data?.error_message || err.message || t('sessionView.stopError')
+    )
+  } finally {
+    isStopping.value = false
+  }
+}
+
 async function loadSession() {
   isLoading.value = true
   error.value = ''
 
   try {
-    // Fetch session info and instance types in parallel
-    const [terminalInfo, instanceTypes] = await Promise.all([
-      terminalService.getTerminalInfo(sessionId),
-      terminalService.getInstanceTypes()
-    ])
+    const terminalInfo = await terminalService.getTerminalInfo(sessionId)
 
     sessionInfo.value = {
       session_id: terminalInfo.terminal.session_id,
@@ -126,15 +154,9 @@ async function loadSession() {
       status: terminalInfo.terminal.status
     }
 
-    // Resolve instance info
-    if (terminalInfo.terminal.instance_type && instanceTypes.length) {
-      instanceInfo.value = instanceTypes.find(
-        (it: InstanceType) => it.prefix === terminalInfo.terminal.instance_type
-      ) || null
-    }
-
-    // Start expiration timer
-    if (terminalInfo.terminal.expires_at) {
+    // Start expiration timer only for active sessions
+    const status = terminalInfo.terminal.status
+    if (terminalInfo.terminal.expires_at && status !== 'expired' && status !== 'stopped') {
       startExpirationTimer(terminalInfo.terminal.expires_at)
     }
   } catch (err: any) {
@@ -158,6 +180,15 @@ function startExpirationTimer(expiresAt: string) {
     clearInterval(timerInterval)
   }
 
+  // Set initial value immediately (don't wait for first interval tick)
+  const initialRemaining = Math.max(0, Math.floor((expirationTime - Date.now()) / 1000))
+  timeRemaining.value = initialRemaining
+
+  if (initialRemaining <= 0) {
+    showWarning(t('sessionView.sessionExpired'), t('sessionView.sessionExpiredTitle'))
+    return
+  }
+
   timerInterval = setInterval(() => {
     const now = Date.now()
     const remaining = Math.max(0, Math.floor((expirationTime - now) / 1000))
@@ -170,24 +201,6 @@ function startExpirationTimer(expiresAt: string) {
       showWarning(t('sessionView.sessionExpired'), t('sessionView.sessionExpiredTitle'))
     }
   }, 1000)
-}
-
-async function stopSession() {
-  if (!sessionInfo.value) return
-
-  isStopping.value = true
-
-  try {
-    await axios.post(`/terminals/${sessionId}/stop`)
-    router.push({ name: 'TerminalSessions' })
-  } catch (err: any) {
-    console.error('Error stopping session:', err)
-    error.value = err.response?.data?.error_message ||
-                  err.response?.data?.message ||
-                  t('sessionView.errorStopping')
-  } finally {
-    isStopping.value = false
-  }
 }
 
 onMounted(() => {
@@ -289,5 +302,26 @@ onBeforeUnmount(() => {
   opacity: 0.9;
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
+}
+
+.session-expired-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  background-color: var(--color-warning-bg, var(--color-bg-secondary));
+  border: var(--border-width-medium) solid var(--color-warning, var(--color-border));
+  border-radius: var(--border-radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.session-expired-notice i {
+  color: var(--color-warning, var(--color-text-muted));
+}
+
+.command-history-panel {
+  margin-top: var(--spacing-md);
 }
 </style>

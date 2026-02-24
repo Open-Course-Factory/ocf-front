@@ -11,12 +11,16 @@
 <template>
   <div class="command-history">
     <div class="command-history-header">
-      <h4>
-        <button class="btn-collapse" @click="toggleCollapse" :aria-label="isCollapsed ? t('history.showHistory') : t('history.hideHistory')" :title="isCollapsed ? t('history.showHistory') : t('history.hideHistory')">
-          <i :class="isCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-down'"></i>
-        </button>
-        <i class="fas fa-history"></i> {{ t('history.title') }}
-      </h4>
+      <button
+        class="collapse-toggle"
+        @click="toggleCollapse"
+        :aria-label="isCollapsed ? t('history.showHistory') : t('history.hideHistory')"
+        :title="isCollapsed ? t('history.showHistory') : t('history.hideHistory')"
+      >
+        <i class="fas fa-chevron-right collapse-chevron" :class="{ expanded: !isCollapsed }"></i>
+        <i class="fas fa-history"></i>
+        <span>{{ t('history.title') }}</span>
+      </button>
       <div v-show="!isCollapsed && commands.length > 0" class="command-history-search">
         <input
           type="text"
@@ -26,6 +30,9 @@
         />
       </div>
       <div v-show="!isCollapsed" class="command-history-actions">
+        <button class="btn btn-sm btn-outline-primary" @click="toggleSort" :disabled="commands.length === 0" :aria-label="t('history.sortOrder')" :title="sortNewestFirst ? t('history.newestFirst') : t('history.oldestFirst')">
+          <i :class="sortNewestFirst ? 'fas fa-sort-amount-down' : 'fas fa-sort-amount-up'"></i>
+        </button>
         <button class="btn btn-sm btn-outline-primary" @click="exportCSV" :disabled="commands.length === 0" :aria-label="t('history.exportCSV')">
           <i class="fas fa-file-csv"></i> CSV
         </button>
@@ -52,7 +59,12 @@
       </div>
       <div v-for="cmd in filteredCommands" :key="cmd.sequence_num" class="command-entry">
         <span class="command-time">{{ formatTime(cmd.executed_at) }}</span>
-        <span class="command-text">{{ cmd.command_text }}</span>
+        <span
+          class="command-text"
+          :class="{ clickable: isActive }"
+          @click="isActive && emit('command-click', cmd.command_text)"
+          :title="isActive ? t('history.clickToPaste') : ''"
+        >{{ cmd.command_text }}</span>
       </div>
     </div>
 
@@ -96,6 +108,11 @@ interface Props {
   isActive: boolean
 }
 
+const emit = defineEmits<{
+  'command-click': [command: string]
+  'recording-detected': []
+}>()
+
 const props = withDefaults(defineProps<Props>(), {
   sessionId: undefined,
   isActive: false
@@ -122,7 +139,11 @@ const { t } = useTranslations({
       hideHistory: 'Hide history',
       exportSuccess: 'Export successful',
       filterPlaceholder: 'Filter commands...',
-      noFilterResults: 'No commands match your filter.'
+      noFilterResults: 'No commands match your filter.',
+      clickToPaste: 'Click to paste in terminal',
+      sortOrder: 'Toggle sort order',
+      newestFirst: 'Newest first',
+      oldestFirst: 'Oldest first'
     }
   },
   fr: {
@@ -145,7 +166,11 @@ const { t } = useTranslations({
       hideHistory: 'Masquer l\'historique',
       exportSuccess: 'Export réussi',
       filterPlaceholder: 'Filtrer les commandes...',
-      noFilterResults: 'Aucune commande ne correspond au filtre.'
+      noFilterResults: 'Aucune commande ne correspond au filtre.',
+      clickToPaste: 'Cliquer pour coller dans le terminal',
+      sortOrder: 'Changer l\'ordre de tri',
+      newestFirst: 'Plus récentes en premier',
+      oldestFirst: 'Plus anciennes en premier'
     }
   }
 })
@@ -157,6 +182,18 @@ const COLLAPSED_KEY = 'terminal_history_collapsed'
 const savedCollapsed = localStorage.getItem(COLLAPSED_KEY)
 if (savedCollapsed !== null) {
   isCollapsed.value = savedCollapsed === 'true'
+}
+
+const sortNewestFirst = ref(true)
+const SORT_KEY = 'terminal_history_sort_newest'
+const savedSort = localStorage.getItem(SORT_KEY)
+if (savedSort !== null) {
+  sortNewestFirst.value = savedSort !== 'false'
+}
+
+function toggleSort() {
+  sortNewestFirst.value = !sortNewestFirst.value
+  localStorage.setItem(SORT_KEY, String(sortNewestFirst.value))
 }
 
 function toggleCollapse() {
@@ -176,9 +213,21 @@ const commandListRef = ref<HTMLElement | null>(null)
 const searchFilter = ref('')
 
 const filteredCommands = computed(() => {
-  if (!searchFilter.value.trim()) return commands.value
-  const query = searchFilter.value.trim().toLowerCase()
-  return commands.value.filter(cmd => cmd.command_text.toLowerCase().includes(query))
+  // Deduplicate by sequence_num (polling can re-fetch boundary commands)
+  const seen = new Set<number>()
+  let result = commands.value.filter(cmd => {
+    if (seen.has(cmd.sequence_num)) return false
+    seen.add(cmd.sequence_num)
+    return true
+  })
+  if (searchFilter.value.trim()) {
+    const query = searchFilter.value.trim().toLowerCase()
+    result = result.filter(cmd => cmd.command_text.toLowerCase().includes(query))
+  }
+  if (sortNewestFirst.value) {
+    result.reverse()
+  }
+  return result
 })
 let pollInterval: ReturnType<typeof setTimeout> | null = null
 let lastTimestamp: number | null = null
@@ -228,6 +277,11 @@ async function fetchHistory() {
       errorCount = 0
       emptyResponseCount = 0
 
+      // Signal that recording is active (commands exist)
+      if (commands.value.length === 0) {
+        emit('recording-detected')
+      }
+
       if (lastTimestamp) {
         // Append new commands, avoiding duplicates by sequence_num
         const existingNums = new Set(commands.value.map(c => c.sequence_num))
@@ -235,12 +289,12 @@ async function fetchHistory() {
         if (toAdd.length > 0) {
           commands.value = [...commands.value, ...toAdd]
           await nextTick()
-          scrollToBottom()
+          scrollToLatest()
         }
       } else {
         commands.value = newCommands
         await nextTick()
-        scrollToBottom()
+        scrollToLatest()
       }
 
       // Update timestamp to last command's execution time
@@ -259,15 +313,23 @@ async function fetchHistory() {
   }
 }
 
-function scrollToBottom() {
+function scrollToLatest() {
   if (commandListRef.value) {
-    commandListRef.value.scrollTop = commandListRef.value.scrollHeight
+    if (sortNewestFirst.value) {
+      commandListRef.value.scrollTop = 0
+    } else {
+      commandListRef.value.scrollTop = commandListRef.value.scrollHeight
+    }
   }
 }
 
 function schedulePoll() {
   stopPolling()
-  const interval = Math.min(BASE_POLL_INTERVAL * (1 + emptyResponseCount), MAX_POLL_INTERVAL)
+  // Active sessions: keep polling at base interval (user is typing)
+  // Inactive sessions: use adaptive backoff for stale data
+  const interval = props.isActive
+    ? BASE_POLL_INTERVAL
+    : Math.min(BASE_POLL_INTERVAL * (1 + emptyResponseCount), MAX_POLL_INTERVAL)
   pollInterval = setTimeout(async () => {
     await fetchHistory()
     if (props.isActive && props.sessionId && !isCollapsed.value) {
@@ -385,6 +447,12 @@ watch(
   ([active, termId]) => {
     if (active && termId) {
       startPolling()
+    } else if (termId) {
+      // Session is not active (expired/stopped) — fetch history once without polling
+      stopPolling()
+      lastTimestamp = null
+      commands.value = []
+      fetchHistory()
     } else {
       stopPolling()
     }
@@ -419,35 +487,41 @@ onBeforeUnmount(() => {
   border-bottom: var(--border-width-thin) solid var(--color-border-light);
 }
 
-.command-history-title {
-  margin: 0;
-  font-size: var(--font-size-md);
-  color: var(--color-text-primary);
+.collapse-toggle {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  cursor: pointer;
-  user-select: none;
-}
-
-.collapse-icon {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  transition: transform var(--transition-fast);
-}
-
-.btn-collapse {
   background: none;
   border: none;
-  color: var(--color-text-primary);
   cursor: pointer;
-  padding: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  margin: calc(-1 * var(--spacing-xs)) calc(-1 * var(--spacing-sm));
+  border-radius: var(--border-radius-sm);
+  color: var(--color-text-primary);
   font-size: var(--font-size-sm);
-  display: flex;
-  align-items: center;
+  font-weight: var(--font-weight-medium);
+  font-family: inherit;
+  white-space: nowrap;
+  user-select: none;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
-.btn-collapse:hover {
+.collapse-toggle:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-primary);
+}
+
+.collapse-chevron {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  transition: transform var(--transition-base);
+}
+
+.collapse-chevron.expanded {
+  transform: rotate(90deg);
+}
+
+.collapse-toggle:hover .collapse-chevron {
   color: var(--color-primary);
 }
 
@@ -532,6 +606,17 @@ onBeforeUnmount(() => {
 .command-text {
   color: var(--color-text-primary);
   word-break: break-all;
+}
+
+.command-text.clickable {
+  cursor: pointer;
+  border-radius: var(--border-radius-sm);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.command-text.clickable:hover {
+  background-color: var(--color-primary-light, var(--color-bg-tertiary, rgba(0, 123, 255, 0.1)));
+  color: var(--color-primary);
 }
 
 @media (max-width: 768px) {

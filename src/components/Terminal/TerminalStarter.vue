@@ -125,21 +125,16 @@
       @stop="stopSession"
     />
 
-    <!-- Terminal Console Panel -->
-    <TerminalViewer
-      v-if="showTerminalPanel"
+    <!-- Terminal + Command History Panel -->
+    <TerminalSessionPanel
+      v-if="showTerminalPanel && sessionInfo"
       ref="terminalConsoleRef"
       :session-info="sessionInfo"
+      :is-active="showTerminalPanel"
       :is-recording="recordingConsentResult === 1"
-      use-settings-card
-      title="Console Terminal"
-      :full-height="false"
+      :show-history="showHistoryPanel"
+      :show-stop-button="false"
     />
-
-    <!-- Command History Panel -->
-    <div v-if="showHistoryPanel" class="command-history-panel">
-      <CommandHistory :session-id="sessionInfo?.session_id" :is-active="showTerminalPanel" />
-    </div>
 
     <!-- Recording Consent Modal -->
     <BaseModal
@@ -195,8 +190,7 @@ import InstanceTypeSelector from './InstanceTypeSelector.vue'
 import TerminalAdvancedOptions from './TerminalAdvancedOptions.vue'
 import TerminalUsagePanel from './TerminalUsagePanel.vue'
 import TerminalSessionInfo from './TerminalSessionInfo.vue'
-import TerminalViewer from './TerminalViewer.vue'
-import CommandHistory from './CommandHistory.vue'
+import TerminalSessionPanel from './TerminalSessionPanel.vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import type { InstanceType } from '../../types'
 
