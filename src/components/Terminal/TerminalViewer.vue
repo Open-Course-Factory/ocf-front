@@ -231,6 +231,9 @@ const { t } = useTranslations({
       connectionFailed: 'Unable to connect: {message}',
       sessionExpired: 'This session has expired. Please start a new terminal session.',
       sessionEnded: 'This session has ended. Please start a new terminal session.',
+      commandNotFound: 'The terminal shell could not start: the command was not found inside the container. The container image may be missing the required shell (e.g., bash). Please contact an administrator.',
+      permissionDenied: 'The terminal shell could not start: permission denied. The command exists but is not executable. Please contact an administrator.',
+      execFailed: 'The terminal shell encountered an error (code {code}). Please try again or contact an administrator.',
       sessionInfoError: 'Unable to verify session: {message}',
       retry: 'Retry',
       reloadPage: 'Reload Page'
@@ -261,6 +264,9 @@ const { t } = useTranslations({
       connectionFailed: 'Impossible de se connecter: {message}',
       sessionExpired: 'Cette session a expiré. Veuillez démarrer une nouvelle session de terminal.',
       sessionEnded: 'Cette session est terminée. Veuillez démarrer une nouvelle session de terminal.',
+      commandNotFound: 'Le terminal n\'a pas pu démarrer : la commande est introuvable dans le conteneur. L\'image du conteneur ne contient peut-être pas le shell requis (ex: bash). Veuillez contacter un administrateur.',
+      permissionDenied: 'Le terminal n\'a pas pu démarrer : permission refusée. La commande existe mais n\'est pas exécutable. Veuillez contacter un administrateur.',
+      execFailed: 'Le terminal a rencontré une erreur (code {code}). Veuillez réessayer ou contacter un administrateur.',
       sessionInfoError: 'Impossible de vérifier la session: {message}',
       retry: 'Réessayer',
       reloadPage: 'Recharger la Page',
@@ -533,8 +539,18 @@ async function connectToTerminal() {
       isWsOpen.value = false
       isConnecting.value = false
 
+      // Handle container exec errors from tt-backend (custom close codes 4000-4999)
+      if (event.code === 4127) {
+        error.value = t('terminal.commandNotFound')
+        showReconnectButton.value = false
+      } else if (event.code === 4126) {
+        error.value = t('terminal.permissionDenied')
+        showReconnectButton.value = false
+      } else if (event.code >= 4000 && event.code <= 4999) {
+        error.value = t('terminal.execFailed', { code: event.code - 4000 })
+        showReconnectButton.value = false
       // Handle authentication failures
-      if (event.code === 1008) {
+      } else if (event.code === 1008) {
         error.value = t('terminal.authenticationFailed')
         showReconnectButton.value = true
         if (props.useSettingsCard) {
