@@ -144,6 +144,11 @@ if (savedCollapsed !== null) {
 function toggleCollapse() {
   isCollapsed.value = !isCollapsed.value
   localStorage.setItem(COLLAPSED_KEY, String(isCollapsed.value))
+  if (isCollapsed.value) {
+    stopPolling()
+  } else if (props.isActive && props.sessionId) {
+    startPolling()
+  }
 }
 
 const commands = ref<CommandEntry[]>([])
@@ -240,13 +245,14 @@ function schedulePoll() {
   const interval = Math.min(BASE_POLL_INTERVAL * (1 + emptyResponseCount), MAX_POLL_INTERVAL)
   pollInterval = setTimeout(async () => {
     await fetchHistory()
-    if (props.isActive && props.sessionId) {
+    if (props.isActive && props.sessionId && !isCollapsed.value) {
       schedulePoll()
     }
   }, interval)
 }
 
 function startPolling() {
+  if (isCollapsed.value) return
   stopPolling()
   lastTimestamp = null
   commands.value = []
@@ -386,13 +392,21 @@ onBeforeUnmount(() => {
   border-bottom: var(--border-width-thin) solid var(--color-border-light);
 }
 
-.command-history-header h4 {
+.command-history-title {
   margin: 0;
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+.collapse-icon {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  transition: transform var(--transition-fast);
 }
 
 .btn-collapse {
