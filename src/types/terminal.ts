@@ -41,7 +41,7 @@ export interface TerminalShare extends BaseEntity {
   shared_with_group_id?: string
   shared_by_user_id: string
   share_type: 'user' | 'group'
-  access_level: 'read' | 'write' | 'admin'
+  access_level: 'read' | 'write' | 'owner'
   expires_at?: string
   is_active: boolean
   metadata?: Record<string, any>

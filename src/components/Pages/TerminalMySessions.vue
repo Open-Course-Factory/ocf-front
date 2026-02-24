@@ -1246,8 +1246,8 @@ function canEditName(session: any): boolean {
     return true
   }
 
-  // For shared sessions, only 'write' and 'admin' access levels can edit
-  return ['write', 'admin'].includes(session.access_level)
+  // For shared sessions, only 'write' and 'owner' access levels can edit
+  return ['write', 'owner'].includes(session.access_level)
 }
 
 function startEditingName(terminalId: string, currentName: string | undefined) {

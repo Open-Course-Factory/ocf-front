@@ -159,7 +159,7 @@ const { t } = useTranslations({
       close: 'Close',
       accessRead: 'Read',
       accessWrite: 'Write',
-      accessAdmin: 'Admin',
+      accessOwner: 'Owner',
       loadError: 'Error loading access data',
       revokeError: 'Error revoking access'
     }
@@ -180,7 +180,7 @@ const { t } = useTranslations({
       close: 'Fermer',
       accessRead: 'Lecture',
       accessWrite: 'Écriture',
-      accessAdmin: 'Admin',
+      accessOwner: 'Propriétaire',
       loadError: 'Erreur lors du chargement des données d\'accès',
       revokeError: 'Erreur lors de la révocation de l\'accès'
     }
@@ -333,7 +333,7 @@ function getAccessIcon(level: string) {
   switch (level) {
     case 'read': return 'fas fa-eye'
     case 'write': return 'fas fa-edit'
-    case 'admin': return 'fas fa-cog'
+    case 'owner': return 'fas fa-crown'
     default: return 'fas fa-question'
   }
 }
@@ -342,7 +342,7 @@ function getAccessLabel(level: string) {
   switch (level) {
     case 'read': return t('access.accessRead')
     case 'write': return t('access.accessWrite')
-    case 'admin': return t('access.accessAdmin')
+    case 'owner': return t('access.accessOwner')
     default: return level
   }
 }
@@ -351,7 +351,7 @@ function getAccessBadgeClass(level: string) {
   switch (level) {
     case 'read': return 'read-badge'
     case 'write': return 'write-badge'
-    case 'admin': return 'admin-badge'
+    case 'owner': return 'owner-badge'
     default: return 'default-badge'
   }
 }
@@ -484,12 +484,6 @@ function getUserDisplayName(userId: string): string {
   background-color: var(--color-success-bg);
   color: var(--color-success-text);
   border: 1px solid var(--color-success-border);
-}
-
-.admin-badge {
-  background-color: var(--color-warning-bg);
-  color: var(--color-warning-text);
-  border: 1px solid var(--color-warning-bg);
 }
 
 .user-meta {

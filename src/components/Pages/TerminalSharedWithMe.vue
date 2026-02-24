@@ -108,7 +108,7 @@
             </div>
 
             <!-- Section intégration iframe pour les sessions actives -->
-            <div class="iframe-section" v-if="sharedSession.terminal.status === 'active' && ['write', 'admin'].includes(sharedSession.access_level)">
+            <div class="iframe-section" v-if="sharedSession.terminal.status === 'active' && ['write', 'owner'].includes(sharedSession.access_level)">
               <h6 class="iframe-title">
                 <i class="fas fa-external-link-alt"></i>
                 {{ t('shared.terminalAccess') }}
@@ -179,7 +179,7 @@
               {{ expandedHistory.has(sharedSession.terminal.session_id) ? t('shared.hideHistory') : t('shared.viewHistory') }}
             </button>
             <button
-              v-if="sharedSession.terminal.status === 'active' && sharedSession.access_level === 'admin'"
+              v-if="sharedSession.terminal.status === 'active' && sharedSession.access_level === 'owner'"
               class="btn btn-danger btn-sm"
               @click="stopSession(sharedSession.terminal.session_id)"
               :title="t('shared.stopTerminal')"
@@ -269,7 +269,6 @@ const { t } = useTranslations({
       createOwnSession: 'create your own session',
       accessRead: 'Read',
       accessWrite: 'Write',
-      accessAdmin: 'Admin',
       accessOwner: 'Owner',
       confirmHide: 'Are you sure you want to hide this inactive terminal?',
       confirmHideTitle: 'Hide terminal',
@@ -311,7 +310,6 @@ const { t } = useTranslations({
       createOwnSession: 'créez votre propre session',
       accessRead: 'Lecture',
       accessWrite: 'Écriture',
-      accessAdmin: 'Admin',
       accessOwner: 'Propriétaire',
       confirmHide: 'Êtes-vous sûr de vouloir masquer ce terminal inactif ?',
       confirmHideTitle: 'Masquer le terminal',
@@ -451,7 +449,6 @@ function getAccessIcon(level: string) {
   switch (level) {
     case 'read': return 'fas fa-eye'
     case 'write': return 'fas fa-edit'
-    case 'admin': return 'fas fa-cog'
     case 'owner': return 'fas fa-crown'
     default: return 'fas fa-question'
   }
@@ -461,7 +458,6 @@ function getAccessLabel(level: string) {
   switch (level) {
     case 'read': return t('shared.accessRead')
     case 'write': return t('shared.accessWrite')
-    case 'admin': return t('shared.accessAdmin')
     case 'owner': return t('shared.accessOwner')
     default: return level
   }
@@ -471,7 +467,6 @@ function getAccessBadgeClass(level: string) {
   switch (level) {
     case 'read': return 'read-badge'
     case 'write': return 'write-badge'
-    case 'admin': return 'admin-badge'
     case 'owner': return 'owner-badge'
     default: return 'default-badge'
   }
@@ -788,12 +783,6 @@ async function discardTerminal(terminalId: string) {
   background-color: var(--color-success-bg);
   color: var(--color-success-text);
   border: 1px solid var(--color-success-border);
-}
-
-.admin-badge {
-  background-color: var(--color-warning-bg);
-  color: var(--color-warning-text);
-  border: 1px solid var(--color-warning-bg);
 }
 
 .owner-badge {
