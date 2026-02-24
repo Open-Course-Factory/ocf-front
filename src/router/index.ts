@@ -390,6 +390,12 @@ const basicRoutes = [
         meta: { requiresAuth: true, requiresAdmin: true }
       },
       {
+        path: 'admin/plan-features',
+        name: 'AdminPlanFeatures',
+        component: () => import('../components/Pages/PlanFeatures.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
         path: 'admin/email-templates',
         name: 'EmailTemplates',
         component: () => import('../components/Pages/EmailTemplates.vue'),
