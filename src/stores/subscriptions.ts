@@ -455,6 +455,24 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         }
     }
 
+    // Admin: assign a plan to a user
+    const adminAssignPlan = async (userId: string, planId: string, durationDays: number) => {
+        return withAsync(async () => {
+            if (isDemoMode()) {
+                logDemoAction('Admin assigning plan', { userId, planId, durationDays })
+                await simulateDelay(1000)
+                return { success: true }
+            }
+
+            const response = await axios.post('/user-subscriptions/admin-assign', {
+                user_id: userId,
+                subscription_plan_id: planId,
+                duration_days: durationDays
+            })
+            return response.data
+        }, 'subscriptions.loadError')
+    }
+
     // Utilitaires pour l'affichage
     // Use shared status formatters (utilise le composable réutilisable)
     const { getStatusClass, getStatusIcon } = useStatusFormatters('subscription')
@@ -506,6 +524,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         getFilteredUsageMetrics,
         checkUsageLimit,
         syncUsageLimits,
+        adminAssignPlan,
 
         // Utilitaires
         getStatusClass,
