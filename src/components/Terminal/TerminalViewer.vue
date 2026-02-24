@@ -263,7 +263,9 @@ const { t } = useTranslations({
       sessionEnded: 'Cette session est terminée. Veuillez démarrer une nouvelle session de terminal.',
       sessionInfoError: 'Impossible de vérifier la session: {message}',
       retry: 'Réessayer',
-      reloadPage: 'Recharger la Page'
+      reloadPage: 'Recharger la Page',
+      recording: 'REC',
+      recordingTooltip: 'Les commandes sont enregistrées'
     }
   }
 })
