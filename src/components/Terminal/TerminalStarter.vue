@@ -356,6 +356,7 @@ const showRecordingConsent = ref(false)
 const recordingConsentResult = ref<number | null>(null)
 const rememberConsent = ref(false)
 const CONSENT_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
+const consentHandledByContract = ref<boolean | null>(null) // null = not checked yet
 
 function loadConsentPreference(): number | null {
   try {
@@ -390,6 +391,18 @@ function saveConsentPreference(value: number) {
     }))
   } catch {
     // localStorage may be unavailable
+  }
+}
+
+async function checkContractConsent(): Promise<boolean> {
+  if (consentHandledByContract.value !== null) return consentHandledByContract.value
+  try {
+    const response = await axios.get('/terminals/consent-status')
+    consentHandledByContract.value = response.data?.consent_handled === true
+    return consentHandledByContract.value
+  } catch {
+    consentHandledByContract.value = false
+    return false
   }
 }
 
@@ -701,6 +714,7 @@ function resetForm() {
   selectedInstanceType.value = ''
   instanceTypeCache.clear()
   recordingConsentResult.value = null
+  consentHandledByContract.value = null
 }
 
 function handleRecordingConsent(accepted: boolean) {
@@ -777,12 +791,18 @@ async function startSingleSession() {
 
   // Check if recording consent is needed
   if (retentionDays.value > 0 && recordingConsentResult.value === null) {
-    const saved = loadConsentPreference()
-    if (saved !== null) {
-      recordingConsentResult.value = saved
+    // Check if org/group contract handles consent (RGPD Art. 13 - enrollment contract)
+    const handledByContract = await checkContractConsent()
+    if (handledByContract) {
+      recordingConsentResult.value = 1 // Auto-accept: contract covers consent
     } else {
-      showRecordingConsent.value = true
-      return // Wait for user response
+      const saved = loadConsentPreference()
+      if (saved !== null) {
+        recordingConsentResult.value = saved
+      } else {
+        showRecordingConsent.value = true
+        return // Wait for user response
+      }
     }
   }
 
@@ -935,12 +955,18 @@ async function startBulkSessions() {
 
   // Check if recording consent is needed (same as single session)
   if (retentionDays.value > 0 && recordingConsentResult.value === null) {
-    const saved = loadConsentPreference()
-    if (saved !== null) {
-      recordingConsentResult.value = saved
+    // Check if org/group contract handles consent (RGPD Art. 13 - enrollment contract)
+    const handledByContract = await checkContractConsent()
+    if (handledByContract) {
+      recordingConsentResult.value = 1 // Auto-accept: contract covers consent
     } else {
-      showRecordingConsent.value = true
-      return
+      const saved = loadConsentPreference()
+      if (saved !== null) {
+        recordingConsentResult.value = saved
+      } else {
+        showRecordingConsent.value = true
+        return
+      }
     }
   }
 
