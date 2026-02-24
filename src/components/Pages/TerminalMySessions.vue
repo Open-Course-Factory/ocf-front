@@ -357,6 +357,13 @@
 
                     <!-- Action buttons -->
                     <div class="card-actions-compact">
+                      <router-link
+                        class="btn-icon btn-view"
+                        :to="{ name: 'TerminalSessionView', params: { sessionId: session.session_id } }"
+                        :title="t('terminalMySessions.buttonViewHistory')"
+                      >
+                        <i class="fas fa-history"></i>
+                      </router-link>
                       <button
                         class="btn-icon"
                         @click="discardTerminal(session.id)"
@@ -376,21 +383,6 @@
                         </button>
 
                         <div v-if="openDropdowns.has(session.id || session.session_id)" class="dropdown-menu" @click.stop>
-                          <!-- Copy URL -->
-                          <button class="dropdown-item" @click="copyUrlToClipboard(session.session_id); closeDropdown(session.id || session.session_id)">
-                            <i class="fas fa-link"></i>
-                            <span>{{ copiedSessions.has(session.session_id) ? t('terminalMySessions.copied') : t('terminalMySessions.copyLink') }}</span>
-                          </button>
-
-                          <!-- Copy iframe code -->
-                          <button class="dropdown-item" @click="copyIframeCode(session.session_id); closeDropdown(session.id || session.session_id)">
-                            <i class="fas fa-code"></i>
-                            <span>{{ copiedIframes.has(session.session_id) ? t('terminalMySessions.copiedIframe') : t('terminalMySessions.copyIframeCode') }}</span>
-                          </button>
-
-                          <!-- Divider -->
-                          <div v-if="!session.isShared" class="dropdown-divider"></div>
-
                           <!-- Sync session -->
                           <button
                             v-if="!session.isShared"
@@ -580,6 +572,7 @@ const { t } = useTranslations({
       copyLink: 'Copy link',
       buttonOpen: 'Open in popup',
       buttonOpenInPage: 'Open in page',
+      buttonViewHistory: 'View session details',
       buttonHide: 'Hide',
       buttonShow: 'Show',
       preview: 'Preview',
@@ -677,6 +670,7 @@ const { t } = useTranslations({
       copyLink: 'Copier le lien',
       buttonOpen: 'Ouvrir dans un popup',
       buttonOpenInPage: 'Ouvrir dans la page',
+      buttonViewHistory: 'Voir les details de la session',
       buttonHide: 'Masquer',
       buttonShow: 'Aperçu',
       preview: 'Aperçu',

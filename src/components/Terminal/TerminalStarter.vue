@@ -69,6 +69,7 @@
       <!-- Advanced Options -->
       <TerminalAdvancedOptions
         v-model="nameInput"
+        :exercise-ref="exerciseRef"
         :disabled="isStarting"
         :show-backend-selector="backendsStore.hasMultipleBackends"
         :backends="backends"
@@ -78,6 +79,7 @@
         :available-groups="availableGroups"
         :selected-group-id="selectedGroupId"
         :selected-group-member-count="selectedGroupMemberCount"
+        @update:exercise-ref="exerciseRef = $event"
         @update:selected-backend-id="selectedBackendId = $event"
         @update:creation-mode="creationMode = $event"
         @update:selected-group-id="selectedGroupId = $event"
@@ -123,15 +125,48 @@
       @stop="stopSession"
     />
 
-    <!-- Terminal Console Panel -->
-    <TerminalViewer
-      v-if="showTerminalPanel"
+    <!-- Terminal + Command History Panel -->
+    <TerminalSessionPanel
+      v-if="showTerminalPanel && sessionInfo"
       ref="terminalConsoleRef"
       :session-info="sessionInfo"
-      use-settings-card
-      title="Console Terminal"
-      :full-height="false"
+      :is-active="showTerminalPanel"
+      :is-recording="recordingConsentResult === 1"
+      :show-history="showHistoryPanel"
+      :show-stop-button="false"
     />
+
+    <!-- Recording Consent Modal -->
+    <BaseModal
+      :visible="showRecordingConsent"
+      :title="t('terminalStarter.recordingConsentTitle')"
+      title-icon="fas fa-circle-dot"
+      size="medium"
+      :show-close="true"
+      @close="cancelRecordingConsent"
+    >
+      <p class="recording-consent-message">
+        {{ t('terminalStarter.recordingConsentMessage', { days: retentionDays }) }}
+      </p>
+      <p class="recording-privacy-link">
+        <router-link to="/privacy" target="_blank">
+          <i class="fas fa-shield-alt"></i> {{ t('terminalStarter.privacyPolicyLink') }}
+        </router-link>
+      </p>
+      <label class="remember-choice-label">
+        <input type="checkbox" v-model="rememberConsent" />
+        {{ t('terminalStarter.rememberChoice') }}
+      </label>
+      <template #footer>
+        <button class="btn btn-primary" @click="handleRecordingConsent(true)">
+          <i class="fas fa-check"></i>
+          {{ t('terminalStarter.recordingAccept') }}
+        </button>
+        <button class="btn btn-secondary" @click="handleRecordingConsent(false)">
+          {{ t('terminalStarter.recordingDecline') }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -155,7 +190,8 @@ import InstanceTypeSelector from './InstanceTypeSelector.vue'
 import TerminalAdvancedOptions from './TerminalAdvancedOptions.vue'
 import TerminalUsagePanel from './TerminalUsagePanel.vue'
 import TerminalSessionInfo from './TerminalSessionInfo.vue'
-import TerminalViewer from './TerminalViewer.vue'
+import TerminalSessionPanel from './TerminalSessionPanel.vue'
+import BaseModal from '../Modals/BaseModal.vue'
 import type { InstanceType } from '../../types'
 
 // Router
@@ -220,7 +256,16 @@ const { t } = useTranslations({
       activeSessions: '{count} active session | {count} active sessions',
       backendOffline: 'Backend "{name}" is offline. Please select another backend or try again later.',
       loadingInstanceTypes: 'Loading instance types...',
-      noInstanceTypesForBackend: 'No instance types available for this backend.'
+      noInstanceTypesForBackend: 'No instance types available for this backend.',
+      recordingConsentTitle: 'Command Recording',
+      recordingConsentMessage: 'Recording your commands helps you review your work later.\n\nYour terminal commands will be recorded and retained for {days} days. Platform administrators can view your command history. Where applicable, your instructors also have access to your history. You can export or delete your history at any time.\n\nWarning: avoid typing passwords or tokens directly in the terminal — they may be captured in your command history.',
+      recordingAccept: 'Accept recording',
+      recordingDecline: 'Continue without recording',
+      commandHistory: 'Command History',
+      rememberChoice: 'Remember my choice',
+      privacyPolicyLink: 'Learn more about how your data is handled',
+      resetConsentPreference: 'Reset saved preference',
+      termsAcceptance: 'I accept the terms of use for the terminal service.'
     }
   },
   fr: {
@@ -267,7 +312,16 @@ const { t } = useTranslations({
       activeSessions: '{count} session active | {count} sessions actives',
       backendOffline: 'Le backend « {name} » est hors ligne. Veuillez sélectionner un autre backend ou réessayer plus tard.',
       loadingInstanceTypes: 'Chargement des types d\'instances...',
-      noInstanceTypesForBackend: 'Aucun type d\'instance disponible sur ce backend.'
+      noInstanceTypesForBackend: 'Aucun type d\'instance disponible sur ce backend.',
+      recordingConsentTitle: 'Enregistrement des commandes',
+      recordingConsentMessage: 'L\'enregistrement de vos commandes vous permet de revoir votre travail ultérieurement.\n\nVos commandes de terminal seront enregistrées et conservées pendant {days} jours. Les administrateurs de la plateforme peuvent consulter votre historique de commandes. Le cas échéant, vos encadrants ont également accès à votre historique. Vous pouvez exporter ou supprimer votre historique à tout moment.\n\nAttention : évitez de saisir des mots de passe ou des jetons directement dans le terminal — ils pourraient être capturés dans votre historique de commandes.',
+      recordingAccept: 'Accepter l\'enregistrement',
+      recordingDecline: 'Continuer sans enregistrement',
+      commandHistory: 'Historique des commandes',
+      rememberChoice: 'Se souvenir de mon choix',
+      privacyPolicyLink: 'En savoir plus sur le traitement de vos données',
+      resetConsentPreference: 'Réinitialiser la préférence',
+      termsAcceptance: "J'accepte les conditions d'utilisation du service terminal."
     }
   }
 })
@@ -285,6 +339,67 @@ const isStarting = ref(false)
 const isStopping = ref(false)
 const startStatus = ref('')
 
+// Recording consent state:
+// - null: not yet asked (retentionDays=0 or dialog not shown yet)
+// - 0: user declined recording, or consent not applicable
+// - 1: user accepted recording
+// Note: 0 covers both "declined" and "not applicable" — the backend
+// treats both as "no recording". If RGPD audit requires distinguishing
+// these cases, a separate value (e.g. 2) should be introduced.
+const showRecordingConsent = ref(false)
+const recordingConsentResult = ref<number | null>(null)
+const rememberConsent = ref(false)
+const CONSENT_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
+const consentHandledByContract = ref<boolean | null>(null) // null = not checked yet
+
+function loadConsentPreference(): number | null {
+  try {
+    const raw = localStorage.getItem(RECORDING_CONSENT_KEY)
+    if (raw === null) return null
+
+    try {
+      const parsed = JSON.parse(raw)
+      if (parsed && typeof parsed === 'object' && 'timestamp' in parsed) {
+        if (Date.now() - parsed.timestamp > CONSENT_EXPIRY_MS) {
+          localStorage.removeItem(RECORDING_CONSENT_KEY)
+          return null
+        }
+        return parsed.value
+      }
+    } catch {
+      // Not valid JSON — old format (plain "accepted"/"declined"), treat as expired
+    }
+
+    localStorage.removeItem(RECORDING_CONSENT_KEY)
+    return null
+  } catch {
+    return null
+  }
+}
+
+function saveConsentPreference(value: number) {
+  try {
+    localStorage.setItem(RECORDING_CONSENT_KEY, JSON.stringify({
+      value,
+      timestamp: Date.now()
+    }))
+  } catch {
+    // localStorage may be unavailable
+  }
+}
+
+async function checkContractConsent(): Promise<boolean> {
+  if (consentHandledByContract.value !== null) return consentHandledByContract.value
+  try {
+    const response = await axios.get('/terminals/consent-status')
+    consentHandledByContract.value = response.data?.consent_handled === true
+    return consentHandledByContract.value
+  } catch {
+    consentHandledByContract.value = false
+    return false
+  }
+}
+
 // Session information
 const sessionInfo = ref<any>(null)
 const timeRemaining = ref(0)
@@ -296,12 +411,14 @@ const USAGE_REFRESH_INTERVAL = 600000 // 10 minutes
 
 // localStorage key for last selected instance
 const LAST_INSTANCE_KEY = 'terminal_last_instance_type'
+const RECORDING_CONSENT_KEY = 'terminal_recording_consent_preference'
 
 // Form
 const selectedInstanceType = ref('')
 const userManuallySelected = ref(false)
 const restoredFromStorage = ref(false)
 const nameInput = ref('')
+const exerciseRef = ref('')
 const creationMode = ref<'single' | 'bulk'>('single')
 const selectedGroupId = ref('')
 // Organizations & Backends
@@ -419,6 +536,15 @@ const capacityStatusText = computed(() => {
   return canLaunchInstance.value
     ? t('terminalStarter.readyToLaunch')
     : t('terminalStarter.capacityIssue')
+})
+
+// Command history panel visibility
+const showHistoryPanel = computed(() => {
+  return sessionInfo.value && recordingConsentResult.value === 1
+})
+
+const retentionDays = computed(() => {
+  return currentSubscription.value?.subscription_plan?.command_history_retention_days || 0
 })
 
 // Form validation
@@ -574,12 +700,30 @@ function preselectInstance(instance: InstanceType) {
 
 function resetForm() {
   nameInput.value = ''
+  exerciseRef.value = ''
   creationMode.value = 'single'
   selectedGroupId.value = ''
   userManuallySelected.value = false
   restoredFromStorage.value = false
   selectedInstanceType.value = ''
   instanceTypeCache.clear()
+  recordingConsentResult.value = null
+  consentHandledByContract.value = null
+}
+
+function handleRecordingConsent(accepted: boolean) {
+  recordingConsentResult.value = accepted ? 1 : 0
+  if (rememberConsent.value) {
+    saveConsentPreference(recordingConsentResult.value)
+  }
+  showRecordingConsent.value = false
+  startNewSession()
+}
+
+function cancelRecordingConsent() {
+  showRecordingConsent.value = false
+  // Don't set recordingConsentResult — leave null so next attempt re-prompts
+  // Don't call startSingleSession() or startNewSession()
 }
 
 async function loadGroupMembers(groupId: string) {
@@ -639,6 +783,23 @@ async function startSingleSession() {
     return
   }
 
+  // Check if recording consent is needed
+  if (retentionDays.value > 0 && recordingConsentResult.value === null) {
+    // Check if org/group contract handles consent (RGPD Art. 13 - enrollment contract)
+    const handledByContract = await checkContractConsent()
+    if (handledByContract) {
+      recordingConsentResult.value = 1 // Auto-accept: contract covers consent
+    } else {
+      const saved = loadConsentPreference()
+      if (saved !== null) {
+        recordingConsentResult.value = saved
+      } else {
+        showRecordingConsent.value = true
+        return // Wait for user response
+      }
+    }
+  }
+
   // Sync sessions first to ensure finished sessions are updated
   try {
     await syncAllSessions()
@@ -678,10 +839,12 @@ async function startSingleSession() {
 
   try {
     const sessionData = {
-      terms: 'J\'accepte les conditions d\'utilisation du service terminal.',
+      terms: t('terminalStarter.termsAcceptance'),
       expiry: sessionDurationCap.value,
+      recording_consent: recordingConsentResult.value ?? 0,
       ...(selectedInstanceType.value && { instance_type: selectedInstanceType.value }),
       ...(nameInput.value.trim() && { name: nameInput.value.trim() }),
+      ...(exerciseRef.value.trim() && { external_ref: exerciseRef.value.trim() }),
       ...(backendsStore.selectedBackendId && { backend: backendsStore.selectedBackendId }),
       ...(selectedOrganizationId.value && { organization_id: selectedOrganizationId.value })
     }
@@ -784,14 +947,33 @@ async function startBulkSessions() {
     return
   }
 
+  // Check if recording consent is needed (same as single session)
+  if (retentionDays.value > 0 && recordingConsentResult.value === null) {
+    // Check if org/group contract handles consent (RGPD Art. 13 - enrollment contract)
+    const handledByContract = await checkContractConsent()
+    if (handledByContract) {
+      recordingConsentResult.value = 1 // Auto-accept: contract covers consent
+    } else {
+      const saved = loadConsentPreference()
+      if (saved !== null) {
+        recordingConsentResult.value = saved
+      } else {
+        showRecordingConsent.value = true
+        return
+      }
+    }
+  }
+
   isStarting.value = true
   startStatus.value = t('terminalStarter.startingBulkSessions')
 
   try {
     const bulkData = {
-      terms: 'J\'accepte les conditions d\'utilisation du service terminal.',
+      terms: t('terminalStarter.termsAcceptance'),
       expiry: sessionDurationCap.value,
       instance_type: selectedInstanceType.value,
+      recording_consent: recordingConsentResult.value ?? 0,
+      ...(exerciseRef.value.trim() && { external_ref: exerciseRef.value.trim() }),
       ...(backendsStore.selectedBackendId && { backend: backendsStore.selectedBackendId }),
       ...(selectedOrganizationId.value && { organization_id: selectedOrganizationId.value })
     }
@@ -1158,6 +1340,51 @@ onBeforeUnmount(() => {
   width: 100%;
   max-width: 400px;
   font-size: var(--font-size-lg);
+}
+
+.recording-consent-message {
+  color: var(--color-text-primary);
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-line;
+}
+
+.recording-privacy-link {
+  margin-top: var(--spacing-sm);
+  margin-bottom: 0;
+}
+
+.recording-privacy-link a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  transition: opacity 0.3s ease;
+}
+
+.recording-privacy-link a:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.remember-choice-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  margin-top: var(--spacing-sm);
+}
+
+.remember-choice-label input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.command-history-panel {
+  margin-top: var(--spacing-lg);
 }
 
 @media (max-width: 768px) {

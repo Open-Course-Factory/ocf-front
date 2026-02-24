@@ -167,6 +167,14 @@
 
           <div class="card-actions">
             <button
+              class="btn btn-outline-secondary btn-sm"
+              @click="toggleHistory(sharedSession.terminal.session_id)"
+              :title="t('shared.viewHistory')"
+            >
+              <i :class="expandedHistory.has(sharedSession.terminal.session_id) ? 'fas fa-chevron-up' : 'fas fa-history'"></i>
+              {{ expandedHistory.has(sharedSession.terminal.session_id) ? t('shared.hideHistory') : t('shared.viewHistory') }}
+            </button>
+            <button
               v-if="sharedSession.terminal.status === 'active' && sharedSession.access_level === 'admin'"
               class="btn btn-danger btn-sm"
               @click="stopSession(sharedSession.terminal.session_id)"
@@ -188,6 +196,14 @@
               <i class="fas fa-eye"></i>
               {{ t('shared.readOnlyAccess') }}
             </span>
+          </div>
+
+          <!-- Command history for shared terminal -->
+          <div v-if="expandedHistory.has(sharedSession.terminal.session_id)" class="shared-history-section">
+            <CommandHistory
+              :session-id="sharedSession.terminal.session_id"
+              :is-active="sharedSession.terminal.status === 'active'"
+            />
           </div>
         </div>
       </div>
@@ -216,6 +232,7 @@ import { useNotification } from '../../composables/useNotification'
 import { extractErrorMessage } from '../../utils/formatters'
 import { useTranslations } from '../../composables/useTranslations'
 import ErrorAlert from '../UI/ErrorAlert.vue'
+import CommandHistory from '../Terminal/CommandHistory.vue'
 
 const { t } = useTranslations({
   en: {
@@ -252,6 +269,8 @@ const { t } = useTranslations({
       accessOwner: 'Owner',
       confirmHide: 'Are you sure you want to hide this inactive terminal?',
       confirmHideTitle: 'Hide terminal',
+      viewHistory: 'History',
+      hideHistory: 'Hide History',
       loadError: 'Error loading shared sessions',
       stopError: 'Error stopping session',
       hideError: 'Error hiding terminal'
@@ -291,6 +310,8 @@ const { t } = useTranslations({
       accessOwner: 'Propriétaire',
       confirmHide: 'Êtes-vous sûr de vouloir masquer ce terminal inactif ?',
       confirmHideTitle: 'Masquer le terminal',
+      viewHistory: 'Historique',
+      hideHistory: 'Masquer l\'historique',
       loadError: 'Erreur lors du chargement des sessions partagées',
       stopError: 'Erreur lors de l\'arrêt de la session',
       hideError: 'Erreur lors du masquage du terminal'
@@ -305,6 +326,9 @@ const sharedSessions = ref<SharedTerminalInfo[]>([])
 const isLoadingShared = ref(false)
 const users = ref<Map<string, User>>(new Map())
 const error = ref('')
+
+// État pour l'affichage de l'historique des commandes
+const expandedHistory = ref(new Set<string>())
 
 // États pour les fonctionnalités iframe
 const showPreviews = ref(new Set())
@@ -483,6 +507,14 @@ function toggleIframePreview(sessionId: string) {
     showPreviews.value.delete(sessionId)
   } else {
     showPreviews.value.add(sessionId)
+  }
+}
+
+function toggleHistory(sessionId: string) {
+  if (expandedHistory.value.has(sessionId)) {
+    expandedHistory.value.delete(sessionId)
+  } else {
+    expandedHistory.value.add(sessionId)
   }
 }
 
@@ -968,6 +1000,12 @@ async function discardTerminal(terminalId: string) {
 .instance-type i {
   color: var(--color-gray-600);
   opacity: 0.7;
+}
+
+.shared-history-section {
+  padding: var(--spacing-md);
+  border-top: 1px solid var(--color-border-light);
+  background-color: var(--color-bg-secondary);
 }
 
 /* Responsive */

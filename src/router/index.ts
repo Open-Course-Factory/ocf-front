@@ -89,6 +89,13 @@ const basicRoutes = [
     component: () => import('../components/Pages/Legal.vue'),
     meta: { requiresAuth: false }
   },
+  // Privacy policy (public, no auth required)
+  {
+    path: '/privacy',
+    name: 'Privacy',
+    component: () => import('../components/Pages/Privacy.vue'),
+    meta: { requiresAuth: false }
+  },
   // Public help route for non-authenticated users
   {
     path: '/help-public',

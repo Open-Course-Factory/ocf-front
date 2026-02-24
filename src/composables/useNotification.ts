@@ -140,7 +140,7 @@ export function useNotification() {
     } = {}
   ): Promise<string | null> => {
     try {
-      const { value } = await ElMessageBox.prompt(message, title, {
+      const result = await ElMessageBox.prompt(message, title, {
         confirmButtonText: 'OK',
         cancelButtonText: 'Cancel',
         inputPlaceholder: options.inputPlaceholder,
@@ -148,7 +148,7 @@ export function useNotification() {
         inputErrorMessage: options.inputErrorMessage,
         center: true,
       })
-      return value
+      return (result as { value: string }).value
     } catch (error) {
       // User cancelled
       return null
