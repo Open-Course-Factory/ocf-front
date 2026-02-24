@@ -69,6 +69,7 @@
       <!-- Advanced Options -->
       <TerminalAdvancedOptions
         v-model="nameInput"
+        :exercise-ref="exerciseRef"
         :disabled="isStarting"
         :show-backend-selector="backendsStore.hasMultipleBackends"
         :backends="backends"
@@ -78,6 +79,7 @@
         :available-groups="availableGroups"
         :selected-group-id="selectedGroupId"
         :selected-group-member-count="selectedGroupMemberCount"
+        @update:exercise-ref="exerciseRef = $event"
         @update:selected-backend-id="selectedBackendId = $event"
         @update:creation-mode="creationMode = $event"
         @update:selected-group-id="selectedGroupId = $event"
@@ -409,6 +411,7 @@ const selectedInstanceType = ref('')
 const userManuallySelected = ref(false)
 const restoredFromStorage = ref(false)
 const nameInput = ref('')
+const exerciseRef = ref('')
 const creationMode = ref<'single' | 'bulk'>('single')
 const selectedGroupId = ref('')
 // Organizations & Backends
@@ -690,6 +693,7 @@ function preselectInstance(instance: InstanceType) {
 
 function resetForm() {
   nameInput.value = ''
+  exerciseRef.value = ''
   creationMode.value = 'single'
   selectedGroupId.value = ''
   userManuallySelected.value = false
@@ -826,6 +830,7 @@ async function startSingleSession() {
       recording_consent: recordingConsentResult.value ?? 0,
       ...(selectedInstanceType.value && { instance_type: selectedInstanceType.value }),
       ...(nameInput.value.trim() && { name: nameInput.value.trim() }),
+      ...(exerciseRef.value.trim() && { external_ref: exerciseRef.value.trim() }),
       ...(backendsStore.selectedBackendId && { backend: backendsStore.selectedBackendId }),
       ...(selectedOrganizationId.value && { organization_id: selectedOrganizationId.value })
     }
@@ -948,6 +953,7 @@ async function startBulkSessions() {
       expiry: sessionDurationCap.value,
       instance_type: selectedInstanceType.value,
       recording_consent: recordingConsentResult.value ?? 0,
+      ...(exerciseRef.value.trim() && { external_ref: exerciseRef.value.trim() }),
       ...(backendsStore.selectedBackendId && { backend: backendsStore.selectedBackendId }),
       ...(selectedOrganizationId.value && { organization_id: selectedOrganizationId.value })
     }

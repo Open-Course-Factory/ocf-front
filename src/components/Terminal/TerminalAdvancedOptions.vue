@@ -93,6 +93,25 @@
         </small>
       </FormGroup>
 
+      <FormGroup
+        :label="t('terminalStarter.exerciseRefLabel')"
+        id="exerciseRef"
+        :help-text="t('terminalStarter.exerciseRefHelp')"
+      >
+        <input
+          id="exerciseRef"
+          :value="exerciseRef"
+          type="text"
+          maxlength="255"
+          :placeholder="t('terminalStarter.exerciseRefPlaceholder')"
+          :disabled="disabled"
+          @input="handleExerciseRefInput"
+        />
+        <small v-if="exerciseRef.length > 0" class="char-count">
+          {{ exerciseRef.length }}/255
+        </small>
+      </FormGroup>
+
       <div class="form-actions">
         <Button
           type="button"
@@ -126,6 +145,7 @@ interface Group {
 
 interface Props {
   modelValue: string
+  exerciseRef?: string
   disabled?: boolean
   backends?: Backend[]
   selectedBackendId?: string
@@ -138,6 +158,7 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
+  exerciseRef: '',
   backends: () => [],
   selectedBackendId: '',
   showBackendSelector: false,
@@ -150,6 +171,7 @@ withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
+  'update:exerciseRef': [value: string]
   'update:selectedBackendId': [value: string]
   'update:creationMode': [value: 'single' | 'bulk']
   'update:selectedGroupId': [value: string]
@@ -163,6 +185,9 @@ const { t } = useTranslations({
       nameOptional: 'Terminal Name (Optional)',
       namePlaceholder: 'My terminal...',
       nameHelp: 'Give your terminal a custom name to easily find it. Maximum 255 characters.',
+      exerciseRefLabel: 'Exercise Reference',
+      exerciseRefPlaceholder: 'e.g., Lab 3 - Docker Basics',
+      exerciseRefHelp: 'Optional tag to identify this terminal session (visible in history exports)',
       buttonReset: 'Reset',
       creationMode: 'Creation Mode',
       singleTerminal: 'Single Terminal',
@@ -179,6 +204,9 @@ const { t } = useTranslations({
       nameOptional: 'Nom du Terminal (Optionnel)',
       namePlaceholder: 'Mon terminal...',
       nameHelp: 'Donnez un nom personnalisé à votre terminal pour le retrouver facilement. Maximum 255 caractères.',
+      exerciseRefLabel: 'Référence d\'exercice',
+      exerciseRefPlaceholder: 'ex. TP 3 - Bases Docker',
+      exerciseRefHelp: 'Tag optionnel pour identifier cette session terminal (visible dans les exports)',
       buttonReset: 'Réinitialiser',
       creationMode: 'Mode de Création',
       singleTerminal: 'Terminal Unique',
@@ -196,6 +224,11 @@ const isExpanded = ref(false)
 function handleInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:modelValue', target.value)
+}
+
+function handleExerciseRefInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  emit('update:exerciseRef', target.value)
 }
 </script>
 
