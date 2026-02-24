@@ -100,13 +100,13 @@
                     class="form-checkbox"
                   />
                   <label :for="`feature-${feature.key}`" class="checkbox-label">
-                    {{ feature.display_name_en }}
+                    {{ getFeatureDisplayName(feature) }}
                   </label>
                 </div>
               </template>
               <template v-else-if="feature.value_type === 'number' && isFeatureVisible(feature)">
                 <div class="number-input-group">
-                  <label :for="`feature-${feature.key}`">{{ feature.display_name_en }}</label>
+                  <label :for="`feature-${feature.key}`">{{ getFeatureDisplayName(feature) }}</label>
                   <div class="number-with-unit">
                     <input
                       :id="`feature-${feature.key}`"
@@ -162,7 +162,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { usePlanFeaturesStore } from '../../stores/planFeatures'
 import BaseModal from './BaseModal.vue'
 
-const { t } = useTranslations({
+const { t, te, locale } = useTranslations({
   en: {
     planConfig: {
       createTitle: 'Create Plan',
@@ -186,7 +186,13 @@ const { t } = useTranslations({
       noFeatures: 'No features configured. Create features in the Plan Features admin page first.',
       cancel: 'Cancel',
       save: 'Save',
-      create: 'Create'
+      create: 'Create',
+      categories: {
+        capabilities: 'Capabilities',
+        machine_sizes: 'Machine Sizes',
+        terminal_limits: 'Terminal Limits',
+        course_limits: 'Course Limits'
+      }
     }
   },
   fr: {
@@ -212,7 +218,13 @@ const { t } = useTranslations({
       noFeatures: 'Aucune fonctionnalite configuree. Creez des fonctionnalites dans la page admin Plan Features.',
       cancel: 'Annuler',
       save: 'Enregistrer',
-      create: 'Creer'
+      create: 'Creer',
+      categories: {
+        capabilities: 'Fonctionnalites',
+        machine_sizes: 'Tailles de Machine',
+        terminal_limits: 'Limites Terminal',
+        course_limits: 'Limites de Cours'
+      }
     }
   }
 })
@@ -245,15 +257,13 @@ const featureValues = reactive<Record<string, any>>({})
 
 const featuresByCategory = computed(() => planFeaturesStore.featuresByCategory)
 
-const categoryLabels: Record<string, string> = {
-  capabilities: 'Capabilities',
-  machine_sizes: 'Machine Sizes',
-  terminal_limits: 'Terminal Limits',
-  course_limits: 'Course Limits'
+function formatCategoryName(category: string): string {
+  const key = `planConfig.categories.${category}`
+  return te(key) ? t(key) : category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 
-function formatCategoryName(category: string): string {
-  return categoryLabels[category] || category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+function getFeatureDisplayName(feature: any): string {
+  return locale.value === 'fr' ? feature.display_name_fr : feature.display_name_en
 }
 
 function isFeatureVisible(feature: any): boolean {

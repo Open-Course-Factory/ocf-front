@@ -466,7 +466,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
 
             const response = await axios.post('/user-subscriptions/admin-assign', {
                 user_id: userId,
-                subscription_plan_id: planId,
+                plan_id: planId,
                 duration_days: durationDays
             })
             return response.data

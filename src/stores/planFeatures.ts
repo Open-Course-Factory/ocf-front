@@ -41,7 +41,13 @@ export const usePlanFeaturesStore = defineStore('planFeatures', () => {
                 valueType: 'Value Type',
                 unit: 'Unit',
                 defaultValue: 'Default Value',
-                isActive: 'Active'
+                isActive: 'Active',
+                categoryCapabilities: 'Capabilities',
+                categoryMachineSizes: 'Machine Sizes',
+                categoryTerminalLimits: 'Terminal Limits',
+                categoryCourseLimits: 'Course Limits',
+                valueTypeBoolean: 'Boolean',
+                valueTypeNumber: 'Number'
             }
         },
         fr: {
@@ -55,7 +61,13 @@ export const usePlanFeaturesStore = defineStore('planFeatures', () => {
                 valueType: 'Type de valeur',
                 unit: 'Unite',
                 defaultValue: 'Valeur par defaut',
-                isActive: 'Actif'
+                isActive: 'Actif',
+                categoryCapabilities: 'Fonctionnalites',
+                categoryMachineSizes: 'Tailles de Machine',
+                categoryTerminalLimits: 'Limites Terminal',
+                categoryCourseLimits: 'Limites de Cours',
+                valueTypeBoolean: 'Booleen',
+                valueTypeNumber: 'Nombre'
             }
         }
     })
@@ -72,28 +84,28 @@ export const usePlanFeaturesStore = defineStore('planFeatures', () => {
         return grouped
     })
 
-    const fieldList = buildFieldList([
+    const fieldList = computed(() => buildFieldList([
         field('id').hidden().readonly(),
         field('key', t('planFeatures.key')).input().visible().creatable().required(),
         field('display_name_en', t('planFeatures.displayNameEn')).input().visible().creatable().updatable().required(),
         field('display_name_fr', t('planFeatures.displayNameFr')).input().visible().creatable().updatable().required(),
         field('description', t('planFeatures.description')).textarea().visible().creatable().updatable(),
         field('category', t('planFeatures.category')).select().visible().creatable().updatable().required().withOptions([
-            { value: 'capabilities', text: 'Capabilities' },
-            { value: 'machine_sizes', text: 'Machine Sizes' },
-            { value: 'terminal_limits', text: 'Terminal Limits' },
-            { value: 'course_limits', text: 'Course Limits' }
+            { value: 'capabilities', text: t('planFeatures.categoryCapabilities') },
+            { value: 'machine_sizes', text: t('planFeatures.categoryMachineSizes') },
+            { value: 'terminal_limits', text: t('planFeatures.categoryTerminalLimits') },
+            { value: 'course_limits', text: t('planFeatures.categoryCourseLimits') }
         ]),
         field('value_type', t('planFeatures.valueType')).select().visible().creatable().required().withOptions([
-            { value: 'boolean', text: 'Boolean' },
-            { value: 'number', text: 'Number' }
+            { value: 'boolean', text: t('planFeatures.valueTypeBoolean') },
+            { value: 'number', text: t('planFeatures.valueTypeNumber') }
         ]),
         field('unit', t('planFeatures.unit')).input().visible().creatable().updatable(),
         field('default_value', t('planFeatures.defaultValue')).input().visible().creatable().updatable(),
         field('is_active', t('planFeatures.isActive')).checkbox().visible().creatable().updatable(),
         field('created_at', 'Created At').input().visible().readonly(),
         field('updated_at', 'Updated At').input().visible().readonly()
-    ])
+    ]))
 
     const loadFeatures = async () => {
         return await base.loadEntities('/PlanFeature')
