@@ -46,6 +46,13 @@
 
       <RecordingIndicator :isRecording="isRecording" />
 
+      <SessionCountdown
+        v-if="sessionInfo?.expires_at"
+        :expires-at="sessionInfo.expires_at"
+        @warning="handleSessionWarning"
+        @expired="handleSessionExpired"
+      />
+
       <Button
         v-if="showStopButton && isConnected"
         variant="danger"
@@ -112,6 +119,12 @@
           </span>
         </div>
         <RecordingIndicator :isRecording="isRecording" />
+        <SessionCountdown
+          v-if="sessionInfo?.expires_at"
+          :expires-at="sessionInfo.expires_at"
+          @warning="handleSessionWarning"
+          @expired="handleSessionExpired"
+        />
       </div>
       <div class="terminal-controls" v-if="!hideControls">
         <button
@@ -178,6 +191,7 @@ import { terminalService, type SharedTerminalInfo } from '../../services/domain/
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
 import RecordingIndicator from './RecordingIndicator.vue'
+import SessionCountdown from './SessionCountdown.vue'
 
 interface SessionInfo {
   session_id: string
@@ -215,6 +229,8 @@ interface Props {
 
 const emit = defineEmits<{
   stop: []
+  'session-warning': [level: 'info' | 'warning' | 'danger']
+  'session-expired': []
 }>()
 
 const props = withDefaults(defineProps<Props>(), {
@@ -330,7 +346,6 @@ let attachAddon: any = null
 
 // Resize observer
 let resizeObserver: ResizeObserver | null = null
-let sessionExpirationCheckInterval: ReturnType<typeof setInterval> | null = null
 
 // Computed: active session info (prefer prop, fallback to fetched)
 const sessionInfo = computed(() => props.sessionInfo || fetchedSessionInfo.value)
@@ -669,16 +684,23 @@ async function retry() {
   await connectToTerminal()
 }
 
+// Session countdown event handlers
+function handleSessionWarning(level: 'info' | 'warning' | 'danger') {
+  emit('session-warning', level)
+}
+
+function handleSessionExpired() {
+  if (socket.value) {
+    socket.value.close()
+  }
+  emit('session-expired')
+}
+
 // Cleanup
 function cleanup() {
   if (resizeObserver) {
     resizeObserver.disconnect()
     resizeObserver = null
-  }
-
-  if (sessionExpirationCheckInterval) {
-    clearInterval(sessionExpirationCheckInterval)
-    sessionExpirationCheckInterval = null
   }
 
   if (socket.value) {
@@ -722,20 +744,6 @@ onMounted(async () => {
     error.value = t('terminal.errorInitializationMessage')
   }
 
-  // Check session expiration every 5 seconds
-  sessionExpirationCheckInterval = setInterval(() => {
-    if (sessionInfo.value?.expires_at && isWsOpen.value) {
-      const expiresAt = new Date(sessionInfo.value.expires_at)
-      const now = new Date()
-
-      if (expiresAt <= now) {
-        showReconnectButton.value = true
-        if (socket.value) {
-          socket.value.close()
-        }
-      }
-    }
-  }, 5000)
 })
 
 onBeforeUnmount(() => {

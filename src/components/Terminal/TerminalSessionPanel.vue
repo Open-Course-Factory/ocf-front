@@ -21,6 +21,8 @@
       :show-stop-button="showStopButton"
       :is-stopping="isStopping"
       @stop="$emit('stop')"
+      @session-warning="$emit('session-warning', $event)"
+      @session-expired="$emit('session-expired')"
     />
 
     <!-- Command History -->
@@ -66,6 +68,8 @@ withDefaults(defineProps<Props>(), {
 defineEmits<{
   stop: []
   'recording-detected': []
+  'session-warning': [level: 'info' | 'warning' | 'danger']
+  'session-expired': []
 }>()
 
 const terminalRef = ref<InstanceType<typeof TerminalViewer> | null>(null)
