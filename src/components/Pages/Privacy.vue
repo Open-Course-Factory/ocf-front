@@ -163,7 +163,7 @@ const { t } = useTranslations({
         title: 'Why We Collect It',
         account: 'Account data: service operation and authentication',
         terminal: 'Terminal sessions: delivering the training platform',
-        commandHistory: 'Command history: enabling learners to review their work and trainers to give personalized feedback',
+        commandHistory: 'Command history: enabling learners to review their work and, where applicable, instructors to give personalized feedback',
         usage: 'Usage metrics: improving the platform',
         billing: 'Billing: subscription and payment processing'
       },
@@ -179,7 +179,7 @@ const { t } = useTranslations({
         title: 'Command History Recording',
         captured: 'What is captured: terminal commands you type during sessions.',
         notCaptured: 'What is NOT captured: passwords and tokens are redacted when possible, but you should avoid typing secrets directly in the terminal.',
-        access: 'Who can see it: you (the learner), your trainer, and platform administrators.',
+        access: 'Who can see it: you (the learner), platform administrators and, if applicable, your instructor.',
         retention: 'Retention: based on your subscription plan (shown as number of days when you consent).',
         control: 'Your control: you can export your command history or request deletion at any time.'
       },
@@ -248,7 +248,7 @@ const { t } = useTranslations({
         title: 'Pourquoi nous collectons ces données',
         account: 'Données de compte : fonctionnement du service et authentification',
         terminal: 'Sessions terminal : fourniture de la plateforme de formation',
-        commandHistory: 'Historique des commandes : permettre aux apprenants de revoir leur travail et aux formateurs de fournir un retour personnalisé',
+        commandHistory: 'Historique des commandes : permettre aux apprenants de revoir leur travail et, le cas échéant, aux encadrants de fournir un retour personnalisé',
         usage: 'Métriques d\'utilisation : amélioration de la plateforme',
         billing: 'Facturation : gestion des abonnements et traitement des paiements'
       },
@@ -264,7 +264,7 @@ const { t } = useTranslations({
         title: 'Enregistrement de l\'historique des commandes',
         captured: 'Ce qui est capturé : les commandes terminal que vous saisissez pendant vos sessions.',
         notCaptured: 'Ce qui n\'est PAS capturé : les mots de passe et tokens sont masqués dans la mesure du possible, mais vous devez éviter de saisir des secrets directement dans le terminal.',
-        access: 'Qui peut le consulter : vous (l\'apprenant), votre formateur et les administrateurs de la plateforme.',
+        access: 'Qui peut le consulter : vous (l\'apprenant), les administrateurs de la plateforme et, le cas échéant, votre encadrant.',
         retention: 'Conservation : basée sur votre plan d\'abonnement (affichée en nombre de jours lors du consentement).',
         control: 'Votre contrôle : vous pouvez exporter votre historique de commandes ou demander sa suppression à tout moment.'
       },
