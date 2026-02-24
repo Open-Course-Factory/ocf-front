@@ -258,7 +258,7 @@ const { t } = useTranslations({
       hide: 'Hide',
       preview: 'Preview',
       previewInfo: 'Shared terminal preview - Access level:',
-      stopTerminal: 'Stop terminal (admin access required)',
+      stopTerminal: 'Stop terminal (owner access required)',
       stop: 'Stop',
       hideInactive: 'Hide this inactive terminal',
       hideBtn: 'Hide',
@@ -299,7 +299,7 @@ const { t } = useTranslations({
       hide: 'Masquer',
       preview: 'Aperçu',
       previewInfo: 'Aperçu du terminal partagé - Niveau d\'accès :',
-      stopTerminal: 'Arrêter le terminal (accès admin requis)',
+      stopTerminal: 'Arrêter le terminal (accès propriétaire requis)',
       stop: 'Arrêter',
       hideInactive: 'Masquer ce terminal inactif',
       hideBtn: 'Masquer',
@@ -675,6 +675,7 @@ async function discardTerminal(terminalId: string) {
 
 /* Styles pour les terminaux inactifs */
 .inactive-terminal {
+  position: relative;
   opacity: 0.7;
   border-left-color: var(--color-gray-600) !important;
   background-color: var(--color-gray-50);
@@ -683,10 +684,6 @@ async function discardTerminal(terminalId: string) {
 .inactive-terminal .card-header {
   background-color: var(--color-gray-200) !important;
   color: var(--color-gray-600);
-}
-
-.inactive-terminal {
-  position: relative;
 }
 
 .inactive-label {
