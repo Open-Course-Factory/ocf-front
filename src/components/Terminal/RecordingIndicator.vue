@@ -32,7 +32,7 @@ const { t } = useTranslations({
   },
   fr: {
     recording: {
-      label: 'ENR',
+      label: 'REC',
       tooltip: 'Les commandes sont enregistrées'
     }
   }
