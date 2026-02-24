@@ -151,6 +151,11 @@
       <p class="recording-consent-message">
         {{ t('terminalStarter.recordingConsentMessage', { days: retentionDays }) }}
       </p>
+      <p class="recording-privacy-link">
+        <router-link to="/privacy" target="_blank">
+          <i class="fas fa-shield-alt"></i> {{ t('terminalStarter.privacyPolicyLink') }}
+        </router-link>
+      </p>
       <label class="remember-choice-label">
         <input type="checkbox" v-model="rememberConsent" />
         {{ t('terminalStarter.rememberChoice') }}
@@ -262,6 +267,7 @@ const { t } = useTranslations({
       recordingDecline: 'Continue without recording',
       commandHistory: 'Command History',
       rememberChoice: 'Remember my choice',
+      privacyPolicyLink: 'Learn more about how your data is handled',
       resetConsentPreference: 'Reset saved preference',
       termsAcceptance: 'I accept the terms of use for the terminal service.'
     }
@@ -317,6 +323,7 @@ const { t } = useTranslations({
       recordingDecline: 'Continuer sans enregistrement',
       commandHistory: 'Historique des commandes',
       rememberChoice: 'Se souvenir de mon choix',
+      privacyPolicyLink: 'En savoir plus sur le traitement de vos données',
       resetConsentPreference: 'Réinitialiser la préférence',
       termsAcceptance: "J'accepte les conditions d'utilisation du service terminal."
     }
@@ -1314,6 +1321,26 @@ onBeforeUnmount(() => {
   line-height: 1.6;
   margin: 0;
   white-space: pre-line;
+}
+
+.recording-privacy-link {
+  margin-top: var(--spacing-sm);
+  margin-bottom: 0;
+}
+
+.recording-privacy-link a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  transition: opacity 0.3s ease;
+}
+
+.recording-privacy-link a:hover {
+  opacity: 0.8;
+  text-decoration: underline;
 }
 
 .remember-choice-label {
