@@ -346,6 +346,43 @@ const startStatus = ref('')
 const showRecordingConsent = ref(false)
 const recordingConsentResult = ref<number | null>(null)
 const rememberConsent = ref(false)
+const CONSENT_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
+
+function loadConsentPreference(): number | null {
+  try {
+    const raw = localStorage.getItem(RECORDING_CONSENT_KEY)
+    if (raw === null) return null
+
+    try {
+      const parsed = JSON.parse(raw)
+      if (parsed && typeof parsed === 'object' && 'timestamp' in parsed) {
+        if (Date.now() - parsed.timestamp > CONSENT_EXPIRY_MS) {
+          localStorage.removeItem(RECORDING_CONSENT_KEY)
+          return null
+        }
+        return parsed.value
+      }
+    } catch {
+      // Not valid JSON — old format (plain "accepted"/"declined"), treat as expired
+    }
+
+    localStorage.removeItem(RECORDING_CONSENT_KEY)
+    return null
+  } catch {
+    return null
+  }
+}
+
+function saveConsentPreference(value: number) {
+  try {
+    localStorage.setItem(RECORDING_CONSENT_KEY, JSON.stringify({
+      value,
+      timestamp: Date.now()
+    }))
+  } catch {
+    // localStorage may be unavailable
+  }
+}
 
 // Session information
 const sessionInfo = ref<any>(null)
@@ -658,7 +695,7 @@ function resetForm() {
 function handleRecordingConsent(accepted: boolean) {
   recordingConsentResult.value = accepted ? 1 : 0
   if (rememberConsent.value) {
-    localStorage.setItem(RECORDING_CONSENT_KEY, accepted ? 'accepted' : 'declined')
+    saveConsentPreference(recordingConsentResult.value)
   }
   showRecordingConsent.value = false
   startNewSession()
@@ -729,12 +766,9 @@ async function startSingleSession() {
 
   // Check if recording consent is needed
   if (retentionDays.value > 0 && recordingConsentResult.value === null) {
-    // Check for remembered preference
-    const savedPref = localStorage.getItem(RECORDING_CONSENT_KEY)
-    if (savedPref === 'accepted') {
-      recordingConsentResult.value = 1
-    } else if (savedPref === 'declined') {
-      recordingConsentResult.value = 0
+    const saved = loadConsentPreference()
+    if (saved !== null) {
+      recordingConsentResult.value = saved
     } else {
       showRecordingConsent.value = true
       return // Wait for user response
@@ -889,11 +923,9 @@ async function startBulkSessions() {
 
   // Check if recording consent is needed (same as single session)
   if (retentionDays.value > 0 && recordingConsentResult.value === null) {
-    const savedPref = localStorage.getItem(RECORDING_CONSENT_KEY)
-    if (savedPref === 'accepted') {
-      recordingConsentResult.value = 1
-    } else if (savedPref === 'declined') {
-      recordingConsentResult.value = 0
+    const saved = loadConsentPreference()
+    if (saved !== null) {
+      recordingConsentResult.value = saved
     } else {
       showRecordingConsent.value = true
       return
