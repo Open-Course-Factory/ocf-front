@@ -55,6 +55,10 @@
         <div v-for="sharedSession in (sharedSessions || [])" :key="sharedSession.terminal.id"
              :class="['session-card', 'shared-terminal', { 'inactive-terminal': isTerminalInactive(sharedSession.terminal.status) }]">
 
+          <span v-if="isTerminalInactive(sharedSession.terminal.status)" class="inactive-label">
+            {{ t('shared.inactiveLabel') }}
+          </span>
+
           <!-- En-tête avec indicateur de partage -->
           <div class="card-header">
             <h5 class="session-id">{{ getTerminalDisplayName(sharedSession.terminal) }}</h5>
@@ -271,6 +275,7 @@ const { t } = useTranslations({
       confirmHideTitle: 'Hide terminal',
       viewHistory: 'History',
       hideHistory: 'Hide History',
+      inactiveLabel: 'INACTIVE',
       loadError: 'Error loading shared sessions',
       stopError: 'Error stopping session',
       hideError: 'Error hiding terminal'
@@ -312,6 +317,7 @@ const { t } = useTranslations({
       confirmHideTitle: 'Masquer le terminal',
       viewHistory: 'Historique',
       hideHistory: 'Masquer l\'historique',
+      inactiveLabel: 'INACTIF',
       loadError: 'Erreur lors du chargement des sessions partagées',
       stopError: 'Erreur lors de l\'arrêt de la session',
       hideError: 'Erreur lors du masquage du terminal'
@@ -684,23 +690,22 @@ async function discardTerminal(terminalId: string) {
   color: var(--color-gray-600);
 }
 
-.inactive-terminal::before {
-  content: "INACTIF";
+.inactive-terminal {
+  position: relative;
+}
+
+.inactive-label {
   position: absolute;
   top: 10px;
   left: 10px;
   background: var(--color-gray-600);
-  color: white;
+  color: var(--color-white);
   padding: 3px 8px;
   border-radius: 12px;
   font-size: 10px;
   font-weight: bold;
   z-index: 2;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.inactive-terminal {
-  position: relative;
 }
 
 .card-header {
