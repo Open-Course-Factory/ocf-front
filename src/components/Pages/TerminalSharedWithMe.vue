@@ -662,7 +662,7 @@ async function discardTerminal(terminalId: string) {
 .session-card {
   border: 1px solid var(--color-gray-200);
   border-radius: 8px;
-  background: white;
+  background: var(--color-bg-primary);
   overflow: hidden;
   transition: box-shadow 0.3s ease;
 }
