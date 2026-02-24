@@ -45,6 +45,8 @@
         :is-stopping="isStopping"
         @stop="stopSession"
         @recording-detected="isRecording = true"
+        @session-warning="handleSessionWarning"
+        @session-expired="handleSessionExpired"
       />
 
       <!-- Session expired: show notice + history only -->
@@ -72,7 +74,7 @@ import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
 import CommandHistory from '../Terminal/CommandHistory.vue'
 
 const route = useRoute()
-const { showWarning, showError: showErrorNotification } = useNotification()
+const { showWarning, showError: showErrorNotification, showInfo } = useNotification()
 
 const { t } = useTranslations({
   en: {
@@ -85,9 +87,11 @@ const { t } = useTranslations({
       sessionExpiredTitle: 'Session Expired',
       sessionEnded: 'This session has ended. You can still view the command history below.',
       stopError: 'Failed to stop the session.',
-      expiresIn5min: 'Your session expires in 5 minutes',
-      expiresIn1min: 'Your session expires in 1 minute — save your work!',
-      expiryWarningTitle: 'Session Expiring Soon'
+      warningInfo: 'Your session expires in 10 minutes.',
+      warningWarning: 'Session expiring soon. Save your work.',
+      warningDanger: 'Session expires in less than 1 minute!',
+      sessionExpiredNotice: 'Session expired',
+      warningTitle: 'Session Expiry'
     }
   },
   fr: {
@@ -100,9 +104,11 @@ const { t } = useTranslations({
       sessionExpiredTitle: 'Session expiree',
       sessionEnded: 'Cette session est terminee. Vous pouvez consulter l\'historique des commandes ci-dessous.',
       stopError: 'Impossible d\'arrêter la session.',
-      expiresIn5min: 'Votre session expire dans 5 minutes',
-      expiresIn1min: 'Votre session expire dans 1 minute — sauvegardez votre travail !',
-      expiryWarningTitle: 'Session bientôt expirée'
+      warningInfo: 'Votre session expire dans 10 minutes.',
+      warningWarning: 'Session bientot terminee. Sauvegardez votre travail.',
+      warningDanger: 'La session expire dans moins d\'une minute !',
+      sessionExpiredNotice: 'Session expiree',
+      warningTitle: 'Expiration de session'
     }
   }
 })
@@ -193,7 +199,6 @@ function startExpirationTimer(expiresAt: string) {
   timeRemaining.value = initialRemaining
 
   if (initialRemaining <= 0) {
-    showWarning(t('sessionView.sessionExpired'), t('sessionView.sessionExpiredTitle'))
     return
   }
 
@@ -216,9 +221,26 @@ function startExpirationTimer(expiresAt: string) {
     if (remaining <= 0) {
       clearInterval(timerInterval!)
       timerInterval = null
-      showWarning(t('sessionView.sessionExpired'), t('sessionView.sessionExpiredTitle'))
     }
   }, 1000)
+}
+
+function handleSessionWarning(level: 'info' | 'warning' | 'danger') {
+  const messages: Record<string, () => void> = {
+    info: () => showInfo(t('sessionView.warningInfo'), t('sessionView.warningTitle')),
+    warning: () => showWarning(t('sessionView.warningWarning'), t('sessionView.warningTitle')),
+    danger: () => showErrorNotification(t('sessionView.warningDanger'), t('sessionView.warningTitle'))
+  }
+  messages[level]?.()
+}
+
+function handleSessionExpired() {
+  timeRemaining.value = 0
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = null
+  }
+  showWarning(t('sessionView.sessionExpiredNotice'), t('sessionView.sessionExpiredTitle'))
 }
 
 onMounted(() => {

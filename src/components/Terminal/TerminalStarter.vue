@@ -134,6 +134,8 @@
       :is-recording="recordingConsentResult === 1"
       :show-history="showHistoryPanel"
       :show-stop-button="false"
+      @session-warning="handleSessionWarning"
+      @session-expired="handleSessionExpired"
     />
 
     <!-- Recording Consent Modal -->
@@ -266,7 +268,13 @@ const { t } = useTranslations({
       rememberChoice: 'Remember my choice',
       privacyPolicyLink: 'Learn more about how your data is handled',
       resetConsentPreference: 'Reset saved preference',
-      termsAcceptance: 'I accept the terms of use for the terminal service.'
+      termsAcceptance: 'I accept the terms of use for the terminal service.',
+      warningInfo: 'Your session expires in 10 minutes.',
+      warningWarning: 'Session expiring soon. Save your work.',
+      warningDanger: 'Session expires in less than 1 minute!',
+      sessionExpiredNotice: 'Session expired',
+      warningTitle: 'Session Expiry',
+      startNewSessionAction: 'Start new session'
     }
   },
   fr: {
@@ -323,12 +331,18 @@ const { t } = useTranslations({
       rememberChoice: 'Se souvenir de mon choix',
       privacyPolicyLink: 'En savoir plus sur le traitement de vos données',
       resetConsentPreference: 'Réinitialiser la préférence',
-      termsAcceptance: "J'accepte les conditions d'utilisation du service terminal."
+      termsAcceptance: "J'accepte les conditions d'utilisation du service terminal.",
+      warningInfo: 'Votre session expire dans 10 minutes.',
+      warningWarning: 'Session bientot terminee. Sauvegardez votre travail.',
+      warningDanger: 'La session expire dans moins d\'une minute !',
+      sessionExpiredNotice: 'Session expiree',
+      warningTitle: 'Expiration de session',
+      startNewSessionAction: 'Nouvelle session'
     }
   }
 })
 
-const { showConfirm, showError: showErrorNotification, showWarning } = useNotification()
+const { showConfirm, showError: showErrorNotification, showWarning, showInfo } = useNotification()
 
 // Panel state
 const showStartPanel = ref(true)
@@ -1088,11 +1102,30 @@ function startExpirationTimer(expiresAt: string) {
 
     if (remaining <= 0) {
       clearInterval(timerInterval!)
-      showWarning(t('terminalStarter.sessionExpired'), t('terminalStarter.sessionExpiredTitle'))
-      showTerminalPanel.value = false
-      showInfoPanel.value = false
+      timerInterval = null
     }
   }, 1000)
+}
+
+function handleSessionWarning(level: 'info' | 'warning' | 'danger') {
+  const messages: Record<string, () => void> = {
+    info: () => showInfo(t('terminalStarter.warningInfo'), t('terminalStarter.warningTitle')),
+    warning: () => showWarning(t('terminalStarter.warningWarning'), t('terminalStarter.warningTitle')),
+    danger: () => showErrorNotification(t('terminalStarter.warningDanger'), t('terminalStarter.warningTitle'))
+  }
+  messages[level]?.()
+}
+
+function handleSessionExpired() {
+  timeRemaining.value = 0
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = null
+  }
+  showTerminalPanel.value = false
+  showInfoPanel.value = false
+  showWarning(t('terminalStarter.sessionExpiredNotice'), t('terminalStarter.sessionExpiredTitle'))
+  showStartPanel.value = true
 }
 
 function cleanup() {
