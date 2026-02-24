@@ -37,6 +37,7 @@ import type { Organization } from '../../types/organization'
 import axios from 'axios'
 import BaseModal from '../Modals/BaseModal.vue'
 import EntityModal from '../Modals/EntityModal.vue'
+import GroupCommandHistory from '../Groups/GroupCommandHistory.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -58,6 +59,7 @@ const { t } = useTranslations({
       // Tabs
       tabOverview: 'Overview',
       tabMembers: 'Members',
+      tabHistory: 'Command History',
       tabSettings: 'Settings',
 
       // Overview Fields
@@ -169,6 +171,7 @@ const { t } = useTranslations({
       // Tabs
       tabOverview: 'Aperçu',
       tabMembers: 'Membres',
+      tabHistory: 'Historique des commandes',
       tabSettings: 'Paramètres',
 
       // Overview Fields
@@ -278,8 +281,8 @@ const groupOrganization = ref<Organization | null>(null)
 const isLoading = ref(true)
 const error = ref('')
 // Initialize activeTab from URL query parameter
-const activeTab = ref<'overview' | 'members' | 'settings'>(
-  (route.query.tab as 'overview' | 'members' | 'settings') || 'overview'
+const activeTab = ref<'overview' | 'members' | 'history' | 'settings'>(
+  (route.query.tab as 'overview' | 'members' | 'history' | 'settings') || 'overview'
 )
 const showAddMemberModal = ref(false)
 const showDeleteConfirm = ref(false)
@@ -311,6 +314,15 @@ const canEditGroup = computed(() => {
 
 const canDeleteGroup = computed(() => {
   return isOwner.value
+})
+
+const isAssistant = computed(() => {
+  const member = groupMembersComposable.members.value.find(m => m.user_id === currentUser.userId)
+  return member?.role === 'assistant'
+})
+
+const canViewHistory = computed(() => {
+  return canEditGroup.value || isAssistant.value
 })
 
 const groupStatus = computed(() => {
@@ -515,8 +527,8 @@ watch(() => route.params.id, async () => {
 
 // Sync activeTab with URL query parameter (for browser back/forward)
 watch(() => route.query.tab, (newTab) => {
-  if (newTab && typeof newTab === 'string' && ['overview', 'members', 'settings'].includes(newTab)) {
-    activeTab.value = newTab as 'overview' | 'members' | 'settings'
+  if (newTab && typeof newTab === 'string' && ['overview', 'members', 'history', 'settings'].includes(newTab)) {
+    activeTab.value = newTab as 'overview' | 'members' | 'history' | 'settings'
   }
 })
 
@@ -627,6 +639,14 @@ watch(activeTab, (newTab) => {
           <i class="fas fa-users"></i>
           {{ t('groupDetails.tabMembers') }}
           <span class="badge">{{ groupMembersComposable.members.value.length }}</span>
+        </button>
+        <button
+          v-if="canViewHistory"
+          @click="activeTab = 'history'"
+          :class="['tab-button', { active: activeTab === 'history' }]"
+        >
+          <i class="fas fa-history"></i>
+          {{ t('groupDetails.tabHistory') }}
         </button>
         <button
           v-if="canEditGroup"
@@ -831,6 +851,11 @@ watch(activeTab, (newTab) => {
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Tab Content: Command History -->
+      <div v-show="activeTab === 'history'" class="tab-content history-tab">
+        <GroupCommandHistory v-if="currentGroup" :group-id="currentGroup.id" />
       </div>
 
       <!-- Tab Content: Settings -->
