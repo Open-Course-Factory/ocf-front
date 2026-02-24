@@ -295,7 +295,6 @@ async function revokeUserAccess(userId: string) {
   try {
     await terminalService.revokeAccess(props.terminalId, userId)
     await loadData() // Reload data to reflect changes
-    console.log(`Access revoked for user ${userId}`)
   } catch (err: any) {
     console.error('Error revoking access:', err)
     error.value = err.response?.data?.error_message || t('access.revokeError')

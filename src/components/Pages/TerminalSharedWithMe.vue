@@ -337,7 +337,6 @@ const copiedSessions = ref(new Set())
 const instanceTypes = ref([])
 
 onMounted(() => {
-  console.log('SharedSessions mounted')
   loadSharedSessions()
   loadInstanceTypes()
 
@@ -357,9 +356,7 @@ async function loadSharedSessions() {
   error.value = ''
 
   try {
-    console.log('Loading shared sessions...')
     const result = await terminalService.getSharedTerminals()
-    console.log('Shared sessions loaded:', result)
 
     // Ensure we always have an array, even if API returns null/undefined
     sharedSessions.value = Array.isArray(result) ? result : []
@@ -417,10 +414,8 @@ async function stopSession(sessionId: string) {
   }
 
   try {
-    console.log('Stopping session:', sessionId)
     await axios.post(`/terminals/${sessionId}/stop`)
     await loadSharedSessions()
-    console.log('Session stopped successfully')
   } catch (err: any) {
     console.error('Error stopping session:', err)
     error.value = extractErrorMessage(err, t('shared.stopError'))
@@ -535,7 +530,6 @@ function fallbackCopyTextToClipboard(text: string) {
 async function loadInstanceTypes() {
   try {
     instanceTypes.value = await terminalService.getInstanceTypes()
-    console.log('Instance types loaded:', instanceTypes.value)
   } catch (error) {
     console.error('Failed to load instance types:', error)
   }
@@ -573,14 +567,12 @@ async function discardTerminal(terminalId: string) {
   }
 
   try {
-    console.log('Hiding terminal:', terminalId)
     await axios.post(`/terminals/${terminalId}/hide`)
 
     // Remove from local display after successful API call
     sharedSessions.value = sharedSessions.value.filter(
       session => session.terminal.id !== terminalId
     )
-    console.log('Terminal successfully hidden:', terminalId)
   } catch (err: any) {
     console.error('Error hiding terminal:', err)
     error.value = extractErrorMessage(err, t('shared.hideError'))
