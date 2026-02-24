@@ -26,6 +26,8 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Entity from './Entity.vue'
 import AdminAssignOrgPlanModal from '../Modals/AdminAssignOrgPlanModal.vue'
+import PlanConfigModal from '../Modals/PlanConfigModal.vue'
+import AdminAssignPlanModal from '../Modals/AdminAssignPlanModal.vue'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useNotification } from '../../composables/useNotification'
@@ -55,6 +57,19 @@ const openAssignOrgModal = (planId?: string) => {
 
 const onOrgPlanAssigned = () => {
     showSuccess(t('subscriptionPlans.assignOrgSuccess'))
+}
+
+const showAssignModal = ref(false)
+const assignPlanId = ref<string | null>(null)
+
+const openAssignModal = (planId: string) => {
+    assignPlanId.value = planId
+    showAssignModal.value = true
+}
+
+const closeAssignModal = () => {
+    showAssignModal.value = false
+    assignPlanId.value = null
 }
 
 // Filtrer les plans selon le mode de vue
@@ -281,6 +296,14 @@ const syncWithStripe = async () => {
                 :entity-name='"subscription-plans"'
                 :entity-store="entityStoreWithFiltering"
             >
+                <template #modal="{ showModal, entityToEdit, onSubmit, onModify, onClose }">
+                    <PlanConfigModal
+                        :visible="showModal"
+                        :plan="entityToEdit"
+                        @save="entityToEdit ? onModify($event) : onSubmit($event)"
+                        @close="onClose"
+                    />
+                </template>
                 <template #actions="{ entity }">
                     <!-- Actions spécifiques pour les plans d'abonnement -->
                     <div class="plan-actions">
@@ -302,7 +325,7 @@ const syncWithStripe = async () => {
                                 </small>
                             </div>
                         </div>
-                        
+
                         <!-- Buttons for plan actions (non-admins or admins viewing as user) -->
                         <div v-if="(!isAdmin || shouldFilterAsStandardUser) && entity.is_active" class="plan-buttons">
                             <!-- Current plan indicator -->
@@ -362,6 +385,13 @@ const syncWithStripe = async () => {
                                 <i class="fas fa-building"></i>
                                 {{ t('subscriptionPlans.assignToOrg') }}
                             </button>
+                            <button
+                                class="btn btn-sm btn-outline-primary assign-btn"
+                                @click.stop="openAssignModal(entity.id)"
+                            >
+                                <i class="fas fa-user-plus"></i>
+                                {{ t('subscriptionPlans.assignToUser') }}
+                            </button>
                         </div>
                     </div>
                 </template>
@@ -373,6 +403,13 @@ const syncWithStripe = async () => {
                 :preselected-plan-id="assignOrgPreselectedPlanId"
                 @close="showAssignOrgModal = false"
                 @assigned="onOrgPlanAssigned"
+            />
+
+            <!-- Admin Assign Plan Modal -->
+            <AdminAssignPlanModal
+                :visible="showAssignModal"
+                :plan-id="assignPlanId"
+                @close="closeAssignModal"
             />
         </div>
     </div>
@@ -620,5 +657,25 @@ const syncWithStripe = async () => {
 .btn-outline-danger:hover {
   background-color: var(--color-danger);
   color: white;
+}
+
+.btn-outline-primary {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background-color: transparent;
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.btn-sm {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.assign-btn {
+  margin-top: var(--spacing-xs);
 }
 </style>

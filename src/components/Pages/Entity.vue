@@ -236,16 +236,19 @@
       </div>
     </div>
 
-    <EntityModal
-      :visible="showModal"
-      :entity="entityToEdit"
-      :entity-store="props.entityStore"
-      :entity-name="props.entityName"
-      :fieldList="props.entityStore.fieldList"
-      @submit="addEntity"
-      @modify="updateEntity"
-      @close="showModal = false"
-    />
+    <slot name="modal" :show-modal="showModal" :entity-to-edit="entityToEdit"
+          :on-submit="addEntity" :on-modify="updateEntity" :on-close="() => showModal = false">
+      <EntityModal
+        :visible="showModal"
+        :entity="entityToEdit"
+        :entity-store="props.entityStore"
+        :entity-name="props.entityName"
+        :fieldList="props.entityStore.fieldList"
+        @submit="addEntity"
+        @modify="updateEntity"
+        @close="showModal = false"
+      />
+    </slot>
   </div>
 </template>
 
