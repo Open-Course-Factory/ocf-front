@@ -17,6 +17,14 @@
         </button>
         <i class="fas fa-history"></i> {{ t('history.title') }}
       </h4>
+      <div v-show="!isCollapsed && commands.length > 0" class="command-history-search">
+        <input
+          type="text"
+          v-model="searchFilter"
+          class="search-filter-input"
+          :placeholder="t('history.filterPlaceholder')"
+        />
+      </div>
       <div v-show="!isCollapsed" class="command-history-actions">
         <button class="btn btn-sm btn-outline-primary" @click="exportCSV" :disabled="commands.length === 0" :aria-label="t('history.exportCSV')">
           <i class="fas fa-file-csv"></i> CSV
@@ -30,7 +38,7 @@
       </div>
     </div>
     <div v-show="!isCollapsed" class="command-list" ref="commandListRef">
-      <div v-if="commands.length === 0 && !isLoading" class="empty-state">
+      <div v-if="filteredCommands.length === 0 && commands.length === 0 && !isLoading" class="empty-state">
         <i class="fas fa-terminal"></i>
         <p>{{ t('history.empty') }}</p>
       </div>
@@ -38,7 +46,11 @@
         <i class="fas fa-spinner fa-spin"></i>
         <p>{{ t('history.loading') }}</p>
       </div>
-      <div v-for="cmd in commands" :key="cmd.sequence_num" class="command-entry">
+      <div v-if="filteredCommands.length === 0 && commands.length > 0 && !isLoading" class="empty-state">
+        <i class="fas fa-search"></i>
+        <p>{{ t('history.noFilterResults') }}</p>
+      </div>
+      <div v-for="cmd in filteredCommands" :key="cmd.sequence_num" class="command-entry">
         <span class="command-time">{{ formatTime(cmd.executed_at) }}</span>
         <span class="command-text">{{ cmd.command_text }}</span>
       </div>
@@ -67,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onBeforeUnmount, onMounted, nextTick } from 'vue'
+import { ref, computed, watch, onBeforeUnmount, onMounted, nextTick } from 'vue'
 import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
@@ -108,7 +120,9 @@ const { t } = useTranslations({
       deleteAll: 'Delete all command history',
       showHistory: 'Show history',
       hideHistory: 'Hide history',
-      exportSuccess: 'Export successful'
+      exportSuccess: 'Export successful',
+      filterPlaceholder: 'Filter commands...',
+      noFilterResults: 'No commands match your filter.'
     }
   },
   fr: {
@@ -129,7 +143,9 @@ const { t } = useTranslations({
       deleteAll: 'Supprimer tout l\'historique des commandes',
       showHistory: 'Afficher l\'historique',
       hideHistory: 'Masquer l\'historique',
-      exportSuccess: 'Export réussi'
+      exportSuccess: 'Export réussi',
+      filterPlaceholder: 'Filtrer les commandes...',
+      noFilterResults: 'Aucune commande ne correspond au filtre.'
     }
   }
 })
@@ -157,6 +173,13 @@ const commands = ref<CommandEntry[]>([])
 const isLoading = ref(false)
 const showDeleteConfirm = ref(false)
 const commandListRef = ref<HTMLElement | null>(null)
+const searchFilter = ref('')
+
+const filteredCommands = computed(() => {
+  if (!searchFilter.value.trim()) return commands.value
+  const query = searchFilter.value.trim().toLowerCase()
+  return commands.value.filter(cmd => cmd.command_text.toLowerCase().includes(query))
+})
 let pollInterval: ReturnType<typeof setTimeout> | null = null
 let lastTimestamp: number | null = null
 let errorCount = 0
@@ -426,6 +449,30 @@ onBeforeUnmount(() => {
 
 .btn-collapse:hover {
   color: var(--color-primary);
+}
+
+.command-history-search {
+  padding: 0 var(--spacing-sm);
+}
+
+.search-filter-input {
+  width: 100%;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  outline: none;
+  font-family: var(--font-family-monospace);
+}
+
+.search-filter-input:focus {
+  border-color: var(--color-primary);
+}
+
+.search-filter-input::placeholder {
+  color: var(--color-text-muted);
 }
 
 .command-history-actions {

@@ -88,6 +88,11 @@ const { t } = useTranslations({
       exportError: 'Failed to export command history',
       exportSuccess: 'CSV export downloaded',
 
+      // Search
+      searchPlaceholder: 'Search commands...',
+      searchClear: 'Clear search',
+      noSearchResults: 'No commands match your search.',
+
       // Stats summary cards
       statTotalCommands: 'Total Commands',
       statActiveStudents: 'Active Students',
@@ -137,6 +142,11 @@ const { t } = useTranslations({
       exportError: 'Échec de l\'exportation de l\'historique',
       exportSuccess: 'Export CSV téléchargé',
 
+      // Search
+      searchPlaceholder: 'Rechercher des commandes...',
+      searchClear: 'Effacer la recherche',
+      noSearchResults: 'Aucune commande ne correspond à votre recherche.',
+
       // Stats summary cards
       statTotalCommands: 'Commandes totales',
       statActiveStudents: 'Apprenants actifs',
@@ -170,6 +180,8 @@ const error = ref('')
 const includeStopped = ref(false)
 const pageSize = 50
 const currentOffset = ref(0)
+const searchQuery = ref('')
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 // Stats state
 const stats = ref<StatsResponse | null>(null)
@@ -263,6 +275,10 @@ async function fetchCommands() {
       params.include_stopped = 'true'
     }
 
+    if (searchQuery.value.trim()) {
+      params.search = searchQuery.value.trim()
+    }
+
     const response = await axios.get<CommandHistoryResponse>(
       `/class-groups/${props.groupId}/command-history`,
       { params }
@@ -291,6 +307,10 @@ async function exportCsv() {
 
     if (includeStopped.value) {
       params.include_stopped = 'true'
+    }
+
+    if (searchQuery.value.trim()) {
+      params.search = searchQuery.value.trim()
     }
 
     const response = await axios.get(
@@ -333,6 +353,20 @@ function goToNextPage() {
   }
 }
 
+function handleSearchInput() {
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
+  searchDebounceTimer = setTimeout(() => {
+    currentOffset.value = 0
+    fetchCommands()
+  }, 400)
+}
+
+function clearSearch() {
+  searchQuery.value = ''
+  currentOffset.value = 0
+  fetchCommands()
+}
+
 function handleRefresh() {
   currentOffset.value = 0
   fetchCommands()
@@ -371,6 +405,25 @@ onMounted(() => {
         />
         <span class="toggle-text">{{ t('groupCommandHistory.includeStopped') }}</span>
       </label>
+
+      <div class="search-wrapper">
+        <i class="fas fa-search search-icon"></i>
+        <input
+          type="text"
+          v-model="searchQuery"
+          @input="handleSearchInput"
+          class="search-input"
+          :placeholder="t('groupCommandHistory.searchPlaceholder')"
+        />
+        <button
+          v-if="searchQuery"
+          class="search-clear"
+          @click="clearSearch"
+          :aria-label="t('groupCommandHistory.searchClear')"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
 
       <div class="toolbar-actions">
         <button
@@ -472,7 +525,7 @@ onMounted(() => {
     <!-- Empty State -->
     <div v-else-if="commands.length === 0 && !isLoading" class="history-state">
       <i class="fas fa-terminal"></i>
-      <p>{{ includeStopped ? t('groupCommandHistory.empty') : t('groupCommandHistory.emptyWithStopped') }}</p>
+      <p>{{ searchQuery.trim() ? t('groupCommandHistory.noSearchResults') : (includeStopped ? t('groupCommandHistory.empty') : t('groupCommandHistory.emptyWithStopped')) }}</p>
     </div>
 
     <!-- Command Table -->
@@ -576,6 +629,62 @@ onMounted(() => {
 .toolbar-actions {
   display: flex;
   gap: var(--spacing-sm);
+}
+
+/* Search */
+.search-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+  max-width: 400px;
+}
+
+.search-icon {
+  position: absolute;
+  left: var(--spacing-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: var(--spacing-xs) var(--spacing-md) var(--spacing-xs) calc(var(--spacing-sm) + 20px);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.search-input:focus {
+  border-color: var(--color-primary);
+}
+
+.search-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.search-clear {
+  position: absolute;
+  right: var(--spacing-xs);
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  line-height: 1;
+}
+
+.search-clear:hover {
+  color: var(--color-text-primary);
 }
 
 /* Stats Cards */
