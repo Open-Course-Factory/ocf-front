@@ -31,6 +31,28 @@ interface CommandHistoryResponse {
   offset: number
 }
 
+interface StudentStats {
+  student_name: string
+  student_email: string
+  total_commands: number
+  session_count: number
+  total_time_seconds: number
+  last_active_at: number
+}
+
+interface StatsSummary {
+  total_commands: number
+  total_sessions: number
+  active_students: number
+  avg_commands_per_student: number
+  avg_time_per_student_seconds: number
+}
+
+interface StatsResponse {
+  summary: StatsSummary
+  students: StudentStats[]
+}
+
 interface Props {
   groupId: string
 }
@@ -64,7 +86,27 @@ const { t } = useTranslations({
       emptyWithStopped: 'No commands found. Try including stopped sessions.',
       errorLoad: 'Failed to load command history',
       exportError: 'Failed to export command history',
-      exportSuccess: 'CSV export downloaded'
+      exportSuccess: 'CSV export downloaded',
+
+      // Stats summary cards
+      statTotalCommands: 'Total Commands',
+      statActiveStudents: 'Active Students',
+      statTotalSessions: 'Sessions',
+      statAvgTime: 'Avg Time / Student',
+
+      // Per-student breakdown
+      studentBreakdown: 'Per-Student Breakdown',
+      colStudentName: 'Student',
+      colCommands: 'Commands',
+      colSessions: 'Sessions',
+      colTimeSpent: 'Time Spent',
+      colLastActive: 'Last Active',
+      noStudentData: 'No student activity data available.',
+
+      // Time formatting
+      timeHours: '{h}h {m}m',
+      timeMinutes: '{m}m',
+      timeLessThanMinute: '< 1m'
     }
   },
   fr: {
@@ -93,7 +135,27 @@ const { t } = useTranslations({
       emptyWithStopped: 'Aucune commande trouvée. Essayez d\'inclure les sessions arrêtées.',
       errorLoad: 'Échec du chargement de l\'historique des commandes',
       exportError: 'Échec de l\'exportation de l\'historique',
-      exportSuccess: 'Export CSV téléchargé'
+      exportSuccess: 'Export CSV téléchargé',
+
+      // Stats summary cards
+      statTotalCommands: 'Commandes totales',
+      statActiveStudents: 'Apprenants actifs',
+      statTotalSessions: 'Sessions',
+      statAvgTime: 'Temps moy. / Apprenant',
+
+      // Per-student breakdown
+      studentBreakdown: 'Détail par apprenant',
+      colStudentName: 'Apprenant',
+      colCommands: 'Commandes',
+      colSessions: 'Sessions',
+      colTimeSpent: 'Temps passé',
+      colLastActive: 'Dernière activité',
+      noStudentData: 'Aucune donnée d\'activité disponible.',
+
+      // Time formatting
+      timeHours: '{h}h {m}min',
+      timeMinutes: '{m}min',
+      timeLessThanMinute: '< 1min'
     }
   }
 })
@@ -108,6 +170,10 @@ const error = ref('')
 const includeStopped = ref(false)
 const pageSize = 50
 const currentOffset = ref(0)
+
+// Stats state
+const stats = ref<StatsResponse | null>(null)
+const isLoadingStats = ref(false)
 
 // Computed
 const currentPage = computed(() => Math.floor(currentOffset.value / pageSize) + 1)
@@ -138,6 +204,47 @@ function formatCommandTime(unixSeconds: number): string {
     })
   } catch {
     return String(unixSeconds)
+  }
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return t('groupCommandHistory.timeLessThanMinute')
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  if (hours > 0) return t('groupCommandHistory.timeHours', { h: hours, m: minutes })
+  return t('groupCommandHistory.timeMinutes', { m: minutes })
+}
+
+function formatLastActive(unixSeconds: number): string {
+  if (!unixSeconds) return '-'
+  try {
+    const date = new Date(unixSeconds * 1000)
+    return date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  } catch {
+    return '-'
+  }
+}
+
+async function fetchStats() {
+  isLoadingStats.value = true
+  try {
+    const params: Record<string, string> = {}
+    if (includeStopped.value) {
+      params.include_stopped = 'true'
+    }
+    const response = await axios.get<StatsResponse>(
+      `/class-groups/${props.groupId}/command-history-stats`,
+      { params }
+    )
+    stats.value = response.data
+  } catch {
+    stats.value = null
+  } finally {
+    isLoadingStats.value = false
   }
 }
 
@@ -229,22 +336,26 @@ function goToNextPage() {
 function handleRefresh() {
   currentOffset.value = 0
   fetchCommands()
+  fetchStats()
 }
 
 // Watch for filter changes: reset pagination and re-fetch
 watch(includeStopped, () => {
   currentOffset.value = 0
   fetchCommands()
+  fetchStats()
 })
 
 // Watch for groupId changes
 watch(() => props.groupId, () => {
   currentOffset.value = 0
   fetchCommands()
+  fetchStats()
 })
 
 onMounted(() => {
   fetchCommands()
+  fetchStats()
 })
 </script>
 
@@ -280,6 +391,67 @@ onMounted(() => {
         </button>
       </div>
     </div>
+
+    <!-- Stats Summary Cards -->
+    <div v-if="stats?.summary" class="stats-cards">
+      <div class="stat-card">
+        <div class="stat-value">{{ stats.summary.total_commands.toLocaleString() }}</div>
+        <div class="stat-label">{{ t('groupCommandHistory.statTotalCommands') }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ stats.summary.active_students }}</div>
+        <div class="stat-label">{{ t('groupCommandHistory.statActiveStudents') }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ stats.summary.total_sessions }}</div>
+        <div class="stat-label">{{ t('groupCommandHistory.statTotalSessions') }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ formatDuration(stats.summary.avg_time_per_student_seconds) }}</div>
+        <div class="stat-label">{{ t('groupCommandHistory.statAvgTime') }}</div>
+      </div>
+    </div>
+
+    <!-- Per-Student Breakdown -->
+    <div v-if="stats?.students && stats.students.length > 0" class="student-breakdown">
+      <h4 class="breakdown-title">
+        <i class="fas fa-users"></i>
+        {{ t('groupCommandHistory.studentBreakdown') }}
+      </h4>
+      <div class="breakdown-table-wrapper">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>{{ t('groupCommandHistory.colStudentName') }}</th>
+              <th class="col-numeric">{{ t('groupCommandHistory.colCommands') }}</th>
+              <th class="col-numeric">{{ t('groupCommandHistory.colSessions') }}</th>
+              <th>{{ t('groupCommandHistory.colTimeSpent') }}</th>
+              <th>{{ t('groupCommandHistory.colLastActive') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="student in stats.students" :key="student.student_email">
+              <td>
+                <div class="student-cell">
+                  <span class="student-name">{{ student.student_name }}</span>
+                  <span class="student-email">{{ student.student_email }}</span>
+                </div>
+              </td>
+              <td class="col-numeric">{{ student.total_commands.toLocaleString() }}</td>
+              <td class="col-numeric">{{ student.session_count }}</td>
+              <td>{{ formatDuration(student.total_time_seconds) }}</td>
+              <td>{{ formatLastActive(student.last_active_at) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Command History Section Header -->
+    <h4 v-if="stats?.summary" class="section-title">
+      <i class="fas fa-terminal"></i>
+      {{ t('groupCommandHistory.title') }}
+    </h4>
 
     <!-- Loading State -->
     <div v-if="isLoading && commands.length === 0" class="history-state">
@@ -403,6 +575,73 @@ onMounted(() => {
 
 .toolbar-actions {
   display: flex;
+  gap: var(--spacing-sm);
+}
+
+/* Stats Cards */
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.stat-card {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  text-align: center;
+}
+
+.stat-value {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--spacing-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Student Breakdown */
+.student-breakdown {
+  margin-bottom: var(--spacing-lg);
+}
+
+.breakdown-title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-md) 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.breakdown-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+}
+
+.col-numeric {
+  text-align: right;
+}
+
+/* Section Title */
+.section-title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-md) 0;
+  display: flex;
+  align-items: center;
   gap: var(--spacing-sm);
 }
 
@@ -547,6 +786,10 @@ onMounted(() => {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .stats-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .history-toolbar {
     flex-direction: column;
     align-items: stretch;
