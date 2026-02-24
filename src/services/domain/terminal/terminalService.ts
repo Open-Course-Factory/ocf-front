@@ -37,7 +37,7 @@ export interface TerminalShareOutput {
   shared_with_group_id?: string
   shared_by_user_id: string
   share_type: 'user' | 'group'
-  access_level: 'read' | 'write' | 'admin'
+  access_level: 'read' | 'write' | 'owner'
   expires_at?: string
   is_active: boolean
   created_at: string
@@ -56,7 +56,7 @@ export interface SharedTerminalInfo {
   }
   shared_by: string // User ID (for reference)
   shared_by_display_name: string // User display name (use this for display)
-  access_level: 'read' | 'write' | 'admin' | 'owner'
+  access_level: 'read' | 'write' | 'owner'
   expires_at?: string
   shared_at: string
   shares?: TerminalShareOutput[]
@@ -65,7 +65,7 @@ export interface SharedTerminalInfo {
 export interface ShareTerminalRequest {
   shared_with_user_id?: string
   shared_with_group_id?: string
-  access_level: 'read' | 'write' | 'admin'
+  access_level: 'read' | 'write' | 'owner'
   expires_at?: string
 }
 

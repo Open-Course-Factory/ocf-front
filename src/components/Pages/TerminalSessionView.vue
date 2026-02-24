@@ -84,7 +84,10 @@ const { t } = useTranslations({
       sessionExpired: 'Your terminal session has expired.',
       sessionExpiredTitle: 'Session Expired',
       sessionEnded: 'This session has ended. You can still view the command history below.',
-      stopError: 'Failed to stop the session.'
+      stopError: 'Failed to stop the session.',
+      expiresIn5min: 'Your session expires in 5 minutes',
+      expiresIn1min: 'Your session expires in 1 minute — save your work!',
+      expiryWarningTitle: 'Session Expiring Soon'
     }
   },
   fr: {
@@ -96,7 +99,10 @@ const { t } = useTranslations({
       sessionExpired: 'Votre session terminal a expire.',
       sessionExpiredTitle: 'Session expiree',
       sessionEnded: 'Cette session est terminee. Vous pouvez consulter l\'historique des commandes ci-dessous.',
-      stopError: 'Impossible d\'arrêter la session.'
+      stopError: 'Impossible d\'arrêter la session.',
+      expiresIn5min: 'Votre session expire dans 5 minutes',
+      expiresIn1min: 'Votre session expire dans 1 minute — sauvegardez votre travail !',
+      expiryWarningTitle: 'Session bientôt expirée'
     }
   }
 })
@@ -109,6 +115,8 @@ const isStopping = ref(false)
 const isRecording = ref(false)
 const timeRemaining = ref(0)
 let timerInterval: NodeJS.Timeout | null = null
+let warned5min = false
+let warned1min = false
 
 // Get session ID from route
 const sessionId = route.params.sessionId as string
@@ -194,6 +202,16 @@ function startExpirationTimer(expiresAt: string) {
     const remaining = Math.max(0, Math.floor((expirationTime - now) / 1000))
 
     timeRemaining.value = remaining
+
+    if (remaining <= 300 && remaining > 60 && !warned5min) {
+      warned5min = true
+      showWarning(t('sessionView.expiresIn5min'), t('sessionView.expiryWarningTitle'))
+    }
+
+    if (remaining <= 60 && remaining > 0 && !warned1min) {
+      warned1min = true
+      showErrorNotification(t('sessionView.expiresIn1min'), t('sessionView.expiryWarningTitle'))
+    }
 
     if (remaining <= 0) {
       clearInterval(timerInterval!)

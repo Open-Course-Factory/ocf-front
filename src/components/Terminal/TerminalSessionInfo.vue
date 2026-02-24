@@ -13,7 +13,7 @@
         Session Terminal: {{ sessionInfo?.session_id }}
       </span>
       <div class="session-actions">
-        <span class="time-remaining" v-if="timeRemaining > 0">
+        <span class="time-remaining" :class="urgencyClass" v-if="timeRemaining > 0">
           <i class="fas fa-clock"></i>
           {{ t('terminalStarter.timeRemaining') }}: {{ formattedTime }}
         </span>
@@ -163,6 +163,12 @@ const statusClass = computed(() => {
       return 'text-muted'
   }
 })
+
+const urgencyClass = computed(() => {
+  if (props.timeRemaining <= 60) return 'time-danger'
+  if (props.timeRemaining <= 300) return 'time-warning'
+  return ''
+})
 </script>
 
 <style scoped>
@@ -195,6 +201,24 @@ const statusClass = computed(() => {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
+}
+
+.time-remaining.time-warning {
+  color: var(--color-warning);
+}
+
+.time-remaining.time-danger {
+  color: var(--color-danger);
+  animation: pulse-danger 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-danger {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .session-details {

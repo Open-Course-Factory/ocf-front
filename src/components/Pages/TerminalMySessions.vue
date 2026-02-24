@@ -893,8 +893,6 @@ function handleClickOutside(event: MouseEvent) {
 }
 
 onMounted(() => {
-  console.log('MySessions mounted')
-
   // Add click outside listener for dropdowns
   document.addEventListener('click', handleClickOutside)
 
@@ -928,7 +926,6 @@ async function loadSessions() {
   error.value = ''
 
   try {
-    console.log('Loading sessions...')
     // Build query parameters
     const params: any = {}
 
@@ -944,7 +941,6 @@ async function loadSessions() {
 
     const response = await axios.get('/terminals/user-sessions', { params })
     sessions.value = response.data || []
-    console.log('Sessions loaded:', sessions.value)
   } catch (err: any) {
     console.error('Erreur lors du chargement des sessions:', err)
     error.value = err.response?.data?.error_message || t('terminalMySessions.errorLoading')
@@ -981,10 +977,8 @@ async function stopSession(sessionId: string) {
   }
 
   try {
-    console.log('Stopping session:', sessionId)
     await axios.post(`/terminals/${sessionId}/stop`)
     await loadSessions()
-    console.log('Session stopped successfully')
   } catch (err: any) {
     console.error('Erreur lors de l\'arrêt:', err)
     error.value = err.response?.data?.error_message || t('terminalMySessions.errorStopping')
@@ -1096,7 +1090,6 @@ function fallbackCopyTextToClipboard(text: string) {
 // Synchroniser une session spécifique
 async function syncSession(sessionId: string) {
   try {
-    console.log('Syncing session:', sessionId)
     const response = await axios.post(`/terminals/${sessionId}/sync`)
 
     syncResults.value.set(sessionId, {
@@ -1109,10 +1102,6 @@ async function syncSession(sessionId: string) {
       loadSessions(),
       loadSharedSessions()
     ])
-
-    if (response.data.updated) {
-      console.log(`Session ${sessionId} synchronized: ${response.data.previous_status} -> ${response.data.current_status}`)
-    }
 
     return response.data
   } catch (err: any) {
@@ -1202,13 +1191,10 @@ async function checkExpiredSessions() {
   })
 
   if (expiredSessions.length > 0) {
-    console.log(`Found ${expiredSessions.length} expired session(s), auto-syncing...`)
-
     // Sync each expired session silently
     for (const session of expiredSessions) {
       try {
         await syncSession(session.session_id)
-        console.log(`Auto-synced expired session: ${session.session_id}`)
       } catch (err) {
         console.error(`Failed to auto-sync session ${session.session_id}:`, err)
       }
@@ -1231,7 +1217,6 @@ function formatSyncTime(time: Date | string) {
 async function loadInstanceTypes() {
   try {
     instanceTypes.value = await terminalService.getInstanceTypes()
-    console.log('Instance types loaded:', instanceTypes.value)
   } catch (error) {
     console.error('Failed to load instance types:', error)
   }
@@ -1261,8 +1246,8 @@ function canEditName(session: any): boolean {
     return true
   }
 
-  // For shared sessions, only 'write' and 'admin' access levels can edit
-  return ['write', 'admin'].includes(session.access_level)
+  // For shared sessions, only 'write' and 'owner' access levels can edit
+  return ['write', 'owner'].includes(session.access_level)
 }
 
 function startEditingName(terminalId: string, currentName: string | undefined) {
@@ -1378,7 +1363,6 @@ function closeSharingModal() {
 }
 
 function onTerminalShared(terminalId: string) {
-  console.log('Terminal shared:', terminalId)
   loadSessions()
   // Reopen AccessModal and refresh its data after sharing
   if (selectedTerminalId.value === terminalId) {
@@ -1421,9 +1405,7 @@ async function discardTerminal(terminalId: string) {
   }
 
   try {
-    console.log('Hiding terminal:', terminalId)
     await axios.post(`/terminals/${terminalId}/hide`)
-    console.log('Terminal successfully hidden:', terminalId)
 
     // Reload both owned and shared sessions to get updated list from backend
     await Promise.all([
@@ -1462,8 +1444,6 @@ async function hideAllInactiveSessions() {
       axios.post(`/terminals/${session.id}/hide`)
     )
     await Promise.all(hidePromises)
-
-    console.log('All inactive terminals successfully hidden')
 
     // Reload both owned and shared sessions to get updated list from backend
     await Promise.all([

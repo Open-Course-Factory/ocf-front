@@ -535,13 +535,10 @@ async function connectToTerminal() {
       console.warn('No authentication token available for WebSocket connection')
     }
 
-    console.log('Connexion WebSocket (secure auth):', wsUrl.replace(/token=[^&]+/, 'token=***'))
-
     // Create WebSocket connection
     socket.value = new WebSocket(wsUrl)
 
     socket.value.onopen = () => {
-      console.log('Terminal WebSocket opened')
       isWsOpen.value = true
       isConnecting.value = false
       showReconnectButton.value = false
@@ -564,7 +561,6 @@ async function connectToTerminal() {
     }
 
     socket.value.onclose = (event) => {
-      console.log('Terminal WebSocket closed:', event.code, event.reason)
       const wasConnected = isWsOpen.value
       isWsOpen.value = false
       isConnecting.value = false
@@ -607,7 +603,6 @@ async function connectToTerminal() {
         setTimeout(async () => {
           try {
             await terminalService.syncSession(sessionId)
-            console.log('Session synced after WebSocket close:', sessionId)
           } catch (syncErr) {
             console.warn('Failed to sync session after close:', syncErr)
           }
@@ -643,7 +638,6 @@ function reloadPage() {
 
 // Reconnect terminal
 async function reconnect() {
-  console.log('Reconnecting terminal...')
   if (socket.value) {
     socket.value.close()
   }
@@ -713,8 +707,6 @@ watch(() => props.sessionInfo, async (newSessionInfo, oldSessionInfo) => {
 }, { immediate: false })
 
 onMounted(async () => {
-  console.log('TerminalViewer mounted, sessionId:', displaySessionId.value)
-
   if (!displaySessionId.value) {
     error.value = t('terminal.sessionMissing')
     return

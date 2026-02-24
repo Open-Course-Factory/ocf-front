@@ -635,7 +635,6 @@ async function loadCurrentTerminalUsage() {
 async function syncAllSessions() {
   try {
     const response = await axios.post('/terminals/sync-all')
-    console.log('All sessions synchronized:', response.data)
     return response.data
   } catch (error) {
     console.error('Failed to sync sessions:', error)
@@ -1132,12 +1131,6 @@ onMounted(async () => {
 
   // Check for query parameters to set bulk mode and group
   if (route.query.mode === 'bulk' && route.query.groupId) {
-    console.log('[TerminalStarter] Detected bulk mode query params:', {
-      mode: route.query.mode,
-      groupId: route.query.groupId,
-      availableGroupsCount: availableGroups.value.length
-    })
-
     creationMode.value = 'bulk'
     selectedGroupId.value = route.query.groupId as string
 
@@ -1147,11 +1140,6 @@ onMounted(async () => {
         const members = await loadGroupMembers(selectedGroupId.value)
         selectedGroupMemberCount.value = members.length
 
-        console.log('[TerminalStarter] Bulk mode configured:', {
-          creationMode: creationMode.value,
-          selectedGroupId: selectedGroupId.value,
-          memberCount: selectedGroupMemberCount.value
-        })
       }
     })
   }

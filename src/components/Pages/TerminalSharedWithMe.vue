@@ -55,6 +55,10 @@
         <div v-for="sharedSession in (sharedSessions || [])" :key="sharedSession.terminal.id"
              :class="['session-card', 'shared-terminal', { 'inactive-terminal': isTerminalInactive(sharedSession.terminal.status) }]">
 
+          <span v-if="isTerminalInactive(sharedSession.terminal.status)" class="inactive-label">
+            {{ t('shared.inactiveLabel') }}
+          </span>
+
           <!-- En-tête avec indicateur de partage -->
           <div class="card-header">
             <h5 class="session-id">{{ getTerminalDisplayName(sharedSession.terminal) }}</h5>
@@ -104,7 +108,7 @@
             </div>
 
             <!-- Section intégration iframe pour les sessions actives -->
-            <div class="iframe-section" v-if="sharedSession.terminal.status === 'active' && ['write', 'admin'].includes(sharedSession.access_level)">
+            <div class="iframe-section" v-if="sharedSession.terminal.status === 'active' && ['write', 'owner'].includes(sharedSession.access_level)">
               <h6 class="iframe-title">
                 <i class="fas fa-external-link-alt"></i>
                 {{ t('shared.terminalAccess') }}
@@ -175,7 +179,7 @@
               {{ expandedHistory.has(sharedSession.terminal.session_id) ? t('shared.hideHistory') : t('shared.viewHistory') }}
             </button>
             <button
-              v-if="sharedSession.terminal.status === 'active' && sharedSession.access_level === 'admin'"
+              v-if="sharedSession.terminal.status === 'active' && sharedSession.access_level === 'owner'"
               class="btn btn-danger btn-sm"
               @click="stopSession(sharedSession.terminal.session_id)"
               :title="t('shared.stopTerminal')"
@@ -254,7 +258,7 @@ const { t } = useTranslations({
       hide: 'Hide',
       preview: 'Preview',
       previewInfo: 'Shared terminal preview - Access level:',
-      stopTerminal: 'Stop terminal (admin access required)',
+      stopTerminal: 'Stop terminal (owner access required)',
       stop: 'Stop',
       hideInactive: 'Hide this inactive terminal',
       hideBtn: 'Hide',
@@ -265,12 +269,12 @@ const { t } = useTranslations({
       createOwnSession: 'create your own session',
       accessRead: 'Read',
       accessWrite: 'Write',
-      accessAdmin: 'Admin',
       accessOwner: 'Owner',
       confirmHide: 'Are you sure you want to hide this inactive terminal?',
       confirmHideTitle: 'Hide terminal',
       viewHistory: 'History',
       hideHistory: 'Hide History',
+      inactiveLabel: 'INACTIVE',
       loadError: 'Error loading shared sessions',
       stopError: 'Error stopping session',
       hideError: 'Error hiding terminal'
@@ -295,7 +299,7 @@ const { t } = useTranslations({
       hide: 'Masquer',
       preview: 'Aperçu',
       previewInfo: 'Aperçu du terminal partagé - Niveau d\'accès :',
-      stopTerminal: 'Arrêter le terminal (accès admin requis)',
+      stopTerminal: 'Arrêter le terminal (accès propriétaire requis)',
       stop: 'Arrêter',
       hideInactive: 'Masquer ce terminal inactif',
       hideBtn: 'Masquer',
@@ -306,12 +310,12 @@ const { t } = useTranslations({
       createOwnSession: 'créez votre propre session',
       accessRead: 'Lecture',
       accessWrite: 'Écriture',
-      accessAdmin: 'Admin',
       accessOwner: 'Propriétaire',
       confirmHide: 'Êtes-vous sûr de vouloir masquer ce terminal inactif ?',
       confirmHideTitle: 'Masquer le terminal',
       viewHistory: 'Historique',
       hideHistory: 'Masquer l\'historique',
+      inactiveLabel: 'INACTIF',
       loadError: 'Erreur lors du chargement des sessions partagées',
       stopError: 'Erreur lors de l\'arrêt de la session',
       hideError: 'Erreur lors du masquage du terminal'
@@ -337,7 +341,6 @@ const copiedSessions = ref(new Set())
 const instanceTypes = ref([])
 
 onMounted(() => {
-  console.log('SharedSessions mounted')
   loadSharedSessions()
   loadInstanceTypes()
 
@@ -357,9 +360,7 @@ async function loadSharedSessions() {
   error.value = ''
 
   try {
-    console.log('Loading shared sessions...')
     const result = await terminalService.getSharedTerminals()
-    console.log('Shared sessions loaded:', result)
 
     // Ensure we always have an array, even if API returns null/undefined
     sharedSessions.value = Array.isArray(result) ? result : []
@@ -417,10 +418,8 @@ async function stopSession(sessionId: string) {
   }
 
   try {
-    console.log('Stopping session:', sessionId)
     await axios.post(`/terminals/${sessionId}/stop`)
     await loadSharedSessions()
-    console.log('Session stopped successfully')
   } catch (err: any) {
     console.error('Error stopping session:', err)
     error.value = extractErrorMessage(err, t('shared.stopError'))
@@ -450,7 +449,6 @@ function getAccessIcon(level: string) {
   switch (level) {
     case 'read': return 'fas fa-eye'
     case 'write': return 'fas fa-edit'
-    case 'admin': return 'fas fa-cog'
     case 'owner': return 'fas fa-crown'
     default: return 'fas fa-question'
   }
@@ -460,7 +458,6 @@ function getAccessLabel(level: string) {
   switch (level) {
     case 'read': return t('shared.accessRead')
     case 'write': return t('shared.accessWrite')
-    case 'admin': return t('shared.accessAdmin')
     case 'owner': return t('shared.accessOwner')
     default: return level
   }
@@ -470,7 +467,6 @@ function getAccessBadgeClass(level: string) {
   switch (level) {
     case 'read': return 'read-badge'
     case 'write': return 'write-badge'
-    case 'admin': return 'admin-badge'
     case 'owner': return 'owner-badge'
     default: return 'default-badge'
   }
@@ -535,7 +531,6 @@ function fallbackCopyTextToClipboard(text: string) {
 async function loadInstanceTypes() {
   try {
     instanceTypes.value = await terminalService.getInstanceTypes()
-    console.log('Instance types loaded:', instanceTypes.value)
   } catch (error) {
     console.error('Failed to load instance types:', error)
   }
@@ -573,14 +568,12 @@ async function discardTerminal(terminalId: string) {
   }
 
   try {
-    console.log('Hiding terminal:', terminalId)
     await axios.post(`/terminals/${terminalId}/hide`)
 
     // Remove from local display after successful API call
     sharedSessions.value = sharedSessions.value.filter(
       session => session.terminal.id !== terminalId
     )
-    console.log('Terminal successfully hidden:', terminalId)
   } catch (err: any) {
     console.error('Error hiding terminal:', err)
     error.value = extractErrorMessage(err, t('shared.hideError'))
@@ -662,7 +655,7 @@ async function discardTerminal(terminalId: string) {
 .session-card {
   border: 1px solid var(--color-gray-200);
   border-radius: 8px;
-  background: white;
+  background: var(--color-bg-primary);
   overflow: hidden;
   transition: box-shadow 0.3s ease;
 }
@@ -682,6 +675,7 @@ async function discardTerminal(terminalId: string) {
 
 /* Styles pour les terminaux inactifs */
 .inactive-terminal {
+  position: relative;
   opacity: 0.7;
   border-left-color: var(--color-gray-600) !important;
   background-color: var(--color-gray-50);
@@ -692,23 +686,18 @@ async function discardTerminal(terminalId: string) {
   color: var(--color-gray-600);
 }
 
-.inactive-terminal::before {
-  content: "INACTIF";
+.inactive-label {
   position: absolute;
   top: 10px;
   left: 10px;
   background: var(--color-gray-600);
-  color: white;
+  color: var(--color-white);
   padding: 3px 8px;
   border-radius: 12px;
   font-size: 10px;
   font-weight: bold;
   z-index: 2;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.inactive-terminal {
-  position: relative;
 }
 
 .card-header {
@@ -791,12 +780,6 @@ async function discardTerminal(terminalId: string) {
   background-color: var(--color-success-bg);
   color: var(--color-success-text);
   border: 1px solid var(--color-success-border);
-}
-
-.admin-badge {
-  background-color: var(--color-warning-bg);
-  color: var(--color-warning-text);
-  border: 1px solid var(--color-warning-bg);
 }
 
 .owner-badge {

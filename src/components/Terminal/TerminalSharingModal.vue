@@ -128,7 +128,7 @@
             >
               <option value="read">{{ t('terminalSharing.readAccess') }}</option>
               <option value="write">{{ t('terminalSharing.writeAccess') }}</option>
-              <option value="admin">{{ t('terminalSharing.adminAccess') }}</option>
+              <option value="owner">{{ t('terminalSharing.ownerAccess') }}</option>
             </select>
             <small class="form-text text-muted">
               {{ shareType === 'group' ? t('terminalSharing.groupAccessLevelHelp') : t('terminalSharing.accessLevelHelp') }}
@@ -197,7 +197,7 @@ const { t } = useTranslations({
       accessLevel: 'Access Level',
       readAccess: 'Read (View only)',
       writeAccess: 'Write (Can execute commands)',
-      adminAccess: 'Admin (Full control)',
+      ownerAccess: 'Owner (Full control)',
       accessLevelHelp: 'Select the permission level for this user.',
       groupAccessLevelHelp: 'Select the permission level for all group members.',
       expirationDate: 'Expiration Date (Optional)',
@@ -234,7 +234,7 @@ const { t } = useTranslations({
       accessLevel: 'Niveau d\'accès',
       readAccess: 'Lecture (Visualisation uniquement)',
       writeAccess: 'Écriture (Peut exécuter des commandes)',
-      adminAccess: 'Admin (Contrôle total)',
+      ownerAccess: 'Propriétaire (Contrôle total)',
       accessLevelHelp: 'Sélectionnez le niveau d\'autorisation pour cet utilisateur.',
       groupAccessLevelHelp: 'Sélectionnez le niveau d\'autorisation pour tous les membres du groupe.',
       expirationDate: 'Date d\'expiration (Optionnel)',
@@ -529,7 +529,7 @@ function getStatusClass(status: string) {
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-gray-400);
   border-top: none;
   border-radius: 0 0 6px 6px;

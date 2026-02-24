@@ -52,9 +52,7 @@ const route = useRoute()
 
 // Récupération des paramètres depuis l'URL
 const sessionId = computed(() => {
-  const id = route.params.sessionId || route.query.sessionId
-  console.log('TerminalPage - sessionId from route:', id)
-  return id
+  return route.params.sessionId || route.query.sessionId
 })
 
 const showHeader = computed(() => route.query.header !== 'false')
@@ -62,14 +60,10 @@ const showFooter = computed(() => route.query.footer === 'true')
 const hideControls = computed(() => route.query.controls === 'false')
 const autoConnect = computed(() => route.query.autoConnect !== 'false')
 
-// Debug
-console.log('TerminalPage mounted with route:', route.path)
-console.log('Route params:', route.params)
-console.log('Route query:', route.query)
 </script>
 
 <style scoped>
-.terminals-page {
+.terminal-page {
   width: 100%;
   height: 100vh;
   margin: 0;
