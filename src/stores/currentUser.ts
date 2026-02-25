@@ -54,7 +54,8 @@ export const useCurrentUserStore = defineStore('currentUser', {
             permissions: [] as string[], // User permissions from backend
             _isAuthenticated: false, // Internal reactive flag
             emailVerified: false,
-            emailVerifiedAt: null as string | null
+            emailVerifiedAt: null as string | null,
+            mustChangePassword: false as boolean
         }
     },
     getters: {
@@ -100,9 +101,16 @@ export const useCurrentUserStore = defineStore('currentUser', {
          */
         needsEmailVerification(): boolean {
             return this._isAuthenticated && !this.emailVerified;
+        },
+        needsPasswordChange(): boolean {
+            return this._isAuthenticated && this.mustChangePassword;
         }
     },
     actions: {
+        clearForcePasswordChange() {
+            this.mustChangePassword = false;
+        },
+
         // Modifier la méthode de sauvegarde du token
         setSecretToken(token: string, rememberMe: boolean = false) {
             tokenService.setAccessToken(token, rememberMe);
@@ -140,6 +148,7 @@ export const useCurrentUserStore = defineStore('currentUser', {
             this.permissions = []; // Clear permissions
             this.emailVerified = false;
             this.emailVerifiedAt = null;
+            this.mustChangePassword = false;
             tokenService.clearTokens();
         },
 
@@ -189,6 +198,7 @@ export const useCurrentUserStore = defineStore('currentUser', {
                 this.userEmail = userData.email || "";
                 this.emailVerified = userData.email_verified || false;
                 this.emailVerifiedAt = userData.email_verified_at || null;
+                this.mustChangePassword = userData.force_password_reset || false;
 
                 // Extract role names from roles array or user_roles field
                 if (userData.user_roles && Array.isArray(userData.user_roles)) {
