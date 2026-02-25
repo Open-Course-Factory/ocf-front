@@ -82,6 +82,12 @@ const basicRoutes = [
     component: () => import('../components/Pages/PasswordReset.vue'),
     meta: { requiresAuth: false }
   },
+  {
+    path: '/force-change-password',
+    name: 'ForceChangePassword',
+    component: () => import('../components/Pages/ForcePasswordChange.vue'),
+    meta: { requiresAuth: true }
+  },
   // Legal notices (public, no auth required)
   {
     path: '/legal',
@@ -512,6 +518,18 @@ router.beforeEach(async (to, from, next) => {
   // Always allow password reset and email verification pages (even for authenticated users)
   if (to.name === 'PasswordReset' || to.name === 'ForgotPassword' || to.name === 'ResetPassword' || to.name === 'VerifyEmail') {
     next();
+    return;
+  }
+
+  // Allow ForceChangePassword page itself
+  if (to.name === 'ForceChangePassword') {
+    next();
+    return;
+  }
+
+  // Force password change: block ALL authenticated routes until password is changed
+  if (currentUserStore.needsPasswordChange) {
+    next({ name: 'ForceChangePassword' });
     return;
   }
 

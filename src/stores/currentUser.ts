@@ -117,6 +117,10 @@ export const useCurrentUserStore = defineStore('currentUser', {
             this._isAuthenticated = true; // Update reactive flag
         },
 
+        clearForcePasswordChange() {
+            this.mustChangePassword = false;
+        },
+
         autoLogout() {
             this._isAuthenticated = false; // Clear auth flag immediately
             this.$reset();
