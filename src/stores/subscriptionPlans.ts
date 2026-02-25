@@ -115,7 +115,23 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             data_persistence_enabled: 'Data Persistence',
             data_persistence_gb: 'Storage Size (GB)',
             allowed_templates: 'Allowed Templates',
-            syncError: 'Error syncing subscription plans'
+            syncError: 'Error syncing subscription plans',
+            activating: 'Activating...',
+            startFreeTrial: 'Start Free Trial',
+            maxCourses: 'courses max',
+            users: 'users',
+            freeTrialDays: 'free trial days',
+            statusActive: 'Active',
+            statusInactive: 'Inactive',
+            syncSuccess: 'Sync successful!',
+            syncTotalPlans: 'Total plans:',
+            syncSynced: 'Synced:',
+            syncSkipped: 'Skipped:',
+            syncFailed: 'Failed:',
+            syncSyncedPlans: 'Synced plans:',
+            syncSkippedPlans: 'Skipped plans:',
+            syncFailedPlans: 'Failed plans:',
+            syncErrorTitle: 'Sync error'
         }
         },
         fr: {
@@ -199,7 +215,23 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             data_persistence_enabled: 'Persistance des Données',
             data_persistence_gb: 'Taille de Stockage (GB)',
             allowed_templates: 'Modèles Autorisés',
-            syncError: 'Erreur lors de la synchronisation des plans'
+            syncError: 'Erreur lors de la synchronisation des plans',
+            activating: 'Activation...',
+            startFreeTrial: 'Démarrer l\'essai gratuit',
+            maxCourses: 'cours max',
+            users: 'utilisateurs',
+            freeTrialDays: 'jours d\'essai gratuit',
+            statusActive: 'Actif',
+            statusInactive: 'Inactif',
+            syncSuccess: 'Synchronisation réussie !',
+            syncTotalPlans: 'Total des plans :',
+            syncSynced: 'Synchronisés :',
+            syncSkipped: 'Ignorés :',
+            syncFailed: 'Échecs :',
+            syncSyncedPlans: 'Plans synchronisés :',
+            syncSkippedPlans: 'Plans ignorés :',
+            syncFailedPlans: 'Plans en échec :',
+            syncErrorTitle: 'Erreur de synchronisation'
         }
         }
     })
