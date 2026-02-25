@@ -33,129 +33,259 @@
         </button>
       </div>
 
-      <!-- Plans Grid - Compact Design -->
-      <div v-else-if="filteredPlans.length > 0" class="plans-grid-compact">
-        <div
-          v-for="plan in filteredPlans"
-          :key="plan.id"
-          :class="['plan-card-compact', { 'current-plan': isCurrentPlan(plan), 'coming-soon-plan': !plan.is_active }]"
-        >
-          <!-- Coming Soon Badge -->
-          <div v-if="!plan.is_active" class="coming-soon-badge">
-            <i class="fas fa-clock"></i>
-            {{ t('plans.comingSoon') }}
-          </div>
-
-          <!-- Plan Header with Status -->
-          <div class="plan-header-compact">
-            <div class="plan-title-section">
-              <h3 class="plan-name-compact">{{ plan.name }}</h3>
-              <div v-if="isCurrentPlan(plan)" class="current-badge">
-                <i class="fas fa-check-circle"></i>
-                {{ t('plans.current') }}
-              </div>
-            </div>
-            <div v-if="plan.is_active" class="plan-price-compact">
-              <span class="price-amount-compact">{{ formatPrice(plan.price_amount, plan.currency) }}</span>
-              <span class="billing-period-compact">/ {{ plan.billing_interval === 'year' ? t('plans.year') : t('plans.month') }}</span>
-            </div>
-          </div>
-
-          <!-- Plan Content in Two Columns -->
-          <div class="plan-content-compact">
-            <!-- Left Column: Key Features -->
-            <div class="features-column">
-              <div class="key-features">
-                <!-- Machine Size -->
-                <div v-if="plan.allowed_machine_sizes && plan.allowed_machine_sizes.length > 0" class="feature-item">
-                  <i class="fas fa-server"></i>
-                  <span>{{ plan.allowed_machine_sizes.join(', ') }} {{ t('plans.machines') }}</span>
-                </div>
-
-                <!-- Session Duration -->
-                <div v-if="plan.max_session_duration_minutes" class="feature-item">
-                  <i class="fas fa-clock"></i>
-                  <span>{{ formatSessionDuration(plan.max_session_duration_minutes) }}</span>
-                </div>
-
-                <!-- Concurrent Terminals -->
-                <div v-if="plan.max_concurrent_terminals" class="feature-item">
-                  <i class="fas fa-terminal"></i>
-                  <span>{{ plan.max_concurrent_terminals }} {{ plan.max_concurrent_terminals === 1 ? t('plans.terminal') : t('plans.terminals') }}</span>
-                </div>
-
-                <!-- Storage -->
-                <div class="feature-item">
-                  <i class="fas fa-hdd"></i>
-                  <span>{{ formatStorage(plan) }}</span>
-                </div>
-
-                <!-- Network Access -->
-                <div class="feature-item">
-                  <i class="fas fa-network-wired"></i>
-                  <span>{{ plan.network_access_enabled ? t('plans.outboundNetwork') : t('plans.noNetworkAccess') }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Right Column: Action Button -->
-            <div class="action-column">
-              <button
-                v-if="!isCurrentPlan(plan)"
-                class="btn-compact"
-                :class="isCurrentPlan(plan) ? 'btn-current' : 'btn-subscribe-compact'"
-                @click="selectPlan(plan)"
-                :disabled="!plan.is_active || isSubscribing"
-              >
-                <i v-if="isSubscribing" class="fas fa-spinner fa-spin"></i>
-                <i v-else class="fas fa-shopping-cart"></i>
-                <span>{{ getPlanButtonText(plan) }}</span>
-              </button>
-
-              <div v-else class="current-plan-indicator">
-                <i class="fas fa-check-circle"></i>
-                <span>{{ t('plans.activePlan') }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Bulk Purchase Option -->
-          <div v-if="hasBulkPurchaseFeature(plan)" class="bulk-purchase-section">
-            <div class="bulk-header">
-              <i class="fas fa-layer-group"></i>
-              <span>{{ t('plans.volumePricing') }}</span>
-            </div>
-            <p class="bulk-description">
-              {{ t('plans.volumeDescription') }}
-            </p>
-            <button
-              class="btn-bulk-purchase"
-              @click="navigateToBulkPurchase(plan.id)"
-            >
-              <i class="fas fa-shopping-cart"></i>
-              {{ t('plans.viewBulkPricing') }}
-            </button>
-          </div>
-
-          <!-- Description (if any) -->
-          <div v-if="plan.description" class="plan-description-compact">
-            {{ plan.description }}
-          </div>
-
-          <!-- Planned Features (Coming Soon) -->
-          <div v-if="plan.planned_features && plan.planned_features.length > 0" class="planned-features-section">
-            <div class="planned-features-header">
-              <i class="fas fa-clock"></i>
-              <span>{{ t('plans.comingSoon') }}</span>
-            </div>
-            <ul class="planned-features-list">
-              <li v-for="(feature, index) in plan.planned_features" :key="index" class="planned-feature-item">
-                {{ feature }}
-              </li>
-            </ul>
+      <!-- Assigned user: simplified view (no pricing, no comparison) -->
+      <div v-else-if="isAssignedUser" class="assigned-user-view">
+        <div class="assigned-info-card">
+          <i class="fas fa-building"></i>
+          <div class="assigned-info-content">
+            <h3>{{ t('plans.yourCurrentPlan') }}: {{ subscriptionsStore.currentSubscription?.plan_name || subscriptionsStore.currentSubscription?.subscription_plan?.name }}</h3>
+            <p class="assigned-message">{{ t('plans.managedByOrg') }}</p>
           </div>
         </div>
       </div>
+
+      <!-- Plans display -->
+      <template v-else-if="filteredPlans.length > 0">
+        <!-- View toggle -->
+        <div class="view-toggle">
+          <button
+            :class="['btn-toggle', { active: viewMode === 'grid' }]"
+            @click="viewMode = 'grid'"
+          >
+            <i class="fas fa-th-large"></i>
+            {{ t('plans.gridView') }}
+          </button>
+          <button
+            :class="['btn-toggle', { active: viewMode === 'table' }]"
+            @click="viewMode = 'table'"
+          >
+            <i class="fas fa-table"></i>
+            {{ t('plans.comparePlans') }}
+          </button>
+        </div>
+
+        <!-- Plans Grid - Compact Design -->
+        <div v-if="viewMode === 'grid'" class="plans-grid-compact">
+          <div
+            v-for="plan in filteredPlans"
+            :key="plan.id"
+            :class="['plan-card-compact', { 'current-plan': isCurrentPlan(plan), 'coming-soon-plan': !plan.is_active }]"
+          >
+            <!-- Coming Soon Badge -->
+            <div v-if="!plan.is_active" class="coming-soon-badge">
+              <i class="fas fa-clock"></i>
+              {{ t('plans.comingSoon') }}
+            </div>
+
+            <!-- Plan Header with Status -->
+            <div class="plan-header-compact">
+              <div class="plan-title-section">
+                <h3 class="plan-name-compact">{{ plan.name }}</h3>
+                <div v-if="isCurrentPlan(plan)" class="current-badge">
+                  <i class="fas fa-check-circle"></i>
+                  {{ t('plans.current') }}
+                </div>
+              </div>
+              <div v-if="plan.is_active" class="plan-price-compact">
+                <span class="price-amount-compact">{{ formatPrice(plan.price_amount, plan.currency) }}</span>
+                <span class="billing-period-compact">/ {{ plan.billing_interval === 'year' ? t('plans.year') : t('plans.month') }}</span>
+              </div>
+            </div>
+
+            <!-- Plan Content in Two Columns -->
+            <div class="plan-content-compact">
+              <!-- Left Column: Key Features -->
+              <div class="features-column">
+                <div class="key-features">
+                  <!-- Concurrent Users -->
+                  <div v-if="plan.max_concurrent_users" class="feature-item">
+                    <i class="fas fa-users"></i>
+                    <span>{{ plan.max_concurrent_users }} {{ plan.max_concurrent_users === 1 ? t('plans.user') : t('plans.users') }}</span>
+                  </div>
+
+                  <!-- Machine Size -->
+                  <div v-if="plan.allowed_machine_sizes && plan.allowed_machine_sizes.length > 0" class="feature-item">
+                    <i class="fas fa-server"></i>
+                    <span>{{ formatMachineSizes(plan.allowed_machine_sizes) }} {{ t('plans.environments') }}</span>
+                  </div>
+
+                  <!-- Session Duration -->
+                  <div v-if="plan.max_session_duration_minutes" class="feature-item">
+                    <i class="fas fa-clock"></i>
+                    <span>{{ formatSessionDuration(plan.max_session_duration_minutes) }}</span>
+                  </div>
+
+                  <!-- Concurrent Terminals -->
+                  <div v-if="plan.max_concurrent_terminals" class="feature-item">
+                    <i class="fas fa-terminal"></i>
+                    <span>{{ plan.max_concurrent_terminals }} {{ plan.max_concurrent_terminals === 1 ? t('plans.terminal') : t('plans.terminals') }}</span>
+                  </div>
+
+                  <!-- Storage -->
+                  <div class="feature-item">
+                    <i class="fas fa-hdd"></i>
+                    <span>{{ formatStorage(plan) }}</span>
+                  </div>
+
+                  <!-- Network Access -->
+                  <div class="feature-item">
+                    <i class="fas fa-network-wired"></i>
+                    <span>{{ plan.network_access_enabled ? t('plans.outboundNetwork') : t('plans.noNetworkAccess') }}</span>
+                  </div>
+                </div>
+
+                <!-- Plan Capabilities -->
+                <div v-if="plan.features && plan.features.length > 0" class="capabilities-section">
+                  <div v-for="feature in plan.features" :key="feature" class="capability-item">
+                    <i class="fas fa-check"></i>
+                    <span>{{ formatFeatureName(feature) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Column: Action Button -->
+              <div class="action-column">
+                <button
+                  v-if="!isCurrentPlan(plan)"
+                  class="btn-compact"
+                  :class="isCurrentPlan(plan) ? 'btn-current' : 'btn-subscribe-compact'"
+                  @click="selectPlan(plan)"
+                  :disabled="!plan.is_active || isSubscribing"
+                >
+                  <i v-if="isSubscribing" class="fas fa-spinner fa-spin"></i>
+                  <i v-else class="fas fa-shopping-cart"></i>
+                  <span>{{ getPlanButtonText(plan) }}</span>
+                </button>
+
+                <div v-else class="current-plan-indicator">
+                  <i class="fas fa-check-circle"></i>
+                  <span>{{ t('plans.activePlan') }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bulk Purchase Option -->
+            <div v-if="hasBulkPurchaseFeature(plan)" class="bulk-purchase-section">
+              <div class="bulk-header">
+                <i class="fas fa-layer-group"></i>
+                <span>{{ t('plans.volumePricing') }}</span>
+              </div>
+              <p class="bulk-description">
+                {{ t('plans.volumeDescription') }}
+              </p>
+              <button
+                class="btn-bulk-purchase"
+                @click="navigateToBulkPurchase(plan.id)"
+              >
+                <i class="fas fa-shopping-cart"></i>
+                {{ t('plans.viewBulkPricing') }}
+              </button>
+            </div>
+
+            <!-- Description (if any) -->
+            <div v-if="plan.description" class="plan-description-compact">
+              {{ plan.description }}
+            </div>
+
+            <!-- Planned Features (Coming Soon) -->
+            <div v-if="plan.planned_features && plan.planned_features.length > 0" class="planned-features-section">
+              <div class="planned-features-header">
+                <i class="fas fa-clock"></i>
+                <span>{{ t('plans.comingSoon') }}</span>
+              </div>
+              <ul class="planned-features-list">
+                <li v-for="(feature, index) in plan.planned_features" :key="index" class="planned-feature-item">
+                  {{ feature }}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comparison Table View -->
+        <div v-else class="comparison-table-wrapper">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th class="feature-col"></th>
+                <th v-for="plan in filteredPlans" :key="plan.id" :class="{ 'current-plan-col': isCurrentPlan(plan) }">
+                  <div class="table-plan-header">
+                    <span class="table-plan-name">{{ plan.name }}</span>
+                    <span v-if="plan.is_active" class="table-plan-price">{{ formatPrice(plan.price_amount, plan.currency) }}/{{ plan.billing_interval === 'year' ? t('plans.year') : t('plans.month') }}</span>
+                    <span v-if="isCurrentPlan(plan)" class="table-current-badge">{{ t('plans.current') }}</span>
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Concurrent Users -->
+              <tr>
+                <td class="feature-col">{{ t('plans.concurrentUsers') }}</td>
+                <td v-for="plan in filteredPlans" :key="plan.id" :class="{ 'current-plan-col': isCurrentPlan(plan) }">
+                  {{ plan.max_concurrent_users || '-' }}
+                </td>
+              </tr>
+              <!-- Machine Sizes -->
+              <tr>
+                <td class="feature-col">{{ t('plans.machineSizes') }}</td>
+                <td v-for="plan in filteredPlans" :key="plan.id" :class="{ 'current-plan-col': isCurrentPlan(plan) }">
+                  {{ plan.allowed_machine_sizes ? formatMachineSizes(plan.allowed_machine_sizes) : '-' }}
+                </td>
+              </tr>
+              <!-- Session Duration -->
+              <tr>
+                <td class="feature-col">{{ t('plans.sessionDuration') }}</td>
+                <td v-for="plan in filteredPlans" :key="plan.id" :class="{ 'current-plan-col': isCurrentPlan(plan) }">
+                  {{ plan.max_session_duration_minutes ? formatSessionDuration(plan.max_session_duration_minutes) : '-' }}
+                </td>
+              </tr>
+              <!-- Concurrent Terminals -->
+              <tr>
+                <td class="feature-col">{{ t('plans.concurrentTerminals') }}</td>
+                <td v-for="plan in filteredPlans" :key="plan.id" :class="{ 'current-plan-col': isCurrentPlan(plan) }">
+                  {{ plan.max_concurrent_terminals || '-' }}
+                </td>
+              </tr>
+              <!-- Storage -->
+              <tr>
+                <td class="feature-col">{{ t('plans.storage') }}</td>
+                <td v-for="plan in filteredPlans" :key="plan.id" :class="{ 'current-plan-col': isCurrentPlan(plan) }">
+                  {{ formatStorage(plan) }}
+                </td>
+              </tr>
+              <!-- Network -->
+              <tr>
+                <td class="feature-col">{{ t('plans.networkAccess') }}</td>
+                <td v-for="plan in filteredPlans" :key="plan.id" :class="{ 'current-plan-col': isCurrentPlan(plan) }">
+                  <i :class="plan.network_access_enabled ? 'fas fa-check table-check' : 'fas fa-times table-cross'"></i>
+                </td>
+              </tr>
+              <!-- Feature Capabilities -->
+              <tr v-for="featureKey in allFeatureKeys" :key="featureKey">
+                <td class="feature-col">{{ formatFeatureName(featureKey) }}</td>
+                <td v-for="plan in filteredPlans" :key="plan.id" :class="{ 'current-plan-col': isCurrentPlan(plan) }">
+                  <i :class="plan.features && plan.features.includes(featureKey) ? 'fas fa-check table-check' : 'fas fa-times table-cross'"></i>
+                </td>
+              </tr>
+              <!-- Actions -->
+              <tr>
+                <td class="feature-col"></td>
+                <td v-for="plan in filteredPlans" :key="plan.id" :class="{ 'current-plan-col': isCurrentPlan(plan) }">
+                  <button
+                    v-if="!isCurrentPlan(plan)"
+                    class="btn-compact btn-subscribe-compact"
+                    @click="selectPlan(plan)"
+                    :disabled="!plan.is_active || isSubscribing"
+                  >
+                    {{ getPlanButtonText(plan) }}
+                  </button>
+                  <span v-else class="table-current-label">{{ t('plans.activePlan') }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
 
       <!-- No Plans Available -->
       <div v-else class="no-plans-container">
@@ -177,7 +307,7 @@ import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import router from '../../router/index'
 import { useNotification } from '../../composables/useNotification'
 
-const { t } = useTranslations({
+const { t, locale } = useTranslations({
   en: {
     plans: {
       pageDescription: 'Choose the perfect plan for your needs',
@@ -192,16 +322,18 @@ const { t } = useTranslations({
       changePlan: 'Change Plan',
       month: 'month',
       year: 'year',
-      machines: 'machine(s)',
+      environments: 'environment(s)',
       terminal: 'terminal',
       terminals: 'terminals',
+      user: 'user',
+      users: 'concurrent users',
       hourMax: '{hours} hour max | {hours} hours max',
       oneHourMax: '1 hour max',
       hoursMax: '{hours} hours max',
-      ephemeralOnly: 'Ephemeral only',
+      ephemeralOnly: 'Session data resets',
       storageGb: '{gb}GB storage',
-      outboundNetwork: 'Outbound network',
-      noNetworkAccess: 'No network access',
+      outboundNetwork: 'Internet access',
+      noNetworkAccess: 'Offline terminal',
       volumePricing: 'Volume Pricing Available',
       volumeDescription: 'Purchase multiple licenses and save with volume discounts. Perfect for classes and teams.',
       viewBulkPricing: 'View Bulk Pricing',
@@ -214,7 +346,18 @@ const { t } = useTranslations({
       activationErrorTitle: 'Activation Error',
       upgradeFromFree: 'Upgrade from Free Plan',
       upgradeFromFreeConfirm: 'You\'re about to upgrade from the free plan to {plan}.\n\nYour free plan will be replaced when you complete checkout.\n\nDo you want to continue?',
-      subscriptionErrorTitle: 'Subscription Error'
+      subscriptionErrorTitle: 'Subscription Error',
+      gridView: 'Grid view',
+      comparePlans: 'Compare plans',
+      concurrentUsers: 'Concurrent users',
+      machineSizes: 'Environments',
+      sessionDuration: 'Session duration',
+      concurrentTerminals: 'Terminals',
+      storage: 'Storage',
+      networkAccess: 'Network',
+      capabilities: 'Capabilities',
+      managedByOrg: 'Your plan is managed by your organization',
+      yourCurrentPlan: 'Your current plan',
     }
   },
   fr: {
@@ -231,15 +374,17 @@ const { t } = useTranslations({
       changePlan: 'Changer de plan',
       month: 'mois',
       year: 'an',
-      machines: 'machine(s)',
+      environments: 'environnement(s)',
       terminal: 'terminal',
       terminals: 'terminaux',
+      user: 'utilisateur',
+      users: 'utilisateurs simultanés',
       oneHourMax: '1 heure max',
       hoursMax: '{hours} heures max',
-      ephemeralOnly: 'Éphémère uniquement',
+      ephemeralOnly: 'Données réinitialisées',
       storageGb: '{gb} Go de stockage',
-      outboundNetwork: 'Réseau sortant',
-      noNetworkAccess: 'Pas d\'accès réseau',
+      outboundNetwork: 'Accès Internet',
+      noNetworkAccess: 'Terminal hors ligne',
       volumePricing: 'Tarification en volume disponible',
       volumeDescription: 'Achetez plusieurs licences et économisez avec des remises en volume. Idéal pour les classes et les équipes.',
       viewBulkPricing: 'Voir les tarifs en volume',
@@ -252,7 +397,18 @@ const { t } = useTranslations({
       activationErrorTitle: 'Erreur d\'activation',
       upgradeFromFree: 'Passer à un plan supérieur',
       upgradeFromFreeConfirm: 'Vous êtes sur le point de passer du plan gratuit à {plan}.\n\nVotre plan gratuit sera remplacé une fois le paiement effectué.\n\nVoulez-vous continuer ?',
-      subscriptionErrorTitle: 'Erreur d\'abonnement'
+      subscriptionErrorTitle: 'Erreur d\'abonnement',
+      gridView: 'Vue grille',
+      comparePlans: 'Comparer les plans',
+      concurrentUsers: 'Utilisateurs simultanés',
+      machineSizes: 'Environnements',
+      sessionDuration: 'Durée de session',
+      concurrentTerminals: 'Terminaux',
+      storage: 'Stockage',
+      networkAccess: 'Réseau',
+      capabilities: 'Fonctionnalités',
+      managedByOrg: 'Votre plan est géré par votre organisation',
+      yourCurrentPlan: 'Votre plan actuel',
     }
   }
 })
@@ -266,11 +422,22 @@ const subscriptionsStore = useSubscriptionsStore()
 // State
 const isSubscribing = ref(false)
 const hasCurrentSubscription = ref(false)
+const viewMode = ref<'grid' | 'table'>('grid')
+
+// Check if user has an assigned (organization-managed) subscription
+const isAssignedUser = computed(() => {
+  const subscription = subscriptionsStore.currentSubscription
+  return subscription?.subscription_type === 'assigned'
+})
 
 // Computed
 const filteredPlans = computed(() => {
-  // Show all plans to everyone, but mark inactive ones as "Coming Soon"
-  const plans = [...entityStore.entities]
+  let plans = [...entityStore.entities]
+
+  // Non-admins don't see inactive (coming soon) plans
+  if (!isAdmin.value) {
+    plans = plans.filter(p => p.is_active)
+  }
 
   // Sort to put current plan first
   return plans.sort((a, b) => {
@@ -281,6 +448,19 @@ const filteredPlans = computed(() => {
     if (!aIsCurrent && bIsCurrent) return 1
     return 0 // Keep original order for non-current plans
   })
+})
+
+// Collect all unique feature keys across plans (for comparison table)
+const allFeatureKeys = computed(() => {
+  const keys = new Set<string>()
+  for (const plan of filteredPlans.value) {
+    if (plan.features && Array.isArray(plan.features)) {
+      for (const f of plan.features) {
+        keys.add(f)
+      }
+    }
+  }
+  return [...keys]
 })
 
 const currentPlanId = computed(() => {
@@ -344,6 +524,52 @@ function formatStorage(plan: any): string {
     return t('plans.ephemeralOnly')
   }
   return t('plans.storageGb', { gb: plan.data_persistence_gb })
+}
+
+// Machine size labels for customer-friendly display
+const machineSizeLabels: Record<string, { en: string; fr: string }> = {
+  'XS': { en: 'Basic', fr: 'Basique' },
+  'S': { en: 'Standard', fr: 'Standard' },
+  'M': { en: 'Performance', fr: 'Performance' },
+  'L': { en: 'Advanced', fr: 'Avancé' },
+  'XL': { en: 'Maximum', fr: 'Maximum' },
+}
+
+function formatMachineSize(size: string): string {
+  const label = machineSizeLabels[size]
+  if (label) {
+    return locale.value === 'fr' ? label.fr : label.en
+  }
+  return size
+}
+
+function formatMachineSizes(sizes: string[]): string {
+  return sizes.map(formatMachineSize).join(', ')
+}
+
+// Feature capability labels for plan features array
+const featureLabels: Record<string, { en: string; fr: string }> = {
+  unlimited_courses: { en: 'Unlimited courses', fr: 'Formations illimitées' },
+  advanced_labs: { en: 'Advanced labs', fr: 'TP avancés' },
+  export: { en: 'Course export', fr: 'Export de cours' },
+  custom_themes: { en: 'Custom themes', fr: 'Thèmes personnalisés' },
+  bulk_purchase: { en: 'Volume licensing', fr: 'Licences en volume' },
+  group_management: { en: 'Group management', fr: 'Gestion des groupes' },
+  api_access: { en: 'API access', fr: 'Accès API' },
+  analytics: { en: 'Analytics dashboard', fr: 'Tableau de bord de suivi' },
+  priority_support: { en: 'Priority support', fr: 'Support prioritaire' },
+}
+
+function formatFeatureName(feature: string): string {
+  const label = featureLabels[feature]
+  if (label) {
+    return locale.value === 'fr' ? label.fr : label.en
+  }
+  // Fallback: title-case the snake_case key
+  return feature
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 }
 
 // Methods
@@ -928,6 +1154,179 @@ async function selectPlan(plan: any) {
   color: var(--color-gray-500);
 }
 
+
+/* Assigned User View */
+.assigned-user-view {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.assigned-info-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-xl);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-lg);
+  border-left: 4px solid var(--color-info);
+}
+
+.assigned-info-card > i {
+  font-size: var(--font-size-3xl);
+  color: var(--color-info);
+}
+
+.assigned-info-content h3 {
+  margin: 0 0 var(--spacing-xs) 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xl);
+}
+
+.assigned-message {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-base);
+}
+
+/* View Toggle */
+.view-toggle {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-lg);
+}
+
+.btn-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.btn-toggle:hover {
+  background: var(--color-bg-tertiary);
+}
+
+.btn-toggle.active {
+  background: var(--color-primary);
+  color: var(--color-white);
+  border-color: var(--color-primary);
+}
+
+/* Capabilities Section */
+.capabilities-section {
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--color-border-light);
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.capability-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.capability-item i {
+  width: 14px;
+  color: var(--color-success);
+  font-size: var(--font-size-xs);
+}
+
+/* Comparison Table */
+.comparison-table-wrapper {
+  overflow-x: auto;
+  margin-bottom: var(--spacing-lg);
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-bg-primary);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-align: center;
+  border-bottom: 1px solid var(--color-border-light);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.comparison-table th {
+  background: var(--color-gray-50);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  vertical-align: top;
+}
+
+.comparison-table .feature-col {
+  text-align: left;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  min-width: 160px;
+}
+
+.comparison-table .current-plan-col {
+  background: var(--color-success-bg);
+}
+
+.table-plan-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
+.table-plan-name {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+}
+
+.table-plan-price {
+  font-size: var(--font-size-sm);
+  color: var(--color-success);
+  font-weight: var(--font-weight-semibold);
+}
+
+.table-current-badge {
+  font-size: var(--font-size-xs);
+  background: var(--color-success);
+  color: var(--color-white);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-xl);
+}
+
+.table-current-label {
+  color: var(--color-success);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+}
+
+.table-check {
+  color: var(--color-success);
+}
+
+.table-cross {
+  color: var(--color-gray-400);
+}
 
 /* Utilities */
 .text-success { color: var(--color-success) !important; }
