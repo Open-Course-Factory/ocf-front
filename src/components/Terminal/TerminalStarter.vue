@@ -241,6 +241,7 @@ const { t } = useTranslations({
       errorValidationInstance: 'Please select an instance type',
       errorValidationGroup: 'Please select a group for bulk creation',
       errorLimitReached: 'You have reached your limit of concurrent terminals. Please stop an existing terminal or upgrade your plan.',
+      errorLimitReachedAssigned: 'You have used all your available terminals. Please close an existing terminal to start a new one.',
       errorLimitReachedTitle: 'Limit Reached',
       errorInstanceNotAvailable: 'The selected instance is not available with your current plan. Please choose another instance or upgrade your plan.',
       errorInstanceNotAvailableTitle: 'Instance Not Available',
@@ -297,6 +298,7 @@ const { t } = useTranslations({
       errorValidationInstance: 'Veuillez sélectionner un type d\'instance',
       errorValidationGroup: 'Veuillez sélectionner un groupe pour la création en masse',
       errorLimitReached: 'Vous avez atteint votre limite de terminaux simultanés. Veuillez arrêter un terminal existant ou mettre à niveau votre plan.',
+      errorLimitReachedAssigned: 'Vous avez utilisé tous vos terminaux disponibles. Veuillez fermer un terminal existant pour en démarrer un nouveau.',
       errorLimitReachedTitle: 'Limite atteinte',
       errorInstanceNotAvailable: 'L\'instance sélectionnée n\'est pas disponible avec votre plan actuel. Veuillez choisir une autre instance ou mettre à niveau votre plan.',
       errorInstanceNotAvailableTitle: 'Instance non disponible',
@@ -442,6 +444,10 @@ const selectedGroupMemberCount = ref(0)
 
 // Subscription and usage state
 const currentSubscription = computed(() => subscriptionsStore.currentSubscription)
+const isAssignedSubscription = computed(() => {
+  const sub = currentSubscription.value
+  return sub?.subscription_type === 'assigned' || !!sub?.subscription_batch_id
+})
 const currentTerminalCount = ref(0)
 const terminalLimitFromMetrics = ref<number | null>(null)
 const loadingUsage = ref(false)
@@ -816,8 +822,11 @@ async function startSingleSession() {
     const canCreateTerminal = await subscriptionsStore.checkUsageLimit('concurrent_terminals', 1)
 
     if (!canCreateTerminal) {
+      const limitMsg = isAssignedSubscription.value
+        ? t('terminalStarter.errorLimitReachedAssigned')
+        : t('terminalStarter.errorLimitReached')
       showErrorNotification(
-        t('terminalStarter.errorLimitReached'),
+        limitMsg,
         t('terminalStarter.errorLimitReachedTitle')
       )
       return
@@ -825,8 +834,11 @@ async function startSingleSession() {
   } catch (error: any) {
     console.error('Error checking usage limits:', error)
     if (error.response?.status === 403 && error.response?.data?.error_message?.includes('Maximum concurrent terminals')) {
+      const limitMsg = isAssignedSubscription.value
+        ? t('terminalStarter.errorLimitReachedAssigned')
+        : t('terminalStarter.errorLimitReached')
       showErrorNotification(
-        error.response.data.error_message + ' ' + t('terminalStarter.errorLimitReached'),
+        error.response.data.error_message + ' ' + limitMsg,
         t('terminalStarter.errorLimitReachedTitle')
       )
       return
