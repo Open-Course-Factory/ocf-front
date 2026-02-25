@@ -50,8 +50,8 @@
               </span>
             </div>
 
-            <!-- Priority indicator -->
-            <div class="plan-priority" v-if="subscription.subscription_plan?.priority !== undefined">
+            <!-- Priority indicator (admin only) -->
+            <div class="plan-priority" v-if="isAdmin && subscription.subscription_plan?.priority !== undefined">
               <i class="fas fa-signal"></i>
               {{ t('subscriptionPlans.priorityLevel') }}: {{ subscription.subscription_plan.priority }}
             </div>
@@ -81,7 +81,7 @@
               {{ getStatusText(subscription.status) }}
             </span>
 
-            <!-- Fallback indicator -->
+            <!-- Fallback indicator (only when multiple subscriptions exist) -->
             <div v-if="!subscription.is_primary && subscriptions.length > 1" class="fallback-indicator">
               <i class="fas fa-layer-group"></i>
               <span>{{ t('subscriptionPlans.fallbackPlan') }}</span>
@@ -96,8 +96,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useSubscriptionTranslations } from '../composables/useSubscriptionTranslations'
+import { useAdminViewMode } from '../../../composables/useAdminViewMode'
 
 const { t } = useSubscriptionTranslations()
+const { isAdmin } = useAdminViewMode()
 
 const isExpanded = ref(false)
 

@@ -57,7 +57,7 @@
             </div>
             <div v-if="plan.is_active" class="plan-price-compact">
               <span class="price-amount-compact">{{ formatPrice(plan.price_amount, plan.currency) }}</span>
-              <span class="billing-period-compact">{{ plan.billing_interval }}</span>
+              <span class="billing-period-compact">/ {{ plan.billing_interval === 'year' ? t('plans.year') : t('plans.month') }}</span>
             </div>
           </div>
 
@@ -173,6 +173,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTranslations } from '../../composables/useTranslations'
+import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import router from '../../router/index'
 import { useNotification } from '../../composables/useNotification'
 
@@ -189,6 +190,8 @@ const { t } = useTranslations({
       startTrial: 'Start Trial',
       subscribe: 'Subscribe',
       changePlan: 'Change Plan',
+      month: 'month',
+      year: 'year',
       machines: 'machine(s)',
       terminal: 'terminal',
       terminals: 'terminals',
@@ -226,6 +229,8 @@ const { t } = useTranslations({
       startTrial: 'Essai gratuit',
       subscribe: 'S\'abonner',
       changePlan: 'Changer de plan',
+      month: 'mois',
+      year: 'an',
       machines: 'machine(s)',
       terminal: 'terminal',
       terminals: 'terminaux',
@@ -252,6 +257,7 @@ const { t } = useTranslations({
   }
 })
 const { showSuccess, showError, showConfirm } = useNotification()
+const { isAdmin } = useAdminViewMode()
 
 // Stores
 const entityStore = useSubscriptionPlansStore()
@@ -370,6 +376,8 @@ function formatPrice(amount: number, currency: string = 'EUR') {
 }
 
 function hasBulkPurchaseFeature(plan: any): boolean {
+  // Only show bulk purchase for admins/trainers, not regular members/learners
+  if (!isAdmin.value) return false
   // Simplified: any plan with tiered pricing supports bulk purchase
   return plan.use_tiered_pricing === true
 }
