@@ -19,7 +19,7 @@
             :disabled="isActivatingFreePlan"
           >
             <i :class="isActivatingFreePlan ? 'fas fa-spinner fa-spin' : 'fas fa-gift'"></i>
-            {{ isActivatingFreePlan ? 'Activating...' : 'Start Free Trial' }}
+            {{ isActivatingFreePlan ? t('subscriptionPlans.activating') : t('subscriptionPlans.startFreeTrial') }}
           </button>
 
           <router-link to="/subscription-plans" class="btn btn-outline-primary btn-lg">

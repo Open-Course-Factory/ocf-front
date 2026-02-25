@@ -188,8 +188,6 @@ const stats = ref<StatsResponse | null>(null)
 const isLoadingStats = ref(false)
 
 // Computed
-const currentPage = computed(() => Math.floor(currentOffset.value / pageSize) + 1)
-const totalPages = computed(() => Math.ceil(total.value / pageSize))
 const hasPrevious = computed(() => currentOffset.value > 0)
 const hasNext = computed(() => currentOffset.value + pageSize < total.value)
 

@@ -25,6 +25,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Entity from './Entity.vue'
+import AdminAssignOrgPlanModal from '../Modals/AdminAssignOrgPlanModal.vue'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useNotification } from '../../composables/useNotification'
@@ -32,7 +33,7 @@ import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import router from '../../router/index.ts'
 
 const { t } = useI18n()
-const { showError } = useNotification()
+const { showError, showSuccess } = useNotification()
 
 const entityStore = useSubscriptionPlansStore()
 const subscriptionsStore = useSubscriptionsStore()
@@ -44,6 +45,17 @@ const upgradingPlanId = ref<string | null>(null)
 const isSyncing = ref(false)
 const syncResult = ref<any>(null)
 const showSyncResult = ref(false)
+const showAssignOrgModal = ref(false)
+const assignOrgPreselectedPlanId = ref<string | undefined>(undefined)
+
+const openAssignOrgModal = (planId?: string) => {
+    assignOrgPreselectedPlanId.value = planId
+    showAssignOrgModal.value = true
+}
+
+const onOrgPlanAssigned = () => {
+    showSuccess(t('subscriptionPlans.assignOrgSuccess'))
+}
 
 // Filtrer les plans selon le mode de vue
 const filteredPlans = computed(() => {
@@ -176,6 +188,13 @@ const syncWithStripe = async () => {
                     <i :class="isSyncing ? 'fas fa-spinner fa-spin' : 'fas fa-sync'"></i>
                     {{ isSyncing ? t('subscriptionPlans.syncing') : t('subscriptionPlans.syncWithStripe') }}
                 </button>
+                <button
+                    class="btn btn-secondary"
+                    @click="openAssignOrgModal()"
+                >
+                    <i class="fas fa-building"></i>
+                    {{ t('subscriptionPlans.assignToOrg') }}
+                </button>
                 <small class="text-muted">
                     {{ t('subscriptionPlans.syncDescription') }}
                 </small>
@@ -185,7 +204,7 @@ const syncWithStripe = async () => {
                     <div v-if="syncResult.success" class="alert alert-success">
                         <div class="result-header">
                             <i class="fas fa-check-circle"></i>
-                            <strong>Synchronisation réussie !</strong>
+                            <strong>{{ t('subscriptionPlans.syncSuccess') }}</strong>
                             <button
                                 class="btn btn-sm btn-outline-success"
                                 @click="showSyncResult = false"
@@ -196,19 +215,19 @@ const syncWithStripe = async () => {
 
                         <div class="result-summary">
                             <div class="summary-item">
-                                <span class="label">Total des plans:</span>
+                                <span class="label">{{ t('subscriptionPlans.syncTotalPlans') }}</span>
                                 <span class="value">{{ syncResult.total_plans }}</span>
                             </div>
                             <div class="summary-item">
-                                <span class="label">Synchronisés:</span>
+                                <span class="label">{{ t('subscriptionPlans.syncSynced') }}</span>
                                 <span class="value success">{{ syncResult.synced_count }}</span>
                             </div>
                             <div v-if="syncResult.skipped_count > 0" class="summary-item">
-                                <span class="label">Ignorés:</span>
+                                <span class="label">{{ t('subscriptionPlans.syncSkipped') }}</span>
                                 <span class="value info">{{ syncResult.skipped_count }}</span>
                             </div>
                             <div v-if="syncResult.failed_count > 0" class="summary-item">
-                                <span class="label">Échecs:</span>
+                                <span class="label">{{ t('subscriptionPlans.syncFailed') }}</span>
                                 <span class="value danger">{{ syncResult.failed_count }}</span>
                             </div>
                         </div>
@@ -216,21 +235,21 @@ const syncWithStripe = async () => {
                         <!-- Detailed Results -->
                         <div v-if="syncResult.details" class="result-details">
                             <div v-if="syncResult.details.synced.length > 0" class="detail-section">
-                                <h6><i class="fas fa-check"></i> Plans synchronisés:</h6>
+                                <h6><i class="fas fa-check"></i> {{ t('subscriptionPlans.syncSyncedPlans') }}</h6>
                                 <ul>
                                     <li v-for="plan in syncResult.details.synced" :key="plan">{{ plan }}</li>
                                 </ul>
                             </div>
 
                             <div v-if="syncResult.details.skipped.length > 0" class="detail-section">
-                                <h6><i class="fas fa-info-circle"></i> Plans ignorés:</h6>
+                                <h6><i class="fas fa-info-circle"></i> {{ t('subscriptionPlans.syncSkippedPlans') }}</h6>
                                 <ul>
                                     <li v-for="plan in syncResult.details.skipped" :key="plan">{{ plan }}</li>
                                 </ul>
                             </div>
 
                             <div v-if="syncResult.details.failed.length > 0" class="detail-section">
-                                <h6><i class="fas fa-exclamation-triangle"></i> Plans en échec:</h6>
+                                <h6><i class="fas fa-exclamation-triangle"></i> {{ t('subscriptionPlans.syncFailedPlans') }}</h6>
                                 <ul>
                                     <li v-for="failure in syncResult.details.failed" :key="failure.id">
                                         <strong>{{ failure.name }}</strong>: {{ failure.error }}
@@ -244,7 +263,7 @@ const syncWithStripe = async () => {
                     <div v-else class="alert alert-danger">
                         <div class="result-header">
                             <i class="fas fa-exclamation-circle"></i>
-                            <strong>Erreur de synchronisation</strong>
+                            <strong>{{ t('subscriptionPlans.syncErrorTitle') }}</strong>
                             <button
                                 class="btn btn-sm btn-outline-danger"
                                 @click="showSyncResult = false"
@@ -272,14 +291,14 @@ const syncWithStripe = async () => {
                             </div>
                             <div class="plan-limits" v-if="entity.max_courses || entity.max_concurrent_users">
                                 <small class="text-muted">
-                                    <span v-if="entity.max_courses">{{ entity.max_courses }} cours max</span>
-                                    <span v-if="entity.max_concurrent_users"> • {{ entity.max_concurrent_users }} utilisateurs</span>
+                                    <span v-if="entity.max_courses">{{ entity.max_courses }} {{ t('subscriptionPlans.maxCourses') }}</span>
+                                    <span v-if="entity.max_concurrent_users"> • {{ entity.max_concurrent_users }} {{ t('subscriptionPlans.users') }}</span>
                                 </small>
                             </div>
                             <div class="plan-trial" v-if="entity.trial_days > 0">
                                 <small class="text-success">
                                     <i class="fas fa-gift"></i>
-                                    {{ entity.trial_days }} jours d'essai gratuit
+                                    {{ entity.trial_days }} {{ t('subscriptionPlans.freeTrialDays') }}
                                 </small>
                             </div>
                         </div>
@@ -330,15 +349,31 @@ const syncWithStripe = async () => {
 
                         <!-- Badge de statut pour les admins (en mode admin complet seulement) -->
                         <div v-if="shouldShowAllData" class="admin-badges">
-                            <span 
+                            <span
                                 :class="['badge', entity.is_active ? 'badge-success' : 'badge-secondary']"
                             >
-                                {{ entity.is_active ? 'Actif' : 'Inactif' }}
+                                {{ entity.is_active ? t('subscriptionPlans.statusActive') : t('subscriptionPlans.statusInactive') }}
                             </span>
+                            <button
+                                v-if="entity.is_active"
+                                class="btn btn-sm btn-outline-primary"
+                                @click.stop="openAssignOrgModal(entity.id)"
+                            >
+                                <i class="fas fa-building"></i>
+                                {{ t('subscriptionPlans.assignToOrg') }}
+                            </button>
                         </div>
                     </div>
                 </template>
             </Entity>
+
+            <!-- Admin: Assign Plan to Organization Modal -->
+            <AdminAssignOrgPlanModal
+                :visible="showAssignOrgModal"
+                :preselected-plan-id="assignOrgPreselectedPlanId"
+                @close="showAssignOrgModal = false"
+                @assigned="onOrgPlanAssigned"
+            />
         </div>
     </div>
 </template>
@@ -514,9 +549,9 @@ const syncWithStripe = async () => {
   justify-content: space-between;
   align-items: center;
   padding: var(--spacing-sm) var(--spacing-md);
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--color-bg-secondary);
   border-radius: var(--border-radius-md);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--color-border-light);
 }
 
 .summary-item .label {
@@ -540,7 +575,7 @@ const syncWithStripe = async () => {
 }
 
 .result-details {
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  border-top: 1px solid var(--color-border-light);
   padding-top: var(--spacing-md);
 }
 

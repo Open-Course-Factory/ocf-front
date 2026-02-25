@@ -16,8 +16,8 @@
         <p class="text-muted">{{ t('subscriptions.dashboardSubtitle') }}</p>
       </div>
 
-      <!-- Upgrade to Team Banner -->
-      <UpgradeToTeamBanner />
+      <!-- Upgrade to Team Banner (hide for assigned subscriptions) -->
+      <UpgradeToTeamBanner v-if="!isAssignedSubscription" />
 
       <!-- Messages d'erreur globaux (utilise le nouveau composant ErrorAlert) -->
       <ErrorAlert
@@ -54,9 +54,9 @@
           :total-subscriptions="subscriptionsStore.allSubscriptions.length"
         />
 
-        <!-- All Subscriptions (Stacked View) -->
+        <!-- All Subscriptions (Stacked View) - hidden for assigned-only users -->
         <AllSubscriptions
-          v-if="subscriptionsStore.hasActiveSubscription() && subscriptionsStore.allSubscriptions.length > 1"
+          v-if="!isAssignedSubscription && subscriptionsStore.hasActiveSubscription() && subscriptionsStore.allSubscriptions.length > 1"
           :subscriptions="subscriptionsStore.allSubscriptions"
           :is-loading="isLoadingAllSubs"
         />
@@ -70,8 +70,9 @@
           @refresh="refreshUsage"
         />
 
-        <!-- Composant Factures Récentes -->
+        <!-- Composant Factures Récentes (hidden for assigned users who don't pay) -->
         <RecentInvoices
+          v-if="!isAssignedSubscription"
           :invoices="recentInvoices"
           :downloading-ids="downloadingInvoices"
           :is-loading="isLoadingInvoices"
@@ -149,6 +150,12 @@ const primarySubscription = computed(() => {
     return subscriptionsStore.currentSubscription
   }
   return subscriptionsStore.allSubscriptions.find((sub: any) => sub.is_primary) || subscriptionsStore.currentSubscription
+})
+
+const isAssignedSubscription = computed(() => {
+  const sub = subscriptionsStore.currentSubscription
+  if (!sub) return false
+  return sub.subscription_type === 'assigned' || !!sub.subscription_batch_id
 })
 
 // Lifecycle

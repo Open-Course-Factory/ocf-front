@@ -20,6 +20,7 @@
  */
 
 import { defineStore } from "pinia"
+import { computed } from "vue"
 import { useBaseStore } from "./baseStore"
 import { getDemoSubscriptionPlans, isDemoMode, logDemoAction, simulateDelay } from '../services/demo'
 import axios from 'axios'
@@ -71,7 +72,7 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             bulkLicenseReadOnly: 'This subscription was assigned to you and is managed by the license owner. You cannot modify or cancel it.',
             canStartPersonalSubscription: 'Want your own subscription? You can still purchase a personal plan or start a free trial.',
             subscriptionType_personal: 'Personal',
-            subscriptionType_assigned: 'Assigned',
+            subscriptionType_assigned: 'Access provided by your organization',
             allSubscriptionsTitle: 'All Your Subscriptions',
             loadingSubscriptions: 'Loading subscriptions...',
             noSubscriptions: 'No subscriptions found',
@@ -115,7 +116,27 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             data_persistence_enabled: 'Data Persistence',
             data_persistence_gb: 'Storage Size (GB)',
             allowed_templates: 'Allowed Templates',
-            syncError: 'Error syncing subscription plans'
+            allowed_backends: 'Allowed Backends',
+            default_backend: 'Default Backend',
+            syncError: 'Error syncing subscription plans',
+            activating: 'Activating...',
+            startFreeTrial: 'Start Free Trial',
+            maxCourses: 'courses max',
+            users: 'users',
+            freeTrialDays: 'free trial days',
+            statusActive: 'Active',
+            statusInactive: 'Inactive',
+            syncSuccess: 'Sync successful!',
+            syncTotalPlans: 'Total plans:',
+            syncSynced: 'Synced:',
+            syncSkipped: 'Skipped:',
+            syncFailed: 'Failed:',
+            syncSyncedPlans: 'Synced plans:',
+            syncSkippedPlans: 'Skipped plans:',
+            syncFailedPlans: 'Failed plans:',
+            syncErrorTitle: 'Sync error',
+            assignToOrg: 'Assign to Organization',
+            assignOrgSuccess: 'Plan assigned to organization successfully'
         }
         },
         fr: {
@@ -155,7 +176,7 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             bulkLicenseReadOnly: 'Cet abonnement vous a été attribué et est géré par le propriétaire de la licence. Vous ne pouvez pas le modifier ou l\'annuler.',
             canStartPersonalSubscription: 'Vous voulez votre propre abonnement ? Vous pouvez toujours acheter un plan personnel ou commencer un essai gratuit.',
             subscriptionType_personal: 'Personnel',
-            subscriptionType_assigned: 'Attribué',
+            subscriptionType_assigned: 'Accès fourni par votre organisation',
             allSubscriptionsTitle: 'Tous vos Abonnements',
             loadingSubscriptions: 'Chargement des abonnements...',
             noSubscriptions: 'Aucun abonnement trouvé',
@@ -199,7 +220,27 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             data_persistence_enabled: 'Persistance des Données',
             data_persistence_gb: 'Taille de Stockage (GB)',
             allowed_templates: 'Modèles Autorisés',
-            syncError: 'Erreur lors de la synchronisation des plans'
+            allowed_backends: 'Backends Autorisés',
+            default_backend: 'Backend par Défaut',
+            syncError: 'Erreur lors de la synchronisation des plans',
+            activating: 'Activation...',
+            startFreeTrial: 'Démarrer l\'essai gratuit',
+            maxCourses: 'cours max',
+            users: 'utilisateurs',
+            freeTrialDays: 'jours d\'essai gratuit',
+            statusActive: 'Actif',
+            statusInactive: 'Inactif',
+            syncSuccess: 'Synchronisation réussie !',
+            syncTotalPlans: 'Total des plans :',
+            syncSynced: 'Synchronisés :',
+            syncSkipped: 'Ignorés :',
+            syncFailed: 'Échecs :',
+            syncSyncedPlans: 'Plans synchronisés :',
+            syncSkippedPlans: 'Plans ignorés :',
+            syncFailedPlans: 'Plans en échec :',
+            syncErrorTitle: 'Erreur de synchronisation',
+            assignToOrg: 'Assigner a une organisation',
+            assignOrgSuccess: 'Plan assigne a l\'organisation avec succes'
         }
         }
     })
@@ -207,7 +248,7 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
     // Create async wrapper with base store state
     const baseAsync = createAsyncWrapper({ isLoading: base.isLoading, error: base.error })
 
-    const fieldList = buildFieldList([
+    const fieldList = computed(() => buildFieldList([
         field('id').hidden().readonly(),
         field('name', t('subscriptionPlans.name')).input().visible().creatable().updatable().required(),
         field('description', t('subscriptionPlans.description')).textarea().visible().creatable().updatable(),
@@ -219,12 +260,21 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
         field('max_concurrent_users', t('subscriptionPlans.max_concurrent_users')).input().visible().creatable().updatable(),
         field('trial_days', t('subscriptionPlans.trial_days')).input().visible().creatable().updatable(),
         field('required_role', t('subscriptionPlans.required_role')).input().visible().creatable().updatable(),
+        field('max_session_duration_minutes', t('subscriptionPlans.max_session_duration_minutes')).input().visible().creatable().updatable(),
+        field('max_concurrent_terminals', t('subscriptionPlans.max_concurrent_terminals')).input().visible().creatable().updatable(),
+        field('allowed_machine_sizes', t('subscriptionPlans.allowed_machine_sizes')).type('advanced-textarea').visible().creatable().updatable(),
+        field('network_access_enabled', t('subscriptionPlans.network_access_enabled')).input().visible().creatable().updatable(),
+        field('data_persistence_enabled', t('subscriptionPlans.data_persistence_enabled')).input().visible().creatable().updatable(),
+        field('data_persistence_gb', t('subscriptionPlans.data_persistence_gb')).input().visible().creatable().updatable(),
+        field('allowed_templates', t('subscriptionPlans.allowed_templates')).type('advanced-textarea').visible().creatable().updatable(),
+        field('allowed_backends', t('subscriptionPlans.allowed_backends')).type('advanced-textarea').visible().creatable().updatable(),
+        field('default_backend', t('subscriptionPlans.default_backend')).input().visible().creatable().updatable(),
         field('is_active', t('subscriptionPlans.is_active')).input().visible().readonly(),
         field('stripe_product_id', t('subscriptionPlans.stripe_product_id')).input().hidden().readonly(),
         field('stripe_price_id', t('subscriptionPlans.stripe_price_id')).input().hidden().readonly(),
         field('created_at', 'Created At').input().visible().readonly(),
         field('updated_at', 'Updated At').input().visible().readonly()
-    ])
+    ]))
 
     // Formatage du prix pour affichage
     const formatPrice = (amount: number, currency: string = 'EUR') => {

@@ -55,6 +55,13 @@
               </span>
               <span class="info-value">{{ formatDate(subscription.current_period_end) }}</span>
             </div>
+            <div v-if="subscription.quantity" class="info-item">
+              <span class="info-label">
+                <i class="fas fa-users"></i>
+                {{ t('subscription.seats') }}:
+              </span>
+              <span class="info-value">{{ subscription.quantity }}</span>
+            </div>
           </div>
 
           <!-- Features -->
@@ -159,7 +166,12 @@
       :title="t('subscription.availablePlans')"
       title-icon="fas fa-exchange-alt"
       size="large"
-      @close="showChangePlanModal = false"
+      :show-default-footer="!!selectedPlan"
+      :confirm-text="t('subscription.confirmPlan')"
+      :cancel-text="t('subscription.cancelChoice')"
+      :is-loading="isSubscribing"
+      @close="closeChangePlanModal"
+      @confirm="confirmPlanSelection"
     >
       <p class="modal-description">{{ t('subscription.selectNewPlan') }}</p>
       <div v-if="modalError" class="alert alert-danger">{{ modalError }}</div>
@@ -168,8 +180,8 @@
         <div
           v-for="plan in availablePlans"
           :key="plan.id"
-          :class="['plan-option', { active: subscription?.subscription_plan_id === plan.id }]"
-          @click="selectPlan(plan)"
+          :class="['plan-option', { active: selectedPlan?.id === plan.id }]"
+          @click="selectedPlan = plan"
         >
           <div class="plan-header">
             <h4>{{ plan.name }}</h4>
@@ -183,17 +195,30 @@
           <p v-if="plan.description" class="plan-description">{{ plan.description }}</p>
         </div>
       </div>
+
+      <!-- Quantity input -->
+      <div v-if="selectedPlan" class="quantity-section">
+        <label for="plan-quantity">{{ t('subscription.quantity') }}</label>
+        <input
+          id="plan-quantity"
+          v-model.number="planQuantity"
+          type="number"
+          class="form-control quantity-input"
+          min="1"
+        />
+      </div>
     </BaseModal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import { ref, computed, onMounted } from 'vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useFormatters } from '../../composables/useFormatters'
-import { useToast } from '../../composables/useToast'
+import { useNotification } from '../../composables/useNotification'
+import { useOrganizationSubscriptionsStore } from '../../stores/organizationSubscriptions'
+import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import type { OrganizationSubscription, SubscriptionPlan } from '../../types'
 
 interface Props {
@@ -203,7 +228,9 @@ interface Props {
 
 const props = defineProps<Props>()
 const { formatDate, formatPrice } = useFormatters()
-const toast = useToast()
+const { showSuccess } = useNotification()
+const orgSubStore = useOrganizationSubscriptionsStore()
+const plansStore = useSubscriptionPlansStore()
 
 const { t } = useTranslations({
   en: {
@@ -241,6 +268,10 @@ const { t } = useTranslations({
       subscriptionCanceled: 'Subscription canceled successfully',
       subscriptionReactivated: 'Subscription reactivated successfully',
       planChanged: 'Plan changed successfully',
+      seats: 'Seats',
+      quantity: 'Quantity (seats)',
+      confirmPlan: 'Confirm',
+      cancelChoice: 'Cancel',
     }
   },
   fr: {
@@ -278,23 +309,32 @@ const { t } = useTranslations({
       subscriptionCanceled: 'Abonnement annulé avec succès',
       subscriptionReactivated: 'Abonnement réactivé avec succès',
       planChanged: 'Plan modifié avec succès',
+      seats: 'Sieges',
+      quantity: 'Quantite (sieges)',
+      confirmPlan: 'Confirmer',
+      cancelChoice: 'Annuler',
     }
   }
 })
 
 const subscription = ref<OrganizationSubscription | null>(null)
-const availablePlans = ref<SubscriptionPlan[]>([])
+const availablePlans = computed(() =>
+  (plansStore.entities as SubscriptionPlan[]).filter((p: SubscriptionPlan) => p.is_active)
+)
 const isLoading = ref(false)
 const error = ref('')
 const showChangePlanModal = ref(false)
 const modalError = ref('')
 const showCancelConfirm = ref(false)
 const isCanceling = ref(false)
+const selectedPlan = ref<SubscriptionPlan | null>(null)
+const planQuantity = ref(1)
+const isSubscribing = ref(false)
 
 onMounted(async () => {
   await Promise.all([
     loadSubscription(),
-    loadAvailablePlans()
+    plansStore.loadPlans()
   ])
 })
 
@@ -302,30 +342,15 @@ const loadSubscription = async () => {
   isLoading.value = true
   error.value = ''
   try {
-    const response = await axios.get(`/organizations/${props.organizationId}/subscription`, {
-      params: { includes: 'subscription_plan' }
-    })
-    subscription.value = response.data.data || response.data
+    subscription.value = await orgSubStore.loadOrganizationSubscription(props.organizationId)
   } catch (err: any) {
     if (err.response?.status === 404) {
-      // No subscription found - this is okay
       subscription.value = null
     } else {
-      error.value = err.response?.data?.error_message || err.message || 'Failed to load subscription'
+      error.value = orgSubStore.error || err.message
     }
   } finally {
     isLoading.value = false
-  }
-}
-
-const loadAvailablePlans = async () => {
-  try {
-    const response = await axios.get('/subscription-plans', {
-      params: { is_active: true }
-    })
-    availablePlans.value = response.data.data || response.data
-  } catch (err: any) {
-    console.error('Failed to load available plans:', err)
   }
 }
 
@@ -336,14 +361,12 @@ const confirmCancelSubscription = () => {
 const cancelSubscription = async () => {
   isCanceling.value = true
   try {
-    await axios.post(`/organizations/${props.organizationId}/subscription/cancel`, {
-      cancel_at_period_end: true
-    })
+    await orgSubStore.cancelOrganizationSubscription(props.organizationId, true)
     showCancelConfirm.value = false
     await loadSubscription()
-    toast.success(t('subscription.subscriptionCanceled'))
+    showSuccess(t('subscription.subscriptionCanceled'))
   } catch (err: any) {
-    error.value = err.response?.data?.error_message || err.message || 'Failed to cancel subscription'
+    error.value = orgSubStore.error || err.message
     showCancelConfirm.value = false
   } finally {
     isCanceling.value = false
@@ -352,26 +375,40 @@ const cancelSubscription = async () => {
 
 const reactivateSubscription = async () => {
   try {
-    await axios.post(`/organizations/${props.organizationId}/subscription/reactivate`)
+    await orgSubStore.subscribeOrganization(props.organizationId, {
+      subscription_plan_id: subscription.value?.subscription_plan_id || ''
+    })
     await loadSubscription()
-    toast.success(t('subscription.subscriptionReactivated'))
+    showSuccess(t('subscription.subscriptionReactivated'))
   } catch (err: any) {
-    error.value = err.response?.data?.error_message || err.message || 'Failed to reactivate subscription'
+    error.value = orgSubStore.error || err.message
   }
 }
 
-const selectPlan = async (plan: SubscriptionPlan) => {
+const confirmPlanSelection = async () => {
+  if (!selectedPlan.value) return
   modalError.value = ''
+  isSubscribing.value = true
   try {
-    await axios.post(`/organizations/${props.organizationId}/subscription`, {
-      subscription_plan_id: plan.id
+    await orgSubStore.subscribeOrganization(props.organizationId, {
+      subscription_plan_id: selectedPlan.value.id,
+      quantity: planQuantity.value > 0 ? planQuantity.value : undefined
     })
-    showChangePlanModal.value = false
+    closeChangePlanModal()
     await loadSubscription()
-    toast.success(t('subscription.planChanged'))
+    showSuccess(t('subscription.planChanged'))
   } catch (err: any) {
-    modalError.value = err.response?.data?.error_message || err.message || 'Failed to change plan'
+    modalError.value = orgSubStore.error || err.message
+  } finally {
+    isSubscribing.value = false
   }
+}
+
+const closeChangePlanModal = () => {
+  showChangePlanModal.value = false
+  selectedPlan.value = null
+  planQuantity.value = 1
+  modalError.value = ''
 }
 
 const showAvailablePlans = () => {
@@ -733,5 +770,32 @@ const formatLimit = (value: number): string => {
   background: var(--color-danger-light);
   color: var(--color-danger);
   border: 1px solid var(--color-danger);
+}
+
+.quantity-section {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.quantity-section label {
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.quantity-input {
+  max-width: 150px;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--color-border-medium);
+  border-radius: 6px;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: 1rem;
+}
+
+.quantity-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
 }
 </style>

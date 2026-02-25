@@ -1,5 +1,8 @@
 <template>
   <div v-if="shouldShowBanner" class="upgrade-banner">
+    <button class="banner-dismiss" @click="dismissBanner" :aria-label="t('upgradeToTeam.dismiss')">
+      <i class="fas fa-times"></i>
+    </button>
     <div class="banner-content">
       <i class="fas fa-users-cog banner-icon"></i>
       <div class="banner-text">
@@ -69,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { useTranslations } from '../../composables/useTranslations'
@@ -93,6 +96,7 @@ const { t } = useTranslations({
       cancelButton: 'Cancel',
       converting: 'Converting organization...',
       successMessage: 'Organization converted to team successfully!',
+      dismiss: 'Dismiss',
     }
   },
   fr: {
@@ -109,11 +113,25 @@ const { t } = useTranslations({
       cancelButton: 'Annuler',
       converting: 'Conversion en cours...',
       successMessage: 'Organisation convertie en équipe avec succès !',
+      dismiss: 'Fermer',
     }
   }
 })
 
-const shouldShowBanner = computed(() => isPersonalOrganization.value)
+const DISMISS_KEY = 'upgradeToTeamBanner_dismissed'
+const isDismissed = ref(false)
+
+onMounted(() => {
+  isDismissed.value = localStorage.getItem(DISMISS_KEY) === 'true'
+})
+
+const shouldShowBanner = computed(() => isPersonalOrganization.value && !isDismissed.value)
+
+const dismissBanner = () => {
+  isDismissed.value = true
+  localStorage.setItem(DISMISS_KEY, 'true')
+}
+
 const showConvertDialog = ref(false)
 const newTeamName = ref('')
 const isConverting = ref(false)
@@ -169,6 +187,25 @@ const handleClose = () => {
   padding: var(--spacing-lg);
   margin-bottom: var(--spacing-xl);
   box-shadow: var(--shadow-md);
+  position: relative;
+}
+
+.banner-dismiss {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  font-size: var(--font-size-base);
+  line-height: 1;
+  transition: color var(--transition-fast);
+}
+
+.banner-dismiss:hover {
+  color: var(--color-white);
 }
 
 .banner-content {

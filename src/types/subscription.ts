@@ -15,6 +15,23 @@ export interface PricingTier {
 }
 
 /**
+ * Plan Feature catalog entry
+ * Represents a feature that can be assigned to subscription plans.
+ * Public API: GET /api/v1/plan-features
+ */
+export interface PlanFeature extends BaseEntity {
+  key: string
+  display_name_en: string
+  display_name_fr: string
+  description: string
+  category: 'capabilities' | 'machine_sizes' | 'terminal_limits' | 'course_limits'
+  value_type: 'boolean' | 'number' | 'string'
+  unit: string
+  default_value: string
+  is_active: boolean
+}
+
+/**
  * Subscription Plan entity
  */
 export interface SubscriptionPlan extends BaseEntity {
@@ -29,9 +46,9 @@ export interface SubscriptionPlan extends BaseEntity {
   billing_interval: 'month' | 'year'
   trial_days: number
   features: string[] // Human-readable features
+  planned_features?: string[] // Features coming soon
   max_concurrent_users: number
   max_courses: number // -1 = unlimited
-  max_lab_sessions: number
   is_active: boolean
   required_role: string
 

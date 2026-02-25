@@ -2,7 +2,7 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/typescript-node
 {
 	"name": "OCF Front",
-	
+
 	"dockerComposeFile": [
 		"docker-compose.yml"
 	],
@@ -21,7 +21,7 @@
 
 	"workspaceFolder": "/workspaces",
 
-	"postCreateCommand": "grep -q 'bash-completion/completions/git' ~/.bashrc || echo '\nsource /usr/share/bash-completion/completions/git' >> ~/.bashrc",
+	"postCreateCommand": "bash -c 'grep -q bash-completion/completions/git ~/.bashrc || echo \"\nsource /usr/share/bash-completion/completions/git\" >> ~/.bashrc; npx playwright install --with-deps chromium'",
 
 	"postStartCommand": "sudo chown node:node ~/.claude 2>/dev/null; if [ ! -L ~/.claude.json ]; then if [ -f ~/.claude/.claude.json ]; then rm -f ~/.claude.json; elif [ -f ~/.claude.json ]; then mv ~/.claude.json ~/.claude/.claude.json; else touch ~/.claude/.claude.json && chmod 600 ~/.claude/.claude.json; fi; ln -sf ~/.claude/.claude.json ~/.claude.json; fi",
 
@@ -31,6 +31,23 @@
 
 	"customizations": {
 		"vscode": {
+			"settings": {
+				"claude-code.mcpServers": {
+					"playwright": {
+						"command": "npx",
+						"args": [
+							"@playwright/mcp@latest",
+							"--headless",
+							"--browser",
+							"chromium",
+							"--viewport-size",
+							"1280x720",
+							"--caps",
+							"testing"
+						]
+					}
+				}
+			},
 			"extensions": [
 				"Vue.volar",
 				"antfu.vite",
@@ -40,19 +57,4 @@
 			]
 		}
 	}
-
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
-
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
-
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "yarn install",
-
-	// Configure tool-specific properties.
-	// "customizations": {},
-
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
 }
