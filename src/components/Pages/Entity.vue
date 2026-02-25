@@ -1228,7 +1228,7 @@ ul {
   flex-direction: column;
   gap: var(--spacing-xs);
   flex-shrink: 0;
-  width: 140px;
+  min-width: 140px;
   align-self: center;
 }
 
