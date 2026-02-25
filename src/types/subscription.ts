@@ -29,6 +29,7 @@ export interface SubscriptionPlan extends BaseEntity {
   billing_interval: 'month' | 'year'
   trial_days: number
   features: string[] // Human-readable features
+  planned_features?: string[] // Features coming soon
   max_concurrent_users: number
   max_courses: number // -1 = unlimited
   is_active: boolean

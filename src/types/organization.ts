@@ -78,7 +78,7 @@ export interface OrganizationSubscription extends BaseEntity {
   organization_id: string
   subscription_plan_id: string
   subscription_plan?: SubscriptionPlan
-  stripe_subscription_id: string
+  stripe_subscription_id: string | null
   stripe_customer_id: string
   status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'pending_payment'
   current_period_start: string

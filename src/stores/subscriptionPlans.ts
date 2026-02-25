@@ -20,6 +20,7 @@
  */
 
 import { defineStore } from "pinia"
+import { computed } from "vue"
 import { useBaseStore } from "./baseStore"
 import { getDemoSubscriptionPlans, isDemoMode, logDemoAction, simulateDelay } from '../services/demo'
 import axios from 'axios'
@@ -239,7 +240,7 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
     // Create async wrapper with base store state
     const baseAsync = createAsyncWrapper({ isLoading: base.isLoading, error: base.error })
 
-    const fieldList = buildFieldList([
+    const fieldList = computed(() => buildFieldList([
         field('id').hidden().readonly(),
         field('name', t('subscriptionPlans.name')).input().visible().creatable().updatable().required(),
         field('description', t('subscriptionPlans.description')).textarea().visible().creatable().updatable(),
@@ -256,7 +257,7 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
         field('stripe_price_id', t('subscriptionPlans.stripe_price_id')).input().hidden().readonly(),
         field('created_at', 'Created At').input().visible().readonly(),
         field('updated_at', 'Updated At').input().visible().readonly()
-    ])
+    ]))
 
     // Formatage du prix pour affichage
     const formatPrice = (amount: number, currency: string = 'EUR') => {
