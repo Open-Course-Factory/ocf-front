@@ -31,7 +31,6 @@ export interface SubscriptionPlan extends BaseEntity {
   features: string[] // Human-readable features
   max_concurrent_users: number
   max_courses: number // -1 = unlimited
-  max_lab_sessions: number
   is_active: boolean
   required_role: string
 
