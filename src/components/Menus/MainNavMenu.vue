@@ -149,6 +149,14 @@ useSubscriptionBatchesStore();
 const organizationsStore = useOrganizationsStore();
 const { isPersonalOrganization } = storeToRefs(organizationsStore);
 
+// Check if user has only assigned subscriptions (no personal/self-paid)
+const subscriptionsStore = useSubscriptionsStore();
+const hasOnlyAssignedSubscription = computed(() => {
+  const current = subscriptionsStore.currentSubscription
+  if (!current) return false
+  return current.subscription_type === 'assigned' || !!current.subscription_batch_id
+});
+
 // Load help translations
 const { loadHelpTranslations } = useHelpTranslations();
 
@@ -204,6 +212,7 @@ interface MenuItem {
   title: string
   icon: string
   featureFlag?: string
+  hideForAssignedOnly?: boolean
 }
 
 interface MenuCategory {
@@ -381,13 +390,15 @@ const menuCategories = computed((): MenuCategory[] => [
         route: '/bulk-license-purchase',
         label: t('navigation.purchaseLicenses'),
         title: t('navigation.purchaseLicensesTitle'),
-        icon: 'fas fa-shopping-cart'
+        icon: 'fas fa-shopping-cart',
+        hideForAssignedOnly: true
       },
       {
         route: '/license-management',
         label: t('navigation.manageLicenses'),
         title: t('navigation.manageLicensesTitle'),
-        icon: 'fas fa-layer-group'
+        icon: 'fas fa-layer-group',
+        hideForAssignedOnly: true
       }
     ]
   },
@@ -558,6 +569,10 @@ const filteredCategories = computed(() => {
     .map(category => ({
       ...category,
       items: category.items.filter(item => {
+        // Hide items marked as not for assigned-only users
+        if (item.hideForAssignedOnly && hasOnlyAssignedSubscription.value) {
+          return false
+        }
         // Check item-level feature flag if it exists
         if (item.featureFlag) {
           return isFeatureEnabled(item.featureFlag)
