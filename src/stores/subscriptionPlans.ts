@@ -116,6 +116,8 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             data_persistence_enabled: 'Data Persistence',
             data_persistence_gb: 'Storage Size (GB)',
             allowed_templates: 'Allowed Templates',
+            allowed_backends: 'Allowed Backends',
+            default_backend: 'Default Backend',
             syncError: 'Error syncing subscription plans',
             activating: 'Activating...',
             startFreeTrial: 'Start Free Trial',
@@ -132,7 +134,9 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             syncSyncedPlans: 'Synced plans:',
             syncSkippedPlans: 'Skipped plans:',
             syncFailedPlans: 'Failed plans:',
-            syncErrorTitle: 'Sync error'
+            syncErrorTitle: 'Sync error',
+            assignToOrg: 'Assign to Organization',
+            assignOrgSuccess: 'Plan assigned to organization successfully'
         }
         },
         fr: {
@@ -216,6 +220,8 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             data_persistence_enabled: 'Persistance des Données',
             data_persistence_gb: 'Taille de Stockage (GB)',
             allowed_templates: 'Modèles Autorisés',
+            allowed_backends: 'Backends Autorisés',
+            default_backend: 'Backend par Défaut',
             syncError: 'Erreur lors de la synchronisation des plans',
             activating: 'Activation...',
             startFreeTrial: 'Démarrer l\'essai gratuit',
@@ -232,7 +238,9 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             syncSyncedPlans: 'Plans synchronisés :',
             syncSkippedPlans: 'Plans ignorés :',
             syncFailedPlans: 'Plans en échec :',
-            syncErrorTitle: 'Erreur de synchronisation'
+            syncErrorTitle: 'Erreur de synchronisation',
+            assignToOrg: 'Assigner a une organisation',
+            assignOrgSuccess: 'Plan assigne a l\'organisation avec succes'
         }
         }
     })
@@ -252,6 +260,15 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
         field('max_concurrent_users', t('subscriptionPlans.max_concurrent_users')).input().visible().creatable().updatable(),
         field('trial_days', t('subscriptionPlans.trial_days')).input().visible().creatable().updatable(),
         field('required_role', t('subscriptionPlans.required_role')).input().visible().creatable().updatable(),
+        field('max_session_duration_minutes', t('subscriptionPlans.max_session_duration_minutes')).input().visible().creatable().updatable(),
+        field('max_concurrent_terminals', t('subscriptionPlans.max_concurrent_terminals')).input().visible().creatable().updatable(),
+        field('allowed_machine_sizes', t('subscriptionPlans.allowed_machine_sizes')).type('advanced-textarea').visible().creatable().updatable(),
+        field('network_access_enabled', t('subscriptionPlans.network_access_enabled')).input().visible().creatable().updatable(),
+        field('data_persistence_enabled', t('subscriptionPlans.data_persistence_enabled')).input().visible().creatable().updatable(),
+        field('data_persistence_gb', t('subscriptionPlans.data_persistence_gb')).input().visible().creatable().updatable(),
+        field('allowed_templates', t('subscriptionPlans.allowed_templates')).type('advanced-textarea').visible().creatable().updatable(),
+        field('allowed_backends', t('subscriptionPlans.allowed_backends')).type('advanced-textarea').visible().creatable().updatable(),
+        field('default_backend', t('subscriptionPlans.default_backend')).input().visible().creatable().updatable(),
         field('is_active', t('subscriptionPlans.is_active')).input().visible().readonly(),
         field('stripe_product_id', t('subscriptionPlans.stripe_product_id')).input().hidden().readonly(),
         field('stripe_price_id', t('subscriptionPlans.stripe_price_id')).input().hidden().readonly(),

@@ -25,6 +25,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Entity from './Entity.vue'
+import AdminAssignOrgPlanModal from '../Modals/AdminAssignOrgPlanModal.vue'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useNotification } from '../../composables/useNotification'
@@ -32,7 +33,7 @@ import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import router from '../../router/index.ts'
 
 const { t } = useI18n()
-const { showError } = useNotification()
+const { showError, showSuccess } = useNotification()
 
 const entityStore = useSubscriptionPlansStore()
 const subscriptionsStore = useSubscriptionsStore()
@@ -44,6 +45,17 @@ const upgradingPlanId = ref<string | null>(null)
 const isSyncing = ref(false)
 const syncResult = ref<any>(null)
 const showSyncResult = ref(false)
+const showAssignOrgModal = ref(false)
+const assignOrgPreselectedPlanId = ref<string | undefined>(undefined)
+
+const openAssignOrgModal = (planId?: string) => {
+    assignOrgPreselectedPlanId.value = planId
+    showAssignOrgModal.value = true
+}
+
+const onOrgPlanAssigned = () => {
+    showSuccess(t('subscriptionPlans.assignOrgSuccess'))
+}
 
 // Filtrer les plans selon le mode de vue
 const filteredPlans = computed(() => {
@@ -175,6 +187,13 @@ const syncWithStripe = async () => {
                 >
                     <i :class="isSyncing ? 'fas fa-spinner fa-spin' : 'fas fa-sync'"></i>
                     {{ isSyncing ? t('subscriptionPlans.syncing') : t('subscriptionPlans.syncWithStripe') }}
+                </button>
+                <button
+                    class="btn btn-secondary"
+                    @click="openAssignOrgModal()"
+                >
+                    <i class="fas fa-building"></i>
+                    {{ t('subscriptionPlans.assignToOrg') }}
                 </button>
                 <small class="text-muted">
                     {{ t('subscriptionPlans.syncDescription') }}
@@ -330,15 +349,31 @@ const syncWithStripe = async () => {
 
                         <!-- Badge de statut pour les admins (en mode admin complet seulement) -->
                         <div v-if="shouldShowAllData" class="admin-badges">
-                            <span 
+                            <span
                                 :class="['badge', entity.is_active ? 'badge-success' : 'badge-secondary']"
                             >
                                 {{ entity.is_active ? t('subscriptionPlans.statusActive') : t('subscriptionPlans.statusInactive') }}
                             </span>
+                            <button
+                                v-if="entity.is_active"
+                                class="btn btn-sm btn-outline-primary"
+                                @click.stop="openAssignOrgModal(entity.id)"
+                            >
+                                <i class="fas fa-building"></i>
+                                {{ t('subscriptionPlans.assignToOrg') }}
+                            </button>
                         </div>
                     </div>
                 </template>
             </Entity>
+
+            <!-- Admin: Assign Plan to Organization Modal -->
+            <AdminAssignOrgPlanModal
+                :visible="showAssignOrgModal"
+                :preselected-plan-id="assignOrgPreselectedPlanId"
+                @close="showAssignOrgModal = false"
+                @assigned="onOrgPlanAssigned"
+            />
         </div>
     </div>
 </template>
