@@ -1,5 +1,5 @@
 <template>
-  <div id="all-subscriptions" class="all-subscriptions">
+  <div v-if="isAdmin" id="all-subscriptions" class="all-subscriptions">
     <div class="collapsible-header" @click="isExpanded = !isExpanded">
       <h3>
         <i class="fas fa-layer-group"></i>
@@ -51,7 +51,7 @@
             </div>
 
             <!-- Priority indicator (admin only) -->
-            <div class="plan-priority" v-if="isAdmin && subscription.subscription_plan?.priority !== undefined">
+            <div class="plan-priority" v-if="subscription.subscription_plan?.priority !== undefined">
               <i class="fas fa-signal"></i>
               {{ t('subscriptionPlans.priorityLevel') }}: {{ subscription.subscription_plan.priority }}
             </div>
