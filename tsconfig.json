@@ -27,8 +27,7 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/**/*.vue",
-    "src/*.vue",
-    "tests/**/*.ts"
+    "src/*.vue"
   ],
   "references": [
     {
