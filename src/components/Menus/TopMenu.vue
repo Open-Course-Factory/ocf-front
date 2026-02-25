@@ -539,6 +539,9 @@ onUnmounted(() => {
   top: calc(100% + var(--spacing-xs));
   right: 0;
   min-width: 280px;
+  max-width: calc(100vw - 2 * var(--spacing-lg));
+  max-height: calc(100vh - 70px);
+  overflow-y: auto;
   background-color: var(--color-bg-primary);
   border: var(--border-width-thin) solid var(--color-border-light);
   border-radius: var(--border-radius-md);
