@@ -188,12 +188,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import { ref, computed, onMounted } from 'vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useFormatters } from '../../composables/useFormatters'
-import { useToast } from '../../composables/useToast'
+import { useNotification } from '../../composables/useNotification'
+import { useOrganizationSubscriptionsStore } from '../../stores/organizationSubscriptions'
+import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import type { OrganizationSubscription, SubscriptionPlan } from '../../types'
 
 interface Props {
@@ -203,7 +204,9 @@ interface Props {
 
 const props = defineProps<Props>()
 const { formatDate, formatPrice } = useFormatters()
-const toast = useToast()
+const { showSuccess } = useNotification()
+const orgSubStore = useOrganizationSubscriptionsStore()
+const plansStore = useSubscriptionPlansStore()
 
 const { t } = useTranslations({
   en: {
@@ -283,7 +286,9 @@ const { t } = useTranslations({
 })
 
 const subscription = ref<OrganizationSubscription | null>(null)
-const availablePlans = ref<SubscriptionPlan[]>([])
+const availablePlans = computed(() =>
+  (plansStore.entities as SubscriptionPlan[]).filter((p: SubscriptionPlan) => p.is_active)
+)
 const isLoading = ref(false)
 const error = ref('')
 const showChangePlanModal = ref(false)
@@ -294,7 +299,7 @@ const isCanceling = ref(false)
 onMounted(async () => {
   await Promise.all([
     loadSubscription(),
-    loadAvailablePlans()
+    plansStore.loadPlans()
   ])
 })
 
@@ -302,30 +307,15 @@ const loadSubscription = async () => {
   isLoading.value = true
   error.value = ''
   try {
-    const response = await axios.get(`/organizations/${props.organizationId}/subscription`, {
-      params: { includes: 'subscription_plan' }
-    })
-    subscription.value = response.data.data || response.data
+    subscription.value = await orgSubStore.loadOrganizationSubscription(props.organizationId)
   } catch (err: any) {
     if (err.response?.status === 404) {
-      // No subscription found - this is okay
       subscription.value = null
     } else {
-      error.value = err.response?.data?.error_message || err.message || 'Failed to load subscription'
+      error.value = orgSubStore.error || err.message
     }
   } finally {
     isLoading.value = false
-  }
-}
-
-const loadAvailablePlans = async () => {
-  try {
-    const response = await axios.get('/subscription-plans', {
-      params: { is_active: true }
-    })
-    availablePlans.value = response.data.data || response.data
-  } catch (err: any) {
-    console.error('Failed to load available plans:', err)
   }
 }
 
@@ -336,14 +326,12 @@ const confirmCancelSubscription = () => {
 const cancelSubscription = async () => {
   isCanceling.value = true
   try {
-    await axios.post(`/organizations/${props.organizationId}/subscription/cancel`, {
-      cancel_at_period_end: true
-    })
+    await orgSubStore.cancelOrganizationSubscription(props.organizationId, true)
     showCancelConfirm.value = false
     await loadSubscription()
-    toast.success(t('subscription.subscriptionCanceled'))
+    showSuccess(t('subscription.subscriptionCanceled'))
   } catch (err: any) {
-    error.value = err.response?.data?.error_message || err.message || 'Failed to cancel subscription'
+    error.value = orgSubStore.error || err.message
     showCancelConfirm.value = false
   } finally {
     isCanceling.value = false
@@ -352,25 +340,27 @@ const cancelSubscription = async () => {
 
 const reactivateSubscription = async () => {
   try {
-    await axios.post(`/organizations/${props.organizationId}/subscription/reactivate`)
+    await orgSubStore.subscribeOrganization(props.organizationId, {
+      subscription_plan_id: subscription.value?.subscription_plan_id || ''
+    })
     await loadSubscription()
-    toast.success(t('subscription.subscriptionReactivated'))
+    showSuccess(t('subscription.subscriptionReactivated'))
   } catch (err: any) {
-    error.value = err.response?.data?.error_message || err.message || 'Failed to reactivate subscription'
+    error.value = orgSubStore.error || err.message
   }
 }
 
 const selectPlan = async (plan: SubscriptionPlan) => {
   modalError.value = ''
   try {
-    await axios.post(`/organizations/${props.organizationId}/subscription`, {
+    await orgSubStore.subscribeOrganization(props.organizationId, {
       subscription_plan_id: plan.id
     })
     showChangePlanModal.value = false
     await loadSubscription()
-    toast.success(t('subscription.planChanged'))
+    showSuccess(t('subscription.planChanged'))
   } catch (err: any) {
-    modalError.value = err.response?.data?.error_message || err.message || 'Failed to change plan'
+    modalError.value = orgSubStore.error || err.message
   }
 }
 
