@@ -27,12 +27,19 @@ export interface ImportSummary {
   processing_time: string
 }
 
+export interface UserCredential {
+  email: string
+  password: string
+  name: string
+}
+
 export interface ImportResponse {
   success: boolean
   dry_run: boolean
   summary: ImportSummary
   errors: ImportError[]
   warnings: ImportWarning[]
+  credentials?: UserCredential[]
 }
 
 export const bulkImportService = {
@@ -47,6 +54,7 @@ export const bulkImportService = {
       membershipsFile?: File
       dryRun?: boolean
       updateExisting?: boolean
+      targetGroup?: string
     } = {}
   ): Promise<ImportResponse> {
     const formData = new FormData()
@@ -62,6 +70,10 @@ export const bulkImportService = {
 
     formData.append('dry_run', String(options.dryRun ?? false))
     formData.append('update_existing', String(options.updateExisting ?? false))
+
+    if (options.targetGroup) {
+      formData.append('target_group', options.targetGroup)
+    }
 
     const response = await axios.post<ImportResponse>(
       `/organizations/${organizationId}/import`,
@@ -90,13 +102,15 @@ export const bulkImportService = {
     organizationId: string,
     usersFile: File,
     groupsFile?: File,
-    membershipsFile?: File
+    membershipsFile?: File,
+    targetGroup?: string
   ): Promise<ImportResponse> {
     return this.importData(organizationId, usersFile, {
       groupsFile,
       membershipsFile,
       dryRun: true,
-      updateExisting: false
+      updateExisting: false,
+      targetGroup
     })
   }
 }

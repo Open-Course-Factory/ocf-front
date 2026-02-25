@@ -48,6 +48,27 @@
           </label>
           <p class="option-hint">{{ t('bulkImport.updateExistingHint') }}</p>
         </div>
+
+        <div class="option-item">
+          <label class="select-label" for="targetGroup">
+            {{ t('bulkImport.targetGroupLabel') }}
+          </label>
+          <select
+            id="targetGroup"
+            v-model="importStore.targetGroupId"
+            class="target-group-select"
+          >
+            <option value="">{{ t('bulkImport.targetGroupNone') }}</option>
+            <option
+              v-for="group in organizationGroups"
+              :key="group.id"
+              :value="group.id"
+            >
+              {{ group.display_name || group.name }}
+            </option>
+          </select>
+          <p class="option-hint">{{ t('bulkImport.targetGroupHint') }}</p>
+        </div>
       </div>
 
       <div class="tips-section">
@@ -121,6 +142,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import axios from 'axios'
 import { useBulkImportStore } from '../../stores/bulkImport'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { useTranslations } from '../../composables/useTranslations'
@@ -141,10 +163,13 @@ const translations = {
       membershipsFileLabel: '📄 Memberships CSV (Optional)',
       updateExistingLabel: 'Update existing users if found',
       updateExistingHint: 'When enabled, existing users will be updated instead of skipped',
+      targetGroupLabel: 'Target group (optional)',
+      targetGroupNone: '— No target group —',
+      targetGroupHint: 'All imported users will be added as members to this group',
       tipsTitle: 'Tips',
-      tip1: 'Always test with validation first',
-      tip2: 'Check organization limits before importing',
-      tip3: 'Download example CSV files if needed',
+      tip1: 'Only email + name columns are required. Password and role are optional (auto-generated if missing)',
+      tip2: 'Use the target group dropdown to automatically assign all imported users to a group',
+      tip3: 'Download credentials after import — auto-generated passwords cannot be retrieved later',
       downloadExamples: 'Download Examples',
       cancel: 'Cancel',
       validateImport: 'Validate & Import',
@@ -165,10 +190,13 @@ const translations = {
       membershipsFileLabel: '📄 CSV des adhésions (Optionnel)',
       updateExistingLabel: 'Mettre à jour les utilisateurs existants si trouvés',
       updateExistingHint: 'Lorsque activé, les utilisateurs existants seront mis à jour au lieu d\'être ignorés',
+      targetGroupLabel: 'Groupe cible (optionnel)',
+      targetGroupNone: '— Pas de groupe cible —',
+      targetGroupHint: 'Tous les utilisateurs importés seront ajoutés comme membres de ce groupe',
       tipsTitle: 'Conseils',
-      tip1: 'Testez toujours avec la validation d\'abord',
-      tip2: 'Vérifiez les limites de l\'organisation avant d\'importer',
-      tip3: 'Téléchargez des exemples de fichiers CSV si nécessaire',
+      tip1: 'Seules les colonnes email + nom sont requises. Le mot de passe et le rôle sont optionnels (générés automatiquement si absents)',
+      tip2: 'Utilisez le menu déroulant du groupe cible pour assigner automatiquement tous les utilisateurs importés à un groupe',
+      tip3: 'Téléchargez les identifiants après l\'importation — les mots de passe générés automatiquement ne pourront pas être récupérés plus tard',
       downloadExamples: 'Télécharger des exemples',
       cancel: 'Annuler',
       validateImport: 'Valider et importer',
@@ -193,6 +221,8 @@ const organizationName = computed(() => {
   return org?.display_name || org?.name || ''
 })
 
+const organizationGroups = ref<Array<{ id: string; name: string; display_name: string }>>([])
+
 const previewModal = ref({
   visible: false,
   file: null as File | null,
@@ -205,6 +235,14 @@ onMounted(async () => {
   // Load organization details
   if (organizationsStore.organizations.length === 0) {
     await organizationsStore.loadOrganizations()
+  }
+
+  // Load organization groups for target group dropdown
+  try {
+    const groupsResponse = await axios.get(`/organizations/${organizationId.value}/groups`)
+    organizationGroups.value = groupsResponse.data || []
+  } catch (err) {
+    console.warn('Could not load organization groups:', err)
   }
 
   // Reset import store
@@ -272,6 +310,12 @@ function handleViewOrganization() {
 function downloadTemplates() {
   // Download example CSV templates
   const templates = {
+    users_simple: {
+      filename: 'users_simple_template.csv',
+      content: `email,name
+marie.dupont@school.fr,DUPONT Marie
+jean.martin@school.fr,MARTIN Jean`
+    },
     users: {
       filename: 'users_template.csv',
       content: `email,first_name,last_name,password,role,external_id,force_reset,update_existing
@@ -387,6 +431,30 @@ jane.smith@school.fr,m1_devops_a,admin`
   padding-left: calc(18px + var(--spacing-sm));
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+}
+
+.select-label {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.target-group-select {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+}
+
+.target-group-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
 }
 
 .tips-section {

@@ -44,6 +44,7 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
 
   const dryRun = ref(true)
   const updateExisting = ref(false)
+  const targetGroupId = ref<string>('')
 
   const step = ref<ImportStep>('upload')
   const isValidating = ref(false)
@@ -95,6 +96,10 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
     updateExisting.value = value
   }
 
+  function setTargetGroup(groupId: string) {
+    targetGroupId.value = groupId
+  }
+
   async function validateImport(organizationId: string): Promise<boolean> {
     if (!usersFile.value) {
       error.value = t('bulkImport.uploadError')
@@ -110,7 +115,8 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
         organizationId,
         usersFile.value,
         groupsFile.value || undefined,
-        membershipsFile.value || undefined
+        membershipsFile.value || undefined,
+        targetGroupId.value || undefined
       )
 
       validationResults.value = result
@@ -152,7 +158,8 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
           groupsFile: groupsFile.value || undefined,
           membershipsFile: membershipsFile.value || undefined,
           dryRun: false,
-          updateExisting: updateExisting.value
+          updateExisting: updateExisting.value,
+          targetGroup: targetGroupId.value || undefined
         }
       )
 
@@ -220,6 +227,7 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
     membershipsFile.value = null
     dryRun.value = true
     updateExisting.value = false
+    targetGroupId.value = ''
     step.value = 'upload'
     isValidating.value = false
     isImporting.value = false
@@ -240,6 +248,7 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
     membershipsFile,
     dryRun,
     updateExisting,
+    targetGroupId,
     step,
     isValidating,
     isImporting,
@@ -260,6 +269,7 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
     setMembershipsFile,
     setDryRun,
     setUpdateExisting,
+    setTargetGroup,
     validateImport,
     performImport,
     reset,

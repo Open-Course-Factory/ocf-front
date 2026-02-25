@@ -51,6 +51,20 @@
         </div>
       </div>
 
+      <!-- Credentials Download -->
+      <div v-if="credentials.length > 0" class="credentials-section">
+        <div class="credentials-warning">
+          <span class="warning-icon">&#x26A0;&#xFE0F;</span>
+          <div class="warning-content">
+            <strong>{{ t('progress.credentialsWarningTitle') }}</strong>
+            <p>{{ t('progress.credentialsWarningMessage') }}</p>
+          </div>
+        </div>
+        <button class="btn btn-warning" @click="downloadCredentials">
+          {{ t('progress.downloadCredentials') }}
+        </button>
+      </div>
+
       <div class="success-actions">
         <button class="btn btn-secondary" @click="$emit('close')">
           {{ t('progress.close') }}
@@ -133,7 +147,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import type { ImportResponse } from '../../services/domain/bulkImport'
+import type { ImportResponse, UserCredential } from '../../services/domain/bulkImport'
 import { useTranslations } from '../../composables/useTranslations'
 
 const translations = {
@@ -158,6 +172,9 @@ const translations = {
       field: 'Field',
       showMore: 'Show {count} more errors',
       fixAndRetry: 'Fix & Retry',
+      credentialsWarningTitle: 'Generated Credentials',
+      credentialsWarningMessage: 'Passwords were auto-generated for users without a password. These credentials cannot be retrieved later. Download them now.',
+      downloadCredentials: 'Download Credentials (CSV)',
     }
   },
   fr: {
@@ -181,6 +198,9 @@ const translations = {
       field: 'Champ',
       showMore: 'Afficher {count} erreurs supplémentaires',
       fixAndRetry: 'Corriger et réessayer',
+      credentialsWarningTitle: 'Identifiants générés',
+      credentialsWarningMessage: 'Des mots de passe ont été générés automatiquement pour les utilisateurs sans mot de passe. Ces identifiants ne pourront pas être récupérés plus tard. Téléchargez-les maintenant.',
+      downloadCredentials: 'Télécharger les identifiants (CSV)',
     }
   }
 }
@@ -203,6 +223,10 @@ defineEmits<{
 const maxDisplayedErrors = 5
 const showAllErrors = ref(false)
 
+const credentials = computed<UserCredential[]>(() =>
+  props.results?.credentials || []
+)
+
 const hasErrors = computed(() =>
   props.results ? props.results.errors.length > 0 : false
 )
@@ -212,6 +236,24 @@ const displayedErrors = computed(() => {
   if (showAllErrors.value) return props.results.errors
   return props.results.errors.slice(0, maxDisplayedErrors)
 })
+
+function downloadCredentials() {
+  if (credentials.value.length === 0) return
+
+  const header = 'email,password,name'
+  const rows = credentials.value.map(c =>
+    `${c.email},${c.password},"${c.name}"`
+  )
+  const csvContent = [header, ...rows].join('\n')
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `import_credentials_${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 </script>
 
 <style scoped>
@@ -398,6 +440,59 @@ const displayedErrors = computed(() => {
 
 .btn-show-more:hover {
   background: var(--color-bg-secondary);
+}
+
+.credentials-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.credentials-warning {
+  display: flex;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--color-warning-bg);
+  border-radius: var(--border-radius-md);
+  border-left: 4px solid var(--color-warning);
+}
+
+.warning-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.warning-content {
+  flex: 1;
+}
+
+.warning-content strong {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  color: var(--color-text-primary);
+}
+
+.warning-content p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.btn-warning {
+  background: var(--color-warning);
+  color: var(--color-text-primary);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border: none;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  transition: opacity 0.2s ease;
+  align-self: flex-start;
+}
+
+.btn-warning:hover {
+  opacity: 0.85;
 }
 
 .success-actions,
