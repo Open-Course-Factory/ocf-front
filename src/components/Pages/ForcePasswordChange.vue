@@ -70,7 +70,8 @@ const { t } = useTranslations({
       logout: 'Log out instead',
       passwordMismatch: 'Passwords do not match',
       passwordTooShort: 'Password must be at least 8 characters',
-      success: 'Password changed successfully'
+      success: 'Password changed successfully',
+      genericError: 'An error occurred while changing your password. Please try again.'
     }
   },
   fr: {
@@ -86,7 +87,8 @@ const { t } = useTranslations({
       logout: 'Se d\u00e9connecter',
       passwordMismatch: 'Les mots de passe ne correspondent pas',
       passwordTooShort: 'Le mot de passe doit comporter au moins 8 caract\u00e8res',
-      success: 'Mot de passe chang\u00e9 avec succ\u00e8s'
+      success: 'Mot de passe chang\u00e9 avec succ\u00e8s',
+      genericError: 'Une erreur est survenue lors du changement de mot de passe. Veuillez r\u00e9essayer.'
     }
   }
 })
@@ -120,12 +122,13 @@ async function handleSubmit() {
       confirm_password: confirmPassword.value
     })
 
-    userStore.mustChangePassword = false
+    userStore.clearForcePasswordChange()
     router.push({ path: '/terminal-sessions' })
   } catch (err: any) {
-    error.value = err.response?.data?.error_message ||
+    error.value = err.response?.data?.error ||
+                  err.response?.data?.error_message ||
                   err.response?.data?.message ||
-                  t('forcePassword.passwordMismatch')
+                  t('forcePassword.genericError')
   } finally {
     isSubmitting.value = false
   }
