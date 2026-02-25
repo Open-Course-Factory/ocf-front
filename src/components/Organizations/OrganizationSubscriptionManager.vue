@@ -55,6 +55,13 @@
               </span>
               <span class="info-value">{{ formatDate(subscription.current_period_end) }}</span>
             </div>
+            <div v-if="subscription.quantity" class="info-item">
+              <span class="info-label">
+                <i class="fas fa-users"></i>
+                {{ t('subscription.seats') }}:
+              </span>
+              <span class="info-value">{{ subscription.quantity }}</span>
+            </div>
           </div>
 
           <!-- Features -->
@@ -159,7 +166,12 @@
       :title="t('subscription.availablePlans')"
       title-icon="fas fa-exchange-alt"
       size="large"
-      @close="showChangePlanModal = false"
+      :show-default-footer="!!selectedPlan"
+      :confirm-text="t('subscription.confirmPlan')"
+      :cancel-text="t('subscription.cancelChoice')"
+      :is-loading="isSubscribing"
+      @close="closeChangePlanModal"
+      @confirm="confirmPlanSelection"
     >
       <p class="modal-description">{{ t('subscription.selectNewPlan') }}</p>
       <div v-if="modalError" class="alert alert-danger">{{ modalError }}</div>
@@ -168,8 +180,8 @@
         <div
           v-for="plan in availablePlans"
           :key="plan.id"
-          :class="['plan-option', { active: subscription?.subscription_plan_id === plan.id }]"
-          @click="selectPlan(plan)"
+          :class="['plan-option', { active: selectedPlan?.id === plan.id }]"
+          @click="selectedPlan = plan"
         >
           <div class="plan-header">
             <h4>{{ plan.name }}</h4>
@@ -182,6 +194,18 @@
           </div>
           <p v-if="plan.description" class="plan-description">{{ plan.description }}</p>
         </div>
+      </div>
+
+      <!-- Quantity input -->
+      <div v-if="selectedPlan" class="quantity-section">
+        <label for="plan-quantity">{{ t('subscription.quantity') }}</label>
+        <input
+          id="plan-quantity"
+          v-model.number="planQuantity"
+          type="number"
+          class="form-control quantity-input"
+          min="1"
+        />
       </div>
     </BaseModal>
   </div>
@@ -244,6 +268,10 @@ const { t } = useTranslations({
       subscriptionCanceled: 'Subscription canceled successfully',
       subscriptionReactivated: 'Subscription reactivated successfully',
       planChanged: 'Plan changed successfully',
+      seats: 'Seats',
+      quantity: 'Quantity (seats)',
+      confirmPlan: 'Confirm',
+      cancelChoice: 'Cancel',
     }
   },
   fr: {
@@ -281,6 +309,10 @@ const { t } = useTranslations({
       subscriptionCanceled: 'Abonnement annulé avec succès',
       subscriptionReactivated: 'Abonnement réactivé avec succès',
       planChanged: 'Plan modifié avec succès',
+      seats: 'Sieges',
+      quantity: 'Quantite (sieges)',
+      confirmPlan: 'Confirmer',
+      cancelChoice: 'Annuler',
     }
   }
 })
@@ -295,6 +327,9 @@ const showChangePlanModal = ref(false)
 const modalError = ref('')
 const showCancelConfirm = ref(false)
 const isCanceling = ref(false)
+const selectedPlan = ref<SubscriptionPlan | null>(null)
+const planQuantity = ref(1)
+const isSubscribing = ref(false)
 
 onMounted(async () => {
   await Promise.all([
@@ -350,18 +385,30 @@ const reactivateSubscription = async () => {
   }
 }
 
-const selectPlan = async (plan: SubscriptionPlan) => {
+const confirmPlanSelection = async () => {
+  if (!selectedPlan.value) return
   modalError.value = ''
+  isSubscribing.value = true
   try {
     await orgSubStore.subscribeOrganization(props.organizationId, {
-      subscription_plan_id: plan.id
+      subscription_plan_id: selectedPlan.value.id,
+      quantity: planQuantity.value > 0 ? planQuantity.value : undefined
     })
-    showChangePlanModal.value = false
+    closeChangePlanModal()
     await loadSubscription()
     showSuccess(t('subscription.planChanged'))
   } catch (err: any) {
     modalError.value = orgSubStore.error || err.message
+  } finally {
+    isSubscribing.value = false
   }
+}
+
+const closeChangePlanModal = () => {
+  showChangePlanModal.value = false
+  selectedPlan.value = null
+  planQuantity.value = 1
+  modalError.value = ''
 }
 
 const showAvailablePlans = () => {
@@ -723,5 +770,32 @@ const formatLimit = (value: number): string => {
   background: var(--color-danger-light);
   color: var(--color-danger);
   border: 1px solid var(--color-danger);
+}
+
+.quantity-section {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.quantity-section label {
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.quantity-input {
+  max-width: 150px;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--color-border-medium);
+  border-radius: 6px;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: 1rem;
+}
+
+.quantity-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
 }
 </style>
