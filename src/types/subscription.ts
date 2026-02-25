@@ -15,6 +15,23 @@ export interface PricingTier {
 }
 
 /**
+ * Plan Feature catalog entry
+ * Represents a feature that can be assigned to subscription plans.
+ * Public API: GET /api/v1/plan-features
+ */
+export interface PlanFeature extends BaseEntity {
+  key: string
+  display_name_en: string
+  display_name_fr: string
+  description: string
+  category: 'capabilities' | 'machine_sizes' | 'terminal_limits' | 'course_limits'
+  value_type: 'boolean' | 'number' | 'string'
+  unit: string
+  default_value: string
+  is_active: boolean
+}
+
+/**
  * Subscription Plan entity
  */
 export interface SubscriptionPlan extends BaseEntity {
