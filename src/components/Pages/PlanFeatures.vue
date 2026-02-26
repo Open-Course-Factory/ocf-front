@@ -8,7 +8,7 @@ const entityStore = usePlanFeaturesStore()
 <template>
     <div class="wrapper">
         <Entity
-            :entity-name="'PlanFeature'"
+            :entity-name="'plan-features'"
             :entity-store="entityStore"
         />
     </div>

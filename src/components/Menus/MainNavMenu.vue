@@ -456,6 +456,12 @@ const menuCategories = computed((): MenuCategory[] => [
         icon: 'fas fa-cogs'
       },
       {
+        route: '/admin/plan-features',
+        label: t('navigation.adminPlanFeatures'),
+        title: t('navigation.adminPlanFeaturesTitle'),
+        icon: 'fas fa-puzzle-piece'
+      },
+      {
         route: '/invoices',
         label: t('navigation.allInvoices'),
         title: t('navigation.viewAllSystemInvoices'),

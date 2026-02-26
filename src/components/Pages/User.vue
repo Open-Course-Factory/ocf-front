@@ -32,6 +32,6 @@ const sshKeysStore = useSshKeysStore();
 
 <template>
     <div class="wrapper">
-        <Entity :entity-name='"sshkeys"' :entity-store=sshKeysStore />
+        <Entity :entity-name='"ssh-keys"' :entity-store=sshKeysStore />
     </div>
 </template>
