@@ -134,7 +134,11 @@ export const bulkImportService = {
       `/organizations/${organizationId}/groups/${groupId}/regenerate-passwords`,
       { user_ids: userIds }
     )
-    return response.data
+    return {
+      ...response.data,
+      credentials: response.data.credentials || [],
+      errors: response.data.errors || []
+    }
   }
 }
 

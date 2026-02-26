@@ -169,6 +169,7 @@ const { t } = useTranslations({
       regeneratePasswordsSuccess: 'Successfully regenerated {count} password(s)',
       regeneratePasswordsError: 'Failed to regenerate passwords',
       credentialsTitle: 'New Credentials',
+      password: 'Password',
       credentialsWarning: 'These credentials will only be shown once. Please download or copy them now.',
       downloadCsv: 'Download CSV',
       credentialsCopied: 'Credentials copied to clipboard',
@@ -295,6 +296,7 @@ const { t } = useTranslations({
       regeneratePasswordsSuccess: '{count} mot(s) de passe régénéré(s) avec succès',
       regeneratePasswordsError: 'Échec de la régénération des mots de passe',
       credentialsTitle: 'Nouveaux identifiants',
+      password: 'Mot de passe',
       credentialsWarning: 'Ces identifiants ne seront affichés qu\'une seule fois. Veuillez les télécharger ou les copier maintenant.',
       downloadCsv: 'Télécharger CSV',
       credentialsCopied: 'Identifiants copiés dans le presse-papiers',
@@ -603,8 +605,9 @@ async function handleRegeneratePasswords() {
 
 function downloadCredentialsCsv() {
   const header = 'name,email,password\n'
+  const escape = (s: string) => s.replace(/"/g, '""')
   const rows = regeneratedCredentials.value
-    .map(c => `"${c.name}","${c.email}","${c.password}"`)
+    .map(c => `"${escape(c.name)}","${escape(c.email)}","${escape(c.password)}"`)
     .join('\n')
   const blob = new Blob([header + rows], { type: 'text/csv' })
   const url = URL.createObjectURL(blob)
@@ -1155,7 +1158,7 @@ watch(activeTab, (newTab) => {
           <thead>
             <tr>
               <th>{{ t('groupDetails.memberEmail') }}</th>
-              <th>{{ t('groupDetails.credentialsTitle') }}</th>
+              <th>{{ t('groupDetails.password') }}</th>
             </tr>
           </thead>
           <tbody>
