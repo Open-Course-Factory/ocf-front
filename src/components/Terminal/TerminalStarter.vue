@@ -487,9 +487,16 @@ const allowedMachineSizes = computed(() => {
 })
 
 const sessionDurationCap = computed(() => {
-  return currentSubscription.value?.plan_features?.session_duration_hours ?
-    currentSubscription.value.plan_features.session_duration_hours * 3600 :
-    3600
+  // Prefer max_session_duration_minutes from subscription plan (backend DTO field)
+  const planMinutes = currentSubscription.value?.subscription_plan?.max_session_duration_minutes
+  if (planMinutes && planMinutes > 0) {
+    return planMinutes * 60
+  }
+  // Legacy fallback: plan_features.session_duration_hours
+  if (currentSubscription.value?.plan_features?.session_duration_hours) {
+    return currentSubscription.value.plan_features.session_duration_hours * 3600
+  }
+  return 3600
 })
 
 const maxTerminals = computed(() => {

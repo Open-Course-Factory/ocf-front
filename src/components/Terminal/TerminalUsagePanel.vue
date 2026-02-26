@@ -134,6 +134,10 @@ const props = defineProps<Props>()
 const isExpanded = ref(false)
 
 const sessionDuration = computed(() => {
+  const planMinutes = props.subscription?.subscription_plan?.max_session_duration_minutes
+  if (planMinutes && planMinutes > 0) {
+    return planMinutes / 60
+  }
   return props.subscription?.plan_features?.session_duration_hours || 1
 })
 
