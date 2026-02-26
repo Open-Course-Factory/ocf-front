@@ -268,7 +268,7 @@ const { t } = useTranslations({
       rememberChoice: 'Remember my choice',
       privacyPolicyLink: 'Learn more about how your data is handled',
       resetConsentPreference: 'Reset saved preference',
-      termsAcceptance: 'I accept the terms of use for the terminal service.',
+      termsAcceptance: "J'accepte les conditions d'utilisation du service terminal.",
       warningInfo: 'Your session expires in 10 minutes.',
       warningWarning: 'Session expiring soon. Save your work.',
       warningDanger: 'Session expires in less than 1 minute!',
