@@ -42,6 +42,17 @@ export interface ImportResponse {
   credentials?: UserCredential[]
 }
 
+export interface RegeneratePasswordsResponse {
+  success: boolean
+  credentials: UserCredential[]
+  errors: ImportError[]
+  summary: {
+    total: number
+    succeeded: number
+    failed: number
+  }
+}
+
 export const bulkImportService = {
   /**
    * Perform bulk import or validation
@@ -112,6 +123,18 @@ export const bulkImportService = {
       updateExisting: false,
       targetGroup
     })
+  },
+
+  async regeneratePasswords(
+    organizationId: string,
+    groupId: string,
+    userIds: string[]
+  ): Promise<RegeneratePasswordsResponse> {
+    const response = await axios.post<RegeneratePasswordsResponse>(
+      `/organizations/${organizationId}/groups/${groupId}/regenerate-passwords`,
+      { user_ids: userIds }
+    )
+    return response.data
   }
 }
 

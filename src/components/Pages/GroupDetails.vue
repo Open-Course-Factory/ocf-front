@@ -35,6 +35,7 @@ import { userService, type User } from '../../services/domain/user'
 import type { ClassGroup } from '../../types'
 import type { Organization } from '../../types/organization'
 import axios from 'axios'
+import { bulkImportService, type UserCredential } from '../../services/domain/bulkImport'
 import BaseModal from '../Modals/BaseModal.vue'
 import EntityModal from '../Modals/EntityModal.vue'
 import GroupCommandHistory from '../Groups/GroupCommandHistory.vue'
@@ -157,7 +158,21 @@ const { t } = useTranslations({
 
       // Empty States
       noMembers: 'No members in this group',
-      noDescription: 'No description provided'
+      noDescription: 'No description provided',
+
+      // Password Regeneration
+      selectAll: 'Select All',
+      deselectAll: 'Deselect All',
+      regeneratePasswords: 'Regenerate Passwords',
+      regeneratePasswordsCount: 'Regenerate Passwords ({count})',
+      regeneratePasswordsConfirm: 'Are you sure you want to regenerate passwords for {count} member(s)? This will invalidate their current passwords.',
+      regeneratePasswordsSuccess: 'Successfully regenerated {count} password(s)',
+      regeneratePasswordsError: 'Failed to regenerate passwords',
+      credentialsTitle: 'New Credentials',
+      credentialsWarning: 'These credentials will only be shown once. Please download or copy them now.',
+      downloadCsv: 'Download CSV',
+      credentialsCopied: 'Credentials copied to clipboard',
+      close: 'Close'
     }
   },
   fr: {
@@ -269,7 +284,21 @@ const { t } = useTranslations({
 
       // Empty States
       noMembers: 'Aucun membre dans ce groupe',
-      noDescription: 'Aucune description fournie'
+      noDescription: 'Aucune description fournie',
+
+      // Password Regeneration
+      selectAll: 'Tout sélectionner',
+      deselectAll: 'Tout désélectionner',
+      regeneratePasswords: 'Régénérer les mots de passe',
+      regeneratePasswordsCount: 'Régénérer les mots de passe ({count})',
+      regeneratePasswordsConfirm: 'Êtes-vous sûr de vouloir régénérer les mots de passe de {count} membre(s) ? Cela invalidera leurs mots de passe actuels.',
+      regeneratePasswordsSuccess: '{count} mot(s) de passe régénéré(s) avec succès',
+      regeneratePasswordsError: 'Échec de la régénération des mots de passe',
+      credentialsTitle: 'Nouveaux identifiants',
+      credentialsWarning: 'Ces identifiants ne seront affichés qu\'une seule fois. Veuillez les télécharger ou les copier maintenant.',
+      downloadCsv: 'Télécharger CSV',
+      credentialsCopied: 'Identifiants copiés dans le presse-papiers',
+      close: 'Fermer'
     }
   }
 })
@@ -288,6 +317,12 @@ const showAddMemberModal = ref(false)
 const showDeleteConfirm = ref(false)
 const showEditGroupModal = ref(false)
 const showCreateSubgroupModal = ref(false)
+
+// Password regeneration state
+const selectedMemberIds = ref(new Set<string>())
+const regeneratedCredentials = ref<UserCredential[]>([])
+const showCredentialsModal = ref(false)
+const isRegenerating = ref(false)
 
 // User search for Add Member modal
 const userSearchQuery = ref('')
@@ -358,6 +393,20 @@ const groupMembersComposable = useGroupMembers({
   currentUserId: computed(() => currentUser.userId),
   isOwner
 })
+
+// Selectable members (exclude owner)
+const selectableMembers = computed(() => {
+  return groupMembersComposable.sortedMembers.value.filter(
+    m => m.user_id !== currentGroup.value?.owner_user_id
+  )
+})
+
+const allSelectableSelected = computed(() => {
+  if (selectableMembers.value.length === 0) return false
+  return selectableMembers.value.every(m => selectedMemberIds.value.has(m.user_id))
+})
+
+const selectedCount = computed(() => selectedMemberIds.value.size)
 
 // Methods
 const loadGroup = async () => {
@@ -499,6 +548,71 @@ const handleCreateSubgroup = async (data: any) => {
     },
     'groupDetails.groupCreateError'
   )
+}
+
+function toggleMemberSelection(userId: string) {
+  const newSet = new Set(selectedMemberIds.value)
+  if (newSet.has(userId)) {
+    newSet.delete(userId)
+  } else {
+    newSet.add(userId)
+  }
+  selectedMemberIds.value = newSet
+}
+
+function toggleSelectAll() {
+  if (allSelectableSelected.value) {
+    selectedMemberIds.value = new Set()
+  } else {
+    selectedMemberIds.value = new Set(selectableMembers.value.map(m => m.user_id))
+  }
+}
+
+async function handleRegeneratePasswords() {
+  if (selectedCount.value === 0 || !currentGroup.value?.organization_id) return
+
+  const confirmed = window.confirm(
+    t('groupDetails.regeneratePasswordsConfirm', { count: selectedCount.value })
+  )
+  if (!confirmed) return
+
+  isRegenerating.value = true
+  try {
+    const response = await bulkImportService.regeneratePasswords(
+      currentGroup.value.organization_id,
+      currentGroup.value.id,
+      Array.from(selectedMemberIds.value)
+    )
+
+    if (response.credentials.length > 0) {
+      regeneratedCredentials.value = response.credentials
+      showCredentialsModal.value = true
+    }
+
+    if (response.errors.length > 0) {
+      error.value = t('groupDetails.regeneratePasswordsError')
+    }
+
+    selectedMemberIds.value = new Set()
+  } catch (err: any) {
+    error.value = err.response?.data?.error_message || t('groupDetails.regeneratePasswordsError')
+  } finally {
+    isRegenerating.value = false
+  }
+}
+
+function downloadCredentialsCsv() {
+  const header = 'name,email,password\n'
+  const rows = regeneratedCredentials.value
+    .map(c => `"${c.name}","${c.email}","${c.password}"`)
+    .join('\n')
+  const blob = new Blob([header + rows], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `credentials-${currentGroup.value?.display_name || 'group'}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 // Lifecycle
@@ -771,7 +885,24 @@ watch(activeTab, (newTab) => {
             :placeholder="t('groupDetails.searchMembers')"
             class="search-input"
           />
+          <label v-if="groupMembersComposable.canManageMembers.value && selectableMembers.length > 0" class="select-all-checkbox">
+            <input
+              type="checkbox"
+              :checked="allSelectableSelected"
+              @change="toggleSelectAll"
+            />
+            {{ allSelectableSelected ? t('groupDetails.deselectAll') : t('groupDetails.selectAll') }}
+          </label>
           <div class="toolbar-actions">
+            <button
+              v-if="groupMembersComposable.canManageMembers.value && selectedCount > 0"
+              @click="handleRegeneratePasswords"
+              class="btn btn-warning"
+              :disabled="isRegenerating"
+            >
+              <i class="fas fa-key"></i>
+              {{ t('groupDetails.regeneratePasswordsCount', { count: selectedCount }) }}
+            </button>
             <router-link
               v-if="groupMembersComposable.canManageMembers.value && groupMembersComposable.members.value.length > 0"
               :to="`/terminal-creation?mode=bulk&groupId=${currentGroup.id}`"
@@ -801,8 +932,15 @@ watch(activeTab, (newTab) => {
           <div
             v-for="member in groupMembersComposable.sortedMembers.value"
             :key="member.id"
-            class="member-card"
+            :class="['member-card', { 'member-selected': selectedMemberIds.has(member.user_id) }]"
           >
+            <input
+              v-if="groupMembersComposable.canManageMembers.value && member.user_id !== currentGroup?.owner_user_id"
+              type="checkbox"
+              class="member-checkbox"
+              :checked="selectedMemberIds.has(member.user_id)"
+              @change="toggleMemberSelection(member.user_id)"
+            />
             <div class="member-info">
               <div class="member-avatar">
                 {{ (member.user?.display_name || member.user?.email || member.user_id).charAt(0).toUpperCase() }}
@@ -1000,6 +1138,44 @@ watch(activeTab, (newTab) => {
       @submit="handleCreateSubgroup"
       @close="showCreateSubgroupModal = false"
     />
+
+    <!-- Credentials Modal -->
+    <BaseModal
+      :visible="showCredentialsModal"
+      :title="t('groupDetails.credentialsTitle')"
+      @close="showCredentialsModal = false"
+      size="large"
+    >
+      <div class="credentials-content">
+        <div class="credentials-warning">
+          <i class="fas fa-exclamation-triangle"></i>
+          {{ t('groupDetails.credentialsWarning') }}
+        </div>
+        <table class="credentials-table">
+          <thead>
+            <tr>
+              <th>{{ t('groupDetails.memberEmail') }}</th>
+              <th>{{ t('groupDetails.credentialsTitle') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="cred in regeneratedCredentials" :key="cred.email">
+              <td>{{ cred.email }}</td>
+              <td class="password-cell">{{ cred.password }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <template #footer>
+        <button @click="downloadCredentialsCsv" class="btn btn-primary">
+          <i class="fas fa-download"></i>
+          {{ t('groupDetails.downloadCsv') }}
+        </button>
+        <button @click="showCredentialsModal = false" class="btn btn-secondary">
+          {{ t('groupDetails.close') }}
+        </button>
+      </template>
+    </BaseModal>
 
   </div>
 </template>
@@ -1662,5 +1838,99 @@ watch(activeTab, (newTab) => {
   .subgroup-actions .btn {
     width: 100%;
   }
+}
+
+/* Password Regeneration */
+.select-all-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.select-all-checkbox input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.member-checkbox {
+  cursor: pointer;
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+}
+
+.member-card.member-selected {
+  background: var(--color-primary-light, rgba(var(--color-primary-rgb, 59, 130, 246), 0.08));
+  border-color: var(--color-primary);
+}
+
+.btn-warning {
+  background: var(--color-warning, #f59e0b);
+  color: var(--color-text-on-warning, #fff);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius, 6px);
+  cursor: pointer;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-warning:hover {
+  opacity: 0.9;
+}
+
+.btn-warning:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.credentials-warning {
+  background: var(--color-warning-light, rgba(245, 158, 11, 0.1));
+  border: 1px solid var(--color-warning, #f59e0b);
+  border-radius: var(--border-radius, 6px);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--color-warning-text, var(--color-text-primary));
+}
+
+.credentials-warning i {
+  color: var(--color-warning, #f59e0b);
+  font-size: 1.25rem;
+}
+
+.credentials-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.credentials-table th,
+.credentials-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.credentials-table th {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.password-cell {
+  font-family: monospace;
+  background: var(--color-background-secondary);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.credentials-content {
+  max-height: 400px;
+  overflow-y: auto;
 }
 </style>
