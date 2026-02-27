@@ -465,12 +465,12 @@ async function initializeTerminal() {
   if (!terminal.value.element) {
     terminal.value.open(terminalRef.value)
 
-    // Fit terminal after delay
-    setTimeout(() => {
-      if (fitAddon && terminal.value) {
-        fitAddon.fit()
-      }
-    }, props.useSettingsCard ? 200 : 100)
+    // Wait for the container to receive its final dimensions from CSS
+    await new Promise<void>(resolve => {
+      const ro = new ResizeObserver(() => { ro.disconnect(); resolve() })
+      ro.observe(terminalRef.value!)
+    })
+    fitTerminal()
 
     // Setup resize observer
     setupResizeObserver()
@@ -482,17 +482,30 @@ async function initializeTerminal() {
   await connectToTerminal()
 }
 
-// Setup resize observer
+// Resize handling
+let resizeTimeout: ReturnType<typeof setTimeout> | null = null
+
+function fitTerminal() {
+  if (fitAddon && terminal.value) {
+    fitAddon.fit()
+  }
+}
+
+function handleResize() {
+  if (resizeTimeout) clearTimeout(resizeTimeout)
+  resizeTimeout = setTimeout(fitTerminal, 100)
+}
+
 function setupResizeObserver() {
-  if (!window.ResizeObserver || !terminalRef.value) return
-
-  resizeObserver = new ResizeObserver(() => {
-    if (fitAddon && terminal.value) {
-      fitAddon.fit()
-    }
-  })
-
-  resizeObserver.observe(terminalRef.value)
+  if (terminalRef.value && window.ResizeObserver) {
+    resizeObserver = new ResizeObserver(() => {
+      if (fitAddon && terminal.value) {
+        fitAddon.fit()
+      }
+    })
+    resizeObserver.observe(terminalRef.value)
+  }
+  window.addEventListener('resize', handleResize)
 }
 
 // Connect to terminal via WebSocket
@@ -698,6 +711,11 @@ function handleSessionExpired() {
 
 // Cleanup
 function cleanup() {
+  window.removeEventListener('resize', handleResize)
+  if (resizeTimeout) {
+    clearTimeout(resizeTimeout)
+    resizeTimeout = null
+  }
   if (resizeObserver) {
     resizeObserver.disconnect()
     resizeObserver = null
@@ -879,7 +897,8 @@ defineExpose({
    SettingsCard Mode Styles
    ======================================== */
 .terminal-wrapper {
-  min-height: 500px;
+  height: 100%;
+  min-height: 400px;
   background-color: var(--terminal-bg);
   position: relative;
   border: var(--border-width-medium) solid var(--terminal-border);
@@ -890,7 +909,6 @@ defineExpose({
 .terminal-wrapper .terminal-container {
   width: 100%;
   height: 100%;
-  min-height: 500px;
 }
 
 .terminal-wrapper .terminal-container.terminal-full-height {
