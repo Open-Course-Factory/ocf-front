@@ -80,6 +80,10 @@ const i18n = createI18n({
                 designSystemTitle: 'Visual audit of CSS variables and theme',
                 courseEditor: 'Course Editor',
                 courseEditorTitle: 'Visual course editor with drag-and-drop',
+                terminalBackends: 'Terminal Backends',
+                terminalBackendsTitle: 'Manage terminal backend servers',
+                adminOrganizations: 'Organizations',
+                adminOrganizationsTitle: 'Manage organization backends and plans',
                 more: 'More'
             }
          },
@@ -156,6 +160,10 @@ const i18n = createI18n({
                 designSystemTitle: 'Audit visuel des variables CSS et du thème',
                 courseEditor: 'Éditeur de Cours',
                 courseEditorTitle: 'Éditeur visuel de cours avec glisser-déposer',
+                terminalBackends: 'Backends Terminal',
+                terminalBackendsTitle: 'Gérer les serveurs backend de terminal',
+                adminOrganizations: 'Organisations',
+                adminOrganizationsTitle: 'Gérer les backends et plans des organisations',
                 more: 'Plus'
             }
         }

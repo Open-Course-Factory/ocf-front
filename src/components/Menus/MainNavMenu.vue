@@ -486,6 +486,12 @@ const menuCategories = computed((): MenuCategory[] => [
         icon: 'fas fa-server'
       },
       {
+        route: '/admin/organizations',
+        label: t('navigation.adminOrganizations'),
+        title: t('navigation.adminOrganizationsTitle'),
+        icon: 'fas fa-building'
+      },
+      {
         route: '/email-templates',
         label: t('navigation.emailTemplates'),
         title: t('navigation.emailTemplatesTitle'),
