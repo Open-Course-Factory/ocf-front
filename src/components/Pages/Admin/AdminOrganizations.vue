@@ -200,8 +200,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import axios from 'axios'
 import { useOrganizationsStore } from '../../../stores/organizations'
-import { useOrganizationSubscriptionsStore } from '../../../stores/organizationSubscriptions'
 import { useTerminalBackendsStore } from '../../../stores/terminalBackends'
 import { useSubscriptionPlansStore } from '../../../stores/subscriptionPlans'
 import { useTranslations } from '../../../composables/useTranslations'
@@ -211,7 +211,6 @@ import AdminOrgPlanModal from '../../Modals/AdminOrgPlanModal.vue'
 import type { Organization, OrganizationSubscription } from '../../../types'
 
 const organizationsStore = useOrganizationsStore()
-const orgSubStore = useOrganizationSubscriptionsStore()
 const backendsStore = useTerminalBackendsStore()
 const plansStore = useSubscriptionPlansStore()
 
@@ -445,11 +444,14 @@ function closePlanModal() {
 }
 
 async function onPlanAssigned() {
-  // Refresh subscription for this org
+  // Refresh subscription for this org (direct axios to avoid store state mutation)
   if (planModalOrgId.value) {
     try {
-      const sub = await orgSubStore.loadOrganizationSubscription(planModalOrgId.value)
-      orgSubscriptions[planModalOrgId.value] = sub
+      const response = await axios.get(`/organizations/${planModalOrgId.value}/subscription`)
+      const data = response.data?.data || response.data
+      if (data) {
+        orgSubscriptions[planModalOrgId.value] = data
+      }
     } catch {
       delete orgSubscriptions[planModalOrgId.value]
     }
@@ -460,6 +462,8 @@ async function onPlanAssigned() {
 // Data loading
 // TODO: Replace per-org API calls with a bulk admin endpoint when available
 // Currently issues 2 requests per org (backends + subscription) which won't scale
+// Uses direct axios calls instead of store methods to avoid mutating shared
+// isLoading/error state in parallel — 404s are expected for orgs without data.
 onMounted(async () => {
   loading.value = true
   try {
@@ -470,26 +474,28 @@ onMounted(async () => {
       plansStore.ensurePlansLoaded()
     ])
 
-    // Phase 2: Load per-org data in parallel
+    // Phase 2: Load per-org data in parallel (direct axios, bypass store state)
     const orgs = organizationsStore.organizations
     const [configResults, subResults] = await Promise.all([
       Promise.allSettled(
-        orgs.map(org => organizationsStore.getOrganizationBackendConfig(org.id))
+        orgs.map(org => axios.get(`/organizations/${org.id}/backends`))
       ),
       Promise.allSettled(
-        orgs.map(org => orgSubStore.loadOrganizationSubscription(org.id))
+        orgs.map(org => axios.get(`/organizations/${org.id}/subscription`))
       )
     ])
 
-    // Process results
+    // Process results — 404s are expected (org has no config/subscription)
     configResults.forEach((result, idx) => {
       if (result.status === 'fulfilled') {
-        orgConfigs[orgs[idx].id] = result.value
+        const data = result.value.data?.data || result.value.data
+        if (data) orgConfigs[orgs[idx].id] = data
       }
     })
     subResults.forEach((result, idx) => {
       if (result.status === 'fulfilled') {
-        orgSubscriptions[orgs[idx].id] = result.value
+        const data = result.value.data?.data || result.value.data
+        if (data) orgSubscriptions[orgs[idx].id] = data
       }
     })
   } catch (err) {
