@@ -23,6 +23,8 @@ export interface Organization extends BaseEntity {
   max_members: number
   is_active: boolean
   metadata?: Record<string, any>
+  allowed_backends?: string[] | null
+  default_backend?: string
 
   // Counts (if preloaded)
   group_count?: number

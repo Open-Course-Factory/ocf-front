@@ -363,8 +363,11 @@ function getBackendName(backendId: string): string {
 function getPlanDisplay(orgId: string): { name: string; price: string } | null {
   const sub = orgSubscriptions[orgId]
   if (!sub) return null
-  const plan = plansStore.entities.find((p: any) => p.id === sub.subscription_plan_id)
+
+  // Use embedded plan from bulk response if available, fallback to store
+  const plan = sub.subscription_plan || plansStore.entities.find((p: any) => p.id === sub.subscription_plan_id)
   if (!plan) return null
+
   return {
     name: plan.name,
     price: plansStore.formatPrice(plan.price_amount, plan.currency) + '/' + plan.billing_interval
@@ -460,10 +463,6 @@ async function onPlanAssigned() {
 }
 
 // Data loading
-// TODO: Replace per-org API calls with a bulk admin endpoint when available
-// Currently issues 2 requests per org (backends + subscription) which won't scale
-// Uses direct axios calls instead of store methods to avoid mutating shared
-// isLoading/error state in parallel — 404s are expected for orgs without data.
 onMounted(async () => {
   loading.value = true
   try {
@@ -474,30 +473,29 @@ onMounted(async () => {
       plansStore.ensurePlansLoaded()
     ])
 
-    // Phase 2: Load per-org data in parallel (direct axios, bypass store state)
+    // Phase 2: Read backend configs from org objects + bulk load subscriptions
     const orgs = organizationsStore.organizations
-    const [configResults, subResults] = await Promise.all([
-      Promise.allSettled(
-        orgs.map(org => axios.get(`/organizations/${org.id}/backends`))
-      ),
-      Promise.allSettled(
-        orgs.map(org => axios.get(`/organizations/${org.id}/subscription`))
-      )
-    ])
 
-    // Process results — 404s are expected (org has no config/subscription)
-    configResults.forEach((result, idx) => {
-      if (result.status === 'fulfilled') {
-        const data = result.value.data?.data || result.value.data
-        if (data) orgConfigs[orgs[idx].id] = data
+    // Backend configs: already on org objects from GET /organizations
+    for (const org of orgs) {
+      if (org.allowed_backends?.length || org.default_backend) {
+        orgConfigs[org.id] = {
+          allowed_backends: org.allowed_backends || [],
+          default_backend: org.default_backend || ''
+        }
       }
-    })
-    subResults.forEach((result, idx) => {
-      if (result.status === 'fulfilled') {
-        const data = result.value.data?.data || result.value.data
-        if (data) orgSubscriptions[orgs[idx].id] = data
+    }
+
+    // Subscriptions: single bulk fetch
+    try {
+      const response = await axios.get('/admin/organizations/subscriptions')
+      const subscriptions = response.data?.data || []
+      for (const sub of subscriptions) {
+        orgSubscriptions[sub.organization_id] = sub
       }
-    })
+    } catch {
+      // Non-critical: page works without subscription data
+    }
   } catch (err) {
     error.value = t('adminOrgs.loadError')
   } finally {
