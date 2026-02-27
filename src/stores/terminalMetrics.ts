@@ -45,22 +45,15 @@ export const useTerminalMetricsStore = defineStore('terminalMetrics', () => {
   useStoreTranslations({
     en: {
       terminalMetrics: {
-        pageTitle: 'Server Metrics',
         cpuUsage: 'CPU Usage',
         ramUsage: 'RAM Usage',
         ramAvailable: 'RAM Available',
         timestamp: 'Last Update',
         refresh: 'Refresh',
-        serverStatus: 'Server Status',
         healthy: 'Healthy',
         warning: 'Warning',
         critical: 'Critical',
-        capacityWarning: 'Server at capacity',
-        capacityWarningMessage: 'Server resources are running low. Please try again in a few minutes.',
-        insufficientRAM: 'Insufficient RAM available',
-        highCPU: 'High CPU usage',
         autoRefresh: 'Auto-refreshing every {seconds} seconds',
-        allBackends: 'All Backends',
         dashboardTitle: 'Terminal Backends',
         backendOffline: 'Offline — metrics unavailable',
         organizations: 'Organizations',
@@ -71,27 +64,25 @@ export const useTerminalMetricsStore = defineStore('terminalMetrics', () => {
         currentDefault: 'System Default',
         onlineCount: '{count}/{total} online',
         offlineWarning: '{count} backend(s) offline',
-        status: 'Status'
+        status: 'Status',
+        loading: 'Loading...',
+        metricsLoadError: 'Failed to fetch metrics',
+        noBackends: 'No backends configured',
+        orgFilterAll: 'All',
+        noMatchingOrganizations: 'No matching organizations'
       }
     },
     fr: {
       terminalMetrics: {
-        pageTitle: 'Métriques du Serveur',
         cpuUsage: 'Utilisation CPU',
         ramUsage: 'Utilisation RAM',
         ramAvailable: 'RAM Disponible',
         timestamp: 'Dernière Mise à Jour',
         refresh: 'Actualiser',
-        serverStatus: 'État du Serveur',
         healthy: 'Bon',
         warning: 'Attention',
         critical: 'Critique',
-        capacityWarning: 'Serveur à capacité maximale',
-        capacityWarningMessage: 'Les ressources du serveur sont faibles. Veuillez réessayer dans quelques minutes.',
-        insufficientRAM: 'RAM disponible insuffisante',
-        highCPU: 'Utilisation CPU élevée',
         autoRefresh: 'Actualisation automatique toutes les {seconds} secondes',
-        allBackends: 'Tous les Backends',
         dashboardTitle: 'Backends Terminal',
         backendOffline: 'Hors ligne — métriques indisponibles',
         organizations: 'Organisations',
@@ -102,7 +93,12 @@ export const useTerminalMetricsStore = defineStore('terminalMetrics', () => {
         currentDefault: 'Défaut système',
         onlineCount: '{count}/{total} en ligne',
         offlineWarning: '{count} backend(s) hors ligne',
-        status: 'Statut'
+        status: 'Statut',
+        loading: 'Chargement...',
+        metricsLoadError: 'Échec du chargement des métriques',
+        noBackends: 'Aucun backend configuré',
+        orgFilterAll: 'Tous',
+        noMatchingOrganizations: 'Aucune organisation correspondante'
       }
     }
   })

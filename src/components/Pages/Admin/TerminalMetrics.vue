@@ -143,20 +143,37 @@
 
         <!-- Organizations Section -->
         <div class="card-organizations">
-          <div class="org-section-header">
+          <div class="org-section-header" @click="toggleOrgSection(backend.id)">
             <i class="fas fa-building"></i>
             <span>{{ t('terminalMetrics.organizations') }}</span>
+            <span v-if="orgsByBackend[backend.id]?.length" class="org-count">({{ orgsByBackend[backend.id].length }})</span>
+            <i class="fas fa-chevron-down org-chevron" :class="{ rotated: expandedOrgs[backend.id] }"></i>
           </div>
-          <div v-if="orgsByBackend[backend.id] && orgsByBackend[backend.id].length > 0" class="org-list">
-            <div v-for="entry in orgsByBackend[backend.id]" :key="entry.org.id" class="org-item">
-              <span class="org-name">{{ entry.org.display_name || entry.org.name }}</span>
-              <span class="org-reason-tag" :class="`reason-${entry.reason}`">
-                {{ entry.reason === 'explicit' ? t('terminalMetrics.explicitAssignment') : t('terminalMetrics.systemDefaultAssignment') }}
-              </span>
+          <div v-if="expandedOrgs[backend.id]" class="org-section-body">
+            <div v-if="orgsByBackend[backend.id]?.length > 0" class="org-filter-row">
+              <button
+                v-for="filterOption in orgFilterOptions"
+                :key="filterOption.value"
+                :class="['org-filter-chip', { active: orgFilter === filterOption.value }]"
+                @click="orgFilter = filterOption.value"
+              >
+                {{ filterOption.label }}
+              </button>
             </div>
-          </div>
-          <div v-else class="no-orgs">
-            {{ t('terminalMetrics.noOrganizations') }}
+            <div v-if="filteredOrgsByBackend(backend.id).length > 0" class="org-list">
+              <div v-for="entry in filteredOrgsByBackend(backend.id)" :key="entry.org.id" class="org-item">
+                <span class="org-name">{{ entry.org.display_name || entry.org.name }}</span>
+                <span class="org-reason-tag" :class="`reason-${entry.reason}`">
+                  {{ entry.reason === 'explicit' ? t('terminalMetrics.explicitAssignment') : t('terminalMetrics.systemDefaultAssignment') }}
+                </span>
+              </div>
+            </div>
+            <div v-else-if="orgsByBackend[backend.id]?.length > 0" class="no-orgs">
+              {{ t('terminalMetrics.noMatchingOrganizations') }}
+            </div>
+            <div v-else class="no-orgs">
+              {{ t('terminalMetrics.noOrganizations') }}
+            </div>
           </div>
         </div>
       </div>
@@ -165,7 +182,7 @@
     <!-- Loading State -->
     <div v-else-if="backendsStore.isLoading" class="loading-state">
       <i class="fas fa-spinner fa-spin fa-3x"></i>
-      <p>Loading...</p>
+      <p>{{ t('terminalMetrics.loading') }}</p>
     </div>
 
     <!-- Error State -->
@@ -175,6 +192,12 @@
       <Button variant="primary" @click="handleRefresh">
         {{ t('terminalMetrics.refresh') }}
       </Button>
+    </div>
+
+    <!-- Empty State -->
+    <div v-else class="empty-state">
+      <i class="fas fa-server fa-3x"></i>
+      <p>{{ t('terminalMetrics.noBackends') }}</p>
     </div>
 
     <!-- Last Update Footer -->
@@ -215,6 +238,28 @@ const orgConfigs: Record<string, { allowed_backends: string[], default_backend: 
 
 // Set as default
 const settingDefault = ref<string | null>(null)
+
+// Org section expand/collapse (collapsed by default)
+const expandedOrgs: Record<string, boolean> = reactive({})
+
+function toggleOrgSection(backendId: string) {
+  expandedOrgs[backendId] = !expandedOrgs[backendId]
+}
+
+// Org filter
+const orgFilter = ref<'all' | 'explicit' | 'default'>('all')
+
+const orgFilterOptions = computed(() => [
+  { value: 'all' as const, label: t('terminalMetrics.orgFilterAll') },
+  { value: 'explicit' as const, label: t('terminalMetrics.explicitAssignment') },
+  { value: 'default' as const, label: t('terminalMetrics.systemDefaultAssignment') }
+])
+
+function filteredOrgsByBackend(backendId: string) {
+  const orgs = orgsByBackend.value[backendId] || []
+  if (orgFilter.value === 'all') return orgs
+  return orgs.filter(entry => entry.reason === orgFilter.value)
+}
 
 // Auto-refresh
 const autoRefreshInterval = 30000
@@ -305,7 +350,7 @@ async function fetchAllMetrics() {
         backendMetrics[backend.id] = response.data
         delete metricsError[backend.id]
       } catch (err: any) {
-        metricsError[backend.id] = err.message || 'Failed to fetch metrics'
+        metricsError[backend.id] = err.response?.data?.error_message || err.message || t('terminalMetrics.metricsLoadError')
       }
     })
 
@@ -404,13 +449,13 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
 }
 
 .page-header h2 {
   margin: 0;
   color: var(--color-text-primary);
-  font-size: 2rem;
+  font-size: 1.5rem;
 }
 
 .header-actions {
@@ -421,9 +466,9 @@ onBeforeUnmount(() => {
 
 /* Status Banner */
 .status-banner {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--border-radius-lg);
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
@@ -474,7 +519,7 @@ onBeforeUnmount(() => {
 .backends-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
   margin-bottom: var(--spacing-xl);
 }
 
@@ -482,7 +527,7 @@ onBeforeUnmount(() => {
   background: var(--color-bg-primary);
   border: var(--border-width-thin) solid var(--color-border-light);
   border-radius: var(--border-radius-lg);
-  padding: var(--spacing-xl);
+  padding: var(--spacing-lg);
   box-shadow: var(--shadow-sm);
   transition: box-shadow var(--transition-base);
 }
@@ -501,7 +546,7 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-sm);
   flex-wrap: wrap;
   gap: var(--spacing-sm);
 }
@@ -581,8 +626,8 @@ onBeforeUnmount(() => {
 
 /* Metrics Row */
 .card-metrics {
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-md);
   background-color: var(--color-bg-secondary);
   border-radius: var(--border-radius-md);
 }
@@ -590,7 +635,7 @@ onBeforeUnmount(() => {
 .metrics-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--spacing-xl);
+  gap: var(--spacing-lg);
 }
 
 .metric-item {
@@ -621,7 +666,7 @@ onBeforeUnmount(() => {
 
 .gauge {
   width: 100%;
-  height: 24px;
+  height: 16px;
   background-color: var(--color-gray-200);
   border-radius: var(--border-radius-full);
   overflow: hidden;
@@ -642,7 +687,7 @@ onBeforeUnmount(() => {
 }
 
 .gauge-value .value {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
 }
@@ -657,11 +702,11 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: baseline;
   gap: var(--spacing-xs);
-  padding: var(--spacing-sm) 0;
+  padding: 0;
 }
 
 .metric-large-value .value {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
 }
@@ -676,8 +721,8 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
   background-color: var(--color-bg-secondary);
   border-radius: var(--border-radius-md);
   color: var(--color-text-muted);
@@ -687,8 +732,8 @@ onBeforeUnmount(() => {
 .card-loading {
   display: flex;
   justify-content: center;
-  padding: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
   color: var(--color-text-secondary);
 }
 
@@ -701,11 +746,64 @@ onBeforeUnmount(() => {
 .org-section-header {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: var(--spacing-xs) 0;
+  user-select: none;
+}
+
+.org-section-header:hover {
+  color: var(--color-text-primary);
+}
+
+.org-count {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-normal);
+}
+
+.org-chevron {
+  margin-left: auto;
+  font-size: var(--font-size-xs);
+  transition: transform var(--transition-base);
+}
+
+.org-chevron.rotated {
+  transform: rotate(180deg);
+}
+
+.org-section-body {
+  padding-top: var(--spacing-sm);
+}
+
+.org-filter-row {
+  display: flex;
+  gap: var(--spacing-xs);
   margin-bottom: var(--spacing-sm);
+}
+
+.org-filter-chip {
+  font-size: var(--font-size-xs);
+  padding: 2px var(--spacing-sm);
+  border-radius: var(--border-radius-full);
+  border: var(--border-width-thin) solid var(--color-border-medium);
+  background: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.org-filter-chip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.org-filter-chip.active {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-white);
 }
 
 .org-list {
@@ -750,6 +848,21 @@ onBeforeUnmount(() => {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   font-style: italic;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-3xl);
+  gap: var(--spacing-lg);
+  color: var(--color-text-secondary);
+}
+
+.empty-state i {
+  opacity: 0.4;
 }
 
 /* Loading/Error States */
