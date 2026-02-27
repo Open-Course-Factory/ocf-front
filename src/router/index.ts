@@ -635,4 +635,16 @@ router.beforeEach(async (to, from, next) => {
   next();
 });
 
+// Handle chunk load failures after deployment (new build = new chunk hashes)
+// When a lazy-loaded route chunk no longer exists, reload the page to get the new index.html
+router.onError((error, to) => {
+  if (
+    error.message.includes('Failed to fetch dynamically imported module') ||
+    error.message.includes('Importing a module script failed') ||
+    error.message.includes('error loading dynamically imported module')
+  ) {
+    window.location.assign(to.fullPath)
+  }
+})
+
 export default router;
