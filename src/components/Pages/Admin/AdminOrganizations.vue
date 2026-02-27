@@ -60,21 +60,21 @@
               @click="toggleSort('display_name')"
             >
               {{ t('adminOrgs.colOrganization') }}
-              <i v-if="sortColumn === 'display_name'" :class="sortIcon"></i>
+              <i :class="getSortIcon('display_name')"></i>
             </th>
             <th
               class="sortable-header"
               @click="toggleSort('organization_type')"
             >
               {{ t('adminOrgs.colType') }}
-              <i v-if="sortColumn === 'organization_type'" :class="sortIcon"></i>
+              <i :class="getSortIcon('organization_type')"></i>
             </th>
             <th
               class="sortable-header"
               @click="toggleSort('member_count')"
             >
               {{ t('adminOrgs.colMembers') }}
-              <i v-if="sortColumn === 'member_count'" :class="sortIcon"></i>
+              <i :class="getSortIcon('member_count')"></i>
             </th>
             <th>{{ t('adminOrgs.colPlan') }}</th>
             <th>{{ t('adminOrgs.colBackends') }}</th>
@@ -301,10 +301,11 @@ const planModalOrgName = ref('')
 const planModalCurrentPlanId = ref<string | undefined>(undefined)
 const planModalCurrentSub = ref<OrganizationSubscription | undefined>(undefined)
 
-// Computed
-const sortIcon = computed(() =>
-  sortDirection.value === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'
-)
+// Helpers
+function getSortIcon(column: string): string {
+  if (sortColumn.value !== column) return 'fas fa-sort'
+  return sortDirection.value === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'
+}
 
 const filteredOrganizations = computed(() => {
   let orgs = [...organizationsStore.organizations]
@@ -457,6 +458,8 @@ async function onPlanAssigned() {
 }
 
 // Data loading
+// TODO: Replace per-org API calls with a bulk admin endpoint when available
+// Currently issues 2 requests per org (backends + subscription) which won't scale
 onMounted(async () => {
   loading.value = true
   try {
@@ -828,43 +831,6 @@ onMounted(async () => {
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-sm);
   border: 1px solid var(--color-danger-border);
-}
-
-/* Modal footer buttons */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--btn-padding-md);
-  font-size: var(--font-size-base);
-  font-weight: 500;
-  cursor: pointer;
-  border: 2px solid transparent;
-  border-radius: var(--border-radius-md);
-  transition: all var(--transition-fast);
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background-color: var(--color-primary);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--color-primary-dark, var(--color-primary-hover));
-}
-
-.btn-secondary {
-  background-color: var(--color-secondary, var(--color-gray-600));
-  color: white;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background-color: var(--color-secondary-dark, var(--color-secondary-hover));
 }
 
 /* Responsive */

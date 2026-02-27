@@ -226,6 +226,7 @@ const saving = ref(false)
 const error = ref('')
 const successMsg = ref('')
 const showCancelConfirm = ref(false)
+let autoCloseTimer: ReturnType<typeof setTimeout> | null = null
 
 const activePlans = computed(() =>
   (plansStore.entities as SubscriptionPlan[]).filter((p: SubscriptionPlan) => p.is_active)
@@ -279,7 +280,7 @@ const handleAssign = async () => {
       ? t('adminOrgPlan.changeSuccess')
       : t('adminOrgPlan.assignSuccess')
     emit('assigned')
-    setTimeout(() => {
+    autoCloseTimer = setTimeout(() => {
       emit('close')
     }, 1500)
   } catch (err: any) {
@@ -302,7 +303,7 @@ const handleCancel = async () => {
     successMsg.value = t('adminOrgPlan.cancelSuccess')
     showCancelConfirm.value = false
     emit('assigned')
-    setTimeout(() => {
+    autoCloseTimer = setTimeout(() => {
       emit('close')
     }, 1500)
   } catch (err: any) {
@@ -316,6 +317,10 @@ const handleCancel = async () => {
 }
 
 const resetForm = () => {
+  if (autoCloseTimer) {
+    clearTimeout(autoCloseTimer)
+    autoCloseTimer = null
+  }
   selectedPlanId.value = ''
   quantity.value = 1
   error.value = ''
@@ -541,61 +546,4 @@ select.form-control {
   border: 1px solid var(--color-success-border);
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--btn-padding-md);
-  font-size: var(--font-size-base);
-  font-weight: 500;
-  cursor: pointer;
-  border: 2px solid transparent;
-  border-radius: var(--border-radius-md);
-  transition: all var(--transition-fast);
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background-color: var(--color-primary);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--color-primary-dark, var(--color-primary-hover));
-}
-
-.btn-secondary {
-  background-color: var(--color-secondary, var(--color-gray-600));
-  color: white;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background-color: var(--color-secondary-dark, var(--color-secondary-hover));
-}
-
-.btn-danger {
-  background-color: var(--color-danger);
-  color: white;
-  border-color: var(--color-danger);
-}
-
-.btn-danger:hover:not(:disabled) {
-  background-color: var(--color-danger-dark, var(--color-danger));
-  opacity: 0.9;
-}
-
-.btn-danger-outline {
-  background: transparent;
-  color: var(--color-danger);
-  border-color: var(--color-danger);
-}
-
-.btn-danger-outline:hover:not(:disabled) {
-  background-color: var(--color-danger);
-  color: white;
-}
 </style>
