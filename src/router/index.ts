@@ -379,9 +379,7 @@ const basicRoutes = [
       },
       {
         path: 'admin/terminal-backends',
-        name: 'AdminTerminalBackends',
-        component: () => import('../components/Pages/Admin/TerminalBackends.vue'),
-        meta: { requiresAuth: true, requiresAdmin: true }
+        redirect: '/admin/terminal-metrics'
       },
       {
         path: 'admin/organizations',

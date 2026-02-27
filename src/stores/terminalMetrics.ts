@@ -60,7 +60,18 @@ export const useTerminalMetricsStore = defineStore('terminalMetrics', () => {
         insufficientRAM: 'Insufficient RAM available',
         highCPU: 'High CPU usage',
         autoRefresh: 'Auto-refreshing every {seconds} seconds',
-        allBackends: 'All Backends'
+        allBackends: 'All Backends',
+        dashboardTitle: 'Terminal Backends',
+        backendOffline: 'Offline — metrics unavailable',
+        organizations: 'Organizations',
+        noOrganizations: 'No organizations assigned',
+        explicitAssignment: 'Explicit',
+        systemDefaultAssignment: 'System default',
+        setDefault: 'Set as Default',
+        currentDefault: 'System Default',
+        onlineCount: '{count}/{total} online',
+        offlineWarning: '{count} backend(s) offline',
+        status: 'Status'
       }
     },
     fr: {
@@ -80,7 +91,18 @@ export const useTerminalMetricsStore = defineStore('terminalMetrics', () => {
         insufficientRAM: 'RAM disponible insuffisante',
         highCPU: 'Utilisation CPU élevée',
         autoRefresh: 'Actualisation automatique toutes les {seconds} secondes',
-        allBackends: 'Tous les Backends'
+        allBackends: 'Tous les Backends',
+        dashboardTitle: 'Backends Terminal',
+        backendOffline: 'Hors ligne — métriques indisponibles',
+        organizations: 'Organisations',
+        noOrganizations: 'Aucune organisation assignée',
+        explicitAssignment: 'Explicite',
+        systemDefaultAssignment: 'Défaut système',
+        setDefault: 'Définir par défaut',
+        currentDefault: 'Défaut système',
+        onlineCount: '{count}/{total} en ligne',
+        offlineWarning: '{count} backend(s) hors ligne',
+        status: 'Statut'
       }
     }
   })

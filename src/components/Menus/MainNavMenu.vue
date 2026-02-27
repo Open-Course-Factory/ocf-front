@@ -475,12 +475,6 @@ const menuCategories = computed((): MenuCategory[] => [
       },
       {
         route: '/admin/terminal-metrics',
-        label: t('navigation.terminalMetrics'),
-        title: t('navigation.terminalMetricsTitle'),
-        icon: 'fas fa-chart-line'
-      },
-      {
-        route: '/admin/terminal-backends',
         label: t('navigation.terminalBackends'),
         title: t('navigation.terminalBackendsTitle'),
         icon: 'fas fa-server'

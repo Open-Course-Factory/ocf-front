@@ -8,27 +8,13 @@
 <template>
   <div class="terminal-metrics-page">
     <div class="page-header">
-      <h2>{{ t('terminalMetrics.pageTitle') }}</h2>
+      <h2>{{ t('terminalMetrics.dashboardTitle') }}</h2>
       <div class="header-actions">
-        <select
-          v-if="backendsStore.backends.length > 1"
-          v-model="selectedBackendFilter"
-          class="backend-filter-select"
-        >
-          <option value="">{{ t('terminalMetrics.allBackends') }}</option>
-          <option
-            v-for="backend in backendsStore.backends"
-            :key="backend.id"
-            :value="backend.id"
-          >
-            {{ backend.name || backend.id }}
-          </option>
-        </select>
         <Button
           variant="primary"
           size="md"
-          :icon="metricsStore.isLoading ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'"
-          :disabled="metricsStore.isLoading"
+          :icon="isRefreshing ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'"
+          :disabled="isRefreshing"
           @click="handleRefresh"
         >
           {{ t('terminalMetrics.refresh') }}
@@ -36,126 +22,165 @@
       </div>
     </div>
 
-    <!-- Server Status Banner -->
-    <div v-if="metricsStore.metrics" class="status-banner" :class="`status-${metricsStore.serverStatus}`">
+    <!-- Overall Status Banner -->
+    <div v-if="backendsStore.backends.length > 0" class="status-banner" :class="`status-${overallStatus}`">
       <div class="status-indicator">
-        <i :class="getStatusIcon()"></i>
-        <span class="status-label">{{ t('terminalMetrics.serverStatus') }}:</span>
-        <strong>{{ t(`terminalMetrics.${metricsStore.serverStatus}`) }}</strong>
+        <i :class="overallStatusIcon"></i>
+        <span class="status-label">{{ t('terminalMetrics.status') }}:</span>
+        <strong>{{ t('terminalMetrics.onlineCount', { count: onlineCount, total: backendsStore.backends.length }) }}</strong>
+        <span v-if="overallStatus !== 'critical'" class="status-health-label">
+          — {{ t(`terminalMetrics.${overallStatus}`) }}
+        </span>
       </div>
-      <div v-if="metricsStore.hasCapacityIssues" class="status-message">
+      <div v-if="offlineCount > 0" class="status-message">
         <i class="fas fa-exclamation-triangle"></i>
-        {{ t('terminalMetrics.capacityWarningMessage') }}
+        {{ t('terminalMetrics.offlineWarning', { count: offlineCount }) }}
       </div>
     </div>
 
-    <!-- Metrics Cards -->
-    <div v-if="metricsStore.metrics" class="metrics-grid">
-      <!-- CPU Usage Card -->
-      <div class="metric-card">
-        <div class="metric-header">
-          <i class="fas fa-microchip"></i>
-          <h3>{{ t('terminalMetrics.cpuUsage') }}</h3>
-        </div>
-        <div class="metric-content">
-          <div class="gauge-container">
-            <div class="gauge" :style="getGaugeStyle(metricsStore.metrics.cpu_percent)">
-              <div class="gauge-fill" :style="`width: ${metricsStore.metrics.cpu_percent}%`"></div>
-            </div>
-            <div class="gauge-value">
-              <span class="value">{{ metricsStore.metrics.cpu_percent.toFixed(1) }}</span>
-              <span class="unit">%</span>
-            </div>
+    <!-- Backend Cards -->
+    <div v-if="backendsStore.backends.length > 0" class="backends-list">
+      <div
+        v-for="backend in backendsStore.backends"
+        :key="backend.id"
+        :class="['backend-card', { 'offline': !backend.connected }]"
+      >
+        <!-- Card Header -->
+        <div class="card-header">
+          <div class="card-title-row">
+            <span class="connection-dot" :class="backend.connected ? 'online' : 'offline'"></span>
+            <h3>{{ backend.name || backend.id }}</h3>
+            <span v-if="backend.is_default" class="default-badge">
+              {{ t('terminalMetrics.currentDefault') }}
+            </span>
+            <Button
+              v-else-if="backend.connected"
+              size="sm"
+              variant="outline-primary"
+              icon="fas fa-star"
+              :loading="settingDefault === backend.id"
+              :disabled="!!settingDefault"
+              @click="setAsDefault(backend.id)"
+            >
+              {{ t('terminalMetrics.setDefault') }}
+            </Button>
           </div>
-          <div class="metric-status">
-            <span v-if="metricsStore.metrics.cpu_percent > 95" class="status-critical">
-              <i class="fas fa-exclamation-circle"></i> {{ t('terminalMetrics.critical') }}
+          <div class="card-status-row">
+            <span class="connection-label" :class="backend.connected ? 'text-success' : 'text-danger'">
+              {{ backend.connected ? t('terminalMetrics.healthy') : t('terminalMetrics.backendOffline') }}
             </span>
-            <span v-else-if="metricsStore.metrics.cpu_percent > 80" class="status-warning">
-              <i class="fas fa-exclamation-triangle"></i> {{ t('terminalMetrics.warning') }}
-            </span>
-            <span v-else class="status-healthy">
-              <i class="fas fa-check-circle"></i> {{ t('terminalMetrics.healthy') }}
+            <span
+              v-if="backend.connected && backendMetrics[backend.id]"
+              class="health-badge"
+              :class="`health-${getBackendStatus(backendMetrics[backend.id])}`"
+            >
+              {{ t(`terminalMetrics.${getBackendStatus(backendMetrics[backend.id])}`) }}
             </span>
           </div>
         </div>
-      </div>
 
-      <!-- RAM Usage Card -->
-      <div class="metric-card">
-        <div class="metric-header">
-          <i class="fas fa-memory"></i>
-          <h3>{{ t('terminalMetrics.ramUsage') }}</h3>
-        </div>
-        <div class="metric-content">
-          <div class="gauge-container">
-            <div class="gauge" :style="getGaugeStyle(metricsStore.metrics.ram_percent)">
-              <div class="gauge-fill" :style="`width: ${metricsStore.metrics.ram_percent}%`"></div>
+        <!-- Metrics (online only) -->
+        <div v-if="backend.connected && backendMetrics[backend.id]" class="card-metrics">
+          <div class="metrics-row">
+            <!-- CPU Gauge -->
+            <div class="metric-item">
+              <div class="metric-label">
+                <i class="fas fa-microchip"></i>
+                {{ t('terminalMetrics.cpuUsage') }}
+              </div>
+              <div class="gauge-container">
+                <div class="gauge" :style="getGaugeStyle(backendMetrics[backend.id].cpu_percent)">
+                  <div class="gauge-fill" :style="`width: ${backendMetrics[backend.id].cpu_percent}%`"></div>
+                </div>
+                <div class="gauge-value">
+                  <span class="value">{{ backendMetrics[backend.id].cpu_percent.toFixed(1) }}</span>
+                  <span class="unit">%</span>
+                </div>
+              </div>
             </div>
-            <div class="gauge-value">
-              <span class="value">{{ metricsStore.metrics.ram_percent.toFixed(1) }}</span>
-              <span class="unit">%</span>
-            </div>
-          </div>
-          <div class="metric-status">
-            <span v-if="metricsStore.metrics.ram_percent > 95" class="status-critical">
-              <i class="fas fa-exclamation-circle"></i> {{ t('terminalMetrics.critical') }}
-            </span>
-            <span v-else-if="metricsStore.metrics.ram_percent > 80" class="status-warning">
-              <i class="fas fa-exclamation-triangle"></i> {{ t('terminalMetrics.warning') }}
-            </span>
-            <span v-else class="status-healthy">
-              <i class="fas fa-check-circle"></i> {{ t('terminalMetrics.healthy') }}
-            </span>
-          </div>
-        </div>
-      </div>
 
-      <!-- RAM Available Card -->
-      <div class="metric-card">
-        <div class="metric-header">
-          <i class="fas fa-hdd"></i>
-          <h3>{{ t('terminalMetrics.ramAvailable') }}</h3>
-        </div>
-        <div class="metric-content">
-          <div class="metric-large-value">
-            <span class="value">{{ metricsStore.metrics.ram_available_gb.toFixed(2) }}</span>
-            <span class="unit">GB</span>
+            <!-- RAM Gauge -->
+            <div class="metric-item">
+              <div class="metric-label">
+                <i class="fas fa-memory"></i>
+                {{ t('terminalMetrics.ramUsage') }}
+              </div>
+              <div class="gauge-container">
+                <div class="gauge" :style="getGaugeStyle(backendMetrics[backend.id].ram_percent)">
+                  <div class="gauge-fill" :style="`width: ${backendMetrics[backend.id].ram_percent}%`"></div>
+                </div>
+                <div class="gauge-value">
+                  <span class="value">{{ backendMetrics[backend.id].ram_percent.toFixed(1) }}</span>
+                  <span class="unit">%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- RAM Available -->
+            <div class="metric-item">
+              <div class="metric-label">
+                <i class="fas fa-hdd"></i>
+                {{ t('terminalMetrics.ramAvailable') }}
+              </div>
+              <div class="metric-large-value">
+                <span class="value">{{ backendMetrics[backend.id].ram_available_gb.toFixed(2) }}</span>
+                <span class="unit">GB</span>
+              </div>
+            </div>
           </div>
-          <div class="metric-status">
-            <span v-if="metricsStore.metrics.ram_available_gb < 1.0" class="status-critical">
-              <i class="fas fa-exclamation-circle"></i> {{ t('terminalMetrics.insufficientRAM') }}
-            </span>
-            <span v-else-if="metricsStore.metrics.ram_available_gb < 2.0" class="status-warning">
-              <i class="fas fa-exclamation-triangle"></i> {{ t('terminalMetrics.warning') }}
-            </span>
-            <span v-else class="status-healthy">
-              <i class="fas fa-check-circle"></i> {{ t('terminalMetrics.healthy') }}
-            </span>
+        </div>
+
+        <!-- Offline message -->
+        <div v-else-if="!backend.connected" class="card-offline-message">
+          <i class="fas fa-plug"></i>
+          {{ t('terminalMetrics.backendOffline') }}
+        </div>
+
+        <!-- Loading metrics -->
+        <div v-else-if="backend.connected && !backendMetrics[backend.id] && !metricsError[backend.id]" class="card-loading">
+          <i class="fas fa-spinner fa-spin"></i>
+        </div>
+
+        <!-- Organizations Section -->
+        <div class="card-organizations">
+          <div class="org-section-header">
+            <i class="fas fa-building"></i>
+            <span>{{ t('terminalMetrics.organizations') }}</span>
+          </div>
+          <div v-if="orgsByBackend[backend.id] && orgsByBackend[backend.id].length > 0" class="org-list">
+            <div v-for="entry in orgsByBackend[backend.id]" :key="entry.org.id" class="org-item">
+              <span class="org-name">{{ entry.org.display_name || entry.org.name }}</span>
+              <span class="org-reason-tag" :class="`reason-${entry.reason}`">
+                {{ entry.reason === 'explicit' ? t('terminalMetrics.explicitAssignment') : t('terminalMetrics.systemDefaultAssignment') }}
+              </span>
+            </div>
+          </div>
+          <div v-else class="no-orgs">
+            {{ t('terminalMetrics.noOrganizations') }}
           </div>
         </div>
       </div>
     </div>
 
     <!-- Loading State -->
-    <div v-else-if="metricsStore.isLoading" class="loading-state">
+    <div v-else-if="backendsStore.isLoading" class="loading-state">
       <i class="fas fa-spinner fa-spin fa-3x"></i>
-      <p>Loading metrics...</p>
+      <p>Loading...</p>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="metricsStore.error" class="error-state">
+    <div v-else-if="backendsStore.error" class="error-state">
       <i class="fas fa-exclamation-triangle fa-3x"></i>
-      <p>{{ metricsStore.error }}</p>
+      <p>{{ backendsStore.error }}</p>
       <Button variant="primary" @click="handleRefresh">
         {{ t('terminalMetrics.refresh') }}
       </Button>
     </div>
 
-    <!-- Last Update Info -->
-    <div v-if="metricsStore.metrics" class="last-update">
+    <!-- Last Update Footer -->
+    <div v-if="backendsStore.backends.length > 0 && lastUpdateTime" class="last-update">
       <i class="fas fa-clock"></i>
-      <span>{{ t('terminalMetrics.timestamp') }}: {{ formatTimestamp(metricsStore.metrics.timestamp) }}</span>
+      <span>{{ t('terminalMetrics.timestamp') }}: {{ formatTimestamp(lastUpdateTime) }}</span>
       <span class="auto-refresh-info">
         <i class="fas fa-sync-alt"></i>
         {{ t('terminalMetrics.autoRefresh', { seconds: autoRefreshInterval / 1000 }) }}
@@ -165,68 +190,93 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useTerminalMetricsStore } from '../../../stores/terminalMetrics'
+import { useTerminalMetricsStore, type TerminalMetrics } from '../../../stores/terminalMetrics'
 import { useTerminalBackendsStore } from '../../../stores/terminalBackends'
+import { useOrganizationsStore } from '../../../stores/organizations'
+import axios from 'axios'
 import Button from '../../UI/Button.vue'
 
 const { t } = useI18n()
-const metricsStore = useTerminalMetricsStore()
+// Initialize store to register translations
+useTerminalMetricsStore()
 const backendsStore = useTerminalBackendsStore()
-const selectedBackendFilter = ref('')
+const organizationsStore = useOrganizationsStore()
 
-watch(selectedBackendFilter, async (backendId) => {
-  metricsStore.clearCache()
-  await metricsStore.fetchMetrics(true, backendId || undefined)
-})
+// Per-backend metrics
+const backendMetrics: Record<string, TerminalMetrics> = reactive({})
+const metricsError: Record<string, string> = reactive({})
+const isRefreshing = ref(false)
+const lastUpdateTime = ref<number>(0)
 
-// Auto-refresh configuration (30 seconds)
+// Per-org backend configs
+const orgConfigs: Record<string, { allowed_backends: string[], default_backend: string }> = reactive({})
+
+// Set as default
+const settingDefault = ref<string | null>(null)
+
+// Auto-refresh
 const autoRefreshInterval = 30000
 let refreshIntervalId: NodeJS.Timeout | null = null
 
-onMounted(async () => {
-  // Load backends for filter (no org filter for admin)
-  try {
-    await backendsStore.fetchBackends()
-  } catch {
-    // Non-critical: filter just won't be available
-  }
+// Computed: online/offline counts
+const onlineCount = computed(() => backendsStore.onlineBackends.length)
+const offlineCount = computed(() => backendsStore.backends.length - onlineCount.value)
 
-  // Initial fetch
-  await metricsStore.fetchMetrics()
+const overallStatus = computed(() => {
+  if (onlineCount.value === 0) return 'critical'
+  if (offlineCount.value > 0) return 'warning'
 
-  // Setup auto-refresh
-  refreshIntervalId = setInterval(async () => {
-    try {
-      await metricsStore.fetchMetrics(false, selectedBackendFilter.value || undefined)
-    } catch (error) {
-      console.error('Auto-refresh failed:', error)
+  // Also check metrics health
+  let worstStatus = 'healthy'
+  for (const backend of backendsStore.backends) {
+    if (backend.connected) {
+      const status = getBackendStatus(backendMetrics[backend.id])
+      if (status === 'critical') return 'critical'
+      if (status === 'warning') worstStatus = 'warning'
     }
-  }, autoRefreshInterval)
+  }
+  return worstStatus
 })
 
-onBeforeUnmount(() => {
-  if (refreshIntervalId) {
-    clearInterval(refreshIntervalId)
+const overallStatusIcon = computed(() => {
+  switch (overallStatus.value) {
+    case 'healthy': return 'fas fa-check-circle'
+    case 'warning': return 'fas fa-exclamation-triangle'
+    case 'critical': return 'fas fa-exclamation-circle'
+    default: return 'fas fa-question-circle'
   }
 })
 
-async function handleRefresh() {
-  await metricsStore.refreshMetrics(selectedBackendFilter.value || undefined)
-}
-
-function getStatusIcon() {
-  switch (metricsStore.serverStatus) {
-    case 'healthy':
-      return 'fas fa-check-circle'
-    case 'warning':
-      return 'fas fa-exclamation-triangle'
-    case 'critical':
-      return 'fas fa-exclamation-circle'
-    default:
-      return 'fas fa-question-circle'
+// Organization reverse mapping
+const orgsByBackend = computed(() => {
+  const map: Record<string, { org: any, reason: 'explicit' | 'default' }[]> = {}
+  for (const backend of backendsStore.backends) {
+    map[backend.id] = []
   }
+  const systemDefault = backendsStore.defaultBackend?.id
+  for (const org of organizationsStore.organizations) {
+    const config = orgConfigs[org.id]
+    if (config?.allowed_backends?.length > 0) {
+      for (const backendId of config.allowed_backends) {
+        if (map[backendId]) {
+          map[backendId].push({ org, reason: 'explicit' })
+        }
+      }
+    } else if (systemDefault && map[systemDefault]) {
+      map[systemDefault].push({ org, reason: 'default' })
+    }
+  }
+  return map
+})
+
+// Helpers
+function getBackendStatus(metrics: TerminalMetrics | undefined): string {
+  if (!metrics) return 'unknown'
+  if (metrics.ram_available_gb < 1.0 || metrics.cpu_percent > 95) return 'critical'
+  if (metrics.ram_available_gb < 2.0 || metrics.cpu_percent > 80) return 'warning'
+  return 'healthy'
 }
 
 function getGaugeStyle(percentage: number) {
@@ -239,9 +289,108 @@ function getGaugeStyle(percentage: number) {
 }
 
 function formatTimestamp(timestamp: number) {
-  const date = new Date(timestamp * 1000)
+  const date = new Date(timestamp)
   return date.toLocaleString()
 }
+
+// Data fetching
+async function fetchAllMetrics() {
+  const promises = backendsStore.backends
+    .filter(b => b.connected)
+    .map(async (backend) => {
+      try {
+        const response = await axios.get('/terminals/metrics', {
+          params: { backend: backend.id, nocache: '1' }
+        })
+        backendMetrics[backend.id] = response.data
+        delete metricsError[backend.id]
+      } catch (err: any) {
+        metricsError[backend.id] = err.message || 'Failed to fetch metrics'
+      }
+    })
+
+  await Promise.allSettled(promises)
+  lastUpdateTime.value = Date.now()
+}
+
+async function fetchOrgConfigs() {
+  const promises = organizationsStore.organizations.map(async (org) => {
+    try {
+      const response = await axios.get(`/organizations/${org.id}/backends`)
+      orgConfigs[org.id] = response.data
+    } catch {
+      // Non-critical: org just won't show backend mapping
+    }
+  })
+
+  await Promise.allSettled(promises)
+}
+
+async function initialLoad() {
+  isRefreshing.value = true
+  try {
+    // Load backends and organizations in parallel
+    await Promise.all([
+      backendsStore.fetchBackends(),
+      organizationsStore.loadOrganizations()
+    ])
+
+    // Then load metrics and org configs in parallel
+    await Promise.all([
+      fetchAllMetrics(),
+      fetchOrgConfigs()
+    ])
+  } catch {
+    // Errors are tracked per-store
+  } finally {
+    isRefreshing.value = false
+  }
+}
+
+async function handleRefresh() {
+  isRefreshing.value = true
+  try {
+    await Promise.all([
+      backendsStore.fetchBackends(),
+      organizationsStore.loadOrganizations()
+    ])
+    await Promise.all([
+      fetchAllMetrics(),
+      fetchOrgConfigs()
+    ])
+  } finally {
+    isRefreshing.value = false
+  }
+}
+
+async function setAsDefault(backendId: string) {
+  settingDefault.value = backendId
+  try {
+    await backendsStore.setSystemDefault(backendId)
+    await backendsStore.fetchBackends()
+  } finally {
+    settingDefault.value = null
+  }
+}
+
+onMounted(async () => {
+  await initialLoad()
+
+  // Auto-refresh: only re-fetch metrics every 30s
+  refreshIntervalId = setInterval(async () => {
+    try {
+      await fetchAllMetrics()
+    } catch {
+      // Silent refresh failure
+    }
+  }, autoRefreshInterval)
+})
+
+onBeforeUnmount(() => {
+  if (refreshIntervalId) {
+    clearInterval(refreshIntervalId)
+  }
+})
 </script>
 
 <style scoped>
@@ -268,23 +417,6 @@ function formatTimestamp(timestamp: number) {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-}
-
-.backend-filter-select {
-  padding: var(--spacing-xs) var(--spacing-md);
-  border: var(--border-width-medium) solid var(--color-border-medium);
-  border-radius: var(--border-radius-md);
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-}
-
-.backend-filter-select:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-focus-primary);
 }
 
 /* Status Banner */
@@ -327,6 +459,10 @@ function formatTimestamp(timestamp: number) {
   font-size: var(--font-size-xl);
 }
 
+.status-health-label {
+  font-weight: var(--font-weight-medium);
+}
+
 .status-message {
   display: flex;
   align-items: center;
@@ -334,15 +470,15 @@ function formatTimestamp(timestamp: number) {
   font-weight: var(--font-weight-medium);
 }
 
-/* Metrics Grid */
-.metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: var(--spacing-xl);
+/* Backend Cards List */
+.backends-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
   margin-bottom: var(--spacing-xl);
 }
 
-.metric-card {
+.backend-card {
   background: var(--color-bg-primary);
   border: var(--border-width-thin) solid var(--color-border-light);
   border-radius: var(--border-radius-lg);
@@ -351,44 +487,141 @@ function formatTimestamp(timestamp: number) {
   transition: box-shadow var(--transition-base);
 }
 
-.metric-card:hover {
+.backend-card:hover {
   box-shadow: var(--shadow-md);
 }
 
-.metric-header {
+.backend-card.offline {
+  opacity: 0.7;
+  background: var(--color-bg-secondary);
+}
+
+/* Card Header */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-lg);
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.card-title-row {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
+  gap: var(--spacing-sm);
 }
 
-.metric-header i {
-  font-size: 2rem;
-  color: var(--color-primary);
-}
-
-.metric-header h3 {
+.card-title-row h3 {
   margin: 0;
   font-size: var(--font-size-xl);
   color: var(--color-text-primary);
 }
 
-.metric-content {
+.card-status-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.connection-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.connection-dot.online {
+  background-color: var(--color-success);
+  box-shadow: 0 0 6px var(--color-success);
+}
+
+.connection-dot.offline {
+  background-color: var(--color-danger);
+}
+
+.default-badge {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  padding: 2px var(--spacing-sm);
+  border-radius: var(--border-radius-full);
+  background-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+.connection-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.text-success { color: var(--color-success); }
+.text-danger { color: var(--color-danger); }
+
+.health-badge {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  padding: 2px var(--spacing-sm);
+  border-radius: var(--border-radius-md);
+}
+
+.health-healthy {
+  background-color: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.health-warning {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.health-critical {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+/* Metrics Row */
+.card-metrics {
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
+}
+
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-xl);
+}
+
+.metric-item {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-sm);
+}
+
+.metric-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.metric-label i {
+  color: var(--color-primary);
 }
 
 /* Gauge */
 .gauge-container {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-xs);
 }
 
 .gauge {
   width: 100%;
-  height: 40px;
+  height: 24px;
   background-color: var(--color-gray-200);
   border-radius: var(--border-radius-full);
   overflow: hidden;
@@ -405,18 +638,17 @@ function formatTimestamp(timestamp: number) {
 .gauge-value {
   display: flex;
   align-items: baseline;
-  justify-content: center;
   gap: var(--spacing-xs);
 }
 
 .gauge-value .value {
-  font-size: 2.5rem;
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
 }
 
 .gauge-value .unit {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 }
 
@@ -424,46 +656,100 @@ function formatTimestamp(timestamp: number) {
 .metric-large-value {
   display: flex;
   align-items: baseline;
-  justify-content: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-xl) 0;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) 0;
 }
 
 .metric-large-value .value {
-  font-size: 3.5rem;
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
 }
 
 .metric-large-value .unit {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 }
 
-/* Metric Status */
-.metric-status {
+/* Offline / Loading states inside card */
+.card-offline-message {
   display: flex;
-  justify-content: center;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: var(--spacing-sm);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  background-color: var(--color-bg-secondary);
   border-radius: var(--border-radius-md);
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.card-loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  color: var(--color-text-secondary);
+}
+
+/* Organizations Section */
+.card-organizations {
+  border-top: var(--border-width-thin) solid var(--color-border-light);
+  padding-top: var(--spacing-md);
+}
+
+.org-section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
 }
 
-.status-healthy {
-  color: var(--color-success-text);
-  background-color: var(--color-success-bg);
+.org-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
 }
 
-.status-warning {
-  color: var(--color-warning-text);
-  background-color: var(--color-warning-bg);
+.org-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
 }
 
-.status-critical {
-  color: var(--color-danger-text);
-  background-color: var(--color-danger-bg);
+.org-name {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.org-reason-tag {
+  font-size: var(--font-size-xs);
+  padding: 1px var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.reason-explicit {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+.reason-default {
+  background-color: var(--color-gray-300);
+  color: var(--color-text-secondary);
+}
+
+.no-orgs {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-style: italic;
 }
 
 /* Loading/Error States */
@@ -516,8 +802,12 @@ function formatTimestamp(timestamp: number) {
     gap: var(--spacing-md);
   }
 
-  .metrics-grid {
+  .metrics-row {
     grid-template-columns: 1fr;
+  }
+
+  .card-header {
+    flex-direction: column;
   }
 
   .last-update {
