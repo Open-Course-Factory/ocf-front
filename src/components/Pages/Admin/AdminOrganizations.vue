@@ -98,7 +98,7 @@
               <span v-else class="text-muted text-italic">{{ t('adminOrgs.noPlan') }}</span>
             </td>
             <td>
-              <template v-if="orgConfigs[org.id] && orgConfigs[org.id].allowed_backends.length > 0">
+              <template v-if="orgConfigs[org.id]?.allowed_backends?.length > 0">
                 <span
                   v-for="backendId in orgConfigs[org.id].allowed_backends"
                   :key="backendId"
