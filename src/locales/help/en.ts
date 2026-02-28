@@ -1237,6 +1237,74 @@ export const helpEn = {
           }
         },
 
+        usageMetrics: {
+          title: "Usage Metrics",
+          description: "Your subscription dashboard displays key usage metrics so you can monitor your consumption at a glance.",
+          activeCourses: {
+            title: "Active Courses",
+            description: "The number of courses currently active on your account. This count reflects courses in progress or published, helping you track your content output."
+          },
+          concurrentTerminals: {
+            title: "Concurrent Terminals",
+            description: "The number of terminal sessions running simultaneously. Your plan defines the maximum allowed, and the dashboard shows your current usage in real time."
+          },
+          concurrentUsers: {
+            title: "Concurrent Users",
+            description: "The number of users connected at the same time across your sessions. This metric is especially relevant for trainers managing live classes."
+          }
+        },
+
+        subscriptionSource: {
+          title: "Subscription Source",
+          description: "Your subscription can come from two different sources. The dashboard clearly indicates which one is currently active.",
+          personal: {
+            title: "Personal Subscription",
+            description: "A subscription you purchased and manage yourself. You have full control over billing, plan changes, and cancellation."
+          },
+          organization: {
+            title: "Organization-Assigned Subscription",
+            description: "A subscription assigned to you by an organization administrator. The organization manages billing and plan settings on your behalf."
+          },
+          indicator: {
+            title: "Visual Indicator",
+            description: "A badge on your dashboard clearly shows whether your active subscription is personal or assigned by an organization, so there is never any ambiguity."
+          }
+        },
+
+        multipleSubscriptions: {
+          title: "Multiple Subscriptions",
+          description: "If you have subscriptions from multiple sources (for example, a personal plan and an organization-assigned plan), they are displayed in a stacked view on your dashboard.",
+          stacked: {
+            title: "Stacked Display",
+            description: "When you hold two or more subscriptions from different sources, each one appears as a separate card. The subscription with the highest tier takes priority for determining your available features and quotas."
+          }
+        },
+
+        assignedSubscriptions: {
+          title: "Assigned Subscriptions",
+          description: "When your subscription is assigned by an organization, your experience is streamlined: the billing section is hidden since the organization handles payments directly.",
+          managedByAdmin: "Managed by your organization administrator who controls plan level and renewal",
+          noBilling: "Simplified view without billing details, since the organization handles all payments",
+          sameFeatures: "Access to the same features and quotas as a personal subscription of the same tier"
+        },
+
+        freePlan: {
+          title: "Free Plan",
+          description: "The free plan lets you explore the platform and get started without any financial commitment.",
+          noCreditCard: {
+            title: "No Credit Card Required",
+            description: "You can activate the free plan instantly without entering any payment information. Simply create your account and start using the platform right away."
+          }
+        },
+
+        trialPeriod: {
+          title: "Trial Period",
+          description: "When you start a trial of a paid plan, your dashboard displays a countdown so you always know how much time remains before the trial ends.",
+          countdown: "A trial countdown timer is displayed prominently on your subscription dashboard",
+          daysRemaining: "The number of days remaining in your trial is shown clearly, updating daily",
+          upgradeAnytime: "You can upgrade to a paid plan at any time during the trial to keep uninterrupted access"
+        },
+
         planChange: {
           title: "Plan Changes",
           description: "You can modify your subscription at any time as your needs evolve.",

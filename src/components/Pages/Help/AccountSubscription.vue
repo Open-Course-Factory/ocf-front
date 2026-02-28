@@ -121,6 +121,145 @@
       </section>
 
       <section class="help-section">
+        <h2><i class="fas fa-chart-pie"></i> {{ t('help.account.subscription.usageMetrics.title') }}</h2>
+        <p>
+          {{ t('help.account.subscription.usageMetrics.description') }}
+        </p>
+
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <i class="fas fa-book-open"></i>
+            <h4>{{ t('help.account.subscription.usageMetrics.activeCourses.title') }}</h4>
+            <p>
+              {{ t('help.account.subscription.usageMetrics.activeCourses.description') }}
+            </p>
+          </div>
+
+          <div class="metric-card">
+            <i class="fas fa-terminal"></i>
+            <h4>{{ t('help.account.subscription.usageMetrics.concurrentTerminals.title') }}</h4>
+            <p>
+              {{ t('help.account.subscription.usageMetrics.concurrentTerminals.description') }}
+            </p>
+          </div>
+
+          <div class="metric-card">
+            <i class="fas fa-users"></i>
+            <h4>{{ t('help.account.subscription.usageMetrics.concurrentUsers.title') }}</h4>
+            <p>
+              {{ t('help.account.subscription.usageMetrics.concurrentUsers.description') }}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-id-badge"></i> {{ t('help.account.subscription.subscriptionSource.title') }}</h2>
+        <p>
+          {{ t('help.account.subscription.subscriptionSource.description') }}
+        </p>
+
+        <div class="source-options">
+          <div class="source-card personal">
+            <div class="source-header">
+              <i class="fas fa-user"></i>
+              <h4>{{ t('help.account.subscription.subscriptionSource.personal.title') }}</h4>
+            </div>
+            <div class="source-content">
+              <p>
+                {{ t('help.account.subscription.subscriptionSource.personal.description') }}
+              </p>
+            </div>
+          </div>
+
+          <div class="source-card organization">
+            <div class="source-header">
+              <i class="fas fa-building"></i>
+              <h4>{{ t('help.account.subscription.subscriptionSource.organization.title') }}</h4>
+            </div>
+            <div class="source-content">
+              <p>
+                {{ t('help.account.subscription.subscriptionSource.organization.description') }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-box">
+          <h4><i class="fas fa-eye"></i> {{ t('help.account.subscription.subscriptionSource.indicator.title') }}</h4>
+          <p>{{ t('help.account.subscription.subscriptionSource.indicator.description') }}</p>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-layer-group"></i> {{ t('help.account.subscription.multipleSubscriptions.title') }}</h2>
+        <p>
+          {{ t('help.account.subscription.multipleSubscriptions.description') }}
+        </p>
+
+        <div class="info-box">
+          <h4><i class="fas fa-info-circle"></i> {{ t('help.account.subscription.multipleSubscriptions.stacked.title') }}</h4>
+          <p>{{ t('help.account.subscription.multipleSubscriptions.stacked.description') }}</p>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-user-shield"></i> {{ t('help.account.subscription.assignedSubscriptions.title') }}</h2>
+        <p>
+          {{ t('help.account.subscription.assignedSubscriptions.description') }}
+        </p>
+
+        <div class="assigned-features">
+          <div class="feature-item">
+            <i class="fas fa-cog"></i>
+            <span>{{ t('help.account.subscription.assignedSubscriptions.managedByAdmin') }}</span>
+          </div>
+          <div class="feature-item">
+            <i class="fas fa-eye-slash"></i>
+            <span>{{ t('help.account.subscription.assignedSubscriptions.noBilling') }}</span>
+          </div>
+          <div class="feature-item">
+            <i class="fas fa-check-circle"></i>
+            <span>{{ t('help.account.subscription.assignedSubscriptions.sameFeatures') }}</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-gift"></i> {{ t('help.account.subscription.freePlan.title') }}</h2>
+        <p>
+          {{ t('help.account.subscription.freePlan.description') }}
+        </p>
+
+        <div class="info-box success">
+          <h4><i class="fas fa-check"></i> {{ t('help.account.subscription.freePlan.noCreditCard.title') }}</h4>
+          <p>{{ t('help.account.subscription.freePlan.noCreditCard.description') }}</p>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-hourglass-half"></i> {{ t('help.account.subscription.trialPeriod.title') }}</h2>
+        <p>
+          {{ t('help.account.subscription.trialPeriod.description') }}
+        </p>
+
+        <div class="trial-features">
+          <div class="feature-item">
+            <i class="fas fa-clock"></i>
+            <span>{{ t('help.account.subscription.trialPeriod.countdown') }}</span>
+          </div>
+          <div class="feature-item">
+            <i class="fas fa-calendar-day"></i>
+            <span>{{ t('help.account.subscription.trialPeriod.daysRemaining') }}</span>
+          </div>
+          <div class="feature-item">
+            <i class="fas fa-arrow-circle-up"></i>
+            <span>{{ t('help.account.subscription.trialPeriod.upgradeAnytime') }}</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="help-section">
         <h2><i class="fas fa-exchange-alt"></i> {{ t('help.account.subscription.planChange.title') }}</h2>
         <p>
           {{ t('help.account.subscription.planChange.description') }}
@@ -759,11 +898,175 @@ onMounted(async () => {
   font-size: 0.9rem;
 }
 
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin: 25px 0;
+}
+
+.metric-card {
+  text-align: center;
+  padding: 25px;
+  background: var(--color-gray-50);
+  border-radius: 8px;
+  border: 2px solid var(--color-gray-200);
+  transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+  border-color: var(--color-info);
+  transform: translateY(-5px);
+}
+
+.metric-card i {
+  font-size: 2rem;
+  color: var(--color-info);
+  margin-bottom: 15px;
+}
+
+.metric-card h4 {
+  margin: 0 0 10px 0;
+  color: var(--color-text-primary);
+}
+
+.metric-card p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.source-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin: 25px 0;
+}
+
+.source-card {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid;
+  transition: all 0.3s ease;
+}
+
+.source-card:hover {
+  transform: translateY(-2px);
+}
+
+.source-card.personal {
+  border-color: var(--color-primary);
+}
+
+.source-card.organization {
+  border-color: var(--color-info);
+}
+
+.source-header {
+  padding: 15px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.source-card.personal .source-header {
+  background: var(--color-gray-50);
+  color: var(--color-primary);
+}
+
+.source-card.organization .source-header {
+  background: var(--color-info-bg);
+  color: var(--color-info);
+}
+
+.source-header i {
+  font-size: 1.3rem;
+}
+
+.source-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.source-content {
+  padding: 20px;
+  background: var(--color-bg-primary);
+}
+
+.source-content p {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.info-box {
+  background: var(--color-info-bg);
+  border: 2px solid var(--color-info);
+  border-radius: 8px;
+  padding: 15px;
+  margin: 20px 0;
+}
+
+.info-box h4 {
+  margin: 0 0 10px 0;
+  color: var(--color-info);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-box p {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.info-box.success {
+  background: var(--color-success-bg);
+  border-color: var(--color-success);
+}
+
+.info-box.success h4 {
+  color: var(--color-success);
+}
+
+.assigned-features,
+.trial-features {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.assigned-features .feature-item,
+.trial-features .feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  background: var(--color-gray-50);
+  border-radius: 8px;
+  border-left: 4px solid var(--color-primary);
+}
+
+.assigned-features .feature-item i,
+.trial-features .feature-item i {
+  color: var(--color-primary);
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.assigned-features .feature-item span,
+.trial-features .feature-item span {
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .subscription-overview,
   .optimization-grid,
-  .support-options {
+  .support-options,
+  .metrics-grid {
     grid-template-columns: 1fr;
   }
 
@@ -777,7 +1080,8 @@ onMounted(async () => {
     text-align: center;
   }
 
-  .cancellation-options {
+  .cancellation-options,
+  .source-options {
     grid-template-columns: 1fr;
   }
 

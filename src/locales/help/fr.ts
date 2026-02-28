@@ -1237,6 +1237,74 @@ export const helpFr = {
           }
         },
 
+        usageMetrics: {
+          title: "Indicateurs d'utilisation",
+          description: "Le tableau de bord de votre abonnement affiche les indicateurs clés d'utilisation pour suivre votre consommation en un coup d'oeil.",
+          activeCourses: {
+            title: "Cours actifs",
+            description: "Le nombre de cours actuellement actifs sur votre compte. Ce compteur reflète les cours en cours ou publiés, vous permettant de suivre votre production de contenu."
+          },
+          concurrentTerminals: {
+            title: "Terminaux simultanés",
+            description: "Le nombre de sessions terminal fonctionnant simultanément. Votre plan définit le maximum autorisé, et le tableau de bord affiche votre utilisation actuelle en temps réel."
+          },
+          concurrentUsers: {
+            title: "Utilisateurs simultanés",
+            description: "Le nombre d'utilisateurs connectés en même temps sur l'ensemble de vos sessions. Cet indicateur est particulièrement pertinent pour les formateurs gérant des classes en direct."
+          }
+        },
+
+        subscriptionSource: {
+          title: "Source de l'abonnement",
+          description: "Votre abonnement peut provenir de deux sources différentes. Le tableau de bord indique clairement laquelle est actuellement active.",
+          personal: {
+            title: "Abonnement personnel",
+            description: "Un abonnement que vous avez souscrit et que vous gérez vous-même. Vous avez le contrôle total sur la facturation, les changements de plan et l'annulation."
+          },
+          organization: {
+            title: "Abonnement attribué par une organisation",
+            description: "Un abonnement qui vous a été attribué par un administrateur d'organisation. L'organisation gère la facturation et les paramètres du plan en votre nom."
+          },
+          indicator: {
+            title: "Indicateur visuel",
+            description: "Un badge sur votre tableau de bord indique clairement si votre abonnement actif est personnel ou attribué par une organisation, pour lever toute ambiguïté."
+          }
+        },
+
+        multipleSubscriptions: {
+          title: "Abonnements multiples",
+          description: "Si vous disposez d'abonnements provenant de plusieurs sources (par exemple, un plan personnel et un plan attribué par une organisation), ils sont affichés sous forme empilée sur votre tableau de bord.",
+          stacked: {
+            title: "Affichage empilé",
+            description: "Lorsque vous détenez deux abonnements ou plus provenant de sources différentes, chacun apparaît sous forme de carte distincte. L'abonnement de niveau le plus élevé a la priorité pour déterminer vos fonctionnalités et quotas disponibles."
+          }
+        },
+
+        assignedSubscriptions: {
+          title: "Abonnements attribués",
+          description: "Lorsque votre abonnement est attribué par une organisation, votre expérience est simplifiée : la section facturation est masquée puisque l'organisation gère directement les paiements.",
+          managedByAdmin: "Géré par l'administrateur de votre organisation qui contrôle le niveau du plan et le renouvellement",
+          noBilling: "Vue simplifiée sans détails de facturation, l'organisation prenant en charge tous les paiements",
+          sameFeatures: "Accès aux mêmes fonctionnalités et quotas qu'un abonnement personnel du même niveau"
+        },
+
+        freePlan: {
+          title: "Plan gratuit",
+          description: "Le plan gratuit vous permet d'explorer la plateforme et de démarrer sans aucun engagement financier.",
+          noCreditCard: {
+            title: "Aucune carte bancaire requise",
+            description: "Vous pouvez activer le plan gratuit instantanément sans saisir aucune information de paiement. Créez simplement votre compte et commencez à utiliser la plateforme immédiatement."
+          }
+        },
+
+        trialPeriod: {
+          title: "Période d'essai",
+          description: "Lorsque vous démarrez l'essai d'un plan payant, votre tableau de bord affiche un compte à rebours pour que vous sachiez toujours combien de temps il reste avant la fin de l'essai.",
+          countdown: "Un compteur de compte à rebours d'essai est affiché de manière visible sur votre tableau de bord d'abonnement",
+          daysRemaining: "Le nombre de jours restants dans votre essai est affiché clairement, avec une mise à jour quotidienne",
+          upgradeAnytime: "Vous pouvez passer à un plan payant à tout moment pendant l'essai pour conserver un accès ininterrompu"
+        },
+
         planChange: {
           title: "Changement de plan",
           description: "Vous pouvez modifier votre abonnement à tout moment selon l'évolution de vos besoins.",
