@@ -239,7 +239,7 @@
 
         <div class="footer-bottom">
           <div class="footer-left">
-            <p>&copy; 2023-2025 Solution Libre. {{ t('landing.footer.rights') }}</p>
+            <p>&copy; 2023-2026 Solution Libre. {{ t('landing.footer.rights') }}</p>
             <div class="version-info">
               <AlphaBadge size="large" />
               <span class="version-divider">•</span>
