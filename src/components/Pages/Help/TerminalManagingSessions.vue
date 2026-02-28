@@ -249,6 +249,168 @@
       </section>
 
       <section class="help-section">
+        <h2><i class="fas fa-columns"></i> {{ t('help.terminals.managingSessions.dashboardLayout.title') }}</h2>
+        <p>{{ t('help.terminals.managingSessions.dashboardLayout.description') }}</p>
+
+        <div class="feature-grid">
+          <div class="feature-card">
+            <i class="fas fa-play-circle"></i>
+            <h4>{{ t('help.terminals.managingSessions.dashboardLayout.activeSessions.title') }}</h4>
+            <p>{{ t('help.terminals.managingSessions.dashboardLayout.activeSessions.description') }}</p>
+          </div>
+          <div class="feature-card">
+            <i class="fas fa-archive"></i>
+            <h4>{{ t('help.terminals.managingSessions.dashboardLayout.inactiveSessions.title') }}</h4>
+            <p>{{ t('help.terminals.managingSessions.dashboardLayout.inactiveSessions.description') }}</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-pencil-alt"></i> {{ t('help.terminals.managingSessions.inlineRenaming.title') }}</h2>
+        <p>{{ t('help.terminals.managingSessions.inlineRenaming.description') }}</p>
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>{{ t('help.terminals.managingSessions.inlineRenaming.howTo.title') }}</h4>
+            <p v-html="t('help.terminals.managingSessions.inlineRenaming.howTo.description')"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-history"></i> {{ t('help.terminals.managingSessions.commandHistory.title') }}</h2>
+        <p>{{ t('help.terminals.managingSessions.commandHistory.description') }}</p>
+
+        <div class="feature-grid">
+          <div class="feature-card">
+            <i class="fas fa-search"></i>
+            <h4>{{ t('help.terminals.managingSessions.commandHistory.search.title') }}</h4>
+            <p>{{ t('help.terminals.managingSessions.commandHistory.search.description') }}</p>
+          </div>
+          <div class="feature-card">
+            <i class="fas fa-sort-amount-down"></i>
+            <h4>{{ t('help.terminals.managingSessions.commandHistory.sort.title') }}</h4>
+            <p>{{ t('help.terminals.managingSessions.commandHistory.sort.description') }}</p>
+          </div>
+          <div class="feature-card">
+            <i class="fas fa-file-export"></i>
+            <h4>{{ t('help.terminals.managingSessions.commandHistory.export.title') }}</h4>
+            <p>{{ t('help.terminals.managingSessions.commandHistory.export.description') }}</p>
+          </div>
+          <div class="feature-card">
+            <i class="fas fa-clipboard"></i>
+            <h4>{{ t('help.terminals.managingSessions.commandHistory.clickToPaste.title') }}</h4>
+            <p>{{ t('help.terminals.managingSessions.commandHistory.clickToPaste.description') }}</p>
+          </div>
+        </div>
+
+        <div class="warning-box">
+          <h4><i class="fas fa-exclamation-triangle"></i> {{ t('help.terminals.managingSessions.commandHistory.deleteAll.title') }}</h4>
+          <p v-html="t('help.terminals.managingSessions.commandHistory.deleteAll.description')"></p>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-ellipsis-v"></i> {{ t('help.terminals.managingSessions.moreActions.title') }}</h2>
+        <p>{{ t('help.terminals.managingSessions.moreActions.description') }}</p>
+
+        <div class="action-list">
+          <div class="action-item">
+            <i class="fas fa-link"></i>
+            <div>
+              <h4>{{ t('help.terminals.managingSessions.moreActions.copyUrl.title') }}</h4>
+              <p>{{ t('help.terminals.managingSessions.moreActions.copyUrl.description') }}</p>
+            </div>
+          </div>
+          <div class="action-item">
+            <i class="fas fa-code"></i>
+            <div>
+              <h4>{{ t('help.terminals.managingSessions.moreActions.copyIframe.title') }}</h4>
+              <p>{{ t('help.terminals.managingSessions.moreActions.copyIframe.description') }}</p>
+            </div>
+          </div>
+          <div class="action-item">
+            <i class="fas fa-users-cog"></i>
+            <div>
+              <h4>{{ t('help.terminals.managingSessions.moreActions.manageAccess.title') }}</h4>
+              <p>{{ t('help.terminals.managingSessions.moreActions.manageAccess.description') }}</p>
+            </div>
+          </div>
+          <div class="action-item">
+            <i class="fas fa-sync"></i>
+            <div>
+              <h4>{{ t('help.terminals.managingSessions.moreActions.syncSession.title') }}</h4>
+              <p>{{ t('help.terminals.managingSessions.moreActions.syncSession.description') }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-circle"></i> {{ t('help.terminals.managingSessions.statusIndicators.title') }}</h2>
+        <p>{{ t('help.terminals.managingSessions.statusIndicators.description') }}</p>
+
+        <div class="status-list">
+          <div class="status-item active-status">
+            <span class="status-dot active"></span>
+            <div>
+              <h4>{{ t('help.terminals.managingSessions.statusIndicators.active.title') }}</h4>
+              <p>{{ t('help.terminals.managingSessions.statusIndicators.active.description') }}</p>
+            </div>
+          </div>
+          <div class="status-item stopped-status">
+            <span class="status-dot stopped"></span>
+            <div>
+              <h4>{{ t('help.terminals.managingSessions.statusIndicators.stopped.title') }}</h4>
+              <p>{{ t('help.terminals.managingSessions.statusIndicators.stopped.description') }}</p>
+            </div>
+          </div>
+          <div class="status-item expired-status">
+            <span class="status-dot expired"></span>
+            <div>
+              <h4>{{ t('help.terminals.managingSessions.statusIndicators.expired.title') }}</h4>
+              <p>{{ t('help.terminals.managingSessions.statusIndicators.expired.description') }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-clock"></i> {{ t('help.terminals.managingSessions.lastSyncTime.title') }}</h2>
+        <p>{{ t('help.terminals.managingSessions.lastSyncTime.description') }}</p>
+
+        <div class="tip-box">
+          <h4><i class="fas fa-lightbulb"></i> {{ t('help.terminals.managingSessions.lastSyncTime.tip.title') }}</h4>
+          <p>{{ t('help.terminals.managingSessions.lastSyncTime.tip.description') }}</p>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-hourglass-half"></i> {{ t('help.terminals.managingSessions.expiryWarnings.title') }}</h2>
+        <p>{{ t('help.terminals.managingSessions.expiryWarnings.description') }}</p>
+
+        <div class="feature-grid">
+          <div class="feature-card info-level">
+            <i class="fas fa-info-circle"></i>
+            <h4>{{ t('help.terminals.managingSessions.expiryWarnings.tenMin.title') }}</h4>
+            <p>{{ t('help.terminals.managingSessions.expiryWarnings.tenMin.description') }}</p>
+          </div>
+          <div class="feature-card warning-level">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h4>{{ t('help.terminals.managingSessions.expiryWarnings.fiveMin.title') }}</h4>
+            <p>{{ t('help.terminals.managingSessions.expiryWarnings.fiveMin.description') }}</p>
+          </div>
+          <div class="feature-card danger-level">
+            <i class="fas fa-exclamation-circle"></i>
+            <h4>{{ t('help.terminals.managingSessions.expiryWarnings.oneMin.title') }}</h4>
+            <p>{{ t('help.terminals.managingSessions.expiryWarnings.oneMin.description') }}</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="help-section">
         <h2><i class="fas fa-question-circle"></i> {{ t('help.navigation.nextSteps') }}</h2>
         <div class="next-steps">
           <router-link :to="`${helpRoutePrefix}/terminals/sharing`" class="next-step-card">
@@ -517,6 +679,114 @@ onMounted(async () => {
   font-size: 0.9rem;
 }
 
+.action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.action-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 15px;
+  background: var(--color-gray-50);
+  border-radius: 8px;
+}
+
+.action-item i {
+  font-size: 1.3rem;
+  color: var(--color-primary);
+  margin-top: 5px;
+}
+
+.action-item h4 {
+  margin: 0 0 5px 0;
+  color: var(--color-text-primary);
+  font-size: 1rem;
+}
+
+.action-item p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  background: var(--color-gray-50);
+  border-radius: 8px;
+}
+
+.status-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.active {
+  background: var(--color-success);
+}
+
+.status-dot.stopped {
+  background: var(--color-gray-400, #9ca3af);
+}
+
+.status-dot.expired {
+  background: var(--color-danger);
+}
+
+.status-item h4 {
+  margin: 0 0 5px 0;
+  color: var(--color-text-primary);
+  font-size: 1rem;
+}
+
+.status-item p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.feature-card.info-level {
+  border-color: var(--color-info);
+  background: var(--color-info-bg);
+}
+
+.feature-card.info-level i {
+  color: var(--color-info);
+}
+
+.feature-card.warning-level {
+  border-color: var(--color-warning);
+  background: var(--color-warning-bg);
+}
+
+.feature-card.warning-level i {
+  color: var(--color-warning);
+}
+
+.feature-card.danger-level {
+  border-color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+
+.feature-card.danger-level i {
+  color: var(--color-danger);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .feature-grid,
@@ -535,6 +805,12 @@ onMounted(async () => {
   }
 
   .practice-item {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .status-item,
+  .action-item {
     flex-direction: column;
     text-align: center;
   }

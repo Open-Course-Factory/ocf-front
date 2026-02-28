@@ -407,6 +407,117 @@ export const helpFr = {
             title: "Intégration Iframe",
             description: "Intégrez les terminaux dans vos propres applications ou plateformes éducatives."
           }
+        },
+
+        dashboardLayout: {
+          title: "Disposition unifiée du tableau de bord",
+          description: "Le tableau de bord des sessions organise vos terminaux en deux sections distinctes pour une vue d'ensemble claire de tous vos environnements.",
+          activeSessions: {
+            title: "Sessions actives",
+            description: "Vos sessions en cours d'exécution sont affichées en évidence en haut avec un badge de comptage indiquant le nombre total de terminaux actifs."
+          },
+          inactiveSessions: {
+            title: "Sessions inactives",
+            description: "Les sessions arrêtées et expirées sont regroupées dans une section repliable que vous pouvez développer ou réduire pour garder votre tableau de bord ordonné."
+          }
+        },
+
+        inlineRenaming: {
+          title: "Renommage de session en ligne",
+          description: "Vous pouvez renommer vos sessions terminal directement depuis le tableau de bord sans ouvrir de fenêtre modale ou de page de paramètres.",
+          howTo: {
+            title: "Renommer une session",
+            description: "Cliquez sur l'<strong>icône de crayon</strong> à côté du nom de la session, saisissez le nouveau nom, puis appuyez sur <strong>Entrée</strong> pour enregistrer ou <strong>Échap</strong> pour annuler."
+          }
+        },
+
+        commandHistory: {
+          title: "Historique des commandes",
+          description: "Chaque session terminal conserve un historique détaillé des commandes que vous pouvez parcourir, rechercher et exporter.",
+          search: {
+            title: "Recherche et filtrage",
+            description: "Utilisez la barre de recherche pour filtrer les commandes par mot-clé. Les résultats se mettent à jour en temps réel pendant la saisie."
+          },
+          sort: {
+            title: "Tri par date",
+            description: "Les commandes sont listées par ordre chronologique. Basculez entre l'ordre du plus récent au plus ancien et inversement."
+          },
+          export: {
+            title: "Exporter l'historique",
+            description: "Téléchargez votre historique de commandes au format CSV ou JSON à des fins de documentation ou d'audit."
+          },
+          clickToPaste: {
+            title: "Cliquer pour coller",
+            description: "Cliquez sur n'importe quelle commande dans l'historique pour la coller instantanément dans le terminal actif, prête à être exécutée."
+          },
+          deleteAll: {
+            title: "Supprimer tout l'historique",
+            description: "Le bouton <strong>\"Tout supprimer\"</strong> efface l'intégralité de l'historique des commandes. Une boîte de confirmation empêche la suppression accidentelle."
+          }
+        },
+
+        moreActions: {
+          title: "Menu d'actions supplémentaires",
+          description: "Chaque carte de session inclut un menu déroulant \"Plus d'actions\" avec des opérations complémentaires.",
+          copyUrl: {
+            title: "Copier l'URL",
+            description: "Copiez l'URL d'accès direct au terminal dans votre presse-papiers pour un partage rapide ou un ajout aux favoris."
+          },
+          copyIframe: {
+            title: "Copier le code iframe",
+            description: "Générez et copiez le code d'intégration iframe pour intégrer le terminal dans des sites web externes ou des plateformes LMS."
+          },
+          manageAccess: {
+            title: "Gérer les accès",
+            description: "Ouvrez le panneau de gestion des accès pour ajouter ou supprimer des utilisateurs et configurer les permissions de partage."
+          },
+          syncSession: {
+            title: "Synchroniser la session",
+            description: "Synchronisez manuellement le statut de la session avec le serveur pour obtenir les informations les plus récentes."
+          }
+        },
+
+        statusIndicators: {
+          title: "Indicateurs de statut",
+          description: "Chaque session affiche un point coloré de statut pour une identification visuelle rapide de son état actuel.",
+          active: {
+            title: "Active (vert)",
+            description: "La session est en cours d'exécution et prête à être utilisée. Vous pouvez vous connecter au terminal immédiatement."
+          },
+          stopped: {
+            title: "Arrêtée (gris)",
+            description: "La session a été arrêtée manuellement. Elle n'est plus accessible mais peut encore apparaître dans votre liste."
+          },
+          expired: {
+            title: "Expirée (rouge)",
+            description: "La session a atteint sa date d'expiration et a été automatiquement terminée."
+          }
+        },
+
+        lastSyncTime: {
+          title: "Dernière synchronisation",
+          description: "Un horodatage en haut du tableau de bord indique quand les sessions ont été synchronisées pour la dernière fois avec le serveur, vous permettant de savoir si les informations affichées sont à jour.",
+          tip: {
+            title: "Conseil",
+            description: "Si l'heure de synchronisation semble obsolète, cliquez sur le bouton de synchronisation globale pour actualiser toutes les sessions d'un coup."
+          }
+        },
+
+        expiryWarnings: {
+          title: "Alertes de compte à rebours avant expiration",
+          description: "Dans le visualiseur de terminal, des bannières de notification apparaissent à l'approche de l'expiration de votre session pour vous aider à sauvegarder votre travail à temps.",
+          tenMin: {
+            title: "10 minutes restantes",
+            description: "Une bannière d'information apparaît en haut du visualiseur de terminal en guise de rappel."
+          },
+          fiveMin: {
+            title: "5 minutes restantes",
+            description: "Une bannière d'avertissement vous invite à sauvegarder votre travail et à terminer vos tâches en cours."
+          },
+          oneMin: {
+            title: "1 minute restante",
+            description: "Une alerte critique signale la fin imminente de la session. Sauvegardez immédiatement tout votre travail."
+          }
         }
       },
 

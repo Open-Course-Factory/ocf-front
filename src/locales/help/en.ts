@@ -38,7 +38,8 @@ export const helpEn = {
         gettingStarted: "Getting Started",
         managingSessions: "Managing Sessions",
         sharing: "Sharing & Collaboration",
-        troubleshooting: "Troubleshooting"
+        troubleshooting: "Troubleshooting",
+        sshKeys: "SSH Key Management"
       },
       courses: {
         title: "📚 Courses",
@@ -51,7 +52,9 @@ export const helpEn = {
         description: "Manage your subscription, billing and account settings",
         subscription: "Subscription & Plans",
         billing: "Billing & Payments",
-        rolesAndPermissions: "Roles & Permissions"
+        rolesAndPermissions: "Roles & Permissions",
+        settings: "Settings & Preferences",
+        themes: "Dark Mode & Themes"
       },
       organizations: {
         title: "🏢 Organizations & Groups",
@@ -406,6 +409,117 @@ export const helpEn = {
           iframe: {
             title: "Iframe Integration",
             description: "Embed terminals in your own applications or educational platforms."
+          }
+        },
+
+        dashboardLayout: {
+          title: "Unified Dashboard Layout",
+          description: "The sessions dashboard organizes your terminals into two distinct sections for a clear overview of all your environments.",
+          activeSessions: {
+            title: "Active Sessions",
+            description: "Your running sessions are displayed prominently at the top with a count badge showing the total number of active terminals."
+          },
+          inactiveSessions: {
+            title: "Inactive Sessions",
+            description: "Stopped and expired sessions are grouped in a collapsible section that you can expand or collapse to keep your dashboard clean."
+          }
+        },
+
+        inlineRenaming: {
+          title: "Inline Session Renaming",
+          description: "You can rename your terminal sessions directly from the dashboard without opening any modal or settings page.",
+          howTo: {
+            title: "Rename a session",
+            description: "Click the <strong>pencil icon</strong> next to the session name, type the new name, and press <strong>Enter</strong> to save or <strong>Escape</strong> to cancel."
+          }
+        },
+
+        commandHistory: {
+          title: "Command History",
+          description: "Each terminal session maintains a detailed command history that you can browse, search, and export.",
+          search: {
+            title: "Search & Filter",
+            description: "Use the search bar to filter commands by keyword. Results update in real-time as you type."
+          },
+          sort: {
+            title: "Sort by Time",
+            description: "Commands are listed chronologically. Toggle between newest-first and oldest-first ordering."
+          },
+          export: {
+            title: "Export History",
+            description: "Download your command history in CSV or JSON format for documentation or auditing purposes."
+          },
+          clickToPaste: {
+            title: "Click to Paste",
+            description: "Click any command in the history to instantly paste it into the active terminal, ready for execution."
+          },
+          deleteAll: {
+            title: "Delete All History",
+            description: "The <strong>\"Delete all\"</strong> button clears the entire command history. A confirmation dialog prevents accidental deletion."
+          }
+        },
+
+        moreActions: {
+          title: "More Actions Dropdown",
+          description: "Each session card includes a \"More actions\" dropdown menu with additional operations.",
+          copyUrl: {
+            title: "Copy URL",
+            description: "Copy the direct terminal access URL to your clipboard for quick sharing or bookmarking."
+          },
+          copyIframe: {
+            title: "Copy Iframe Code",
+            description: "Generate and copy the iframe embed code for integrating the terminal into external websites or LMS platforms."
+          },
+          manageAccess: {
+            title: "Manage Access",
+            description: "Open the access management panel to add or remove users and configure sharing permissions."
+          },
+          syncSession: {
+            title: "Sync Session",
+            description: "Manually synchronize the session status with the backend to get the most up-to-date information."
+          }
+        },
+
+        statusIndicators: {
+          title: "Status Indicators",
+          description: "Each session displays a colored status dot for quick visual identification of its current state.",
+          active: {
+            title: "Active (green)",
+            description: "The session is running and ready to use. You can connect to the terminal immediately."
+          },
+          stopped: {
+            title: "Stopped (gray)",
+            description: "The session has been manually stopped. It can no longer be accessed but may still appear in your list."
+          },
+          expired: {
+            title: "Expired (red)",
+            description: "The session has reached its expiration time and was automatically terminated."
+          }
+        },
+
+        lastSyncTime: {
+          title: "Last Sync Time",
+          description: "A timestamp at the top of the dashboard shows when sessions were last synchronized with the server, helping you know how current the displayed information is.",
+          tip: {
+            title: "Tip",
+            description: "If the sync time seems outdated, click the global sync button to refresh all sessions at once."
+          }
+        },
+
+        expiryWarnings: {
+          title: "Expiry Countdown Warnings",
+          description: "While using the terminal viewer, notification banners appear as your session approaches its expiration time to help you save your work in time.",
+          tenMin: {
+            title: "10 minutes remaining",
+            description: "An informational banner appears at the top of the terminal viewer as a gentle reminder."
+          },
+          fiveMin: {
+            title: "5 minutes remaining",
+            description: "A warning banner prompts you to save your work and wrap up your current tasks."
+          },
+          oneMin: {
+            title: "1 minute remaining",
+            description: "A critical alert signals imminent session termination. Save all work immediately."
           }
         }
       },
