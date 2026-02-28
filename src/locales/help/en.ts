@@ -1846,6 +1846,159 @@ export const helpEn = {
         scenario3Answer: "The owner should transfer ownership to another member before leaving. If not, contact support to reassign ownership.",
         scenario4Question: "Can I have multiple roles?",
         scenario4Answer: "Yes. You can be an owner of one organization, a manager of another, and a member of groups within different organizations."
+      },
+      settings: {
+        title: "Settings & Preferences",
+        intro: "Configure your account settings to personalize your experience, from language and theme to security and notifications.",
+        overview: {
+          title: "Overview",
+          description: "The Settings page lets you customize your account to suit your workflow. You can access it from the user menu in the top-right corner of the screen.",
+          access: "Click your avatar or username in the top-right corner, then select the setting you want to adjust from the dropdown menu."
+        },
+        navigation: {
+          title: "Navigation Settings",
+          description: "Choose which page loads by default when you log in to the platform.",
+          defaultPage: {
+            title: "Default Landing Page",
+            description: "Select your preferred starting page after login. You can choose between the terminal sessions page, the courses page, or any other main section of the platform."
+          }
+        },
+        localization: {
+          title: "Localization",
+          description: "Adapt the platform to your language and regional preferences.",
+          language: {
+            title: "Language",
+            description: "Switch the interface between French and English. All menus, labels, and help content will be displayed in your selected language."
+          },
+          timezone: {
+            title: "Timezone",
+            description: "Set your timezone so that dates, session times, and scheduled events are displayed in your local time."
+          }
+        },
+        ui: {
+          title: "UI Settings",
+          description: "Adjust the visual appearance and layout density of the platform.",
+          theme: {
+            title: "Theme",
+            description: "Choose between light mode, dark mode, or automatic mode that follows your operating system preference."
+          },
+          compact: {
+            title: "Compact Mode",
+            description: "Toggle compact mode to reduce spacing between elements. This increases information density and is useful for power users who prefer a more condensed interface."
+          }
+        },
+        notifications: {
+          title: "Notifications",
+          description: "Control how and when you receive notifications from the platform.",
+          preferences: {
+            title: "Notification Preferences",
+            description: "Configure which notifications you want to receive. You can enable or disable notifications for different types of events such as session updates, group invitations, and system announcements."
+          }
+        },
+        security: {
+          title: "Security",
+          description: "Manage your account security by changing your password.",
+          currentPassword: {
+            title: "Current Password",
+            description: "Enter your current password to verify your identity before making changes."
+          },
+          newPassword: {
+            title: "New Password",
+            description: "Choose a strong new password. Use a mix of uppercase letters, lowercase letters, numbers, and special characters."
+          },
+          confirmation: {
+            title: "Confirm Password",
+            description: "Re-enter your new password to confirm it matches. Both fields must be identical to proceed."
+          }
+        },
+        sshKeys: {
+          title: "SSH Keys",
+          description: "Terminal access keys are managed from a dedicated page in the settings. These keys allow you to connect to terminal sessions.",
+          linkText: "For detailed information about managing your SSH keys, see the dedicated SSH Key Management article.",
+          button: "SSH Key Management Guide"
+        },
+        version: {
+          title: "Application Version",
+          description: "The current version of the application is displayed at the bottom of the settings page. This information can be useful when reporting issues or verifying that you are running the latest version."
+        },
+        nextSteps: {
+          themes: {
+            title: "Dark Mode & Themes",
+            description: "Learn more about theme options and visual customization"
+          },
+          sshKeys: {
+            title: "SSH Key Management",
+            description: "Manage your terminal access keys"
+          },
+          roles: {
+            title: "Roles & Permissions",
+            description: "Understand the role-based access control system"
+          }
+        }
+      },
+      themes: {
+        title: "Dark Mode & Themes",
+        intro: "Personalize the visual appearance of the platform with theme selection and display density options.",
+        overview: {
+          title: "Overview",
+          description: "The platform supports multiple visual themes so you can work in the environment that suits you best. Whether you prefer a bright interface for daytime work or a dark theme for late-night sessions, you can adjust the look and feel across the entire platform."
+        },
+        selection: {
+          title: "Theme Selection",
+          description: "Three theme modes are available to match your visual preference.",
+          light: {
+            title: "Light Theme",
+            description: "A bright, clean interface with light backgrounds and high contrast text. Ideal for well-lit environments and daytime use."
+          },
+          dark: {
+            title: "Dark Theme",
+            description: "A dark interface that reduces eye strain in low-light conditions. Dark backgrounds with light text for comfortable extended use."
+          },
+          auto: {
+            title: "Auto Mode",
+            description: "Automatically follows your operating system or browser preference. The theme switches between light and dark based on your system settings."
+          }
+        },
+        compact: {
+          title: "Compact Mode",
+          description: "Adjust the spacing and density of the interface elements to show more or less content on screen.",
+          standard: {
+            title: "Standard Layout",
+            description: "Default spacing with comfortable padding between elements. Recommended for most users and provides a relaxed reading experience."
+          },
+          compact: {
+            title: "Compact Layout",
+            description: "Reduced spacing between elements for higher information density. Ideal for power users who want to see more content without scrolling."
+          }
+        },
+        whereToChange: {
+          title: "Where to Change Theme",
+          description: "You can change the theme from the Settings page under the UI Settings section.",
+          path: "Navigate to Settings > UI Settings to find the theme selector and compact mode toggle.",
+          button: "View Settings Guide"
+        },
+        consistency: {
+          title: "Consistent Experience",
+          description: "Your selected theme is applied consistently across all pages of the platform. Every section respects your visual preference for a unified experience.",
+          terminal: "Terminal sessions",
+          dashboard: "Dashboard & metrics",
+          help: "Help & documentation",
+          courses: "Course editor & viewer"
+        },
+        nextSteps: {
+          settings: {
+            title: "Settings & Preferences",
+            description: "Explore all available settings and customization options"
+          },
+          gettingStarted: {
+            title: "Getting Started",
+            description: "Learn how to set up and use your first terminal"
+          },
+          subscription: {
+            title: "Subscription & Plans",
+            description: "Review your subscription and available features"
+          }
+        }
       }
     },
 
@@ -2071,6 +2224,57 @@ export const helpEn = {
             title: "Check for Duplicates",
             description: "Remove duplicate email addresses from your CSV. The system will flag duplicates but won't import them."
           }
+        },
+        csvEncoding: {
+          title: "CSV Encoding Auto-Detection",
+          description: "The import system automatically detects your file's character encoding, so you do not need to convert files manually.",
+          utf8: "UTF-8 files are supported natively and recommended for best compatibility",
+          windows: "Windows-1252 encoding (common with Excel exports) is detected and handled automatically",
+          bomStripping: "Byte Order Mark (BOM) characters are stripped automatically, preventing hidden character issues in your headers"
+        },
+        columnAliases: {
+          title: "Column Alias Support",
+          description: "French column headers are recognized automatically during mapping, so you can use your native language in CSV exports without manual renaming.",
+          examplesTitle: "Supported aliases:"
+        },
+        forcePasswordReset: {
+          title: "Force Password Reset",
+          description: "You can require imported users to change their password on first login for enhanced security.",
+          column: "Add a force_reset column to your CSV with values true or false per user",
+          automatic: "When a password is auto-generated (no password column provided), the force reset flag is enabled automatically"
+        },
+        autoGeneratedPasswords: {
+          title: "Auto-Generated Passwords",
+          description: "When your CSV does not include a password column, the system generates strong, random passwords for each new user account.",
+          secure: "Generated passwords are 16 characters long, combining letters, numbers, and special characters",
+          downloadable: "After import, a downloadable credentials table is available containing each user's email and temporary password",
+          warning: {
+            title: "Security Warning",
+            description: "Download and distribute the credentials table promptly. For security reasons, auto-generated passwords cannot be retrieved after you leave the import results page."
+          }
+        },
+        trialPlanAssignment: {
+          title: "Trial Plan Assignment",
+          description: "Newly created user accounts are automatically assigned the trial plan, giving them immediate access to the platform without any manual subscription setup."
+        },
+        targetGroupDropdown: {
+          title: "Target Group Dropdown",
+          description: "A dropdown on the import page lets you select a target group. All users in the current import batch will be automatically added to the selected group, saving you from assigning each one individually after import."
+        },
+        updateExistingUsers: {
+          title: "Update Existing Users",
+          description: "Enable the \"Update existing users if found\" toggle to update the profile information of users who already exist on the platform (matched by email address). When disabled, existing users are skipped during import."
+        },
+        validationPreview: {
+          title: "Validation Preview",
+          description: "Before executing the import, a preview step displays the validation results for every row in your CSV. You can review warnings, errors, and pending actions so you know exactly what will happen before confirming."
+        },
+        importProgress: {
+          title: "Import Progress",
+          description: "Once you confirm the import, a real-time progress display shows the outcome for each user as it is processed.",
+          created: "Created: new accounts successfully added to the platform",
+          updated: "Updated: existing users whose profile was refreshed with new data",
+          skipped: "Skipped: rows that were ignored due to errors or duplicate entries"
         },
         nextSteps: {
           organizations: {
