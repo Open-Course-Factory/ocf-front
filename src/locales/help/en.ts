@@ -568,6 +568,12 @@ export const helpEn = {
             tag2: "✏️ Modifications",
             tag3: "💾 Save"
           },
+          admin: {
+            description: "The user has full control over the terminal, including managing sharing settings and other users' access.",
+            tag1: "👑 Full control",
+            tag2: "🔧 Manage settings",
+            tag3: "👥 Manage users"
+          },
           actionsTitle: "Management actions:",
           actions: {
             manage: {
@@ -718,6 +724,76 @@ export const helpEn = {
           history: {
             title: "Command history",
             description: "All commands executed by all users are recorded in the terminal history"
+          }
+        },
+
+        shareWithGroup: {
+          title: "Share with a Group",
+          description: "In addition to sharing with individual users, you can share a terminal with an entire group at once. This feature requires the groups feature flag to be enabled.",
+          selectGroup: {
+            title: "Select a group",
+            description: "In the sharing dialog, switch to the <strong>\"Group\"</strong> tab and choose a group from the list to share your terminal with all its members."
+          },
+          setPermissions: {
+            title: "Set group permissions",
+            description: "Choose the <strong>access level</strong> (Read, Write, or Admin) that will apply to all members of the selected group."
+          },
+          tip: {
+            title: "Availability",
+            description: "Group sharing requires the groups feature to be enabled by your administrator. If you do not see the group tab, contact your administrator."
+          }
+        },
+
+        userSearch: {
+          title: "User Search",
+          description: "When sharing a terminal with individual users, a real-time search helps you find the right person quickly.",
+          howTo: {
+            title: "Search for a user",
+            description: "Start typing a <strong>name or email address</strong> in the search field. A dropdown appears with matching results showing each user's <strong>display name and email</strong>. Click a result to select the user."
+          }
+        },
+
+        groupSearch: {
+          title: "Group Search",
+          description: "When sharing with a group, you can search through available groups to find the right one.",
+          howTo: {
+            title: "Search for a group",
+            description: "Type the <strong>group name</strong> in the search field. A dropdown displays matching groups with their <strong>name and description</strong>. Select a group to share with all its members at once."
+          }
+        },
+
+        expirationPicker: {
+          title: "Expiration Date for Shares",
+          description: "You can optionally set an expiration date when sharing a terminal. After the expiration date, shared access is automatically revoked.",
+          howTo: {
+            title: "Set an expiration date",
+            description: "When adding a user or group to a share, use the <strong>date picker</strong> to select an expiration date. Leave it empty for shares that do not expire automatically."
+          },
+          tip: {
+            title: "Best practice",
+            description: "For temporary collaborations or training sessions, always set an expiration date to ensure access is automatically cleaned up."
+          }
+        },
+
+        sharedWithMePage: {
+          title: "Shared With Me Page",
+          description: "The \"Shared with Me\" page at /terminal-shared gives you a complete overview of all terminals others have shared with you.",
+          accessBadge: {
+            title: "Access Level Badge",
+            description: "Each shared terminal displays a badge indicating your access level: Read, Write, or Admin."
+          },
+          terminalDetails: {
+            title: "Terminal Details",
+            description: "View the terminal name, status (active, stopped, expired), backend, and expiration information at a glance."
+          },
+          sharedBy: {
+            title: "Shared By",
+            description: "See who shared the terminal with you and when the share was created."
+          },
+          access: {
+            title: "Access shared terminals",
+            description: "Navigate to <strong>Practical Work > Shared with Me</strong> to view all terminals shared with you.",
+            button: "View shared terminals"
           }
         },
 
@@ -2061,6 +2137,52 @@ export const helpEn = {
             title: "Regular License Audits",
             description: "Review license assignments periodically to ensure they're allocated to active users."
           }
+        },
+        detailTabs: {
+          title: "Organization Detail Tabs",
+          description: "The organization detail page is organized into tabs for easy navigation between different management areas.",
+          overview: {
+            title: "Overview",
+            description: "A summary of your organization including member count, active groups, and subscription status."
+          },
+          members: {
+            title: "Members",
+            description: "View, invite, and manage all organization members. Assign roles and monitor activity."
+          },
+          groups: {
+            title: "Groups",
+            description: "Create and manage groups within the organization. Assign members and content per group."
+          },
+          subscription: {
+            title: "Subscription",
+            description: "View and manage the organization-level subscription, including plan details and usage metrics."
+          },
+          settings: {
+            title: "Settings",
+            description: "Configure organization preferences, branding, notification rules, and security policies."
+          }
+        },
+        orgSubscription: {
+          title: "Organization-Level Subscription",
+          description: "Each organization can have its own subscription, separate from any personal subscriptions held by individual members.",
+          separate: {
+            title: "Separate from Personal Subscriptions",
+            description: "The organization subscription is managed independently on the organization's Subscription tab. It covers all members of the organization and is billed to the organization rather than to individual users."
+          }
+        },
+        subscriptionPreference: {
+          title: "Subscription Preference",
+          description: "When a user belongs to an organization that has its own subscription, the system determines which subscription takes effect based on plan tier.",
+          priority: {
+            title: "Higher Tier Takes Priority",
+            description: "If the organization subscription offers a higher tier than the user's personal subscription, the organization subscription takes precedence. This ensures that members always benefit from the best available plan without manual switching."
+          }
+        },
+        bulkImportIntegration: {
+          title: "Bulk Import Integration",
+          description: "You can import members directly from the organization detail page without navigating to a separate tool.",
+          accessButton: "A \"Bulk Import\" button is available on the organization detail page, pre-configured to import members into the current organization",
+          autoAssign: "Imported users are automatically associated with the organization and can be assigned to groups during import"
         },
         nextSteps: {
           groups: {

@@ -164,6 +164,75 @@
       </section>
 
       <section class="help-section">
+        <h2><i class="fas fa-columns"></i> {{ t('help.organizations.overview.detailTabs.title') }}</h2>
+        <p>{{ t('help.organizations.overview.detailTabs.description') }}</p>
+
+        <div class="tabs-grid">
+          <div class="tab-card">
+            <i class="fas fa-home"></i>
+            <h4>{{ t('help.organizations.overview.detailTabs.overview.title') }}</h4>
+            <p>{{ t('help.organizations.overview.detailTabs.overview.description') }}</p>
+          </div>
+          <div class="tab-card">
+            <i class="fas fa-users"></i>
+            <h4>{{ t('help.organizations.overview.detailTabs.members.title') }}</h4>
+            <p>{{ t('help.organizations.overview.detailTabs.members.description') }}</p>
+          </div>
+          <div class="tab-card">
+            <i class="fas fa-object-group"></i>
+            <h4>{{ t('help.organizations.overview.detailTabs.groups.title') }}</h4>
+            <p>{{ t('help.organizations.overview.detailTabs.groups.description') }}</p>
+          </div>
+          <div class="tab-card">
+            <i class="fas fa-calendar-check"></i>
+            <h4>{{ t('help.organizations.overview.detailTabs.subscription.title') }}</h4>
+            <p>{{ t('help.organizations.overview.detailTabs.subscription.description') }}</p>
+          </div>
+          <div class="tab-card">
+            <i class="fas fa-cog"></i>
+            <h4>{{ t('help.organizations.overview.detailTabs.settings.title') }}</h4>
+            <p>{{ t('help.organizations.overview.detailTabs.settings.description') }}</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-calendar-check"></i> {{ t('help.organizations.overview.orgSubscription.title') }}</h2>
+        <p>{{ t('help.organizations.overview.orgSubscription.description') }}</p>
+
+        <div class="info-box">
+          <h4><i class="fas fa-info-circle"></i> {{ t('help.organizations.overview.orgSubscription.separate.title') }}</h4>
+          <p>{{ t('help.organizations.overview.orgSubscription.separate.description') }}</p>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-sort-amount-up"></i> {{ t('help.organizations.overview.subscriptionPreference.title') }}</h2>
+        <p>{{ t('help.organizations.overview.subscriptionPreference.description') }}</p>
+
+        <div class="info-box">
+          <h4><i class="fas fa-arrow-up"></i> {{ t('help.organizations.overview.subscriptionPreference.priority.title') }}</h4>
+          <p>{{ t('help.organizations.overview.subscriptionPreference.priority.description') }}</p>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-file-import"></i> {{ t('help.organizations.overview.bulkImportIntegration.title') }}</h2>
+        <p>{{ t('help.organizations.overview.bulkImportIntegration.description') }}</p>
+
+        <div class="feature-list">
+          <div class="feature-item">
+            <i class="fas fa-mouse-pointer"></i>
+            <span>{{ t('help.organizations.overview.bulkImportIntegration.accessButton') }}</span>
+          </div>
+          <div class="feature-item">
+            <i class="fas fa-users-cog"></i>
+            <span>{{ t('help.organizations.overview.bulkImportIntegration.autoAssign') }}</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="help-section">
         <h2><i class="fas fa-question-circle"></i> {{ t('help.navigation.nextSteps') }}</h2>
         <div class="next-steps">
           <router-link :to="`${helpRoutePrefix}/groups/management`" class="next-step-card">
@@ -317,10 +386,72 @@ onMounted(async () => {
   font-size: 0.9rem;
 }
 
+.tabs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.tab-card {
+  text-align: center;
+  padding: 20px;
+  background: var(--color-gray-50);
+  border: 2px solid var(--color-gray-200);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.tab-card:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-3px);
+}
+
+.tab-card i {
+  font-size: 1.5rem;
+  color: var(--color-primary);
+  margin-bottom: 10px;
+}
+
+.tab-card h4 {
+  margin: 0 0 8px 0;
+  color: var(--color-text-primary);
+  font-size: 0.95rem;
+}
+
+.tab-card p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.info-box {
+  background: var(--color-info-bg);
+  border: 2px solid var(--color-info);
+  border-radius: 8px;
+  padding: 15px;
+  margin: 20px 0;
+}
+
+.info-box h4 {
+  margin: 0 0 10px 0;
+  color: var(--color-info);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-box p {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .benefits-grid,
-  .settings-grid {
+  .settings-grid,
+  .tabs-grid {
     grid-template-columns: 1fr;
   }
 }

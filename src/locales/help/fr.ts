@@ -565,6 +565,12 @@ export const helpFr = {
             tag2: "✏️ Modifications",
             tag3: "💾 Sauvegarde"
           },
+          admin: {
+            description: "L'utilisateur a le contrôle total sur le terminal, y compris la gestion des paramètres de partage et l'accès des autres utilisateurs.",
+            tag1: "👑 Contrôle total",
+            tag2: "🔧 Gérer les paramètres",
+            tag3: "👥 Gérer les utilisateurs"
+          },
           actionsTitle: "Actions de gestion :",
           actions: {
             manage: {
@@ -1905,6 +1911,52 @@ export const helpFr = {
             title: "Audits Réguliers des Licences",
             description: "Vérifiez périodiquement les attributions de licences pour vous assurer qu'elles sont allouées aux utilisateurs actifs."
           }
+        },
+        detailTabs: {
+          title: "Onglets de la page Organisation",
+          description: "La page détaillée d'une organisation est organisée en onglets pour une navigation facile entre les différentes zones de gestion.",
+          overview: {
+            title: "Vue d'ensemble",
+            description: "Un résumé de votre organisation incluant le nombre de membres, les groupes actifs et l'état de l'abonnement."
+          },
+          members: {
+            title: "Membres",
+            description: "Consultez, invitez et gérez tous les membres de l'organisation. Attribuez des rôles et suivez l'activité."
+          },
+          groups: {
+            title: "Groupes",
+            description: "Créez et gérez les groupes au sein de l'organisation. Affectez des membres et du contenu par groupe."
+          },
+          subscription: {
+            title: "Abonnement",
+            description: "Consultez et gérez l'abonnement au niveau de l'organisation, y compris les détails du plan et les indicateurs d'utilisation."
+          },
+          settings: {
+            title: "Paramètres",
+            description: "Configurez les préférences de l'organisation, la personnalisation, les règles de notification et les politiques de sécurité."
+          }
+        },
+        orgSubscription: {
+          title: "Abonnement au niveau de l'organisation",
+          description: "Chaque organisation peut avoir son propre abonnement, distinct des abonnements personnels détenus par les membres individuels.",
+          separate: {
+            title: "Distinct des abonnements personnels",
+            description: "L'abonnement de l'organisation est géré indépendamment dans l'onglet Abonnement de l'organisation. Il couvre tous les membres de l'organisation et est facturé à l'organisation plutôt qu'aux utilisateurs individuels."
+          }
+        },
+        subscriptionPreference: {
+          title: "Priorité d'abonnement",
+          description: "Lorsqu'un utilisateur appartient à une organisation qui dispose de son propre abonnement, le système détermine quel abonnement s'applique en fonction du niveau du plan.",
+          priority: {
+            title: "Le niveau supérieur a la priorité",
+            description: "Si l'abonnement de l'organisation offre un niveau supérieur à l'abonnement personnel de l'utilisateur, l'abonnement de l'organisation prend le dessus. Cela garantit que les membres bénéficient toujours du meilleur plan disponible sans intervention manuelle."
+          }
+        },
+        bulkImportIntegration: {
+          title: "Intégration de l'import en masse",
+          description: "Vous pouvez importer des membres directement depuis la page détaillée de l'organisation sans avoir à naviguer vers un outil séparé.",
+          accessButton: "Un bouton « Import en masse » est disponible sur la page détaillée de l'organisation, préconfiguré pour importer des membres dans l'organisation courante",
+          autoAssign: "Les utilisateurs importés sont automatiquement associés à l'organisation et peuvent être affectés à des groupes pendant l'importation"
         },
         nextSteps: {
           groups: {
