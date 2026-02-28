@@ -135,6 +135,12 @@ const basicRoutes = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/help-public/terminals/ssh-keys',
+    name: 'HelpPublicTerminalsSSHKeys',
+    component: () => import('../components/Pages/Help/SSHKeyManagement.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/help-public/courses/structure',
     name: 'HelpPublicCoursesStructure',
     component: () => import('../components/Pages/Help/CourseStructure.vue'),
@@ -162,6 +168,18 @@ const basicRoutes = [
     path: '/help-public/account/roles-and-permissions',
     name: 'HelpPublicRolesAndPermissions',
     component: () => import('../components/Pages/Help/RolesAndPermissions.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/help-public/account/settings',
+    name: 'HelpPublicAccountSettings',
+    component: () => import('../components/Pages/Help/SettingsPreferences.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/help-public/account/themes',
+    name: 'HelpPublicAccountThemes',
+    component: () => import('../components/Pages/Help/DarkModeThemes.vue'),
     meta: { requiresAuth: false }
   },
   {
@@ -450,6 +468,12 @@ const basicRoutes = [
         meta: { requiresAuth: true }
       },
       {
+        path: 'help/terminals/ssh-keys',
+        name: 'HelpTerminalsSSHKeys',
+        component: () => import('../components/Pages/Help/SSHKeyManagement.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
         path: 'help/courses/structure',
         name: 'HelpCoursesStructure',
         component: () => import('../components/Pages/Help/CourseStructure.vue'),
@@ -471,6 +495,18 @@ const basicRoutes = [
         path: 'help/account/billing',
         name: 'HelpAccountBilling',
         component: () => import('../components/Pages/Help/AccountBilling.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'help/account/settings',
+        name: 'HelpAccountSettings',
+        component: () => import('../components/Pages/Help/SettingsPreferences.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'help/account/themes',
+        name: 'HelpAccountThemes',
+        component: () => import('../components/Pages/Help/DarkModeThemes.vue'),
         meta: { requiresAuth: true }
       },
       {

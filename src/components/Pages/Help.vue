@@ -167,6 +167,12 @@ const helpSections = computed(() => {
           title: t('help.sections.terminals.troubleshooting'),
           description: t('help.terminals.troubleshooting.intro'),
           icon: 'fas fa-wrench'
+        },
+        {
+          route: `${routePrefix.value}/terminals/ssh-keys`,
+          title: t('help.sections.terminals.sshKeys'),
+          description: t('help.terminals.sshKeys.intro'),
+          icon: 'fas fa-key'
         }
       ]
     },
@@ -247,6 +253,18 @@ const helpSections = computed(() => {
           title: t('help.sections.account.rolesAndPermissions'),
           description: t('help.account.rolesAndPermissions.intro'),
           icon: 'fas fa-user-shield'
+        },
+        {
+          route: `${routePrefix.value}/account/settings`,
+          title: t('help.sections.account.settings'),
+          description: t('help.account.settings.intro'),
+          icon: 'fas fa-cog'
+        },
+        {
+          route: `${routePrefix.value}/account/themes`,
+          title: t('help.sections.account.themes'),
+          description: t('help.account.themes.intro'),
+          icon: 'fas fa-palette'
         }
       ]
     }

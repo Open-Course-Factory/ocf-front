@@ -1061,6 +1061,101 @@ export const helpFr = {
             description: "Maîtrisez les fonctionnalités de partage"
           }
         }
+      },
+      sshKeys: {
+        title: "Gestion des clés SSH",
+        intro: "Gérez vos clés d'accès terminal pour vous connecter aux sessions de terminal en toute sécurité.",
+        overview: {
+          title: "Que sont les clés d'accès terminal ?",
+          description: "Les clés d'accès terminal sont des identifiants qui vous authentifient lors de la connexion aux sessions de terminal. Chaque clé est unique à votre compte et vous permet de créer et rejoindre des sessions de terminal sur la plateforme.",
+          requirement: "Vous avez besoin d'une clé d'accès terminal active pour créer ou vous connecter à toute session de terminal. Sans clé, les fonctionnalités de terminal ne seront pas disponibles."
+        },
+        regenerate: {
+          title: "Créer ou régénérer une clé",
+          description: "Vous pouvez générer une nouvelle clé d'accès terminal depuis la page Clés d'Accès Terminal. Si vous possédez déjà une clé, la régénération la remplacera.",
+          step1: {
+            title: "Accéder aux Clés d'Accès Terminal",
+            description: "Rendez-vous sur la page Clés d'Accès Terminal depuis le menu des paramètres ou la navigation principale."
+          },
+          step2: {
+            title: "Cliquer sur Régénérer la clé",
+            description: "Appuyez sur le bouton « Régénérer la clé ». Une boîte de dialogue de confirmation apparaîtra pour vérifier votre intention."
+          },
+          step3: {
+            title: "Confirmer l'action",
+            description: "Confirmez la régénération dans la boîte de dialogue. Votre nouvelle clé sera générée immédiatement et deviendra active."
+          },
+          warning: {
+            title: "Important",
+            description: "La régénération de votre clé invalidera immédiatement votre clé précédente. Toute session authentifiée avec l'ancienne clé pourra être affectée. Ne régénérez que lorsque c'est nécessaire."
+          }
+        },
+        details: {
+          title: "Détails de la clé",
+          description: "La page de votre clé d'accès terminal affiche les informations suivantes sur votre clé actuelle.",
+          keyId: {
+            title: "Identifiant de la clé",
+            description: "Un identifiant unique pour votre clé d'accès terminal. Il est utilisé en interne pour le suivi et la gestion de votre clé."
+          },
+          keyName: {
+            title: "Nom de la clé",
+            description: "Un nom descriptif pour votre clé, généralement généré automatiquement à partir des informations de votre compte."
+          },
+          status: {
+            title: "Statut",
+            description: "Indique si votre clé est active ou inactive. Une clé active (badge vert) permet l'accès au terminal. Une clé inactive (badge rouge) doit être régénérée."
+          },
+          maxSessions: {
+            title: "Sessions maximum",
+            description: "Le nombre maximum de sessions de terminal simultanées que votre clé prend en charge. Ce nombre peut être illimité selon votre plan d'abonnement."
+          }
+        },
+        security: {
+          title: "Bonnes pratiques de sécurité",
+          description: "Suivez ces recommandations pour maintenir la sécurité de vos accès terminal.",
+          keepSecure: {
+            title: "Gardez votre clé en sécurité",
+            description: "Votre clé d'accès terminal donne accès aux sessions de terminal en votre nom. Traitez-la comme un mot de passe et ne l'exposez pas inutilement."
+          },
+          noShare: {
+            title: "Ne partagez jamais votre clé",
+            description: "Ne partagez pas votre clé d'accès terminal avec d'autres personnes. Chaque utilisateur doit avoir sa propre clé. Le partage de clés peut entraîner un accès non autorisé et des conflits de sessions."
+          },
+          regenerateIfCompromised: {
+            title: "Régénérez en cas de compromission",
+            description: "Si vous suspectez que votre clé a été compromise ou consultée par quelqu'un d'autre, régénérez-la immédiatement pour invalider l'ancienne clé."
+          }
+        },
+        troubleshooting: {
+          title: "Dépannage",
+          description: "Problèmes courants avec les clés d'accès terminal et comment les résoudre.",
+          noKey: {
+            title: "Aucune clé trouvée (état vide)",
+            description: "Si la page affiche « Aucune clé terminal trouvée », vous devez générer votre première clé. Cliquez sur le bouton « Régénérer la clé » pour en créer une. C'est normal pour les nouveaux comptes."
+          },
+          inactive: {
+            title: "Clé inactive",
+            description: "Une clé inactive (badge rouge) signifie que votre clé a été désactivée. Cela peut être dû à des actions administratives ou des changements de politique. Essayez de régénérer votre clé. Si le problème persiste, contactez votre administrateur."
+          },
+          lost: {
+            title: "Clé perdue ou oubliée",
+            description: "Si vous avez perdu l'accès à votre clé ou ne vous en souvenez plus, régénérez simplement une nouvelle clé depuis la page Clés d'Accès Terminal. L'ancienne clé sera invalidée et une nouvelle prendra sa place."
+          }
+        },
+        nextSteps: {
+          gettingStarted: {
+            title: "Premiers pas avec les terminaux",
+            description: "Apprenez à créer et utiliser votre première session de terminal"
+          },
+          troubleshooting: {
+            title: "Dépannage des terminaux",
+            description: "Solutions aux problèmes courants des terminaux"
+          },
+          settings: {
+            title: "Paramètres & Préférences",
+            description: "Configurez les paramètres de votre compte"
+          }
+        }
       }
     },
 
@@ -1922,6 +2017,159 @@ export const helpFr = {
         scenario3Answer: "Le propriétaire devrait transférer la propriété à un autre membre avant de partir. Sinon, contactez le support pour réassigner la propriété.",
         scenario4Question: "Puis-je avoir plusieurs rôles ?",
         scenario4Answer: "Oui. Vous pouvez être propriétaire d'une organisation, gestionnaire d'une autre, et membre de groupes dans différentes organisations."
+      },
+      settings: {
+        title: "Paramètres & Préférences",
+        intro: "Configurez les paramètres de votre compte pour personnaliser votre expérience, de la langue et du thème à la sécurité et aux notifications.",
+        overview: {
+          title: "Vue d'ensemble",
+          description: "La page Paramètres vous permet de personnaliser votre compte selon votre façon de travailler. Vous pouvez y accéder depuis le menu utilisateur dans le coin supérieur droit de l'écran.",
+          access: "Cliquez sur votre avatar ou votre nom d'utilisateur dans le coin supérieur droit, puis sélectionnez le paramètre que vous souhaitez ajuster dans le menu déroulant."
+        },
+        navigation: {
+          title: "Paramètres de navigation",
+          description: "Choisissez quelle page s'affiche par défaut lorsque vous vous connectez à la plateforme.",
+          defaultPage: {
+            title: "Page d'accueil par défaut",
+            description: "Sélectionnez votre page de démarrage préférée après la connexion. Vous pouvez choisir entre la page des sessions de terminal, la page des cours ou toute autre section principale de la plateforme."
+          }
+        },
+        localization: {
+          title: "Localisation",
+          description: "Adaptez la plateforme à votre langue et vos préférences régionales.",
+          language: {
+            title: "Langue",
+            description: "Basculez l'interface entre le français et l'anglais. Tous les menus, libellés et contenus d'aide seront affichés dans la langue sélectionnée."
+          },
+          timezone: {
+            title: "Fuseau horaire",
+            description: "Définissez votre fuseau horaire afin que les dates, heures de session et événements planifiés soient affichés dans votre heure locale."
+          }
+        },
+        ui: {
+          title: "Paramètres d'interface",
+          description: "Ajustez l'apparence visuelle et la densité de la mise en page de la plateforme.",
+          theme: {
+            title: "Thème",
+            description: "Choisissez entre le mode clair, le mode sombre ou le mode automatique qui suit la préférence de votre système d'exploitation."
+          },
+          compact: {
+            title: "Mode compact",
+            description: "Activez le mode compact pour réduire l'espacement entre les éléments. Cela augmente la densité d'information et convient aux utilisateurs avancés qui préfèrent une interface plus condensée."
+          }
+        },
+        notifications: {
+          title: "Notifications",
+          description: "Contrôlez comment et quand vous recevez des notifications de la plateforme.",
+          preferences: {
+            title: "Préférences de notification",
+            description: "Configurez les notifications que vous souhaitez recevoir. Vous pouvez activer ou désactiver les notifications pour différents types d'événements comme les mises à jour de session, les invitations de groupe et les annonces système."
+          }
+        },
+        security: {
+          title: "Sécurité",
+          description: "Gérez la sécurité de votre compte en changeant votre mot de passe.",
+          currentPassword: {
+            title: "Mot de passe actuel",
+            description: "Entrez votre mot de passe actuel pour vérifier votre identité avant de procéder aux modifications."
+          },
+          newPassword: {
+            title: "Nouveau mot de passe",
+            description: "Choisissez un nouveau mot de passe robuste. Utilisez un mélange de lettres majuscules, minuscules, chiffres et caractères spéciaux."
+          },
+          confirmation: {
+            title: "Confirmer le mot de passe",
+            description: "Saisissez à nouveau votre nouveau mot de passe pour confirmer qu'il correspond. Les deux champs doivent être identiques pour continuer."
+          }
+        },
+        sshKeys: {
+          title: "Clés SSH",
+          description: "Les clés d'accès terminal sont gérées depuis une page dédiée dans les paramètres. Ces clés vous permettent de vous connecter aux sessions de terminal.",
+          linkText: "Pour des informations détaillées sur la gestion de vos clés SSH, consultez l'article dédié à la gestion des clés SSH.",
+          button: "Guide de gestion des clés SSH"
+        },
+        version: {
+          title: "Version de l'application",
+          description: "La version actuelle de l'application est affichée en bas de la page des paramètres. Cette information peut être utile pour signaler des problèmes ou vérifier que vous utilisez la dernière version."
+        },
+        nextSteps: {
+          themes: {
+            title: "Mode sombre & Thèmes",
+            description: "En savoir plus sur les options de thème et la personnalisation visuelle"
+          },
+          sshKeys: {
+            title: "Gestion des clés SSH",
+            description: "Gérez vos clés d'accès terminal"
+          },
+          roles: {
+            title: "Rôles & Permissions",
+            description: "Comprendre le système de contrôle d'accès basé sur les rôles"
+          }
+        }
+      },
+      themes: {
+        title: "Mode sombre & Thèmes",
+        intro: "Personnalisez l'apparence visuelle de la plateforme avec le choix du thème et les options de densité d'affichage.",
+        overview: {
+          title: "Vue d'ensemble",
+          description: "La plateforme prend en charge plusieurs thèmes visuels afin que vous puissiez travailler dans l'environnement qui vous convient le mieux. Que vous préfériez une interface lumineuse pour travailler en journée ou un thème sombre pour les sessions nocturnes, vous pouvez ajuster l'apparence sur l'ensemble de la plateforme."
+        },
+        selection: {
+          title: "Choix du thème",
+          description: "Trois modes de thème sont disponibles pour correspondre à votre préférence visuelle.",
+          light: {
+            title: "Thème clair",
+            description: "Une interface lumineuse et épurée avec des arrière-plans clairs et un texte à fort contraste. Idéal pour les environnements bien éclairés et une utilisation de jour."
+          },
+          dark: {
+            title: "Thème sombre",
+            description: "Une interface sombre qui réduit la fatigue oculaire en conditions de faible luminosité. Des arrière-plans foncés avec du texte clair pour une utilisation prolongée confortable."
+          },
+          auto: {
+            title: "Mode automatique",
+            description: "Suit automatiquement la préférence de votre système d'exploitation ou de votre navigateur. Le thème bascule entre clair et sombre selon vos paramètres système."
+          }
+        },
+        compact: {
+          title: "Mode compact",
+          description: "Ajustez l'espacement et la densité des éléments de l'interface pour afficher plus ou moins de contenu à l'écran.",
+          standard: {
+            title: "Mise en page standard",
+            description: "Espacement par défaut avec un rembourrage confortable entre les éléments. Recommandé pour la plupart des utilisateurs et offrant une expérience de lecture détendue."
+          },
+          compact: {
+            title: "Mise en page compacte",
+            description: "Espacement réduit entre les éléments pour une plus grande densité d'information. Idéal pour les utilisateurs avancés qui souhaitent voir plus de contenu sans faire défiler."
+          }
+        },
+        whereToChange: {
+          title: "Où changer le thème",
+          description: "Vous pouvez changer le thème depuis la page Paramètres dans la section Paramètres d'interface.",
+          path: "Naviguez vers Paramètres > Paramètres d'interface pour trouver le sélecteur de thème et le bouton du mode compact.",
+          button: "Voir le guide des paramètres"
+        },
+        consistency: {
+          title: "Expérience cohérente",
+          description: "Le thème sélectionné est appliqué de manière cohérente sur toutes les pages de la plateforme. Chaque section respecte votre préférence visuelle pour une expérience unifiée.",
+          terminal: "Sessions de terminal",
+          dashboard: "Tableau de bord & métriques",
+          help: "Aide & documentation",
+          courses: "Éditeur & visionneuse de cours"
+        },
+        nextSteps: {
+          settings: {
+            title: "Paramètres & Préférences",
+            description: "Explorez tous les paramètres et options de personnalisation disponibles"
+          },
+          gettingStarted: {
+            title: "Premiers pas",
+            description: "Apprenez à configurer et utiliser votre premier terminal"
+          },
+          subscription: {
+            title: "Abonnement & Plans",
+            description: "Consultez votre abonnement et les fonctionnalités disponibles"
+          }
+        }
       }
     },
 
