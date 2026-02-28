@@ -146,6 +146,23 @@
               </div>
             </div>
           </div>
+
+          <div class="access-card admin">
+            <div class="access-icon">
+              <i class="fas fa-crown"></i>
+            </div>
+            <div class="access-content">
+              <h4>{{ t('help.terminals.sharing.permissions.admin.title') }}</h4>
+              <p>
+                {{ t('help.terminals.sharing.accessManagement.admin.description') }}
+              </p>
+              <div class="access-features">
+                <span class="feature-tag">{{ t('help.terminals.sharing.accessManagement.admin.tag1') }}</span>
+                <span class="feature-tag">{{ t('help.terminals.sharing.accessManagement.admin.tag2') }}</span>
+                <span class="feature-tag">{{ t('help.terminals.sharing.accessManagement.admin.tag3') }}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="management-actions">
@@ -348,6 +365,111 @@
               <h4>{{ t('help.terminals.sharing.limitations.history.title') }}</h4>
               <p>{{ t('help.terminals.sharing.limitations.history.description') }}</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-user-friends"></i> {{ t('help.terminals.sharing.shareWithGroup.title') }}</h2>
+        <p>{{ t('help.terminals.sharing.shareWithGroup.description') }}</p>
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>{{ t('help.terminals.sharing.shareWithGroup.selectGroup.title') }}</h4>
+            <p v-html="t('help.terminals.sharing.shareWithGroup.selectGroup.description')"></p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h4>{{ t('help.terminals.sharing.shareWithGroup.setPermissions.title') }}</h4>
+            <p v-html="t('help.terminals.sharing.shareWithGroup.setPermissions.description')"></p>
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <h4><i class="fas fa-lightbulb"></i> {{ t('help.terminals.sharing.shareWithGroup.tip.title') }}</h4>
+          <p>{{ t('help.terminals.sharing.shareWithGroup.tip.description') }}</p>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-search"></i> {{ t('help.terminals.sharing.userSearch.title') }}</h2>
+        <p>{{ t('help.terminals.sharing.userSearch.description') }}</p>
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>{{ t('help.terminals.sharing.userSearch.howTo.title') }}</h4>
+            <p v-html="t('help.terminals.sharing.userSearch.howTo.description')"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-users"></i> {{ t('help.terminals.sharing.groupSearch.title') }}</h2>
+        <p>{{ t('help.terminals.sharing.groupSearch.description') }}</p>
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>{{ t('help.terminals.sharing.groupSearch.howTo.title') }}</h4>
+            <p v-html="t('help.terminals.sharing.groupSearch.howTo.description')"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-calendar-alt"></i> {{ t('help.terminals.sharing.expirationPicker.title') }}</h2>
+        <p>{{ t('help.terminals.sharing.expirationPicker.description') }}</p>
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>{{ t('help.terminals.sharing.expirationPicker.howTo.title') }}</h4>
+            <p v-html="t('help.terminals.sharing.expirationPicker.howTo.description')"></p>
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <h4><i class="fas fa-lightbulb"></i> {{ t('help.terminals.sharing.expirationPicker.tip.title') }}</h4>
+          <p>{{ t('help.terminals.sharing.expirationPicker.tip.description') }}</p>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-inbox"></i> {{ t('help.terminals.sharing.sharedWithMePage.title') }}</h2>
+        <p>{{ t('help.terminals.sharing.sharedWithMePage.description') }}</p>
+
+        <div class="feature-grid">
+          <div class="feature-card">
+            <i class="fas fa-id-badge"></i>
+            <h4>{{ t('help.terminals.sharing.sharedWithMePage.accessBadge.title') }}</h4>
+            <p>{{ t('help.terminals.sharing.sharedWithMePage.accessBadge.description') }}</p>
+          </div>
+          <div class="feature-card">
+            <i class="fas fa-info-circle"></i>
+            <h4>{{ t('help.terminals.sharing.sharedWithMePage.terminalDetails.title') }}</h4>
+            <p>{{ t('help.terminals.sharing.sharedWithMePage.terminalDetails.description') }}</p>
+          </div>
+          <div class="feature-card">
+            <i class="fas fa-user"></i>
+            <h4>{{ t('help.terminals.sharing.sharedWithMePage.sharedBy.title') }}</h4>
+            <p>{{ t('help.terminals.sharing.sharedWithMePage.sharedBy.description') }}</p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>{{ t('help.terminals.sharing.sharedWithMePage.access.title') }}</h4>
+            <p v-html="t('help.terminals.sharing.sharedWithMePage.access.description')"></p>
+            <router-link to="/terminal-shared" class="btn btn-outline">
+              <i class="fas fa-share-alt"></i>
+              {{ t('help.terminals.sharing.sharedWithMePage.access.button') }}
+            </router-link>
           </div>
         </div>
       </section>
@@ -635,6 +757,37 @@ onMounted(async () => {
   margin: 0;
   color: var(--color-warning-text);
   font-size: 0.9rem;
+}
+
+.access-card.admin {
+  background: var(--color-warning-bg);
+  border-color: var(--color-warning);
+}
+
+.access-card.admin .access-icon i {
+  font-size: 2rem;
+  color: var(--color-warning-text);
+}
+
+.tip-box {
+  background: var(--color-warning-bg);
+  border: 2px solid var(--color-warning);
+  border-radius: 8px;
+  padding: 15px;
+  margin: 20px 0;
+}
+
+.tip-box h4 {
+  margin: 0 0 10px 0;
+  color: var(--color-warning-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tip-box p {
+  margin: 0;
+  color: var(--color-warning-text);
 }
 
 /* Responsive */

@@ -1061,6 +1061,101 @@ export const helpEn = {
             description: "Master sharing features"
           }
         }
+      },
+      sshKeys: {
+        title: "SSH Key Management",
+        intro: "Manage your terminal access keys to connect to terminal sessions securely.",
+        overview: {
+          title: "What are Terminal Access Keys?",
+          description: "Terminal access keys are credentials that authenticate you when connecting to terminal sessions. Each key is unique to your account and grants access to create and join terminal sessions on the platform.",
+          requirement: "You need an active terminal access key to create or connect to any terminal session. Without a key, terminal features will be unavailable."
+        },
+        regenerate: {
+          title: "Creating or Regenerating a Key",
+          description: "You can generate a new terminal access key from the Terminal Access Keys page. If you already have a key, regenerating will replace it.",
+          step1: {
+            title: "Navigate to Terminal Access Keys",
+            description: "Go to the Terminal Access Keys page from the settings menu or the main navigation."
+          },
+          step2: {
+            title: "Click Regenerate Key",
+            description: "Press the \"Regenerate key\" button. A confirmation dialog will appear to verify your intent."
+          },
+          step3: {
+            title: "Confirm the Action",
+            description: "Confirm the regeneration in the modal dialog. Your new key will be generated immediately and become active."
+          },
+          warning: {
+            title: "Important",
+            description: "Regenerating your key will immediately invalidate your previous key. Any sessions authenticated with the old key may be affected. Only regenerate when necessary."
+          }
+        },
+        details: {
+          title: "Key Details",
+          description: "Your terminal access key page displays the following information about your current key.",
+          keyId: {
+            title: "Key ID",
+            description: "A unique identifier for your terminal access key. This is used internally to track and manage your key."
+          },
+          keyName: {
+            title: "Key Name",
+            description: "A descriptive name for your key, usually auto-generated based on your account information."
+          },
+          status: {
+            title: "Status",
+            description: "Indicates whether your key is active or inactive. An active key (shown with a green badge) allows terminal access. An inactive key (shown with a red badge) must be regenerated."
+          },
+          maxSessions: {
+            title: "Max Sessions",
+            description: "The maximum number of simultaneous terminal sessions your key supports. This may be unlimited depending on your subscription plan."
+          }
+        },
+        security: {
+          title: "Security Best Practices",
+          description: "Follow these guidelines to keep your terminal access secure.",
+          keepSecure: {
+            title: "Keep Your Key Secure",
+            description: "Your terminal access key grants access to terminal sessions on your behalf. Treat it like a password and do not expose it unnecessarily."
+          },
+          noShare: {
+            title: "Never Share Your Key",
+            description: "Do not share your terminal access key with others. Each user should have their own key. Sharing keys can lead to unauthorized access and session conflicts."
+          },
+          regenerateIfCompromised: {
+            title: "Regenerate if Compromised",
+            description: "If you suspect your key has been compromised or accessed by someone else, regenerate it immediately to invalidate the old key."
+          }
+        },
+        troubleshooting: {
+          title: "Troubleshooting",
+          description: "Common issues with terminal access keys and how to resolve them.",
+          noKey: {
+            title: "No key found (empty state)",
+            description: "If the page shows \"No terminal key found\", you need to generate your first key. Click the \"Regenerate key\" button to create one. This is normal for new accounts."
+          },
+          inactive: {
+            title: "Key is inactive",
+            description: "An inactive key (red badge) means your key has been deactivated. This can happen due to administrative actions or policy changes. Try regenerating your key. If the issue persists, contact your administrator."
+          },
+          lost: {
+            title: "Lost or forgotten key",
+            description: "If you have lost access to your key or cannot remember it, simply regenerate a new one from the Terminal Access Keys page. The old key will be invalidated and a new one will take its place."
+          }
+        },
+        nextSteps: {
+          gettingStarted: {
+            title: "Getting Started with Terminals",
+            description: "Learn how to create and use your first terminal session"
+          },
+          troubleshooting: {
+            title: "Terminal Troubleshooting",
+            description: "Solutions to common terminal problems and issues"
+          },
+          settings: {
+            title: "Settings & Preferences",
+            description: "Configure your account settings and preferences"
+          }
+        }
       }
     },
 

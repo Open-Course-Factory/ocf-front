@@ -38,7 +38,8 @@ export const helpFr = {
         gettingStarted: "Premiers Pas",
         managingSessions: "Gestion des Sessions",
         sharing: "Partage et Collaboration",
-        troubleshooting: "Dépannage"
+        troubleshooting: "Dépannage",
+        sshKeys: "Gestion des clés SSH"
       },
       courses: {
         title: "📚 Cours",
@@ -51,7 +52,9 @@ export const helpFr = {
         description: "Gérez votre abonnement, facturation et paramètres de compte",
         subscription: "Abonnement et Plans",
         billing: "Facturation et Paiements",
-        rolesAndPermissions: "Rôles et Permissions"
+        rolesAndPermissions: "Rôles et Permissions",
+        settings: "Paramètres & Préférences",
+        themes: "Mode sombre & Thèmes"
       },
       organizations: {
         title: "🏢 Organisations & Groupes",
@@ -721,6 +724,76 @@ export const helpFr = {
           history: {
             title: "Historique des commandes",
             description: "Toutes les commandes exécutées par tous les utilisateurs sont enregistrées dans l'historique du terminal"
+          }
+        },
+
+        shareWithGroup: {
+          title: "Partager avec un groupe",
+          description: "En plus du partage avec des utilisateurs individuels, vous pouvez partager un terminal avec un groupe entier en une seule fois. Cette fonctionnalité nécessite que le feature flag des groupes soit activé.",
+          selectGroup: {
+            title: "Sélectionner un groupe",
+            description: "Dans la boîte de dialogue de partage, basculez sur l'onglet <strong>\"Groupe\"</strong> et choisissez un groupe dans la liste pour partager votre terminal avec tous ses membres."
+          },
+          setPermissions: {
+            title: "Définir les permissions du groupe",
+            description: "Choisissez le <strong>niveau d'accès</strong> (Lecture, Écriture ou Administrateur) qui s'appliquera à tous les membres du groupe sélectionné."
+          },
+          tip: {
+            title: "Disponibilité",
+            description: "Le partage avec un groupe nécessite que la fonctionnalité de groupes soit activée par votre administrateur. Si vous ne voyez pas l'onglet groupe, contactez votre administrateur."
+          }
+        },
+
+        userSearch: {
+          title: "Recherche d'utilisateurs",
+          description: "Lors du partage d'un terminal avec des utilisateurs individuels, une recherche en temps réel vous aide à trouver rapidement la bonne personne.",
+          howTo: {
+            title: "Rechercher un utilisateur",
+            description: "Commencez à saisir un <strong>nom ou une adresse email</strong> dans le champ de recherche. Un menu déroulant apparaît avec les résultats correspondants, affichant le <strong>nom et l'email</strong> de chaque utilisateur. Cliquez sur un résultat pour sélectionner l'utilisateur."
+          }
+        },
+
+        groupSearch: {
+          title: "Recherche de groupes",
+          description: "Lors du partage avec un groupe, vous pouvez rechercher parmi les groupes disponibles pour trouver le bon.",
+          howTo: {
+            title: "Rechercher un groupe",
+            description: "Saisissez le <strong>nom du groupe</strong> dans le champ de recherche. Un menu déroulant affiche les groupes correspondants avec leur <strong>nom et description</strong>. Sélectionnez un groupe pour partager avec tous ses membres en une seule fois."
+          }
+        },
+
+        expirationPicker: {
+          title: "Date d'expiration des partages",
+          description: "Vous pouvez optionnellement définir une date d'expiration lors du partage d'un terminal. Après la date d'expiration, l'accès partagé est automatiquement révoqué.",
+          howTo: {
+            title: "Définir une date d'expiration",
+            description: "Lors de l'ajout d'un utilisateur ou d'un groupe au partage, utilisez le <strong>sélecteur de date</strong> pour choisir une date d'expiration. Laissez-le vide pour les partages sans expiration automatique."
+          },
+          tip: {
+            title: "Bonne pratique",
+            description: "Pour les collaborations temporaires ou les sessions de formation, définissez toujours une date d'expiration pour garantir que les accès sont automatiquement nettoyés."
+          }
+        },
+
+        sharedWithMePage: {
+          title: "Page Partagés avec Moi",
+          description: "La page \"Partagés avec moi\" accessible via /terminal-shared vous donne une vue d'ensemble complète de tous les terminaux que d'autres ont partagés avec vous.",
+          accessBadge: {
+            title: "Badge de niveau d'accès",
+            description: "Chaque terminal partagé affiche un badge indiquant votre niveau d'accès : Lecture, Écriture ou Administrateur."
+          },
+          terminalDetails: {
+            title: "Détails du terminal",
+            description: "Consultez le nom du terminal, son statut (actif, arrêté, expiré), le backend et les informations d'expiration en un coup d'œil."
+          },
+          sharedBy: {
+            title: "Partagé par",
+            description: "Identifiez qui a partagé le terminal avec vous et quand le partage a été créé."
+          },
+          access: {
+            title: "Accéder aux terminaux partagés",
+            description: "Naviguez vers <strong>Travaux Pratiques > Partagés avec Moi</strong> pour voir tous les terminaux partagés avec vous.",
+            button: "Voir les terminaux partagés"
           }
         },
 
