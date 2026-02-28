@@ -138,6 +138,117 @@ export const helpFr = {
             title: "Se connecter au terminal",
             description: "Cliquez sur le bouton <strong>\"Ouvrir\"</strong> pour accéder à votre terminal dans un nouvel onglet, ou utilisez <strong>\"Aperçu\"</strong> pour le voir directement dans la page."
           }
+        },
+
+        multiBackend: {
+          title: "Support Multi-Backend",
+          description: "Lorsque plusieurs backends de terminaux sont disponibles, vous pouvez choisir le serveur à utiliser pour votre session. Cela vous permet de sélectionner l'infrastructure la plus proche de votre localisation ou la mieux adaptée à votre charge de travail.",
+          selectBackend: {
+            title: "Sélectionner un backend",
+            description: "Sur la page de création de session, un <strong>sélecteur de backend</strong> apparaît lorsque plusieurs serveurs sont disponibles. Choisissez le backend qui correspond le mieux à vos besoins."
+          },
+          tip: {
+            title: "Conseil",
+            description: "Si un seul backend est configuré, le sélecteur est masqué et le serveur par défaut est utilisé automatiquement."
+          }
+        },
+
+        machineSizes: {
+          title: "Tailles de machine",
+          description: "Les sessions de terminal sont disponibles en différentes tailles, chacune offrant des quantités différentes de CPU et de mémoire. Les tailles disponibles dépendent de votre plan d'abonnement.",
+          small: {
+            title: "S - Petite",
+            description: "Environnement léger pour les tâches simples, le scripting et le développement basique."
+          },
+          medium: {
+            title: "M - Moyenne",
+            description: "Environnement équilibré pour le développement standard et les charges de travail modérées."
+          },
+          large: {
+            title: "L - Grande",
+            description: "Environnement puissant pour les tâches intensives en ressources, la compilation et les architectures multi-services."
+          },
+          xlarge: {
+            title: "XL - Très Grande",
+            description: "Ressources maximales pour les charges lourdes, les builds à grande échelle et les environnements de type production."
+          },
+          planTip: {
+            title: "Disponibilité selon le plan",
+            description: "Votre plan d'abonnement détermine les tailles de machine auxquelles vous avez accès. Consultez les détails de votre plan pour connaître les tailles autorisées."
+          }
+        },
+
+        usageQuota: {
+          title: "Panneau d'utilisation et quotas",
+          description: "Avant de créer une session, le panneau d'utilisation affiche votre consommation actuelle de ressources en un coup d'œil.",
+          concurrentSessions: {
+            title: "Sessions simultanées",
+            description: "Indique le nombre de sessions terminal actives que vous utilisez actuellement par rapport au maximum autorisé par votre plan."
+          },
+          maxDuration: {
+            title: "Durée maximale de session",
+            description: "Affiche la durée la plus longue autorisée pour une session unique selon votre plan d'abonnement actuel."
+          }
+        },
+
+        advancedOptions: {
+          title: "Options avancées",
+          description: "Lors de la création d'une session, vous pouvez optionnellement configurer des paramètres supplémentaires pour une meilleure organisation.",
+          terminalName: {
+            title: "Nom du terminal",
+            description: "Donnez à votre session un <strong>nom personnalisé</strong> pour l'identifier facilement parmi vos sessions actives (ex. : \"TP 3 - Réseau\")."
+          },
+          exerciseRef: {
+            title: "Référence d'exercice",
+            description: "Associez votre session à un <strong>exercice ou travail pratique</strong> spécifique à des fins de suivi et d'organisation."
+          }
+        },
+
+        bulkGroupCreation: {
+          title: "Création en masse pour un groupe",
+          description: "Lorsque la fonctionnalité de groupes est activée, les formateurs peuvent créer des sessions de terminal pour tous les membres d'un groupe en une seule opération. Idéal pour la mise en place de salles de cours et de sessions de formation.",
+          selectGroup: {
+            title: "Sélectionner un groupe",
+            description: "Choisissez un <strong>groupe</strong> dans la liste déroulante. Tous les membres de ce groupe recevront leur propre session terminal."
+          },
+          confirm: {
+            title: "Confirmer la création en masse",
+            description: "Vérifiez le nombre de sessions à créer et cliquez sur <strong>\"Créer les sessions\"</strong>. Chaque membre du groupe recevra une session terminal dédiée avec la même configuration."
+          },
+          tip: {
+            title: "Disponibilité",
+            description: "Cette fonctionnalité nécessite que le feature flag des groupes soit activé. Contactez votre administrateur si vous ne voyez pas cette option."
+          }
+        },
+
+        recordingConsent: {
+          title: "Consentement d'enregistrement",
+          description: "Lorsque l'enregistrement de session est activé par votre organisation, une fenêtre de consentement apparaît après le démarrage de votre session terminal.",
+          modal: {
+            title: "Fenêtre de consentement",
+            description: "Après la création de la session, une <strong>boîte de dialogue de consentement à l'enregistrement</strong> apparaît pour vous demander si vous acceptez que votre session soit enregistrée."
+          },
+          choices: {
+            title: "Vos choix",
+            description: "Vous pouvez <strong>accepter</strong> l'enregistrement pour autoriser la capture de session, ou <strong>refuser</strong> si vous préférez ne pas être enregistré. Votre choix est enregistré pour la session en cours."
+          }
+        },
+
+        expiryWarnings: {
+          title: "Alertes de compte à rebours avant expiration",
+          description: "À l'approche de l'expiration de votre session, la plateforme affiche des bannières de notification pour vous rappeler de sauvegarder votre travail.",
+          tenMin: {
+            title: "10 minutes restantes",
+            description: "Une notification d'information apparaît, vous rappelant que votre session va bientôt expirer."
+          },
+          fiveMin: {
+            title: "5 minutes restantes",
+            description: "Une notification d'avertissement vous invite à sauvegarder votre travail et à vous préparer à terminer votre session."
+          },
+          oneMin: {
+            title: "1 minute restante",
+            description: "Une alerte critique signale la fin imminente de la session. Sauvegardez immédiatement tout votre travail."
+          }
         }
       },
 

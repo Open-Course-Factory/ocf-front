@@ -138,6 +138,117 @@ export const helpEn = {
             title: "Connect to the terminal",
             description: "Click the <strong>\"Open\"</strong> button to access your terminal in a new tab, or use <strong>\"Preview\"</strong> to see it directly in the page."
           }
+        },
+
+        multiBackend: {
+          title: "Multi-Backend Support",
+          description: "When multiple terminal backends are available, you can choose which server to use for your session. This allows you to select the infrastructure closest to your location or the one best suited to your workload.",
+          selectBackend: {
+            title: "Select a backend",
+            description: "On the session creation page, a <strong>backend selector</strong> appears when multiple servers are available. Choose the backend that best fits your needs."
+          },
+          tip: {
+            title: "Tip",
+            description: "If only one backend is configured, the selector is hidden and the default server is used automatically."
+          }
+        },
+
+        machineSizes: {
+          title: "Machine Sizes",
+          description: "Terminal sessions are available in different sizes, each offering different amounts of CPU and memory resources. The sizes available to you depend on your subscription plan.",
+          small: {
+            title: "S - Small",
+            description: "Lightweight environment for simple tasks, scripting, and basic development."
+          },
+          medium: {
+            title: "M - Medium",
+            description: "Balanced environment for standard development work and moderate workloads."
+          },
+          large: {
+            title: "L - Large",
+            description: "Powerful environment for resource-intensive tasks, compilation, and multi-service setups."
+          },
+          xlarge: {
+            title: "XL - Extra Large",
+            description: "Maximum resources for heavy workloads, large-scale builds, and production-like environments."
+          },
+          planTip: {
+            title: "Plan-based availability",
+            description: "Your subscription plan determines which machine sizes are available to you. Check your plan details to see your allowed sizes."
+          }
+        },
+
+        usageQuota: {
+          title: "Usage & Quota Panel",
+          description: "Before creating a session, the usage panel displays your current resource consumption at a glance.",
+          concurrentSessions: {
+            title: "Concurrent Sessions",
+            description: "Shows how many active terminal sessions you currently have compared to the maximum allowed by your plan."
+          },
+          maxDuration: {
+            title: "Maximum Session Duration",
+            description: "Displays the longest duration allowed for a single session under your current subscription plan."
+          }
+        },
+
+        advancedOptions: {
+          title: "Advanced Options",
+          description: "When creating a session, you can optionally configure additional parameters for better organization.",
+          terminalName: {
+            title: "Terminal name",
+            description: "Give your session a <strong>custom name</strong> to easily identify it among your active sessions (e.g., \"Lab 3 - Networking\")."
+          },
+          exerciseRef: {
+            title: "Exercise reference",
+            description: "Link your session to a specific <strong>exercise or practical work</strong> for tracking and organizational purposes."
+          }
+        },
+
+        bulkGroupCreation: {
+          title: "Bulk Group Creation",
+          description: "When the groups feature is enabled, trainers can create terminal sessions for all members of a group in a single operation. This is ideal for classroom setups and training sessions.",
+          selectGroup: {
+            title: "Select a group",
+            description: "Choose a <strong>group</strong> from the dropdown list. All members of that group will receive their own terminal session."
+          },
+          confirm: {
+            title: "Confirm bulk creation",
+            description: "Review the number of sessions to be created and click <strong>\"Create sessions\"</strong>. Each group member will receive a dedicated terminal session with the same configuration."
+          },
+          tip: {
+            title: "Availability",
+            description: "This feature requires the groups feature flag to be enabled. Contact your administrator if you do not see this option."
+          }
+        },
+
+        recordingConsent: {
+          title: "Recording Consent",
+          description: "When session recording is enabled by your organization, a consent modal appears after your terminal session starts.",
+          modal: {
+            title: "Consent modal",
+            description: "After the session is created, a <strong>recording consent dialog</strong> appears asking whether you agree to have your session recorded."
+          },
+          choices: {
+            title: "Your choices",
+            description: "You can <strong>accept</strong> recording to allow session capture, or <strong>decline</strong> if you prefer not to be recorded. Your choice is saved for the current session."
+          }
+        },
+
+        expiryWarnings: {
+          title: "Expiry Countdown Warnings",
+          description: "As your session approaches its expiration time, the platform displays notification banners to remind you to save your work.",
+          tenMin: {
+            title: "10 minutes remaining",
+            description: "An informational notification appears, gently reminding you that your session will expire soon."
+          },
+          fiveMin: {
+            title: "5 minutes remaining",
+            description: "A warning notification urges you to save your work and prepare to end your session."
+          },
+          oneMin: {
+            title: "1 minute remaining",
+            description: "A critical alert indicates imminent session termination. Save all work immediately."
+          }
         }
       },
 

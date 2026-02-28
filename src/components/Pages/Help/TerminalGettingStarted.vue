@@ -138,6 +138,166 @@
         </div>
       </section>
 
+      <section class="help-section">
+        <h2><i class="fas fa-server"></i> {{ t('help.terminals.gettingStarted.multiBackend.title') }}</h2>
+        <p>{{ t('help.terminals.gettingStarted.multiBackend.description') }}</p>
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>{{ t('help.terminals.gettingStarted.multiBackend.selectBackend.title') }}</h4>
+            <p v-html="t('help.terminals.gettingStarted.multiBackend.selectBackend.description')"></p>
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <h4><i class="fas fa-lightbulb"></i> {{ t('help.terminals.gettingStarted.multiBackend.tip.title') }}</h4>
+          <p>{{ t('help.terminals.gettingStarted.multiBackend.tip.description') }}</p>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-expand-arrows-alt"></i> {{ t('help.terminals.gettingStarted.machineSizes.title') }}</h2>
+        <p>{{ t('help.terminals.gettingStarted.machineSizes.description') }}</p>
+
+        <div class="feature-grid">
+          <div class="feature-card">
+            <i class="fas fa-microchip"></i>
+            <h4>{{ t('help.terminals.gettingStarted.machineSizes.small.title') }}</h4>
+            <p>{{ t('help.terminals.gettingStarted.machineSizes.small.description') }}</p>
+          </div>
+          <div class="feature-card">
+            <i class="fas fa-desktop"></i>
+            <h4>{{ t('help.terminals.gettingStarted.machineSizes.medium.title') }}</h4>
+            <p>{{ t('help.terminals.gettingStarted.machineSizes.medium.description') }}</p>
+          </div>
+          <div class="feature-card">
+            <i class="fas fa-server"></i>
+            <h4>{{ t('help.terminals.gettingStarted.machineSizes.large.title') }}</h4>
+            <p>{{ t('help.terminals.gettingStarted.machineSizes.large.description') }}</p>
+          </div>
+          <div class="feature-card">
+            <i class="fas fa-database"></i>
+            <h4>{{ t('help.terminals.gettingStarted.machineSizes.xlarge.title') }}</h4>
+            <p>{{ t('help.terminals.gettingStarted.machineSizes.xlarge.description') }}</p>
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <h4><i class="fas fa-lightbulb"></i> {{ t('help.terminals.gettingStarted.machineSizes.planTip.title') }}</h4>
+          <p>{{ t('help.terminals.gettingStarted.machineSizes.planTip.description') }}</p>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-chart-pie"></i> {{ t('help.terminals.gettingStarted.usageQuota.title') }}</h2>
+        <p>{{ t('help.terminals.gettingStarted.usageQuota.description') }}</p>
+
+        <div class="feature-grid">
+          <div class="feature-card">
+            <i class="fas fa-layer-group"></i>
+            <h4>{{ t('help.terminals.gettingStarted.usageQuota.concurrentSessions.title') }}</h4>
+            <p>{{ t('help.terminals.gettingStarted.usageQuota.concurrentSessions.description') }}</p>
+          </div>
+          <div class="feature-card">
+            <i class="fas fa-hourglass-half"></i>
+            <h4>{{ t('help.terminals.gettingStarted.usageQuota.maxDuration.title') }}</h4>
+            <p>{{ t('help.terminals.gettingStarted.usageQuota.maxDuration.description') }}</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-sliders-h"></i> {{ t('help.terminals.gettingStarted.advancedOptions.title') }}</h2>
+        <p>{{ t('help.terminals.gettingStarted.advancedOptions.description') }}</p>
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>{{ t('help.terminals.gettingStarted.advancedOptions.terminalName.title') }}</h4>
+            <p v-html="t('help.terminals.gettingStarted.advancedOptions.terminalName.description')"></p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h4>{{ t('help.terminals.gettingStarted.advancedOptions.exerciseRef.title') }}</h4>
+            <p v-html="t('help.terminals.gettingStarted.advancedOptions.exerciseRef.description')"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-users"></i> {{ t('help.terminals.gettingStarted.bulkGroupCreation.title') }}</h2>
+        <p>{{ t('help.terminals.gettingStarted.bulkGroupCreation.description') }}</p>
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>{{ t('help.terminals.gettingStarted.bulkGroupCreation.selectGroup.title') }}</h4>
+            <p v-html="t('help.terminals.gettingStarted.bulkGroupCreation.selectGroup.description')"></p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h4>{{ t('help.terminals.gettingStarted.bulkGroupCreation.confirm.title') }}</h4>
+            <p v-html="t('help.terminals.gettingStarted.bulkGroupCreation.confirm.description')"></p>
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <h4><i class="fas fa-lightbulb"></i> {{ t('help.terminals.gettingStarted.bulkGroupCreation.tip.title') }}</h4>
+          <p>{{ t('help.terminals.gettingStarted.bulkGroupCreation.tip.description') }}</p>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-video"></i> {{ t('help.terminals.gettingStarted.recordingConsent.title') }}</h2>
+        <p>{{ t('help.terminals.gettingStarted.recordingConsent.description') }}</p>
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>{{ t('help.terminals.gettingStarted.recordingConsent.modal.title') }}</h4>
+            <p v-html="t('help.terminals.gettingStarted.recordingConsent.modal.description')"></p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h4>{{ t('help.terminals.gettingStarted.recordingConsent.choices.title') }}</h4>
+            <p v-html="t('help.terminals.gettingStarted.recordingConsent.choices.description')"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-clock"></i> {{ t('help.terminals.gettingStarted.expiryWarnings.title') }}</h2>
+        <p>{{ t('help.terminals.gettingStarted.expiryWarnings.description') }}</p>
+
+        <div class="feature-grid">
+          <div class="feature-card info-level">
+            <i class="fas fa-info-circle"></i>
+            <h4>{{ t('help.terminals.gettingStarted.expiryWarnings.tenMin.title') }}</h4>
+            <p>{{ t('help.terminals.gettingStarted.expiryWarnings.tenMin.description') }}</p>
+          </div>
+          <div class="feature-card warning-level">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h4>{{ t('help.terminals.gettingStarted.expiryWarnings.fiveMin.title') }}</h4>
+            <p>{{ t('help.terminals.gettingStarted.expiryWarnings.fiveMin.description') }}</p>
+          </div>
+          <div class="feature-card danger-level">
+            <i class="fas fa-exclamation-circle"></i>
+            <h4>{{ t('help.terminals.gettingStarted.expiryWarnings.oneMin.title') }}</h4>
+            <p>{{ t('help.terminals.gettingStarted.expiryWarnings.oneMin.description') }}</p>
+          </div>
+        </div>
+      </section>
+
       <section class="help-section warning">
         <h2><i class="fas fa-exclamation-triangle"></i> {{ t('help.terminals.gettingStarted.firstSteps.step4.title') }}</h2>
         <div class="warning-content">
@@ -189,4 +349,91 @@ onMounted(async () => {
 
 <style scoped>
 /* Page-specific styles only - common help article styles are in help-article.css */
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin: 20px 0;
+}
+
+.feature-card {
+  text-align: center;
+  padding: 20px;
+  background: var(--color-gray-50);
+  border-radius: 8px;
+  border: 2px solid var(--color-gray-200);
+}
+
+.feature-card i {
+  font-size: 2rem;
+  color: var(--color-primary);
+  margin-bottom: 15px;
+}
+
+.feature-card h4 {
+  margin: 0 0 10px 0;
+  color: var(--color-text-primary);
+}
+
+.feature-card p {
+  margin: 0;
+  color: var(--color-gray-600);
+  font-size: 0.9rem;
+}
+
+.feature-card.info-level {
+  border-color: var(--color-info);
+  background: var(--color-info-bg);
+}
+
+.feature-card.info-level i {
+  color: var(--color-info);
+}
+
+.feature-card.warning-level {
+  border-color: var(--color-warning);
+  background: var(--color-warning-bg);
+}
+
+.feature-card.warning-level i {
+  color: var(--color-warning);
+}
+
+.feature-card.danger-level {
+  border-color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+
+.feature-card.danger-level i {
+  color: var(--color-danger);
+}
+
+.tip-box {
+  background: var(--color-warning-bg);
+  border: 2px solid var(--color-warning);
+  border-radius: 8px;
+  padding: 15px;
+  margin: 20px 0;
+}
+
+.tip-box h4 {
+  margin: 0 0 10px 0;
+  color: var(--color-warning-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tip-box p {
+  margin: 0;
+  color: var(--color-warning-text);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
