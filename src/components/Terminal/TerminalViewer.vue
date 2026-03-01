@@ -584,6 +584,15 @@ async function connectToTerminal() {
       attachAddon = new AttachAddon(socket.value!)
       terminal.value.loadAddon(attachAddon)
 
+      // Send resize events to backend as binary WebSocket frames
+      // so the container PTY dimensions stay in sync with the browser
+      terminal.value.onResize(({ cols, rows }: { cols: number; rows: number }) => {
+        if (socket.value && socket.value.readyState === WebSocket.OPEN) {
+          const msg = JSON.stringify({ type: 'resize', cols, rows })
+          socket.value.send(new TextEncoder().encode(msg))
+        }
+      })
+
       // Focus terminal
       terminal.value.focus()
     }
