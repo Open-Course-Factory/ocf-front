@@ -143,7 +143,7 @@
             @blur="onUserSearchBlur"
             @keyup.enter="searchUserPermissions"
           />
-          <div v-if="showUserSearchDropdown && (userSearchResults.length > 0 || isSearchingUsers)" class="search-dropdown">
+          <div v-if="showUserSearchDropdown && (userSearchResults.length > 0 || isSearchingUsers || userSearchQuery.trim().length >= 2)" class="search-dropdown">
             <div v-if="isSearchingUsers" class="search-loading">
               <i class="fas fa-spinner fa-spin"></i>
               {{ t('securityAdmin.searchingUsers') }}
@@ -317,7 +317,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSecurityAdminStore } from '../../../stores/securityAdmin'
 import { userService } from '../../../services/domain/user/userService'
@@ -448,6 +448,10 @@ function getMethodClass(method: string): string {
 
 onMounted(() => {
   store.fetchPolicyOverview()
+})
+
+onUnmounted(() => {
+  if (searchTimeout) clearTimeout(searchTimeout)
 })
 </script>
 

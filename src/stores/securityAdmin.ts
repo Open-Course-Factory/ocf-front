@@ -137,10 +137,6 @@ export const useSecurityAdminStore = defineStore('securityAdmin', () => {
         hasSubscription: 'Has Subscription',
         yes: 'Yes',
         no: 'No'
-      },
-      navigation: {
-        securityAdmin: 'Security',
-        securityAdminTitle: 'View Casbin security policies and permissions'
       }
     },
     fr: {
@@ -188,10 +184,6 @@ export const useSecurityAdminStore = defineStore('securityAdmin', () => {
         hasSubscription: 'A un Abonnement',
         yes: 'Oui',
         no: 'Non'
-      },
-      navigation: {
-        securityAdmin: 'Sécurité',
-        securityAdminTitle: 'Voir les politiques de sécurité Casbin et les permissions'
       }
     }
   })
@@ -205,7 +197,6 @@ export const useSecurityAdminStore = defineStore('securityAdmin', () => {
       policyOverview.value = response.data
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
-      throw err
     } finally {
       isLoading.value = false
     }
@@ -219,7 +210,6 @@ export const useSecurityAdminStore = defineStore('securityAdmin', () => {
       userPermissions.value = response.data
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
-      throw err
     } finally {
       isLoading.value = false
     }
@@ -233,7 +223,6 @@ export const useSecurityAdminStore = defineStore('securityAdmin', () => {
       entityRoleMatrix.value = response.data
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
-      throw err
     } finally {
       isLoading.value = false
     }
@@ -247,7 +236,6 @@ export const useSecurityAdminStore = defineStore('securityAdmin', () => {
       healthChecks.value = response.data
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
-      throw err
     } finally {
       isLoading.value = false
     }
