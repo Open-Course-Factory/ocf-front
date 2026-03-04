@@ -502,6 +502,12 @@ const menuCategories = computed((): MenuCategory[] => [
         label: t('navigation.designSystem'),
         title: t('navigation.designSystemTitle'),
         icon: 'fas fa-palette'
+      },
+      {
+        route: '/admin/security',
+        label: t('navigation.securityAdmin'),
+        title: t('navigation.securityAdminTitle'),
+        icon: 'fas fa-user-shield'
       }
     ]
   }

@@ -412,6 +412,12 @@ const basicRoutes = [
         meta: { requiresAuth: true, requiresAdmin: true }
       },
       {
+        path: 'admin/security',
+        name: 'AdminSecurity',
+        component: () => import('../components/Pages/Admin/Security.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
         path: 'admin/plan-features',
         name: 'AdminPlanFeatures',
         component: () => import('../components/Pages/PlanFeatures.vue'),
