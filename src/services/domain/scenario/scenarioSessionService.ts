@@ -37,9 +37,14 @@ export interface ScenarioSessionInfo {
 }
 
 export const scenarioSessionService = {
-  async startScenario(scenarioId: string, options?: { backend?: string; instance_type?: string }): Promise<ScenarioSessionInfo> {
+  async startScenario(scenarioId: string, options?: { terminal_session_id?: string; backend?: string; instance_type?: string }): Promise<ScenarioSessionInfo> {
     const response = await axios.post(`/scenarios/${scenarioId}/start`, options || {})
     return response.data
+  },
+
+  async listScenarios(): Promise<any[]> {
+    const response = await axios.get('/scenarios')
+    return response.data?.data || response.data || []
   },
 
   async getCurrentStep(sessionId: string): Promise<CurrentStepResponse> {

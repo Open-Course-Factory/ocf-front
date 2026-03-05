@@ -35,6 +35,13 @@
         </router-link>
       </div>
 
+      <!-- Scenario start bar (when no scenario active) -->
+      <ScenarioStartBar
+        v-if="isSessionActive && !scenarioSessionId"
+        :terminal-session-id="sessionId"
+        @scenario-started="handleScenarioStarted"
+      />
+
       <!-- Terminal + Scenario Panel layout (active session with scenario) -->
       <div v-if="isSessionActive && scenarioSessionId" class="terminal-session-layout">
         <div class="terminal-main-area">
@@ -96,6 +103,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
 import ScenarioPanel from '../Terminal/ScenarioPanel.vue'
+import ScenarioStartBar from '../Terminal/ScenarioStartBar.vue'
 import CommandHistory from '../Terminal/CommandHistory.vue'
 
 const route = useRoute()
@@ -295,6 +303,10 @@ function handleSessionExpired() {
     timerInterval = null
   }
   showWarning(t('sessionView.sessionExpiredNotice'), t('sessionView.sessionExpiredTitle'))
+}
+
+function handleScenarioStarted(newScenarioSessionId: string) {
+  scenarioSessionId.value = newScenarioSessionId
 }
 
 function handleScenarioCompleted() {
