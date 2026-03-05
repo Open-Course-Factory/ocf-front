@@ -61,7 +61,7 @@
               <i class="fas fa-chevron-right chevron" :class="{ rotated: expandedSubjects['role-' + subject.subject] }"></i>
               <div class="subject-info">
                 <span class="subject-name">{{ subject.subject_name || subject.subject }}</span>
-                <span v-if="subject.subject_name" class="subject-id">{{ subject.subject }}</span>
+                <span v-if="subject.subject_name" class="subject-id" :title="subject.subject">{{ subject.subject }}</span>
               </div>
               <span class="policy-count">{{ subject.policies.length }}</span>
             </div>
@@ -75,7 +75,12 @@
                 </thead>
                 <tbody>
                   <tr v-for="policy in subject.policies" :key="policy.resource">
-                    <td class="resource-cell">{{ policy.resource }}</td>
+                    <td class="resource-cell">
+                      <span class="resource-path">{{ policy.resource }}</span>
+                      <span v-if="policy.resource_name" class="resource-resolved-name">
+                        {{ policy.resource_name }}
+                      </span>
+                    </td>
                     <td>
                       <span
                         v-for="method in policy.methods"
@@ -102,7 +107,7 @@
               <i class="fas fa-chevron-right chevron" :class="{ rotated: expandedSubjects['user-' + subject.subject] }"></i>
               <div class="subject-info">
                 <span class="subject-name">{{ subject.subject_name || subject.subject }}</span>
-                <span v-if="subject.subject_name" class="subject-id">{{ subject.subject }}</span>
+                <span v-if="subject.subject_name" class="subject-id" :title="subject.subject">{{ subject.subject }}</span>
               </div>
               <span class="policy-count">{{ subject.policies.length }}</span>
             </div>
@@ -116,7 +121,12 @@
                 </thead>
                 <tbody>
                   <tr v-for="policy in subject.policies" :key="policy.resource">
-                    <td class="resource-cell">{{ policy.resource }}</td>
+                    <td class="resource-cell">
+                      <span class="resource-path">{{ policy.resource }}</span>
+                      <span v-if="policy.resource_name" class="resource-resolved-name">
+                        {{ policy.resource_name }}
+                      </span>
+                    </td>
                     <td>
                       <span
                         v-for="method in policy.methods"
@@ -225,7 +235,12 @@
             </thead>
             <tbody>
               <tr v-for="perm in store.userPermissions.permissions" :key="perm.resource">
-                <td class="resource-cell">{{ perm.resource }}</td>
+                <td class="resource-cell">
+                  <span class="resource-path">{{ perm.resource }}</span>
+                  <span v-if="perm.resource_name" class="resource-resolved-name">
+                    {{ perm.resource_name }}
+                  </span>
+                </td>
                 <td>
                   <span
                     v-for="method in perm.methods"
@@ -665,6 +680,24 @@ onUnmounted(() => {
 .resource-cell {
   font-family: monospace;
   font-size: var(--font-size-xs);
+}
+
+.resource-path {
+  font-family: monospace;
+  font-size: var(--font-size-xs);
+}
+
+.resource-resolved-name {
+  display: inline-block;
+  margin-left: var(--spacing-sm);
+  padding: 1px var(--spacing-sm);
+  background-color: var(--color-info-bg);
+  color: var(--color-info-text);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  vertical-align: baseline;
 }
 
 /* Method Badges */

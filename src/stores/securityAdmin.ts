@@ -27,6 +27,7 @@ import { useStoreTranslations } from '../composables/useTranslations'
 // Types
 export interface PolicyRule {
   resource: string
+  resource_name?: string
   methods: string[]
 }
 
@@ -72,7 +73,7 @@ export interface PolicyHealthCheck {
 
 export interface UserPermissionLookup {
   user_id: string
-  permissions: { resource: string; methods: string[] }[]
+  permissions: { resource: string; resource_name?: string; methods: string[] }[]
   roles: string[]
   is_system_admin: boolean
   entity_memberships: Record<string, any[]>
