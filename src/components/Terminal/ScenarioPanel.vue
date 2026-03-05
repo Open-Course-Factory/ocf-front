@@ -411,7 +411,6 @@ onMounted(() => {
   border-left: var(--border-width-medium) solid var(--color-border-light);
   border-radius: var(--border-radius-md) 0 0 var(--border-radius-md);
   transition: width var(--transition-slow), min-width var(--transition-slow);
-  overflow: hidden;
 }
 
 .scenario-panel.collapsed {
