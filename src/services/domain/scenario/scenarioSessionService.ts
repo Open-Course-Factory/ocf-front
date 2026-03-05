@@ -38,7 +38,7 @@ export interface ScenarioSessionInfo {
 
 export const scenarioSessionService = {
   async startScenario(scenarioId: string, options?: { terminal_session_id?: string; backend?: string; instance_type?: string }): Promise<ScenarioSessionInfo> {
-    const response = await axios.post(`/scenarios/${scenarioId}/start`, options || {})
+    const response = await axios.post('/scenario-sessions/start', { scenario_id: scenarioId, ...options })
     return response.data
   },
 
