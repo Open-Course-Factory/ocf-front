@@ -74,10 +74,8 @@
             <h4 class="step-title">{{ currentStep.title }}</h4>
           </div>
 
-          <!-- Step text -->
-          <div v-if="currentStep.text" class="step-text">
-            {{ currentStep.text }}
-          </div>
+          <!-- Step text (rendered as markdown) -->
+          <div v-if="currentStep.text" class="step-text markdown-content" v-html="renderedStepText"></div>
 
           <!-- Hint section (collapsible) -->
           <div v-if="currentStep.hint" class="hint-section">
@@ -85,9 +83,7 @@
               <i :class="showHint ? 'fas fa-eye-slash' : 'fas fa-lightbulb'"></i>
               {{ showHint ? t('scenarioPanel.hideHint') : t('scenarioPanel.showHint') }}
             </button>
-            <div v-if="showHint" class="hint-content">
-              {{ currentStep.hint }}
-            </div>
+            <div v-if="showHint" class="hint-content markdown-content" v-html="renderedHintText"></div>
           </div>
 
           <!-- Verify button -->
@@ -163,7 +159,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { scenarioSessionService } from '../../services/domain/scenario'
@@ -180,6 +178,12 @@ const emit = defineEmits<{
   'session-completed': []
   'session-abandoned': []
 }>()
+
+// Configure marked for safe rendering
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+})
 
 const { showConfirm } = useNotification()
 
@@ -259,6 +263,19 @@ const verifyResult = ref<VerifyStepResponse | null>(null)
 const flagValue = ref('')
 const isSubmittingFlag = ref(false)
 const flagResult = ref<SubmitFlagResponse | null>(null)
+
+// Computed markdown rendering
+const renderedStepText = computed(() => {
+  if (!currentStep.value?.text) return ''
+  const html = marked.parse(currentStep.value.text) as string
+  return DOMPurify.sanitize(html)
+})
+
+const renderedHintText = computed(() => {
+  if (!currentStep.value?.hint) return ''
+  const html = marked.parse(currentStep.value.hint) as string
+  return DOMPurify.sanitize(html)
+})
 
 // Load collapse state from localStorage
 const COLLAPSE_KEY = 'scenario_panel_collapsed'
@@ -552,7 +569,6 @@ onMounted(() => {
   font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
   color: var(--color-text-secondary);
-  white-space: pre-wrap;
 }
 
 /* Hint section */
@@ -595,7 +611,6 @@ onMounted(() => {
   font-size: var(--font-size-sm);
   color: var(--color-warning-text);
   line-height: var(--line-height-relaxed);
-  white-space: pre-wrap;
 }
 
 /* Verify button */
@@ -872,5 +887,125 @@ onMounted(() => {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   line-height: var(--line-height-relaxed);
+}
+
+/* Markdown content styles (v-html requires :deep for scoped styles) */
+.markdown-content :deep(p) {
+  margin: var(--spacing-xs) 0;
+}
+
+.markdown-content :deep(p:first-child) {
+  margin-top: 0;
+}
+
+.markdown-content :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.markdown-content :deep(pre) {
+  background: var(--color-bg-tertiary, rgba(0, 0, 0, 0.2));
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  overflow-x: auto;
+  margin: var(--spacing-sm) 0;
+}
+
+.markdown-content :deep(code) {
+  font-family: var(--font-family-monospace, monospace);
+  font-size: var(--font-size-xs);
+}
+
+.markdown-content :deep(p code),
+.markdown-content :deep(li code) {
+  background: var(--color-bg-tertiary, rgba(0, 0, 0, 0.2));
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+}
+
+.markdown-content :deep(pre code) {
+  background: none;
+  padding: 0;
+}
+
+.markdown-content :deep(h1),
+.markdown-content :deep(h2),
+.markdown-content :deep(h3),
+.markdown-content :deep(h4) {
+  margin: var(--spacing-sm) 0 var(--spacing-xs);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.markdown-content :deep(h1) { font-size: var(--font-size-lg); }
+.markdown-content :deep(h2) { font-size: var(--font-size-md); }
+.markdown-content :deep(h3) { font-size: var(--font-size-sm); }
+.markdown-content :deep(h4) { font-size: var(--font-size-sm); }
+
+.markdown-content :deep(ul),
+.markdown-content :deep(ol) {
+  margin: var(--spacing-xs) 0;
+  padding-left: var(--spacing-lg);
+}
+
+.markdown-content :deep(li) {
+  margin: var(--spacing-xs) 0;
+}
+
+.markdown-content :deep(a) {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.markdown-content :deep(a:hover) {
+  color: var(--color-primary-hover);
+}
+
+.markdown-content :deep(strong) {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.markdown-content :deep(em) {
+  font-style: italic;
+}
+
+.markdown-content :deep(blockquote) {
+  margin: var(--spacing-sm) 0;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-left: 3px solid var(--color-primary);
+  background: var(--color-bg-tertiary, rgba(0, 0, 0, 0.1));
+  border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+}
+
+.markdown-content :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--spacing-sm) 0;
+  font-size: var(--font-size-xs);
+}
+
+.markdown-content :deep(th),
+.markdown-content :deep(td) {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  text-align: left;
+}
+
+.markdown-content :deep(th) {
+  background: var(--color-bg-secondary);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.markdown-content :deep(hr) {
+  border: none;
+  border-top: var(--border-width-thin) solid var(--color-border-light);
+  margin: var(--spacing-sm) 0;
+}
+
+.markdown-content :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--border-radius-sm);
 }
 </style>
