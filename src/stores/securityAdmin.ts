@@ -32,6 +32,7 @@ export interface PolicyRule {
 
 export interface PolicySubject {
   subject: string
+  subject_name?: string
   policies: PolicyRule[]
 }
 

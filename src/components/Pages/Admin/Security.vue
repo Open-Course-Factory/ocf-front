@@ -59,7 +59,10 @@
           <div v-for="subject in store.policyOverview.role_policies" :key="subject.subject" class="subject-card">
             <div class="subject-header" @click="toggleSubject('role-' + subject.subject)">
               <i class="fas fa-chevron-right chevron" :class="{ rotated: expandedSubjects['role-' + subject.subject] }"></i>
-              <span class="subject-name">{{ subject.subject }}</span>
+              <div class="subject-info">
+                <span class="subject-name">{{ subject.subject_name || subject.subject }}</span>
+                <span v-if="subject.subject_name" class="subject-id">{{ subject.subject }}</span>
+              </div>
               <span class="policy-count">{{ subject.policies.length }}</span>
             </div>
             <div v-if="expandedSubjects['role-' + subject.subject]" class="subject-content">
@@ -97,7 +100,10 @@
           <div v-for="subject in store.policyOverview.user_policies" :key="subject.subject" class="subject-card">
             <div class="subject-header" @click="toggleSubject('user-' + subject.subject)">
               <i class="fas fa-chevron-right chevron" :class="{ rotated: expandedSubjects['user-' + subject.subject] }"></i>
-              <span class="subject-name">{{ subject.subject }}</span>
+              <div class="subject-info">
+                <span class="subject-name">{{ subject.subject_name || subject.subject }}</span>
+                <span v-if="subject.subject_name" class="subject-id">{{ subject.subject }}</span>
+              </div>
               <span class="policy-count">{{ subject.policies.length }}</span>
             </div>
             <div v-if="expandedSubjects['user-' + subject.subject]" class="subject-content">
@@ -578,11 +584,24 @@ onUnmounted(() => {
   background-color: var(--color-bg-tertiary);
 }
 
-.subject-name {
+.subject-info {
   flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+
+.subject-name {
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
+}
+
+.subject-id {
+  font-family: monospace;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
 }
 
 .policy-count {
