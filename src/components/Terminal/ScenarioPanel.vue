@@ -440,10 +440,10 @@ onMounted(() => {
 .collapse-toggle {
   position: absolute;
   top: var(--spacing-md);
-  left: -14px;
+  left: -18px;
   z-index: 10;
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -463,7 +463,7 @@ onMounted(() => {
 }
 
 .collapsed .collapse-toggle {
-  left: -28px;
+  left: -36px;
 }
 
 /* Panel content */
@@ -1007,5 +1007,25 @@ onMounted(() => {
   max-width: 100%;
   height: auto;
   border-radius: var(--border-radius-sm);
+}
+
+/* Responsive breakpoints */
+@media (max-width: 768px) {
+  .scenario-panel {
+    width: 280px;
+    min-width: 280px;
+  }
+}
+
+@media (max-width: 480px) {
+  .scenario-panel {
+    width: 100%;
+    min-width: 100%;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+  }
 }
 </style>
