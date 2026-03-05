@@ -53,24 +53,27 @@
       <!-- Active step content -->
       <template v-else-if="currentStep">
         <!-- Progress indicator -->
-        <div class="progress-dots">
-          <span
-            v-for="n in totalSteps"
-            :key="n"
-            class="progress-dot"
-            :class="{
-              completed: n < currentStep.step_order,
-              active: n === currentStep.step_order,
-              locked: n > currentStep.step_order
-            }"
-          ></span>
+        <div class="progress-bar">
+          <span class="progress-label">{{ stepCountLabel }}</span>
+          <div class="progress-dots" role="status" :aria-label="stepCountLabel">
+            <span
+              v-for="n in totalSteps"
+              :key="n"
+              class="progress-dot"
+              :class="{
+                completed: n < currentStep.step_order,
+                active: n === currentStep.step_order,
+                locked: n > currentStep.step_order
+              }"
+            ></span>
+          </div>
         </div>
 
         <!-- Step content area -->
         <div class="step-content">
           <!-- Step title -->
           <div class="step-header">
-            <span class="step-label">{{ t('scenarioPanel.step') }} {{ currentStep.step_order }}</span>
+            <span class="step-label">{{ t('scenarioPanel.step') }} {{ currentStep.step_order + 1 }}</span>
             <h4 class="step-title">{{ currentStep.title }}</h4>
           </div>
 
@@ -263,6 +266,14 @@ const verifyResult = ref<VerifyStepResponse | null>(null)
 const flagValue = ref('')
 const isSubmittingFlag = ref(false)
 const flagResult = ref<SubmitFlagResponse | null>(null)
+
+// Step counter label (e.g. "Step 2 / 5" or "Étape 2 / 5")
+const stepCountLabel = computed(() => {
+  if (!currentStep.value) return ''
+  const current = currentStep.value.step_order + 1
+  const total = totalSteps.value
+  return `${t('scenarioPanel.step')} ${current} / ${total}`
+})
 
 // Computed markdown rendering
 const renderedStepText = computed(() => {
@@ -497,14 +508,27 @@ onMounted(() => {
   font-size: var(--font-size-sm);
 }
 
+/* Progress bar wrapper */
+.progress-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md);
+  border-bottom: var(--border-width-thin) solid var(--color-border-light);
+  flex-shrink: 0;
+}
+
+.progress-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+}
+
 /* Progress dots */
 .progress-dots {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  padding: var(--spacing-md);
-  border-bottom: var(--border-width-thin) solid var(--color-border-light);
-  flex-shrink: 0;
 }
 
 .progress-dot {
