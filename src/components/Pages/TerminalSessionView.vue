@@ -35,9 +35,32 @@
         </router-link>
       </div>
 
-      <!-- Terminal + Command History (active session) -->
+      <!-- Terminal + Scenario Panel layout (active session with scenario) -->
+      <div v-if="isSessionActive && scenarioSessionId" class="terminal-session-layout">
+        <div class="terminal-main-area">
+          <TerminalSessionPanel
+            :session-info="sessionInfo"
+            :is-active="isSessionActive"
+            :is-recording="isRecording"
+            show-stop-button
+            :is-stopping="isStopping"
+            @stop="stopSession"
+            @recording-detected="isRecording = true"
+            @session-warning="handleSessionWarning"
+            @session-expired="handleSessionExpired"
+          />
+        </div>
+        <ScenarioPanel
+          :scenario-session-id="scenarioSessionId"
+          :is-active="isSessionActive"
+          @session-completed="handleScenarioCompleted"
+          @session-abandoned="handleScenarioAbandoned"
+        />
+      </div>
+
+      <!-- Terminal only (active session without scenario) -->
       <TerminalSessionPanel
-        v-if="isSessionActive"
+        v-else-if="isSessionActive"
         :session-info="sessionInfo"
         :is-active="isSessionActive"
         :is-recording="isRecording"
@@ -71,10 +94,11 @@ import { terminalService } from '../../services/domain/terminal'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
+import ScenarioPanel from '../Terminal/ScenarioPanel.vue'
 import CommandHistory from '../Terminal/CommandHistory.vue'
 
 const route = useRoute()
-const { showWarning, showError: showErrorNotification, showInfo } = useNotification()
+const { showSuccess, showWarning, showError: showErrorNotification, showInfo } = useNotification()
 
 const { t } = useTranslations({
   en: {
@@ -91,7 +115,11 @@ const { t } = useTranslations({
       warningWarning: 'Session expiring soon. Save your work.',
       warningDanger: 'Session expires in less than 1 minute!',
       sessionExpiredNotice: 'Session expired',
-      warningTitle: 'Session Expiry'
+      warningTitle: 'Session Expiry',
+      scenarioCompleted: 'Scenario completed successfully!',
+      scenarioCompletedTitle: 'Scenario Completed',
+      scenarioAbandoned: 'Scenario session abandoned.',
+      scenarioAbandonedTitle: 'Scenario Abandoned'
     }
   },
   fr: {
@@ -108,7 +136,11 @@ const { t } = useTranslations({
       warningWarning: 'Session bientot terminee. Sauvegardez votre travail.',
       warningDanger: 'La session expire dans moins d\'une minute !',
       sessionExpiredNotice: 'Session expiree',
-      warningTitle: 'Expiration de session'
+      warningTitle: 'Expiration de session',
+      scenarioCompleted: 'Scénario terminé avec succès !',
+      scenarioCompletedTitle: 'Scénario terminé',
+      scenarioAbandoned: 'Session de scénario abandonnée.',
+      scenarioAbandonedTitle: 'Scénario abandonné'
     }
   }
 })
@@ -126,6 +158,11 @@ let warned1min = false
 
 // Get session ID from route
 const sessionId = route.params.sessionId as string
+
+// Scenario session ID: check query parameter for testing
+const scenarioSessionId = ref<string | null>(
+  (route.query.scenario_session as string) || null
+)
 
 const isSessionActive = computed(() => {
   if (!sessionInfo.value) return false
@@ -241,6 +278,15 @@ function handleSessionExpired() {
     timerInterval = null
   }
   showWarning(t('sessionView.sessionExpiredNotice'), t('sessionView.sessionExpiredTitle'))
+}
+
+function handleScenarioCompleted() {
+  showSuccess(t('sessionView.scenarioCompleted'), t('sessionView.scenarioCompletedTitle'))
+}
+
+function handleScenarioAbandoned() {
+  scenarioSessionId.value = null
+  showInfo(t('sessionView.scenarioAbandoned'), t('sessionView.scenarioAbandonedTitle'))
 }
 
 onMounted(() => {
@@ -363,5 +409,20 @@ onBeforeUnmount(() => {
 
 .command-history-panel {
   margin-top: var(--spacing-md);
+}
+
+.terminal-session-layout {
+  display: flex;
+  flex-direction: row;
+  gap: var(--spacing-md);
+  flex: 1;
+  min-height: 0;
+}
+
+.terminal-main-area {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 </style>

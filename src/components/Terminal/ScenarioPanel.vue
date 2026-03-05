@@ -1,0 +1,877 @@
+<!--
+/*
+ * Open Course Factory - Front
+ * Copyright (C) 2023-2026 Solution Libre
+ *
+ * Collapsible right sidebar panel for scenario interaction during terminal sessions.
+ * Displays step content, hints, verify button, flag input, and progress indicator.
+ */
+-->
+
+<template>
+  <div class="scenario-panel" :class="{ collapsed: isCollapsed }">
+    <!-- Collapse/Expand toggle button (always visible) -->
+    <button
+      class="collapse-toggle"
+      :title="isCollapsed ? t('scenarioPanel.expandPanel') : t('scenarioPanel.collapsePanel')"
+      @click="toggleCollapse"
+    >
+      <i :class="isCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right'"></i>
+    </button>
+
+    <!-- Panel content (hidden when collapsed) -->
+    <div v-show="!isCollapsed" class="panel-content">
+      <!-- Panel header -->
+      <div class="panel-header">
+        <h3 class="panel-title">
+          <i class="fas fa-flag-checkered"></i>
+          {{ t('scenarioPanel.title') }}
+        </h3>
+      </div>
+
+      <!-- Loading state -->
+      <div v-if="isLoading" class="panel-loading">
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>{{ t('scenarioPanel.loading') }}</span>
+      </div>
+
+      <!-- Error state -->
+      <div v-else-if="loadError" class="panel-error">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>{{ t('scenarioPanel.error') }}</span>
+      </div>
+
+      <!-- Completed state -->
+      <div v-else-if="isSessionCompleted" class="panel-completed">
+        <div class="completed-icon">
+          <i class="fas fa-trophy"></i>
+        </div>
+        <h4>{{ t('scenarioPanel.completed') }}</h4>
+        <p>{{ t('scenarioPanel.completedMessage') }}</p>
+      </div>
+
+      <!-- Active step content -->
+      <template v-else-if="currentStep">
+        <!-- Progress indicator -->
+        <div class="progress-dots">
+          <span
+            v-for="n in totalSteps"
+            :key="n"
+            class="progress-dot"
+            :class="{
+              completed: n < currentStep.step_order,
+              active: n === currentStep.step_order,
+              locked: n > currentStep.step_order
+            }"
+          ></span>
+        </div>
+
+        <!-- Step content area -->
+        <div class="step-content">
+          <!-- Step title -->
+          <div class="step-header">
+            <span class="step-label">{{ t('scenarioPanel.step') }} {{ currentStep.step_order }}</span>
+            <h4 class="step-title">{{ currentStep.title }}</h4>
+          </div>
+
+          <!-- Step text -->
+          <div v-if="currentStep.text" class="step-text">
+            {{ currentStep.text }}
+          </div>
+
+          <!-- Hint section (collapsible) -->
+          <div v-if="currentStep.hint" class="hint-section">
+            <button class="hint-toggle" @click="showHint = !showHint">
+              <i :class="showHint ? 'fas fa-eye-slash' : 'fas fa-lightbulb'"></i>
+              {{ showHint ? t('scenarioPanel.hideHint') : t('scenarioPanel.showHint') }}
+            </button>
+            <div v-if="showHint" class="hint-content">
+              {{ currentStep.hint }}
+            </div>
+          </div>
+
+          <!-- Verify button -->
+          <button
+            class="verify-btn"
+            :disabled="isVerifying || !isActive"
+            @click="handleVerify"
+          >
+            <i :class="isVerifying ? 'fas fa-spinner fa-spin' : 'fas fa-check-circle'"></i>
+            {{ isVerifying ? t('scenarioPanel.verifying') : t('scenarioPanel.verify') }}
+          </button>
+
+          <!-- Verify result feedback -->
+          <div v-if="verifyResult" class="verify-result" :class="{ passed: verifyResult.passed, failed: !verifyResult.passed }">
+            <div class="verify-result-header">
+              <i :class="verifyResult.passed ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+              <span>{{ verifyResult.passed ? t('scenarioPanel.passed') : t('scenarioPanel.failed') }}</span>
+            </div>
+            <div v-if="verifyResult.output" class="verify-output">
+              <span class="output-label">{{ t('scenarioPanel.output') }}</span>
+              <pre class="output-text">{{ verifyResult.output }}</pre>
+            </div>
+          </div>
+
+          <!-- Flag input (only when step has_flag) -->
+          <div v-if="currentStep.has_flag" class="flag-section">
+            <div class="flag-input-row">
+              <input
+                v-model="flagValue"
+                type="text"
+                class="flag-input"
+                :placeholder="t('scenarioPanel.flagPlaceholder')"
+                :disabled="isSubmittingFlag || !isActive"
+                @keyup.enter="handleSubmitFlag"
+              />
+              <button
+                class="flag-submit-btn"
+                :disabled="!flagValue.trim() || isSubmittingFlag || !isActive"
+                @click="handleSubmitFlag"
+              >
+                <i :class="isSubmittingFlag ? 'fas fa-spinner fa-spin' : 'fas fa-paper-plane'"></i>
+                {{ isSubmittingFlag ? t('scenarioPanel.submitting') : t('scenarioPanel.submitFlag') }}
+              </button>
+            </div>
+            <!-- Flag result feedback -->
+            <div v-if="flagResult" class="flag-result" :class="{ correct: flagResult.correct, incorrect: !flagResult.correct }">
+              <i :class="flagResult.correct ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+              <span>{{ flagResult.correct ? t('scenarioPanel.flagCorrect') : t('scenarioPanel.flagIncorrect') }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Session actions -->
+        <div class="session-actions">
+          <button
+            class="abandon-btn"
+            :disabled="!isActive"
+            @click="handleAbandon"
+          >
+            <i class="fas fa-sign-out-alt"></i>
+            {{ t('scenarioPanel.abandon') }}
+          </button>
+        </div>
+      </template>
+
+      <!-- No scenario state -->
+      <div v-else class="panel-empty">
+        <i class="fas fa-info-circle"></i>
+        <span>{{ t('scenarioPanel.noScenario') }}</span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, watch } from 'vue'
+import { useTranslations } from '../../composables/useTranslations'
+import { useNotification } from '../../composables/useNotification'
+import { scenarioSessionService } from '../../services/domain/scenario'
+import type { CurrentStepResponse, VerifyStepResponse, SubmitFlagResponse } from '../../services/domain/scenario'
+
+interface Props {
+  scenarioSessionId: string
+  isActive: boolean
+}
+
+const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  'session-completed': []
+  'session-abandoned': []
+}>()
+
+const { showConfirm } = useNotification()
+
+const { t } = useTranslations({
+  en: {
+    scenarioPanel: {
+      title: 'Scenario',
+      step: 'Step',
+      verify: 'Verify',
+      verifying: 'Verifying...',
+      passed: 'Step completed!',
+      failed: 'Not quite right. Check the output and try again.',
+      showHint: 'Show Hint',
+      hideHint: 'Hide Hint',
+      submitFlag: 'Submit Flag',
+      submitting: 'Submitting...',
+      flagCorrect: 'Correct!',
+      flagIncorrect: 'Incorrect flag. Try again.',
+      flagPlaceholder: 'Enter flag...',
+      abandon: 'Abandon Scenario',
+      abandonConfirm: 'Are you sure? All progress will be lost.',
+      abandonTitle: 'Abandon Scenario',
+      completed: 'Scenario Completed!',
+      completedMessage: 'Congratulations! You have completed all steps.',
+      loading: 'Loading scenario...',
+      error: 'Failed to load scenario data.',
+      noScenario: 'No active scenario',
+      output: 'Output',
+      collapsePanel: 'Collapse panel',
+      expandPanel: 'Expand panel'
+    }
+  },
+  fr: {
+    scenarioPanel: {
+      title: 'Scénario',
+      step: 'Étape',
+      verify: 'Vérifier',
+      verifying: 'Vérification...',
+      passed: 'Étape validée !',
+      failed: 'Pas tout à fait. Vérifiez la sortie et réessayez.',
+      showHint: 'Afficher l\'indice',
+      hideHint: 'Masquer l\'indice',
+      submitFlag: 'Soumettre le flag',
+      submitting: 'Envoi...',
+      flagCorrect: 'Correct !',
+      flagIncorrect: 'Flag incorrect. Réessayez.',
+      flagPlaceholder: 'Entrez le flag...',
+      abandon: 'Abandonner le scénario',
+      abandonConfirm: 'Êtes-vous sûr ? Toute progression sera perdue.',
+      abandonTitle: 'Abandonner le scénario',
+      completed: 'Scénario terminé !',
+      completedMessage: 'Félicitations ! Vous avez complété toutes les étapes.',
+      loading: 'Chargement du scénario...',
+      error: 'Échec du chargement des données du scénario.',
+      noScenario: 'Aucun scénario actif',
+      output: 'Sortie',
+      collapsePanel: 'Réduire le panneau',
+      expandPanel: 'Étendre le panneau'
+    }
+  }
+})
+
+// State
+const isCollapsed = ref(false)
+const isLoading = ref(false)
+const loadError = ref(false)
+const isSessionCompleted = ref(false)
+const currentStep = ref<CurrentStepResponse | null>(null)
+const totalSteps = ref(0)
+const showHint = ref(false)
+
+// Verify state
+const isVerifying = ref(false)
+const verifyResult = ref<VerifyStepResponse | null>(null)
+
+// Flag state
+const flagValue = ref('')
+const isSubmittingFlag = ref(false)
+const flagResult = ref<SubmitFlagResponse | null>(null)
+
+// Load collapse state from localStorage
+const COLLAPSE_KEY = 'scenario_panel_collapsed'
+const savedCollapsed = localStorage.getItem(COLLAPSE_KEY)
+if (savedCollapsed !== null) {
+  isCollapsed.value = savedCollapsed === 'true'
+}
+
+function toggleCollapse() {
+  isCollapsed.value = !isCollapsed.value
+  localStorage.setItem(COLLAPSE_KEY, String(isCollapsed.value))
+}
+
+async function loadCurrentStep() {
+  isLoading.value = true
+  loadError.value = false
+  verifyResult.value = null
+  flagResult.value = null
+  flagValue.value = ''
+  showHint.value = false
+
+  try {
+    const step = await scenarioSessionService.getCurrentStep(props.scenarioSessionId)
+    currentStep.value = step
+
+    // Track total steps: update if current step_order is higher
+    if (step.step_order > totalSteps.value) {
+      totalSteps.value = step.step_order
+    }
+
+    // If the step status indicates session is completed
+    if (step.status === 'completed' && !step.title) {
+      isSessionCompleted.value = true
+    }
+  } catch (err: any) {
+    console.error('Failed to load scenario step:', err)
+    // If 404 or specific status, might mean session is completed
+    if (err.response?.status === 404 || err.response?.data?.status === 'completed') {
+      isSessionCompleted.value = true
+    } else {
+      loadError.value = true
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function handleVerify() {
+  if (isVerifying.value || !props.isActive) return
+
+  isVerifying.value = true
+  verifyResult.value = null
+
+  try {
+    const result = await scenarioSessionService.verifyStep(props.scenarioSessionId)
+    verifyResult.value = result
+
+    if (result.passed) {
+      // If there's a next step, reload after a brief delay to show the success message
+      if (result.next_step) {
+        totalSteps.value = Math.max(totalSteps.value, result.next_step)
+        setTimeout(() => {
+          loadCurrentStep()
+        }, 1500)
+      } else {
+        // No next step means scenario is completed
+        isSessionCompleted.value = true
+        emit('session-completed')
+      }
+    }
+  } catch (err: any) {
+    console.error('Verify step failed:', err)
+    verifyResult.value = {
+      passed: false,
+      output: err.response?.data?.error_message || err.message
+    }
+  } finally {
+    isVerifying.value = false
+  }
+}
+
+async function handleSubmitFlag() {
+  if (!flagValue.value.trim() || isSubmittingFlag.value || !props.isActive) return
+
+  isSubmittingFlag.value = true
+  flagResult.value = null
+
+  try {
+    const result = await scenarioSessionService.submitFlag(props.scenarioSessionId, flagValue.value.trim())
+    flagResult.value = result
+
+    if (result.correct) {
+      // Flag accepted, reload step (might advance to next)
+      setTimeout(() => {
+        loadCurrentStep()
+      }, 1500)
+    }
+  } catch (err: any) {
+    console.error('Submit flag failed:', err)
+    flagResult.value = {
+      correct: false,
+      message: err.response?.data?.error_message || err.message
+    }
+  } finally {
+    isSubmittingFlag.value = false
+  }
+}
+
+async function handleAbandon() {
+  if (!props.isActive) return
+
+  const confirmed = await showConfirm(
+    t('scenarioPanel.abandonConfirm'),
+    t('scenarioPanel.abandonTitle'),
+    { type: 'warning' }
+  )
+
+  if (!confirmed) return
+
+  try {
+    await scenarioSessionService.abandonSession(props.scenarioSessionId)
+    emit('session-abandoned')
+  } catch (err: any) {
+    console.error('Abandon session failed:', err)
+  }
+}
+
+// Watch for session ID changes to reload
+watch(() => props.scenarioSessionId, () => {
+  if (props.scenarioSessionId) {
+    loadCurrentStep()
+  }
+})
+
+onMounted(() => {
+  if (props.scenarioSessionId) {
+    loadCurrentStep()
+  }
+})
+</script>
+
+<style scoped>
+.scenario-panel {
+  position: relative;
+  width: 350px;
+  min-width: 350px;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-primary);
+  border-left: var(--border-width-medium) solid var(--color-border-light);
+  border-radius: var(--border-radius-md) 0 0 var(--border-radius-md);
+  transition: width var(--transition-slow), min-width var(--transition-slow);
+  overflow: hidden;
+}
+
+.scenario-panel.collapsed {
+  width: 0;
+  min-width: 0;
+  border-left: none;
+}
+
+/* Collapse toggle button */
+.collapse-toggle {
+  position: absolute;
+  top: var(--spacing-md);
+  left: -14px;
+  z-index: 10;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-secondary);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-full);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-xs);
+}
+
+.collapse-toggle:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.collapsed .collapse-toggle {
+  left: -28px;
+}
+
+/* Panel content */
+.panel-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Panel header */
+.panel-header {
+  padding: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-bottom: var(--border-width-thin) solid var(--color-border-light);
+  flex-shrink: 0;
+}
+
+.panel-title {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.panel-title i {
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+}
+
+/* Progress dots */
+.progress-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: var(--spacing-md);
+  border-bottom: var(--border-width-thin) solid var(--color-border-light);
+  flex-shrink: 0;
+}
+
+.progress-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--border-radius-full);
+  background: var(--color-gray-300);
+  transition: all var(--transition-fast);
+}
+
+.progress-dot.completed {
+  background: var(--color-success);
+}
+
+.progress-dot.active {
+  background: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.progress-dot.locked {
+  background: var(--color-gray-300);
+}
+
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 3px var(--color-primary-light); }
+  50% { box-shadow: 0 0 0 5px var(--color-primary-light); }
+}
+
+/* Step content */
+.step-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.step-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.step-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.step-title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.step-text {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+  white-space: pre-wrap;
+}
+
+/* Hint section */
+.hint-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.hint-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: transparent;
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  align-self: flex-start;
+}
+
+.hint-toggle:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
+  border-color: var(--color-border-medium);
+}
+
+.hint-toggle i {
+  color: var(--color-warning);
+}
+
+.hint-content {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-warning-bg);
+  border: var(--border-width-thin) solid var(--color-warning-border);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-warning-text);
+  line-height: var(--line-height-relaxed);
+  white-space: pre-wrap;
+}
+
+/* Verify button */
+.verify-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-primary);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.verify-btn:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+.verify-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Verify result */
+.verify-result {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+}
+
+.verify-result.passed {
+  background: var(--color-success-bg);
+  border: var(--border-width-thin) solid var(--color-success-border);
+  color: var(--color-success-text);
+}
+
+.verify-result.failed {
+  background: var(--color-danger-bg);
+  border: var(--border-width-thin) solid var(--color-danger-border);
+  color: var(--color-danger-text);
+}
+
+.verify-result-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.verify-result.passed .verify-result-header i {
+  color: var(--color-success);
+}
+
+.verify-result.failed .verify-result-header i {
+  color: var(--color-danger);
+}
+
+.verify-output {
+  margin-top: var(--spacing-sm);
+}
+
+.output-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: inherit;
+  opacity: 0.8;
+}
+
+.output-text {
+  margin: var(--spacing-xs) 0 0;
+  padding: var(--spacing-sm);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-xs);
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--color-text-primary);
+}
+
+/* Flag section */
+.flag-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.flag-input-row {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.flag-input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--color-border-medium);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-monospace);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  transition: border-color var(--transition-fast);
+}
+
+.flag-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus-primary);
+}
+
+.flag-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.flag-submit-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-primary);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.flag-submit-btn:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.flag-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.flag-result {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.flag-result.correct {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.flag-result.correct i {
+  color: var(--color-success);
+}
+
+.flag-result.incorrect {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+.flag-result.incorrect i {
+  color: var(--color-danger);
+}
+
+/* Session actions */
+.session-actions {
+  padding: var(--spacing-md);
+  border-top: var(--border-width-thin) solid var(--color-border-light);
+  flex-shrink: 0;
+}
+
+.abandon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: transparent;
+  color: var(--color-danger);
+  border: var(--border-width-thin) solid var(--color-danger);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.abandon-btn:hover:not(:disabled) {
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger-hover);
+}
+
+.abandon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Loading, error, empty, completed states */
+.panel-loading,
+.panel-error,
+.panel-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-2xl) var(--spacing-md);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.panel-loading i {
+  color: var(--color-primary);
+  font-size: var(--font-size-lg);
+}
+
+.panel-error i {
+  color: var(--color-danger);
+  font-size: var(--font-size-lg);
+}
+
+.panel-empty i {
+  font-size: var(--font-size-lg);
+}
+
+.panel-completed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-2xl) var(--spacing-md);
+  text-align: center;
+}
+
+.completed-icon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-success-bg);
+  border-radius: var(--border-radius-full);
+}
+
+.completed-icon i {
+  font-size: var(--font-size-2xl);
+  color: var(--color-success);
+}
+
+.panel-completed h4 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-success);
+}
+
+.panel-completed p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+</style>
