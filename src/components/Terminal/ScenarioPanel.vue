@@ -240,13 +240,13 @@ const { t } = useTranslations({
       abandonConfirm: 'Êtes-vous sûr ? Toute progression sera perdue.',
       abandonTitle: 'Abandonner le scénario',
       completed: 'Scénario terminé !',
-      completedMessage: 'Félicitations ! Vous avez complété toutes les étapes.',
+      completedMessage: 'Félicitations ! Vous avez terminé toutes les étapes.',
       loading: 'Chargement du scénario...',
       error: 'Échec du chargement des données du scénario.',
       noScenario: 'Aucun scénario actif',
       output: 'Sortie',
-      collapsePanel: 'Réduire le panneau',
-      expandPanel: 'Étendre le panneau'
+      collapsePanel: 'Replier le panneau',
+      expandPanel: 'Déplier le panneau'
     }
   }
 })
