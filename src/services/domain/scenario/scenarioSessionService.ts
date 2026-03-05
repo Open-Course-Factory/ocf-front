@@ -59,5 +59,15 @@ export const scenarioSessionService = {
 
   async abandonSession(sessionId: string): Promise<void> {
     await axios.post(`/scenario-sessions/${sessionId}/abandon`)
+  },
+
+  async getSessionByTerminal(terminalSessionId: string): Promise<ScenarioSessionInfo | null> {
+    try {
+      const response = await axios.get(`/scenario-sessions/by-terminal/${terminalSessionId}`)
+      return response.data
+    } catch {
+      // 404 means no scenario linked — not an error
+      return null
+    }
   }
 }

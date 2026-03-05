@@ -91,6 +91,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { terminalService } from '../../services/domain/terminal'
+import { scenarioSessionService } from '../../services/domain/scenario'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
@@ -159,10 +160,14 @@ let warned1min = false
 // Get session ID from route
 const sessionId = route.params.sessionId as string
 
-// Scenario session ID: check query parameter for testing
-const scenarioSessionId = ref<string | null>(
-  (route.query.scenario_session as string) || null
-)
+// Scenario session ID: auto-detected from terminal, or manual override via query parameter
+const scenarioSessionId = ref<string | null>(null)
+
+// Allow manual override via query parameter for testing
+const queryScenarioSession = route.query.scenario_session as string | undefined
+if (queryScenarioSession) {
+  scenarioSessionId.value = queryScenarioSession
+}
 
 const isSessionActive = computed(() => {
   if (!sessionInfo.value) return false
@@ -209,6 +214,18 @@ async function loadSession() {
     const status = terminalInfo.terminal.status
     if (terminalInfo.terminal.expires_at && status !== 'expired' && status !== 'stopped') {
       startExpirationTimer(terminalInfo.terminal.expires_at)
+    }
+
+    // Auto-detect linked scenario session (unless already set via query parameter)
+    if (!scenarioSessionId.value && status !== 'expired' && status !== 'stopped') {
+      try {
+        const scenarioSession = await scenarioSessionService.getSessionByTerminal(sessionId)
+        if (scenarioSession) {
+          scenarioSessionId.value = scenarioSession.id
+        }
+      } catch {
+        // Silently ignore - no scenario linked is fine
+      }
     }
   } catch (err: any) {
     console.error('Failed to load session:', err)
