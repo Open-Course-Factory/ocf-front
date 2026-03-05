@@ -40,9 +40,12 @@
           :disabled="isStarting"
           @click="startScenario(scenario)"
         >
-          <div class="scenario-info">
-            <span class="scenario-title">{{ scenario.title }}</span>
-            <span v-if="scenario.difficulty" class="scenario-difficulty">{{ scenario.difficulty }}</span>
+          <div class="scenario-main">
+            <div class="scenario-info">
+              <span class="scenario-title">{{ scenario.title }}</span>
+              <span v-if="scenario.difficulty" class="scenario-difficulty">{{ scenario.difficulty }}</span>
+            </div>
+            <p v-if="scenario.description" class="scenario-description">{{ scenario.description }}</p>
           </div>
           <span v-if="scenario.estimated_time" class="scenario-time">
             <i class="fas fa-clock"></i> {{ scenario.estimated_time }}
@@ -257,10 +260,25 @@ async function startScenario(scenario: any) {
   cursor: not-allowed;
 }
 
+.scenario-main {
+  flex: 1;
+  min-width: 0;
+}
+
 .scenario-info {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+}
+
+.scenario-description {
+  margin: 2px 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: var(--line-height-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .scenario-title {
