@@ -22,7 +22,7 @@
     <div v-else class="scenario-picker">
       <div class="picker-header">
         <span>{{ t('scenarioStart.choose') }}</span>
-        <button class="close-btn" @click="showPicker = false">
+        <button class="close-btn" @click="showPicker = false" :aria-label="t('scenarioStart.closePicker')">
           <i class="fas fa-times"></i>
         </button>
       </div>
@@ -31,10 +31,11 @@
         {{ t('scenarioStart.none') }}
       </div>
 
-      <div v-else class="scenario-list">
+      <div v-else class="scenario-list" role="list">
         <button
           v-for="scenario in scenarios"
           :key="scenario.id"
+          role="listitem"
           class="scenario-item"
           :disabled="isStarting"
           @click="startScenario(scenario)"
@@ -78,7 +79,8 @@ const { t } = useTranslations({
       choose: 'Choose a scenario',
       none: 'No scenarios available. Ask your instructor to create one.',
       startError: 'Failed to start scenario.',
-      loadError: 'Failed to load scenarios.'
+      loadError: 'Failed to load scenarios.',
+      closePicker: 'Close'
     }
   },
   fr: {
@@ -88,7 +90,8 @@ const { t } = useTranslations({
       choose: 'Choisir un scénario',
       none: 'Aucun scénario disponible. Demandez à votre formateur d\'en créer un.',
       startError: 'Échec du démarrage du scénario.',
-      loadError: 'Échec du chargement des scénarios.'
+      loadError: 'Échec du chargement des scénarios.',
+      closePicker: 'Fermer'
     }
   }
 })

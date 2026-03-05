@@ -13,6 +13,8 @@
     <!-- Collapse/Expand toggle button (always visible) -->
     <button
       class="collapse-toggle"
+      :aria-expanded="!isCollapsed"
+      :aria-label="isCollapsed ? t('scenarioPanel.expandPanel') : t('scenarioPanel.collapsePanel')"
       :title="isCollapsed ? t('scenarioPanel.expandPanel') : t('scenarioPanel.collapsePanel')"
       @click="toggleCollapse"
     >
@@ -82,7 +84,7 @@
 
           <!-- Hint section (collapsible) -->
           <div v-if="currentStep.hint" class="hint-section">
-            <button class="hint-toggle" @click="showHint = !showHint">
+            <button class="hint-toggle" @click="showHint = !showHint" :aria-expanded="showHint">
               <i :class="showHint ? 'fas fa-eye-slash' : 'fas fa-lightbulb'"></i>
               {{ showHint ? t('scenarioPanel.hideHint') : t('scenarioPanel.showHint') }}
             </button>
@@ -100,7 +102,7 @@
           </button>
 
           <!-- Verify result feedback -->
-          <div v-if="verifyResult" class="verify-result" :class="{ passed: verifyResult.passed, failed: !verifyResult.passed }">
+          <div v-if="verifyResult" class="verify-result" role="status" aria-live="polite" :class="{ passed: verifyResult.passed, failed: !verifyResult.passed }">
             <div class="verify-result-header">
               <i :class="verifyResult.passed ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
               <span>{{ verifyResult.passed ? t('scenarioPanel.passed') : t('scenarioPanel.failed') }}</span>
@@ -132,7 +134,7 @@
               </button>
             </div>
             <!-- Flag result feedback -->
-            <div v-if="flagResult" class="flag-result" :class="{ correct: flagResult.correct, incorrect: !flagResult.correct }">
+            <div v-if="flagResult" class="flag-result" role="status" aria-live="polite" :class="{ correct: flagResult.correct, incorrect: !flagResult.correct }">
               <i :class="flagResult.correct ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
               <span>{{ flagResult.correct ? t('scenarioPanel.flagCorrect') : t('scenarioPanel.flagIncorrect') }}</span>
             </div>
