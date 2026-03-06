@@ -56,7 +56,12 @@ export const useScenariosStore = defineStore('scenarios', () => {
                 sourceTypeGit: 'Git',
                 sourceTypeUpload: 'Upload',
                 sourceTypeBuiltin: 'Builtin',
-                sourceTypeSeed: 'Seed'
+                sourceTypeSeed: 'Seed',
+                os_type: 'OS Type',
+                osTypeDeb: 'Debian-based (apt)',
+                osTypeRpm: 'RPM-based (dnf/yum)',
+                osTypeApk: 'Alpine (apk)',
+                osTypePacman: 'Arch-based (pacman)'
             }
         },
         fr: {
@@ -85,7 +90,12 @@ export const useScenariosStore = defineStore('scenarios', () => {
                 sourceTypeGit: 'Git',
                 sourceTypeUpload: 'Upload',
                 sourceTypeBuiltin: 'Intégré',
-                sourceTypeSeed: 'Seed'
+                sourceTypeSeed: 'Seed',
+                os_type: 'Type d\'OS',
+                osTypeDeb: 'Debian (apt)',
+                osTypeRpm: 'RPM (dnf/yum)',
+                osTypeApk: 'Alpine (apk)',
+                osTypePacman: 'Arch (pacman)'
             }
         }
     })
@@ -102,6 +112,12 @@ export const useScenariosStore = defineStore('scenarios', () => {
         ]),
         field('estimated_time', t('scenarios.estimatedTime')).input().visible().creatable().updatable(),
         field('instance_type', t('scenarios.instanceType')).input().visible().creatable().updatable().required(),
+        field('os_type', t('scenarios.os_type')).select().visible().creatable().updatable().withOptions([
+            { value: 'deb', text: t('scenarios.osTypeDeb') },
+            { value: 'rpm', text: t('scenarios.osTypeRpm') },
+            { value: 'apk', text: t('scenarios.osTypeApk') },
+            { value: 'pacman', text: t('scenarios.osTypePacman') }
+        ]),
         field('source_type', t('scenarios.sourceType')).select().visible().creatable().updatable().withOptions([
             { value: 'git', text: t('scenarios.sourceTypeGit') },
             { value: 'upload', text: t('scenarios.sourceTypeUpload') },
