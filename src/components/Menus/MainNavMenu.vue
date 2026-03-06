@@ -85,7 +85,7 @@ import { useCurrentUserStore } from '../../stores/currentUser.ts';
 import { useSchedulesStore } from '../../stores/schedules.ts';
 import { useThemesStore } from '../../stores/themes.ts';
 import { useGenerationsStore } from '../../stores/generations.ts';
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useI18n } from "vue-i18n"
 import { useTerminalsStore } from '../../stores/terminals.ts';
 import { useUserTerminalKeysStore } from '../../stores/userTerminalKeys.ts';
@@ -99,10 +99,10 @@ import { useGroupMembersStore } from '../../stores/groupMembers.ts';
 import { useSubscriptionBatchesStore } from '../../stores/subscriptionBatches.ts';
 import { useOrganizationsStore } from '../../stores/organizations.ts';
 import { storeToRefs } from 'pinia';
-import { useRoute } from 'vue-router';
 import { useHelpTranslations } from '../../composables/useHelpTranslations';
 import { useFeatureFlags } from '../../composables/useFeatureFlags';
 import { usePermissions } from '../../composables/usePermissions';
+import { useMenuCategories } from '../../composables/useMenuCategories';
 
 // Props
 const props = defineProps<{
@@ -143,7 +143,6 @@ const { loadHelpTranslations } = useHelpTranslations();
 const currentUser = useCurrentUserStore();
 const { userRoles, permissions } = storeToRefs(currentUser); // Make roles and permissions reactive
 const { t } = useI18n();
-const route = useRoute();
 
 // Feature flags
 const { createReactiveFlag, waitForInitialization } = useFeatureFlags();
@@ -204,19 +203,7 @@ interface MenuCategory {
   featureFlag?: string
 }
 
-// État pour gérer l'expansion des catégories et leur position
-const expandedCategories = ref<Record<string, boolean>>({
-  courses: false,
-  terminals: false,
-  groups: false,
-  organizations: false,
-  subscription: false,
-  help: false,
-  admin: false
-});
-
 const isBottomCollapsed = ref(true);
-const menuPositions = ref<Record<string, { top: number; left: number }>>({});
 
 // Structure des catégories de menu
 const menuCategories = computed((): MenuCategory[] => [
@@ -531,102 +518,20 @@ const showAdminLink = computed(() =>
   filteredCategories.value.some(c => c.key === 'admin')
 )
 
-// Fonction pour déterminer si une catégorie contient l'élément actif
-const isCategoryActive = computed(() => {
-  const activeCategories: Record<string, boolean> = {};
-  
-  menuCategories.value.forEach(category => {
-    activeCategories[category.key] = category.items.some(item => 
-      route.path === item.route || route.path.startsWith(item.route + '/')
-    );
-  });
-  
-  return activeCategories;
-});
-
-// Fonction pour basculer l'état d'une catégorie
-function toggleCategory(categoryKey: string, event?: Event) {
-  console.log('Toggle category:', categoryKey, 'isCollapsed:', props.isMenuCollapsed);
-  
-  // En mode collapsed, fermer les autres catégories d'abord
-  if (props.isMenuCollapsed) {
-    Object.keys(expandedCategories.value).forEach(key => {
-      if (key !== categoryKey) {
-        expandedCategories.value[key] = false;
-      }
-    });
-    
-    // Calculer la position du menu contextuel
-    if (event) {
-      const target = event.currentTarget as HTMLElement;
-      const rect = target.getBoundingClientRect();
-      menuPositions.value[categoryKey] = {
-        top: rect.top,
-        left: rect.right + 5
-      };
-      console.log('Menu position:', menuPositions.value[categoryKey]);
-    }
+// Use shared composable for category expansion, position, active state, and outside click
+const {
+  expandedCategories,
+  menuPositions,
+  toggleCategory,
+  isCategoryActive,
+  handleMenuItemClick
+} = useMenuCategories(
+  () => menuCategories.value,
+  {
+    isCollapsed: () => props.isMenuCollapsed ?? false,
+    menuSelector: '.main-menu'
   }
-  
-  expandedCategories.value[categoryKey] = !expandedCategories.value[categoryKey];
-  console.log('New state:', expandedCategories.value[categoryKey]);
-}
-
-// Fermer les catégories quand on clique sur un item en mode collapsed
-function handleMenuItemClick() {
-  if (props.isMenuCollapsed) {
-    Object.keys(expandedCategories.value).forEach(key => {
-      expandedCategories.value[key] = false;
-    });
-  }
-}
-
-// Fermer les catégories quand on clique en dehors (seulement en mode collapsed)
-function handleOutsideClick(event: Event) {
-  if (!props.isMenuCollapsed) return;
-  
-  const target = event.target as HTMLElement;
-  const menuElement = target.closest('.main-menu');
-  
-  if (!menuElement) {
-    Object.keys(expandedCategories.value).forEach(key => {
-      expandedCategories.value[key] = false;
-    });
-  }
-}
-
-// Fonction pour ouvrir la catégorie active selon la route courante
-function openActiveCategoryOnMount() {
-  if (props.isMenuCollapsed) return;
-
-  // Fermer toutes les catégories d'abord
-  Object.keys(expandedCategories.value).forEach(key => {
-    expandedCategories.value[key] = false;
-  });
-
-  // Trouver la catégorie contenant la route active
-  let activeCategoryFound = false;
-  for (const category of filteredCategories.value) {
-    const hasActiveItem = category.items.some(item =>
-      route.path === item.route || route.path.startsWith(item.route + '/')
-    );
-
-    if (hasActiveItem) {
-      expandedCategories.value[category.key] = true;
-      activeCategoryFound = true;
-      // Auto-expand bottom section if the active route is in a bottom category
-      if (bottomCategoryKeys.has(category.key)) {
-        isBottomCollapsed.value = false;
-      }
-      break;
-    }
-  }
-
-  // Si aucune catégorie active n'est trouvée, ouvrir la première par défaut
-  if (!activeCategoryFound && filteredCategories.value.length > 0) {
-    expandedCategories.value[filteredCategories.value[0].key] = true;
-  }
-}
+)
 
 onMounted(async () => {
   // Wait for feature flags to be initialized from backend
@@ -634,27 +539,6 @@ onMounted(async () => {
   featureFlagsReady.value = true;
 
   await loadHelpTranslations();
-
-  openActiveCategoryOnMount();
-  document.addEventListener('click', handleOutsideClick);
-});
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleOutsideClick);
-});
-
-// Gérer les changements de mode collapsed
-watch(() => props.isMenuCollapsed, (isCollapsed) => {
-  if (!isCollapsed) {
-    openActiveCategoryOnMount();
-  }
-});
-
-// Gérer les changements de route pour ouvrir la bonne catégorie
-watch(() => route.path, () => {
-  if (!props.isMenuCollapsed) {
-    openActiveCategoryOnMount();
-  }
 });
 </script>
 

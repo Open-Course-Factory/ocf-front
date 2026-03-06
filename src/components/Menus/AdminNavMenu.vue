@@ -247,6 +247,13 @@ function goBack() {
 </script>
 
 <style scoped>
+/* Local semi-transparent danger color variants for dark sidebar backgrounds */
+.nav-menu-shell {
+  --color-danger-items-bg: rgba(220, 53, 69, 0.1);
+  --color-danger-items-border: rgba(220, 53, 69, 0.2);
+  --color-danger-items-hover: rgba(220, 53, 69, 0.2);
+}
+
 /* Admin-themed danger gradient for all category headers */
 :deep(.nav-category .category-header) {
   background: linear-gradient(135deg, var(--color-danger) 0%, var(--color-danger-hover) 100%);
@@ -264,8 +271,8 @@ function goBack() {
 }
 
 :deep(.nav-category .category-items) {
-  background-color: rgba(220, 53, 69, 0.1);
-  border: var(--border-width-thin) solid rgba(220, 53, 69, 0.2);
+  background-color: var(--color-danger-items-bg);
+  border: var(--border-width-thin) solid var(--color-danger-items-border);
 }
 
 :deep(.nav-category .category-items li a) {
@@ -273,7 +280,7 @@ function goBack() {
 }
 
 :deep(.nav-category .category-items li a:hover) {
-  background-color: rgba(220, 53, 69, 0.2);
+  background-color: var(--color-danger-items-hover);
   color: var(--color-white);
 }
 

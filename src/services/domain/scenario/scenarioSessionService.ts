@@ -36,6 +36,16 @@ export interface ScenarioSessionInfo {
   terminal_session_id?: string
 }
 
+export interface ScenarioInfo {
+  id: string
+  name: string
+  title: string
+  description?: string
+  intro_text?: string
+  difficulty?: string
+  estimated_time?: string
+}
+
 export const scenarioSessionService = {
   async startScenario(scenarioId: string, options?: { terminal_session_id?: string; backend?: string; instance_type?: string }): Promise<ScenarioSessionInfo> {
     const response = await axios.post('/scenario-sessions/start', { scenario_id: scenarioId, ...options })
@@ -74,5 +84,15 @@ export const scenarioSessionService = {
       // 404 means no scenario linked — not an error
       return null
     }
+  },
+
+  async getSessionInfo(sessionId: string): Promise<ScenarioSessionInfo> {
+    const response = await axios.get(`/scenario-sessions/${sessionId}`)
+    return response.data
+  },
+
+  async getScenario(scenarioId: string): Promise<ScenarioInfo> {
+    const response = await axios.get(`/scenarios/${scenarioId}`)
+    return response.data
   }
 }

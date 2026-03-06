@@ -27,8 +27,16 @@
       <div class="panel-header">
         <h3 class="panel-title">
           <i class="fas fa-flag-checkered"></i>
-          {{ t('scenarioPanel.title') }}
+          {{ scenarioName || t('scenarioPanel.title') }}
         </h3>
+        <!-- Scenario description / intro (collapsible) -->
+        <div v-if="scenarioDescription" class="scenario-intro">
+          <button class="intro-toggle" @click="showIntro = !showIntro" :aria-expanded="showIntro">
+            <i :class="showIntro ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
+            {{ showIntro ? t('scenarioPanel.hideIntro') : t('scenarioPanel.showIntro') }}
+          </button>
+          <p v-if="showIntro" class="scenario-intro-text">{{ scenarioDescription }}</p>
+        </div>
       </div>
 
       <!-- Loading state -->
@@ -72,7 +80,7 @@
         </div>
 
         <!-- Step content area -->
-        <div class="step-content">
+        <div ref="stepContentRef" class="step-content">
           <!-- Step title -->
           <div class="step-header">
             <span class="step-label">{{ t('scenarioPanel.step') }} {{ currentStep.step_order + 1 }}</span>
@@ -164,13 +172,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { scenarioSessionService } from '../../services/domain/scenario'
-import type { CurrentStepResponse, VerifyStepResponse, SubmitFlagResponse } from '../../services/domain/scenario'
+import type { CurrentStepResponse, VerifyStepResponse, SubmitFlagResponse, ScenarioInfo } from '../../services/domain/scenario'
 
 interface Props {
   scenarioSessionId: string
@@ -218,7 +226,11 @@ const { t } = useTranslations({
       noScenario: 'No active scenario',
       output: 'Output',
       collapsePanel: 'Collapse panel',
-      expandPanel: 'Expand panel'
+      expandPanel: 'Expand panel',
+      copyCode: 'Copy',
+      codeCopied: 'Copied!',
+      showIntro: 'Show introduction',
+      hideIntro: 'Hide introduction'
     }
   },
   fr: {
@@ -246,7 +258,11 @@ const { t } = useTranslations({
       noScenario: 'Aucun scénario actif',
       output: 'Sortie',
       collapsePanel: 'Replier le panneau',
-      expandPanel: 'Déplier le panneau'
+      expandPanel: 'Déplier le panneau',
+      copyCode: 'Copier',
+      codeCopied: 'Copié !',
+      showIntro: 'Afficher l\'introduction',
+      hideIntro: 'Masquer l\'introduction'
     }
   }
 })
@@ -260,6 +276,10 @@ const currentStep = ref<CurrentStepResponse | null>(null)
 const totalSteps = ref(0)
 const showHint = ref(false)
 
+// Scenario metadata
+const scenarioInfo = ref<ScenarioInfo | null>(null)
+const showIntro = ref(true)
+
 // Verify state
 const isVerifying = ref(false)
 const verifyResult = ref<VerifyStepResponse | null>(null)
@@ -268,6 +288,9 @@ const verifyResult = ref<VerifyStepResponse | null>(null)
 const flagValue = ref('')
 const isSubmittingFlag = ref(false)
 const flagResult = ref<SubmitFlagResponse | null>(null)
+
+// Ref for step content container (for copy-to-clipboard injection)
+const stepContentRef = ref<HTMLElement | null>(null)
 
 // Step counter label (e.g. "Step 2 / 5" or "Étape 2 / 5")
 const stepCountLabel = computed(() => {
@@ -289,6 +312,60 @@ const renderedHintText = computed(() => {
   const html = marked.parse(currentStep.value.hint) as string
   return DOMPurify.sanitize(html)
 })
+
+// Scenario name for the panel header (falls back to generic title)
+const scenarioName = computed(() => scenarioInfo.value?.title || scenarioInfo.value?.name || '')
+const scenarioDescription = computed(() => scenarioInfo.value?.intro_text || scenarioInfo.value?.description || '')
+
+// Load scenario metadata (name, description) from the API
+async function loadScenarioInfo() {
+  try {
+    const session = await scenarioSessionService.getSessionInfo(props.scenarioSessionId)
+    if (session?.scenario_id) {
+      scenarioInfo.value = await scenarioSessionService.getScenario(session.scenario_id)
+    }
+  } catch (err) {
+    // Non-critical: scenario name is a nice-to-have, fall back to generic title
+    console.warn('Could not load scenario info:', err)
+  }
+}
+
+// Add copy-to-clipboard buttons to all <pre><code> blocks after markdown renders
+function addCopyButtons(container: HTMLElement) {
+  const preBlocks = container.querySelectorAll('pre')
+  preBlocks.forEach(pre => {
+    // Skip if already processed
+    if (pre.parentElement?.classList.contains('code-block-wrapper')) return
+
+    const wrapper = document.createElement('div')
+    wrapper.className = 'code-block-wrapper'
+
+    const button = document.createElement('button')
+    button.className = 'copy-code-btn'
+    button.type = 'button'
+    button.innerHTML = `<i class="fas fa-copy"></i> <span>${t('scenarioPanel.copyCode')}</span>`
+    button.addEventListener('click', async () => {
+      const code = pre.querySelector('code')
+      const text = code?.textContent || pre.textContent || ''
+      try {
+        await navigator.clipboard.writeText(text)
+        button.innerHTML = `<i class="fas fa-check"></i> <span>${t('scenarioPanel.codeCopied')}</span>`
+        button.classList.add('copied')
+        setTimeout(() => {
+          button.innerHTML = `<i class="fas fa-copy"></i> <span>${t('scenarioPanel.copyCode')}</span>`
+          button.classList.remove('copied')
+        }, 2000)
+      } catch {
+        // Fallback for older browsers or non-HTTPS contexts
+        console.warn('Clipboard API not available')
+      }
+    })
+
+    pre.parentNode?.insertBefore(wrapper, pre)
+    wrapper.appendChild(pre)
+    wrapper.appendChild(button)
+  })
+}
 
 // Load collapse state from localStorage
 const COLLAPSE_KEY = 'scenario_panel_collapsed'
@@ -322,6 +399,17 @@ async function loadCurrentStep() {
     // If the step status indicates session is completed
     if (step.status === 'completed' && !step.title) {
       isSessionCompleted.value = true
+    }
+
+    // Load scenario info once (for name/description display)
+    if (!scenarioInfo.value) {
+      loadScenarioInfo()
+    }
+
+    // After render, inject copy-to-clipboard buttons on code blocks
+    await nextTick()
+    if (stepContentRef.value) {
+      addCopyButtons(stepContentRef.value)
     }
   } catch (err: any) {
     console.error('Failed to load scenario step:', err)
@@ -508,6 +596,39 @@ onMounted(() => {
 .panel-title i {
   color: var(--color-primary);
   font-size: var(--font-size-sm);
+}
+
+/* Scenario intro section */
+.scenario-intro {
+  margin-top: var(--spacing-xs);
+}
+
+.intro-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.intro-toggle:hover {
+  color: var(--color-text-secondary);
+}
+
+.intro-toggle i {
+  font-size: 10px;
+}
+
+.scenario-intro-text {
+  margin: var(--spacing-xs) 0 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
 }
 
 /* Progress bar wrapper */
@@ -913,6 +1034,44 @@ onMounted(() => {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   line-height: var(--line-height-relaxed);
+}
+
+/* Copy-to-clipboard code block wrapper (injected via DOM after v-html render) */
+.step-content :deep(.code-block-wrapper) {
+  position: relative;
+}
+
+.step-content :deep(.copy-code-btn) {
+  position: absolute;
+  top: var(--spacing-xs);
+  right: var(--spacing-xs);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px var(--spacing-xs);
+  background: var(--color-bg-secondary);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-sm);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--transition-fast), background var(--transition-fast);
+  z-index: 1;
+}
+
+.step-content :deep(.code-block-wrapper:hover .copy-code-btn) {
+  opacity: 1;
+}
+
+.step-content :deep(.copy-code-btn:hover) {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.step-content :deep(.copy-code-btn.copied) {
+  color: var(--color-success);
+  border-color: var(--color-success-border);
 }
 
 /* Markdown content styles (v-html requires :deep for scoped styles) */
