@@ -58,10 +58,28 @@
         </div>
         <h4>{{ t('scenarioPanel.completed') }}</h4>
         <p>{{ t('scenarioPanel.completedMessage') }}</p>
+        <router-link to="/my-scenarios" class="btn btn-primary view-results-link">
+          <i class="fas fa-list"></i>
+          {{ t('scenarioPanel.viewMyScenarios') }}
+        </router-link>
       </div>
 
       <!-- Active step content -->
       <template v-else-if="currentStep">
+        <!-- Step transition animation -->
+        <div v-if="isTransitioning" class="panel-transitioning">
+          <div class="transition-animation">
+            <div class="transition-progress">
+              <div class="transition-bar"></div>
+            </div>
+            <div class="transition-content">
+              <i class="fas fa-arrow-right transition-icon"></i>
+              <span class="transition-text">{{ t('scenarioPanel.nextStep') }}</span>
+            </div>
+          </div>
+        </div>
+
+        <template v-else>
         <!-- Progress indicator -->
         <div class="progress-bar">
           <span class="progress-label">{{ stepCountLabel }}</span>
@@ -71,9 +89,9 @@
               :key="n"
               class="progress-dot"
               :class="{
-                completed: n < currentStep.step_order,
-                active: n === currentStep.step_order,
-                locked: n > currentStep.step_order
+                completed: (n - 1) < currentStep.step_order,
+                active: (n - 1) === currentStep.step_order,
+                locked: (n - 1) > currentStep.step_order
               }"
             ></span>
           </div>
@@ -101,6 +119,7 @@
 
           <!-- Verify button -->
           <button
+            v-if="!currentStep.has_flag"
             class="verify-btn"
             :disabled="isVerifying || !isActive"
             @click="handleVerify"
@@ -110,7 +129,7 @@
           </button>
 
           <!-- Verify result feedback -->
-          <div v-if="verifyResult" class="verify-result" role="status" aria-live="polite" :class="{ passed: verifyResult.passed, failed: !verifyResult.passed }">
+          <div v-if="verifyResult && !currentStep.has_flag" class="verify-result" role="status" aria-live="polite" :class="{ passed: verifyResult.passed, failed: !verifyResult.passed }">
             <div class="verify-result-header">
               <i :class="verifyResult.passed ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
               <span>{{ verifyResult.passed ? t('scenarioPanel.passed') : t('scenarioPanel.failed') }}</span>
@@ -160,6 +179,7 @@
             {{ t('scenarioPanel.abandon') }}
           </button>
         </div>
+        </template>
       </template>
 
       <!-- No scenario state -->
@@ -190,6 +210,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   'session-completed': []
   'session-abandoned': []
+  'paste-command': [command: string]
 }>()
 
 // Configure marked for safe rendering
@@ -217,7 +238,7 @@ const { t } = useTranslations({
       flagIncorrect: 'Incorrect flag. Try again.',
       flagPlaceholder: 'Enter flag...',
       abandon: 'Abandon Scenario',
-      abandonConfirm: 'Are you sure? All progress will be lost.',
+      abandonConfirm: 'This session will be marked as abandoned. You can start a new attempt later.',
       abandonTitle: 'Abandon Scenario',
       completed: 'Scenario Completed!',
       completedMessage: 'Congratulations! You have completed all steps.',
@@ -229,8 +250,11 @@ const { t } = useTranslations({
       expandPanel: 'Expand panel',
       copyCode: 'Copy',
       codeCopied: 'Copied!',
+      pasteToTerminal: 'Paste to terminal',
       showIntro: 'Show introduction',
-      hideIntro: 'Hide introduction'
+      hideIntro: 'Hide introduction',
+      viewMyScenarios: 'View my scenarios',
+      nextStep: 'Loading next step...'
     }
   },
   fr: {
@@ -249,7 +273,7 @@ const { t } = useTranslations({
       flagIncorrect: 'Flag incorrect. Réessayez.',
       flagPlaceholder: 'Entrez le flag...',
       abandon: 'Abandonner le scénario',
-      abandonConfirm: 'Êtes-vous sûr ? Toute progression sera perdue.',
+      abandonConfirm: 'Cette session sera marquée comme abandonnée. Vous pourrez recommencer une nouvelle tentative plus tard.',
       abandonTitle: 'Abandonner le scénario',
       completed: 'Scénario terminé !',
       completedMessage: 'Félicitations ! Vous avez terminé toutes les étapes.',
@@ -261,8 +285,11 @@ const { t } = useTranslations({
       expandPanel: 'Déplier le panneau',
       copyCode: 'Copier',
       codeCopied: 'Copié !',
+      pasteToTerminal: 'Coller dans le terminal',
       showIntro: 'Afficher l\'introduction',
-      hideIntro: 'Masquer l\'introduction'
+      hideIntro: 'Masquer l\'introduction',
+      viewMyScenarios: 'Voir mes scénarios',
+      nextStep: 'Chargement de l\'étape suivante...'
     }
   }
 })
@@ -288,6 +315,9 @@ const verifyResult = ref<VerifyStepResponse | null>(null)
 const flagValue = ref('')
 const isSubmittingFlag = ref(false)
 const flagResult = ref<SubmitFlagResponse | null>(null)
+
+// Step transition state
+const isTransitioning = ref(false)
 
 // Ref for step content container (for copy-to-clipboard injection)
 const stepContentRef = ref<HTMLElement | null>(null)
@@ -330,7 +360,7 @@ async function loadScenarioInfo() {
   }
 }
 
-// Add copy-to-clipboard buttons to all <pre><code> blocks after markdown renders
+// Add copy-to-clipboard and paste-to-terminal buttons to <pre><code> blocks
 function addCopyButtons(container: HTMLElement) {
   const preBlocks = container.querySelectorAll('pre')
   preBlocks.forEach(pre => {
@@ -340,30 +370,45 @@ function addCopyButtons(container: HTMLElement) {
     const wrapper = document.createElement('div')
     wrapper.className = 'code-block-wrapper'
 
-    const button = document.createElement('button')
-    button.className = 'copy-code-btn'
-    button.type = 'button'
-    button.innerHTML = `<i class="fas fa-copy"></i> <span>${t('scenarioPanel.copyCode')}</span>`
-    button.addEventListener('click', async () => {
-      const code = pre.querySelector('code')
-      const text = code?.textContent || pre.textContent || ''
+    const code = pre.querySelector('code')
+    const text = (code?.textContent || pre.textContent || '').trim()
+
+    // Copy button
+    const copyBtn = document.createElement('button')
+    copyBtn.className = 'copy-code-btn'
+    copyBtn.type = 'button'
+    copyBtn.innerHTML = `<i class="fas fa-copy"></i> <span>${t('scenarioPanel.copyCode')}</span>`
+    copyBtn.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(text)
-        button.innerHTML = `<i class="fas fa-check"></i> <span>${t('scenarioPanel.codeCopied')}</span>`
-        button.classList.add('copied')
+        copyBtn.innerHTML = `<i class="fas fa-check"></i> <span>${t('scenarioPanel.codeCopied')}</span>`
+        copyBtn.classList.add('copied')
         setTimeout(() => {
-          button.innerHTML = `<i class="fas fa-copy"></i> <span>${t('scenarioPanel.copyCode')}</span>`
-          button.classList.remove('copied')
+          copyBtn.innerHTML = `<i class="fas fa-copy"></i> <span>${t('scenarioPanel.copyCode')}</span>`
+          copyBtn.classList.remove('copied')
         }, 2000)
       } catch {
-        // Fallback for older browsers or non-HTTPS contexts
         console.warn('Clipboard API not available')
       }
     })
 
+    // Paste-to-terminal button (for single-line commands)
+    const isSingleLine = !text.includes('\n')
+    if (isSingleLine && text.length > 0) {
+      const pasteBtn = document.createElement('button')
+      pasteBtn.className = 'paste-terminal-btn'
+      pasteBtn.type = 'button'
+      pasteBtn.innerHTML = `<i class="fas fa-terminal"></i>`
+      pasteBtn.title = t('scenarioPanel.pasteToTerminal')
+      pasteBtn.addEventListener('click', () => {
+        emit('paste-command', text)
+      })
+      wrapper.appendChild(pasteBtn)
+    }
+
     pre.parentNode?.insertBefore(wrapper, pre)
     wrapper.appendChild(pre)
-    wrapper.appendChild(button)
+    wrapper.appendChild(copyBtn)
   })
 }
 
@@ -380,6 +425,7 @@ function toggleCollapse() {
 }
 
 async function loadCurrentStep() {
+  isTransitioning.value = false
   isLoading.value = true
   loadError.value = false
   verifyResult.value = null
@@ -391,9 +437,9 @@ async function loadCurrentStep() {
     const step = await scenarioSessionService.getCurrentStep(props.scenarioSessionId)
     currentStep.value = step
 
-    // Track total steps: update if current step_order is higher
-    if (step.step_order > totalSteps.value) {
-      totalSteps.value = step.step_order
+    // Use total_steps from backend (fixed count, not client-side tracking)
+    if (step.total_steps) {
+      totalSteps.value = step.total_steps
     }
 
     // If the step status indicates session is completed
@@ -437,7 +483,7 @@ async function handleVerify() {
     if (result.passed) {
       // If there's a next step, reload after a brief delay to show the success message
       if (result.next_step) {
-        totalSteps.value = Math.max(totalSteps.value, result.next_step)
+        isTransitioning.value = true
         setTimeout(() => {
           loadCurrentStep()
         }, 1500)
@@ -469,10 +515,17 @@ async function handleSubmitFlag() {
     flagResult.value = result
 
     if (result.correct) {
-      // Flag accepted, reload step (might advance to next)
-      setTimeout(() => {
-        loadCurrentStep()
-      }, 1500)
+      if (result.next_step !== undefined && result.next_step !== null) {
+        // Not the last step — advance to next after showing success
+        isTransitioning.value = true
+        setTimeout(() => {
+          loadCurrentStep()
+        }, 1500)
+      } else {
+        // Last step completed — show completion screen
+        isSessionCompleted.value = true
+        emit('session-completed')
+      }
     }
   } catch (err: any) {
     console.error('Submit flag failed:', err)
@@ -1036,6 +1089,50 @@ onMounted(() => {
   line-height: var(--line-height-relaxed);
 }
 
+.view-results-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: var(--color-primary);
+  color: var(--color-white);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.view-results-link:hover {
+  opacity: 0.9;
+}
+
+.verify-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.flag-submit-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.abandon-btn:focus-visible {
+  outline: 2px solid var(--color-danger);
+  outline-offset: 2px;
+}
+
+.hint-toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.intro-toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 /* Copy-to-clipboard code block wrapper (injected via DOM after v-html render) */
 .step-content :deep(.code-block-wrapper) {
   position: relative;
@@ -1072,6 +1169,33 @@ onMounted(() => {
 .step-content :deep(.copy-code-btn.copied) {
   color: var(--color-success);
   border-color: var(--color-success-border);
+}
+
+.step-content :deep(.paste-terminal-btn) {
+  position: absolute;
+  bottom: var(--spacing-xs);
+  right: var(--spacing-xs);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  color: var(--color-white);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--transition-fast), background var(--transition-fast);
+  z-index: 1;
+}
+
+.step-content :deep(.code-block-wrapper:hover .paste-terminal-btn) {
+  opacity: 1;
+}
+
+.step-content :deep(.paste-terminal-btn:hover) {
+  background: var(--color-primary-hover);
 }
 
 /* Markdown content styles (v-html requires :deep for scoped styles) */
@@ -1192,6 +1316,68 @@ onMounted(() => {
   max-width: 100%;
   height: auto;
   border-radius: var(--border-radius-sm);
+}
+
+/* Step transition animation */
+.panel-transitioning {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2xl) var(--spacing-md);
+  flex: 1;
+}
+
+.transition-animation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  width: 100%;
+  max-width: 200px;
+}
+
+.transition-progress {
+  width: 100%;
+  height: 4px;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--border-radius-full);
+  overflow: hidden;
+}
+
+.transition-bar {
+  height: 100%;
+  width: 40%;
+  background: var(--color-primary);
+  border-radius: var(--border-radius-full);
+  animation: transition-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes transition-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
+.transition-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.transition-icon {
+  color: var(--color-primary);
+  animation: transition-bounce 1s ease-in-out infinite;
+}
+
+@keyframes transition-bounce {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(4px); }
+}
+
+.transition-text {
+  font-weight: var(--font-weight-medium);
 }
 
 /* Responsive breakpoints */

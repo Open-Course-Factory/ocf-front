@@ -46,6 +46,7 @@
       <div v-if="isSessionActive && scenarioSessionId" class="terminal-session-layout">
         <div class="terminal-main-area">
           <TerminalSessionPanel
+            ref="scenarioTerminalRef"
             :session-info="sessionInfo"
             :is-active="isSessionActive"
             :is-recording="isRecording"
@@ -62,6 +63,7 @@
           :is-active="isSessionActive"
           @session-completed="handleScenarioCompleted"
           @session-abandoned="handleScenarioAbandoned"
+          @paste-command="handlePasteCommand"
         />
       </div>
 
@@ -170,17 +172,50 @@ const timeRemaining = ref(0)
 let timerInterval: NodeJS.Timeout | null = null
 let warned5min = false
 let warned1min = false
+let scenarioSyncInterval: ReturnType<typeof setInterval> | null = null
 
 // Get session ID from route
 const sessionId = route.params.sessionId as string
 
 // Scenario session ID: auto-detected from terminal, or manual override via query parameter
 const scenarioSessionId = ref<string | null>(null)
+const scenarioTerminalRef = ref<InstanceType<typeof TerminalSessionPanel> | null>(null)
+
+function handlePasteCommand(command: string) {
+  scenarioTerminalRef.value?.pasteText(command)
+}
 
 // Allow manual override via query parameter for testing
 const queryScenarioSession = route.query.scenario_session as string | undefined
 if (queryScenarioSession) {
   scenarioSessionId.value = queryScenarioSession
+}
+
+function startScenarioSync() {
+  if (scenarioSessionId.value || scenarioSyncInterval) return
+
+  scenarioSyncInterval = setInterval(async () => {
+    if (scenarioSessionId.value || !isSessionActive.value) {
+      stopScenarioSync()
+      return
+    }
+    try {
+      const scenarioSession = await scenarioSessionService.getSessionByTerminal(sessionId)
+      if (scenarioSession) {
+        scenarioSessionId.value = scenarioSession.id
+        stopScenarioSync()
+      }
+    } catch {
+      // Silently ignore — will retry next interval
+    }
+  }, 10000)
+}
+
+function stopScenarioSync() {
+  if (scenarioSyncInterval) {
+    clearInterval(scenarioSyncInterval)
+    scenarioSyncInterval = null
+  }
 }
 
 const isSessionActive = computed(() => {
@@ -240,6 +275,11 @@ async function loadSession() {
       } catch {
         // Silently ignore - no scenario linked is fine
       }
+    }
+
+    // Start polling for scenario if none was detected yet
+    if (!scenarioSessionId.value && status !== 'expired' && status !== 'stopped') {
+      startScenarioSync()
     }
   } catch (err: any) {
     console.error('Failed to load session:', err)
@@ -313,6 +353,7 @@ function handleSessionExpired() {
 
 function handleScenarioStarted(newScenarioSessionId: string) {
   scenarioSessionId.value = newScenarioSessionId
+  stopScenarioSync()
 }
 
 function handleScenarioCompleted() {
@@ -333,6 +374,7 @@ onBeforeUnmount(() => {
     clearInterval(timerInterval)
     timerInterval = null
   }
+  stopScenarioSync()
 })
 </script>
 
