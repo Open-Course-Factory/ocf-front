@@ -86,7 +86,17 @@ const i18n = createI18n({
                 terminalBackendsTitle: 'Manage terminal backend servers',
                 adminOrganizations: 'Organizations',
                 adminOrganizationsTitle: 'Manage organization backends and plans',
-                more: 'More'
+                adminScenarios: 'Scenarios',
+                adminScenariosTitle: 'Manage interactive lab scenarios',
+                adminScenarioSteps: 'Scenario Steps',
+                adminScenarioStepsTitle: 'Manage scenario step content and scripts',
+                adminScenarioSessions: 'Scenario Sessions',
+                adminScenarioSessionsTitle: 'Monitor active scenario sessions',
+                adminDashboard: 'Dashboard',
+                adminDashboardTitle: 'Administration dashboard',
+                more: 'More',
+                adminBack: 'Back to application',
+                preferencesTitle: 'Preferences',
             }
          },
         fr: {
@@ -168,7 +178,17 @@ const i18n = createI18n({
                 terminalBackendsTitle: 'Gérer les serveurs backend de terminal',
                 adminOrganizations: 'Organisations',
                 adminOrganizationsTitle: 'Gérer les backends et plans des organisations',
-                more: 'Plus'
+                adminScenarios: 'Scénarios',
+                adminScenariosTitle: 'Gérer les scénarios de TP interactifs',
+                adminScenarioSteps: 'Étapes de Scénario',
+                adminScenarioStepsTitle: 'Gérer le contenu et les scripts des étapes',
+                adminScenarioSessions: 'Sessions de Scénario',
+                adminScenarioSessionsTitle: 'Suivre les sessions de scénario actives',
+                adminDashboard: 'Tableau de bord',
+                adminDashboardTitle: 'Tableau de bord d\'administration',
+                more: 'Plus',
+                adminBack: 'Retour à l\'application',
+                preferencesTitle: 'Préférences',
             }
         }
     }

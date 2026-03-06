@@ -1,9 +1,14 @@
 <template>
   <div class="wrapper">
     <DemoModeBanner />
-    <!-- Show SettingsNavMenu when in settings routes, otherwise MainNavMenu -->
-    <SettingsNavMenu
-      v-if="isInSettings"
+    <AdminNavMenu
+      v-if="isInAdmin"
+      class="main-nav-menu"
+      :class="{ collapsed: isMenuCollapsed }"
+      :isMenuCollapsed="isMenuCollapsed"
+    />
+    <PreferencesNavMenu
+      v-else-if="isInSettings"
       class="main-nav-menu"
       :class="{ collapsed: isMenuCollapsed }"
       :isMenuCollapsed="isMenuCollapsed"
@@ -30,8 +35,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import AdminNavMenu from './Menus/AdminNavMenu.vue'
 import MainNavMenu from './Menus/MainNavMenu.vue'
-import SettingsNavMenu from './Menus/SettingsNavMenu.vue'
+import PreferencesNavMenu from './Menus/PreferencesNavMenu.vue'
 import TopMenu from './Menus/TopMenu.vue'
 import DemoModeBanner from './UI/DemoModeBanner.vue'
 import ToastContainer from './UI/ToastContainer.vue'
@@ -48,6 +54,11 @@ const { setTheme } = useTheme()
 
 // Check if we're in a settings route
 const isInSettings = computed(() => route.meta.isSettings === true)
+
+// Check if we're in an admin route
+const isInAdmin = computed(() =>
+  route.path.startsWith('/admin') || route.path.startsWith('/debug')
+)
 
 // Watch for route changes with collapseNav meta
 watch(() => route.meta.collapseNav, (shouldCollapse) => {
