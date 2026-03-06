@@ -35,7 +35,7 @@ import { userService, type User } from '../../services/domain/user'
 import type { ClassGroup } from '../../types'
 import type { Organization } from '../../types/organization'
 import axios from 'axios'
-import { GroupOverviewTab, GroupMembersManager, GroupSettingsTab, GroupCommandHistory } from '../Groups'
+import { GroupOverviewTab, GroupMembersManager, GroupSettingsTab, GroupCommandHistory, GroupScenariosTab, GroupActivityTab, GroupAnalyticsTab } from '../Groups'
 
 const route = useRoute()
 const router = useRouter()
@@ -53,6 +53,9 @@ const { t } = useTranslations({
       loading: 'Loading group details...',
       tabOverview: 'Overview',
       tabMembers: 'Members',
+      tabScenarios: 'Scenarios',
+      tabActivity: 'Activity',
+      tabAnalytics: 'Analytics',
       tabHistory: 'Command History',
       tabSettings: 'Settings',
       statusActive: 'Active',
@@ -75,6 +78,9 @@ const { t } = useTranslations({
       loading: 'Chargement des détails du groupe...',
       tabOverview: 'Aperçu',
       tabMembers: 'Membres',
+      tabScenarios: 'Scénarios',
+      tabActivity: 'Activité',
+      tabAnalytics: 'Analyses',
       tabHistory: 'Historique des commandes',
       tabSettings: 'Paramètres',
       statusActive: 'Actif',
@@ -97,8 +103,8 @@ const ownerUser = ref<User | null>(null)
 const groupOrganization = ref<Organization | null>(null)
 const isLoading = ref(true)
 const error = ref('')
-const activeTab = ref<'overview' | 'members' | 'history' | 'settings'>(
-  (route.query.tab as 'overview' | 'members' | 'history' | 'settings') || 'overview'
+const activeTab = ref<'overview' | 'members' | 'scenarios' | 'activity' | 'analytics' | 'history' | 'settings'>(
+  (route.query.tab as 'overview' | 'members' | 'scenarios' | 'activity' | 'analytics' | 'history' | 'settings') || 'overview'
 )
 
 // Ref to members manager for member count
@@ -237,8 +243,8 @@ watch(() => route.params.id, async () => {
 
 // Sync activeTab with URL query parameter (for browser back/forward)
 watch(() => route.query.tab, (newTab) => {
-  if (newTab && typeof newTab === 'string' && ['overview', 'members', 'history', 'settings'].includes(newTab)) {
-    activeTab.value = newTab as 'overview' | 'members' | 'history' | 'settings'
+  if (newTab && typeof newTab === 'string' && ['overview', 'members', 'scenarios', 'activity', 'analytics', 'history', 'settings'].includes(newTab)) {
+    activeTab.value = newTab as 'overview' | 'members' | 'scenarios' | 'activity' | 'analytics' | 'history' | 'settings'
   }
 })
 
@@ -343,6 +349,30 @@ watch(activeTab, (newTab) => {
           <span class="badge">{{ groupMembersComposable.members.value.length }}</span>
         </button>
         <button
+          v-if="canEditGroup"
+          @click="activeTab = 'scenarios'"
+          :class="['tab-button', { active: activeTab === 'scenarios' }]"
+        >
+          <i class="fas fa-clipboard-list"></i>
+          {{ t('groupDetails.tabScenarios') }}
+        </button>
+        <button
+          v-if="canViewHistory"
+          @click="activeTab = 'activity'"
+          :class="['tab-button', { active: activeTab === 'activity' }]"
+        >
+          <i class="fas fa-desktop"></i>
+          {{ t('groupDetails.tabActivity') }}
+        </button>
+        <button
+          v-if="canEditGroup"
+          @click="activeTab = 'analytics'"
+          :class="['tab-button', { active: activeTab === 'analytics' }]"
+        >
+          <i class="fas fa-chart-bar"></i>
+          {{ t('groupDetails.tabAnalytics') }}
+        </button>
+        <button
           v-if="canViewHistory"
           @click="activeTab = 'history'"
           :class="['tab-button', { active: activeTab === 'history' }]"
@@ -383,6 +413,24 @@ watch(activeTab, (newTab) => {
           :is-admin="isAdmin"
           :subgroups="subgroups"
           @member-count-changed="handleMemberCountChanged"
+        />
+
+        <GroupScenariosTab
+          v-if="activeTab === 'scenarios'"
+          :group-id="groupId!"
+          :can-edit-group="canEditGroup"
+        />
+
+        <GroupActivityTab
+          v-if="activeTab === 'activity'"
+          :group-id="groupId!"
+          :can-view-history="canViewHistory"
+        />
+
+        <GroupAnalyticsTab
+          v-if="activeTab === 'analytics'"
+          :group-id="groupId!"
+          :can-edit-group="canEditGroup"
         />
 
         <div v-if="activeTab === 'history'" class="history-tab">
