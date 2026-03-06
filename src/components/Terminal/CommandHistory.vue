@@ -9,7 +9,7 @@
 -->
 
 <template>
-  <div class="command-history">
+  <div v-if="!recordingDisabled" class="command-history">
     <div class="command-history-header">
       <button
         class="collapse-toggle"
@@ -208,6 +208,7 @@ function toggleCollapse() {
 
 const commands = ref<CommandEntry[]>([])
 const isLoading = ref(false)
+const recordingDisabled = ref(false)
 const showDeleteConfirm = ref(false)
 const commandListRef = ref<HTMLElement | null>(null)
 const searchFilter = ref('')
@@ -305,7 +306,12 @@ async function fetchHistory() {
     } else {
       emptyResponseCount++
     }
-  } catch (error) {
+  } catch (error: any) {
+    if (error.response?.status === 403) {
+      recordingDisabled.value = true
+      stopPolling()
+      return
+    }
     console.error('Failed to fetch command history:', error)
     errorCount++
   } finally {

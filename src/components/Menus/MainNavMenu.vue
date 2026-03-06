@@ -291,6 +291,12 @@ const menuCategories = computed((): MenuCategory[] => [
         label: t('navigation.mySessions'),
         title: t('navigation.manageAllTerminalSessions'),
         icon: 'fas fa-terminal'
+      },
+      {
+        route: '/my-scenarios',
+        label: t('navigation.myScenarios'),
+        title: t('navigation.myScenarioSessions'),
+        icon: 'fas fa-flag-checkered'
       }
     ]
   },

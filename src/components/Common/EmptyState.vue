@@ -1,21 +1,21 @@
 <template>
-  <div class="empty-state">
-    <div class="empty-state-content">
+  <div class="empty-state-page">
+    <div class="empty-state-page-content">
       <!-- Icon or Illustration -->
-      <div class="empty-state-icon">
+      <div class="empty-state-page-icon">
         <i :class="iconClass"></i>
       </div>
 
       <!-- Title -->
-      <h3 class="empty-state-title">{{ title }}</h3>
+      <h3 class="empty-state-page-title">{{ title }}</h3>
 
       <!-- Description -->
-      <p class="empty-state-description">{{ description }}</p>
+      <p class="empty-state-page-description">{{ description }}</p>
 
       <!-- Primary Action Button -->
       <button
         v-if="actionText"
-        class="btn btn-primary empty-state-action"
+        class="btn btn-primary empty-state-page-action"
         @click="handleAction"
       >
         <i v-if="actionIcon" :class="actionIcon"></i>
@@ -26,7 +26,7 @@
       <a
         v-if="helpText && helpUrl"
         :href="helpUrl"
-        class="empty-state-help"
+        class="empty-state-page-help"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -38,7 +38,7 @@
       <router-link
         v-else-if="helpText && helpRoute"
         :to="helpRoute"
-        class="empty-state-help"
+        class="empty-state-page-help"
       >
         <i class="fas fa-question-circle"></i>
         {{ helpText }}
@@ -76,110 +76,126 @@ const handleAction = () => {
 </script>
 
 <style scoped>
-.empty-state {
+@keyframes empty-state-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.empty-state-page {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 400px;
+  min-height: 300px;
   padding: var(--spacing-xl);
 }
 
-.empty-state-content {
-  max-width: 500px;
+.empty-state-page-content {
+  max-width: 420px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
+  animation: empty-state-fade-in 0.4s ease-out both;
 }
 
-.empty-state-icon {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
+.empty-state-page-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--border-radius-full);
+  background: var(--color-bg-tertiary);
+  border: 1.5px dashed var(--color-border-light);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-xs);
 }
 
-.empty-state-icon i {
-  font-size: 3.5rem;
-  color: var(--color-white);
+.empty-state-page-icon i {
+  font-size: 1.75rem;
+  color: var(--color-text-muted);
+  opacity: 0.7;
 }
 
-.empty-state-title {
+.empty-state-page-title {
   margin: 0;
   color: var(--color-text-primary);
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.01em;
 }
 
-.empty-state-description {
+.empty-state-page-description {
   margin: 0;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-base);
   line-height: 1.6;
+  max-width: 360px;
 }
 
-.empty-state-action {
-  margin-top: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-2xl);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
+.empty-state-page-action {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
 }
 
-.empty-state-action i {
-  margin-right: var(--spacing-sm);
+.empty-state-page-action i {
+  margin-right: var(--spacing-xs);
 }
 
-.empty-state-help {
+.empty-state-page-help {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  color: var(--color-primary);
+  gap: var(--spacing-xs);
+  color: var(--color-text-muted);
   text-decoration: none;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   transition: color var(--transition-fast);
 }
 
-.empty-state-help:hover {
-  color: var(--color-primary-hover);
+.empty-state-page-help:hover {
+  color: var(--color-primary);
   text-decoration: underline;
 }
 
-.empty-state-help i {
-  font-size: var(--font-size-base);
+.empty-state-page-help i {
+  font-size: var(--font-size-sm);
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .empty-state {
-    min-height: 300px;
+  .empty-state-page {
+    min-height: 240px;
     padding: var(--spacing-lg);
   }
 
-  .empty-state-icon {
-    width: 90px;
-    height: 90px;
+  .empty-state-page-icon {
+    width: 64px;
+    height: 64px;
   }
 
-  .empty-state-icon i {
-    font-size: 2.5rem;
+  .empty-state-page-icon i {
+    font-size: 1.4rem;
   }
 
-  .empty-state-title {
-    font-size: var(--font-size-xl);
+  .empty-state-page-title {
+    font-size: var(--font-size-lg);
   }
 
-  .empty-state-description {
-    font-size: var(--font-size-base);
+  .empty-state-page-description {
+    font-size: var(--font-size-sm);
   }
 
-  .empty-state-action {
+  .empty-state-page-action {
     width: 100%;
-    padding: var(--spacing-md) var(--spacing-lg);
+    padding: var(--spacing-sm) var(--spacing-md);
   }
 }
 </style>

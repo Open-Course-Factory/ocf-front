@@ -56,7 +56,7 @@
           <p>{{ currentUser.userDisplayName || currentUser.userName }}</p>
           <i class="fas fa-chevron-down chevron-icon" :class="{ rotated: isUserMenuOpen }"></i>
         </button>
-        <div v-if="isUserMenuOpen" class="user-dropdown">
+        <div v-if="isUserMenuOpen" class="user-dropdown" :class="{ 'flyout-open': isOrgSwitcherOpen }">
           <div class="dropdown-user-header">
             <div class="user-name">@{{ currentUser.userName }}</div>
           </div>
@@ -548,6 +548,10 @@ onUnmounted(() => {
   box-shadow: var(--shadow-lg);
   z-index: var(--z-index-dropdown);
   animation: dropdownSlideIn var(--transition-fast) ease-out;
+}
+
+.user-dropdown.flyout-open {
+  overflow: visible;
 }
 
 @keyframes dropdownSlideIn {

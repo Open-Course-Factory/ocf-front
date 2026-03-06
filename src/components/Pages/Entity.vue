@@ -67,6 +67,35 @@
             </button>
           </div>
 
+          <!-- Export button -->
+          <button
+            class="btn btn-secondary"
+            @click="exportEntities"
+            :disabled="isExporting || totalItems === 0"
+            :title="isExporting ? t('exporting') : t('exportData')"
+          >
+            <i :class="isExporting ? 'fas fa-spinner fa-spin' : 'fas fa-download'"></i>
+            {{ isExporting ? t('exporting') : t('exportData') }}
+          </button>
+
+          <!-- Import button -->
+          <button
+            class="btn btn-secondary"
+            @click="triggerImportFileInput"
+            :disabled="isImporting"
+            :title="isImporting ? t('importing') : t('importData')"
+          >
+            <i :class="isImporting ? 'fas fa-spinner fa-spin' : 'fas fa-upload'"></i>
+            {{ isImporting ? t('importing') : t('importData') }}
+          </button>
+          <input
+            ref="importFileInput"
+            type="file"
+            accept=".json"
+            style="display: none"
+            @change="handleImportFile"
+          />
+
           <button class="btn btn-primary" @click="openModal(null)">
             <i class="fas fa-plus"></i> {{ t('add') }}
           </button>
@@ -271,7 +300,7 @@ import { useCurrentUserStore } from '../../stores/currentUser';
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const { showError, showConfirm } = useNotification();
+const { showError, showSuccess, showConfirm } = useNotification();
 
 // Ensure baseStore is initialized to load pagination translations
 useBaseStore();
@@ -307,6 +336,11 @@ const pageJumpInput = ref('');
 const showPageJumpInput = ref(false);
 const isSequentialNavigating = ref(false);
 const targetPageForNavigation = ref(0);
+
+// Export/Import state
+const isExporting = ref(false);
+const isImporting = ref(false);
+const importFileInput = ref<HTMLInputElement | null>(null);
 
 // Calcul des filtres disponibles basés sur les entités parentes
 const parentFilters = computed(() => {
@@ -1110,6 +1144,152 @@ function isEditable(entityStore: Store) {
 function openModal(entity: any) {
   showModal.value = true;
   entityToEdit.value = entity;
+}
+
+// === Export / Import functions ===
+
+async function exportEntities() {
+  isExporting.value = true;
+  try {
+    const allEntities: any[] = [];
+    let page = 1;
+    const size = 100;
+    let hasMore = true;
+
+    while (hasMore) {
+      const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('size', size.toString());
+
+      // Include same include params as the current page
+      if (props.entityStore.includeParams) {
+        const includeList = [
+          ...props.entityStore.includeParams.children,
+          ...props.entityStore.includeParams.parents
+        ];
+        if (includeList.length > 0) {
+          params.append('include', includeList.join(','));
+        }
+      }
+
+      // Include active filters
+      Object.entries(activeFilters).forEach(([key, value]) => {
+        if (value && value !== '') {
+          params.append(key, value);
+        }
+      });
+
+      const response = await axios.get(`/${props.entityName}?${params}`);
+      const data = response.data?.data || response.data || [];
+      allEntities.push(...data);
+
+      const totalPages = response.data?.totalPages || 1;
+      hasMore = page < totalPages;
+      page++;
+
+      // Safety limit
+      if (page > 1000) break;
+    }
+
+    // Build filename with current date
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10); // YYYY-MM-DD
+    const filename = `${props.entityName}-export-${dateStr}.json`;
+
+    // Trigger browser download
+    const blob = new Blob([JSON.stringify(allEntities, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    showSuccess(t('exportSuccess'));
+  } catch (error: any) {
+    console.error('Export error:', error);
+    showError(error.message || 'Export failed');
+  } finally {
+    isExporting.value = false;
+  }
+}
+
+function triggerImportFileInput() {
+  importFileInput.value?.click();
+}
+
+async function handleImportFile(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+
+  isImporting.value = true;
+  try {
+    const text = await file.text();
+    let entities: any[];
+
+    try {
+      const parsed = JSON.parse(text);
+      if (!Array.isArray(parsed)) {
+        showError(t('importFormatError'));
+        return;
+      }
+      entities = parsed;
+    } catch {
+      showError(t('importFormatError'));
+      return;
+    }
+
+    if (entities.length === 0) {
+      showError(t('importNoData'));
+      return;
+    }
+
+    let successCount = 0;
+    const total = entities.length;
+
+    // Process imports sequentially to avoid overwhelming the server
+    for (const entity of entities) {
+      try {
+        // Strip read-only server fields
+        const { id, created_at, updated_at, deleted_at, ...cleanEntity } = entity;
+
+        // Inject active parent filter values
+        if (props.entityStore.parentEntitiesStores?.size > 0) {
+          for (const [filterKey] of props.entityStore.parentEntitiesStores) {
+            if (activeFilters[filterKey] && !cleanEntity[filterKey]) {
+              cleanEntity[filterKey] = activeFilters[filterKey];
+            }
+          }
+        }
+
+        await axios.post(`/${props.entityName}`, cleanEntity);
+        successCount++;
+      } catch (err: any) {
+        console.error('Import entity error:', err);
+      }
+    }
+
+    if (successCount === total) {
+      showSuccess(t('importSuccess', { success: successCount, total }));
+    } else if (successCount > 0) {
+      showSuccess(t('importSuccess', { success: successCount, total }));
+    } else {
+      showError(t('importError', { error: `0/${total}` }));
+    }
+
+    // Reload current page of entities
+    await loadEntities();
+  } catch (error: any) {
+    console.error('Import error:', error);
+    showError(t('importError', { error: error.message || 'Unknown error' }));
+  } finally {
+    isImporting.value = false;
+    // Reset the file input so the same file can be re-selected
+    if (input) input.value = '';
+  }
 }
 
 const translationKey = computed(() => getTranslationKey(props.entityName));

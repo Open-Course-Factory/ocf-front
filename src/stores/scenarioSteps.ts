@@ -43,6 +43,7 @@ export const useScenarioStepsStore = defineStore('scenarioSteps', () => {
                 backgroundScript: 'Background Script',
                 foregroundScript: 'Foreground Script',
                 hasFlag: 'Has Flag',
+                flagPath: 'Flag Path',
                 flagLevel: 'Flag Level'
             }
         },
@@ -58,6 +59,7 @@ export const useScenarioStepsStore = defineStore('scenarioSteps', () => {
                 backgroundScript: 'Script d\'arrière-plan',
                 foregroundScript: 'Script de premier plan',
                 hasFlag: 'A un drapeau',
+                flagPath: 'Chemin du drapeau',
                 flagLevel: 'Niveau du drapeau'
             }
         }
@@ -72,10 +74,11 @@ export const useScenarioStepsStore = defineStore('scenarioSteps', () => {
         field('title', t('scenarioSteps.title')).input().visible().creatable().updatable().required(),
         field('text_content', t('scenarioSteps.textContent')).textarea().visible().creatable().updatable(),
         field('hint_content', t('scenarioSteps.hintContent')).textarea().visible().creatable().updatable(),
-        field('verify_script', t('scenarioSteps.verifyScript')).textarea().hidden().creatable().updatable(),
-        field('background_script', t('scenarioSteps.backgroundScript')).textarea().hidden().creatable().updatable(),
-        field('foreground_script', t('scenarioSteps.foregroundScript')).textarea().hidden().creatable().updatable(),
+        field('verify_script', t('scenarioSteps.verifyScript')).textarea().visible().creatable().updatable(),
+        field('background_script', t('scenarioSteps.backgroundScript')).textarea().visible().creatable().updatable(),
+        field('foreground_script', t('scenarioSteps.foregroundScript')).textarea().visible().creatable().updatable(),
         field('has_flag', t('scenarioSteps.hasFlag')).checkbox().visible().creatable().updatable(),
+        field('flag_path', t('scenarioSteps.flagPath')).input().visible().creatable().updatable(),
         field('flag_level', t('scenarioSteps.flagLevel')).input().visible().creatable().updatable()
     ]))
 

@@ -145,7 +145,7 @@
       title-icon="fas fa-circle-dot"
       size="medium"
       :show-close="true"
-      @close="cancelRecordingConsent"
+      @close="handleRecordingConsent()"
     >
       <p class="recording-consent-message">
         {{ t('terminalStarter.recordingConsentMessage', { days: retentionDays }) }}
@@ -155,17 +155,10 @@
           <i class="fas fa-shield-alt"></i> {{ t('terminalStarter.privacyPolicyLink') }}
         </router-link>
       </p>
-      <label class="remember-choice-label">
-        <input type="checkbox" v-model="rememberConsent" />
-        {{ t('terminalStarter.rememberChoice') }}
-      </label>
       <template #footer>
-        <button class="btn btn-primary" @click="handleRecordingConsent(true)">
+        <button class="btn btn-primary" @click="handleRecordingConsent()">
           <i class="fas fa-check"></i>
-          {{ t('terminalStarter.recordingAccept') }}
-        </button>
-        <button class="btn btn-secondary" @click="handleRecordingConsent(false)">
-          {{ t('terminalStarter.recordingDecline') }}
+          {{ t('terminalStarter.recordingUnderstood') }}
         </button>
       </template>
     </BaseModal>
@@ -261,13 +254,10 @@ const { t } = useTranslations({
       loadingInstanceTypes: 'Loading instance types...',
       noInstanceTypesForBackend: 'No instance types available for this backend.',
       recordingConsentTitle: 'Command Recording',
-      recordingConsentMessage: 'Recording your commands helps you review your work later.\n\nYour terminal commands will be recorded and retained for {days} days. Platform administrators can view your command history. Where applicable, your instructors also have access to your history. You can export or delete your history at any time.\n\nWarning: avoid typing passwords or tokens directly in the terminal — they may be captured in your command history.',
-      recordingAccept: 'Accept recording',
-      recordingDecline: 'Continue without recording',
+      recordingConsentMessage: 'Your terminal commands are recorded for security and learning purposes. Administrators and instructors can view your command history. You can export or delete your history at any time.\n\nAvoid typing passwords or tokens directly in the terminal — they may be captured in your command history.',
+      recordingUnderstood: 'I understand',
       commandHistory: 'Command History',
-      rememberChoice: 'Remember my choice',
       privacyPolicyLink: 'Learn more about how your data is handled',
-      resetConsentPreference: 'Reset saved preference',
       termsAcceptance: "J'accepte les conditions d'utilisation du service terminal.",
       warningInfo: 'Your session expires in 10 minutes.',
       warningWarning: 'Session expiring soon. Save your work.',
@@ -324,13 +314,10 @@ const { t } = useTranslations({
       loadingInstanceTypes: 'Chargement des types d\'instances...',
       noInstanceTypesForBackend: 'Aucun type d\'instance disponible sur ce backend.',
       recordingConsentTitle: 'Enregistrement des commandes',
-      recordingConsentMessage: 'L\'enregistrement de vos commandes vous permet de revoir votre travail ultérieurement.\n\nVos commandes de terminal seront enregistrées et conservées pendant {days} jours. Les administrateurs de la plateforme peuvent consulter votre historique de commandes. Le cas échéant, vos encadrants ont également accès à votre historique. Vous pouvez exporter ou supprimer votre historique à tout moment.\n\nAttention : évitez de saisir des mots de passe ou des jetons directement dans le terminal — ils pourraient être capturés dans votre historique de commandes.',
-      recordingAccept: 'Accepter l\'enregistrement',
-      recordingDecline: 'Continuer sans enregistrement',
+      recordingConsentMessage: 'Vos commandes terminal sont enregistrées à des fins de sécurité et d\'apprentissage. Les administrateurs et encadrants peuvent consulter votre historique de commandes. Vous pouvez exporter ou supprimer votre historique à tout moment.\n\nÉvitez de saisir des mots de passe ou des jetons directement dans le terminal — ils pourraient être capturés dans votre historique de commandes.',
+      recordingUnderstood: 'J\'ai compris',
       commandHistory: 'Historique des commandes',
-      rememberChoice: 'Se souvenir de mon choix',
       privacyPolicyLink: 'En savoir plus sur le traitement de vos données',
-      resetConsentPreference: 'Réinitialiser la préférence',
       termsAcceptance: "J'accepte les conditions d'utilisation du service terminal.",
       warningInfo: 'Votre session expire dans 10 minutes.',
       warningWarning: 'Session bientot terminee. Sauvegardez votre travail.',
@@ -364,45 +351,7 @@ const startStatus = ref('')
 // these cases, a separate value (e.g. 2) should be introduced.
 const showRecordingConsent = ref(false)
 const recordingConsentResult = ref<number | null>(null)
-const rememberConsent = ref(false)
-const CONSENT_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
 const consentHandledByContract = ref<boolean | null>(null) // null = not checked yet
-
-function loadConsentPreference(): number | null {
-  try {
-    const raw = localStorage.getItem(RECORDING_CONSENT_KEY)
-    if (raw === null) return null
-
-    try {
-      const parsed = JSON.parse(raw)
-      if (parsed && typeof parsed === 'object' && 'timestamp' in parsed) {
-        if (Date.now() - parsed.timestamp > CONSENT_EXPIRY_MS) {
-          localStorage.removeItem(RECORDING_CONSENT_KEY)
-          return null
-        }
-        return parsed.value
-      }
-    } catch {
-      // Not valid JSON — old format (plain "accepted"/"declined"), treat as expired
-    }
-
-    localStorage.removeItem(RECORDING_CONSENT_KEY)
-    return null
-  } catch {
-    return null
-  }
-}
-
-function saveConsentPreference(value: number) {
-  try {
-    localStorage.setItem(RECORDING_CONSENT_KEY, JSON.stringify({
-      value,
-      timestamp: Date.now()
-    }))
-  } catch {
-    // localStorage may be unavailable
-  }
-}
 
 async function checkContractConsent(): Promise<boolean> {
   if (consentHandledByContract.value !== null) return consentHandledByContract.value
@@ -427,7 +376,6 @@ const USAGE_REFRESH_INTERVAL = 600000 // 10 minutes
 
 // localStorage key for last selected instance
 const LAST_INSTANCE_KEY = 'terminal_last_instance_type'
-const RECORDING_CONSENT_KEY = 'terminal_recording_consent_preference'
 
 // Form
 const selectedInstanceType = ref('')
@@ -737,19 +685,10 @@ function resetForm() {
   consentHandledByContract.value = null
 }
 
-function handleRecordingConsent(accepted: boolean) {
-  recordingConsentResult.value = accepted ? 1 : 0
-  if (rememberConsent.value) {
-    saveConsentPreference(recordingConsentResult.value)
-  }
+function handleRecordingConsent() {
+  recordingConsentResult.value = 1
   showRecordingConsent.value = false
   startNewSession()
-}
-
-function cancelRecordingConsent() {
-  showRecordingConsent.value = false
-  // Don't set recordingConsentResult — leave null so next attempt re-prompts
-  // Don't call startSingleSession() or startNewSession()
 }
 
 async function loadGroupMembers(groupId: string) {
@@ -816,13 +755,8 @@ async function startSingleSession() {
     if (handledByContract) {
       recordingConsentResult.value = 1 // Auto-accept: contract covers consent
     } else {
-      const saved = loadConsentPreference()
-      if (saved !== null) {
-        recordingConsentResult.value = saved
-      } else {
-        showRecordingConsent.value = true
-        return // Wait for user response
-      }
+      showRecordingConsent.value = true
+      return // Wait for user response
     }
   }
 
@@ -986,13 +920,8 @@ async function startBulkSessions() {
     if (handledByContract) {
       recordingConsentResult.value = 1 // Auto-accept: contract covers consent
     } else {
-      const saved = loadConsentPreference()
-      if (saved !== null) {
-        recordingConsentResult.value = saved
-      } else {
-        showRecordingConsent.value = true
-        return
-      }
+      showRecordingConsent.value = true
+      return
     }
   }
 
@@ -1407,20 +1336,6 @@ onBeforeUnmount(() => {
 .recording-privacy-link a:hover {
   opacity: 0.8;
   text-decoration: underline;
-}
-
-.remember-choice-label {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  margin-top: var(--spacing-sm);
-}
-
-.remember-choice-label input[type="checkbox"] {
-  cursor: pointer;
 }
 
 .command-history-panel {

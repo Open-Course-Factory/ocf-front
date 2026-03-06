@@ -78,8 +78,13 @@ function handleCommandClick(text: string) {
   terminalRef.value?.pasteText(text)
 }
 
+function pasteText(text: string) {
+  terminalRef.value?.pasteText(text)
+}
+
 defineExpose({
-  terminalRef
+  terminalRef,
+  pasteText
 })
 </script>
 

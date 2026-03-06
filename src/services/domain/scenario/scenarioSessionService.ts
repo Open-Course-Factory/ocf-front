@@ -7,6 +7,7 @@ import axios from 'axios'
 
 export interface CurrentStepResponse {
   step_order: number
+  total_steps: number
   title: string
   text?: string
   hint?: string
@@ -23,6 +24,7 @@ export interface VerifyStepResponse {
 export interface SubmitFlagResponse {
   correct: boolean
   message?: string
+  next_step?: number
 }
 
 export interface ScenarioSessionInfo {
@@ -31,6 +33,21 @@ export interface ScenarioSessionInfo {
   user_id: string
   current_step: number
   status: string // 'active' | 'completed' | 'abandoned'
+  started_at: string
+  completed_at?: string
+  terminal_session_id?: string
+}
+
+export interface MyScenarioSession {
+  id: string
+  scenario_id: string
+  scenario_name: string
+  scenario_title: string
+  status: string // 'active' | 'completed' | 'abandoned'
+  current_step: number
+  total_steps: number
+  completed_steps: number
+  grade?: number
   started_at: string
   completed_at?: string
   terminal_session_id?: string
@@ -47,6 +64,11 @@ export interface ScenarioInfo {
 }
 
 export const scenarioSessionService = {
+  async getMyScenarioSessions(): Promise<MyScenarioSession[]> {
+    const response = await axios.get('/scenario-sessions/my')
+    return response.data?.data || response.data || []
+  },
+
   async startScenario(scenarioId: string, options?: { terminal_session_id?: string; backend?: string; instance_type?: string }): Promise<ScenarioSessionInfo> {
     const response = await axios.post('/scenario-sessions/start', { scenario_id: scenarioId, ...options })
     return response.data
