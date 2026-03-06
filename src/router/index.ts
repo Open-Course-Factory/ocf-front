@@ -384,6 +384,12 @@ const basicRoutes = [
 
       // Admin routes
       {
+        path: 'admin',
+        name: 'AdminDashboard',
+        component: () => import('../components/Pages/Admin/AdminDashboard.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
         path: 'admin/bulk-import',
         name: 'AdminBulkImport',
         component: () => import('../components/Pages/Admin/BulkImportAdmin.vue'),
@@ -415,6 +421,24 @@ const basicRoutes = [
         path: 'admin/security',
         name: 'AdminSecurity',
         component: () => import('../components/Pages/Admin/Security.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'admin/scenarios',
+        name: 'AdminScenarios',
+        component: () => import('../components/Pages/Admin/Scenarios.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'admin/scenario-steps',
+        name: 'AdminScenarioSteps',
+        component: () => import('../components/Pages/Admin/ScenarioSteps.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'admin/scenario-sessions',
+        name: 'AdminScenarioSessions',
+        component: () => import('../components/Pages/Admin/ScenarioSessions.vue'),
         meta: { requiresAuth: true, requiresAdmin: true }
       },
       {
