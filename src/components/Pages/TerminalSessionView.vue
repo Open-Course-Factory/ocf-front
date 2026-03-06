@@ -128,7 +128,10 @@ const { t } = useTranslations({
       scenarioCompleted: 'Scenario completed successfully!',
       scenarioCompletedTitle: 'Scenario Completed',
       scenarioAbandoned: 'Scenario session abandoned.',
-      scenarioAbandonedTitle: 'Scenario Abandoned'
+      scenarioAbandonedTitle: 'Scenario Abandoned',
+      expiresIn5min: 'Your session expires in 5 minutes. Save your work.',
+      expiresIn1min: 'Your session expires in less than 1 minute!',
+      expiryWarningTitle: 'Session Expiring'
     }
   },
   fr: {
@@ -137,19 +140,22 @@ const { t } = useTranslations({
       backToSessions: 'Retour aux sessions',
       errorLoading: 'Impossible de charger les informations de la session.',
       errorNotFound: 'Session introuvable.',
-      sessionExpired: 'Votre session terminal a expire.',
-      sessionExpiredTitle: 'Session expiree',
-      sessionEnded: 'Cette session est terminee. Vous pouvez consulter l\'historique des commandes ci-dessous.',
+      sessionExpired: 'Votre session terminal a expiré.',
+      sessionExpiredTitle: 'Session expirée',
+      sessionEnded: 'Cette session est terminée. Vous pouvez consulter l\'historique des commandes ci-dessous.',
       stopError: 'Impossible d\'arrêter la session.',
       warningInfo: 'Votre session expire dans 10 minutes.',
-      warningWarning: 'Session bientot terminee. Sauvegardez votre travail.',
+      warningWarning: 'Session bientôt terminée. Sauvegardez votre travail.',
       warningDanger: 'La session expire dans moins d\'une minute !',
-      sessionExpiredNotice: 'Session expiree',
+      sessionExpiredNotice: 'Session expirée',
       warningTitle: 'Expiration de session',
       scenarioCompleted: 'Scénario terminé avec succès !',
       scenarioCompletedTitle: 'Scénario terminé',
       scenarioAbandoned: 'Session de scénario abandonnée.',
-      scenarioAbandonedTitle: 'Scénario abandonné'
+      scenarioAbandonedTitle: 'Scénario abandonné',
+      expiresIn5min: 'Votre session expire dans 5 minutes. Sauvegardez votre travail.',
+      expiresIn1min: 'Votre session expire dans moins d\'une minute !',
+      expiryWarningTitle: 'Expiration de la session'
     }
   }
 })
