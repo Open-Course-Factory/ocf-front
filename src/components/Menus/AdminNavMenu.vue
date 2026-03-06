@@ -1,0 +1,289 @@
+<!--
+/*
+ * Open Course Factory - Front
+ * Copyright (C) 2023-2025 Solution Libre
+ */
+-->
+
+<template>
+  <NavMenuShell
+    :isMenuCollapsed="isMenuCollapsed"
+    :headerTitle="t('admin.title')"
+    :showHeader="true"
+    @back="goBack"
+  >
+    <ul>
+      <NavCategory
+        v-for="category in adminCategories"
+        :key="category.key"
+        :categoryKey="category.key"
+        :label="category.label"
+        :icon="category.icon"
+        :expanded="expandedCategories[category.key] ?? false"
+        :hasActiveItem="isCategoryActive[category.key] ?? false"
+        :collapsed="isMenuCollapsed ?? false"
+        :popupStyle="isMenuCollapsed && menuPositions[category.key] ? {
+          top: menuPositions[category.key].top + 'px',
+          left: menuPositions[category.key].left + 'px'
+        } : undefined"
+        @toggle="toggleCategory"
+      >
+        <NavMenuItem
+          v-for="item in category.items"
+          :key="item.route"
+          :to="item.route"
+          :label="item.label"
+          :icon="item.icon"
+          :tooltip="isMenuCollapsed ? item.label : ''"
+          @click="handleMenuItemClick"
+        />
+      </NavCategory>
+    </ul>
+  </NavMenuShell>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useTranslations } from '../../composables/useTranslations'
+import { useMenuCategories } from '../../composables/useMenuCategories'
+import type { MenuCategory } from '../../composables/useMenuCategories'
+import NavMenuShell from './NavMenuShell.vue'
+import NavCategory from './NavCategory.vue'
+import NavMenuItem from './NavMenuItem.vue'
+
+const props = withDefaults(defineProps<{
+  isMenuCollapsed?: boolean
+}>(), {
+  isMenuCollapsed: false
+})
+
+const router = useRouter()
+
+const { t } = useTranslations({
+  en: {
+    admin: {
+      title: 'Administration',
+      categories: {
+        billing: 'Billing & Payments',
+        system: 'System Management',
+        content: 'Content Management',
+        scenarios: 'Scenarios',
+        debug: 'Debug & Monitoring'
+      },
+      items: {
+        subscriptionPlans: 'Subscription Plans',
+        planFeatures: 'Plan Features',
+        allInvoices: 'All Invoices',
+        invoiceCleanup: 'Invoice Cleanup',
+        organizations: 'Organizations',
+        terminalBackends: 'Terminal Backends',
+        security: 'Security',
+        bulkImport: 'Bulk Import',
+        emailTemplates: 'Email Templates',
+        scenarios: 'Scenarios',
+        scenarioSteps: 'Scenario Steps',
+        scenarioSessions: 'Scenario Sessions',
+        featureFlags: 'Feature Flags',
+        designSystem: 'Design System'
+      }
+    }
+  },
+  fr: {
+    admin: {
+      title: 'Administration',
+      categories: {
+        billing: 'Facturation & Paiements',
+        system: 'Gestion du Système',
+        content: 'Gestion du Contenu',
+        scenarios: 'Scénarios',
+        debug: 'Débogage & Surveillance'
+      },
+      items: {
+        subscriptionPlans: 'Plans d\'Abonnement',
+        planFeatures: 'Fonctionnalités des Plans',
+        allInvoices: 'Toutes les Factures',
+        invoiceCleanup: 'Nettoyage des Factures',
+        organizations: 'Organisations',
+        terminalBackends: 'Backends Terminal',
+        security: 'Sécurité',
+        bulkImport: 'Importation Groupée',
+        emailTemplates: 'Modèles d\'Email',
+        scenarios: 'Scénarios',
+        scenarioSteps: 'Étapes de Scénario',
+        scenarioSessions: 'Sessions de Scénario',
+        featureFlags: 'Drapeaux de Fonctionnalités',
+        designSystem: 'Système de Design'
+      }
+    }
+  }
+})
+
+const adminCategories = computed<MenuCategory[]>(() => [
+  {
+    key: 'billing',
+    label: t('admin.categories.billing'),
+    icon: 'fas fa-credit-card',
+    items: [
+      {
+        route: '/admin/subscription-plans',
+        label: t('admin.items.subscriptionPlans'),
+        icon: 'fas fa-tags'
+      },
+      {
+        route: '/admin/plan-features',
+        label: t('admin.items.planFeatures'),
+        icon: 'fas fa-puzzle-piece'
+      },
+      {
+        route: '/invoices',
+        label: t('admin.items.allInvoices'),
+        icon: 'fas fa-file-invoice-dollar'
+      },
+      {
+        route: '/admin/invoice-cleanup',
+        label: t('admin.items.invoiceCleanup'),
+        icon: 'fas fa-broom'
+      }
+    ]
+  },
+  {
+    key: 'system',
+    label: t('admin.categories.system'),
+    icon: 'fas fa-server',
+    items: [
+      {
+        route: '/admin/organizations',
+        label: t('admin.items.organizations'),
+        icon: 'fas fa-building'
+      },
+      {
+        route: '/admin/terminal-metrics',
+        label: t('admin.items.terminalBackends'),
+        icon: 'fas fa-server'
+      },
+      {
+        route: '/admin/security',
+        label: t('admin.items.security'),
+        icon: 'fas fa-user-shield'
+      }
+    ]
+  },
+  {
+    key: 'content',
+    label: t('admin.categories.content'),
+    icon: 'fas fa-book-open',
+    items: [
+      {
+        route: '/admin/bulk-import',
+        label: t('admin.items.bulkImport'),
+        icon: 'fas fa-file-import'
+      },
+      {
+        route: '/admin/email-templates',
+        label: t('admin.items.emailTemplates'),
+        icon: 'fas fa-envelope'
+      }
+    ]
+  },
+  {
+    key: 'scenarios',
+    label: t('admin.categories.scenarios'),
+    icon: 'fas fa-flask',
+    items: [
+      {
+        route: '/admin/scenarios',
+        label: t('admin.items.scenarios'),
+        icon: 'fas fa-flask'
+      },
+      {
+        route: '/admin/scenario-steps',
+        label: t('admin.items.scenarioSteps'),
+        icon: 'fas fa-list-ol'
+      },
+      {
+        route: '/admin/scenario-sessions',
+        label: t('admin.items.scenarioSessions'),
+        icon: 'fas fa-play-circle'
+      }
+    ]
+  },
+  {
+    key: 'debug',
+    label: t('admin.categories.debug'),
+    icon: 'fas fa-bug',
+    items: [
+      {
+        route: '/debug/feature-flags',
+        label: t('admin.items.featureFlags'),
+        icon: 'fas fa-flag'
+      },
+      {
+        route: '/debug/design-system',
+        label: t('admin.items.designSystem'),
+        icon: 'fas fa-palette'
+      }
+    ]
+  }
+])
+
+const {
+  expandedCategories,
+  menuPositions,
+  toggleCategory,
+  isCategoryActive,
+  handleMenuItemClick
+} = useMenuCategories(
+  () => adminCategories.value,
+  {
+    isCollapsed: () => props.isMenuCollapsed,
+    menuSelector: '.nav-menu-shell'
+  }
+)
+
+function goBack() {
+  router.push('/terminal-sessions')
+}
+</script>
+
+<style scoped>
+/* Admin-themed danger gradient for all category headers */
+:deep(.nav-category .category-header) {
+  background: linear-gradient(135deg, var(--color-danger) 0%, var(--color-danger-hover) 100%);
+  border: var(--border-width-thin) solid var(--color-danger-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+:deep(.nav-category .category-header:hover) {
+  background: linear-gradient(135deg, var(--color-danger-hover) 0%, var(--color-danger-dark) 100%);
+  transform: translateX(3px);
+}
+
+:deep(.nav-category .category-header.active) {
+  background: linear-gradient(135deg, var(--color-danger-dark) 0%, var(--color-danger-darker) 100%);
+}
+
+:deep(.nav-category .category-items) {
+  background-color: rgba(220, 53, 69, 0.1);
+  border: var(--border-width-thin) solid rgba(220, 53, 69, 0.2);
+}
+
+:deep(.nav-category .category-items li a) {
+  color: var(--color-gray-400);
+}
+
+:deep(.nav-category .category-items li a:hover) {
+  background-color: rgba(220, 53, 69, 0.2);
+  color: var(--color-white);
+}
+
+/* Collapsed mode admin styling */
+:deep(.collapsed .nav-category .category-items) {
+  background-color: var(--color-danger);
+  border-color: var(--color-danger-hover);
+}
+
+:deep(.collapsed .nav-category .category-items li a) {
+  color: var(--color-white);
+}
+</style>
