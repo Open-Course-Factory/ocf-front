@@ -80,7 +80,7 @@ const { t } = useTranslations({
       noActive: 'No scenario active on this terminal',
       start: 'Start a Scenario',
       choose: 'Choose a scenario',
-      none: 'No scenarios available. Ask your instructor to create one.',
+      none: 'No scenarios available. Ask your trainer to create one.',
       startError: 'Failed to start scenario.',
       loadError: 'Failed to load scenarios.',
       closePicker: 'Close'
@@ -301,5 +301,15 @@ async function startScenario(scenario: any) {
 
 .scenario-time i {
   margin-right: 2px;
+}
+
+.start-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.scenario-item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 </style>

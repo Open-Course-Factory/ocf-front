@@ -22,7 +22,7 @@
 -->
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
 import BaseModal from '../Modals/BaseModal.vue'
@@ -78,7 +78,49 @@ const { t } = useTranslations({
       assignError: 'Failed to assign scenario',
       removeError: 'Failed to remove assignment',
       bulkStartError: 'Failed to start sessions',
-      starting: 'Starting sessions...'
+      starting: 'Starting sessions...',
+      bulkStartTitle: 'Sessions Started',
+      confirmRemoveTitle: 'Remove Assignment',
+      close: 'Close',
+      remove: 'Remove',
+      noKeyWarning: 'The following learners couldn\'t get a terminal key provisioned:',
+      resetSessions: 'Reset Sessions',
+      resetConfirmTitle: 'Reset Scenario Sessions',
+      resetConfirm: 'This will abandon all active sessions for this scenario. Learners will need to restart. Continue?',
+      resetSuccess: '{count} sessions reset',
+      resetError: 'Failed to reset sessions',
+      selectInstanceType: 'Select Instance Type',
+      instanceType: 'Instance Type',
+      instanceTypeDescription: 'Choose the terminal environment type for all learners in this group.',
+      terminalErrors: 'Some terminals could not be created:',
+      viewResults: 'Results',
+      studentResults: 'Learner Results',
+      student: 'Learner',
+      status: 'Status',
+      grade: 'Grade',
+      progress: 'Progress',
+      startedAt: 'Started',
+      completedAt: 'Completed',
+      actions: 'Actions',
+      viewDetails: 'Details',
+      noResults: 'No sessions yet for this scenario.',
+      sessionDetail: 'Session Detail',
+      stepOrder: 'Step',
+      stepTitle: 'Title',
+      stepStatus: 'Status',
+      attempts: 'Attempts',
+      timeSpent: 'Time',
+      completed: 'completed',
+      activeStatus: 'active',
+      locked: 'locked',
+      abandoned: 'abandoned',
+      in_progress: 'in progress',
+      notGraded: 'N/A',
+      back: 'Back',
+      difficultyBeginner: 'Beginner',
+      difficultyIntermediate: 'Intermediate',
+      difficultyAdvanced: 'Advanced',
+      exportCsv: 'Export CSV'
     }
   },
   fr: {
@@ -104,10 +146,95 @@ const { t } = useTranslations({
       assignError: 'Échec de l\'assignation du scénario',
       removeError: 'Échec de la suppression de l\'assignation',
       bulkStartError: 'Échec du démarrage des sessions',
-      starting: 'Démarrage des sessions...'
+      starting: 'Démarrage des sessions...',
+      bulkStartTitle: 'Sessions démarrées',
+      confirmRemoveTitle: 'Supprimer l\'assignation',
+      close: 'Fermer',
+      remove: 'Supprimer',
+      noKeyWarning: 'Les apprenants suivants n\'ont pas pu recevoir de clé terminal :',
+      resetSessions: 'Réinitialiser',
+      resetConfirmTitle: 'Réinitialiser les sessions',
+      resetConfirm: 'Ceci va abandonner toutes les sessions actives pour ce scénario. Les apprenants devront recommencer. Continuer ?',
+      resetSuccess: '{count} sessions réinitialisées',
+      resetError: 'Échec de la réinitialisation',
+      selectInstanceType: 'Sélectionner le type d\'instance',
+      instanceType: 'Type d\'instance',
+      instanceTypeDescription: 'Choisissez le type d\'environnement terminal pour tous les apprenants de ce groupe.',
+      terminalErrors: 'Certains terminaux n\'ont pas pu être créés :',
+      viewResults: 'Résultats',
+      studentResults: 'Résultats des apprenants',
+      student: 'Apprenant(e)',
+      status: 'Statut',
+      grade: 'Note',
+      progress: 'Progression',
+      startedAt: 'Début',
+      completedAt: 'Fin',
+      actions: 'Actions',
+      viewDetails: 'Détails',
+      noResults: 'Aucune session pour ce scénario.',
+      sessionDetail: 'Détail de la session',
+      stepOrder: 'Étape',
+      stepTitle: 'Titre',
+      stepStatus: 'Statut',
+      attempts: 'Tentatives',
+      timeSpent: 'Temps',
+      completed: 'terminé',
+      activeStatus: 'actif',
+      locked: 'verrouillé',
+      abandoned: 'abandonné',
+      in_progress: 'en cours',
+      notGraded: 'N/A',
+      back: 'Retour',
+      difficultyBeginner: 'Débutant',
+      difficultyIntermediate: 'Intermédiaire',
+      difficultyAdvanced: 'Avancé',
+      exportCsv: 'Exporter CSV'
     }
   }
 })
+
+interface InstanceType {
+  prefix: string
+  name: string
+  description: string
+}
+
+interface ScenarioResultItem {
+  session_id: string
+  user_id: string
+  user_name?: string
+  user_email?: string
+  status: string
+  grade?: number
+  current_step: number
+  total_steps: number
+  completed_steps: number
+  started_at: string
+  completed_at?: string
+}
+
+interface SessionStepDetail {
+  step_order: number
+  step_title: string
+  status: string
+  verify_attempts: number
+  completed_at?: string
+  time_spent_seconds: number
+}
+
+interface SessionDetailResponse {
+  session_id: string
+  user_id: string
+  user_name?: string
+  user_email?: string
+  scenario_id: string
+  scenario_title: string
+  status: string
+  grade?: number
+  started_at: string
+  completed_at?: string
+  steps: SessionStepDetail[]
+}
 
 // State
 const assignments = ref<ScenarioAssignment[]>([])
@@ -119,6 +246,32 @@ const selectedScenarioId = ref('')
 const assignDeadline = ref('')
 const scenarioSearch = ref('')
 const bulkStartingId = ref<string | null>(null)
+const showResultModal = ref(false)
+const resultMessage = ref('')
+const resultNoKeyUsers = ref<Array<{ user_id?: string; user_name?: string; user_email?: string }>>([])
+const resultErrors = ref<Array<{ user_id?: string; error?: string }>>([])
+const showConfirmRemoveModal = ref(false)
+const assignmentToRemove = ref<ScenarioAssignment | null>(null)
+const showResetModal = ref(false)
+const assignmentToReset = ref<ScenarioAssignment | null>(null)
+const showBulkStartModal = ref(false)
+const assignmentToBulkStart = ref<ScenarioAssignment | null>(null)
+const instanceTypes = ref<InstanceType[]>([])
+const selectedInstanceType = ref('')
+const loadingInstanceTypes = ref(false)
+
+// Results view state
+const showResultsForAssignment = ref<ScenarioAssignment | null>(null)
+const scenarioResults = ref<ScenarioResultItem[]>([])
+const loadingResults = ref(false)
+
+// Auto-refresh interval
+const resultsRefreshInterval = ref<ReturnType<typeof setInterval> | null>(null)
+
+// Detail modal state
+const showDetailModal = ref(false)
+const sessionDetail = ref<SessionDetailResponse | null>(null)
+const loadingDetail = ref(false)
 
 // Filtered scenarios for modal dropdown
 const filteredScenarios = () => {
@@ -176,34 +329,185 @@ async function handleAssign() {
   }
 }
 
-// Bulk start
-async function handleBulkStart(assignment: ScenarioAssignment) {
+// Load instance types for bulk start modal
+async function loadInstanceTypes() {
+  loadingInstanceTypes.value = true
+  try {
+    const response = await axios.get('/terminals/instance-types')
+    const data = response.data
+    if (Array.isArray(data)) {
+      instanceTypes.value = data
+    } else if (data.instance_types && Array.isArray(data.instance_types)) {
+      instanceTypes.value = data.instance_types
+    }
+    // Auto-select first if only one
+    if (instanceTypes.value.length === 1) {
+      selectedInstanceType.value = instanceTypes.value[0].prefix
+    }
+  } catch (err: any) {
+    console.error('Failed to load instance types:', err)
+  } finally {
+    loadingInstanceTypes.value = false
+  }
+}
+
+// Open bulk start modal with instance type selection
+function handleBulkStart(assignment: ScenarioAssignment) {
+  assignmentToBulkStart.value = assignment
+  selectedInstanceType.value = ''
+  loadInstanceTypes()
+  showBulkStartModal.value = true
+}
+
+// Confirm bulk start with selected instance type
+async function confirmBulkStart() {
+  if (!assignmentToBulkStart.value || !selectedInstanceType.value) return
+  const assignment = assignmentToBulkStart.value
+  showBulkStartModal.value = false
   bulkStartingId.value = assignment.id
   error.value = ''
   try {
     const response = await axios.post(
-      `/teacher/groups/${props.groupId}/scenarios/${assignment.scenario_id}/bulk-start`
+      `/teacher/groups/${props.groupId}/scenarios/${assignment.scenario_id}/bulk-start`,
+      { instance_type: selectedInstanceType.value }
     )
     const data = response.data
-    const started = data?.started || 0
+    const started = data?.created || data?.started || 0
     const skipped = data?.skipped || 0
-    alert(t('groupScenarios.bulkStartResult', { started, skipped }))
+    resultMessage.value = t('groupScenarios.bulkStartResult', { started, skipped })
+    resultNoKeyUsers.value = data?.no_key_users || []
+    resultErrors.value = data?.errors || []
+    showResultModal.value = true
   } catch (err: any) {
-    error.value = err.response?.data?.error_message || t('groupScenarios.bulkStartError')
+    error.value = err.response?.data?.error || err.response?.data?.error_message || t('groupScenarios.bulkStartError')
   } finally {
     bulkStartingId.value = null
+    assignmentToBulkStart.value = null
   }
 }
 
 // Remove assignment
-async function handleRemove(assignment: ScenarioAssignment) {
-  if (!window.confirm(t('groupScenarios.confirmRemove'))) return
+function handleRemove(assignment: ScenarioAssignment) {
+  assignmentToRemove.value = assignment
+  showConfirmRemoveModal.value = true
+}
+
+async function confirmRemove() {
+  if (!assignmentToRemove.value) return
   error.value = ''
   try {
-    await axios.delete(`/scenario-assignments/${assignment.id}`)
+    await axios.delete(`/scenario-assignments/${assignmentToRemove.value.id}`)
+    showConfirmRemoveModal.value = false
+    assignmentToRemove.value = null
     await loadAssignments()
   } catch (err: any) {
     error.value = err.response?.data?.error_message || t('groupScenarios.removeError')
+  }
+}
+
+// Reset sessions
+function handleReset(assignment: ScenarioAssignment) {
+  assignmentToReset.value = assignment
+  showResetModal.value = true
+}
+
+async function confirmReset() {
+  if (!assignmentToReset.value) return
+  error.value = ''
+  try {
+    const response = await axios.post(
+      `/teacher/groups/${props.groupId}/scenarios/${assignmentToReset.value.scenario_id}/reset-sessions`
+    )
+    const count = response.data?.abandoned || 0
+    showResetModal.value = false
+    assignmentToReset.value = null
+    resultMessage.value = t('groupScenarios.resetSuccess', { count })
+    resultNoKeyUsers.value = []
+    showResultModal.value = true
+  } catch (err: any) {
+    error.value = err.response?.data?.error_message || t('groupScenarios.resetError')
+  }
+}
+
+// View results for an assignment
+async function handleViewResults(assignment: ScenarioAssignment) {
+  showResultsForAssignment.value = assignment
+  loadingResults.value = true
+  scenarioResults.value = []
+  try {
+    const response = await axios.get(
+      `/teacher/groups/${props.groupId}/scenarios/${assignment.scenario_id}/results`
+    )
+    scenarioResults.value = response.data || []
+  } catch (err: any) {
+    error.value = err.response?.data?.error || t('groupScenarios.loadError')
+  } finally {
+    loadingResults.value = false
+  }
+
+  // Start auto-refresh
+  if (resultsRefreshInterval.value) clearInterval(resultsRefreshInterval.value)
+  resultsRefreshInterval.value = setInterval(async () => {
+    if (!showResultsForAssignment.value) return
+    try {
+      const response = await axios.get(
+        `/teacher/groups/${props.groupId}/scenarios/${showResultsForAssignment.value.scenario_id}/results`
+      )
+      scenarioResults.value = response.data || []
+    } catch {
+      // Silently ignore refresh errors
+    }
+  }, 30000)
+}
+
+function closeResults() {
+  showResultsForAssignment.value = null
+  scenarioResults.value = []
+  if (resultsRefreshInterval.value) {
+    clearInterval(resultsRefreshInterval.value)
+    resultsRefreshInterval.value = null
+  }
+}
+
+// View step-by-step detail for a session
+async function handleViewDetail(result: ScenarioResultItem) {
+  showDetailModal.value = true
+  loadingDetail.value = true
+  sessionDetail.value = null
+  try {
+    const response = await axios.get(
+      `/teacher/groups/${props.groupId}/sessions/${result.session_id}/detail`
+    )
+    sessionDetail.value = response.data
+  } catch (err: any) {
+    error.value = err.response?.data?.error || t('groupScenarios.loadError')
+    showDetailModal.value = false
+  } finally {
+    loadingDetail.value = false
+  }
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`
+  const minutes = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  if (minutes < 60) return `${minutes}m ${secs}s`
+  const hours = Math.floor(minutes / 60)
+  return `${hours}h ${minutes % 60}m`
+}
+
+function formatDate(dateStr: string): string {
+  if (!dateStr) return ''
+  return new Date(dateStr).toLocaleString()
+}
+
+function getStatusClass(status: string): string {
+  switch (status) {
+    case 'completed': return 'status-completed'
+    case 'active': case 'in_progress': return 'status-active'
+    case 'locked': return 'status-locked'
+    case 'abandoned': return 'status-abandoned'
+    default: return ''
   }
 }
 
@@ -216,6 +520,48 @@ function getDifficultyClass(difficulty: string) {
   }
 }
 
+function translateStatus(status: string): string {
+  const statusMap: Record<string, string> = {
+    completed: t('groupScenarios.completed'),
+    active: t('groupScenarios.activeStatus'),
+    in_progress: t('groupScenarios.in_progress'),
+    locked: t('groupScenarios.locked'),
+    abandoned: t('groupScenarios.abandoned')
+  }
+  return statusMap[status] || status
+}
+
+function translateDifficulty(difficulty: string): string {
+  const difficultyMap: Record<string, string> = {
+    beginner: t('groupScenarios.difficultyBeginner'),
+    intermediate: t('groupScenarios.difficultyIntermediate'),
+    advanced: t('groupScenarios.difficultyAdvanced')
+  }
+  return difficultyMap[difficulty] || difficulty
+}
+
+function exportResultsCsv() {
+  if (scenarioResults.value.length === 0) return
+  const headers = ['Name', 'Email', 'Status', 'Grade', 'Progress', 'Started', 'Completed']
+  const rows = scenarioResults.value.map(r => [
+    r.user_name || r.user_id,
+    r.user_email || '',
+    r.status,
+    r.grade != null ? Math.round(r.grade) + '%' : '',
+    `${r.completed_steps}/${r.total_steps}`,
+    r.started_at ? formatDate(r.started_at) : '',
+    r.completed_at ? formatDate(r.completed_at) : ''
+  ])
+  const csv = [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `scenario-results-${showResultsForAssignment.value?.scenario?.title || 'export'}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
 function openAssignModal() {
   loadScenarios()
   showAssignModal.value = true
@@ -223,6 +569,12 @@ function openAssignModal() {
 
 onMounted(() => {
   loadAssignments()
+})
+
+onUnmounted(() => {
+  if (resultsRefreshInterval.value) {
+    clearInterval(resultsRefreshInterval.value)
+  }
 })
 </script>
 
@@ -268,11 +620,11 @@ onMounted(() => {
               v-if="assignment.scenario?.difficulty"
               :class="['difficulty-badge', getDifficultyClass(assignment.scenario.difficulty)]"
             >
-              {{ assignment.scenario.difficulty }}
+              {{ translateDifficulty(assignment.scenario.difficulty) }}
             </span>
             <span class="deadline-text">
               <i class="fas fa-calendar"></i>
-              {{ assignment.deadline ? assignment.deadline : t('groupScenarios.noDeadline') }}
+              {{ assignment.deadline ? formatDate(assignment.deadline) : t('groupScenarios.noDeadline') }}
             </span>
             <span :class="['status-chip', assignment.is_active ? 'status-active' : 'status-inactive']">
               {{ assignment.is_active ? t('groupScenarios.active') : t('groupScenarios.inactive') }}
@@ -281,12 +633,27 @@ onMounted(() => {
         </div>
         <div v-if="canEditGroup" class="assignment-actions">
           <button
+            @click="handleViewResults(assignment)"
+            class="btn btn-sm btn-info"
+          >
+            <i class="fas fa-chart-bar"></i>
+            {{ t('groupScenarios.viewResults') }}
+          </button>
+          <button
             @click="handleBulkStart(assignment)"
             class="btn btn-sm btn-secondary"
             :disabled="bulkStartingId === assignment.id"
           >
             <i :class="bulkStartingId === assignment.id ? 'fas fa-spinner fa-spin' : 'fas fa-play'"></i>
             {{ bulkStartingId === assignment.id ? t('groupScenarios.starting') : t('groupScenarios.bulkStart') }}
+          </button>
+          <button
+            @click="handleReset(assignment)"
+            class="btn btn-sm btn-outline"
+            :title="t('groupScenarios.resetSessions')"
+          >
+            <i class="fas fa-undo"></i>
+            {{ t('groupScenarios.resetSessions') }}
           </button>
           <button
             @click="handleRemove(assignment)"
@@ -298,6 +665,126 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- Student Results Panel -->
+    <div v-if="showResultsForAssignment" class="results-panel">
+      <div class="results-header">
+        <button @click="closeResults" class="btn btn-sm btn-outline">
+          <i class="fas fa-arrow-left"></i> {{ t('groupScenarios.back') }}
+        </button>
+        <h4>{{ t('groupScenarios.studentResults') }} — {{ showResultsForAssignment.scenario?.title }}</h4>
+        <button @click="exportResultsCsv" class="btn btn-sm btn-outline" :disabled="scenarioResults.length === 0">
+          <i class="fas fa-download"></i> {{ t('groupScenarios.exportCsv') }}
+        </button>
+      </div>
+
+      <div v-if="loadingResults" class="loading-state">
+        <i class="fas fa-spinner fa-spin"></i>
+      </div>
+
+      <div v-else-if="scenarioResults.length === 0" class="empty-state">
+        <p>{{ t('groupScenarios.noResults') }}</p>
+      </div>
+
+      <table v-else class="results-table">
+        <thead>
+          <tr>
+            <th>{{ t('groupScenarios.student') }}</th>
+            <th>{{ t('groupScenarios.status') }}</th>
+            <th>{{ t('groupScenarios.grade') }}</th>
+            <th>{{ t('groupScenarios.progress') }}</th>
+            <th>{{ t('groupScenarios.startedAt') }}</th>
+            <th>{{ t('groupScenarios.completedAt') }}</th>
+            <th>{{ t('groupScenarios.actions') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="result in scenarioResults" :key="result.session_id">
+            <td>
+              <div class="student-name">{{ result.user_name || result.user_id }}</div>
+              <div v-if="result.user_email" class="student-email">{{ result.user_email }}</div>
+            </td>
+            <td>
+              <span :class="['status-chip', getStatusClass(result.status)]">
+                {{ translateStatus(result.status) }}
+              </span>
+            </td>
+            <td>
+              {{ result.grade != null ? Math.round(result.grade) + '%' : t('groupScenarios.notGraded') }}
+            </td>
+            <td>
+              <div class="progress-cell">
+                <div class="progress-bar-bg">
+                  <div
+                    class="progress-bar-fill"
+                    :style="{ width: (result.total_steps > 0 ? (result.completed_steps / result.total_steps) * 100 : 0) + '%' }"
+                  ></div>
+                </div>
+                <span class="progress-text">{{ result.completed_steps }}/{{ result.total_steps }}</span>
+              </div>
+            </td>
+            <td class="date-cell">{{ formatDate(result.started_at) }}</td>
+            <td class="date-cell">{{ result.completed_at ? formatDate(result.completed_at) : '—' }}</td>
+            <td>
+              <button @click="handleViewDetail(result)" class="btn btn-sm btn-outline">
+                <i class="fas fa-eye"></i> {{ t('groupScenarios.viewDetails') }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Session Detail Modal -->
+    <BaseModal
+      :visible="showDetailModal"
+      :title="t('groupScenarios.sessionDetail')"
+      size="large"
+      :show-default-footer="true"
+      :confirm-text="t('groupScenarios.close')"
+      @confirm="showDetailModal = false"
+      @close="showDetailModal = false"
+    >
+      <div v-if="loadingDetail" class="loading-state">
+        <i class="fas fa-spinner fa-spin"></i>
+      </div>
+      <div v-else-if="sessionDetail">
+        <div class="detail-header-info">
+          <div><strong>{{ t('groupScenarios.student') }}:</strong> {{ sessionDetail.user_name || sessionDetail.user_id }}</div>
+          <div><strong>{{ t('groupScenarios.status') }}:</strong>
+            <span :class="['status-chip', getStatusClass(sessionDetail.status)]">{{ translateStatus(sessionDetail.status) }}</span>
+          </div>
+          <div v-if="sessionDetail.grade != null"><strong>{{ t('groupScenarios.grade') }}:</strong> {{ Math.round(sessionDetail.grade) }}%</div>
+          <div><strong>{{ t('groupScenarios.startedAt') }}:</strong> {{ formatDate(sessionDetail.started_at) }}</div>
+          <div v-if="sessionDetail.completed_at"><strong>{{ t('groupScenarios.completedAt') }}:</strong> {{ formatDate(sessionDetail.completed_at) }}</div>
+        </div>
+
+        <table class="steps-table">
+          <thead>
+            <tr>
+              <th>{{ t('groupScenarios.stepOrder') }}</th>
+              <th>{{ t('groupScenarios.stepTitle') }}</th>
+              <th>{{ t('groupScenarios.stepStatus') }}</th>
+              <th>{{ t('groupScenarios.attempts') }}</th>
+              <th>{{ t('groupScenarios.timeSpent') }}</th>
+              <th>{{ t('groupScenarios.completedAt') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="step in sessionDetail.steps" :key="step.step_order">
+              <td>{{ step.step_order + 1 }}</td>
+              <td>{{ step.step_title }}</td>
+              <td>
+                <span :class="['status-chip', getStatusClass(step.status)]">{{ translateStatus(step.status) }}</span>
+              </td>
+              <td>{{ step.verify_attempts }}</td>
+              <td>{{ formatDuration(step.time_spent_seconds) }}</td>
+              <td class="date-cell">{{ step.completed_at ? formatDate(step.completed_at) : '—' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </BaseModal>
 
     <!-- Assign Scenario Modal -->
     <BaseModal
@@ -337,6 +824,107 @@ onMounted(() => {
           class="form-control"
         />
       </div>
+    </BaseModal>
+
+    <!-- Bulk Start Instance Type Modal -->
+    <BaseModal
+      :visible="showBulkStartModal"
+      :title="t('groupScenarios.selectInstanceType')"
+      size="medium"
+      :show-default-footer="true"
+      :confirm-text="t('groupScenarios.bulkStart')"
+      :cancel-text="t('groupScenarios.cancel')"
+      @confirm="confirmBulkStart"
+      @close="showBulkStartModal = false"
+    >
+      <p class="instance-type-description">
+        {{ t('groupScenarios.instanceTypeDescription') }}
+      </p>
+      <div v-if="loadingInstanceTypes" class="loading-state">
+        <i class="fas fa-spinner fa-spin"></i>
+      </div>
+      <div v-else class="form-group">
+        <label>{{ t('groupScenarios.instanceType') }}</label>
+        <select v-model="selectedInstanceType" class="form-control">
+          <option value="" disabled>{{ t('groupScenarios.selectInstanceType') }}</option>
+          <option
+            v-for="instance in instanceTypes"
+            :key="instance.prefix"
+            :value="instance.prefix"
+          >
+            {{ instance.name }} — {{ instance.description }}
+          </option>
+        </select>
+      </div>
+    </BaseModal>
+
+    <!-- Bulk Start Result Modal -->
+    <BaseModal
+      :visible="showResultModal"
+      :title="t('groupScenarios.bulkStartTitle')"
+      size="medium"
+      :show-default-footer="true"
+      :confirm-text="t('groupScenarios.close')"
+      @confirm="showResultModal = false"
+      @close="showResultModal = false"
+    >
+      <p class="result-message">
+        <i class="fas fa-check-circle result-icon"></i>
+        {{ resultMessage }}
+      </p>
+      <div v-if="resultNoKeyUsers.length > 0" class="no-key-warning">
+        <p class="no-key-title">
+          <i class="fas fa-exclamation-triangle"></i>
+          {{ t('groupScenarios.noKeyWarning') }}
+        </p>
+        <ul class="no-key-list">
+          <li v-for="(user, idx) in resultNoKeyUsers" :key="idx">
+            {{ user.user_name || user.user_email || user.user_id }}
+            <span v-if="user.user_email && user.user_name" class="no-key-email">
+              ({{ user.user_email }})
+            </span>
+          </li>
+        </ul>
+      </div>
+      <div v-if="resultErrors.length > 0" class="no-key-warning">
+        <p class="no-key-title">
+          <i class="fas fa-exclamation-triangle"></i>
+          {{ t('groupScenarios.terminalErrors') }}
+        </p>
+        <ul class="no-key-list">
+          <li v-for="(err, idx) in resultErrors" :key="idx">
+            {{ err.user_id }}: {{ err.error }}
+          </li>
+        </ul>
+      </div>
+    </BaseModal>
+
+    <!-- Confirm Remove Modal -->
+    <BaseModal
+      :visible="showConfirmRemoveModal"
+      :title="t('groupScenarios.confirmRemoveTitle')"
+      size="small"
+      :show-default-footer="true"
+      :confirm-text="t('groupScenarios.remove')"
+      :cancel-text="t('groupScenarios.cancel')"
+      @confirm="confirmRemove"
+      @close="showConfirmRemoveModal = false"
+    >
+      <p>{{ t('groupScenarios.confirmRemove') }}</p>
+    </BaseModal>
+
+    <!-- Confirm Reset Modal -->
+    <BaseModal
+      :visible="showResetModal"
+      :title="t('groupScenarios.resetConfirmTitle')"
+      size="small"
+      :show-default-footer="true"
+      :confirm-text="t('groupScenarios.resetSessions')"
+      :cancel-text="t('groupScenarios.cancel')"
+      @confirm="confirmReset"
+      @close="showResetModal = false"
+    >
+      <p>{{ t('groupScenarios.resetConfirm') }}</p>
     </BaseModal>
   </div>
 </template>
@@ -496,6 +1084,69 @@ onMounted(() => {
   margin-top: var(--spacing-sm);
 }
 
+.result-message {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.result-icon {
+  color: var(--color-success);
+  font-size: var(--font-size-lg);
+}
+
+.no-key-warning {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--border-radius-md);
+}
+
+.no-key-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--color-warning-text);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.no-key-list {
+  margin: 0;
+  padding-left: var(--spacing-lg);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.no-key-list li {
+  margin-bottom: 2px;
+}
+
+.no-key-email {
+  color: var(--color-text-muted);
+}
+
+.instance-type-description {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--color-border-medium);
+  color: var(--color-text-secondary);
+}
+
+.btn-outline:hover {
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-border-dark);
+}
+
 .alert {
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--border-radius-md);
@@ -506,6 +1157,132 @@ onMounted(() => {
   background-color: var(--color-danger-bg);
   color: var(--color-danger-text);
   border: 1px solid var(--color-danger-border);
+}
+
+/* Results panel */
+.results-panel {
+  margin-top: var(--spacing-lg);
+}
+
+.results-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.results-header h4 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+}
+
+.results-table,
+.steps-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.results-table th,
+.results-table td,
+.steps-table th,
+.steps-table td {
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border-light);
+  color: var(--color-text-primary);
+}
+
+.results-table th,
+.steps-table th {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  background-color: var(--color-bg-secondary);
+}
+
+.results-table tbody tr:hover,
+.steps-table tbody tr:hover {
+  background-color: var(--color-bg-secondary);
+}
+
+.student-name {
+  font-weight: var(--font-weight-medium);
+}
+
+.student-email {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.date-cell {
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.progress-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.progress-bar-bg {
+  flex: 1;
+  height: 8px;
+  background-color: var(--color-bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 60px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--color-primary);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.status-completed {
+  background-color: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.status-locked {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-muted);
+}
+
+.status-abandoned {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+.btn-info {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  border: none;
+}
+
+.btn-info:hover {
+  opacity: 0.9;
+}
+
+.detail-header-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md) var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
 }
 
 /* Responsive */
