@@ -3,47 +3,31 @@
     <nav class="menu-nav">
       <div class="menu-top">
         <ul>
-          <li v-for="category in filteredTopCategories" :key="category.key" class="menu-category" :data-category="category.key">
-            <div
-              class="category-header"
-              @click="toggleCategory(category.key, $event)"
-              :class="{
-                active: expandedCategories[category.key],
-                'has-active-item': isCategoryActive[category.key]
-              }"
-              :title="isMenuCollapsed ? category.label : ''"
-            >
-              <i :class="category.icon"></i>
-              <span class="menu-text category-title">{{ category.label }}</span>
-              <i
-                v-if="!isMenuCollapsed"
-                class="fas fa-chevron-down chevron-icon"
-                :class="{ rotated: expandedCategories[category.key] }"
-              ></i>
-            </div>
-            <ul
-              class="category-items"
-              :class="{
-                expanded: expandedCategories[category.key]
-              }"
-              :style="isMenuCollapsed && menuPositions[category.key] ? {
-                top: menuPositions[category.key].top + 'px',
-                left: menuPositions[category.key].left + 'px'
-              } : {}"
-            >
-              <li v-for="item in category.items" :key="item.route">
-                <router-link
-                  :to="item.route"
-                  class="menu-item"
-                  :title="isMenuCollapsed ? item.title : ''"
-                  @click="handleMenuItemClick"
-                >
-                  <i :class="item.icon"></i>
-                  <span class="menu-text">{{ item.label }}</span>
-                </router-link>
-              </li>
-            </ul>
-          </li>
+          <NavCategory
+            v-for="category in filteredTopCategories"
+            :key="category.key"
+            :categoryKey="category.key"
+            :label="category.label"
+            :icon="category.icon"
+            :expanded="expandedCategories[category.key]"
+            :hasActiveItem="isCategoryActive[category.key]"
+            :collapsed="isMenuCollapsed ?? false"
+            :popupStyle="isMenuCollapsed && menuPositions[category.key] ? {
+              top: menuPositions[category.key].top + 'px',
+              left: menuPositions[category.key].left + 'px'
+            } : undefined"
+            @toggle="toggleCategory"
+          >
+            <NavMenuItem
+              v-for="item in category.items"
+              :key="item.route"
+              :to="item.route"
+              :label="item.label"
+              :icon="item.icon"
+              :tooltip="isMenuCollapsed ? item.title : ''"
+              @click="handleMenuItemClick"
+            />
+          </NavCategory>
         </ul>
       </div>
       <div class="menu-bottom" :class="{ 'bottom-collapsed': isBottomCollapsed }">
@@ -52,46 +36,40 @@
           <i class="fas fa-chevron-up menu-bottom-toggle-icon" :class="{ rotated: isBottomCollapsed }"></i>
         </div>
         <ul v-show="!isBottomCollapsed">
-          <li v-for="category in filteredBottomCategories" :key="category.key" class="menu-category" :data-category="category.key">
-            <div
-              class="category-header"
-              @click="toggleCategory(category.key, $event)"
-              :class="{
-                active: expandedCategories[category.key],
-                'has-active-item': isCategoryActive[category.key]
-              }"
-              :title="isMenuCollapsed ? category.label : ''"
+          <NavCategory
+            v-for="category in filteredBottomCategories"
+            :key="category.key"
+            :categoryKey="category.key"
+            :label="category.label"
+            :icon="category.icon"
+            :expanded="expandedCategories[category.key]"
+            :hasActiveItem="isCategoryActive[category.key]"
+            :collapsed="isMenuCollapsed ?? false"
+            :popupStyle="isMenuCollapsed && menuPositions[category.key] ? {
+              top: menuPositions[category.key].top + 'px',
+              left: menuPositions[category.key].left + 'px'
+            } : undefined"
+            @toggle="toggleCategory"
+          >
+            <NavMenuItem
+              v-for="item in category.items"
+              :key="item.route"
+              :to="item.route"
+              :label="item.label"
+              :icon="item.icon"
+              :tooltip="isMenuCollapsed ? item.title : ''"
+              @click="handleMenuItemClick"
+            />
+          </NavCategory>
+          <li v-if="showAdminLink" class="admin-direct-link">
+            <router-link
+              to="/admin"
+              class="admin-link"
+              :title="isMenuCollapsed ? t('navigation.administration') : ''"
             >
-              <i :class="category.icon"></i>
-              <span class="menu-text category-title">{{ category.label }}</span>
-              <i
-                v-if="!isMenuCollapsed"
-                class="fas fa-chevron-down chevron-icon"
-                :class="{ rotated: expandedCategories[category.key] }"
-              ></i>
-            </div>
-            <ul
-              class="category-items"
-              :class="{
-                expanded: expandedCategories[category.key]
-              }"
-              :style="isMenuCollapsed && menuPositions[category.key] ? {
-                top: menuPositions[category.key].top + 'px',
-                left: menuPositions[category.key].left + 'px'
-              } : {}"
-            >
-              <li v-for="item in category.items" :key="item.route">
-                <router-link
-                  :to="item.route"
-                  class="menu-item"
-                  :title="isMenuCollapsed ? item.title : ''"
-                  @click="handleMenuItemClick"
-                >
-                  <i :class="item.icon"></i>
-                  <span class="menu-text">{{ item.label }}</span>
-                </router-link>
-              </li>
-            </ul>
+              <i class="fas fa-shield-alt"></i>
+              <span class="menu-text">{{ t('navigation.administration') }}</span>
+            </router-link>
           </li>
         </ul>
       </div>
@@ -100,6 +78,8 @@
 </template>
 
 <script setup lang="ts">
+import NavCategory from './NavCategory.vue'
+import NavMenuItem from './NavMenuItem.vue'
 import { useCoursesStore } from '../../stores/courses.ts';
 import { useCurrentUserStore } from '../../stores/currentUser.ts';
 import { useSchedulesStore } from '../../stores/schedules.ts';
@@ -444,70 +424,10 @@ const menuCategories = computed((): MenuCategory[] => [
     allowedRoles: ['administrator'],
     items: [
       {
-        route: '/admin/bulk-import',
-        label: t('navigation.bulkImport'),
-        title: t('navigation.bulkImportTitle'),
-        icon: 'fas fa-file-import'
-      },
-      {
-        route: '/admin/subscription-plans',
-        label: t('navigation.adminSubscriptionPlans'),
-        title: t('navigation.adminSubscriptionPlansTitle'),
-        icon: 'fas fa-cogs'
-      },
-      {
-        route: '/admin/plan-features',
-        label: t('navigation.adminPlanFeatures'),
-        title: t('navigation.adminPlanFeaturesTitle'),
-        icon: 'fas fa-puzzle-piece'
-      },
-      {
-        route: '/invoices',
-        label: t('navigation.allInvoices'),
-        title: t('navigation.viewAllSystemInvoices'),
-        icon: 'fas fa-file-invoice-dollar'
-      },
-      {
-        route: '/admin/invoice-cleanup',
-        label: t('navigation.invoiceCleanup'),
-        title: t('navigation.invoiceCleanupTitle'),
-        icon: 'fas fa-broom'
-      },
-      {
-        route: '/admin/terminal-metrics',
-        label: t('navigation.terminalBackends'),
-        title: t('navigation.terminalBackendsTitle'),
-        icon: 'fas fa-server'
-      },
-      {
-        route: '/admin/organizations',
-        label: t('navigation.adminOrganizations'),
-        title: t('navigation.adminOrganizationsTitle'),
-        icon: 'fas fa-building'
-      },
-      {
-        route: '/email-templates',
-        label: t('navigation.emailTemplates'),
-        title: t('navigation.emailTemplatesTitle'),
-        icon: 'fas fa-envelope'
-      },
-      {
-        route: '/debug/feature-flags',
-        label: t('navigation.featureFlags'),
-        title: t('navigation.featureFlagsTitle'),
-        icon: 'fas fa-flag'
-      },
-      {
-        route: '/debug/design-system',
-        label: t('navigation.designSystem'),
-        title: t('navigation.designSystemTitle'),
-        icon: 'fas fa-palette'
-      },
-      {
-        route: '/admin/security',
-        label: t('navigation.securityAdmin'),
-        title: t('navigation.securityAdminTitle'),
-        icon: 'fas fa-user-shield'
+        route: '/admin',
+        label: t('navigation.adminDashboard'),
+        title: t('navigation.adminDashboardTitle'),
+        icon: 'fas fa-tachometer-alt'
       }
     ]
   }
@@ -603,7 +523,12 @@ const filteredTopCategories = computed(() =>
   filteredCategories.value.filter(c => !bottomCategoryKeys.has(c.key))
 )
 const filteredBottomCategories = computed(() =>
-  filteredCategories.value.filter(c => bottomCategoryKeys.has(c.key))
+  filteredCategories.value.filter(c => bottomCategoryKeys.has(c.key) && c.key !== 'admin')
+)
+
+// Admin is rendered as a direct link, not an expandable category
+const showAdminLink = computed(() =>
+  filteredCategories.value.some(c => c.key === 'admin')
 )
 
 // Fonction pour déterminer si une catégorie contient l'élément actif
@@ -797,200 +722,11 @@ watch(() => route.path, () => {
   margin: 0;
 }
 
-/* Styles pour les catégories */
-.menu-category {
-  margin-bottom: var(--spacing-sm);
-  position: relative;
-}
-
-.category-header {
-  display: flex;
-  align-items: center;
-  padding: var(--spacing-md);
-  color: var(--color-white);
-  background-color: var(--color-gray-700);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition: background-color var(--transition-slow), transform var(--transition-slow);
-  position: relative;
-  user-select: none;
-  min-height: 50px;
-  box-sizing: border-box;
-}
-
-.category-header:hover {
-  background-color: var(--color-gray-600);
-  transform: translateX(3px);
-}
-
-.category-header.active {
-  background-color: var(--color-gray-600);
-}
-
-.category-header i:first-child {
-  width: 20px;
-  text-align: center;
-  margin-right: var(--spacing-md);
-  flex-shrink: 0;
-}
-
-.category-title {
-  flex-grow: 1;
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-sm);
-}
-
-.chevron-icon {
-  margin-left: auto;
-  transition: transform var(--transition-slow) ease;
-  font-size: var(--font-size-xs);
-  flex-shrink: 0;
-}
-
-.chevron-icon.rotated {
-  transform: rotate(180deg);
-}
-
-/* Mode collapsed */
-.main-menu.collapsed .category-header {
-  justify-content: center;
-  align-items: center;
-  min-height: 50px;
-  margin-bottom: var(--spacing-xs);
-  width: 100%;
-  margin-left: 0;
-  margin-right: 0;
-  display: flex;
-  cursor: pointer;
-}
-
-.main-menu.collapsed .category-header:hover {
-  transform: none;
-  background-color: var(--color-gray-600);
-}
-
-.main-menu.collapsed .category-header i:first-child {
-  margin: 0;
-  width: auto;
-}
-
-.main-menu.collapsed .category-title {
+/* Hide menu-text in collapsed mode */
+.main-menu.collapsed :deep(.menu-text) {
   opacity: 0;
   width: 0;
-  margin: 0;
   height: 0;
-}
-
-.main-menu.collapsed .chevron-icon {
-  display: none;
-}
-
-.main-menu.collapsed .category-header:hover::after {
-  content: attr(title);
-  position: absolute;
-  left: 85px;
-  top: 50%;
-  transform: translateY(-50%);
-  background-color: var(--color-bg-dark);
-  color: var(--color-text-primary);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--border-radius-sm);
-  white-space: nowrap;
-  opacity: 1;
-  z-index: 5000;
-  border: var(--border-width-thin) solid var(--color-border-medium);
-  box-shadow: var(--shadow-md);
-  font-size: var(--font-size-sm);
-  pointer-events: none;
-}
-
-/* Styles pour les items de catégorie */
-.category-items {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-  overflow: hidden;
-  max-height: 0;
-  transition: max-height 0.3s ease;
-  background-color: rgba(0, 0, 0, 0.1);
-  border-radius: 0 0 4px 4px;
-}
-
-.category-items.expanded {
-  max-height: 1000px;
-}
-
-/* Mode collapsed - menu contextuel */
-.main-menu.collapsed .category-items {
-  position: fixed !important;
-  min-width: 220px;
-  background-color: var(--color-bg-dark);
-  border: var(--border-width-thin) solid var(--color-border-medium);
-  border-radius: var(--border-radius-sm);
-  box-shadow: var(--shadow-lg);
-  z-index: 9999 !important;
-  overflow: visible;
-  max-height: none !important;
-  transition: none;
-}
-
-.main-menu.collapsed .category-items.expanded {
-  display: block !important;
-}
-
-.main-menu.collapsed .category-items:not(.expanded) {
-  display: none !important;
-}
-
-.category-items li a {
-  display: flex;
-  align-items: center;
-  padding: var(--spacing-md) var(--spacing-lg);
-  color: var(--color-gray-400);
-  text-decoration: none;
-  transition: background-color var(--transition-slow), transform var(--transition-slow), color var(--transition-slow);
-  position: relative;
-  font-size: var(--font-size-sm);
-  min-height: 44px;
-  box-sizing: border-box;
-}
-
-.category-items li a:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: var(--color-white);
-  transform: translateX(5px);
-}
-
-.category-items li a i {
-  width: 18px;
-  text-align: center;
-  margin-right: var(--spacing-md);
-  font-size: var(--font-size-sm);
-  flex-shrink: 0;
-}
-
-.category-items li a .menu-text {
-  transition: opacity var(--transition-slow) ease;
-}
-
-/* Styles spéciaux pour le mode collapsed */
-.main-menu.collapsed .category-items li a {
-  padding: var(--spacing-md) var(--spacing-md);
-  transform: none;
-}
-
-.main-menu.collapsed .category-items li a:hover {
-  transform: none;
-  background-color: var(--color-gray-700);
-}
-
-.main-menu.collapsed .category-items li a .menu-text {
-  opacity: 1;
-  width: auto;
-}
-
-.main-menu.collapsed .category-items li a:hover::after {
-  display: none;
 }
 
 /* Animation d'apparition */
@@ -1011,72 +747,78 @@ watch(() => route.path, () => {
   }
 }
 
-/* Style pour l'élément de menu actif */
-.category-items li a.router-link-active,
-.category-items li a.router-link-exact-active {
-  background-color: var(--color-primary) !important;
-  color: var(--color-white) !important;
-  font-weight: var(--font-weight-semibold);
-  border-left: 4px solid var(--color-primary-hover);
-  transform: translateX(0) !important;
+/* Administration direct link */
+.admin-direct-link {
+  margin-top: var(--spacing-sm);
 }
 
-.category-items li a.router-link-active:hover,
-.category-items li a.router-link-exact-active:hover {
-  background-color: var(--color-primary-hover) !important;
-  transform: translateX(0) !important;
-}
-
-/* Style pour l'en-tête de catégorie contenant un élément actif */
-.category-header.has-active-item {
-  background-color: var(--color-gray-700);
-  border-left: 3px solid var(--color-primary);
-}
-
-/* Styles spéciaux pour la section Administration */
-.menu-category[data-category="admin"] .category-header {
+.admin-link {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-md);
+  color: var(--color-white);
+  text-decoration: none;
   background: linear-gradient(135deg, var(--color-danger) 0%, var(--color-danger-hover) 100%);
   border: var(--border-width-thin) solid var(--color-danger-hover);
+  border-radius: var(--border-radius-sm);
   box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: background var(--transition-slow), transform var(--transition-slow);
+  min-height: 50px;
+  box-sizing: border-box;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
 }
 
-.menu-category[data-category="admin"] .category-header:hover {
+.admin-link i {
+  width: 20px;
+  text-align: center;
+  margin-right: var(--spacing-md);
+  flex-shrink: 0;
+}
+
+.admin-link:hover {
   background: linear-gradient(135deg, var(--color-danger-hover) 0%, var(--color-danger-dark) 100%);
   transform: translateX(3px);
 }
 
-.menu-category[data-category="admin"] .category-header.active {
+.admin-link.router-link-active {
   background: linear-gradient(135deg, var(--color-danger-dark) 0%, var(--color-danger-darker) 100%);
 }
 
-.menu-category[data-category="admin"] .category-items {
-  background-color: rgba(220, 53, 69, 0.1);
-  border: var(--border-width-thin) solid rgba(220, 53, 69, 0.2);
+/* Collapsed mode admin link */
+.main-menu.collapsed .admin-link {
+  justify-content: center;
+  min-height: 50px;
 }
 
-.menu-category[data-category="admin"] .category-items li a {
-  color: var(--color-gray-400);
+.main-menu.collapsed .admin-link i {
+  margin: 0;
 }
 
-.menu-category[data-category="admin"] .category-items li a:hover {
-  background-color: rgba(220, 53, 69, 0.2);
-  color: var(--color-white);
+.main-menu.collapsed .admin-link:hover {
+  transform: none;
 }
 
-.main-menu.collapsed .menu-category[data-category="admin"] .category-items {
-  background-color: var(--color-danger);
-  border-color: var(--color-danger-hover);
-}
-
-.main-menu.collapsed .menu-category[data-category="admin"] .category-items li a {
-  color: var(--color-white);
-}
-
-/* Adaptation pour le mode collapsed */
-.main-menu.collapsed .category-items li a.router-link-active,
-.main-menu.collapsed .category-items li a.router-link-exact-active {
-  background-color: var(--color-primary) !important;
-  border-left: none;
+.main-menu.collapsed .admin-link:hover::after {
+  content: attr(title);
+  position: absolute;
+  left: 85px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-primary);
+  padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--border-radius-sm);
+  white-space: nowrap;
+  z-index: 5000;
+  border: var(--border-width-thin) solid var(--color-border-medium);
+  box-shadow: var(--shadow-md);
+  font-size: var(--font-size-sm);
+  pointer-events: none;
+}
+
+.admin-direct-link {
+  position: relative;
 }
 </style>
