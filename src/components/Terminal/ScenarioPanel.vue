@@ -58,6 +58,7 @@
         </div>
         <h4>{{ t('scenarioPanel.completed') }}</h4>
         <p>{{ t('scenarioPanel.completedMessage') }}</p>
+        <div v-if="renderedFinishText" class="finish-text markdown-content" v-html="renderedFinishText"></div>
         <router-link to="/my-scenarios" class="btn btn-primary view-results-link">
           <i class="fas fa-list"></i>
           {{ t('scenarioPanel.viewMyScenarios') }}
@@ -347,6 +348,13 @@ const renderedHintText = computed(() => {
 const scenarioName = computed(() => scenarioInfo.value?.title || scenarioInfo.value?.name || '')
 const scenarioDescription = computed(() => scenarioInfo.value?.intro_text || scenarioInfo.value?.description || '')
 
+// Rendered finish_text (markdown) for the completion screen
+const renderedFinishText = computed(() => {
+  if (!scenarioInfo.value?.finish_text) return ''
+  const html = marked.parse(scenarioInfo.value.finish_text) as string
+  return DOMPurify.sanitize(html)
+})
+
 // Load scenario metadata (name, description) from the API
 async function loadScenarioInfo() {
   try {
@@ -481,12 +489,12 @@ async function handleVerify() {
     verifyResult.value = result
 
     if (result.passed) {
-      // If there's a next step, reload after a brief delay to show the success message
+      // If there's a next step, reload after a delay to show the success message
       if (result.next_step) {
-        isTransitioning.value = true
         setTimeout(() => {
+          isTransitioning.value = true
           loadCurrentStep()
-        }, 1500)
+        }, 2500)
       } else {
         // No next step means scenario is completed
         isSessionCompleted.value = true
@@ -517,10 +525,10 @@ async function handleSubmitFlag() {
     if (result.correct) {
       if (result.next_step !== undefined && result.next_step !== null) {
         // Not the last step — advance to next after showing success
-        isTransitioning.value = true
         setTimeout(() => {
+          isTransitioning.value = true
           loadCurrentStep()
-        }, 1500)
+        }, 2500)
       } else {
         // Last step completed — show completion screen
         isSessionCompleted.value = true
@@ -1087,6 +1095,18 @@ onMounted(() => {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   line-height: var(--line-height-relaxed);
+}
+
+.finish-text {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  text-align: left;
+  width: 100%;
 }
 
 .view-results-link {
