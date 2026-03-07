@@ -140,8 +140,7 @@ const hasOnlyAssignedSubscription = computed(() => {
 // Load help translations
 const { loadHelpTranslations } = useHelpTranslations();
 
-const currentUser = useCurrentUserStore();
-const { userRoles, permissions } = storeToRefs(currentUser); // Make roles and permissions reactive
+useCurrentUserStore();
 const { t } = useI18n();
 
 // Feature flags
@@ -430,17 +429,7 @@ const menuCategories = computed((): MenuCategory[] => [
 // Now powered by backend-calculated permissions
 // Backend determines access based on: role + org ownership + group membership
 const shouldShowGroupsMenu = computed(() => {
-  const result = hasPermission('view_groups')
-
-  console.log('🔐 Groups menu visibility check:', {
-    hasViewGroupsPermission: result,
-    allPermissions: permissions.value,
-    permissionsCount: permissions.value.length,
-    userId: currentUser.userId,
-    userRoles: userRoles.value
-  })
-
-  return result
+  return hasPermission('view_groups')
 })
 
 // Catégories filtrées selon le rôle de l'utilisateur et les feature flags
@@ -449,12 +438,6 @@ const filteredCategories = computed(() => {
   const { getCurrentActor } = useFeatureFlags();
   const actor = getCurrentActor();
   const userRolesList = actor.roles || [];
-
-  console.log('🔄 filteredCategories recomputing:', {
-    userRolesList,
-    permissionsCount: permissions.value.length,
-    hasViewGroups: permissions.value.includes('view_groups')
-  });
 
   /**
    * Check if user has any of the allowed roles
@@ -477,18 +460,12 @@ const filteredCategories = computed(() => {
       }
       // Check role access - user must have at least ONE of the allowed roles
       if (!hasAnyAllowedRole(category.allowedRoles)) {
-        console.log(`  ❌ Category "${category.key}" filtered out: user roles`, userRolesList, 'not in', category.allowedRoles);
         return false
       }
       // Check category-level feature flag
       if (category.featureFlag) {
-        const enabled = isFeatureEnabled(category.featureFlag);
-        if (!enabled) {
-          console.log(`  ❌ Category "${category.key}" filtered out: feature flag "${category.featureFlag}" disabled`);
-        }
-        return enabled
+        return isFeatureEnabled(category.featureFlag)
       }
-      console.log(`  ✅ Category "${category.key}" visible`);
       return true
     })
     .map(category => ({
