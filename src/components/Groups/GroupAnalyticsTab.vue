@@ -69,7 +69,10 @@ const { t } = useTranslations({
       difficulty: 'Difficulty',
       started: 'Started',
       completed: 'Completed',
-      loadError: 'Failed to load analytics data'
+      loadError: 'Failed to load analytics data',
+      difficultyBeginner: 'Beginner',
+      difficultyIntermediate: 'Intermediate',
+      difficultyAdvanced: 'Advanced'
     }
   },
   fr: {
@@ -86,7 +89,10 @@ const { t } = useTranslations({
       difficulty: 'Difficulté',
       started: 'Démarrées',
       completed: 'Terminées',
-      loadError: 'Échec du chargement des analyses'
+      loadError: 'Échec du chargement des analyses',
+      difficultyBeginner: 'Débutant',
+      difficultyIntermediate: 'Intermédiaire',
+      difficultyAdvanced: 'Avancé'
     }
   }
 })
@@ -169,11 +175,29 @@ function getDifficultyClass(difficulty: string): string {
   }
 }
 
+function translateDifficulty(difficulty: string): string {
+  const difficultyMap: Record<string, string> = {
+    beginner: t('groupAnalytics.difficultyBeginner'),
+    intermediate: t('groupAnalytics.difficultyIntermediate'),
+    advanced: t('groupAnalytics.difficultyAdvanced')
+  }
+  return difficultyMap[difficulty] || difficulty
+}
+
 function exportCsv() {
-  const header = 'Scenario,Difficulty,Started,Completed,Completion Rate,Avg Grade,Avg Time\n'
   const escape = (s: string) => s.replace(/"/g, '""')
+  const headers = [
+    t('groupAnalytics.scenario'),
+    t('groupAnalytics.difficulty'),
+    t('groupAnalytics.started'),
+    t('groupAnalytics.completed'),
+    t('groupAnalytics.completionRate'),
+    t('groupAnalytics.avgGrade'),
+    t('groupAnalytics.avgTime')
+  ]
+  const header = headers.map(h => `"${escape(h)}"`).join(',') + '\n'
   const rows = analyticsData.value
-    .map(a => `"${escape(a.scenario_title)}","${escape(a.difficulty)}",${a.started_count},${a.completed_count},${a.completion_rate}%,${a.avg_grade.toFixed(1)},${formatTime(a.avg_time_seconds)}`)
+    .map(a => `"${escape(a.scenario_title)}","${escape(translateDifficulty(a.difficulty))}",${a.started_count},${a.completed_count},${a.completion_rate}%,${a.avg_grade.toFixed(1)},${formatTime(a.avg_time_seconds)}`)
     .join('\n')
   const blob = new Blob([header + rows], { type: 'text/csv' })
   const url = URL.createObjectURL(blob)
@@ -203,11 +227,11 @@ onMounted(() => {
       </button>
     </div>
 
-    <div v-if="error" class="alert alert-danger">
+    <div v-if="error" class="alert alert-danger" role="alert">
       {{ error }}
     </div>
 
-    <div v-if="isLoading" class="loading-state">
+    <div v-if="isLoading" class="loading-state" role="status">
       <i class="fas fa-spinner fa-spin"></i>
     </div>
 
@@ -218,7 +242,7 @@ onMounted(() => {
 
     <template v-else>
       <!-- Summary Cards -->
-      <div class="summary-cards">
+      <div class="summary-cards" role="status">
         <div class="summary-card">
           <div class="summary-value">{{ totalStarted }}</div>
           <div class="summary-label">{{ t('groupAnalytics.totalStarted') }}</div>
@@ -238,7 +262,7 @@ onMounted(() => {
 
       <!-- Per-scenario table -->
       <div class="analytics-table-container">
-        <table class="analytics-table">
+        <table class="analytics-table" :aria-label="t('groupAnalytics.analyticsTitle')">
           <thead>
             <tr>
               <th>{{ t('groupAnalytics.scenario') }}</th>
@@ -255,7 +279,7 @@ onMounted(() => {
               <td class="scenario-name">{{ row.scenario_title }}</td>
               <td>
                 <span :class="['difficulty-badge', getDifficultyClass(row.difficulty)]">
-                  {{ row.difficulty }}
+                  {{ translateDifficulty(row.difficulty) }}
                 </span>
               </td>
               <td>{{ row.started_count }}</td>
