@@ -184,18 +184,18 @@ onUnmounted(() => {
             {{ sc.title }}
           </option>
         </select>
-        <span class="auto-refresh-badge">
+        <span class="auto-refresh-badge" role="status">
           <i class="fas fa-sync-alt"></i>
           {{ t('groupActivity.autoRefresh') }}
         </span>
       </div>
     </div>
 
-    <div v-if="error" class="alert alert-danger">
+    <div v-if="error" class="alert alert-danger" role="alert">
       {{ error }}
     </div>
 
-    <div v-if="isLoading && sessions.length === 0" class="loading-state">
+    <div v-if="isLoading && sessions.length === 0" class="loading-state" role="status">
       <i class="fas fa-spinner fa-spin"></i>
     </div>
 
@@ -205,7 +205,7 @@ onUnmounted(() => {
     </div>
 
     <div v-else class="sessions-table-container">
-      <table class="sessions-table">
+      <table class="sessions-table" :aria-label="t('groupActivity.activeSessionsTitle')">
         <thead>
           <tr>
             <th>{{ t('groupActivity.student') }}</th>
