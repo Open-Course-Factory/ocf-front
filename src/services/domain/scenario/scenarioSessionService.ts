@@ -41,7 +41,6 @@ export interface ScenarioSessionInfo {
 export interface MyScenarioSession {
   id: string
   scenario_id: string
-  scenario_name: string
   scenario_title: string
   status: string // 'active' | 'completed' | 'abandoned'
   current_step: number
@@ -59,6 +58,7 @@ export interface ScenarioInfo {
   title: string
   description?: string
   intro_text?: string
+  finish_text?: string
   difficulty?: string
   estimated_time?: string
 }
