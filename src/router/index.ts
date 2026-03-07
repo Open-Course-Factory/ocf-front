@@ -194,6 +194,18 @@ const basicRoutes = [
     component: () => import('../components/Pages/Help/GroupManagement.vue'),
     meta: { requiresAuth: false }
   },
+  {
+    path: '/help-public/scenarios/getting-started',
+    name: 'HelpPublicScenariosGettingStarted',
+    component: () => import('../components/Pages/Help/ScenarioGettingStarted.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/help-public/scenarios/creation',
+    name: 'HelpPublicScenariosCreation',
+    component: () => import('../components/Pages/Help/ScenarioCreation.vue'),
+    meta: { requiresAuth: false }
+  },
   // Route spéciale pour l'affichage du terminal en iframe (sans layout)
   {
     path: '/terminal/:sessionId',
@@ -562,6 +574,18 @@ const basicRoutes = [
         path: 'help/licenses/bulk-purchase',
         name: 'HelpBulkLicenses',
         component: () => import('../components/Pages/Help/BulkLicenses.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'help/scenarios/getting-started',
+        name: 'HelpScenariosGettingStarted',
+        component: () => import('../components/Pages/Help/ScenarioGettingStarted.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'help/scenarios/creation',
+        name: 'HelpScenariosCreation',
+        component: () => import('../components/Pages/Help/ScenarioCreation.vue'),
         meta: { requiresAuth: true }
       }
     ],

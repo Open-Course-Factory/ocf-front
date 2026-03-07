@@ -132,6 +132,7 @@ const backButtonText = computed(() => isPublicHelp.value ? t('help.backToHome') 
 // Feature flag mapping for help sections
 const sectionFeatureFlags: Record<string, string> = {
   terminals: 'terminal_management',
+  scenarios: 'scenarios',
   courses: 'course_conception',
   // account section is always visible (no feature flag)
 }
@@ -173,6 +174,26 @@ const helpSections = computed(() => {
           title: t('help.sections.terminals.sshKeys'),
           description: t('help.terminals.sshKeys.intro'),
           icon: 'fas fa-key'
+        }
+      ]
+    },
+    {
+      id: 'scenarios',
+      title: t('help.sections.scenarios.title'),
+      description: t('help.sections.scenarios.description'),
+      icon: 'fas fa-flag-checkered',
+      items: [
+        {
+          route: `${routePrefix.value}/scenarios/getting-started`,
+          title: t('help.sections.scenarios.gettingStarted'),
+          description: t('help.scenarios.gettingStarted.intro'),
+          icon: 'fas fa-play-circle'
+        },
+        {
+          route: `${routePrefix.value}/scenarios/creation`,
+          title: t('help.sections.scenarios.creation'),
+          description: t('help.scenarios.creation.intro'),
+          icon: 'fas fa-plus-circle'
         }
       ]
     },

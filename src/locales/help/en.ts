@@ -56,6 +56,12 @@ export const helpEn = {
         settings: "Settings & Preferences",
         themes: "Dark Mode & Themes"
       },
+      scenarios: {
+        title: "🎯 Interactive Scenarios",
+        description: "Learn how to use and create step-by-step interactive lab exercises",
+        gettingStarted: "Getting Started with Scenarios",
+        creation: "Creating Scenarios"
+      },
       organizations: {
         title: "🏢 Organizations & Groups",
         description: "Manage organizations, groups, bulk imports and licenses",
@@ -2502,6 +2508,317 @@ export const helpEn = {
             title: "Group Management",
             description: "Set up groups before importing users"
           }
+        }
+      }
+    },
+
+    scenarios: {
+      gettingStarted: {
+        title: "Getting Started with Interactive Scenarios",
+        intro: "Interactive scenarios are guided, step-by-step lab exercises that run on real Linux terminals. Follow instructions, execute commands, and get instant feedback on your progress.",
+
+        whatAre: {
+          title: "What are Interactive Scenarios?",
+          description: "Interactive scenarios are guided exercises that walk you through real-world tasks step by step. Each scenario runs on a real Linux terminal — you follow instructions, execute commands, and the system verifies your work automatically. Scenarios cover topics like installing software, configuring services, writing scripts, and more."
+        },
+
+        starting: {
+          title: "Starting a Scenario",
+          description: "Follow these steps to launch your first interactive scenario.",
+          step1: {
+            title: "Open a Terminal Session",
+            description: "First, make sure you have an active terminal session. Navigate to your terminal sessions page and start or select a session.",
+            button: "My Terminal Sessions"
+          },
+          step2: {
+            title: "Launch a Scenario",
+            description: "Above your terminal, you will see a bar that says <strong>\"No scenario active on this terminal\"</strong>. Click the <strong>\"Start a Scenario\"</strong> button to open the scenario selection dialog."
+          },
+          step3: {
+            title: "Choose a Scenario",
+            description: "Browse the list of available scenarios. Each one displays its <strong>title</strong>, <strong>difficulty badge</strong> (beginner, intermediate, or advanced), and <strong>estimated completion time</strong>. Click on a scenario to start it."
+          },
+          step4: {
+            title: "The Scenario Panel Opens",
+            description: "Once you select a scenario, a <strong>panel opens on the right side</strong> of your terminal. This panel contains the instructions for your current step, and the terminal remains fully usable on the left."
+          },
+          tip: {
+            title: "Tip",
+            description: "You need an active terminal session before you can start a scenario. If you don't have one yet, create a terminal session first."
+          }
+        },
+
+        panel: {
+          title: "The Scenario Panel",
+          description: "The scenario panel is your guide throughout the exercise. Here is what you will find in it.",
+          progress: {
+            title: "Step Progress",
+            description: "Progress dots at the top of the panel show your advancement. Completed steps appear green, the current step pulses blue, and upcoming steps are gray."
+          },
+          content: {
+            title: "Step Content",
+            description: "Each step's instructions are rendered in rich markdown format, including headings, code blocks, images, and lists. Read the instructions carefully before executing commands."
+          },
+          collapse: {
+            title: "Collapse / Expand",
+            description: "Click the circular toggle button on the left edge of the panel to collapse or expand it. This gives you more terminal space when you need it."
+          },
+          tip: {
+            title: "Tip",
+            description: "The panel remembers your collapse preference across sessions, so it will stay the way you left it next time."
+          }
+        },
+
+        verifying: {
+          title: "Verifying Your Work",
+          description: "After completing the instructions for a step, you can verify that everything is set up correctly.",
+          click: {
+            title: "Click Verify",
+            description: "Click the <strong>\"Verify\"</strong> button at the bottom of the step instructions. The system will run a verification script on your terminal in the background."
+          },
+          result: {
+            title: "Review the Result",
+            description: "After a few seconds, you will see feedback indicating whether the verification <strong>passed</strong> or <strong>failed</strong>, along with any output from the verification script."
+          },
+          passed: {
+            title: "Passed",
+            description: "A green success message appears with the script output. The scenario automatically advances to the next step after a short animation."
+          },
+          failed: {
+            title: "Failed",
+            description: "A red error message appears explaining what went wrong. Review the output, fix the issue in your terminal, and try verifying again."
+          },
+          tip: {
+            title: "Tip",
+            description: "You can verify as many times as you need — there is no penalty for retrying. Take your time to get each step right."
+          }
+        },
+
+        hints: {
+          title: "Using Hints",
+          description: "Some steps include hints to help you if you get stuck.",
+          show: {
+            title: "Show a Hint",
+            description: "If a step has a hint available, you will see a <strong>\"Show Hint\"</strong> button. Click it to reveal additional guidance displayed in a highlighted box."
+          },
+          hide: {
+            title: "Hide the Hint",
+            description: "Click <strong>\"Hide Hint\"</strong> to close the hint box and return to just the step instructions."
+          }
+        },
+
+        ctf: {
+          title: "CTF Flag Challenges",
+          description: "Some scenarios include Capture The Flag (CTF) style challenges that test your skills in a gamified way.",
+          find: {
+            title: "Find the Flag",
+            description: "Instead of a Verify button, CTF steps display a <strong>flag input field</strong>. Complete the exercise and look for a flag in the format <strong>FLAG{...}</strong> somewhere in the system."
+          },
+          submit: {
+            title: "Submit the Flag",
+            description: "Type or paste the flag you found into the input field and click <strong>\"Submit Flag\"</strong>. A green message confirms a correct flag, while a red message means it is incorrect — you can try again."
+          },
+          unique: {
+            title: "Unique Per Student",
+            description: "Each student receives <strong>unique flags</strong> generated specifically for their session. Sharing flags with others will not work, as they are cryptographically bound to each individual student."
+          },
+          tip: {
+            title: "Tip",
+            description: "Flags are generated uniquely for each student using cryptographic hashing, so you must find your own. Look carefully in the exercise environment — flags can be hidden in files, command outputs, or service configurations."
+          }
+        },
+
+        codeBlocks: {
+          title: "Code Blocks",
+          description: "Scenario instructions often contain code blocks. These come with convenient action buttons when you hover over them.",
+          copy: {
+            title: "Copy to Clipboard",
+            description: "Hover over a code block and click the copy button (top-right corner) to copy the code to your clipboard."
+          },
+          execute: {
+            title: "Paste into Terminal",
+            description: "For single-line commands, a terminal button appears (bottom-right corner). Click it to paste the command directly into your active terminal."
+          }
+        },
+
+        abandoning: {
+          title: "Abandoning a Scenario",
+          description: "If you need to stop working on a scenario before completing it, you can abandon your current attempt.",
+          click: {
+            title: "Click Abandon",
+            description: "Scroll to the bottom of the scenario panel and click the <strong>\"Abandon Scenario\"</strong> button."
+          },
+          confirm: {
+            title: "Confirm Abandonment",
+            description: "A confirmation dialog will appear. Confirm your choice to mark the session as <strong>abandoned</strong>."
+          },
+          warning: {
+            title: "Warning",
+            description: "You can start a new attempt later, but your current progress will be lost. Make sure you really want to abandon before confirming."
+          }
+        },
+
+        completing: {
+          title: "Completing a Scenario",
+          description: "Once you pass all the steps in a scenario, you have completed it.",
+          finish: {
+            title: "Completion Screen",
+            description: "After passing the final step, a <strong>completion screen with a trophy icon</strong> appears, congratulating you on finishing the scenario."
+          },
+          history: {
+            title: "View Your History",
+            description: "Click <strong>\"View my scenarios\"</strong> to see your scenario history, including completed, active, and abandoned sessions.",
+            button: "My Scenarios"
+          }
+        },
+
+        nextSteps: {
+          description: "Continue learning with these related guides."
+        }
+      },
+
+      creation: {
+        title: "Creating Interactive Scenarios",
+        intro: "Learn how to build engaging, step-by-step interactive exercises for your learners with real terminal environments, verification scripts, and CTF challenges.",
+
+        overview: {
+          title: "Overview",
+          description: "As a trainer, you can create interactive scenarios that guide learners through real-world exercises. Each scenario consists of ordered steps with instructions, verification scripts, and optional hints. Scenarios run on real Linux containers matching a chosen instance type, giving learners a hands-on experience."
+        },
+
+        creating: {
+          title: "Creating a Scenario",
+          description: "Follow these steps to create a new interactive scenario.",
+          step1: {
+            title: "Navigate to Scenarios",
+            description: "Go to <strong>Admin > Scenarios</strong> in the administration panel to access the scenario management page.",
+            button: "Go to Scenarios"
+          },
+          step2: {
+            title: "Fill in Scenario Details",
+            description: "Click <strong>\"Create\"</strong> and fill in the scenario details: <strong>title</strong>, <strong>description</strong>, <strong>difficulty level</strong> (beginner, intermediate, or advanced), and <strong>estimated completion time</strong> in minutes."
+          },
+          step3: {
+            title: "Choose the Instance Type",
+            description: "Select the <strong>instance type</strong> (Linux image) that learners' terminals will use for this scenario. This determines the operating system and pre-installed tools available during the exercise."
+          },
+          tip: {
+            title: "Tip",
+            description: "Choose a descriptive title — learners see this when picking a scenario from the list. A good title clearly indicates what the exercise covers."
+          }
+        },
+
+        steps: {
+          title: "Adding Steps",
+          description: "Each scenario is composed of ordered steps. Create and configure them individually.",
+          step1: {
+            title: "Navigate to Scenario Steps",
+            description: "Go to <strong>Admin > Scenario Steps</strong> in the administration panel.",
+            button: "Go to Scenario Steps"
+          },
+          step2: {
+            title: "Create a Step",
+            description: "Create a new step linked to your scenario. Each step has the following fields:",
+            fieldTitle: "<strong>Title</strong> — displayed in the step header, should be concise and descriptive",
+            fieldText: "<strong>Text Content</strong> — markdown instructions shown to the learner (supports headings, code blocks, images, and lists)",
+            fieldHint: "<strong>Hint</strong> — optional markdown text revealed when the learner clicks \"Show Hint\"",
+            fieldVerify: "<strong>Verify Script</strong> — a shell script that exits with code 0 on success (this is the core of the exercise verification)",
+            fieldBackground: "<strong>Background Script</strong> — optional script executed in the background when the step starts",
+            fieldForeground: "<strong>Foreground Script</strong> — optional script executed in the foreground when the step starts",
+            fieldOrder: "<strong>Order</strong> — a number determining the step sequence (0-based, lower numbers come first)"
+          },
+          step3: {
+            title: "Set the Correct Order",
+            description: "Make sure each step has the correct <strong>order value</strong> so that steps are presented to learners in the right sequence. Steps are sorted by their order number (starting from 0)."
+          },
+          tip: {
+            title: "Tip",
+            description: "Write verify scripts that check the actual state of the system — for example, whether a package is installed, a file exists, or a service is running. The exit code (0 for success, non-zero for failure) determines whether the step passes or fails."
+          }
+        },
+
+        verifyScripts: {
+          title: "Writing Good Verify Scripts",
+          description: "A verify script is a shell command that returns exit code 0 if the learner has completed the step correctly, and a non-zero exit code otherwise. Here are some common examples.",
+          checkPackage: {
+            title: "Check Package Installed"
+          },
+          checkFile: {
+            title: "Check File Exists"
+          },
+          checkService: {
+            title: "Check Service Running"
+          },
+          checkContent: {
+            title: "Check File Content"
+          },
+          warning: {
+            title: "Important",
+            description: "Verify scripts are never shown to learners. They run server-side on the learner's terminal with a 10-second timeout. Make sure your scripts complete quickly and produce clear output on failure."
+          }
+        },
+
+        ctf: {
+          title: "CTF Flag Challenges",
+          description: "Add a gamification layer to your scenarios with Capture The Flag challenges.",
+          enable: {
+            title: "Enable Flags on the Scenario",
+            description: "When creating or editing a scenario, enable the <strong>\"Flags Enabled\"</strong> option to activate CTF mode for this scenario."
+          },
+          markSteps: {
+            title: "Mark Steps as Flag Steps",
+            description: "For individual steps, enable the <strong>\"Has Flag\"</strong> option. Those steps will display a flag input field instead of a Verify button."
+          },
+          unique: {
+            title: "Unique Flags Per Student",
+            description: "Flags are generated using <strong>HMAC-SHA256</strong> and are unique per student — it is impossible for students to share answers. The flag format is <strong>FLAG{16-hex-characters}</strong>."
+          },
+          tip: {
+            title: "Tip",
+            description: "CTF flags add a competitive, gamified element to your exercises. Use them for bonus challenges, security-focused exercises, or competitive training sessions."
+          }
+        },
+
+        killercoda: {
+          title: "KillerCoda Compatibility",
+          description: "OCF supports the KillerCoda index.json format for scenario import, making it easy to migrate existing content.",
+          layout: "The standard KillerCoda directory layout is supported: index.json for metadata, intro.md and finish.md for introduction and conclusion text, and step directories (step1/, step2/, etc.) containing text.md for instructions and verify.sh for verification scripts.",
+          info: {
+            title: "Note",
+            description: "Git-based import is coming soon. For now, you can create scenarios using the admin panel or the seed API to bulk-load KillerCoda-formatted content."
+          }
+        },
+
+        monitoring: {
+          title: "Monitoring Student Progress",
+          description: "Track how your learners are progressing through your scenarios.",
+          navigate: {
+            title: "View Scenario Sessions",
+            description: "Navigate to <strong>Admin > Scenario Sessions</strong> to see all student sessions across your scenarios.",
+            button: "Go to Scenario Sessions"
+          },
+          track: {
+            title: "Track Progress Details",
+            description: "For each session, you can see the <strong>scenario name</strong>, the <strong>current step</strong>, the <strong>status</strong> (active, completed, or abandoned), and <strong>timestamps</strong> for when the session started and completed. Step-level details show the number of verification attempts and time spent per step."
+          }
+        },
+
+        bestPractices: {
+          title: "Best Practices",
+          description: "Follow these guidelines to create effective and engaging scenarios.",
+          tips: {
+            title: "Recommendations",
+            tip1: "Start with a simple first step to build learner confidence before moving to more complex tasks.",
+            tip2: "Use clear, actionable instructions — tell learners exactly what commands to run and what results to expect.",
+            tip3: "Provide hints for challenging steps so learners can get unstuck without external help.",
+            tip4: "Write verify scripts that check the result, not the method — there are often multiple valid approaches to a task.",
+            tip5: "Set realistic estimated times based on the difficulty level and the number of steps in the scenario.",
+            tip6: "Use introduction text to set context and conclusion text to summarize what was learned in the exercise."
+          }
+        },
+
+        nextSteps: {
+          description: "Explore more resources to get the most out of the platform."
         }
       }
     },

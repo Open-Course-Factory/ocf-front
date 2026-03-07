@@ -56,6 +56,12 @@ export const helpFr = {
         settings: "Paramètres & Préférences",
         themes: "Mode sombre & Thèmes"
       },
+      scenarios: {
+        title: "🎯 Scénarios interactifs",
+        description: "Apprenez à utiliser et créer des exercices pratiques interactifs étape par étape",
+        gettingStarted: "Premiers pas avec les scénarios",
+        creation: "Création de scénarios"
+      },
       organizations: {
         title: "🏢 Organisations & Groupes",
         description: "Gérez les organisations, les groupes, les importations en masse et les licences",
@@ -2502,6 +2508,317 @@ export const helpFr = {
             title: "Gestion des Groupes",
             description: "Configurez les groupes avant d'importer les utilisateurs"
           }
+        }
+      }
+    },
+
+    scenarios: {
+      gettingStarted: {
+        title: "Premiers pas avec les scénarios interactifs",
+        intro: "Les scénarios interactifs sont des exercices pratiques guidés, étape par étape, qui s'exécutent sur de vrais terminaux Linux. Suivez les instructions, exécutez des commandes et obtenez un retour instantané sur votre progression.",
+
+        whatAre: {
+          title: "Que sont les scénarios interactifs ?",
+          description: "Les scénarios interactifs sont des exercices guidés qui vous accompagnent à travers des tâches concrètes, étape par étape. Chaque scénario s'exécute sur un vrai terminal Linux — vous suivez les instructions, exécutez des commandes, et le système vérifie automatiquement votre travail. Les scénarios couvrent des sujets comme l'installation de logiciels, la configuration de services, l'écriture de scripts, et bien plus encore."
+        },
+
+        starting: {
+          title: "Démarrer un scénario",
+          description: "Suivez ces étapes pour lancer votre premier scénario interactif.",
+          step1: {
+            title: "Ouvrir une session terminal",
+            description: "Tout d'abord, assurez-vous d'avoir une session terminal active. Rendez-vous sur la page de vos sessions terminales et démarrez ou sélectionnez une session.",
+            button: "Mes sessions terminales"
+          },
+          step2: {
+            title: "Lancer un scénario",
+            description: "Au-dessus de votre terminal, vous verrez une barre indiquant <strong>\"Aucun scénario actif sur ce terminal\"</strong>. Cliquez sur le bouton <strong>\"Démarrer un scénario\"</strong> pour ouvrir la fenêtre de sélection des scénarios."
+          },
+          step3: {
+            title: "Choisir un scénario",
+            description: "Parcourez la liste des scénarios disponibles. Chacun affiche son <strong>titre</strong>, son <strong>badge de difficulté</strong> (débutant, intermédiaire ou avancé) et sa <strong>durée estimée</strong>. Cliquez sur un scénario pour le démarrer."
+          },
+          step4: {
+            title: "Le panneau de scénario s'ouvre",
+            description: "Une fois le scénario sélectionné, un <strong>panneau s'ouvre sur le côté droit</strong> de votre terminal. Ce panneau contient les instructions de l'étape en cours, et le terminal reste entièrement utilisable sur la gauche."
+          },
+          tip: {
+            title: "Conseil",
+            description: "Vous avez besoin d'une session terminal active avant de pouvoir démarrer un scénario. Si vous n'en avez pas encore, créez d'abord une session terminal."
+          }
+        },
+
+        panel: {
+          title: "Le panneau de scénario",
+          description: "Le panneau de scénario est votre guide tout au long de l'exercice. Voici ce que vous y trouverez.",
+          progress: {
+            title: "Progression des étapes",
+            description: "Des points de progression en haut du panneau montrent votre avancement. Les étapes terminées apparaissent en vert, l'étape en cours pulse en bleu, et les étapes à venir sont grises."
+          },
+          content: {
+            title: "Contenu de l'étape",
+            description: "Les instructions de chaque étape sont affichées en format markdown enrichi, incluant titres, blocs de code, images et listes. Lisez attentivement les instructions avant d'exécuter les commandes."
+          },
+          collapse: {
+            title: "Réduire / Agrandir",
+            description: "Cliquez sur le bouton circulaire sur le bord gauche du panneau pour le réduire ou l'agrandir. Cela vous donne plus d'espace terminal quand vous en avez besoin."
+          },
+          tip: {
+            title: "Conseil",
+            description: "Le panneau mémorise votre préférence de réduction entre les sessions, il restera dans l'état où vous l'avez laissé la prochaine fois."
+          }
+        },
+
+        verifying: {
+          title: "Vérifier votre travail",
+          description: "Après avoir suivi les instructions d'une étape, vous pouvez vérifier que tout est correctement configuré.",
+          click: {
+            title: "Cliquer sur Vérifier",
+            description: "Cliquez sur le bouton <strong>\"Vérifier\"</strong> en bas des instructions de l'étape. Le système exécutera un script de vérification sur votre terminal en arrière-plan."
+          },
+          result: {
+            title: "Consulter le résultat",
+            description: "Après quelques secondes, vous verrez un retour indiquant si la vérification a <strong>réussi</strong> ou <strong>échoué</strong>, accompagné de la sortie du script de vérification."
+          },
+          passed: {
+            title: "Réussi",
+            description: "Un message de succès vert apparaît avec la sortie du script. Le scénario avance automatiquement à l'étape suivante après une courte animation."
+          },
+          failed: {
+            title: "Échoué",
+            description: "Un message d'erreur rouge apparaît expliquant ce qui n'a pas fonctionné. Consultez la sortie, corrigez le problème dans votre terminal et réessayez la vérification."
+          },
+          tip: {
+            title: "Conseil",
+            description: "Vous pouvez vérifier autant de fois que nécessaire — il n'y a aucune pénalité pour les nouvelles tentatives. Prenez le temps de bien réaliser chaque étape."
+          }
+        },
+
+        hints: {
+          title: "Utiliser les indices",
+          description: "Certaines étapes incluent des indices pour vous aider si vous êtes bloqué.",
+          show: {
+            title: "Afficher un indice",
+            description: "Si une étape dispose d'un indice, vous verrez un bouton <strong>\"Afficher l'indice\"</strong>. Cliquez dessus pour révéler des conseils supplémentaires dans un encadré mis en évidence."
+          },
+          hide: {
+            title: "Masquer l'indice",
+            description: "Cliquez sur <strong>\"Masquer l'indice\"</strong> pour fermer l'encadré d'indice et revenir aux instructions de l'étape uniquement."
+          }
+        },
+
+        ctf: {
+          title: "Défis Flag CTF",
+          description: "Certains scénarios incluent des défis de type Capture The Flag (CTF) qui testent vos compétences de manière ludique.",
+          find: {
+            title: "Trouver le flag",
+            description: "Au lieu d'un bouton Vérifier, les étapes CTF affichent un <strong>champ de saisie de flag</strong>. Complétez l'exercice et cherchez un flag au format <strong>FLAG{...}</strong> quelque part dans le système."
+          },
+          submit: {
+            title: "Soumettre le flag",
+            description: "Tapez ou collez le flag trouvé dans le champ de saisie et cliquez sur <strong>\"Soumettre le flag\"</strong>. Un message vert confirme un flag correct, tandis qu'un message rouge signifie qu'il est incorrect — vous pouvez réessayer."
+          },
+          unique: {
+            title: "Unique par apprenant",
+            description: "Chaque apprenant reçoit des <strong>flags uniques</strong> générés spécifiquement pour sa session. Partager des flags avec d'autres ne fonctionnera pas, car ils sont liés cryptographiquement à chaque apprenant individuel."
+          },
+          tip: {
+            title: "Conseil",
+            description: "Les flags sont générés de manière unique pour chaque apprenant par hachage cryptographique, vous devez donc trouver le vôtre. Cherchez attentivement dans l'environnement de l'exercice — les flags peuvent être cachés dans des fichiers, des sorties de commandes ou des configurations de services."
+          }
+        },
+
+        codeBlocks: {
+          title: "Blocs de code",
+          description: "Les instructions des scénarios contiennent souvent des blocs de code. Ceux-ci disposent de boutons d'action pratiques lorsque vous les survolez.",
+          copy: {
+            title: "Copier dans le presse-papiers",
+            description: "Survolez un bloc de code et cliquez sur le bouton de copie (coin supérieur droit) pour copier le code dans votre presse-papiers."
+          },
+          execute: {
+            title: "Coller dans le terminal",
+            description: "Pour les commandes sur une seule ligne, un bouton terminal apparaît (coin inférieur droit). Cliquez dessus pour coller la commande directement dans votre terminal actif."
+          }
+        },
+
+        abandoning: {
+          title: "Abandonner un scénario",
+          description: "Si vous devez arrêter de travailler sur un scénario avant de l'avoir terminé, vous pouvez abandonner votre tentative en cours.",
+          click: {
+            title: "Cliquer sur Abandonner",
+            description: "Faites défiler jusqu'en bas du panneau de scénario et cliquez sur le bouton <strong>\"Abandonner le scénario\"</strong>."
+          },
+          confirm: {
+            title: "Confirmer l'abandon",
+            description: "Une boîte de dialogue de confirmation apparaîtra. Confirmez votre choix pour marquer la session comme <strong>abandonnée</strong>."
+          },
+          warning: {
+            title: "Attention",
+            description: "Vous pourrez démarrer une nouvelle tentative plus tard, mais votre progression actuelle sera perdue. Assurez-vous de vraiment vouloir abandonner avant de confirmer."
+          }
+        },
+
+        completing: {
+          title: "Terminer un scénario",
+          description: "Une fois toutes les étapes d'un scénario réussies, vous l'avez terminé.",
+          finish: {
+            title: "Écran de réussite",
+            description: "Après avoir réussi la dernière étape, un <strong>écran de réussite avec une icône de trophée</strong> apparaît pour vous féliciter d'avoir terminé le scénario."
+          },
+          history: {
+            title: "Consulter votre historique",
+            description: "Cliquez sur <strong>\"Voir mes scénarios\"</strong> pour consulter votre historique de scénarios, incluant les sessions terminées, actives et abandonnées.",
+            button: "Mes scénarios"
+          }
+        },
+
+        nextSteps: {
+          description: "Continuez votre apprentissage avec ces guides complémentaires."
+        }
+      },
+
+      creation: {
+        title: "Création de scénarios interactifs",
+        intro: "Apprenez à concevoir des exercices interactifs engageants, étape par étape, pour vos apprenants avec des environnements terminaux réels, des scripts de vérification et des défis CTF.",
+
+        overview: {
+          title: "Vue d'ensemble",
+          description: "En tant que formateur, vous pouvez créer des scénarios interactifs qui guident les apprenants à travers des exercices concrets. Chaque scénario se compose d'étapes ordonnées avec des instructions, des scripts de vérification et des indices optionnels. Les scénarios s'exécutent sur de vrais conteneurs Linux correspondant au type d'instance choisi, offrant aux apprenants une expérience pratique."
+        },
+
+        creating: {
+          title: "Créer un scénario",
+          description: "Suivez ces étapes pour créer un nouveau scénario interactif.",
+          step1: {
+            title: "Accéder aux scénarios",
+            description: "Allez dans <strong>Admin > Scénarios</strong> dans le panneau d'administration pour accéder à la page de gestion des scénarios.",
+            button: "Accéder aux scénarios"
+          },
+          step2: {
+            title: "Remplir les détails du scénario",
+            description: "Cliquez sur <strong>\"Créer\"</strong> et remplissez les détails du scénario : <strong>titre</strong>, <strong>description</strong>, <strong>niveau de difficulté</strong> (débutant, intermédiaire ou avancé) et <strong>durée estimée</strong> en minutes."
+          },
+          step3: {
+            title: "Choisir le type d'instance",
+            description: "Sélectionnez le <strong>type d'instance</strong> (image Linux) que les terminaux des apprenants utiliseront pour ce scénario. Cela détermine le système d'exploitation et les outils pré-installés disponibles pendant l'exercice."
+          },
+          tip: {
+            title: "Conseil",
+            description: "Choisissez un titre descriptif — les apprenants le voient quand ils choisissent un scénario dans la liste. Un bon titre indique clairement ce que l'exercice couvre."
+          }
+        },
+
+        steps: {
+          title: "Ajouter des étapes",
+          description: "Chaque scénario est composé d'étapes ordonnées. Créez-les et configurez-les individuellement.",
+          step1: {
+            title: "Accéder aux étapes de scénario",
+            description: "Allez dans <strong>Admin > Étapes de scénario</strong> dans le panneau d'administration.",
+            button: "Accéder aux étapes"
+          },
+          step2: {
+            title: "Créer une étape",
+            description: "Créez une nouvelle étape liée à votre scénario. Chaque étape comporte les champs suivants :",
+            fieldTitle: "<strong>Titre</strong> — affiché dans l'en-tête de l'étape, doit être concis et descriptif",
+            fieldText: "<strong>Contenu textuel</strong> — instructions en markdown affichées à l'apprenant (supporte les titres, blocs de code, images et listes)",
+            fieldHint: "<strong>Indice</strong> — texte optionnel en markdown révélé quand l'apprenant clique sur « Afficher l'indice »",
+            fieldVerify: "<strong>Script de vérification</strong> — un script shell qui retourne le code de sortie 0 en cas de succès (c'est le cœur de la vérification de l'exercice)",
+            fieldBackground: "<strong>Script d'arrière-plan</strong> — script optionnel exécuté en arrière-plan au démarrage de l'étape",
+            fieldForeground: "<strong>Script d'avant-plan</strong> — script optionnel exécuté au premier plan au démarrage de l'étape",
+            fieldOrder: "<strong>Ordre</strong> — un nombre déterminant la séquence des étapes (commence à 0, les nombres plus petits viennent en premier)"
+          },
+          step3: {
+            title: "Définir le bon ordre",
+            description: "Assurez-vous que chaque étape a la bonne <strong>valeur d'ordre</strong> pour que les étapes soient présentées aux apprenants dans la bonne séquence. Les étapes sont triées par leur numéro d'ordre (en commençant par 0)."
+          },
+          tip: {
+            title: "Conseil",
+            description: "Écrivez des scripts de vérification qui vérifient l'état réel du système — par exemple, si un paquet est installé, si un fichier existe ou si un service est en cours d'exécution. Le code de sortie (0 pour succès, non-zéro pour échec) détermine si l'étape est réussie ou non."
+          }
+        },
+
+        verifyScripts: {
+          title: "Écrire de bons scripts de vérification",
+          description: "Un script de vérification est une commande shell qui retourne le code de sortie 0 si l'apprenant a correctement complété l'étape, et un code non-zéro dans le cas contraire. Voici quelques exemples courants.",
+          checkPackage: {
+            title: "Vérifier un paquet installé"
+          },
+          checkFile: {
+            title: "Vérifier l'existence d'un fichier"
+          },
+          checkService: {
+            title: "Vérifier un service en cours d'exécution"
+          },
+          checkContent: {
+            title: "Vérifier le contenu d'un fichier"
+          },
+          warning: {
+            title: "Important",
+            description: "Les scripts de vérification ne sont jamais montrés aux apprenants. Ils s'exécutent côté serveur sur le terminal de l'apprenant avec un délai d'expiration de 10 secondes. Assurez-vous que vos scripts s'exécutent rapidement et produisent une sortie claire en cas d'échec."
+          }
+        },
+
+        ctf: {
+          title: "Défis Flag CTF",
+          description: "Ajoutez une dimension ludique à vos scénarios avec des défis Capture The Flag.",
+          enable: {
+            title: "Activer les flags sur le scénario",
+            description: "Lors de la création ou la modification d'un scénario, activez l'option <strong>\"Flags activés\"</strong> pour activer le mode CTF pour ce scénario."
+          },
+          markSteps: {
+            title: "Marquer les étapes comme étapes flag",
+            description: "Pour les étapes individuelles, activez l'option <strong>\"A un flag\"</strong>. Ces étapes afficheront un champ de saisie de flag au lieu d'un bouton Vérifier."
+          },
+          unique: {
+            title: "Flags uniques par apprenant",
+            description: "Les flags sont générés par <strong>HMAC-SHA256</strong> et sont uniques par apprenant — il est impossible pour les apprenants de partager les réponses. Le format des flags est <strong>FLAG{16-caractères-hexadécimaux}</strong>."
+          },
+          tip: {
+            title: "Conseil",
+            description: "Les flags CTF ajoutent un élément compétitif et ludique à vos exercices. Utilisez-les pour des défis bonus, des exercices orientés sécurité ou des sessions de formation compétitives."
+          }
+        },
+
+        killercoda: {
+          title: "Compatibilité KillerCoda",
+          description: "OCF supporte le format index.json de KillerCoda pour l'importation de scénarios, facilitant la migration de contenu existant.",
+          layout: "L'arborescence standard KillerCoda est supportée : index.json pour les métadonnées, intro.md et finish.md pour les textes d'introduction et de conclusion, et des répertoires d'étapes (step1/, step2/, etc.) contenant text.md pour les instructions et verify.sh pour les scripts de vérification.",
+          info: {
+            title: "Note",
+            description: "L'import par Git arrive bientôt. Pour le moment, vous pouvez créer des scénarios via le panneau d'administration ou l'API de peuplement pour charger en masse du contenu au format KillerCoda."
+          }
+        },
+
+        monitoring: {
+          title: "Suivi de la progression des apprenants",
+          description: "Suivez la progression de vos apprenants à travers vos scénarios.",
+          navigate: {
+            title: "Consulter les sessions de scénario",
+            description: "Allez dans <strong>Admin > Sessions de scénario</strong> pour voir toutes les sessions des apprenants sur vos scénarios.",
+            button: "Accéder aux sessions"
+          },
+          track: {
+            title: "Détails de progression",
+            description: "Pour chaque session, vous pouvez voir le <strong>nom du scénario</strong>, l'<strong>étape en cours</strong>, le <strong>statut</strong> (active, terminée ou abandonnée) et les <strong>horodatages</strong> de début et fin de session. Les détails par étape montrent le nombre de tentatives de vérification et le temps passé par étape."
+          }
+        },
+
+        bestPractices: {
+          title: "Bonnes pratiques",
+          description: "Suivez ces recommandations pour créer des scénarios efficaces et engageants.",
+          tips: {
+            title: "Recommandations",
+            tip1: "Commencez par une première étape simple pour mettre l'apprenant en confiance avant de passer à des tâches plus complexes.",
+            tip2: "Utilisez des instructions claires et orientées action — dites aux apprenants exactement quelles commandes exécuter et quels résultats attendre.",
+            tip3: "Fournissez des indices pour les étapes difficiles afin que les apprenants puissent se débloquer sans aide externe.",
+            tip4: "Écrivez des scripts de vérification qui vérifient le résultat, pas la méthode — il existe souvent plusieurs approches valides pour une tâche.",
+            tip5: "Définissez des durées estimées réalistes en fonction du niveau de difficulté et du nombre d'étapes du scénario.",
+            tip6: "Utilisez le texte d'introduction pour poser le contexte et le texte de conclusion pour résumer ce qui a été appris dans l'exercice."
+          }
+        },
+
+        nextSteps: {
+          description: "Explorez d'autres ressources pour tirer le meilleur parti de la plateforme."
         }
       }
     },
