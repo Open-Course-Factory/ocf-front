@@ -120,7 +120,16 @@ const { t } = useTranslations({
       difficultyBeginner: 'Beginner',
       difficultyIntermediate: 'Intermediate',
       difficultyAdvanced: 'Advanced',
-      exportCsv: 'Export CSV'
+      exportCsv: 'Export CSV',
+      export: {
+        name: 'Name',
+        email: 'Email',
+        status: 'Status',
+        grade: 'Grade',
+        progress: 'Progress',
+        started: 'Started',
+        completed: 'Completed'
+      }
     }
   },
   fr: {
@@ -188,7 +197,16 @@ const { t } = useTranslations({
       difficultyBeginner: 'Débutant',
       difficultyIntermediate: 'Intermédiaire',
       difficultyAdvanced: 'Avancé',
-      exportCsv: 'Exporter CSV'
+      exportCsv: 'Exporter CSV',
+      export: {
+        name: 'Nom',
+        email: 'Email',
+        status: 'Statut',
+        grade: 'Note',
+        progress: 'Progression',
+        started: 'Début',
+        completed: 'Fin'
+      }
     }
   }
 })
@@ -542,7 +560,15 @@ function translateDifficulty(difficulty: string): string {
 
 function exportResultsCsv() {
   if (scenarioResults.value.length === 0) return
-  const headers = ['Name', 'Email', 'Status', 'Grade', 'Progress', 'Started', 'Completed']
+  const headers = [
+    t('groupScenarios.export.name'),
+    t('groupScenarios.export.email'),
+    t('groupScenarios.export.status'),
+    t('groupScenarios.export.grade'),
+    t('groupScenarios.export.progress'),
+    t('groupScenarios.export.started'),
+    t('groupScenarios.export.completed')
+  ]
   const rows = scenarioResults.value.map(r => [
     r.user_name || r.user_id,
     r.user_email || '',
@@ -592,11 +618,11 @@ onUnmounted(() => {
       </button>
     </div>
 
-    <div v-if="error" class="alert alert-danger">
+    <div v-if="error" class="alert alert-danger" role="alert">
       {{ error }}
     </div>
 
-    <div v-if="isLoading" class="loading-state">
+    <div v-if="isLoading" class="loading-state" role="status">
       <i class="fas fa-spinner fa-spin"></i>
     </div>
 
@@ -678,7 +704,7 @@ onUnmounted(() => {
         </button>
       </div>
 
-      <div v-if="loadingResults" class="loading-state">
+      <div v-if="loadingResults" class="loading-state" role="status">
         <i class="fas fa-spinner fa-spin"></i>
       </div>
 
@@ -686,7 +712,7 @@ onUnmounted(() => {
         <p>{{ t('groupScenarios.noResults') }}</p>
       </div>
 
-      <table v-else class="results-table">
+      <table v-else class="results-table" :aria-label="t('groupScenarios.studentResults')">
         <thead>
           <tr>
             <th>{{ t('groupScenarios.student') }}</th>
