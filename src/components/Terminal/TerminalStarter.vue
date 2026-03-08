@@ -70,6 +70,7 @@
       <TerminalAdvancedOptions
         v-model="nameInput"
         :exercise-ref="exerciseRef"
+        :hostname="hostnameInput"
         :disabled="isStarting"
         :show-backend-selector="backendsStore.hasMultipleBackends"
         :backends="backends"
@@ -80,6 +81,7 @@
         :selected-group-id="selectedGroupId"
         :selected-group-member-count="selectedGroupMemberCount"
         @update:exercise-ref="exerciseRef = $event"
+        @update:hostname="hostnameInput = $event"
         @update:selected-backend-id="selectedBackendId = $event"
         @update:creation-mode="creationMode = $event"
         @update:selected-group-id="selectedGroupId = $event"
@@ -383,6 +385,7 @@ const userManuallySelected = ref(false)
 const restoredFromStorage = ref(false)
 const nameInput = ref('')
 const exerciseRef = ref('')
+const hostnameInput = ref('')
 const creationMode = ref<'single' | 'bulk'>('single')
 const selectedGroupId = ref('')
 // Organizations & Backends
@@ -675,6 +678,7 @@ function preselectInstance(instance: InstanceType) {
 function resetForm() {
   nameInput.value = ''
   exerciseRef.value = ''
+  hostnameInput.value = ''
   creationMode.value = 'single'
   selectedGroupId.value = ''
   userManuallySelected.value = false
@@ -811,6 +815,7 @@ async function startSingleSession() {
       ...(selectedInstanceType.value && { instance_type: selectedInstanceType.value }),
       ...(nameInput.value.trim() && { name: nameInput.value.trim() }),
       ...(exerciseRef.value.trim() && { external_ref: exerciseRef.value.trim() }),
+      ...(hostnameInput.value.trim() && { hostname: hostnameInput.value.trim() }),
       ...(backendsStore.selectedBackendId && { backend: backendsStore.selectedBackendId }),
       ...(selectedOrganizationId.value && { organization_id: selectedOrganizationId.value })
     }
@@ -935,6 +940,7 @@ async function startBulkSessions() {
       instance_type: selectedInstanceType.value,
       recording_consent: recordingConsentResult.value ?? 0,
       ...(exerciseRef.value.trim() && { external_ref: exerciseRef.value.trim() }),
+      ...(hostnameInput.value.trim() && { hostname: hostnameInput.value.trim() }),
       ...(backendsStore.selectedBackendId && { backend: backendsStore.selectedBackendId }),
       ...(selectedOrganizationId.value && { organization_id: selectedOrganizationId.value })
     }
