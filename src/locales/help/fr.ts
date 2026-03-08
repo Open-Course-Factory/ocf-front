@@ -2785,7 +2785,54 @@ export const helpFr = {
           layout: "L'arborescence standard KillerCoda est supportée : index.json pour les métadonnées, intro.md et finish.md pour les textes d'introduction et de conclusion, et des répertoires d'étapes (step1/, step2/, etc.) contenant text.md pour les instructions et verify.sh pour les scripts de vérification.",
           info: {
             title: "Note",
-            description: "L'import par Git est prévu pour une prochaine version. En attendant, vous pouvez créer des scénarios via le panneau d'administration ou l'API seed."
+            description: "L'import par Git est prévu pour une prochaine version. En attendant, vous pouvez importer des scénarios via le panneau d'administration ou le script CLI seed."
+          }
+        },
+
+        uploadAdmin: {
+          title: "Import via le panneau d'administration",
+          description: "Le moyen le plus simple d'importer un scénario compatible KillerCoda est via le panneau d'administration.",
+          step1: {
+            title: "Préparer votre archive",
+            description: "Empaquetez votre répertoire de scénario en fichier <strong>.zip</strong> ou <strong>.tar.gz</strong>. L'archive doit contenir un fichier <strong>index.json</strong> à la racine (ou un niveau en dessous)."
+          },
+          step2: {
+            title: "Ouvrir la fenêtre d'import",
+            description: "Accédez à <strong>Admin > Scénarios</strong> et cliquez sur le bouton <strong>« Importer KillerCoda »</strong> en haut de la page.",
+            button: "Aller aux Scénarios"
+          },
+          step3: {
+            title: "Télécharger l'archive",
+            description: "Glissez-déposez votre fichier archive sur la zone de téléchargement, ou cliquez pour le sélectionner. Le fichier doit faire moins de <strong>10 Mo</strong>. Cliquez sur <strong>« Importer »</strong> pour lancer le téléchargement."
+          },
+          upsert: {
+            title: "Comportement de mise à jour",
+            description: "Si un scénario avec le même nom existe déjà, il sera mis à jour avec le nouveau contenu. Les sessions actives et les secrets de drapeaux sont préservés."
+          }
+        },
+
+        seeding: {
+          title: "Import & mise à jour de scénarios (CLI)",
+          description: "Utilisez le script seed-scenario.sh pour importer ou mettre à jour un scénario depuis un répertoire compatible KillerCoda. C'est le moyen le plus rapide pour charger du contenu en masse.",
+          usage: {
+            title: "Utilisation",
+            description: "Lancez le script depuis le répertoire <strong>challenges/</strong> :",
+            command: "./seed-scenario.sh &lt;scenario-dir&gt; [api-url] [auth-token]",
+            example: "./seed-scenario.sh ./gameshell-basics http://localhost:8080 \"eyJhbGci...\""
+          },
+          token: {
+            title: "Obtenir un token d'authentification",
+            description: "Vous avez besoin d'un token JWT valide. Obtenez-le en vous connectant via l'API :",
+            command: "curl -s -X POST http://localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"votre@email.com\",\"password\":\"votremotdepasse\"}' | python3 -c \"import json,sys; print(json.load(sys.stdin)['access_token'])\"",
+            altDescription: "Ou copiez-le depuis les DevTools de votre navigateur (onglet Network, n'importe quelle requête API, en-tête Authorization)."
+          },
+          upsert: {
+            title: "Création ou mise à jour",
+            description: "L'endpoint seed utilise une logique upsert : si un scénario avec le même nom existe déjà, il met à jour le contenu (étapes, scripts, texte) tout en préservant le secret des flags pour que les sessions actives restent valides. Sinon, un nouveau scénario est créé."
+          },
+          envVar: {
+            title: "Astuce",
+            description: "Définissez la variable d'environnement <strong>OCF_AUTH_TOKEN</strong> pour éviter de passer le token à chaque fois : <code>export OCF_AUTH_TOKEN=\"eyJhbGci...\"</code>"
           }
         },
 

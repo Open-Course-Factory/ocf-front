@@ -64,6 +64,9 @@ export interface FeatureFlags {
   // Group management features
   class_groups: FeatureFlagConfig
 
+  // Scenario features
+  scenarios: FeatureFlagConfig
+
   // Documentation features
   help_documentation: FeatureFlagConfig
 
@@ -127,6 +130,14 @@ export class FeatureFlagService {
         type: 'ops',
         allowedRoles: ['administrator', 'member'],
         controlledFeatures: ['group_creation', 'group_management']
+      },
+      // Scenario Features (start disabled to prevent flashing)
+      scenarios: {
+        enabled: false,
+        description: 'Enable scenario engine features',
+        type: 'ops',
+        allowedRoles: ['administrator', 'member'],
+        controlledFeatures: ['scenario_management', 'scenario_execution']
       },
       // Documentation Features (can start enabled)
       help_documentation: {

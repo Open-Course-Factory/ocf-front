@@ -220,6 +220,91 @@
         </div>
       </section>
 
+      <!-- Importing via Admin Panel -->
+      <section class="help-section">
+        <h2><i class="fas fa-upload"></i> {{ t('help.scenarios.creation.uploadAdmin.title') }}</h2>
+        <p>{{ t('help.scenarios.creation.uploadAdmin.description') }}</p>
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>{{ t('help.scenarios.creation.uploadAdmin.step1.title') }}</h4>
+            <p v-html="t('help.scenarios.creation.uploadAdmin.step1.description')"></p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h4>{{ t('help.scenarios.creation.uploadAdmin.step2.title') }}</h4>
+            <p v-html="t('help.scenarios.creation.uploadAdmin.step2.description')"></p>
+            <router-link to="/admin/scenarios" class="btn btn-outline">
+              <i class="fas fa-flag-checkered"></i>
+              {{ t('help.scenarios.creation.uploadAdmin.step2.button') }}
+            </router-link>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h4>{{ t('help.scenarios.creation.uploadAdmin.step3.title') }}</h4>
+            <p v-html="t('help.scenarios.creation.uploadAdmin.step3.description')"></p>
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <h4><i class="fas fa-lightbulb"></i> {{ t('help.scenarios.creation.uploadAdmin.upsert.title') }}</h4>
+          <p>{{ t('help.scenarios.creation.uploadAdmin.upsert.description') }}</p>
+        </div>
+      </section>
+
+      <!-- Seeding Scenarios from CLI (admin-only) -->
+      <section class="help-section">
+        <h2><i class="fas fa-terminal"></i> {{ t('help.scenarios.creation.seeding.title') }}</h2>
+        <p>{{ t('help.scenarios.creation.seeding.description') }}</p>
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>{{ t('help.scenarios.creation.seeding.token.title') }}</h4>
+            <p v-html="t('help.scenarios.creation.seeding.token.description')"></p>
+            <div class="code-example">
+              <code>{{ t('help.scenarios.creation.seeding.token.command') }}</code>
+            </div>
+            <p style="margin-top: 10px;">{{ t('help.scenarios.creation.seeding.token.altDescription') }}</p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h4>{{ t('help.scenarios.creation.seeding.usage.title') }}</h4>
+            <p v-html="t('help.scenarios.creation.seeding.usage.description')"></p>
+            <div class="code-example">
+              <code>{{ t('help.scenarios.creation.seeding.usage.command') }}</code>
+            </div>
+            <p style="margin-top: 10px; font-weight: bold;">Example:</p>
+            <div class="code-example">
+              <code>{{ t('help.scenarios.creation.seeding.usage.example') }}</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h4>{{ t('help.scenarios.creation.seeding.upsert.title') }}</h4>
+            <p>{{ t('help.scenarios.creation.seeding.upsert.description') }}</p>
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <h4><i class="fas fa-lightbulb"></i> {{ t('help.scenarios.creation.seeding.envVar.title') }}</h4>
+          <p v-html="t('help.scenarios.creation.seeding.envVar.description')"></p>
+        </div>
+      </section>
+
       <!-- Monitoring Student Progress -->
       <section class="help-section">
         <h2><i class="fas fa-chart-line"></i> {{ t('help.scenarios.creation.monitoring.title') }}</h2>

@@ -2785,7 +2785,54 @@ export const helpEn = {
           layout: "The standard KillerCoda directory layout is supported: index.json for metadata, intro.md and finish.md for introduction and conclusion text, and step directories (step1/, step2/, etc.) containing text.md for instructions and verify.sh for verification scripts.",
           info: {
             title: "Note",
-            description: "Git-based import is planned for a future release. For now, you can create scenarios using the admin panel or the seed API."
+            description: "Git-based import is planned for a future release. For now, you can import scenarios via the admin panel or the CLI seed script."
+          }
+        },
+
+        uploadAdmin: {
+          title: "Importing via Admin Panel",
+          description: "The easiest way to import a KillerCoda-compatible scenario is through the admin panel.",
+          step1: {
+            title: "Prepare your archive",
+            description: "Package your scenario directory as a <strong>.zip</strong> or <strong>.tar.gz</strong> file. The archive must contain an <strong>index.json</strong> file at the root (or one level deep)."
+          },
+          step2: {
+            title: "Open the import modal",
+            description: "Navigate to <strong>Admin > Scenarios</strong> and click the <strong>\"Import KillerCoda\"</strong> button at the top of the page.",
+            button: "Go to Scenarios"
+          },
+          step3: {
+            title: "Upload the archive",
+            description: "Drag and drop your archive file onto the upload area, or click to select it. The file must be under <strong>10 MB</strong>. Click <strong>\"Import\"</strong> to start the upload."
+          },
+          upsert: {
+            title: "Update behavior",
+            description: "If a scenario with the same name already exists, it will be updated with the new content. Active sessions and flag secrets are preserved."
+          }
+        },
+
+        seeding: {
+          title: "Seeding & Updating Scenarios (CLI)",
+          description: "Use the seed-scenario.sh script to import or update a scenario from a KillerCoda-compatible directory. This is the fastest way to bulk-load scenario content.",
+          usage: {
+            title: "Usage",
+            description: "Run the script from the <strong>challenges/</strong> directory:",
+            command: "./seed-scenario.sh &lt;scenario-dir&gt; [api-url] [auth-token]",
+            example: "./seed-scenario.sh ./gameshell-basics http://localhost:8080 \"eyJhbGci...\""
+          },
+          token: {
+            title: "Getting an Auth Token",
+            description: "You need a valid JWT token. Get one by logging in via the API:",
+            command: "curl -s -X POST http://localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"your@email.com\",\"password\":\"yourpassword\"}' | python3 -c \"import json,sys; print(json.load(sys.stdin)['access_token'])\"",
+            altDescription: "Or copy it from your browser DevTools (Network tab, any API request, Authorization header)."
+          },
+          upsert: {
+            title: "Create or Update",
+            description: "The seed endpoint uses upsert logic: if a scenario with the same name already exists, it updates the content (steps, scripts, text) while preserving the flag secret so active sessions remain valid. If it doesn't exist, a new scenario is created."
+          },
+          envVar: {
+            title: "Tip",
+            description: "Set the <strong>OCF_AUTH_TOKEN</strong> environment variable to avoid passing the token every time: <code>export OCF_AUTH_TOKEN=\"eyJhbGci...\"</code>"
           }
         },
 
