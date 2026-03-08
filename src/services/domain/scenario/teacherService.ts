@@ -87,6 +87,20 @@ export const teacherService = {
 
   // --- Scenario import/export operations ---
 
+  async uploadScenario(file: File, onProgress?: (percent: number) => void): Promise<any> {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await axios.post('/scenarios/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (e) => {
+        if (e.total && onProgress) {
+          onProgress(Math.round((e.loaded * 100) / e.total))
+        }
+      }
+    })
+    return response.data
+  },
+
   async exportScenarioJSON(scenarioId: string): Promise<any> {
     const response = await axios.get(`/scenarios/${scenarioId}/export`, { params: { format: 'json' } })
     return response.data

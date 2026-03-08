@@ -108,7 +108,6 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import axios from 'axios'
 import BaseModal from './BaseModal.vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { teacherService } from '../../services/domain/scenario'
@@ -234,27 +233,10 @@ async function handleUpload() {
   errorMessage.value = null
 
   try {
-    let responseData
-    if (props.groupId) {
-      responseData = await teacherService.groupUploadScenario(
-        props.groupId,
-        selectedFile.value,
-        (percent) => { uploadProgress.value = percent }
-      )
-    } else {
-      const formData = new FormData()
-      formData.append('file', selectedFile.value)
-
-      const response = await axios.post('/scenarios/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (e) => {
-          if (e.total) {
-            uploadProgress.value = Math.round((e.loaded * 100) / e.total)
-          }
-        }
-      })
-      responseData = response.data
-    }
+    const onProgress = (percent: number) => { uploadProgress.value = percent }
+    const responseData = props.groupId
+      ? await teacherService.groupUploadScenario(props.groupId, selectedFile.value, onProgress)
+      : await teacherService.uploadScenario(selectedFile.value, onProgress)
 
     uploadedScenario.value = responseData
     uploadSuccess.value = true
