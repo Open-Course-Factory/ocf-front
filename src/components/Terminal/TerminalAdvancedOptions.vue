@@ -94,6 +94,25 @@
       </FormGroup>
 
       <FormGroup
+        :label="t('terminalStarter.hostnameLabel')"
+        id="hostname"
+        :help-text="t('terminalStarter.hostnameHelp')"
+      >
+        <input
+          id="hostname"
+          :value="hostname"
+          type="text"
+          maxlength="63"
+          :placeholder="t('terminalStarter.hostnamePlaceholder')"
+          :disabled="disabled"
+          @input="handleHostnameInput"
+        />
+        <small v-if="hostname.length > 0" class="char-count">
+          {{ hostname.length }}/63
+        </small>
+      </FormGroup>
+
+      <FormGroup
         :label="t('terminalStarter.exerciseRefLabel')"
         id="exerciseRef"
         :help-text="t('terminalStarter.exerciseRefHelp')"
@@ -146,6 +165,7 @@ interface Group {
 interface Props {
   modelValue: string
   exerciseRef?: string
+  hostname?: string
   disabled?: boolean
   backends?: Backend[]
   selectedBackendId?: string
@@ -159,6 +179,7 @@ interface Props {
 
 withDefaults(defineProps<Props>(), {
   exerciseRef: '',
+  hostname: '',
   backends: () => [],
   selectedBackendId: '',
   showBackendSelector: false,
@@ -172,6 +193,7 @@ withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   'update:modelValue': [value: string]
   'update:exerciseRef': [value: string]
+  'update:hostname': [value: string]
   'update:selectedBackendId': [value: string]
   'update:creationMode': [value: 'single' | 'bulk']
   'update:selectedGroupId': [value: string]
@@ -195,7 +217,10 @@ const { t } = useTranslations({
       selectGroup: 'Select Group',
       chooseGroup: 'Choose a group...',
       members: 'members',
-      willCreate: 'Will create {count} terminals (1 per member)'
+      willCreate: 'Will create {count} terminals (1 per member)',
+      hostnameLabel: 'Container Hostname (Optional)',
+      hostnamePlaceholder: 'e.g., webserver',
+      hostnameHelp: 'Custom hostname for the terminal prompt (root@hostname). Lowercase, alphanumeric and hyphens, max 63 chars.'
     }
   },
   fr: {
@@ -214,7 +239,10 @@ const { t } = useTranslations({
       selectGroup: 'Sélectionner un Groupe',
       chooseGroup: 'Choisir un groupe...',
       members: 'membres',
-      willCreate: '{count} terminaux seront créés (1 par membre)'
+      willCreate: '{count} terminaux seront créés (1 par membre)',
+      hostnameLabel: 'Nom d\'hôte (Optionnel)',
+      hostnamePlaceholder: 'ex. webserver',
+      hostnameHelp: 'Nom d\'hôte personnalisé pour le prompt (root@hostname). Minuscules, alphanumérique et tirets, 63 caractères max.'
     }
   }
 })
@@ -229,6 +257,11 @@ function handleInput(event: Event) {
 function handleExerciseRefInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:exerciseRef', target.value)
+}
+
+function handleHostnameInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  emit('update:hostname', target.value)
 }
 </script>
 

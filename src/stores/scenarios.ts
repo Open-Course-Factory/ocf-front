@@ -61,7 +61,9 @@ export const useScenariosStore = defineStore('scenarios', () => {
                 osTypeDeb: 'Debian-based (apt)',
                 osTypeRpm: 'RPM-based (dnf/yum)',
                 osTypeApk: 'Alpine (apk)',
-                osTypePacman: 'Arch-based (pacman)'
+                osTypePacman: 'Arch-based (pacman)',
+                hostname: 'Container Hostname',
+                hostnameHelp: 'Custom hostname displayed in the terminal prompt (e.g., webserver)'
             }
         },
         fr: {
@@ -95,7 +97,9 @@ export const useScenariosStore = defineStore('scenarios', () => {
                 osTypeDeb: 'Debian (apt)',
                 osTypeRpm: 'RPM (dnf/yum)',
                 osTypeApk: 'Alpine (apk)',
-                osTypePacman: 'Arch (pacman)'
+                osTypePacman: 'Arch (pacman)',
+                hostname: 'Nom d\'hôte du conteneur',
+                hostnameHelp: 'Nom d\'hôte personnalisé affiché dans le terminal (ex. webserver)'
             }
         }
     })
@@ -112,6 +116,7 @@ export const useScenariosStore = defineStore('scenarios', () => {
         ]),
         field('estimated_time', t('scenarios.estimatedTime')).input().visible().creatable().updatable(),
         field('instance_type', t('scenarios.instanceType')).input().visible().creatable().updatable().required(),
+        field('hostname', t('scenarios.hostname')).input().visible().creatable().updatable(),
         field('os_type', t('scenarios.os_type')).select().visible().creatable().updatable().withOptions([
             { value: 'deb', text: t('scenarios.osTypeDeb') },
             { value: 'rpm', text: t('scenarios.osTypeRpm') },
