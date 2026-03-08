@@ -63,6 +63,21 @@
         <h4>{{ t('scenarioPanel.completed') }}</h4>
         <p>{{ t('scenarioPanel.completedMessage') }}</p>
         <div v-if="renderedFinishText" class="finish-text markdown-content" v-html="renderedFinishText"></div>
+        <div class="completion-summary">
+          <h5 class="completion-summary-title">{{ t('scenarioPanel.completionSummary') }}</h5>
+          <div class="completion-summary-items">
+            <div class="summary-item">
+              <i class="fas fa-check-double"></i>
+              <span class="summary-label">{{ t('scenarioPanel.stepsCompleted') }}</span>
+              <span class="summary-value">{{ totalSteps }}/{{ totalSteps }}</span>
+            </div>
+            <div v-if="formattedElapsedTime" class="summary-item">
+              <i class="fas fa-clock"></i>
+              <span class="summary-label">{{ t('scenarioPanel.totalTime') }}</span>
+              <span class="summary-value">{{ formattedElapsedTime }}</span>
+            </div>
+          </div>
+        </div>
         <router-link to="/my-scenarios" class="btn btn-primary view-results-link">
           <i class="fas fa-list"></i>
           {{ t('scenarioPanel.viewMyScenarios') }}
@@ -96,33 +111,49 @@
               :class="{
                 completed: (n - 1) < currentStep.step_order,
                 active: (n - 1) === currentStep.step_order,
-                locked: (n - 1) > currentStep.step_order
+                locked: (n - 1) > currentStep.step_order,
+                clickable: (n - 1) <= currentStep.step_order,
+                reviewing: reviewingStep && (n - 1) === reviewingStep.step_order
               }"
+              @click="(n - 1) <= currentStep.step_order ? navigateToStep(n - 1) : undefined"
             ></span>
           </div>
+        </div>
+
+        <!-- Review mode indicator -->
+        <div v-if="reviewingStep" class="review-banner">
+          <span class="review-label">
+            <i class="fas fa-eye"></i>
+            {{ t('scenarioPanel.reviewingStep', { step: reviewingStep.step_order + 1 }) }}
+          </span>
+          <button class="back-to-current-btn" @click="backToCurrentStep">
+            <i class="fas fa-arrow-left"></i>
+            {{ t('scenarioPanel.backToCurrent') }}
+          </button>
         </div>
 
         <!-- Step content area -->
         <div ref="stepContentRef" class="step-content">
           <!-- Step title -->
           <div class="step-header">
-            <span class="step-label">{{ t('scenarioPanel.step') }} {{ currentStep.step_order + 1 }}</span>
-            <h4 class="step-title">{{ currentStep.title }}</h4>
+            <span class="step-label">{{ t('scenarioPanel.step') }} {{ displayedStep!.step_order + 1 }}</span>
+            <h4 class="step-title">{{ displayedStep!.title }}</h4>
           </div>
 
           <!-- Step text (rendered as markdown) -->
-          <div v-if="currentStep.text" class="step-text markdown-content" v-html="renderedStepText"></div>
+          <div v-if="displayedStep!.text" class="step-text markdown-content" v-html="renderedDisplayedStepText"></div>
 
           <!-- Hint section (collapsible) -->
-          <div v-if="currentStep.hint" class="hint-section">
+          <div v-if="displayedStep!.hint" class="hint-section">
             <button class="hint-toggle" @click="showHint = !showHint" :aria-expanded="showHint">
               <i :class="showHint ? 'fas fa-eye-slash' : 'fas fa-lightbulb'"></i>
               {{ showHint ? t('scenarioPanel.hideHint') : t('scenarioPanel.showHint') }}
             </button>
-            <div v-if="showHint" class="hint-content markdown-content" v-html="renderedHintText"></div>
+            <div v-if="showHint" class="hint-content markdown-content" v-html="renderedDisplayedHintText"></div>
           </div>
 
-          <!-- Verify button -->
+          <!-- Verify button (hidden when reviewing previous steps) -->
+          <template v-if="!reviewingStep">
           <button
             v-if="!currentStep.has_flag"
             class="verify-btn"
@@ -172,10 +203,11 @@
               <span>{{ flagResult.correct ? t('scenarioPanel.flagCorrect') : t('scenarioPanel.flagIncorrect') }}</span>
             </div>
           </div>
+          </template>
         </div>
 
-        <!-- Session actions -->
-        <div class="session-actions">
+        <!-- Session actions (hidden when reviewing previous steps) -->
+        <div v-if="!reviewingStep" class="session-actions">
           <button
             class="abandon-btn"
             :disabled="!isActive"
@@ -247,6 +279,8 @@ const { t } = useTranslations({
       abandon: 'Abandon Scenario',
       abandonConfirm: 'This session will be marked as abandoned. You can start a new attempt later.',
       abandonTitle: 'Abandon Scenario',
+      confirmButtonText: 'Yes, abandon',
+      cancelButtonText: 'Cancel',
       completed: 'Scenario Completed!',
       completedMessage: 'Congratulations! You have completed all steps.',
       loading: 'Loading scenario...',
@@ -262,7 +296,12 @@ const { t } = useTranslations({
       showIntro: 'Show introduction',
       hideIntro: 'Hide introduction',
       viewMyScenarios: 'View my scenarios',
-      nextStep: 'Loading next step...'
+      nextStep: 'Loading next step...',
+      completionSummary: 'Your Results',
+      stepsCompleted: 'Steps Completed',
+      totalTime: 'Time Spent',
+      reviewingStep: 'Reviewing step {step}',
+      backToCurrent: 'Back to current step'
     }
   },
   fr: {
@@ -284,6 +323,8 @@ const { t } = useTranslations({
       abandon: 'Abandonner le scénario',
       abandonConfirm: 'Cette session sera marquée comme abandonnée. Vous pourrez recommencer une nouvelle tentative plus tard.',
       abandonTitle: 'Abandonner le scénario',
+      confirmButtonText: 'Oui, abandonner',
+      cancelButtonText: 'Annuler',
       completed: 'Scénario terminé !',
       completedMessage: 'Félicitations ! Vous avez terminé toutes les étapes.',
       loading: 'Chargement du scénario...',
@@ -299,7 +340,12 @@ const { t } = useTranslations({
       showIntro: 'Afficher l\'introduction',
       hideIntro: 'Masquer l\'introduction',
       viewMyScenarios: 'Voir mes scénarios',
-      nextStep: 'Chargement de l\'étape suivante...'
+      nextStep: 'Chargement de l\'étape suivante...',
+      completionSummary: 'Vos résultats',
+      stepsCompleted: 'Étapes complétées',
+      totalTime: 'Temps passé',
+      reviewingStep: 'Révision de l\'étape {step}',
+      backToCurrent: 'Retour à l\'étape en cours'
     }
   }
 })
@@ -317,6 +363,9 @@ const showHint = ref(false)
 const scenarioInfo = ref<ScenarioInfo | null>(null)
 const showIntro = ref(true)
 
+// Session timing (for completion summary)
+const sessionStartedAt = ref<string | null>(null)
+
 // Track whether we already auto-expanded the hint for the current step
 const hintAutoShown = ref(false)
 
@@ -332,6 +381,10 @@ const flagResult = ref<SubmitFlagResponse | null>(null)
 // Step transition state
 const isTransitioning = ref(false)
 
+// Step review navigation state
+const reviewingStep = ref<CurrentStepResponse | null>(null)
+const isLoadingReview = ref(false)
+
 // Ref for step content container (for copy-to-clipboard injection)
 const stepContentRef = ref<HTMLElement | null>(null)
 
@@ -343,22 +396,23 @@ const stepCountLabel = computed(() => {
   return `${t('scenarioPanel.step')} ${current} / ${total}`
 })
 
-// Computed markdown rendering
-const renderedStepText = computed(() => {
-  if (!currentStep.value?.text) return ''
-  const html = marked.parse(currentStep.value.text) as string
-  return DOMPurify.sanitize(html)
-})
-
-const renderedHintText = computed(() => {
-  if (!currentStep.value?.hint) return ''
-  const html = marked.parse(currentStep.value.hint) as string
-  return DOMPurify.sanitize(html)
-})
-
 // Scenario name for the panel header (falls back to generic title)
 const scenarioName = computed(() => scenarioInfo.value?.title || scenarioInfo.value?.name || '')
 const scenarioDescription = computed(() => scenarioInfo.value?.intro_text || scenarioInfo.value?.description || '')
+
+// Formatted elapsed time for the completion summary
+const formattedElapsedTime = computed(() => {
+  if (!sessionStartedAt.value) return null
+  const start = new Date(sessionStartedAt.value)
+  const now = new Date()
+  const diffMs = now.getTime() - start.getTime()
+  const totalMinutes = Math.floor(diffMs / 60000)
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (hours > 0) return `${hours}h ${minutes}m`
+  const seconds = Math.floor((diffMs % 60000) / 1000)
+  return `${totalMinutes}m ${seconds}s`
+})
 
 // Rendered finish_text (markdown) for the completion screen
 const renderedFinishText = computed(() => {
@@ -367,10 +421,55 @@ const renderedFinishText = computed(() => {
   return DOMPurify.sanitize(html)
 })
 
+// The displayed step: either the review step or the current step
+const displayedStep = computed(() => reviewingStep.value || currentStep.value)
+
+// Rendered markdown for the displayed step
+const renderedDisplayedStepText = computed(() => {
+  if (!displayedStep.value?.text) return ''
+  const html = marked.parse(displayedStep.value.text) as string
+  return DOMPurify.sanitize(html)
+})
+
+const renderedDisplayedHintText = computed(() => {
+  if (!displayedStep.value?.hint) return ''
+  const html = marked.parse(displayedStep.value.hint) as string
+  return DOMPurify.sanitize(html)
+})
+
+// Navigate to a specific step for review
+async function navigateToStep(stepOrder: number) {
+  // If clicking the current step, exit review mode
+  if (currentStep.value && stepOrder === currentStep.value.step_order) {
+    reviewingStep.value = null
+    return
+  }
+  isLoadingReview.value = true
+  try {
+    const step = await scenarioSessionService.getStepByOrder(props.scenarioSessionId, stepOrder)
+    if (step) {
+      reviewingStep.value = step
+      showHint.value = false
+    }
+  } catch (err) {
+    console.warn('Could not load step for review:', err)
+  } finally {
+    isLoadingReview.value = false
+  }
+}
+
+function backToCurrentStep() {
+  reviewingStep.value = null
+  showHint.value = false
+}
+
 // Load scenario metadata (name, description) from the API
 async function loadScenarioInfo() {
   try {
     const session = await scenarioSessionService.getSessionInfo(props.scenarioSessionId)
+    if (session?.started_at) {
+      sessionStartedAt.value = session.started_at
+    }
     if (session?.scenario_id) {
       scenarioInfo.value = await scenarioSessionService.getScenario(session.scenario_id)
     }
@@ -453,6 +552,7 @@ async function loadCurrentStep() {
   flagValue.value = ''
   showHint.value = false
   hintAutoShown.value = false
+  reviewingStep.value = null
 
   try {
     const step = await scenarioSessionService.getCurrentStep(props.scenarioSessionId)
@@ -577,7 +677,11 @@ async function handleAbandon() {
   const confirmed = await showConfirm(
     t('scenarioPanel.abandonConfirm'),
     t('scenarioPanel.abandonTitle'),
-    { type: 'warning' }
+    {
+      type: 'warning',
+      confirmButtonText: t('scenarioPanel.confirmButtonText'),
+      cancelButtonText: t('scenarioPanel.cancelButtonText')
+    }
   )
 
   if (!confirmed) return
@@ -762,9 +866,62 @@ onMounted(() => {
   background: var(--color-gray-300);
 }
 
+.progress-dot.clickable {
+  cursor: pointer;
+}
+
+.progress-dot.clickable:hover {
+  transform: scale(1.4);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.progress-dot.reviewing {
+  box-shadow: 0 0 0 3px var(--color-info);
+  animation: none;
+}
+
 @keyframes pulse-dot {
   0%, 100% { box-shadow: 0 0 0 3px var(--color-primary-light); }
   50% { box-shadow: 0 0 0 5px var(--color-primary-light); }
+}
+
+/* Review mode banner */
+.review-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: var(--color-info-bg);
+  border-bottom: var(--border-width-thin) solid var(--color-info-border);
+  flex-shrink: 0;
+}
+
+.review-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-info-text);
+}
+
+.back-to-current-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 2px var(--spacing-sm);
+  background: transparent;
+  border: var(--border-width-thin) solid var(--color-info-border);
+  border-radius: var(--border-radius-sm);
+  color: var(--color-info-text);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.back-to-current-btn:hover {
+  background: var(--color-info);
+  color: var(--color-white);
 }
 
 /* Step content */
@@ -1165,6 +1322,54 @@ onMounted(() => {
   line-height: var(--line-height-relaxed);
   text-align: left;
   width: 100%;
+}
+
+.completion-summary {
+  width: 100%;
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  text-align: left;
+}
+
+.completion-summary-title {
+  margin: 0 0 var(--spacing-sm) 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.completion-summary-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.summary-item i {
+  color: var(--color-success);
+  font-size: var(--font-size-sm);
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.summary-label {
+  flex: 1;
+}
+
+.summary-value {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 
 .view-results-link {
