@@ -317,6 +317,9 @@ const showHint = ref(false)
 const scenarioInfo = ref<ScenarioInfo | null>(null)
 const showIntro = ref(true)
 
+// Track whether we already auto-expanded the hint for the current step
+const hintAutoShown = ref(false)
+
 // Verify state
 const isVerifying = ref(false)
 const verifyResult = ref<VerifyStepResponse | null>(null)
@@ -449,6 +452,7 @@ async function loadCurrentStep() {
   flagResult.value = null
   flagValue.value = ''
   showHint.value = false
+  hintAutoShown.value = false
 
   try {
     const step = await scenarioSessionService.getCurrentStep(props.scenarioSessionId)
@@ -497,6 +501,12 @@ async function handleVerify() {
     const result = await scenarioSessionService.verifyStep(props.scenarioSessionId)
     verifyResult.value = result
 
+    // Auto-expand hint on first failure if the step has a hint
+    if (!result.passed && currentStep.value?.hint && !hintAutoShown.value) {
+      showHint.value = true
+      hintAutoShown.value = true
+    }
+
     if (result.passed) {
       // If there's a next step, reload after a delay to show the success message
       if (result.next_step) {
@@ -530,6 +540,12 @@ async function handleSubmitFlag() {
   try {
     const result = await scenarioSessionService.submitFlag(props.scenarioSessionId, flagValue.value.trim())
     flagResult.value = result
+
+    // Auto-expand hint on first failure if the step has a hint
+    if (!result.correct && currentStep.value?.hint && !hintAutoShown.value) {
+      showHint.value = true
+      hintAutoShown.value = true
+    }
 
     if (result.correct) {
       if (result.next_step !== undefined && result.next_step !== null) {
