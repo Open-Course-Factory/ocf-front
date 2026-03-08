@@ -367,22 +367,22 @@ function toggleSection(sectionId: string) {
 .admin-dashboard {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: var(--spacing-lg);
 }
 
 .dashboard-header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: var(--spacing-2xl);
 }
 
 .dashboard-header h1 {
   color: var(--color-text-primary);
-  font-size: 2.5rem;
-  margin: 0 0 15px 0;
+  font-size: var(--font-size-4xl);
+  margin: 0 0 var(--spacing-md) 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 15px;
+  gap: var(--spacing-md);
 }
 
 .dashboard-header h1 i {
@@ -391,7 +391,7 @@ function toggleSection(sectionId: string) {
 
 .dashboard-description {
   color: var(--color-text-muted);
-  font-size: 1.2rem;
+  font-size: var(--font-size-lg);
   max-width: 600px;
   margin: 0 auto;
 }
@@ -399,21 +399,21 @@ function toggleSection(sectionId: string) {
 .dashboard-sections {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--spacing-lg);
 }
 
 .dashboard-section {
   border: var(--border-width-thin) solid var(--color-border-light);
-  border-radius: 8px;
+  border-radius: var(--border-radius-lg);
   overflow: hidden;
   background: var(--color-bg-primary);
   box-shadow: var(--shadow-sm);
 }
 
 .section-card {
-  padding: 25px;
+  padding: var(--spacing-xl);
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color var(--transition-slow);
 }
 
 .section-card:hover {
@@ -429,23 +429,23 @@ function toggleSection(sectionId: string) {
 .section-title {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: var(--spacing-md);
 }
 
 .section-title i {
-  font-size: 1.5rem;
+  font-size: var(--font-size-2xl);
   color: var(--color-primary);
 }
 
 .section-title h3 {
   margin: 0;
   color: var(--color-text-primary);
-  font-size: 1.3rem;
+  font-size: var(--font-size-xl);
 }
 
 .section-toggle i {
   color: var(--color-text-muted);
-  transition: transform 0.3s ease;
+  transition: transform var(--transition-slow);
 }
 
 .section-toggle i.rotated {
@@ -466,11 +466,11 @@ function toggleSection(sectionId: string) {
 .dashboard-item {
   display: flex;
   align-items: center;
-  padding: 20px 25px;
+  padding: var(--spacing-lg) var(--spacing-xl);
   text-decoration: none;
   color: inherit;
   background: var(--color-bg-primary);
-  transition: all 0.3s ease;
+  transition: all var(--transition-slow);
   border-bottom: var(--border-width-thin) solid var(--color-border-light);
 }
 
@@ -480,12 +480,12 @@ function toggleSection(sectionId: string) {
 }
 
 .item-icon {
-  margin-right: 20px;
+  margin-right: var(--spacing-lg);
   flex-shrink: 0;
 }
 
 .item-icon i {
-  font-size: 1.3rem;
+  font-size: var(--font-size-xl);
   color: var(--color-primary);
   width: 30px;
   text-align: center;
@@ -496,45 +496,45 @@ function toggleSection(sectionId: string) {
 }
 
 .item-content h4 {
-  margin: 0 0 5px 0;
+  margin: 0 0 var(--spacing-xs) 0;
   color: var(--color-text-primary);
-  font-size: 1.1rem;
+  font-size: var(--font-size-md);
 }
 
 .item-content p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .item-arrow {
-  margin-left: 15px;
+  margin-left: var(--spacing-md);
   flex-shrink: 0;
 }
 
 .item-arrow i {
   color: var(--color-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .admin-dashboard {
-    padding: 10px;
+    padding: var(--spacing-sm);
   }
 
   .dashboard-header h1 {
-    font-size: 2rem;
+    font-size: var(--font-size-3xl);
     flex-direction: column;
-    gap: 10px;
+    gap: var(--spacing-sm);
   }
 
   .dashboard-description {
-    font-size: 1rem;
+    font-size: var(--font-size-md);
   }
 
   .section-card {
-    padding: 20px;
+    padding: var(--spacing-lg);
   }
 
   .dashboard-items {
@@ -542,11 +542,11 @@ function toggleSection(sectionId: string) {
   }
 
   .dashboard-item {
-    padding: 15px 20px;
+    padding: var(--spacing-md) var(--spacing-lg);
   }
 
   .item-icon {
-    margin-right: 15px;
+    margin-right: var(--spacing-md);
   }
 }
 </style>
