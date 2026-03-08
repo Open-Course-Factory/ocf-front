@@ -148,7 +148,6 @@
                 @click="handleEntityClick(entity)"
               >
                 <i class="fas fa-eye"></i>
-                <br>
                 {{ t('viewDetails') }}
               </button>
               <button
@@ -157,7 +156,6 @@
                 @click="openModal(entity)"
               >
                 <i class="fas fa-edit"></i>
-                <br>
                 {{ t('edit') }}
               </button>
               <button
@@ -166,7 +164,6 @@
                 @click="deleteEntity(entity.id)"
               >
                 <i class="fas fa-trash"></i>
-                <br>
                 {{ t('delete') }}
               </button>
             </div>
@@ -1422,6 +1419,8 @@ ul {
   margin-left: 0;
   margin-bottom: 0;
   width: 100%;
+  justify-content: center;
+  text-align: center;
 }
 
 .actions .btn i {

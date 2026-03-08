@@ -100,11 +100,13 @@ async function exportArchive(entity: any) {
       </button>
     </template>
     <template #actions="{ entity }">
-      <button class="btn btn-sm btn-outline" @click="exportJSON(entity)" :title="t('scenarios.exportJson')">
+      <button class="btn btn-secondary" @click="exportJSON(entity)">
         <i class="fas fa-file-download"></i>
+        {{ t('scenarios.exportJson') }}
       </button>
-      <button class="btn btn-sm btn-outline" @click="exportArchive(entity)" :title="t('scenarios.exportKillercoda')">
+      <button class="btn btn-secondary" @click="exportArchive(entity)">
         <i class="fas fa-file-archive"></i>
+        {{ t('scenarios.exportKillercoda') }}
       </button>
     </template>
   </Entity>
