@@ -161,6 +161,7 @@
                 {{ isSubmittingFlag ? t('scenarioPanel.submitting') : t('scenarioPanel.submitFlag') }}
               </button>
             </div>
+            <p class="flag-hint">{{ t('scenarioPanel.flagHint') }}</p>
             <!-- Flag result feedback -->
             <div v-if="flagResult" class="flag-result" role="status" aria-live="polite" :class="{ correct: flagResult.correct, incorrect: !flagResult.correct }">
               <i :class="flagResult.correct ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
@@ -238,6 +239,7 @@ const { t } = useTranslations({
       flagCorrect: 'Correct!',
       flagIncorrect: 'Incorrect flag. Try again.',
       flagPlaceholder: 'Enter flag...',
+      flagHint: 'Flags look like FLAG{abc123...}. Find it in the terminal to submit.',
       abandon: 'Abandon Scenario',
       abandonConfirm: 'This session will be marked as abandoned. You can start a new attempt later.',
       abandonTitle: 'Abandon Scenario',
@@ -273,6 +275,7 @@ const { t } = useTranslations({
       flagCorrect: 'Correct !',
       flagIncorrect: 'Flag incorrect. Réessayez.',
       flagPlaceholder: 'Entrez le flag...',
+      flagHint: 'Les flags sont au format FLAG{abc123...}. Trouvez-le dans le terminal pour le soumettre.',
       abandon: 'Abandonner le scénario',
       abandonConfirm: 'Cette session sera marquée comme abandonnée. Vous pourrez recommencer une nouvelle tentative plus tard.',
       abandonTitle: 'Abandonner le scénario',
@@ -916,6 +919,13 @@ onMounted(() => {
 .flag-input-row {
   display: flex;
   gap: var(--spacing-sm);
+}
+
+.flag-hint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: var(--line-height-relaxed);
 }
 
 .flag-input {
