@@ -148,12 +148,10 @@ export class FieldBuilder {
 
   creatable(): this {
     this.config.toBeSet = true
-    this.config.toBeEdited = false
     return this
   }
 
   updatable(): this {
-    this.config.toBeSet = false
     this.config.toBeEdited = true
     return this
   }
