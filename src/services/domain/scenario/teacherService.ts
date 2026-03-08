@@ -83,5 +83,64 @@ export const teacherService = {
     if (Array.isArray(data)) return data
     if (data.instance_types && Array.isArray(data.instance_types)) return data.instance_types
     return []
+  },
+
+  // --- Scenario import/export operations ---
+
+  async exportScenarioJSON(scenarioId: string): Promise<any> {
+    const response = await axios.get(`/scenarios/${scenarioId}/export`, { params: { format: 'json' } })
+    return response.data
+  },
+
+  async exportScenarioArchive(scenarioId: string): Promise<Blob> {
+    const response = await axios.get(`/scenarios/${scenarioId}/export`, {
+      params: { format: 'killerkoda' },
+      responseType: 'blob'
+    })
+    return response.data
+  },
+
+  async exportScenariosJSON(ids: string[]): Promise<any[]> {
+    const response = await axios.post('/scenarios/export', { ids })
+    return response.data
+  },
+
+  async importScenarioJSON(data: any): Promise<any> {
+    const response = await axios.post('/scenarios/import-json', data)
+    return response.data
+  },
+
+  // --- Group-level import/export ---
+
+  async groupExportScenarioJSON(groupId: string, scenarioId: string): Promise<any> {
+    const response = await axios.get(`/groups/${groupId}/scenarios/${scenarioId}/export`, { params: { format: 'json' } })
+    return response.data
+  },
+
+  async groupExportScenarioArchive(groupId: string, scenarioId: string): Promise<Blob> {
+    const response = await axios.get(`/groups/${groupId}/scenarios/${scenarioId}/export`, {
+      params: { format: 'killerkoda' },
+      responseType: 'blob'
+    })
+    return response.data
+  },
+
+  async groupImportScenarioJSON(groupId: string, data: any): Promise<any> {
+    const response = await axios.post(`/groups/${groupId}/scenarios/import-json`, data)
+    return response.data
+  },
+
+  async groupUploadScenario(groupId: string, file: File, onProgress?: (percent: number) => void): Promise<any> {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await axios.post(`/groups/${groupId}/scenarios/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (e) => {
+        if (e.total && onProgress) {
+          onProgress(Math.round((e.loaded * 100) / e.total))
+        }
+      }
+    })
+    return response.data
   }
 }
