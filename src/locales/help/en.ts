@@ -2619,12 +2619,12 @@ export const helpEn = {
             description: "Type or paste the flag you found into the input field and click <strong>\"Submit Flag\"</strong>. A green message confirms a correct flag, while a red message means it is incorrect — you can try again."
           },
           unique: {
-            title: "Unique Per Student",
-            description: "Each student receives <strong>unique flags</strong> generated specifically for their session. Sharing flags with others will not work, as they are cryptographically bound to each individual student."
+            title: "Unique Per Learner",
+            description: "Each learner receives <strong>unique flags</strong> generated specifically for their session. Sharing flags with others will not work, as they are cryptographically bound to each individual learner."
           },
           tip: {
             title: "Tip",
-            description: "Flags are generated uniquely for each student using cryptographic hashing, so you must find your own. Look carefully in the exercise environment — flags can be hidden in files, command outputs, or service configurations."
+            description: "Flags are generated uniquely for each learner using cryptographic hashing, so you must find your own. Look carefully in the exercise environment — flags can be hidden in files, command outputs, or service configurations."
           }
         },
 
@@ -2770,8 +2770,8 @@ export const helpEn = {
             description: "For individual steps, enable the <strong>\"Has Flag\"</strong> option. Those steps will display a flag input field instead of a Verify button."
           },
           unique: {
-            title: "Unique Flags Per Student",
-            description: "Flags are generated using <strong>HMAC-SHA256</strong> and are unique per student — it is impossible for students to share answers. The flag format is <strong>FLAG{16-hex-characters}</strong>."
+            title: "Unique Flags Per Learner",
+            description: "Flags are generated using <strong>HMAC-SHA256</strong> and are unique per learner — it is impossible for learners to share answers. The flag format is <strong>FLAG{16-hex-characters}</strong>."
           },
           tip: {
             title: "Tip",
@@ -2790,11 +2790,11 @@ export const helpEn = {
         },
 
         monitoring: {
-          title: "Monitoring Student Progress",
+          title: "Monitoring Learner Progress",
           description: "Track how your learners are progressing through your scenarios.",
           navigate: {
             title: "View Scenario Sessions",
-            description: "Navigate to <strong>Admin > Scenario Sessions</strong> to see all student sessions across your scenarios.",
+            description: "Navigate to <strong>Admin > Scenario Sessions</strong> to see all learner sessions across your scenarios.",
             button: "Go to Scenario Sessions"
           },
           track: {
