@@ -23,8 +23,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
+import { useNotification } from '../../composables/useNotification'
+import { teacherService } from '../../services/domain/scenario'
 import BaseModal from '../Modals/BaseModal.vue'
 
 interface ScenarioAssignment {
@@ -211,6 +212,8 @@ const { t } = useTranslations({
   }
 })
 
+const { showError: notifyError } = useNotification()
+
 interface InstanceType {
   prefix: string
   name: string
@@ -258,7 +261,6 @@ interface SessionDetailResponse {
 const assignments = ref<ScenarioAssignment[]>([])
 const availableScenarios = ref<Scenario[]>([])
 const isLoading = ref(false)
-const error = ref('')
 const showAssignModal = ref(false)
 const selectedScenarioId = ref('')
 const assignDeadline = ref('')
@@ -303,14 +305,10 @@ const filteredScenarios = () => {
 // Load assignments
 async function loadAssignments() {
   isLoading.value = true
-  error.value = ''
   try {
-    const response = await axios.get('/scenario-assignments', {
-      params: { group_id: props.groupId }
-    })
-    assignments.value = response.data?.data || response.data || []
+    assignments.value = await teacherService.getGroupAssignments(props.groupId)
   } catch (err: any) {
-    error.value = err.response?.data?.error_message || t('groupScenarios.loadError')
+    notifyError(err.response?.data?.error_message || t('groupScenarios.loadError'))
   } finally {
     isLoading.value = false
   }
@@ -319,8 +317,7 @@ async function loadAssignments() {
 // Load available scenarios for the assign modal
 async function loadScenarios() {
   try {
-    const response = await axios.get('/scenarios')
-    availableScenarios.value = response.data?.data || response.data || []
+    availableScenarios.value = await teacherService.listScenarios()
   } catch (err: any) {
     console.error('Failed to load scenarios:', err)
   }
@@ -329,21 +326,19 @@ async function loadScenarios() {
 // Assign scenario
 async function handleAssign() {
   if (!selectedScenarioId.value) return
-  error.value = ''
   try {
-    await axios.post('/scenario-assignments', {
-      scenario_id: selectedScenarioId.value,
-      group_id: props.groupId,
-      scope: 'group',
-      deadline: assignDeadline.value || undefined
-    })
+    await teacherService.assignScenarioToGroup(
+      props.groupId,
+      selectedScenarioId.value,
+      { deadline: assignDeadline.value || undefined }
+    )
     showAssignModal.value = false
     selectedScenarioId.value = ''
     assignDeadline.value = ''
     scenarioSearch.value = ''
     await loadAssignments()
   } catch (err: any) {
-    error.value = err.response?.data?.error_message || t('groupScenarios.assignError')
+    notifyError(err.response?.data?.error_message || t('groupScenarios.assignError'))
   }
 }
 
@@ -351,13 +346,7 @@ async function handleAssign() {
 async function loadInstanceTypes() {
   loadingInstanceTypes.value = true
   try {
-    const response = await axios.get('/terminals/instance-types')
-    const data = response.data
-    if (Array.isArray(data)) {
-      instanceTypes.value = data
-    } else if (data.instance_types && Array.isArray(data.instance_types)) {
-      instanceTypes.value = data.instance_types
-    }
+    instanceTypes.value = await teacherService.getInstanceTypes()
     // Auto-select first if only one
     if (instanceTypes.value.length === 1) {
       selectedInstanceType.value = instanceTypes.value[0].prefix
@@ -383,13 +372,12 @@ async function confirmBulkStart() {
   const assignment = assignmentToBulkStart.value
   showBulkStartModal.value = false
   bulkStartingId.value = assignment.id
-  error.value = ''
   try {
-    const response = await axios.post(
-      `/teacher/groups/${props.groupId}/scenarios/${assignment.scenario_id}/bulk-start`,
+    const data = await teacherService.bulkStartScenario(
+      props.groupId,
+      assignment.scenario_id,
       { instance_type: selectedInstanceType.value }
     )
-    const data = response.data
     const started = data?.created || data?.started || 0
     const skipped = data?.skipped || 0
     resultMessage.value = t('groupScenarios.bulkStartResult', { started, skipped })
@@ -397,7 +385,7 @@ async function confirmBulkStart() {
     resultErrors.value = data?.errors || []
     showResultModal.value = true
   } catch (err: any) {
-    error.value = err.response?.data?.error || err.response?.data?.error_message || t('groupScenarios.bulkStartError')
+    notifyError(err.response?.data?.error || err.response?.data?.error_message || t('groupScenarios.bulkStartError'))
   } finally {
     bulkStartingId.value = null
     assignmentToBulkStart.value = null
@@ -412,14 +400,13 @@ function handleRemove(assignment: ScenarioAssignment) {
 
 async function confirmRemove() {
   if (!assignmentToRemove.value) return
-  error.value = ''
   try {
-    await axios.delete(`/scenario-assignments/${assignmentToRemove.value.id}`)
+    await teacherService.removeAssignment(assignmentToRemove.value.id)
     showConfirmRemoveModal.value = false
     assignmentToRemove.value = null
     await loadAssignments()
   } catch (err: any) {
-    error.value = err.response?.data?.error_message || t('groupScenarios.removeError')
+    notifyError(err.response?.data?.error_message || t('groupScenarios.removeError'))
   }
 }
 
@@ -431,19 +418,19 @@ function handleReset(assignment: ScenarioAssignment) {
 
 async function confirmReset() {
   if (!assignmentToReset.value) return
-  error.value = ''
   try {
-    const response = await axios.post(
-      `/teacher/groups/${props.groupId}/scenarios/${assignmentToReset.value.scenario_id}/reset-sessions`
+    const data = await teacherService.resetGroupScenarioSessions(
+      props.groupId,
+      assignmentToReset.value.scenario_id
     )
-    const count = response.data?.abandoned || 0
+    const count = data?.abandoned || 0
     showResetModal.value = false
     assignmentToReset.value = null
     resultMessage.value = t('groupScenarios.resetSuccess', { count })
     resultNoKeyUsers.value = []
     showResultModal.value = true
   } catch (err: any) {
-    error.value = err.response?.data?.error_message || t('groupScenarios.resetError')
+    notifyError(err.response?.data?.error_message || t('groupScenarios.resetError'))
   }
 }
 
@@ -453,12 +440,12 @@ async function handleViewResults(assignment: ScenarioAssignment) {
   loadingResults.value = true
   scenarioResults.value = []
   try {
-    const response = await axios.get(
-      `/teacher/groups/${props.groupId}/scenarios/${assignment.scenario_id}/results`
+    scenarioResults.value = await teacherService.getScenarioResults(
+      props.groupId,
+      assignment.scenario_id
     )
-    scenarioResults.value = response.data || []
   } catch (err: any) {
-    error.value = err.response?.data?.error || t('groupScenarios.loadError')
+    notifyError(err.response?.data?.error || t('groupScenarios.loadError'))
   } finally {
     loadingResults.value = false
   }
@@ -468,10 +455,10 @@ async function handleViewResults(assignment: ScenarioAssignment) {
   resultsRefreshInterval.value = setInterval(async () => {
     if (!showResultsForAssignment.value) return
     try {
-      const response = await axios.get(
-        `/teacher/groups/${props.groupId}/scenarios/${showResultsForAssignment.value.scenario_id}/results`
+      scenarioResults.value = await teacherService.getScenarioResults(
+        props.groupId,
+        showResultsForAssignment.value.scenario_id
       )
-      scenarioResults.value = response.data || []
     } catch {
       // Silently ignore refresh errors
     }
@@ -493,12 +480,12 @@ async function handleViewDetail(result: ScenarioResultItem) {
   loadingDetail.value = true
   sessionDetail.value = null
   try {
-    const response = await axios.get(
-      `/teacher/groups/${props.groupId}/sessions/${result.session_id}/detail`
+    sessionDetail.value = await teacherService.getSessionDetail(
+      props.groupId,
+      result.session_id
     )
-    sessionDetail.value = response.data
   } catch (err: any) {
-    error.value = err.response?.data?.error || t('groupScenarios.loadError')
+    notifyError(err.response?.data?.error || t('groupScenarios.loadError'))
     showDetailModal.value = false
   } finally {
     loadingDetail.value = false
@@ -618,10 +605,6 @@ onUnmounted(() => {
       </button>
     </div>
 
-    <div v-if="error" class="alert alert-danger" role="alert">
-      {{ error }}
-    </div>
-
     <div v-if="isLoading" class="loading-state" role="status">
       <i class="fas fa-spinner fa-spin"></i>
     </div>
@@ -712,7 +695,8 @@ onUnmounted(() => {
         <p>{{ t('groupScenarios.noResults') }}</p>
       </div>
 
-      <table v-else class="results-table" :aria-label="t('groupScenarios.studentResults')">
+      <div v-else class="results-table-container">
+      <table class="results-table" :aria-label="t('groupScenarios.studentResults')">
         <thead>
           <tr>
             <th>{{ t('groupScenarios.student') }}</th>
@@ -759,6 +743,7 @@ onUnmounted(() => {
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
 
     <!-- Session Detail Modal -->
@@ -1173,16 +1158,8 @@ onUnmounted(() => {
   border-color: var(--color-border-dark);
 }
 
-.alert {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--border-radius-md);
-  margin-bottom: var(--spacing-md);
-}
-
-.alert-danger {
-  background-color: var(--color-danger-bg);
-  color: var(--color-danger-text);
-  border: 1px solid var(--color-danger-border);
+.results-table-container {
+  overflow-x: auto;
 }
 
 /* Results panel */
