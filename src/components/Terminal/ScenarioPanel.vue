@@ -49,6 +49,10 @@
       <div v-else-if="loadError" class="panel-error">
         <i class="fas fa-exclamation-triangle"></i>
         <span>{{ t('scenarioPanel.error') }}</span>
+        <button class="retry-btn" @click="loadCurrentStep">
+          <i class="fas fa-redo"></i>
+          {{ t('scenarioPanel.retry') }}
+        </button>
       </div>
 
       <!-- Completed state -->
@@ -247,6 +251,7 @@ const { t } = useTranslations({
       completedMessage: 'Congratulations! You have completed all steps.',
       loading: 'Loading scenario...',
       error: 'Failed to load scenario data.',
+      retry: 'Retry',
       noScenario: 'No active scenario',
       output: 'Output',
       collapsePanel: 'Collapse panel',
@@ -283,6 +288,7 @@ const { t } = useTranslations({
       completedMessage: 'Félicitations ! Vous avez terminé toutes les étapes.',
       loading: 'Chargement du scénario...',
       error: 'Échec du chargement des données du scénario.',
+      retry: 'Réessayer',
       noScenario: 'Aucun scénario actif',
       output: 'Sortie',
       collapsePanel: 'Replier le panneau',
@@ -1062,6 +1068,32 @@ onMounted(() => {
 .panel-error i {
   color: var(--color-danger);
   font-size: var(--font-size-lg);
+}
+
+.retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: transparent;
+  color: var(--color-primary);
+  border: var(--border-width-thin) solid var(--color-primary);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.retry-btn:hover {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.retry-btn i {
+  color: inherit;
+  font-size: var(--font-size-sm);
 }
 
 .panel-empty i {
