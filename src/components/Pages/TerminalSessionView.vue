@@ -49,7 +49,7 @@
             <i class="fas fa-book-open"></i>
             <span>{{ t('sessionView.scenarioBriefing') }}</span>
           </div>
-          <button class="briefing-toggle" @click="showBriefing = !showBriefing" :aria-expanded="showBriefing">
+          <button class="briefing-toggle" @click="toggleBriefing" :aria-expanded="showBriefing">
             <i :class="showBriefing ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
           </button>
         </div>
@@ -111,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { marked } from 'marked'
@@ -207,6 +207,18 @@ const sessionId = route.params.sessionId as string
 const scenarioBriefing = ref<ScenarioInfo | null>(null)
 const showBriefing = ref(true)
 
+function toggleBriefing() {
+  showBriefing.value = !showBriefing.value
+  if (scenarioSessionId.value) {
+    const key = 'briefing-dismissed-' + scenarioSessionId.value
+    if (!showBriefing.value) {
+      localStorage.setItem(key, '1')
+    } else {
+      localStorage.removeItem(key)
+    }
+  }
+}
+
 const scenarioBriefingText = computed(() =>
   scenarioBriefing.value?.intro_text || scenarioBriefing.value?.description || ''
 )
@@ -229,6 +241,13 @@ function handleScenarioInfoLoaded(info: ScenarioInfo) {
 // Scenario session ID: auto-detected from terminal, or manual override via query parameter
 const scenarioSessionId = ref<string | null>(null)
 const scenarioTerminalRef = ref<InstanceType<typeof TerminalSessionPanel> | null>(null)
+
+// Restore briefing dismissed state from localStorage when scenario session is known
+watch(scenarioSessionId, (id) => {
+  if (id && localStorage.getItem('briefing-dismissed-' + id)) {
+    showBriefing.value = false
+  }
+})
 
 function handlePasteCommand(command: string) {
   scenarioTerminalRef.value?.pasteText(command)
