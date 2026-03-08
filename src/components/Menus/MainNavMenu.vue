@@ -395,6 +395,13 @@ const menuCategories = computed((): MenuCategory[] => [
         featureFlag: 'terminal_management'
       },
       {
+        route: '/help/scenarios/getting-started',
+        label: t('help.sections.scenarios.title'),
+        title: t('help.sections.scenarios.description'),
+        icon: 'fas fa-flag-checkered',
+        featureFlag: 'scenarios'
+      },
+      {
         route: '/help/courses/structure',
         label: t('help.sections.courses.title'),
         title: t('help.sections.courses.description'),
