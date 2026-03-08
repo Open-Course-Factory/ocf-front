@@ -1,15 +1,15 @@
 <template>
   <BaseModal
     :visible="visible"
-    :title="t('scenarioUpload.title')"
-    title-icon="fas fa-file-import"
+    :title="t('jsonImport.title')"
+    title-icon="fas fa-file-code"
     size="medium"
     @close="handleClose"
   >
     <!-- Upload form -->
-    <div v-if="!uploadSuccess" class="scenario-upload">
+    <div v-if="!importSuccess" class="scenario-upload">
       <p class="upload-description">
-        {{ t('scenarioUpload.description') }}
+        {{ t('jsonImport.description') }}
       </p>
 
       <div
@@ -26,17 +26,17 @@
         <input
           ref="fileInput"
           type="file"
-          accept=".zip,.tar.gz,.tgz"
+          accept=".json"
           class="file-input"
           @change="handleFileSelect"
         />
 
         <div class="dropzone-content" @click="triggerFileSelect">
           <div v-if="!selectedFile" class="dropzone-prompt">
-            <i class="fas fa-cloud-upload-alt dropzone-icon"></i>
+            <i class="fas fa-file-code dropzone-icon"></i>
             <div class="dropzone-text">
-              <strong>{{ t('scenarioUpload.dragDrop') }}</strong>
-              <span class="dropzone-hint">{{ t('scenarioUpload.acceptedFormats') }}</span>
+              <strong>{{ t('jsonImport.dragDrop') }}</strong>
+              <span class="dropzone-hint">{{ t('jsonImport.acceptedFormats') }}</span>
             </div>
           </div>
 
@@ -50,7 +50,7 @@
               type="button"
               class="btn-clear"
               @click.stop="clearFile"
-              :title="t('scenarioUpload.clearFile')"
+              :title="t('jsonImport.clearFile')"
             >
               <i class="fas fa-times"></i>
             </button>
@@ -58,35 +58,41 @@
         </div>
       </div>
 
+      <!-- Preview -->
+      <div v-if="parsedData" class="preview-info">
+        <i class="fas fa-info-circle"></i>
+        <span>{{ t('jsonImport.preview', { title: parsedData.title, steps: parsedData.steps?.length || 0 }) }}</span>
+      </div>
+
       <div v-if="errorMessage" class="error-message">
         <i class="fas fa-exclamation-triangle"></i>
         {{ errorMessage }}
       </div>
 
-      <!-- Progress bar -->
-      <div v-if="isUploading" class="progress-container">
+      <!-- Progress -->
+      <div v-if="isImporting" class="progress-container">
         <div class="progress-bar">
-          <div class="progress-fill" :style="{ width: `${uploadProgress}%` }"></div>
+          <div class="progress-fill indeterminate"></div>
         </div>
-        <span class="progress-text">{{ uploadProgress }}%</span>
+        <span class="progress-text">{{ t('jsonImport.importing') }}</span>
       </div>
 
       <!-- Footer buttons -->
       <div class="upload-footer">
         <button
           class="btn btn-primary"
-          :disabled="!selectedFile || isUploading"
-          @click="handleUpload"
+          :disabled="!parsedData || isImporting"
+          @click="handleImport"
         >
           <i class="fas fa-file-import"></i>
-          {{ t('scenarioUpload.import') }}
+          {{ t('jsonImport.import') }}
         </button>
         <button
           class="btn btn-secondary"
-          :disabled="isUploading"
+          :disabled="isImporting"
           @click="handleClose"
         >
-          {{ t('scenarioUpload.cancel') }}
+          {{ t('jsonImport.cancel') }}
         </button>
       </div>
     </div>
@@ -95,11 +101,11 @@
     <div v-else class="upload-success">
       <div class="success-message">
         <i class="fas fa-check-circle"></i>
-        {{ t('scenarioUpload.success') }}
+        {{ t('jsonImport.success') }}
       </div>
       <div class="upload-footer">
         <button class="btn btn-primary" @click="handleSuccessClose">
-          {{ t('scenarioUpload.close') }}
+          {{ t('jsonImport.close') }}
         </button>
       </div>
     </div>
@@ -108,12 +114,11 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import axios from 'axios'
 import BaseModal from './BaseModal.vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { teacherService } from '../../services/domain/scenario'
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
 const props = defineProps<{
   visible: boolean
@@ -122,55 +127,63 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  uploaded: [scenario: any]
+  imported: [scenario: any]
 }>()
 
 const { t } = useTranslations({
   en: {
-    scenarioUpload: {
-      title: 'Import KillerCoda Scenario',
-      description: 'Upload a KillerCoda-compatible scenario archive (.zip or .tar.gz). The archive should contain the scenario structure with index.json, steps, and assets.',
+    jsonImport: {
+      title: 'Import JSON Scenario',
+      description: 'Upload a scenario JSON file exported from OCF. The file must contain a title and steps.',
       dragDrop: 'Drag & drop or click to select a file',
-      acceptedFormats: 'Accepted formats: .zip, .tar.gz, .tgz (max 10 MB)',
+      acceptedFormats: 'Accepted format: .json (max 5 MB)',
       clearFile: 'Clear file',
       import: 'Import',
       cancel: 'Cancel',
       close: 'Close',
+      importing: 'Importing...',
       success: 'Scenario imported successfully!',
-      invalidFile: 'Invalid file type. Please select a .zip, .tar.gz, or .tgz file.',
-      fileTooLarge: 'File exceeds the 10 MB size limit.',
-      uploadError: 'An error occurred during upload. Please try again.'
+      preview: 'Scenario: {title} — {steps} step(s)',
+      invalidFile: 'Invalid file type. Please select a .json file.',
+      fileTooLarge: 'File exceeds the 5 MB size limit.',
+      invalidJson: 'Invalid JSON file. Could not parse the content.',
+      missingFields: 'Invalid scenario file. Missing required fields: title and steps.',
+      importError: 'An error occurred during import. Please try again.'
     }
   },
   fr: {
-    scenarioUpload: {
-      title: 'Importer un scénario KillerCoda',
-      description: 'Téléversez une archive de scénario compatible KillerCoda (.zip ou .tar.gz). L\'archive doit contenir la structure du scénario avec index.json, les étapes et les ressources.',
+    jsonImport: {
+      title: 'Importer un scénario JSON',
+      description: 'Téléversez un fichier JSON de scénario exporté depuis OCF. Le fichier doit contenir un titre et des étapes.',
       dragDrop: 'Glisser-déposer ou cliquer pour sélectionner un fichier',
-      acceptedFormats: 'Formats acceptés : .zip, .tar.gz, .tgz (max 10 Mo)',
+      acceptedFormats: 'Format accepté : .json (max 5 Mo)',
       clearFile: 'Effacer le fichier',
       import: 'Importer',
       cancel: 'Annuler',
       close: 'Fermer',
+      importing: 'Importation...',
       success: 'Scénario importé avec succès !',
-      invalidFile: 'Type de fichier invalide. Veuillez sélectionner un fichier .zip, .tar.gz ou .tgz.',
-      fileTooLarge: 'Le fichier dépasse la limite de 10 Mo.',
-      uploadError: 'Une erreur est survenue lors du téléversement. Veuillez réessayer.'
+      preview: 'Scénario : {title} — {steps} étape(s)',
+      invalidFile: 'Type de fichier invalide. Veuillez sélectionner un fichier .json.',
+      fileTooLarge: 'Le fichier dépasse la limite de 5 Mo.',
+      invalidJson: 'Fichier JSON invalide. Impossible de lire le contenu.',
+      missingFields: 'Fichier de scénario invalide. Champs requis manquants : titre et étapes.',
+      importError: 'Une erreur est survenue lors de l\'importation. Veuillez réessayer.'
     }
   }
 })
 
 const fileInput = ref<HTMLInputElement>()
 const selectedFile = ref<File | null>(null)
+const parsedData = ref<any>(null)
 const isDragging = ref(false)
-const isUploading = ref(false)
-const uploadProgress = ref(0)
+const isImporting = ref(false)
 const errorMessage = ref<string | null>(null)
-const uploadSuccess = ref(false)
-const uploadedScenario = ref<any>(null)
+const importSuccess = ref(false)
+const importedScenario = ref<any>(null)
 
 function triggerFileSelect() {
-  if (!isUploading.value) {
+  if (!isImporting.value) {
     fileInput.value?.click()
   }
 }
@@ -201,93 +214,94 @@ function handleDrop(event: DragEvent) {
 
 function validateAndSetFile(file: File) {
   errorMessage.value = null
+  parsedData.value = null
 
   const name = file.name.toLowerCase()
-  const isValidType = name.endsWith('.zip') || name.endsWith('.tar.gz') || name.endsWith('.tgz')
-  if (!isValidType) {
-    errorMessage.value = t('scenarioUpload.invalidFile')
+  if (!name.endsWith('.json')) {
+    errorMessage.value = t('jsonImport.invalidFile')
     return
   }
 
   if (file.size > MAX_FILE_SIZE) {
-    errorMessage.value = t('scenarioUpload.fileTooLarge')
+    errorMessage.value = t('jsonImport.fileTooLarge')
     return
   }
 
   selectedFile.value = file
+  readAndParseFile(file)
+}
+
+async function readAndParseFile(file: File) {
+  try {
+    const text = await file.text()
+    const data = JSON.parse(text)
+
+    if (!data.title || !data.steps) {
+      errorMessage.value = t('jsonImport.missingFields')
+      return
+    }
+
+    parsedData.value = data
+  } catch {
+    errorMessage.value = t('jsonImport.invalidJson')
+  }
 }
 
 function clearFile() {
   selectedFile.value = null
+  parsedData.value = null
   errorMessage.value = null
-  uploadProgress.value = 0
   if (fileInput.value) {
     fileInput.value.value = ''
   }
 }
 
-async function handleUpload() {
-  if (!selectedFile.value) return
+async function handleImport() {
+  if (!parsedData.value) return
 
-  isUploading.value = true
-  uploadProgress.value = 0
+  isImporting.value = true
   errorMessage.value = null
 
   try {
-    let responseData
+    let response
     if (props.groupId) {
-      responseData = await teacherService.groupUploadScenario(
-        props.groupId,
-        selectedFile.value,
-        (percent) => { uploadProgress.value = percent }
-      )
+      response = await teacherService.groupImportScenarioJSON(props.groupId, parsedData.value)
     } else {
-      const formData = new FormData()
-      formData.append('file', selectedFile.value)
-
-      const response = await axios.post('/scenarios/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (e) => {
-          if (e.total) {
-            uploadProgress.value = Math.round((e.loaded * 100) / e.total)
-          }
-        }
-      })
-      responseData = response.data
+      response = await teacherService.importScenarioJSON(parsedData.value)
     }
 
-    uploadedScenario.value = responseData
-    uploadSuccess.value = true
+    importedScenario.value = response
+    importSuccess.value = true
   } catch (err: any) {
     errorMessage.value = err.response?.data?.error_message ||
       err.response?.data?.message ||
-      t('scenarioUpload.uploadError')
+      t('jsonImport.importError')
   } finally {
-    isUploading.value = false
+    isImporting.value = false
   }
 }
 
 function handleClose() {
-  if (!isUploading.value) {
+  if (!isImporting.value) {
     resetState()
     emit('close')
   }
 }
 
 function handleSuccessClose() {
-  const scenario = uploadedScenario.value
+  const scenario = importedScenario.value
   resetState()
-  emit('uploaded', scenario)
+  emit('imported', scenario)
 }
 
 function resetState() {
   selectedFile.value = null
+  parsedData.value = null
   isDragging.value = false
-  isUploading.value = false
-  uploadProgress.value = 0
+  isImporting.value = false
   errorMessage.value = null
-  uploadSuccess.value = false
-  uploadedScenario.value = null
+  importSuccess.value = false
+  importedScenario.value = null
   if (fileInput.value) {
     fileInput.value.value = ''
   }
@@ -421,6 +435,17 @@ function formatFileSize(bytes: number): string {
   opacity: 0.8;
 }
 
+.preview-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--color-primary-light, var(--color-bg-tertiary));
+  color: var(--color-primary);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+}
+
 .error-message {
   display: flex;
   align-items: center;
@@ -453,10 +478,21 @@ function formatFileSize(bytes: number): string {
   transition: width 0.3s ease;
 }
 
+.progress-fill.indeterminate {
+  width: 30%;
+  animation: indeterminate 1.5s infinite ease-in-out;
+}
+
+@keyframes indeterminate {
+  0% { margin-left: 0; }
+  50% { margin-left: 70%; }
+  100% { margin-left: 0; }
+}
+
 .progress-text {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  min-width: 40px;
+  min-width: 80px;
   text-align: right;
 }
 
