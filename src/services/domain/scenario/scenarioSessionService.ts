@@ -116,5 +116,14 @@ export const scenarioSessionService = {
   async getScenario(scenarioId: string): Promise<ScenarioInfo> {
     const response = await axios.get(`/scenarios/${scenarioId}`)
     return response.data
+  },
+
+  async getStepByOrder(sessionId: string, stepOrder: number): Promise<CurrentStepResponse | null> {
+    try {
+      const response = await axios.get(`/scenario-sessions/${sessionId}/step/${stepOrder}`)
+      return response.data
+    } catch {
+      return null
+    }
   }
 }
