@@ -29,14 +29,6 @@
           <i class="fas fa-flag-checkered"></i>
           {{ scenarioName || t('scenarioPanel.title') }}
         </h3>
-        <!-- Scenario description / intro (collapsible) -->
-        <div v-if="scenarioDescription" class="scenario-intro">
-          <button class="intro-toggle" @click="showIntro = !showIntro" :aria-expanded="showIntro">
-            <i :class="showIntro ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
-            {{ showIntro ? t('scenarioPanel.hideIntro') : t('scenarioPanel.showIntro') }}
-          </button>
-          <p v-if="showIntro" class="scenario-intro-text">{{ scenarioDescription }}</p>
-        </div>
       </div>
 
       <!-- Loading state -->
@@ -84,10 +76,17 @@
         </router-link>
       </div>
 
-      <!-- Active step content -->
-      <template v-else-if="currentStep">
-        <!-- Step transition animation -->
-        <div v-if="isTransitioning" class="panel-transitioning">
+      <!-- Step transition (full panel) -->
+      <div v-else-if="isTransitioning" class="panel-transitioning">
+        <!-- Phase 1: Step validated -->
+        <template v-if="transitionPhase === 'validated'">
+          <div class="transition-validated">
+            <i class="fas fa-check-circle validated-icon"></i>
+            <span class="validated-text">{{ t('scenarioPanel.stepValidated') }}</span>
+          </div>
+        </template>
+        <!-- Phase 2: Loading next step -->
+        <template v-else>
           <div class="transition-animation">
             <div class="transition-progress">
               <div class="transition-bar"></div>
@@ -97,9 +96,11 @@
               <span class="transition-text">{{ t('scenarioPanel.nextStep') }}</span>
             </div>
           </div>
-        </div>
+        </template>
+      </div>
 
-        <template v-else>
+      <!-- Active step content -->
+      <template v-else-if="currentStep">
         <!-- Progress indicator -->
         <div class="progress-bar">
           <span class="progress-label">{{ stepCountLabel }}</span>
@@ -217,7 +218,6 @@
             {{ t('scenarioPanel.abandon') }}
           </button>
         </div>
-        </template>
       </template>
 
       <!-- No scenario state -->
@@ -249,6 +249,7 @@ const emit = defineEmits<{
   'session-completed': []
   'session-abandoned': []
   'paste-command': [command: string]
+  'scenario-info-loaded': [info: ScenarioInfo]
 }>()
 
 // Configure marked for safe rendering
@@ -293,9 +294,8 @@ const { t } = useTranslations({
       copyCode: 'Copy',
       codeCopied: 'Copied!',
       pasteToTerminal: 'Paste to terminal',
-      showIntro: 'Show introduction',
-      hideIntro: 'Hide introduction',
       viewMyScenarios: 'View my scenarios',
+      stepValidated: 'Step validated!',
       nextStep: 'Loading next step...',
       completionSummary: 'Your Results',
       stepsCompleted: 'Steps Completed',
@@ -337,9 +337,8 @@ const { t } = useTranslations({
       copyCode: 'Copier',
       codeCopied: 'Copié !',
       pasteToTerminal: 'Coller dans le terminal',
-      showIntro: 'Afficher l\'introduction',
-      hideIntro: 'Masquer l\'introduction',
       viewMyScenarios: 'Voir mes scénarios',
+      stepValidated: 'Étape validée !',
       nextStep: 'Chargement de l\'étape suivante...',
       completionSummary: 'Vos résultats',
       stepsCompleted: 'Étapes complétées',
@@ -361,7 +360,6 @@ const showHint = ref(false)
 
 // Scenario metadata
 const scenarioInfo = ref<ScenarioInfo | null>(null)
-const showIntro = ref(true)
 
 // Session timing (for completion summary)
 const sessionStartedAt = ref<string | null>(null)
@@ -380,6 +378,7 @@ const flagResult = ref<SubmitFlagResponse | null>(null)
 
 // Step transition state
 const isTransitioning = ref(false)
+const transitionPhase = ref<'validated' | 'loading' | null>(null)
 
 // Step review navigation state
 const reviewingStep = ref<CurrentStepResponse | null>(null)
@@ -398,8 +397,6 @@ const stepCountLabel = computed(() => {
 
 // Scenario name for the panel header (falls back to generic title)
 const scenarioName = computed(() => scenarioInfo.value?.title || scenarioInfo.value?.name || '')
-const scenarioDescription = computed(() => scenarioInfo.value?.intro_text || scenarioInfo.value?.description || '')
-
 // Formatted elapsed time for the completion summary
 const formattedElapsedTime = computed(() => {
   if (!sessionStartedAt.value) return null
@@ -472,6 +469,9 @@ async function loadScenarioInfo() {
     }
     if (session?.scenario_id) {
       scenarioInfo.value = await scenarioSessionService.getScenario(session.scenario_id)
+      if (scenarioInfo.value) {
+        emit('scenario-info-loaded', scenarioInfo.value)
+      }
     }
   } catch (err) {
     // Non-critical: scenario name is a nice-to-have, fall back to generic title
@@ -544,7 +544,9 @@ function toggleCollapse() {
 }
 
 async function loadCurrentStep() {
-  isLoading.value = true
+  if (!isTransitioning.value) {
+    isLoading.value = true
+  }
   loadError.value = false
   verifyResult.value = null
   flagResult.value = null
@@ -588,6 +590,7 @@ async function loadCurrentStep() {
   } finally {
     isLoading.value = false
     isTransitioning.value = false
+    transitionPhase.value = null
   }
 }
 
@@ -608,12 +611,14 @@ async function handleVerify() {
     }
 
     if (result.passed) {
-      // If there's a next step, reload after a delay to show the success message
       if (result.next_step) {
+        // Show full-panel "Step validated!" then load next step
+        isTransitioning.value = true
+        transitionPhase.value = 'validated'
         setTimeout(() => {
-          isTransitioning.value = true
+          transitionPhase.value = 'loading'
           loadCurrentStep()
-        }, 2500)
+        }, 2000)
       } else {
         // No next step means scenario is completed
         isSessionCompleted.value = true
@@ -649,11 +654,13 @@ async function handleSubmitFlag() {
 
     if (result.correct) {
       if (result.next_step !== undefined && result.next_step !== null) {
-        // Not the last step — advance to next after showing success
+        // Show full-panel "Step validated!" then load next step
+        isTransitioning.value = true
+        transitionPhase.value = 'validated'
         setTimeout(() => {
-          isTransitioning.value = true
+          transitionPhase.value = 'loading'
           loadCurrentStep()
-        }, 2500)
+        }, 2000)
       } else {
         // Last step completed — show completion screen
         isSessionCompleted.value = true
@@ -786,39 +793,6 @@ onMounted(() => {
 .panel-title i {
   color: var(--color-primary);
   font-size: var(--font-size-sm);
-}
-
-/* Scenario intro section */
-.scenario-intro {
-  margin-top: var(--spacing-xs);
-}
-
-.intro-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: 0;
-  background: transparent;
-  border: none;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  cursor: pointer;
-  transition: color var(--transition-fast);
-}
-
-.intro-toggle:hover {
-  color: var(--color-text-secondary);
-}
-
-.intro-toggle i {
-  font-size: 10px;
-}
-
-.scenario-intro-text {
-  margin: var(--spacing-xs) 0 0;
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-relaxed);
-  color: var(--color-text-secondary);
 }
 
 /* Progress bar wrapper */
@@ -1601,7 +1575,33 @@ onMounted(() => {
   border-radius: var(--border-radius-sm);
 }
 
-/* Step transition animation */
+/* Step transition — validated phase */
+.transition-validated {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.validated-icon {
+  font-size: 2.5rem;
+  color: var(--color-success);
+  animation: validated-pop 0.4s ease-out;
+}
+
+@keyframes validated-pop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.validated-text {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-success);
+}
+
+/* Step transition — loading phase */
 .panel-transitioning {
   display: flex;
   flex-direction: column;

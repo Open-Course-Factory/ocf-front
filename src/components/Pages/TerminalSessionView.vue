@@ -42,6 +42,20 @@
         @scenario-started="handleScenarioStarted"
       />
 
+      <!-- Scenario briefing card (full width, dismissible) -->
+      <div v-if="scenarioBriefing && scenarioBriefingText" class="scenario-briefing" :class="{ collapsed: !showBriefing }">
+        <div class="briefing-header">
+          <div class="briefing-title">
+            <i class="fas fa-book-open"></i>
+            <span>{{ t('sessionView.scenarioBriefing') }}</span>
+          </div>
+          <button class="briefing-toggle" @click="showBriefing = !showBriefing" :aria-expanded="showBriefing">
+            <i :class="showBriefing ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
+          </button>
+        </div>
+        <div v-if="showBriefing" class="briefing-content markdown-content" v-html="renderedBriefingText"></div>
+      </div>
+
       <!-- Terminal + Scenario Panel layout (active session with scenario) -->
       <div v-if="isSessionActive && scenarioSessionId" class="terminal-session-layout">
         <div class="terminal-main-area">
@@ -64,6 +78,7 @@
           @session-completed="handleScenarioCompleted"
           @session-abandoned="handleScenarioAbandoned"
           @paste-command="handlePasteCommand"
+          @scenario-info-loaded="handleScenarioInfoLoaded"
         />
       </div>
 
@@ -99,8 +114,11 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import { terminalService } from '../../services/domain/terminal'
 import { scenarioSessionService } from '../../services/domain/scenario'
+import type { ScenarioInfo } from '../../services/domain/scenario'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
@@ -110,6 +128,12 @@ import CommandHistory from '../Terminal/CommandHistory.vue'
 
 const route = useRoute()
 const { showSuccess, showWarning, showError: showErrorNotification, showInfo } = useNotification()
+
+// Configure marked for safe rendering
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+})
 
 const { t } = useTranslations({
   en: {
@@ -133,7 +157,8 @@ const { t } = useTranslations({
       scenarioAbandonedTitle: 'Scenario Abandoned',
       expiresIn5min: 'Your session expires in 5 minutes. Save your work.',
       expiresIn1min: 'Your session expires in less than 1 minute!',
-      expiryWarningTitle: 'Session Expiring'
+      expiryWarningTitle: 'Session Expiring',
+      scenarioBriefing: 'Scenario Briefing'
     }
   },
   fr: {
@@ -157,7 +182,8 @@ const { t } = useTranslations({
       scenarioAbandonedTitle: 'Scénario abandonné',
       expiresIn5min: 'Votre session expire dans 5 minutes. Sauvegardez votre travail.',
       expiresIn1min: 'Votre session expire dans moins d\'une minute !',
-      expiryWarningTitle: 'Expiration de la session'
+      expiryWarningTitle: 'Expiration de la session',
+      scenarioBriefing: 'Briefing du scénario'
     }
   }
 })
@@ -176,6 +202,24 @@ let scenarioSyncInterval: ReturnType<typeof setInterval> | null = null
 
 // Get session ID from route
 const sessionId = route.params.sessionId as string
+
+// Scenario briefing (full-width card above the terminal layout)
+const scenarioBriefing = ref<ScenarioInfo | null>(null)
+const showBriefing = ref(true)
+
+const scenarioBriefingText = computed(() =>
+  scenarioBriefing.value?.intro_text || scenarioBriefing.value?.description || ''
+)
+
+const renderedBriefingText = computed(() => {
+  if (!scenarioBriefingText.value) return ''
+  const html = marked.parse(scenarioBriefingText.value) as string
+  return DOMPurify.sanitize(html)
+})
+
+function handleScenarioInfoLoaded(info: ScenarioInfo) {
+  scenarioBriefing.value = info
+}
 
 // Scenario session ID: auto-detected from terminal, or manual override via query parameter
 const scenarioSessionId = ref<string | null>(null)
@@ -501,5 +545,184 @@ onBeforeUnmount(() => {
   min-width: 0;
   display: flex;
   flex-direction: column;
+}
+
+/* Scenario briefing card */
+.scenario-briefing {
+  margin-bottom: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  transition: all var(--transition-base);
+}
+
+.briefing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.briefing-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.briefing-title i {
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+}
+
+.briefing-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  transition: all var(--transition-fast);
+}
+
+.briefing-toggle:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.briefing-content {
+  padding: 0 var(--spacing-md) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+}
+
+/* Markdown content styles (v-html requires :deep for scoped styles) */
+.markdown-content :deep(p) {
+  margin: var(--spacing-xs) 0;
+}
+
+.markdown-content :deep(p:first-child) {
+  margin-top: 0;
+}
+
+.markdown-content :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.markdown-content :deep(pre) {
+  background: var(--color-bg-tertiary, rgba(0, 0, 0, 0.2));
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  overflow-x: auto;
+  margin: var(--spacing-sm) 0;
+}
+
+.markdown-content :deep(code) {
+  font-family: var(--font-family-monospace, monospace);
+  font-size: var(--font-size-xs);
+}
+
+.markdown-content :deep(p code),
+.markdown-content :deep(li code) {
+  background: var(--color-bg-tertiary, rgba(0, 0, 0, 0.2));
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+}
+
+.markdown-content :deep(pre code) {
+  background: none;
+  padding: 0;
+}
+
+.markdown-content :deep(h1),
+.markdown-content :deep(h2),
+.markdown-content :deep(h3),
+.markdown-content :deep(h4) {
+  margin: var(--spacing-sm) 0 var(--spacing-xs);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.markdown-content :deep(h1) { font-size: var(--font-size-lg); }
+.markdown-content :deep(h2) { font-size: var(--font-size-md); }
+.markdown-content :deep(h3) { font-size: var(--font-size-sm); }
+.markdown-content :deep(h4) { font-size: var(--font-size-sm); }
+
+.markdown-content :deep(ul),
+.markdown-content :deep(ol) {
+  margin: var(--spacing-xs) 0;
+  padding-left: var(--spacing-lg);
+}
+
+.markdown-content :deep(li) {
+  margin: var(--spacing-xs) 0;
+}
+
+.markdown-content :deep(a) {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.markdown-content :deep(a:hover) {
+  color: var(--color-primary-hover);
+}
+
+.markdown-content :deep(strong) {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.markdown-content :deep(em) {
+  font-style: italic;
+}
+
+.markdown-content :deep(blockquote) {
+  margin: var(--spacing-sm) 0;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-left: 3px solid var(--color-primary);
+  background: var(--color-bg-tertiary, rgba(0, 0, 0, 0.1));
+  border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+}
+
+.markdown-content :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--spacing-sm) 0;
+  font-size: var(--font-size-xs);
+}
+
+.markdown-content :deep(th),
+.markdown-content :deep(td) {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  text-align: left;
+}
+
+.markdown-content :deep(th) {
+  background: var(--color-bg-secondary);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.markdown-content :deep(hr) {
+  border: none;
+  border-top: var(--border-width-thin) solid var(--color-border-light);
+  margin: var(--spacing-sm) 0;
+}
+
+.markdown-content :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--border-radius-sm);
 }
 </style>
