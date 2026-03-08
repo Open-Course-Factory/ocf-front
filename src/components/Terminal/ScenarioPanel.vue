@@ -544,7 +544,6 @@ function toggleCollapse() {
 }
 
 async function loadCurrentStep() {
-  isTransitioning.value = false
   isLoading.value = true
   loadError.value = false
   verifyResult.value = null
@@ -588,6 +587,7 @@ async function loadCurrentStep() {
     }
   } finally {
     isLoading.value = false
+    isTransitioning.value = false
   }
 }
 
