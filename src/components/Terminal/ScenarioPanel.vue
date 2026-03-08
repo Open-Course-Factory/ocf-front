@@ -54,7 +54,7 @@
         </div>
         <h4>{{ t('scenarioPanel.completed') }}</h4>
         <p>{{ t('scenarioPanel.completedMessage') }}</p>
-        <div v-if="renderedFinishText" class="finish-text markdown-content" v-html="renderedFinishText"></div>
+        <div v-if="renderedFinishText" class="finish-text markdown-content" v-html="renderedFinishText" @click="handleExecClick"></div>
         <div class="completion-summary">
           <h5 class="completion-summary-title">{{ t('scenarioPanel.completionSummary') }}</h5>
           <div class="completion-summary-items">
@@ -134,7 +134,7 @@
         </div>
 
         <!-- Step content area -->
-        <div ref="stepContentRef" class="step-content">
+        <div ref="stepContentRef" class="step-content" @click="handleExecClick">
           <!-- Step title -->
           <div class="step-header">
             <span class="step-label">{{ t('scenarioPanel.step') }} {{ displayedStep!.step_order + 1 }}</span>
@@ -411,11 +411,16 @@ const formattedElapsedTime = computed(() => {
   return `${totalMinutes}m ${seconds}s`
 })
 
+// Process KillerCoda {{exec}} syntax: `command`{{exec}} → clickable inline command
+function processExecSyntax(html: string): string {
+  return html.replace(/<code>([^<]+)<\/code>\{\{exec\}\}/g, '<code class="exec-command">$1</code>')
+}
+
 // Rendered finish_text (markdown) for the completion screen
 const renderedFinishText = computed(() => {
   if (!scenarioInfo.value?.finish_text) return ''
   const html = marked.parse(scenarioInfo.value.finish_text) as string
-  return DOMPurify.sanitize(html)
+  return DOMPurify.sanitize(processExecSyntax(html))
 })
 
 // The displayed step: either the review step or the current step
@@ -425,13 +430,13 @@ const displayedStep = computed(() => reviewingStep.value || currentStep.value)
 const renderedDisplayedStepText = computed(() => {
   if (!displayedStep.value?.text) return ''
   const html = marked.parse(displayedStep.value.text) as string
-  return DOMPurify.sanitize(html)
+  return DOMPurify.sanitize(processExecSyntax(html))
 })
 
 const renderedDisplayedHintText = computed(() => {
   if (!displayedStep.value?.hint) return ''
   const html = marked.parse(displayedStep.value.hint) as string
-  return DOMPurify.sanitize(html)
+  return DOMPurify.sanitize(processExecSyntax(html))
 })
 
 // Navigate to a specific step for review
@@ -476,6 +481,17 @@ async function loadScenarioInfo() {
   } catch (err) {
     // Non-critical: scenario name is a nice-to-have, fall back to generic title
     console.warn('Could not load scenario info:', err)
+  }
+}
+
+// Handle clicks on {{exec}} commands (event delegation on markdown containers)
+function handleExecClick(event: MouseEvent) {
+  const target = event.target as HTMLElement
+  if (target.classList.contains('exec-command')) {
+    const command = target.textContent?.trim()
+    if (command) {
+      emit('paste-command', command)
+    }
   }
 }
 
@@ -1479,6 +1495,18 @@ onMounted(() => {
 .markdown-content :deep(code) {
   font-family: var(--font-family-monospace, monospace);
   font-size: var(--font-size-xs);
+}
+
+/* KillerCoda {{exec}} clickable inline commands */
+.markdown-content :deep(.exec-command) {
+  cursor: pointer;
+  border-bottom: 1px dashed var(--color-primary);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.markdown-content :deep(.exec-command:hover) {
+  background-color: var(--color-primary-light, rgba(0, 123, 255, 0.15));
+  color: var(--color-primary);
 }
 
 .markdown-content :deep(p code),

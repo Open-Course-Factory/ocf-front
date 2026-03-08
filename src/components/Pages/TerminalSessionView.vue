@@ -53,7 +53,7 @@
             <i :class="showBriefing ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
           </button>
         </div>
-        <div v-if="showBriefing" class="briefing-content markdown-content" v-html="renderedBriefingText"></div>
+        <div v-if="showBriefing" class="briefing-content markdown-content" v-html="renderedBriefingText" @click="handleBriefingExecClick"></div>
       </div>
 
       <!-- Terminal + Scenario Panel layout (active session with scenario) -->
@@ -211,10 +211,15 @@ const scenarioBriefingText = computed(() =>
   scenarioBriefing.value?.intro_text || scenarioBriefing.value?.description || ''
 )
 
+// Process KillerCoda {{exec}} syntax: `command`{{exec}} → clickable inline command
+function processExecSyntax(html: string): string {
+  return html.replace(/<code>([^<]+)<\/code>\{\{exec\}\}/g, '<code class="exec-command">$1</code>')
+}
+
 const renderedBriefingText = computed(() => {
   if (!scenarioBriefingText.value) return ''
   const html = marked.parse(scenarioBriefingText.value) as string
-  return DOMPurify.sanitize(html)
+  return DOMPurify.sanitize(processExecSyntax(html))
 })
 
 function handleScenarioInfoLoaded(info: ScenarioInfo) {
@@ -227,6 +232,16 @@ const scenarioTerminalRef = ref<InstanceType<typeof TerminalSessionPanel> | null
 
 function handlePasteCommand(command: string) {
   scenarioTerminalRef.value?.pasteText(command)
+}
+
+function handleBriefingExecClick(event: MouseEvent) {
+  const target = event.target as HTMLElement
+  if (target.classList.contains('exec-command')) {
+    const command = target.textContent?.trim()
+    if (command) {
+      handlePasteCommand(command)
+    }
+  }
 }
 
 // Allow manual override via query parameter for testing
@@ -630,6 +645,17 @@ onBeforeUnmount(() => {
 .markdown-content :deep(code) {
   font-family: var(--font-family-monospace, monospace);
   font-size: var(--font-size-xs);
+}
+
+.markdown-content :deep(.exec-command) {
+  cursor: pointer;
+  border-bottom: 1px dashed var(--color-primary);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.markdown-content :deep(.exec-command:hover) {
+  background-color: var(--color-primary-light, rgba(0, 123, 255, 0.15));
+  color: var(--color-primary);
 }
 
 .markdown-content :deep(p code),
