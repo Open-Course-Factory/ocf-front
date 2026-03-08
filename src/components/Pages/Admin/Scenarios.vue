@@ -88,88 +88,34 @@ async function exportArchive(entity: any) {
 </script>
 
 <template>
-  <div class="wrapper">
-    <div class="scenario-toolbar">
-      <button class="btn btn-primary" @click="showUploadModal = true">
+  <Entity :entity-name="'scenarios'" :entity-store="entityStore">
+    <template #toolbar-extra>
+      <button class="btn btn-secondary" @click="showUploadModal = true">
         <i class="fas fa-file-import"></i>
         {{ t('scenarios.importKillercoda') }}
       </button>
-      <button class="btn btn-primary" @click="showJSONImportModal = true">
+      <button class="btn btn-secondary" @click="showJSONImportModal = true">
         <i class="fas fa-file-code"></i>
         {{ t('scenarios.importJson') }}
       </button>
-    </div>
-    <Entity :entity-name="'scenarios'" :entity-store="entityStore">
-      <template #actions="{ entity }">
-        <button class="btn btn-sm btn-outline" @click="exportJSON(entity)" :title="t('scenarios.exportJson')">
-          <i class="fas fa-file-download"></i>
-        </button>
-        <button class="btn btn-sm btn-outline" @click="exportArchive(entity)" :title="t('scenarios.exportKillercoda')">
-          <i class="fas fa-file-archive"></i>
-        </button>
-      </template>
-    </Entity>
-    <ScenarioUploadModal
-      :visible="showUploadModal"
-      @close="showUploadModal = false"
-      @uploaded="handleUploaded"
-    />
-    <ScenarioJSONImportModal
-      :visible="showJSONImportModal"
-      @close="showJSONImportModal = false"
-      @imported="handleJSONImported"
-    />
-  </div>
+    </template>
+    <template #actions="{ entity }">
+      <button class="btn btn-sm btn-outline" @click="exportJSON(entity)" :title="t('scenarios.exportJson')">
+        <i class="fas fa-file-download"></i>
+      </button>
+      <button class="btn btn-sm btn-outline" @click="exportArchive(entity)" :title="t('scenarios.exportKillercoda')">
+        <i class="fas fa-file-archive"></i>
+      </button>
+    </template>
+  </Entity>
+  <ScenarioUploadModal
+    :visible="showUploadModal"
+    @close="showUploadModal = false"
+    @uploaded="handleUploaded"
+  />
+  <ScenarioJSONImportModal
+    :visible="showJSONImportModal"
+    @close="showJSONImportModal = false"
+    @imported="handleJSONImported"
+  />
 </template>
-
-<style scoped>
-.scenario-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md) 0;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--btn-padding-md);
-  font-size: var(--font-size-base);
-  font-weight: 500;
-  cursor: pointer;
-  border: 2px solid transparent;
-  border-radius: var(--border-radius-md);
-  transition: all var(--transition-fast);
-}
-
-.btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-
-.btn-primary {
-  background-color: var(--color-primary);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--color-primary-dark, var(--color-primary-hover));
-}
-
-.btn-sm {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: var(--font-size-sm);
-}
-
-.btn-outline {
-  background: transparent;
-  border: 1px solid var(--color-border-medium);
-  color: var(--color-text-secondary);
-}
-
-.btn-outline:hover:not(:disabled) {
-  background: var(--color-bg-tertiary);
-  border-color: var(--color-border-dark);
-}
-</style>

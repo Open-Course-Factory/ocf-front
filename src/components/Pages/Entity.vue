@@ -67,6 +67,9 @@
             </button>
           </div>
 
+          <!-- Extra toolbar buttons from parent -->
+          <slot name="toolbar-extra"></slot>
+
           <!-- Export button -->
           <button
             class="btn btn-secondary"
