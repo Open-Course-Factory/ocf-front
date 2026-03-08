@@ -559,6 +559,7 @@ function toggleCollapse() {
   localStorage.setItem(COLLAPSE_KEY, String(isCollapsed.value))
 }
 
+
 async function loadCurrentStep() {
   if (!isTransitioning.value) {
     isLoading.value = true
@@ -745,8 +746,8 @@ onMounted(() => {
 }
 
 .scenario-panel.collapsed {
-  width: 0;
-  min-width: 0;
+  width: 0 !important;
+  min-width: 0 !important;
   border-left: none;
 }
 
@@ -754,30 +755,30 @@ onMounted(() => {
 .collapse-toggle {
   position: absolute;
   top: var(--spacing-md);
-  left: -18px;
+  left: -16px;
   z-index: 10;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--color-bg-secondary);
   border: var(--border-width-thin) solid var(--color-border-light);
-  border-radius: var(--border-radius-full);
+  border-radius: var(--border-radius-md);
   color: var(--color-text-muted);
   cursor: pointer;
   font-size: var(--font-size-xs);
   transition: all var(--transition-fast);
-  box-shadow: var(--shadow-xs);
 }
 
 .collapse-toggle:hover {
   background: var(--color-surface-hover);
   color: var(--color-text-primary);
+  border-color: var(--color-border-medium);
 }
 
 .collapsed .collapse-toggle {
-  left: -36px;
+  left: -32px;
 }
 
 /* Panel content */
@@ -963,7 +964,7 @@ onMounted(() => {
   align-items: center;
   gap: var(--spacing-xs);
   padding: var(--spacing-xs) var(--spacing-sm);
-  background: transparent;
+  background: var(--color-bg-secondary);
   border: var(--border-width-thin) solid var(--color-border-light);
   border-radius: var(--border-radius-md);
   color: var(--color-text-muted);
@@ -1701,13 +1702,14 @@ onMounted(() => {
 
 @media (max-width: 480px) {
   .scenario-panel {
-    width: 100%;
-    min-width: 100%;
+    width: 100% !important;
+    min-width: 100% !important;
     position: absolute;
     top: 0;
     right: 0;
     bottom: 0;
     z-index: 20;
   }
+
 }
 </style>

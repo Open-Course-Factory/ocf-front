@@ -57,7 +57,7 @@
       </div>
 
       <!-- Terminal + Scenario Panel layout (active session with scenario) -->
-      <div v-if="isSessionActive && scenarioSessionId" class="terminal-session-layout">
+      <div v-if="isSessionActive && scenarioSessionId" class="terminal-session-layout" :class="{ resizing: isPanelResizing }">
         <div class="terminal-main-area">
           <TerminalSessionPanel
             ref="scenarioTerminalRef"
@@ -72,9 +72,13 @@
             @session-expired="handleSessionExpired"
           />
         </div>
+        <div class="panel-resize-handle" @mousedown.prevent="startPanelResize">
+          <div class="resize-handle-bar"></div>
+        </div>
         <ScenarioPanel
           :scenario-session-id="scenarioSessionId"
           :is-active="isSessionActive"
+          :style="scenarioPanelStyle"
           @session-completed="handleScenarioCompleted"
           @session-abandoned="handleScenarioAbandoned"
           @paste-command="handlePasteCommand"
@@ -443,6 +447,50 @@ function handleScenarioAbandoned() {
   showInfo(t('sessionView.scenarioAbandoned'), t('sessionView.scenarioAbandonedTitle'))
 }
 
+// Resizable scenario panel
+const PANEL_WIDTH_KEY = 'scenario-panel-width'
+const MIN_PANEL_WIDTH = 250
+const MAX_PANEL_WIDTH = 600
+const DEFAULT_PANEL_WIDTH = 350
+
+const scenarioPanelWidth = ref(DEFAULT_PANEL_WIDTH)
+const isPanelResizing = ref(false)
+
+// Restore saved width
+const savedPanelWidth = localStorage.getItem(PANEL_WIDTH_KEY)
+if (savedPanelWidth !== null) {
+  const parsed = parseInt(savedPanelWidth, 10)
+  if (!isNaN(parsed) && parsed >= MIN_PANEL_WIDTH && parsed <= MAX_PANEL_WIDTH) {
+    scenarioPanelWidth.value = parsed
+  }
+}
+
+const scenarioPanelStyle = computed(() => ({
+  width: `${scenarioPanelWidth.value}px`,
+  minWidth: `${scenarioPanelWidth.value}px`
+}))
+
+function startPanelResize(event: MouseEvent) {
+  isPanelResizing.value = true
+  const startX = event.clientX
+  const startWidth = scenarioPanelWidth.value
+
+  function onMouseMove(e: MouseEvent) {
+    const deltaX = startX - e.clientX
+    scenarioPanelWidth.value = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, startWidth + deltaX))
+  }
+
+  function onMouseUp() {
+    isPanelResizing.value = false
+    localStorage.setItem(PANEL_WIDTH_KEY, String(scenarioPanelWidth.value))
+    document.removeEventListener('mousemove', onMouseMove)
+    document.removeEventListener('mouseup', onMouseUp)
+  }
+
+  document.addEventListener('mousemove', onMouseMove)
+  document.addEventListener('mouseup', onMouseUp)
+}
+
 onMounted(() => {
   loadSession()
 })
@@ -569,9 +617,41 @@ onBeforeUnmount(() => {
 .terminal-session-layout {
   display: flex;
   flex-direction: row;
-  gap: var(--spacing-md);
   flex: 1;
   min-height: 0;
+}
+
+.terminal-session-layout.resizing {
+  user-select: none;
+}
+
+.panel-resize-handle {
+  width: 12px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  transition: background-color var(--transition-fast);
+}
+
+.panel-resize-handle:hover,
+.resizing .panel-resize-handle {
+  background-color: var(--color-primary-light);
+}
+
+.resize-handle-bar {
+  width: 3px;
+  height: 40px;
+  border-radius: var(--border-radius-full);
+  background: var(--color-border-light);
+  transition: background-color var(--transition-fast), height var(--transition-fast);
+}
+
+.panel-resize-handle:hover .resize-handle-bar,
+.resizing .resize-handle-bar {
+  background-color: var(--color-primary);
+  height: 56px;
 }
 
 .terminal-main-area {
@@ -616,12 +696,12 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   padding: 0;
-  background: transparent;
+  background: var(--color-bg-secondary);
   border: var(--border-width-thin) solid var(--color-border-light);
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--border-radius-md);
   color: var(--color-text-muted);
   cursor: pointer;
   font-size: var(--font-size-xs);
@@ -631,6 +711,7 @@ onBeforeUnmount(() => {
 .briefing-toggle:hover {
   background: var(--color-surface-hover);
   color: var(--color-text-primary);
+  border-color: var(--color-border-medium);
 }
 
 .briefing-content {
