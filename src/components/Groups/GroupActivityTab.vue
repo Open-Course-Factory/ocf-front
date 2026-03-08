@@ -23,8 +23,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
+import { teacherService } from '../../services/domain/scenario'
 
 interface ActiveSession {
   user_id: string
@@ -110,8 +110,7 @@ async function loadActivity() {
   isLoading.value = true
   error.value = ''
   try {
-    const response = await axios.get(`/teacher/groups/${props.groupId}/activity`)
-    sessions.value = response.data?.sessions || response.data?.data || response.data || []
+    sessions.value = await teacherService.getGroupActivity(props.groupId)
   } catch (err: any) {
     error.value = err.response?.data?.error_message || t('groupActivity.loadError')
   } finally {

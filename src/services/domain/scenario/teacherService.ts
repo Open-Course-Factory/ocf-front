@@ -1,0 +1,87 @@
+/*
+ * Open Course Factory - Front
+ * Copyright (C) 2023-2026 Solution Libre
+ */
+
+import axios from 'axios'
+
+export const teacherService = {
+  // --- Group scenario assignment operations ---
+
+  async getGroupAssignments(groupId: string): Promise<any[]> {
+    const response = await axios.get('/scenario-assignments', {
+      params: { group_id: groupId }
+    })
+    return response.data?.data || response.data || []
+  },
+
+  async assignScenarioToGroup(groupId: string, scenarioId: string, data?: { deadline?: string }): Promise<any> {
+    const response = await axios.post('/scenario-assignments', {
+      scenario_id: scenarioId,
+      group_id: groupId,
+      scope: 'group',
+      deadline: data?.deadline || undefined
+    })
+    return response.data
+  },
+
+  async removeAssignment(assignmentId: string): Promise<void> {
+    await axios.delete(`/scenario-assignments/${assignmentId}`)
+  },
+
+  // --- Teacher dashboard operations ---
+
+  async getGroupActivity(groupId: string): Promise<any[]> {
+    const response = await axios.get(`/teacher/groups/${groupId}/activity`)
+    return response.data?.sessions || response.data?.data || response.data || []
+  },
+
+  async getScenarioResults(groupId: string, scenarioId: string): Promise<any[]> {
+    const response = await axios.get(
+      `/teacher/groups/${groupId}/scenarios/${scenarioId}/results`
+    )
+    return response.data || []
+  },
+
+  async getScenarioAnalytics(groupId: string): Promise<any> {
+    const response = await axios.get(`/teacher/groups/${groupId}/scenarios/analytics`)
+    return response.data
+  },
+
+  async getSessionDetail(groupId: string, sessionId: string): Promise<any> {
+    const response = await axios.get(
+      `/teacher/groups/${groupId}/sessions/${sessionId}/detail`
+    )
+    return response.data
+  },
+
+  async bulkStartScenario(groupId: string, scenarioId: string, data: { instance_type: string }): Promise<any> {
+    const response = await axios.post(
+      `/teacher/groups/${groupId}/scenarios/${scenarioId}/bulk-start`,
+      data
+    )
+    return response.data
+  },
+
+  async resetGroupScenarioSessions(groupId: string, scenarioId: string): Promise<any> {
+    const response = await axios.post(
+      `/teacher/groups/${groupId}/scenarios/${scenarioId}/reset-sessions`
+    )
+    return response.data
+  },
+
+  // --- Supporting data ---
+
+  async listScenarios(): Promise<any[]> {
+    const response = await axios.get('/scenarios')
+    return response.data?.data || response.data || []
+  },
+
+  async getInstanceTypes(): Promise<any[]> {
+    const response = await axios.get('/terminals/instance-types')
+    const data = response.data
+    if (Array.isArray(data)) return data
+    if (data.instance_types && Array.isArray(data.instance_types)) return data.instance_types
+    return []
+  }
+}
