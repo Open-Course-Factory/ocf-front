@@ -43,7 +43,7 @@
           <div class="scenario-main">
             <div class="scenario-info">
               <span class="scenario-title">{{ scenario.title }}</span>
-              <span v-if="scenario.difficulty" class="scenario-difficulty">{{ scenario.difficulty }}</span>
+              <span v-if="scenario.difficulty" class="scenario-difficulty">{{ translateDifficulty(scenario.difficulty) }}</span>
             </div>
             <p v-if="scenario.description" class="scenario-description">{{ scenario.description }}</p>
           </div>
@@ -83,7 +83,10 @@ const { t } = useTranslations({
       none: 'No scenarios available. Ask your trainer to create one.',
       startError: 'Failed to start scenario.',
       loadError: 'Failed to load scenarios.',
-      closePicker: 'Close'
+      closePicker: 'Close',
+      difficultyBeginner: 'Beginner',
+      difficultyIntermediate: 'Intermediate',
+      difficultyAdvanced: 'Advanced'
     }
   },
   fr: {
@@ -94,10 +97,22 @@ const { t } = useTranslations({
       none: 'Aucun scénario disponible. Demandez à votre formateur d\'en créer un.',
       startError: 'Échec du démarrage du scénario.',
       loadError: 'Échec du chargement des scénarios.',
-      closePicker: 'Fermer'
+      closePicker: 'Fermer',
+      difficultyBeginner: 'Débutant',
+      difficultyIntermediate: 'Intermédiaire',
+      difficultyAdvanced: 'Avancé'
     }
   }
 })
+
+function translateDifficulty(difficulty: string): string {
+  const difficultyMap: Record<string, string> = {
+    beginner: t('scenarioStart.difficultyBeginner'),
+    intermediate: t('scenarioStart.difficultyIntermediate'),
+    advanced: t('scenarioStart.difficultyAdvanced')
+  }
+  return difficultyMap[difficulty] || difficulty
+}
 
 const showPicker = ref(false)
 const scenarios = ref<any[]>([])
