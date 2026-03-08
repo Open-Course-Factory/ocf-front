@@ -27,6 +27,8 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { teacherService } from '../../services/domain/scenario'
 import BaseModal from '../Modals/BaseModal.vue'
+import ScenarioUploadModal from '../Modals/ScenarioUploadModal.vue'
+import ScenarioJSONImportModal from '../Modals/ScenarioJSONImportModal.vue'
 
 interface ScenarioAssignment {
   id: string
@@ -122,6 +124,12 @@ const { t } = useTranslations({
       difficultyIntermediate: 'Intermediate',
       difficultyAdvanced: 'Advanced',
       exportCsv: 'Export CSV',
+      importKillercoda: 'Import KillerCoda',
+      importJson: 'Import JSON',
+      exportJson: 'Export JSON',
+      exportKillercoda: 'Export KillerCoda',
+      importSuccess: 'Scenario imported successfully',
+      exportError: 'Failed to export scenario',
       export: {
         name: 'Name',
         email: 'Email',
@@ -199,6 +207,12 @@ const { t } = useTranslations({
       difficultyIntermediate: 'Intermédiaire',
       difficultyAdvanced: 'Avancé',
       exportCsv: 'Exporter CSV',
+      importKillercoda: 'Importer KillerCoda',
+      importJson: 'Importer JSON',
+      exportJson: 'Exporter JSON',
+      exportKillercoda: 'Exporter KillerCoda',
+      importSuccess: 'Scénario importé avec succès',
+      exportError: 'Échec de l\'export du scénario',
       export: {
         name: 'Nom',
         email: 'Email',
@@ -279,6 +293,10 @@ const assignmentToBulkStart = ref<ScenarioAssignment | null>(null)
 const instanceTypes = ref<InstanceType[]>([])
 const selectedInstanceType = ref('')
 const loadingInstanceTypes = ref(false)
+
+// Import modal state
+const showUploadModal = ref(false)
+const showJSONImportModal = ref(false)
 
 // Results view state
 const showResultsForAssignment = ref<ScenarioAssignment | null>(null)
@@ -575,6 +593,58 @@ function exportResultsCsv() {
   URL.revokeObjectURL(url)
 }
 
+// Download helpers
+function downloadJSON(data: any, filename: string) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+// Export handlers
+async function handleExportJSON(assignment: ScenarioAssignment) {
+  try {
+    const data = await teacherService.groupExportScenarioJSON(props.groupId, assignment.scenario_id)
+    const name = assignment.scenario?.title || assignment.scenario?.name || assignment.scenario_id
+    downloadJSON(data, `${name}.json`)
+  } catch (err: any) {
+    notifyError(err.response?.data?.error_message || t('groupScenarios.exportError'))
+  }
+}
+
+async function handleExportArchive(assignment: ScenarioAssignment) {
+  try {
+    const blob = await teacherService.groupExportScenarioArchive(props.groupId, assignment.scenario_id)
+    const name = assignment.scenario?.title || assignment.scenario?.name || assignment.scenario_id
+    downloadBlob(blob, `${name}.zip`)
+  } catch (err: any) {
+    notifyError(err.response?.data?.error_message || t('groupScenarios.exportError'))
+  }
+}
+
+// Import handlers
+function handleImportUploaded() {
+  showUploadModal.value = false
+  loadAssignments()
+}
+
+function handleJSONImported() {
+  showJSONImportModal.value = false
+  loadAssignments()
+}
+
 function openAssignModal() {
   loadScenarios()
   showAssignModal.value = true
@@ -595,14 +665,20 @@ onUnmounted(() => {
   <div class="scenarios-tab">
     <div class="tab-header">
       <h3>{{ t('groupScenarios.assignedScenarios') }}</h3>
-      <button
-        v-if="canEditGroup"
-        @click="openAssignModal"
-        class="btn btn-primary"
-      >
-        <i class="fas fa-plus"></i>
-        {{ t('groupScenarios.assignScenario') }}
-      </button>
+      <div v-if="canEditGroup" class="tab-header-actions">
+        <button @click="openAssignModal" class="btn btn-sm btn-primary">
+          <i class="fas fa-plus"></i>
+          {{ t('groupScenarios.assignScenario') }}
+        </button>
+        <button @click="showUploadModal = true" class="btn btn-sm btn-primary">
+          <i class="fas fa-file-import"></i>
+          {{ t('groupScenarios.importKillercoda') }}
+        </button>
+        <button @click="showJSONImportModal = true" class="btn btn-sm btn-primary">
+          <i class="fas fa-file-code"></i>
+          {{ t('groupScenarios.importJson') }}
+        </button>
+      </div>
     </div>
 
     <div v-if="isLoading" class="loading-state" role="status">
@@ -641,6 +717,20 @@ onUnmounted(() => {
           </div>
         </div>
         <div v-if="canEditGroup" class="assignment-actions">
+          <button
+            @click="handleExportJSON(assignment)"
+            class="btn btn-sm btn-outline"
+            :title="t('groupScenarios.exportJson')"
+          >
+            <i class="fas fa-file-download"></i>
+          </button>
+          <button
+            @click="handleExportArchive(assignment)"
+            class="btn btn-sm btn-outline"
+            :title="t('groupScenarios.exportKillercoda')"
+          >
+            <i class="fas fa-file-archive"></i>
+          </button>
           <button
             @click="handleViewResults(assignment)"
             class="btn btn-sm btn-info"
@@ -937,6 +1027,22 @@ onUnmounted(() => {
     >
       <p>{{ t('groupScenarios.resetConfirm') }}</p>
     </BaseModal>
+
+    <!-- KillerCoda Upload Modal -->
+    <ScenarioUploadModal
+      :visible="showUploadModal"
+      :group-id="groupId"
+      @close="showUploadModal = false"
+      @uploaded="handleImportUploaded"
+    />
+
+    <!-- JSON Import Modal -->
+    <ScenarioJSONImportModal
+      :visible="showJSONImportModal"
+      :group-id="groupId"
+      @close="showJSONImportModal = false"
+      @imported="handleJSONImported"
+    />
   </div>
 </template>
 
@@ -957,6 +1063,11 @@ onUnmounted(() => {
   color: var(--color-text-primary);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
+}
+
+.tab-header-actions {
+  display: flex;
+  gap: var(--spacing-sm);
 }
 
 .loading-state {
