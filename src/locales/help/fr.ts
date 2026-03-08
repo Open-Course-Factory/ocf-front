@@ -2785,7 +2785,7 @@ export const helpFr = {
           layout: "L'arborescence standard KillerCoda est supportée : index.json pour les métadonnées, intro.md et finish.md pour les textes d'introduction et de conclusion, et des répertoires d'étapes (step1/, step2/, etc.) contenant text.md pour les instructions et verify.sh pour les scripts de vérification.",
           info: {
             title: "Note",
-            description: "L'import par Git arrive bientôt. Pour le moment, vous pouvez créer des scénarios via le panneau d'administration ou l'API de peuplement pour charger en masse du contenu au format KillerCoda."
+            description: "L'import par Git est prévu pour une prochaine version. En attendant, vous pouvez créer des scénarios via le panneau d'administration ou l'API seed."
           }
         },
 

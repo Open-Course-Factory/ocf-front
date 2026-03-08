@@ -2785,7 +2785,7 @@ export const helpEn = {
           layout: "The standard KillerCoda directory layout is supported: index.json for metadata, intro.md and finish.md for introduction and conclusion text, and step directories (step1/, step2/, etc.) containing text.md for instructions and verify.sh for verification scripts.",
           info: {
             title: "Note",
-            description: "Git-based import is coming soon. For now, you can create scenarios using the admin panel or the seed API to bulk-load KillerCoda-formatted content."
+            description: "Git-based import is planned for a future release. For now, you can create scenarios using the admin panel or the seed API."
           }
         },
 
