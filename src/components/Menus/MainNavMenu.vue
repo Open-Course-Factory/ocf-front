@@ -596,8 +596,9 @@ onMounted(async () => {
   margin: 0;
 }
 
-/* Hide menu-text in collapsed mode */
-.main-menu.collapsed :deep(.menu-text) {
+/* Hide menu-text in collapsed mode — only in category headers and admin link, not in popup submenus */
+.main-menu.collapsed :deep(.category-header .menu-text),
+.main-menu.collapsed .admin-link .menu-text {
   opacity: 0;
   width: 0;
   height: 0;

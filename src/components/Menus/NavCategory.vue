@@ -152,21 +152,21 @@ defineEmits<{
   display: none;
 }
 
-/* Collapsed tooltip on hover */
-.collapsed .category-header:hover::after {
+/* Collapsed tooltip on hover — hidden when submenu is open */
+.collapsed .category-header:hover:not(.active)::after {
   content: attr(title);
   position: absolute;
   left: 85px;
   top: 50%;
   transform: translateY(-50%);
-  background-color: var(--color-bg-dark);
-  color: var(--color-text-primary);
+  background-color: var(--color-gray-800);
+  color: var(--color-white);
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--border-radius-sm);
   white-space: nowrap;
   opacity: 1;
   z-index: 5000;
-  border: var(--border-width-thin) solid var(--color-border-medium);
+  border: var(--border-width-thin) solid var(--color-gray-600);
   box-shadow: var(--shadow-md);
   font-size: var(--font-size-sm);
   pointer-events: none;
@@ -176,14 +176,17 @@ defineEmits<{
 .collapsed .category-items {
   position: fixed !important;
   min-width: 220px;
-  background-color: var(--color-bg-dark);
-  border: var(--border-width-thin) solid var(--color-border-medium);
+  background-color: var(--color-gray-900);
+  border: var(--border-width-thin) solid var(--color-gray-600);
   border-radius: var(--border-radius-sm);
   box-shadow: var(--shadow-lg);
   z-index: 9999 !important;
   overflow: visible;
   max-height: none !important;
   transition: none;
+  color: var(--color-white);
+  --collapsed-popup-text: var(--color-white);
+  --collapsed-popup-hover-bg: var(--color-gray-700);
 }
 
 .collapsed .category-items.expanded {
@@ -191,6 +194,11 @@ defineEmits<{
 }
 
 .collapsed .category-items:not(.expanded) {
+  display: none !important;
+}
+
+/* Hide individual item tooltips inside open submenus */
+.collapsed .category-items.expanded :deep(a:hover::after) {
   display: none !important;
 }
 </style>

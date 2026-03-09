@@ -12,7 +12,7 @@
     :showHeader="true"
     @back="goBack"
   >
-    <ul>
+    <ul :class="{ collapsed: isMenuCollapsed }">
       <NavCategory
         v-for="category in adminCategories"
         :key="category.key"
@@ -254,32 +254,37 @@ function goBack() {
 </script>
 
 <style scoped>
-/* Local semi-transparent danger color variants for dark sidebar backgrounds */
+/* Admin theme — refined indigo accent on dark base */
 .nav-menu-shell {
-  --color-danger-items-bg: rgba(220, 53, 69, 0.1);
-  --color-danger-items-border: rgba(220, 53, 69, 0.2);
-  --color-danger-items-hover: rgba(220, 53, 69, 0.2);
+  --admin-accent: var(--color-purple);
+  --admin-accent-hover: #5558e6;
+  --admin-items-bg: rgba(99, 102, 241, 0.06);
+  --admin-items-border: rgba(99, 102, 241, 0.12);
+  --admin-items-hover: rgba(99, 102, 241, 0.15);
 }
 
-/* Admin-themed danger gradient for all category headers */
+/* Category headers — dark gray with indigo left accent */
 :deep(.nav-category .category-header) {
-  background: linear-gradient(135deg, var(--color-danger) 0%, var(--color-danger-hover) 100%);
-  border: var(--border-width-thin) solid var(--color-danger-hover);
+  background-color: var(--color-gray-700);
+  border: var(--border-width-thin) solid var(--color-gray-600);
+  border-left: 3px solid var(--admin-accent);
   box-shadow: var(--shadow-sm);
 }
 
 :deep(.nav-category .category-header:hover) {
-  background: linear-gradient(135deg, var(--color-danger-hover) 0%, var(--color-danger-dark) 100%);
+  background-color: var(--color-gray-600);
   transform: translateX(3px);
 }
 
 :deep(.nav-category .category-header.active) {
-  background: linear-gradient(135deg, var(--color-danger-dark) 0%, var(--color-danger-darker) 100%);
+  background-color: var(--color-gray-600);
+  border-left-color: var(--admin-accent-hover);
 }
 
+/* Submenu items — subtle indigo tint */
 :deep(.nav-category .category-items) {
-  background-color: var(--color-danger-items-bg);
-  border: var(--border-width-thin) solid var(--color-danger-items-border);
+  background-color: var(--admin-items-bg);
+  border: var(--border-width-thin) solid var(--admin-items-border);
 }
 
 :deep(.nav-category .category-items li a) {
@@ -287,17 +292,15 @@ function goBack() {
 }
 
 :deep(.nav-category .category-items li a:hover) {
-  background-color: var(--color-danger-items-hover);
+  background-color: var(--admin-items-hover);
   color: var(--color-white);
 }
 
-/* Collapsed mode admin styling */
+/* Collapsed popup — solid dark background with indigo hover */
 :deep(.collapsed .nav-category .category-items) {
-  background-color: var(--color-danger);
-  border-color: var(--color-danger-hover);
-}
-
-:deep(.collapsed .nav-category .category-items li a) {
-  color: var(--color-white);
+  background-color: var(--color-gray-900) !important;
+  border-color: var(--color-gray-600) !important;
+  --collapsed-popup-text: var(--color-white);
+  --collapsed-popup-hover-bg: var(--admin-items-hover);
 }
 </style>
