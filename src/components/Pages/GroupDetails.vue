@@ -419,6 +419,7 @@ watch(activeTab, (newTab) => {
           v-if="activeTab === 'scenarios'"
           :group-id="groupId!"
           :can-edit-group="canEditGroup"
+          :organization-id="currentGroup?.organization_id"
         />
 
         <GroupActivityTab

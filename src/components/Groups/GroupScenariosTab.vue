@@ -22,10 +22,12 @@
 -->
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { teacherService } from '../../services/domain/scenario'
+import { useTerminalBackendsStore } from '../../stores/terminalBackends'
+import BackendSelector from '../Terminal/BackendSelector.vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import ScenarioUploadModal from '../Modals/ScenarioUploadModal.vue'
 import ScenarioJSONImportModal from '../Modals/ScenarioJSONImportModal.vue'
@@ -55,6 +57,7 @@ interface Scenario {
 const props = defineProps<{
   groupId: string
   canEditGroup: boolean
+  organizationId?: string
 }>()
 
 const { t } = useTranslations({
@@ -227,6 +230,7 @@ const { t } = useTranslations({
 })
 
 const { showError: notifyError } = useNotification()
+const backendsStore = useTerminalBackendsStore()
 
 interface InstanceType {
   prefix: string
@@ -364,7 +368,8 @@ async function handleAssign() {
 async function loadInstanceTypes() {
   loadingInstanceTypes.value = true
   try {
-    instanceTypes.value = await teacherService.getInstanceTypes()
+    const backendId = backendsStore.selectedBackendId || undefined
+    instanceTypes.value = await teacherService.getInstanceTypes(backendId)
     // Auto-select first if only one
     if (instanceTypes.value.length === 1) {
       selectedInstanceType.value = instanceTypes.value[0].prefix
@@ -377,10 +382,15 @@ async function loadInstanceTypes() {
 }
 
 // Open bulk start modal with instance type selection
-function handleBulkStart(assignment: ScenarioAssignment) {
+async function handleBulkStart(assignment: ScenarioAssignment) {
   assignmentToBulkStart.value = assignment
   selectedInstanceType.value = ''
-  loadInstanceTypes()
+  if (props.organizationId) {
+    await backendsStore.fetchBackends(props.organizationId)
+  } else {
+    await backendsStore.fetchBackends()
+  }
+  await loadInstanceTypes()
   showBulkStartModal.value = true
 }
 
@@ -394,7 +404,10 @@ async function confirmBulkStart() {
     const data = await teacherService.bulkStartScenario(
       props.groupId,
       assignment.scenario_id,
-      { instance_type: selectedInstanceType.value }
+      {
+        instance_type: selectedInstanceType.value,
+        ...(backendsStore.selectedBackendId && { backend: backendsStore.selectedBackendId })
+      }
     )
     const started = data?.created || data?.started || 0
     const skipped = data?.skipped || 0
@@ -649,6 +662,12 @@ function openAssignModal() {
   loadScenarios()
   showAssignModal.value = true
 }
+
+// When backend selection changes, reload instance types
+watch(() => backendsStore.selectedBackendId, () => {
+  selectedInstanceType.value = ''
+  loadInstanceTypes()
+})
 
 onMounted(() => {
   loadAssignments()
@@ -941,6 +960,14 @@ onUnmounted(() => {
       <p class="instance-type-description">
         {{ t('groupScenarios.instanceTypeDescription') }}
       </p>
+      <!-- Backend selector (only if org has backends) -->
+      <BackendSelector
+        v-if="backendsStore.backends.length > 0"
+        :model-value="backendsStore.selectedBackendId || ''"
+        :backends="backendsStore.backends"
+        :disabled="backendsStore.isLoading"
+        @update:model-value="backendsStore.selectBackend($event)"
+      />
       <div v-if="loadingInstanceTypes" class="loading-state">
         <i class="fas fa-spinner fa-spin"></i>
       </div>
