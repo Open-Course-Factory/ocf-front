@@ -53,6 +53,7 @@
       <iframe
         :src="iframeSrc"
         :title="t('infrastructure.iframeTitle')"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
         allow="clipboard-read; clipboard-write"
       ></iframe>
     </div>
@@ -110,9 +111,23 @@ const availableBackends = computed(() => {
     return []
   }
 
-  // If org backend configs are not loaded, fall back to all backends
-  // (the route guard already restricts access to admins/org managers)
-  return backendsStore.backends
+  // Collect all allowed backend IDs from the user's organizations
+  const allowedBackendIds = new Set<string>()
+  for (const org of userOrgs) {
+    if (org.allowed_backends && org.allowed_backends.length > 0) {
+      for (const backendId of org.allowed_backends) {
+        allowedBackendIds.add(backendId)
+      }
+    }
+  }
+
+  // If no orgs have allowed_backends configured, return empty
+  // (don't leak all backend names — server-side auth will block anyway)
+  if (allowedBackendIds.size === 0) {
+    return []
+  }
+
+  return backendsStore.backends.filter(b => allowedBackendIds.has(b.id))
 })
 
 const iframeSrc = computed(() => {

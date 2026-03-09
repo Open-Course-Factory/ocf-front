@@ -422,7 +422,7 @@ const basicRoutes = [
         path: 'admin/infrastructure',
         name: 'AdminInfrastructure',
         component: () => import('../components/Pages/Admin/AdminIncusUI.vue'),
-        meta: { requiresAuth: true, requiresAdmin: true }
+        meta: { requiresAuth: true }
       },
       {
         path: 'admin/organizations',
