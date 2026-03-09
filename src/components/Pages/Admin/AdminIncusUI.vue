@@ -7,44 +7,57 @@
 
 <template>
   <div class="admin-infrastructure">
-    <div class="page-header">
-      <h2><i class="fas fa-server"></i> {{ t('infrastructure.title') }}</h2>
-    </div>
+    <!-- Compact toolbar: title + backend selector in one row -->
+    <div class="infra-toolbar">
+      <div class="toolbar-left">
+        <i class="fas fa-server"></i>
+        <h2>{{ t('infrastructure.title') }}</h2>
+      </div>
 
-    <!-- Backend Selector -->
-    <div v-if="availableBackends.length > 0" class="backend-selector">
-      <label for="backend-select">{{ t('infrastructure.backend') }}:</label>
-      <select
-        id="backend-select"
-        v-model="selectedBackendId"
-        @change="onBackendChange"
-      >
-        <option
-          v-for="backend in availableBackends"
-          :key="backend.id"
-          :value="backend.id"
-        >
-          {{ backend.name || backend.id }}
-          <template v-if="!backend.connected"> ({{ t('infrastructure.offline') }})</template>
-        </option>
-      </select>
+      <div v-if="availableBackends.length > 0" class="toolbar-right">
+        <label for="backend-select">{{ t('infrastructure.backend') }}</label>
+        <div class="select-wrapper">
+          <select
+            id="backend-select"
+            v-model="selectedBackendId"
+            @change="onBackendChange"
+          >
+            <option
+              v-for="backend in availableBackends"
+              :key="backend.id"
+              :value="backend.id"
+            >
+              {{ backend.name || backend.id }}
+              <template v-if="!backend.connected"> ({{ t('infrastructure.offline') }})</template>
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div v-if="selectedBackend" class="toolbar-status">
+        <span
+          class="status-dot"
+          :class="{ online: selectedBackend.connected, offline: !selectedBackend.connected }"
+        ></span>
+        <span class="status-text">{{ selectedBackend.connected ? t('infrastructure.online') : t('infrastructure.offline') }}</span>
+      </div>
     </div>
 
     <!-- Loading State -->
-    <div v-if="backendsStore.isLoading" class="loading-state">
-      <i class="fas fa-spinner fa-spin fa-3x"></i>
+    <div v-if="backendsStore.isLoading" class="state-overlay">
+      <i class="fas fa-spinner fa-spin fa-2x"></i>
       <p>{{ t('infrastructure.loading') }}</p>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="backendsStore.error" class="error-state">
-      <i class="fas fa-exclamation-triangle fa-3x"></i>
+    <div v-else-if="backendsStore.error" class="state-overlay error">
+      <i class="fas fa-exclamation-triangle fa-2x"></i>
       <p>{{ backendsStore.error }}</p>
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="availableBackends.length === 0 && !backendsStore.isLoading" class="empty-state">
-      <i class="fas fa-server fa-3x"></i>
+    <div v-else-if="availableBackends.length === 0 && !backendsStore.isLoading" class="state-overlay">
+      <i class="fas fa-server fa-2x"></i>
       <p>{{ t('infrastructure.noBackends') }}</p>
     </div>
 
@@ -61,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useTranslations } from '../../../composables/useTranslations'
 import { useTerminalBackendsStore } from '../../../stores/terminalBackends'
 import { useCurrentUserStore } from '../../../stores/currentUser'
@@ -75,7 +88,8 @@ const { t } = useTranslations({
       backend: 'Backend',
       loading: 'Loading backends...',
       noBackends: 'No backends available',
-      offline: 'offline',
+      online: 'Connected',
+      offline: 'Offline',
       iframeTitle: 'Incus Management UI'
     }
   },
@@ -85,7 +99,8 @@ const { t } = useTranslations({
       backend: 'Backend',
       loading: 'Chargement des backends...',
       noBackends: 'Aucun backend disponible',
-      offline: 'hors ligne',
+      online: 'Connecté',
+      offline: 'Hors ligne',
       iframeTitle: 'Interface de gestion Incus'
     }
   }
@@ -131,6 +146,11 @@ const availableBackends = computed(() => {
   return backendsStore.backends.filter(b => allowedBackendIds.has(b.id))
 })
 
+const selectedBackend = computed(() => {
+  if (!selectedBackendId.value) return null
+  return availableBackends.value.find(b => b.id === selectedBackendId.value) || null
+})
+
 const authReady = ref(false)
 
 const iframeSrc = computed(() => {
@@ -144,6 +164,24 @@ const iframeSrc = computed(() => {
 function onBackendChange() {
   // The iframe src is reactive via the computed, so nothing extra needed
 }
+
+// Remove parent .content-area border-radius and padding to maximize iframe space
+const contentArea = ref<HTMLElement | null>(null)
+onMounted(() => {
+  contentArea.value = document.querySelector('.content-area') as HTMLElement
+  if (contentArea.value) {
+    contentArea.value.style.borderRadius = '0'
+    contentArea.value.style.boxShadow = 'none'
+    contentArea.value.style.padding = '0'
+  }
+})
+onBeforeUnmount(() => {
+  if (contentArea.value) {
+    contentArea.value.style.borderRadius = ''
+    contentArea.value.style.boxShadow = ''
+    contentArea.value.style.padding = ''
+  }
+})
 
 onMounted(async () => {
   try {
@@ -178,55 +216,97 @@ onMounted(async () => {
 .admin-infrastructure {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 80px);
+  height: calc(100vh - 60px);
+  overflow: hidden;
 }
 
-.page-header {
-  padding: var(--spacing-lg);
-  border-bottom: var(--border-width-thin) solid var(--color-border-light);
+.infra-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-lg);
   background: var(--color-bg-primary);
+  border-bottom: var(--border-width-thin) solid var(--color-border-light);
+  min-height: 42px;
+  flex-shrink: 0;
 }
 
-.page-header h2 {
-  margin: 0;
-  color: var(--color-text-primary);
-  font-size: 1.5rem;
-}
-
-.page-header h2 i {
-  margin-right: var(--spacing-sm);
-  color: var(--color-primary);
-}
-
-.backend-selector {
+.toolbar-left {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: var(--spacing-md) var(--spacing-lg);
-  background: var(--color-bg-secondary);
-  border-bottom: var(--border-width-thin) solid var(--color-border-light);
 }
 
-.backend-selector label {
+.toolbar-left i {
+  color: var(--color-primary);
+  font-size: 1rem;
+}
+
+.toolbar-left h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1.1rem;
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.toolbar-right label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
   white-space: nowrap;
 }
 
-.backend-selector select {
-  padding: var(--spacing-xs) var(--spacing-sm);
+.select-wrapper select {
+  padding: 4px var(--spacing-sm);
   border: var(--border-width-thin) solid var(--color-border-light);
-  border-radius: var(--border-radius-lg);
-  background: var(--color-bg-primary);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-secondary);
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
-  min-width: 200px;
+  min-width: 160px;
+  cursor: pointer;
 }
 
-.backend-selector select:focus {
+.select-wrapper select:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb, 59, 130, 246), 0.2);
+  box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb, 59, 130, 246), 0.15);
+}
+
+.toolbar-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 3px var(--spacing-sm);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.online {
+  background: var(--color-success, #22c55e);
+  box-shadow: 0 0 4px var(--color-success, #22c55e);
+}
+
+.status-dot.offline {
+  background: var(--color-text-muted);
+}
+
+.status-text {
+  color: var(--color-text-secondary);
 }
 
 .incus-iframe-container {
@@ -238,30 +318,29 @@ onMounted(async () => {
   width: 100%;
   height: 100%;
   border: none;
+  display: block;
 }
 
-.empty-state,
-.loading-state,
-.error-state {
+.state-overlay {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   flex: 1;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
   color: var(--color-text-muted);
 }
 
-.empty-state i,
-.loading-state i {
+.state-overlay i {
   opacity: 0.4;
 }
 
-.error-state {
+.state-overlay.error {
   color: var(--color-danger-text);
 }
 
-.error-state i {
+.state-overlay.error i {
   color: var(--color-danger);
+  opacity: 1;
 }
 </style>
