@@ -14,7 +14,17 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(version)
   },
   server: {
-    allowedHosts: true
+    allowedHosts: true,
+    proxy: {
+      // Proxy Incus UI iframe requests through the dev server so cookies
+      // and iframe requests stay same-origin (avoids cross-origin issues
+      // between localhost:4000 and localhost:8080 in development).
+      '/api/v1/incus-ui': {
+        target: `http://${process.env.VITE_API_URL || 'localhost:8080'}`,
+        changeOrigin: true,
+        ws: true
+      }
+    }
   },
   test: {
     environment: 'happy-dom',

@@ -66,6 +66,7 @@ import { useTranslations } from '../../../composables/useTranslations'
 import { useTerminalBackendsStore } from '../../../stores/terminalBackends'
 import { useCurrentUserStore } from '../../../stores/currentUser'
 import { useOrganizationsStore } from '../../../stores/organizations'
+import { tokenService } from '../../../services/auth'
 
 const { t } = useTranslations({
   en: {
@@ -130,11 +131,14 @@ const availableBackends = computed(() => {
   return backendsStore.backends.filter(b => allowedBackendIds.has(b.id))
 })
 
+const authReady = ref(false)
+
 const iframeSrc = computed(() => {
-  if (!selectedBackendId.value) return null
-  const protocol = import.meta.env.VITE_PROTOCOL || 'https'
-  const apiUrl = import.meta.env.VITE_API_URL || window.location.host
-  return `${protocol}://${apiUrl}/api/v1/incus-ui/${selectedBackendId.value}/ui/`
+  if (!selectedBackendId.value || !authReady.value) return null
+  // Use a same-origin path so the auth cookie (set by the _auth endpoint)
+  // is sent with the iframe request. In dev, Vite proxies /api/v1/incus-ui
+  // to the API server. In production, the reverse proxy handles it.
+  return `/api/v1/incus-ui/${selectedBackendId.value}/ui/`
 })
 
 function onBackendChange() {
@@ -143,6 +147,17 @@ function onBackendChange() {
 
 onMounted(async () => {
   try {
+    // Set auth cookie via a same-origin fetch (goes through Vite proxy in
+    // dev, or directly in production). Using fetch() with a relative URL
+    // instead of axios ensures the request goes to the same origin as the
+    // page, so the Set-Cookie response sets the cookie on the right domain.
+    const token = tokenService.getAccessToken()
+    await fetch('/api/v1/incus-ui/_auth/cookie', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    authReady.value = true
+
     await Promise.all([
       backendsStore.fetchBackends(),
       organizationsStore.loadOrganizations()
