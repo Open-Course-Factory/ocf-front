@@ -337,6 +337,12 @@ const menuCategories = computed((): MenuCategory[] => [
         label: t('navigation.myOrganizations'),
         title: t('navigation.myOrganizationsTitle'),
         icon: 'fas fa-building'
+      },
+      {
+        route: '/infrastructure',
+        label: t('navigation.infrastructure'),
+        title: t('navigation.infrastructureTitle'),
+        icon: 'fas fa-network-wired'
       }
     ]
   },

@@ -255,6 +255,12 @@ const basicRoutes = [
       { path: 'organizations', name: 'Organizations', component: Organizations, meta: { requiresAuth: true } },
       { path: 'organizations/:id', name: 'OrganizationDetail', component: OrganizationDetail, meta: { requiresAuth: true } },
       { path: 'organizations/:id/import', name: 'BulkImport', component: BulkImport, meta: { requiresAuth: true } },
+      {
+        path: 'infrastructure',
+        name: 'Infrastructure',
+        component: () => import('../components/Pages/Admin/AdminIncusUI.vue'),
+        meta: { requiresAuth: true, collapseNav: true }
+      },
       { path: 'course/:id', name: 'CourseDetails', component: CourseDetails, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
       { path: 'chapter/:id', name: 'ChapterDetails', component: ChapterDetails, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
       { path: 'section/:id', name: 'SectionDetails', component: SectionDetails, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
