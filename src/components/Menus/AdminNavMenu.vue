@@ -78,6 +78,7 @@ const { t } = useTranslations({
         invoiceCleanup: 'Invoice Cleanup',
         organizations: 'Organizations',
         terminalBackends: 'Terminal Backends',
+        infrastructure: 'Infrastructure',
         security: 'Security',
         bulkImport: 'Bulk Import',
         emailTemplates: 'Email Templates',
@@ -106,6 +107,7 @@ const { t } = useTranslations({
         invoiceCleanup: 'Nettoyage des Factures',
         organizations: 'Organisations',
         terminalBackends: 'Backends Terminal',
+        infrastructure: 'Infrastructure',
         security: 'Sécurité',
         bulkImport: 'Importation Groupée',
         emailTemplates: 'Modèles d\'Email',
@@ -161,6 +163,11 @@ const adminCategories = computed<MenuCategory[]>(() => [
         route: '/admin/terminal-metrics',
         label: t('admin.items.terminalBackends'),
         icon: 'fas fa-server'
+      },
+      {
+        route: '/admin/infrastructure',
+        label: t('admin.items.infrastructure'),
+        icon: 'fas fa-network-wired'
       },
       {
         route: '/admin/security',

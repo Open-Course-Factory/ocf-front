@@ -419,6 +419,12 @@ const basicRoutes = [
         redirect: '/admin/terminal-metrics'
       },
       {
+        path: 'admin/infrastructure',
+        name: 'AdminInfrastructure',
+        component: () => import('../components/Pages/Admin/AdminIncusUI.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
         path: 'admin/organizations',
         name: 'AdminOrganizations',
         component: () => import('../components/Pages/Admin/AdminOrganizations.vue'),
