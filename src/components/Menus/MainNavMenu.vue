@@ -137,10 +137,17 @@ const hasOnlyAssignedSubscription = computed(() => {
   return current.subscription_type === 'assigned' || !!current.subscription_batch_id
 });
 
+// Check if user has infrastructure access (admin or org with incus_ui_enabled)
+const hasInfrastructureAccess = computed(() => {
+  if (currentUserStore.userRoles?.includes('administrator')) return true
+  const userOrgs = organizationsStore.userOrganizations
+  return userOrgs.some(org => org.incus_ui_enabled)
+})
+
 // Load help translations
 const { loadHelpTranslations } = useHelpTranslations();
 
-useCurrentUserStore();
+const currentUserStore = useCurrentUserStore();
 const { t } = useI18n();
 
 // Feature flags
@@ -338,12 +345,12 @@ const menuCategories = computed((): MenuCategory[] => [
         title: t('navigation.myOrganizationsTitle'),
         icon: 'fas fa-building'
       },
-      {
+      ...(hasInfrastructureAccess.value ? [{
         route: '/infrastructure',
         label: t('navigation.infrastructure'),
         title: t('navigation.infrastructureTitle'),
         icon: 'fas fa-network-wired'
-      }
+      }] : [])
     ]
   },
   {

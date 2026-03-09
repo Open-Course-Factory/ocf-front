@@ -143,6 +143,16 @@
     >
       <div class="config-modal-content">
         <div class="config-section">
+          <label class="toggle-label">
+            <input
+              type="checkbox"
+              v-model="editIncusUIEnabled"
+            />
+            <span>{{ t('adminOrgs.incusUIEnabledLabel') }}</span>
+          </label>
+          <p class="config-hint">{{ t('adminOrgs.incusUIEnabledHint') }}</p>
+        </div>
+        <div class="config-section">
           <h4>{{ t('adminOrgs.allowedBackendsLabel') }}</h4>
           <p class="config-hint">{{ t('adminOrgs.allowedBackendsHint') }}</p>
           <div class="backend-checkboxes">
@@ -240,7 +250,9 @@ const { t } = useTranslations({
       defaultBackendLabel: 'Default Backend',
       cancel: 'Cancel',
       save: 'Save',
-      saveError: 'Failed to save backend configuration'
+      saveError: 'Failed to save backend configuration',
+      incusUIEnabledLabel: 'Enable Incus UI access',
+      incusUIEnabledHint: 'Allow organization owners and managers to access the infrastructure management interface.'
     }
   },
   fr: {
@@ -268,7 +280,9 @@ const { t } = useTranslations({
       defaultBackendLabel: 'Backend par défaut',
       cancel: 'Annuler',
       save: 'Enregistrer',
-      saveError: 'Échec de l\'enregistrement de la configuration des backends'
+      saveError: 'Échec de l\'enregistrement de la configuration des backends',
+      incusUIEnabledLabel: 'Activer l\'accès à l\'interface Incus',
+      incusUIEnabledHint: 'Permettre aux propriétaires et gestionnaires de l\'organisation d\'accéder à l\'interface de gestion de l\'infrastructure.'
     }
   }
 })
@@ -290,6 +304,7 @@ const showBackendModal = ref(false)
 const editingOrg = ref<Organization | null>(null)
 const editAllowedBackends = ref<string[]>([])
 const editDefaultBackend = ref('')
+const editIncusUIEnabled = ref(false)
 const savingBackendConfig = ref(false)
 const backendConfigError = ref('')
 
@@ -402,6 +417,7 @@ function openBackendModal(org: Organization) {
   const config = orgConfigs[org.id]
   editAllowedBackends.value = [...(config?.allowed_backends || [])]
   editDefaultBackend.value = config?.default_backend || ''
+  editIncusUIEnabled.value = org.incus_ui_enabled ?? false
   backendConfigError.value = ''
   showBackendModal.value = true
 }
@@ -416,6 +432,9 @@ async function saveBackendConfig() {
   savingBackendConfig.value = true
   backendConfigError.value = ''
   try {
+    await axios.patch(`/organizations/${editingOrg.value.id}`, {
+      incus_ui_enabled: editIncusUIEnabled.value
+    })
     await organizationsStore.updateOrganizationBackendConfig(editingOrg.value.id, {
       allowed_backends: editAllowedBackends.value,
       default_backend: editDefaultBackend.value
