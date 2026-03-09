@@ -22,6 +22,7 @@ export interface Organization extends BaseEntity {
   max_groups: number
   max_members: number
   is_active: boolean
+  incus_ui_enabled?: boolean
   metadata?: Record<string, any>
   allowed_backends?: string[] | null
   default_backend?: string

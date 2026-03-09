@@ -80,6 +80,8 @@ import { useTerminalBackendsStore } from '../../../stores/terminalBackends'
 import { useCurrentUserStore } from '../../../stores/currentUser'
 import { useOrganizationsStore } from '../../../stores/organizations'
 import { tokenService } from '../../../services/auth'
+import { terminalService } from '../../../services/domain/terminal'
+import type { Backend } from '../../../types/entities'
 
 const { t } = useTranslations({
   en: {
@@ -196,10 +198,31 @@ onMounted(async () => {
     })
     authReady.value = true
 
-    await Promise.all([
-      backendsStore.fetchBackends(),
-      organizationsStore.loadOrganizations()
-    ])
+    await organizationsStore.loadOrganizations()
+
+    if (isAdmin.value) {
+      await backendsStore.fetchBackends()
+    } else {
+      // For non-admin users, fetch backends per org to avoid 403
+      const userOrgs = organizationsStore.userOrganizations
+      const enabledOrgs = userOrgs.filter(org => org.incus_ui_enabled)
+      const allBackends: Backend[] = []
+      const seenIds = new Set<string>()
+
+      await Promise.all(
+        enabledOrgs.map(async (org) => {
+          const orgBackends = await terminalService.getBackends(org.id)
+          for (const b of orgBackends) {
+            if (!seenIds.has(b.id)) {
+              seenIds.add(b.id)
+              allBackends.push(b)
+            }
+          }
+        })
+      )
+
+      backendsStore.backends = allBackends
+    }
 
     // Auto-select first available backend
     if (availableBackends.value.length > 0) {
