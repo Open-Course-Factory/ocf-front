@@ -103,9 +103,9 @@ defineEmits<{
   margin: 0;
 }
 
-/* Hide menu-text in collapsed mode */
+/* Hide menu-text in collapsed mode — only in headers, not in popup submenus */
 .nav-menu-shell.collapsed .menu-text,
-.nav-menu-shell.collapsed :deep(.menu-text) {
+.nav-menu-shell.collapsed :deep(.category-header .menu-text) {
   opacity: 0;
   width: 0;
   height: 0;

@@ -36,7 +36,7 @@ defineEmits<{
   display: flex;
   align-items: center;
   padding: var(--spacing-md) var(--spacing-lg);
-  color: var(--color-gray-400);
+  color: var(--collapsed-popup-text, var(--color-gray-400));
   text-decoration: none;
   transition: background-color var(--transition-slow), transform var(--transition-slow), color var(--transition-slow);
   border-radius: var(--border-radius-sm);
@@ -47,7 +47,7 @@ defineEmits<{
 }
 
 .nav-menu-item:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--collapsed-popup-hover-bg, rgba(255, 255, 255, 0.1));
   color: var(--color-white);
   transform: translateX(5px);
 }
@@ -105,18 +105,19 @@ defineEmits<{
   left: 85px;
   top: 50%;
   transform: translateY(-50%);
-  background-color: var(--color-bg-dark);
-  color: var(--color-text-primary);
+  background-color: var(--color-gray-800);
+  color: var(--color-white);
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--border-radius-sm);
   white-space: nowrap;
   opacity: 1;
   z-index: 5000;
-  border: var(--border-width-thin) solid var(--color-border-medium);
+  border: var(--border-width-thin) solid var(--color-gray-600);
   box-shadow: var(--shadow-md);
   font-size: var(--font-size-sm);
   pointer-events: none;
 }
+
 
 .collapsed .nav-menu-item.router-link-active,
 .collapsed .nav-menu-item.router-link-exact-active {

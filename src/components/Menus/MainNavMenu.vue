@@ -337,6 +337,12 @@ const menuCategories = computed((): MenuCategory[] => [
         label: t('navigation.myOrganizations'),
         title: t('navigation.myOrganizationsTitle'),
         icon: 'fas fa-building'
+      },
+      {
+        route: '/infrastructure',
+        label: t('navigation.infrastructure'),
+        title: t('navigation.infrastructureTitle'),
+        icon: 'fas fa-network-wired'
       }
     ]
   },
@@ -596,8 +602,9 @@ onMounted(async () => {
   margin: 0;
 }
 
-/* Hide menu-text in collapsed mode */
-.main-menu.collapsed :deep(.menu-text) {
+/* Hide menu-text in collapsed mode — only in category headers and admin link, not in popup submenus */
+.main-menu.collapsed :deep(.category-header .menu-text),
+.main-menu.collapsed .admin-link .menu-text {
   opacity: 0;
   width: 0;
   height: 0;
