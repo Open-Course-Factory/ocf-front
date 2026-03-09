@@ -16,11 +16,13 @@ export default defineConfig({
   server: {
     allowedHosts: true,
     proxy: {
-      // Proxy Incus UI iframe requests through the dev server so cookies
-      // and iframe requests stay same-origin (avoids cross-origin issues
-      // between localhost:4000 and localhost:8080 in development).
+      // Proxy Incus UI iframe requests to ocf-core so cookies and iframe
+      // requests stay same-origin. VITE_INCUS_PROXY_TARGET allows using
+      // a K8s-internal URL (e.g., http://ocf-core:8080) in production
+      // instead of going through the public load balancer.
       '/api/v1/incus-ui': {
-        target: `http://${process.env.VITE_API_URL || 'localhost:8080'}`,
+        target: process.env.VITE_INCUS_PROXY_TARGET
+          || `http://${process.env.VITE_API_URL || 'localhost:8080'}`,
         changeOrigin: true,
         ws: true
       }
