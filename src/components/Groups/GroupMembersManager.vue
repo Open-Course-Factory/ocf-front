@@ -89,7 +89,10 @@ const { t } = useTranslations({
       close: 'Close',
 
       // Errors
-      groupFull: 'Group is at maximum capacity'
+      groupFull: 'Group is at maximum capacity',
+
+      // Loading
+      loadingMembers: 'Loading members...'
     }
   },
   fr: {
@@ -133,7 +136,10 @@ const { t } = useTranslations({
       close: 'Fermer',
 
       // Errors
-      groupFull: 'Le groupe a atteint sa capacité maximale'
+      groupFull: 'Le groupe a atteint sa capacité maximale',
+
+      // Loading
+      loadingMembers: 'Chargement des membres...'
     }
   }
 })
@@ -355,7 +361,12 @@ async function handleRemoveMember(member: GroupMember) {
       </div>
     </div>
 
-    <div v-if="groupMembersComposable.sortedMembers.value.length === 0" class="empty-state">
+    <div v-if="groupMembersComposable.isLoading.value" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <p>{{ t('groupMembers.loadingMembers') }}</p>
+    </div>
+
+    <div v-else-if="groupMembersComposable.sortedMembers.value.length === 0" class="empty-state">
       <i class="fas fa-users"></i>
       <p>{{ t('groupMembers.noMembers') }}</p>
     </div>
@@ -544,6 +555,20 @@ async function handleRemoveMember(member: GroupMember) {
   border-radius: var(--border-radius-md);
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--spacing-2xl);
+  gap: var(--spacing-md);
+  color: var(--color-text-secondary);
+}
+
+.loading-state i {
+  font-size: var(--font-size-2xl);
+  color: var(--color-primary);
 }
 
 .empty-state {

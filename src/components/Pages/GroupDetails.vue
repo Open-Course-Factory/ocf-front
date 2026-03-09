@@ -29,7 +29,6 @@ import { useCurrentUserStore } from '../../stores/currentUser'
 import { useTranslations } from '../../composables/useTranslations'
 import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import { useGroupMembers } from '../../composables/useGroupMembers'
-import { withAsync } from '../../utils/asyncWrapper'
 import { formatDate } from '../../utils/formatters'
 import { userService, type User } from '../../services/domain/user'
 import type { ClassGroup } from '../../types'
@@ -67,7 +66,8 @@ const { t } = useTranslations({
       expiresAt: 'Expires',
       editGroup: 'Edit Group',
       deleteGroup: 'Delete Group',
-      groupLoadError: 'Failed to load group details'
+      groupLoadError: 'Failed to load group details',
+      loadingMembers: 'Loading members...'
     }
   },
   fr: {
@@ -92,7 +92,8 @@ const { t } = useTranslations({
       expiresAt: 'Expire',
       editGroup: 'Modifier le groupe',
       deleteGroup: 'Supprimer le groupe',
-      groupLoadError: 'Échec du chargement des détails du groupe'
+      groupLoadError: 'Échec du chargement des détails du groupe',
+      loadingMembers: 'Chargement des membres...'
     }
   }
 })
@@ -102,6 +103,7 @@ const currentGroup = ref<ClassGroup | null>(null)
 const ownerUser = ref<User | null>(null)
 const groupOrganization = ref<Organization | null>(null)
 const isLoading = ref(true)
+const isMembersLoading = ref(false)
 const error = ref('')
 const activeTab = ref<'overview' | 'members' | 'scenarios' | 'activity' | 'analytics' | 'history' | 'settings'>(
   (route.query.tab as 'overview' | 'members' | 'scenarios' | 'activity' | 'analytics' | 'history' | 'settings') || 'overview'
@@ -165,9 +167,16 @@ const statusColor = computed(() => {
   }
 })
 
+const displayMemberCount = computed(() => {
+  if (isMembersLoading.value && currentGroup.value) {
+    return currentGroup.value.member_count ?? 0
+  }
+  return groupMembersComposable.members.value.length
+})
+
 const actualMemberPercentage = computed(() => {
   if (!currentGroup.value) return 0
-  return Math.round((groupMembersComposable.members.value.length / currentGroup.value.max_members) * 100)
+  return Math.round((displayMemberCount.value / currentGroup.value.max_members) * 100)
 })
 
 const subgroups = computed(() => {
@@ -175,39 +184,56 @@ const subgroups = computed(() => {
 })
 
 // Methods
-const loadGroup = async () => {
-  return await withAsync(
-    { isLoading, error },
-    async () => {
-      const id = route.params.id as string
-      if (!id) return
+const loadGroupData = async () => {
+  const id = route.params.id as string
+  if (!id) return
 
-      const data = await groupStore.getOne(id, ['ParentGroup', 'SubGroups'])
-      currentGroup.value = data
+  const data = await groupStore.getOne(id, ['ParentGroup', 'SubGroups'])
+  currentGroup.value = data
 
-      if (data.owner_user_id) {
-        try {
-          ownerUser.value = await userService.getUserById(data.owner_user_id)
-        } catch (err) {
-          console.error('Failed to load owner user:', err)
-          ownerUser.value = null
-        }
-      }
+  if (data.owner_user_id) {
+    try {
+      ownerUser.value = await userService.getUserById(data.owner_user_id)
+    } catch (err) {
+      console.error('Failed to load owner user:', err)
+      ownerUser.value = null
+    }
+  }
 
-      if (data.organization_id) {
-        try {
-          const orgResponse = await axios.get(`/organizations/${data.organization_id}`)
-          groupOrganization.value = orgResponse.data
-        } catch (err) {
-          console.error('Failed to load organization:', err)
-          groupOrganization.value = null
-        }
-      }
+  if (data.organization_id) {
+    try {
+      const orgResponse = await axios.get(`/organizations/${data.organization_id}`)
+      groupOrganization.value = orgResponse.data
+    } catch (err) {
+      console.error('Failed to load organization:', err)
+      groupOrganization.value = null
+    }
+  }
 
-      return data
-    },
-    'groupDetails.groupLoadError'
-  )
+  return data
+}
+
+const loadGroupAndMembers = async () => {
+  isLoading.value = true
+  error.value = ''
+
+  try {
+    await loadGroupData()
+  } catch (err: any) {
+    error.value = err.response?.data?.error_message || err.message || t('groupDetails.groupLoadError')
+    isLoading.value = false
+    return
+  }
+
+  // Group is loaded — show the page, but members are still loading
+  isLoading.value = false
+  isMembersLoading.value = true
+
+  try {
+    await groupMembersComposable.loadMembers(true, subgroups.value)
+  } finally {
+    isMembersLoading.value = false
+  }
 }
 
 const handleMemberCountChanged = (delta: number) => {
@@ -217,8 +243,13 @@ const handleMemberCountChanged = (delta: number) => {
 }
 
 const handleGroupUpdated = async () => {
-  await loadGroup()
-  await groupMembersComposable.loadMembers(true, subgroups.value)
+  await loadGroupData()
+  isMembersLoading.value = true
+  try {
+    await groupMembersComposable.loadMembers(true, subgroups.value)
+  } finally {
+    isMembersLoading.value = false
+  }
 }
 
 // Lifecycle
@@ -228,17 +259,11 @@ onMounted(async () => {
     return
   }
 
-  isLoading.value = true
-  await loadGroup()
-  await groupMembersComposable.loadMembers(true, subgroups.value)
-  isLoading.value = false
+  await loadGroupAndMembers()
 })
 
 watch(() => route.params.id, async () => {
-  isLoading.value = true
-  await loadGroup()
-  await groupMembersComposable.loadMembers(true, subgroups.value)
-  isLoading.value = false
+  await loadGroupAndMembers()
 })
 
 // Sync activeTab with URL query parameter (for browser back/forward)
@@ -309,9 +334,10 @@ watch(activeTab, (newTab) => {
         <div class="status-item">
           <i class="fas fa-users"></i>
           <span>{{ t('groupDetails.memberCountLabel', {
-            current: groupMembersComposable.members.value.length,
+            current: displayMemberCount,
             max: currentGroup.max_members
           }) }}</span>
+          <i v-if="isMembersLoading" class="fas fa-spinner fa-spin members-loading-icon"></i>
         </div>
         <div class="status-item">
           <div class="progress-bar">
@@ -346,7 +372,10 @@ watch(activeTab, (newTab) => {
         >
           <i class="fas fa-users"></i>
           {{ t('groupDetails.tabMembers') }}
-          <span class="badge">{{ groupMembersComposable.members.value.length }}</span>
+          <span class="badge">
+            <i v-if="isMembersLoading" class="fas fa-spinner fa-spin"></i>
+            <template v-else>{{ displayMemberCount }}</template>
+          </span>
         </button>
         <button
           v-if="canEditGroup"
@@ -399,7 +428,7 @@ watch(activeTab, (newTab) => {
           :owner-user="ownerUser"
           :group-organization="groupOrganization"
           :can-edit-group="canEditGroup"
-          :member-count="groupMembersComposable.members.value.length"
+          :member-count="displayMemberCount"
           @group-updated="handleGroupUpdated"
         />
 
@@ -581,6 +610,11 @@ watch(activeTab, (newTab) => {
 
 .capacity-text {
   font-size: var(--font-size-sm);
+}
+
+.members-loading-icon {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
 }
 
 /* Tabs */
