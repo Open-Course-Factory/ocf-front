@@ -1,48 +1,32 @@
-ARG VARIANT=22-bookworm
-FROM node:${VARIANT} AS build
+# === Build stage ===
+FROM node:22-bookworm-slim AS build
 
-ARG USERNAME=node
-ARG NPM_GLOBAL=/usr/local/share/npm-global
-ARG NODE_MODULES="tslint-to-eslint-config typescript xterm xterm-addon-fit xterm-addon-attach @xterm/addon-clipboard xterm-addon-serialize"
-ARG PORT=4000
+# VITE_* vars are statically replaced by Vite at build time (import.meta.env.*)
+# Defaults here are production values — CI can override via --build-arg if needed
+ARG VITE_API_URL="api.solution-libre.fr"
+ARG VITE_PROTOCOL="https"
+ARG VITE_FEATURE_COURSES_ENABLED="true"
+ARG VITE_FEATURE_LABS_ENABLED="true"
+ARG VITE_FEATURE_TERMINALS_ENABLED="true"
 
-# Add NPM global to PATH.
-ENV PATH=${NPM_GLOBAL}/bin:${PATH}
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
 
-RUN \
-    # Configure global npm install location, use group to adapt to UID/GID changes
-    if ! cat /etc/group | grep -e "^npm:" > /dev/null 2>&1; then groupadd -r npm; fi \
-    && usermod -a -G npm ${USERNAME} \
-    && umask 0002 \
-    && mkdir -p ${NPM_GLOBAL} \
-    && touch /usr/local/etc/npmrc \
-    && chown ${USERNAME}:npm ${NPM_GLOBAL} /usr/local/etc/npmrc \
-    && chmod g+s ${NPM_GLOBAL} \
-    && npm config -g set prefix ${NPM_GLOBAL} \
-    && su ${USERNAME} -c "npm config -g set prefix ${NPM_GLOBAL}" \
-    # Install eslint
-    && su ${USERNAME} -c "umask 0002 && npm install -g eslint" \
-    && npm cache clean --force > /dev/null 2>&1
+RUN npm run build
 
-RUN su node -c "umask 0002 && npm install -g ${NODE_MODULES}" \
-    && npm cache clean --force > /dev/null 2>&1
+# === Runtime stage ===
+FROM nginx:1.27-alpine
 
-ENV PORT=${PORT}
+# Runtime-configurable proxy target for Incus UI
+# (envsubst replaces ${INCUS_PROXY_TARGET} in nginx config at container startup)
+ENV INCUS_PROXY_TARGET="http://ocf:8080"
 
-WORKDIR /home/node
-COPY --chown=node:node . /home/node/
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 
-USER node
-RUN npm install
-# RUN npm run build
+EXPOSE 80
 
-ENTRYPOINT []
-CMD ["npx", "vite", "--port", "4000", "--host" ]
-
-
-# FROM nginx
-
-# COPY --from=build /home/node/dist /usr/share/nginx/html
-
-# EXPOSE 80
-# CMD ["nginx","-g","daemon off;"]
+# Scope envsubst to ONLY our variable — otherwise it corrupts nginx builtins ($uri, $host, etc.)
+CMD ["/bin/sh", "-c", "envsubst '${INCUS_PROXY_TARGET}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
