@@ -742,7 +742,7 @@ async function startSingleSession() {
     const sessionData = {
       terms: t('terminalStarter.termsAcceptance'),
       expiry: sessionDurationCap.value,
-      recording_consent: 1,
+      recording_enabled: 1,
       ...(selectedInstanceType.value && { instance_type: selectedInstanceType.value }),
       ...(nameInput.value.trim() && { name: nameInput.value.trim() }),
       ...(exerciseRef.value.trim() && { external_ref: exerciseRef.value.trim() }),
@@ -846,7 +846,7 @@ async function startBulkSessions() {
       terms: t('terminalStarter.termsAcceptance'),
       expiry: sessionDurationCap.value,
       instance_type: selectedInstanceType.value,
-      recording_consent: 1,
+      recording_enabled: 1,
       ...(exerciseRef.value.trim() && { external_ref: exerciseRef.value.trim() }),
       ...(hostnameInput.value.trim() && { hostname: hostnameInput.value.trim() }),
       ...(backendsStore.selectedBackendId && { backend: backendsStore.selectedBackendId }),
