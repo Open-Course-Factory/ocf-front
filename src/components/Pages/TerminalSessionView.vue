@@ -35,6 +35,18 @@
         </router-link>
       </div>
 
+      <!-- Recording info notice -->
+      <div v-if="isSessionActive && !recordingNoticeDismissed" class="recording-info-notice">
+        <div class="recording-notice-content">
+          <i class="fas fa-video"></i>
+          <span>{{ t('sessionView.recordingNotice') }}</span>
+          <router-link to="/privacy" class="recording-notice-link">{{ t('sessionView.learnMore') }}</router-link>
+        </div>
+        <button class="recording-notice-dismiss" @click="dismissRecordingNotice" :aria-label="t('sessionView.dismissNotice')">
+          {{ t('sessionView.gotIt') }}
+        </button>
+      </div>
+
       <!-- Scenario start bar (when no scenario active) -->
       <ScenarioStartBar
         v-if="isSessionActive && !scenarioSessionId"
@@ -162,7 +174,11 @@ const { t } = useTranslations({
       expiresIn5min: 'Your session expires in 5 minutes. Save your work.',
       expiresIn1min: 'Your session expires in less than 1 minute!',
       expiryWarningTitle: 'Session Expiring',
-      scenarioBriefing: 'Scenario Briefing'
+      scenarioBriefing: 'Scenario Briefing',
+      recordingNotice: 'Your terminal commands are recorded for security and learning purposes.',
+      learnMore: 'Learn more',
+      gotIt: 'Got it',
+      dismissNotice: 'Dismiss recording notice'
     }
   },
   fr: {
@@ -187,7 +203,11 @@ const { t } = useTranslations({
       expiresIn5min: 'Votre session expire dans 5 minutes. Sauvegardez votre travail.',
       expiresIn1min: 'Votre session expire dans moins d\'une minute !',
       expiryWarningTitle: 'Expiration de la session',
-      scenarioBriefing: 'Briefing du scénario'
+      scenarioBriefing: 'Briefing du scénario',
+      recordingNotice: 'Vos commandes terminal sont enregistrées à des fins de sécurité et d\'apprentissage.',
+      learnMore: 'En savoir plus',
+      gotIt: 'Compris',
+      dismissNotice: 'Fermer la notification d\'enregistrement'
     }
   }
 })
@@ -203,6 +223,15 @@ let timerInterval: NodeJS.Timeout | null = null
 let warned5min = false
 let warned1min = false
 let scenarioSyncInterval: ReturnType<typeof setInterval> | null = null
+
+// Recording notice dismissal
+const RECORDING_NOTICE_KEY = 'recording-notice-dismissed'
+const recordingNoticeDismissed = ref(localStorage.getItem(RECORDING_NOTICE_KEY) === '1')
+
+function dismissRecordingNotice() {
+  recordingNoticeDismissed.value = true
+  localStorage.setItem(RECORDING_NOTICE_KEY, '1')
+}
 
 // Get session ID from route
 const sessionId = route.params.sessionId as string
@@ -608,6 +637,60 @@ onBeforeUnmount(() => {
 
 .session-expired-notice i {
   color: var(--color-warning, var(--color-text-muted));
+}
+
+.recording-info-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  background-color: var(--color-info-bg, var(--color-bg-secondary));
+  border: var(--border-width-thin) solid var(--color-info, var(--color-border));
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+}
+
+.recording-notice-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--color-text-secondary);
+}
+
+.recording-notice-content i {
+  color: var(--color-info, var(--color-primary));
+  flex-shrink: 0;
+}
+
+.recording-notice-link {
+  color: var(--color-primary);
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+.recording-notice-link:hover {
+  color: var(--color-primary-hover);
+}
+
+.recording-notice-dismiss {
+  background: none;
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.recording-notice-dismiss:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-medium);
 }
 
 .command-history-panel {
