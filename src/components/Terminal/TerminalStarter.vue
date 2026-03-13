@@ -12,9 +12,6 @@
     <!-- Debug info en mode développement -->
     <div v-if="showDebug" class="debug-panel">
       <h4>Debug Info</h4>
-      <p>showStartPanel: {{ showStartPanel }}</p>
-      <p>showInfoPanel: {{ showInfoPanel }}</p>
-      <p>showTerminalPanel: {{ showTerminalPanel }}</p>
       <p>isStarting: {{ isStarting }}</p>
       <p>instanceTypes.length: {{ instanceTypes.length }}</p>
       <p>selectedInstanceType: {{ selectedInstanceType }}</p>
@@ -23,7 +20,7 @@
     </div>
 
     <!-- Panneau de démarrage -->
-    <SettingsCard v-show="showStartPanel" :title="t('terminals.startNewSession')">
+    <SettingsCard :title="t('terminals.startNewSession')">
       <template #headerActions>
         <div class="header-actions-group">
           <!-- Session Count Badge -->
@@ -110,29 +107,6 @@
       </div>
     </SettingsCard>
 
-    <!-- Session Info Panel -->
-    <TerminalSessionInfo
-      v-if="showInfoPanel && sessionInfo"
-      :session-info="sessionInfo"
-      :instance-info="selectedInstanceInfo"
-      :time-remaining="timeRemaining"
-      :is-stopping="isStopping"
-      @stop="stopSession"
-    />
-
-    <!-- Terminal + Command History Panel -->
-    <TerminalSessionPanel
-      v-if="showTerminalPanel && sessionInfo"
-      ref="terminalConsoleRef"
-      :session-info="sessionInfo"
-      :is-active="showTerminalPanel"
-      :is-recording="recordingConsentResult === 1"
-      :show-history="showHistoryPanel"
-      :show-stop-button="false"
-      @session-warning="handleSessionWarning"
-      @session-expired="handleSessionExpired"
-    />
-
     <!-- Recording Consent Modal -->
     <BaseModal
       :visible="showRecordingConsent"
@@ -179,8 +153,6 @@ import Button from '../UI/Button.vue'
 import InstanceTypeSelector from './InstanceTypeSelector.vue'
 import TerminalAdvancedOptions from './TerminalAdvancedOptions.vue'
 import TerminalUsagePanel from './TerminalUsagePanel.vue'
-import TerminalSessionInfo from './TerminalSessionInfo.vue'
-import TerminalSessionPanel from './TerminalSessionPanel.vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import type { InstanceType } from '../../types'
 
@@ -226,8 +198,6 @@ const { t } = useTranslations({
       sessionCreated: 'Session created, initializing terminal...',
       bulkSessionsCreated: '{count} terminals created successfully',
       bulkSessionsPartial: '{successCount} of {totalCount} terminals created ({failedCount} failed)',
-      sessionExpired: 'Your terminal session has expired',
-      sessionExpiredTitle: 'Session Expired',
       errorValidationInstance: 'Please select an instance type',
       errorValidationGroup: 'Please select a group for bulk creation',
       errorLimitReached: 'You have reached your limit of concurrent terminals. Please stop an existing terminal or upgrade your plan.',
@@ -240,8 +210,6 @@ const { t } = useTranslations({
       errorUpgradePrompt: 'Would you like to view available plans to unlock this instance?',
       errorUpgradePromptTitle: 'Upgrade Plan',
       errorStarting: 'Startup Error',
-      errorStopping: 'Error stopping',
-      errorStoppingMessage: 'Error stopping the session',
       errorServerCapacity: 'Server at Capacity',
       errorServerCapacityMessage: 'The server does not have enough resources to create a new terminal session. Please try again in a few minutes or stop an existing terminal.',
       activeSessions: '{count} active session | {count} active sessions',
@@ -254,12 +222,6 @@ const { t } = useTranslations({
       commandHistory: 'Command History',
       privacyPolicyLink: 'Learn more about how your data is handled',
       termsAcceptance: "J'accepte les conditions d'utilisation du service terminal.",
-      warningInfo: 'Your session expires in 10 minutes.',
-      warningWarning: 'Session expiring soon. Save your work.',
-      warningDanger: 'Session expires in less than 1 minute!',
-      sessionExpiredNotice: 'Session expired',
-      warningTitle: 'Session Expiry',
-      startNewSessionAction: 'Start new session'
     }
   },
   fr: {
@@ -286,8 +248,6 @@ const { t } = useTranslations({
       sessionCreated: 'Session créée, initialisation du terminal...',
       bulkSessionsCreated: '{count} terminaux créés avec succès',
       bulkSessionsPartial: '{successCount} sur {totalCount} terminaux créés ({failedCount} échecs)',
-      sessionExpired: 'Votre session terminal a expiré',
-      sessionExpiredTitle: 'Session expirée',
       errorValidationInstance: 'Veuillez sélectionner un type d\'instance',
       errorValidationGroup: 'Veuillez sélectionner un groupe pour la création en masse',
       errorLimitReached: 'Vous avez atteint votre limite de terminaux simultanés. Veuillez arrêter un terminal existant ou mettre à niveau votre plan.',
@@ -300,8 +260,6 @@ const { t } = useTranslations({
       errorUpgradePrompt: 'Souhaitez-vous voir les plans disponibles pour débloquer cette instance ?',
       errorUpgradePromptTitle: 'Mettre à niveau le plan',
       errorStarting: 'Erreur de démarrage',
-      errorStopping: 'Erreur d\'arrêt',
-      errorStoppingMessage: 'Erreur lors de l\'arrêt de la session',
       errorServerCapacity: 'Serveur à Capacité Maximale',
       errorServerCapacityMessage: 'Le serveur n\'a pas suffisamment de ressources pour créer une nouvelle session terminal. Veuillez réessayer dans quelques minutes ou arrêter un terminal existant.',
       activeSessions: '{count} session active | {count} sessions actives',
@@ -314,27 +272,17 @@ const { t } = useTranslations({
       commandHistory: 'Historique des commandes',
       privacyPolicyLink: 'En savoir plus sur le traitement de vos données',
       termsAcceptance: "J'accepte les conditions d'utilisation du service terminal.",
-      warningInfo: 'Votre session expire dans 10 minutes.',
-      warningWarning: 'Session bientot terminee. Sauvegardez votre travail.',
-      warningDanger: 'La session expire dans moins d\'une minute !',
-      sessionExpiredNotice: 'Session expiree',
-      warningTitle: 'Expiration de session',
-      startNewSessionAction: 'Nouvelle session'
     }
   }
 })
 
-const { showConfirm, showError: showErrorNotification, showWarning, showInfo } = useNotification()
+const { showConfirm, showError: showErrorNotification, showWarning } = useNotification()
 
 // Panel state
-const showStartPanel = ref(true)
-const showInfoPanel = ref(false)
-const showTerminalPanel = ref(false)
 const showDebug = ref(false)
 
 // Application state
 const isStarting = ref(false)
-const isStopping = ref(false)
 const startStatus = ref('')
 
 // Recording consent state:
@@ -362,8 +310,6 @@ async function checkContractConsent(): Promise<boolean> {
 
 // Session information
 const sessionInfo = ref<any>(null)
-const timeRemaining = ref(0)
-let timerInterval: NodeJS.Timeout | null = null
 let usageRefreshInterval: NodeJS.Timeout | null = null
 
 // Usage refresh configuration
@@ -412,17 +358,7 @@ const terminalLimitFromMetrics = ref<number | null>(null)
 const loadingUsage = ref(false)
 const refreshingUsage = ref(false)
 
-// Refs
-const terminalConsoleRef = ref<any>(null)
-
 // Computed properties
-const selectedInstanceInfo = computed(() => {
-  if (!selectedInstanceType.value || !instanceTypes.value.length) {
-    return null
-  }
-  return instanceTypes.value.find(instance => instance.prefix === selectedInstanceType.value)
-})
-
 const allowedMachineSizes = computed(() => {
   const sizes = currentSubscription.value?.subscription_plan?.allowed_machine_sizes || []
   if (sizes.length === 0) {
@@ -508,11 +444,6 @@ const capacityStatusText = computed(() => {
   return canLaunchInstance.value
     ? t('terminalStarter.readyToLaunch')
     : t('terminalStarter.capacityIssue')
-})
-
-// Command history panel visibility
-const showHistoryPanel = computed(() => {
-  return sessionInfo.value && recordingConsentResult.value === 1
 })
 
 const retentionDays = computed(() => {
@@ -861,21 +792,8 @@ async function startSingleSession() {
 
     startStatus.value = t('terminalStarter.sessionCreated')
 
-    // Hide start panel and show session panels
-    showStartPanel.value = false
-    showInfoPanel.value = true
-    showTerminalPanel.value = true
-
-    // Start expiration timer
-    if (response.data.expires_at) {
-      startExpirationTimer(response.data.expires_at)
-    }
-
-    // Emit event
+    // Emit event — parent redirects to session view
     emit('session-started', sessionInfo.value.session_id)
-
-    // Refresh terminal count
-    await loadCurrentTerminalUsage()
 
   } catch (error: any) {
     console.error('Error starting session:', error)
@@ -925,10 +843,6 @@ async function startSingleSession() {
     } else {
       showErrorNotification(errorMsg, t('terminalStarter.errorStarting'))
     }
-
-    showStartPanel.value = true
-    showInfoPanel.value = false
-    showTerminalPanel.value = false
   } finally {
     isStarting.value = false
     startStatus.value = ''
@@ -1022,88 +936,7 @@ async function startBulkSessions() {
   }
 }
 
-async function stopSession() {
-  if (!sessionInfo.value) return
-
-  isStopping.value = true
-
-  try {
-    const sessionId = sessionInfo.value.session_id
-    await axios.post(`/terminals/${sessionId}/stop`)
-
-    await loadCurrentTerminalUsage()
-
-    resetToStart()
-
-  } catch (error: any) {
-    console.error('Error stopping session:', error)
-    const errorMsg = error.response?.data?.error_message || error.message || t('terminalStarter.errorStoppingMessage')
-    showErrorNotification(errorMsg, t('terminalStarter.errorStopping'))
-  } finally {
-    isStopping.value = false
-  }
-}
-
-function resetToStart() {
-  cleanup()
-
-  sessionInfo.value = null
-  timeRemaining.value = 0
-
-  showStartPanel.value = true
-  showInfoPanel.value = false
-  showTerminalPanel.value = false
-
-  resetForm()
-}
-
-function startExpirationTimer(expiresAt: string) {
-  const expirationTime = new Date(expiresAt).getTime()
-
-  if (timerInterval) {
-    clearInterval(timerInterval)
-  }
-
-  timerInterval = setInterval(() => {
-    const now = Date.now()
-    const remaining = Math.max(0, Math.floor((expirationTime - now) / 1000))
-
-    timeRemaining.value = remaining
-
-    if (remaining <= 0) {
-      clearInterval(timerInterval!)
-      timerInterval = null
-    }
-  }, 1000)
-}
-
-function handleSessionWarning(level: 'info' | 'warning' | 'danger') {
-  const messages: Record<string, () => void> = {
-    info: () => showInfo(t('terminalStarter.warningInfo'), t('terminalStarter.warningTitle')),
-    warning: () => showWarning(t('terminalStarter.warningWarning'), t('terminalStarter.warningTitle')),
-    danger: () => showErrorNotification(t('terminalStarter.warningDanger'), t('terminalStarter.warningTitle'))
-  }
-  messages[level]?.()
-}
-
-function handleSessionExpired() {
-  timeRemaining.value = 0
-  if (timerInterval) {
-    clearInterval(timerInterval)
-    timerInterval = null
-  }
-  showTerminalPanel.value = false
-  showInfoPanel.value = false
-  showWarning(t('terminalStarter.sessionExpiredNotice'), t('terminalStarter.sessionExpiredTitle'))
-  showStartPanel.value = true
-}
-
 function cleanup() {
-  if (timerInterval) {
-    clearInterval(timerInterval)
-    timerInterval = null
-  }
-
   if (usageRefreshInterval) {
     clearInterval(usageRefreshInterval)
     usageRefreshInterval = null
