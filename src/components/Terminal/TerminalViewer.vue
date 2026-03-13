@@ -577,7 +577,11 @@ async function connectToTerminal() {
 
       // Attach socket to terminal
       if (attachAddon) {
-        attachAddon.dispose()
+        try {
+          attachAddon.dispose()
+        } catch {
+          // Addon may not be fully loaded yet
+        }
         attachAddon = null
       }
 

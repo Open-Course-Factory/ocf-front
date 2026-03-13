@@ -233,6 +233,7 @@ const filteredCommands = computed(() => {
 let pollInterval: ReturnType<typeof setTimeout> | null = null
 let lastTimestamp: number | null = null
 let errorCount = 0
+let forbiddenCount = 0
 let emptyResponseCount = 0
 const MAX_POLL_INTERVAL = 30000
 const BASE_POLL_INTERVAL = 3000
@@ -276,6 +277,7 @@ async function fetchHistory() {
 
     if (newCommands.length > 0) {
       errorCount = 0
+      forbiddenCount = 0
       emptyResponseCount = 0
 
       // Signal that recording is active (commands exist)
@@ -308,8 +310,11 @@ async function fetchHistory() {
     }
   } catch (error: any) {
     if (error.response?.status === 403) {
-      recordingDisabled.value = true
-      stopPolling()
+      forbiddenCount++
+      if (forbiddenCount >= 3) {
+        recordingDisabled.value = true
+        stopPolling()
+      }
       return
     }
     console.error('Failed to fetch command history:', error)
@@ -350,6 +355,7 @@ function startPolling() {
   lastTimestamp = null
   commands.value = []
   errorCount = 0
+  forbiddenCount = 0
   emptyResponseCount = 0
   fetchHistory()
   schedulePoll()
