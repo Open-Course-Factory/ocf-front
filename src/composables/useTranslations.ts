@@ -24,7 +24,7 @@
  * })
  */
 
-import { onMounted } from 'vue'
+// onMounted no longer needed — translations are registered immediately in setup()
 import { useI18n } from 'vue-i18n'
 import i18nInstance from '../i18n'
 
@@ -43,28 +43,18 @@ export interface TranslationMessages {
  * Must be called inside a Vue component's setup() function.
  *
  * @param messages - Translation messages organized by locale
- * @param immediate - If true, register translations immediately instead of in onMounted (default: false)
  * @returns The translation function and i18n instance
  */
-export function useTranslations(messages: TranslationMessages, immediate: boolean = false) {
+export function useTranslations(messages: TranslationMessages) {
   const i18n = useI18n()
   const { t, te, locale } = i18n
 
-  const registerTranslations = () => {
-    Object.entries(messages).forEach(([localeKey, translations]) => {
-      i18n.mergeLocaleMessage(localeKey, translations)
-    })
-  }
-
-  if (immediate) {
-    // Register immediately (useful for stores)
-    registerTranslations()
-  } else {
-    // Register in onMounted (standard for components)
-    onMounted(() => {
-      registerTranslations()
-    })
-  }
+  // Register translations immediately during setup() so they are
+  // available on first render. Previously deferred to onMounted, but
+  // vue-i18n v11 no longer triggers reactivity from mergeLocaleMessage.
+  Object.entries(messages).forEach(([localeKey, translations]) => {
+    i18n.mergeLocaleMessage(localeKey, translations)
+  })
 
   return {
     t,

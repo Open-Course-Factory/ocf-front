@@ -134,7 +134,7 @@ import { getTranslationKey } from '../../utils';
 import { formatDateTime, formatCurrency, formatStorageSize, formatDuration, formatNumber } from '../../utils/formatters';
 import { computed, reactive } from 'vue';
 import { useI18n } from 'vue-i18n';
-const { t } = useI18n();
+const { t } = useI18n<{ message: Record<string, string> }>();
 
 const translationKey = computed(() => getTranslationKey(props.entityStore.$id || 'unknown'));
 
