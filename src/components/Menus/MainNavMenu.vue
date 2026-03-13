@@ -207,6 +207,7 @@ interface MenuCategory {
   allowedRoles: string[]
   items: MenuItem[]
   featureFlag?: string
+  routePrefixes?: string[]
 }
 
 const isBottomCollapsed = ref(true);
@@ -285,6 +286,7 @@ const menuCategories = computed((): MenuCategory[] => [
     icon: 'fas fa-laptop-code',
     allowedRoles: ['administrator', 'member'],
     featureFlag: 'terminal_management',
+    routePrefixes: ['/terminal-session'],
     items: [
       {
         route: '/terminal-creation',

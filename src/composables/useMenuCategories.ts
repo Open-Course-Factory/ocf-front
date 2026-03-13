@@ -18,6 +18,7 @@ export interface MenuCategory {
   label: string
   icon: string
   items: MenuCategoryItem[]
+  routePrefixes?: string[]
 }
 
 export function useMenuCategories(
@@ -44,6 +45,8 @@ export function useMenuCategories(
     for (const category of categories()) {
       const hasActiveItem = category.items.some(item =>
         route.path === item.route || route.path.startsWith(item.route + '/')
+      ) || category.routePrefixes?.some(prefix =>
+        route.path === prefix || route.path.startsWith(prefix + '/')
       )
       if (hasActiveItem) {
         expandedCategories.value[category.key] = true
@@ -76,7 +79,9 @@ export function useMenuCategories(
     categories().forEach(category => {
       result[category.key] = category.items.some(item =>
         route.path === item.route || route.path.startsWith(item.route + '/')
-      )
+      ) || category.routePrefixes?.some(prefix =>
+        route.path === prefix || route.path.startsWith(prefix + '/')
+      ) || false
     })
     return result
   })

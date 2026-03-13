@@ -872,7 +872,7 @@ async function startSingleSession() {
     }
 
     // Emit event
-    emit('session-started')
+    emit('session-started', sessionInfo.value.session_id)
 
     // Refresh terminal count
     await loadCurrentTerminalUsage()

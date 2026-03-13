@@ -48,6 +48,7 @@
 
 <script setup lang="ts">
 import { defineAsyncComponent } from 'vue'
+import { useRouter } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
 
 const { t } = useTranslations({
@@ -67,12 +68,15 @@ const { t } = useTranslations({
   }
 })
 
+const router = useRouter()
+
 // Import dynamique du composant
 const TerminalStarter = defineAsyncComponent(() => import('../Terminal/TerminalStarter.vue'))
 
-function onSessionStarted() {
-  // Terminal is shown inline by TerminalStarter (showInfoPanel/showTerminalPanel)
-  // No redirect needed — bulk mode stays on form with success notification
+function onSessionStarted(sessionId: string) {
+  if (sessionId) {
+    router.push({ name: 'TerminalSessionView', params: { sessionId } })
+  }
 }
 </script>
 
