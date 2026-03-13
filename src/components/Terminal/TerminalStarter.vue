@@ -107,17 +107,17 @@
       </div>
     </SettingsCard>
 
-    <!-- Recording Consent Modal -->
+    <!-- Recording Acknowledgement Modal -->
     <BaseModal
-      :visible="showRecordingConsent"
-      :title="t('terminalStarter.recordingConsentTitle')"
+      :visible="showRecordingAcknowledgement"
+      :title="t('terminalStarter.recordingAcknowledgementTitle')"
       title-icon="fas fa-circle-dot"
       size="medium"
       :show-close="true"
-      @close="handleRecordingConsent()"
+      @close="handleRecordingAcknowledgement()"
     >
       <p class="recording-consent-message">
-        {{ t('terminalStarter.recordingConsentMessage', { days: retentionDays }) }}
+        {{ t('terminalStarter.recordingAcknowledgementMessage') }}
       </p>
       <p class="recording-privacy-link">
         <router-link to="/privacy" target="_blank">
@@ -125,7 +125,7 @@
         </router-link>
       </p>
       <template #footer>
-        <button class="btn btn-primary" @click="handleRecordingConsent()">
+        <button class="btn btn-primary" @click="handleRecordingAcknowledgement()">
           <i class="fas fa-check"></i>
           {{ t('terminalStarter.recordingUnderstood') }}
         </button>
@@ -216,8 +216,8 @@ const { t } = useTranslations({
       backendOffline: 'Backend "{name}" is offline. Please select another backend or try again later.',
       loadingInstanceTypes: 'Loading instance types...',
       noInstanceTypesForBackend: 'No instance types available for this backend.',
-      recordingConsentTitle: 'Command Recording',
-      recordingConsentMessage: 'Your terminal commands are recorded for security and learning purposes. Administrators and instructors can view your command history. You can export or delete your history at any time.\n\nAvoid typing passwords or tokens directly in the terminal — they may be captured in your command history.',
+      recordingAcknowledgementTitle: 'Command Recording',
+      recordingAcknowledgementMessage: 'Your terminal commands are recorded for security and learning purposes. Administrators and instructors can view your command history. You can export or delete your history at any time.\n\nAvoid typing passwords or tokens directly in the terminal — they may be captured in your command history.',
       recordingUnderstood: 'I understand',
       commandHistory: 'Command History',
       privacyPolicyLink: 'Learn more about how your data is handled',
@@ -266,8 +266,8 @@ const { t } = useTranslations({
       backendOffline: 'Le backend « {name} » est hors ligne. Veuillez sélectionner un autre backend ou réessayer plus tard.',
       loadingInstanceTypes: 'Chargement des types d\'instances...',
       noInstanceTypesForBackend: 'Aucun type d\'instance disponible sur ce backend.',
-      recordingConsentTitle: 'Enregistrement des commandes',
-      recordingConsentMessage: 'Vos commandes terminal sont enregistrées à des fins de sécurité et d\'apprentissage. Les administrateurs et encadrants peuvent consulter votre historique de commandes. Vous pouvez exporter ou supprimer votre historique à tout moment.\n\nÉvitez de saisir des mots de passe ou des jetons directement dans le terminal — ils pourraient être capturés dans votre historique de commandes.',
+      recordingAcknowledgementTitle: 'Enregistrement des commandes',
+      recordingAcknowledgementMessage: 'Vos commandes terminal sont enregistrées à des fins de sécurité et d\'apprentissage. Les administrateurs et encadrants peuvent consulter votre historique de commandes. Vous pouvez exporter ou supprimer votre historique à tout moment.\n\nÉvitez de saisir des mots de passe ou des jetons directement dans le terminal — ils pourraient être capturés dans votre historique de commandes.',
       recordingUnderstood: 'J\'ai compris',
       commandHistory: 'Historique des commandes',
       privacyPolicyLink: 'En savoir plus sur le traitement de vos données',
@@ -285,28 +285,11 @@ const showDebug = ref(false)
 const isStarting = ref(false)
 const startStatus = ref('')
 
-// Recording consent state:
-// - null: not yet asked (retentionDays=0 or dialog not shown yet)
-// - 0: user declined recording, or consent not applicable
-// - 1: user accepted recording
-// Note: 0 covers both "declined" and "not applicable" — the backend
-// treats both as "no recording". If RGPD audit requires distinguishing
-// these cases, a separate value (e.g. 2) should be introduced.
-const showRecordingConsent = ref(false)
-const recordingConsentResult = ref<number | null>(null)
-const consentHandledByContract = ref<boolean | null>(null) // null = not checked yet
-
-async function checkContractConsent(): Promise<boolean> {
-  if (consentHandledByContract.value !== null) return consentHandledByContract.value
-  try {
-    const response = await axios.get('/terminals/consent-status')
-    consentHandledByContract.value = response.data?.consent_handled === true
-    return consentHandledByContract.value
-  } catch {
-    consentHandledByContract.value = false
-    return false
-  }
-}
+// Recording acknowledgement: recording always happens (RGPD Art. 6.1.f — legitimate interest).
+// The modal informs the user; it does not gate recording.
+const RECORDING_ACK_KEY = 'terminal-recording-acknowledged'
+const showRecordingAcknowledgement = ref(false)
+const recordingAcknowledged = ref(localStorage.getItem(RECORDING_ACK_KEY) === '1')
 
 // Session information
 const sessionInfo = ref<any>(null)
@@ -444,10 +427,6 @@ const capacityStatusText = computed(() => {
   return canLaunchInstance.value
     ? t('terminalStarter.readyToLaunch')
     : t('terminalStarter.capacityIssue')
-})
-
-const retentionDays = computed(() => {
-  return currentSubscription.value?.subscription_plan?.command_history_retention_days || 0
 })
 
 // Form validation
@@ -635,8 +614,6 @@ function resetForm() {
   restoredFromStorage.value = false
   selectedInstanceType.value = ''
   instanceTypeCache.clear()
-  recordingConsentResult.value = null
-  consentHandledByContract.value = null
 }
 
 function handleHostnameUpdate(value: string) {
@@ -648,9 +625,10 @@ function handleHostnameUpdate(value: string) {
   }
 }
 
-function handleRecordingConsent() {
-  recordingConsentResult.value = 1
-  showRecordingConsent.value = false
+function handleRecordingAcknowledgement() {
+  recordingAcknowledged.value = true
+  localStorage.setItem(RECORDING_ACK_KEY, '1')
+  showRecordingAcknowledgement.value = false
   startNewSession()
 }
 
@@ -711,16 +689,10 @@ async function startSingleSession() {
     return
   }
 
-  // Check if recording consent is needed
-  if (retentionDays.value > 0 && recordingConsentResult.value === null) {
-    // Check if org/group contract handles consent (RGPD Art. 13 - enrollment contract)
-    const handledByContract = await checkContractConsent()
-    if (handledByContract) {
-      recordingConsentResult.value = 1 // Auto-accept: contract covers consent
-    } else {
-      showRecordingConsent.value = true
-      return // Wait for user response
-    }
+  // Show recording acknowledgement if user hasn't seen it yet
+  if (!recordingAcknowledged.value) {
+    showRecordingAcknowledgement.value = true
+    return // Wait for user acknowledgement
   }
 
   // Sync sessions first to ensure finished sessions are updated
@@ -770,7 +742,7 @@ async function startSingleSession() {
     const sessionData = {
       terms: t('terminalStarter.termsAcceptance'),
       expiry: sessionDurationCap.value,
-      recording_consent: recordingConsentResult.value ?? 0,
+      recording_consent: 1,
       ...(selectedInstanceType.value && { instance_type: selectedInstanceType.value }),
       ...(nameInput.value.trim() && { name: nameInput.value.trim() }),
       ...(exerciseRef.value.trim() && { external_ref: exerciseRef.value.trim() }),
@@ -860,16 +832,10 @@ async function startBulkSessions() {
     return
   }
 
-  // Check if recording consent is needed (same as single session)
-  if (retentionDays.value > 0 && recordingConsentResult.value === null) {
-    // Check if org/group contract handles consent (RGPD Art. 13 - enrollment contract)
-    const handledByContract = await checkContractConsent()
-    if (handledByContract) {
-      recordingConsentResult.value = 1 // Auto-accept: contract covers consent
-    } else {
-      showRecordingConsent.value = true
-      return
-    }
+  // Show recording acknowledgement if user hasn't seen it yet
+  if (!recordingAcknowledged.value) {
+    showRecordingAcknowledgement.value = true
+    return
   }
 
   isStarting.value = true
@@ -880,7 +846,7 @@ async function startBulkSessions() {
       terms: t('terminalStarter.termsAcceptance'),
       expiry: sessionDurationCap.value,
       instance_type: selectedInstanceType.value,
-      recording_consent: recordingConsentResult.value ?? 0,
+      recording_consent: 1,
       ...(exerciseRef.value.trim() && { external_ref: exerciseRef.value.trim() }),
       ...(hostnameInput.value.trim() && { hostname: hostnameInput.value.trim() }),
       ...(backendsStore.selectedBackendId && { backend: backendsStore.selectedBackendId }),
