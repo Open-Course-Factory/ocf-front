@@ -7,7 +7,7 @@ default:
 # ============================================================================
 
 variables:
-  NODE_VERSION: "18"
+  NODE_VERSION: "22"
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: "/certs"
 
