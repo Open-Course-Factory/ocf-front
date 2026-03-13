@@ -742,6 +742,12 @@ onBeforeUnmount(() => {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  /* Keep terminal visible while scenario panel scrolls */
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: calc(100vh - 60px);
+  overflow: hidden;
 }
 
 /* Scenario briefing card */
