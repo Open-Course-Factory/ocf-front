@@ -13,7 +13,8 @@ function createTestI18n() {
     legacy: false,
     locale: 'en',
     fallbackLocale: 'en',
-    messages: { en: {}, fr: {} }
+    messages: { en: {}, fr: {} },
+    missingWarn: false
   })
 }
 
