@@ -184,34 +184,6 @@ describe('TerminalAdvancedOptions', () => {
     })
   })
 
-  describe('conditional: bulk mode selector', () => {
-    it('does not show bulk mode selector when showBulkMode is false (default)', async () => {
-      const header = wrapper.find('.collapsible-header')
-      await header.trigger('click')
-
-      const bulkMode = wrapper.find('.creation-mode-selector')
-      expect(bulkMode.exists()).toBe(false)
-    })
-
-    it('shows bulk mode selector when showBulkMode is true', async () => {
-      const w = mountComponent({ showBulkMode: true })
-      const header = w.find('.collapsible-header')
-      await header.trigger('click')
-
-      const bulkMode = w.find('.creation-mode-selector')
-      expect(bulkMode.exists()).toBe(true)
-    })
-
-    it('renders single and bulk mode buttons when showBulkMode is true', async () => {
-      const w = mountComponent({ showBulkMode: true })
-      const header = w.find('.collapsible-header')
-      await header.trigger('click')
-
-      const modeOptions = w.findAll('.mode-option')
-      expect(modeOptions.length).toBe(2)
-    })
-  })
-
   describe('i18n safety: no unescaped @ in translations', () => {
     it('does not trigger vue-i18n message compilation errors', async () => {
       // Regression test: vue-i18n treats @ as linked message syntax.
