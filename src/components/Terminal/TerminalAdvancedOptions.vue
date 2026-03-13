@@ -220,7 +220,7 @@ const { t } = useTranslations({
       willCreate: 'Will create {count} terminals (1 per member)',
       hostnameLabel: 'Container Hostname (Optional)',
       hostnamePlaceholder: 'e.g., webserver',
-      hostnameHelp: 'Custom hostname for the terminal prompt (root@hostname). Lowercase, alphanumeric and hyphens, max 63 chars.'
+      hostnameHelp: "Custom hostname for the terminal prompt (root{'@'}hostname). Lowercase, alphanumeric and hyphens, max 63 chars."
     }
   },
   fr: {
@@ -242,7 +242,7 @@ const { t } = useTranslations({
       willCreate: '{count} terminaux seront créés (1 par membre)',
       hostnameLabel: 'Nom d\'hôte (Optionnel)',
       hostnamePlaceholder: 'ex. webserver',
-      hostnameHelp: 'Nom d\'hôte personnalisé pour le prompt (root@hostname). Minuscules, alphanumérique et tirets, 63 caractères max.'
+      hostnameHelp: "Nom d'hôte personnalisé pour le prompt (root{'@'}hostname). Minuscules, alphanumérique et tirets, 63 caractères max."
     }
   }
 })
