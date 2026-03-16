@@ -60,6 +60,10 @@
             <i class="fas fa-camera"></i>
             {{ t('feedbackModal.captureScreenshot') }}
           </button>
+          <p v-if="screenshotError" class="screenshot-error">
+            <i class="fas fa-exclamation-triangle"></i>
+            {{ screenshotError }}
+          </p>
         </div>
         <div v-else class="screenshot-preview">
           <img :src="'data:image/png;base64,' + screenshotBase64" alt="Screenshot preview" />
@@ -93,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import axios from 'axios'
 import html2canvas from 'html2canvas'
 import { useTranslations } from '../../composables/useTranslations'
@@ -128,6 +132,7 @@ const { t } = useTranslations({
       sending: 'Sending...',
       successMessage: 'Thank you! Your feedback has been sent successfully.',
       errorMessage: 'Failed to send feedback. Please try again.',
+      screenshotTooLarge: 'Screenshot is too large. Try with a smaller window.',
     }
   },
   fr: {
@@ -149,6 +154,7 @@ const { t } = useTranslations({
       sending: 'Envoi...',
       successMessage: 'Merci ! Votre retour a été envoyé avec succès.',
       errorMessage: 'Échec de l\'envoi. Veuillez réessayer.',
+      screenshotTooLarge: 'La capture d\'écran est trop volumineuse. Essayez avec une fenêtre plus petite.',
     }
   }
 })
@@ -156,6 +162,7 @@ const { t } = useTranslations({
 const feedbackType = ref<'bug' | 'suggestion' | 'question'>('bug')
 const message = ref('')
 const screenshotBase64 = ref('')
+const screenshotError = ref('')
 const isSending = ref(false)
 const isCapturing = ref(false)
 const successMessage = ref('')
@@ -173,6 +180,7 @@ function resetForm() {
   feedbackType.value = 'bug'
   message.value = ''
   screenshotBase64.value = ''
+  screenshotError.value = ''
   successMessage.value = ''
   errorMessage.value = ''
 }
@@ -186,13 +194,30 @@ function handleClose() {
 
 async function captureScreenshot() {
   isCapturing.value = true
+  screenshotError.value = ''
 
-  // Wait for DOM to update (modal hides via isCapturing)
-  await new Promise(resolve => setTimeout(resolve, 300))
+  // Wait for Vue DOM update cycle, then one animation frame for browser repaint
+  await nextTick()
+  await new Promise(resolve => requestAnimationFrame(resolve))
 
   try {
     const canvas = await html2canvas(document.body)
-    screenshotBase64.value = canvas.toDataURL('image/png').replace('data:image/png;base64,', '')
+    let dataUrl = canvas.toDataURL('image/png')
+    let base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
+
+    // If too large, try JPEG with lower quality
+    const maxSize = 4 * 1024 * 1024
+    if (base64.length > maxSize) {
+      dataUrl = canvas.toDataURL('image/jpeg', 0.6)
+      base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
+    }
+
+    if (base64.length > maxSize) {
+      screenshotError.value = t('feedbackModal.screenshotTooLarge')
+      return
+    }
+
+    screenshotBase64.value = base64
   } catch (err) {
     console.error('Screenshot capture failed:', err)
   } finally {
@@ -379,42 +404,13 @@ async function handleSubmit() {
   transform: scale(1.1);
 }
 
-/* Footer buttons are handled by BaseModal slots, these styles
-   ensure btn classes from BaseModal are reused consistently */
-.btn {
-  display: inline-flex;
+.screenshot-error {
+  margin: var(--spacing-xs) 0 0 0;
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+  display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  font-size: var(--font-size-base);
-  font-weight: 500;
-  cursor: pointer;
-  border: 2px solid transparent;
-  border-radius: var(--border-radius-md);
-  transition: all 0.2s ease;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background-color: var(--color-primary);
-  color: var(--color-white);
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
-}
-
-.btn-secondary {
-  background-color: var(--color-secondary, var(--color-gray-600));
-  color: var(--color-white);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background-color: var(--color-secondary-hover, var(--color-gray-500));
+  gap: var(--spacing-xs);
 }
 
 @media (max-width: 768px) {

@@ -378,38 +378,6 @@ onMounted(() => {
   justify-content: flex-end;
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  font-size: var(--font-size-base);
-  font-weight: 500;
-  cursor: pointer;
-  border: 2px solid transparent;
-  border-radius: var(--border-radius-md);
-  transition: all 0.2s ease;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background-color: var(--color-primary);
-  color: var(--color-white);
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
-}
-
-.btn-sm {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: var(--font-size-sm);
-}
-
 .save-success {
   margin-top: var(--spacing-md);
   padding: var(--spacing-sm) var(--spacing-md);
