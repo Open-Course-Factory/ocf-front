@@ -80,6 +80,7 @@ const { t } = useTranslations({
         terminalBackends: 'Terminal Backends',
         infrastructure: 'Infrastructure',
         security: 'Security',
+        feedbackSettings: 'Feedback Settings',
         bulkImport: 'Bulk Import',
         emailTemplates: 'Email Templates',
         scenarios: 'Scenarios',
@@ -109,6 +110,7 @@ const { t } = useTranslations({
         terminalBackends: 'Backends Terminal',
         infrastructure: 'Infrastructure',
         security: 'Sécurité',
+        feedbackSettings: 'Paramètres de Feedback',
         bulkImport: 'Importation Groupée',
         emailTemplates: 'Modèles d\'Email',
         scenarios: 'Scénarios',
@@ -173,6 +175,11 @@ const adminCategories = computed<MenuCategory[]>(() => [
         route: '/admin/security',
         label: t('admin.items.security'),
         icon: 'fas fa-user-shield'
+      },
+      {
+        route: '/admin/feedback-settings',
+        label: t('admin.items.feedbackSettings'),
+        icon: 'fas fa-comment-dots'
       }
     ]
   },

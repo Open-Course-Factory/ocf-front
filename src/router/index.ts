@@ -473,6 +473,12 @@ const basicRoutes = [
         meta: { requiresAuth: true, requiresAdmin: true }
       },
       {
+        path: 'admin/feedback-settings',
+        name: 'FeedbackSettings',
+        component: () => import('../components/Pages/FeedbackSettings.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
         path: 'admin/email-templates',
         name: 'EmailTemplates',
         component: () => import('../components/Pages/EmailTemplates.vue'),

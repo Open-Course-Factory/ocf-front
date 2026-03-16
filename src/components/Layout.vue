@@ -29,6 +29,7 @@
       </div>
     </div>
     <ToastContainer />
+    <FeedbackButton />
   </div>
 </template>
 
@@ -41,6 +42,7 @@ import PreferencesNavMenu from './Menus/PreferencesNavMenu.vue'
 import TopMenu from './Menus/TopMenu.vue'
 import DemoModeBanner from './UI/DemoModeBanner.vue'
 import ToastContainer from './UI/ToastContainer.vue'
+import FeedbackButton from './Feedback/FeedbackButton.vue'
 import EmailVerificationBanner from './Auth/EmailVerificationBanner.vue'
 import { useUserSettingsStore } from '../stores/userSettings'
 import { useLocale } from '../composables/useLocale'
