@@ -108,11 +108,11 @@ export const usePlanFeaturesStore = defineStore('planFeatures', () => {
     ]))
 
     const loadFeatures = async () => {
-        return await base.loadEntities('/plan-features')
+        return await base.loadEntities('/plan-features?size=100')
     }
 
     const refreshFeatures = async () => {
-        return await base.refreshEntities('/plan-features')
+        return await base.refreshEntities('/plan-features?size=100')
     }
 
     let featuresLoaded = false

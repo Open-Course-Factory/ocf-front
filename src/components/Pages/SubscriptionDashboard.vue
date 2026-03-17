@@ -146,10 +146,7 @@ const CACHE_DURATION = 60 * 1000 // 1 minute
 
 // Computed
 const primarySubscription = computed(() => {
-  if (!subscriptionsStore.allSubscriptions || subscriptionsStore.allSubscriptions.length === 0) {
-    return subscriptionsStore.currentSubscription
-  }
-  return subscriptionsStore.allSubscriptions.find((sub: any) => sub.is_primary) || subscriptionsStore.currentSubscription
+  return subscriptionsStore.currentSubscription
 })
 
 const isAssignedSubscription = computed(() => {
