@@ -13,6 +13,14 @@ export interface CurrentStepResponse {
   hint?: string
   status: string // 'locked' | 'active' | 'completed' | 'skipped'
   has_flag: boolean
+  hints_total_count: number
+  hints_revealed: number
+}
+
+export interface RevealHintResponse {
+  level: number
+  content: string
+  total: number
 }
 
 export interface VerifyStepResponse {
@@ -141,5 +149,10 @@ export const scenarioSessionService = {
     } catch {
       return []
     }
+  },
+
+  async revealHint(sessionId: string, stepOrder: number, level: number): Promise<RevealHintResponse> {
+    const response = await axios.post(`/scenario-sessions/${sessionId}/steps/${stepOrder}/hints/${level}/reveal`)
+    return response.data
   }
 }

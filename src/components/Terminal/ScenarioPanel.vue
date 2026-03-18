@@ -144,8 +144,51 @@
           <!-- Step text (rendered as markdown) -->
           <div v-if="displayedStep!.text" class="step-text markdown-content" v-html="renderedDisplayedStepText"></div>
 
-          <!-- Hint section (collapsible) -->
-          <div v-if="displayedStep!.hint" class="hint-section">
+          <!-- Transparency notice for hint tracking -->
+          <div v-if="hasProgressiveHints && !reviewingStep" class="hint-transparency-notice">
+            <i class="fas fa-eye"></i>
+            <span>{{ t('scenarioPanel.hintTransparency') }}</span>
+          </div>
+
+          <!-- Progressive hints section -->
+          <div v-if="hasProgressiveHints" class="hint-section">
+            <!-- Hint counter -->
+            <div class="hint-header">
+              <i class="fas fa-lightbulb hint-icon"></i>
+              <span class="hint-counter">
+                {{ t('scenarioPanel.hintsAvailable', { used: revealedHints.length, total: displayedStep!.hints_total_count }) }}
+              </span>
+            </div>
+
+            <!-- Already revealed hints (always visible, stacked) -->
+            <div v-for="hint in revealedHints" :key="hint.level" class="hint-item">
+              <div class="hint-level-label">{{ t('scenarioPanel.hintLevel', { level: hint.level }) }}</div>
+              <div class="hint-content markdown-content" v-html="renderHintMarkdown(hint.content)"></div>
+            </div>
+
+            <!-- Reveal next hint button -->
+            <button
+              v-if="revealedHints.length < displayedStep!.hints_total_count"
+              class="hint-toggle"
+              :disabled="isRevealingHint"
+              @click="handleRevealNextHint"
+            >
+              <i :class="isRevealingHint ? 'fas fa-spinner fa-spin' : 'fas fa-lightbulb'"></i>
+              {{ isRevealingHint
+                ? t('scenarioPanel.revealingHint')
+                : t('scenarioPanel.revealNextHint', { level: revealedHints.length + 1 })
+              }}
+            </button>
+
+            <!-- All hints used -->
+            <div v-if="revealedHints.length > 0 && revealedHints.length >= displayedStep!.hints_total_count" class="hints-exhausted">
+              <i class="fas fa-check-circle"></i>
+              {{ t('scenarioPanel.allHintsRevealed') }}
+            </div>
+          </div>
+
+          <!-- Legacy single hint (backward compat for old scenarios without progressive hints) -->
+          <div v-else-if="displayedStep!.hint" class="hint-section">
             <button class="hint-toggle" @click="showHint = !showHint" :aria-expanded="showHint">
               <i :class="showHint ? 'fas fa-eye-slash' : 'fas fa-lightbulb'"></i>
               {{ showHint ? t('scenarioPanel.hideHint') : t('scenarioPanel.showHint') }}
@@ -303,7 +346,13 @@ const { t } = useTranslations({
       stepsCompleted: 'Steps Completed',
       totalTime: 'Time Spent',
       reviewingStep: 'Reviewing step {step}',
-      backToCurrent: 'Back to current step'
+      backToCurrent: 'Back to current step',
+      hintsAvailable: 'Hints: {used}/{total}',
+      hintLevel: 'Hint {level}',
+      revealNextHint: 'Show Hint {level}',
+      revealingHint: 'Loading...',
+      allHintsRevealed: 'All hints used',
+      hintTransparency: 'Your instructor can see how many hints you use.'
     }
   },
   fr: {
@@ -346,7 +395,13 @@ const { t } = useTranslations({
       stepsCompleted: 'Étapes complétées',
       totalTime: 'Temps passé',
       reviewingStep: 'Révision de l\'étape {step}',
-      backToCurrent: 'Retour à l\'étape en cours'
+      backToCurrent: 'Retour à l\'étape en cours',
+      hintsAvailable: 'Indices : {used}/{total}',
+      hintLevel: 'Indice {level}',
+      revealNextHint: 'Révéler l\'indice {level}',
+      revealingHint: 'Chargement...',
+      allHintsRevealed: 'Tous les indices utilisés',
+      hintTransparency: 'Votre formateur peut voir combien d\'indices vous utilisez.'
     }
   }
 })
@@ -359,6 +414,10 @@ const isSessionCompleted = ref(false)
 const currentStep = ref<CurrentStepResponse | null>(null)
 const totalSteps = ref(0)
 const showHint = ref(false)
+
+// Progressive hints state
+const revealedHints = ref<Array<{ level: number; content: string }>>([])
+const isRevealingHint = ref(false)
 
 // Scenario metadata
 const scenarioInfo = ref<ScenarioInfo | null>(null)
@@ -441,6 +500,33 @@ const renderedDisplayedHintText = computed(() => {
   return DOMPurify.sanitize(processExecSyntax(html))
 })
 
+const hasProgressiveHints = computed(() => {
+  return displayedStep.value && displayedStep.value.hints_total_count > 0
+})
+
+function renderHintMarkdown(content: string): string {
+  const html = marked.parse(content) as string
+  return DOMPurify.sanitize(processExecSyntax(html))
+}
+
+async function handleRevealNextHint() {
+  if (isRevealingHint.value || !displayedStep.value) return
+  isRevealingHint.value = true
+  try {
+    const nextLevel = revealedHints.value.length + 1
+    const result = await scenarioSessionService.revealHint(
+      props.scenarioSessionId,
+      displayedStep.value.step_order,
+      nextLevel
+    )
+    revealedHints.value.push({ level: result.level, content: result.content })
+  } catch (err: any) {
+    console.error('Failed to reveal hint:', err)
+  } finally {
+    isRevealingHint.value = false
+  }
+}
+
 // Navigate to a specific step for review
 async function navigateToStep(stepOrder: number) {
   // If clicking the current step, exit review mode
@@ -454,6 +540,19 @@ async function navigateToStep(stepOrder: number) {
     if (step) {
       reviewingStep.value = step
       showHint.value = false
+      revealedHints.value = []
+      if (step.hints_total_count > 0 && step.hints_revealed > 0) {
+        for (let level = 1; level <= step.hints_revealed; level++) {
+          try {
+            const hint = await scenarioSessionService.revealHint(
+              props.scenarioSessionId, step.step_order, level
+            )
+            revealedHints.value.push({ level: hint.level, content: hint.content })
+          } catch {
+            break
+          }
+        }
+      }
     }
   } catch (err) {
     console.warn('Could not load step for review:', err)
@@ -573,6 +672,7 @@ async function loadCurrentStep() {
   flagValue.value = ''
   showHint.value = false
   hintAutoShown.value = false
+  revealedHints.value = []
   reviewingStep.value = null
 
   try {
@@ -582,6 +682,20 @@ async function loadCurrentStep() {
     // Use total_steps from backend (fixed count, not client-side tracking)
     if (step.total_steps) {
       totalSteps.value = step.total_steps
+    }
+
+    // Load already-revealed progressive hints
+    if (step.hints_total_count > 0 && step.hints_revealed > 0) {
+      for (let level = 1; level <= step.hints_revealed; level++) {
+        try {
+          const hint = await scenarioSessionService.revealHint(
+            props.scenarioSessionId, step.step_order, level
+          )
+          revealedHints.value.push({ level: hint.level, content: hint.content })
+        } catch {
+          break
+        }
+      }
     }
 
     // If the step status indicates session is completed
@@ -624,10 +738,15 @@ async function handleVerify() {
     const result = await scenarioSessionService.verifyStep(props.scenarioSessionId)
     verifyResult.value = result
 
-    // Auto-expand hint on first failure if the step has a hint
-    if (!result.passed && currentStep.value?.hint && !hintAutoShown.value) {
-      showHint.value = true
-      hintAutoShown.value = true
+    // Auto-reveal first hint on first failure
+    if (!result.passed && !hintAutoShown.value) {
+      if (hasProgressiveHints.value && revealedHints.value.length === 0) {
+        handleRevealNextHint()
+        hintAutoShown.value = true
+      } else if (currentStep.value?.hint) {
+        showHint.value = true
+        hintAutoShown.value = true
+      }
     }
 
     if (result.passed) {
@@ -666,10 +785,15 @@ async function handleSubmitFlag() {
     const result = await scenarioSessionService.submitFlag(props.scenarioSessionId, flagValue.value.trim())
     flagResult.value = result
 
-    // Auto-expand hint on first failure if the step has a hint
-    if (!result.correct && currentStep.value?.hint && !hintAutoShown.value) {
-      showHint.value = true
-      hintAutoShown.value = true
+    // Auto-reveal first hint on first failure
+    if (!result.correct && !hintAutoShown.value) {
+      if (hasProgressiveHints.value && revealedHints.value.length === 0) {
+        handleRevealNextHint()
+        hintAutoShown.value = true
+      } else if (currentStep.value?.hint) {
+        showHint.value = true
+        hintAutoShown.value = true
+      }
     }
 
     if (result.correct) {
@@ -1007,6 +1131,66 @@ defineExpose({
   font-size: var(--font-size-sm);
   color: var(--color-warning-text);
   line-height: var(--line-height-relaxed);
+}
+
+.hint-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.hint-icon {
+  color: var(--color-warning);
+}
+
+.hint-counter {
+  font-weight: var(--font-weight-medium);
+}
+
+.hint-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2xs);
+}
+
+.hint-level-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hints-exhausted {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.hints-exhausted i {
+  color: var(--color-success);
+}
+
+.hint-transparency-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.hint-transparency-notice i {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
 }
 
 /* Verify button */
