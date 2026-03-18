@@ -49,7 +49,7 @@
 
       <!-- Scenario start bar (when no scenario active) -->
       <ScenarioStartBar
-        v-if="isSessionActive && !scenarioSessionId"
+        v-show="isSessionActive && !scenarioSessionId && !scenarioLoading"
         :terminal-session-id="sessionId"
         @scenario-started="handleScenarioStarted"
         @scenario-loading="handleScenarioLoading"
@@ -66,7 +66,7 @@
             <i :class="showBriefing ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
           </button>
         </div>
-        <div v-if="showBriefing" class="briefing-content markdown-content" v-html="renderedBriefingText" @click="handleBriefingExecClick"></div>
+        <div v-if="showBriefing" ref="briefingContentRef" class="briefing-content markdown-content" :class="{ 'has-overflow': briefingHasOverflow }" v-html="renderedBriefingText" @click="handleBriefingExecClick" @scroll="checkBriefingScroll"></div>
         <div v-if="showBriefing" class="briefing-footer">
           <button class="briefing-collapse-btn" @click="toggleBriefing">
             <i class="fas fa-chevron-up"></i> {{ t('sessionView.collapseBriefing') }}
@@ -90,6 +90,7 @@
             :session-info="sessionInfo"
             :is-active="isSessionActive"
             :is-recording="isRecording"
+            :scenario-session-id="scenarioSessionId"
             show-stop-button
             :is-stopping="isStopping"
             @stop="stopSession"
@@ -111,6 +112,7 @@
           @paste-command="handlePasteCommand"
           @scenario-info-loaded="handleScenarioInfoLoaded"
           @collapsed="scenarioPanelCollapsed = $event"
+          @flag-validated="scenarioTerminalRef?.refreshFlags()"
         />
       </div>
 
@@ -136,6 +138,7 @@
           :session-info="sessionInfo"
           :is-active="isSessionActive"
           :is-recording="isRecording"
+          :show-history="!scenarioLoading"
           show-stop-button
           :is-stopping="isStopping"
           @stop="stopSession"
@@ -160,7 +163,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { marked } from 'marked'
@@ -288,6 +291,21 @@ const sessionId = route.params.sessionId as string
 // Scenario briefing (full-width card above the terminal layout)
 const scenarioBriefing = ref<ScenarioInfo | null>(null)
 const showBriefing = ref(true)
+const briefingContentRef = ref<HTMLElement | null>(null)
+const briefingHasOverflow = ref(false)
+
+function checkBriefingScroll() {
+  const el = briefingContentRef.value
+  if (!el) return
+  // Hide the fade when scrolled near the bottom (within 10px)
+  briefingHasOverflow.value = el.scrollHeight - el.scrollTop - el.clientHeight > 10
+}
+
+watch(showBriefing, (visible) => {
+  if (visible) {
+    nextTick(() => checkBriefingScroll())
+  }
+})
 
 function toggleBriefing() {
   showBriefing.value = !showBriefing.value
@@ -314,6 +332,10 @@ const renderedBriefingText = computed(() => {
   if (!scenarioBriefingText.value) return ''
   const html = marked.parse(scenarioBriefingText.value) as string
   return DOMPurify.sanitize(processExecSyntax(html))
+})
+
+watch(renderedBriefingText, () => {
+  nextTick(() => checkBriefingScroll())
 })
 
 function handleScenarioInfoLoaded(info: ScenarioInfo) {
@@ -955,6 +977,12 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   flex: 1;
   min-height: 0;
+  position: relative;
+}
+
+.briefing-content.has-overflow {
+  mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent 100%);
 }
 
 .briefing-footer {

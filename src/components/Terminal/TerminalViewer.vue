@@ -587,8 +587,16 @@ async function connectToTerminal() {
         attachAddon = null
       }
 
-      attachAddon = new AttachAddon(socket.value!)
-      terminal.value.loadAddon(attachAddon)
+      if (socket.value && socket.value.readyState === WebSocket.OPEN) {
+        attachAddon = new AttachAddon(socket.value)
+        try {
+          terminal.value.loadAddon(attachAddon)
+        } catch {
+          // xterm may throw "Could not dispose an addon that has not been loaded"
+          // when the socket's onclose fires during activate() — this is a benign
+          // race condition, the addon still works after loadAddon completes
+        }
+      }
 
       // Send resize events to backend as binary WebSocket frames
       // so the container PTY dimensions stay in sync with the browser
@@ -741,6 +749,25 @@ function cleanup() {
     socket.value = null
   }
 
+  // Dispose addons before terminal to avoid "addon not loaded" errors
+  if (attachAddon) {
+    try {
+      attachAddon.dispose()
+    } catch {
+      // Addon may not be fully loaded yet
+    }
+    attachAddon = null
+  }
+
+  if (fitAddon) {
+    try {
+      fitAddon.dispose()
+    } catch {
+      // Addon may not be fully loaded yet
+    }
+    fitAddon = null
+  }
+
   if (terminal.value) {
     try {
       terminal.value.dispose()
@@ -749,9 +776,6 @@ function cleanup() {
     }
     terminal.value = null
   }
-
-  fitAddon = null
-  attachAddon = null
 }
 
 // Watch for sessionInfo changes

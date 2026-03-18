@@ -27,6 +27,12 @@ export interface SubmitFlagResponse {
   next_step?: number
 }
 
+export interface ValidatedFlag {
+  step_order: number
+  flag: string
+  submitted_at: string
+}
+
 export interface ScenarioSessionInfo {
   id: string
   scenario_id: string
@@ -125,6 +131,15 @@ export const scenarioSessionService = {
       return response.data
     } catch {
       return null
+    }
+  },
+
+  async getValidatedFlags(sessionId: string): Promise<ValidatedFlag[]> {
+    try {
+      const response = await axios.get(`/scenario-sessions/${sessionId}/flags`)
+      return response.data || []
+    } catch {
+      return []
     }
   }
 }

@@ -251,6 +251,7 @@ const emit = defineEmits<{
   'paste-command': [command: string]
   'scenario-info-loaded': [info: ScenarioInfo]
   'collapsed': [collapsed: boolean]
+  'flag-validated': []
 }>()
 
 // Configure marked for safe rendering
@@ -672,6 +673,7 @@ async function handleSubmitFlag() {
     }
 
     if (result.correct) {
+      emit('flag-validated')
       if (result.next_step !== undefined && result.next_step !== null) {
         // Show full-panel "Step validated!" then load next step
         isTransitioning.value = true

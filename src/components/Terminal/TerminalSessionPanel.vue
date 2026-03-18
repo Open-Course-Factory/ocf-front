@@ -26,14 +26,24 @@
       @session-expired="$emit('session-expired')"
     />
 
-    <!-- Command History -->
-    <div v-if="showHistory" class="command-history-panel">
-      <CommandHistory
-        :session-id="sessionInfo?.session_id"
-        :is-active="isActive"
-        @command-click="handleCommandClick"
-        @recording-detected="$emit('recording-detected')"
-      />
+    <!-- Sub-panels: Command History + Validated Flags side by side -->
+    <div class="sub-panels" :class="{ 'has-flags': !!scenarioSessionId }">
+      <div v-if="showHistory" class="command-history-panel">
+        <CommandHistory
+          :session-id="sessionInfo?.session_id"
+          :is-active="isActive"
+          @command-click="handleCommandClick"
+          @recording-detected="$emit('recording-detected')"
+        />
+      </div>
+
+      <div v-if="scenarioSessionId" class="validated-flags-panel">
+        <ValidatedFlags
+          ref="validatedFlagsRef"
+          :scenario-session-id="scenarioSessionId"
+          :is-active="isActive"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -42,6 +52,7 @@
 import { ref } from 'vue'
 import TerminalViewer from './TerminalViewer.vue'
 import CommandHistory from './CommandHistory.vue'
+import ValidatedFlags from './ValidatedFlags.vue'
 
 interface SessionInfo {
   session_id: string
@@ -58,13 +69,15 @@ interface Props {
   showStopButton?: boolean
   isStopping?: boolean
   showHistory?: boolean
+  scenarioSessionId?: string
 }
 
 withDefaults(defineProps<Props>(), {
   isRecording: false,
   showStopButton: false,
   isStopping: false,
-  showHistory: true
+  showHistory: true,
+  scenarioSessionId: undefined
 })
 
 defineEmits<{
@@ -75,6 +88,7 @@ defineEmits<{
 }>()
 
 const terminalRef = ref<InstanceType<typeof TerminalViewer> | null>(null)
+const validatedFlagsRef = ref<InstanceType<typeof ValidatedFlags> | null>(null)
 
 function handleCommandClick(text: string) {
   terminalRef.value?.pasteText(text)
@@ -84,9 +98,14 @@ function pasteText(text: string) {
   terminalRef.value?.pasteText(text)
 }
 
+function refreshFlags() {
+  validatedFlagsRef.value?.refresh()
+}
+
 defineExpose({
   terminalRef,
-  pasteText
+  pasteText,
+  refreshFlags
 })
 </script>
 
@@ -110,7 +129,28 @@ defineExpose({
   padding: var(--spacing-sm);
 }
 
-.command-history-panel {
+.sub-panels {
   margin-top: var(--spacing-md);
+}
+
+.sub-panels.has-flags {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.sub-panels.has-flags > .command-history-panel {
+  flex: 3;
+  min-width: 0;
+}
+
+.sub-panels.has-flags > .validated-flags-panel {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .sub-panels.has-flags {
+    flex-direction: column;
+  }
 }
 </style>
