@@ -57,7 +57,7 @@
 
       <!-- Scenario briefing card (full width, dismissible) -->
       <div v-if="scenarioBriefing && scenarioBriefingText" class="scenario-briefing" :class="{ collapsed: !showBriefing }">
-        <div class="briefing-header">
+        <div class="briefing-header" @click="toggleBriefing" style="cursor: pointer;">
           <div class="briefing-title">
             <i class="fas fa-book-open"></i>
             <span>{{ t('sessionView.scenarioBriefing') }}</span>
@@ -98,17 +98,19 @@
             @session-expired="handleSessionExpired"
           />
         </div>
-        <div class="panel-resize-handle" @mousedown.prevent="startPanelResize">
+        <div v-show="!scenarioPanelCollapsed" class="panel-resize-handle" @mousedown.prevent="startPanelResize">
           <div class="resize-handle-bar"></div>
         </div>
         <ScenarioPanel
+          ref="scenarioPanelRef"
           :scenario-session-id="scenarioSessionId"
           :is-active="isSessionActive"
-          :style="scenarioPanelStyle"
+          :style="scenarioPanelCollapsed ? undefined : scenarioPanelStyle"
           @session-completed="handleScenarioCompleted"
           @session-abandoned="handleScenarioAbandoned"
           @paste-command="handlePasteCommand"
           @scenario-info-loaded="handleScenarioInfoLoaded"
+          @collapsed="scenarioPanelCollapsed = $event"
         />
       </div>
 
@@ -212,6 +214,8 @@ const { t } = useTranslations({
       scenarioLaunch: 'Start!',
       scenarioLaunching: 'Starting...',
       collapseBriefing: 'Collapse briefing',
+      collapseScenario: 'Collapse instructions',
+      expandScenario: 'Expand instructions',
       recordingNotice: 'Your terminal commands are recorded for security and learning purposes.',
       learnMore: 'Learn more',
       gotIt: 'Got it',
@@ -247,6 +251,8 @@ const { t } = useTranslations({
       scenarioLaunch: 'Démarrer !',
       scenarioLaunching: 'Démarrage...',
       collapseBriefing: 'Réduire le briefing',
+      collapseScenario: 'Réduire les instructions',
+      expandScenario: 'Afficher les instructions',
       recordingNotice: 'Vos commandes terminal sont enregistrées à des fins de sécurité et d\'apprentissage.',
       learnMore: 'En savoir plus',
       gotIt: 'Compris',
@@ -318,6 +324,7 @@ function handleScenarioInfoLoaded(info: ScenarioInfo) {
 const scenarioSessionId = ref<string | null>(null)
 const scenarioTerminalRef = ref<InstanceType<typeof TerminalSessionPanel> | null>(null)
 const standaloneTerminalRef = ref<InstanceType<typeof TerminalSessionPanel> | null>(null)
+const scenarioPanelRef = ref<InstanceType<typeof ScenarioPanel> | null>(null)
 const scenarioLoading = ref(false)
 const scenarioLaunching = ref(false)
 
@@ -414,7 +421,8 @@ async function loadSession() {
     sessionInfo.value = {
       session_id: terminalInfo.terminal.session_id,
       expires_at: terminalInfo.terminal.expires_at,
-      status: terminalInfo.terminal.status
+      status: terminalInfo.terminal.status,
+      name: terminalInfo.terminal.name
     }
 
     // Start expiration timer only for active sessions
@@ -556,10 +564,11 @@ function handleScenarioAbandoned() {
 const PANEL_WIDTH_KEY = 'scenario-panel-width'
 const MIN_PANEL_WIDTH = 250
 const MAX_PANEL_WIDTH = 600
-const DEFAULT_PANEL_WIDTH = 350
+const DEFAULT_PANEL_WIDTH = MAX_PANEL_WIDTH
 
 const scenarioPanelWidth = ref(DEFAULT_PANEL_WIDTH)
 const isPanelResizing = ref(false)
+const scenarioPanelCollapsed = ref(localStorage.getItem('scenario_panel_collapsed') === 'true')
 
 // Restore saved width
 const savedPanelWidth = localStorage.getItem(PANEL_WIDTH_KEY)
@@ -862,6 +871,7 @@ onBeforeUnmount(() => {
   height: 56px;
 }
 
+
 .terminal-main-area {
   flex: 1;
   min-width: 0;
@@ -878,6 +888,9 @@ onBeforeUnmount(() => {
 /* Scenario briefing card */
 .scenario-briefing {
   margin-bottom: var(--spacing-md);
+  max-height: 50vh;
+  display: flex;
+  flex-direction: column;
   background: var(--color-bg-secondary);
   border: var(--border-width-thin) solid var(--color-border-light);
   border-radius: var(--border-radius-md);
@@ -890,20 +903,26 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: var(--border-width-thin) solid var(--color-border-light);
+  flex-shrink: 0;
+}
+
+.scenario-briefing.collapsed .briefing-header {
+  border-bottom: none;
 }
 
 .briefing-title {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
 }
 
 .briefing-title i {
   color: var(--color-primary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-md);
 }
 
 .briefing-toggle {
@@ -933,12 +952,17 @@ onBeforeUnmount(() => {
   font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
   color: var(--color-text-secondary);
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .briefing-footer {
   display: flex;
   justify-content: center;
-  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+  align-items: center;
+  padding: var(--spacing-xs) var(--spacing-md);
+  flex-shrink: 0;
   border-top: var(--border-width-thin) solid var(--color-border-light);
 }
 

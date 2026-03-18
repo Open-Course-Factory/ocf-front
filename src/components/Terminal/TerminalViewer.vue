@@ -23,7 +23,7 @@
 
 <template>
   <!-- SettingsCard wrapper mode -->
-  <SettingsCard v-if="useSettingsCard" :title="title">
+  <SettingsCard v-if="useSettingsCard" :title="title" :icon="icon">
     <template #headerActions>
       <Button
         variant="warning"
@@ -224,6 +224,7 @@ interface Props {
   // Layout options
   useSettingsCard?: boolean
   title?: string
+  icon?: string
   fullHeight?: boolean
 }
 
@@ -245,6 +246,7 @@ const props = withDefaults(defineProps<Props>(), {
   isStopping: false,
   useSettingsCard: false,
   title: 'Console Terminal',
+  icon: undefined,
   fullHeight: true
 })
 
@@ -914,7 +916,7 @@ defineExpose({
   min-height: 400px;
   background-color: var(--terminal-bg);
   position: relative;
-  border: var(--border-width-medium) solid var(--terminal-border);
+  border: var(--border-width-thin) solid var(--terminal-border);
   border-radius: var(--border-radius-md);
   overflow: hidden;
 }

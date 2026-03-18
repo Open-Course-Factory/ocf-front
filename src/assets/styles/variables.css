@@ -202,6 +202,9 @@
   --card-header-padding: 20px 30px;
   --card-border-radius: var(--border-radius-lg);
   --card-shadow: var(--shadow-sm);
+
+  /* Panel headers (terminal, scenario, command history) */
+  --panel-header-min-height: 44px;
 }
 
 /* === DARK THEME VARIABLES === */

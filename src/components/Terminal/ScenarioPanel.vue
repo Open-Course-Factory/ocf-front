@@ -10,7 +10,7 @@
 
 <template>
   <div class="scenario-panel" :class="{ collapsed: isCollapsed }">
-    <!-- Collapse/Expand toggle button (always visible) -->
+    <!-- Collapse/Expand toggle button -->
     <button
       class="collapse-toggle"
       :aria-expanded="!isCollapsed"
@@ -250,6 +250,7 @@ const emit = defineEmits<{
   'session-abandoned': []
   'paste-command': [command: string]
   'scenario-info-loaded': [info: ScenarioInfo]
+  'collapsed': [collapsed: boolean]
 }>()
 
 // Configure marked for safe rendering
@@ -557,6 +558,7 @@ if (savedCollapsed !== null) {
 function toggleCollapse() {
   isCollapsed.value = !isCollapsed.value
   localStorage.setItem(COLLAPSE_KEY, String(isCollapsed.value))
+  emit('collapsed', isCollapsed.value)
 }
 
 
@@ -730,6 +732,11 @@ onMounted(() => {
     loadCurrentStep()
   }
 })
+
+defineExpose({
+  toggleCollapse,
+  isCollapsed
+})
 </script>
 
 <style scoped>
@@ -740,29 +747,30 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   background: var(--color-bg-primary);
-  border-left: var(--border-width-medium) solid var(--color-border-light);
-  border-radius: var(--border-radius-md) 0 0 var(--border-radius-md);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
   transition: width var(--transition-slow), min-width var(--transition-slow);
 }
 
 .scenario-panel.collapsed {
   width: 0 !important;
   min-width: 0 !important;
-  border-left: none;
+  border: none;
 }
 
 /* Collapse toggle button */
 .collapse-toggle {
   position: absolute;
-  top: var(--spacing-md);
-  left: -16px;
+  top: 28%;
+  left: 0;
+  transform: translate(-50%, -50%);
   z-index: 10;
   width: 32px;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-bg-secondary);
+  background-color: var(--color-bg-primary);
   border: var(--border-width-thin) solid var(--color-border-light);
   border-radius: var(--border-radius-md);
   color: var(--color-text-muted);
@@ -772,14 +780,15 @@ onMounted(() => {
 }
 
 .collapse-toggle:hover {
-  background: var(--color-surface-hover);
+  background-color: var(--color-bg-secondary);
   color: var(--color-text-primary);
   border-color: var(--color-border-medium);
 }
 
 .collapsed .collapse-toggle {
-  left: -32px;
+  left: 0;
 }
+
 
 /* Panel content */
 .panel-content {
@@ -787,11 +796,15 @@ onMounted(() => {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  border-radius: inherit;
 }
 
 /* Panel header */
 .panel-header {
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  min-height: var(--panel-header-min-height);
+  display: flex;
+  align-items: center;
   background: var(--color-bg-secondary);
   border-bottom: var(--border-width-thin) solid var(--color-border-light);
   flex-shrink: 0;

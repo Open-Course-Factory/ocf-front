@@ -16,7 +16,8 @@
       :session-info="sessionInfo"
       :is-recording="isRecording"
       use-settings-card
-      title="Console Terminal"
+      :title="sessionInfo?.name || ('Terminal ' + (sessionInfo?.session_id?.substring(0, 8) || ''))"
+      icon="fas fa-terminal"
       :full-height="false"
       :show-stop-button="showStopButton"
       :is-stopping="isStopping"
@@ -47,6 +48,7 @@ interface SessionInfo {
   console_url?: string
   expires_at?: string
   status?: string
+  name?: string
 }
 
 interface Props {
@@ -89,6 +91,25 @@ defineExpose({
 </script>
 
 <style scoped>
+.terminal-session-panel :deep(.card-header) {
+  padding: var(--spacing-sm) var(--spacing-md);
+  min-height: var(--panel-header-min-height);
+  align-items: center;
+}
+
+.terminal-session-panel :deep(.header-actions) {
+  align-items: center;
+}
+
+.terminal-session-panel :deep(.card-header h2) {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.terminal-session-panel :deep(.card-body) {
+  padding: var(--spacing-sm);
+}
+
 .command-history-panel {
   margin-top: var(--spacing-md);
 }

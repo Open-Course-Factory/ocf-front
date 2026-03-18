@@ -495,6 +495,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   align-items: center;
   padding: var(--spacing-sm) var(--spacing-md);
+  min-height: var(--panel-header-min-height);
   background-color: var(--color-bg-secondary);
   border-bottom: var(--border-width-thin) solid var(--color-border-light);
 }
@@ -510,8 +511,8 @@ onBeforeUnmount(() => {
   margin: calc(-1 * var(--spacing-xs)) calc(-1 * var(--spacing-sm));
   border-radius: var(--border-radius-sm);
   color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
   font-family: inherit;
   white-space: nowrap;
   user-select: none;
@@ -564,6 +565,13 @@ onBeforeUnmount(() => {
 .command-history-actions {
   display: flex;
   gap: var(--spacing-xs);
+  align-items: center;
+}
+
+.command-history-actions .btn {
+  padding: 6px 12px;
+  font-size: var(--font-size-sm);
+  border-radius: var(--border-radius-sm);
 }
 
 .command-list {

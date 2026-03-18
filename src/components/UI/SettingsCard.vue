@@ -8,7 +8,7 @@
 <template>
   <div class="card">
     <div class="card-header">
-      <h2>{{ title }}</h2>
+      <h2><i v-if="icon" :class="icon"></i> {{ title }}</h2>
       <div v-if="$slots.headerActions" class="header-actions">
         <slot name="headerActions"></slot>
       </div>
@@ -20,9 +20,12 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+withDefaults(defineProps<{
   title: string
-}>()
+  icon?: string
+}>(), {
+  icon: undefined
+})
 </script>
 
 <style scoped>
