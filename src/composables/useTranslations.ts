@@ -38,6 +38,25 @@ export interface TranslationMessages {
 }
 
 /**
+ * Wraps a vue-i18n `t` function with error handling so that message
+ * compilation errors (e.g. unescaped `@` in vue-i18n v11) log a warning
+ * instead of crashing the entire component.
+ */
+function wrapT<T extends (...args: any[]) => any>(t: T): T {
+  return ((...args: any[]) => {
+    try {
+      return t(...args)
+    } catch (err) {
+      console.warn(
+        `[vue-i18n] Message compilation error for key "${String(args[0])}":`,
+        err instanceof Error ? err.message : err
+      )
+      return String(args[0])
+    }
+  }) as T
+}
+
+/**
  * Register translations and return the translation function
  *
  * Must be called inside a Vue component's setup() function.
@@ -47,7 +66,7 @@ export interface TranslationMessages {
  */
 export function useTranslations(messages: TranslationMessages) {
   const i18n = useI18n()
-  const { t, te, locale } = i18n
+  const { te, locale } = i18n
 
   // Register translations immediately during setup() so they are
   // available on first render. Previously deferred to onMounted, but
@@ -57,7 +76,7 @@ export function useTranslations(messages: TranslationMessages) {
   })
 
   return {
-    t,
+    t: wrapT(i18n.t),
     te,
     locale,
     i18n
@@ -85,7 +104,7 @@ export function useStoreTranslations(messages: TranslationMessages) {
   })
 
   return {
-    t: global.t,
+    t: wrapT(global.t),
     te: global.te,
     locale: global.locale,
     i18n: global

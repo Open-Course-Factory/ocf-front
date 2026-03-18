@@ -45,7 +45,30 @@ else
 fi
 echo ""
 
-# 4. Import paths
+# 4. i18n special characters (vue-i18n v11: @ is reserved for linked messages)
+echo "🌐 Checking for unescaped @ in translation strings..."
+# Find files with translation definitions, then check for unescaped @ in string values
+I18N_AT=$(grep -rn ":\s*['\"].*@[a-zA-Z]" src/ --include="*.vue" --include="*.ts" 2>/dev/null \
+  | grep -v "{'@'}" \
+  | grep -v "node_modules" \
+  | grep -v "href=" \
+  | grep -v "mailto:" \
+  | grep -v "@click\|@change\|@input\|@submit\|@keyup\|@blur\|@close\|@confirm\|@mounted\|@resize\|@mouseover\|@mouseenter\|@mouseleave" \
+  | grep -v "PATTERN\|RegExp\|regex\|/\^" \
+  | grep -v "import " \
+  | grep -v "\.test\." \
+  | grep "useTranslations\|useStoreTranslations\|createI18n\|locales/" \
+  || true)
+if [ -n "$I18N_AT" ]; then
+    echo "   ❌ Unescaped @ found in translations (use {'@'} to escape):"
+    echo "$I18N_AT" | head -10
+    ERRORS=$((ERRORS + 1))
+else
+    echo "   ✅ No unescaped @ in translations"
+fi
+echo ""
+
+# 5. Import paths
 echo "📦 Checking import paths..."
 ALIAS=$(grep -r "from ['\"]@/" src/ --include="*.ts" --include="*.vue" 2>/dev/null || true)
 if [ -n "$ALIAS" ]; then
@@ -57,7 +80,7 @@ else
 fi
 echo ""
 
-# 5. API paths
+# 6. API paths
 echo "🌐 Checking API paths..."
 API_PREFIX=$(grep -r "/api/v1/" src/ --include="*.ts" --include="*.vue" 2>/dev/null || true)
 if [ -n "$API_PREFIX" ]; then
@@ -69,7 +92,7 @@ else
 fi
 echo ""
 
-# 6. Console logs
+# 7. Console logs
 echo "🔍 Checking for console statements..."
 CONSOLE_LOGS=$(grep -r "console\.log\|console\.debug" src/ --include="*.vue" --include="*.ts" 2>/dev/null | grep -v "utils/logger" | wc -l || echo "0")
 if [ "$CONSOLE_LOGS" -gt 0 ]; then
@@ -80,7 +103,7 @@ else
 fi
 echo ""
 
-# 7. Security patterns
+# 8. Security patterns
 echo "🔒 Security checks..."
 EVAL_USAGE=$(grep -r "eval(" src/ --include="*.ts" --include="*.vue" 2>/dev/null || true)
 if [ -n "$EVAL_USAGE" ]; then

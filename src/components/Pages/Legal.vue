@@ -146,7 +146,7 @@ const { t } = useTranslations({
         item2: 'Session data for terminal access and authentication',
         item3: 'Usage metrics for service improvement (anonymized)',
         item4: 'Billing information when using paid features (processed securely via Stripe)',
-        rights: 'You have the right to access, rectify, delete, or port your personal data. To exercise these rights, please contact us at contact@labinux.com.',
+        rights: "You have the right to access, rectify, delete, or port your personal data. To exercise these rights, please contact us at contact{'@'}labinux.com.",
         fullPolicy: 'View Full Privacy Policy'
       },
 
@@ -206,7 +206,7 @@ const { t } = useTranslations({
         item2: 'Données de session pour l\'accès aux terminaux et l\'authentification',
         item3: 'Métriques d\'utilisation pour l\'amélioration du service (anonymisées)',
         item4: 'Informations de facturation lors de l\'utilisation de fonctionnalités payantes (traitées de manière sécurisée via Stripe)',
-        rights: 'Vous disposez d\'un droit d\'accès, de rectification, de suppression et de portabilité de vos données personnelles. Pour exercer ces droits, contactez-nous à contact@labinux.com.',
+        rights: "Vous disposez d'un droit d'accès, de rectification, de suppression et de portabilité de vos données personnelles. Pour exercer ces droits, contactez-nous à contact{'@'}labinux.com.",
         fullPolicy: 'Consulter la politique de confidentialité complète'
       },
 

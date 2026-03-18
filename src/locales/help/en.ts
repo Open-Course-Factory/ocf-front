@@ -2402,7 +2402,7 @@ export const helpEn = {
           optionalFields: "Optional fields: role, group, phone",
           encoding: "File encoding: UTF-8 recommended",
           delimiter: "Delimiter: comma (,) or semicolon (;)",
-          example: "email,first_name,last_name,role\njohn@example.com,John,Doe,member\njane@example.com,Jane,Smith,manager"
+          example: "email,first_name,last_name,role\njohn{'@'}example.com,John,Doe,member\njane{'@'}example.com,Jane,Smith,manager"
         },
         wizard: {
           title: "Import Wizard",
@@ -2771,11 +2771,46 @@ export const helpEn = {
           },
           unique: {
             title: "Unique Flags Per Learner",
-            description: "Flags are generated using <strong>HMAC-SHA256</strong> and are unique per learner — it is impossible for learners to share answers. The flag format is <strong>FLAG{16-hex-characters}</strong>."
+            description: "Flags are generated using <strong>HMAC-SHA256</strong> and are unique per learner — it is impossible for learners to share answers. The flag format is <strong>FLAG{'{'} 16-hex-characters{'}' }</strong>."
           },
           tip: {
             title: "Tip",
             description: "CTF flags add a competitive, gamified element to your exercises. Use them for bonus challenges, security-focused exercises, or competitive training sessions."
+          }
+        },
+
+        challengeMode: {
+          title: "Challenge Mode (Crash Traps)",
+          description: "Challenge mode enables advanced exam-style scenarios where the entire environment is provisioned at once — with password-gated user accounts, sabotaged configurations, and crash traps that destroy the machine on careless actions.",
+          enable: {
+            title: "Enable Challenge Mode",
+            description: "When creating a scenario, enable the <strong>\"Crash Traps\"</strong> option. This activates challenge mode, which changes how the scenario is provisioned."
+          },
+          howItWorks: {
+            title: "How It Works",
+            description: "In challenge mode, the scenario engine works differently from standard step-by-step scenarios:",
+            standard: "<strong>Standard mode</strong>: flags are deployed one at a time as the learner advances through steps. Each step's background script sets up only that step.",
+            challenge: "<strong>Challenge mode</strong>: ALL flags are bundled into a configuration file and pushed to the container at session start. The first step's background script is a full setup script that provisions the entire environment at once — creating users, installing traps, placing all flags."
+          },
+          whyNeeded: {
+            title: "Why a Separate Mode?",
+            description: "Challenge scenarios use <strong>flag-as-password gating</strong>: each level's flag becomes the password for the next Linux account (e.g., finding FLAG_L0 lets you <code>su - level1</code>). This requires ALL flags to exist at container creation time to set all account passwords. Deploying flags one at a time would make it impossible to create the accounts with the right passwords."
+          },
+          setupScript: {
+            title: "The Setup Script",
+            description: "In challenge mode, <strong>step 0's background script</strong> serves as the full provisioning script. It reads <code>/etc/challenge/config.json</code> (automatically pushed by the platform with all generated flags) and sets up the entire environment: user accounts, traps, sabotaged configurations, and flag placements."
+          },
+          crashTraps: {
+            title: "Crash Traps",
+            description: "Crash traps are mechanisms built into the container that <strong>destroy the machine</strong> when the learner performs a careless action (e.g., running <code>sudo</code> without checking aliases, deleting a system file instead of editing it). The learner loses all progress and must start a new session — this is the rogue-lite mechanic that teaches <strong>\"understand before you act\"</strong>."
+          },
+          naming: {
+            title: "Important: Flag File Naming",
+            description: "If your challenge uses LD_PRELOAD or other file-hiding mechanisms, make sure flag filenames do <strong>not</strong> contain the words \"flag\" or \"FLAG\" — hidden files with these patterns become invisible in directory listings. Use neutral names like <code>.the_key</code> or <code>level1_key.txt</code> instead."
+          },
+          tip: {
+            title: "Tip",
+            description: "Challenge mode scenarios are complex to build. Start with the setup script (test it manually in a container), then wrap it as step 0's background script and seed the scenario. The platform handles flag generation, config injection, and terminal user switching automatically."
           }
         },
 
@@ -2823,7 +2858,7 @@ export const helpEn = {
           token: {
             title: "Getting an Auth Token",
             description: "You need a valid JWT token. Get one by logging in via the API:",
-            command: "curl -s -X POST http://localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"your@email.com\",\"password\":\"yourpassword\"}' | python3 -c \"import json,sys; print(json.load(sys.stdin)['access_token'])\"",
+            command: "curl -s -X POST http://localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"your{'@'}email.com\",\"password\":\"yourpassword\"}' | python3 -c \"import json,sys; print(json.load(sys.stdin)['access_token'])\"",
             altDescription: "Or copy it from your browser DevTools (Network tab, any API request, Authorization header)."
           },
           upsert: {

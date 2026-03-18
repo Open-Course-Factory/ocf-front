@@ -2402,7 +2402,7 @@ export const helpFr = {
           optionalFields: "Champs optionnels : rôle, groupe, téléphone",
           encoding: "Encodage du fichier : UTF-8 recommandé",
           delimiter: "Délimiteur : virgule (,) ou point-virgule (;)",
-          example: "email,prenom,nom,role\njean@exemple.com,Jean,Dupont,member\nmarie@exemple.com,Marie,Martin,manager"
+          example: "email,prenom,nom,role\njean{'@'}exemple.com,Jean,Dupont,member\nmarie{'@'}exemple.com,Marie,Martin,manager"
         },
         wizard: {
           title: "Assistant d'Importation",
@@ -2771,11 +2771,46 @@ export const helpFr = {
           },
           unique: {
             title: "Flags uniques par apprenant",
-            description: "Les flags sont générés par <strong>HMAC-SHA256</strong> et sont uniques par apprenant — il est impossible pour les apprenants de partager les réponses. Le format des flags est <strong>FLAG{16-caractères-hexadécimaux}</strong>."
+            description: "Les flags sont générés par <strong>HMAC-SHA256</strong> et sont uniques par apprenant — il est impossible pour les apprenants de partager les réponses. Le format des flags est <strong>FLAG{'{'} 16-caractères-hexadécimaux{'}' }</strong>."
           },
           tip: {
             title: "Conseil",
             description: "Les flags CTF ajoutent un élément compétitif et ludique à vos exercices. Utilisez-les pour des défis bonus, des exercices orientés sécurité ou des sessions de formation compétitives."
+          }
+        },
+
+        challengeMode: {
+          title: "Mode Challenge (Crash Traps)",
+          description: "Le mode challenge permet des scénarios avancés de type examen où l'environnement entier est provisionné en une fois — avec des comptes utilisateurs protégés par mot de passe, des configurations sabotées et des pièges mortels qui détruisent la machine en cas d'action irréfléchie.",
+          enable: {
+            title: "Activer le mode challenge",
+            description: "Lors de la création d'un scénario, activez l'option <strong>\"Crash Traps\"</strong>. Cela active le mode challenge, qui change la façon dont le scénario est provisionné."
+          },
+          howItWorks: {
+            title: "Comment ça fonctionne",
+            description: "En mode challenge, le moteur de scénarios fonctionne différemment des scénarios standard étape par étape :",
+            standard: "<strong>Mode standard</strong> : les flags sont déployés un par un au fur et à mesure que l'apprenant progresse. Le script d'arrière-plan de chaque étape configure uniquement cette étape.",
+            challenge: "<strong>Mode challenge</strong> : TOUS les flags sont regroupés dans un fichier de configuration et poussés dans le conteneur au démarrage de la session. Le script d'arrière-plan de la première étape est un script de setup complet qui provisionne l'environnement entier en une fois — création d'utilisateurs, installation de pièges, placement de tous les flags."
+          },
+          whyNeeded: {
+            title: "Pourquoi un mode séparé ?",
+            description: "Les scénarios challenge utilisent le <strong>flag comme mot de passe</strong> : le flag de chaque niveau devient le mot de passe du compte Linux suivant (par ex., trouver FLAG_L0 permet de faire <code>su - level1</code>). Cela nécessite que TOUS les flags existent au moment de la création du conteneur pour définir tous les mots de passe des comptes. Déployer les flags un par un rendrait impossible la création des comptes avec les bons mots de passe."
+          },
+          setupScript: {
+            title: "Le script de setup",
+            description: "En mode challenge, le <strong>script d'arrière-plan de l'étape 0</strong> sert de script de provisionnement complet. Il lit <code>/etc/challenge/config.json</code> (automatiquement poussé par la plateforme avec tous les flags générés) et configure l'environnement entier : comptes utilisateurs, pièges, configurations sabotées et placement des flags."
+          },
+          crashTraps: {
+            title: "Pièges mortels (Crash Traps)",
+            description: "Les pièges mortels sont des mécanismes intégrés au conteneur qui <strong>détruisent la machine</strong> quand l'apprenant effectue une action irréfléchie (par ex., exécuter <code>sudo</code> sans vérifier les aliases, supprimer un fichier système au lieu de l'éditer). L'apprenant perd toute sa progression et doit démarrer une nouvelle session — c'est le mécanisme rogue-lite qui enseigne <strong>« comprendre avant d'agir »</strong>."
+          },
+          naming: {
+            title: "Important : Nommage des fichiers flags",
+            description: "Si votre challenge utilise LD_PRELOAD ou d'autres mécanismes de masquage de fichiers, assurez-vous que les noms de fichiers flags ne contiennent <strong>pas</strong> les mots « flag » ou « FLAG » — les fichiers cachés avec ces motifs deviennent invisibles dans les listings de répertoire. Utilisez des noms neutres comme <code>.the_key</code> ou <code>level1_key.txt</code> à la place."
+          },
+          tip: {
+            title: "Conseil",
+            description: "Les scénarios en mode challenge sont complexes à construire. Commencez par le script de setup (testez-le manuellement dans un conteneur), puis intégrez-le comme script d'arrière-plan de l'étape 0 et importez le scénario. La plateforme gère automatiquement la génération des flags, l'injection de la configuration et le changement d'utilisateur du terminal."
           }
         },
 
@@ -2823,7 +2858,7 @@ export const helpFr = {
           token: {
             title: "Obtenir un token d'authentification",
             description: "Vous avez besoin d'un token JWT valide. Obtenez-le en vous connectant via l'API :",
-            command: "curl -s -X POST http://localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"votre@email.com\",\"password\":\"votremotdepasse\"}' | python3 -c \"import json,sys; print(json.load(sys.stdin)['access_token'])\"",
+            command: "curl -s -X POST http://localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"votre{'@'}email.com\",\"password\":\"votremotdepasse\"}' | python3 -c \"import json,sys; print(json.load(sys.stdin)['access_token'])\"",
             altDescription: "Ou copiez-le depuis les DevTools de votre navigateur (onglet Network, n'importe quelle requête API, en-tête Authorization)."
           },
           upsert: {
