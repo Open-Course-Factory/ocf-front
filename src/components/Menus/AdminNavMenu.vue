@@ -85,6 +85,7 @@ const { t } = useTranslations({
         emailTemplates: 'Email Templates',
         scenarios: 'Scenarios',
         scenarioSteps: 'Scenario Steps',
+        scenarioStepHints: 'Scenario Step Hints',
         scenarioSessions: 'Scenario Sessions',
         featureFlags: 'Feature Flags',
         designSystem: 'Design System'
@@ -115,6 +116,7 @@ const { t } = useTranslations({
         emailTemplates: 'Modèles d\'Email',
         scenarios: 'Scénarios',
         scenarioSteps: 'Étapes de Scénario',
+        scenarioStepHints: 'Indices des Étapes',
         scenarioSessions: 'Sessions de Scénario',
         featureFlags: 'Drapeaux de Fonctionnalités',
         designSystem: 'Système de Design'
@@ -214,6 +216,11 @@ const adminCategories = computed<MenuCategory[]>(() => [
         route: '/admin/scenario-steps',
         label: t('admin.items.scenarioSteps'),
         icon: 'fas fa-list-ol'
+      },
+      {
+        route: '/admin/scenario-step-hints',
+        label: t('admin.items.scenarioStepHints'),
+        icon: 'fas fa-lightbulb'
       },
       {
         route: '/admin/scenario-sessions',

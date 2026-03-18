@@ -461,6 +461,12 @@ const basicRoutes = [
         meta: { requiresAuth: true, requiresAdmin: true }
       },
       {
+        path: 'admin/scenario-step-hints',
+        name: 'AdminScenarioStepHints',
+        component: () => import('../components/Pages/Admin/ScenarioStepHints.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
         path: 'admin/scenario-sessions',
         name: 'AdminScenarioSessions',
         component: () => import('../components/Pages/Admin/ScenarioSessions.vue'),
