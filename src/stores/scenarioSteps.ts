@@ -23,6 +23,7 @@ import { defineStore } from "pinia"
 import { computed } from 'vue'
 import { useBaseStore } from "./baseStore"
 import { useScenariosStore } from "./scenarios"
+import { useScenarioStepHintsStore } from "./scenarioStepHints"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
 
@@ -66,6 +67,9 @@ export const useScenarioStepsStore = defineStore('scenarioSteps', () => {
     })
 
     base.parentEntitiesStores = new Map([["scenario_id", useScenariosStore()]])
+    base.subEntitiesStores = new Map<string, any>([
+        ["scenarioStepHints", useScenarioStepHintsStore()],
+    ])
 
     const fieldList = computed(() => buildFieldList([
         field('id').hidden().readonly(),
