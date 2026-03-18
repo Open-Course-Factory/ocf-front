@@ -981,12 +981,14 @@ onUnmounted(() => {
             <td class="date-cell">{{ formatDate(result.started_at) }}</td>
             <td class="date-cell">{{ result.completed_at ? formatDate(result.completed_at) : '—' }}</td>
             <td>
-              <button @click="handleViewDetail(result)" class="btn btn-sm btn-outline">
-                <i class="fas fa-eye"></i> {{ t('groupScenarios.viewDetails') }}
-              </button>
-              <button @click="exportSingleResult(result)" class="btn btn-sm btn-outline" :title="t('groupScenarios.exportStudent')">
-                <i class="fas fa-download"></i>
-              </button>
+              <div class="actions-cell">
+                <button @click="handleViewDetail(result)" class="btn btn-sm btn-outline">
+                  <i class="fas fa-eye"></i> {{ t('groupScenarios.viewDetails') }}
+                </button>
+                <button @click="exportSingleResult(result)" class="btn btn-sm btn-outline" :title="t('groupScenarios.exportStudent')">
+                  <i class="fas fa-download"></i>
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -1456,6 +1458,12 @@ onUnmounted(() => {
 .checkbox-col input[type="checkbox"] {
   cursor: pointer;
   accent-color: var(--color-primary);
+}
+
+.actions-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .bulk-actions-bar {
