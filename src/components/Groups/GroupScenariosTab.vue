@@ -115,6 +115,7 @@ const { t } = useTranslations({
       stepTitle: 'Title',
       stepStatus: 'Status',
       attempts: 'Attempts',
+      hintsUsed: 'Hints',
       timeSpent: 'Time',
       completed: 'completed',
       activeStatus: 'active',
@@ -198,6 +199,7 @@ const { t } = useTranslations({
       stepTitle: 'Titre',
       stepStatus: 'Statut',
       attempts: 'Tentatives',
+      hintsUsed: 'Indices',
       timeSpent: 'Temps',
       completed: 'terminé',
       activeStatus: 'actif',
@@ -257,6 +259,7 @@ interface SessionStepDetail {
   step_title: string
   status: string
   verify_attempts: number
+  hints_revealed: number
   completed_at?: string
   time_spent_seconds: number
 }
@@ -886,6 +889,7 @@ onUnmounted(() => {
               <th>{{ t('groupScenarios.stepTitle') }}</th>
               <th>{{ t('groupScenarios.stepStatus') }}</th>
               <th>{{ t('groupScenarios.attempts') }}</th>
+              <th>{{ t('groupScenarios.hintsUsed') }}</th>
               <th>{{ t('groupScenarios.timeSpent') }}</th>
               <th>{{ t('groupScenarios.completedAt') }}</th>
             </tr>
@@ -898,6 +902,12 @@ onUnmounted(() => {
                 <span :class="['status-chip', getStatusClass(step.status)]">{{ translateStatus(step.status) }}</span>
               </td>
               <td>{{ step.verify_attempts }}</td>
+              <td>
+                <span v-if="step.hints_revealed > 0" class="hints-used-badge">
+                  {{ step.hints_revealed }}
+                </span>
+                <span v-else class="hints-none">&mdash;</span>
+              </td>
               <td>{{ formatDuration(step.time_spent_seconds) }}</td>
               <td class="date-cell">{{ step.completed_at ? formatDate(step.completed_at) : '—' }}</td>
             </tr>
@@ -1201,6 +1211,23 @@ onUnmounted(() => {
 .status-inactive {
   background-color: var(--color-danger-bg);
   color: var(--color-danger-text);
+}
+
+.hints-used-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5em;
+  padding: 0.15em 0.4em;
+  border-radius: var(--border-radius-sm);
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.hints-none {
+  color: var(--color-text-muted);
 }
 
 .assignment-actions {
