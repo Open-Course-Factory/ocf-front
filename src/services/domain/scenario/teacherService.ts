@@ -56,9 +56,11 @@ export const teacherService = {
   },
 
   async bulkStartScenario(groupId: string, scenarioId: string, data: { instance_type: string; backend?: string }): Promise<any> {
+    // Longer timeout: challenge scenarios run setup.sh for each student (~90s each, parallelized in batches)
     const response = await axios.post(
       `/teacher/groups/${groupId}/scenarios/${scenarioId}/bulk-start`,
-      data
+      data,
+      { timeout: 300000 }
     )
     return response.data
   },
