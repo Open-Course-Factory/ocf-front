@@ -853,9 +853,12 @@ async function getEntitiesWithCursor(entityName: string, store: any, cursor: str
         }
       }
 
-      // Add filter parameters
+      // Add filter parameters (only for real entity fields, not cascade-only filters)
       Object.entries(filters).forEach(([key, value]) => {
         if (value && value !== '') {
+          const fieldConfig = props.entityStore.fieldList?.get(key);
+          // Skip hidden fields that aren't creatable — they're cascade-only UI filters
+          if (fieldConfig && !fieldConfig.display && !fieldConfig.toBeSet) return;
           cursorParams.append(key, value);
         }
       });
