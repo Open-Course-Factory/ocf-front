@@ -20,11 +20,11 @@
       <button
         v-if="canManage"
         class="btn btn-primary"
-        @click="openInviteModal"
+        @click="openAddMemberModal"
         :disabled="members.length >= maxMembers"
       >
         <i class="fas fa-user-plus"></i>
-        {{ t('members.inviteMember') }}
+        {{ t('members.addMember') }}
       </button>
     </div>
 
@@ -151,10 +151,10 @@
       <button
         v-if="canManage"
         class="btn btn-primary"
-        @click="openInviteModal"
+        @click="openAddMemberModal"
       >
         <i class="fas fa-user-plus"></i>
-        {{ t('members.inviteFirstMember') }}
+        {{ t('members.addFirstMember') }}
       </button>
     </div>
 
@@ -179,35 +179,56 @@
       </p>
     </BaseModal>
 
-    <!-- Invite Member Modal -->
+    <!-- Add Member Modal -->
     <BaseModal
-      :visible="showInviteModal"
-      :title="t('members.inviteMember')"
+      :visible="showAddMemberModal"
+      :title="t('members.addMember')"
       title-icon="fas fa-user-plus"
       size="medium"
-      @close="closeInviteModal"
+      @close="closeAddMemberModal"
     >
-      <div v-if="inviteError" class="alert alert-danger">
-        {{ inviteError }}
+      <div v-if="addMemberError" class="alert alert-danger">
+        {{ addMemberError }}
       </div>
 
       <div class="form-group">
-        <label for="userEmail">{{ t('members.emailAddress') }}</label>
-        <input
-          id="userEmail"
-          v-model="inviteEmail"
-          type="email"
-          :class="['form-control', { 'is-invalid': emailError }]"
-          :placeholder="t('members.emailPlaceholder')"
-          @keyup.enter="inviteMember"
-          @input="validateEmail"
-        />
-        <small v-if="emailError" class="field-error">{{ emailError }}</small>
+        <label>{{ t('members.searchUser') }}</label>
+        <div class="user-search-container">
+          <input
+            v-model="userSearchQuery"
+            type="text"
+            class="form-control"
+            :placeholder="t('members.searchUserPlaceholder')"
+            @input="onUserSearchInput"
+            @focus="showUserSearchDropdown = true"
+            @blur="onUserSearchBlur"
+          />
+          <div v-if="showUserSearchDropdown && (userSearchResults.length > 0 || isSearchingUsers)" class="search-dropdown">
+            <div v-if="isSearchingUsers" class="search-loading">
+              <i class="fas fa-spinner fa-spin"></i>
+              {{ t('members.searching') }}
+            </div>
+            <div
+              v-for="user in userSearchResults"
+              :key="user.id"
+              class="search-result"
+              @click="selectUser(user)"
+            >
+              <div class="user-info">
+                <div class="user-name">{{ user.display_name || user.name }}</div>
+                <div class="user-email" v-if="user.email">{{ user.email }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <small class="form-text text-muted">
+          {{ t('members.searchUserHelp') }}
+        </small>
       </div>
 
       <div class="form-group">
-        <label for="userRole">{{ t('members.role') }}</label>
-        <select id="userRole" v-model="inviteRole" class="form-control">
+        <label>{{ t('members.role') }}</label>
+        <select v-model="addMemberRole" class="form-control">
           <option value="member">{{ t('members.roleMember') }}</option>
           <option value="manager">{{ t('members.roleManager') }}</option>
           <option v-if="props.isOwner" value="owner">{{ t('members.roleOwner') }}</option>
@@ -215,16 +236,16 @@
       </div>
 
       <template #footer>
-        <button class="btn btn-secondary" @click="closeInviteModal">
+        <button class="btn btn-secondary" @click="closeAddMemberModal">
           {{ t('members.cancel') }}
         </button>
         <button
           class="btn btn-primary"
-          @click="inviteMember"
-          :disabled="isInviting || !inviteEmail || !!emailError"
+          @click="addMember"
+          :disabled="isAddingMember || !selectedUserId"
         >
-          <i :class="isInviting ? 'fas fa-spinner fa-spin' : 'fas fa-paper-plane'"></i>
-          {{ isInviting ? t('members.inviting') : t('members.sendInvite') }}
+          <i :class="isAddingMember ? 'fas fa-spinner fa-spin' : 'fas fa-user-plus'"></i>
+          {{ isAddingMember ? t('members.adding') : t('members.addMember') }}
         </button>
       </template>
     </BaseModal>
@@ -240,6 +261,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useFormatters } from '../../composables/useFormatters'
 import { useClientPagination } from '../../composables/useClientPagination'
 import { useToast } from '../../composables/useToast'
+import { userService, type User } from '../../services/domain/user'
 import type { OrganizationMember } from '../../types'
 
 interface Props {
@@ -262,7 +284,7 @@ const { t } = useTranslations({
     members: {
       title: 'Members',
       members: 'members',
-      inviteMember: 'Invite Member',
+      addMember: 'Add Member',
       loading: 'Loading members...',
       retry: 'Retry',
       joined: 'Joined',
@@ -271,21 +293,21 @@ const { t } = useTranslations({
       roleOwner: 'Owner',
       removeMember: 'Remove member',
       noMembers: 'No members yet',
-      noMembersDesc: 'Invite members to collaborate in this organization',
-      inviteFirstMember: 'Invite your first member',
-      emailAddress: 'Email Address',
-      emailPlaceholder: "user{'@'}example.com",
-      emailInvalid: 'Please enter a valid email address',
+      noMembersDesc: 'Add members to collaborate in this organization',
+      addFirstMember: 'Add your first member',
+      searchUser: 'Search User',
+      searchUserPlaceholder: 'Search by name or email...',
+      searchUserHelp: 'Search and select the user to add to this organization',
+      searching: 'Searching...',
       role: 'Role',
       cancel: 'Cancel',
-      sendInvite: 'Send Invite',
-      inviting: 'Inviting...',
+      adding: 'Adding...',
       confirmRemove: 'Are you sure you want to remove this member from the organization?',
       confirmRemoveBtn: 'Remove',
       removing: 'Removing member...',
       roleUpdated: 'Member role updated successfully',
       memberRemoved: 'Member removed successfully',
-      memberInvited: 'Member invited successfully',
+      memberAdded: 'Member added successfully',
       rolesHelp: 'Learn about roles',
       searchPlaceholder: 'Search members...',
       showing: 'Showing {from}-{to} of {total}',
@@ -298,7 +320,7 @@ const { t } = useTranslations({
     members: {
       title: 'Membres',
       members: 'membres',
-      inviteMember: 'Inviter un membre',
+      addMember: 'Ajouter un membre',
       loading: 'Chargement des membres...',
       retry: 'Réessayer',
       joined: 'Rejoint',
@@ -307,21 +329,21 @@ const { t } = useTranslations({
       roleOwner: 'Propriétaire',
       removeMember: 'Retirer le membre',
       noMembers: 'Aucun membre',
-      noMembersDesc: 'Invitez des membres pour collaborer dans cette organisation',
-      inviteFirstMember: 'Invitez votre premier membre',
-      emailAddress: 'Adresse email',
-      emailPlaceholder: "utilisateur{'@'}exemple.com",
-      emailInvalid: 'Veuillez saisir une adresse email valide',
+      noMembersDesc: 'Ajoutez des membres pour collaborer dans cette organisation',
+      addFirstMember: 'Ajoutez votre premier membre',
+      searchUser: 'Rechercher un utilisateur',
+      searchUserPlaceholder: 'Rechercher par nom ou email...',
+      searchUserHelp: 'Recherchez et sélectionnez l\'utilisateur à ajouter à cette organisation',
+      searching: 'Recherche...',
       role: 'Rôle',
       cancel: 'Annuler',
-      sendInvite: 'Envoyer l\'invitation',
-      inviting: 'Invitation en cours...',
+      adding: 'Ajout en cours...',
       confirmRemove: 'Êtes-vous sûr de vouloir retirer ce membre de l\'organisation ?',
       confirmRemoveBtn: 'Retirer',
       removing: 'Retrait du membre...',
       roleUpdated: 'Rôle du membre mis à jour avec succès',
       memberRemoved: 'Membre retiré avec succès',
-      memberInvited: 'Membre invité avec succès',
+      memberAdded: 'Membre ajouté avec succès',
       rolesHelp: 'En savoir plus sur les rôles',
       searchPlaceholder: 'Rechercher des membres...',
       showing: 'Affichage {from}-{to} sur {total}',
@@ -353,28 +375,18 @@ const {
   searchFields: ['user.display_name', 'user.name', 'user.email', 'role'],
   pageSize: 10
 })
-const showInviteModal = ref(false)
-const inviteEmail = ref('')
-const inviteRole = ref<'member' | 'manager' | 'owner'>('member')
-const isInviting = ref(false)
-const inviteError = ref('')
-const emailError = ref('')
+const showAddMemberModal = ref(false)
+const addMemberRole = ref<'member' | 'manager' | 'owner'>('member')
+const isAddingMember = ref(false)
+const addMemberError = ref('')
+const selectedUserId = ref('')
+const userSearchQuery = ref('')
+const userSearchResults = ref<User[]>([])
+const isSearchingUsers = ref(false)
+const showUserSearchDropdown = ref(false)
 const showRemoveConfirm = ref(false)
 const memberToRemove = ref<OrganizationMember | null>(null)
 const isRemoving = ref(false)
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-const validateEmail = () => {
-  const email = inviteEmail.value.trim()
-  if (!email) {
-    emailError.value = ''
-  } else if (!EMAIL_PATTERN.test(email)) {
-    emailError.value = t('members.emailInvalid')
-  } else {
-    emailError.value = ''
-  }
-}
 
 onMounted(() => {
   loadMembers()
@@ -395,37 +407,78 @@ const loadMembers = async () => {
   }
 }
 
-const openInviteModal = () => {
-  inviteEmail.value = ''
-  inviteRole.value = 'member'
-  inviteError.value = ''
-  emailError.value = ''
-  showInviteModal.value = true
+const openAddMemberModal = () => {
+  selectedUserId.value = ''
+  userSearchQuery.value = ''
+  userSearchResults.value = []
+  addMemberRole.value = 'member'
+  addMemberError.value = ''
+  showAddMemberModal.value = true
 }
 
-const closeInviteModal = () => {
-  showInviteModal.value = false
+const closeAddMemberModal = () => {
+  showAddMemberModal.value = false
 }
 
-const inviteMember = async () => {
-  if (!inviteEmail.value) return
+let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
-  isInviting.value = true
-  inviteError.value = ''
+const onUserSearchInput = () => {
+  selectedUserId.value = ''
+  showUserSearchDropdown.value = true
+
+  if (searchTimeout) clearTimeout(searchTimeout)
+
+  const query = userSearchQuery.value.trim()
+  if (query.length < 2) {
+    userSearchResults.value = []
+    return
+  }
+
+  searchTimeout = setTimeout(async () => {
+    isSearchingUsers.value = true
+    try {
+      userSearchResults.value = await userService.searchUsers(query)
+    } catch (err: any) {
+      console.error('Error searching users:', err)
+      userSearchResults.value = []
+    } finally {
+      isSearchingUsers.value = false
+    }
+  }, 300)
+}
+
+const selectUser = (user: User) => {
+  selectedUserId.value = user.id
+  userSearchQuery.value = `${user.display_name || user.name}${user.email ? ` (${user.email})` : ''}`
+  showUserSearchDropdown.value = false
+}
+
+const onUserSearchBlur = () => {
+  setTimeout(() => {
+    showUserSearchDropdown.value = false
+  }, 200)
+}
+
+const addMember = async () => {
+  if (!selectedUserId.value) return
+
+  isAddingMember.value = true
+  addMemberError.value = ''
 
   try {
-    await axios.post(`/organizations/${props.organizationId}/members`, {
-      email: inviteEmail.value,
-      role: inviteRole.value
+    await axios.post('/organization-members', {
+      organization_id: props.organizationId,
+      user_id: selectedUserId.value,
+      role: addMemberRole.value
     })
 
-    closeInviteModal()
+    closeAddMemberModal()
     await loadMembers()
-    toast.success(t('members.memberInvited'))
+    toast.success(t('members.memberAdded'))
   } catch (err: any) {
-    inviteError.value = err.response?.data?.error_message || err.message || 'Failed to invite member'
+    addMemberError.value = err.response?.data?.error_message || err.message || 'Failed to add member'
   } finally {
-    isInviting.value = false
+    isAddingMember.value = false
   }
 }
 
@@ -713,11 +766,13 @@ const goToRolesHelp = () => {
 
 .btn-primary {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-text-on-primary, white);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-dark);
+  background: var(--color-primary-hover, var(--color-primary));
+  color: var(--color-text-on-primary, white);
+  filter: brightness(0.9);
 }
 
 .btn-primary:disabled {
@@ -867,5 +922,78 @@ const goToRolesHelp = () => {
   background: var(--color-bg-secondary);
   border-radius: 6px;
   color: var(--color-text-primary);
+}
+
+.user-search-container {
+  position: relative;
+}
+
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.search-loading {
+  padding: 0.75rem 1rem;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.search-loading i {
+  margin-right: 0.5rem;
+}
+
+.search-result {
+  padding: 0.625rem 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--color-border);
+  transition: background-color 0.15s ease;
+}
+
+.search-result:hover {
+  background: var(--color-bg-secondary);
+}
+
+.search-result:last-child {
+  border-bottom: none;
+}
+
+.search-result .user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.search-result .user-name {
+  font-weight: 500;
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+}
+
+.search-result .user-email {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+}
+
+.form-text {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.text-muted {
+  color: var(--color-text-tertiary);
+  font-style: italic;
 }
 </style>

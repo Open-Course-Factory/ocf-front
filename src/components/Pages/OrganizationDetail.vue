@@ -530,11 +530,13 @@ const changeTab = (tab: string) => {
 
 .btn-primary {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-text-on-primary, white);
 }
 
 .btn-primary:hover {
-  background: var(--color-primary-dark);
+  background: var(--color-primary);
+  color: var(--color-text-on-primary, white);
+  filter: brightness(0.9);
 }
 
 .btn-outline-primary {

@@ -335,11 +335,23 @@ const getStatusIcon = (hasSubscription: boolean) => {
 
 .btn-primary {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-text-on-primary, white);
 }
 
 .btn-primary:hover {
-  background: var(--color-primary-dark);
+  background: var(--color-primary-hover, var(--color-primary));
+  color: var(--color-text-on-primary, white);
+  filter: brightness(0.9);
+}
+
+.btn-secondary {
+  background: var(--color-bg-tertiary, #e9ecef);
+  color: var(--color-text-primary);
+}
+
+.btn-secondary:hover {
+  background: var(--color-surface-hover, #dee2e6);
+  color: var(--color-text-primary);
 }
 
 .btn-outline-primary {
