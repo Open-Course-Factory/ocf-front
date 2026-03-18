@@ -365,6 +365,19 @@ const parentFilters = computed(() => {
             return Object.entries(activeFilters).every(([filterKey, filterValue]) => {
               if (!filterValue || filterKey === key) return true;
 
+              // Skip filters for fields that don't exist on this parent entity
+              // (e.g., don't filter scenarios by step_id — scenarios don't have that field)
+              if (!(filterKey in entity)) {
+                // Also check common variations before skipping
+                const hasVariation = [
+                  filterKey.replace(/s$/, ''),
+                  filterKey + 's',
+                  filterKey.replace(/Id$/, 'IDs'),
+                  filterKey.replace(/ID$/, 'IDs'),
+                ].some(v => v in entity);
+                if (!hasVariation) return true;
+              }
+
               // Check if the entity has a relationship field that matches the active filter
               // Direct match (e.g., section.courseId === selectedCourseId)
               if (entity[filterKey] === filterValue) return true;
