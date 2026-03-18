@@ -22,7 +22,7 @@
 -->
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { teacherService } from '../../services/domain/scenario'
@@ -128,6 +128,11 @@ const { t } = useTranslations({
       difficultyIntermediate: 'Intermediate',
       difficultyAdvanced: 'Advanced',
       exportCsv: 'Export CSV',
+      selectAll: 'Select all',
+      exportStudent: 'Export this student',
+      selectedCount: '{count} selected',
+      exportSelected: 'Export selected',
+      clearSelection: 'Clear selection',
       importKillercoda: 'Import KillerCoda',
       importJson: 'Import JSON',
       exportJson: 'Export JSON',
@@ -213,6 +218,11 @@ const { t } = useTranslations({
       difficultyIntermediate: 'Intermédiaire',
       difficultyAdvanced: 'Avancé',
       exportCsv: 'Exporter CSV',
+      selectAll: 'Tout sélectionner',
+      exportStudent: 'Exporter cet étudiant',
+      selectedCount: '{count} sélectionné(s)',
+      exportSelected: 'Exporter la sélection',
+      clearSelection: 'Annuler la sélection',
       importKillercoda: 'Importer KillerCoda',
       importJson: 'Importer JSON',
       exportJson: 'Exporter JSON',
@@ -320,6 +330,19 @@ const resultsRefreshInterval = ref<ReturnType<typeof setInterval> | null>(null)
 const showDetailModal = ref(false)
 const sessionDetail = ref<SessionDetailResponse | null>(null)
 const loadingDetail = ref(false)
+
+// Selection state for multi-select export
+const selectedResults = ref<Set<string>>(new Set())
+const allSelected = computed({
+  get: () => scenarioResults.value.length > 0 && selectedResults.value.size === scenarioResults.value.length,
+  set: (val: boolean) => {
+    if (val) {
+      scenarioResults.value.forEach(r => selectedResults.value.add(r.session_id))
+    } else {
+      selectedResults.value.clear()
+    }
+  }
+})
 
 // Filtered scenarios for modal dropdown
 const filteredScenarios = () => {
@@ -476,6 +499,7 @@ async function handleViewResults(assignment: ScenarioAssignment) {
   showResultsForAssignment.value = assignment
   loadingResults.value = true
   scenarioResults.value = []
+  selectedResults.value.clear()
   try {
     scenarioResults.value = await teacherService.getScenarioResults(
       props.groupId,
@@ -582,8 +606,7 @@ function translateDifficulty(difficulty: string): string {
   return difficultyMap[difficulty] || difficulty
 }
 
-function exportResultsCsv() {
-  if (scenarioResults.value.length === 0) return
+function buildResultsCsv(results: ScenarioResultItem[]): string {
   const headers = [
     t('groupScenarios.export.name'),
     t('groupScenarios.export.email'),
@@ -594,7 +617,7 @@ function exportResultsCsv() {
     t('groupScenarios.export.started'),
     t('groupScenarios.export.completed')
   ]
-  const rows = scenarioResults.value.map(r => [
+  const rows = results.map(r => [
     r.user_name || r.user_id,
     r.user_email || '',
     r.status,
@@ -604,14 +627,46 @@ function exportResultsCsv() {
     r.started_at ? formatDate(r.started_at) : '',
     r.completed_at ? formatDate(r.completed_at) : ''
   ])
-  const csv = [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n')
+  return [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n')
+}
+
+function downloadCsv(csv: string, filename: string) {
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = `scenario-results-${showResultsForAssignment.value?.scenario?.title || 'export'}.csv`
+  link.download = filename
   link.click()
   URL.revokeObjectURL(url)
+}
+
+function exportResultsCsv() {
+  if (scenarioResults.value.length === 0) return
+  const csv = buildResultsCsv(scenarioResults.value)
+  downloadCsv(csv, `scenario-results-${showResultsForAssignment.value?.scenario?.title || 'export'}.csv`)
+}
+
+function exportSingleResult(result: ScenarioResultItem) {
+  const csv = buildResultsCsv([result])
+  const studentName = (result.user_name || result.user_id).replace(/[^a-zA-Z0-9-_]/g, '_')
+  const scenarioTitle = showResultsForAssignment.value?.scenario?.title || 'scenario'
+  downloadCsv(csv, `${scenarioTitle}-${studentName}.csv`)
+}
+
+function exportSelectedResults() {
+  const selected = scenarioResults.value.filter(r => selectedResults.value.has(r.session_id))
+  if (selected.length === 0) return
+  const csv = buildResultsCsv(selected)
+  const scenarioTitle = showResultsForAssignment.value?.scenario?.title || 'scenario'
+  downloadCsv(csv, `${scenarioTitle}-${selected.length}-students.csv`)
+}
+
+function toggleSelection(sessionId: string) {
+  if (selectedResults.value.has(sessionId)) {
+    selectedResults.value.delete(sessionId)
+  } else {
+    selectedResults.value.add(sessionId)
+  }
 }
 
 // Download helpers
@@ -813,9 +868,21 @@ onUnmounted(() => {
       </div>
 
       <div v-else class="results-table-container">
+      <div v-if="selectedResults.size > 0" class="bulk-actions-bar">
+        <span>{{ t('groupScenarios.selectedCount', { count: selectedResults.size }) }}</span>
+        <button @click="exportSelectedResults" class="btn btn-sm btn-primary">
+          <i class="fas fa-download"></i> {{ t('groupScenarios.exportSelected') }}
+        </button>
+        <button @click="selectedResults.clear()" class="btn btn-sm btn-outline">
+          {{ t('groupScenarios.clearSelection') }}
+        </button>
+      </div>
       <table class="results-table" :aria-label="t('groupScenarios.studentResults')">
         <thead>
           <tr>
+            <th class="checkbox-col">
+              <input type="checkbox" v-model="allSelected" :title="t('groupScenarios.selectAll')" />
+            </th>
             <th>{{ t('groupScenarios.student') }}</th>
             <th>{{ t('groupScenarios.status') }}</th>
             <th>{{ t('groupScenarios.grade') }}</th>
@@ -828,6 +895,9 @@ onUnmounted(() => {
         </thead>
         <tbody>
           <tr v-for="result in scenarioResults" :key="result.session_id">
+            <td class="checkbox-col">
+              <input type="checkbox" :checked="selectedResults.has(result.session_id)" @change="toggleSelection(result.session_id)" />
+            </td>
             <td>
               <div class="student-name">{{ result.user_name || result.user_id }}</div>
               <div v-if="result.user_email" class="student-email">{{ result.user_email }}</div>
@@ -862,6 +932,9 @@ onUnmounted(() => {
             <td>
               <button @click="handleViewDetail(result)" class="btn btn-sm btn-outline">
                 <i class="fas fa-eye"></i> {{ t('groupScenarios.viewDetails') }}
+              </button>
+              <button @click="exportSingleResult(result)" class="btn btn-sm btn-outline" :title="t('groupScenarios.exportStudent')">
+                <i class="fas fa-download"></i>
               </button>
             </td>
           </tr>
@@ -1322,6 +1395,29 @@ onUnmounted(() => {
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   margin-bottom: var(--spacing-md);
+}
+
+.checkbox-col {
+  width: 2rem;
+  text-align: center;
+}
+
+.checkbox-col input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.bulk-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-primary-bg);
+  border: var(--border-width-thin) solid var(--color-primary-border);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
 }
 
 .btn-outline {
