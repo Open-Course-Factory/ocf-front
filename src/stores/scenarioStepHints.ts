@@ -26,7 +26,7 @@ import { useScenarioStepsStore } from "./scenarioSteps"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
 
-export const useScenarioStepHintsStore = defineStore('scenarioStepHints', () => {
+export const useScenarioStepHintsStore = defineStore('scenario-step-hints', () => {
 
     const base = useBaseStore()
 
