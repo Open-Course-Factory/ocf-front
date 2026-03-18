@@ -646,19 +646,70 @@ function exportResultsCsv() {
   downloadCsv(csv, `scenario-results-${showResultsForAssignment.value?.scenario?.title || 'export'}.csv`)
 }
 
-function exportSingleResult(result: ScenarioResultItem) {
-  const csv = buildResultsCsv([result])
-  const studentName = (result.user_name || result.user_id).replace(/[^a-zA-Z0-9-_]/g, '_')
-  const scenarioTitle = showResultsForAssignment.value?.scenario?.title || 'scenario'
-  downloadCsv(csv, `${scenarioTitle}-${studentName}.csv`)
+function buildDetailCsv(details: Array<{ result: ScenarioResultItem; detail: SessionDetailResponse }>): string {
+  const headers = [
+    t('groupScenarios.export.name'),
+    t('groupScenarios.export.email'),
+    t('groupScenarios.export.status'),
+    t('groupScenarios.export.grade'),
+    t('groupScenarios.stepOrder'),
+    t('groupScenarios.stepTitle'),
+    t('groupScenarios.stepStatus'),
+    t('groupScenarios.attempts'),
+    t('groupScenarios.hintsUsed'),
+    t('groupScenarios.timeSpent'),
+    t('groupScenarios.completedAt')
+  ]
+  const rows: any[][] = []
+  for (const { result, detail } of details) {
+    const studentName = result.user_name || result.user_id
+    const email = result.user_email || ''
+    const status = result.status
+    const grade = result.grade != null ? Math.round(result.grade) + '%' : ''
+    for (const step of detail.steps) {
+      rows.push([
+        studentName, email, status, grade,
+        step.step_order + 1,
+        step.step_title,
+        step.status,
+        step.verify_attempts,
+        step.hints_revealed,
+        formatDuration(step.time_spent_seconds),
+        step.completed_at ? formatDate(step.completed_at) : ''
+      ])
+    }
+  }
+  return [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n')
 }
 
-function exportSelectedResults() {
+async function exportSingleResult(result: ScenarioResultItem) {
+  try {
+    const detail = await teacherService.getSessionDetail(props.groupId, result.session_id)
+    const csv = buildDetailCsv([{ result, detail }])
+    const studentName = (result.user_name || result.user_id).replace(/[^a-zA-Z0-9-_]/g, '_')
+    const scenarioTitle = showResultsForAssignment.value?.scenario?.title || 'scenario'
+    downloadCsv(csv, `${scenarioTitle}-${studentName}.csv`)
+  } catch (err: any) {
+    notifyError(err.response?.data?.error || t('groupScenarios.exportError'))
+  }
+}
+
+async function exportSelectedResults() {
   const selected = scenarioResults.value.filter(r => selectedResults.value.has(r.session_id))
   if (selected.length === 0) return
-  const csv = buildResultsCsv(selected)
-  const scenarioTitle = showResultsForAssignment.value?.scenario?.title || 'scenario'
-  downloadCsv(csv, `${scenarioTitle}-${selected.length}-students.csv`)
+  try {
+    const details = await Promise.all(
+      selected.map(async r => ({
+        result: r,
+        detail: await teacherService.getSessionDetail(props.groupId, r.session_id)
+      }))
+    )
+    const csv = buildDetailCsv(details)
+    const scenarioTitle = showResultsForAssignment.value?.scenario?.title || 'scenario'
+    downloadCsv(csv, `${scenarioTitle}-${selected.length}-students.csv`)
+  } catch (err: any) {
+    notifyError(err.response?.data?.error || t('groupScenarios.exportError'))
+  }
 }
 
 function toggleSelection(sessionId: string) {
