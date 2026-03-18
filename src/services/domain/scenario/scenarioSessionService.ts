@@ -70,7 +70,8 @@ export const scenarioSessionService = {
   },
 
   async startScenario(scenarioId: string, options?: { terminal_session_id?: string; backend?: string; instance_type?: string }): Promise<ScenarioSessionInfo> {
-    const response = await axios.post('/scenario-sessions/start', { scenario_id: scenarioId, ...options })
+    // Longer timeout: challenge scenarios run setup.sh which installs packages (~60-90s)
+    const response = await axios.post('/scenario-sessions/start', { scenario_id: scenarioId, ...options }, { timeout: 180000 })
     return response.data
   },
 

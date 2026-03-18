@@ -52,6 +52,7 @@
         v-if="isSessionActive && !scenarioSessionId"
         :terminal-session-id="sessionId"
         @scenario-started="handleScenarioStarted"
+        @scenario-loading="handleScenarioLoading"
       />
 
       <!-- Scenario briefing card (full width, dismissible) -->
@@ -66,11 +67,24 @@
           </button>
         </div>
         <div v-if="showBriefing" class="briefing-content markdown-content" v-html="renderedBriefingText" @click="handleBriefingExecClick"></div>
+        <div v-if="showBriefing" class="briefing-footer">
+          <button class="briefing-collapse-btn" @click="toggleBriefing">
+            <i class="fas fa-chevron-up"></i> {{ t('sessionView.collapseBriefing') }}
+          </button>
+        </div>
       </div>
 
       <!-- Terminal + Scenario Panel layout (active session with scenario) -->
       <div v-if="isSessionActive && scenarioSessionId" class="terminal-session-layout" :class="{ resizing: isPanelResizing }">
-        <div class="terminal-main-area">
+        <div class="terminal-main-area" style="position: relative;">
+          <!-- Loading overlay (covers terminal during scenario setup) -->
+          <div v-if="scenarioLoading" class="scenario-loading-overlay">
+            <div class="scenario-loading-content">
+              <i class="fas fa-cog fa-spin"></i>
+              <p>{{ t('sessionView.scenarioLoading') }}</p>
+              <p class="scenario-loading-detail">{{ t('sessionView.scenarioLoadingDetail') }}</p>
+            </div>
+          </div>
           <TerminalSessionPanel
             ref="scenarioTerminalRef"
             :session-info="sessionInfo"
@@ -99,18 +113,35 @@
       </div>
 
       <!-- Terminal only (active session without scenario) -->
-      <TerminalSessionPanel
-        v-else-if="isSessionActive"
-        :session-info="sessionInfo"
-        :is-active="isSessionActive"
-        :is-recording="isRecording"
-        show-stop-button
-        :is-stopping="isStopping"
-        @stop="stopSession"
-        @recording-detected="isRecording = true"
-        @session-warning="handleSessionWarning"
-        @session-expired="handleSessionExpired"
-      />
+      <div v-else-if="isSessionActive" style="position: relative;">
+        <!-- Loading overlay (covers terminal during scenario setup) -->
+        <div v-if="scenarioLoading" class="scenario-loading-overlay">
+          <div class="scenario-loading-content">
+            <div class="scenario-loading-icon">
+              <i v-if="!scenarioReady" class="fas fa-cog fa-spin"></i>
+              <i v-else class="fas fa-check-circle"></i>
+            </div>
+            <h3>{{ scenarioReady ? t('sessionView.scenarioReady') : t('sessionView.scenarioLoading') }}</h3>
+            <p v-if="!scenarioReady" class="scenario-loading-detail">{{ t('sessionView.scenarioLoadingDetail') }}</p>
+            <button v-if="scenarioReady" class="btn btn-success btn-lg" :disabled="scenarioLaunching" @click="launchScenario">
+              <i :class="scenarioLaunching ? 'fas fa-spinner fa-spin' : 'fas fa-play'"></i>
+              {{ scenarioLaunching ? t('sessionView.scenarioLaunching') : t('sessionView.scenarioLaunch') }}
+            </button>
+          </div>
+        </div>
+        <TerminalSessionPanel
+          ref="standaloneTerminalRef"
+          :session-info="sessionInfo"
+          :is-active="isSessionActive"
+          :is-recording="isRecording"
+          show-stop-button
+          :is-stopping="isStopping"
+          @stop="stopSession"
+          @recording-detected="isRecording = true"
+          @session-warning="handleSessionWarning"
+          @session-expired="handleSessionExpired"
+        />
+      </div>
 
       <!-- Session expired: show notice + history only -->
       <template v-else>
@@ -175,6 +206,12 @@ const { t } = useTranslations({
       expiresIn1min: 'Your session expires in less than 1 minute!',
       expiryWarningTitle: 'Session Expiring',
       scenarioBriefing: 'Scenario Briefing',
+      scenarioLoading: 'Preparing your environment...',
+      scenarioLoadingDetail: 'Setting up the challenge. This may take a moment.',
+      scenarioReady: 'Your environment is ready!',
+      scenarioLaunch: 'Start!',
+      scenarioLaunching: 'Starting...',
+      collapseBriefing: 'Collapse briefing',
       recordingNotice: 'Your terminal commands are recorded for security and learning purposes.',
       learnMore: 'Learn more',
       gotIt: 'Got it',
@@ -204,6 +241,12 @@ const { t } = useTranslations({
       expiresIn1min: 'Votre session expire dans moins d\'une minute !',
       expiryWarningTitle: 'Expiration de la session',
       scenarioBriefing: 'Briefing du scénario',
+      scenarioLoading: 'Préparation de votre environnement...',
+      scenarioLoadingDetail: 'Configuration du challenge en cours. Cela peut prendre un moment.',
+      scenarioReady: 'Votre environnement est prêt !',
+      scenarioLaunch: 'Démarrer !',
+      scenarioLaunching: 'Démarrage...',
+      collapseBriefing: 'Réduire le briefing',
       recordingNotice: 'Vos commandes terminal sont enregistrées à des fins de sécurité et d\'apprentissage.',
       learnMore: 'En savoir plus',
       gotIt: 'Compris',
@@ -274,6 +317,9 @@ function handleScenarioInfoLoaded(info: ScenarioInfo) {
 // Scenario session ID: auto-detected from terminal, or manual override via query parameter
 const scenarioSessionId = ref<string | null>(null)
 const scenarioTerminalRef = ref<InstanceType<typeof TerminalSessionPanel> | null>(null)
+const standaloneTerminalRef = ref<InstanceType<typeof TerminalSessionPanel> | null>(null)
+const scenarioLoading = ref(false)
+const scenarioLaunching = ref(false)
 
 // Restore briefing dismissed state from localStorage when scenario session is known
 watch(scenarioSessionId, (id) => {
@@ -306,8 +352,9 @@ function startScenarioSync() {
   if (scenarioSessionId.value || scenarioSyncInterval) return
 
   scenarioSyncInterval = setInterval(async () => {
-    if (scenarioSessionId.value || !isSessionActive.value) {
-      stopScenarioSync()
+    // Don't auto-set scenarioSessionId while scenario is loading — let handleScenarioStarted control it
+    if (scenarioSessionId.value || !isSessionActive.value || scenarioLoading.value) {
+      if (scenarioSessionId.value || !isSessionActive.value) stopScenarioSync()
       return
     }
     try {
@@ -376,8 +423,8 @@ async function loadSession() {
       startExpirationTimer(terminalInfo.terminal.expires_at)
     }
 
-    // Auto-detect linked scenario session (unless already set via query parameter)
-    if (!scenarioSessionId.value && status !== 'expired' && status !== 'stopped') {
+    // Auto-detect linked scenario session (unless already set via query parameter or loading)
+    if (!scenarioSessionId.value && !scenarioLoading.value && status !== 'expired' && status !== 'stopped') {
       try {
         const scenarioSession = await scenarioSessionService.getSessionByTerminal(sessionId)
         if (scenarioSession) {
@@ -462,9 +509,38 @@ function handleSessionExpired() {
   showWarning(t('sessionView.sessionExpiredNotice'), t('sessionView.sessionExpiredTitle'))
 }
 
+function handleScenarioLoading(loading: boolean) {
+  scenarioLoading.value = loading
+  scenarioReady.value = false
+  if (loading) stopScenarioSync()
+}
+
+const scenarioReady = ref(false)
+const pendingScenarioSessionId = ref<string | null>(null)
+
 function handleScenarioStarted(newScenarioSessionId: string) {
-  scenarioSessionId.value = newScenarioSessionId
-  stopScenarioSync()
+  // Setup is done — show the "Start!" button on the loading overlay
+  pendingScenarioSessionId.value = newScenarioSessionId
+  scenarioReady.value = true
+}
+
+function launchScenario() {
+  if (!pendingScenarioSessionId.value || scenarioLaunching.value) return
+
+  scenarioLaunching.value = true
+
+  // Send user switch to the standalone terminal (still mounted behind overlay)
+  standaloneTerminalRef.value?.pasteText('exec bash\r')
+
+  // Wait for bash restart + su, then switch to scenario layout
+  setTimeout(() => {
+    scenarioSessionId.value = pendingScenarioSessionId.value
+    pendingScenarioSessionId.value = null
+    stopScenarioSync()
+    scenarioLoading.value = false
+    scenarioReady.value = false
+    scenarioLaunching.value = false
+  }, 2000)
 }
 
 function handleScenarioCompleted() {
@@ -547,6 +623,55 @@ onBeforeUnmount(() => {
   padding: var(--spacing-2xl);
   color: var(--color-text-muted);
   font-size: var(--font-size-md);
+}
+
+.scenario-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-bg-primary);
+  border-radius: var(--border-radius-lg);
+}
+
+.scenario-loading-content {
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.scenario-loading-icon {
+  font-size: 3rem;
+  margin-bottom: var(--spacing-md);
+  color: var(--color-primary);
+}
+
+.scenario-loading-icon .fa-check-circle {
+  color: var(--color-success);
+}
+
+.scenario-loading-content h3 {
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-xl);
+  color: var(--color-text-primary);
+}
+
+.scenario-loading-content .scenario-loading-detail {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.scenario-loading-content .btn {
+  margin-top: var(--spacing-lg);
+}
+
+.scenario-loading-content .btn i {
+  margin-right: var(--spacing-xs);
 }
 
 .loading-section i {
@@ -808,6 +933,33 @@ onBeforeUnmount(() => {
   font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
   color: var(--color-text-secondary);
+}
+
+.briefing-footer {
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+  border-top: var(--border-width-thin) solid var(--color-border-light);
+}
+
+.briefing-collapse-btn {
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  background: none;
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.briefing-collapse-btn:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-border-medium);
+}
+
+.briefing-collapse-btn i {
+  margin-right: var(--spacing-xs);
 }
 
 /* Markdown content styles (v-html requires :deep for scoped styles) */

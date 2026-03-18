@@ -70,6 +70,7 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   'scenario-started': [scenarioSessionId: string]
+  'scenario-loading': [loading: boolean]
 }>()
 
 const { showError } = useNotification()
@@ -138,6 +139,7 @@ async function loadAndShowPicker() {
 
 async function startScenario(scenario: any) {
   isStarting.value = true
+  emit('scenario-loading', true)
   try {
     const session = await scenarioSessionService.startScenario(scenario.id, {
       terminal_session_id: props.terminalSessionId
@@ -145,6 +147,7 @@ async function startScenario(scenario: any) {
     emit('scenario-started', session.id)
   } catch (err: any) {
     console.error('Failed to start scenario:', err)
+    emit('scenario-loading', false)
     showError(
       err.response?.data?.error_message ||
       err.response?.data?.message ||
