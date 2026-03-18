@@ -945,7 +945,7 @@ async function getEntitiesWithCursor(entityName: string, store: any, cursor: str
 // Get entities without pagination for parent/sub entities
 async function getEntitiesWithoutPagination(entityName: string, store: Store) {
   try {
-    const response = await axios.get(`/${entityName}`, { params: { page_size: 1000 } });
+    const response = await axios.get(`/${entityName}`, { params: { size: 1000 } });
     const entities = response.data?.data || response.data || [];
     store.entities = entities;
     if (store.getSelectDatas) {
