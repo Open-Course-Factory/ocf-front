@@ -1462,7 +1462,7 @@ onUnmounted(() => {
 
 .actions-cell {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: var(--spacing-xs);
 }
 
