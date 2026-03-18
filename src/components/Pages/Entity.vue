@@ -841,9 +841,19 @@ async function getEntitiesWithCursor(entityName: string, store: any, cursor: str
   try {
     let result: { data: any[], nextCursor: string | null, hasMore: boolean, total: number };
 
+    // Filter out cascade-only filters (hidden, non-creatable fields used only for UI dropdown cascading)
+    const apiFilters: Record<string, string> = {};
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value && value !== '') {
+        const fieldConfig = props.entityStore.fieldList?.get(key);
+        if (fieldConfig && !fieldConfig.display && !fieldConfig.toBeSet) return;
+        apiFilters[key] = value;
+      }
+    });
+
     // Check if store supports cursor-based pagination
     if (store.loadEntitiesWithCursor && typeof store.loadEntitiesWithCursor === 'function') {
-      result = await store.loadEntitiesWithCursor(`/${entityName}`, cursor, size, filters);
+      result = await store.loadEntitiesWithCursor(`/${entityName}`, cursor, size, apiFilters);
     } else {
       // Determine pagination strategy based on backend support
       let response: any;
@@ -866,14 +876,9 @@ async function getEntitiesWithCursor(entityName: string, store: any, cursor: str
         }
       }
 
-      // Add filter parameters (only for real entity fields, not cascade-only filters)
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value && value !== '') {
-          const fieldConfig = props.entityStore.fieldList?.get(key);
-          // Skip hidden fields that aren't creatable — they're cascade-only UI filters
-          if (fieldConfig && !fieldConfig.display && !fieldConfig.toBeSet) return;
-          cursorParams.append(key, value);
-        }
+      // Add filter parameters (already filtered at the top of this function)
+      Object.entries(apiFilters).forEach(([key, value]) => {
+        cursorParams.append(key, value);
       });
 
       response = await axios.get(`/${entityName}?${cursorParams}`);
