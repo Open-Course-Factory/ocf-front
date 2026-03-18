@@ -390,7 +390,7 @@ async function initXterm(): Promise<boolean> {
     const [xtermModule, fitModule, attachModule] = await Promise.all([
       import('@xterm/xterm'),
       import('@xterm/addon-fit'),
-      import('xterm-addon-attach')
+      import('@xterm/addon-attach')
     ])
 
     Terminal = xtermModule.Terminal
