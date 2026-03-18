@@ -140,6 +140,7 @@ const { t } = useTranslations({
         status: 'Status',
         grade: 'Grade',
         progress: 'Progress',
+        hintsUsed: 'Hints Used',
         started: 'Started',
         completed: 'Completed'
       }
@@ -224,6 +225,7 @@ const { t } = useTranslations({
         status: 'Statut',
         grade: 'Note',
         progress: 'Progression',
+        hintsUsed: 'Indices utilisés',
         started: 'Début',
         completed: 'Fin'
       }
@@ -250,6 +252,7 @@ interface ScenarioResultItem {
   current_step: number
   total_steps: number
   completed_steps: number
+  total_hints_used: number
   started_at: string
   completed_at?: string
 }
@@ -587,6 +590,7 @@ function exportResultsCsv() {
     t('groupScenarios.export.status'),
     t('groupScenarios.export.grade'),
     t('groupScenarios.export.progress'),
+    t('groupScenarios.export.hintsUsed'),
     t('groupScenarios.export.started'),
     t('groupScenarios.export.completed')
   ]
@@ -596,6 +600,7 @@ function exportResultsCsv() {
     r.status,
     r.grade != null ? Math.round(r.grade) + '%' : '',
     `${r.completed_steps}/${r.total_steps}`,
+    r.total_hints_used ?? 0,
     r.started_at ? formatDate(r.started_at) : '',
     r.completed_at ? formatDate(r.completed_at) : ''
   ])
@@ -815,6 +820,7 @@ onUnmounted(() => {
             <th>{{ t('groupScenarios.status') }}</th>
             <th>{{ t('groupScenarios.grade') }}</th>
             <th>{{ t('groupScenarios.progress') }}</th>
+            <th>{{ t('groupScenarios.hintsUsed') }}</th>
             <th>{{ t('groupScenarios.startedAt') }}</th>
             <th>{{ t('groupScenarios.completedAt') }}</th>
             <th>{{ t('groupScenarios.actions') }}</th>
@@ -844,6 +850,12 @@ onUnmounted(() => {
                 </div>
                 <span class="progress-text">{{ result.completed_steps }}/{{ result.total_steps }}</span>
               </div>
+            </td>
+            <td>
+              <span v-if="result.total_hints_used > 0" class="hints-used-badge">
+                {{ result.total_hints_used }}
+              </span>
+              <span v-else class="hints-none">0</span>
             </td>
             <td class="date-cell">{{ formatDate(result.started_at) }}</td>
             <td class="date-cell">{{ result.completed_at ? formatDate(result.completed_at) : '—' }}</td>
