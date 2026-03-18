@@ -22,6 +22,7 @@
 import { defineStore } from "pinia"
 import { computed } from 'vue'
 import { useBaseStore } from "./baseStore"
+import { useScenariosStore } from "./scenarios"
 import { useScenarioStepsStore } from "./scenarioSteps"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
@@ -34,6 +35,7 @@ export const useScenarioStepHintsStore = defineStore('scenario-step-hints', () =
         en: {
             scenarioStepHints: {
                 pageTitle: 'Scenario Step Hints',
+                scenarioId: 'Scenario',
                 stepId: 'Step',
                 level: 'Level',
                 content: 'Content'
@@ -42,6 +44,7 @@ export const useScenarioStepHintsStore = defineStore('scenario-step-hints', () =
         fr: {
             scenarioStepHints: {
                 pageTitle: 'Indices des Étapes',
+                scenarioId: 'Scénario',
                 stepId: 'Étape',
                 level: 'Niveau',
                 content: 'Contenu'
@@ -49,10 +52,14 @@ export const useScenarioStepHintsStore = defineStore('scenario-step-hints', () =
         }
     })
 
-    base.parentEntitiesStores = new Map([["step_id", useScenarioStepsStore()]])
+    base.parentEntitiesStores = new Map<string, any>([
+        ["scenario_id", useScenariosStore()],
+        ["step_id", useScenarioStepsStore()],
+    ])
 
     const fieldList = computed(() => buildFieldList([
         field('id').hidden().readonly(),
+        field('scenario_id', t('scenarioStepHints.scenarioId')).type('select').hidden(),
         field('step_id', t('scenarioStepHints.stepId')).type('multi-select').visible().creatable().required(),
         field('level', t('scenarioStepHints.level')).input().visible().creatable().updatable().required(),
         field('content', t('scenarioStepHints.content')).textarea().visible().creatable().updatable()
