@@ -936,8 +936,8 @@ defineExpose({
    SettingsCard Mode Styles
    ======================================== */
 .terminal-wrapper {
-  height: 100%;
-  min-height: 400px;
+  flex: 1;
+  min-height: 300px;
   background-color: var(--terminal-bg);
   position: relative;
   border: var(--border-width-thin) solid var(--terminal-border);

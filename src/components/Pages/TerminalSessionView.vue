@@ -903,8 +903,8 @@ onBeforeUnmount(() => {
   position: sticky;
   top: 0;
   align-self: flex-start;
-  height: calc(100vh - 60px);
-  overflow: hidden;
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
 }
 
 /* Scenario briefing card */

@@ -125,12 +125,31 @@ defineExpose({
   font-weight: var(--font-weight-semibold);
 }
 
+.terminal-session-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.terminal-session-panel :deep(.card) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .terminal-session-panel :deep(.card-body) {
   padding: var(--spacing-sm);
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .sub-panels {
   margin-top: var(--spacing-md);
+  flex-shrink: 0;
 }
 
 .sub-panels.has-flags {
