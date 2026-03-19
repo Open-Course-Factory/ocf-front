@@ -90,7 +90,7 @@ export const scenarioSessionService = {
   },
 
   async listScenarios(): Promise<any[]> {
-    const response = await axios.get('/scenarios')
+    const response = await axios.get('/scenario-sessions/available')
     return response.data?.data || response.data || []
   },
 
