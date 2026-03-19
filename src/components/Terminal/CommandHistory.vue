@@ -434,15 +434,17 @@ async function exportCSV() {
   try {
     const response = await axios.get(`/terminals/${props.sessionId}/history`, {
       params: { format: 'csv' },
-      responseType: 'text'
+      responseType: 'text',
+      timeout: 60000
     })
-    // Only trigger download if we actually got CSV content
-    if (typeof response.data !== 'string' || response.data.trim().startsWith('{')) {
+    // Ensure we got text content (not a JSON error object)
+    const data = typeof response.data === 'string' ? response.data : String(response.data)
+    if (!data || !data.trim()) {
       showErrorNotification(t('history.exportError'))
       return
     }
     triggerDownload(
-      response.data,
+      data,
       `command-history-${props.sessionId}.csv`,
       'text/csv'
     )
@@ -458,11 +460,18 @@ async function exportJSON() {
 
   try {
     const response = await axios.get(`/terminals/${props.sessionId}/history`, {
-      params: { format: 'json' }
+      params: { format: 'json' },
+      responseType: 'text',
+      timeout: 60000
     })
-    const jsonContent = typeof response.data === 'string' ? response.data : JSON.stringify(response.data, null, 2)
+    // Ensure we got content — responseType: 'text' prevents axios auto-parse
+    const data = typeof response.data === 'string' ? response.data : JSON.stringify(response.data, null, 2)
+    if (!data || !data.trim()) {
+      showErrorNotification(t('history.exportError'))
+      return
+    }
     triggerDownload(
-      jsonContent,
+      data,
       `command-history-${props.sessionId}.json`,
       'application/json'
     )
