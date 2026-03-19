@@ -65,6 +65,14 @@
           @click="isActive && emit('command-click', cmd.command_text)"
           :title="isActive ? t('history.clickToPaste') : ''"
         >{{ cmd.command_text }}</span>
+        <button
+          class="copy-btn"
+          @click.stop="copyCommand(cmd)"
+          :aria-label="t('history.copyToClipboard')"
+          :title="t('history.copyToClipboard')"
+        >
+          <i :class="copiedSequence === cmd.sequence_num ? 'fas fa-check' : 'fas fa-copy'"></i>
+        </button>
       </div>
     </div>
 
@@ -143,7 +151,9 @@ const { t } = useTranslations({
       clickToPaste: 'Click to paste in terminal',
       sortOrder: 'Toggle sort order',
       newestFirst: 'Newest first',
-      oldestFirst: 'Oldest first'
+      oldestFirst: 'Oldest first',
+      copyToClipboard: 'Copy to clipboard',
+      copied: 'Copied!'
     }
   },
   fr: {
@@ -170,7 +180,9 @@ const { t } = useTranslations({
       clickToPaste: 'Cliquer pour coller dans le terminal',
       sortOrder: 'Changer l\'ordre de tri',
       newestFirst: 'Plus récentes en premier',
-      oldestFirst: 'Plus anciennes en premier'
+      oldestFirst: 'Plus anciennes en premier',
+      copyToClipboard: 'Copier dans le presse-papiers',
+      copied: 'Copié !'
     }
   }
 })
@@ -212,6 +224,34 @@ const recordingDisabled = ref(false)
 const showDeleteConfirm = ref(false)
 const commandListRef = ref<HTMLElement | null>(null)
 const searchFilter = ref('')
+const copiedSequence = ref<number | null>(null)
+let copyTimeout: ReturnType<typeof setTimeout> | null = null
+
+async function copyCommand(cmd: CommandEntry) {
+  try {
+    await navigator.clipboard.writeText(cmd.command_text)
+    copiedSequence.value = cmd.sequence_num
+    if (copyTimeout) clearTimeout(copyTimeout)
+    copyTimeout = setTimeout(() => {
+      copiedSequence.value = null
+    }, 2000)
+  } catch {
+    // Fallback for non-HTTPS contexts
+    const textArea = document.createElement('textarea')
+    textArea.value = cmd.command_text
+    textArea.style.position = 'fixed'
+    textArea.style.opacity = '0'
+    document.body.appendChild(textArea)
+    textArea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textArea)
+    copiedSequence.value = cmd.sequence_num
+    if (copyTimeout) clearTimeout(copyTimeout)
+    copyTimeout = setTimeout(() => {
+      copiedSequence.value = null
+    }, 2000)
+  }
+}
 
 const filteredCommands = computed(() => {
   // Deduplicate by sequence_num (polling can re-fetch boundary commands)
@@ -637,6 +677,37 @@ onBeforeUnmount(() => {
 .command-text.clickable:hover {
   background-color: var(--color-primary-light, var(--color-bg-tertiary, rgba(0, 123, 255, 0.1)));
   color: var(--color-primary);
+}
+
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  margin-left: auto;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--transition-fast), color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.command-entry:hover .copy-btn {
+  opacity: 1;
+}
+
+.copy-btn:hover {
+  color: var(--color-primary);
+  background-color: var(--color-surface-hover);
+}
+
+.copy-btn .fa-check {
+  color: var(--color-success, #28a745);
 }
 
 @media (max-width: 768px) {
