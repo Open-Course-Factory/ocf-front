@@ -87,6 +87,7 @@ const { t } = useTranslations({
         scenarioSteps: 'Scenario Steps',
         scenarioStepHints: 'Scenario Step Hints',
         scenarioSessions: 'Scenario Sessions',
+        projectFiles: 'Project Files',
         featureFlags: 'Feature Flags',
         designSystem: 'Design System'
       }
@@ -118,6 +119,7 @@ const { t } = useTranslations({
         scenarioSteps: 'Étapes de Scénario',
         scenarioStepHints: 'Indices des Étapes',
         scenarioSessions: 'Sessions de Scénario',
+        projectFiles: 'Fichiers Projet',
         featureFlags: 'Drapeaux de Fonctionnalités',
         designSystem: 'Système de Design'
       }
@@ -226,6 +228,11 @@ const adminCategories = computed<MenuCategory[]>(() => [
         route: '/admin/scenario-sessions',
         label: t('admin.items.scenarioSessions'),
         icon: 'fas fa-play-circle'
+      },
+      {
+        route: '/admin/project-files',
+        label: t('admin.items.projectFiles'),
+        icon: 'fas fa-file-code'
       }
     ]
   },

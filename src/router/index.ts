@@ -473,6 +473,12 @@ const basicRoutes = [
         meta: { requiresAuth: true, requiresAdmin: true }
       },
       {
+        path: 'admin/project-files',
+        name: 'AdminProjectFiles',
+        component: () => import('../components/Pages/Admin/ProjectFiles.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
         path: 'admin/plan-features',
         name: 'AdminPlanFeatures',
         component: () => import('../components/Pages/PlanFeatures.vue'),
