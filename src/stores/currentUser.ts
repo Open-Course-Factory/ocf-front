@@ -206,8 +206,10 @@ export const useCurrentUserStore = defineStore('currentUser', {
                     this.userRoles = userData.user_roles;
                     console.log('🔐 Using user_roles field directly:', this.userRoles);
                 } else if (userData.roles && Array.isArray(userData.roles)) {
-                    // Roles as objects (from /users/me)
-                    this.userRoles = userData.roles.map((role: any) => role.name);
+                    // Roles may be strings (from /auth/me) or objects with .name (from /users/me)
+                    this.userRoles = userData.roles.map((role: any) =>
+                        typeof role === 'string' ? role : role.name
+                    );
                     console.log('🔐 Extracted userRoles from roles array:', this.userRoles);
                 } else {
                     console.warn('⚠️ No roles found in user data! userData:', userData);
