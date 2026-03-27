@@ -147,7 +147,7 @@
       </template>
       <div v-if="hasRequiredFields" class="required-legend">{{ t('entityModal.requiredLegend') }}</div>
       <div v-if="entityStore.subEntitiesStores.size > 0" v-for="[name, store] of entityStore.subEntitiesStores" class="form-group">
-        <template v-if="entityStore.fieldList.get(name).toBeSet">
+        <template v-if="entityStore.fieldList.get(name)?.toBeSet">
           <label :for="name">{{ name }}</label>
           <v-autocomplete
             label="Autocomplete"
