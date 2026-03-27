@@ -33,7 +33,7 @@ export const useProjectFilesStore = defineStore('project-files', () => {
         en: {
             projectFiles: {
                 pageTitle: 'Project Files',
-                filename: 'Filename',
+                name: 'Name',
                 relPath: 'Relative Path',
                 contentType: 'Content Type',
                 content: 'Content',
@@ -49,7 +49,7 @@ export const useProjectFilesStore = defineStore('project-files', () => {
         fr: {
             projectFiles: {
                 pageTitle: 'Fichiers Projet',
-                filename: 'Nom du fichier',
+                name: 'Nom',
                 relPath: 'Chemin relatif',
                 contentType: 'Type de contenu',
                 content: 'Contenu',
@@ -66,7 +66,7 @@ export const useProjectFilesStore = defineStore('project-files', () => {
 
     const fieldList = computed(() => buildFieldList([
         field('id').hidden().readonly(),
-        field('filename', t('projectFiles.filename')).input().visible().creatable().updatable().required(),
+        field('name', t('projectFiles.name')).input().visible().creatable().updatable().required(),
         field('rel_path', t('projectFiles.relPath')).input().visible().creatable().updatable(),
         field('content_type', t('projectFiles.contentType')).select().visible().creatable().updatable().required().withOptions([
             { value: 'script', text: t('projectFiles.typeScript') },

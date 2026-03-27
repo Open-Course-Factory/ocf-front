@@ -24,6 +24,7 @@ import { computed } from 'vue'
 import { useBaseStore } from "./baseStore"
 import { useScenariosStore } from "./scenarios"
 import { useScenarioStepHintsStore } from "./scenarioStepHints"
+import { useProjectFilesStore } from "./projectFiles"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
 
@@ -76,7 +77,15 @@ export const useScenarioStepsStore = defineStore('scenario-steps', () => {
         }
     })
 
-    base.parentEntitiesStores = new Map([["scenario_id", useScenariosStore()]])
+    const projectFilesStore = useProjectFilesStore()
+    base.parentEntitiesStores = new Map<string, any>([
+        ["scenario_id", useScenariosStore()],
+        ["verify_script_id", projectFilesStore],
+        ["background_script_id", projectFilesStore],
+        ["foreground_script_id", projectFilesStore],
+        ["text_file_id", projectFilesStore],
+        ["hint_file_id", projectFilesStore],
+    ])
     base.subEntitiesStores = new Map<string, any>([
         ["scenarioStepHints", useScenarioStepHintsStore()],
     ])
@@ -86,16 +95,16 @@ export const useScenarioStepsStore = defineStore('scenario-steps', () => {
         field('scenario_id', t('scenarioSteps.scenarioId')).type('multi-select').visible().creatable().required(),
         field('order', t('scenarioSteps.order')).input().visible().creatable().updatable().required(),
         field('title', t('scenarioSteps.title')).input().visible().creatable().updatable().required(),
-        field('text_content', t('scenarioSteps.textContent')).textarea().visible().creatable().updatable(),
-        field('hint_content', t('scenarioSteps.hintContent')).textarea().visible().creatable().updatable(),
-        field('verify_script', t('scenarioSteps.verifyScript')).textarea().visible().creatable().updatable(),
-        field('background_script', t('scenarioSteps.backgroundScript')).textarea().visible().creatable().updatable(),
-        field('foreground_script', t('scenarioSteps.foregroundScript')).textarea().visible().creatable().updatable(),
-        field('verify_script_id', t('scenarioSteps.verifyScriptId')).input().visible().creatable().updatable(),
-        field('background_script_id', t('scenarioSteps.backgroundScriptId')).input().visible().creatable().updatable(),
-        field('foreground_script_id', t('scenarioSteps.foregroundScriptId')).input().visible().creatable().updatable(),
-        field('text_file_id', t('scenarioSteps.textFileId')).input().visible().creatable().updatable(),
-        field('hint_file_id', t('scenarioSteps.hintFileId')).input().visible().creatable().updatable(),
+        field('text_file_id', t('scenarioSteps.textFileId')).type('multi-select').visible().creatable().updatable(),
+        field('hint_file_id', t('scenarioSteps.hintFileId')).type('multi-select').visible().creatable().updatable(),
+        field('verify_script_id', t('scenarioSteps.verifyScriptId')).type('multi-select').visible().creatable().updatable(),
+        field('background_script_id', t('scenarioSteps.backgroundScriptId')).type('multi-select').visible().creatable().updatable(),
+        field('foreground_script_id', t('scenarioSteps.foregroundScriptId')).type('multi-select').visible().creatable().updatable(),
+        field('text_content', t('scenarioSteps.textContent')).textarea().hidden(),
+        field('hint_content', t('scenarioSteps.hintContent')).textarea().hidden(),
+        field('verify_script', t('scenarioSteps.verifyScript')).textarea().hidden(),
+        field('background_script', t('scenarioSteps.backgroundScript')).textarea().hidden(),
+        field('foreground_script', t('scenarioSteps.foregroundScript')).textarea().hidden(),
         field('has_flag', t('scenarioSteps.hasFlag')).checkbox().visible().creatable().updatable(),
         field('flag_path', t('scenarioSteps.flagPath')).input().visible().creatable().updatable(),
         field('flag_level', t('scenarioSteps.flagLevel')).input().visible().creatable().updatable()

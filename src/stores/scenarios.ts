@@ -22,6 +22,7 @@
 import { defineStore } from "pinia"
 import { computed } from 'vue'
 import { useBaseStore } from "./baseStore"
+import { useProjectFilesStore } from "./projectFiles"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
 
@@ -110,6 +111,13 @@ export const useScenariosStore = defineStore('scenarios', () => {
         }
     })
 
+    const projectFilesStore = useProjectFilesStore()
+    base.parentEntitiesStores = new Map<string, any>([
+        ["setup_script_id", projectFilesStore],
+        ["intro_file_id", projectFilesStore],
+        ["finish_file_id", projectFilesStore],
+    ])
+
     const fieldList = computed(() => buildFieldList([
         field('id').hidden().readonly(),
         field('name', t('scenarios.name')).input().visible().creatable().required(),
@@ -140,11 +148,11 @@ export const useScenariosStore = defineStore('scenarios', () => {
         field('flags_enabled', t('scenarios.flagsEnabled')).checkbox().visible().creatable().updatable(),
         field('gsh_enabled', t('scenarios.gshEnabled')).checkbox().visible().creatable().updatable(),
         field('crash_traps', t('scenarios.crashTraps')).checkbox().visible().creatable().updatable(),
-        field('intro_text', t('scenarios.introText')).textarea().visible().creatable().updatable(),
-        field('finish_text', t('scenarios.finishText')).textarea().visible().creatable().updatable(),
-        field('setup_script_id', t('scenarios.setupScriptId')).input().visible().creatable().updatable(),
-        field('intro_file_id', t('scenarios.introFileId')).input().visible().creatable().updatable(),
-        field('finish_file_id', t('scenarios.finishFileId')).input().visible().creatable().updatable(),
+        field('setup_script_id', t('scenarios.setupScriptId')).type('multi-select').visible().creatable().updatable(),
+        field('intro_file_id', t('scenarios.introFileId')).type('multi-select').visible().creatable().updatable(),
+        field('finish_file_id', t('scenarios.finishFileId')).type('multi-select').visible().creatable().updatable(),
+        field('intro_text', t('scenarios.introText')).textarea().hidden(),
+        field('finish_text', t('scenarios.finishText')).textarea().hidden(),
         field('created_by_id', t('scenarios.createdById')).input().visible().readonly(),
         field('created_at', t('scenarios.createdAt')).input().visible().readonly(),
         field('updated_at', t('scenarios.updatedAt')).input().visible().readonly()
