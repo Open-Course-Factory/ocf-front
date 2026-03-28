@@ -88,6 +88,7 @@ const { t } = useTranslations({
       choose: 'Choose a scenario',
       none: 'No scenarios available. Ask your trainer to create one.',
       startError: 'Failed to start scenario.',
+      setupFailed: 'Environment setup failed. Please try again or contact your trainer.',
       provisioning: 'Setting up environment... This may take a few minutes.',
       loadError: 'Failed to load scenarios.',
       closePicker: 'Close',
@@ -103,6 +104,7 @@ const { t } = useTranslations({
       choose: 'Choisir un scénario',
       none: 'Aucun scénario disponible. Demandez à votre formateur d\'en créer un.',
       startError: 'Échec du démarrage du scénario.',
+      setupFailed: 'La préparation de l\'environnement a échoué. Réessayez ou contactez votre formateur.',
       provisioning: 'Préparation de l\'environnement... Cela peut prendre quelques minutes.',
       loadError: 'Échec du chargement des scénarios.',
       closePicker: 'Fermer',
@@ -182,9 +184,13 @@ async function waitForProvisioning(sessionId: string) {
     await new Promise(resolve => setTimeout(resolve, 3000))
     try {
       const info = await scenarioSessionService.getSessionInfo(sessionId)
+      if (info.status === 'setup_failed') {
+        throw new Error(t('scenarioStart.setupFailed'))
+      }
       if (info.status !== 'provisioning') return
-    } catch {
-      // Ignore transient errors, keep polling
+    } catch (err: any) {
+      if (err.message === t('scenarioStart.setupFailed')) throw err
+      // Ignore transient network errors, keep polling
     }
   }
   throw new Error('Setup timed out')
