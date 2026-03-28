@@ -10,7 +10,12 @@
 
 <template>
   <div class="scenario-start-bar">
-    <div v-if="!showPicker" class="start-prompt">
+    <div v-if="provisioningMessage" class="provisioning-prompt">
+      <i class="fas fa-cog fa-spin"></i>
+      <span>{{ provisioningMessage }}</span>
+    </div>
+
+    <div v-else-if="!showPicker" class="start-prompt">
       <i class="fas fa-flag-checkered"></i>
       <span>{{ t('scenarioStart.noActive') }}</span>
       <button class="start-btn" @click="loadAndShowPicker" :disabled="isLoading">
@@ -83,6 +88,7 @@ const { t } = useTranslations({
       choose: 'Choose a scenario',
       none: 'No scenarios available. Ask your trainer to create one.',
       startError: 'Failed to start scenario.',
+      provisioning: 'Setting up environment... This may take a few minutes.',
       loadError: 'Failed to load scenarios.',
       closePicker: 'Close',
       difficultyBeginner: 'Beginner',
@@ -97,6 +103,7 @@ const { t } = useTranslations({
       choose: 'Choisir un scénario',
       none: 'Aucun scénario disponible. Demandez à votre formateur d\'en créer un.',
       startError: 'Échec du démarrage du scénario.',
+      provisioning: 'Préparation de l\'environnement... Cela peut prendre quelques minutes.',
       loadError: 'Échec du chargement des scénarios.',
       closePicker: 'Fermer',
       difficultyBeginner: 'Débutant',
@@ -137,6 +144,8 @@ async function loadAndShowPicker() {
   }
 }
 
+const provisioningMessage = ref('')
+
 async function startScenario(scenario: any) {
   isStarting.value = true
   emit('scenario-loading', true)
@@ -144,9 +153,18 @@ async function startScenario(scenario: any) {
     const session = await scenarioSessionService.startScenario(scenario.id, {
       terminal_session_id: props.terminalSessionId
     })
+
+    // If session is provisioning, poll until setup completes
+    if (session.status === 'provisioning') {
+      provisioningMessage.value = t('scenarioStart.provisioning')
+      await waitForProvisioning(session.id)
+      provisioningMessage.value = ''
+    }
+
     emit('scenario-started', session.id)
   } catch (err: any) {
     console.error('Failed to start scenario:', err)
+    provisioningMessage.value = ''
     emit('scenario-loading', false)
     showError(
       err.response?.data?.error_message ||
@@ -157,6 +175,20 @@ async function startScenario(scenario: any) {
     isStarting.value = false
   }
 }
+
+async function waitForProvisioning(sessionId: string) {
+  const maxAttempts = 120 // 6 minutes at 3s intervals
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise(resolve => setTimeout(resolve, 3000))
+    try {
+      const info = await scenarioSessionService.getSessionInfo(sessionId)
+      if (info.status !== 'provisioning') return
+    } catch {
+      // Ignore transient errors, keep polling
+    }
+  }
+  throw new Error('Setup timed out')
+}
 </script>
 
 <style scoped>
@@ -165,6 +197,16 @@ async function startScenario(scenario: any) {
   background-color: var(--color-bg-secondary);
   border: var(--border-width-thin) solid var(--color-border-light);
   border-radius: var(--border-radius-md);
+}
+
+.provisioning-prompt {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  color: var(--color-warning);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
 }
 
 .start-prompt {

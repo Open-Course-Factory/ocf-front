@@ -32,16 +32,9 @@
       </div>
 
       <!-- Loading state -->
-      <div v-if="isLoading && !isProvisioning" class="panel-loading">
+      <div v-if="isLoading" class="panel-loading">
         <i class="fas fa-spinner fa-spin"></i>
         <span>{{ t('scenarioPanel.loading') }}</span>
-      </div>
-
-      <!-- Provisioning state (setup running in background) -->
-      <div v-else-if="isProvisioning" class="panel-provisioning">
-        <i class="fas fa-cog fa-spin"></i>
-        <span>{{ t('scenarioPanel.provisioning') }}</span>
-        <p class="provisioning-detail">{{ t('scenarioPanel.provisioningDetail') }}</p>
       </div>
 
       <!-- Error state -->
@@ -280,7 +273,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { useTranslations } from '../../composables/useTranslations'
@@ -337,8 +330,6 @@ const { t } = useTranslations({
       completed: 'Scenario Completed!',
       completedMessage: 'Congratulations! You have completed all steps.',
       loading: 'Loading scenario...',
-      provisioning: 'Setting up environment...',
-      provisioningDetail: 'Installing packages and configuring the challenge. This may take a few minutes.',
       error: 'Failed to load scenario data.',
       retry: 'Retry',
       noScenario: 'No active scenario',
@@ -388,8 +379,6 @@ const { t } = useTranslations({
       completed: 'Scénario terminé !',
       completedMessage: 'Félicitations ! Vous avez terminé toutes les étapes.',
       loading: 'Chargement du scénario...',
-      provisioning: 'Préparation de l\'environnement...',
-      provisioningDetail: 'Installation des paquets et configuration du challenge. Cela peut prendre quelques minutes.',
       error: 'Échec du chargement des données du scénario.',
       retry: 'Réessayer',
       noScenario: 'Aucun scénario actif',
@@ -420,8 +409,6 @@ const { t } = useTranslations({
 // State
 const isCollapsed = ref(false)
 const isLoading = ref(false)
-const isProvisioning = ref(false)
-let provisioningPollTimer: ReturnType<typeof setInterval> | null = null
 const loadError = ref(false)
 const isSessionCompleted = ref(false)
 const currentStep = ref<CurrentStepResponse | null>(null)
@@ -690,18 +677,6 @@ async function loadCurrentStep() {
 
   try {
     const step = await scenarioSessionService.getCurrentStep(props.scenarioSessionId)
-
-    // If environment is still being set up, start polling
-    if (step.status === 'provisioning') {
-      isProvisioning.value = true
-      isLoading.value = false
-      startProvisioningPoll()
-      return
-    }
-
-    // Setup complete — stop polling if active
-    stopProvisioningPoll()
-    isProvisioning.value = false
     currentStep.value = step
 
     // Use total_steps from backend (fixed count, not client-side tracking)
@@ -750,20 +725,6 @@ async function loadCurrentStep() {
     isLoading.value = false
     isTransitioning.value = false
     transitionPhase.value = null
-  }
-}
-
-function startProvisioningPoll() {
-  if (provisioningPollTimer) return
-  provisioningPollTimer = setInterval(() => {
-    loadCurrentStep()
-  }, 3000)
-}
-
-function stopProvisioningPoll() {
-  if (provisioningPollTimer) {
-    clearInterval(provisioningPollTimer)
-    provisioningPollTimer = null
   }
 }
 
@@ -896,10 +857,6 @@ onMounted(() => {
   if (props.scenarioSessionId) {
     loadCurrentStep()
   }
-})
-
-onBeforeUnmount(() => {
-  stopProvisioningPoll()
 })
 
 defineExpose({
@@ -1452,29 +1409,6 @@ defineExpose({
 }
 
 /* Loading, error, empty, completed states */
-.panel-provisioning {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-2xl) var(--spacing-md);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-}
-
-.panel-provisioning i {
-  color: var(--color-warning);
-  font-size: var(--font-size-2xl);
-}
-
-.provisioning-detail {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  text-align: center;
-  margin: 0;
-}
-
 .panel-loading,
 .panel-error,
 .panel-empty {
