@@ -189,6 +189,10 @@ export const useBaseStore = () => {
                     // Fallback to ID if no display name is found
                     name = value.id
                 }
+                // Append rel_path for disambiguation when present (e.g. ProjectFiles)
+                if (value.rel_path && value.rel_path !== name) {
+                    name = value.rel_path
+                }
                 res.push({ text: name, value: value.id})
             })
         }

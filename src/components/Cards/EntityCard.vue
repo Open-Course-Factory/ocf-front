@@ -384,6 +384,19 @@ function getDisplayValue(key: string, value: any) {
     if (field?.displayValue && typeof field.displayValue === 'function') {
       return field.displayValue(value);
     }
+
+    // Resolve FK fields via parentEntitiesStores (show name instead of UUID)
+    if (field?.type === 'multi-select') {
+      const parentStores = (props.entityStore as any).parentEntitiesStores;
+      if (parentStores) {
+        const parentStore = parentStores.get(key);
+        if (parentStore) {
+          const options = parentStore.selectDatas || [];
+          const match = options.find((opt: any) => opt.value === value);
+          if (match) return match.text;
+        }
+      }
+    }
   }
 
   // Auto-format based on field name patterns
