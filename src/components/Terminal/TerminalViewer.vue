@@ -937,7 +937,7 @@ defineExpose({
    ======================================== */
 .terminal-wrapper {
   flex: 1;
-  min-height: 300px;
+  min-height: 0;
   background-color: var(--terminal-bg);
   position: relative;
   border: var(--border-width-thin) solid var(--terminal-border);
@@ -974,6 +974,7 @@ defineExpose({
   border-top: var(--border-width-thin) solid var(--color-border-medium);
   margin-top: var(--spacing-md);
   border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
+  flex-shrink: 0;
 }
 
 .terminal-info {

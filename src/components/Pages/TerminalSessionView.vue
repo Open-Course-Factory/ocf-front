@@ -899,11 +899,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  /* Keep terminal visible while scenario panel scrolls */
-  position: sticky;
-  top: 0;
-  align-self: flex-start;
-  max-height: calc(100vh - 60px);
+  height: calc(100vh - 60px);
   overflow-y: auto;
 }
 

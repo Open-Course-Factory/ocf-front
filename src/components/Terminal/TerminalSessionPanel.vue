@@ -128,8 +128,8 @@ defineExpose({
 .terminal-session-panel {
   display: flex;
   flex-direction: column;
+  flex: 1;
   min-height: 0;
-  height: 100%;
 }
 
 .terminal-session-panel :deep(.card) {
