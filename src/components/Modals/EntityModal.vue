@@ -121,6 +121,23 @@
             </div>
           </div>
 
+          <!-- Multi-select (parent entity FK) -->
+          <select
+            v-else-if="field.type == 'multi-select'"
+            :id="name"
+            v-model="data[name]"
+            :class="['form-control', { 'is-invalid': errors[name] }]"
+          >
+            <option :value="null">{{ t('entityModal.selectOption') }}</option>
+            <option
+              v-for="option in getParentSelectOptions(name)"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.text }}
+            </option>
+          </select>
+
           <!-- Checkbox -->
           <div v-else-if="field.type == 'checkbox'" class="checkbox-wrapper">
             <input
@@ -247,6 +264,14 @@ const hasRequiredFields = computed(() => {
 })
 
 prepareNeededField();
+
+function getParentSelectOptions(fieldName: string): Array<{ value: string; text: string }> {
+  const parentStores = (props.entityStore as any).parentEntitiesStores;
+  if (!parentStores) return [];
+  const store = parentStores.get(fieldName);
+  if (!store) return [];
+  return store.selectDatas || store.getSelectDatas?.(store.entities) || [];
+}
 
 function isFieldRequired(field: any): boolean {
   return field.required === true;
