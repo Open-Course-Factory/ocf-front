@@ -120,9 +120,10 @@
               </div>
             </div>
 
-            <!-- Resume action for active sessions -->
-            <div v-if="session.status === 'active' && session.terminal_session_id" class="card-footer">
+            <!-- Actions for active sessions -->
+            <div v-if="session.status === 'active'" class="card-footer">
               <router-link
+                v-if="session.terminal_session_id"
                 :to="`/terminal-session/${session.terminal_session_id}`"
                 class="btn btn-sm btn-primary resume-btn"
                 @click.stop
@@ -130,6 +131,13 @@
                 <i class="fas fa-play-circle"></i>
                 {{ t('myScenarios.resume') }}
               </router-link>
+              <button
+                class="btn btn-sm btn-outline-danger abandon-btn"
+                @click.stop="handleAbandon(session)"
+              >
+                <i class="fas fa-times-circle"></i>
+                {{ t('myScenarios.abandon') }}
+              </button>
             </div>
           </div>
         </div>
@@ -161,6 +169,10 @@ const { t } = useTranslations({
       attempts: 'attempt | attempts',
       bestGrade: 'Best grade',
       resume: 'Resume',
+      abandon: 'Abandon',
+      abandonConfirm: 'Abandon this scenario session? This cannot be undone.',
+      abandonSuccess: 'Session abandoned.',
+      abandonError: 'Failed to abandon session.',
       all: 'All',
       active: 'Active',
       completed: 'Completed',
@@ -181,6 +193,10 @@ const { t } = useTranslations({
       attempts: 'tentative | tentatives',
       bestGrade: 'Meilleure note',
       resume: 'Reprendre',
+      abandon: 'Abandonner',
+      abandonConfirm: 'Abandonner cette session de scénario ? Cette action est irréversible.',
+      abandonSuccess: 'Session abandonnée.',
+      abandonError: 'Impossible d\'abandonner la session.',
       all: 'Tous',
       active: 'Actifs',
       completed: 'Terminés',
@@ -305,6 +321,16 @@ async function loadSessions() {
     loadError.value = err.response?.data?.error_message || t('myScenarios.loadError')
   } finally {
     isLoading.value = false
+  }
+}
+
+async function handleAbandon(session: MyScenarioSession) {
+  if (!confirm(t('myScenarios.abandonConfirm'))) return
+  try {
+    await scenarioSessionService.abandonSession(session.id)
+    session.status = 'abandoned'
+  } catch {
+    alert(t('myScenarios.abandonError'))
   }
 }
 
@@ -639,9 +665,13 @@ onMounted(() => {
 .card-footer {
   padding: var(--spacing-sm) var(--spacing-md);
   border-top: var(--border-width-thin) solid var(--color-border-light);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
-.resume-btn {
+.resume-btn,
+.abandon-btn {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
