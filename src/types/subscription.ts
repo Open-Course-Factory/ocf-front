@@ -179,14 +179,17 @@ export interface BulkPurchaseInput {
  */
 export interface Invoice extends BaseEntity {
   user_id: string
-  subscription_id?: string
+  user_subscription?: UserSubscription
+  stripe_invoice_id?: string
   amount: number
   currency: string
   status: 'draft' | 'open' | 'paid' | 'void' | 'uncollectible'
+  invoice_number?: string
   invoice_date?: string
   due_date?: string
   paid_at?: string
-  stripe_invoice_id?: string
+  stripe_hosted_url?: string
+  download_url?: string
 }
 
 /**
@@ -194,13 +197,14 @@ export interface Invoice extends BaseEntity {
  */
 export interface PaymentMethod extends BaseEntity {
   user_id: string
-  type: 'card' | 'bank_account' | 'paypal'
-  last4?: string
-  brand?: string
-  exp_month?: number
-  exp_year?: number
-  is_default?: boolean
   stripe_payment_method_id?: string
+  type: 'card' | 'bank_account' | 'paypal'
+  card_brand?: string
+  card_last4?: string
+  card_exp_month?: number
+  card_exp_year?: number
+  is_default?: boolean
+  is_active?: boolean
 }
 
 // Subscription API request types (moved from api.ts)
