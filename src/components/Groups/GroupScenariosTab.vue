@@ -44,6 +44,7 @@ interface ScenarioAssignment {
     name: string
     title: string
     difficulty: string
+    organization_id?: string
   }
 }
 
@@ -52,6 +53,7 @@ interface Scenario {
   name: string
   title: string
   difficulty: string
+  source?: string
 }
 
 const props = defineProps<{
@@ -139,6 +141,9 @@ const { t } = useTranslations({
       exportKillercoda: 'Export KillerCoda',
       importSuccess: 'Scenario imported successfully',
       exportError: 'Failed to export scenario',
+      orgLibrary: 'Organization Library',
+      groupScenarios: 'Group Scenarios',
+      orgScenario: 'Org',
       export: {
         name: 'Name',
         email: 'Email',
@@ -229,6 +234,9 @@ const { t } = useTranslations({
       exportKillercoda: 'Exporter KillerCoda',
       importSuccess: 'Scénario importé avec succès',
       exportError: 'Échec de l\'export du scénario',
+      orgLibrary: 'Bibliothèque de l\'organisation',
+      groupScenarios: 'Scénarios du groupe',
+      orgScenario: 'Org',
       export: {
         name: 'Nom',
         email: 'Email',
@@ -345,13 +353,20 @@ const allSelected = computed({
 })
 
 // Filtered scenarios for modal dropdown
-const filteredScenarios = () => {
+const filteredAvailableScenarios = computed(() => {
   if (!scenarioSearch.value.trim()) return availableScenarios.value
   const q = scenarioSearch.value.toLowerCase()
   return availableScenarios.value.filter(
     s => s.title.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)
   )
-}
+})
+
+const orgScenarios = computed(() =>
+  filteredAvailableScenarios.value.filter((s: any) => s.source === 'org')
+)
+const groupOnlyScenarios = computed(() =>
+  filteredAvailableScenarios.value.filter((s: any) => s.source === 'group')
+)
 
 // Load assignments
 async function loadAssignments() {
@@ -368,7 +383,7 @@ async function loadAssignments() {
 // Load available scenarios for the assign modal
 async function loadScenarios() {
   try {
-    availableScenarios.value = await teacherService.listScenarios()
+    availableScenarios.value = await teacherService.listGroupAvailableScenarios(props.groupId)
   } catch (err: any) {
     console.error('Failed to load scenarios:', err)
   }
@@ -606,6 +621,10 @@ function translateDifficulty(difficulty: string): string {
   return difficultyMap[difficulty] || difficulty
 }
 
+function isOrgScenario(assignment: ScenarioAssignment): boolean {
+  return assignment.scenario?.organization_id != null
+}
+
 function buildResultsCsv(results: ScenarioResultItem[]): string {
   const headers = [
     t('groupScenarios.export.name'),
@@ -832,6 +851,9 @@ onUnmounted(() => {
         <div class="assignment-info">
           <div class="assignment-title">
             {{ assignment.scenario?.title || assignment.scenario_id }}
+            <span v-if="isOrgScenario(assignment)" class="source-badge org-badge">
+              <i class="fas fa-building"></i> {{ t('groupScenarios.orgScenario') }}
+            </span>
           </div>
           <div class="assignment-meta">
             <span
@@ -1075,13 +1097,16 @@ onUnmounted(() => {
         />
         <select v-model="selectedScenarioId" class="form-control select-scenario">
           <option value="" disabled>{{ t('groupScenarios.selectScenario') }}</option>
-          <option
-            v-for="scenario in filteredScenarios()"
-            :key="scenario.id"
-            :value="scenario.id"
-          >
-            {{ scenario.title }} ({{ scenario.difficulty }})
-          </option>
+          <optgroup v-if="orgScenarios.length > 0" :label="t('groupScenarios.orgLibrary')">
+            <option v-for="s in orgScenarios" :key="s.id" :value="s.id">
+              {{ s.title }} ({{ translateDifficulty(s.difficulty) }})
+            </option>
+          </optgroup>
+          <optgroup v-if="groupOnlyScenarios.length > 0" :label="t('groupScenarios.groupScenarios')">
+            <option v-for="s in groupOnlyScenarios" :key="s.id" :value="s.id">
+              {{ s.title }} ({{ translateDifficulty(s.difficulty) }})
+            </option>
+          </optgroup>
         </select>
       </div>
       <div class="form-group">
@@ -1326,6 +1351,21 @@ onUnmounted(() => {
 .difficulty-advanced {
   background-color: var(--color-danger-bg);
   color: var(--color-danger-text);
+}
+
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.org-badge {
+  background: var(--color-info-bg, rgba(59, 130, 246, 0.1));
+  color: var(--color-info, #3b82f6);
 }
 
 .deadline-text {

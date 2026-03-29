@@ -109,6 +109,14 @@
             {{ t('organizations.groups') }}
           </button>
           <button
+            v-if="canManage"
+            :class="['tab', { active: activeTab === 'scenarios' }]"
+            @click="changeTab('scenarios')"
+          >
+            <i class="fas fa-flask"></i>
+            {{ t('organizations.scenarios') }}
+          </button>
+          <button
             :class="['tab', { active: activeTab === 'subscription' }]"
             @click="changeTab('subscription')"
           >
@@ -147,6 +155,14 @@
               :organization-id="organizationId"
               :can-manage="canManage"
               :max-groups="organization?.max_groups || 20"
+            />
+          </div>
+
+          <!-- Scenarios Tab -->
+          <div v-if="activeTab === 'scenarios' && canManage" class="tab-panel">
+            <OrganizationScenariosTab
+              :organization-id="organizationId"
+              :can-manage="canManage"
             />
           </div>
 
@@ -197,6 +213,7 @@ import {
   OrganizationOverviewTab,
   OrganizationSettingsTab
 } from '../Organizations'
+import OrganizationScenariosTab from '../Organizations/OrganizationScenariosTab.vue'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { usePermissionsStore } from '../../stores/permissions'
 import { useTranslations } from '../../composables/useTranslations'
@@ -230,6 +247,7 @@ const { t } = useTranslations({
       back: 'Back',
       overview: 'Overview',
       subscription: 'Subscription',
+      scenarios: 'Scenarios',
       settings: 'Settings',
       notFound: 'Organization not found',
     }
@@ -247,6 +265,7 @@ const { t } = useTranslations({
       back: 'Retour',
       overview: 'Aperçu',
       subscription: 'Abonnement',
+      scenarios: 'Scénarios',
       settings: 'Paramètres',
       notFound: 'Organisation introuvable',
     }
