@@ -283,7 +283,7 @@
 
 <script setup lang="ts">
 import axios from 'axios';
-import { ref, onBeforeMount, computed, reactive, watch } from 'vue';
+import { ref, onBeforeMount, computed, reactive, watch, nextTick } from 'vue';
 import EntityModal from '../Modals/EntityModal.vue';
 import EntityCard from '../Cards/EntityCard.vue';
 import EntityListSkeleton from '../Generic/EntityListSkeleton.vue';
@@ -493,9 +493,10 @@ function handleEntityClick(entity: any) {
 function applyFilters() {
   // Reset to first page when filters change
   resetPagination();
-  // Update URL with new filters
+  // Update URL — this triggers the route watcher which calls loadEntities()
+  // Do NOT call loadEntities() here to avoid a double-load race condition
   updateURL();
-  // Reload data from server with filters
+  // Load immediately (updateURL sets isUpdatingURL=true so the route watcher won't double-fire)
   loadEntities();
 }
 
@@ -504,9 +505,9 @@ function clearFilters() {
   Object.keys(activeFilters).forEach(key => {
     activeFilters[key] = '';
   });
-  // Reset to first page and reload data
+  // Reset to first page
   resetPagination();
-  // Update URL to remove filters
+  // Update URL and load
   updateURL();
   loadEntities();
 }
@@ -746,17 +747,17 @@ function updateURL() {
     query
   };
 
-  if (isPageChange && query.page) {
-    // Pagination changes create new history entries
-    router.push(routeUpdate).finally(() => {
+  const routePromise = isPageChange && query.page
+    ? router.push(routeUpdate)
+    : router.replace(routeUpdate);
+
+  // Delay resetting the flag until the next tick so the route watcher
+  // sees isUpdatingURL=true and skips, preventing a double-load race.
+  routePromise.finally(() => {
+    nextTick(() => {
       isUpdatingURL.value = false;
     });
-  } else {
-    // Filter changes and resets use replace to avoid cluttering history
-    router.replace(routeUpdate).finally(() => {
-      isUpdatingURL.value = false;
-    });
-  }
+  });
 }
 
 function loadFromURL() {
