@@ -255,7 +255,7 @@ const handleGroupUpdated = async () => {
 // Lifecycle
 onMounted(async () => {
   if (!isEnabled('class_groups')) {
-    router.push('/dashboard')
+    router.push('/terminal-sessions')
     return
   }
 

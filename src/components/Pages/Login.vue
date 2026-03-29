@@ -120,7 +120,7 @@ const currentUserStore = useCurrentUserStore();
 const settingsStore = useUserSettingsStore();
 const { setLocale } = useLocale();
 const { setTheme } = useTheme();
-const { isEnabled, refreshAfterLogin, waitForInitialization } = useFeatureFlags();
+const { refreshAfterLogin, waitForInitialization } = useFeatureFlags();
 const errorMessage = ref('');
 const showPassword = ref(false);
 const isLoading = ref(false);
@@ -173,23 +173,12 @@ async function redirect() {
         setTheme(settings.theme as 'light' | 'dark' | 'auto');
       }
 
-      // Determine redirect based on user preference and feature flags
+      // Determine redirect based on user preference and available pages
       let landingPage = settings.default_landing_page;
 
-      // If user has a landing page preference, validate it's enabled
-      if (landingPage) {
-        // Check if the landing page requires a feature that's disabled
-        if (landingPage === '/courses' && !isEnabled('course_conception')) {
-          landingPage = null; // Reset to find alternative
-        }
-        if (landingPage?.startsWith('/terminal') && !isEnabled('terminal_management')) {
-          landingPage = null; // Reset to find alternative
-        }
-      }
-
-      // If no valid landing page, find first available enabled route
-      if (!landingPage) {
-        // Priority order: terminal sessions > subscription dashboard
+      // Validate the saved landing page exists in the current available pages
+      const validPages = settingsStore.availablePages.map((p: { value: string }) => p.value);
+      if (!landingPage || !validPages.includes(landingPage)) {
         landingPage = '/terminal-sessions';
       }
 

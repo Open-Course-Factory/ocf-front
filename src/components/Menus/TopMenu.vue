@@ -180,7 +180,7 @@ import { useTranslations } from '../../composables/useTranslations';
 import { useCurrentUserStore } from '../../stores/currentUser.ts';
 import { useUserSettingsStore } from '../../stores/userSettings.ts';
 import { useOrganizationsStore } from '../../stores/organizations.ts';
-import { useFeatureFlags } from '../../composables/useFeatureFlags';
+
 import { useAdminViewMode } from '../../composables/useAdminViewMode';
 import { useVersionInfo } from '../../composables/useVersionInfo';
 import AlphaBadge from '../Common/AlphaBadge.vue';
@@ -243,7 +243,7 @@ const router = useRouter();
 const currentUser = useCurrentUserStore();
 const settingsStore = useUserSettingsStore();
 const organizationsStore = useOrganizationsStore();
-const { isEnabled } = useFeatureFlags();
+
 const { isAdmin, viewAsStandardUser, toggleViewMode: toggleViewModeComposable, initViewMode } = useAdminViewMode();
 const { versions } = useVersionInfo();
 
@@ -299,28 +299,10 @@ async function navigateToHome() {
     const settings = await settingsStore.loadSettings();
     let landingPage = settings.default_landing_page;
 
-    // If user has a landing page preference, validate it's enabled
-    if (landingPage) {
-      // Check if the landing page requires a feature that's disabled
-      if (landingPage === '/courses' && !isEnabled('course_conception')) {
-        landingPage = null; // Reset to find alternative
-      }
-      if (landingPage?.startsWith('/terminal') && !isEnabled('terminal_management')) {
-        landingPage = null; // Reset to find alternative
-      }
-    }
-
-    // If no valid landing page, find first available enabled route
-    if (!landingPage) {
-      // Priority order: dashboard > terminals > courses
-      if (isEnabled('terminal_management')) {
-        landingPage = '/subscription-dashboard';
-      } else if (isEnabled('course_conception')) {
-        landingPage = '/courses';
-      } else {
-        // Fallback to subscription dashboard (always available)
-        landingPage = '/subscription-dashboard';
-      }
+    // Validate the saved landing page exists in the current available pages
+    const validPages = settingsStore.availablePages.map((p: { value: string }) => p.value);
+    if (!landingPage || !validPages.includes(landingPage)) {
+      landingPage = '/terminal-sessions';
     }
 
     router.push(landingPage);
