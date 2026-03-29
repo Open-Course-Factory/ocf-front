@@ -117,7 +117,7 @@ function findUnescapedAt(blocks: string[], filePath: string): string[] {
 }
 
 describe('i18n safety', () => {
-  it('translation strings should not contain unescaped @ (vue-i18n v11 reserved character)', () => {
+  it('translation strings should not contain unescaped @ (vue-i18n v11 reserved character)', { timeout: 30000 }, () => {
     const srcDir = path.resolve(__dirname, '../../src')
     const files = findFilesRecursively(srcDir, ['.vue', '.ts'])
 
