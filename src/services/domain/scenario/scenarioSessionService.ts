@@ -75,6 +75,7 @@ export interface ScenarioInfo {
   finish_text?: string
   difficulty?: string
   estimated_time?: string
+  flags_enabled?: boolean
 }
 
 export const scenarioSessionService = {

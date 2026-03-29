@@ -27,7 +27,7 @@
     />
 
     <!-- Sub-panels: Command History + Validated Flags side by side -->
-    <div class="sub-panels" :class="{ 'has-flags': !!scenarioSessionId }">
+    <div class="sub-panels" :class="{ 'has-flags': scenarioSessionId && scenarioFlagsEnabled }">
       <div v-if="showHistory" class="command-history-panel">
         <CommandHistory
           :session-id="sessionInfo?.session_id"
@@ -37,7 +37,7 @@
         />
       </div>
 
-      <div v-if="scenarioSessionId" class="validated-flags-panel">
+      <div v-if="scenarioSessionId && scenarioFlagsEnabled" class="validated-flags-panel">
         <ValidatedFlags
           ref="validatedFlagsRef"
           :scenario-session-id="scenarioSessionId"
@@ -70,6 +70,7 @@ interface Props {
   isStopping?: boolean
   showHistory?: boolean
   scenarioSessionId?: string
+  scenarioFlagsEnabled?: boolean
 }
 
 withDefaults(defineProps<Props>(), {
@@ -77,7 +78,8 @@ withDefaults(defineProps<Props>(), {
   showStopButton: false,
   isStopping: false,
   showHistory: true,
-  scenarioSessionId: undefined
+  scenarioSessionId: undefined,
+  scenarioFlagsEnabled: false
 })
 
 defineEmits<{

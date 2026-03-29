@@ -91,6 +91,7 @@
             :is-active="isSessionActive"
             :is-recording="isRecording"
             :scenario-session-id="scenarioSessionId"
+            :scenario-flags-enabled="scenarioBriefing?.flags_enabled ?? false"
             show-stop-button
             :is-stopping="isStopping"
             @stop="stopSession"
