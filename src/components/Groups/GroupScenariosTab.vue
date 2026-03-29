@@ -1364,8 +1364,8 @@ onUnmounted(() => {
 }
 
 .org-badge {
-  background: var(--color-info-bg, rgba(59, 130, 246, 0.1));
-  color: var(--color-info, #3b82f6);
+  background: var(--color-info-bg);
+  color: var(--color-info);
 }
 
 .deadline-text {
