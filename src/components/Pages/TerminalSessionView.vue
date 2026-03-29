@@ -166,7 +166,7 @@
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
-import { renderKillercodaMarkdown } from '../../utils/killercodaMarkdown'
+import { renderKillercodaMarkdown, loadScenarioImages } from '../../utils/killercodaMarkdown'
 import { terminalService } from '../../services/domain/terminal'
 import { scenarioSessionService } from '../../services/domain/scenario'
 import type { ScenarioInfo } from '../../services/domain/scenario'
@@ -322,7 +322,13 @@ const renderedBriefingText = computed(() => {
 })
 
 watch(renderedBriefingText, () => {
-  nextTick(() => checkBriefingScroll())
+  nextTick(() => {
+    checkBriefingScroll()
+    // Load scenario images in briefing text
+    if (briefingContentRef.value && scenarioBriefing.value?.id) {
+      loadScenarioImages(briefingContentRef.value, scenarioBriefing.value.id)
+    }
+  })
 })
 
 function handleScenarioInfoLoaded(info: ScenarioInfo) {

@@ -273,10 +273,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
-import { renderKillercodaMarkdown } from '../../utils/killercodaMarkdown'
+import { renderKillercodaMarkdown, loadScenarioImages, revokeScenarioImageUrls } from '../../utils/killercodaMarkdown'
 import { scenarioSessionService } from '../../services/domain/scenario'
 import type { CurrentStepResponse, VerifyStepResponse, SubmitFlagResponse, ScenarioInfo } from '../../services/domain/scenario'
 
@@ -693,10 +693,17 @@ async function loadCurrentStep() {
       loadScenarioInfo()
     }
 
-    // After render, inject copy-to-clipboard buttons on code blocks
+    // After render, inject copy-to-clipboard buttons and load images
     await nextTick()
     if (stepContentRef.value) {
       addCopyButtons(stepContentRef.value)
+      // Revoke old blob URLs before loading new images to prevent memory leaks
+      revokeScenarioImageUrls()
+      // Load images from API if scenario info is available
+      if (scenarioInfo.value?.id && step.step_order !== undefined) {
+        const stepDir = `step${step.step_order + 1}`
+        loadScenarioImages(stepContentRef.value, scenarioInfo.value.id, stepDir)
+      }
     }
   } catch (err: any) {
     console.error('Failed to load scenario step:', err)
@@ -842,6 +849,10 @@ onMounted(() => {
   if (props.scenarioSessionId) {
     loadCurrentStep()
   }
+})
+
+onBeforeUnmount(() => {
+  revokeScenarioImageUrls()
 })
 
 defineExpose({
