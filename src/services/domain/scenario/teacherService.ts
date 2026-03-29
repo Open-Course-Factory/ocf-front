@@ -160,5 +160,54 @@ export const teacherService = {
       }
     })
     return response.data
+  },
+
+  // --- Organization-level scenario management ---
+
+  async orgListScenarios(orgId: string): Promise<any[]> {
+    const response = await axios.get(`/organizations/${orgId}/scenarios`)
+    return response.data?.data || response.data || []
+  },
+
+  async orgImportScenarioJSON(orgId: string, data: any): Promise<any> {
+    const response = await axios.post(`/organizations/${orgId}/scenarios/import-json`, data)
+    return response.data
+  },
+
+  async orgUploadScenario(orgId: string, file: File, onProgress?: (percent: number) => void): Promise<any> {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await axios.post(`/organizations/${orgId}/scenarios/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (e) => {
+        if (e.total && onProgress) {
+          onProgress(Math.round((e.loaded * 100) / e.total))
+        }
+      }
+    })
+    return response.data
+  },
+
+  async orgExportScenarioJSON(orgId: string, scenarioId: string): Promise<any> {
+    const response = await axios.get(`/organizations/${orgId}/scenarios/${scenarioId}/export`, { params: { format: 'json' } })
+    return response.data
+  },
+
+  async orgExportScenarioArchive(orgId: string, scenarioId: string): Promise<Blob> {
+    const response = await axios.get(`/organizations/${orgId}/scenarios/${scenarioId}/export`, {
+      params: { format: 'killerkoda' },
+      responseType: 'blob'
+    })
+    return response.data
+  },
+
+  async orgDeleteScenario(orgId: string, scenarioId: string): Promise<void> {
+    await axios.delete(`/organizations/${orgId}/scenarios/${scenarioId}`)
+  },
+
+  // Combined listing for group assign modal
+  async listGroupAvailableScenarios(groupId: string): Promise<any[]> {
+    const response = await axios.get(`/groups/${groupId}/scenarios`)
+    return response.data?.data || response.data || []
   }
 }

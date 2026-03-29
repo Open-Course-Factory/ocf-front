@@ -123,6 +123,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const props = defineProps<{
   visible: boolean
   groupId?: string
+  organizationId?: string
 }>()
 
 const emit = defineEmits<{
@@ -266,6 +267,8 @@ async function handleImport() {
     let response
     if (props.groupId) {
       response = await teacherService.groupImportScenarioJSON(props.groupId, parsedData.value)
+    } else if (props.organizationId) {
+      response = await teacherService.orgImportScenarioJSON(props.organizationId, parsedData.value)
     } else {
       response = await teacherService.importScenarioJSON(parsedData.value)
     }

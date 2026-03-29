@@ -117,6 +117,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const props = defineProps<{
   visible: boolean
   groupId?: string
+  organizationId?: string
 }>()
 
 const emit = defineEmits<{
@@ -234,9 +235,14 @@ async function handleUpload() {
 
   try {
     const onProgress = (percent: number) => { uploadProgress.value = percent }
-    const responseData = props.groupId
-      ? await teacherService.groupUploadScenario(props.groupId, selectedFile.value, onProgress)
-      : await teacherService.uploadScenario(selectedFile.value, onProgress)
+    let responseData
+    if (props.groupId) {
+      responseData = await teacherService.groupUploadScenario(props.groupId, selectedFile.value, onProgress)
+    } else if (props.organizationId) {
+      responseData = await teacherService.orgUploadScenario(props.organizationId, selectedFile.value, onProgress)
+    } else {
+      responseData = await teacherService.uploadScenario(selectedFile.value, onProgress)
+    }
 
     uploadedScenario.value = responseData
     uploadSuccess.value = true
