@@ -350,9 +350,16 @@ const parentFilters = computed(() => {
 
   // Chercher dans les entités parentes
   if ((props.entityStore as any).parentEntitiesStores) {
+    // Count how many fields reference each store — skip stores used by multiple fields
+    // (e.g., 5 file FK fields all pointing to projectFilesStore = ambiguous, not useful as filter)
+    const storeCounts = new Map<any, number>();
+    (props.entityStore as any).parentEntitiesStores.forEach((store: any) => {
+      storeCounts.set(store, (storeCounts.get(store) || 0) + 1);
+    });
+
     (props.entityStore as any).parentEntitiesStores.forEach((parentStore: any, key: string) => {
       const field = props.entityStore.fieldList.get(key);
-      if (field && parentStore && parentStore.entities && parentStore.entities.length > 0) {
+      if (field && field.display && parentStore && parentStore.entities && parentStore.entities.length > 0 && (storeCounts.get(parentStore) || 0) <= 1) {
         let filteredOptions = parentStore.selectDatas || [];
 
         // Filter options based on other active filters for related entities
