@@ -166,8 +166,7 @@
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
-import { marked } from 'marked'
-import DOMPurify from 'dompurify'
+import { renderKillercodaMarkdown } from '../../utils/killercodaMarkdown'
 import { terminalService } from '../../services/domain/terminal'
 import { scenarioSessionService } from '../../services/domain/scenario'
 import type { ScenarioInfo } from '../../services/domain/scenario'
@@ -180,12 +179,6 @@ import CommandHistory from '../Terminal/CommandHistory.vue'
 
 const route = useRoute()
 const { showSuccess, showWarning, showError: showErrorNotification, showInfo } = useNotification()
-
-// Configure marked for safe rendering
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-})
 
 const { t } = useTranslations({
   en: {
@@ -323,15 +316,9 @@ const scenarioBriefingText = computed(() =>
   scenarioBriefing.value?.intro_text || scenarioBriefing.value?.description || ''
 )
 
-// Process KillerCoda {{exec}} syntax: `command`{{exec}} → clickable inline command
-function processExecSyntax(html: string): string {
-  return html.replace(/<code>([^<]+)<\/code>\{\{exec\}\}/g, '<code class="exec-command">$1</code>')
-}
-
 const renderedBriefingText = computed(() => {
   if (!scenarioBriefingText.value) return ''
-  const html = marked.parse(scenarioBriefingText.value) as string
-  return DOMPurify.sanitize(processExecSyntax(html))
+  return renderKillercodaMarkdown(scenarioBriefingText.value)
 })
 
 watch(renderedBriefingText, () => {

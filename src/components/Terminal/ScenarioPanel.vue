@@ -274,10 +274,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
-import { marked } from 'marked'
-import DOMPurify from 'dompurify'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
+import { renderKillercodaMarkdown } from '../../utils/killercodaMarkdown'
 import { scenarioSessionService } from '../../services/domain/scenario'
 import type { CurrentStepResponse, VerifyStepResponse, SubmitFlagResponse, ScenarioInfo } from '../../services/domain/scenario'
 
@@ -296,12 +295,6 @@ const emit = defineEmits<{
   'collapsed': [collapsed: boolean]
   'flag-validated': []
 }>()
-
-// Configure marked for safe rendering
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-})
 
 const { showConfirm } = useNotification()
 
@@ -472,16 +465,10 @@ const formattedElapsedTime = computed(() => {
   return `${totalMinutes}m ${seconds}s`
 })
 
-// Process KillerCoda {{exec}} syntax: `command`{{exec}} → clickable inline command
-function processExecSyntax(html: string): string {
-  return html.replace(/<code>([^<]+)<\/code>\{\{exec\}\}/g, '<code class="exec-command">$1</code>')
-}
-
 // Rendered finish_text (markdown) for the completion screen
 const renderedFinishText = computed(() => {
   if (!scenarioInfo.value?.finish_text) return ''
-  const html = marked.parse(scenarioInfo.value.finish_text) as string
-  return DOMPurify.sanitize(processExecSyntax(html))
+  return renderKillercodaMarkdown(scenarioInfo.value.finish_text)
 })
 
 // The displayed step: either the review step or the current step
@@ -490,14 +477,12 @@ const displayedStep = computed(() => reviewingStep.value || currentStep.value)
 // Rendered markdown for the displayed step
 const renderedDisplayedStepText = computed(() => {
   if (!displayedStep.value?.text) return ''
-  const html = marked.parse(displayedStep.value.text) as string
-  return DOMPurify.sanitize(processExecSyntax(html))
+  return renderKillercodaMarkdown(displayedStep.value.text)
 })
 
 const renderedDisplayedHintText = computed(() => {
   if (!displayedStep.value?.hint) return ''
-  const html = marked.parse(displayedStep.value.hint) as string
-  return DOMPurify.sanitize(processExecSyntax(html))
+  return renderKillercodaMarkdown(displayedStep.value.hint)
 })
 
 const hasProgressiveHints = computed(() => {
@@ -505,8 +490,7 @@ const hasProgressiveHints = computed(() => {
 })
 
 function renderHintMarkdown(content: string): string {
-  const html = marked.parse(content) as string
-  return DOMPurify.sanitize(processExecSyntax(html))
+  return renderKillercodaMarkdown(content)
 }
 
 async function handleRevealNextHint() {
@@ -628,9 +612,10 @@ function addCopyButtons(container: HTMLElement) {
       }
     })
 
-    // Paste-to-terminal button (for single-line commands)
+    // Paste-to-terminal button (for single-line commands, or exec-block marked blocks)
+    const isExecBlock = pre.classList.contains('exec-block')
     const isSingleLine = !text.includes('\n')
-    if (isSingleLine && text.length > 0) {
+    if ((isSingleLine || isExecBlock) && text.length > 0) {
       const pasteBtn = document.createElement('button')
       pasteBtn.className = 'paste-terminal-btn'
       pasteBtn.type = 'button'
