@@ -537,6 +537,16 @@ async function navigateToStep(stepOrder: number) {
           }
         }
       }
+      // Load images and copy buttons after review step renders
+      await nextTick()
+      if (stepContentRef.value) {
+        addCopyButtons(stepContentRef.value)
+        revokeScenarioImageUrls()
+        if (scenarioInfo.value?.id && step.step_order !== undefined) {
+          const stepDir = `step${step.step_order + 1}`
+          loadScenarioImages(stepContentRef.value, scenarioInfo.value.id, stepDir)
+        }
+      }
     }
   } catch (err) {
     console.warn('Could not load step for review:', err)
@@ -688,23 +698,11 @@ async function loadCurrentStep() {
       isSessionCompleted.value = true
     }
 
-    // Load scenario info once (for name/description display)
+    // Load scenario info once (for name/description display and image loading)
     if (!scenarioInfo.value) {
-      loadScenarioInfo()
+      await loadScenarioInfo()
     }
 
-    // After render, inject copy-to-clipboard buttons and load images
-    await nextTick()
-    if (stepContentRef.value) {
-      addCopyButtons(stepContentRef.value)
-      // Revoke old blob URLs before loading new images to prevent memory leaks
-      revokeScenarioImageUrls()
-      // Load images from API if scenario info is available
-      if (scenarioInfo.value?.id && step.step_order !== undefined) {
-        const stepDir = `step${step.step_order + 1}`
-        loadScenarioImages(stepContentRef.value, scenarioInfo.value.id, stepDir)
-      }
-    }
   } catch (err: any) {
     console.error('Failed to load scenario step:', err)
     // If 404 or specific status, might mean session is completed
@@ -717,6 +715,18 @@ async function loadCurrentStep() {
     isLoading.value = false
     isTransitioning.value = false
     transitionPhase.value = null
+  }
+
+  // After loading spinner is hidden and step content is rendered,
+  // inject copy buttons and load images
+  await nextTick()
+  if (stepContentRef.value) {
+    addCopyButtons(stepContentRef.value)
+    revokeScenarioImageUrls()
+    if (scenarioInfo.value?.id && currentStep.value?.step_order !== undefined) {
+      const stepDir = `step${currentStep.value.step_order + 1}`
+      loadScenarioImages(stepContentRef.value, scenarioInfo.value.id, stepDir)
+    }
   }
 }
 
