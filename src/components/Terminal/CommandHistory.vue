@@ -274,9 +274,10 @@ let pollInterval: ReturnType<typeof setTimeout> | null = null
 let lastTimestamp: number | null = null
 let errorCount = 0
 let forbiddenCount = 0
-let emptyResponseCount = 0
-const MAX_POLL_INTERVAL = 30000
-const BASE_POLL_INTERVAL = 3000
+let lastCommandTime = 0
+const ACTIVE_POLL_INTERVAL = 5000
+const IDLE_POLL_INTERVAL = 30000
+const IDLE_THRESHOLD = 30000
 
 function formatTime(unixSeconds: number): string {
   try {
@@ -318,7 +319,7 @@ async function fetchHistory() {
     if (newCommands.length > 0) {
       errorCount = 0
       forbiddenCount = 0
-      emptyResponseCount = 0
+      lastCommandTime = Date.now()
 
       // Signal that recording is active (commands exist)
       if (commands.value.length === 0) {
@@ -345,8 +346,6 @@ async function fetchHistory() {
       if (lastCmd?.executed_at != null) {
         lastTimestamp = lastCmd.executed_at
       }
-    } else {
-      emptyResponseCount++
     }
   } catch (error: any) {
     if (error.response?.status === 403) {
@@ -376,11 +375,9 @@ function scrollToLatest() {
 
 function schedulePoll() {
   stopPolling()
-  // Active sessions: keep polling at base interval (user is typing)
-  // Inactive sessions: use adaptive backoff for stale data
-  const interval = props.isActive
-    ? BASE_POLL_INTERVAL
-    : Math.min(BASE_POLL_INTERVAL * (1 + emptyResponseCount), MAX_POLL_INTERVAL)
+  // Fast polling when commands arrived recently, slow heartbeat when idle
+  const isIdle = lastCommandTime > 0 && (Date.now() - lastCommandTime) > IDLE_THRESHOLD
+  const interval = isIdle ? IDLE_POLL_INTERVAL : ACTIVE_POLL_INTERVAL
   pollInterval = setTimeout(async () => {
     await fetchHistory()
     if (props.isActive && props.sessionId && !isCollapsed.value) {
@@ -392,11 +389,12 @@ function schedulePoll() {
 function startPolling() {
   if (isCollapsed.value) return
   stopPolling()
-  lastTimestamp = null
-  commands.value = []
+  // Only reset data when session changes, not on panel reopen
+  if (commands.value.length === 0) {
+    lastTimestamp = null
+  }
   errorCount = 0
   forbiddenCount = 0
-  emptyResponseCount = 0
   fetchHistory()
   schedulePoll()
 }
