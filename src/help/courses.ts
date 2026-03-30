@@ -1,0 +1,64 @@
+/*
+ * Open Course Factory - Front
+ * Copyright (C) 2023-2025 Solution Libre
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * Copyright (c) - All Rights Reserved.
+ *
+ * See the LICENSE file for more information.
+ */
+
+import type { useHelpRegistryStore } from '../stores/helpRegistry'
+
+export function registerCoursesHelp(store: ReturnType<typeof useHelpRegistryStore>) {
+  store.registerSection({
+    id: 'courses',
+    title: {
+      en: 'Courses',
+      fr: 'Cours'
+    },
+    description: {
+      en: 'Master the course creation and management system',
+      fr: 'Maitrisez le systeme de creation et gestion de cours'
+    },
+    icon: 'fas fa-graduation-cap',
+    featureFlag: 'course_conception',
+    items: [
+      {
+        route: 'courses/structure',
+        title: {
+          en: 'Course Structure',
+          fr: 'Structure des Cours'
+        },
+        description: {
+          en: 'Understanding the hierarchical organization of educational content in OCF',
+          fr: 'Comprendre l\'organisation hierarchique des contenus pedagogiques dans OCF'
+        },
+        icon: 'fas fa-sitemap'
+      },
+      {
+        route: 'courses/content',
+        title: {
+          en: 'Content Creation',
+          fr: 'Creation de Contenu'
+        },
+        description: {
+          en: 'Guide for effectively writing and structuring educational content',
+          fr: 'Guide pour rediger et structurer efficacement le contenu pedagogique'
+        },
+        icon: 'fas fa-edit'
+      }
+    ]
+  })
+}

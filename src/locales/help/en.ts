@@ -2649,7 +2649,7 @@ export const helpEn = {
           description: "Some scenarios include Capture The Flag (CTF) style challenges that test your skills in a gamified way.",
           find: {
             title: "Find the Flag",
-            description: "Instead of a Verify button, CTF steps display a <strong>flag input field</strong>. Complete the exercise and look for a flag in the format <strong>FLAG{...}</strong> somewhere in the system."
+            description: "Instead of a Verify button, CTF steps display a <strong>flag input field</strong>. Complete the exercise and look for a flag in the format <strong>FLAG{'{'} ...{'}'}</strong> somewhere in the system."
           },
           submit: {
             title: "Submit the Flag",
@@ -2808,7 +2808,7 @@ export const helpEn = {
           },
           unique: {
             title: "Unique Flags Per Learner",
-            description: "Flags are generated using <strong>HMAC-SHA256</strong> and are unique per learner — it is impossible for learners to share answers. The flag format is <strong>FLAG{'{'} 16-hex-characters{'}' }</strong>."
+            description: "Flags are generated using <strong>HMAC-SHA256</strong> and are unique per learner — it is impossible for learners to share answers. The flag format is <strong>FLAG{'{'} 16-hex-characters {'}'}</strong>."
           },
           tip: {
             title: "Tip",
@@ -2895,7 +2895,7 @@ export const helpEn = {
           token: {
             title: "Getting an Auth Token",
             description: "You need a valid JWT token. Get one by logging in via the API:",
-            command: "curl -s -X POST http://localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"your{'@'}email.com\",\"password\":\"yourpassword\"}' | python3 -c \"import json,sys; print(json.load(sys.stdin)['access_token'])\"",
+            command: "curl -s -X POST http://localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' -d '{'{'}\"email\":\"your{'@'}email.com\",\"password\":\"yourpassword\"{'}'}' | python3 -c \"import json,sys; print(json.load(sys.stdin)['access_token'])\"",
             altDescription: "Or copy it from your browser DevTools (Network tab, any API request, Authorization header)."
           },
           upsert: {

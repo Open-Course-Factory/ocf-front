@@ -99,10 +99,15 @@ import { useGroupMembersStore } from '../../stores/groupMembers.ts';
 import { useSubscriptionBatchesStore } from '../../stores/subscriptionBatches.ts';
 import { useOrganizationsStore } from '../../stores/organizations.ts';
 import { storeToRefs } from 'pinia';
-import { useHelpTranslations } from '../../composables/useHelpTranslations';
 import { useFeatureFlags } from '../../composables/useFeatureFlags';
 import { usePermissions } from '../../composables/usePermissions';
 import { useMenuCategories } from '../../composables/useMenuCategories';
+import { useHelpRegistryStore } from '../../stores/helpRegistry';
+import { useLocale } from '../../composables/useLocale';
+
+const helpStore = useHelpRegistryStore()
+const { currentLocale } = useLocale()
+const loc = (text: { en: string; fr: string }) => text[currentLocale.value as 'en' | 'fr'] || text.en
 
 // Props
 const props = defineProps<{
@@ -143,9 +148,6 @@ const hasInfrastructureAccess = computed(() => {
   const userOrgs = organizationsStore.userOrganizations
   return userOrgs.some(org => org.incus_ui_enabled)
 })
-
-// Load help translations
-const { loadHelpTranslations } = useHelpTranslations();
 
 const currentUserStore = useCurrentUserStore();
 const { t } = useI18n();
@@ -391,45 +393,17 @@ const menuCategories = computed((): MenuCategory[] => [
   },
   {
     key: 'help',
-    label: t('help.title'),
+    label: loc({ en: 'Help & Documentation', fr: 'Aide & Documentation' }),
     icon: 'fas fa-question-circle',
     allowedRoles: ['administrator', 'member'],
     featureFlag: 'help_documentation',
-    items: [
-      {
-        route: '/help',
-        label: t('help.title'),
-        title: t('help.subtitle'),
-        icon: 'fas fa-book'
-      },
-      {
-        route: '/help/terminals/getting-started',
-        label: t('help.sections.terminals.title'),
-        title: t('help.sections.terminals.description'),
-        icon: 'fas fa-terminal',
-        featureFlag: 'terminal_management'
-      },
-      {
-        route: '/help/scenarios/getting-started',
-        label: t('help.sections.scenarios.title'),
-        title: t('help.sections.scenarios.description'),
-        icon: 'fas fa-flag-checkered',
-        featureFlag: 'scenarios'
-      },
-      {
-        route: '/help/courses/structure',
-        label: t('help.sections.courses.title'),
-        title: t('help.sections.courses.description'),
-        icon: 'fas fa-graduation-cap',
-        featureFlag: 'course_conception'
-      },
-      {
-        route: '/help/account/subscription',
-        label: t('help.sections.account.title'),
-        title: t('help.sections.account.description'),
-        icon: 'fas fa-user-cog'
-      }
-    ]
+    items: helpStore.navItems.map(item => ({
+      route: item.route,
+      label: loc(item.label),
+      title: loc(item.title),
+      icon: item.icon,
+      ...(item.featureFlag ? { featureFlag: item.featureFlag } : {})
+    }))
   },
   {
     key: 'admin',
@@ -542,8 +516,6 @@ onMounted(async () => {
   // Wait for feature flags to be initialized from backend
   await waitForInitialization();
   featureFlagsReady.value = true;
-
-  await loadHelpTranslations();
 });
 </script>
 

@@ -23,10 +23,6 @@
 
 <template>
   <div class="help-article permissions-reference">
-    <div v-if="!translationsLoaded" class="loading-container">
-      <div class="spinner"></div>
-    </div>
-    <template v-else>
     <div class="help-nav">
       <router-link :to="helpMainRoute" class="back-link">
         <i class="fas fa-arrow-left"></i>
@@ -193,19 +189,18 @@
         </div>
       </template>
     </div>
-    </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
-import { useHelpTranslations } from '../../../composables/useHelpTranslations'
+import { useTranslations } from '../../../composables/useTranslations'
+import { helpEn } from '../../../locales/help/en'
+import { helpFr } from '../../../locales/help/fr'
 
-const { t } = useI18n()
-const { loadHelpTranslations } = useHelpTranslations()
+const { t } = useTranslations({ en: helpEn, fr: helpFr })
 const route = useRoute()
 
 const isPublicHelp = computed(() => route.path.startsWith('/help-public'))
@@ -236,7 +231,6 @@ interface PermissionsResponse {
   entities: any[]
 }
 
-const translationsLoaded = ref(false)
 const loading = ref(true)
 const error = ref(false)
 const categories = ref<PermissionCategory[]>([])
@@ -342,8 +336,6 @@ function formatAccessRule(access: AccessRule): string {
 }
 
 onMounted(async () => {
-  await loadHelpTranslations()
-  translationsLoaded.value = true
   await fetchPermissions()
 })
 </script>

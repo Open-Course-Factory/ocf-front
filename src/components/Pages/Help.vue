@@ -23,12 +23,6 @@
 
 <template>
   <div class="help-page">
-    <template v-if="!translationsLoaded">
-      <div class="help-loading">
-        <div class="spinner"></div>
-      </div>
-    </template>
-    <template v-else>
     <div class="back-button">
       <router-link :to="backRoute" class="btn-back">
         <i class="fas fa-arrow-left"></i>
@@ -104,30 +98,47 @@
         </a>
       </div>
     </div>
-    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { useHelpTranslations } from '../../composables/useHelpTranslations'
+import { useTranslations } from '../../composables/useTranslations'
 import { useLocale } from '../../composables/useLocale'
-import { useFeatureFlags } from '../../composables/useFeatureFlags'
+import { useHelpRegistryStore } from '../../stores/helpRegistry'
 
-const { t } = useI18n()
-const { loadHelpTranslations } = useHelpTranslations()
-const { currentLocale, supportedLocales, setLocale, getLocaleInfo } = useLocale()
-const { isEnabled } = useFeatureFlags()
-const route = useRoute()
-
-const translationsLoaded = ref(false)
-
-onMounted(async () => {
-  await loadHelpTranslations()
-  translationsLoaded.value = true
+const { t } = useTranslations({
+  en: {
+    help: {
+      title: 'Help & Documentation',
+      subtitle: 'Everything you need to get started and make the most of the platform',
+      backToHome: 'Back to home',
+      backToApp: 'Back to application',
+      contact: {
+        title: 'Need help?',
+        text: 'If you can\'t find what you\'re looking for, don\'t hesitate to contact us at'
+      }
+    }
+  },
+  fr: {
+    help: {
+      title: 'Aide & Documentation',
+      subtitle: 'Tout ce dont vous avez besoin pour commencer et tirer le meilleur parti de la plateforme',
+      backToHome: 'Retour a l\'accueil',
+      backToApp: 'Retour a l\'application',
+      contact: {
+        title: 'Besoin d\'aide ?',
+        text: 'Si vous ne trouvez pas ce que vous cherchez, n\'hesitez pas a nous contacter a'
+      }
+    }
+  }
 })
+const { currentLocale, supportedLocales, setLocale, getLocaleInfo } = useLocale()
+const route = useRoute()
+const helpStore = useHelpRegistryStore()
+
+const loc = (text: { en: string; fr: string }) => text[currentLocale.value as 'en' | 'fr'] || text.en
 
 const expandedSections = ref(new Set<string>())
 
@@ -139,183 +150,18 @@ const routePrefix = computed(() => isPublicHelp.value ? '/help-public' : '/help'
 const backRoute = computed(() => isPublicHelp.value ? '/' : '/courses')
 const backButtonText = computed(() => isPublicHelp.value ? t('help.backToHome') : t('help.backToApp'))
 
-// Feature flag mapping for help sections
-const sectionFeatureFlags: Record<string, string> = {
-  terminals: 'terminal_management',
-  scenarios: 'scenarios',
-  courses: 'course_conception',
-  // account section is always visible (no feature flag)
-}
-
-const helpSections = computed(() => {
-  const allSections = [
-    {
-      id: 'terminals',
-      title: t('help.sections.terminals.title'),
-      description: t('help.sections.terminals.description'),
-      icon: 'fas fa-terminal',
-      items: [
-        {
-          route: `${routePrefix.value}/terminals/getting-started`,
-          title: t('help.sections.terminals.gettingStarted'),
-          description: t('help.terminals.gettingStarted.intro'),
-          icon: 'fas fa-play-circle'
-        },
-        {
-          route: `${routePrefix.value}/terminals/managing-sessions`,
-          title: t('help.sections.terminals.managingSessions'),
-          description: t('help.terminals.managingSessions.intro'),
-          icon: 'fas fa-cogs'
-        },
-        {
-          route: `${routePrefix.value}/terminals/sharing`,
-          title: t('help.sections.terminals.sharing'),
-          description: t('help.terminals.sharing.intro'),
-          icon: 'fas fa-share-alt'
-        },
-        {
-          route: `${routePrefix.value}/terminals/troubleshooting`,
-          title: t('help.sections.terminals.troubleshooting'),
-          description: t('help.terminals.troubleshooting.intro'),
-          icon: 'fas fa-wrench'
-        },
-        {
-          route: `${routePrefix.value}/terminals/ssh-keys`,
-          title: t('help.sections.terminals.sshKeys'),
-          description: t('help.terminals.sshKeys.intro'),
-          icon: 'fas fa-key'
-        }
-      ]
-    },
-    {
-      id: 'scenarios',
-      title: t('help.sections.scenarios.title'),
-      description: t('help.sections.scenarios.description'),
-      icon: 'fas fa-flag-checkered',
-      items: [
-        {
-          route: `${routePrefix.value}/scenarios/getting-started`,
-          title: t('help.sections.scenarios.gettingStarted'),
-          description: t('help.scenarios.gettingStarted.intro'),
-          icon: 'fas fa-play-circle'
-        },
-        {
-          route: `${routePrefix.value}/scenarios/creation`,
-          title: t('help.sections.scenarios.creation'),
-          description: t('help.scenarios.creation.intro'),
-          icon: 'fas fa-plus-circle'
-        }
-      ]
-    },
-    {
-      id: 'courses',
-      title: t('help.sections.courses.title'),
-      description: t('help.sections.courses.description'),
-      icon: 'fas fa-graduation-cap',
-      items: [
-        {
-          route: `${routePrefix.value}/courses/structure`,
-          title: t('help.sections.courses.structure'),
-          description: t('help.courses.structure.intro'),
-          icon: 'fas fa-sitemap'
-        },
-        {
-          route: `${routePrefix.value}/courses/content`,
-          title: t('help.sections.courses.content'),
-          description: t('help.courses.content.intro'),
-          icon: 'fas fa-edit'
-        }
-      ]
-    },
-    {
-      id: 'organizations',
-      title: t('help.sections.organizations.title'),
-      description: t('help.sections.organizations.description'),
-      icon: 'fas fa-building',
-      items: [
-        {
-          route: `${routePrefix.value}/organizations/overview`,
-          title: t('help.sections.organizations.overview'),
-          description: t('help.organizations.overview.intro'),
-          icon: 'fas fa-building'
-        },
-        {
-          route: `${routePrefix.value}/groups/management`,
-          title: t('help.sections.organizations.groups'),
-          description: t('help.groups.management.intro'),
-          icon: 'fas fa-users'
-        },
-        ...(!isPublicHelp.value ? [
-          {
-            route: `${routePrefix.value}/organizations/bulk-import`,
-            title: t('help.sections.organizations.bulkImport'),
-            description: t('help.bulkImport.overview.intro'),
-            icon: 'fas fa-file-import'
-          },
-          {
-            route: `${routePrefix.value}/licenses/bulk-purchase`,
-            title: t('help.sections.organizations.bulkLicenses'),
-            description: t('help.bulkLicenses.overview.intro'),
-            icon: 'fas fa-id-badge'
-          }
-        ] : [])
-      ]
-    },
-    {
-      id: 'account',
-      title: t('help.sections.account.title'),
-      description: t('help.sections.account.description'),
-      icon: 'fas fa-user-cog',
-      items: [
-        {
-          route: `${routePrefix.value}/account/subscription`,
-          title: t('help.sections.account.subscription'),
-          description: t('help.account.subscription.intro'),
-          icon: 'fas fa-calendar-check'
-        },
-        {
-          route: `${routePrefix.value}/account/billing`,
-          title: t('help.sections.account.billing'),
-          description: t('help.account.billing.intro'),
-          icon: 'fas fa-credit-card'
-        },
-        {
-          route: `${routePrefix.value}/account/roles-and-permissions`,
-          title: t('help.sections.account.rolesAndPermissions'),
-          description: t('help.account.rolesAndPermissions.intro'),
-          icon: 'fas fa-user-shield'
-        },
-        {
-          route: `${routePrefix.value}/account/permissions-reference`,
-          title: t('help.sections.account.permissionsReference'),
-          description: t('help.account.permissionsReference.intro'),
-          icon: 'fas fa-lock'
-        },
-        {
-          route: `${routePrefix.value}/account/settings`,
-          title: t('help.sections.account.settings'),
-          description: t('help.account.settings.intro'),
-          icon: 'fas fa-cog'
-        },
-        {
-          route: `${routePrefix.value}/account/themes`,
-          title: t('help.sections.account.themes'),
-          description: t('help.account.themes.intro'),
-          icon: 'fas fa-palette'
-        }
-      ]
-    }
-  ]
-
-  // Filter sections based on feature flags
-  return allSections.filter(section => {
-    const featureFlag = sectionFeatureFlags[section.id]
-    // If no feature flag is defined for this section, always show it
-    if (!featureFlag) return true
-    // Otherwise, check if the feature flag is enabled
-    return isEnabled(featureFlag)
-  })
-})
+const helpSections = computed(() => helpStore.filteredSections.map(section => ({
+  id: section.id,
+  title: loc(section.title),
+  description: loc(section.description),
+  icon: section.icon,
+  items: section.items.map(item => ({
+    route: `${routePrefix.value}/${item.route}`,
+    title: loc(item.title),
+    description: loc(item.description),
+    icon: item.icon
+  }))
+})))
 
 function toggleSection(sectionId: string) {
   if (expandedSections.value.has(sectionId)) {
@@ -332,26 +178,6 @@ function handleLocaleChange(event: Event) {
 </script>
 
 <style scoped>
-.help-loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 200px;
-}
-
-.help-loading .spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid var(--color-border, #e0e0e0);
-  border-top-color: var(--color-primary, #3b82f6);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 .help-page {
   max-width: 1200px;
   margin: 0 auto;

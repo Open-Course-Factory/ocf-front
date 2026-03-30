@@ -2649,7 +2649,7 @@ export const helpFr = {
           description: "Certains scénarios incluent des défis de type Capture The Flag (CTF) qui testent vos compétences de manière ludique.",
           find: {
             title: "Trouver le flag",
-            description: "Au lieu d'un bouton Vérifier, les étapes CTF affichent un <strong>champ de saisie de flag</strong>. Complétez l'exercice et cherchez un flag au format <strong>FLAG{...}</strong> quelque part dans le système."
+            description: "Au lieu d'un bouton Vérifier, les étapes CTF affichent un <strong>champ de saisie de flag</strong>. Complétez l'exercice et cherchez un flag au format <strong>FLAG{'{'} ...{'}'}</strong> quelque part dans le système."
           },
           submit: {
             title: "Soumettre le flag",
@@ -2808,7 +2808,7 @@ export const helpFr = {
           },
           unique: {
             title: "Flags uniques par apprenant",
-            description: "Les flags sont générés par <strong>HMAC-SHA256</strong> et sont uniques par apprenant — il est impossible pour les apprenants de partager les réponses. Le format des flags est <strong>FLAG{'{'} 16-caractères-hexadécimaux{'}' }</strong>."
+            description: "Les flags sont générés par <strong>HMAC-SHA256</strong> et sont uniques par apprenant — il est impossible pour les apprenants de partager les réponses. Le format des flags est <strong>FLAG{'{'} 16-caractères-hexadécimaux {'}'}</strong>."
           },
           tip: {
             title: "Conseil",
@@ -2895,7 +2895,7 @@ export const helpFr = {
           token: {
             title: "Obtenir un token d'authentification",
             description: "Vous avez besoin d'un token JWT valide. Obtenez-le en vous connectant via l'API :",
-            command: "curl -s -X POST http://localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"votre{'@'}email.com\",\"password\":\"votremotdepasse\"}' | python3 -c \"import json,sys; print(json.load(sys.stdin)['access_token'])\"",
+            command: "curl -s -X POST http://localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' -d '{'{'}\"email\":\"votre{'@'}email.com\",\"password\":\"votremotdepasse\"{'}'}' | python3 -c \"import json,sys; print(json.load(sys.stdin)['access_token'])\"",
             altDescription: "Ou copiez-le depuis les DevTools de votre navigateur (onglet Network, n'importe quelle requête API, en-tête Authorization)."
           },
           upsert: {
