@@ -182,8 +182,62 @@
           </div>
         </section>
 
+        <!-- Entity CRUD Permissions -->
+        <section v-if="entities.length > 0" class="help-section entity-crud-section">
+          <h2>
+            <i class="fas fa-database"></i>
+            {{ t('help.account.permissionsReference.entityCrudTitle') }}
+          </h2>
+          <p>{{ t('help.account.permissionsReference.entityCrudDescription') }}</p>
+
+          <div class="entity-table-wrapper">
+            <table class="entity-crud-table">
+              <thead>
+                <tr>
+                  <th class="col-entity">{{ t('help.account.permissionsReference.entityColumn') }}</th>
+                  <th class="col-crud">{{ t('help.account.permissionsReference.colCreate') }}</th>
+                  <th class="col-crud">{{ t('help.account.permissionsReference.colRead') }}</th>
+                  <th class="col-crud">{{ t('help.account.permissionsReference.colUpdate') }}</th>
+                  <th class="col-crud">{{ t('help.account.permissionsReference.colDelete') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="entity in entities" :key="entity.entity">
+                  <td class="col-entity">
+                    <code class="entity-name">{{ entity.entity }}</code>
+                  </td>
+                  <td class="col-crud">
+                    <span class="access-tag" :class="getAccessClass(entity.create)">
+                      <i :class="getAccessIcon(entity.create)"></i>
+                      {{ formatAccessRule(entity.create) }}
+                    </span>
+                  </td>
+                  <td class="col-crud">
+                    <span class="access-tag" :class="getAccessClass(entity.read)">
+                      <i :class="getAccessIcon(entity.read)"></i>
+                      {{ formatAccessRule(entity.read) }}
+                    </span>
+                  </td>
+                  <td class="col-crud">
+                    <span class="access-tag" :class="getAccessClass(entity.update)">
+                      <i :class="getAccessIcon(entity.update)"></i>
+                      {{ formatAccessRule(entity.update) }}
+                    </span>
+                  </td>
+                  <td class="col-crud">
+                    <span class="access-tag" :class="getAccessClass(entity.delete)">
+                      <i :class="getAccessIcon(entity.delete)"></i>
+                      {{ formatAccessRule(entity.delete) }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
         <!-- Empty State -->
-        <div v-if="categories.length === 0 && !loading && !error" class="empty-state">
+        <div v-if="categories.length === 0 && entities.length === 0 && !loading && !error" class="empty-state">
           <i class="fas fa-folder-open"></i>
           <p>{{ t('help.account.permissionsReference.noData') }}</p>
         </div>
@@ -209,6 +263,7 @@ const helpMainRoute = computed(() => isPublicHelp.value ? '/help-public' : '/hel
 interface AccessRule {
   type: string
   entity?: string
+  field?: string
   min_role?: string
 }
 
@@ -226,14 +281,23 @@ interface PermissionCategory {
   routes: RoutePermission[]
 }
 
+interface EntityCRUDPermissions {
+  entity: string
+  create: AccessRule
+  read: AccessRule
+  update: AccessRule
+  delete: AccessRule
+}
+
 interface PermissionsResponse {
   categories: PermissionCategory[]
-  entities: any[]
+  entities: EntityCRUDPermissions[]
 }
 
 const loading = ref(true)
 const error = ref(false)
 const categories = ref<PermissionCategory[]>([])
+const entities = ref<EntityCRUDPermissions[]>([])
 const expandedCategories = ref(new Set<string>())
 
 async function fetchPermissions() {
@@ -242,6 +306,7 @@ async function fetchPermissions() {
   try {
     const response = await axios.get<PermissionsResponse>('permissions/reference')
     categories.value = response.data.categories || []
+    entities.value = response.data.entities || []
     // Expand all categories by default
     categories.value.forEach(cat => expandedCategories.value.add(cat.name))
   } catch (err) {
@@ -799,6 +864,85 @@ onMounted(async () => {
   font-size: 2.5rem;
 }
 
+/* Entity CRUD Table */
+.entity-crud-section {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--color-bg-primary);
+  padding: 1.5rem;
+}
+
+.entity-crud-section > h2 {
+  margin-bottom: 0.5rem;
+}
+
+.entity-crud-section > p {
+  margin-bottom: 1.5rem;
+}
+
+.entity-table-wrapper {
+  overflow-x: auto;
+}
+
+.entity-crud-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.entity-crud-table thead {
+  background: var(--color-bg-secondary);
+}
+
+.entity-crud-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.entity-crud-table tbody tr {
+  border-bottom: 1px solid var(--color-border-light, var(--color-border));
+  transition: background 0.15s ease;
+}
+
+.entity-crud-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.entity-crud-table tbody tr:hover {
+  background: var(--color-bg-secondary);
+}
+
+.entity-crud-table td {
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+  vertical-align: middle;
+}
+
+.col-entity {
+  min-width: 160px;
+}
+
+.col-crud {
+  min-width: 130px;
+}
+
+.entity-name {
+  font-family: monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text-primary);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .help-article {
@@ -829,6 +973,24 @@ onMounted(async () => {
 
   .col-path {
     min-width: 180px;
+  }
+
+  .entity-crud-section {
+    padding: 1rem;
+  }
+
+  .entity-crud-table th,
+  .entity-crud-table td {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .col-entity {
+    min-width: 120px;
+  }
+
+  .col-crud {
+    min-width: 100px;
   }
 }
 </style>

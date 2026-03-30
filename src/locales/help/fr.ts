@@ -2058,7 +2058,14 @@ export const helpFr = {
         colMethod: "Méthode",
         colPath: "Chemin",
         colCasbinRole: "Rôle",
-        colAccessRule: "Règle d'accès"
+        colAccessRule: "Règle d'accès",
+        entityCrudTitle: "Permissions CRUD des entités",
+        entityCrudDescription: "Règles d'accès pour les opérations standard Créer, Lire, Modifier, Supprimer sur chaque entité. Appliquées par le framework de gestion d'entités.",
+        entityColumn: "Entité",
+        colCreate: "Créer",
+        colRead: "Lire",
+        colUpdate: "Modifier",
+        colDelete: "Supprimer"
       },
 
       settings: {

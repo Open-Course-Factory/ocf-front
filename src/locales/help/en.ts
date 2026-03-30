@@ -2058,7 +2058,14 @@ export const helpEn = {
         colMethod: "Method",
         colPath: "Path",
         colCasbinRole: "Role",
-        colAccessRule: "Access Rule"
+        colAccessRule: "Access Rule",
+        entityCrudTitle: "Entity CRUD Permissions",
+        entityCrudDescription: "Access rules for standard Create, Read, Update, Delete operations on each entity. These are enforced by the entity management framework.",
+        entityColumn: "Entity",
+        colCreate: "Create",
+        colRead: "Read",
+        colUpdate: "Update",
+        colDelete: "Delete"
       },
 
       settings: {
