@@ -23,6 +23,12 @@
 
 <template>
   <div class="help-page">
+    <template v-if="!translationsLoaded">
+      <div class="help-loading">
+        <div class="spinner"></div>
+      </div>
+    </template>
+    <template v-else>
     <div class="back-button">
       <router-link :to="backRoute" class="btn-back">
         <i class="fas fa-arrow-left"></i>
@@ -98,6 +104,7 @@
         </a>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
@@ -115,8 +122,11 @@ const { currentLocale, supportedLocales, setLocale, getLocaleInfo } = useLocale(
 const { isEnabled } = useFeatureFlags()
 const route = useRoute()
 
+const translationsLoaded = ref(false)
+
 onMounted(async () => {
   await loadHelpTranslations()
+  translationsLoaded.value = true
 })
 
 const expandedSections = ref(new Set<string>())
@@ -322,6 +332,26 @@ function handleLocaleChange(event: Event) {
 </script>
 
 <style scoped>
+.help-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.help-loading .spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border, #e0e0e0);
+  border-top-color: var(--color-primary, #3b82f6);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .help-page {
   max-width: 1200px;
   margin: 0 auto;

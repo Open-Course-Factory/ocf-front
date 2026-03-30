@@ -23,6 +23,10 @@
 
 <template>
   <div class="help-article permissions-reference">
+    <div v-if="!translationsLoaded" class="loading-container">
+      <div class="spinner"></div>
+    </div>
+    <template v-else>
     <div class="help-nav">
       <router-link :to="helpMainRoute" class="back-link">
         <i class="fas fa-arrow-left"></i>
@@ -189,6 +193,7 @@
         </div>
       </template>
     </div>
+    </template>
   </div>
 </template>
 
@@ -231,6 +236,7 @@ interface PermissionsResponse {
   entities: any[]
 }
 
+const translationsLoaded = ref(false)
 const loading = ref(true)
 const error = ref(false)
 const categories = ref<PermissionCategory[]>([])
@@ -337,6 +343,7 @@ function formatAccessRule(access: AccessRule): string {
 
 onMounted(async () => {
   await loadHelpTranslations()
+  translationsLoaded.value = true
   await fetchPermissions()
 })
 </script>
