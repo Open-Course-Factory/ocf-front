@@ -276,6 +276,12 @@ const helpSections = computed(() => {
           icon: 'fas fa-user-shield'
         },
         {
+          route: `${routePrefix.value}/account/permissions-reference`,
+          title: t('help.sections.account.permissionsReference'),
+          description: t('help.account.permissionsReference.intro'),
+          icon: 'fas fa-lock'
+        },
+        {
           route: `${routePrefix.value}/account/settings`,
           title: t('help.sections.account.settings'),
           description: t('help.account.settings.intro'),

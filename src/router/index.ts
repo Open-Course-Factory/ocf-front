@@ -171,6 +171,12 @@ const basicRoutes = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/help-public/account/permissions-reference',
+    name: 'HelpPublicPermissionsReference',
+    component: () => import('../components/Pages/Help/PermissionsReference.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/help-public/account/settings',
     name: 'HelpPublicAccountSettings',
     component: () => import('../components/Pages/Help/SettingsPreferences.vue'),
@@ -321,6 +327,7 @@ const basicRoutes = [
 
       // Help Routes
       { path: 'help/account/roles-and-permissions', name: 'HelpRolesAndPermissions', component: () => import('../components/Pages/Help/RolesAndPermissions.vue'), meta: { requiresAuth: true } },
+      { path: 'help/account/permissions-reference', name: 'HelpPermissionsReference', component: () => import('../components/Pages/Help/PermissionsReference.vue'), meta: { requiresAuth: true } },
 
       // Bulk License Management Routes
       {
