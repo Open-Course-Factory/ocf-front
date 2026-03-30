@@ -47,8 +47,17 @@ export interface HelpSection {
 export const useHelpRegistryStore = defineStore('helpRegistry', () => {
   const sections = ref<HelpSection[]>([])
 
+  function clearSections() {
+    sections.value = []
+  }
+
   function registerSection(section: HelpSection) {
-    sections.value.push(section)
+    const existing = sections.value.findIndex(s => s.id === section.id)
+    if (existing !== -1) {
+      sections.value[existing] = section
+    } else {
+      sections.value.push(section)
+    }
   }
 
   const filteredSections = computed(() => {
@@ -86,6 +95,7 @@ export const useHelpRegistryStore = defineStore('helpRegistry', () => {
 
   return {
     sections,
+    clearSections,
     registerSection,
     filteredSections,
     navItems

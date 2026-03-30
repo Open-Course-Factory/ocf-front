@@ -29,6 +29,7 @@ import { registerPermissionsHelp } from './permissions'
 
 export function registerAllHelp() {
   const store = useHelpRegistryStore()
+  store.clearSections() // Idempotent: clear before re-registering (needed for Vite HMR)
   registerTerminalsHelp(store)
   registerScenariosHelp(store)
   registerCoursesHelp(store)
