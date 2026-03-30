@@ -363,6 +363,14 @@ function handleBriefingExecClick(event: MouseEvent) {
       handlePasteCommand(command)
     }
   }
+  if (target.classList.contains('copy-command')) {
+    const text = target.textContent?.trim()
+    if (text) {
+      navigator.clipboard.writeText(text)
+      target.classList.add('copied')
+      setTimeout(() => target.classList.remove('copied'), 1500)
+    }
+  }
 }
 
 // Allow manual override via query parameter for testing

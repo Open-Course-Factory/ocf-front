@@ -25,6 +25,8 @@ export function preprocessKillercodaMarkdown(markdown: string): string {
 export function processExecSyntax(html: string): string {
   // Inline code: `command`{{exec}} or `command`{{execute}} → clickable command
   html = html.replace(/<code>([^<]+)<\/code>\{\{exec(ute)?\}\}/g, '<code class="exec-command">$1</code>')
+  // Inline code: `text`{{copy}} → click-to-copy
+  html = html.replace(/<code>([^<]+)<\/code>\{\{copy\}\}/g, '<code class="copy-command">$1</code>')
   // Fenced code blocks: ```{{exec}} → paste-to-terminal block
   html = html.replace(/<pre><code([^>]*)>([\s\S]*?)<\/code><\/pre>\s*<!--\s*EXEC_BLOCK\s*-->/g,
     '<pre class="exec-block"><code$1>$2</code></pre>')

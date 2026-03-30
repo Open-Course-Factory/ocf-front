@@ -66,6 +66,19 @@ describe('processExecSyntax', () => {
       expect(result).toBe('<p><code class="exec-command">plan</code> and <code class="exec-command">apply</code></p>')
     })
 
+    it('converts inline `text`{{copy}} to copy-command class', () => {
+      const input = '<p>alias <code>k8s</code>{{copy}}</p>'
+      const result = processExecSyntax(input)
+      expect(result).toBe('<p>alias <code class="copy-command">k8s</code></p>')
+    })
+
+    it('handles mixed exec and copy inline markers', () => {
+      const input = '<p><code>cmd</code>{{exec}} and <code>text</code>{{copy}}</p>'
+      const result = processExecSyntax(input)
+      expect(result).toContain('<code class="exec-command">cmd</code>')
+      expect(result).toContain('<code class="copy-command">text</code>')
+    })
+
     it('leaves regular inline code unchanged', () => {
       const input = '<p>Use <code>tofu plan</code> to preview.</p>'
       const result = processExecSyntax(input)

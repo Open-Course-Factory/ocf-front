@@ -588,6 +588,14 @@ function handleExecClick(event: MouseEvent) {
       emit('paste-command', command)
     }
   }
+  if (target.classList.contains('copy-command')) {
+    const text = target.textContent?.trim()
+    if (text) {
+      navigator.clipboard.writeText(text)
+      target.classList.add('copied')
+      setTimeout(() => target.classList.remove('copied'), 1500)
+    }
+  }
 }
 
 // Add copy-to-clipboard and paste-to-terminal buttons to <pre><code> blocks
@@ -1713,6 +1721,21 @@ defineExpose({
 .markdown-content :deep(.exec-command:hover) {
   background-color: var(--color-primary-light, rgba(0, 123, 255, 0.15));
   color: var(--color-primary);
+}
+
+.markdown-content :deep(.copy-command) {
+  cursor: pointer;
+  border-bottom: 1px dashed var(--color-text-secondary);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.markdown-content :deep(.copy-command:hover) {
+  background-color: var(--color-bg-tertiary, rgba(0, 0, 0, 0.15));
+}
+
+.markdown-content :deep(.copy-command.copied) {
+  background-color: var(--color-success-light, rgba(40, 167, 69, 0.15));
+  border-color: var(--color-success, #28a745);
 }
 
 .markdown-content :deep(p code),
