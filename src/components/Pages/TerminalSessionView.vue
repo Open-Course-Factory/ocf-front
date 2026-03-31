@@ -142,10 +142,7 @@
     </template>
 
     <!-- Full-screen provisioning overlay (shared with ScenarioLauncher) -->
-    <ScenarioProvisioningOverlay
-      v-if="scenarioLoading"
-      fixed
-    />
+    <ScenarioProvisioningOverlay v-if="scenarioLoading" />
   </div>
 </template>
 
@@ -614,6 +611,8 @@ onBeforeUnmount(() => {
 .terminal-session-view {
   max-width: 100%;
   margin: 0 auto;
+  position: relative;
+  min-height: 300px;
 }
 
 .loading-section {

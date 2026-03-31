@@ -139,10 +139,7 @@
     </div>
 
     <!-- Provisioning overlay -->
-    <ScenarioProvisioningOverlay
-      v-if="provisioningMessage"
-      fixed
-    />
+    <ScenarioProvisioningOverlay v-if="provisioningMessage" />
   </div>
 </template>
 

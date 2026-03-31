@@ -9,7 +9,7 @@
 -->
 
 <template>
-  <div class="provisioning-overlay" :class="{ 'provisioning-overlay--fixed': fixed }">
+  <div class="provisioning-overlay">
     <div class="provisioning-content">
       <div class="provisioning-icon">
         <i v-if="!ready" class="fas fa-cog fa-spin"></i>
@@ -27,12 +27,10 @@ import { useTranslations } from '../../composables/useTranslations'
 
 interface Props {
   ready?: boolean
-  fixed?: boolean
 }
 
 withDefaults(defineProps<Props>(), {
-  ready: false,
-  fixed: false
+  ready: false
 })
 
 const { t } = useTranslations({
@@ -66,12 +64,6 @@ const { t } = useTranslations({
   justify-content: center;
   background-color: var(--color-bg-primary);
   border-radius: var(--border-radius-lg);
-}
-
-.provisioning-overlay--fixed {
-  position: fixed;
-  z-index: 1000;
-  border-radius: 0;
 }
 
 .provisioning-content {
