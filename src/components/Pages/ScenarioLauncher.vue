@@ -38,7 +38,10 @@
         :class="{ 'scenario-card--unavailable': !scenario.launchable && !getExistingSession(scenario), 'scenario-card--active': !!getExistingSession(scenario) }"
       >
         <div class="card-header">
-          <h3 class="card-title">{{ scenario.title }}</h3>
+          <div class="card-title-row">
+            <h3 class="card-title">{{ scenario.title }}</h3>
+            <AdminBadge v-if="scenario.admin_only" icon-only />
+          </div>
           <span v-if="scenario.difficulty" class="difficulty-badge" :class="'difficulty-' + scenario.difficulty">
             {{ translateDifficulty(scenario.difficulty) }}
           </span>
@@ -155,6 +158,7 @@ import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import type { InstanceType } from '../../types'
+import AdminBadge from '../Common/AdminBadge.vue'
 
 const router = useRouter()
 const { showError } = useNotification()
@@ -487,6 +491,13 @@ onMounted(loadScenarios)
   padding: var(--spacing-md);
   background: var(--color-bg-secondary);
   border-bottom: var(--border-width-thin) solid var(--color-border-light);
+}
+
+.card-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-width: 0;
 }
 
 .card-title {
