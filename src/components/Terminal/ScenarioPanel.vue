@@ -31,6 +31,12 @@
         </h3>
       </div>
 
+      <!-- Review mode banner -->
+      <div v-if="isReviewMode" class="review-mode-banner">
+        <i :class="props.sessionStatus === 'completed' ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+        <span>{{ props.sessionStatus === 'completed' ? t('scenarioPanel.sessionCompleted') : t('scenarioPanel.sessionAbandoned') }}</span>
+      </div>
+
       <!-- Loading state -->
       <div v-if="isLoading" class="panel-loading">
         <i class="fas fa-spinner fa-spin"></i>
@@ -196,8 +202,8 @@
             <div v-if="showHint" class="hint-content markdown-content" v-html="renderedDisplayedHintText"></div>
           </div>
 
-          <!-- Verify button (hidden when reviewing previous steps) -->
-          <template v-if="!reviewingStep">
+          <!-- Verify button (hidden when reviewing previous steps or in review mode) -->
+          <template v-if="!reviewingStep && !isReviewMode">
           <button
             v-if="!currentStep.has_flag"
             class="verify-btn"
@@ -250,8 +256,8 @@
           </template>
         </div>
 
-        <!-- Session actions (hidden when reviewing previous steps) -->
-        <div v-if="!reviewingStep" class="session-actions">
+        <!-- Session actions (hidden when reviewing previous steps or in review mode) -->
+        <div v-if="!reviewingStep && !isReviewMode" class="session-actions">
           <button
             class="abandon-btn"
             :disabled="!isActive"
@@ -283,9 +289,12 @@ import type { CurrentStepResponse, VerifyStepResponse, SubmitFlagResponse, Scena
 interface Props {
   scenarioSessionId: string
   isActive: boolean
+  sessionStatus?: string | null
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  sessionStatus: null
+})
 
 const emit = defineEmits<{
   'session-completed': []
@@ -295,6 +304,10 @@ const emit = defineEmits<{
   'collapsed': [collapsed: boolean]
   'flag-validated': []
 }>()
+
+const isReviewMode = computed(() =>
+  props.sessionStatus === 'completed' || props.sessionStatus === 'abandoned'
+)
 
 const { showConfirm } = useNotification()
 
@@ -345,7 +358,9 @@ const { t } = useTranslations({
       revealNextHint: 'Show Hint {level}',
       revealingHint: 'Loading...',
       allHintsRevealed: 'All hints used',
-      hintTransparency: 'Your instructor can see how many hints you use.'
+      hintTransparency: 'Your instructor can see how many hints you use.',
+      sessionCompleted: 'Scenario Completed',
+      sessionAbandoned: 'Scenario Abandoned'
     }
   },
   fr: {
@@ -394,7 +409,9 @@ const { t } = useTranslations({
       revealNextHint: 'Révéler l\'indice {level}',
       revealingHint: 'Chargement...',
       allHintsRevealed: 'Tous les indices utilisés',
-      hintTransparency: 'Votre formateur peut voir combien d\'indices vous utilisez.'
+      hintTransparency: 'Votre formateur peut voir combien d\'indices vous utilisez.',
+      sessionCompleted: 'Scénario terminé',
+      sessionAbandoned: 'Scénario abandonné'
     }
   }
 })
@@ -963,6 +980,26 @@ defineExpose({
 .panel-title i {
   color: var(--color-primary);
   font-size: var(--font-size-sm);
+}
+
+/* Review mode banner */
+.review-mode-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-bg-secondary);
+  border-bottom: var(--border-width-thin) solid var(--color-border-light);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.review-mode-banner .fa-check-circle {
+  color: var(--color-success);
+}
+
+.review-mode-banner .fa-times-circle {
+  color: var(--color-danger);
 }
 
 /* Progress bar wrapper */

@@ -50,6 +50,7 @@ export interface ScenarioSessionInfo {
   started_at: string
   completed_at?: string
   terminal_session_id?: string
+  grade?: number
 }
 
 export interface MyScenarioSession {
@@ -93,6 +94,18 @@ export const scenarioSessionService = {
   async listScenarios(): Promise<any[]> {
     const response = await axios.get('/scenario-sessions/available')
     return response.data?.data || response.data || []
+  },
+
+  async launchScenario(scenarioId: string, options?: { backend?: string }): Promise<{
+    terminal_session_id: string
+    scenario_session_id: string
+    status: string
+  }> {
+    const response = await axios.post('/scenario-sessions/launch', {
+      scenario_id: scenarioId,
+      ...options
+    }, { timeout: 180000 })
+    return response.data
   },
 
   async getCurrentStep(sessionId: string): Promise<CurrentStepResponse> {

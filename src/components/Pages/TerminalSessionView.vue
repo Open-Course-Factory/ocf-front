@@ -74,8 +74,8 @@
         </div>
       </div>
 
-      <!-- Terminal + Scenario Panel layout (active session with scenario) -->
-      <div v-if="isSessionActive && scenarioSessionId" class="terminal-session-layout" :class="{ resizing: isPanelResizing }">
+      <!-- Terminal + Scenario Panel layout (active session with scenario, or review mode) -->
+      <div v-if="scenarioSessionId" class="terminal-session-layout" :class="{ resizing: isPanelResizing }">
         <div class="terminal-main-area" style="position: relative;">
           <!-- Loading overlay (covers terminal during scenario setup) -->
           <div v-if="scenarioLoading" class="scenario-loading-overlay">
@@ -107,6 +107,7 @@
           ref="scenarioPanelRef"
           :scenario-session-id="scenarioSessionId"
           :is-active="isSessionActive"
+          :session-status="scenarioSessionStatus"
           :style="scenarioPanelCollapsed ? undefined : scenarioPanelStyle"
           @session-completed="handleScenarioCompleted"
           @session-abandoned="handleScenarioAbandoned"
@@ -338,6 +339,7 @@ function handleScenarioInfoLoaded(info: ScenarioInfo) {
 
 // Scenario session ID: auto-detected from terminal, or manual override via query parameter
 const scenarioSessionId = ref<string | null>(null)
+const scenarioSessionStatus = ref<string | null>(null)
 const scenarioTerminalRef = ref<InstanceType<typeof TerminalSessionPanel> | null>(null)
 const standaloneTerminalRef = ref<InstanceType<typeof TerminalSessionPanel> | null>(null)
 const scenarioPanelRef = ref<InstanceType<typeof ScenarioPanel> | null>(null)
@@ -392,6 +394,7 @@ function startScenarioSync() {
       const scenarioSession = await scenarioSessionService.getSessionByTerminal(sessionId)
       if (scenarioSession) {
         scenarioSessionId.value = scenarioSession.id
+        scenarioSessionStatus.value = scenarioSession.status
         stopScenarioSync()
       }
     } catch {
@@ -456,11 +459,12 @@ async function loadSession() {
     }
 
     // Auto-detect linked scenario session (unless already set via query parameter or loading)
-    if (!scenarioSessionId.value && !scenarioLoading.value && status !== 'expired' && status !== 'stopped') {
+    if (!scenarioSessionId.value && !scenarioLoading.value) {
       try {
         const scenarioSession = await scenarioSessionService.getSessionByTerminal(sessionId)
         if (scenarioSession) {
           scenarioSessionId.value = scenarioSession.id
+          scenarioSessionStatus.value = scenarioSession.status
         }
       } catch {
         // Silently ignore - no scenario linked is fine
