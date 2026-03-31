@@ -66,6 +66,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { scenarioSessionService } from '../../services/domain/scenario'
+import { terminalService } from '../../services/domain/terminal'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import AdminBadge from '../Common/AdminBadge.vue'
@@ -135,15 +136,15 @@ function translateDifficulty(difficulty: string): string {
 // Size ordering for "at least" comparison
 const SIZE_ORDER: Record<string, number> = { 'XS': 1, 'S': 2, 'M': 3, 'L': 4, 'XL': 5, 'XXL': 6 }
 
+const terminalOsType = ref('')
+
 function isScenarioCompatible(scenario: any): boolean {
-  if (!props.terminalMachineSize) return true // no info, show all
+  // Check OS type compatibility
+  if (scenario.os_type && terminalOsType.value && scenario.os_type !== terminalOsType.value) {
+    return false
+  }
 
-  // Check OS type: scenario.os_type must match the terminal's instance OS
-  // We don't have the terminal's os_type directly, but the backend's available
-  // scenarios endpoint already filters by what's available. The instance_type
-  // prefix on the terminal tells us what machine it is.
-  // For now, just check size — the scenario's instance_type stores the required size
-
+  // Check size: terminal size must be >= scenario required size
   const requiredSize = scenario.instance_type // e.g., "M"
   const machineSize = props.terminalMachineSize // e.g., "L"
 
@@ -166,10 +167,28 @@ const compatibleScenarios = computed(() => {
   return scenarios.value.filter(isScenarioCompatible)
 })
 
+async function resolveTerminalOsType() {
+  if (!props.terminalInstanceType || terminalOsType.value) return
+  try {
+    const types = await terminalService.getInstanceTypes()
+    const match = types.find(t => t.prefix === props.terminalInstanceType)
+    if (match?.os_type) {
+      terminalOsType.value = match.os_type
+    }
+  } catch {
+    // Best effort — filtering still works on size
+  }
+}
+
 async function loadAndShowPicker() {
   isLoading.value = true
   try {
-    scenarios.value = await scenarioSessionService.listScenarios()
+    // Load scenarios and resolve terminal's OS type in parallel
+    const [scenarioData] = await Promise.all([
+      scenarioSessionService.listScenarios(),
+      resolveTerminalOsType()
+    ])
+    scenarios.value = scenarioData
     showPicker.value = true
   } catch (err: any) {
     console.error('Failed to load scenarios:', err)

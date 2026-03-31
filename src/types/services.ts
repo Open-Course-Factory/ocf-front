@@ -10,6 +10,7 @@ export interface InstanceType {
   name: string
   description: string
   size: string
+  os_type?: string
   ram_gb?: number
   cpu_cores?: number
   display_order?: number
