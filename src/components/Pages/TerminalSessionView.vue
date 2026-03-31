@@ -80,13 +80,10 @@
       <div v-if="scenarioSessionId" class="terminal-session-layout" :class="{ resizing: isPanelResizing }">
         <div class="terminal-main-area" style="position: relative;">
           <!-- Loading overlay (covers terminal during scenario setup) -->
-          <div v-if="scenarioLoading" class="scenario-loading-overlay">
-            <div class="scenario-loading-content">
-              <i class="fas fa-cog fa-spin"></i>
-              <p>{{ t('sessionView.scenarioLoading') }}</p>
-              <p class="scenario-loading-detail">{{ t('sessionView.scenarioLoadingDetail') }}</p>
-            </div>
-          </div>
+          <ScenarioProvisioningOverlay
+            v-if="scenarioLoading"
+            :message="t('sessionView.scenarioLoadingDetail')"
+          />
           <TerminalSessionPanel
             ref="scenarioTerminalRef"
             :session-info="sessionInfo"
@@ -123,20 +120,18 @@
       <!-- Terminal only (active session without scenario) -->
       <div v-else-if="isSessionActive" style="position: relative;">
         <!-- Loading overlay (covers terminal during scenario setup) -->
-        <div v-if="scenarioLoading" class="scenario-loading-overlay">
-          <div class="scenario-loading-content">
-            <div class="scenario-loading-icon">
-              <i v-if="!scenarioReady" class="fas fa-cog fa-spin"></i>
-              <i v-else class="fas fa-check-circle"></i>
-            </div>
-            <h3>{{ scenarioReady ? t('sessionView.scenarioReady') : t('sessionView.scenarioLoading') }}</h3>
-            <p v-if="!scenarioReady" class="scenario-loading-detail">{{ t('sessionView.scenarioLoadingDetail') }}</p>
-            <button v-if="scenarioReady" class="btn btn-success btn-lg" :disabled="scenarioLaunching" @click="launchScenario">
+        <ScenarioProvisioningOverlay
+          v-if="scenarioLoading"
+          :message="t('sessionView.scenarioLoadingDetail')"
+          :ready="scenarioReady"
+        >
+          <template #ready-action>
+            <button class="btn btn-success btn-lg" :disabled="scenarioLaunching" @click="launchScenario">
               <i :class="scenarioLaunching ? 'fas fa-spinner fa-spin' : 'fas fa-play'"></i>
               {{ scenarioLaunching ? t('sessionView.scenarioLaunching') : t('sessionView.scenarioLaunch') }}
             </button>
-          </div>
-        </div>
+          </template>
+        </ScenarioProvisioningOverlay>
         <TerminalSessionPanel
           ref="standaloneTerminalRef"
           :session-info="sessionInfo"
@@ -179,6 +174,7 @@ import { useNotification } from '../../composables/useNotification'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
 import ScenarioPanel from '../Terminal/ScenarioPanel.vue'
 import ScenarioStartBar from '../Terminal/ScenarioStartBar.vue'
+import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
 import CommandHistory from '../Terminal/CommandHistory.vue'
 
 const route = useRoute()
@@ -664,55 +660,6 @@ onBeforeUnmount(() => {
   padding: var(--spacing-2xl);
   color: var(--color-text-muted);
   font-size: var(--font-size-md);
-}
-
-.scenario-loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--color-bg-primary);
-  border-radius: var(--border-radius-lg);
-}
-
-.scenario-loading-content {
-  text-align: center;
-  color: var(--color-text-secondary);
-}
-
-.scenario-loading-icon {
-  font-size: 3rem;
-  margin-bottom: var(--spacing-md);
-  color: var(--color-primary);
-}
-
-.scenario-loading-icon .fa-check-circle {
-  color: var(--color-success);
-}
-
-.scenario-loading-content h3 {
-  margin: 0 0 var(--spacing-sm);
-  font-size: var(--font-size-xl);
-  color: var(--color-text-primary);
-}
-
-.scenario-loading-content .scenario-loading-detail {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
-.scenario-loading-content .btn {
-  margin-top: var(--spacing-lg);
-}
-
-.scenario-loading-content .btn i {
-  margin-right: var(--spacing-xs);
 }
 
 .loading-section i {

@@ -139,13 +139,11 @@
     </div>
 
     <!-- Provisioning overlay -->
-    <div v-if="provisioningMessage" class="provisioning-overlay">
-      <div class="provisioning-content">
-        <i class="fas fa-cog fa-spin provisioning-icon"></i>
-        <h3>{{ t('launcher.provisioning') }}</h3>
-        <p>{{ provisioningMessage }}</p>
-      </div>
-    </div>
+    <ScenarioProvisioningOverlay
+      v-if="provisioningMessage"
+      :message="provisioningMessage"
+      fixed
+    />
   </div>
 </template>
 
@@ -159,6 +157,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import type { InstanceType } from '../../types'
 import AdminBadge from '../Common/AdminBadge.vue'
+import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
 
 const router = useRouter()
 const { showError } = useNotification()
@@ -703,48 +702,6 @@ onMounted(loadScenarios)
   font-weight: var(--font-weight-medium);
   cursor: not-allowed;
   border: 1px solid var(--color-border-light);
-}
-
-/* Provisioning overlay */
-.provisioning-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(0, 0, 0, 0.5);
-}
-
-.provisioning-content {
-  background: var(--color-bg-primary);
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-2xl);
-  text-align: center;
-  max-width: 400px;
-  box-shadow: var(--shadow-lg);
-}
-
-.provisioning-icon {
-  font-size: 3rem;
-  color: var(--color-primary);
-  margin-bottom: var(--spacing-md);
-}
-
-.provisioning-content h3 {
-  margin: 0 0 var(--spacing-sm);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-}
-
-.provisioning-content p {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
 }
 
 /* Responsive */
