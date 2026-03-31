@@ -87,19 +87,38 @@
         </div>
 
         <div class="card-actions">
-          <!-- Existing session: resume or review -->
+          <!-- Active session: resume -->
           <router-link
-            v-if="getExistingSession(scenario)?.terminal_session_id"
+            v-if="getExistingSession(scenario)?.terminal_session_id && getExistingSession(scenario).status === 'active'"
             :to="{ name: 'TerminalSessionView', params: { sessionId: getExistingSession(scenario).terminal_session_id } }"
-            class="btn launch-btn"
-            :class="getExistingSession(scenario).status === 'active' ? 'btn-primary' : 'btn-secondary'"
+            class="btn btn-primary launch-btn"
           >
-            <i :class="getExistingSession(scenario).status === 'active' ? 'fas fa-play' : 'fas fa-eye'"></i>
-            {{ getExistingSession(scenario).status === 'active' ? t('launcher.resume') : t('launcher.review') }}
+            <i class="fas fa-play"></i>
+            {{ t('launcher.resume') }}
           </router-link>
+          <!-- Completed/abandoned session: review + relaunch -->
+          <div v-else-if="getExistingSession(scenario)" class="card-actions-row">
+            <router-link
+              v-if="getExistingSession(scenario).terminal_session_id"
+              :to="{ name: 'TerminalSessionView', params: { sessionId: getExistingSession(scenario).terminal_session_id } }"
+              class="btn btn-secondary launch-btn"
+            >
+              <i class="fas fa-eye"></i>
+              {{ t('launcher.review') }}
+            </router-link>
+            <button
+              v-if="scenario.launchable"
+              class="btn btn-primary launch-btn"
+              :disabled="isLaunching"
+              @click="handleLaunchScenario(scenario)"
+            >
+              <i :class="isLaunching && launchingScenarioId === scenario.id ? 'fas fa-spinner fa-spin' : 'fas fa-redo'"></i>
+              {{ t('launcher.relaunch') }}
+            </button>
+          </div>
           <!-- No session + launchable -->
           <button
-            v-else-if="scenario.launchable && !getExistingSession(scenario)"
+            v-else-if="scenario.launchable"
             class="btn btn-primary launch-btn"
             :disabled="isLaunching"
             @click="handleLaunchScenario(scenario)"
@@ -152,6 +171,7 @@ const { t } = useTranslations({
       launch: 'Launch',
       resume: 'Resume',
       review: 'Review',
+      relaunch: 'Relaunch',
       unavailable: 'Unavailable',
       sessionActive: 'Scenario in progress',
       sessionCompleted: 'Scenario completed',
@@ -186,6 +206,7 @@ const { t } = useTranslations({
       launch: 'Lancer',
       resume: 'Reprendre',
       review: 'Revoir',
+      relaunch: 'Relancer',
       unavailable: 'Indisponible',
       sessionActive: 'Scenario en cours',
       sessionCompleted: 'Scenario termine',
@@ -633,6 +654,15 @@ onMounted(loadScenarios)
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   color: var(--color-info-text);
+}
+
+.card-actions-row {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.card-actions-row .launch-btn {
+  flex: 1;
 }
 
 /* Card actions */
