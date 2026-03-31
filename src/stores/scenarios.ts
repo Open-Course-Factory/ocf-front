@@ -41,8 +41,9 @@ export const useScenariosStore = defineStore('scenarios', () => {
                 difficulty: 'Difficulty',
                 estimatedTime: 'Estimated Time',
                 estimated_time: 'Estimated Time',
-                instanceType: 'Instance Type',
-                instance_type: 'Instance Type',
+                instanceType: 'Machine Size',
+                instance_type: 'Machine Size',
+                machineSize: 'Minimum Machine Size',
                 sourceType: 'Source Type',
                 source_type: 'Source Type',
                 gitRepository: 'Git Repository',
@@ -97,8 +98,9 @@ export const useScenariosStore = defineStore('scenarios', () => {
                 difficulty: 'Difficulté',
                 estimatedTime: 'Temps estimé',
                 estimated_time: 'Temps estimé',
-                instanceType: 'Type d\'instance',
-                instance_type: 'Type d\'instance',
+                instanceType: 'Taille machine',
+                instance_type: 'Taille machine',
+                machineSize: 'Taille machine minimum',
                 sourceType: 'Type de source',
                 source_type: 'Type de source',
                 gitRepository: 'Dépôt Git',
@@ -164,7 +166,13 @@ export const useScenariosStore = defineStore('scenarios', () => {
             { value: 'advanced', text: t('scenarios.difficultyAdvanced') }
         ]),
         field('estimated_time', t('scenarios.estimatedTime')).input().visible().creatable().updatable(),
-        field('instance_type', t('scenarios.instanceType'))
+        field('os_type', t('scenarios.os_type')).select().visible().creatable().updatable().required().withOptions([
+            { value: 'deb', text: t('scenarios.osTypeDeb') },
+            { value: 'rpm', text: t('scenarios.osTypeRpm') },
+            { value: 'apk', text: t('scenarios.osTypeApk') },
+            { value: 'pacman', text: t('scenarios.osTypePacman') }
+        ]),
+        field('instance_type', t('scenarios.machineSize'))
             .searchableSelect()
             .visible()
             .creatable()
@@ -173,11 +181,18 @@ export const useScenariosStore = defineStore('scenarios', () => {
             .withOptionsLoader(async () => {
                 try {
                     const types = await terminalService.getInstanceTypes()
-                    return types.map(inst => ({
-                        value: inst.prefix,
-                        text: `${inst.name} (${inst.size})`,
-                        id: inst.prefix
-                    }))
+                    // Extract unique sizes from all available instance types
+                    const sizeSet = new Set<string>()
+                    for (const inst of types) {
+                        for (const s of inst.size.split('|').map(s => s.trim())) {
+                            if (s) sizeSet.add(s)
+                        }
+                    }
+                    // Sort by standard size order
+                    const order: Record<string, number> = { 'XS': 1, 'S': 2, 'M': 3, 'L': 4, 'XL': 5, 'XXL': 6 }
+                    return Array.from(sizeSet)
+                        .sort((a, b) => (order[a] ?? 99) - (order[b] ?? 99))
+                        .map(s => ({ value: s, text: s, id: s }))
                 } catch {
                     return []
                 }
