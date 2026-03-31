@@ -48,6 +48,7 @@ export interface SharedTerminalInfo {
     status: string
     expires_at: string
     instance_type: string
+    machine_size?: string
     created_at: string
     name?: string
   }

@@ -5,6 +5,7 @@
  *
  * Compact bar shown above the terminal when no scenario is active.
  * Allows users to pick and start a scenario on their running terminal session.
+ * Filters scenarios to only show ones compatible with the current machine.
  */
 -->
 
@@ -32,13 +33,13 @@
         </button>
       </div>
 
-      <div v-if="scenarios.length === 0" class="no-scenarios">
+      <div v-if="compatibleScenarios.length === 0" class="no-scenarios">
         {{ t('scenarioStart.none') }}
       </div>
 
       <div v-else class="scenario-list" role="list">
         <button
-          v-for="scenario in scenarios"
+          v-for="scenario in compatibleScenarios"
           :key="scenario.id"
           role="listitem"
           class="scenario-item"
@@ -48,6 +49,7 @@
           <div class="scenario-main">
             <div class="scenario-info">
               <span class="scenario-title">{{ scenario.title }}</span>
+              <AdminBadge v-if="scenario.admin_only" icon-only />
               <span v-if="scenario.difficulty" class="scenario-difficulty">{{ translateDifficulty(scenario.difficulty) }}</span>
             </div>
             <p v-if="scenario.description" class="scenario-description">{{ scenario.description }}</p>
@@ -62,16 +64,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { scenarioSessionService } from '../../services/domain/scenario'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
+import AdminBadge from '../Common/AdminBadge.vue'
 
 interface Props {
   terminalSessionId: string
+  terminalInstanceType?: string
+  terminalMachineSize?: string
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  terminalInstanceType: '',
+  terminalMachineSize: ''
+})
 
 const emit = defineEmits<{
   'scenario-started': [scenarioSessionId: string]
@@ -86,7 +94,7 @@ const { t } = useTranslations({
       noActive: 'No scenario active on this terminal',
       start: 'Start a Scenario',
       choose: 'Choose a scenario',
-      none: 'No scenarios available yet.',
+      none: 'No compatible scenarios available for this machine.',
       startError: 'Failed to start scenario.',
       setupFailed: 'Environment setup failed. Please try again.',
       provisioning: 'Setting up environment... This may take a few minutes.',
@@ -102,7 +110,7 @@ const { t } = useTranslations({
       noActive: 'Aucun scénario actif sur ce terminal',
       start: 'Démarrer un scénario',
       choose: 'Choisir un scénario',
-      none: 'Aucun scénario disponible pour le moment.',
+      none: 'Aucun scénario compatible disponible pour cette machine.',
       startError: 'Échec du démarrage du scénario.',
       setupFailed: 'La préparation de l\'environnement a échoué. Veuillez réessayer.',
       provisioning: 'Préparation de l\'environnement... Cela peut prendre quelques minutes.',
@@ -124,10 +132,39 @@ function translateDifficulty(difficulty: string): string {
   return difficultyMap[difficulty] || difficulty
 }
 
+// Size ordering for "at least" comparison
+const SIZE_ORDER: Record<string, number> = { 'XS': 1, 'S': 2, 'M': 3, 'L': 4, 'XL': 5, 'XXL': 6 }
+
+function isScenarioCompatible(scenario: any): boolean {
+  if (!props.terminalMachineSize) return true // no info, show all
+
+  // Check OS type: scenario.os_type must match the terminal's instance OS
+  // We don't have the terminal's os_type directly, but the backend's available
+  // scenarios endpoint already filters by what's available. The instance_type
+  // prefix on the terminal tells us what machine it is.
+  // For now, just check size — the scenario's instance_type stores the required size
+
+  const requiredSize = scenario.instance_type // e.g., "M"
+  const machineSize = props.terminalMachineSize // e.g., "L"
+
+  if (!requiredSize || !machineSize) return true
+
+  const requiredOrder = SIZE_ORDER[requiredSize] ?? 0
+  const machineOrder = SIZE_ORDER[machineSize] ?? 0
+
+  if (requiredOrder === 0 || machineOrder === 0) return true // unknown size, show it
+
+  return machineOrder >= requiredOrder
+}
+
 const showPicker = ref(false)
 const scenarios = ref<any[]>([])
 const isLoading = ref(false)
 const isStarting = ref(false)
+
+const compatibleScenarios = computed(() => {
+  return scenarios.value.filter(isScenarioCompatible)
+})
 
 async function loadAndShowPicker() {
   isLoading.value = true

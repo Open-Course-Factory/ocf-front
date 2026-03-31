@@ -51,6 +51,8 @@
       <ScenarioStartBar
         v-show="isSessionActive && !scenarioSessionId && !scenarioLoading"
         :terminal-session-id="sessionId"
+        :terminal-instance-type="sessionInfo?.instance_type"
+        :terminal-machine-size="sessionInfo?.machine_size"
         @scenario-started="handleScenarioStarted"
         @scenario-loading="handleScenarioLoading"
       />
@@ -449,7 +451,9 @@ async function loadSession() {
       session_id: terminalInfo.terminal.session_id,
       expires_at: terminalInfo.terminal.expires_at,
       status: terminalInfo.terminal.status,
-      name: terminalInfo.terminal.name
+      name: terminalInfo.terminal.name,
+      instance_type: terminalInfo.terminal.instance_type,
+      machine_size: terminalInfo.terminal.machine_size
     }
 
     // Start expiration timer only for active sessions
