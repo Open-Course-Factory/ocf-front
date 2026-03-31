@@ -25,6 +25,7 @@ import { useBaseStore } from "./baseStore"
 import { useProjectFilesStore } from "./projectFiles"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
+import axios from 'axios'
 
 export const useScenariosStore = defineStore('scenarios', () => {
 
@@ -171,14 +172,23 @@ export const useScenariosStore = defineStore('scenarios', () => {
             { value: 'apk', text: t('scenarios.osTypeApk') },
             { value: 'pacman', text: t('scenarios.osTypePacman') }
         ]),
-        field('instance_type', t('scenarios.machineSize')).select().visible().creatable().updatable().required().withOptions([
-            { value: 'XS', text: 'XS' },
-            { value: 'S', text: 'S' },
-            { value: 'M', text: 'M' },
-            { value: 'L', text: 'L' },
-            { value: 'XL', text: 'XL' },
-            { value: 'XXL', text: 'XXL' }
-        ]),
+        field('instance_type', t('scenarios.machineSize'))
+            .searchableSelect()
+            .visible()
+            .creatable()
+            .updatable()
+            .required()
+            .withOptionsLoader(async () => {
+                try {
+                    const response = await axios.get('/terminals/sizes')
+                    const sizes: string[] = response.data || []
+                    return sizes.map(s => ({ value: s, text: s, id: s }))
+                } catch {
+                    return []
+                }
+            })
+            .withItemValue('value')
+            .withItemText('text'),
         field('hostname', t('scenarios.hostname')).input().visible().creatable().updatable(),
         field('source_type', t('scenarios.sourceType')).select().visible().creatable().updatable().withOptions([
             { value: 'git', text: t('scenarios.sourceTypeGit') },
