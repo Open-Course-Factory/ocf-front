@@ -84,6 +84,8 @@ export const useScenariosStore = defineStore('scenarios', () => {
                 osTypeRpm: 'RPM-based (dnf/yum)',
                 osTypeApk: 'Alpine (apk)',
                 osTypePacman: 'Arch-based (pacman)',
+                isPublic: 'Public (available to all users)',
+                is_public: 'Public',
                 hostname: 'Container Hostname',
                 hostnameHelp: 'Custom hostname displayed in the terminal prompt (e.g., webserver)',
                 organization_id: 'Organization'
@@ -141,6 +143,8 @@ export const useScenariosStore = defineStore('scenarios', () => {
                 osTypeRpm: 'RPM (dnf/yum)',
                 osTypeApk: 'Alpine (apk)',
                 osTypePacman: 'Arch (pacman)',
+                isPublic: 'Public (disponible pour tous les utilisateurs)',
+                is_public: 'Public',
                 hostname: 'Nom d\'hôte du conteneur',
                 hostnameHelp: 'Nom d\'hôte personnalisé affiché dans le terminal (ex. webserver)',
                 organization_id: 'Organisation'
@@ -198,6 +202,7 @@ export const useScenariosStore = defineStore('scenarios', () => {
         ]),
         field('git_repository', t('scenarios.gitRepository')).input().visible().creatable().updatable(),
         field('git_branch', t('scenarios.gitBranch')).input().visible().creatable().updatable(),
+        field('is_public', t('scenarios.isPublic')).checkbox().visible().creatable().updatable(),
         field('flags_enabled', t('scenarios.flagsEnabled')).checkbox().visible().creatable().updatable(),
         field('gsh_enabled', t('scenarios.gshEnabled')).checkbox().visible().creatable().updatable(),
         field('crash_traps', t('scenarios.crashTraps')).checkbox().visible().creatable().updatable(),
