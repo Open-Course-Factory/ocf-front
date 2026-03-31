@@ -48,6 +48,8 @@
   --color-accent-coral-dark: #ee5a52;
   --color-orange: #fd7e14;
   --color-purple: #6366f1;
+  --color-purple-bg: #f0f0ff;
+  --color-purple-border: #c7c8f9;
 
   /* Neutral Colors */
   --color-white: #ffffff;
@@ -270,6 +272,8 @@
   --color-accent-coral-dark: #f06e66;
   --color-orange: #ff9636;
   --color-purple: #818cf8;
+  --color-purple-bg: #2a2a4a;
+  --color-purple-border: #4a4a7a;
 
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);

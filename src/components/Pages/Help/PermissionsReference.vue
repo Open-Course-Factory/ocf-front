@@ -621,15 +621,15 @@ onMounted(async () => {
 }
 
 .badge-member {
-  background: var(--color-info-bg, rgba(59, 130, 246, 0.1));
-  color: var(--color-info, #3b82f6);
-  border: 1px solid var(--color-info-border, rgba(59, 130, 246, 0.3));
+  background: var(--color-info-bg);
+  color: var(--color-info);
+  border: 1px solid var(--color-info-border);
 }
 
 .badge-admin {
-  background: var(--color-danger-bg, rgba(239, 68, 68, 0.1));
-  color: var(--color-danger, #ef4444);
-  border: 1px solid var(--color-danger-border, rgba(239, 68, 68, 0.3));
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger-border);
 }
 
 /* Method Badges */
@@ -645,27 +645,27 @@ onMounted(async () => {
 }
 
 .method-get {
-  background: rgba(16, 185, 129, 0.1);
-  color: var(--color-success, #10b981);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border: 1px solid var(--color-success-border);
 }
 
 .method-post {
-  background: rgba(59, 130, 246, 0.1);
-  color: var(--color-info, #3b82f6);
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: var(--color-info-bg);
+  color: var(--color-info);
+  border: 1px solid var(--color-info-border);
 }
 
 .method-patch, .method-put {
-  background: rgba(245, 158, 11, 0.1);
-  color: var(--color-warning, #f59e0b);
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning-border);
 }
 
 .method-delete {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--color-danger, #ef4444);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger-border);
 }
 
 /* Access Tags */
@@ -685,33 +685,33 @@ onMounted(async () => {
 }
 
 .access-self {
-  background: rgba(139, 92, 246, 0.1);
-  color: var(--color-purple, #8b5cf6);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: var(--color-purple-bg);
+  color: var(--color-purple);
+  border: 1px solid var(--color-purple-border);
 }
 
 .access-admin {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--color-danger, #ef4444);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger-border);
 }
 
 .access-owner {
-  background: rgba(245, 158, 11, 0.1);
-  color: var(--color-warning, #f59e0b);
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning-border);
 }
 
 .access-group {
-  background: rgba(16, 185, 129, 0.1);
-  color: var(--color-success, #10b981);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border: 1px solid var(--color-success-border);
 }
 
 .access-org {
-  background: rgba(59, 130, 246, 0.1);
-  color: var(--color-info, #3b82f6);
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: var(--color-info-bg);
+  color: var(--color-info);
+  border: 1px solid var(--color-info-border);
 }
 
 .access-any {
