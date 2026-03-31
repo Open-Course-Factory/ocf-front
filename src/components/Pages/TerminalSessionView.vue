@@ -77,12 +77,6 @@
       </div>
 
       <!-- Terminal + Scenario Panel layout (active session with scenario, or review mode) -->
-      <!-- Full-screen provisioning overlay (shared with ScenarioLauncher) -->
-      <ScenarioProvisioningOverlay
-        v-if="scenarioLoading"
-        fixed
-      />
-
       <div v-if="scenarioSessionId" class="terminal-session-layout" :class="{ resizing: isPanelResizing }">
         <div class="terminal-main-area" style="position: relative;">
           <TerminalSessionPanel
@@ -146,6 +140,13 @@
         </div>
       </template>
     </template>
+
+    <!-- Full-screen provisioning overlay (shared with ScenarioLauncher) -->
+    <ScenarioProvisioningOverlay
+      v-if="scenarioLoading"
+      :message="t('sessionView.scenarioLoadingDetail')"
+      fixed
+    />
   </div>
 </template>
 
