@@ -25,6 +25,7 @@ import { useBaseStore } from "./baseStore"
 import { useProjectFilesStore } from "./projectFiles"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
+import { terminalService } from '../services/domain/terminal'
 
 export const useScenariosStore = defineStore('scenarios', () => {
 
@@ -163,14 +164,27 @@ export const useScenariosStore = defineStore('scenarios', () => {
             { value: 'advanced', text: t('scenarios.difficultyAdvanced') }
         ]),
         field('estimated_time', t('scenarios.estimatedTime')).input().visible().creatable().updatable(),
-        field('instance_type', t('scenarios.instanceType')).input().visible().creatable().updatable().required(),
+        field('instance_type', t('scenarios.instanceType'))
+            .searchableSelect()
+            .visible()
+            .creatable()
+            .updatable()
+            .required()
+            .withOptionsLoader(async () => {
+                try {
+                    const types = await terminalService.getInstanceTypes()
+                    return types.map(inst => ({
+                        value: inst.prefix,
+                        text: `${inst.name} (${inst.size})`,
+                        id: inst.prefix
+                    }))
+                } catch {
+                    return []
+                }
+            })
+            .withItemValue('value')
+            .withItemText('text'),
         field('hostname', t('scenarios.hostname')).input().visible().creatable().updatable(),
-        field('os_type', t('scenarios.os_type')).select().visible().creatable().updatable().withOptions([
-            { value: 'deb', text: t('scenarios.osTypeDeb') },
-            { value: 'rpm', text: t('scenarios.osTypeRpm') },
-            { value: 'apk', text: t('scenarios.osTypeApk') },
-            { value: 'pacman', text: t('scenarios.osTypePacman') }
-        ]),
         field('source_type', t('scenarios.sourceType')).select().visible().creatable().updatable().withOptions([
             { value: 'git', text: t('scenarios.sourceTypeGit') },
             { value: 'upload', text: t('scenarios.sourceTypeUpload') },
