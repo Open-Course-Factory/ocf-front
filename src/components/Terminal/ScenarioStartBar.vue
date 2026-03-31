@@ -11,12 +11,7 @@
 
 <template>
   <div class="scenario-start-bar">
-    <div v-if="provisioningMessage" class="provisioning-prompt">
-      <i class="fas fa-cog fa-spin"></i>
-      <span>{{ provisioningMessage }}</span>
-    </div>
-
-    <div v-else-if="!showPicker" class="start-prompt">
+    <div v-if="!showPicker" class="start-prompt">
       <i class="fas fa-flag-checkered"></i>
       <span>{{ t('scenarioStart.noActive') }}</span>
       <button class="start-btn" @click="loadAndShowPicker" :disabled="isLoading">
@@ -202,8 +197,6 @@ async function loadAndShowPicker() {
   }
 }
 
-const provisioningMessage = ref('')
-
 async function startScenario(scenario: any) {
   isStarting.value = true
   emit('scenario-loading', true)
@@ -214,15 +207,12 @@ async function startScenario(scenario: any) {
 
     // If session is provisioning, poll until setup completes
     if (session.status === 'provisioning') {
-      provisioningMessage.value = t('scenarioStart.provisioning')
       await waitForProvisioning(session.id)
-      provisioningMessage.value = ''
     }
 
     emit('scenario-started', session.id)
   } catch (err: any) {
     console.error('Failed to start scenario:', err)
-    provisioningMessage.value = ''
     emit('scenario-loading', false)
     showError(
       err.response?.data?.error_message ||
@@ -259,16 +249,6 @@ async function waitForProvisioning(sessionId: string) {
   background-color: var(--color-bg-secondary);
   border: var(--border-width-thin) solid var(--color-border-light);
   border-radius: var(--border-radius-md);
-}
-
-.provisioning-prompt {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  color: var(--color-warning);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
 }
 
 .start-prompt {
