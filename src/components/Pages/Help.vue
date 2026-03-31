@@ -125,11 +125,11 @@ const { t } = useTranslations({
     help: {
       title: 'Aide & Documentation',
       subtitle: 'Tout ce dont vous avez besoin pour commencer et tirer le meilleur parti de la plateforme',
-      backToHome: 'Retour a l\'accueil',
-      backToApp: 'Retour a l\'application',
+      backToHome: 'Retour à l\'accueil',
+      backToApp: 'Retour à l\'application',
       contact: {
         title: 'Besoin d\'aide ?',
-        text: 'Si vous ne trouvez pas ce que vous cherchez, n\'hesitez pas a nous contacter a'
+        text: 'Si vous ne trouvez pas ce que vous cherchez, n\'hésitez pas à nous contacter à'
       }
     }
   }
