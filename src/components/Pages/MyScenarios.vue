@@ -221,7 +221,7 @@ const { t } = useTranslations({
 })
 
 const sessions = ref<MyScenarioSession[]>([])
-const isLoading = ref(false)
+const isLoading = ref(true)
 const loadError = ref('')
 const selectedStatus = ref<'all' | 'active' | 'completed' | 'abandoned'>('all')
 
