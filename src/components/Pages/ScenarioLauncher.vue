@@ -31,7 +31,12 @@
     </div>
 
     <div v-else class="scenario-grid">
-      <div v-for="scenario in scenarios" :key="scenario.id" class="scenario-card">
+      <div
+        v-for="scenario in scenarios"
+        :key="scenario.id"
+        class="scenario-card"
+        :class="{ 'scenario-card--unavailable': !scenario.launchable }"
+      >
         <div class="card-header">
           <h3 class="card-title">{{ scenario.title }}</h3>
           <span v-if="scenario.difficulty" class="difficulty-badge" :class="'difficulty-' + scenario.difficulty">
@@ -44,23 +49,49 @@
             <i class="fas fa-clock"></i> {{ scenario.estimated_time }}
           </span>
           <div v-if="scenario.compatible_instance_types?.length" class="os-badges">
-            <span v-for="cit in scenario.compatible_instance_types" :key="cit.id" class="os-badge">
+            <span
+              v-for="cit in scenario.compatible_instance_types"
+              :key="cit.id"
+              class="os-badge"
+              :class="{ 'os-badge--missing': !isInstanceTypeAvailable(cit.instance_type, scenario) }"
+              :title="isInstanceTypeAvailable(cit.instance_type, scenario) ? t('launcher.machineAvailable') : t('launcher.machineOffline')"
+            >
+              <i :class="isInstanceTypeAvailable(cit.instance_type, scenario) ? 'fas fa-check-circle' : 'fas fa-times-circle'" class="os-badge-icon"></i>
               {{ cit.instance_type }}
             </span>
           </div>
-          <span v-else-if="scenario.instance_type" class="os-badge">
+          <span v-else-if="scenario.instance_type" class="os-badge" :class="{ 'os-badge--missing': !scenario.launchable }">
+            <i :class="scenario.launchable ? 'fas fa-check-circle' : 'fas fa-times-circle'" class="os-badge-icon"></i>
             {{ scenario.instance_type }}
           </span>
         </div>
+
+        <!-- Unavailability explanation -->
+        <div v-if="!scenario.launchable" class="unavailable-notice">
+          <div class="unavailable-notice-content">
+            <i class="fas fa-server unavailable-notice-icon"></i>
+            <div class="unavailable-notice-text">
+              <span class="unavailable-notice-title">{{ t('launcher.unavailableTitle') }}</span>
+              <span class="unavailable-notice-detail">{{ getUnavailableReason(scenario) }}</span>
+            </div>
+          </div>
+          <span class="unavailable-notice-hint">{{ t('launcher.unavailableHint') }}</span>
+        </div>
+
         <div class="card-actions">
           <button
+            v-if="scenario.launchable"
             class="btn btn-primary launch-btn"
-            :disabled="!scenario.launchable || isLaunching"
+            :disabled="isLaunching"
             @click="handleLaunchScenario(scenario)"
           >
             <i :class="isLaunching && launchingScenarioId === scenario.id ? 'fas fa-spinner fa-spin' : 'fas fa-rocket'"></i>
-            {{ scenario.launchable ? t('launcher.launch') : t('launcher.unavailable') }}
+            {{ t('launcher.launch') }}
           </button>
+          <div v-else class="launch-btn-disabled" :title="t('launcher.unavailableTitle')">
+            <i class="fas fa-ban"></i>
+            {{ t('launcher.unavailable') }}
+          </div>
         </div>
       </div>
     </div>
@@ -96,6 +127,12 @@ const { t } = useTranslations({
       retry: 'Retry',
       launch: 'Launch',
       unavailable: 'Unavailable',
+      unavailableTitle: 'No compatible machine available',
+      unavailableNoTypes: 'This scenario requires machine types that are not currently online.',
+      unavailableSpecific: 'Required: {types} — none are available right now.',
+      unavailableHint: 'Try again later or contact your trainer.',
+      machineAvailable: 'Machine available',
+      machineOffline: 'Machine offline or not configured',
       provisioning: 'Setting up your environment...',
       provisioningDetail: 'Creating terminal and preparing scenario. This may take a few minutes.',
       launchError: 'Failed to launch scenario.',
@@ -113,6 +150,12 @@ const { t } = useTranslations({
       retry: 'Reessayer',
       launch: 'Lancer',
       unavailable: 'Indisponible',
+      unavailableTitle: 'Aucune machine compatible disponible',
+      unavailableNoTypes: 'Ce scenario necessite des types de machines qui ne sont pas en ligne actuellement.',
+      unavailableSpecific: 'Requis : {types} — aucun n\'est disponible pour le moment.',
+      unavailableHint: 'Reessayez plus tard ou contactez votre formateur.',
+      machineAvailable: 'Machine disponible',
+      machineOffline: 'Machine hors ligne ou non configuree',
       provisioning: 'Preparation de votre environnement...',
       provisioningDetail: 'Creation du terminal et preparation du scenario. Cela peut prendre quelques minutes.',
       launchError: 'Echec du lancement du scenario.',
@@ -137,6 +180,21 @@ function translateDifficulty(difficulty: string): string {
     advanced: t('launcher.difficultyAdvanced')
   }
   return map[difficulty] || difficulty
+}
+
+function isInstanceTypeAvailable(instanceType: string, scenario: any): boolean {
+  return (scenario.available_instance_types || []).includes(instanceType)
+}
+
+function getUnavailableReason(scenario: any): string {
+  const requiredTypes = scenario.compatible_instance_types?.map((c: any) => c.instance_type) || []
+  if (requiredTypes.length === 0 && scenario.instance_type) {
+    requiredTypes.push(scenario.instance_type)
+  }
+  if (requiredTypes.length === 0) {
+    return t('launcher.unavailableNoTypes')
+  }
+  return t('launcher.unavailableSpecific').replace('{types}', requiredTypes.join(', '))
 }
 
 async function loadScenarios() {
@@ -247,6 +305,15 @@ onMounted(loadScenarios)
   box-shadow: var(--shadow-sm);
 }
 
+.scenario-card--unavailable {
+  opacity: 0.85;
+}
+
+.scenario-card--unavailable:hover {
+  border-color: var(--color-border-medium);
+  box-shadow: none;
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -323,14 +390,76 @@ onMounted(loadScenarios)
 .os-badge {
   display: inline-flex;
   align-items: center;
+  gap: 3px;
   padding: 2px var(--spacing-sm);
   border-radius: var(--border-radius-full);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-secondary);
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  border: 1px solid var(--color-success-border);
 }
 
+.os-badge-icon {
+  font-size: 9px;
+}
+
+.os-badge--missing {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+  border-color: var(--color-danger-border);
+}
+
+/* Unavailability notice */
+.unavailable-notice {
+  margin: var(--spacing-xs) var(--spacing-md) 0;
+  padding: var(--spacing-sm);
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--border-radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.unavailable-notice-content {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+}
+
+.unavailable-notice-icon {
+  color: var(--color-warning-text);
+  font-size: var(--font-size-sm);
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.unavailable-notice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.unavailable-notice-title {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning-text);
+}
+
+.unavailable-notice-detail {
+  font-size: var(--font-size-xs);
+  color: var(--color-warning-text);
+  line-height: var(--line-height-normal);
+}
+
+.unavailable-notice-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* Card actions */
 .card-actions {
   padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
 }
@@ -341,6 +470,22 @@ onMounted(loadScenarios)
   gap: var(--spacing-xs);
   width: 100%;
   justify-content: center;
+}
+
+.launch-btn-disabled {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-disabled);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: not-allowed;
+  border: 1px solid var(--color-border-light);
 }
 
 /* Provisioning overlay */
