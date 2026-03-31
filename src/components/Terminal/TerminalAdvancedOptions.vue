@@ -82,6 +82,26 @@
         </small>
       </FormGroup>
 
+      <FormGroup
+        :label="t('terminalStarter.packagesLabel')"
+        id="packages"
+        :help-text="t('terminalStarter.packagesHelp')"
+      >
+        <input
+          id="packages"
+          :value="packages"
+          type="text"
+          maxlength="500"
+          :placeholder="t('terminalStarter.packagesPlaceholder')"
+          :disabled="disabled"
+          @input="handlePackagesInput"
+        />
+        <div v-if="defaultPackages.length > 0" class="default-packages">
+          <small class="default-packages-label">{{ t('terminalStarter.preInstalled') }}</small>
+          <span v-for="pkg in defaultPackages" :key="pkg" class="package-badge">{{ pkg }}</span>
+        </div>
+      </FormGroup>
+
       <div class="form-actions">
         <Button
           type="button"
@@ -110,6 +130,8 @@ interface Props {
   modelValue: string
   exerciseRef?: string
   hostname?: string
+  packages?: string
+  defaultPackages?: string[]
   disabled?: boolean
   backends?: Backend[]
   selectedBackendId?: string
@@ -119,6 +141,8 @@ interface Props {
 withDefaults(defineProps<Props>(), {
   exerciseRef: '',
   hostname: '',
+  packages: '',
+  defaultPackages: () => [],
   backends: () => [],
   selectedBackendId: '',
   showBackendSelector: false
@@ -128,6 +152,7 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
   'update:exerciseRef': [value: string]
   'update:hostname': [value: string]
+  'update:packages': [value: string]
   'update:selectedBackendId': [value: string]
   reset: []
 }>()
@@ -145,7 +170,11 @@ const { t } = useTranslations({
       buttonReset: 'Reset',
       hostnameLabel: 'Container Hostname (Optional)',
       hostnamePlaceholder: 'e.g., webserver',
-      hostnameHelp: "Custom hostname for the terminal prompt (root{'@'}hostname). Lowercase, alphanumeric and hyphens, max 63 chars."
+      hostnameHelp: "Custom hostname for the terminal prompt (root{'@'}hostname). Lowercase, alphanumeric and hyphens, max 63 chars.",
+      packagesLabel: 'Startup Packages (Optional)',
+      packagesPlaceholder: 'e.g., git, curl, vim, htop',
+      packagesHelp: 'Comma-separated list of packages to install when the terminal starts. These are installed on top of the defaults.',
+      preInstalled: 'Pre-installed:'
     }
   },
   fr: {
@@ -160,7 +189,11 @@ const { t } = useTranslations({
       buttonReset: 'Réinitialiser',
       hostnameLabel: 'Nom d\'hôte (Optionnel)',
       hostnamePlaceholder: 'ex. webserver',
-      hostnameHelp: "Nom d'hôte personnalisé pour le prompt (root{'@'}hostname). Minuscules, alphanumérique et tirets, 63 caractères max."
+      hostnameHelp: "Nom d'hôte personnalisé pour le prompt (root{'@'}hostname). Minuscules, alphanumérique et tirets, 63 caractères max.",
+      packagesLabel: 'Paquets de démarrage (Optionnel)',
+      packagesPlaceholder: 'ex. git, curl, vim, htop',
+      packagesHelp: 'Liste de paquets séparés par des virgules à installer au démarrage du terminal. Installés en plus des paquets par défaut.',
+      preInstalled: 'Pré-installés :'
     }
   }
 })
@@ -180,6 +213,11 @@ function handleExerciseRefInput(event: Event) {
 function handleHostnameInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:hostname', target.value)
+}
+
+function handlePackagesInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  emit('update:packages', target.value)
 }
 </script>
 
@@ -236,6 +274,29 @@ function handleHostnameInput(event: Event) {
   margin-top: 4px;
   display: block;
   text-align: right;
+}
+
+.default-packages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-xs);
+}
+
+.default-packages-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.package-badge {
+  display: inline-block;
+  padding: 1px var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  background-color: var(--color-bg-tertiary, var(--color-bg-secondary));
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-sm);
+  color: var(--color-text-secondary);
 }
 
 @media (max-width: 768px) {

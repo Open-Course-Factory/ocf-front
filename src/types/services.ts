@@ -13,6 +13,7 @@ export interface InstanceType {
   ram_gb?: number
   cpu_cores?: number
   display_order?: number
+  default_packages?: string[]
 }
 
 /**

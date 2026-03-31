@@ -5,13 +5,9 @@
 
 import axios from 'axios'
 import type { Backend } from '../../../types/entities'
+import type { InstanceType } from '../../../types'
 
-export interface InstanceType {
-  name: string
-  prefix: string
-  description: string
-  size: string // Available sizes separated by | (e.g., "XS|S|M")
-}
+export type { InstanceType }
 
 export interface InstanceTypeResponse {
   instance_types: InstanceType[]
@@ -24,6 +20,7 @@ export interface StartSessionData {
   name?: string
   backend?: string
   organization_id?: string
+  packages?: string[]
 }
 
 export interface UpdateTerminalRequest {
