@@ -147,7 +147,7 @@
                     <th class="col-action">{{ t('help.account.permissionsReference.colAction') }}</th>
                     <th class="col-method">{{ t('help.account.permissionsReference.colMethod') }}</th>
                     <th class="col-path">{{ t('help.account.permissionsReference.colPath') }}</th>
-                    <th class="col-role">{{ t('help.account.permissionsReference.colCasbinRole') }}</th>
+                    <th class="col-role">{{ t('help.account.permissionsReference.colRole') }}</th>
                     <th class="col-access">{{ t('help.account.permissionsReference.colAccessRule') }}</th>
                   </tr>
                 </thead>
@@ -165,8 +165,8 @@
                       <code class="path-code">{{ route.path }}</code>
                     </td>
                     <td class="col-role">
-                      <span class="badge" :class="route.casbin_role === 'admin' ? 'badge-admin' : 'badge-member'">
-                        {{ route.casbin_role }}
+                      <span class="badge" :class="route.role === 'admin' ? 'badge-admin' : 'badge-member'">
+                        {{ route.role }}
                       </span>
                     </td>
                     <td class="col-access">
@@ -271,7 +271,7 @@ interface RoutePermission {
   path: string
   method: string
   category: string
-  casbin_role: string
+  role: string
   access: AccessRule
   description: string
 }
