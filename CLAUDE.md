@@ -128,6 +128,40 @@ catch (err: any) {
 
 See [CODE_QUALITY.md](.claude/docs/CODE_QUALITY.md) for standards.
 
+### Admin Badge Pattern
+
+**When a platform administrator sees UI elements that regular users don't, those elements MUST have a visual admin indicator.**
+
+This helps admins distinguish elevated privileges from normal role-based access. See [ADMIN_BADGE_PATTERN.md](.claude/docs/ADMIN_BADGE_PATTERN.md) for the full reference.
+
+Rules:
+- Use `AdminBadge` component (from `components/Common/AdminBadge.vue`) next to admin-gated buttons, sections, or actions
+- For `<option>` elements in `<select>` dropdowns: prefix with `🛡️` emoji (Vue components can't go inside `<option>`)
+- The badge/emoji should ONLY appear when admin privilege is the REASON the element is visible -- not when the user would see it anyway as owner/manager
+- Detect admin status via `useAdminViewMode()` composable -> `isAdmin` computed
+- Condition pattern: `v-if="isAdmin && !isOwner"` (adapt ownership check to context)
+
+Example:
+```vue
+<script setup>
+import { useAdminViewMode } from '../../composables/useAdminViewMode'
+import AdminBadge from '../Common/AdminBadge.vue'
+const { isAdmin } = useAdminViewMode()
+</script>
+
+<template>
+  <!-- Button only visible to owners/managers/admins -->
+  <button v-if="canManage" @click="doSomething">
+    Action
+  </button>
+  <!-- Badge shown only when admin is the reason -->
+  <AdminBadge v-if="isAdmin && !isOwner" icon-only />
+
+  <!-- Select option admin-only -->
+  <option v-if="isAdmin" value="special">🛡️ Special Option</option>
+</template>
+```
+
 ### Import Paths
 
 **This project does NOT have `@` alias configured - use relative paths**
@@ -245,6 +279,7 @@ For detailed information, see:
 - [API.md](.claude/docs/API.md) - API integration & demo mode
 - [DESIGN_SYSTEM.md](.claude/docs/DESIGN_SYSTEM.md) - Design tokens & CSS framework
 - [BACKEND_FEATURE_FLAGS_INTEGRATION.md](.claude/docs/BACKEND_FEATURE_FLAGS_INTEGRATION.md) - Feature flags system
+- [ADMIN_BADGE_PATTERN.md](.claude/docs/ADMIN_BADGE_PATTERN.md) - Admin badge UX pattern for elevated-privilege indicators
 
 **Groups System (Recent Implementation):**
 

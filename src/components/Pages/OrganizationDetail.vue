@@ -68,6 +68,7 @@
           >
             <i class="fas fa-file-import"></i>
             {{ t('organizations.bulkImport') }}
+            <AdminBadge v-if="isAdminGranted" icon-only />
           </button>
           <button
             v-if="canManage"
@@ -76,6 +77,7 @@
           >
             <i class="fas fa-edit"></i>
             {{ t('organizations.edit') }}
+            <AdminBadge v-if="isAdminGranted" icon-only />
           </button>
           <button class="btn btn-outline-secondary" @click="goBack">
             <i class="fas fa-arrow-left"></i>
@@ -115,6 +117,7 @@
           >
             <i class="fas fa-flask"></i>
             {{ t('organizations.scenarios') }}
+            <AdminBadge v-if="isAdminGranted" icon-only />
           </button>
           <button
             :class="['tab', { active: activeTab === 'subscription' }]"
@@ -130,6 +133,7 @@
           >
             <i class="fas fa-cog"></i>
             {{ t('organizations.settings') }}
+            <AdminBadge v-if="isAdminGranted" icon-only />
           </button>
         </div>
 
@@ -214,8 +218,10 @@ import {
   OrganizationSettingsTab
 } from '../Organizations'
 import OrganizationScenariosTab from '../Organizations/OrganizationScenariosTab.vue'
+import AdminBadge from '../Common/AdminBadge.vue'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { usePermissionsStore } from '../../stores/permissions'
+import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useTranslations } from '../../composables/useTranslations'
 import type { Organization, UpdateOrganizationRequest } from '../../types'
 
@@ -223,6 +229,7 @@ const route = useRoute()
 const router = useRouter()
 const organizationsStore = useOrganizationsStore()
 const permissionsStore = usePermissionsStore()
+const { isAdmin } = useAdminViewMode()
 
 const isInitialLoading = ref(true) // Initial page load
 const isRefreshing = ref(false) // Refreshing data (don't show full screen loader)
@@ -276,6 +283,7 @@ const organizationId = computed(() => route.params.id as string)
 const canManage = computed(() => permissionsStore.canManageOrganization(organizationId.value))
 const isOwner = computed(() => permissionsStore.isOrganizationOwner(organizationId.value))
 const canDelete = computed(() => permissionsStore.canDeleteOrganization(organizationId.value))
+const isAdminGranted = computed(() => isAdmin.value && !isOwner.value)
 
 onMounted(async () => {
   await Promise.all([

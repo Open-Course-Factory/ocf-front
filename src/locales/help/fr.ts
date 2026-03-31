@@ -1996,17 +1996,12 @@ export const helpFr = {
         groupOwnerDesc: "Le créateur du groupe avec contrôle total.",
         groupOwnerPerm1: "Supprimer le groupe",
         groupOwnerPerm2: "Transférer la propriété",
-        groupOwnerPerm3: "Assigner des administrateurs et assistants",
-        groupAdmin: "Administrateur",
-        groupAdminDesc: "Co-instructeurs avec permissions de gestion.",
-        groupAdminPerm1: "Gérer le contenu et les cours du groupe",
-        groupAdminPerm2: "Ajouter/retirer des membres",
-        groupAdminPerm3: "Voir les analyses du groupe",
-        groupAssistant: "Assistant",
-        groupAssistantDesc: "Assistants pédagogiques avec accès de gestion limité.",
-        groupAssistantPerm1: "Aider à gérer les activités du groupe",
-        groupAssistantPerm2: "Voir la progression des membres",
-        groupAssistantPerm3: "Assister avec la livraison des cours",
+        groupOwnerPerm3: "Assigner des gestionnaires",
+        groupManager: "Gestionnaire",
+        groupManagerDesc: "Co-instructeurs avec permissions de gestion.",
+        groupManagerPerm1: "Gérer le contenu et les cours du groupe",
+        groupManagerPerm2: "Ajouter/retirer des membres",
+        groupManagerPerm3: "Voir les analyses du groupe",
         groupMember: "Membre",
         groupMemberDesc: "Étudiants ou participants du groupe.",
         groupMemberPerm1: "Accéder au contenu du groupe",
@@ -2048,7 +2043,7 @@ export const helpFr = {
         accessOwnerDesc: "Seul le propriétaire de la ressource peut effectuer cette action",
         accessGroup: "Rôle de groupe",
         accessGroupRole: "Rôle de groupe ({role}+)",
-        accessGroupDesc: "Nécessite un rôle de groupe minimum (ex. admin, assistant)",
+        accessGroupDesc: "Nécessite un rôle de groupe minimum (ex. gestionnaire)",
         accessOrg: "Rôle d'organisation",
         accessOrgRole: "Rôle d'organisation ({role}+)",
         accessOrgDesc: "Nécessite un rôle d'organisation minimum (ex. gestionnaire)",
@@ -2385,13 +2380,9 @@ export const helpFr = {
             title: "Propriétaire du Groupe",
             description: "Contrôle total sur le groupe, y compris les paramètres, les membres et le contenu"
           },
-          admin: {
-            title: "Administrateur du Groupe",
+          manager: {
+            title: "Gestionnaire du Groupe",
             description: "Peut gérer les membres et le contenu mais ne peut pas supprimer le groupe ou modifier les paramètres critiques"
-          },
-          assistant: {
-            title: "Assistant du Groupe",
-            description: "Peut aider à gérer le contenu et consulter la progression des membres mais ne peut pas modifier les paramètres du groupe"
           },
           member: {
             title: "Membre du Groupe",

@@ -1996,17 +1996,12 @@ export const helpEn = {
         groupOwnerDesc: "The group creator with full control over the group.",
         groupOwnerPerm1: "Delete the group",
         groupOwnerPerm2: "Transfer ownership",
-        groupOwnerPerm3: "Assign admins and assistants",
-        groupAdmin: "Admin",
-        groupAdminDesc: "Co-instructors with management permissions.",
-        groupAdminPerm1: "Manage group content and courses",
-        groupAdminPerm2: "Add/remove members",
-        groupAdminPerm3: "View group analytics",
-        groupAssistant: "Assistant",
-        groupAssistantDesc: "Teaching assistants with limited management access.",
-        groupAssistantPerm1: "Help manage group activities",
-        groupAssistantPerm2: "View member progress",
-        groupAssistantPerm3: "Assist with course delivery",
+        groupOwnerPerm3: "Assign managers",
+        groupManager: "Manager",
+        groupManagerDesc: "Co-instructors with management permissions.",
+        groupManagerPerm1: "Manage group content and courses",
+        groupManagerPerm2: "Add/remove members",
+        groupManagerPerm3: "View group analytics",
         groupMember: "Member",
         groupMemberDesc: "Students or participants in the group.",
         groupMemberPerm1: "Access group content",
@@ -2048,7 +2043,7 @@ export const helpEn = {
         accessOwnerDesc: "Only the resource owner can perform this action",
         accessGroup: "Group role",
         accessGroupRole: "Group role ({role}+)",
-        accessGroupDesc: "Requires a minimum group role (e.g., admin, assistant)",
+        accessGroupDesc: "Requires a minimum group role (e.g., manager)",
         accessOrg: "Org role",
         accessOrgRole: "Org role ({role}+)",
         accessOrgDesc: "Requires a minimum organization role (e.g., manager)",
@@ -2385,13 +2380,9 @@ export const helpEn = {
             title: "Group Owner",
             description: "Full control over the group, including settings, members, and content"
           },
-          admin: {
-            title: "Group Admin",
+          manager: {
+            title: "Group Manager",
             description: "Can manage members and content but cannot delete the group or change critical settings"
-          },
-          assistant: {
-            title: "Group Assistant",
-            description: "Can help manage content and view member progress but cannot modify group settings"
           },
           member: {
             title: "Group Member",

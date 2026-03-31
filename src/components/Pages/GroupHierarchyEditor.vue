@@ -30,7 +30,7 @@
           <i class="fas fa-arrow-left"></i>
           {{ t('hierarchyEditor.backToGroups') }}
         </router-link>
-        <h1>{{ t('hierarchyEditor.title') }}</h1>
+        <h1>{{ t('hierarchyEditor.title') }} <AdminBadge v-if="isAdmin && !shouldFilterAsStandardUser" icon-only /></h1>
         <p class="header-subtitle">{{ t('hierarchyEditor.subtitle') }}</p>
       </div>
 
@@ -204,6 +204,7 @@ import axios from 'axios'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { usePermissionsStore } from '../../stores/permissions'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
+import AdminBadge from '../Common/AdminBadge.vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useTreeExpand } from '../../composables/useTreeExpand'
 import { useToast } from '../../composables/useToast'

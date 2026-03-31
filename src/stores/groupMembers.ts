@@ -56,8 +56,7 @@ export const useGroupMembersStore = defineStore('groupMembers', () => {
                 deleteError: "Failed to remove member",
                 memberInfo: "Manage group membership",
                 roleOwner: "Owner",
-                roleAdmin: "Admin",
-                roleAssistant: "Assistant",
+                roleManager: "Manager",
                 roleMember: "Member",
                 roleHelp: "Role determines permissions within the group"
             }
@@ -90,8 +89,7 @@ export const useGroupMembersStore = defineStore('groupMembers', () => {
                 deleteError: "Échec du retrait du membre",
                 memberInfo: "Gérer l'appartenance au groupe",
                 roleOwner: "Propriétaire",
-                roleAdmin: "Administrateur",
-                roleAssistant: "Assistant",
+                roleManager: "Gestionnaire",
                 roleMember: "Membre",
                 roleHelp: "Le rôle détermine les permissions dans le groupe"
             }
@@ -104,8 +102,7 @@ export const useGroupMembersStore = defineStore('groupMembers', () => {
         field('user_id', t('groupMembers.user_id')).input().visible().creatable(),
         field('role', t('groupMembers.role')).select().withOptions([
             { label: t('groupMembers.roleOwner'), value: 'owner' },
-            { label: t('groupMembers.roleAdmin'), value: 'admin' },
-            { label: t('groupMembers.roleAssistant'), value: 'assistant' },
+            { label: t('groupMembers.roleManager'), value: 'manager' },
             { label: t('groupMembers.roleMember'), value: 'member' }
         ]).visible().editable(),
         field('invited_by', t('groupMembers.invited_by')).input().visible().readonly(),

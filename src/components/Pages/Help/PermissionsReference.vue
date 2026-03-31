@@ -165,7 +165,7 @@
                       <code class="path-code">{{ route.path }}</code>
                     </td>
                     <td class="col-role">
-                      <span class="badge" :class="route.role === 'admin' ? 'badge-admin' : 'badge-member'">
+                      <span class="badge" :class="route.role === 'administrator' ? 'badge-admin' : 'badge-member'">
                         {{ route.role }}
                       </span>
                     </td>
@@ -278,7 +278,7 @@ const { t } = useTranslations({
           accessOwnerDesc: 'Only the resource owner can perform this action',
           accessGroup: 'Group role',
           accessGroupRole: 'Group role ({role}+)',
-          accessGroupDesc: 'Requires a minimum group role (e.g., admin, assistant)',
+          accessGroupDesc: 'Requires a minimum group role (e.g., owner, manager)',
           accessOrg: 'Org role',
           accessOrgRole: 'Org role ({role}+)',
           accessOrgDesc: 'Requires a minimum organization role (e.g., manager)',
@@ -325,7 +325,7 @@ const { t } = useTranslations({
           accessOwnerDesc: 'Seul le propriétaire de la ressource peut effectuer cette action',
           accessGroup: 'Rôle de groupe',
           accessGroupRole: 'Rôle de groupe ({role}+)',
-          accessGroupDesc: 'Nécessite un rôle de groupe minimum (ex. admin, assistant)',
+          accessGroupDesc: 'Nécessite un rôle de groupe minimum (ex. propriétaire, gestionnaire)',
           accessOrg: 'Rôle d\'organisation',
           accessOrgRole: 'Rôle d\'organisation ({role}+)',
           accessOrgDesc: 'Nécessite un rôle d\'organisation minimum (ex. gestionnaire)',

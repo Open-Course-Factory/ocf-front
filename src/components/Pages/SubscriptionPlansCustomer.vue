@@ -75,6 +75,7 @@
             <div v-if="!plan.is_active" class="coming-soon-badge">
               <i class="fas fa-clock"></i>
               {{ t('plans.comingSoon') }}
+              <AdminBadge v-if="isAdmin" icon-only />
             </div>
 
             <!-- Plan Header with Status -->
@@ -169,6 +170,7 @@
               <div class="bulk-header">
                 <i class="fas fa-layer-group"></i>
                 <span>{{ t('plans.volumePricing') }}</span>
+                <AdminBadge v-if="isAdmin" icon-only />
               </div>
               <p class="bulk-description">
                 {{ t('plans.volumeDescription') }}
@@ -304,6 +306,7 @@ import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTranslations } from '../../composables/useTranslations'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
+import AdminBadge from '../Common/AdminBadge.vue'
 import router from '../../router/index'
 import { useNotification } from '../../composables/useNotification'
 

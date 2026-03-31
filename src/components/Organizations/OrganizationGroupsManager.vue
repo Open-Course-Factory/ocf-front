@@ -6,6 +6,7 @@
         <h3>
           <i class="fas fa-layer-group"></i>
           {{ t('groups.title') }}
+          <AdminBadge v-if="isAdmin" icon-only />
         </h3>
         <p class="group-count">
           {{ groups.length }} {{ groups.length === 1 ? t('groups.group') : t('groups.groups') }}
@@ -166,6 +167,8 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import AdminBadge from '../Common/AdminBadge.vue'
+import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useTranslations } from '../../composables/useTranslations'
 import { useFormatters } from '../../composables/useFormatters'
 import { useClientPagination } from '../../composables/useClientPagination'
@@ -183,6 +186,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const router = useRouter()
 const { formatDate } = useFormatters()
+const { isAdmin } = useAdminViewMode()
 
 const { t } = useTranslations({
   en: {

@@ -186,28 +186,15 @@
           </div>
 
           <div class="role-desc-card">
-            <div class="role-desc-header admin-header">
+            <div class="role-desc-header manager-header">
               <i class="fas fa-user-shield"></i>
-              <h3>{{ t('help.account.rolesAndPermissions.groupAdmin') }}</h3>
+              <h3>{{ t('help.account.rolesAndPermissions.groupManager') }}</h3>
             </div>
-            <p>{{ t('help.account.rolesAndPermissions.groupAdminDesc') }}</p>
+            <p>{{ t('help.account.rolesAndPermissions.groupManagerDesc') }}</p>
             <ul>
-              <li>{{ t('help.account.rolesAndPermissions.groupAdminPerm1') }}</li>
-              <li>{{ t('help.account.rolesAndPermissions.groupAdminPerm2') }}</li>
-              <li>{{ t('help.account.rolesAndPermissions.groupAdminPerm3') }}</li>
-            </ul>
-          </div>
-
-          <div class="role-desc-card">
-            <div class="role-desc-header assistant-header">
-              <i class="fas fa-hands-helping"></i>
-              <h3>{{ t('help.account.rolesAndPermissions.groupAssistant') }}</h3>
-            </div>
-            <p>{{ t('help.account.rolesAndPermissions.groupAssistantDesc') }}</p>
-            <ul>
-              <li>{{ t('help.account.rolesAndPermissions.groupAssistantPerm1') }}</li>
-              <li>{{ t('help.account.rolesAndPermissions.groupAssistantPerm2') }}</li>
-              <li>{{ t('help.account.rolesAndPermissions.groupAssistantPerm3') }}</li>
+              <li>{{ t('help.account.rolesAndPermissions.groupManagerPerm1') }}</li>
+              <li>{{ t('help.account.rolesAndPermissions.groupManagerPerm2') }}</li>
+              <li>{{ t('help.account.rolesAndPermissions.groupManagerPerm3') }}</li>
             </ul>
           </div>
 
@@ -560,12 +547,8 @@ onMounted(async () => {
   background: linear-gradient(135deg, var(--color-warning-amber) 0%, var(--color-warning-amber-light) 100%);
 }
 
-.admin-header {
+.manager-header {
   background: linear-gradient(135deg, var(--color-org-personal) 0%, var(--color-org-personal-light) 100%);
-}
-
-.assistant-header {
-  background: linear-gradient(135deg, var(--color-org-team) 0%, var(--color-org-team-light) 100%);
 }
 
 .member-header {

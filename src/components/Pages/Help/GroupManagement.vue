@@ -132,20 +132,12 @@
             <p>{{ t('help.groups.management.roles.owner.description') }}</p>
           </div>
 
-          <div class="role-card admin">
+          <div class="role-card manager">
             <div class="role-header">
               <i class="fas fa-user-shield"></i>
-              <h4>{{ t('help.groups.management.roles.admin.title') }}</h4>
+              <h4>{{ t('help.groups.management.roles.manager.title') }}</h4>
             </div>
-            <p>{{ t('help.groups.management.roles.admin.description') }}</p>
-          </div>
-
-          <div class="role-card assistant">
-            <div class="role-header">
-              <i class="fas fa-hands-helping"></i>
-              <h4>{{ t('help.groups.management.roles.assistant.title') }}</h4>
-            </div>
-            <p>{{ t('help.groups.management.roles.assistant.description') }}</p>
+            <p>{{ t('help.groups.management.roles.manager.description') }}</p>
           </div>
 
           <div class="role-card member">
@@ -314,12 +306,8 @@ onMounted(async () => {
   background: linear-gradient(135deg, var(--color-warning-amber) 0%, var(--color-warning-amber-light) 100%);
 }
 
-.role-card.admin .role-header {
+.role-card.manager .role-header {
   background: linear-gradient(135deg, var(--color-org-personal) 0%, var(--color-org-personal-light) 100%);
-}
-
-.role-card.assistant .role-header {
-  background: linear-gradient(135deg, var(--color-org-team) 0%, var(--color-org-team-light) 100%);
 }
 
 .role-card.member .role-header {

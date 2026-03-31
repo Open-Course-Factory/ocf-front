@@ -25,10 +25,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
+import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { teacherService } from '../../services/domain/scenario'
 import BaseModal from '../Modals/BaseModal.vue'
 import ScenarioUploadModal from '../Modals/ScenarioUploadModal.vue'
 import ScenarioJSONImportModal from '../Modals/ScenarioJSONImportModal.vue'
+import AdminBadge from '../Common/AdminBadge.vue'
 
 interface OrgScenario {
   id: string
@@ -44,6 +46,8 @@ const props = defineProps<{
   organizationId: string
   canManage: boolean
 }>()
+
+const { isAdmin } = useAdminViewMode()
 
 const { t } = useTranslations({
   en: {
@@ -243,10 +247,12 @@ onMounted(() => {
         <button @click="showUploadModal = true" class="btn btn-sm btn-primary">
           <i class="fas fa-file-import"></i>
           {{ t('orgScenarios.importKillercoda') }}
+          <AdminBadge v-if="isAdmin" icon-only />
         </button>
         <button @click="showJSONImportModal = true" class="btn btn-sm btn-primary">
           <i class="fas fa-file-code"></i>
           {{ t('orgScenarios.importJson') }}
+          <AdminBadge v-if="isAdmin" icon-only />
         </button>
       </div>
     </div>

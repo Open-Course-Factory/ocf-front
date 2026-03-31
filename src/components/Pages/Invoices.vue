@@ -30,6 +30,7 @@ import { useInvoicesStore } from '../../stores/invoices';
 import { extractErrorMessage } from '../../utils/formatters';
 
 import { useAdminViewMode } from '../../composables/useAdminViewMode';
+import AdminBadge from '../Common/AdminBadge.vue';
 import { usePageLoad } from '../../composables/usePageLoad';
 import { useLoadingState } from '../../composables/useLoadingState';
 import { useTranslations } from '../../composables/useTranslations';
@@ -189,7 +190,7 @@ const getInvoiceStats = computed(() => {
 
             <!-- Statistiques pour les admins (en mode admin complet seulement) -->
             <div v-if="shouldShowAllData" class="stats-panel">
-                <h4><i class="fas fa-chart-bar"></i> {{ t('invoices.statsTitle') }}</h4>
+                <h4><i class="fas fa-chart-bar"></i> {{ t('invoices.statsTitle') }} <AdminBadge icon-only /></h4>
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-value">{{ getInvoiceStats.total }}</div>

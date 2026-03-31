@@ -55,6 +55,7 @@
       <button v-if="canDelete" class="btn btn-danger" @click="confirmDelete">
         <i class="fas fa-trash"></i>
         {{ t('settings.deleteOrganization') }}
+        <AdminBadge v-if="isAdminGranted" icon-only />
       </button>
       <p v-else class="permission-notice">
         <i class="fas fa-info-circle"></i>
@@ -146,7 +147,9 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import BaseModal from '../Modals/BaseModal.vue'
+import AdminBadge from '../Common/AdminBadge.vue'
 import { useOrganizationsStore } from '../../stores/organizations'
+import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useTranslations } from '../../composables/useTranslations'
 import type { Organization } from '../../types'
 
@@ -164,6 +167,8 @@ const emit = defineEmits<{
 
 const router = useRouter()
 const organizationsStore = useOrganizationsStore()
+const { isAdmin } = useAdminViewMode()
+const isAdminGranted = computed(() => isAdmin.value && !props.isOwner)
 
 // Convert to Team modal state
 const isConvertModalOpen = ref(false)

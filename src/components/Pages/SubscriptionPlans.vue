@@ -32,6 +32,7 @@ import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useNotification } from '../../composables/useNotification'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
+import AdminBadge from '../Common/AdminBadge.vue'
 import router from '../../router/index.ts'
 
 const { t } = useI18n()
@@ -195,6 +196,7 @@ const syncWithStripe = async () => {
 
             <!-- Admin controls (visible uniquement en mode admin complet) -->
             <div v-if="shouldShowAllData" class="admin-controls">
+                <AdminBadge />
                 <button
                     class="btn btn-primary"
                     @click="syncWithStripe"
@@ -377,6 +379,7 @@ const syncWithStripe = async () => {
                             >
                                 {{ entity.is_active ? t('subscriptionPlans.statusActive') : t('subscriptionPlans.statusInactive') }}
                             </span>
+                            <AdminBadge v-if="!entity.is_active" icon-only />
                             <button
                                 v-if="entity.is_active"
                                 class="btn btn-sm btn-outline-primary"

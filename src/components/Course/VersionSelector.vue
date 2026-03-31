@@ -33,6 +33,7 @@
         :title="t('courses.deleteVersion')"
       >
         <i class="fas fa-trash"></i>
+        <AdminBadge v-if="isAdminGranted" icon-only />
       </button>
     </div>
 
@@ -68,6 +69,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
+import AdminBadge from '../Common/AdminBadge.vue'
 import type { Course } from '../../types/entities'
 
 interface Props {
@@ -76,12 +78,14 @@ interface Props {
   isLoading?: boolean
   error?: string
   canDelete?: boolean
+  isAdminGranted?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isLoading: false,
   error: '',
-  canDelete: true
+  canDelete: true,
+  isAdminGranted: false
 })
 
 const emit = defineEmits<{

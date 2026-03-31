@@ -27,7 +27,7 @@ import { useTranslations } from './useTranslations'
 export interface GroupMember {
   id: string
   user_id: string
-  role: 'owner' | 'admin' | 'assistant' | 'member'
+  role: 'owner' | 'manager' | 'member'
   joined_at?: string
   user?: {
     id: string
@@ -44,7 +44,7 @@ export interface GroupMember {
 
 export interface NewMemberData {
   user_id: string
-  role: 'owner' | 'admin' | 'assistant' | 'member'
+  role: 'owner' | 'manager' | 'member'
 }
 
 export interface UseGroupMembersOptions {
@@ -114,7 +114,7 @@ export function useGroupMembers({ groupId, currentUserId, isOwner }: UseGroupMem
   })
 
   const sortedMembers = computed(() => {
-    const roleOrder = { owner: 3, admin: 2, assistant: 1, member: 0 }
+    const roleOrder = { owner: 2, manager: 1, member: 0 }
     return [...filteredMembers.value].sort((a, b) => {
       return (roleOrder[b.role] || 0) - (roleOrder[a.role] || 0)
     })

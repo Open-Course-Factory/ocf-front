@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import axios from 'axios'
 import { useStoreTranslations } from '../composables/useTranslations'
+import { useCurrentUserStore } from './currentUser'
 import { isDemoMode, logDemoAction } from '../services/demo'
 import type { User, UserEffectiveFeatures } from '../types'
 
@@ -150,11 +151,9 @@ export const usePermissionsStore = defineStore('permissions', () => {
   // ==========================================
 
   const isSystemAdmin = computed((): boolean => {
-    if (!currentUser.value) return false
-    return currentUser.value.roles?.some(role => {
-      const roleName = role.name as string
-      return roleName === 'administrator' || roleName === 'admin'
-    }) ?? false
+    // Use auth store as single source of truth — populated from /auth/me which includes roles
+    const authStore = useCurrentUserStore()
+    return authStore.userRoles?.includes('administrator') ?? false
   })
 
   const isMember = computed((): boolean => {
@@ -167,6 +166,7 @@ export const usePermissionsStore = defineStore('permissions', () => {
   // ==========================================
 
   const isOrganizationOwner = (organizationId: string): boolean => {
+    if (isSystemAdmin.value) return true
     if (!currentUser.value) return false
     const membership = currentUser.value.organization_memberships?.find(
       m => m.organization_id === organizationId
@@ -175,6 +175,7 @@ export const usePermissionsStore = defineStore('permissions', () => {
   }
 
   const isOrganizationManager = (organizationId: string): boolean => {
+    if (isSystemAdmin.value) return true
     if (!currentUser.value) return false
     const membership = currentUser.value.organization_memberships?.find(
       m => m.organization_id === organizationId
@@ -183,6 +184,7 @@ export const usePermissionsStore = defineStore('permissions', () => {
   }
 
   const canManageOrganization = (organizationId: string): boolean => {
+    if (isSystemAdmin.value) return true
     if (!currentUser.value) return false
     const membership = currentUser.value.organization_memberships?.find(
       m => m.organization_id === organizationId
@@ -202,6 +204,7 @@ export const usePermissionsStore = defineStore('permissions', () => {
   // ==========================================
 
   const isGroupOwner = (groupId: string): boolean => {
+    if (isSystemAdmin.value) return true
     if (!currentUser.value) return false
     const membership = currentUser.value.group_memberships?.find(
       m => m.group_id === groupId
@@ -209,20 +212,22 @@ export const usePermissionsStore = defineStore('permissions', () => {
     return membership?.role === 'owner'
   }
 
-  const isGroupAdmin = (groupId: string): boolean => {
+  const isGroupManager = (groupId: string): boolean => {
+    if (isSystemAdmin.value) return true
     if (!currentUser.value) return false
     const membership = currentUser.value.group_memberships?.find(
       m => m.group_id === groupId
     )
-    return membership?.role === 'admin'
+    return membership?.role === 'manager'
   }
 
   const canManageGroup = (groupId: string): boolean => {
+    if (isSystemAdmin.value) return true
     if (!currentUser.value) return false
     const membership = currentUser.value.group_memberships?.find(
       m => m.group_id === groupId
     )
-    return membership?.role === 'owner' || membership?.role === 'admin'
+    return membership?.role === 'owner' || membership?.role === 'manager'
   }
 
   const isGroupMember = (groupId: string): boolean => {
@@ -324,7 +329,7 @@ export const usePermissionsStore = defineStore('permissions', () => {
 
     // Group role checks
     isGroupOwner,
-    isGroupAdmin,
+    isGroupManager,
     canManageGroup,
     isGroupMember,
 

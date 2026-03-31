@@ -109,6 +109,7 @@
           >
             <i class="fas fa-times-circle"></i>
             {{ t('subscription.cancelSubscription') }}
+            <AdminBadge v-if="isAdmin" icon-only />
           </button>
           <button
             v-else
@@ -117,11 +118,13 @@
           >
             <i class="fas fa-undo"></i>
             {{ t('subscription.reactivateSubscription') }}
+            <AdminBadge v-if="isAdmin" icon-only />
           </button>
 
           <button class="btn btn-primary" @click="showChangePlanModal = true">
             <i class="fas fa-exchange-alt"></i>
             {{ t('subscription.changePlan') }}
+            <AdminBadge v-if="isAdmin" icon-only />
           </button>
         </div>
       </div>
@@ -139,6 +142,7 @@
       >
         <i class="fas fa-shopping-cart"></i>
         {{ t('subscription.choosePlan') }}
+        <AdminBadge v-if="isAdmin" icon-only />
       </button>
     </div>
 
@@ -214,6 +218,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import BaseModal from '../Modals/BaseModal.vue'
+import AdminBadge from '../Common/AdminBadge.vue'
+import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useTranslations } from '../../composables/useTranslations'
 import { useFormatters } from '../../composables/useFormatters'
 import { useNotification } from '../../composables/useNotification'
@@ -228,6 +234,7 @@ interface Props {
 
 const props = defineProps<Props>()
 const { formatDate, formatPrice } = useFormatters()
+const { isAdmin } = useAdminViewMode()
 const { showSuccess } = useNotification()
 const orgSubStore = useOrganizationSubscriptionsStore()
 const plansStore = useSubscriptionPlansStore()

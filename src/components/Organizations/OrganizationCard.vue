@@ -55,6 +55,7 @@
       >
         <i class="fas fa-file-import"></i>
         {{ t('organizations.import') }}
+        <AdminBadge v-if="isAdminGranted" icon-only />
       </button>
       <button
         v-if="canManage"
@@ -63,6 +64,7 @@
       >
         <i class="fas fa-cog"></i>
         {{ t('organizations.manage') }}
+        <AdminBadge v-if="isAdminGranted" icon-only />
       </button>
       <button
         class="btn btn-outline-primary"
@@ -77,6 +79,10 @@
 
 <script setup lang="ts">
 
+import { computed } from 'vue'
+import AdminBadge from '../Common/AdminBadge.vue'
+import { useAdminViewMode } from '../../composables/useAdminViewMode'
+import { useCurrentUserStore } from '../../stores/currentUser'
 import { useTranslations } from '../../composables/useTranslations'
 import type { Organization } from '../../types'
 
@@ -86,9 +92,18 @@ interface Props {
   hasSubscription?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   canManage: false,
   hasSubscription: false
+})
+
+const { isAdmin } = useAdminViewMode()
+const currentUser = useCurrentUserStore()
+
+// Badge shows only when admin is the reason we have access (not org owner/manager)
+const isAdminGranted = computed(() => {
+  if (!isAdmin.value) return false
+  return props.organization.owner_user_id !== currentUser.userId
 })
 
 const emit = defineEmits<{

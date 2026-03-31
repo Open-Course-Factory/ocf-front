@@ -4,6 +4,7 @@
       <h3>
         <i class="fas fa-layer-group"></i>
         {{ t('subscriptionPlans.advancedDetails') }}
+        <AdminBadge icon-only />
       </h3>
       <button class="collapse-toggle" :aria-expanded="isExpanded">
         <i :class="isExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
@@ -97,6 +98,7 @@
 import { ref, computed } from 'vue'
 import { useSubscriptionTranslations } from '../composables/useSubscriptionTranslations'
 import { useAdminViewMode } from '../../../composables/useAdminViewMode'
+import AdminBadge from '../../Common/AdminBadge.vue'
 
 const { t } = useSubscriptionTranslations()
 const { isAdmin } = useAdminViewMode()

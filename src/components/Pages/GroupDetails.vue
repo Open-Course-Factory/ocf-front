@@ -28,6 +28,7 @@ import { useClassGroupsStore } from '../../stores/classGroups'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import { useTranslations } from '../../composables/useTranslations'
 import { useFeatureFlags } from '../../composables/useFeatureFlags'
+import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useGroupMembers } from '../../composables/useGroupMembers'
 import { formatDate } from '../../utils/formatters'
 import { userService, type User } from '../../services/domain/user'
@@ -35,12 +36,14 @@ import type { ClassGroup } from '../../types'
 import type { Organization } from '../../types/organization'
 import axios from 'axios'
 import { GroupOverviewTab, GroupMembersManager, GroupSettingsTab, GroupCommandHistory, GroupScenariosTab, GroupActivityTab, GroupAnalyticsTab } from '../Groups'
+import AdminBadge from '../Common/AdminBadge.vue'
 
 const route = useRoute()
 const router = useRouter()
 const groupStore = useClassGroupsStore()
 const currentUser = useCurrentUserStore()
 const { isEnabled } = useFeatureFlags()
+const { isAdmin: isPlatformAdmin } = useAdminViewMode()
 
 // Translations
 const { t } = useTranslations({
@@ -67,7 +70,8 @@ const { t } = useTranslations({
       editGroup: 'Edit Group',
       deleteGroup: 'Delete Group',
       groupLoadError: 'Failed to load group details',
-      loadingMembers: 'Loading members...'
+      loadingMembers: 'Loading members...',
+      viewingAsAdmin: 'Viewing as administrator'
     }
   },
   fr: {
@@ -93,7 +97,8 @@ const { t } = useTranslations({
       editGroup: 'Modifier le groupe',
       deleteGroup: 'Supprimer le groupe',
       groupLoadError: 'Échec du chargement des détails du groupe',
-      loadingMembers: 'Chargement des membres...'
+      loadingMembers: 'Chargement des membres...',
+      viewingAsAdmin: 'Vue en tant qu\u2019administrateur'
     }
   }
 })
@@ -119,7 +124,7 @@ const groupId = computed(() => route.params.id as string | null)
 const groupMembersComposable = useGroupMembers({
   groupId,
   currentUserId: computed(() => currentUser.userId),
-  isOwner: computed(() => currentGroup.value?.owner_user_id === currentUser.userId)
+  isOwner: computed(() => isPlatformAdmin.value || currentGroup.value?.owner_user_id === currentUser.userId)
 })
 
 // Computed Properties
@@ -127,26 +132,21 @@ const isOwner = computed(() => {
   return currentGroup.value?.owner_user_id === currentUser.userId
 })
 
-const isAdmin = computed(() => {
+const isManager = computed(() => {
   const member = groupMembersComposable.members.value.find(m => m.user_id === currentUser.userId)
-  return member?.role === 'admin' || member?.role === 'owner'
+  return member?.role === 'manager' || member?.role === 'owner'
 })
 
 const canEditGroup = computed(() => {
-  return isOwner.value || isAdmin.value
+  return isPlatformAdmin.value || isOwner.value || isManager.value
 })
 
 const canDeleteGroup = computed(() => {
-  return isOwner.value
-})
-
-const isAssistant = computed(() => {
-  const member = groupMembersComposable.members.value.find(m => m.user_id === currentUser.userId)
-  return member?.role === 'assistant'
+  return isPlatformAdmin.value || isOwner.value
 })
 
 const canViewHistory = computed(() => {
-  return canEditGroup.value || isAssistant.value
+  return canEditGroup.value
 })
 
 const groupStatus = computed(() => {
@@ -315,6 +315,10 @@ watch(activeTab, (newTab) => {
           <span class="status-badge" :class="`badge-${statusColor}`">
             {{ t(`groupDetails.status${groupStatus.charAt(0).toUpperCase() + groupStatus.slice(1)}`) }}
           </span>
+          <AdminBadge
+            v-if="isPlatformAdmin && !isOwner && !isManager"
+            :tooltip="t('groupDetails.viewingAsAdmin')"
+          />
         </div>
 
         <div class="header-actions">
@@ -439,7 +443,8 @@ watch(activeTab, (newTab) => {
           :group="currentGroup"
           :can-edit-group="canEditGroup"
           :is-owner="isOwner"
-          :is-admin="isAdmin"
+          :is-manager="isManager"
+          :is-platform-admin="isPlatformAdmin"
           :subgroups="subgroups"
           @member-count-changed="handleMemberCountChanged"
         />

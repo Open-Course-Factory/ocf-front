@@ -31,13 +31,15 @@ import { userService, type User } from '../../services/domain/user'
 import { bulkImportService, type UserCredential } from '../../services/domain/bulkImport'
 import type { ClassGroup } from '../../types'
 import BaseModal from '../Modals/BaseModal.vue'
+import AdminBadge from '../Common/AdminBadge.vue'
 
 const props = defineProps<{
   groupId: string
   group: ClassGroup
   canEditGroup: boolean
   isOwner: boolean
-  isAdmin: boolean
+  isManager: boolean
+  isPlatformAdmin: boolean
   subgroups: ClassGroup[]
 }>()
 
@@ -58,8 +60,7 @@ const { t } = useTranslations({
 
       // Roles
       roleOwner: 'Owner',
-      roleAdmin: 'Admin',
-      roleAssistant: 'Assistant',
+      roleManager: 'Manager',
       roleMember: 'Member',
 
       // Actions
@@ -105,8 +106,7 @@ const { t } = useTranslations({
 
       // Roles
       roleOwner: 'Propriétaire',
-      roleAdmin: 'Administrateur',
-      roleAssistant: 'Assistant',
+      roleManager: 'Gestionnaire',
       roleMember: 'Membre',
 
       // Actions
@@ -358,6 +358,7 @@ async function handleRemoveMember(member: GroupMember) {
           <i class="fas fa-plus"></i>
           {{ t('groupMembers.addMember') }}
         </button>
+        <AdminBadge v-if="isPlatformAdmin && !isOwner" icon-only />
       </div>
     </div>
 
@@ -415,8 +416,9 @@ async function handleRemoveMember(member: GroupMember) {
             @change="groupMembersComposable.updateMemberRole(member)"
             class="role-select"
           >
-            <option value="admin">{{ t('groupMembers.roleAdmin') }}</option>
-            <option value="assistant">{{ t('groupMembers.roleAssistant') }}</option>
+            <option v-if="isPlatformAdmin && !isOwner" value="owner">🛡️ {{ t('groupMembers.roleOwner') }}</option>
+            <option v-else-if="isOwner" value="owner">{{ t('groupMembers.roleOwner') }}</option>
+            <option value="manager">{{ t('groupMembers.roleManager') }}</option>
             <option value="member">{{ t('groupMembers.roleMember') }}</option>
           </select>
           <button
@@ -485,8 +487,9 @@ async function handleRemoveMember(member: GroupMember) {
           <label>{{ t('groupMembers.selectRole') }}</label>
           <select v-model="groupMembersComposable.newMemberData.value.role" class="form-control">
             <option value="member">{{ t('groupMembers.roleMember') }}</option>
-            <option value="assistant">{{ t('groupMembers.roleAssistant') }}</option>
-            <option value="admin">{{ t('groupMembers.roleAdmin') }}</option>
+            <option value="manager">{{ t('groupMembers.roleManager') }}</option>
+            <option v-if="isPlatformAdmin && !isOwner" value="owner">🛡️ {{ t('groupMembers.roleOwner') }}</option>
+            <option v-else-if="isOwner" value="owner">{{ t('groupMembers.roleOwner') }}</option>
           </select>
         </div>
         <div v-if="groupMembersComposable.error.value" class="alert alert-danger">
@@ -655,13 +658,8 @@ async function handleRemoveMember(member: GroupMember) {
   color: var(--color-black);
 }
 
-.role-badge.role-admin {
+.role-badge.role-manager {
   background-color: var(--color-primary);
-  color: var(--color-white);
-}
-
-.role-badge.role-assistant {
-  background-color: var(--color-success);
   color: var(--color-white);
 }
 

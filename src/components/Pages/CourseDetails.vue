@@ -26,6 +26,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ref, computed, onMounted } from 'vue'
 import { useCoursesStore } from '../../stores/courses'
 import { useCurrentUserStore } from '../../stores/currentUser'
+import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import VersionSelector from '../Course/VersionSelector.vue'
@@ -37,6 +38,7 @@ const route = useRoute()
 const router = useRouter()
 const courseStore = useCoursesStore()
 const currentUserStore = useCurrentUserStore()
+const { isAdmin } = useAdminViewMode()
 const notification = useNotification()
 
 const { t } = useTranslations({
@@ -194,14 +196,24 @@ async function handleDeleteVersion(courseId: string) {
     }
 }
 
-// Computed property to check if current user can delete the course
-const canDeleteCourse = computed(() => {
+// Check if user owns the course (by email or ID)
+const isCourseOwner = computed(() => {
     if (!currentCourse.value) return false
-    if (currentUserStore.hasPermission('delete_courses')) return true
     const isOwnerByEmail = currentCourse.value.author_email === currentUserStore.userEmail
     const isOwnerById = currentCourse.value.user_id === currentUserStore.userId ||
                         currentCourse.value.owner_id === currentUserStore.userId
     return isOwnerByEmail || isOwnerById
+})
+
+// Computed property to check if current user can delete the course
+const canDeleteCourse = computed(() => {
+    if (!currentCourse.value) return false
+    return isAdmin.value || currentUserStore.hasPermission('delete_courses') || isCourseOwner.value
+})
+
+// Check if delete is admin-granted (admin but not course owner)
+const isDeleteAdminGranted = computed(() => {
+    return isAdmin.value && !isCourseOwner.value
 })
 </script>
 
@@ -229,6 +241,7 @@ const canDeleteCourse = computed(() => {
                     :is-loading="courseStore.isLoadingVersions || isLoadingCourse"
                     :error="courseStore.versionError"
                     :can-delete="canDeleteCourse"
+                    :is-admin-granted="isDeleteAdminGranted"
                     @version-changed="handleVersionChange"
                     @delete-version="handleDeleteVersion"
                 />

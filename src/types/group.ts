@@ -39,7 +39,7 @@ export interface ClassGroup extends BaseEntity {
 export interface GroupMember extends BaseEntity {
   group_id: string
   user_id: string
-  role: 'owner' | 'admin' | 'assistant' | 'member'
+  role: 'owner' | 'manager' | 'member'
   invited_by?: string
   joined_at?: string
   is_active: boolean
@@ -52,7 +52,7 @@ export interface GroupMember extends BaseEntity {
 export interface GroupMembership extends BaseEntity {
   group_id: string
   user_id: string
-  role: 'owner' | 'admin' | 'assistant' | 'member'
+  role: 'owner' | 'manager' | 'member'
   joined_at: string
 }
 

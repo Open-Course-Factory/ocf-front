@@ -25,6 +25,7 @@
       >
         <i class="fas fa-user-plus"></i>
         {{ t('members.addMember') }}
+        <AdminBadge v-if="isAdminGranted" icon-only />
       </button>
     </div>
 
@@ -253,10 +254,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import BaseModal from '../Modals/BaseModal.vue'
+import AdminBadge from '../Common/AdminBadge.vue'
+import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useTranslations } from '../../composables/useTranslations'
 import { useFormatters } from '../../composables/useFormatters'
 import { useClientPagination } from '../../composables/useClientPagination'
@@ -278,6 +281,9 @@ const props = withDefaults(defineProps<Props>(), {
 const router = useRouter()
 const { formatDate } = useFormatters()
 const toast = useToast()
+const { isAdmin } = useAdminViewMode()
+
+const isAdminGranted = computed(() => isAdmin.value && !props.isOwner)
 
 const { t } = useTranslations({
   en: {
