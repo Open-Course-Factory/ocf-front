@@ -30,7 +30,7 @@ export function registerTerminalsHelp(store: ReturnType<typeof useHelpRegistrySt
     },
     description: {
       en: 'Learn how to create, manage and share your terminal sessions',
-      fr: 'Apprenez a creer, gerer et partager vos sessions de terminaux'
+      fr: 'Apprenez à créer, gérer et partager vos sessions de terminaux'
     },
     icon: 'fas fa-terminal',
     featureFlag: 'terminal_management',
@@ -43,7 +43,7 @@ export function registerTerminalsHelp(store: ReturnType<typeof useHelpRegistrySt
         },
         description: {
           en: 'Terminals are virtual development environments that allow you to work on your projects directly from your browser. This guide will help you create your first terminal session.',
-          fr: 'Les terminaux sont des environnements de developpement virtuels qui vous permettent de travailler sur vos projets directement depuis votre navigateur. Ce guide vous aidera a creer votre premiere session terminal.'
+          fr: 'Les terminaux sont des environnements de développement virtuels qui vous permettent de travailler sur vos projets directement depuis votre navigateur. Ce guide vous aidera à créer votre première session terminal.'
         },
         icon: 'fas fa-play-circle'
       },
@@ -55,7 +55,7 @@ export function registerTerminalsHelp(store: ReturnType<typeof useHelpRegistrySt
         },
         description: {
           en: 'Learn how to effectively manage your terminal sessions, synchronize your work, and access your environments from anywhere.',
-          fr: 'Apprenez a gerer efficacement vos sessions terminal, synchroniser votre travail et acceder a vos environnements depuis n\'importe ou.'
+          fr: 'Apprenez à gérer efficacement vos sessions terminal, synchroniser votre travail et accéder à vos environnements depuis n\'importe où.'
         },
         icon: 'fas fa-cogs'
       },
@@ -67,7 +67,7 @@ export function registerTerminalsHelp(store: ReturnType<typeof useHelpRegistrySt
         },
         description: {
           en: 'Terminals can be shared with other users to facilitate collaboration, teaching, or technical support.',
-          fr: 'Les terminaux peuvent etre partages avec d\'autres utilisateurs pour faciliter la collaboration, l\'enseignement ou le support technique.'
+          fr: 'Les terminaux peuvent être partagés avec d\'autres utilisateurs pour faciliter la collaboration, l\'enseignement ou le support technique.'
         },
         icon: 'fas fa-share-alt'
       },
@@ -75,11 +75,11 @@ export function registerTerminalsHelp(store: ReturnType<typeof useHelpRegistrySt
         route: 'terminals/troubleshooting',
         title: {
           en: 'Troubleshooting',
-          fr: 'Depannage'
+          fr: 'Dépannage'
         },
         description: {
           en: 'Solutions to common problems and incident resolution guide',
-          fr: 'Solutions aux problemes courants et guide de resolution des incidents'
+          fr: 'Solutions aux problèmes courants et guide de résolution des incidents'
         },
         icon: 'fas fa-wrench'
       },
@@ -87,11 +87,11 @@ export function registerTerminalsHelp(store: ReturnType<typeof useHelpRegistrySt
         route: 'terminals/ssh-keys',
         title: {
           en: 'SSH Key Management',
-          fr: 'Gestion des cles SSH'
+          fr: 'Gestion des clés SSH'
         },
         description: {
           en: 'Manage your terminal access keys to connect to terminal sessions securely.',
-          fr: 'Gerez vos cles d\'acces terminal pour vous connecter aux sessions de terminal en toute securite.'
+          fr: 'Gérez vos clés d\'accès terminal pour vous connecter aux sessions de terminal en toute sécurité.'
         },
         icon: 'fas fa-key'
       }

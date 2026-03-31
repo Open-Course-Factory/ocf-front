@@ -30,7 +30,7 @@ export function registerCoursesHelp(store: ReturnType<typeof useHelpRegistryStor
     },
     description: {
       en: 'Master the course creation and management system',
-      fr: 'Maitrisez le systeme de creation et gestion de cours'
+      fr: 'Maîtrisez le système de création et gestion de cours'
     },
     icon: 'fas fa-graduation-cap',
     featureFlag: 'course_conception',
@@ -43,7 +43,7 @@ export function registerCoursesHelp(store: ReturnType<typeof useHelpRegistryStor
         },
         description: {
           en: 'Understanding the hierarchical organization of educational content in OCF',
-          fr: 'Comprendre l\'organisation hierarchique des contenus pedagogiques dans OCF'
+          fr: 'Comprendre l\'organisation hiérarchique des contenus pédagogiques dans OCF'
         },
         icon: 'fas fa-sitemap'
       },
@@ -51,11 +51,11 @@ export function registerCoursesHelp(store: ReturnType<typeof useHelpRegistryStor
         route: 'courses/content',
         title: {
           en: 'Content Creation',
-          fr: 'Creation de Contenu'
+          fr: 'Création de Contenu'
         },
         description: {
           en: 'Guide for effectively writing and structuring educational content',
-          fr: 'Guide pour rediger et structurer efficacement le contenu pedagogique'
+          fr: 'Guide pour rédiger et structurer efficacement le contenu pédagogique'
         },
         icon: 'fas fa-edit'
       }

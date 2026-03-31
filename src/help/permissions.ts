@@ -26,11 +26,11 @@ export function registerPermissionsHelp(store: ReturnType<typeof useHelpRegistry
     id: 'permissions',
     title: {
       en: 'Permissions Reference',
-      fr: 'Reference des permissions'
+      fr: 'Référence des permissions'
     },
     description: {
       en: 'Complete technical reference of all API endpoints and their access control rules',
-      fr: 'Reference technique complete de tous les endpoints API et de leurs regles de controle d\'acces'
+      fr: 'Référence technique complète de tous les endpoints API et de leurs règles de contrôle d\'accès'
     },
     icon: 'fas fa-lock',
     items: [
@@ -38,11 +38,11 @@ export function registerPermissionsHelp(store: ReturnType<typeof useHelpRegistry
         route: 'account/permissions-reference',
         title: {
           en: 'API Permissions Reference',
-          fr: 'Reference des permissions API'
+          fr: 'Référence des permissions API'
         },
         description: {
           en: 'Complete technical reference of all API endpoints and their access control rules.',
-          fr: 'Reference technique complete de tous les endpoints API et de leurs regles de controle d\'acces.'
+          fr: 'Référence technique complète de tous les endpoints API et de leurs règles de contrôle d\'accès.'
         },
         icon: 'fas fa-lock'
       }

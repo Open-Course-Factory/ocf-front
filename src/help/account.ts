@@ -30,7 +30,7 @@ export function registerAccountHelp(store: ReturnType<typeof useHelpRegistryStor
     },
     description: {
       en: 'Manage your subscription, billing and account settings',
-      fr: 'Gerez votre abonnement, facturation et parametres de compte'
+      fr: 'Gérez votre abonnement, facturation et paramètres de compte'
     },
     icon: 'fas fa-user-cog',
     items: [
@@ -42,7 +42,7 @@ export function registerAccountHelp(store: ReturnType<typeof useHelpRegistryStor
         },
         description: {
           en: 'Manage your subscription, understand plan features, and optimize your usage.',
-          fr: 'Gerez votre abonnement, comprenez les fonctionnalites des plans et optimisez votre utilisation.'
+          fr: 'Gérez votre abonnement, comprenez les fonctionnalités des plans et optimisez votre utilisation.'
         },
         icon: 'fas fa-calendar-check'
       },
@@ -54,7 +54,7 @@ export function registerAccountHelp(store: ReturnType<typeof useHelpRegistryStor
         },
         description: {
           en: 'Everything you need to know about billing, payments, and financial management of your account.',
-          fr: 'Tout ce que vous devez savoir sur la facturation, les paiements et la gestion financiere de votre compte.'
+          fr: 'Tout ce que vous devez savoir sur la facturation, les paiements et la gestion financière de votre compte.'
         },
         icon: 'fas fa-credit-card'
       },
@@ -62,11 +62,11 @@ export function registerAccountHelp(store: ReturnType<typeof useHelpRegistryStor
         route: 'account/roles-and-permissions',
         title: {
           en: 'Roles & Permissions',
-          fr: 'Roles et Permissions'
+          fr: 'Rôles et Permissions'
         },
         description: {
           en: 'Understand organization roles and what each role can do.',
-          fr: 'Comprendre les roles d\'organisation et ce que chaque role peut faire.'
+          fr: 'Comprendre les rôles d\'organisation et ce que chaque rôle peut faire.'
         },
         icon: 'fas fa-user-shield'
       },
@@ -74,11 +74,11 @@ export function registerAccountHelp(store: ReturnType<typeof useHelpRegistryStor
         route: 'account/settings',
         title: {
           en: 'Settings & Preferences',
-          fr: 'Parametres & Preferences'
+          fr: 'Paramètres & Préférences'
         },
         description: {
           en: 'Configure your account settings to personalize your experience, from language and theme to security and notifications.',
-          fr: 'Configurez les parametres de votre compte pour personnaliser votre experience, de la langue et du theme a la securite et aux notifications.'
+          fr: 'Configurez les paramètres de votre compte pour personnaliser votre expérience, de la langue et du thème à la sécurité et aux notifications.'
         },
         icon: 'fas fa-cog'
       },
@@ -86,11 +86,11 @@ export function registerAccountHelp(store: ReturnType<typeof useHelpRegistryStor
         route: 'account/themes',
         title: {
           en: 'Dark Mode & Themes',
-          fr: 'Mode sombre & Themes'
+          fr: 'Mode sombre & Thèmes'
         },
         description: {
           en: 'Personalize the visual appearance of the platform with theme selection and display density options.',
-          fr: 'Personnalisez l\'apparence visuelle de la plateforme avec le choix du theme et les options de densite d\'affichage.'
+          fr: 'Personnalisez l\'apparence visuelle de la plateforme avec le choix du thème et les options de densité d\'affichage.'
         },
         icon: 'fas fa-palette'
       }

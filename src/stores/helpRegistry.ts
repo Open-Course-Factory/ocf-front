@@ -73,7 +73,7 @@ export const useHelpRegistryStore = defineStore('helpRegistry', () => {
       {
         route: '/help',
         label: { en: 'Help & Documentation', fr: 'Aide & Documentation' },
-        title: { en: 'Everything you need to get started', fr: 'Tout ce dont vous avez besoin pour demarrer' },
+        title: { en: 'Everything you need to get started', fr: 'Tout ce dont vous avez besoin pour démarrer' },
         icon: 'fas fa-book'
       }
     ]

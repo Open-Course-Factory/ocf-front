@@ -26,11 +26,11 @@ export function registerScenariosHelp(store: ReturnType<typeof useHelpRegistrySt
     id: 'scenarios',
     title: {
       en: 'Interactive Scenarios',
-      fr: 'Scenarios interactifs'
+      fr: 'Scénarios interactifs'
     },
     description: {
       en: 'Learn how to use and create step-by-step interactive lab exercises',
-      fr: 'Apprenez a utiliser et creer des exercices pratiques interactifs etape par etape'
+      fr: 'Apprenez à utiliser et créer des exercices pratiques interactifs étape par étape'
     },
     icon: 'fas fa-flag-checkered',
     featureFlag: 'scenarios',
@@ -39,11 +39,11 @@ export function registerScenariosHelp(store: ReturnType<typeof useHelpRegistrySt
         route: 'scenarios/getting-started',
         title: {
           en: 'Getting Started with Scenarios',
-          fr: 'Premiers pas avec les scenarios'
+          fr: 'Premiers pas avec les scénarios'
         },
         description: {
           en: 'Interactive scenarios are guided, step-by-step lab exercises that run on real Linux terminals. Follow instructions, execute commands, and get instant feedback on your progress.',
-          fr: 'Les scenarios interactifs sont des exercices pratiques guides, etape par etape, qui s\'executent sur de vrais terminaux Linux. Suivez les instructions, executez des commandes et obtenez un retour instantane sur votre progression.'
+          fr: 'Les scénarios interactifs sont des exercices pratiques guidés, étape par étape, qui s\'exécutent sur de vrais terminaux Linux. Suivez les instructions, exécutez des commandes et obtenez un retour instantané sur votre progression.'
         },
         icon: 'fas fa-play-circle'
       },
@@ -51,11 +51,11 @@ export function registerScenariosHelp(store: ReturnType<typeof useHelpRegistrySt
         route: 'scenarios/creation',
         title: {
           en: 'Creating Scenarios',
-          fr: 'Creation de scenarios'
+          fr: 'Création de scénarios'
         },
         description: {
           en: 'Learn how to build engaging, step-by-step interactive exercises for your learners with real terminal environments, verification scripts, and CTF challenges.',
-          fr: 'Apprenez a concevoir des exercices interactifs engageants, etape par etape, pour vos apprenants avec des environnements terminaux reels, des scripts de verification et des defis CTF.'
+          fr: 'Apprenez à concevoir des exercices interactifs engageants, étape par étape, pour vos apprenants avec des environnements terminaux réels, des scripts de vérification et des défis CTF.'
         },
         icon: 'fas fa-plus-circle'
       }
