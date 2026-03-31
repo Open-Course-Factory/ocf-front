@@ -251,10 +251,103 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { useTranslations } from '../../../composables/useTranslations'
-import { helpEn } from '../../../locales/help/en'
-import { helpFr } from '../../../locales/help/fr'
 
-const { t } = useTranslations({ en: helpEn, fr: helpFr })
+const { t } = useTranslations({
+  en: {
+    help: {
+      navigation: { backToHelp: '← Back to Help Center' },
+      account: {
+        permissionsReference: {
+          title: 'API Permissions Reference',
+          subtitle: 'Auto-generated reference of all API permissions, roles, and access rules',
+          loading: 'Loading permissions reference...',
+          error: 'Failed to load permissions reference. The API may be unavailable.',
+          retry: 'Retry',
+          noData: 'No permissions data available.',
+          legendTitle: 'Understanding the Reference',
+          legendDescription: 'Each API endpoint is protected by two layers: a platform role (member or admin) that controls HTTP-level access, and a fine-grained access rule that enforces business logic.',
+          legendMember: 'All authenticated users (students, teachers, trainers)',
+          legendAdmin: 'Platform administrators only',
+          accessRulesTitle: 'Access Rule Types',
+          accessSelf: 'Self only',
+          accessSelfDesc: 'Users can only access their own resources',
+          accessAdminOnly: 'Admin only',
+          accessAdminOnlyDesc: 'Restricted to platform administrators',
+          accessOwner: 'Entity owner',
+          accessOwnerEntity: 'Entity owner ({entity})',
+          accessOwnerDesc: 'Only the resource owner can perform this action',
+          accessGroup: 'Group role',
+          accessGroupRole: 'Group role ({role}+)',
+          accessGroupDesc: 'Requires a minimum group role (e.g., admin, assistant)',
+          accessOrg: 'Org role',
+          accessOrgRole: 'Org role ({role}+)',
+          accessOrgDesc: 'Requires a minimum organization role (e.g., manager)',
+          accessAny: 'Any member',
+          accessAnyDesc: 'Any authenticated user can access this endpoint',
+          colAction: 'Action',
+          colMethod: 'Method',
+          colPath: 'Path',
+          colRole: 'Role',
+          colAccessRule: 'Access Rule',
+          entityCrudTitle: 'Entity CRUD Permissions',
+          entityCrudDescription: 'Access rules for standard Create, Read, Update, Delete operations on each entity. These are enforced by the entity management framework.',
+          entityColumn: 'Entity',
+          colCreate: 'Create',
+          colRead: 'Read',
+          colUpdate: 'Update',
+          colDelete: 'Delete'
+        }
+      }
+    }
+  },
+  fr: {
+    help: {
+      navigation: { backToHelp: '← Retour au Centre d\'Aide' },
+      account: {
+        permissionsReference: {
+          title: 'Référence des permissions API',
+          subtitle: 'Référence auto-générée de toutes les permissions API, rôles et règles d\'accès',
+          loading: 'Chargement de la référence des permissions...',
+          error: 'Impossible de charger la référence des permissions. L\'API est peut-être indisponible.',
+          retry: 'Réessayer',
+          noData: 'Aucune donnée de permissions disponible.',
+          legendTitle: 'Comprendre la référence',
+          legendDescription: 'Chaque endpoint API est protégé par deux couches : un rôle plateforme (member ou admin) qui contrôle l\'accès HTTP, et une règle d\'accès fine qui applique la logique métier.',
+          legendMember: 'Tous les utilisateurs authentifiés (étudiants, enseignants, formateurs)',
+          legendAdmin: 'Administrateurs de la plateforme uniquement',
+          accessRulesTitle: 'Types de règles d\'accès',
+          accessSelf: 'Soi uniquement',
+          accessSelfDesc: 'Les utilisateurs ne peuvent accéder qu\'à leurs propres ressources',
+          accessAdminOnly: 'Admin uniquement',
+          accessAdminOnlyDesc: 'Réservé aux administrateurs de la plateforme',
+          accessOwner: 'Propriétaire',
+          accessOwnerEntity: 'Propriétaire ({entity})',
+          accessOwnerDesc: 'Seul le propriétaire de la ressource peut effectuer cette action',
+          accessGroup: 'Rôle de groupe',
+          accessGroupRole: 'Rôle de groupe ({role}+)',
+          accessGroupDesc: 'Nécessite un rôle de groupe minimum (ex. admin, assistant)',
+          accessOrg: 'Rôle d\'organisation',
+          accessOrgRole: 'Rôle d\'organisation ({role}+)',
+          accessOrgDesc: 'Nécessite un rôle d\'organisation minimum (ex. gestionnaire)',
+          accessAny: 'Tout membre',
+          accessAnyDesc: 'Tout utilisateur authentifié peut accéder à cet endpoint',
+          colAction: 'Action',
+          colMethod: 'Méthode',
+          colPath: 'Chemin',
+          colRole: 'Rôle',
+          colAccessRule: 'Règle d\'accès',
+          entityCrudTitle: 'Permissions CRUD des entités',
+          entityCrudDescription: 'Règles d\'accès pour les opérations standard Créer, Lire, Modifier, Supprimer sur chaque entité. Appliquées par le framework de gestion d\'entités.',
+          entityColumn: 'Entité',
+          colCreate: 'Créer',
+          colRead: 'Lire',
+          colUpdate: 'Modifier',
+          colDelete: 'Supprimer'
+        }
+      }
+    }
+  }
+})
 const route = useRoute()
 
 const isPublicHelp = computed(() => route.path.startsWith('/help-public'))

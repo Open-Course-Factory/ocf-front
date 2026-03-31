@@ -247,7 +247,7 @@ const { t } = useTranslations({
 })
 
 const goToRolesHelp = () => {
-  router.push({ name: 'HelpRolesAndPermissions' })
+  router.push({ name: 'Help_account_roles-and-permissions' })
 }
 
 const confirmConvertToTeam = () => {

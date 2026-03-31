@@ -37,6 +37,7 @@ export function registerScenariosHelp(store: ReturnType<typeof useHelpRegistrySt
     items: [
       {
         route: 'scenarios/getting-started',
+        component: () => import('../components/Pages/Help/ScenarioGettingStarted.vue'),
         title: {
           en: 'Getting Started with Scenarios',
           fr: 'Premiers pas avec les scénarios'
@@ -49,6 +50,7 @@ export function registerScenariosHelp(store: ReturnType<typeof useHelpRegistrySt
       },
       {
         route: 'scenarios/creation',
+        component: () => import('../components/Pages/Help/ScenarioCreation.vue'),
         title: {
           en: 'Creating Scenarios',
           fr: 'Création de scénarios'

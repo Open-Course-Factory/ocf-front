@@ -33,6 +33,7 @@ export interface HelpItem {
   title: BilingualText
   description: BilingualText
   icon: string
+  component?: () => Promise<any>
 }
 
 export interface HelpSection {

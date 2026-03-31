@@ -36,6 +36,7 @@ export function registerOrganizationsHelp(store: ReturnType<typeof useHelpRegist
     items: [
       {
         route: 'organizations/overview',
+        component: () => import('../components/Pages/Help/AccountOrganizations.vue'),
         title: {
           en: 'Organizations Overview',
           fr: 'Vue d\'ensemble des Organisations'
@@ -48,6 +49,7 @@ export function registerOrganizationsHelp(store: ReturnType<typeof useHelpRegist
       },
       {
         route: 'groups/management',
+        component: () => import('../components/Pages/Help/GroupManagement.vue'),
         title: {
           en: 'Group Management',
           fr: 'Gestion des Groupes'
@@ -60,6 +62,7 @@ export function registerOrganizationsHelp(store: ReturnType<typeof useHelpRegist
       },
       {
         route: 'organizations/bulk-import',
+        component: () => import('../components/Pages/Help/BulkImport.vue'),
         title: {
           en: 'Bulk Import',
           fr: 'Import en Masse'
@@ -72,6 +75,7 @@ export function registerOrganizationsHelp(store: ReturnType<typeof useHelpRegist
       },
       {
         route: 'licenses/bulk-purchase',
+        component: () => import('../components/Pages/Help/BulkLicenses.vue'),
         title: {
           en: 'Bulk Licenses',
           fr: 'Licences en Volume'

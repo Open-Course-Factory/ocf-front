@@ -37,6 +37,7 @@ export function registerCoursesHelp(store: ReturnType<typeof useHelpRegistryStor
     items: [
       {
         route: 'courses/structure',
+        component: () => import('../components/Pages/Help/CourseStructure.vue'),
         title: {
           en: 'Course Structure',
           fr: 'Structure des Cours'
@@ -49,6 +50,7 @@ export function registerCoursesHelp(store: ReturnType<typeof useHelpRegistryStor
       },
       {
         route: 'courses/content',
+        component: () => import('../components/Pages/Help/CourseContent.vue'),
         title: {
           en: 'Content Creation',
           fr: 'Création de Contenu'

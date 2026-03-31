@@ -36,6 +36,7 @@ export function registerPermissionsHelp(store: ReturnType<typeof useHelpRegistry
     items: [
       {
         route: 'account/permissions-reference',
+        component: () => import('../components/Pages/Help/PermissionsReference.vue'),
         title: {
           en: 'API Permissions Reference',
           fr: 'Référence des permissions API'

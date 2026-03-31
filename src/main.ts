@@ -32,7 +32,7 @@ import { useCurrentUserStore } from './stores/currentUser'
 import { setupAxiosInterceptors, setupAxiosDefaults } from './services/core/http'
 import { featureFlagService } from './services/features'
 import i18n from './i18n'
-import { registerAllHelp } from './help'
+import { registerAllHelp, registerHelpRoutes } from './help'
 
 // Vuetify
 import 'vuetify/styles'
@@ -85,6 +85,8 @@ async function initializeApp() {
 
     // Register help sections into the help registry store
     registerAllHelp()
+    // Dynamically register help article routes from the registry
+    registerHelpRoutes(router)
 
     // Step 2: Now that Pinia is registered, stores can access persisted data
     // Initialize currentUser store to ensure token is loaded from localStorage

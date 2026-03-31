@@ -109,103 +109,6 @@ const basicRoutes = [
     component: () => import('../components/Pages/Help.vue'),
     meta: { requiresAuth: false }
   },
-  // Public help sub-routes for non-authenticated users
-  {
-    path: '/help-public/terminals/getting-started',
-    name: 'HelpPublicTerminalsGettingStarted',
-    component: () => import('../components/Pages/Help/TerminalGettingStarted.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/help-public/terminals/managing-sessions',
-    name: 'HelpPublicTerminalsManagingSessions',
-    component: () => import('../components/Pages/Help/TerminalManagingSessions.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/help-public/terminals/sharing',
-    name: 'HelpPublicTerminalsSharing',
-    component: () => import('../components/Pages/Help/TerminalSharing.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/help-public/terminals/troubleshooting',
-    name: 'HelpPublicTerminalsTroubleshooting',
-    component: () => import('../components/Pages/Help/TerminalTroubleshooting.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/help-public/terminals/ssh-keys',
-    name: 'HelpPublicTerminalsSSHKeys',
-    component: () => import('../components/Pages/Help/SSHKeyManagement.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/help-public/courses/structure',
-    name: 'HelpPublicCoursesStructure',
-    component: () => import('../components/Pages/Help/CourseStructure.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/help-public/courses/content',
-    name: 'HelpPublicCoursesContent',
-    component: () => import('../components/Pages/Help/CourseContent.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/help-public/account/subscription',
-    name: 'HelpPublicAccountSubscription',
-    component: () => import('../components/Pages/Help/AccountSubscription.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/help-public/account/billing',
-    name: 'HelpPublicAccountBilling',
-    component: () => import('../components/Pages/Help/AccountBilling.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/help-public/account/roles-and-permissions',
-    name: 'HelpPublicRolesAndPermissions',
-    component: () => import('../components/Pages/Help/RolesAndPermissions.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/help-public/account/settings',
-    name: 'HelpPublicAccountSettings',
-    component: () => import('../components/Pages/Help/SettingsPreferences.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/help-public/account/themes',
-    name: 'HelpPublicAccountThemes',
-    component: () => import('../components/Pages/Help/DarkModeThemes.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/help-public/organizations/overview',
-    name: 'HelpPublicOrganizationsOverview',
-    component: () => import('../components/Pages/Help/AccountOrganizations.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/help-public/groups/management',
-    name: 'HelpPublicGroupManagement',
-    component: () => import('../components/Pages/Help/GroupManagement.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/help-public/scenarios/getting-started',
-    name: 'HelpPublicScenariosGettingStarted',
-    component: () => import('../components/Pages/Help/ScenarioGettingStarted.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/help-public/scenarios/creation',
-    name: 'HelpPublicScenariosCreation',
-    component: () => import('../components/Pages/Help/ScenarioCreation.vue'),
-    meta: { requiresAuth: false }
-  },
   // Route spéciale pour l'affichage du terminal en iframe (sans layout)
   {
     path: '/terminal/:sessionId',
@@ -228,6 +131,7 @@ const basicRoutes = [
   },
   {
     path: '/',
+    name: 'Layout',
     component: Layout,
     meta: { requiresAuth: true },
     children: [
@@ -318,10 +222,6 @@ const basicRoutes = [
       { path: 'payment-methods', name: 'PaymentMethods', component: () => import('../components/Pages/PaymentMethods.vue'), meta: { requiresAuth: true, isSettings: true, requiresEmailVerification: true } },
       { path: 'invoices', name: 'Invoices', component: () => import('../components/Pages/Invoices.vue'), meta: { requiresAuth: true } },
       { path: 'subscription-dashboard', name: 'SubscriptionDashboard', component: () => import('../components/Pages/SubscriptionDashboard.vue'), meta: { requiresAuth: true } },
-
-      // Help Routes
-      { path: 'help/account/roles-and-permissions', name: 'HelpRolesAndPermissions', component: () => import('../components/Pages/Help/RolesAndPermissions.vue'), meta: { requiresAuth: true } },
-      { path: 'help/account/permissions-reference', name: 'HelpPermissionsReference', component: () => import('../components/Pages/Help/PermissionsReference.vue'), meta: { requiresAuth: true } },
 
       // Bulk License Management Routes
       {
@@ -510,113 +410,11 @@ const basicRoutes = [
         meta: { requiresAuth: true, requiresAdmin: true }
       },
 
-      // Help and Documentation routes
+      // Help and Documentation (main page only; article routes are dynamically registered)
       {
         path: 'help',
         name: 'Help',
         component: () => import('../components/Pages/Help.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'help/terminals/getting-started',
-        name: 'HelpTerminalsGettingStarted',
-        component: () => import('../components/Pages/Help/TerminalGettingStarted.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'help/terminals/managing-sessions',
-        name: 'HelpTerminalsManagingSessions',
-        component: () => import('../components/Pages/Help/TerminalManagingSessions.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'help/terminals/sharing',
-        name: 'HelpTerminalsSharing',
-        component: () => import('../components/Pages/Help/TerminalSharing.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'help/terminals/troubleshooting',
-        name: 'HelpTerminalsTroubleshooting',
-        component: () => import('../components/Pages/Help/TerminalTroubleshooting.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'help/terminals/ssh-keys',
-        name: 'HelpTerminalsSSHKeys',
-        component: () => import('../components/Pages/Help/SSHKeyManagement.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'help/courses/structure',
-        name: 'HelpCoursesStructure',
-        component: () => import('../components/Pages/Help/CourseStructure.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'help/courses/content',
-        name: 'HelpCoursesContent',
-        component: () => import('../components/Pages/Help/CourseContent.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'help/account/subscription',
-        name: 'HelpAccountSubscription',
-        component: () => import('../components/Pages/Help/AccountSubscription.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'help/account/billing',
-        name: 'HelpAccountBilling',
-        component: () => import('../components/Pages/Help/AccountBilling.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'help/account/settings',
-        name: 'HelpAccountSettings',
-        component: () => import('../components/Pages/Help/SettingsPreferences.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'help/account/themes',
-        name: 'HelpAccountThemes',
-        component: () => import('../components/Pages/Help/DarkModeThemes.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'help/organizations/overview',
-        name: 'HelpOrganizationsOverview',
-        component: () => import('../components/Pages/Help/AccountOrganizations.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'help/groups/management',
-        name: 'HelpGroupManagement',
-        component: () => import('../components/Pages/Help/GroupManagement.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'help/organizations/bulk-import',
-        name: 'HelpBulkImport',
-        component: () => import('../components/Pages/Help/BulkImport.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'help/licenses/bulk-purchase',
-        name: 'HelpBulkLicenses',
-        component: () => import('../components/Pages/Help/BulkLicenses.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'help/scenarios/getting-started',
-        name: 'HelpScenariosGettingStarted',
-        component: () => import('../components/Pages/Help/ScenarioGettingStarted.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'help/scenarios/creation',
-        name: 'HelpScenariosCreation',
-        component: () => import('../components/Pages/Help/ScenarioCreation.vue'),
         meta: { requiresAuth: true }
       }
     ],

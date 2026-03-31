@@ -19,6 +19,7 @@
  * See the LICENSE file for more information.
  */
 
+import type { Router } from 'vue-router'
 import { useHelpRegistryStore } from '../stores/helpRegistry'
 import { registerTerminalsHelp } from './terminals'
 import { registerScenariosHelp } from './scenarios'
@@ -36,4 +37,30 @@ export function registerAllHelp() {
   registerOrganizationsHelp(store)
   registerAccountHelp(store)
   registerPermissionsHelp(store)
+}
+
+export function registerHelpRoutes(router: Router) {
+  const store = useHelpRegistryStore()
+
+  for (const section of store.sections) {
+    for (const item of section.items) {
+      if (!item.component) continue
+
+      // Authenticated route (nested under Layout)
+      router.addRoute('Layout', {
+        path: `help/${item.route}`,
+        name: `Help_${item.route.replace(/\//g, '_')}`,
+        component: item.component,
+        meta: { requiresAuth: true }
+      })
+
+      // Public route
+      router.addRoute({
+        path: `/help-public/${item.route}`,
+        name: `HelpPublic_${item.route.replace(/\//g, '_')}`,
+        component: item.component,
+        meta: { requiresAuth: false }
+      })
+    }
+  }
 }

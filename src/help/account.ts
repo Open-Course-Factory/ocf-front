@@ -36,6 +36,7 @@ export function registerAccountHelp(store: ReturnType<typeof useHelpRegistryStor
     items: [
       {
         route: 'account/subscription',
+        component: () => import('../components/Pages/Help/AccountSubscription.vue'),
         title: {
           en: 'Subscription & Plans',
           fr: 'Abonnement et Plans'
@@ -48,6 +49,7 @@ export function registerAccountHelp(store: ReturnType<typeof useHelpRegistryStor
       },
       {
         route: 'account/billing',
+        component: () => import('../components/Pages/Help/AccountBilling.vue'),
         title: {
           en: 'Billing & Payments',
           fr: 'Facturation et Paiements'
@@ -60,6 +62,7 @@ export function registerAccountHelp(store: ReturnType<typeof useHelpRegistryStor
       },
       {
         route: 'account/roles-and-permissions',
+        component: () => import('../components/Pages/Help/RolesAndPermissions.vue'),
         title: {
           en: 'Roles & Permissions',
           fr: 'Rôles et Permissions'
@@ -72,6 +75,7 @@ export function registerAccountHelp(store: ReturnType<typeof useHelpRegistryStor
       },
       {
         route: 'account/settings',
+        component: () => import('../components/Pages/Help/SettingsPreferences.vue'),
         title: {
           en: 'Settings & Preferences',
           fr: 'Paramètres & Préférences'
@@ -84,6 +88,7 @@ export function registerAccountHelp(store: ReturnType<typeof useHelpRegistryStor
       },
       {
         route: 'account/themes',
+        component: () => import('../components/Pages/Help/DarkModeThemes.vue'),
         title: {
           en: 'Dark Mode & Themes',
           fr: 'Mode sombre & Thèmes'

@@ -37,6 +37,7 @@ export function registerTerminalsHelp(store: ReturnType<typeof useHelpRegistrySt
     items: [
       {
         route: 'terminals/getting-started',
+        component: () => import('../components/Pages/Help/TerminalGettingStarted.vue'),
         title: {
           en: 'Getting Started',
           fr: 'Premiers Pas'
@@ -49,6 +50,7 @@ export function registerTerminalsHelp(store: ReturnType<typeof useHelpRegistrySt
       },
       {
         route: 'terminals/managing-sessions',
+        component: () => import('../components/Pages/Help/TerminalManagingSessions.vue'),
         title: {
           en: 'Managing Sessions',
           fr: 'Gestion des Sessions'
@@ -61,6 +63,7 @@ export function registerTerminalsHelp(store: ReturnType<typeof useHelpRegistrySt
       },
       {
         route: 'terminals/sharing',
+        component: () => import('../components/Pages/Help/TerminalSharing.vue'),
         title: {
           en: 'Sharing & Collaboration',
           fr: 'Partage et Collaboration'
@@ -73,6 +76,7 @@ export function registerTerminalsHelp(store: ReturnType<typeof useHelpRegistrySt
       },
       {
         route: 'terminals/troubleshooting',
+        component: () => import('../components/Pages/Help/TerminalTroubleshooting.vue'),
         title: {
           en: 'Troubleshooting',
           fr: 'Dépannage'
@@ -85,6 +89,7 @@ export function registerTerminalsHelp(store: ReturnType<typeof useHelpRegistrySt
       },
       {
         route: 'terminals/ssh-keys',
+        component: () => import('../components/Pages/Help/SSHKeyManagement.vue'),
         title: {
           en: 'SSH Key Management',
           fr: 'Gestion des clés SSH'
