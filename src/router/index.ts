@@ -1,6 +1,6 @@
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2025 Solution Libre
+ * Copyright (C) 2023-2026 Solution Libre
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -168,12 +168,6 @@ const basicRoutes = [
     path: '/help-public/account/roles-and-permissions',
     name: 'HelpPublicRolesAndPermissions',
     component: () => import('../components/Pages/Help/RolesAndPermissions.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/help-public/account/permissions-reference',
-    name: 'HelpPublicPermissionsReference',
-    component: () => import('../components/Pages/Help/PermissionsReference.vue'),
     meta: { requiresAuth: false }
   },
   {
