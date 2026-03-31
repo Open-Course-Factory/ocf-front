@@ -25,7 +25,6 @@ import { useBaseStore } from "./baseStore"
 import { useProjectFilesStore } from "./projectFiles"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
-import { terminalService } from '../services/domain/terminal'
 
 export const useScenariosStore = defineStore('scenarios', () => {
 
@@ -172,33 +171,14 @@ export const useScenariosStore = defineStore('scenarios', () => {
             { value: 'apk', text: t('scenarios.osTypeApk') },
             { value: 'pacman', text: t('scenarios.osTypePacman') }
         ]),
-        field('instance_type', t('scenarios.machineSize'))
-            .searchableSelect()
-            .visible()
-            .creatable()
-            .updatable()
-            .required()
-            .withOptionsLoader(async () => {
-                try {
-                    const types = await terminalService.getInstanceTypes()
-                    // Extract unique sizes from all available instance types
-                    const sizeSet = new Set<string>()
-                    for (const inst of types) {
-                        for (const s of inst.size.split('|').map(s => s.trim())) {
-                            if (s) sizeSet.add(s)
-                        }
-                    }
-                    // Sort by standard size order
-                    const order: Record<string, number> = { 'XS': 1, 'S': 2, 'M': 3, 'L': 4, 'XL': 5, 'XXL': 6 }
-                    return Array.from(sizeSet)
-                        .sort((a, b) => (order[a] ?? 99) - (order[b] ?? 99))
-                        .map(s => ({ value: s, text: s, id: s }))
-                } catch {
-                    return []
-                }
-            })
-            .withItemValue('value')
-            .withItemText('text'),
+        field('instance_type', t('scenarios.machineSize')).select().visible().creatable().updatable().required().withOptions([
+            { value: 'XS', text: 'XS' },
+            { value: 'S', text: 'S' },
+            { value: 'M', text: 'M' },
+            { value: 'L', text: 'L' },
+            { value: 'XL', text: 'XL' },
+            { value: 'XXL', text: 'XXL' }
+        ]),
         field('hostname', t('scenarios.hostname')).input().visible().creatable().updatable(),
         field('source_type', t('scenarios.sourceType')).select().visible().creatable().updatable().withOptions([
             { value: 'git', text: t('scenarios.sourceTypeGit') },
