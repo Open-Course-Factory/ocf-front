@@ -288,7 +288,7 @@ const menuCategories = computed((): MenuCategory[] => [
     icon: 'fas fa-laptop-code',
     allowedRoles: ['administrator', 'member'],
     featureFlag: 'terminal_management',
-    routePrefixes: ['/terminal-session'],
+    routePrefixes: ['/terminal-session', '/scenarios'],
     items: [
       {
         route: '/terminal-creation',
@@ -303,9 +303,15 @@ const menuCategories = computed((): MenuCategory[] => [
         icon: 'fas fa-terminal'
       },
       {
+        route: '/scenarios',
+        label: t('navigation.scenarios'),
+        title: t('navigation.scenariosTitle'),
+        icon: 'fas fa-flask'
+      },
+      {
         route: '/my-scenarios',
-        label: t('navigation.myScenarios'),
-        title: t('navigation.myScenarioSessions'),
+        label: t('navigation.scenarioHistory'),
+        title: t('navigation.scenarioHistoryTitle'),
         icon: 'fas fa-flag-checkered'
       }
     ]
