@@ -141,7 +141,6 @@
     <!-- Provisioning overlay -->
     <ScenarioProvisioningOverlay
       v-if="provisioningMessage"
-      :message="provisioningMessage"
       fixed
     />
   </div>

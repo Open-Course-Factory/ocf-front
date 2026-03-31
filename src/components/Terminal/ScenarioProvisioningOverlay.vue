@@ -16,7 +16,7 @@
         <i v-else class="fas fa-check-circle"></i>
       </div>
       <h3>{{ ready ? t('provisioning.ready') : t('provisioning.title') }}</h3>
-      <p v-if="!ready && message" class="provisioning-detail">{{ message }}</p>
+      <p v-if="!ready" class="provisioning-detail">{{ t('provisioning.detail') }}</p>
       <slot v-if="ready" name="ready-action"></slot>
     </div>
   </div>
@@ -26,13 +26,11 @@
 import { useTranslations } from '../../composables/useTranslations'
 
 interface Props {
-  message?: string
   ready?: boolean
   fixed?: boolean
 }
 
 withDefaults(defineProps<Props>(), {
-  message: '',
   ready: false,
   fixed: false
 })
@@ -41,12 +39,14 @@ const { t } = useTranslations({
   en: {
     provisioning: {
       title: 'Setting up your environment...',
+      detail: 'Creating terminal and preparing scenario. This may take a few minutes.',
       ready: 'Your environment is ready!'
     }
   },
   fr: {
     provisioning: {
       title: 'Préparation de votre environnement...',
+      detail: 'Création du terminal et préparation du scénario. Cela peut prendre quelques minutes.',
       ready: 'Votre environnement est prêt !'
     }
   }
@@ -64,7 +64,7 @@ const { t } = useTranslations({
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--color-bg-primary);
   border-radius: var(--border-radius-lg);
 }
 

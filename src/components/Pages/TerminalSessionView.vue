@@ -144,7 +144,6 @@
     <!-- Full-screen provisioning overlay (shared with ScenarioLauncher) -->
     <ScenarioProvisioningOverlay
       v-if="scenarioLoading"
-      :message="t('sessionView.scenarioLoadingDetail')"
       fixed
     />
   </div>
