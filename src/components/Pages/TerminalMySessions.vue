@@ -404,7 +404,7 @@
         </div>
       </div>
 
-      <div v-else class="empty-section">
+      <div v-else-if="!isLoading" class="empty-section">
         <i class="fas fa-terminal fa-3x"></i>
         <h4>{{ t('terminalMySessions.noActiveSessions') }}</h4>
         <p>{{ t('terminalMySessions.noActiveSessionsDesc') }}</p>
