@@ -77,13 +77,14 @@
       </div>
 
       <!-- Terminal + Scenario Panel layout (active session with scenario, or review mode) -->
+      <!-- Full-screen provisioning overlay (shared with ScenarioLauncher) -->
+      <ScenarioProvisioningOverlay
+        v-if="scenarioLoading"
+        fixed
+      />
+
       <div v-if="scenarioSessionId" class="terminal-session-layout" :class="{ resizing: isPanelResizing }">
         <div class="terminal-main-area" style="position: relative;">
-          <!-- Loading overlay (covers terminal during scenario setup) -->
-          <ScenarioProvisioningOverlay
-            v-if="scenarioLoading"
-            :message="t('sessionView.scenarioLoadingDetail')"
-          />
           <TerminalSessionPanel
             ref="scenarioTerminalRef"
             :session-info="sessionInfo"
@@ -119,19 +120,6 @@
 
       <!-- Terminal only (active session without scenario) -->
       <div v-else-if="isSessionActive" style="position: relative;">
-        <!-- Loading overlay (covers terminal during scenario setup) -->
-        <ScenarioProvisioningOverlay
-          v-if="scenarioLoading"
-          :message="t('sessionView.scenarioLoadingDetail')"
-          :ready="scenarioReady"
-        >
-          <template #ready-action>
-            <button class="btn btn-success btn-lg" :disabled="scenarioLaunching" @click="launchScenario">
-              <i :class="scenarioLaunching ? 'fas fa-spinner fa-spin' : 'fas fa-play'"></i>
-              {{ scenarioLaunching ? t('sessionView.scenarioLaunching') : t('sessionView.scenarioLaunch') }}
-            </button>
-          </template>
-        </ScenarioProvisioningOverlay>
         <TerminalSessionPanel
           ref="standaloneTerminalRef"
           :session-info="sessionInfo"
@@ -342,7 +330,6 @@ const scenarioTerminalRef = ref<InstanceType<typeof TerminalSessionPanel> | null
 const standaloneTerminalRef = ref<InstanceType<typeof TerminalSessionPanel> | null>(null)
 const scenarioPanelRef = ref<InstanceType<typeof ScenarioPanel> | null>(null)
 const scenarioLoading = ref(false)
-const scenarioLaunching = ref(false)
 
 // Restore briefing dismissed state from localStorage when scenario session is known
 watch(scenarioSessionId, (id) => {
@@ -547,36 +534,13 @@ function handleSessionExpired() {
 
 function handleScenarioLoading(loading: boolean) {
   scenarioLoading.value = loading
-  scenarioReady.value = false
   if (loading) stopScenarioSync()
 }
 
-const scenarioReady = ref(false)
-const pendingScenarioSessionId = ref<string | null>(null)
-
 function handleScenarioStarted(newScenarioSessionId: string) {
-  // Setup is done — show the "Start!" button on the loading overlay
-  pendingScenarioSessionId.value = newScenarioSessionId
-  scenarioReady.value = true
-}
-
-function launchScenario() {
-  if (!pendingScenarioSessionId.value || scenarioLaunching.value) return
-
-  scenarioLaunching.value = true
-
-  // Send user switch to the standalone terminal (still mounted behind overlay)
-  standaloneTerminalRef.value?.pasteText('exec bash\r')
-
-  // Wait for bash restart + su, then switch to scenario layout
-  setTimeout(() => {
-    scenarioSessionId.value = pendingScenarioSessionId.value
-    pendingScenarioSessionId.value = null
-    stopScenarioSync()
-    scenarioLoading.value = false
-    scenarioReady.value = false
-    scenarioLaunching.value = false
-  }, 2000)
+  scenarioSessionId.value = newScenarioSessionId
+  stopScenarioSync()
+  scenarioLoading.value = false
 }
 
 function handleScenarioCompleted() {
