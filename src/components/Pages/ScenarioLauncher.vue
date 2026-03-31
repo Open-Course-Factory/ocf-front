@@ -69,13 +69,13 @@
         <!-- Unavailability explanation -->
         <div v-if="!scenario.launchable" class="unavailable-notice">
           <div class="unavailable-notice-content">
-            <i class="fas fa-server unavailable-notice-icon"></i>
+            <i :class="getScenarioBlockReason(scenario) === 'plan' ? 'fas fa-lock' : 'fas fa-server'" class="unavailable-notice-icon"></i>
             <div class="unavailable-notice-text">
               <span class="unavailable-notice-title">{{ t('launcher.unavailableTitle') }}</span>
               <span class="unavailable-notice-detail">{{ getUnavailableReason(scenario) }}</span>
             </div>
           </div>
-          <span class="unavailable-notice-hint">{{ t('launcher.unavailableHint') }}</span>
+          <span class="unavailable-notice-hint">{{ getUnavailableHint(scenario) }}</span>
         </div>
 
         <div class="card-actions">
@@ -108,14 +108,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { scenarioSessionService } from '../../services/domain/scenario'
+import { terminalService, instanceUtils } from '../../services/domain/terminal'
+import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
+import type { InstanceType } from '../../types'
 
 const router = useRouter()
 const { showError } = useNotification()
+const subscriptionsStore = useSubscriptionsStore()
 
 const { t } = useTranslations({
   en: {
@@ -130,6 +134,8 @@ const { t } = useTranslations({
       unavailableTitle: 'No compatible machine available',
       unavailableNoTypes: 'This scenario requires machine types that are not currently online.',
       unavailableSpecific: 'Required: {types} — none are available right now.',
+      unavailablePlan: 'The required machine size is not included in your current plan.',
+      unavailablePlanHint: 'Upgrade your plan to access larger machines.',
       unavailableHint: 'The required machines may be temporarily offline. Try again later.',
       machineAvailable: 'Machine available',
       machineOffline: 'Machine offline or not configured',
@@ -153,6 +159,8 @@ const { t } = useTranslations({
       unavailableTitle: 'Aucune machine compatible disponible',
       unavailableNoTypes: 'Ce scenario necessite des types de machines qui ne sont pas en ligne actuellement.',
       unavailableSpecific: 'Requis : {types} — aucun n\'est disponible pour le moment.',
+      unavailablePlan: 'La taille de machine requise n\'est pas incluse dans votre plan actuel.',
+      unavailablePlanHint: 'Mettez a niveau votre plan pour acceder aux machines plus puissantes.',
       unavailableHint: 'Les machines requises sont peut-etre temporairement hors ligne. Reessayez plus tard.',
       machineAvailable: 'Machine disponible',
       machineOffline: 'Machine hors ligne ou non configuree',
@@ -167,11 +175,17 @@ const { t } = useTranslations({
 })
 
 const scenarios = ref<any[]>([])
+const instanceTypes = ref<InstanceType[]>([])
 const isLoading = ref(false)
 const error = ref('')
 const isLaunching = ref(false)
 const launchingScenarioId = ref('')
 const provisioningMessage = ref('')
+
+const allowedMachineSizes = computed(() => {
+  const sizes = subscriptionsStore.currentSubscription?.subscription_plan?.allowed_machine_sizes || []
+  return sizes.length === 0 ? ['XS'] : sizes
+})
 
 function translateDifficulty(difficulty: string): string {
   const map: Record<string, string> = {
@@ -186,22 +200,68 @@ function isInstanceTypeAvailable(instanceType: string, scenario: any): boolean {
   return (scenario.available_instance_types || []).includes(instanceType)
 }
 
-function getUnavailableReason(scenario: any): string {
-  const requiredTypes = scenario.compatible_instance_types?.map((c: any) => c.instance_type) || []
-  if (requiredTypes.length === 0 && scenario.instance_type) {
-    requiredTypes.push(scenario.instance_type)
+function getScenarioBlockReason(scenario: any): 'plan' | 'offline' | null {
+  if (scenario.launchable) return null
+
+  // Check if any compatible instance type exists on the backend
+  const requiredPrefixes = getRequiredPrefixes(scenario)
+  const availablePrefixes = new Set((scenario.available_instance_types || []) as string[])
+
+  // If some are available but launchable is false, it might be a plan issue
+  // Check if any available instance type matches but has a restricted size
+  for (const prefix of requiredPrefixes) {
+    if (availablePrefixes.has(prefix)) {
+      // Instance exists — check if user's plan covers it
+      const inst = instanceTypes.value.find(i => i.prefix === prefix)
+      if (inst) {
+        const availability = instanceUtils.checkAvailability(inst, allowedMachineSizes.value)
+        if (!availability.available) {
+          return 'plan'
+        }
+      }
+    }
   }
+  return 'offline'
+}
+
+function getRequiredPrefixes(scenario: any): string[] {
+  const types = scenario.compatible_instance_types?.map((c: any) => c.instance_type) || []
+  if (types.length === 0 && scenario.instance_type) {
+    types.push(scenario.instance_type)
+  }
+  return types
+}
+
+function getUnavailableReason(scenario: any): string {
+  const reason = getScenarioBlockReason(scenario)
+  if (reason === 'plan') {
+    return t('launcher.unavailablePlan')
+  }
+  const requiredTypes = getRequiredPrefixes(scenario)
   if (requiredTypes.length === 0) {
     return t('launcher.unavailableNoTypes')
   }
   return t('launcher.unavailableSpecific').replace('{types}', requiredTypes.join(', '))
 }
 
+function getUnavailableHint(scenario: any): string {
+  const reason = getScenarioBlockReason(scenario)
+  if (reason === 'plan') {
+    return t('launcher.unavailablePlanHint')
+  }
+  return t('launcher.unavailableHint')
+}
+
 async function loadScenarios() {
   isLoading.value = true
   error.value = ''
   try {
-    scenarios.value = await scenarioSessionService.listScenarios()
+    const [scenarioData] = await Promise.all([
+      scenarioSessionService.listScenarios(),
+      terminalService.getInstanceTypes().then(types => { instanceTypes.value = types }).catch(() => {}),
+      subscriptionsStore.getCurrentSubscription().catch(() => {})
+    ])
+    scenarios.value = scenarioData
   } catch (err: any) {
     error.value = err.response?.data?.error_message || t('launcher.loading')
   } finally {
