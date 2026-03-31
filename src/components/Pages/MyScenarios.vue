@@ -139,6 +139,18 @@
                 {{ t('myScenarios.abandon') }}
               </button>
             </div>
+
+            <!-- Review action for completed/abandoned sessions -->
+            <div v-if="session.terminal_session_id && (session.status === 'completed' || session.status === 'abandoned')" class="card-footer">
+              <router-link
+                :to="{ name: 'TerminalSessionView', params: { sessionId: session.terminal_session_id } }"
+                class="btn btn-sm btn-secondary review-btn"
+                @click.stop
+              >
+                <i class="fas fa-eye"></i>
+                {{ t('myScenarios.review') }}
+              </router-link>
+            </div>
           </div>
         </div>
       </div>
@@ -158,7 +170,7 @@ const router = useRouter()
 const { t } = useTranslations({
   en: {
     myScenarios: {
-      title: 'My Scenarios',
+      title: 'Scenario History',
       loading: 'Loading scenarios...',
       retry: 'Retry',
       empty: 'You have not started any scenarios yet.',
@@ -170,6 +182,7 @@ const { t } = useTranslations({
       bestGrade: 'Best grade',
       resume: 'Resume',
       abandon: 'Abandon',
+      review: 'Review',
       abandonConfirm: 'Abandon this scenario session? This cannot be undone.',
       abandonSuccess: 'Session abandoned.',
       abandonError: 'Failed to abandon session.',
@@ -182,7 +195,7 @@ const { t } = useTranslations({
   },
   fr: {
     myScenarios: {
-      title: 'Mes Scénarios',
+      title: 'Historique des scénarios',
       loading: 'Chargement des scénarios...',
       retry: 'Réessayer',
       empty: 'Vous n\'avez pas encore commencé de scénario.',
@@ -194,6 +207,7 @@ const { t } = useTranslations({
       bestGrade: 'Meilleure note',
       resume: 'Reprendre',
       abandon: 'Abandonner',
+      review: 'Revoir',
       abandonConfirm: 'Abandonner cette session de scénario ? Cette action est irréversible.',
       abandonSuccess: 'Session abandonnée.',
       abandonError: 'Impossible d\'abandonner la session.',
@@ -671,7 +685,8 @@ onMounted(() => {
 }
 
 .resume-btn,
-.abandon-btn {
+.abandon-btn,
+.review-btn {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
