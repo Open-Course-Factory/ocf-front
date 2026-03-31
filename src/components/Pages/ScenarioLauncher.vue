@@ -35,7 +35,7 @@
         v-for="scenario in scenarios"
         :key="scenario.id"
         class="scenario-card"
-        :class="{ 'scenario-card--unavailable': !scenario.launchable }"
+        :class="{ 'scenario-card--unavailable': !scenario.launchable && !getExistingSession(scenario), 'scenario-card--active': !!getExistingSession(scenario) }"
       >
         <div class="card-header">
           <h3 class="card-title">{{ scenario.title }}</h3>
@@ -78,9 +78,28 @@
           <span class="unavailable-notice-hint">{{ getUnavailableHint(scenario) }}</span>
         </div>
 
+        <!-- Existing session notice -->
+        <div v-if="getExistingSession(scenario)" class="existing-session-notice">
+          <div class="existing-session-content">
+            <i :class="getExistingSession(scenario).status === 'active' ? 'fas fa-play-circle' : 'fas fa-check-circle'" class="existing-session-icon"></i>
+            <span class="existing-session-text">{{ getExistingSessionLabel(scenario) }}</span>
+          </div>
+        </div>
+
         <div class="card-actions">
+          <!-- Existing session: resume or review -->
+          <router-link
+            v-if="getExistingSession(scenario)?.terminal_session_id"
+            :to="{ name: 'TerminalSessionView', params: { sessionId: getExistingSession(scenario).terminal_session_id } }"
+            class="btn launch-btn"
+            :class="getExistingSession(scenario).status === 'active' ? 'btn-primary' : 'btn-secondary'"
+          >
+            <i :class="getExistingSession(scenario).status === 'active' ? 'fas fa-play' : 'fas fa-eye'"></i>
+            {{ getExistingSession(scenario).status === 'active' ? t('launcher.resume') : t('launcher.review') }}
+          </router-link>
+          <!-- No session + launchable -->
           <button
-            v-if="scenario.launchable"
+            v-else-if="scenario.launchable && !getExistingSession(scenario)"
             class="btn btn-primary launch-btn"
             :disabled="isLaunching"
             @click="handleLaunchScenario(scenario)"
@@ -88,6 +107,7 @@
             <i :class="isLaunching && launchingScenarioId === scenario.id ? 'fas fa-spinner fa-spin' : 'fas fa-rocket'"></i>
             {{ t('launcher.launch') }}
           </button>
+          <!-- No session + not launchable -->
           <div v-else class="launch-btn-disabled" :title="t('launcher.unavailableTitle')">
             <i class="fas fa-ban"></i>
             {{ t('launcher.unavailable') }}
@@ -130,7 +150,13 @@ const { t } = useTranslations({
       empty: 'No scenarios available yet. Scenarios will appear here once they are assigned to you.',
       retry: 'Retry',
       launch: 'Launch',
+      resume: 'Resume',
+      review: 'Review',
       unavailable: 'Unavailable',
+      sessionActive: 'Scenario in progress',
+      sessionCompleted: 'Scenario completed',
+      sessionAbandoned: 'Scenario abandoned',
+      sessionExists: 'Scenario already started',
       unavailableTitle: 'No compatible machine available',
       unavailableNoTypes: 'This scenario requires machine types that are not currently online.',
       unavailableSpecific: 'Required: {types} — none are available right now.',
@@ -158,7 +184,13 @@ const { t } = useTranslations({
       empty: 'Aucun scenario disponible pour le moment. Les scenarios apparaitront ici une fois qu\'ils vous seront assignes.',
       retry: 'Reessayer',
       launch: 'Lancer',
+      resume: 'Reprendre',
+      review: 'Revoir',
       unavailable: 'Indisponible',
+      sessionActive: 'Scenario en cours',
+      sessionCompleted: 'Scenario termine',
+      sessionAbandoned: 'Scenario abandonne',
+      sessionExists: 'Scenario deja lance',
       unavailableTitle: 'Aucune machine compatible disponible',
       unavailableNoTypes: 'Ce scenario necessite des types de machines qui ne sont pas en ligne actuellement.',
       unavailableSpecific: 'Requis : {types} — aucun n\'est disponible pour le moment.',
@@ -182,6 +214,7 @@ const { t } = useTranslations({
 
 const scenarios = ref<any[]>([])
 const instanceTypes = ref<InstanceType[]>([])
+const mySessions = ref<any[]>([])
 const isLoading = ref(false)
 const error = ref('')
 const isLaunching = ref(false)
@@ -200,6 +233,26 @@ function translateDifficulty(difficulty: string): string {
     advanced: t('launcher.difficultyAdvanced')
   }
   return map[difficulty] || difficulty
+}
+
+function getExistingSession(scenario: any): any | null {
+  return mySessions.value.find(s => s.scenario_id === scenario.id) || null
+}
+
+function getExistingSessionLabel(scenario: any): string {
+  const session = getExistingSession(scenario)
+  if (!session) return ''
+  switch (session.status) {
+    case 'active':
+    case 'provisioning':
+      return t('launcher.sessionActive')
+    case 'completed':
+      return t('launcher.sessionCompleted')
+    case 'abandoned':
+      return t('launcher.sessionAbandoned')
+    default:
+      return t('launcher.sessionExists')
+  }
 }
 
 function isInstanceTypeAvailable(instanceType: string, scenario: any): boolean {
@@ -264,6 +317,7 @@ async function loadScenarios() {
   try {
     const [scenarioData] = await Promise.all([
       scenarioSessionService.listScenarios(),
+      scenarioSessionService.getMyScenarioSessions().then(sessions => { mySessions.value = sessions }).catch(() => {}),
       terminalService.getInstanceTypes().then(types => { instanceTypes.value = types }).catch(() => {}),
       subscriptionsStore.getCurrentSubscription().catch(() => {})
     ])
@@ -547,6 +601,38 @@ onMounted(loadScenarios)
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   font-style: italic;
+}
+
+/* Active session card */
+.scenario-card--active {
+  border-color: var(--color-primary);
+}
+
+/* Existing session notice */
+.existing-session-notice {
+  margin: var(--spacing-xs) var(--spacing-md) 0;
+  padding: var(--spacing-sm);
+  background: var(--color-info-bg);
+  border: 1px solid var(--color-info-border);
+  border-radius: var(--border-radius-sm);
+}
+
+.existing-session-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.existing-session-icon {
+  color: var(--color-info-text);
+  font-size: var(--font-size-sm);
+  flex-shrink: 0;
+}
+
+.existing-session-text {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-info-text);
 }
 
 /* Card actions */
