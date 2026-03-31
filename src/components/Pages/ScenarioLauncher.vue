@@ -141,6 +141,9 @@ const { t } = useTranslations({
       machineOffline: 'Machine offline or not configured',
       provisioning: 'Setting up your environment...',
       provisioningDetail: 'Creating terminal and preparing scenario. This may take a few minutes.',
+      provisioningSetup: 'Running scenario setup scripts... This may take a few minutes.',
+      setupFailed: 'Scenario setup failed. The environment could not be prepared.',
+      setupTimeout: 'Scenario setup timed out. Please try again.',
       launchError: 'Failed to launch scenario.',
       difficultyBeginner: 'Beginner',
       difficultyIntermediate: 'Intermediate',
@@ -166,6 +169,9 @@ const { t } = useTranslations({
       machineOffline: 'Machine hors ligne ou non configuree',
       provisioning: 'Preparation de votre environnement...',
       provisioningDetail: 'Creation du terminal et preparation du scenario. Cela peut prendre quelques minutes.',
+      provisioningSetup: 'Execution des scripts de preparation du scenario... Cela peut prendre quelques minutes.',
+      setupFailed: 'La preparation du scenario a echoue. L\'environnement n\'a pas pu etre configure.',
+      setupTimeout: 'La preparation du scenario a expire. Veuillez reessayer.',
       launchError: 'Echec du lancement du scenario.',
       difficultyBeginner: 'Debutant',
       difficultyIntermediate: 'Intermediaire',
@@ -275,15 +281,39 @@ async function handleLaunchScenario(scenario: any) {
   provisioningMessage.value = t('launcher.provisioningDetail')
   try {
     const result = await scenarioSessionService.launchScenario(scenario.id)
+
+    // Wait for scenario to be ready if still provisioning
+    if (result.status === 'provisioning') {
+      provisioningMessage.value = t('launcher.provisioningSetup')
+      await waitForScenarioReady(result.scenario_session_id)
+    }
+
     provisioningMessage.value = ''
     router.push({ name: 'TerminalSessionView', params: { sessionId: result.terminal_session_id } })
   } catch (err: any) {
     provisioningMessage.value = ''
-    showError(err.response?.data?.error_message || t('launcher.launchError'))
+    showError(err.response?.data?.error_message || err.message || t('launcher.launchError'))
   } finally {
     isLaunching.value = false
     launchingScenarioId.value = ''
   }
+}
+
+async function waitForScenarioReady(sessionId: string) {
+  const maxAttempts = 120 // 6 minutes at 3s intervals
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise(resolve => setTimeout(resolve, 3000))
+    try {
+      const info = await scenarioSessionService.getSessionInfo(sessionId)
+      if (info.status === 'setup_failed') {
+        throw new Error(t('launcher.setupFailed'))
+      }
+      if (info.status !== 'provisioning') return
+    } catch (err: any) {
+      if (err.message === t('launcher.setupFailed')) throw err
+    }
+  }
+  throw new Error(t('launcher.setupTimeout'))
 }
 
 onMounted(loadScenarios)

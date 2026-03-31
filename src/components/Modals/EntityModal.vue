@@ -438,6 +438,15 @@ async function loadSearchableOptions(fieldName: string, fieldConfig: any) {
     const options = await fieldConfig.optionsLoader();
     searchableOptions[fieldName] = options;
     searchResults[fieldName] = options; // Initially show all options
+
+    // If there's already a selected value (editing mode), update display text
+    if (data[fieldName]) {
+      const displayText = getItemDisplayText(fieldName, fieldConfig, data[fieldName]);
+      if (displayText) {
+        selectedItemText[fieldName] = displayText;
+        searchQueries[fieldName] = displayText;
+      }
+    }
   } catch (error) {
     console.error(`Failed to load options for ${fieldName}:`, error);
     searchableOptions[fieldName] = [];
