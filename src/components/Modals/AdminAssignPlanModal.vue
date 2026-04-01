@@ -43,6 +43,36 @@
         </div>
       </div>
 
+      <!-- Assign Confirmation -->
+      <div v-if="showAssignConfirm" class="confirm-assign">
+        <p class="confirm-text">
+          {{ t('adminAssign.assignConfirmText') }}
+        </p>
+        <div class="confirm-summary">
+          <div class="confirm-summary-row">
+            <span class="confirm-label">{{ t('adminAssign.userId') }}:</span>
+            <span class="confirm-value">{{ userId }}</span>
+          </div>
+          <div class="confirm-summary-row">
+            <span class="confirm-label">{{ t('adminAssign.plan') }}:</span>
+            <span class="confirm-value">{{ selectedPlanName }}</span>
+          </div>
+          <div class="confirm-summary-row">
+            <span class="confirm-label">{{ t('adminAssign.durationDays') }}:</span>
+            <span class="confirm-value">{{ durationDays }} {{ t('adminAssign.days') }}</span>
+          </div>
+        </div>
+        <div class="confirm-actions">
+          <button class="btn btn-primary" :disabled="isAssigning" @click="handleAssign">
+            <i :class="isAssigning ? 'fas fa-spinner fa-spin' : 'fas fa-check'"></i>
+            {{ t('adminAssign.confirm') }}
+          </button>
+          <button class="btn btn-secondary" :disabled="isAssigning" @click="showAssignConfirm = false">
+            {{ t('adminAssign.goBack') }}
+          </button>
+        </div>
+      </div>
+
       <div v-if="errorMsg" class="alert alert-danger">
         <i class="fas fa-exclamation-triangle"></i>
         {{ errorMsg }}
@@ -59,8 +89,13 @@
         <i class="fas fa-ban"></i>
         {{ t('adminAssign.cancel') }}
       </button>
-      <button class="btn btn-primary" @click="handleAssign" :disabled="isAssigning || !userId || !selectedPlanId">
-        <i :class="isAssigning ? 'fas fa-spinner fa-spin' : 'fas fa-check'"></i>
+      <button
+        v-if="!showAssignConfirm"
+        class="btn btn-primary"
+        @click="showAssignConfirm = true"
+        :disabled="isAssigning || !userId || !selectedPlanId"
+      >
+        <i class="fas fa-check"></i>
         {{ t('adminAssign.confirm') }}
       </button>
     </template>
@@ -85,6 +120,8 @@ const { t } = useTranslations({
       days: 'days',
       cancel: 'Cancel',
       confirm: 'Assign Plan',
+      goBack: 'Go Back',
+      assignConfirmText: 'Are you sure you want to assign this plan? This will affect the user\'s billing.',
       success: 'Plan assigned successfully',
       error: 'Failed to assign plan'
     }
@@ -99,6 +136,8 @@ const { t } = useTranslations({
       days: 'jours',
       cancel: 'Annuler',
       confirm: 'Attribuer le Plan',
+      goBack: 'Retour',
+      assignConfirmText: 'Êtes-vous sûr de vouloir attribuer ce plan ? Cela affectera la facturation de l\'utilisateur.',
       success: 'Plan attribue avec succes',
       error: "Echec de l'attribution du plan"
     }
@@ -121,11 +160,18 @@ const userId = ref('')
 const selectedPlanId = ref('')
 const durationDays = ref(365)
 const isAssigning = ref(false)
+const showAssignConfirm = ref(false)
 const errorMsg = ref('')
 const successMsg = ref('')
 
 const activePlans = computed(() => {
   return plansStore.entities.filter((p: any) => p.is_active)
+})
+
+const selectedPlanName = computed(() => {
+  if (!selectedPlanId.value) return ''
+  const plan = activePlans.value.find((p: any) => p.id === selectedPlanId.value)
+  return plan ? `${plan.name} - ${plansStore.formatPrice(plan.price_amount, plan.currency)}/${plan.billing_interval}` : selectedPlanId.value
 })
 
 async function handleAssign() {
@@ -152,6 +198,7 @@ watch(() => props.visible, (newVal) => {
   if (newVal) {
     errorMsg.value = ''
     successMsg.value = ''
+    showAssignConfirm.value = false
     userId.value = ''
     durationDays.value = 365
     if (props.planId) {
@@ -214,6 +261,54 @@ watch(() => props.visible, (newVal) => {
   background: var(--color-primary);
   color: white;
   border-color: var(--color-primary);
+}
+
+.confirm-assign {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--border-radius-md);
+}
+
+.confirm-assign .confirm-text {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-warning-text);
+  font-weight: var(--font-weight-medium);
+}
+
+.confirm-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  background: var(--color-bg-primary);
+  border-radius: var(--border-radius-sm);
+}
+
+.confirm-summary-row {
+  display: flex;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.confirm-label {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.confirm-value {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.confirm-actions {
+  display: flex;
+  gap: var(--spacing-sm);
 }
 
 .alert {

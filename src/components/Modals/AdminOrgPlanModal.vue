@@ -103,6 +103,36 @@
         />
       </div>
 
+      <!-- Assign Confirmation -->
+      <div v-if="showAssignConfirm" class="confirm-assign">
+        <p class="confirm-text">
+          {{ currentSubscription ? t('adminOrgPlan.changeConfirmText') : t('adminOrgPlan.assignConfirmText') }}
+        </p>
+        <div class="confirm-summary">
+          <div class="confirm-summary-row">
+            <span class="confirm-label">{{ t('adminOrgPlan.confirmOrganization') }}:</span>
+            <span class="confirm-value">{{ organizationName }}</span>
+          </div>
+          <div class="confirm-summary-row">
+            <span class="confirm-label">{{ t('adminOrgPlan.confirmPlan') }}:</span>
+            <span class="confirm-value">{{ selectedPlanName }}</span>
+          </div>
+          <div v-if="quantity > 1" class="confirm-summary-row">
+            <span class="confirm-label">{{ t('adminOrgPlan.quantity') }}:</span>
+            <span class="confirm-value">{{ quantity }}</span>
+          </div>
+        </div>
+        <div class="confirm-actions">
+          <button class="btn btn-primary" :disabled="saving" @click="handleAssign">
+            <i :class="saving ? 'fas fa-spinner fa-spin' : 'fas fa-check'"></i>
+            {{ currentSubscription ? t('adminOrgPlan.changePlanConfirm') : t('adminOrgPlan.assignPlan') }}
+          </button>
+          <button class="btn btn-secondary" :disabled="saving" @click="showAssignConfirm = false">
+            {{ t('adminOrgPlan.goBack') }}
+          </button>
+        </div>
+      </div>
+
       <!-- Error message -->
       <div v-if="error" class="error-message">
         <i class="fas fa-exclamation-circle"></i>
@@ -122,11 +152,12 @@
         {{ t('adminOrgPlan.cancel') }}
       </button>
       <button
+        v-if="!showAssignConfirm"
         class="btn btn-primary"
         :disabled="saving || !selectedPlanId"
-        @click="handleAssign"
+        @click="showAssignConfirm = true"
       >
-        <i :class="saving ? 'fas fa-spinner fa-spin' : 'fas fa-check'"></i>
+        <i class="fas fa-check"></i>
         {{ currentSubscription ? t('adminOrgPlan.changePlanConfirm') : t('adminOrgPlan.assignPlan') }}
       </button>
     </template>
@@ -173,6 +204,11 @@ const { t } = useTranslations({
       keepSubscription: 'Keep Subscription',
       willCancelAtPeriodEnd: 'Subscription will be canceled at the end of the current period',
       periodEnd: 'Period ends',
+      assignConfirmText: 'Are you sure you want to assign this plan? This will affect the organization\'s billing.',
+      changeConfirmText: 'Are you sure you want to change the plan? This will affect the organization\'s billing.',
+      confirmOrganization: 'Organization',
+      confirmPlan: 'Plan',
+      goBack: 'Go Back',
       assignSuccess: 'Plan assigned successfully',
       changeSuccess: 'Plan changed successfully',
       cancelSuccess: 'Subscription canceled successfully',
@@ -203,6 +239,11 @@ const { t } = useTranslations({
       keepSubscription: 'Garder l\'abonnement',
       willCancelAtPeriodEnd: 'L\'abonnement sera annulé à la fin de la période en cours',
       periodEnd: 'Fin de période',
+      assignConfirmText: 'Êtes-vous sûr de vouloir attribuer ce plan ? Cela affectera la facturation de l\'organisation.',
+      changeConfirmText: 'Êtes-vous sûr de vouloir changer de plan ? Cela affectera la facturation de l\'organisation.',
+      confirmOrganization: 'Organisation',
+      confirmPlan: 'Plan',
+      goBack: 'Retour',
       assignSuccess: 'Plan attribué avec succès',
       changeSuccess: 'Plan modifié avec succès',
       cancelSuccess: 'Abonnement annulé avec succès',
@@ -226,6 +267,7 @@ const saving = ref(false)
 const error = ref('')
 const successMsg = ref('')
 const showCancelConfirm = ref(false)
+const showAssignConfirm = ref(false)
 let autoCloseTimer: ReturnType<typeof setTimeout> | null = null
 
 const activePlans = computed(() =>
@@ -239,6 +281,12 @@ const currentPlanName = computed(() => {
   }
   const plan = activePlans.value.find(p => p.id === props.currentSubscription?.subscription_plan_id)
   return plan?.name || props.currentSubscription.subscription_plan_id
+})
+
+const selectedPlanName = computed(() => {
+  if (!selectedPlanId.value) return ''
+  const plan = activePlans.value.find(p => p.id === selectedPlanId.value)
+  return plan ? `${plan.name} - ${plansStore.formatPrice(plan.price_amount, plan.currency)}/${plan.billing_interval}` : selectedPlanId.value
 })
 
 const statusLabel = (status: string) => {
@@ -327,6 +375,7 @@ const resetForm = () => {
   successMsg.value = ''
   saving.value = false
   showCancelConfirm.value = false
+  showAssignConfirm.value = false
 }
 
 // Pre-fill plan when modal opens with currentPlanId
@@ -459,6 +508,49 @@ watch(() => props.visible, (newVisible) => {
   background: var(--color-danger-bg);
   border: 1px solid var(--color-danger-border);
   border-radius: var(--border-radius-md);
+}
+
+.confirm-assign {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--border-radius-md);
+}
+
+.confirm-assign .confirm-text {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-warning-text);
+  font-weight: var(--font-weight-medium);
+}
+
+.confirm-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  background: var(--color-bg-primary);
+  border-radius: var(--border-radius-sm);
+}
+
+.confirm-summary-row {
+  display: flex;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.confirm-label {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.confirm-value {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
 }
 
 .confirm-text {

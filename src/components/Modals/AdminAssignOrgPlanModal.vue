@@ -13,8 +13,8 @@
     :confirm-text="t('assignOrgPlan.assign')"
     :cancel-text="t('assignOrgPlan.cancel')"
     :is-loading="isAssigning"
-    :confirm-disabled="!selectedOrganizationId || !selectedPlanId"
-    @confirm="handleAssign"
+    :confirm-disabled="!selectedOrganizationId || !selectedPlanId || showAssignConfirm"
+    @confirm="showAssignConfirm = true"
     @close="handleClose"
   >
     <div class="assign-modal-content">
@@ -104,6 +104,36 @@
         />
       </div>
 
+      <!-- Assign Confirmation -->
+      <div v-if="showAssignConfirm" class="confirm-assign">
+        <p class="confirm-text">
+          {{ t('assignOrgPlan.assignConfirmText') }}
+        </p>
+        <div class="confirm-summary">
+          <div class="confirm-summary-row">
+            <span class="confirm-label">{{ t('assignOrgPlan.confirmOrganization') }}:</span>
+            <span class="confirm-value">{{ selectedOrganizationName }}</span>
+          </div>
+          <div class="confirm-summary-row">
+            <span class="confirm-label">{{ t('assignOrgPlan.confirmPlan') }}:</span>
+            <span class="confirm-value">{{ selectedPlanName }}</span>
+          </div>
+          <div v-if="quantity > 1" class="confirm-summary-row">
+            <span class="confirm-label">{{ t('assignOrgPlan.quantity') }}:</span>
+            <span class="confirm-value">{{ quantity }}</span>
+          </div>
+        </div>
+        <div class="confirm-actions">
+          <button class="btn btn-primary" :disabled="isAssigning" @click="handleAssign">
+            <i :class="isAssigning ? 'fas fa-spinner fa-spin' : 'fas fa-check'"></i>
+            {{ t('assignOrgPlan.assign') }}
+          </button>
+          <button class="btn btn-secondary" :disabled="isAssigning" @click="showAssignConfirm = false">
+            {{ t('assignOrgPlan.goBack') }}
+          </button>
+        </div>
+      </div>
+
       <!-- Error message -->
       <div v-if="error" class="error-message">
         <i class="fas fa-exclamation-circle"></i>
@@ -148,6 +178,10 @@ const { t } = useTranslations({
       quantityPlaceholder: '1',
       assign: 'Assign Plan',
       cancel: 'Cancel',
+      goBack: 'Go Back',
+      assignConfirmText: 'Are you sure you want to assign this plan? This will affect the organization\'s billing.',
+      confirmOrganization: 'Organization',
+      confirmPlan: 'Plan',
       assignSuccess: 'Plan assigned to organization successfully',
       assignError: 'Failed to assign plan to organization'
     }
@@ -167,6 +201,10 @@ const { t } = useTranslations({
       quantityPlaceholder: '1',
       assign: 'Assigner le plan',
       cancel: 'Annuler',
+      goBack: 'Retour',
+      assignConfirmText: 'Êtes-vous sûr de vouloir assigner ce plan ? Cela affectera la facturation de l\'organisation.',
+      confirmOrganization: 'Organisation',
+      confirmPlan: 'Plan',
       assignSuccess: 'Plan assigne a l\'organisation avec succes',
       assignError: 'Echec de l\'assignation du plan a l\'organisation'
     }
@@ -183,11 +221,24 @@ const selectedPlanId = ref('')
 const quantity = ref(1)
 const isSearching = ref(false)
 const isAssigning = ref(false)
+const showAssignConfirm = ref(false)
 const error = ref('')
 
 const activePlans = computed(() =>
   (plansStore.entities as SubscriptionPlan[]).filter((p: SubscriptionPlan) => p.is_active)
 )
+
+const selectedOrganizationName = computed(() => {
+  if (!selectedOrganizationId.value) return ''
+  const org = (orgsStore.organizations as Organization[]).find(o => o.id === selectedOrganizationId.value)
+  return org?.display_name || selectedOrganizationId.value
+})
+
+const selectedPlanName = computed(() => {
+  if (!selectedPlanId.value) return ''
+  const plan = activePlans.value.find(p => p.id === selectedPlanId.value)
+  return plan ? `${plan.name} - ${plansStore.formatPrice(plan.price_amount, plan.currency)}/${plan.billing_interval}` : selectedPlanId.value
+})
 
 const filteredOrganizations = computed(() => {
   const orgs = orgsStore.organizations as Organization[]
@@ -263,6 +314,7 @@ const resetForm = () => {
   quantity.value = 1
   error.value = ''
   isAssigning.value = false
+  showAssignConfirm.value = false
 }
 
 // Pre-fill plan when modal opens with preselectedPlanId
@@ -428,5 +480,89 @@ select.form-control {
   color: var(--color-danger-text);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-sm);
+}
+
+.confirm-assign {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--border-radius-md);
+}
+
+.confirm-assign .confirm-text {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-warning-text);
+  font-weight: var(--font-weight-medium);
+}
+
+.confirm-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  background: var(--color-bg-primary);
+  border-radius: var(--border-radius-sm);
+}
+
+.confirm-summary-row {
+  display: flex;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.confirm-label {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.confirm-value {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.confirm-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--btn-padding-md);
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-radius: var(--border-radius-md);
+  transition: all var(--transition-fast);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-primary-dark, var(--color-primary-hover));
+}
+
+.btn-secondary {
+  background-color: var(--color-secondary, var(--color-gray-600));
+  color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-secondary-dark, var(--color-secondary-hover));
 }
 </style>
