@@ -139,7 +139,7 @@
     </div>
 
     <!-- Provisioning overlay -->
-    <ScenarioProvisioningOverlay v-if="provisioningMessage" />
+    <ScenarioProvisioningOverlay v-if="provisioningMessage" :phase="provisioningPhase" />
   </div>
 </template>
 
@@ -240,6 +240,7 @@ const error = ref('')
 const isLaunching = ref(false)
 const launchingScenarioId = ref('')
 const provisioningMessage = ref('')
+const provisioningPhase = ref('')
 
 const allowedMachineSizes = computed(() => {
   const sizes = subscriptionsStore.currentSubscription?.subscription_plan?.allowed_machine_sizes || []
@@ -353,19 +354,22 @@ async function handleLaunchScenario(scenario: any) {
   isLaunching.value = true
   launchingScenarioId.value = scenario.id
   provisioningMessage.value = t('launcher.provisioningDetail')
+  provisioningPhase.value = 'terminal_creation'
   try {
     const result = await scenarioSessionService.launchScenario(scenario.id)
+    provisioningPhase.value = result.provisioning_phase || 'setup_script'
 
     // Wait for scenario to be ready if still provisioning
     if (result.status === 'provisioning') {
-      provisioningMessage.value = t('launcher.provisioningSetup')
       await waitForScenarioReady(result.scenario_session_id)
     }
 
     provisioningMessage.value = ''
+    provisioningPhase.value = ''
     router.push({ name: 'TerminalSessionView', params: { sessionId: result.terminal_session_id } })
   } catch (err: any) {
     provisioningMessage.value = ''
+    provisioningPhase.value = ''
     showError(err.response?.data?.error_message || err.message || t('launcher.launchError'))
   } finally {
     isLaunching.value = false
@@ -379,6 +383,7 @@ async function waitForScenarioReady(sessionId: string) {
     await new Promise(resolve => setTimeout(resolve, 3000))
     try {
       const info = await scenarioSessionService.getSessionInfo(sessionId)
+      provisioningPhase.value = info.provisioning_phase || ''
       if (info.status === 'setup_failed') {
         throw new Error(t('launcher.setupFailed'))
       }

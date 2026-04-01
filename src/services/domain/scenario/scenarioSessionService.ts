@@ -51,6 +51,7 @@ export interface ScenarioSessionInfo {
   completed_at?: string
   terminal_session_id?: string
   grade?: number
+  provisioning_phase?: string
 }
 
 export interface MyScenarioSession {
@@ -100,6 +101,7 @@ export const scenarioSessionService = {
     terminal_session_id: string
     scenario_session_id: string
     status: string
+    provisioning_phase?: string
   }> {
     const response = await axios.post('/scenario-sessions/launch', {
       scenario_id: scenarioId,
