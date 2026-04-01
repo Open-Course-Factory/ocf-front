@@ -15,6 +15,8 @@
       ref="terminalRef"
       :session-info="sessionInfo"
       :is-recording="isRecording"
+      :end-reason="endReason"
+      :has-scenario="hasScenario"
       use-settings-card
       :title="sessionInfo?.name || ('Terminal ' + (sessionInfo?.session_id?.substring(0, 8) || ''))"
       icon="fas fa-terminal"
@@ -71,6 +73,8 @@ interface Props {
   showHistory?: boolean
   scenarioSessionId?: string
   scenarioFlagsEnabled?: boolean
+  endReason?: 'completed' | 'abandoned' | 'expired' | 'stopped' | 'setup_failed' | ''
+  hasScenario?: boolean
 }
 
 withDefaults(defineProps<Props>(), {
@@ -79,7 +83,9 @@ withDefaults(defineProps<Props>(), {
   isStopping: false,
   showHistory: true,
   scenarioSessionId: undefined,
-  scenarioFlagsEnabled: false
+  scenarioFlagsEnabled: false,
+  endReason: '',
+  hasScenario: false
 })
 
 defineEmits<{

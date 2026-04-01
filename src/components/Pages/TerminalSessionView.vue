@@ -49,12 +49,13 @@
 
       <!-- Scenario start bar (when no scenario active) -->
       <ScenarioStartBar
-        v-show="isSessionActive && !scenarioSessionId && !scenarioLoading"
+        v-show="isSessionActive && !scenarioSessionId && !scenarioLoading && !terminalHadScenario"
         :terminal-session-id="sessionId"
         :terminal-instance-type="sessionInfo?.instance_type"
         :terminal-machine-size="sessionInfo?.machine_size"
         @scenario-started="handleScenarioStarted"
         @scenario-loading="handleScenarioLoading"
+        @provisioning-phase="handleProvisioningPhase"
       />
 
       <!-- Scenario briefing card (full width, dismissible) -->
@@ -84,6 +85,8 @@
             :session-info="sessionInfo"
             :is-active="isSessionActive"
             :is-recording="isRecording"
+            :end-reason="terminalEndReason"
+            :has-scenario="terminalHadScenario"
             :scenario-session-id="scenarioSessionId"
             :scenario-flags-enabled="scenarioBriefing?.flags_enabled ?? false"
             show-stop-button
@@ -105,6 +108,7 @@
           :style="scenarioPanelCollapsed ? undefined : scenarioPanelStyle"
           @session-completed="handleScenarioCompleted"
           @session-abandoned="handleScenarioAbandoned"
+          @session-abandon-failed="handleScenarioAbandonFailed"
           @paste-command="handlePasteCommand"
           @scenario-info-loaded="handleScenarioInfoLoaded"
           @collapsed="scenarioPanelCollapsed = $event"
@@ -119,6 +123,8 @@
           :session-info="sessionInfo"
           :is-active="isSessionActive"
           :is-recording="isRecording"
+          :end-reason="terminalEndReason"
+          :has-scenario="terminalHadScenario"
           :show-history="!scenarioLoading"
           show-stop-button
           :is-stopping="isStopping"
@@ -129,9 +135,26 @@
         />
       </div>
 
-      <!-- Session expired: show notice + history only -->
+      <!-- Session ended: show state-aware banner + history -->
       <template v-else>
-        <div class="session-expired-notice">
+        <div v-if="activeEndBanner" class="session-end-banner" :class="activeEndBanner.toneClass" role="status">
+          <div class="end-banner-left">
+            <i :class="activeEndBanner.icon" class="end-banner-icon" aria-hidden="true"></i>
+            <div class="end-banner-text">
+              <strong class="end-banner-title">{{ activeEndBanner.title }}</strong>
+              <span class="end-banner-body">{{ activeEndBanner.body }}</span>
+            </div>
+          </div>
+          <div class="end-banner-actions">
+            <router-link :to="activeEndBanner.primaryRoute" class="end-banner-btn-primary" :class="activeEndBanner.toneClass">
+              {{ activeEndBanner.primaryLabel }}
+            </router-link>
+            <router-link v-if="activeEndBanner.secondaryRoute" :to="activeEndBanner.secondaryRoute" class="end-banner-btn-secondary">
+              {{ activeEndBanner.secondaryLabel }}
+            </router-link>
+          </div>
+        </div>
+        <div v-else class="session-expired-notice">
           <i class="fas fa-clock"></i>
           <span>{{ t('sessionView.sessionEnded') }}</span>
         </div>
@@ -142,7 +165,7 @@
     </template>
 
     <!-- Full-screen provisioning overlay (shared with ScenarioLauncher) -->
-    <ScenarioProvisioningOverlay v-if="scenarioLoading" />
+    <ScenarioProvisioningOverlay v-if="scenarioLoading" :phase="provisioningPhase" />
   </div>
 </template>
 
@@ -156,6 +179,7 @@ import { scenarioSessionService } from '../../services/domain/scenario'
 import type { ScenarioInfo } from '../../services/domain/scenario'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
+import { useEndStateConfig, type EndStateReason } from '../../composables/useEndStateConfig'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
 import ScenarioPanel from '../Terminal/ScenarioPanel.vue'
 import ScenarioStartBar from '../Terminal/ScenarioStartBar.vue'
@@ -327,6 +351,12 @@ const scenarioTerminalRef = ref<InstanceType<typeof TerminalSessionPanel> | null
 const standaloneTerminalRef = ref<InstanceType<typeof TerminalSessionPanel> | null>(null)
 const scenarioPanelRef = ref<InstanceType<typeof ScenarioPanel> | null>(null)
 const scenarioLoading = ref(false)
+const provisioningPhase = ref('')
+const terminalHadScenario = ref(false)
+
+function handleProvisioningPhase(phase: string) {
+  provisioningPhase.value = phase
+}
 
 // Restore briefing dismissed state from localStorage when scenario session is known
 watch(scenarioSessionId, (id) => {
@@ -361,6 +391,7 @@ function handleBriefingExecClick(event: MouseEvent) {
 const queryScenarioSession = route.query.scenario_session as string | undefined
 if (queryScenarioSession) {
   scenarioSessionId.value = queryScenarioSession
+  terminalHadScenario.value = true
 }
 
 function startScenarioSync() {
@@ -377,6 +408,7 @@ function startScenarioSync() {
       if (scenarioSession) {
         scenarioSessionId.value = scenarioSession.id
         scenarioSessionStatus.value = scenarioSession.status
+        terminalHadScenario.value = true
         stopScenarioSync()
       }
     } catch {
@@ -396,6 +428,36 @@ const isSessionActive = computed(() => {
   if (!sessionInfo.value) return false
   if (sessionInfo.value.status === 'expired' || sessionInfo.value.status === 'stopped') return false
   return timeRemaining.value > 0
+})
+
+// Determine the end-of-session reason using priority resolution
+const terminalEndReason = computed<'completed' | 'abandoned' | 'expired' | 'stopped' | 'setup_failed' | ''>(() => {
+  // Scenario end-states take priority (may fire before terminal status updates)
+  if (scenarioSessionStatus.value === 'completed') return 'completed'
+  if (scenarioSessionStatus.value === 'abandoned') return 'abandoned'
+  if (scenarioSessionStatus.value === 'setup_failed') return 'setup_failed'
+
+  // Terminal end-states only when session is no longer active
+  if (isSessionActive.value) return ''
+  if (sessionInfo.value?.status === 'expired') return 'expired'
+  if (sessionInfo.value?.status === 'stopped') return 'stopped'
+
+  // Fallback: no specific end reason (keep existing reconnect behavior)
+  return ''
+})
+
+// End banner config (shared composable)
+const { getEndStateConfig } = useEndStateConfig()
+
+const activeEndBanner = computed(() => {
+  const reason = terminalEndReason.value
+  if (!reason) return null
+  const config = getEndStateConfig(reason as EndStateReason, { hasScenario: terminalHadScenario.value })
+  if (!config) return null
+  return {
+    ...config,
+    toneClass: 'end-banner--' + config.tone
+  }
 })
 
 async function stopSession() {
@@ -449,6 +511,7 @@ async function loadSession() {
         if (scenarioSession) {
           scenarioSessionId.value = scenarioSession.id
           scenarioSessionStatus.value = scenarioSession.status
+          terminalHadScenario.value = true
         }
       } catch {
         // Silently ignore - no scenario linked is fine
@@ -536,6 +599,7 @@ function handleScenarioLoading(loading: boolean) {
 
 function handleScenarioStarted(newScenarioSessionId: string) {
   scenarioSessionId.value = newScenarioSessionId
+  terminalHadScenario.value = true
   stopScenarioSync()
   scenarioLoading.value = false
 }
@@ -545,8 +609,13 @@ function handleScenarioCompleted() {
 }
 
 function handleScenarioAbandoned() {
-  scenarioSessionId.value = null
+  scenarioSessionStatus.value = 'abandoned'
   showInfo(t('sessionView.scenarioAbandoned'), t('sessionView.scenarioAbandonedTitle'))
+}
+
+function handleScenarioAbandonFailed() {
+  // Revert the optimistic abandon state — session is still active
+  scenarioSessionStatus.value = 'active'
 }
 
 // Resizable scenario panel
@@ -713,6 +782,110 @@ onBeforeUnmount(() => {
 
 .session-expired-notice i {
   color: var(--color-warning, var(--color-text-muted));
+}
+
+/* State-aware end banner */
+.session-end-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  border: var(--border-width-medium) solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  background-color: var(--color-bg-secondary);
+}
+
+.session-end-banner.end-banner--success { border-color: var(--color-success); }
+.session-end-banner.end-banner--info { border-color: var(--color-info); }
+.session-end-banner.end-banner--warning { border-color: var(--color-warning); }
+.session-end-banner.end-banner--danger { border-color: var(--color-danger); }
+
+.end-banner-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex: 1;
+  min-width: 0;
+}
+
+.end-banner-icon {
+  font-size: var(--font-size-xl);
+  flex-shrink: 0;
+}
+
+.end-banner--success .end-banner-icon { color: var(--color-success); }
+.end-banner--info .end-banner-icon { color: var(--color-info); }
+.end-banner--warning .end-banner-icon { color: var(--color-warning); }
+.end-banner--danger .end-banner-icon { color: var(--color-danger); }
+
+.end-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.end-banner-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.end-banner-body {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.end-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.end-banner-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  color: var(--color-white);
+  white-space: nowrap;
+  transition: opacity var(--transition-fast);
+}
+
+.end-banner-btn-primary:hover { opacity: 0.9; }
+
+.end-banner-btn-primary.end-banner--success { background-color: var(--color-success); }
+.end-banner-btn-primary.end-banner--info { background-color: var(--color-info); }
+.end-banner-btn-primary.end-banner--warning { background-color: var(--color-warning); }
+.end-banner-btn-primary.end-banner--danger { background-color: var(--color-danger); }
+
+.end-banner-btn-secondary {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+.end-banner-btn-secondary:hover {
+  color: var(--color-text-primary);
+}
+
+@media (max-width: 768px) {
+  .session-end-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .end-banner-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 
 .recording-info-notice {

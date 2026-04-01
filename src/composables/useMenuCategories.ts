@@ -118,7 +118,14 @@ export function useMenuCategories(
   })
 
   watch(() => options?.isCollapsed?.(), (isCollapsed) => {
-    if (!isCollapsed) openActiveCategory()
+    if (isCollapsed) {
+      // Close all submenus when the nav collapses
+      Object.keys(expandedCategories.value).forEach(key => {
+        expandedCategories.value[key] = false
+      })
+    } else {
+      openActiveCategory()
+    }
   })
 
   watch(() => route.path, () => {

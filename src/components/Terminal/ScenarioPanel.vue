@@ -299,6 +299,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   'session-completed': []
   'session-abandoned': []
+  'session-abandon-failed': []
   'paste-command': [command: string]
   'scenario-info-loaded': [info: ScenarioInfo]
   'collapsed': [collapsed: boolean]
@@ -309,7 +310,7 @@ const isReviewMode = computed(() =>
   props.sessionStatus === 'completed' || props.sessionStatus === 'abandoned'
 )
 
-const { showConfirm } = useNotification()
+const { showConfirm, showError } = useNotification()
 
 const { t } = useTranslations({
   en: {
@@ -332,6 +333,7 @@ const { t } = useTranslations({
       abandonConfirm: 'This session will be marked as abandoned. You can start a new attempt later.',
       abandonTitle: 'Abandon Scenario',
       confirmButtonText: 'Yes, abandon',
+      abandonError: 'Failed to abandon scenario. The session is still active.',
       cancelButtonText: 'Cancel',
       completed: 'Scenario Completed!',
       completedMessage: 'Congratulations! You have completed all steps.',
@@ -383,6 +385,7 @@ const { t } = useTranslations({
       abandonConfirm: 'Cette session sera marquée comme abandonnée. Vous pourrez recommencer une nouvelle tentative plus tard.',
       abandonTitle: 'Abandonner le scénario',
       confirmButtonText: 'Oui, abandonner',
+      abandonError: 'Échec de l\'abandon du scénario. La session est toujours active.',
       cancelButtonText: 'Annuler',
       completed: 'Scénario terminé !',
       completedMessage: 'Félicitations ! Vous avez terminé toutes les étapes.',
@@ -866,10 +869,14 @@ async function handleAbandon() {
   if (!confirmed) return
 
   try {
-    await scenarioSessionService.abandonSession(props.scenarioSessionId)
+    // Emit before the API call so the parent sets the end-state before
+    // the backend stops the terminal (which closes the WebSocket)
     emit('session-abandoned')
+    await scenarioSessionService.abandonSession(props.scenarioSessionId)
   } catch (err: any) {
-    console.error('Abandon session failed:', err)
+    // Revert: re-emit to restore active state since abandon failed
+    emit('session-abandon-failed')
+    showError(err.response?.data?.error_message || err.message || t('scenarioPanel.abandonError'))
   }
 }
 

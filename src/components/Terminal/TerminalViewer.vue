@@ -67,7 +67,8 @@
 
     <div class="terminal-wrapper">
       <div ref="terminalRef" class="terminal-container" :class="{ 'terminal-full-height': fullHeight }"></div>
-      <div v-if="error" class="terminal-error">
+      <TerminalEndStateOverlay v-if="activeEndState" :reason="(endReason as EndStateReason)" :config="activeEndState" />
+      <div v-else-if="error" class="terminal-error">
         <i class="fas fa-exclamation-triangle fa-2x"></i>
         <h3>{{ t('terminal.connectionError') }}</h3>
         <p>{{ error }}</p>
@@ -82,7 +83,7 @@
           </button>
         </div>
       </div>
-      <div v-if="!terminal && !error" class="terminal-loading">
+      <div v-if="!terminal && !error && !activeEndState" class="terminal-loading">
         <i class="fas fa-spinner fa-spin fa-2x"></i>
         <p>{{ loadingMessage }}</p>
       </div>
@@ -150,7 +151,8 @@
     <!-- Terminal container -->
     <div class="terminal-wrapper">
       <div class="terminal-container" ref="terminalRef"></div>
-      <div v-if="error" class="terminal-error">
+      <TerminalEndStateOverlay v-if="activeEndState" :reason="(endReason as EndStateReason)" :config="activeEndState" />
+      <div v-else-if="error" class="terminal-error">
         <i class="fas fa-exclamation-triangle fa-2x"></i>
         <h3>{{ t('terminal.connectionError') }}</h3>
         <p>{{ error }}</p>
@@ -165,7 +167,7 @@
           </button>
         </div>
       </div>
-      <div v-if="!terminal && !error" class="terminal-loading">
+      <div v-if="!terminal && !error && !activeEndState" class="terminal-loading">
         <i class="fas fa-spinner fa-spin fa-2x"></i>
         <p>{{ loadingMessage }}</p>
       </div>
@@ -186,12 +188,14 @@ import { useRoute } from 'vue-router'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
+import { useEndStateConfig, type EndStateReason } from '../../composables/useEndStateConfig'
 import { getTerminalTheme } from '../../utils/terminalTheme'
 import { terminalService, type SharedTerminalInfo } from '../../services/domain/terminal/terminalService'
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
 import RecordingIndicator from './RecordingIndicator.vue'
 import SessionCountdown from './SessionCountdown.vue'
+import TerminalEndStateOverlay from './TerminalEndStateOverlay.vue'
 
 interface SessionInfo {
   session_id: string
@@ -226,6 +230,10 @@ interface Props {
   title?: string
   icon?: string
   fullHeight?: boolean
+  // End-of-session state (when set, shows state-aware overlay instead of error)
+  endReason?: 'completed' | 'abandoned' | 'expired' | 'stopped' | 'setup_failed' | ''
+  // Whether this terminal was part of a scenario (affects navigation in end-state)
+  hasScenario?: boolean
 }
 
 const emit = defineEmits<{
@@ -247,7 +255,9 @@ const props = withDefaults(defineProps<Props>(), {
   useSettingsCard: false,
   title: 'Console Terminal',
   icon: undefined,
-  fullHeight: true
+  fullHeight: true,
+  endReason: '',
+  hasScenario: false
 })
 
 // Translations
@@ -283,7 +293,7 @@ const { t } = useTranslations({
       sessionInfoError: 'Unable to verify session: {message}',
       retry: 'Retry',
       reloadPage: 'Reload Page',
-      stop: 'Stop'
+      stop: 'Stop',
     }
   },
   fr: {
@@ -327,6 +337,14 @@ const { t } = useTranslations({
 const { showError: showErrorNotification } = useNotification()
 const route = useRoute()
 const userStore = useCurrentUserStore()
+
+// End state configuration (shared composable)
+const { getEndStateConfig } = useEndStateConfig()
+
+const activeEndState = computed(() => {
+  if (!props.endReason) return null
+  return getEndStateConfig(props.endReason as EndStateReason, { hasScenario: props.hasScenario }) ?? null
+})
 
 // State
 const terminal = ref<any>(null)

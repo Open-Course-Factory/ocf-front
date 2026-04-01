@@ -46,7 +46,7 @@ export interface ScenarioSessionInfo {
   scenario_id: string
   user_id: string
   current_step: number
-  status: string // 'active' | 'completed' | 'abandoned'
+  status: string // 'active' | 'provisioning' | 'completed' | 'abandoned' | 'setup_failed'
   started_at: string
   completed_at?: string
   terminal_session_id?: string
@@ -58,7 +58,7 @@ export interface MyScenarioSession {
   id: string
   scenario_id: string
   scenario_title: string
-  status: string // 'active' | 'completed' | 'abandoned'
+  status: string // 'active' | 'provisioning' | 'completed' | 'abandoned' | 'setup_failed'
   current_step: number
   total_steps: number
   completed_steps: number
@@ -66,6 +66,7 @@ export interface MyScenarioSession {
   started_at: string
   completed_at?: string
   terminal_session_id?: string
+  provisioning_phase?: string
 }
 
 export interface ScenarioInfo {
@@ -171,4 +172,33 @@ export const scenarioSessionService = {
     const response = await axios.post(`/scenario-sessions/${sessionId}/steps/${stepOrder}/hints/${level}/reveal`)
     return response.data
   }
+}
+
+/**
+ * Polls a scenario session until provisioning completes or fails.
+ * Throws 'SETUP_FAILED' if setup fails, 'SETUP_TIMEOUT' if max attempts reached.
+ */
+export async function pollProvisioningStatus(
+  sessionId: string,
+  onPhaseChange?: (phase: string) => void,
+  options?: { maxAttempts?: number; intervalMs?: number }
+): Promise<void> {
+  const maxAttempts = options?.maxAttempts ?? 120
+  const intervalMs = options?.intervalMs ?? 3000
+
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise(resolve => setTimeout(resolve, intervalMs))
+    try {
+      const info = await scenarioSessionService.getSessionInfo(sessionId)
+      onPhaseChange?.(info.provisioning_phase || '')
+      if (info.status === 'setup_failed') {
+        throw new Error('SETUP_FAILED')
+      }
+      if (info.status !== 'provisioning') return
+    } catch (err: any) {
+      if (err.message === 'SETUP_FAILED') throw err
+      // Ignore transient network errors, keep polling
+    }
+  }
+  throw new Error('SETUP_TIMEOUT')
 }

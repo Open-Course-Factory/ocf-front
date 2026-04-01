@@ -60,7 +60,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { scenarioSessionService } from '../../services/domain/scenario'
+import { scenarioSessionService, pollProvisioningStatus } from '../../services/domain/scenario'
 import { terminalService } from '../../services/domain/terminal'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
@@ -80,6 +80,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   'scenario-started': [scenarioSessionId: string]
   'scenario-loading': [loading: boolean]
+  'provisioning-phase': [phase: string]
 }>()
 
 const { showError } = useNotification()
@@ -159,7 +160,12 @@ const isLoading = ref(false)
 const isStarting = ref(false)
 
 const compatibleScenarios = computed(() => {
-  return scenarios.value.filter(isScenarioCompatible)
+  return scenarios.value.filter(s => {
+    // Use backend launchable flag first (accounts for machine availability)
+    if (s.launchable === false) return false
+    // Then check compatibility with this specific terminal's OS and size
+    return isScenarioCompatible(s)
+  })
 })
 
 async function resolveTerminalOsType() {
@@ -200,46 +206,33 @@ async function loadAndShowPicker() {
 async function startScenario(scenario: any) {
   isStarting.value = true
   emit('scenario-loading', true)
+  emit('provisioning-phase', 'setup_script')
   try {
     const session = await scenarioSessionService.startScenario(scenario.id, {
       terminal_session_id: props.terminalSessionId
     })
+    emit('provisioning-phase', session.provisioning_phase || 'setup_script')
 
     // If session is provisioning, poll until setup completes
     if (session.status === 'provisioning') {
-      await waitForProvisioning(session.id)
+      await pollProvisioningStatus(session.id, (phase) => {
+        emit('provisioning-phase', phase)
+      })
     }
 
+    emit('provisioning-phase', '')
     emit('scenario-started', session.id)
   } catch (err: any) {
     console.error('Failed to start scenario:', err)
+    emit('provisioning-phase', '')
     emit('scenario-loading', false)
-    showError(
-      err.response?.data?.error_message ||
-      err.response?.data?.message ||
-      t('scenarioStart.startError')
-    )
+    const msg = err.message === 'SETUP_FAILED' ? t('scenarioStart.setupFailed')
+      : err.message === 'SETUP_TIMEOUT' ? t('scenarioStart.startError')
+      : err.response?.data?.error_message || err.response?.data?.message || t('scenarioStart.startError')
+    showError(msg)
   } finally {
     isStarting.value = false
   }
-}
-
-async function waitForProvisioning(sessionId: string) {
-  const maxAttempts = 120 // 6 minutes at 3s intervals
-  for (let i = 0; i < maxAttempts; i++) {
-    await new Promise(resolve => setTimeout(resolve, 3000))
-    try {
-      const info = await scenarioSessionService.getSessionInfo(sessionId)
-      if (info.status === 'setup_failed') {
-        throw new Error(t('scenarioStart.setupFailed'))
-      }
-      if (info.status !== 'provisioning') return
-    } catch (err: any) {
-      if (err.message === t('scenarioStart.setupFailed')) throw err
-      // Ignore transient network errors, keep polling
-    }
-  }
-  throw new Error('Setup timed out')
 }
 </script>
 

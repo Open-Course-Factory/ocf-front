@@ -32,7 +32,7 @@
 
     <div v-else class="scenario-grid">
       <div
-        v-for="scenario in scenarios"
+        v-for="scenario in sortedScenarios"
         :key="scenario.id"
         class="scenario-card"
         :class="{ 'scenario-card--unavailable': !scenario.launchable && !getExistingSession(scenario), 'scenario-card--active': !!getExistingSession(scenario) }"
@@ -146,7 +146,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { scenarioSessionService } from '../../services/domain/scenario'
+import { scenarioSessionService, pollProvisioningStatus } from '../../services/domain/scenario'
 import { terminalService, instanceUtils } from '../../services/domain/terminal'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTranslations } from '../../composables/useTranslations'
@@ -241,6 +241,18 @@ const isLaunching = ref(false)
 const launchingScenarioId = ref('')
 const provisioningMessage = ref('')
 const provisioningPhase = ref('')
+
+const sortedScenarios = computed(() => {
+  return [...scenarios.value].sort((a, b) => {
+    // Score: launchable (2), has session but not launchable (1), neither (0)
+    const score = (s: any) => {
+      if (s.launchable) return 2
+      if (getExistingSession(s)) return 1
+      return 0
+    }
+    return score(b) - score(a)
+  })
+})
 
 const allowedMachineSizes = computed(() => {
   const sizes = subscriptionsStore.currentSubscription?.subscription_plan?.allowed_machine_sizes || []
@@ -361,7 +373,9 @@ async function handleLaunchScenario(scenario: any) {
 
     // Wait for scenario to be ready if still provisioning
     if (result.status === 'provisioning') {
-      await waitForScenarioReady(result.scenario_session_id)
+      await pollProvisioningStatus(result.scenario_session_id, (phase) => {
+        provisioningPhase.value = phase
+      })
     }
 
     provisioningMessage.value = ''
@@ -370,29 +384,14 @@ async function handleLaunchScenario(scenario: any) {
   } catch (err: any) {
     provisioningMessage.value = ''
     provisioningPhase.value = ''
-    showError(err.response?.data?.error_message || err.message || t('launcher.launchError'))
+    const msg = err.message === 'SETUP_FAILED' ? t('launcher.setupFailed')
+      : err.message === 'SETUP_TIMEOUT' ? t('launcher.setupTimeout')
+      : err.response?.data?.error_message || err.message || t('launcher.launchError')
+    showError(msg)
   } finally {
     isLaunching.value = false
     launchingScenarioId.value = ''
   }
-}
-
-async function waitForScenarioReady(sessionId: string) {
-  const maxAttempts = 120 // 6 minutes at 3s intervals
-  for (let i = 0; i < maxAttempts; i++) {
-    await new Promise(resolve => setTimeout(resolve, 3000))
-    try {
-      const info = await scenarioSessionService.getSessionInfo(sessionId)
-      provisioningPhase.value = info.provisioning_phase || ''
-      if (info.status === 'setup_failed') {
-        throw new Error(t('launcher.setupFailed'))
-      }
-      if (info.status !== 'provisioning') return
-    } catch (err: any) {
-      if (err.message === t('launcher.setupFailed')) throw err
-    }
-  }
-  throw new Error(t('launcher.setupTimeout'))
 }
 
 onMounted(loadScenarios)
