@@ -59,7 +59,7 @@ import { useTranslations } from '../../composables/useTranslations'
 
 interface Props {
   ready?: boolean
-  phase?: string // 'terminal_creation' | 'setup_script' | 'step_setup' | ''
+  phase?: string // 'terminal_creation' (client-side only) | 'setup_script' | 'step_setup' (from backend) | ''
 }
 
 const props = withDefaults(defineProps<Props>(), {

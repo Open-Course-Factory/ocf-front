@@ -357,7 +357,7 @@ async function handleLaunchScenario(scenario: any) {
   provisioningPhase.value = 'terminal_creation'
   try {
     const result = await scenarioSessionService.launchScenario(scenario.id)
-    provisioningPhase.value = result.provisioning_phase || 'setup_script'
+    provisioningPhase.value = result.provisioning_phase || ''
 
     // Wait for scenario to be ready if still provisioning
     if (result.status === 'provisioning') {
