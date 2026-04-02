@@ -30,10 +30,30 @@
       <p>{{ t('launcher.empty') }}</p>
     </div>
 
-    <div v-else class="scenario-grid">
-      <div
-        v-for="scenario in sortedScenarios"
-        :key="scenario.id"
+    <template v-else>
+      <!-- Search bar -->
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <i class="fas fa-search"></i>
+          <input
+            v-model="searchQuery"
+            type="text"
+            class="search-input"
+            :placeholder="t('launcher.searchPlaceholder')"
+          />
+        </div>
+      </div>
+
+      <!-- No results message -->
+      <div v-if="filteredScenarios.length === 0" class="empty-section">
+        <i class="fas fa-search"></i>
+        <p>{{ t('launcher.noMatchingScenarios') }}</p>
+      </div>
+
+      <div v-else class="scenario-grid">
+        <div
+          v-for="scenario in filteredScenarios"
+          :key="scenario.id"
         class="scenario-card"
         :class="{ 'scenario-card--unavailable': !scenario.launchable && !getExistingSession(scenario), 'scenario-card--active': !!getExistingSession(scenario) }"
       >
@@ -137,6 +157,7 @@
         </div>
       </div>
     </div>
+    </template>
 
     <!-- Provisioning overlay -->
     <ScenarioProvisioningOverlay
@@ -197,7 +218,9 @@ const { t } = useTranslations({
       launchError: 'Failed to launch scenario.',
       difficultyBeginner: 'Beginner',
       difficultyIntermediate: 'Intermediate',
-      difficultyAdvanced: 'Advanced'
+      difficultyAdvanced: 'Advanced',
+      searchPlaceholder: 'Search scenarios...',
+      noMatchingScenarios: 'No matching scenarios'
     }
   },
   fr: {
@@ -232,7 +255,9 @@ const { t } = useTranslations({
       launchError: 'Echec du lancement du scenario.',
       difficultyBeginner: 'Debutant',
       difficultyIntermediate: 'Intermediaire',
-      difficultyAdvanced: 'Avance'
+      difficultyAdvanced: 'Avance',
+      searchPlaceholder: 'Rechercher des scénarios...',
+      noMatchingScenarios: 'Aucun scénario trouvé'
     }
   }
 })
@@ -248,6 +273,7 @@ const provisioningMessage = ref('')
 const provisioningPhase = ref('')
 const provisioningSessionId = ref('')
 const provisioningAbortController = ref<AbortController | null>(null)
+const searchQuery = ref('')
 
 const sortedScenarios = computed(() => {
   return [...scenarios.value].sort((a, b) => {
@@ -259,6 +285,14 @@ const sortedScenarios = computed(() => {
     }
     return score(b) - score(a)
   })
+})
+
+const filteredScenarios = computed(() => {
+  if (!searchQuery.value.trim()) return sortedScenarios.value
+  const q = searchQuery.value.toLowerCase()
+  return sortedScenarios.value.filter(
+    s => (s.title || '').toLowerCase().includes(q) || (s.description || '').toLowerCase().includes(q)
+  )
 })
 
 const allowedMachineSizes = computed(() => {
@@ -748,6 +782,37 @@ onMounted(loadScenarios)
   font-weight: var(--font-weight-medium);
   cursor: not-allowed;
   border: 1px solid var(--color-border-light);
+}
+
+/* Search bar */
+.search-bar {
+  margin-bottom: var(--spacing-lg);
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input-wrapper i {
+  position: absolute;
+  left: var(--spacing-md);
+  color: var(--color-text-muted);
+}
+
+.search-input {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) var(--spacing-2xl);
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--border-radius-md);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.search-input::placeholder {
+  color: var(--color-text-muted);
 }
 
 /* Responsive */
