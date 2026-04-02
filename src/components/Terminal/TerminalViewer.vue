@@ -68,6 +68,20 @@
     <div class="terminal-wrapper">
       <div ref="terminalRef" class="terminal-container" :class="{ 'terminal-full-height': fullHeight }"></div>
       <TerminalEndStateOverlay v-if="activeEndState" :reason="(endReason as EndStateReason)" :config="activeEndState" />
+      <div v-else-if="showDisconnectOverlay" class="terminal-disconnect-overlay">
+        <i class="fas fa-plug fa-2x"></i>
+        <p>{{ t('terminal.disconnectedMessage') }}</p>
+        <div class="terminal-disconnect-actions">
+          <button class="btn btn-primary" @click="reconnect" :disabled="isConnecting">
+            <i :class="isConnecting ? 'fas fa-spinner fa-spin' : 'fas fa-sync'"></i>
+            {{ t('terminal.reconnect') }}
+          </button>
+          <button class="btn btn-danger" @click="endSession" :disabled="isEndingSession">
+            <i :class="isEndingSession ? 'fas fa-spinner fa-spin' : 'fas fa-stop'"></i>
+            {{ isEndingSession ? t('terminal.endingSession') : t('terminal.endSession') }}
+          </button>
+        </div>
+      </div>
       <div v-else-if="error" class="terminal-error">
         <i class="fas fa-exclamation-triangle fa-2x"></i>
         <h3>{{ t('terminal.connectionError') }}</h3>
@@ -83,7 +97,7 @@
           </button>
         </div>
       </div>
-      <div v-if="!terminal && !error && !activeEndState" class="terminal-loading">
+      <div v-if="!terminal && !error && !activeEndState && !showDisconnectOverlay" class="terminal-loading">
         <i class="fas fa-spinner fa-spin fa-2x"></i>
         <p>{{ loadingMessage }}</p>
       </div>
@@ -152,6 +166,20 @@
     <div class="terminal-wrapper">
       <div class="terminal-container" ref="terminalRef"></div>
       <TerminalEndStateOverlay v-if="activeEndState" :reason="(endReason as EndStateReason)" :config="activeEndState" />
+      <div v-else-if="showDisconnectOverlay" class="terminal-disconnect-overlay">
+        <i class="fas fa-plug fa-2x"></i>
+        <p>{{ t('terminal.disconnectedMessage') }}</p>
+        <div class="terminal-disconnect-actions">
+          <button class="btn btn-primary" @click="reconnect" :disabled="isConnecting">
+            <i :class="isConnecting ? 'fas fa-spinner fa-spin' : 'fas fa-sync'"></i>
+            {{ t('terminal.reconnect') }}
+          </button>
+          <button class="btn btn-danger" @click="endSession" :disabled="isEndingSession">
+            <i :class="isEndingSession ? 'fas fa-spinner fa-spin' : 'fas fa-stop'"></i>
+            {{ isEndingSession ? t('terminal.endingSession') : t('terminal.endSession') }}
+          </button>
+        </div>
+      </div>
       <div v-else-if="error" class="terminal-error">
         <i class="fas fa-exclamation-triangle fa-2x"></i>
         <h3>{{ t('terminal.connectionError') }}</h3>
@@ -167,7 +195,7 @@
           </button>
         </div>
       </div>
-      <div v-if="!terminal && !error && !activeEndState" class="terminal-loading">
+      <div v-if="!terminal && !error && !activeEndState && !showDisconnectOverlay" class="terminal-loading">
         <i class="fas fa-spinner fa-spin fa-2x"></i>
         <p>{{ loadingMessage }}</p>
       </div>
@@ -285,6 +313,9 @@ const { t } = useTranslations({
       retry: 'Retry',
       reloadPage: 'Reload Page',
       stop: 'Stop',
+      disconnectedMessage: 'Your terminal has disconnected. Your environment is still running.',
+      endSession: 'End Session',
+      endingSession: 'Ending...',
     }
   },
   fr: {
@@ -319,6 +350,9 @@ const { t } = useTranslations({
       retry: 'Réessayer',
       reloadPage: 'Recharger la Page',
       stop: 'Arrêter',
+      disconnectedMessage: 'Votre terminal s\'est déconnecté. Votre environnement est toujours actif.',
+      endSession: 'Terminer la session',
+      endingSession: 'Arrêt...',
       recording: 'REC',
       recordingTooltip: 'Les commandes sont enregistrées'
     }
@@ -344,6 +378,8 @@ const socket = ref<WebSocket | null>(null)
 const isWsOpen = ref(false)
 const isConnecting = ref(false)
 const showReconnectButton = ref(false)
+const showDisconnectOverlay = ref(false)
+const isEndingSession = ref(false)
 const error = ref('')
 const loadingMessage = ref(t('terminal.initializingTerminal'))
 const fetchedSessionInfo = ref<SessionInfo | null>(null)
@@ -570,6 +606,8 @@ async function connectToTerminal() {
       isWsOpen.value = true
       isConnecting.value = false
       showReconnectButton.value = false
+      showDisconnectOverlay.value = false
+      isEndingSession.value = false
       error.value = ''
 
       // Clear old terminal content before attaching new session
@@ -636,8 +674,10 @@ async function connectToTerminal() {
         }
       } else if (wasConnected) {
         // WebSocket closed while session was active = shell exited or connection lost
-        error.value = t('terminal.sessionEnded')
-        showReconnectButton.value = false
+        // Show disconnect overlay with reconnect + end session options
+        showDisconnectOverlay.value = true
+        showReconnectButton.value = true
+        error.value = ''
       } else {
         // Connection failed before session was established - offer reconnect
         error.value = event.reason
@@ -701,6 +741,28 @@ async function reconnect() {
   }
 
   await connectToTerminal()
+}
+
+// End session — stop the terminal on the backend
+async function endSession() {
+  const sessionId = displaySessionId.value
+  if (!sessionId) return
+
+  isEndingSession.value = true
+  try {
+    await terminalService.stopSession(sessionId)
+    showDisconnectOverlay.value = false
+    showReconnectButton.value = false
+    error.value = t('terminal.sessionEnded')
+  } catch (err: any) {
+    console.error('Error ending session:', err)
+    // Still show the ended state even if the API call fails
+    showDisconnectOverlay.value = false
+    showReconnectButton.value = false
+    error.value = t('terminal.sessionEnded')
+  } finally {
+    isEndingSession.value = false
+  }
 }
 
 // Retry on error
@@ -905,6 +967,34 @@ defineExpose({
   background: var(--color-bg-primary);
 }
 
+.terminal-disconnect-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--color-warning);
+  z-index: 100;
+  background: var(--color-bg-primary);
+}
+
+.terminal-disconnect-overlay p {
+  margin: var(--spacing-md) 0;
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+}
+
+.terminal-disconnect-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
 .terminal-error-actions {
   display: flex;
   gap: var(--spacing-sm);
@@ -1005,6 +1095,24 @@ defineExpose({
   background-color: var(--color-warning);
   color: var(--color-white);
   border-color: var(--color-warning);
+}
+
+.btn-danger {
+  background-color: var(--color-danger);
+  color: var(--color-white);
+  border-color: var(--color-danger);
+}
+
+.btn-secondary {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-medium);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .btn:hover {
