@@ -67,6 +67,11 @@ export interface ShareTerminalRequest {
   expires_at?: string
 }
 
+export interface TermsResponse {
+  terms: string
+  hash: string
+}
+
 export interface InstanceAvailability {
   available: boolean
   matchingSizes: string[]
@@ -208,6 +213,11 @@ export const terminalService = {
 
   async setDefaultBackend(backendId: string): Promise<Backend> {
     const response = await axios.patch(`/terminals/backends/${backendId}/set-default`)
+    return response.data
+  },
+
+  async getTerms(): Promise<TermsResponse> {
+    const response = await axios.get('/terminals/terms')
     return response.data
   }
 }

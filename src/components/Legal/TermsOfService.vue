@@ -5,7 +5,19 @@
       <p class="last-updated">{{ t('tos.lastUpdated', { date: lastUpdateDate }) }}</p>
     </div>
 
-    <div class="terms-content">
+    <!-- Loading state -->
+    <div v-if="isLoading" class="terms-loading">
+      <div class="loading-spinner"></div>
+      <p>{{ t('tos.loading') }}</p>
+    </div>
+
+    <!-- API terms content -->
+    <div v-else-if="apiTerms" class="terms-content terms-api-content">
+      <div class="api-terms-text" v-html="formattedApiTerms"></div>
+    </div>
+
+    <!-- Fallback: hardcoded terms content -->
+    <div v-else class="terms-content">
       <section>
         <h3>{{ t('tos.acceptance.title') }}</h3>
         <p>{{ t('tos.acceptance.content') }}</p>
@@ -181,14 +193,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useTranslations } from '../../composables/useTranslations';
+import { terminalService } from '../../services/domain/terminal/terminalService';
 
 const { t, locale } = useTranslations({
   en: {
     tos: {
       title: 'Terms of Service',
       lastUpdated: 'Last updated: {date}',
+      loading: 'Loading terms of service...',
 
       acceptance: {
         title: '1. Acceptance of Terms',
@@ -403,6 +417,7 @@ const { t, locale } = useTranslations({
     tos: {
       title: 'Conditions Générales d\'Utilisation',
       lastUpdated: 'Dernière mise à jour : {date}',
+      loading: 'Chargement des conditions d\'utilisation...',
 
       acceptance: {
         title: '1. Acceptation des Conditions',
@@ -617,6 +632,10 @@ const { t, locale } = useTranslations({
   }
 })
 
+// API state
+const isLoading = ref(true);
+const apiTerms = ref('');
+
 // Configuration - update these values for your organization
 const lastUpdateDate = computed(() => {
   const date = new Date('2025-10-11');
@@ -628,6 +647,30 @@ const lastUpdateDate = computed(() => {
 });
 
 const contactEmail = 'legal@your-organization.com';
+
+// Convert plain text terms to basic HTML (preserve paragraphs and line breaks)
+const formattedApiTerms = computed(() => {
+  if (!apiTerms.value) return '';
+  return apiTerms.value
+    .split(/\n\n+/)
+    .map(paragraph => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`)
+    .join('');
+});
+
+// Fetch terms from tt-backend via ocf-core proxy
+onMounted(async () => {
+  try {
+    const response = await terminalService.getTerms();
+    if (response.terms) {
+      apiTerms.value = response.terms;
+    }
+  } catch {
+    // API not available or endpoint not yet implemented —
+    // silently fall back to hardcoded i18n content
+  } finally {
+    isLoading.value = false;
+  }
+});
 </script>
 
 <style scoped>
@@ -685,5 +728,41 @@ const contactEmail = 'legal@your-organization.com';
 .contact-info {
   font-weight: 600;
   color: var(--color-primary);
+}
+
+.terms-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+}
+
+.terms-loading p {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+.loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--color-border-light);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.api-terms-text {
+  line-height: 1.6;
+  color: var(--color-text-primary);
+}
+
+.api-terms-text :deep(p) {
+  margin-bottom: 12px;
 }
 </style>
