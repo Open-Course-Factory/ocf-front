@@ -648,10 +648,17 @@ const lastUpdateDate = computed(() => {
 
 const contactEmail = 'legal@your-organization.com';
 
+// Escape HTML entities to prevent XSS from API content
+function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 // Convert plain text terms to basic HTML (preserve paragraphs and line breaks)
 const formattedApiTerms = computed(() => {
   if (!apiTerms.value) return '';
-  return apiTerms.value
+  return escapeHtml(apiTerms.value)
     .split(/\n\n+/)
     .map(paragraph => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`)
     .join('');
