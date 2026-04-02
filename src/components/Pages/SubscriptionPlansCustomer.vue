@@ -437,9 +437,9 @@ const isAssignedUser = computed(() => {
 const filteredPlans = computed(() => {
   let plans = [...entityStore.entities]
 
-  // Non-admins don't see inactive (coming soon) plans
+  // Non-admins only see active catalog plans
   if (!isAdmin.value) {
-    plans = plans.filter(p => p.is_active)
+    plans = plans.filter(p => p.is_active && p.is_catalog)
   }
 
   // Sort to put current plan first

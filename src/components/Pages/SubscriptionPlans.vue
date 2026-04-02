@@ -75,9 +75,9 @@ const closeAssignModal = () => {
 
 // Filtrer les plans selon le mode de vue
 const filteredPlans = computed(() => {
-    // Si pas admin OU admin en mode "vue utilisateur", filtrer pour ne montrer que les plans actifs
+    // Si pas admin OU admin en mode "vue utilisateur", filtrer pour ne montrer que les plans actifs du catalogue
     if (!isAdmin.value || shouldFilterAsStandardUser.value) {
-        return entityStore.entities.filter((plan: any) => plan.is_active);
+        return entityStore.entities.filter((plan: any) => plan.is_active && plan.is_catalog);
     }
     // Admin en mode "vue admin" : montrer tous les plans
     return entityStore.entities;
@@ -379,6 +379,13 @@ const syncWithStripe = async () => {
                             >
                                 {{ entity.is_active ? t('subscriptionPlans.statusActive') : t('subscriptionPlans.statusInactive') }}
                             </span>
+                            <span
+                                :class="['badge', entity.is_catalog ? 'badge-catalog' : 'badge-unlisted']"
+                                :title="entity.is_catalog ? t('subscriptionPlans.catalogPlanDescription') : t('subscriptionPlans.unlistedPlanDescription')"
+                            >
+                                <i :class="entity.is_catalog ? 'fas fa-store' : 'fas fa-eye-slash'"></i>
+                                {{ entity.is_catalog ? t('subscriptionPlans.catalogPlan') : t('subscriptionPlans.unlistedPlan') }}
+                            </span>
                             <AdminBadge v-if="!entity.is_active" icon-only />
                             <button
                                 v-if="entity.is_active"
@@ -510,6 +517,20 @@ const syncWithStripe = async () => {
 
 .badge-secondary {
     background-color: var(--color-gray-600);
+}
+
+.badge-catalog {
+    background-color: var(--color-primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.badge-unlisted {
+    background-color: var(--color-warning);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .text-muted {

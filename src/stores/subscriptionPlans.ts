@@ -49,6 +49,11 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             trial_days: 'Trial Days',
             required_role: 'Required Role',
             is_active: 'Active',
+            is_catalog: 'Catalog Plan',
+            catalogPlan: 'Catalog',
+            unlistedPlan: 'Unlisted',
+            catalogPlanDescription: 'Shown on the pricing page',
+            unlistedPlanDescription: 'Custom plan, assigned by administrator',
             stripe_product_id: 'Stripe Product ID',
             stripe_price_id: 'Stripe Price ID',
             modify: 'Modify the plan',
@@ -154,6 +159,11 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             trial_days: 'Jours d\'Essai',
             required_role: 'Rôle Requis',
             is_active: 'Actif',
+            is_catalog: 'Plan catalogue',
+            catalogPlan: 'Catalogue',
+            unlistedPlan: 'Non listé',
+            catalogPlanDescription: 'Affiché sur la page des tarifs',
+            unlistedPlanDescription: 'Plan personnalisé, assigné par un administrateur',
             stripe_product_id: 'ID Produit Stripe',
             stripe_price_id: 'ID Prix Stripe',
             modify: 'Modifier le plan',
@@ -272,6 +282,7 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
         field('allowed_backends', t('subscriptionPlans.allowed_backends')).type('advanced-textarea').visible().creatable().updatable(),
         field('default_backend', t('subscriptionPlans.default_backend')).input().visible().creatable().updatable(),
         field('is_active', t('subscriptionPlans.is_active')).input().visible().readonly(),
+        field('is_catalog', t('subscriptionPlans.is_catalog')).checkbox().visible().creatable().updatable(),
         field('stripe_product_id', t('subscriptionPlans.stripe_product_id')).input().hidden().readonly(),
         field('stripe_price_id', t('subscriptionPlans.stripe_price_id')).input().hidden().readonly(),
         field('created_at', 'Created At').input().visible().readonly(),
@@ -327,8 +338,9 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
     }
 
     // Check if user can see plan (admin vs regular user)
+    // Non-admin users only see catalog plans that are active
     const canViewPlan = (plan: any, isAdmin: boolean) => {
-        return isAdmin || plan.is_active
+        return isAdmin || (plan.is_active && plan.is_catalog)
     }
 
     // Synchroniser les plans avec Stripe
