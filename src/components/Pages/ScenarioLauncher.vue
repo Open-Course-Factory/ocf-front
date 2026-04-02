@@ -815,6 +815,11 @@ onMounted(loadScenarios)
   color: var(--color-text-muted);
 }
 
+.search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .scenario-launcher {
