@@ -109,7 +109,13 @@
       <template v-else-if="currentStep">
         <!-- Progress indicator -->
         <div class="progress-bar">
-          <span class="progress-label">{{ stepCountLabel }}</span>
+          <div class="progress-bar-top">
+            <span class="progress-label">{{ stepCountLabel }}</span>
+            <span v-if="liveElapsedTime" class="elapsed-timer" :title="t('scenarioPanel.elapsed')">
+              <i class="fas fa-clock"></i>
+              {{ liveElapsedTime }}
+            </span>
+          </div>
           <div class="progress-dots" role="status" :aria-label="stepCountLabel">
             <span
               v-for="n in totalSteps"
@@ -279,7 +285,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, type Ref } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { renderKillercodaMarkdown, loadScenarioImages, revokeScenarioImageUrls } from '../../utils/killercodaMarkdown'
@@ -362,7 +368,8 @@ const { t } = useTranslations({
       allHintsRevealed: 'All hints used',
       hintTransparency: 'Your instructor can see how many hints you use.',
       sessionCompleted: 'Scenario Completed',
-      sessionAbandoned: 'Scenario Abandoned'
+      sessionAbandoned: 'Scenario Abandoned',
+      elapsed: 'Elapsed'
     }
   },
   fr: {
@@ -414,7 +421,8 @@ const { t } = useTranslations({
       allHintsRevealed: 'Tous les indices utilisés',
       hintTransparency: 'Votre formateur peut voir combien d\'indices vous utilisez.',
       sessionCompleted: 'Scénario terminé',
-      sessionAbandoned: 'Scénario abandonné'
+      sessionAbandoned: 'Scénario abandonné',
+      elapsed: 'Temps écoulé'
     }
   }
 })
@@ -437,6 +445,37 @@ const scenarioInfo = ref<ScenarioInfo | null>(null)
 
 // Session timing (for completion summary)
 const sessionStartedAt = ref<string | null>(null)
+
+// Live elapsed timer
+const liveElapsedTime = ref('')
+const timerInterval: Ref<ReturnType<typeof setInterval> | null> = ref(null)
+
+function formatElapsed(startDate: Date): string {
+  const diffMs = Date.now() - startDate.getTime()
+  const totalSeconds = Math.floor(diffMs / 1000)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`
+  return `${minutes}m ${seconds}s`
+}
+
+function startElapsedTimer() {
+  stopElapsedTimer()
+  if (!sessionStartedAt.value) return
+  const start = new Date(sessionStartedAt.value)
+  liveElapsedTime.value = formatElapsed(start)
+  timerInterval.value = setInterval(() => {
+    liveElapsedTime.value = formatElapsed(start)
+  }, 1000)
+}
+
+function stopElapsedTimer() {
+  if (timerInterval.value) {
+    clearInterval(timerInterval.value)
+    timerInterval.value = null
+  }
+}
 
 // Track whether we already auto-expanded the hint for the current step
 const hintAutoShown = ref(false)
@@ -880,6 +919,22 @@ async function handleAbandon() {
   }
 }
 
+// Start the elapsed timer when session start time becomes available
+watch(sessionStartedAt, (val) => {
+  if (val) {
+    startElapsedTimer()
+  } else {
+    stopElapsedTimer()
+  }
+})
+
+// Stop the timer when the session completes
+watch(isSessionCompleted, (completed) => {
+  if (completed) {
+    stopElapsedTimer()
+  }
+})
+
 // Watch for session ID changes to reload
 watch(() => props.scenarioSessionId, () => {
   if (props.scenarioSessionId) {
@@ -894,6 +949,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  stopElapsedTimer()
   revokeScenarioImageUrls()
 })
 
@@ -1019,10 +1075,30 @@ defineExpose({
   flex-shrink: 0;
 }
 
+.progress-bar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .progress-label {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-muted);
+}
+
+.elapsed-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.elapsed-timer i {
+  font-size: 0.7em;
+  opacity: 0.8;
 }
 
 /* Progress dots */
