@@ -177,17 +177,21 @@ export const scenarioSessionService = {
 /**
  * Polls a scenario session until provisioning completes or fails.
  * Throws 'SETUP_FAILED' if setup fails, 'SETUP_TIMEOUT' if max attempts reached.
+ * Accepts an optional AbortSignal to cancel polling early.
  */
 export async function pollProvisioningStatus(
   sessionId: string,
   onPhaseChange?: (phase: string) => void,
+  abortSignal?: AbortSignal,
   options?: { maxAttempts?: number; intervalMs?: number }
 ): Promise<void> {
   const maxAttempts = options?.maxAttempts ?? 120
   const intervalMs = options?.intervalMs ?? 3000
 
   for (let i = 0; i < maxAttempts; i++) {
+    if (abortSignal?.aborted) return
     await new Promise(resolve => setTimeout(resolve, intervalMs))
+    if (abortSignal?.aborted) return
     try {
       const info = await scenarioSessionService.getSessionInfo(sessionId)
       onPhaseChange?.(info.provisioning_phase || '')

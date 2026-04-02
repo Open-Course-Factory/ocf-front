@@ -49,6 +49,7 @@
 
       <!-- Scenario start bar (when no scenario active) -->
       <ScenarioStartBar
+        ref="scenarioStartBarRef"
         v-show="isSessionActive && !scenarioSessionId && !scenarioLoading && !terminalHadScenario"
         :terminal-session-id="sessionId"
         :terminal-instance-type="sessionInfo?.instance_type"
@@ -56,6 +57,7 @@
         @scenario-started="handleScenarioStarted"
         @scenario-loading="handleScenarioLoading"
         @provisioning-phase="handleProvisioningPhase"
+        @provisioning-session-id="handleProvisioningSessionId"
       />
 
       <!-- Scenario briefing card (full width, dismissible) -->
@@ -165,7 +167,12 @@
     </template>
 
     <!-- Full-screen provisioning overlay (shared with ScenarioLauncher) -->
-    <ScenarioProvisioningOverlay v-if="scenarioLoading" :phase="provisioningPhase" />
+    <ScenarioProvisioningOverlay
+      v-if="scenarioLoading"
+      :phase="provisioningPhase"
+      :cancellable="!!provisioningScenarioSessionId"
+      @cancel="handleCancelProvisioning"
+    />
   </div>
 </template>
 
@@ -350,12 +357,39 @@ const scenarioSessionStatus = ref<string | null>(null)
 const scenarioTerminalRef = ref<InstanceType<typeof TerminalSessionPanel> | null>(null)
 const standaloneTerminalRef = ref<InstanceType<typeof TerminalSessionPanel> | null>(null)
 const scenarioPanelRef = ref<InstanceType<typeof ScenarioPanel> | null>(null)
+const scenarioStartBarRef = ref<InstanceType<typeof ScenarioStartBar> | null>(null)
 const scenarioLoading = ref(false)
 const provisioningPhase = ref('')
+const provisioningScenarioSessionId = ref('')
 const terminalHadScenario = ref(false)
 
 function handleProvisioningPhase(phase: string) {
   provisioningPhase.value = phase
+}
+
+function handleProvisioningSessionId(sessionId: string) {
+  provisioningScenarioSessionId.value = sessionId
+}
+
+async function handleCancelProvisioning() {
+  const sessionId = provisioningScenarioSessionId.value
+
+  // Abort the polling in ScenarioStartBar
+  scenarioStartBarRef.value?.abortProvisioning()
+
+  // Reset UI state
+  scenarioLoading.value = false
+  provisioningPhase.value = ''
+  provisioningScenarioSessionId.value = ''
+
+  // Abandon the session on the backend
+  if (sessionId) {
+    try {
+      await scenarioSessionService.abandonSession(sessionId)
+    } catch {
+      // Best-effort — session may already be cleaned up
+    }
+  }
 }
 
 // Restore briefing dismissed state from localStorage when scenario session is known
@@ -600,6 +634,7 @@ function handleScenarioLoading(loading: boolean) {
 function handleScenarioStarted(newScenarioSessionId: string) {
   scenarioSessionId.value = newScenarioSessionId
   terminalHadScenario.value = true
+  provisioningScenarioSessionId.value = ''
   stopScenarioSync()
   scenarioLoading.value = false
 }

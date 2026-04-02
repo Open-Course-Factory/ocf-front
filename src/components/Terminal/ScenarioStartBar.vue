@@ -81,7 +81,16 @@ const emit = defineEmits<{
   'scenario-started': [scenarioSessionId: string]
   'scenario-loading': [loading: boolean]
   'provisioning-phase': [phase: string]
+  'provisioning-session-id': [sessionId: string]
 }>()
+
+let provisioningAbortController: AbortController | null = null
+
+function abortProvisioning() {
+  provisioningAbortController?.abort()
+}
+
+defineExpose({ abortProvisioning })
 
 const { showError } = useNotification()
 
@@ -207,22 +216,32 @@ async function startScenario(scenario: any) {
   isStarting.value = true
   emit('scenario-loading', true)
   emit('provisioning-phase', 'setup_script')
+
+  const abortController = new AbortController()
+  provisioningAbortController = abortController
+
   try {
     const session = await scenarioSessionService.startScenario(scenario.id, {
       terminal_session_id: props.terminalSessionId
     })
+    emit('provisioning-session-id', session.id)
     emit('provisioning-phase', session.provisioning_phase || 'setup_script')
+
+    if (abortController.signal.aborted) return
 
     // If session is provisioning, poll until setup completes
     if (session.status === 'provisioning') {
       await pollProvisioningStatus(session.id, (phase) => {
         emit('provisioning-phase', phase)
-      })
+      }, abortController.signal)
     }
+
+    if (abortController.signal.aborted) return
 
     emit('provisioning-phase', '')
     emit('scenario-started', session.id)
   } catch (err: any) {
+    if (abortController.signal.aborted) return
     console.error('Failed to start scenario:', err)
     emit('provisioning-phase', '')
     emit('scenario-loading', false)
@@ -232,6 +251,7 @@ async function startScenario(scenario: any) {
     showError(msg)
   } finally {
     isStarting.value = false
+    provisioningAbortController = null
   }
 }
 </script>

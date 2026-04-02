@@ -139,7 +139,12 @@
     </div>
 
     <!-- Provisioning overlay -->
-    <ScenarioProvisioningOverlay v-if="provisioningMessage" :phase="provisioningPhase" />
+    <ScenarioProvisioningOverlay
+      v-if="provisioningMessage"
+      :phase="provisioningPhase"
+      :cancellable="!!provisioningSessionId"
+      @cancel="handleCancelProvisioning"
+    />
   </div>
 </template>
 
@@ -241,6 +246,8 @@ const isLaunching = ref(false)
 const launchingScenarioId = ref('')
 const provisioningMessage = ref('')
 const provisioningPhase = ref('')
+const provisioningSessionId = ref('')
+const provisioningAbortController = ref<AbortController | null>(null)
 
 const sortedScenarios = computed(() => {
   return [...scenarios.value].sort((a, b) => {
@@ -367,23 +374,36 @@ async function handleLaunchScenario(scenario: any) {
   launchingScenarioId.value = scenario.id
   provisioningMessage.value = t('launcher.provisioningDetail')
   provisioningPhase.value = 'terminal_creation'
+  provisioningSessionId.value = ''
+
+  const abortController = new AbortController()
+  provisioningAbortController.value = abortController
+
   try {
     const result = await scenarioSessionService.launchScenario(scenario.id)
+    provisioningSessionId.value = result.scenario_session_id
     provisioningPhase.value = result.provisioning_phase || ''
+
+    if (abortController.signal.aborted) return
 
     // Wait for scenario to be ready if still provisioning
     if (result.status === 'provisioning') {
       await pollProvisioningStatus(result.scenario_session_id, (phase) => {
         provisioningPhase.value = phase
-      })
+      }, abortController.signal)
     }
+
+    if (abortController.signal.aborted) return
 
     provisioningMessage.value = ''
     provisioningPhase.value = ''
+    provisioningSessionId.value = ''
     router.push({ name: 'TerminalSessionView', params: { sessionId: result.terminal_session_id } })
   } catch (err: any) {
+    if (abortController.signal.aborted) return
     provisioningMessage.value = ''
     provisioningPhase.value = ''
+    provisioningSessionId.value = ''
     const msg = err.message === 'SETUP_FAILED' ? t('launcher.setupFailed')
       : err.message === 'SETUP_TIMEOUT' ? t('launcher.setupTimeout')
       : err.response?.data?.error_message || err.message || t('launcher.launchError')
@@ -391,7 +411,33 @@ async function handleLaunchScenario(scenario: any) {
   } finally {
     isLaunching.value = false
     launchingScenarioId.value = ''
+    provisioningAbortController.value = null
   }
+}
+
+async function handleCancelProvisioning() {
+  const sessionId = provisioningSessionId.value
+  // Abort the polling loop
+  provisioningAbortController.value?.abort()
+
+  // Reset UI state
+  provisioningMessage.value = ''
+  provisioningPhase.value = ''
+  provisioningSessionId.value = ''
+  isLaunching.value = false
+  launchingScenarioId.value = ''
+
+  // Abandon the session on the backend
+  if (sessionId) {
+    try {
+      await scenarioSessionService.abandonSession(sessionId)
+    } catch {
+      // Best-effort — session may already be cleaned up
+    }
+  }
+
+  // Reload scenarios to refresh session states
+  await loadScenarios()
 }
 
 onMounted(loadScenarios)
