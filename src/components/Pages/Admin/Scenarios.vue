@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Entity from '../Entity.vue'
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { useScenariosStore } from '../../../stores/scenarios'
 import { useTranslations } from '../../../composables/useTranslations'
@@ -9,12 +10,14 @@ import { teacherService } from '../../../services/domain/scenario'
 import ScenarioUploadModal from '../../Modals/ScenarioUploadModal.vue'
 import ScenarioJSONImportModal from '../../Modals/ScenarioJSONImportModal.vue'
 
+const router = useRouter()
 const entityStore = useScenariosStore()
 const showUploadModal = ref(false)
 const showJSONImportModal = ref(false)
 
 const { showError: notifyError, showSuccess: notifySuccess } = useNotification()
 const isDuplicating = ref<string | null>(null)
+const isPreviewing = ref<string | null>(null)
 
 const { t } = useTranslations({
   en: {
@@ -27,7 +30,9 @@ const { t } = useTranslations({
       exportError: 'Failed to export scenario',
       duplicate: 'Duplicate',
       duplicateSuccess: 'Scenario duplicated',
-      duplicateError: 'Failed to duplicate scenario'
+      duplicateError: 'Failed to duplicate scenario',
+      test: 'Test',
+      testError: 'Failed to start preview session'
     }
   },
   fr: {
@@ -40,7 +45,9 @@ const { t } = useTranslations({
       exportError: 'Échec de l\'export du scénario',
       duplicate: 'Dupliquer',
       duplicateSuccess: 'Scénario dupliqué',
-      duplicateError: 'Échec de la duplication du scénario'
+      duplicateError: 'Échec de la duplication du scénario',
+      test: 'Tester',
+      testError: 'Échec du lancement de la session de test'
     }
   }
 })
@@ -94,6 +101,22 @@ async function exportArchive(entity: any) {
   }
 }
 
+async function previewScenario(entity: any) {
+  isPreviewing.value = entity.id
+  try {
+    const response = await axios.post(`/scenarios/${entity.id}/preview`)
+    const session = response.data
+    const sessionId = session.terminal_session_id || session.id
+    if (sessionId) {
+      router.push({ name: 'TerminalSessionView', params: { sessionId } })
+    }
+  } catch (err: any) {
+    notifyError(err.response?.data?.error_message || t('scenarios.testError'))
+  } finally {
+    isPreviewing.value = null
+  }
+}
+
 async function duplicateScenario(entity: any) {
   isDuplicating.value = entity.id
   try {
@@ -121,6 +144,14 @@ async function duplicateScenario(entity: any) {
       </button>
     </template>
     <template #actions="{ entity }">
+      <button
+        class="btn btn-secondary"
+        :disabled="isPreviewing === entity.id"
+        @click="previewScenario(entity)"
+      >
+        <i :class="isPreviewing === entity.id ? 'fas fa-spinner fa-spin' : 'fas fa-play'"></i>
+        {{ t('scenarios.test') }}
+      </button>
       <button
         class="btn btn-secondary"
         :disabled="isDuplicating === entity.id"
