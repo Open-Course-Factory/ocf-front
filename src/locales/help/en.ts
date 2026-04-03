@@ -151,15 +151,15 @@ export const helpEn = {
         },
 
         multiBackend: {
-          title: "Multi-Backend Support",
-          description: "When multiple terminal backends are available, you can choose which server to use for your session. This allows you to select the infrastructure closest to your location or the one best suited to your workload.",
+          title: "Multi-Server Support",
+          description: "When multiple terminal servers are available, you can choose which server to use for your session. This allows you to select the infrastructure closest to your location or the one best suited to your workload.",
           selectBackend: {
-            title: "Select a backend",
-            description: "On the session creation page, a <strong>backend selector</strong> appears when multiple servers are available. Choose the backend that best fits your needs."
+            title: "Select a server",
+            description: "On the session creation page, a <strong>server selector</strong> appears when multiple servers are available. Choose the server that best fits your needs."
           },
           tip: {
             title: "Tip",
-            description: "If only one backend is configured, the selector is hidden and the default server is used automatically."
+            description: "If only one server is configured, the selector is hidden and the default server is used automatically."
           }
         },
 
@@ -483,7 +483,7 @@ export const helpEn = {
           },
           syncSession: {
             title: "Sync Session",
-            description: "Manually synchronize the session status with the backend to get the most up-to-date information."
+            description: "Manually synchronize the session status with the server to get the most up-to-date information."
           }
         },
 
@@ -791,7 +791,7 @@ export const helpEn = {
           },
           terminalDetails: {
             title: "Terminal Details",
-            description: "View the terminal name, status (active, stopped, expired), backend, and expiration information at a glance."
+            description: "View the terminal name, status (active, stopped, expired), server, and expiration information at a glance."
           },
           sharedBy: {
             title: "Shared By",
@@ -2718,7 +2718,7 @@ export const helpEn = {
 
         overview: {
           title: "Overview",
-          description: "As a trainer, you can create interactive scenarios that guide learners through real-world exercises. Each scenario consists of ordered steps with instructions, verification scripts, and optional hints. Scenarios run on real Linux containers matching a chosen instance type, giving learners a hands-on experience."
+          description: "As a trainer, you can create interactive scenarios that guide learners through real-world exercises. Each scenario consists of ordered steps with instructions, verification scripts, and optional hints. Scenarios run on real Linux containers matching a chosen machine type, giving learners a hands-on experience."
         },
 
         creating: {
@@ -2734,8 +2734,8 @@ export const helpEn = {
             description: "Click <strong>\"Create\"</strong> and fill in the scenario details: <strong>title</strong>, <strong>description</strong>, <strong>difficulty level</strong> (beginner, intermediate, or advanced), and <strong>estimated completion time</strong> in minutes."
           },
           step3: {
-            title: "Choose the Instance Type",
-            description: "Select the <strong>instance type</strong> (Linux image) that learners' terminals will use for this scenario. This determines the operating system and pre-installed tools available during the exercise."
+            title: "Choose the Machine Type",
+            description: "Select the <strong>machine type</strong> (Linux image) that learners' terminals will use for this scenario. This determines the operating system and pre-installed tools available during the exercise."
           },
           tip: {
             title: "Tip",

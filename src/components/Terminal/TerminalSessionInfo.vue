@@ -98,7 +98,7 @@ const { t } = useTranslations({
     terminalStarter: {
       timeRemaining: 'Time remaining',
       stop: 'Stop',
-      instanceType: 'Instance Type',
+      instanceType: 'Machine Type',
       status: 'Status',
       sessionSavedHint: 'This session is saved. You can find it anytime in',
       mySessionsLink: 'My Sessions',
@@ -109,7 +109,7 @@ const { t } = useTranslations({
     terminalStarter: {
       timeRemaining: 'Temps restant',
       stop: 'Arrêter',
-      instanceType: 'Type d\'Instance',
+      instanceType: 'Type de Machine',
       status: 'Statut',
       sessionSavedHint: 'Cette session est sauvegardée. Vous pouvez la retrouver à tout moment dans',
       mySessionsLink: 'Mes Sessions',
