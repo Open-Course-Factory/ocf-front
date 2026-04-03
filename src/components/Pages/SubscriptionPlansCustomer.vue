@@ -435,12 +435,7 @@ const isAssignedUser = computed(() => {
 
 // Computed
 const filteredPlans = computed(() => {
-  let plans = [...entityStore.entities]
-
-  // Non-admins only see active catalog plans
-  if (!isAdmin.value) {
-    plans = plans.filter(p => p.is_active && p.is_catalog)
-  }
+  let plans = [...entityStore.entities].filter(p => entityStore.canViewPlan(p, isAdmin.value))
 
   // Sort to put current plan first
   return plans.sort((a, b) => {
