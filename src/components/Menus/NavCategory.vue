@@ -6,16 +6,17 @@
 -->
 
 <template>
-  <li class="nav-category" :data-category="categoryKey">
-    <div class="category-header" @click="$emit('toggle', categoryKey, $event)"
-      :class="{ active: expanded, 'has-active-item': hasActiveItem }"
-      :title="collapsed ? label : ''">
+  <li class="nav-category" :class="{ 'nav-category--disabled': disabled }" :data-category="categoryKey">
+    <div class="category-header" @click="!disabled && $emit('toggle', categoryKey, $event)"
+      :class="{ active: expanded && !disabled, 'has-active-item': hasActiveItem && !disabled, disabled: disabled }"
+      :title="disabled ? (disabledTooltip || '') : (collapsed ? label : '')">
       <i :class="icon"></i>
       <span class="menu-text category-title">{{ label }}</span>
-      <i v-if="!collapsed" class="fas fa-chevron-down chevron-icon"
+      <i v-if="disabled" class="fas fa-lock category-lock-icon"></i>
+      <i v-else-if="!collapsed" class="fas fa-chevron-down chevron-icon"
          :class="{ rotated: expanded }"></i>
     </div>
-    <ul class="category-items" :class="{ expanded }" :style="popupStyle">
+    <ul v-if="!disabled" class="category-items" :class="{ expanded }" :style="popupStyle">
       <slot></slot>
     </ul>
   </li>
@@ -31,6 +32,8 @@ defineProps<{
   expanded: boolean
   hasActiveItem: boolean
   collapsed: boolean
+  disabled?: boolean
+  disabledTooltip?: string
   popupStyle?: CSSProperties
 }>()
 
@@ -44,6 +47,28 @@ defineEmits<{
 .nav-category {
   margin-bottom: var(--spacing-sm);
   position: relative;
+}
+
+/* Disabled category (feature available in another org) */
+.nav-category--disabled {
+  opacity: 0.5;
+}
+
+.category-header.disabled {
+  cursor: not-allowed;
+  pointer-events: auto;
+}
+
+.category-header.disabled:hover {
+  transform: none;
+  background-color: var(--color-gray-700);
+}
+
+.category-lock-icon {
+  margin-left: auto;
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-400);
+  flex-shrink: 0;
 }
 
 /* Category header */

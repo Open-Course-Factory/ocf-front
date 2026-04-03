@@ -7,10 +7,17 @@
 
 <template>
   <li class="nav-menu-item-wrapper">
-    <router-link :to="to" class="nav-menu-item" :title="tooltip" @click="$emit('click')">
+    <component
+      :is="disabled ? 'span' : 'router-link'"
+      :to="disabled ? undefined : to"
+      class="nav-menu-item"
+      :class="{ 'nav-menu-item--disabled': disabled }"
+      :title="tooltip"
+      @click="!disabled && $emit('click')"
+    >
       <i :class="icon"></i>
       <span class="menu-text">{{ label }}</span>
-    </router-link>
+    </component>
   </li>
 </template>
 
@@ -20,6 +27,7 @@ defineProps<{
   label: string
   icon: string
   tooltip?: string
+  disabled?: boolean
 }>()
 
 defineEmits<{
@@ -30,6 +38,13 @@ defineEmits<{
 <style scoped>
 .nav-menu-item-wrapper {
   margin-bottom: var(--spacing-xs);
+}
+
+/* Disabled menu item (feature available in another org) */
+.nav-menu-item--disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 .nav-menu-item {

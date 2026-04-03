@@ -12,6 +12,8 @@
             :expanded="expandedCategories[category.key]"
             :hasActiveItem="isCategoryActive[category.key]"
             :collapsed="isMenuCollapsed ?? false"
+            :disabled="category.disabled"
+            :disabledTooltip="category.disabledTooltip"
             :popupStyle="isMenuCollapsed && menuPositions[category.key] ? {
               top: menuPositions[category.key].top + 'px',
               left: menuPositions[category.key].left + 'px'
@@ -21,10 +23,11 @@
             <NavMenuItem
               v-for="item in category.items"
               :key="item.route"
-              :to="item.route"
+              :to="item.disabled ? '' : item.route"
               :label="item.label"
               :icon="item.icon"
               :tooltip="isMenuCollapsed ? item.title : ''"
+              :disabled="category.disabled"
               @click="handleMenuItemClick"
             />
           </NavCategory>
@@ -45,6 +48,8 @@
             :expanded="expandedCategories[category.key]"
             :hasActiveItem="isCategoryActive[category.key]"
             :collapsed="isMenuCollapsed ?? false"
+            :disabled="category.disabled"
+            :disabledTooltip="category.disabledTooltip"
             :popupStyle="isMenuCollapsed && menuPositions[category.key] ? {
               top: menuPositions[category.key].top + 'px',
               left: menuPositions[category.key].left + 'px'
@@ -54,10 +59,11 @@
             <NavMenuItem
               v-for="item in category.items"
               :key="item.route"
-              :to="item.route"
+              :to="item.disabled ? '' : item.route"
               :label="item.label"
               :icon="item.icon"
               :tooltip="isMenuCollapsed ? item.title : ''"
+              :disabled="category.disabled"
               @click="handleMenuItemClick"
             />
           </NavCategory>
@@ -101,13 +107,34 @@ import { useOrganizationsStore } from '../../stores/organizations.ts';
 import { storeToRefs } from 'pinia';
 import { useFeatureFlags } from '../../composables/useFeatureFlags';
 import { usePermissions } from '../../composables/usePermissions';
+import { usePermissionsStore } from '../../stores/permissions';
 import { useMenuCategories } from '../../composables/useMenuCategories';
 import { useHelpRegistryStore } from '../../stores/helpRegistry';
 import { useLocale } from '../../composables/useLocale';
+import { useTranslations } from '../../composables/useTranslations';
 
 const helpStore = useHelpRegistryStore()
 const { currentLocale } = useLocale()
 const loc = (text: { en: string; fr: string }) => text[currentLocale.value as 'en' | 'fr'] || text.en
+
+// Translations for nav-specific messages (gray-out tooltips)
+const { t: tNav } = useTranslations({
+  en: {
+    nav: {
+      featureAvailableInOrg: 'Available in {orgName}',
+      featureNotInCurrentOrg: 'Not available in current organization',
+    }
+  },
+  fr: {
+    nav: {
+      featureAvailableInOrg: 'Disponible dans {orgName}',
+      featureNotInCurrentOrg: 'Non disponible dans l\'organisation actuelle',
+    }
+  }
+})
+
+// Permissions store for feature availability checks across orgs
+const permissionsStoreInstance = usePermissionsStore()
 
 // Props
 const props = defineProps<{
@@ -200,6 +227,8 @@ interface MenuItem {
   icon: string
   featureFlag?: string
   hideForAssignedOnly?: boolean
+  disabled?: boolean
+  disabledTooltip?: string
 }
 
 interface MenuCategory {
@@ -209,7 +238,10 @@ interface MenuCategory {
   allowedRoles: string[]
   items: MenuItem[]
   featureFlag?: string
+  planFeature?: string // Maps to subscription plan feature name for org-aware visibility
   routePrefixes?: string[]
+  disabled?: boolean
+  disabledTooltip?: string
 }
 
 const isBottomCollapsed = ref(true);
@@ -288,6 +320,7 @@ const menuCategories = computed((): MenuCategory[] => [
     icon: 'fas fa-laptop-code',
     allowedRoles: ['administrator', 'member'],
     featureFlag: 'terminal_management',
+    planFeature: 'advanced_terminals',
     routePrefixes: ['/terminal-session', '/scenarios'],
     items: [
       {
@@ -322,6 +355,7 @@ const menuCategories = computed((): MenuCategory[] => [
     icon: 'fas fa-users',
     allowedRoles: ['administrator', 'member'],
     featureFlag: 'class_groups',
+    planFeature: 'multiple_groups',
     items: [
       {
         route: '/class-groups',
@@ -458,7 +492,14 @@ const filteredCategories = computed(() => {
       }
       // Custom visibility logic for groups menu
       if (category.key === 'groups') {
-        return shouldShowGroupsMenu.value
+        // Even if groups is not shown by permission, check if available in another org for gray-out
+        if (!shouldShowGroupsMenu.value) {
+          if (category.planFeature && permissionsStoreInstance.isFeatureInAnyOrg(category.planFeature)) {
+            // Available in another org — show grayed out (handled in map step below)
+            return true
+          }
+          return false
+        }
       }
       // Check role access - user must have at least ONE of the allowed roles
       if (!hasAnyAllowedRole(category.allowedRoles)) {
@@ -466,25 +507,66 @@ const filteredCategories = computed(() => {
       }
       // Check category-level feature flag
       if (category.featureFlag) {
-        return isFeatureEnabled(category.featureFlag)
+        const flagEnabled = isFeatureEnabled(category.featureFlag)
+        if (!flagEnabled) {
+          // Feature flag is off — check if the plan feature is available in any org (gray-out)
+          if (category.planFeature && permissionsStoreInstance.isFeatureInAnyOrg(category.planFeature)) {
+            return true // Keep in list, will be marked disabled in map step
+          }
+          return false // Not available anywhere — hide completely
+        }
       }
       return true
     })
-    .map(category => ({
-      ...category,
-      items: category.items.filter(item => {
-        // Hide items marked as not for assigned-only users
-        if (item.hideForAssignedOnly && hasOnlyAssignedSubscription.value) {
-          return false
+    .map(category => {
+      // Determine if category should be disabled (available in another org, not current)
+      let disabled = false
+      let disabledTooltip = ''
+
+      if (category.planFeature) {
+        const inCurrentOrg = permissionsStoreInstance.hasFeature(category.planFeature)
+        const inAnyOrg = permissionsStoreInstance.isFeatureInAnyOrg(category.planFeature)
+
+        if (!inCurrentOrg && inAnyOrg) {
+          disabled = true
+          const orgName = permissionsStoreInstance.getOrgWithFeature(category.planFeature)
+          disabledTooltip = orgName
+            ? tNav('nav.featureAvailableInOrg', { orgName })
+            : tNav('nav.featureNotInCurrentOrg')
         }
-        // Check item-level feature flag if it exists
-        if (item.featureFlag) {
-          return isFeatureEnabled(item.featureFlag)
+      }
+
+      // For groups, also check the shouldShowGroupsMenu permission
+      if (category.key === 'groups' && !shouldShowGroupsMenu.value) {
+        disabled = true
+        if (!disabledTooltip) {
+          const orgName = category.planFeature
+            ? permissionsStoreInstance.getOrgWithFeature(category.planFeature)
+            : null
+          disabledTooltip = orgName
+            ? tNav('nav.featureAvailableInOrg', { orgName })
+            : tNav('nav.featureNotInCurrentOrg')
         }
-        // Include items without feature flags
-        return true
-      })
-    }))
+      }
+
+      return {
+        ...category,
+        disabled,
+        disabledTooltip,
+        items: category.items.filter(item => {
+          // Hide items marked as not for assigned-only users
+          if (item.hideForAssignedOnly && hasOnlyAssignedSubscription.value) {
+            return false
+          }
+          // Check item-level feature flag if it exists
+          if (item.featureFlag) {
+            return isFeatureEnabled(item.featureFlag)
+          }
+          // Include items without feature flags
+          return true
+        })
+      }
+    })
     .filter(category => category.items.length > 0) // Remove categories with no visible items
 });
 
