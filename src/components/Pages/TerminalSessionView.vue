@@ -1268,4 +1268,26 @@ onBeforeUnmount(() => {
   height: auto;
   border-radius: var(--border-radius-sm);
 }
+
+/* Responsive: hide resize handle on tablet and mobile (no room to drag) */
+@media (max-width: 768px) {
+  .panel-resize-handle {
+    display: none;
+  }
+
+  .terminal-session-layout {
+    gap: 0;
+  }
+}
+
+/* Responsive: stack layout on mobile (scenario panel becomes full overlay) */
+@media (max-width: 480px) {
+  .terminal-session-layout {
+    position: relative;
+  }
+
+  .terminal-main-area {
+    width: 100%;
+  }
+}
 </style>

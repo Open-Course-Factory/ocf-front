@@ -2043,8 +2043,13 @@ defineExpose({
 /* Responsive breakpoints */
 @media (max-width: 768px) {
   .scenario-panel {
-    width: 280px;
-    min-width: 280px;
+    width: 250px;
+    min-width: 250px;
+  }
+
+  .collapse-toggle {
+    width: 28px;
+    height: 28px;
   }
 }
 
@@ -2057,7 +2062,35 @@ defineExpose({
     right: 0;
     bottom: 0;
     z-index: 20;
+    border-radius: 0;
   }
 
+  .scenario-panel.collapsed {
+    /* When collapsed on mobile, fully hide the overlay */
+    width: 0 !important;
+    min-width: 0 !important;
+  }
+
+  .collapse-toggle {
+    /* Make the toggle more prominent on mobile overlay */
+    width: 36px;
+    height: 36px;
+    font-size: var(--font-size-sm);
+    background-color: var(--color-primary);
+    color: var(--color-white);
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-md);
+  }
+
+  .collapse-toggle:hover {
+    background-color: var(--color-primary-hover);
+    color: var(--color-white);
+    border-color: var(--color-primary-hover);
+  }
+
+  .panel-header {
+    padding: var(--spacing-sm) var(--spacing-md);
+    padding-right: var(--spacing-xs);
+  }
 }
 </style>
