@@ -119,16 +119,16 @@ const loc = (text: { en: string; fr: string }) => text[currentLocale.value as 'e
 
 // Translations for nav-specific messages (gray-out tooltips)
 const { t: tNav } = useTranslations({
-  en: {
-    nav: {
-      featureAvailableInOrg: 'Available in {orgName}',
-      featureNotInCurrentOrg: 'Not available in current organization',
-    }
-  },
   fr: {
     nav: {
-      featureAvailableInOrg: 'Disponible dans {orgName}',
-      featureNotInCurrentOrg: 'Non disponible dans l\'organisation actuelle',
+      featureAvailableInOrg: 'Disponible dans {orgName} — changez pour y accéder',
+      featureNotInCurrentOrg: 'Non disponible dans cette organisation — changez pour y accéder',
+    }
+  },
+  en: {
+    nav: {
+      featureAvailableInOrg: 'Available in {orgName} — switch organization to access',
+      featureNotInCurrentOrg: 'Not available in current organization — switch to access',
     }
   }
 })
