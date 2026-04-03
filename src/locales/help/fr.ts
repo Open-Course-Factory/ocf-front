@@ -151,15 +151,15 @@ export const helpFr = {
         },
 
         multiBackend: {
-          title: "Support Multi-Backend",
-          description: "Lorsque plusieurs backends de terminaux sont disponibles, vous pouvez choisir le serveur à utiliser pour votre session. Cela vous permet de sélectionner l'infrastructure la plus proche de votre localisation ou la mieux adaptée à votre charge de travail.",
+          title: "Support Multi-Serveur",
+          description: "Lorsque plusieurs serveurs de terminaux sont disponibles, vous pouvez choisir le serveur à utiliser pour votre session. Cela vous permet de sélectionner l'infrastructure la plus proche de votre localisation ou la mieux adaptée à votre charge de travail.",
           selectBackend: {
-            title: "Sélectionner un backend",
-            description: "Sur la page de création de session, un <strong>sélecteur de backend</strong> apparaît lorsque plusieurs serveurs sont disponibles. Choisissez le backend qui correspond le mieux à vos besoins."
+            title: "Sélectionner un serveur",
+            description: "Sur la page de création de session, un <strong>sélecteur de serveur</strong> apparaît lorsque plusieurs serveurs sont disponibles. Choisissez le serveur qui correspond le mieux à vos besoins."
           },
           tip: {
             title: "Conseil",
-            description: "Si un seul backend est configuré, le sélecteur est masqué et le serveur par défaut est utilisé automatiquement."
+            description: "Si un seul serveur est configuré, le sélecteur est masqué et le serveur par défaut est utilisé automatiquement."
           }
         },
 
@@ -791,7 +791,7 @@ export const helpFr = {
           },
           terminalDetails: {
             title: "Détails du terminal",
-            description: "Consultez le nom du terminal, son statut (actif, arrêté, expiré), le backend et les informations d'expiration en un coup d'œil."
+            description: "Consultez le nom du terminal, son statut (actif, arrêté, expiré), le serveur et les informations d'expiration en un coup d'œil."
           },
           sharedBy: {
             title: "Partagé par",
@@ -2718,7 +2718,7 @@ export const helpFr = {
 
         overview: {
           title: "Vue d'ensemble",
-          description: "En tant que formateur, vous pouvez créer des scénarios interactifs qui guident les apprenants à travers des exercices concrets. Chaque scénario se compose d'étapes ordonnées avec des instructions, des scripts de vérification et des indices optionnels. Les scénarios s'exécutent sur de vrais conteneurs Linux correspondant au type d'instance choisi, offrant aux apprenants une expérience pratique."
+          description: "En tant que formateur, vous pouvez créer des scénarios interactifs qui guident les apprenants à travers des exercices concrets. Chaque scénario se compose d'étapes ordonnées avec des instructions, des scripts de vérification et des indices optionnels. Les scénarios s'exécutent sur de vrais conteneurs Linux correspondant au type de machine choisi, offrant aux apprenants une expérience pratique."
         },
 
         creating: {
@@ -2734,8 +2734,8 @@ export const helpFr = {
             description: "Cliquez sur <strong>\"Créer\"</strong> et remplissez les détails du scénario : <strong>titre</strong>, <strong>description</strong>, <strong>niveau de difficulté</strong> (débutant, intermédiaire ou avancé) et <strong>durée estimée</strong> en minutes."
           },
           step3: {
-            title: "Choisir le type d'instance",
-            description: "Sélectionnez le <strong>type d'instance</strong> (image Linux) que les terminaux des apprenants utiliseront pour ce scénario. Cela détermine le système d'exploitation et les outils pré-installés disponibles pendant l'exercice."
+            title: "Choisir le type de machine",
+            description: "Sélectionnez le <strong>type de machine</strong> (image Linux) que les terminaux des apprenants utiliseront pour ce scénario. Cela détermine le système d'exploitation et les outils pré-installés disponibles pendant l'exercice."
           },
           tip: {
             title: "Conseil",

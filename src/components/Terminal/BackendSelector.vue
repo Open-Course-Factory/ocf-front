@@ -68,7 +68,7 @@ const emit = defineEmits<{
 const { t } = useTranslations({
   en: {
     backendSelector: {
-      label: 'Backend Server',
+      label: 'Server',
       helpText: 'Select which server to run your terminal on.',
       default: 'Default',
       offline: 'Offline'
@@ -76,7 +76,7 @@ const { t } = useTranslations({
   },
   fr: {
     backendSelector: {
-      label: 'Serveur Backend',
+      label: 'Serveur',
       helpText: 'Sélectionnez sur quel serveur exécuter votre terminal.',
       default: 'Par défaut',
       offline: 'Hors ligne'
