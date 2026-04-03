@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Entity from '../Entity.vue'
 import { ref } from 'vue'
+import axios from 'axios'
 import { useScenariosStore } from '../../../stores/scenarios'
 import { useTranslations } from '../../../composables/useTranslations'
 import { useNotification } from '../../../composables/useNotification'
@@ -12,7 +13,8 @@ const entityStore = useScenariosStore()
 const showUploadModal = ref(false)
 const showJSONImportModal = ref(false)
 
-const { showError: notifyError } = useNotification()
+const { showError: notifyError, showSuccess: notifySuccess } = useNotification()
+const isDuplicating = ref<string | null>(null)
 
 const { t } = useTranslations({
   en: {
@@ -22,7 +24,10 @@ const { t } = useTranslations({
       importSuccess: 'Scenario imported successfully',
       exportJson: 'Export JSON',
       exportKillercoda: 'Export KillerCoda',
-      exportError: 'Failed to export scenario'
+      exportError: 'Failed to export scenario',
+      duplicate: 'Duplicate',
+      duplicateSuccess: 'Scenario duplicated',
+      duplicateError: 'Failed to duplicate scenario'
     }
   },
   fr: {
@@ -32,7 +37,10 @@ const { t } = useTranslations({
       importSuccess: 'Scénario importé avec succès',
       exportJson: 'Exporter JSON',
       exportKillercoda: 'Exporter KillerCoda',
-      exportError: 'Échec de l\'export du scénario'
+      exportError: 'Échec de l\'export du scénario',
+      duplicate: 'Dupliquer',
+      duplicateSuccess: 'Scénario dupliqué',
+      duplicateError: 'Échec de la duplication du scénario'
     }
   }
 })
@@ -85,6 +93,19 @@ async function exportArchive(entity: any) {
     notifyError(err.response?.data?.error_message || t('scenarios.exportError'))
   }
 }
+
+async function duplicateScenario(entity: any) {
+  isDuplicating.value = entity.id
+  try {
+    await axios.post(`/scenarios/${entity.id}/duplicate`)
+    notifySuccess(t('scenarios.duplicateSuccess'))
+    entityStore.loadEntities('scenarios')
+  } catch (err: any) {
+    notifyError(err.response?.data?.error_message || t('scenarios.duplicateError'))
+  } finally {
+    isDuplicating.value = null
+  }
+}
 </script>
 
 <template>
@@ -100,6 +121,14 @@ async function exportArchive(entity: any) {
       </button>
     </template>
     <template #actions="{ entity }">
+      <button
+        class="btn btn-secondary"
+        :disabled="isDuplicating === entity.id"
+        @click="duplicateScenario(entity)"
+      >
+        <i :class="isDuplicating === entity.id ? 'fas fa-spinner fa-spin' : 'fas fa-copy'"></i>
+        {{ t('scenarios.duplicate') }}
+      </button>
       <button class="btn btn-secondary" @click="exportJSON(entity)">
         <i class="fas fa-file-download"></i>
         {{ t('scenarios.exportJson') }}
