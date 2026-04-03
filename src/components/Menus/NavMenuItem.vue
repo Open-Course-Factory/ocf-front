@@ -44,7 +44,6 @@ defineEmits<{
 .nav-menu-item--disabled {
   cursor: not-allowed;
   opacity: 0.5;
-  pointer-events: none;
 }
 
 .nav-menu-item {
