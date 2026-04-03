@@ -7,6 +7,7 @@ import { useAdminViewMode } from '../composables/useAdminViewMode'
 import { usePermissionsStore } from './permissions'
 import axios from 'axios'
 import { isDemoMode } from '../services/demo'
+import { useSubscriptionsStore } from './subscriptions'
 import type { Organization, CreateOrganizationRequest, UpdateOrganizationRequest, ConvertOrganizationToTeamRequest } from '../types'
 
 interface OrganizationBackendConfig {
@@ -275,6 +276,14 @@ export const useOrganizationsStore = defineStore('organizations', () => {
   const setCurrentOrganization = (organizationId: string) => {
     currentOrganizationId.value = organizationId
     localStorage.setItem('currentOrganizationId', organizationId)
+
+    // Refresh subscription and features for new org context
+    // Stores are imported inside the function to avoid circular dependency issues
+    const subscriptionsStore = useSubscriptionsStore()
+    subscriptionsStore.getCurrentSubscription()
+
+    const permissionsStore = usePermissionsStore()
+    permissionsStore.loadEffectiveFeatures()
   }
 
   // Initialize current organization from localStorage, validate against userOrganizations
@@ -287,8 +296,11 @@ export const useOrganizationsStore = defineStore('organizations', () => {
         return
       }
     }
-    // Fallback to first org
-    if (userOrganizations.value.length > 0) {
+    // Prefer team org over personal when no saved preference exists
+    const teamOrg = userOrganizations.value.find(org => org.organization_type === 'team')
+    if (teamOrg) {
+      currentOrganizationId.value = teamOrg.id
+    } else if (userOrganizations.value.length > 0) {
       currentOrganizationId.value = userOrganizations.value[0].id
     }
   }
