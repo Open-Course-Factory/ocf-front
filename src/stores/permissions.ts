@@ -9,6 +9,7 @@ import type { User, UserEffectiveFeatures } from '../types'
 export const usePermissionsStore = defineStore('permissions', () => {
   const currentUser = ref<User | null>(null)
   const effectiveFeatures = ref<UserEffectiveFeatures | null>(null)
+  const allOrgFeatures = ref<UserEffectiveFeatures | null>(null)
   const isLoading = ref(false)
   const error = ref('')
 
@@ -84,7 +85,7 @@ export const usePermissionsStore = defineStore('permissions', () => {
     }
   }
 
-  // Load effective features (aggregated from all organizations)
+  // Load effective features for current org context + all orgs (for gray-out logic)
   const loadEffectiveFeatures = async () => {
     isLoading.value = true
     error.value = ''
@@ -132,11 +133,30 @@ export const usePermissionsStore = defineStore('permissions', () => {
           ],
           has_personal_subscription: false,
         }
+        allOrgFeatures.value = effectiveFeatures.value
         return effectiveFeatures.value
       }
 
-      const response = await axios.get('/users/me/features')
+      // Get org context for scoped features
+      const { useOrganizationsStore } = await import('./organizations')
+      const orgStore = useOrganizationsStore()
+      const orgId = orgStore.currentOrganizationId
+
+      // Current context features (scoped to current org)
+      const url = orgId
+        ? `/users/me/features?organization_id=${orgId}`
+        : '/users/me/features'
+      const response = await axios.get(url)
       effectiveFeatures.value = response.data.data || response.data
+
+      // All features across all orgs (for gray-out logic)
+      try {
+        const allResponse = await axios.get('/users/me/features')
+        allOrgFeatures.value = allResponse.data.data || allResponse.data
+      } catch {
+        allOrgFeatures.value = null
+      }
+
       return effectiveFeatures.value
     } catch (err: any) {
       error.value = err.response?.data?.error_message || err.message || t('permissions.loadError')
@@ -144,6 +164,30 @@ export const usePermissionsStore = defineStore('permissions', () => {
     } finally {
       isLoading.value = false
     }
+  }
+
+  /**
+   * Check if a feature is available in any org (for gray-out logic).
+   * Returns true if the feature exists in allOrgFeatures but might not be in current context.
+   */
+  const isFeatureInAnyOrg = (featureName: string): boolean => {
+    if (!allOrgFeatures.value) return false
+    const allFeatures = allOrgFeatures.value.effective_features?.features || []
+    return allFeatures.includes(featureName)
+  }
+
+  /**
+   * Find which org provides a specific feature (for tooltip).
+   * Returns the org name that contributes this feature, or null.
+   */
+  const getOrgWithFeature = (featureName: string): string | null => {
+    if (!allOrgFeatures.value?.source_organizations) return null
+    for (const org of allOrgFeatures.value.source_organizations) {
+      if (org.contributing_features?.includes(featureName)) {
+        return org.organization_name
+      }
+    }
+    return null
   }
 
   // ==========================================
@@ -310,12 +354,15 @@ export const usePermissionsStore = defineStore('permissions', () => {
     // State
     currentUser,
     effectiveFeatures,
+    allOrgFeatures,
     isLoading,
     error,
 
     // Actions
     loadCurrentUser,
     loadEffectiveFeatures,
+    isFeatureInAnyOrg,
+    getOrgWithFeature,
 
     // System role checks
     isSystemAdmin,

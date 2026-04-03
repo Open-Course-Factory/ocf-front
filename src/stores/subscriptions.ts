@@ -184,7 +184,14 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
                 await simulateDelay(1000)
                 data = getDemoCurrentSubscription('active') // You can change this to test different states
             } else {
-                const response = await axios.get('/user-subscriptions/current')
+                // Pass org context to get subscription for current organization
+                const { useOrganizationsStore } = await import('./organizations')
+                const orgStore = useOrganizationsStore()
+                const orgId = orgStore.currentOrganizationId
+                const url = orgId
+                    ? `/user-subscriptions/current?organization_id=${orgId}`
+                    : '/user-subscriptions/current'
+                const response = await axios.get(url)
                 data = response.data
             }
 
