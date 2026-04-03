@@ -90,7 +90,9 @@ export const useScenariosStore = defineStore('scenarios', () => {
                 hostnameHelp: 'Custom hostname displayed in the terminal prompt (e.g., webserver)',
                 organization_id: 'Organization',
                 allowed_flag_paths: 'Allowed Flag Paths',
-                allowedFlagPathsHelp: 'Comma-separated list of allowed paths for flag deployment (e.g., /tmp/,/home/). Leave empty for defaults.'
+                allowedFlagPathsHelp: 'Comma-separated list of allowed paths for flag deployment (e.g., /tmp/,/home/). Leave empty for defaults.',
+                objectives: 'Objectives',
+                prerequisites: 'Prerequisites'
             }
         },
         fr: {
@@ -151,7 +153,9 @@ export const useScenariosStore = defineStore('scenarios', () => {
                 hostnameHelp: 'Nom d\'hôte personnalisé affiché dans le terminal (ex. webserver)',
                 organization_id: 'Organisation',
                 allowed_flag_paths: 'Chemins de drapeaux autorisés',
-                allowedFlagPathsHelp: 'Liste de chemins autorisés pour le déploiement des drapeaux, séparés par des virgules (ex. /tmp/,/home/). Laisser vide pour les valeurs par défaut.'
+                allowedFlagPathsHelp: 'Liste de chemins autorisés pour le déploiement des drapeaux, séparés par des virgules (ex. /tmp/,/home/). Laisser vide pour les valeurs par défaut.',
+                objectives: 'Objectifs',
+                prerequisites: 'Prérequis'
             }
         }
     })
@@ -168,6 +172,8 @@ export const useScenariosStore = defineStore('scenarios', () => {
         field('name', t('scenarios.name')).input().visible().creatable().required(),
         field('title', t('scenarios.title')).input().visible().creatable().updatable().required(),
         field('description', t('scenarios.description')).textarea().visible().creatable().updatable(),
+        field('objectives', t('scenarios.objectives')).textarea().visible().creatable().updatable(),
+        field('prerequisites', t('scenarios.prerequisites')).textarea().visible().creatable().updatable(),
         field('difficulty', t('scenarios.difficulty')).select().visible().creatable().updatable().withOptions([
             { value: 'beginner', text: t('scenarios.difficultyBeginner') },
             { value: 'intermediate', text: t('scenarios.difficultyIntermediate') },
