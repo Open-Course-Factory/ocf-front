@@ -274,16 +274,26 @@ export const useOrganizationsStore = defineStore('organizations', () => {
 
   // Set current organization (persists to localStorage)
   const setCurrentOrganization = (organizationId: string) => {
+    // Guard against redundant calls
+    if (organizationId === currentOrganizationId.value) return
+
     currentOrganizationId.value = organizationId
     localStorage.setItem('currentOrganizationId', organizationId)
 
     // Refresh subscription and features for new org context
-    // Stores are imported inside the function to avoid circular dependency issues
     const subscriptionsStore = useSubscriptionsStore()
-    subscriptionsStore.getCurrentSubscription()
+    const subscriptionPromise = subscriptionsStore.getCurrentSubscription().catch((err: any) => {
+      base.error.value = err?.message || t('organizations.loadError')
+      console.warn('Failed to refresh subscription on org switch:', err)
+    })
 
     const permissionsStore = usePermissionsStore()
-    permissionsStore.loadEffectiveFeatures()
+    const featuresPromise = permissionsStore.loadEffectiveFeatures().catch((err: any) => {
+      base.error.value = err?.message || t('organizations.loadError')
+      console.warn('Failed to refresh features on org switch:', err)
+    })
+
+    return Promise.all([subscriptionPromise, featuresPromise])
   }
 
   // Initialize current organization from localStorage, validate against userOrganizations
