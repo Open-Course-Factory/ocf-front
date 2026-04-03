@@ -88,7 +88,9 @@ export const useScenariosStore = defineStore('scenarios', () => {
                 is_public: 'Public',
                 hostname: 'Container Hostname',
                 hostnameHelp: 'Custom hostname displayed in the terminal prompt (e.g., webserver)',
-                organization_id: 'Organization'
+                organization_id: 'Organization',
+                allowed_flag_paths: 'Allowed Flag Paths',
+                allowedFlagPathsHelp: 'Comma-separated list of allowed paths for flag deployment (e.g., /tmp/,/home/). Leave empty for defaults.'
             }
         },
         fr: {
@@ -147,7 +149,9 @@ export const useScenariosStore = defineStore('scenarios', () => {
                 is_public: 'Public',
                 hostname: 'Nom d\'hôte du conteneur',
                 hostnameHelp: 'Nom d\'hôte personnalisé affiché dans le terminal (ex. webserver)',
-                organization_id: 'Organisation'
+                organization_id: 'Organisation',
+                allowed_flag_paths: 'Chemins de drapeaux autorisés',
+                allowedFlagPathsHelp: 'Liste de chemins autorisés pour le déploiement des drapeaux, séparés par des virgules (ex. /tmp/,/home/). Laisser vide pour les valeurs par défaut.'
             }
         }
     })
@@ -206,6 +210,8 @@ export const useScenariosStore = defineStore('scenarios', () => {
         field('flags_enabled', t('scenarios.flagsEnabled')).checkbox().visible().creatable().updatable(),
         field('gsh_enabled', t('scenarios.gshEnabled')).checkbox().visible().creatable().updatable(),
         field('crash_traps', t('scenarios.crashTraps')).checkbox().visible().creatable().updatable(),
+        field('allowed_flag_paths', t('scenarios.allowed_flag_paths')).input().visible().creatable().updatable()
+            .hint(t('scenarios.allowedFlagPathsHelp')),
         field('setup_script_id', t('scenarios.setupScriptId')).type('multi-select').visible().creatable().updatable(),
         field('intro_file_id', t('scenarios.introFileId')).type('multi-select').visible().creatable().updatable(),
         field('finish_file_id', t('scenarios.finishFileId')).type('multi-select').visible().creatable().updatable(),
