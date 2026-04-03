@@ -15,11 +15,12 @@ export const teacherService = {
     return response.data?.data || response.data || []
   },
 
-  async assignScenarioToGroup(groupId: string, scenarioId: string, data?: { deadline?: string }): Promise<any> {
+  async assignScenarioToGroup(groupId: string, scenarioId: string, data?: { start_date?: string; deadline?: string }): Promise<any> {
     const response = await axios.post('/scenario-assignments', {
       scenario_id: scenarioId,
       group_id: groupId,
       scope: 'group',
+      start_date: data?.start_date || undefined,
       deadline: data?.deadline || undefined
     })
     return response.data

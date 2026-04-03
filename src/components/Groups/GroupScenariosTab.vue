@@ -37,6 +37,7 @@ interface ScenarioAssignment {
   scenario_id: string
   group_id: string
   scope: string
+  start_date?: string
   deadline?: string
   is_active: boolean
   scenario?: {
@@ -70,6 +71,8 @@ const { t } = useTranslations({
       bulkStart: 'Start for All',
       removeAssignment: 'Remove',
       deadline: 'Deadline',
+      startDate: 'Start Date',
+      noStartDate: 'No start date',
       noAssignments: 'No scenarios assigned to this group yet.',
       assignSuccess: 'Scenario assigned successfully',
       bulkStartResult: 'Started {started} sessions, skipped {skipped}',
@@ -163,6 +166,8 @@ const { t } = useTranslations({
       bulkStart: 'Démarrer pour tous',
       removeAssignment: 'Supprimer',
       deadline: 'Date limite',
+      startDate: 'Date de début',
+      noStartDate: 'Pas de date de début',
       noAssignments: 'Aucun scénario assigné à ce groupe.',
       assignSuccess: 'Scénario assigné avec succès',
       bulkStartResult: '{started} sessions démarrées, {skipped} ignorées',
@@ -305,6 +310,7 @@ const availableScenarios = ref<Scenario[]>([])
 const isLoading = ref(false)
 const showAssignModal = ref(false)
 const selectedScenarioId = ref('')
+const assignStartDate = ref('')
 const assignDeadline = ref('')
 const scenarioSearch = ref('')
 const bulkStartingId = ref<string | null>(null)
@@ -396,10 +402,14 @@ async function handleAssign() {
     await teacherService.assignScenarioToGroup(
       props.groupId,
       selectedScenarioId.value,
-      { deadline: assignDeadline.value || undefined }
+      {
+        start_date: assignStartDate.value || undefined,
+        deadline: assignDeadline.value || undefined
+      }
     )
     showAssignModal.value = false
     selectedScenarioId.value = ''
+    assignStartDate.value = ''
     assignDeadline.value = ''
     scenarioSearch.value = ''
     await loadAssignments()
@@ -862,6 +872,10 @@ onUnmounted(() => {
             >
               {{ translateDifficulty(assignment.scenario.difficulty) }}
             </span>
+            <span class="start-date-text">
+              <i class="fas fa-calendar-plus"></i>
+              {{ assignment.start_date ? formatDate(assignment.start_date) : t('groupScenarios.noStartDate') }}
+            </span>
             <span class="deadline-text">
               <i class="fas fa-calendar"></i>
               {{ assignment.deadline ? formatDate(assignment.deadline) : t('groupScenarios.noDeadline') }}
@@ -1108,6 +1122,14 @@ onUnmounted(() => {
             </option>
           </optgroup>
         </select>
+      </div>
+      <div class="form-group">
+        <label>{{ t('groupScenarios.startDate') }}</label>
+        <input
+          v-model="assignStartDate"
+          type="date"
+          class="form-control"
+        />
       </div>
       <div class="form-group">
         <label>{{ t('groupScenarios.deadline') }}</label>
@@ -1368,6 +1390,7 @@ onUnmounted(() => {
   color: var(--color-info);
 }
 
+.start-date-text,
 .deadline-text {
   display: flex;
   align-items: center;
