@@ -204,12 +204,15 @@ const { t } = useTranslations({
       errorValidationInstance: 'Please select an instance type',
       errorValidationGroup: 'Please select a group for bulk creation',
       errorLimitReached: 'You have reached your limit of concurrent terminals. Please stop an existing terminal or upgrade your plan.',
+      errorLimitReachedOrg: 'You have reached the concurrent terminal limit provided by your organization\'s plan. You can upgrade to a personal plan for more, or contact your organization administrator.',
       errorLimitReachedAssigned: 'You have used all your available terminals. Please close an existing terminal to start a new one.',
       errorLimitReachedTitle: 'Limit Reached',
       errorInstanceNotAvailable: 'The selected instance is not available with your current plan. Please choose another instance or upgrade your plan.',
+      errorInstanceNotAvailableOrg: 'The selected instance is not available with your organization\'s plan. You can upgrade to a personal plan, or contact your organization administrator.',
       errorInstanceNotAvailableTitle: 'Instance Not Available',
       errorInstanceRestricted: 'Instance Not Allowed',
       errorInstanceRestrictedMessage: 'Instance "{name}" requires sizes: {required}\nYour plan allows: {allowed}\n\nPlease choose another instance or upgrade your plan.',
+      errorInstanceRestrictedMessageOrg: 'Instance "{name}" requires sizes: {required}\nYour organization\'s plan allows: {allowed}\n\nYou can upgrade to a personal plan for more, or contact your organization administrator.',
       errorUpgradePrompt: 'Would you like to view available plans to unlock this instance?',
       errorUpgradePromptTitle: 'Upgrade Plan',
       errorStarting: 'Startup Error',
@@ -254,12 +257,15 @@ const { t } = useTranslations({
       errorValidationInstance: 'Veuillez sélectionner un type d\'instance',
       errorValidationGroup: 'Veuillez sélectionner un groupe pour la création en masse',
       errorLimitReached: 'Vous avez atteint votre limite de terminaux simultanés. Veuillez arrêter un terminal existant ou mettre à niveau votre plan.',
+      errorLimitReachedOrg: 'Vous avez atteint la limite de terminaux simultanés fournie par le plan de votre organisation. Vous pouvez souscrire un plan personnel pour en avoir plus, ou contacter l\'administrateur de votre organisation.',
       errorLimitReachedAssigned: 'Vous avez utilisé tous vos terminaux disponibles. Veuillez fermer un terminal existant pour en démarrer un nouveau.',
       errorLimitReachedTitle: 'Limite atteinte',
       errorInstanceNotAvailable: 'L\'instance sélectionnée n\'est pas disponible avec votre plan actuel. Veuillez choisir une autre instance ou mettre à niveau votre plan.',
+      errorInstanceNotAvailableOrg: 'L\'instance sélectionnée n\'est pas disponible avec le plan de votre organisation. Vous pouvez souscrire un plan personnel, ou contacter l\'administrateur de votre organisation.',
       errorInstanceNotAvailableTitle: 'Instance non disponible',
       errorInstanceRestricted: 'Instance non autorisée',
       errorInstanceRestrictedMessage: 'L\'instance "{name}" nécessite les tailles: {required}\nVotre plan autorise: {allowed}\n\nVeuillez choisir une autre instance ou mettre à niveau votre plan.',
+      errorInstanceRestrictedMessageOrg: 'L\'instance "{name}" nécessite les tailles: {required}\nLe plan de votre organisation autorise: {allowed}\n\nVous pouvez souscrire un plan personnel pour en avoir plus, ou contacter l\'administrateur de votre organisation.',
       errorUpgradePrompt: 'Souhaitez-vous voir les plans disponibles pour débloquer cette instance ?',
       errorUpgradePromptTitle: 'Mettre à niveau le plan',
       errorStarting: 'Erreur de démarrage',
@@ -626,6 +632,16 @@ function resetForm() {
   instanceTypeCache.clear()
 }
 
+function getLimitReachedMessage(source?: string): string {
+  if (source === 'organization') {
+    return t('terminalStarter.errorLimitReachedOrg')
+  }
+  if (isAssignedSubscription.value) {
+    return t('terminalStarter.errorLimitReachedAssigned')
+  }
+  return t('terminalStarter.errorLimitReached')
+}
+
 function handleHostnameUpdate(value: string) {
   hostnameInput.value = value
   if (value === '') {
@@ -719,12 +735,10 @@ async function startSingleSession() {
   startStatus.value = t('terminalStarter.checkingLimits')
 
   try {
-    const canCreateTerminal = await subscriptionsStore.checkUsageLimit('concurrent_terminals', 1)
+    const usageResult = await subscriptionsStore.checkUsageLimit('concurrent_terminals', 1)
 
-    if (!canCreateTerminal) {
-      const limitMsg = isAssignedSubscription.value
-        ? t('terminalStarter.errorLimitReachedAssigned')
-        : t('terminalStarter.errorLimitReached')
+    if (!usageResult.allowed) {
+      const limitMsg = getLimitReachedMessage(usageResult.source)
       showErrorNotification(
         limitMsg,
         t('terminalStarter.errorLimitReachedTitle')
@@ -734,9 +748,8 @@ async function startSingleSession() {
   } catch (error: any) {
     console.error('Error checking usage limits:', error)
     if (error.response?.status === 403 && error.response?.data?.error_message?.includes('Maximum concurrent terminals')) {
-      const limitMsg = isAssignedSubscription.value
-        ? t('terminalStarter.errorLimitReachedAssigned')
-        : t('terminalStarter.errorLimitReached')
+      const source = error.response?.data?.source || (isAssignedSubscription.value ? 'organization' : 'personal')
+      const limitMsg = getLimitReachedMessage(source)
       showErrorNotification(
         error.response.data.error_message + ' ' + limitMsg,
         t('terminalStarter.errorLimitReachedTitle')
@@ -800,6 +813,8 @@ async function startSingleSession() {
       const instanceMatch = errorMsg.match(/instance '([^']+)'/)
       const sizesMatch = errorMsg.match(/sizes \[([^\]]+)\]/)
       const allowedMatch = errorMsg.match(/Allowed sizes: \[([^\]]+)\]/)
+      const errorSource = error.response?.data?.source || (isAssignedSubscription.value ? 'organization' : 'personal')
+      const isOrgSource = errorSource === 'organization'
 
       let enhancedError = errorMsg
 
@@ -808,7 +823,10 @@ async function startSingleSession() {
         const requiredSizes = sizesMatch[1].split('|').map(s => s.trim())
         const allowedSizes = allowedMatch[1].split(',').map(s => s.trim())
 
-        enhancedError = t('terminalStarter.errorInstanceRestrictedMessage', {
+        const msgKey = isOrgSource
+          ? 'terminalStarter.errorInstanceRestrictedMessageOrg'
+          : 'terminalStarter.errorInstanceRestrictedMessage'
+        enhancedError = t(msgKey, {
           name: instanceName,
           required: requiredSizes.join(', '),
           allowed: allowedSizes.join(', ')

@@ -415,6 +415,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     }
 
     // Vérifier les limites d'utilisation
+    // Returns { allowed: boolean, source?: 'personal' | 'organization', current_usage?, limit?, remaining?, ... }
     const checkUsageLimit = async (metricType: string, requestedAmount: number = 1) => {
         try {
             let result: any
@@ -422,19 +423,35 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
             if (isDemoMode()) {
                 logDemoAction('Checking demo usage limit', { metricType, requestedAmount })
                 result = await demoPayments.checkUsageLimit(metricType, requestedAmount)
-                return result.allowed
+                return {
+                    allowed: result.allowed,
+                    source: result.source || 'personal',
+                    current_usage: result.current_usage,
+                    limit: result.limit,
+                    remaining: result.remaining
+                }
             } else {
                 const response = await axios.post('/user-subscriptions/usage/check', {
                     metric_type: metricType,
                     increment: requestedAmount
                 })
-                return response.data.allowed
+                const data = response.data
+                return {
+                    allowed: data.allowed,
+                    source: data.source || 'personal',
+                    current_usage: data.current_usage,
+                    limit: data.limit,
+                    remaining: data.remaining
+                }
             }
         } catch (err: any) {
             error.value = err.response?.data?.error_message ||
                          err.response?.data?.message ||
                          t('subscriptions.usageLimitError')
-            return false
+            return {
+                allowed: false,
+                source: err.response?.data?.source || 'personal'
+            }
         }
     }
 

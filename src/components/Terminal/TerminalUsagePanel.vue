@@ -33,6 +33,16 @@
       <div class="usage-stats">
         <div class="usage-item">
           <span class="usage-label">
+            <i class="fas fa-id-badge"></i>
+            {{ t('terminals.planSource') }}:
+          </span>
+          <span class="usage-value">
+            {{ planName }}
+            <small class="text-muted">({{ planSourceLabel }})</small>
+          </span>
+        </div>
+        <div class="usage-item">
+          <span class="usage-label">
             <i class="fas fa-terminal"></i>
             {{ capitalizeFirst(t('terminals.concurrentTerminals')) }}:
           </span>
@@ -92,6 +102,9 @@ const { t } = useTranslations({
       concurrentTerminals: 'concurrent terminals',
       sessionDuration: 'session duration',
       planLimit: 'plan limit',
+      planSource: 'Plan',
+      sourcePersonal: 'personal',
+      sourceOrganization: 'provided by {orgName}',
       autoRefreshInfo: 'Usage data is automatically refreshed every {minutes} minutes.'
     },
     terminalStarter: {
@@ -108,6 +121,9 @@ const { t } = useTranslations({
       concurrentTerminals: 'terminaux simultanés',
       sessionDuration: 'durée de session',
       planLimit: 'limite du plan',
+      planSource: 'Plan',
+      sourcePersonal: 'personnel',
+      sourceOrganization: 'fourni par {orgName}',
       autoRefreshInfo: 'Les données d\'utilisation sont automatiquement actualisées toutes les {minutes} minutes.'
     },
     terminalStarter: {
@@ -132,6 +148,25 @@ interface Props {
 const props = defineProps<Props>()
 
 const isExpanded = ref(false)
+
+const planName = computed(() => {
+  return props.subscription?.subscription_plan?.name ||
+         props.subscription?.plan_name ||
+         '—'
+})
+
+const isOrgSubscription = computed(() => {
+  const sub = props.subscription
+  return sub?.subscription_type === 'assigned' || !!sub?.subscription_batch_id
+})
+
+const planSourceLabel = computed(() => {
+  if (isOrgSubscription.value) {
+    const orgName = props.subscription?.batch_owner_name || ''
+    return t('terminals.sourceOrganization', { orgName: orgName || '—' })
+  }
+  return t('terminals.sourcePersonal')
+})
 
 const sessionDuration = computed(() => {
   const planMinutes = props.subscription?.subscription_plan?.max_session_duration_minutes
