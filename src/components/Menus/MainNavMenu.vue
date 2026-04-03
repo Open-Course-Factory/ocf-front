@@ -121,14 +121,14 @@ const loc = (text: { en: string; fr: string }) => text[currentLocale.value as 'e
 const { t: tNav } = useTranslations({
   fr: {
     nav: {
-      featureAvailableInOrg: 'Disponible dans {orgName} — changez pour y accéder',
-      featureNotInCurrentOrg: 'Non disponible dans cette organisation — changez pour y accéder',
+      featureAvailableInOrg: "Disponible dans {orgName} — changez d'organisation pour y accéder",
+      featureNotInCurrentOrg: "Non disponible dans cette organisation — changez d'organisation pour y accéder",
     }
   },
   en: {
     nav: {
       featureAvailableInOrg: 'Available in {orgName} — switch organization to access',
-      featureNotInCurrentOrg: 'Not available in current organization — switch to access',
+      featureNotInCurrentOrg: 'Not available in current organization — switch organization to access',
     }
   }
 })
