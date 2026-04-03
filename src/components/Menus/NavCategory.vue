@@ -9,10 +9,12 @@
   <li class="nav-category" :class="{ 'nav-category--disabled': disabled }" :data-category="categoryKey">
     <div class="category-header" @click="!disabled && $emit('toggle', categoryKey, $event)"
       :class="{ active: expanded && !disabled, 'has-active-item': hasActiveItem && !disabled, disabled: disabled }"
-      :title="disabled ? (disabledTooltip || '') : (collapsed ? label : '')">
+      :title="disabled ? (disabledTooltip || '') : (collapsed ? label : '')"
+      :aria-disabled="disabled ? 'true' : undefined"
+      role="button">
       <i :class="icon"></i>
       <span class="menu-text category-title">{{ label }}</span>
-      <i v-if="disabled" class="fas fa-lock category-lock-icon"></i>
+      <i v-if="disabled" class="fas fa-lock category-lock-icon" aria-hidden="true"></i>
       <i v-else-if="!collapsed" class="fas fa-chevron-down chevron-icon"
          :class="{ rotated: expanded }"></i>
     </div>
