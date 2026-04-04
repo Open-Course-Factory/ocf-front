@@ -678,7 +678,7 @@ async function loadGroupMembers(groupId: string) {
 // Watch for global organization changes to re-fetch backends
 watch(storeOrgId, async (newOrgId) => {
   instanceTypeCache.clear()
-  // Reset cached metrics from previous org context
+  // Reset cached metrics — forces maxTerminals to use subscription plan data (reactive)
   terminalLimitFromMetrics.value = null
   currentTerminalCount.value = 0
   if (newOrgId) {
@@ -687,9 +687,18 @@ watch(storeOrgId, async (newOrgId) => {
     } catch {
       // Error is stored in backendsStore.error
     }
-    // Reload usage metrics for new org context
+    // Wait for subscription to be refreshed by setCurrentOrganization, then reload metrics
+    // Use nextTick to ensure subscription store has processed the API response
+    const { nextTick } = await import('vue')
+    await nextTick()
     await loadCurrentTerminalUsage()
   }
+})
+
+// Also reset metrics when subscription changes (catches all org switch paths)
+watch(currentSubscription, () => {
+  terminalLimitFromMetrics.value = null
+  currentTerminalCount.value = 0
 })
 
 // Watch for backend changes to re-fetch instance types
