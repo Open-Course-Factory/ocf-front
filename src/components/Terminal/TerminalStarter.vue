@@ -148,6 +148,7 @@ import { useTerminalMetricsStore } from '../../stores/terminalMetrics'
 import { useClassGroupsStore } from '../../stores/classGroups'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { useTerminalBackendsStore } from '../../stores/terminalBackends'
+import { usePermissionsStore } from '../../stores/permissions'
 import { useNotification } from '../../composables/useNotification'
 import { useTranslations } from '../../composables/useTranslations'
 import { useFeatureFlags } from '../../composables/useFeatureFlags'
@@ -171,6 +172,7 @@ const metricsStore = useTerminalMetricsStore()
 const groupsStore = useClassGroupsStore()
 const organizationsStore = useOrganizationsStore()
 const backendsStore = useTerminalBackendsStore()
+const permissionsStore = usePermissionsStore()
 
 // Feature flags
 const { isEnabled } = useFeatureFlags()
@@ -352,7 +354,6 @@ const isAssignedSubscription = computed(() => {
   return sub?.subscription_type === 'assigned' || !!sub?.subscription_batch_id
 })
 const currentTerminalCount = ref(0)
-const terminalLimitFromMetrics = ref<number | null>(null)
 const loadingUsage = ref(false)
 const refreshingUsage = ref(false)
 
@@ -379,17 +380,9 @@ const sessionDurationCap = computed(() => {
 })
 
 const maxTerminals = computed(() => {
-  // Primary: subscription plan (reactive, updates immediately on org switch)
-  const planLimit = currentSubscription.value?.subscription_plan?.max_concurrent_terminals
-  if (planLimit !== undefined && planLimit !== null && planLimit >= 0) {
-    return planLimit
-  }
-  // Fallback: usage metrics API (async, may lag behind on org switch)
-  if (terminalLimitFromMetrics.value !== null) {
-    return terminalLimitFromMetrics.value
-  }
-  // Legacy fallback
-  return currentSubscription.value?.plan_features?.concurrent_terminals || 1
+  // Use permissions store as single source of truth (same as nav menu and other components)
+  // This reads from effectiveFeatures which is org-scoped and refreshed on org switch
+  return permissionsStore.getMaxConcurrentTerminals || 1
 })
 
 const refreshIntervalMinutes = computed(() => {
@@ -528,9 +521,6 @@ async function loadCurrentTerminalUsage() {
 
     if (terminalMetric) {
       currentTerminalCount.value = terminalMetric.current_value || 0
-      if (terminalMetric.limit_value > 0) {
-        terminalLimitFromMetrics.value = terminalMetric.limit_value
-      }
     } else {
       currentTerminalCount.value = 0
     }
@@ -675,14 +665,13 @@ async function loadGroupMembers(groupId: string) {
   }
 }
 
-// Watch for global organization changes — full reload of all org-dependent data
+// Watch for global organization changes — reload org-dependent data
 watch(storeOrgId, async (newOrgId) => {
   instanceTypeCache.clear()
-  terminalLimitFromMetrics.value = null
   currentTerminalCount.value = 0
   if (newOrgId) {
-    // Reload everything in sequence: subscription first (for limits), then backends + metrics
-    await subscriptionsStore.getCurrentSubscription().catch(() => {})
+    // Reload current usage count and backends for new org context
+    // Limits come from permissionsStore (reactive, already refreshed by setCurrentOrganization)
     await loadCurrentTerminalUsage().catch(() => {})
     await backendsStore.fetchBackends(newOrgId).catch(() => {})
   }
