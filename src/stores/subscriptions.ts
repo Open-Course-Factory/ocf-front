@@ -340,7 +340,14 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
                 await simulateDelay(800)
                 data = getDemoUsageMetrics()
             } else {
-                const response = await axios.get('/user-subscriptions/usage')
+                // Pass org context for org-scoped limits
+                const { useOrganizationsStore } = await import('./organizations')
+                const orgStore = useOrganizationsStore()
+                const orgId = orgStore.currentOrganizationId
+                const url = orgId
+                    ? `/user-subscriptions/usage?organization_id=${orgId}`
+                    : '/user-subscriptions/usage'
+                const response = await axios.get(url)
                 data = response.data || []
             }
 
