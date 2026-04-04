@@ -673,12 +673,17 @@ async function loadGroupMembers(groupId: string) {
 // Watch for global organization changes to re-fetch backends
 watch(storeOrgId, async (newOrgId) => {
   instanceTypeCache.clear()
+  // Reset cached metrics from previous org context
+  terminalLimitFromMetrics.value = null
+  currentTerminalCount.value = 0
   if (newOrgId) {
     try {
       await backendsStore.fetchBackends(newOrgId)
     } catch {
       // Error is stored in backendsStore.error
     }
+    // Reload usage metrics for new org context
+    await loadCurrentTerminalUsage()
   }
 })
 
