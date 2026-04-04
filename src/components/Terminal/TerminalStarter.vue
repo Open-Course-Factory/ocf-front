@@ -379,11 +379,16 @@ const sessionDurationCap = computed(() => {
 })
 
 const maxTerminals = computed(() => {
-  // Prefer limit from usage metrics (works with org subscriptions too)
+  // Primary: subscription plan (reactive, updates immediately on org switch)
+  const planLimit = currentSubscription.value?.subscription_plan?.max_concurrent_terminals
+  if (planLimit !== undefined && planLimit !== null && planLimit >= 0) {
+    return planLimit
+  }
+  // Fallback: usage metrics API (async, may lag behind on org switch)
   if (terminalLimitFromMetrics.value !== null) {
     return terminalLimitFromMetrics.value
   }
-  // Fallback to subscription plan_features if available
+  // Legacy fallback
   return currentSubscription.value?.plan_features?.concurrent_terminals || 1
 })
 
