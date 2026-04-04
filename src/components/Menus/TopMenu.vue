@@ -252,7 +252,7 @@ const currentOrganization = computed(() => organizationsStore.currentOrganizatio
 const userOrganizations = computed(() => organizationsStore.userOrganizations);
 
 // Helper: check if an org is personal (handles both legacy is_personal and organization_type)
-const isPersonalOrg = (org: any) => isPersonalOrg(org) || org.is_personal === true;
+const isPersonalOrg = (org: any) => org.organization_type === 'personal' || org.is_personal === true;
 const hasTeamOrganizations = computed(() =>
   organizationsStore.businessOrganizations.length > 0 ||
   userOrganizations.value.length > 1
