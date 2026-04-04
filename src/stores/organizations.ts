@@ -303,23 +303,25 @@ export const useOrganizationsStore = defineStore('organizations', () => {
 
     // After features refresh, redirect if current page requires a feature no longer available
     return Promise.all([subscriptionPromise, featuresPromise]).then(async () => {
-      const { useRouter, useRoute } = await import('vue-router')
       try {
-        const router = useRouter()
-        const route = useRoute()
-        const currentPath = route.path
+        const { default: router } = await import('../router')
+        const currentPath = router.currentRoute.value.path
 
         // Check if current route requires a plan feature
         for (const [routePrefix, feature] of Object.entries(routePlanFeatureMap)) {
           if (currentPath.startsWith(routePrefix)) {
             if (!permissionsStore.hasFeature(feature)) {
-              router.push({ path: '/' })
+              // Redirect to user's default page
+              const { useUserSettingsStore } = await import('./userSettings')
+              const settingsStore = useUserSettingsStore()
+              const defaultPage = settingsStore.settings.default_landing_page || '/terminal-sessions'
+              router.push(defaultPage)
             }
             break
           }
         }
       } catch {
-        // Router not available (e.g., during SSR or test) — skip redirect
+        // Router not available (e.g., during test) — skip redirect
       }
     })
   }

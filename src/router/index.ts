@@ -22,6 +22,7 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import { useCurrentUserStore } from '../stores/currentUser';
 import { usePermissionsStore } from '../stores/permissions';
+import { useUserSettingsStore } from '../stores/userSettings';
 import { featureFlagService } from '../services/features';
 import { useSettingsNavigation } from '../composables/useSettingsNavigation';
 import { getCurrentActorRoles } from '../composables/useFeatureFlags';
@@ -509,7 +510,9 @@ router.beforeEach(async (to, from, next) => {
     const permissionsStore = usePermissionsStore();
     if (!permissionsStore.hasFeature(requiredPlanFeature)) {
       console.warn(`Plan feature "${requiredPlanFeature}" not available in current org context`);
-      next({ name: 'LandingPage' });
+      const settingsStore = useUserSettingsStore();
+      const defaultPage = settingsStore.settings.default_landing_page || '/terminal-sessions';
+      next(defaultPage);
       return;
     }
   }
