@@ -68,13 +68,13 @@
 
             <!-- Current org display (always shown) -->
             <div v-if="currentOrganization" class="current-organization-info" :class="{ 'org-switchable': userOrganizations.length > 1 }">
-              <div class="org-icon" :class="currentOrganization.organization_type === 'personal' ? 'org-icon-personal' : 'org-icon-team'">
-                <i :class="currentOrganization.organization_type === 'personal' ? 'fas fa-user' : 'fas fa-building'"></i>
+              <div class="org-icon" :class="isPersonalOrg(currentOrganization) ? 'org-icon-personal' : 'org-icon-team'">
+                <i :class="isPersonalOrg(currentOrganization) ? 'fas fa-user' : 'fas fa-building'"></i>
               </div>
               <div class="org-details">
                 <div class="org-name">{{ currentOrganization.display_name || currentOrganization.name }}</div>
                 <div class="org-type">
-                  {{ currentOrganization.organization_type === 'personal' ? t('topMenu.personalOrg') : t('topMenu.teamOrg') }}
+                  {{ isPersonalOrg(currentOrganization) ? t('topMenu.personalOrg') : t('topMenu.teamOrg') }}
                 </div>
               </div>
               <!-- Switch button (only if multiple orgs) -->
@@ -99,12 +99,12 @@
                   :class="{ 'org-active': currentOrganization?.id === org.id }"
                   @click="switchOrganization(org.id)"
                 >
-                  <div class="org-icon org-icon-sm" :class="org.organization_type === 'personal' ? 'org-icon-personal' : 'org-icon-team'">
-                    <i :class="org.organization_type === 'personal' ? 'fas fa-user' : 'fas fa-building'"></i>
+                  <div class="org-icon org-icon-sm" :class="isPersonalOrg(org) ? 'org-icon-personal' : 'org-icon-team'">
+                    <i :class="isPersonalOrg(org) ? 'fas fa-user' : 'fas fa-building'"></i>
                   </div>
                   <div class="org-details">
                     <div class="org-name">{{ org.display_name || org.name }}</div>
-                    <div class="org-type">{{ org.organization_type === 'personal' ? t('topMenu.personalOrg') : t('topMenu.teamOrg') }}</div>
+                    <div class="org-type">{{ isPersonalOrg(org) ? t('topMenu.personalOrg') : t('topMenu.teamOrg') }}</div>
                   </div>
                   <i v-if="currentOrganization?.id === org.id" class="fas fa-check org-check"></i>
                 </button>
@@ -250,6 +250,9 @@ const { versions } = useVersionInfo();
 // Organization computed properties
 const currentOrganization = computed(() => organizationsStore.currentOrganization);
 const userOrganizations = computed(() => organizationsStore.userOrganizations);
+
+// Helper: check if an org is personal (handles both legacy is_personal and organization_type)
+const isPersonalOrg = (org: any) => isPersonalOrg(org) || org.is_personal === true;
 const hasTeamOrganizations = computed(() =>
   organizationsStore.businessOrganizations.length > 0 ||
   userOrganizations.value.length > 1
