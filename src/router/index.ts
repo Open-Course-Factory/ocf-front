@@ -21,6 +21,7 @@
 
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import { useCurrentUserStore } from '../stores/currentUser';
+import { usePermissionsStore } from '../stores/permissions';
 import { featureFlagService } from '../services/features';
 import { useSettingsNavigation } from '../composables/useSettingsNavigation';
 import { getCurrentActorRoles } from '../composables/useFeatureFlags';
@@ -151,10 +152,10 @@ const basicRoutes = [
       { path: 'terminal-session/:sessionId', name: 'TerminalSessionView', component: () => import('../components/Pages/TerminalSessionView.vue'), meta: { requiresAuth: true, collapseNav: true } },
       { path: 'terminal-shared', redirect: '/terminal-sessions' }, // Redirect old route to unified sessions page
       { path: 'user-terminal-keys', name: 'UserTerminalKeys', component: UserTerminalKeys, meta: { requiresAuth: true, isSettings: true } },
-      { path: 'class-groups', name: 'ClassGroups', component: ClassGroups, meta: { requiresAuth: true, requiredPermissions: ['view_groups'] } },
-      { path: 'class-groups-hierarchy', name: 'GroupHierarchyEditor', component: GroupHierarchyEditor, meta: { requiresAuth: true, requiredPermissions: ['view_groups'] } },
-      { path: 'class-groups/:id', name: 'GroupDetails', component: GroupDetails, meta: { requiresAuth: true, requiredPermissions: ['view_groups'] } },
-      { path: 'group-members', name: 'GroupMembers', component: GroupMembers, meta: { requiresAuth: true, requiredPermissions: ['view_groups'] } },
+      { path: 'class-groups', name: 'ClassGroups', component: ClassGroups, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresPlanFeature: 'multiple_groups' } },
+      { path: 'class-groups-hierarchy', name: 'GroupHierarchyEditor', component: GroupHierarchyEditor, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresPlanFeature: 'multiple_groups' } },
+      { path: 'class-groups/:id', name: 'GroupDetails', component: GroupDetails, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresPlanFeature: 'multiple_groups' } },
+      { path: 'group-members', name: 'GroupMembers', component: GroupMembers, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresPlanFeature: 'multiple_groups' } },
 
       // Organization routes
       { path: 'organizations', name: 'Organizations', component: Organizations, meta: { requiresAuth: true } },
@@ -498,6 +499,17 @@ router.beforeEach(async (to, from, next) => {
         name: 'LandingPage',
         query: { error: 'feature_disabled', feature: requiredFeature }
       });
+      return;
+    }
+  }
+
+  // Check plan features (org-context-aware — blocks access when current org's plan lacks the feature)
+  const requiredPlanFeature = to.meta.requiresPlanFeature as string | undefined;
+  if (requiredPlanFeature) {
+    const permissionsStore = usePermissionsStore();
+    if (!permissionsStore.hasFeature(requiredPlanFeature)) {
+      console.warn(`Plan feature "${requiredPlanFeature}" not available in current org context`);
+      next({ name: 'LandingPage' });
       return;
     }
   }
