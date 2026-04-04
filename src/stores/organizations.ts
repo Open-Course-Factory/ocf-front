@@ -272,6 +272,14 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     )
   }
 
+  // Routes that require specific plan features (mirrors MainNavMenu planFeature mapping)
+  const routePlanFeatureMap: Record<string, string> = {
+    '/class-groups': 'multiple_groups',
+    '/class-groups-hierarchy': 'multiple_groups',
+    '/terminals': 'advanced_terminals',
+    '/terminal-creation': 'advanced_terminals',
+  }
+
   // Set current organization (persists to localStorage)
   const setCurrentOrganization = (organizationId: string) => {
     // Guard against redundant calls
@@ -293,7 +301,27 @@ export const useOrganizationsStore = defineStore('organizations', () => {
       console.warn('Failed to refresh features on org switch:', err)
     })
 
-    return Promise.all([subscriptionPromise, featuresPromise])
+    // After features refresh, redirect if current page requires a feature no longer available
+    return Promise.all([subscriptionPromise, featuresPromise]).then(async () => {
+      const { useRouter, useRoute } = await import('vue-router')
+      try {
+        const router = useRouter()
+        const route = useRoute()
+        const currentPath = route.path
+
+        // Check if current route requires a plan feature
+        for (const [routePrefix, feature] of Object.entries(routePlanFeatureMap)) {
+          if (currentPath.startsWith(routePrefix)) {
+            if (!permissionsStore.hasFeature(feature)) {
+              router.push({ path: '/' })
+            }
+            break
+          }
+        }
+      } catch {
+        // Router not available (e.g., during SSR or test) — skip redirect
+      }
+    })
   }
 
   // Initialize current organization from localStorage, validate against userOrganizations
