@@ -675,30 +675,17 @@ async function loadGroupMembers(groupId: string) {
   }
 }
 
-// Watch for global organization changes to re-fetch backends
+// Watch for global organization changes — full reload of all org-dependent data
 watch(storeOrgId, async (newOrgId) => {
   instanceTypeCache.clear()
-  // Reset cached metrics — forces maxTerminals to use subscription plan data (reactive)
   terminalLimitFromMetrics.value = null
   currentTerminalCount.value = 0
   if (newOrgId) {
-    try {
-      await backendsStore.fetchBackends(newOrgId)
-    } catch {
-      // Error is stored in backendsStore.error
-    }
-    // Wait for subscription to be refreshed by setCurrentOrganization, then reload metrics
-    // Use nextTick to ensure subscription store has processed the API response
-    const { nextTick } = await import('vue')
-    await nextTick()
-    await loadCurrentTerminalUsage()
+    // Reload everything in sequence: subscription first (for limits), then backends + metrics
+    await subscriptionsStore.getCurrentSubscription().catch(() => {})
+    await loadCurrentTerminalUsage().catch(() => {})
+    await backendsStore.fetchBackends(newOrgId).catch(() => {})
   }
-})
-
-// Also reset metrics when subscription changes (catches all org switch paths)
-watch(currentSubscription, () => {
-  terminalLimitFromMetrics.value = null
-  currentTerminalCount.value = 0
 })
 
 // Watch for backend changes to re-fetch instance types
