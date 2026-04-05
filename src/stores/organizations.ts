@@ -176,6 +176,29 @@ export const useOrganizationsStore = defineStore('organizations', () => {
         hasMore = response.data?.hasMore || false
       }
 
+      // Also fetch orgs the user is a member of but doesn't own
+      // (the generic entity endpoint may only return owned orgs for non-admins)
+      try {
+        const permissionsStore = usePermissionsStore()
+        const memberships = permissionsStore.currentUser?.organization_memberships || []
+        const loadedIds = new Set(allOrgs.map(o => o.id))
+        const missingOrgIds = memberships
+          .filter(m => m.is_active && !loadedIds.has(m.organization_id))
+          .map(m => m.organization_id)
+
+        for (const orgId of missingOrgIds) {
+          try {
+            const response = await axios.get(`${apiEndpoint}/${orgId}`)
+            const org = response.data?.data || response.data
+            if (org) allOrgs.push(org)
+          } catch {
+            // Org might not be accessible — skip silently
+          }
+        }
+      } catch {
+        // Non-critical: if memberships aren't loaded yet, we'll get orgs on next load
+      }
+
       base.entities.splice(0, base.entities.length, ...allOrgs)
       base.lastLoaded.value = new Date()
       initCurrentOrganization()
