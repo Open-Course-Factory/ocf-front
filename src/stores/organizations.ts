@@ -3,7 +3,6 @@ import { computed, ref } from 'vue'
 import { useBaseStore } from './baseStore'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
-import { useAdminViewMode } from '../composables/useAdminViewMode'
 import { usePermissionsStore } from './permissions'
 import axios from 'axios'
 import { isDemoMode } from '../services/demo'
@@ -78,20 +77,11 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     organizations.value.filter(org => org.organization_type === 'team')
   )
 
-  // Admin-mode-aware filtered organizations
-  // This is the list all UI components should use when showing orgs to the user
+  // User's organizations
+  // The backend already filters GET /organizations by membership (MembershipConfig).
+  // Non-admin users only receive orgs they own or are a member of.
+  // No client-side re-filtering needed — trust the backend response.
   const userOrganizations = computed(() => {
-    const { isAdmin, shouldFilterAsStandardUser } = useAdminViewMode()
-    if (!isAdmin.value || shouldFilterAsStandardUser.value) {
-      const permissionsStore = usePermissionsStore()
-      const currentUserId = permissionsStore.currentUser?.id
-      if (!currentUserId) return organizations.value
-      return organizations.value.filter(org => {
-        if (org.owner_user_id === currentUserId) return true
-        const memberships = permissionsStore.currentUser?.organization_memberships || []
-        return memberships.some(m => m.organization_id === org.id && m.is_active)
-      })
-    }
     return organizations.value
   })
 
