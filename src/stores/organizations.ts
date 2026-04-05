@@ -288,21 +288,24 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     currentOrganizationId.value = organizationId
     localStorage.setItem('currentOrganizationId', organizationId)
 
-    // Refresh subscription and features for new org context
+    // Refresh all org-dependent data from single source of truth (stores)
     const subscriptionsStore = useSubscriptionsStore()
-    const subscriptionPromise = subscriptionsStore.getCurrentSubscription().catch((err: any) => {
-      base.error.value = err?.message || t('organizations.loadError')
-      console.warn('Failed to refresh subscription on org switch:', err)
-    })
-
     const permissionsStore = usePermissionsStore()
-    const featuresPromise = permissionsStore.loadEffectiveFeatures().catch((err: any) => {
-      base.error.value = err?.message || t('organizations.loadError')
-      console.warn('Failed to refresh features on org switch:', err)
-    })
 
-    // After features refresh, redirect if current page requires a feature no longer available
-    return Promise.all([subscriptionPromise, featuresPromise]).then(async () => {
+    const refreshPromises = [
+      subscriptionsStore.getCurrentSubscription().catch((err: any) => {
+        console.warn('Failed to refresh subscription on org switch:', err)
+      }),
+      permissionsStore.loadEffectiveFeatures().catch((err: any) => {
+        console.warn('Failed to refresh features on org switch:', err)
+      }),
+      subscriptionsStore.getUsageMetrics().catch((err: any) => {
+        console.warn('Failed to refresh usage metrics on org switch:', err)
+      }),
+    ]
+
+    // After all refreshes, redirect if current page requires a feature no longer available
+    return Promise.all(refreshPromises).then(async () => {
       try {
         const { default: router } = await import('../router')
         const currentPath = router.currentRoute.value.path

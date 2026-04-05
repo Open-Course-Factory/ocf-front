@@ -133,8 +133,8 @@ const isLoadingUsage = ref(false)
 const isLoadingInvoices = ref(false)
 const isLoadingAllSubs = ref(false)
 
-// Données réactives
-const usageMetrics = ref([])
+// Données réactives — usageMetrics comes from the store (single source of truth, refreshed on org switch)
+const usageMetrics = computed(() => subscriptionsStore.usageMetrics || [])
 const recentInvoices = ref([])
 const lastCanceledSubscription = ref(null)
 const downloadingInvoices = ref<Set<string>>(new Set())
@@ -219,7 +219,8 @@ async function loadAllSubscriptions() {
 }
 
 async function loadUsageMetrics(force: boolean = false) {
-  // Check cache unless forced reload
+  // Usage metrics are stored in subscriptionsStore (single source of truth)
+  // The store is refreshed on org switch by setCurrentOrganization
   const now = Date.now()
   if (!force && (now - lastUsageLoad.value) < CACHE_DURATION && usageMetrics.value.length > 0) {
     console.debug('Using cached usage metrics')
@@ -228,11 +229,10 @@ async function loadUsageMetrics(force: boolean = false) {
   }
 
   try {
-    usageMetrics.value = await subscriptionsStore.getUsageMetrics()
+    await subscriptionsStore.getUsageMetrics()
     lastUsageLoad.value = now
   } catch (err) {
     console.warn('Impossible de charger les métriques d\'usage:', err)
-    usageMetrics.value = []
   } finally {
     isLoadingUsage.value = false
   }
