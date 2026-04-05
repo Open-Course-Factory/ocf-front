@@ -31,6 +31,13 @@ vi.mock('../../src/composables/useTranslations', () => ({
   useStoreTranslations: () => ({ t: (key: string) => key, te: () => true, locale: ref('en') })
 }))
 
+// Mock organizations store (dynamically imported by getCurrentSubscription and getUsageMetrics)
+vi.mock('../../src/stores/organizations', () => ({
+  useOrganizationsStore: () => ({
+    currentOrganizationId: null
+  })
+}))
+
 vi.mock('../../src/services/demo', () => ({
   isDemoMode: vi.fn(() => false),
   logDemoAction: vi.fn(),
