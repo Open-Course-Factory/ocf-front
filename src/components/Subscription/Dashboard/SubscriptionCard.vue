@@ -122,23 +122,23 @@
             {{ t('subscriptionPlans.planFeatures') }}
           </h5>
           <div class="features-grid">
-            <div v-if="subscription.plan_features.concurrent_terminals" class="feature-item">
+            <div v-if="planFeature('concurrent_terminals', 'max_concurrent_terminals')" class="feature-item">
               <i class="fas fa-terminal"></i>
-              <span>{{ subscription.plan_features.concurrent_terminals }} {{ t('subscriptionPlans.concurrentTerminals') }}</span>
+              <span>{{ planFeature('concurrent_terminals', 'max_concurrent_terminals') }} {{ t('subscriptionPlans.concurrentTerminals') }}</span>
             </div>
-            <div v-if="subscription.plan_features.session_duration_hours" class="feature-item">
+            <div v-if="planFeature('session_duration_hours', 'max_session_duration_minutes')" class="feature-item">
               <i class="fas fa-clock"></i>
-              <span>{{ subscription.plan_features.session_duration_hours }}h {{ t('subscriptionPlans.sessionDuration') }}</span>
+              <span>{{ formatDuration(planFeature('session_duration_hours', 'max_session_duration_minutes')) }} {{ t('subscriptionPlans.sessionDuration') }}</span>
             </div>
-            <div v-if="subscription.plan_features.allowed_machine_sizes" class="feature-item">
+            <div v-if="planFeature('allowed_machine_sizes', 'allowed_machine_sizes')" class="feature-item">
               <i class="fas fa-server"></i>
-              <span>{{ subscription.plan_features.allowed_machine_sizes.join(', ') }} {{ t('subscriptionPlans.allowedSizes') }}</span>
+              <span>{{ planFeature('allowed_machine_sizes', 'allowed_machine_sizes').join(', ') }} {{ t('subscriptionPlans.allowedSizes') }}</span>
             </div>
-            <div v-if="subscription.plan_features.storage_gb" class="feature-item">
+            <div v-if="planFeature('storage_gb', 'data_persistence_gb')" class="feature-item">
               <i class="fas fa-hdd"></i>
-              <span>{{ subscription.plan_features.storage_gb }}GB {{ t('subscriptionPlans.storage') }}</span>
+              <span>{{ planFeature('storage_gb', 'data_persistence_gb') }}GB {{ t('subscriptionPlans.storage') }}</span>
             </div>
-            <div v-if="subscription.plan_features.network_access" class="feature-item">
+            <div v-if="planFeature('network_access', 'network_access_enabled')" class="feature-item">
               <i class="fas fa-network-wired"></i>
               <span>{{ t('subscriptionPlans.networkAccess') }}</span>
             </div>
@@ -289,6 +289,25 @@ const neverPurchasedPersonal = computed(() => {
 
   return !hasPersonalSubscription
 })
+
+// Read a plan feature from subscription_plan (new) or plan_features (legacy)
+const planFeature = (legacyKey: string, planKey: string) => {
+  const sub = props.subscription
+  if (!sub) return null
+  return sub.subscription_plan?.[planKey] ?? sub.plan_features?.[legacyKey] ?? null
+}
+
+// Format duration: if value is in minutes (from subscription_plan), convert to hours display
+const formatDuration = (value: any) => {
+  if (!value) return ''
+  // subscription_plan.max_session_duration_minutes is in minutes
+  // plan_features.session_duration_hours is already in hours
+  if (typeof value === 'number' && value > 24) {
+    // Likely minutes — convert to hours
+    return `${Math.round(value / 60)}h`
+  }
+  return `${value}h`
+}
 
 // Check if current plan is free (price_amount === 0)
 const isFreePlan = computed(() => {
