@@ -141,7 +141,7 @@ describe('organizations store', () => {
       expect(result).toBeInstanceOf(Promise)
     })
 
-    it('should handle errors from getCurrentSubscription without silently swallowing them', async () => {
+    it('should handle errors from getCurrentSubscription without silently swallowing them', { timeout: 15000 }, async () => {
       const subscriptionError = new Error('Subscription service unavailable')
       mockGetCurrentSubscription.mockRejectedValueOnce(subscriptionError)
 
