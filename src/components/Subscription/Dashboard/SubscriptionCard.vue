@@ -116,7 +116,7 @@
         </div>
 
         <!-- Plan limits and features -->
-        <div v-if="subscription?.plan_features" class="plan-features">
+        <div v-if="subscription?.plan_features || subscription?.subscription_plan" class="plan-features">
           <h5>
             <i class="fas fa-list"></i>
             {{ t('subscriptionPlans.planFeatures') }}
