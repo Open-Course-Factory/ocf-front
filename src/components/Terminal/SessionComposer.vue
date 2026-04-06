@@ -7,14 +7,6 @@
 
 <template>
   <div class="session-composer">
-    <!-- Repeat Last Config -->
-    <div v-if="lastConfig && distributions.length > 0" class="repeat-last-config">
-      <button class="btn-repeat" :disabled="disabled" @click="repeatLastConfig">
-        <i class="fas fa-redo"></i>
-        {{ t('sessionComposer.repeatLast', { distribution: lastConfig.distribution, size: lastConfig.size.toUpperCase() }) }}
-      </button>
-    </div>
-
     <!-- Step 1: Distribution Selection -->
     <fieldset class="composer-step">
       <legend>{{ t('sessionComposer.stepDistribution') }}</legend>
@@ -132,7 +124,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
-import { useNotification } from '../../composables/useNotification'
 import { terminalService } from '../../services/domain/terminal'
 import type { Distribution, SessionOptionSize, SessionOptionFeature, SessionOptionsResponse } from '../../types/terminal'
 
@@ -169,8 +160,6 @@ const { t } = useTranslations({
       useCaseM: 'Development environment',
       useCaseL: 'Multi-service, Docker',
       useCaseXL: 'Heavy workloads, clusters',
-      repeatLast: 'Repeat last: {distribution} ({size})',
-      repeatLastUnavailable: 'The previously used environment is no longer available. Please select a new one.',
       unlockMore: 'Unlock more power',
     }
   },
@@ -199,14 +188,11 @@ const { t } = useTranslations({
       useCaseM: 'Environnement de d\u00e9veloppement',
       useCaseL: 'Multi-service, Docker',
       useCaseXL: 'Charges lourdes, clusters',
-      repeatLast: 'R\u00e9p\u00e9ter : {distribution} ({size})',
-      repeatLastUnavailable: 'L\u0027environnement utilis\u00e9 pr\u00e9c\u00e9demment n\u0027est plus disponible. Veuillez en s\u00e9lectionner un nouveau.',
       unlockMore: 'D\u00e9bloquer plus de puissance',
     }
   }
 })
 
-const { showWarning } = useNotification()
 
 // Last session config persistence
 const LAST_CONFIG_KEY = 'ocf-last-session-config'
@@ -259,6 +245,10 @@ async function loadDistributions() {
   loadingDistributions.value = true
   try {
     distributions.value = await terminalService.getDistributions(props.backendId)
+    // Auto-restore last used config if available
+    if (lastConfig.value && distributions.value.length > 0) {
+      await restoreLastConfig()
+    }
   } catch (e) {
     console.error('Failed to load distributions:', e)
     distributions.value = []
@@ -335,27 +325,25 @@ function saveLastConfig() {
   }
 }
 
-async function repeatLastConfig() {
+async function restoreLastConfig() {
   if (!lastConfig.value) return
-  // Find the distribution
   const dist = distributions.value.find(d => d.name === lastConfig.value!.distribution)
   if (!dist) {
-    // Distribution no longer available — clear the stored config and inform user
+    // Distribution no longer available — silently clear
     localStorage.removeItem(LAST_CONFIG_KEY)
     lastConfig.value = null
-    showWarning(t('sessionComposer.repeatLastUnavailable'))
     return
   }
   await selectDistribution(dist)
-  // Select size
-  if (sessionOptions.value) {
+  // Restore size if still allowed
+  if (sessionOptions.value && lastConfig.value) {
     const size = sessionOptions.value.allowed_sizes.find(
       s => s.key === lastConfig.value!.size && s.allowed
     )
     if (size) selectedSize.value = size
   }
-  // Set features
-  if (lastConfig.value.features) {
+  // Restore features
+  if (lastConfig.value?.features) {
     enabledFeatures.value = { ...lastConfig.value.features }
   }
 }
@@ -791,29 +779,6 @@ watch(() => props.organizationId, () => {
   opacity: 0.7;
 }
 
-/* Repeat last config */
-.repeat-last-config {
-  margin-bottom: var(--spacing-md, 16px);
-}
-
-.btn-repeat {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: var(--color-bg-tertiary, #f0f4f8);
-  border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: var(--border-radius-md, 8px);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  font-size: var(--font-size-sm, 14px);
-  transition: all 0.2s;
-}
-
-.btn-repeat:hover:not(:disabled) {
-  background: var(--color-primary-bg, rgba(66, 153, 225, 0.1));
-  border-color: var(--color-primary);
-}
 
 .btn-repeat:disabled {
   opacity: 0.5;
