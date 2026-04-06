@@ -629,14 +629,15 @@ watch(() => props.organizationId, () => {
 }
 
 .pill-recommended {
-  font-size: 8px;
+  font-size: 7px;
   margin-left: 3px;
   color: var(--color-warning, #f6ad55);
-  vertical-align: middle;
+  display: inline-flex;
+  align-items: center;
 }
 
 .size-pill.selected .pill-recommended {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--color-warning, #f6ad55);
 }
 
 .pill-lock {
