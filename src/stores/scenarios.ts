@@ -86,6 +86,8 @@ export const useScenariosStore = defineStore('scenarios', () => {
                 osTypePacman: 'Arch-based (pacman)',
                 isPublic: 'Public (available to all users)',
                 is_public: 'Public',
+                requiredFeatures: 'Required Features',
+                requiredFeaturesHelp: 'Comma-separated list of required distribution features (e.g., docker,python3)',
                 hostname: 'Container Hostname',
                 hostnameHelp: 'Custom hostname displayed in the terminal prompt (e.g., webserver)',
                 organization_id: 'Organization',
@@ -149,6 +151,8 @@ export const useScenariosStore = defineStore('scenarios', () => {
                 osTypePacman: 'Arch (pacman)',
                 isPublic: 'Public (disponible pour tous les utilisateurs)',
                 is_public: 'Public',
+                requiredFeatures: 'Fonctionnalités requises',
+                requiredFeaturesHelp: 'Liste de fonctionnalités de distribution requises, séparées par des virgules (ex. docker,python3)',
                 hostname: 'Nom d\'hôte du conteneur',
                 hostnameHelp: 'Nom d\'hôte personnalisé affiché dans le terminal (ex. webserver)',
                 organization_id: 'Organisation',
@@ -203,6 +207,8 @@ export const useScenariosStore = defineStore('scenarios', () => {
             })
             .withItemValue('value')
             .withItemText('text'),
+        field('required_features', t('scenarios.requiredFeatures')).input().visible().creatable().updatable()
+            .hint(t('scenarios.requiredFeaturesHelp')),
         field('hostname', t('scenarios.hostname')).input().visible().creatable().updatable(),
         field('source_type', t('scenarios.sourceType')).select().visible().creatable().updatable().withOptions([
             { value: 'git', text: t('scenarios.sourceTypeGit') },

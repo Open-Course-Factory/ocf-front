@@ -71,20 +71,12 @@
           <span v-if="scenario.estimated_time" class="meta-item">
             <i class="fas fa-clock"></i> {{ scenario.estimated_time }}
           </span>
-          <div v-if="scenario.compatible_instance_types?.length" class="os-badges">
-            <span
-              v-for="cit in scenario.compatible_instance_types"
-              :key="cit.id"
-              class="os-badge"
-              :class="{ 'os-badge--missing': !isInstanceTypeAvailable(cit.instance_type, scenario) }"
-              :title="isInstanceTypeAvailable(cit.instance_type, scenario) ? t('launcher.machineAvailable') : t('launcher.machineOffline')"
-            >
-              <i :class="isInstanceTypeAvailable(cit.instance_type, scenario) ? 'fas fa-check-circle' : 'fas fa-times-circle'" class="os-badge-icon"></i>
-              {{ cit.instance_type }}
-            </span>
-          </div>
-          <span v-else-if="scenario.instance_type" class="os-badge" :class="{ 'os-badge--missing': !scenario.launchable }">
-            <i :class="scenario.launchable ? 'fas fa-check-circle' : 'fas fa-times-circle'" class="os-badge-icon"></i>
+          <span v-if="scenario.os_type" class="os-badge">
+            <i class="fas fa-linux os-badge-icon"></i>
+            {{ scenario.os_type }}
+          </span>
+          <span v-if="scenario.instance_type" class="os-badge">
+            <i class="fas fa-microchip os-badge-icon"></i>
             {{ scenario.instance_type }}
           </span>
         </div>
@@ -92,7 +84,7 @@
         <!-- Unavailability explanation -->
         <div v-if="!scenario.launchable" class="unavailable-notice">
           <div class="unavailable-notice-content">
-            <i :class="getScenarioBlockReason(scenario) === 'plan' ? 'fas fa-lock' : 'fas fa-server'" class="unavailable-notice-icon"></i>
+            <i :class="getScenarioBlockReason(scenario) === 'plan' ? 'fas fa-lock' : getScenarioBlockReason(scenario) === 'no_distribution' ? 'fas fa-exclamation-triangle' : 'fas fa-server'" class="unavailable-notice-icon"></i>
             <div class="unavailable-notice-text">
               <span class="unavailable-notice-title">{{ t('launcher.unavailableTitle') }}</span>
               <span class="unavailable-notice-detail">{{ getUnavailableReason(scenario) }}</span>
@@ -173,17 +165,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { scenarioSessionService, pollProvisioningStatus } from '../../services/domain/scenario'
-import { terminalService, instanceUtils } from '../../services/domain/terminal'
-import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
-import type { InstanceType } from '../../types'
 import AdminBadge from '../Common/AdminBadge.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
 
 const router = useRouter()
 const { showError } = useNotification()
-const subscriptionsStore = useSubscriptionsStore()
 
 const { t } = useTranslations({
   en: {
@@ -202,14 +190,13 @@ const { t } = useTranslations({
       sessionCompleted: 'Scenario completed',
       sessionAbandoned: 'Scenario abandoned',
       sessionExists: 'Scenario already started',
-      unavailableTitle: 'No compatible machine available',
-      unavailableNoTypes: 'This scenario requires machine types that are not currently online.',
-      unavailableSpecific: 'Required: {types} — none are available right now.',
+      unavailableTitle: 'Scenario unavailable',
+      unavailableNoDistribution: 'No compatible machine available for this scenario.',
+      unavailableOffline: 'The required server is currently offline.',
       unavailablePlan: 'The required machine size is not included in your current plan.',
       unavailablePlanHint: 'Upgrade your plan to access larger machines.',
-      unavailableHint: 'The required machines may be temporarily offline. Try again later.',
-      machineAvailable: 'Machine available',
-      machineOffline: 'Machine offline or not configured',
+      unavailableOfflineHint: 'The required machines may be temporarily offline. Try again later.',
+      unavailableNoDistributionHint: 'Contact your administrator to configure compatible machines.',
       provisioning: 'Setting up your environment...',
       provisioningDetail: 'Creating terminal and preparing scenario. This may take a few minutes.',
       provisioningSetup: 'Running scenario setup scripts... This may take a few minutes.',
@@ -239,14 +226,13 @@ const { t } = useTranslations({
       sessionCompleted: 'Scenario termine',
       sessionAbandoned: 'Scenario abandonne',
       sessionExists: 'Scenario deja lance',
-      unavailableTitle: 'Aucune machine compatible disponible',
-      unavailableNoTypes: 'Ce scenario necessite des types de machines qui ne sont pas en ligne actuellement.',
-      unavailableSpecific: 'Requis : {types} — aucun n\'est disponible pour le moment.',
+      unavailableTitle: 'Scénario indisponible',
+      unavailableNoDistribution: 'Aucune machine compatible disponible pour ce scénario.',
+      unavailableOffline: 'Le serveur requis est actuellement hors ligne.',
       unavailablePlan: 'La taille de machine requise n\'est pas incluse dans votre plan actuel.',
-      unavailablePlanHint: 'Mettez a niveau votre plan pour acceder aux machines plus puissantes.',
-      unavailableHint: 'Les machines requises sont peut-etre temporairement hors ligne. Reessayez plus tard.',
-      machineAvailable: 'Machine disponible',
-      machineOffline: 'Machine hors ligne ou non configuree',
+      unavailablePlanHint: 'Mettez à niveau votre plan pour accéder aux machines plus puissantes.',
+      unavailableOfflineHint: 'Les machines requises sont peut-être temporairement hors ligne. Réessayez plus tard.',
+      unavailableNoDistributionHint: 'Contactez votre administrateur pour configurer des machines compatibles.',
       provisioning: 'Preparation de votre environnement...',
       provisioningDetail: 'Creation du terminal et preparation du scenario. Cela peut prendre quelques minutes.',
       provisioningSetup: 'Execution des scripts de preparation du scenario... Cela peut prendre quelques minutes.',
@@ -263,7 +249,6 @@ const { t } = useTranslations({
 })
 
 const scenarios = ref<any[]>([])
-const instanceTypes = ref<InstanceType[]>([])
 const mySessions = ref<any[]>([])
 const isLoading = ref(false)
 const error = ref('')
@@ -295,11 +280,6 @@ const filteredScenarios = computed(() => {
   )
 })
 
-const allowedMachineSizes = computed(() => {
-  const sizes = subscriptionsStore.currentSubscription?.subscription_plan?.allowed_machine_sizes || []
-  return sizes.length === 0 ? ['XS'] : sizes
-})
-
 function translateDifficulty(difficulty: string): string {
   const map: Record<string, string> = {
     beginner: t('launcher.difficultyBeginner'),
@@ -329,60 +309,35 @@ function getExistingSessionLabel(scenario: any): string {
   }
 }
 
-function isInstanceTypeAvailable(instanceType: string, scenario: any): boolean {
-  return (scenario.available_instance_types || []).includes(instanceType)
-}
-
-function getScenarioBlockReason(scenario: any): 'plan' | 'offline' | null {
+function getScenarioBlockReason(scenario: any): string | null {
   if (scenario.launchable) return null
-
-  // Check if any compatible instance type exists on the backend
-  const requiredPrefixes = getRequiredPrefixes(scenario)
-  const availablePrefixes = new Set((scenario.available_instance_types || []) as string[])
-
-  // If some are available but launchable is false, it might be a plan issue
-  // Check if any available instance type matches but has a restricted size
-  for (const prefix of requiredPrefixes) {
-    if (availablePrefixes.has(prefix)) {
-      // Instance exists — check if user's plan covers it
-      const inst = instanceTypes.value.find(i => i.prefix === prefix)
-      if (inst) {
-        const availability = instanceUtils.checkAvailability(inst, allowedMachineSizes.value)
-        if (!availability.available) {
-          return 'plan'
-        }
-      }
-    }
-  }
-  return 'offline'
-}
-
-function getRequiredPrefixes(scenario: any): string[] {
-  const types = scenario.compatible_instance_types?.map((c: any) => c.instance_type) || []
-  if (types.length === 0 && scenario.instance_type) {
-    types.push(scenario.instance_type)
-  }
-  return types
+  return scenario.block_reason || 'offline'
 }
 
 function getUnavailableReason(scenario: any): string {
   const reason = getScenarioBlockReason(scenario)
-  if (reason === 'plan') {
-    return t('launcher.unavailablePlan')
+  switch (reason) {
+    case 'plan':
+      return t('launcher.unavailablePlan')
+    case 'no_distribution':
+      return t('launcher.unavailableNoDistribution')
+    case 'offline':
+    default:
+      return t('launcher.unavailableOffline')
   }
-  const requiredTypes = getRequiredPrefixes(scenario)
-  if (requiredTypes.length === 0) {
-    return t('launcher.unavailableNoTypes')
-  }
-  return t('launcher.unavailableSpecific').replace('{types}', requiredTypes.join(', '))
 }
 
 function getUnavailableHint(scenario: any): string {
   const reason = getScenarioBlockReason(scenario)
-  if (reason === 'plan') {
-    return t('launcher.unavailablePlanHint')
+  switch (reason) {
+    case 'plan':
+      return t('launcher.unavailablePlanHint')
+    case 'no_distribution':
+      return t('launcher.unavailableNoDistributionHint')
+    case 'offline':
+    default:
+      return t('launcher.unavailableOfflineHint')
   }
-  return t('launcher.unavailableHint')
 }
 
 async function loadScenarios() {
@@ -391,9 +346,7 @@ async function loadScenarios() {
   try {
     const [scenarioData] = await Promise.all([
       scenarioSessionService.listScenarios(),
-      scenarioSessionService.getMyScenarioSessions().then(sessions => { mySessions.value = sessions }).catch(() => {}),
-      terminalService.getInstanceTypes().then(types => { instanceTypes.value = types }).catch(() => {}),
-      subscriptionsStore.getCurrentSubscription().catch(() => {})
+      scenarioSessionService.getMyScenarioSessions().then(sessions => { mySessions.value = sessions }).catch(() => {})
     ])
     scenarios.value = scenarioData
   } catch (err: any) {
