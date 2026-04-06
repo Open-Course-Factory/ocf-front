@@ -601,6 +601,9 @@ watch(() => props.organizationId, () => {
 
 .size-pill {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   padding: 6px 14px;
   border: 2px solid var(--color-border-light);
   border-radius: var(--border-radius-full, 999px);
@@ -630,10 +633,7 @@ watch(() => props.organizationId, () => {
 
 .pill-recommended {
   font-size: 7px;
-  margin-left: 3px;
   color: var(--color-warning, #f6ad55);
-  display: inline-flex;
-  align-items: center;
 }
 
 .size-pill.selected .pill-recommended {
