@@ -7,6 +7,14 @@
 
 <template>
   <div class="session-composer">
+    <!-- Repeat Last Config -->
+    <div v-if="lastConfig && distributions.length > 0" class="repeat-last-config">
+      <button class="btn-repeat" :disabled="disabled" @click="repeatLastConfig">
+        <i class="fas fa-redo"></i>
+        {{ t('sessionComposer.repeatLast', { distribution: lastConfig.distribution, size: lastConfig.size.toUpperCase() }) }}
+      </button>
+    </div>
+
     <!-- Step 1: Distribution Selection -->
     <fieldset class="composer-step">
       <legend>{{ t('sessionComposer.stepDistribution') }}</legend>
@@ -56,7 +64,7 @@
 
       <div v-else-if="sessionOptions" class="size-selector">
         <button
-          v-for="size in sessionOptions.allowed_sizes"
+          v-for="size in visibleSizes"
           :key="size.key"
           type="button"
           class="size-option"
@@ -67,7 +75,13 @@
           :disabled="!size.allowed || disabled"
           @click="size.allowed && selectSize(size)"
         >
-          <div class="size-label">{{ size.key.toUpperCase() }}</div>
+          <div class="size-label">
+            {{ size.key.toUpperCase() }}
+            <span v-if="size.key === selectedDistribution?.default_size_key" class="recommended-badge">
+              {{ t('sessionComposer.recommended') }}
+            </span>
+          </div>
+          <div v-if="getSizeUseCase(size.key)" class="size-use-case">{{ getSizeUseCase(size.key) }}</div>
           <div class="size-specs">{{ size.cpu }} CPU {{ size.cpu_allowance }} &bull; {{ size.memory }}</div>
           <div v-if="!size.allowed" class="size-reason">
             <i class="fas fa-lock" />
@@ -77,22 +91,21 @@
       </div>
     </fieldset>
 
-    <!-- Step 3: Features (shown after size selected) -->
-    <fieldset v-if="selectedSize && availableFeatures.length > 0" class="composer-step">
+    <!-- Step 3: Features (shown after size selected, only if there are toggleable features) -->
+    <fieldset v-if="selectedSize && toggleableFeatures.length > 0" class="composer-step">
       <legend>{{ t('sessionComposer.stepFeatures') }}</legend>
 
       <div class="features-list">
         <div
-          v-for="feature in availableFeatures"
+          v-for="feature in toggleableFeatures"
           :key="feature.key"
           class="feature-toggle"
-          :class="{ disabled: !feature.allowed }"
         >
           <label class="feature-label">
             <input
               type="checkbox"
               :checked="enabledFeatures[feature.key]"
-              :disabled="!feature.allowed || disabled"
+              :disabled="disabled"
               @change="toggleFeature(feature.key, ($event.target as HTMLInputElement).checked)"
             />
             <span class="toggle-track"><span class="toggle-thumb" /></span>
@@ -101,10 +114,6 @@
               <small v-if="feature.description">{{ feature.description }}</small>
             </span>
           </label>
-          <div v-if="!feature.allowed" class="feature-reason">
-            <i class="fas fa-lock" />
-            {{ getReasonText(feature.reason) }}
-          </div>
         </div>
       </div>
     </fieldset>
@@ -133,14 +142,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { terminalService } from '../../services/domain/terminal'
 import type { Distribution, SessionOptionSize, SessionOptionFeature, SessionOptionsResponse } from '../../types/terminal'
 
 const props = defineProps<{
   backendId?: string
+  organizationId?: string
   disabled?: boolean
+  isAssignedSubscription?: boolean
 }>()
 
 const { t } = useTranslations({
@@ -161,6 +172,13 @@ const { t } = useTranslations({
       notSupported: 'Not supported by this environment',
       sizeTooSmall: 'Requires a larger size',
       unavailable: 'Unavailable',
+      recommended: 'Recommended',
+      useCaseXS: 'Light practice, basic CLI',
+      useCaseS: 'Standard exercises',
+      useCaseM: 'Development environment',
+      useCaseL: 'Multi-service, Docker',
+      useCaseXL: 'Heavy workloads, clusters',
+      repeatLast: 'Repeat last: {distribution} ({size})',
     }
   },
   fr: {
@@ -180,9 +198,25 @@ const { t } = useTranslations({
       notSupported: 'Non support\u00e9 par cet environnement',
       sizeTooSmall: 'N\u00e9cessite une taille sup\u00e9rieure',
       unavailable: 'Indisponible',
+      recommended: 'Recommand\u00e9',
+      useCaseXS: 'Pratique l\u00e9g\u00e8re, CLI basique',
+      useCaseS: 'Exercices standards',
+      useCaseM: 'Environnement de d\u00e9veloppement',
+      useCaseL: 'Multi-service, Docker',
+      useCaseXL: 'Charges lourdes, clusters',
+      repeatLast: 'R\u00e9p\u00e9ter : {distribution} ({size})',
     }
   }
 })
+
+// Last session config persistence
+const LAST_CONFIG_KEY = 'ocf-last-session-config'
+
+interface LastSessionConfig {
+  distribution: string
+  size: string
+  features: Record<string, boolean>
+}
 
 // State
 const distributions = ref<Distribution[]>([])
@@ -192,6 +226,7 @@ const selectedSize = ref<SessionOptionSize | null>(null)
 const enabledFeatures = ref<Record<string, boolean>>({})
 const loadingDistributions = ref(false)
 const loadingOptions = ref(false)
+const lastConfig = ref<LastSessionConfig | null>(null)
 
 // Computed
 const availableFeatures = computed<SessionOptionFeature[]>(() => sessionOptions.value?.allowed_features ?? [])
@@ -199,6 +234,19 @@ const activeFeatureNames = computed(() =>
   availableFeatures.value
     .filter(f => enabledFeatures.value[f.key])
     .map(f => f.name)
+)
+
+const visibleSizes = computed(() => {
+  if (!sessionOptions.value) return []
+  if (props.isAssignedSubscription) {
+    // Hide locked sizes for org-managed plans (students can't upgrade)
+    return sessionOptions.value.allowed_sizes.filter(s => s.allowed)
+  }
+  return sessionOptions.value.allowed_sizes
+})
+
+const toggleableFeatures = computed(() =>
+  availableFeatures.value.filter(f => f.allowed)
 )
 
 // Methods
@@ -222,13 +270,28 @@ async function selectDistribution(dist: Distribution) {
 
   loadingOptions.value = true
   try {
-    sessionOptions.value = await terminalService.getSessionOptions(dist.name, props.backendId)
+    sessionOptions.value = await terminalService.getSessionOptions(dist.name, props.backendId, props.organizationId)
     // Auto-select default size if allowed
     if (dist.default_size_key && sessionOptions.value) {
       const defaultSize = sessionOptions.value.allowed_sizes.find(
         s => s.key === dist.default_size_key && s.allowed
       )
       if (defaultSize) selectedSize.value = defaultSize
+    }
+    // Fallback: auto-select smallest allowed size if nothing selected
+    if (!selectedSize.value && sessionOptions.value) {
+      const firstAllowed = sessionOptions.value.allowed_sizes.find(s => s.allowed)
+      if (firstAllowed) selectedSize.value = firstAllowed
+    }
+    // Auto-enable all allowed features by default
+    if (sessionOptions.value) {
+      const defaults: Record<string, boolean> = {}
+      for (const f of sessionOptions.value.allowed_features) {
+        if (f.allowed) {
+          defaults[f.key] = true
+        }
+      }
+      enabledFeatures.value = defaults
     }
   } catch (e) {
     console.error('Failed to load session options:', e)
@@ -243,6 +306,47 @@ function selectSize(size: SessionOptionSize) {
 
 function toggleFeature(key: string, enabled: boolean) {
   enabledFeatures.value = { ...enabledFeatures.value, [key]: enabled }
+}
+
+function getSizeUseCase(key: string): string {
+  const useCases: Record<string, string> = {
+    xs: t('sessionComposer.useCaseXS'),
+    s: t('sessionComposer.useCaseS'),
+    m: t('sessionComposer.useCaseM'),
+    l: t('sessionComposer.useCaseL'),
+    xl: t('sessionComposer.useCaseXL'),
+  }
+  return useCases[key.toLowerCase()] || ''
+}
+
+function saveLastConfig() {
+  if (selectedDistribution.value && selectedSize.value) {
+    const config: LastSessionConfig = {
+      distribution: selectedDistribution.value.name,
+      size: selectedSize.value.key,
+      features: { ...enabledFeatures.value }
+    }
+    localStorage.setItem(LAST_CONFIG_KEY, JSON.stringify(config))
+  }
+}
+
+async function repeatLastConfig() {
+  if (!lastConfig.value) return
+  // Find the distribution
+  const dist = distributions.value.find(d => d.name === lastConfig.value!.distribution)
+  if (!dist) return
+  await selectDistribution(dist)
+  // Select size
+  if (sessionOptions.value) {
+    const size = sessionOptions.value.allowed_sizes.find(
+      s => s.key === lastConfig.value!.size && s.allowed
+    )
+    if (size) selectedSize.value = size
+  }
+  // Set features
+  if (lastConfig.value.features) {
+    enabledFeatures.value = { ...lastConfig.value.features }
+  }
 }
 
 function getOsIcon(osType?: string): string {
@@ -271,10 +375,25 @@ defineExpose({
   selectedSize,
   enabledFeatures,
   isReady: computed(() => !!selectedDistribution.value && !!selectedSize.value),
-  loadDistributions
+  loadDistributions,
+  saveLastConfig
 })
 
-onMounted(loadDistributions)
+onMounted(() => {
+  // Load last config from localStorage
+  try {
+    const stored = localStorage.getItem(LAST_CONFIG_KEY)
+    if (stored) lastConfig.value = JSON.parse(stored)
+  } catch (e) { /* ignore invalid stored data */ }
+  loadDistributions()
+})
+
+// Re-fetch session options when org context changes (different plan)
+watch(() => props.organizationId, () => {
+  if (selectedDistribution.value) {
+    selectDistribution(selectedDistribution.value)
+  }
+})
 </script>
 
 <style scoped>
@@ -624,6 +743,54 @@ onMounted(loadDistributions)
   color: var(--color-text-primary);
   font-weight: var(--font-weight-semibold);
   text-align: right;
+}
+
+/* Repeat last config */
+.repeat-last-config {
+  margin-bottom: var(--spacing-md, 16px);
+}
+
+.btn-repeat {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--color-bg-tertiary, #f0f4f8);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: var(--border-radius-md, 8px);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-size: var(--font-size-sm, 14px);
+  transition: all 0.2s;
+}
+
+.btn-repeat:hover:not(:disabled) {
+  background: var(--color-primary-bg, rgba(66, 153, 225, 0.1));
+  border-color: var(--color-primary);
+}
+
+.btn-repeat:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Recommended badge */
+.recommended-badge {
+  font-size: var(--font-size-xs, 10px);
+  background: var(--color-success, #48bb78);
+  color: white;
+  padding: 1px 6px;
+  border-radius: var(--border-radius-full, 999px);
+  margin-left: 4px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+/* Size use-case label */
+.size-use-case {
+  font-size: var(--font-size-xs, 11px);
+  color: var(--color-text-secondary);
+  margin-top: 2px;
 }
 
 /* Responsive */

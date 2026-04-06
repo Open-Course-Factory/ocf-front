@@ -223,9 +223,10 @@ export const terminalService = {
     return response.data
   },
 
-  async getSessionOptions(distribution: string, backendId?: string): Promise<SessionOptionsResponse> {
+  async getSessionOptions(distribution: string, backendId?: string, organizationId?: string): Promise<SessionOptionsResponse> {
     const params: Record<string, string> = { distribution }
     if (backendId) params.backend = backendId
+    if (organizationId) params.organization_id = organizationId
     const response = await axios.get('/terminals/session-options', { params })
     return response.data
   },
