@@ -13,9 +13,9 @@
     <div v-if="showDebug" class="debug-panel">
       <h4>Debug Info</h4>
       <p>isStarting: {{ isStarting }}</p>
-      <p>instanceTypes.length: {{ instanceTypes.length }}</p>
-      <p>selectedInstanceType: {{ selectedInstanceType }}</p>
-      <p>allowedMachineSizes: {{ allowedMachineSizes }}</p>
+      <p>composerReady: {{ composerRef?.isReady }}</p>
+      <p>selectedDistribution: {{ composerRef?.selectedDistribution?.name }}</p>
+      <p>selectedSize: {{ composerRef?.selectedSize?.key }}</p>
       <p>currentSubscription: {{ !!currentSubscription }}</p>
     </div>
 
@@ -30,7 +30,7 @@
           </div>
 
           <!-- Compact Capacity Check -->
-          <div v-if="selectedInstanceType" class="capacity-check-inline" :class="`status-${capacityStatusLevel}`">
+          <div v-if="composerRef?.selectedDistribution" class="capacity-check-inline" :class="`status-${capacityStatusLevel}`">
             <i :class="capacityStatusIcon"></i>
             <span class="capacity-text">{{ capacityStatusText }}</span>
           </div>
@@ -38,18 +38,11 @@
         </div>
       </template>
 
-      <!-- Instance Type Selection -->
-      <div v-if="isLoadingInstanceTypes" class="instance-types-loading">
-        <i class="fas fa-spinner fa-spin"></i>
-        <span>{{ t('terminalStarter.loadingInstanceTypes') }}</span>
-      </div>
-      <InstanceTypeSelector
-        v-else
-        v-model="selectedInstanceType"
-        :instance-types="instanceTypes"
-        :allowed-sizes="allowedMachineSizes"
-        @select="selectInstance"
-        @preselect="preselectInstance"
+      <!-- Session Composer: Distribution / Size / Features -->
+      <SessionComposer
+        ref="composerRef"
+        :backend-id="selectedBackendId || undefined"
+        :disabled="isStarting"
       />
 
       <!-- Progress indicator -->
@@ -142,7 +135,7 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
-import { terminalService, instanceUtils } from '../../services/domain/terminal'
+import { terminalService } from '../../services/domain/terminal'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTerminalMetricsStore } from '../../stores/terminalMetrics'
 import { useClassGroupsStore } from '../../stores/classGroups'
@@ -154,11 +147,11 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
-import InstanceTypeSelector from './InstanceTypeSelector.vue'
+import SessionComposer from './SessionComposer.vue'
 import TerminalAdvancedOptions from './TerminalAdvancedOptions.vue'
 import TerminalUsagePanel from './TerminalUsagePanel.vue'
 import BaseModal from '../Modals/BaseModal.vue'
-import type { InstanceType } from '../../types'
+import type { StartComposedSessionData } from '../../types/terminal'
 
 // Router
 const route = useRoute()
@@ -309,13 +302,10 @@ let usageRefreshInterval: NodeJS.Timeout | null = null
 // Usage refresh configuration
 const USAGE_REFRESH_INTERVAL = 600000 // 10 minutes
 
-// localStorage key for last selected instance
-const LAST_INSTANCE_KEY = 'terminal_last_instance_type'
+// Session Composer ref
+const composerRef = ref<InstanceType<typeof SessionComposer>>()
 
 // Form
-const selectedInstanceType = ref('')
-const userManuallySelected = ref(false)
-const restoredFromStorage = ref(false)
 const nameInput = ref('')
 const exerciseRef = ref('')
 const hostnameInput = ref('')
@@ -333,15 +323,8 @@ const selectedBackendId = computed({
   set: (val: string) => backendsStore.selectBackend(val)
 })
 
-// Instance types
-const instanceTypes = ref<InstanceType[]>([])
-const isLoadingInstanceTypes = ref(false)
-const selectedInstanceDefaultPackages = computed(() => {
-  if (!selectedInstanceType.value) return []
-  const inst = instanceTypes.value.find(i => i.prefix === selectedInstanceType.value)
-  return inst?.default_packages || []
-})
-const instanceTypeCache = new Map<string, InstanceType[]>()
+// Default packages (not used with composer, kept for backward compat in TerminalAdvancedOptions)
+const selectedInstanceDefaultPackages = computed(() => [] as string[])
 
 // Groups
 const canUseGroups = computed(() => isEnabled('class_groups'))
@@ -401,7 +384,8 @@ const SYSTEM_RESERVE_GB = 0.6
 const serverMetrics = computed(() => metricsStore.metrics)
 
 const canLaunchInstance = computed(() => {
-  if (!selectedInstanceType.value || !serverMetrics.value) return null
+  const dist = composerRef.value?.selectedDistribution
+  if (!dist || !serverMetrics.value) return null
 
   // Check CPU - must be under 95%
   if (serverMetrics.value.cpu_percent > 95) {
@@ -409,14 +393,14 @@ const canLaunchInstance = computed(() => {
   }
 
   // Check RAM
-  const requiredRAM = getInstanceRAMRequirement(selectedInstanceType.value)
+  const requiredRAM = getInstanceRAMRequirement(dist.name)
   const totalRequired = requiredRAM + SYSTEM_RESERVE_GB
 
   return serverMetrics.value.ram_available_gb >= totalRequired
 })
 
 const capacityStatusLevel = computed(() => {
-  if (!selectedInstanceType.value) return 'neutral'
+  if (!composerRef.value?.selectedDistribution) return 'neutral'
   if (canLaunchInstance.value === null) return 'checking'
   return canLaunchInstance.value ? 'ok' : 'error'
 })
@@ -435,7 +419,7 @@ const capacityStatusIcon = computed(() => {
 })
 
 const capacityStatusText = computed(() => {
-  if (!selectedInstanceType.value) return ''
+  if (!composerRef.value?.selectedDistribution) return ''
   if (canLaunchInstance.value === null) return t('terminalStarter.checkingCapacity')
   return canLaunchInstance.value
     ? t('terminalStarter.readyToLaunch')
@@ -444,8 +428,7 @@ const capacityStatusText = computed(() => {
 
 // Form validation
 const isFormValid = computed(() => {
-  if (isLoadingInstanceTypes.value) return false
-  if (!selectedInstanceType.value) return false
+  if (!composerRef.value?.isReady) return false
   if (creationMode.value === 'bulk' && !selectedGroupId.value) return false
   // Check if user has reached terminal limit
   if (creationMode.value === 'single' && currentTerminalCount.value >= maxTerminals.value) return false
@@ -453,14 +436,6 @@ const isFormValid = computed(() => {
 })
 
 // Helper functions
-function sanitizeHostname(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9-]/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 63)
-}
-
 function getInstanceRAMRequirement(instancePrefix: string): number {
   const lowerPrefix = instancePrefix.toLowerCase()
   for (const key in INSTANCE_RAM_REQUIREMENTS) {
@@ -469,43 +444,6 @@ function getInstanceRAMRequirement(instancePrefix: string): number {
     }
   }
   return INSTANCE_RAM_REQUIREMENTS['default']
-}
-
-async function loadInstanceTypes(backendId?: string) {
-  const cacheKey = backendId || '__default__'
-
-  // Serve from cache if available
-  const cached = instanceTypeCache.get(cacheKey)
-  if (cached) {
-    instanceTypes.value = cached
-    return
-  }
-
-  isLoadingInstanceTypes.value = true
-  try {
-    const loadedTypes = await terminalService.getInstanceTypes(backendId)
-
-    if (!Array.isArray(loadedTypes)) {
-      instanceTypes.value = []
-      showErrorNotification('Invalid data format for instance types.', 'Loading Error')
-      return
-    }
-
-    instanceTypes.value = loadedTypes
-    instanceTypeCache.set(cacheKey, loadedTypes)
-
-    if (instanceTypes.value.length === 0) {
-      showWarning(t('terminalStarter.noInstanceTypesForBackend'), t('terminalStarter.noInstanceTypesForBackend'))
-      return
-    }
-  } catch (error: any) {
-    console.error('Failed to load instance types:', error)
-    showErrorNotification(`Invalid data format for instance types: ${error.message || error}`, 'Loading Error')
-    instanceTypes.value = []
-    selectedInstanceType.value = ''
-  } finally {
-    isLoadingInstanceTypes.value = false
-  }
 }
 
 async function loadCurrentTerminalUsage() {
@@ -560,58 +498,6 @@ async function refreshUsage() {
   }
 }
 
-function selectInstance(instance: InstanceType) {
-  userManuallySelected.value = true
-  selectedInstanceType.value = instance.prefix
-  if (!userManuallySetHostname.value) {
-    const hostname = sanitizeHostname(instance.name || instance.prefix)
-    autoGeneratedHostname.value = hostname
-    hostnameInput.value = hostname
-  }
-  try {
-    localStorage.setItem(LAST_INSTANCE_KEY, instance.prefix)
-  } catch {
-    // localStorage may be unavailable
-  }
-}
-
-function preselectInstance(instance: InstanceType) {
-  // Only preselect if user hasn't manually clicked on an instance
-  if (userManuallySelected.value) return
-
-  // Try to restore from localStorage on first preselect call
-  if (!restoredFromStorage.value) {
-    restoredFromStorage.value = true
-    try {
-      const stored = localStorage.getItem(LAST_INSTANCE_KEY)
-      if (stored) {
-        const storedInstance = instanceTypes.value.find(i => i.prefix === stored)
-        if (storedInstance) {
-          const availability = instanceUtils.checkAvailability(storedInstance, allowedMachineSizes.value)
-          if (availability.available) {
-            selectedInstanceType.value = stored
-            if (!userManuallySetHostname.value) {
-              const hostname = sanitizeHostname(storedInstance.name || storedInstance.prefix)
-              autoGeneratedHostname.value = hostname
-              hostnameInput.value = hostname
-            }
-            return
-          }
-        }
-      }
-    } catch {
-      // localStorage may be unavailable
-    }
-  }
-
-  selectedInstanceType.value = instance.prefix
-  if (!userManuallySetHostname.value) {
-    const hostname = sanitizeHostname(instance.name || instance.prefix)
-    autoGeneratedHostname.value = hostname
-    hostnameInput.value = hostname
-  }
-}
-
 function resetForm() {
   nameInput.value = ''
   exerciseRef.value = ''
@@ -621,10 +507,6 @@ function resetForm() {
   autoGeneratedHostname.value = ''
   creationMode.value = 'single'
   selectedGroupId.value = ''
-  userManuallySelected.value = false
-  restoredFromStorage.value = false
-  selectedInstanceType.value = ''
-  instanceTypeCache.clear()
 }
 
 function getLimitReachedMessage(source?: string): string {
@@ -667,7 +549,6 @@ async function loadGroupMembers(groupId: string) {
 
 // Watch for global organization changes — reload org-dependent data
 watch(storeOrgId, async (newOrgId) => {
-  instanceTypeCache.clear()
   currentTerminalCount.value = 0
   if (newOrgId) {
     // Reload current usage count and backends for new org context
@@ -675,14 +556,13 @@ watch(storeOrgId, async (newOrgId) => {
     await loadCurrentTerminalUsage().catch(() => {})
     await backendsStore.fetchBackends(newOrgId).catch(() => {})
   }
+  // Reload distributions in composer (backend may have changed)
+  composerRef.value?.loadDistributions()
 })
 
-// Watch for backend changes to re-fetch instance types
-watch(selectedBackendId, async (newBackendId) => {
-  selectedInstanceType.value = ''
-  userManuallySelected.value = false
-  restoredFromStorage.value = false
-  await loadInstanceTypes(newBackendId || undefined)
+// Watch for backend changes to reload distributions in composer
+watch(selectedBackendId, () => {
+  composerRef.value?.loadDistributions()
 })
 
 // Watch for group selection changes to update member count
@@ -705,7 +585,8 @@ async function startNewSession() {
 }
 
 async function startSingleSession() {
-  if (!selectedInstanceType.value) {
+  const composer = composerRef.value
+  if (!composer?.selectedDistribution || !composer?.selectedSize) {
     showErrorNotification(t('terminalStarter.errorValidationInstance'), t('terminalStarter.errorStarting'))
     return
   }
@@ -760,13 +641,13 @@ async function startSingleSession() {
     const parsedPackages = packagesInput.value.trim()
       ? packagesInput.value.split(',').map(p => p.trim()).filter(Boolean)
       : []
-    const sessionData = {
+
+    const sessionData: StartComposedSessionData = {
+      distribution: composer.selectedDistribution.name,
+      size: composer.selectedSize.key,
+      features: composer.enabledFeatures,
       terms: t('terminalStarter.termsAcceptance'),
-      expiry: sessionDurationCap.value,
-      recording_enabled: 1,
-      ...(selectedInstanceType.value && { instance_type: selectedInstanceType.value }),
       ...(nameInput.value.trim() && { name: nameInput.value.trim() }),
-      ...(exerciseRef.value.trim() && { external_ref: exerciseRef.value.trim() }),
       ...(hostnameInput.value.trim() && { hostname: hostnameInput.value.trim() }),
       ...(backendsStore.selectedBackendId && { backend: backendsStore.selectedBackendId }),
       ...(selectedOrganizationId.value && { organization_id: selectedOrganizationId.value }),
@@ -775,13 +656,13 @@ async function startSingleSession() {
 
     startStatus.value = t('terminalStarter.sendingRequest')
 
-    const response = await axios.post('/terminals/start-session', sessionData)
+    const response = await terminalService.startComposedSession(sessionData)
 
     sessionInfo.value = {
-      session_id: response.data.session_id,
-      console_url: response.data.console_url,
-      expires_at: response.data.expires_at,
-      status: response.data.status
+      session_id: response.session_id,
+      console_url: response.console_url,
+      expires_at: response.expires_at,
+      status: response.status
     }
 
     startStatus.value = t('terminalStarter.sessionCreated')
@@ -805,30 +686,7 @@ async function startSingleSession() {
         showErrorNotification(errorMsg, t('terminalStarter.errorServerCapacity'))
       }
     } else if (error.response?.status === 400 && errorMsg.includes('not allowed in your plan')) {
-      const instanceMatch = errorMsg.match(/instance '([^']+)'/)
-      const sizesMatch = errorMsg.match(/sizes \[([^\]]+)\]/)
-      const allowedMatch = errorMsg.match(/Allowed sizes: \[([^\]]+)\]/)
-      const errorSource = error.response?.data?.source || (isAssignedSubscription.value ? 'organization' : 'personal')
-      const isOrgSource = errorSource === 'organization'
-
-      let enhancedError = errorMsg
-
-      if (instanceMatch && sizesMatch && allowedMatch) {
-        const instanceName = instanceMatch[1]
-        const requiredSizes = sizesMatch[1].split('|').map(s => s.trim())
-        const allowedSizes = allowedMatch[1].split(',').map(s => s.trim())
-
-        const msgKey = isOrgSource
-          ? 'terminalStarter.errorInstanceRestrictedMessageOrg'
-          : 'terminalStarter.errorInstanceRestrictedMessage'
-        enhancedError = t(msgKey, {
-          name: instanceName,
-          required: requiredSizes.join(', '),
-          allowed: allowedSizes.join(', ')
-        })
-      }
-
-      showErrorNotification(enhancedError, t('terminalStarter.errorInstanceRestricted'))
+      showErrorNotification(errorMsg, t('terminalStarter.errorInstanceRestricted'))
 
       setTimeout(async () => {
         const confirmed = await showConfirm(
@@ -849,7 +707,8 @@ async function startSingleSession() {
 }
 
 async function startBulkSessions() {
-  if (!selectedInstanceType.value) {
+  const composer = composerRef.value
+  if (!composer?.selectedDistribution || !composer?.selectedSize) {
     showErrorNotification(t('terminalStarter.errorValidationInstance'), t('terminalStarter.errorStarting'))
     return
   }
@@ -872,7 +731,9 @@ async function startBulkSessions() {
     const bulkData = {
       terms: t('terminalStarter.termsAcceptance'),
       expiry: sessionDurationCap.value,
-      instance_type: selectedInstanceType.value,
+      distribution: composer.selectedDistribution.name,
+      size: composer.selectedSize.key,
+      features: composer.enabledFeatures,
       recording_enabled: 1,
       ...(exerciseRef.value.trim() && { external_ref: exerciseRef.value.trim() }),
       ...(hostnameInput.value.trim() && { hostname: hostnameInput.value.trim() }),
@@ -937,8 +798,6 @@ function cleanup() {
 }
 
 onMounted(async () => {
-  instanceTypeCache.clear()
-
   const promises: Promise<any>[] = [
     subscriptionsStore.getCurrentSubscription(),
     loadCurrentTerminalUsage()
@@ -967,8 +826,7 @@ onMounted(async () => {
     }
   }
 
-  // Fetch instance types after backends are loaded (pass selected backend if any)
-  await loadInstanceTypes(backendsStore.selectedBackendId || undefined)
+  // SessionComposer loads distributions on its own mount (via onMounted)
 
   // Check for query parameters to set bulk mode and group
   if (route.query.mode === 'bulk' && route.query.groupId) {
@@ -980,7 +838,6 @@ onMounted(async () => {
       if (selectedGroupId.value) {
         const members = await loadGroupMembers(selectedGroupId.value)
         selectedGroupMemberCount.value = members.length
-
       }
     })
   }
@@ -999,7 +856,7 @@ onMounted(async () => {
 
   // Periodic refresh of metrics (every 30 seconds)
   const metricsRefreshInterval = setInterval(() => {
-    if (selectedInstanceType.value) {
+    if (composerRef.value?.selectedDistribution) {
       metricsStore.refreshMetrics(backendsStore.selectedBackendId || undefined)
     }
   }, 30000)
