@@ -110,7 +110,10 @@
                 @change="toggleFeature(feature.key, ($event.target as HTMLInputElement).checked)"
               />
               <i v-if="!feature.allowed" class="fas fa-lock" />
-              <span>{{ feature.name }}</span>
+              <span class="feature-chip-text">
+                <span>{{ feature.name }}</span>
+                <small v-if="feature.description" class="feature-chip-desc">{{ feature.description }}</small>
+              </span>
             </label>
           </div>
         </div>
@@ -144,7 +147,7 @@ const { t } = useTranslations({
   en: {
     sessionComposer: {
       subtitle: 'Pick your environment and click Create — your terminal will be ready in about 30 seconds.',
-      stepDistribution: 'Choose your environment',
+      stepDistribution: 'Start your terminal',
       stepSize: 'Select resources',
       stepFeatures: 'Additional options',
       summary: 'Session summary',
@@ -174,7 +177,7 @@ const { t } = useTranslations({
   fr: {
     sessionComposer: {
       subtitle: 'Choisissez votre environnement et cliquez sur Cr\u00e9er \u2014 votre terminal sera pr\u00eat en 30 secondes environ.',
-      stepDistribution: 'Choisissez votre environnement',
+      stepDistribution: 'D\u00e9marrer votre terminal',
       stepSize: 'S\u00e9lectionnez les ressources',
       stepFeatures: 'Options suppl\u00e9mentaires',
       summary: 'R\u00e9sum\u00e9 de la session',
@@ -733,6 +736,23 @@ watch(() => props.organizationId, () => {
 .feature-chip .fa-lock {
   font-size: 9px;
   color: var(--color-warning);
+}
+
+.feature-chip-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.feature-chip-desc {
+  font-size: var(--font-size-xs, 10px);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-normal);
+}
+
+.feature-chip.active .feature-chip-desc {
+  color: var(--color-primary);
+  opacity: 0.7;
 }
 
 /* Repeat last config */

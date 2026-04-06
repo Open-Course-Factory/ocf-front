@@ -345,3 +345,35 @@ test.describe('Session Composer — plan size restrictions', () => {
     await expect(mOption).toHaveClass(/selected/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Hostname pre-fill regression test
+// ---------------------------------------------------------------------------
+test.describe('Session Composer -- hostname pre-fill', () => {
+  test('selecting a distribution pre-fills the hostname field', async ({ page }) => {
+    await login(page, TRAINER_EMAIL, TEST_PASSWORD);
+    await page.goto('/terminal-creation');
+    await dismissVerificationBanner(page);
+
+    // Wait for distributions and click one
+    await page.waitForSelector('.distribution-card', { timeout: 15_000 });
+    const firstCard = page.locator('.distribution-card').first();
+    const distName = await firstCard.locator('strong').innerText();
+    await firstCard.click({ force: true });
+
+    // Open Advanced Options to see hostname field
+    const advancedBtn = page.locator('button', { hasText: /Advanced Options|Options avancées/i });
+    await advancedBtn.click({ force: true });
+
+    // Wait for the hostname input to appear
+    const hostnameInput = page.locator('#hostname').first();
+    await page.waitForTimeout(500);
+    await hostnameInput.waitFor({ state: "visible", timeout: 5_000 });
+
+    // Hostname should be pre-filled with a sanitized version of the distribution name
+    const hostnameValue = await hostnameInput.inputValue();
+    expect(hostnameValue.length).toBeGreaterThan(0);
+    // The hostname should be derived from the distribution name (lowercased, sanitized)
+    expect(hostnameValue).toBe(distName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-+|-+$/g, '').slice(0, 63));
+  });
+});
