@@ -42,7 +42,9 @@
       <SessionComposer
         ref="composerRef"
         :backend-id="selectedBackendId || undefined"
+        :organization-id="selectedOrganizationId || undefined"
         :disabled="isStarting"
+        :is-assigned-subscription="isAssignedSubscription"
       />
 
       <!-- Progress indicator -->
@@ -210,6 +212,8 @@ const { t } = useTranslations({
       errorInstanceRestrictedMessageOrg: 'Machine "{name}" requires sizes: {required}\nYour organization\'s plan allows: {allowed}\n\nYou can upgrade to a personal plan for more, or contact your organization administrator.',
       errorUpgradePrompt: 'Would you like to view available plans to unlock this instance?',
       errorUpgradePromptTitle: 'Upgrade Plan',
+      errorViewPlans: 'View Plans',
+      errorDismiss: 'Dismiss',
       errorStarting: 'Startup Error',
       errorServerCapacity: 'Server at Capacity',
       errorServerCapacityMessage: 'The server does not have enough resources to create a new terminal session. Please try again in a few minutes or stop an existing terminal.',
@@ -263,6 +267,8 @@ const { t } = useTranslations({
       errorInstanceRestrictedMessageOrg: 'La machine "{name}" nécessite les tailles: {required}\nLe plan de votre organisation autorise: {allowed}\n\nVous pouvez souscrire un plan personnel pour en avoir plus, ou contacter l\'administrateur de votre organisation.',
       errorUpgradePrompt: 'Souhaitez-vous voir les plans disponibles pour débloquer cette instance ?',
       errorUpgradePromptTitle: 'Mettre à niveau le plan',
+      errorViewPlans: 'Voir les plans',
+      errorDismiss: 'Fermer',
       errorStarting: 'Erreur de démarrage',
       errorServerCapacity: 'Serveur à Capacité Maximale',
       errorServerCapacityMessage: 'Le serveur n\'a pas suffisamment de ressources pour créer une nouvelle session terminal. Veuillez réessayer dans quelques minutes ou arrêter un terminal existant.',
@@ -667,6 +673,9 @@ async function startSingleSession() {
 
     startStatus.value = t('terminalStarter.sessionCreated')
 
+    // Save last config for "repeat last session" feature
+    composerRef.value?.saveLastConfig()
+
     // Emit event — parent redirects to session view
     emit('session-started', sessionInfo.value.session_id)
 
@@ -686,17 +695,17 @@ async function startSingleSession() {
         showErrorNotification(errorMsg, t('terminalStarter.errorServerCapacity'))
       }
     } else if (error.response?.status === 400 && errorMsg.includes('not allowed in your plan')) {
-      showErrorNotification(errorMsg, t('terminalStarter.errorInstanceRestricted'))
-
-      setTimeout(async () => {
-        const confirmed = await showConfirm(
-          t('terminalStarter.errorUpgradePrompt'),
-          t('terminalStarter.errorUpgradePromptTitle')
-        )
-        if (confirmed) {
-          window.open('/subscription-plans', '_blank')
+      const confirmed = await showConfirm(
+        errorMsg + '\n\n' + t('terminalStarter.errorUpgradePrompt'),
+        t('terminalStarter.errorInstanceRestricted'),
+        {
+          confirmButtonText: t('terminalStarter.errorViewPlans'),
+          cancelButtonText: t('terminalStarter.errorDismiss')
         }
-      }, 2000)
+      )
+      if (confirmed) {
+        window.open('/subscription-plans', '_blank')
+      }
     } else {
       showErrorNotification(errorMsg, t('terminalStarter.errorStarting'))
     }
@@ -728,6 +737,10 @@ async function startBulkSessions() {
   startStatus.value = t('terminalStarter.startingBulkSessions')
 
   try {
+    const parsedBulkPackages = packagesInput.value.trim()
+      ? packagesInput.value.split(',').map(p => p.trim()).filter(Boolean)
+      : []
+
     const bulkData = {
       terms: t('terminalStarter.termsAcceptance'),
       expiry: sessionDurationCap.value,
@@ -738,7 +751,8 @@ async function startBulkSessions() {
       ...(exerciseRef.value.trim() && { external_ref: exerciseRef.value.trim() }),
       ...(hostnameInput.value.trim() && { hostname: hostnameInput.value.trim() }),
       ...(backendsStore.selectedBackendId && { backend: backendsStore.selectedBackendId }),
-      ...(selectedOrganizationId.value && { organization_id: selectedOrganizationId.value })
+      ...(selectedOrganizationId.value && { organization_id: selectedOrganizationId.value }),
+      ...(parsedBulkPackages.length > 0 && { packages: parsedBulkPackages })
     }
 
     const response = await axios.post(
