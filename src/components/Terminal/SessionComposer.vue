@@ -54,80 +54,60 @@
       </div>
     </fieldset>
 
-    <!-- Step 2: Size Selection (shown after distribution selected) -->
-    <fieldset v-if="selectedDistribution" class="composer-step">
-      <legend>{{ t('sessionComposer.stepSize') }}</legend>
-
+    <!-- Configuration row: Size + Features inline (shown after distribution selected) -->
+    <div v-if="selectedDistribution" class="config-row">
+      <!-- Size pills -->
       <div v-if="loadingOptions" class="skeleton-sizes">
-        <div v-for="i in 5" :key="i" class="skeleton-pill" />
+        <div v-for="i in 4" :key="i" class="skeleton-pill" />
       </div>
-
-      <div v-else-if="sessionOptions" class="size-selector">
-        <button
-          v-for="size in visibleSizes"
-          :key="size.key"
-          type="button"
-          class="size-option"
-          :class="{
-            selected: selectedSize?.key === size.key,
-            disabled: !size.allowed
-          }"
-          :disabled="!size.allowed || disabled"
-          @click="size.allowed && selectSize(size)"
-        >
-          <div class="size-label">
+      <div v-else-if="sessionOptions" class="size-strip">
+        <span class="config-label">{{ t('sessionComposer.size') }}</span>
+        <div class="size-pills">
+          <button
+            v-for="size in visibleSizes"
+            :key="size.key"
+            type="button"
+            class="size-pill"
+            :class="{
+              selected: selectedSize?.key === size.key,
+              disabled: !size.allowed
+            }"
+            :disabled="!size.allowed || disabled"
+            :title="getSizeUseCase(size.key) + ' — ' + size.cpu + ' CPU ' + size.cpu_allowance + ', ' + size.memory"
+            @click="size.allowed && selectSize(size)"
+          >
             {{ size.key.toUpperCase() }}
-            <span v-if="size.key === selectedDistribution?.default_size_key" class="recommended-badge">
-              {{ t('sessionComposer.recommended') }}
-            </span>
-          </div>
-          <div v-if="getSizeUseCase(size.key)" class="size-use-case">{{ getSizeUseCase(size.key) }}</div>
-          <div class="size-specs">{{ size.cpu }} CPU {{ size.cpu_allowance }} &bull; {{ size.memory }}</div>
-          <div v-if="!size.allowed" class="size-reason">
-            <i class="fas fa-lock" />
-            {{ getReasonText(size.reason) }}
-          </div>
-        </button>
+            <span v-if="size.key === selectedDistribution?.default_size_key" class="pill-dot" :title="t('sessionComposer.recommended')"></span>
+            <i v-if="!size.allowed" class="fas fa-lock pill-lock" />
+          </button>
+        </div>
+        <span v-if="selectedSize" class="size-detail">
+          {{ getSizeUseCase(selectedSize.key) }} · {{ selectedSize.cpu }} CPU, {{ selectedSize.memory }}
+        </span>
       </div>
-    </fieldset>
 
-    <!-- Step 3: Features (shown after size selected, only if there are toggleable features) -->
-    <fieldset v-if="selectedSize && availableFeatures.length > 0" class="composer-step">
-      <legend>{{ t('sessionComposer.stepFeatures') }}</legend>
-
-      <div class="features-list">
-        <div
-          v-for="feature in availableFeatures"
-          :key="feature.key"
-          class="feature-toggle"
-          :class="{ disabled: !feature.allowed }"
-        >
-          <label class="feature-label">
+      <!-- Feature toggles inline -->
+      <div v-if="selectedSize && availableFeatures.length > 0" class="feature-strip">
+        <span class="config-label">{{ t('sessionComposer.stepFeatures') }}</span>
+        <div class="feature-chips">
+          <label
+            v-for="feature in availableFeatures"
+            :key="feature.key"
+            class="feature-chip"
+            :class="{ active: enabledFeatures[feature.key], disabled: !feature.allowed }"
+            :title="!feature.allowed ? getReasonText(feature.reason) : feature.description"
+          >
             <input
               type="checkbox"
               :checked="enabledFeatures[feature.key]"
               :disabled="!feature.allowed || disabled"
               @change="toggleFeature(feature.key, ($event.target as HTMLInputElement).checked)"
             />
-            <span class="toggle-track"><span class="toggle-thumb" /></span>
-            <span class="feature-info">
-              <strong>{{ feature.name }}</strong>
-              <small v-if="feature.description">{{ feature.description }}</small>
-            </span>
+            <i v-if="!feature.allowed" class="fas fa-lock" />
+            <span>{{ feature.name }}</span>
           </label>
-          <div v-if="!feature.allowed" class="feature-reason">
-            <i class="fas fa-lock" />
-            {{ getReasonText(feature.reason) }}
-          </div>
         </div>
       </div>
-    </fieldset>
-
-    <!-- Compact inline summary -->
-    <div v-if="selectedSize" class="composer-summary-inline">
-      <span class="summary-tag">{{ selectedDistribution?.description || selectedDistribution?.name }}</span>
-      <span class="summary-tag">{{ selectedSize.key.toUpperCase() }} · {{ selectedSize.memory }}</span>
-      <span v-if="activeFeatureNames.length" class="summary-tag">{{ activeFeatureNames.join(', ') }}</span>
     </div>
   </div>
 </template>
@@ -228,11 +208,6 @@ const lastConfig = ref<LastSessionConfig | null>(null)
 
 // Computed
 const availableFeatures = computed<SessionOptionFeature[]>(() => sessionOptions.value?.allowed_features ?? [])
-const activeFeatureNames = computed(() =>
-  availableFeatures.value
-    .filter(f => enabledFeatures.value[f.key])
-    .map(f => f.name)
-)
 
 const visibleSizes = computed(() => {
   if (!sessionOptions.value) return []
@@ -538,199 +513,140 @@ watch(() => props.organizationId, () => {
   background: var(--color-primary-hover);
 }
 
-/* Size selector */
-.size-selector {
-  display: flex;
-  gap: var(--spacing-sm);
-  flex-wrap: wrap;
-}
-
-.size-option {
+/* Config row: size + features inline */
+.config-row {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  min-width: 110px;
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-bg-secondary);
-  border: var(--border-width-medium) solid var(--color-border-light);
-  border-radius: var(--border-radius-md);
-  cursor: pointer;
-  transition: all var(--transition-base);
-  text-align: center;
+  gap: var(--spacing-sm);
 }
 
-.size-option:hover:not(.disabled):not(:disabled) {
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
-}
-
-.size-option.selected {
-  border-color: var(--color-primary);
-  background: var(--color-primary-bg);
-}
-
-.size-option.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.size-label {
-  font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-md);
-  color: var(--color-text-primary);
-}
-
-.size-option.selected .size-label {
-  color: var(--color-primary);
-}
-
-.size-specs {
+.config-label {
   font-size: var(--font-size-xs, 11px);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-muted);
-  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Size pills — compact horizontal strip */
+.size-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.size-pills {
+  display: flex;
+  gap: 4px;
+}
+
+.size-pill {
+  position: relative;
+  padding: 6px 14px;
+  border: 2px solid var(--color-border-light);
+  border-radius: var(--border-radius-full, 999px);
+  background: var(--color-bg-secondary);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
   white-space: nowrap;
 }
 
-.size-reason {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  color: var(--color-warning-text);
-  margin-top: 2px;
+.size-pill:hover:not(.disabled):not(:disabled) {
+  border-color: var(--color-primary);
 }
 
-.size-reason i {
-  font-size: 10px;
-  color: var(--color-warning);
+.size-pill.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
 }
 
-/* Features */
-.features-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.feature-toggle {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-bg-secondary);
-  border-radius: var(--border-radius-md);
-  border: var(--border-width-thin) solid var(--color-border-light);
-}
-
-.feature-toggle.disabled {
-  opacity: 0.6;
-}
-
-.feature-reason {
-  font-size: var(--font-size-xs, 11px);
-  color: var(--color-warning, #dd6b20);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: calc(var(--spacing-md, 16px) + 44px); /* align with text after toggle */
-}
-
-.feature-label {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  cursor: pointer;
-}
-
-.feature-toggle.disabled .feature-label {
+.size-pill.disabled {
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-.feature-label input[type="checkbox"] {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.toggle-track {
-  position: relative;
-  width: 40px;
-  height: 22px;
-  background: var(--color-gray-300);
-  border-radius: var(--border-radius-full);
-  transition: background var(--transition-fast);
-  flex-shrink: 0;
-}
-
-.feature-label input[type="checkbox"]:checked + .toggle-track {
-  background: var(--color-primary);
-}
-
-.toggle-thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 18px;
-  height: 18px;
-  background: var(--color-white);
+.pill-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  transition: transform var(--transition-fast);
-  box-shadow: var(--shadow-xs);
+  background: var(--color-success, #48bb78);
+  margin-left: 2px;
+  vertical-align: middle;
 }
 
-.feature-label input[type="checkbox"]:checked + .toggle-track .toggle-thumb {
-  transform: translateX(18px);
+.size-pill.selected .pill-dot {
+  background: white;
 }
 
-.feature-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.feature-info strong {
-  font-size: var(--font-size-base);
-  color: var(--color-text-primary);
-}
-
-.feature-info small {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-
-.feature-reason {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--font-size-xs);
-  color: var(--color-warning-text);
-  padding-left: calc(40px + var(--spacing-md));
-}
-
-.feature-reason i {
-  font-size: 10px;
+.pill-lock {
+  font-size: 9px;
+  margin-left: 3px;
   color: var(--color-warning);
 }
 
-/* Summary */
-.composer-summary-inline {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
-  align-items: center;
+.size-detail {
+  font-size: var(--font-size-xs, 11px);
+  color: var(--color-text-muted);
 }
 
-.summary-tag {
+/* Feature chips — compact inline toggles */
+.feature-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.feature-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.feature-chip {
   display: inline-flex;
   align-items: center;
-  padding: 2px 10px;
-  background: var(--color-bg-tertiary);
-  border-radius: var(--border-radius-full);
-  font-size: var(--font-size-xs);
+  gap: 6px;
+  padding: 5px 12px;
+  border: 2px solid var(--color-border-light);
+  border-radius: var(--border-radius-full, 999px);
+  background: var(--color-bg-secondary);
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.feature-chip input[type="checkbox"] {
+  display: none;
+}
+
+.feature-chip:hover:not(.disabled) {
+  border-color: var(--color-primary);
+}
+
+.feature-chip.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.feature-chip.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.feature-chip .fa-lock {
+  font-size: 9px;
+  color: var(--color-warning);
 }
 
 /* Repeat last config */
@@ -762,31 +678,6 @@ watch(() => props.organizationId, () => {
   cursor: not-allowed;
 }
 
-/* Recommended badge */
-.recommended-badge {
-  font-size: var(--font-size-xs, 10px);
-  background: var(--color-success, #48bb78);
-  color: white;
-  padding: 1px 6px;
-  border-radius: var(--border-radius-full, 999px);
-  margin-left: 4px;
-  font-weight: 600;
-  vertical-align: middle;
-}
-
-/* Subtitle */
-.composer-subtitle {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm, 14px);
-  margin-bottom: var(--spacing-md, 16px);
-}
-
-/* Size use-case label */
-.size-use-case {
-  font-size: var(--font-size-sm, 13px);
-  color: var(--color-text-primary);
-  margin-top: 4px;
-}
 
 /* Responsive */
 @media (max-width: 768px) {
@@ -794,22 +685,12 @@ watch(() => props.organizationId, () => {
     grid-template-columns: 1fr;
   }
 
-  .size-selector {
-    flex-direction: column;
+  .size-pills {
+    flex-wrap: wrap;
   }
 
-  .size-option {
-    width: 100%;
-  }
-
-  .summary-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-  }
-
-  .summary-value {
-    text-align: left;
+  .feature-chips {
+    flex-wrap: wrap;
   }
 }
 </style>
