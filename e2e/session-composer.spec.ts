@@ -296,3 +296,52 @@ test.describe('Session Composer — summary content', () => {
     expect(summarySizeValue.toUpperCase()).toContain(sizeLabel.toUpperCase());
   });
 });
+
+// ---------------------------------------------------------------------------
+// 8. Plan size restrictions
+// ---------------------------------------------------------------------------
+test.describe('Session Composer — plan size restrictions', () => {
+  test('karim (Pro plan) sees XL as disabled with lock icon', async ({ page }) => {
+    // Karim has Pro plan: allows XS, S, M, L but NOT XL
+    await login(page, 'karim@test.ocf', TEST_PASSWORD);
+    await gotoTerminalCreation(page);
+
+    // Select a distribution that has sizes
+    await clickDistribution(page);
+
+    // Wait for sizes to load
+    await page.waitForSelector('.size-option', { timeout: 10_000 });
+
+    // Find the XL size option — it should be disabled
+    const xlOption = page.locator('.size-option').filter({ hasText: /XL/i }).last();
+    await expect(xlOption).toBeVisible();
+    await expect(xlOption).toHaveClass(/disabled/);
+
+    // Should have a lock icon
+    await expect(xlOption.locator('.fa-lock')).toBeVisible();
+
+    // Should have a reason text
+    await expect(xlOption.locator('.size-reason')).toBeVisible();
+
+    // Clicking it should NOT select it
+    await xlOption.click({ force: true });
+    await expect(xlOption).not.toHaveClass(/selected/);
+  });
+
+  test('karim (Pro plan) can select M size (allowed)', async ({ page }) => {
+    await login(page, 'karim@test.ocf', TEST_PASSWORD);
+    await gotoTerminalCreation(page);
+
+    await clickDistribution(page);
+
+    await page.waitForSelector('.size-option', { timeout: 10_000 });
+
+    // M should be available and clickable
+    const mOption = page.locator('.size-option').filter({ has: page.locator('.size-label', { hasText: 'M' }) });
+    await expect(mOption).toBeVisible();
+    await expect(mOption).not.toHaveClass(/disabled/);
+
+    await mOption.click({ force: true });
+    await expect(mOption).toHaveClass(/selected/);
+  });
+});
