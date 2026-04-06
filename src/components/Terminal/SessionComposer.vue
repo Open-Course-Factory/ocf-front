@@ -52,63 +52,63 @@
           {{ t('sessionComposer.retry') }}
         </button>
       </div>
+
+      <!-- Size + Features inline (inside the environment fieldset) -->
+      <div v-if="selectedDistribution" class="config-row">
+        <!-- Size pills -->
+        <div v-if="loadingOptions" class="skeleton-sizes">
+          <div v-for="i in 4" :key="i" class="skeleton-pill" />
+        </div>
+        <div v-else-if="sessionOptions" class="size-strip">
+          <span class="config-label">{{ t('sessionComposer.size') }}</span>
+          <div class="size-pills">
+            <button
+              v-for="size in visibleSizes"
+              :key="size.key"
+              type="button"
+              class="size-pill"
+              :class="{
+                selected: selectedSize?.key === size.key,
+                disabled: !size.allowed
+              }"
+              :disabled="!size.allowed || disabled"
+              :title="getSizeUseCase(size.key) + ' — ' + size.cpu + ' CPU ' + size.cpu_allowance + ', ' + size.memory"
+              @click="size.allowed && selectSize(size)"
+            >
+              {{ size.key.toUpperCase() }}
+              <span v-if="size.key === selectedDistribution?.default_size_key" class="pill-dot" :title="t('sessionComposer.recommended')"></span>
+              <i v-if="!size.allowed" class="fas fa-lock pill-lock" />
+            </button>
+          </div>
+          <span v-if="selectedSize" class="size-detail">
+            {{ getSizeUseCase(selectedSize.key) }} · {{ selectedSize.cpu }} CPU, {{ selectedSize.memory }}
+          </span>
+        </div>
+
+        <!-- Feature toggles inline -->
+        <div v-if="selectedSize && availableFeatures.length > 0" class="feature-strip">
+          <span class="config-label">{{ t('sessionComposer.stepFeatures') }}</span>
+          <div class="feature-chips">
+            <label
+              v-for="feature in availableFeatures"
+              :key="feature.key"
+              class="feature-chip"
+              :class="{ active: enabledFeatures[feature.key], disabled: !feature.allowed }"
+              :title="!feature.allowed ? getReasonText(feature.reason) : feature.description"
+            >
+              <input
+                type="checkbox"
+                :checked="enabledFeatures[feature.key]"
+                :disabled="!feature.allowed || disabled"
+                @change="toggleFeature(feature.key, ($event.target as HTMLInputElement).checked)"
+              />
+              <i v-if="!feature.allowed" class="fas fa-lock" />
+              <span>{{ feature.name }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
     </fieldset>
-
-    <!-- Configuration row: Size + Features inline (shown after distribution selected) -->
-    <div v-if="selectedDistribution" class="config-row">
-      <!-- Size pills -->
-      <div v-if="loadingOptions" class="skeleton-sizes">
-        <div v-for="i in 4" :key="i" class="skeleton-pill" />
-      </div>
-      <div v-else-if="sessionOptions" class="size-strip">
-        <span class="config-label">{{ t('sessionComposer.size') }}</span>
-        <div class="size-pills">
-          <button
-            v-for="size in visibleSizes"
-            :key="size.key"
-            type="button"
-            class="size-pill"
-            :class="{
-              selected: selectedSize?.key === size.key,
-              disabled: !size.allowed
-            }"
-            :disabled="!size.allowed || disabled"
-            :title="getSizeUseCase(size.key) + ' — ' + size.cpu + ' CPU ' + size.cpu_allowance + ', ' + size.memory"
-            @click="size.allowed && selectSize(size)"
-          >
-            {{ size.key.toUpperCase() }}
-            <span v-if="size.key === selectedDistribution?.default_size_key" class="pill-dot" :title="t('sessionComposer.recommended')"></span>
-            <i v-if="!size.allowed" class="fas fa-lock pill-lock" />
-          </button>
-        </div>
-        <span v-if="selectedSize" class="size-detail">
-          {{ getSizeUseCase(selectedSize.key) }} · {{ selectedSize.cpu }} CPU, {{ selectedSize.memory }}
-        </span>
-      </div>
-
-      <!-- Feature toggles inline -->
-      <div v-if="selectedSize && availableFeatures.length > 0" class="feature-strip">
-        <span class="config-label">{{ t('sessionComposer.stepFeatures') }}</span>
-        <div class="feature-chips">
-          <label
-            v-for="feature in availableFeatures"
-            :key="feature.key"
-            class="feature-chip"
-            :class="{ active: enabledFeatures[feature.key], disabled: !feature.allowed }"
-            :title="!feature.allowed ? getReasonText(feature.reason) : feature.description"
-          >
-            <input
-              type="checkbox"
-              :checked="enabledFeatures[feature.key]"
-              :disabled="!feature.allowed || disabled"
-              @change="toggleFeature(feature.key, ($event.target as HTMLInputElement).checked)"
-            />
-            <i v-if="!feature.allowed" class="fas fa-lock" />
-            <span>{{ feature.name }}</span>
-          </label>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
