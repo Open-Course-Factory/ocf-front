@@ -133,20 +133,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useRoute } from 'vue-router'
+
 import axios from 'axios'
 import { terminalService } from '../../services/domain/terminal'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTerminalMetricsStore } from '../../stores/terminalMetrics'
-import { useClassGroupsStore } from '../../stores/classGroups'
+
 import { useOrganizationsStore } from '../../stores/organizations'
 import { useTerminalBackendsStore } from '../../stores/terminalBackends'
 import { usePermissionsStore } from '../../stores/permissions'
 import { useNotification } from '../../composables/useNotification'
 import { useTranslations } from '../../composables/useTranslations'
-import { useFeatureFlags } from '../../composables/useFeatureFlags'
+
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
 import SessionComposer from './SessionComposer.vue'
@@ -155,22 +155,15 @@ import TerminalUsagePanel from './TerminalUsagePanel.vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import type { StartComposedSessionData } from '../../types/terminal'
 
-// Router
-const route = useRoute()
-
 // Emit events
 const emit = defineEmits(['session-started'])
 
 // Stores
 const subscriptionsStore = useSubscriptionsStore()
 const metricsStore = useTerminalMetricsStore()
-const groupsStore = useClassGroupsStore()
 const organizationsStore = useOrganizationsStore()
 const backendsStore = useTerminalBackendsStore()
 const permissionsStore = usePermissionsStore()
-
-// Feature flags
-const { isEnabled } = useFeatureFlags()
 
 // i18n setup
 const { t } = useTranslations({
@@ -184,22 +177,11 @@ const { t } = useTranslations({
       readyToLaunch: 'Ready to Launch',
       capacityIssue: 'Capacity Issue',
       checkingCapacity: 'Checking...',
-      creationMode: 'Creation Mode',
-      singleTerminal: 'Single Terminal',
-      bulkForGroup: 'Bulk for Group',
-      selectGroup: 'Select Group',
-      chooseGroup: 'Choose a group...',
-      members: 'members',
-      willCreate: 'Will create {count} terminals (1 per member)',
       startingSession: 'Starting terminal session...',
-      startingBulkSessions: 'Creating terminals for group members...',
       checkingLimits: 'Checking usage limits...',
       sendingRequest: 'Sending request to server...',
       sessionCreated: 'Session created, initializing terminal...',
-      bulkSessionsCreated: '{count} terminals created successfully',
-      bulkSessionsPartial: '{successCount} of {totalCount} terminals created ({failedCount} failed)',
       errorValidationInstance: 'Please select a machine type',
-      errorValidationGroup: 'Please select a group for bulk creation',
       errorLimitReached: 'You have reached your limit of concurrent terminals. Please stop an existing terminal or upgrade your plan.',
       errorLimitReachedOrg: 'You have reached the concurrent terminal limit provided by your organization\'s plan. You can upgrade to a personal plan for more, or contact your organization administrator.',
       errorLimitReachedAssigned: 'You have used all your available terminals. Please close an existing terminal to start a new one.',
@@ -226,7 +208,8 @@ const { t } = useTranslations({
       recordingUnderstood: 'I understand',
       commandHistory: 'Command History',
       privacyPolicyLink: 'Learn more about how your data is handled',
-      termsAcceptance: "J'accepte les conditions d'utilisation du service terminal.",
+      termsAcceptance: 'I accept the terms of use of the terminal service.',
+      errorStartingSession: 'Error starting session',
     }
   },
   fr: {
@@ -239,22 +222,11 @@ const { t } = useTranslations({
       readyToLaunch: 'Prêt à Lancer',
       capacityIssue: 'Problème de Capacité',
       checkingCapacity: 'Vérification...',
-      creationMode: 'Mode de Création',
-      singleTerminal: 'Terminal Unique',
-      bulkForGroup: 'En Masse pour Groupe',
-      selectGroup: 'Sélectionner un Groupe',
-      chooseGroup: 'Choisir un groupe...',
-      members: 'membres',
-      willCreate: '{count} terminaux seront créés (1 par membre)',
       startingSession: 'Démarrage de la session terminal...',
-      startingBulkSessions: 'Création des terminaux pour les membres du groupe...',
       checkingLimits: 'Vérification des limites d\'utilisation...',
       sendingRequest: 'Envoi de la requête au serveur...',
       sessionCreated: 'Session créée, initialisation du terminal...',
-      bulkSessionsCreated: '{count} terminaux créés avec succès',
-      bulkSessionsPartial: '{successCount} sur {totalCount} terminaux créés ({failedCount} échecs)',
       errorValidationInstance: 'Veuillez sélectionner un type de machine',
-      errorValidationGroup: 'Veuillez sélectionner un groupe pour la création en masse',
       errorLimitReached: 'Vous avez atteint votre limite de terminaux simultanés. Veuillez arrêter un terminal existant ou mettre à niveau votre plan.',
       errorLimitReachedOrg: 'Vous avez atteint la limite de terminaux simultanés fournie par le plan de votre organisation. Vous pouvez souscrire un plan personnel pour en avoir plus, ou contacter l\'administrateur de votre organisation.',
       errorLimitReachedAssigned: 'Vous avez utilisé tous vos terminaux disponibles. Veuillez fermer un terminal existant pour en démarrer un nouveau.',
@@ -282,11 +254,12 @@ const { t } = useTranslations({
       commandHistory: 'Historique des commandes',
       privacyPolicyLink: 'En savoir plus sur le traitement de vos données',
       termsAcceptance: "J'accepte les conditions d'utilisation du service terminal.",
+      errorStartingSession: 'Erreur lors du démarrage de la session',
     }
   }
 })
 
-const { showConfirm, showError: showErrorNotification, showWarning } = useNotification()
+const { showConfirm, showError: showErrorNotification } = useNotification()
 
 // Panel state
 const showDebug = ref(false)
@@ -318,8 +291,6 @@ const hostnameInput = ref('')
 const packagesInput = ref('')
 const userManuallySetHostname = ref(false)
 const autoGeneratedHostname = ref('')
-const creationMode = ref<'single' | 'bulk'>('single')
-const selectedGroupId = ref('')
 // Organizations & Backends
 const { currentOrganizationId: storeOrgId } = storeToRefs(organizationsStore)
 const selectedOrganizationId = computed(() => organizationsStore.currentOrganization?.id || '')
@@ -331,10 +302,6 @@ const selectedBackendId = computed({
 
 // Default packages (not used with composer, kept for backward compat in TerminalAdvancedOptions)
 const selectedInstanceDefaultPackages = computed(() => [] as string[])
-
-// Groups
-const canUseGroups = computed(() => isEnabled('class_groups'))
-const selectedGroupMemberCount = ref(0)
 
 // Subscription and usage state
 const currentSubscription = computed(() => subscriptionsStore.currentSubscription)
@@ -353,19 +320,6 @@ const allowedMachineSizes = computed(() => {
     return ['XS']
   }
   return sizes
-})
-
-const sessionDurationCap = computed(() => {
-  // Prefer max_session_duration_minutes from subscription plan (backend DTO field)
-  const planMinutes = currentSubscription.value?.subscription_plan?.max_session_duration_minutes
-  if (planMinutes && planMinutes > 0) {
-    return planMinutes * 60
-  }
-  // Legacy fallback: plan_features.session_duration_hours
-  if (currentSubscription.value?.plan_features?.session_duration_hours) {
-    return currentSubscription.value.plan_features.session_duration_hours * 3600
-  }
-  return 3600
 })
 
 const maxTerminals = computed(() => {
@@ -435,9 +389,8 @@ const capacityStatusText = computed(() => {
 // Form validation
 const isFormValid = computed(() => {
   if (!composerRef.value?.isReady) return false
-  if (creationMode.value === 'bulk' && !selectedGroupId.value) return false
   // Check if user has reached terminal limit
-  if (creationMode.value === 'single' && currentTerminalCount.value >= maxTerminals.value) return false
+  if (currentTerminalCount.value >= maxTerminals.value) return false
   return true
 })
 
@@ -511,8 +464,6 @@ function resetForm() {
   packagesInput.value = ''
   userManuallySetHostname.value = false
   autoGeneratedHostname.value = ''
-  creationMode.value = 'single'
-  selectedGroupId.value = ''
 }
 
 function getLimitReachedMessage(source?: string): string {
@@ -541,18 +492,6 @@ function handleRecordingAcknowledgement() {
   startNewSession()
 }
 
-async function loadGroupMembers(groupId: string) {
-  try {
-    const response = await axios.get(`/group-members`, {
-      params: { group_id: groupId }
-    })
-    return response.data?.data || response.data || []
-  } catch (error) {
-    console.error('Failed to load group members:', error)
-    return []
-  }
-}
-
 // Watch for global organization changes — reload org-dependent data
 watch(storeOrgId, async (newOrgId) => {
   currentTerminalCount.value = 0
@@ -571,26 +510,7 @@ watch(selectedBackendId, () => {
   composerRef.value?.loadDistributions()
 })
 
-// Watch for group selection changes to update member count
-watch(selectedGroupId, async (newGroupId) => {
-  if (newGroupId) {
-    const members = await loadGroupMembers(newGroupId)
-    selectedGroupMemberCount.value = members.length
-  } else {
-    selectedGroupMemberCount.value = 0
-  }
-})
-
 async function startNewSession() {
-  // Route to appropriate creation method
-  if (creationMode.value === 'bulk') {
-    return await startBulkSessions()
-  } else {
-    return await startSingleSession()
-  }
-}
-
-async function startSingleSession() {
   const composer = composerRef.value
   if (!composer?.selectedDistribution || !composer?.selectedSize) {
     showErrorNotification(t('terminalStarter.errorValidationInstance'), t('terminalStarter.errorStarting'))
@@ -682,7 +602,7 @@ async function startSingleSession() {
   } catch (error: any) {
     console.error('Error starting session:', error)
 
-    const errorMsg = error.response?.data?.error_message || error.message || 'Error starting session'
+    const errorMsg = error.response?.data?.error_message || error.message || t('terminalStarter.errorStartingSession')
 
     if (error.response?.status === 503) {
       const backendName = error.response?.data?.backend_name || backendsStore.selectedBackend?.name
@@ -715,95 +635,6 @@ async function startSingleSession() {
   }
 }
 
-async function startBulkSessions() {
-  const composer = composerRef.value
-  if (!composer?.selectedDistribution || !composer?.selectedSize) {
-    showErrorNotification(t('terminalStarter.errorValidationInstance'), t('terminalStarter.errorStarting'))
-    return
-  }
-
-  if (!selectedGroupId.value) {
-    showErrorNotification(t('terminalStarter.errorValidationGroup'), t('terminalStarter.errorStarting'))
-    return
-  }
-
-  // Show recording acknowledgement if user hasn't seen it yet
-  if (!recordingAcknowledged.value) {
-    showRecordingAcknowledgement.value = true
-    return
-  }
-
-  isStarting.value = true
-  startStatus.value = t('terminalStarter.startingBulkSessions')
-
-  try {
-    const parsedBulkPackages = packagesInput.value.trim()
-      ? packagesInput.value.split(',').map(p => p.trim()).filter(Boolean)
-      : []
-
-    const bulkData = {
-      terms: t('terminalStarter.termsAcceptance'),
-      expiry: sessionDurationCap.value,
-      distribution: composer.selectedDistribution.name,
-      size: composer.selectedSize.key,
-      features: composer.enabledFeatures,
-      recording_enabled: 1,
-      ...(exerciseRef.value.trim() && { external_ref: exerciseRef.value.trim() }),
-      ...(hostnameInput.value.trim() && { hostname: hostnameInput.value.trim() }),
-      ...(backendsStore.selectedBackendId && { backend: backendsStore.selectedBackendId }),
-      ...(selectedOrganizationId.value && { organization_id: selectedOrganizationId.value }),
-      ...(parsedBulkPackages.length > 0 && { packages: parsedBulkPackages })
-    }
-
-    const response = await axios.post(
-      `/class-groups/${selectedGroupId.value}/bulk-create-terminals`,
-      bulkData
-    )
-
-    const result = response.data
-    const successCount = result.created_count || result.success_count || 0
-    const failedCount = result.failed_count || 0
-    const totalCount = result.total_count || successCount + failedCount
-
-    if (failedCount === 0 && successCount > 0) {
-      showWarning(
-        t('terminalStarter.bulkSessionsCreated', { count: successCount }),
-        'Success'
-      )
-    } else if (successCount > 0) {
-      showWarning(
-        t('terminalStarter.bulkSessionsPartial', {
-          successCount,
-          totalCount,
-          failedCount
-        }),
-        'Partial Success'
-      )
-    } else {
-      showErrorNotification(
-        result.error_message || 'Failed to create terminals',
-        t('terminalStarter.errorStarting')
-      )
-    }
-
-    // Refresh terminal count
-    await loadCurrentTerminalUsage()
-
-    // Emit event
-    emit('session-started')
-
-  } catch (error: any) {
-    console.error('Error starting bulk sessions:', error)
-    showErrorNotification(
-      error.response?.data?.error_message || error.message || 'Error creating bulk terminals',
-      t('terminalStarter.errorStarting')
-    )
-  } finally {
-    isStarting.value = false
-    startStatus.value = ''
-  }
-}
-
 function cleanup() {
   if (usageRefreshInterval) {
     clearInterval(usageRefreshInterval)
@@ -812,17 +643,10 @@ function cleanup() {
 }
 
 onMounted(async () => {
-  const promises: Promise<any>[] = [
+  await Promise.all([
     subscriptionsStore.getCurrentSubscription(),
     loadCurrentTerminalUsage()
-  ]
-
-  // Load groups if feature is enabled
-  if (canUseGroups.value) {
-    promises.push(groupsStore.loadEntities())
-  }
-
-  await Promise.all(promises)
+  ])
 
   // Load organizations separately (must not break Promise.all if it fails)
   try {
@@ -841,20 +665,6 @@ onMounted(async () => {
   }
 
   // SessionComposer loads distributions on its own mount (via onMounted)
-
-  // Check for query parameters to set bulk mode and group
-  if (route.query.mode === 'bulk' && route.query.groupId) {
-    creationMode.value = 'bulk'
-    selectedGroupId.value = route.query.groupId as string
-
-    // Manually trigger the member count load since watcher might not fire in time
-    await nextTick(async () => {
-      if (selectedGroupId.value) {
-        const members = await loadGroupMembers(selectedGroupId.value)
-        selectedGroupMemberCount.value = members.length
-      }
-    })
-  }
 
   // Start periodic refresh of usage metrics
   usageRefreshInterval = setInterval(async () => {
