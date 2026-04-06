@@ -36,7 +36,7 @@
           @click="selectDistribution(dist)"
         >
           <div class="dist-icon">
-            <i :class="getOsIcon(dist.os_type)" />
+            <i :class="getDistIcon(dist)" :style="getDistIconColor(dist)" />
           </div>
           <div class="dist-info">
             <strong>{{ dist.name }}</strong>
@@ -360,13 +360,47 @@ async function repeatLastConfig() {
   }
 }
 
-function getOsIcon(osType?: string): string {
-  switch (osType) {
-    case 'apk': return 'fab fa-linux'
-    case 'deb': return 'fab fa-ubuntu'
-    case 'rpm': return 'fab fa-redhat'
-    default: return 'fab fa-linux'
+// FontAwesome brand icons by distribution name, then os_type fallback, then generic
+const DIST_ICONS: Record<string, string> = {
+  ubuntu: 'fab fa-ubuntu',
+  debian: 'fab fa-debian',
+  fedora: 'fab fa-fedora',
+  redhat: 'fab fa-redhat',
+  centos: 'fab fa-centos',
+  suse: 'fab fa-suse',
+}
+const OS_TYPE_ICONS: Record<string, string> = {
+  rpm: 'fab fa-redhat',
+}
+// Brand colors per distribution
+const DIST_COLORS: Record<string, string> = {
+  ubuntu: '#E95420',
+  debian: '#A80030',
+  fedora: '#51A2DA',
+  redhat: '#EE0000',
+  centos: '#932279',
+  suse: '#73BA25',
+  alpine: '#0D597F',
+}
+
+function getDistIcon(dist: Distribution): string {
+  // Match by name (check if any key is a substring of the dist name)
+  const nameLower = dist.name.toLowerCase()
+  for (const [key, icon] of Object.entries(DIST_ICONS)) {
+    if (nameLower.includes(key)) return icon
   }
+  // Fallback to os_type
+  if (dist.os_type && OS_TYPE_ICONS[dist.os_type]) return OS_TYPE_ICONS[dist.os_type]
+  // Generic Linux
+  return 'fab fa-linux'
+}
+
+function getDistIconColor(dist: Distribution): Record<string, string> {
+  const nameLower = dist.name.toLowerCase()
+  for (const [key, color] of Object.entries(DIST_COLORS)) {
+    if (nameLower.includes(key)) return { color }
+  }
+  return {}
 }
 
 function getReasonText(reason?: string): string {
