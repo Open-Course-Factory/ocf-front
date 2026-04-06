@@ -96,20 +96,21 @@
     </fieldset>
 
     <!-- Step 3: Features (shown after size selected, only if there are toggleable features) -->
-    <fieldset v-if="selectedSize && toggleableFeatures.length > 0" class="composer-step">
+    <fieldset v-if="selectedSize && availableFeatures.length > 0" class="composer-step">
       <legend>{{ t('sessionComposer.stepFeatures') }}</legend>
 
       <div class="features-list">
         <div
-          v-for="feature in toggleableFeatures"
+          v-for="feature in availableFeatures"
           :key="feature.key"
           class="feature-toggle"
+          :class="{ disabled: !feature.allowed }"
         >
           <label class="feature-label">
             <input
               type="checkbox"
               :checked="enabledFeatures[feature.key]"
-              :disabled="disabled"
+              :disabled="!feature.allowed || disabled"
               @change="toggleFeature(feature.key, ($event.target as HTMLInputElement).checked)"
             />
             <span class="toggle-track"><span class="toggle-thumb" /></span>
@@ -118,6 +119,10 @@
               <small v-if="feature.description">{{ feature.description }}</small>
             </span>
           </label>
+          <div v-if="!feature.allowed" class="feature-reason">
+            <i class="fas fa-lock" />
+            {{ getReasonText(feature.reason) }}
+          </div>
         </div>
       </div>
     </fieldset>
@@ -255,10 +260,6 @@ const visibleSizes = computed(() => {
   }
   return sessionOptions.value.allowed_sizes
 })
-
-const toggleableFeatures = computed(() =>
-  availableFeatures.value.filter(f => f.allowed)
-)
 
 // Methods
 async function loadDistributions() {
@@ -641,7 +642,16 @@ watch(() => props.organizationId, () => {
 }
 
 .feature-toggle.disabled {
-  opacity: 0.5;
+  opacity: 0.6;
+}
+
+.feature-reason {
+  font-size: var(--font-size-xs, 11px);
+  color: var(--color-warning, #dd6b20);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: calc(var(--spacing-md, 16px) + 44px); /* align with text after toggle */
 }
 
 .feature-label {
