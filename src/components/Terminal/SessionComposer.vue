@@ -361,24 +361,26 @@ async function repeatLastConfig() {
 }
 
 // FontAwesome brand icons by distribution name, then os_type fallback, then generic
+// Icons from FontAwesome 6.7.2 (loaded via CDN in index.html)
+// Distributions without a specific icon fall back to generic Linux penguin
 const DIST_ICONS: Record<string, string> = {
   ubuntu: 'fab fa-ubuntu',
   debian: 'fab fa-debian',
   fedora: 'fab fa-fedora',
   redhat: 'fab fa-redhat',
-  centos: 'fab fa-centos',
   suse: 'fab fa-suse',
 }
 const OS_TYPE_ICONS: Record<string, string> = {
   rpm: 'fab fa-redhat',
 }
-// Brand colors per distribution
+// Brand colors per distribution (applied even when using fallback icon)
 const DIST_COLORS: Record<string, string> = {
   ubuntu: '#E95420',
   debian: '#A80030',
   fedora: '#51A2DA',
   redhat: '#EE0000',
-  centos: '#932279',
+  almalinux: '#0F4266',
+  rocky: '#10B981',
   suse: '#73BA25',
   alpine: '#0D597F',
 }
