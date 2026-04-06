@@ -162,7 +162,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { scenarioSessionService, pollProvisioningStatus } from '../../services/domain/scenario'
 import { useOrganizationsStore } from '../../stores/organizations'
@@ -433,6 +433,11 @@ async function handleCancelProvisioning() {
 }
 
 onMounted(loadScenarios)
+
+// Re-fetch scenarios when org context changes (different plan = different availability)
+watch(currentOrgId, () => {
+  loadScenarios()
+})
 </script>
 
 <style scoped>
