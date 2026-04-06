@@ -27,7 +27,7 @@
       <!-- Distribution cards -->
       <div v-else-if="distributions.length" class="distribution-grid">
         <button
-          v-for="dist in distributions"
+          v-for="dist in sortedDistributions"
           :key="dist.name"
           type="button"
           class="distribution-card"
@@ -223,6 +223,14 @@ const enabledFeatures = ref<Record<string, boolean>>({})
 const loadingDistributions = ref(false)
 const loadingOptions = ref(false)
 const lastConfig = ref<LastSessionConfig | null>(null)
+
+// Sort: dedicated (backend-specific) distributions grouped together at the end
+const sortedDistributions = computed(() =>
+  [...distributions.value].sort((a, b) => {
+    if (a.is_global === b.is_global) return 0
+    return a.is_global ? -1 : 1
+  })
+)
 
 // Computed
 const availableFeatures = computed<SessionOptionFeature[]>(() => sessionOptions.value?.allowed_features ?? [])
