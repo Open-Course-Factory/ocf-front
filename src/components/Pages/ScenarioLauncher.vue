@@ -165,6 +165,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { scenarioSessionService, pollProvisioningStatus } from '../../services/domain/scenario'
+import { useOrganizationsStore } from '../../stores/organizations'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import AdminBadge from '../Common/AdminBadge.vue'
@@ -172,6 +173,8 @@ import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay
 
 const router = useRouter()
 const { showError } = useNotification()
+const organizationsStore = useOrganizationsStore()
+const currentOrgId = computed(() => organizationsStore.currentOrganization?.id || '')
 
 const { t } = useTranslations({
   en: {
@@ -345,7 +348,7 @@ async function loadScenarios() {
   error.value = ''
   try {
     const [scenarioData] = await Promise.all([
-      scenarioSessionService.listScenarios(),
+      scenarioSessionService.listScenarios(currentOrgId.value || undefined),
       scenarioSessionService.getMyScenarioSessions().then(sessions => { mySessions.value = sessions }).catch(() => {})
     ])
     scenarios.value = scenarioData
@@ -367,7 +370,9 @@ async function handleLaunchScenario(scenario: any) {
   provisioningAbortController.value = abortController
 
   try {
-    const result = await scenarioSessionService.launchScenario(scenario.id)
+    const result = await scenarioSessionService.launchScenario(scenario.id, {
+      organization_id: currentOrgId.value || undefined
+    })
     provisioningSessionId.value = result.scenario_session_id
     provisioningPhase.value = result.provisioning_phase || ''
 

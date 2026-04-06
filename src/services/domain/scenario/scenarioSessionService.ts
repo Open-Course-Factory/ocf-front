@@ -93,12 +93,14 @@ export const scenarioSessionService = {
     return response.data
   },
 
-  async listScenarios(): Promise<any[]> {
-    const response = await axios.get('/scenario-sessions/available')
+  async listScenarios(organizationId?: string): Promise<any[]> {
+    const params: Record<string, string> = {}
+    if (organizationId) params.organization_id = organizationId
+    const response = await axios.get('/scenario-sessions/available', { params })
     return response.data?.data || response.data || []
   },
 
-  async launchScenario(scenarioId: string, options?: { backend?: string }): Promise<{
+  async launchScenario(scenarioId: string, options?: { backend?: string; organization_id?: string }): Promise<{
     terminal_session_id: string
     scenario_session_id: string
     status: string
