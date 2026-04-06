@@ -66,6 +66,7 @@ export interface Distribution {
   prefix: string
   description: string
   os_type?: string
+  is_global: boolean
   min_size_key?: string
   default_size_key?: string
   supported_features?: string[]

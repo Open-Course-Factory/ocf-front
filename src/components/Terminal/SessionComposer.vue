@@ -31,7 +31,7 @@
           :key="dist.name"
           type="button"
           class="distribution-card"
-          :class="{ selected: selectedDistribution?.name === dist.name }"
+          :class="{ selected: selectedDistribution?.name === dist.name, dedicated: !dist.is_global }"
           :disabled="disabled"
           @click="selectDistribution(dist)"
         >
@@ -42,6 +42,9 @@
             <strong>{{ dist.name }}</strong>
             <small>{{ dist.description }}</small>
           </div>
+          <span v-if="!dist.is_global" class="dist-dedicated-badge" :title="t('sessionComposer.dedicatedEnv')">
+            <i class="fas fa-server"></i>
+          </span>
         </button>
       </div>
 
@@ -149,6 +152,7 @@ const { t } = useTranslations({
       size: 'Resources',
       features: 'Features',
       noDistributions: 'No environments available.',
+      dedicatedEnv: 'Dedicated to this server',
       retry: 'Retry',
       requiresUpgrade: 'Requires plan upgrade',
       belowMinSize: 'Below minimum for this environment',
@@ -178,6 +182,7 @@ const { t } = useTranslations({
       size: 'Ressources',
       features: 'Fonctionnalit\u00e9s',
       noDistributions: 'Aucun environnement disponible.',
+      dedicatedEnv: 'D\u00e9di\u00e9 \u00e0 ce serveur',
       retry: 'R\u00e9essayer',
       requiresUpgrade: 'N\u00e9cessite un plan sup\u00e9rieur',
       belowMinSize: 'En dessous du minimum pour cet environnement',
@@ -455,6 +460,7 @@ watch(() => props.organizationId, () => {
 }
 
 .distribution-card {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
@@ -478,9 +484,25 @@ watch(() => props.organizationId, () => {
   background: var(--color-primary-bg);
 }
 
+.distribution-card.dedicated {
+  border-left: 3px solid var(--color-warning, #f6ad55);
+}
+
+.distribution-card.dedicated.selected {
+  border-left-color: var(--color-primary);
+}
+
 .distribution-card:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.dist-dedicated-badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 9px;
+  color: var(--color-warning, #f6ad55);
 }
 
 .dist-icon {
