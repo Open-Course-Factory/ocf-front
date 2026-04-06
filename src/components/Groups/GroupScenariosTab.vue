@@ -100,9 +100,9 @@ const { t } = useTranslations({
       resetConfirm: 'This will abandon all active sessions for this scenario. Learners will need to restart. Continue?',
       resetSuccess: '{count} sessions reset',
       resetError: 'Failed to reset sessions',
-      selectInstanceType: 'Select Instance Type',
-      instanceType: 'Instance Type',
-      instanceTypeDescription: 'Choose the terminal environment type for all learners in this group.',
+      selectDistribution: 'Select Distribution',
+      distribution: 'Distribution',
+      distributionDescription: 'Choose the terminal distribution for all learners in this group.',
       terminalErrors: 'Some terminals could not be created:',
       viewResults: 'Results',
       studentResults: 'Learner Results',
@@ -195,9 +195,9 @@ const { t } = useTranslations({
       resetConfirm: 'Ceci va abandonner toutes les sessions actives pour ce scénario. Les apprenants devront recommencer. Continuer ?',
       resetSuccess: '{count} sessions réinitialisées',
       resetError: 'Échec de la réinitialisation',
-      selectInstanceType: 'Sélectionner le type d\'instance',
-      instanceType: 'Type d\'instance',
-      instanceTypeDescription: 'Choisissez le type d\'environnement terminal pour tous les apprenants de ce groupe.',
+      selectDistribution: 'Sélectionner la distribution',
+      distribution: 'Distribution',
+      distributionDescription: 'Choisissez la distribution terminal pour tous les apprenants de ce groupe.',
       terminalErrors: 'Certains terminaux n\'ont pas pu être créés :',
       viewResults: 'Résultats',
       studentResults: 'Résultats des apprenants',
@@ -259,10 +259,12 @@ const { t } = useTranslations({
 const { showError: notifyError } = useNotification()
 const backendsStore = useTerminalBackendsStore()
 
-interface InstanceType {
+interface Distribution {
   prefix: string
   name: string
   description: string
+  os_type?: string
+  is_global: boolean
 }
 
 interface ScenarioResultItem {
@@ -324,9 +326,9 @@ const showResetModal = ref(false)
 const assignmentToReset = ref<ScenarioAssignment | null>(null)
 const showBulkStartModal = ref(false)
 const assignmentToBulkStart = ref<ScenarioAssignment | null>(null)
-const instanceTypes = ref<InstanceType[]>([])
-const selectedInstanceType = ref('')
-const loadingInstanceTypes = ref(false)
+const distributions = ref<Distribution[]>([])
+const selectedDistribution = ref('')
+const loadingDistributions = ref(false)
 
 // Import modal state
 const showUploadModal = ref(false)
@@ -418,39 +420,39 @@ async function handleAssign() {
   }
 }
 
-// Load instance types for bulk start modal
-async function loadInstanceTypes() {
-  loadingInstanceTypes.value = true
+// Load distributions for bulk start modal
+async function loadDistributions() {
+  loadingDistributions.value = true
   try {
     const backendId = backendsStore.selectedBackendId || undefined
-    instanceTypes.value = await teacherService.getInstanceTypes(backendId)
+    distributions.value = await teacherService.getDistributions(backendId)
     // Auto-select first if only one
-    if (instanceTypes.value.length === 1) {
-      selectedInstanceType.value = instanceTypes.value[0].prefix
+    if (distributions.value.length === 1) {
+      selectedDistribution.value = distributions.value[0].prefix
     }
   } catch (err: any) {
-    console.error('Failed to load instance types:', err)
+    console.error('Failed to load distributions:', err)
   } finally {
-    loadingInstanceTypes.value = false
+    loadingDistributions.value = false
   }
 }
 
-// Open bulk start modal with instance type selection
+// Open bulk start modal with distribution selection
 async function handleBulkStart(assignment: ScenarioAssignment) {
   assignmentToBulkStart.value = assignment
-  selectedInstanceType.value = ''
+  selectedDistribution.value = ''
   if (props.organizationId) {
     await backendsStore.fetchBackends(props.organizationId)
   } else {
     await backendsStore.fetchBackends()
   }
-  await loadInstanceTypes()
+  await loadDistributions()
   showBulkStartModal.value = true
 }
 
-// Confirm bulk start with selected instance type
+// Confirm bulk start with selected distribution
 async function confirmBulkStart() {
-  if (!assignmentToBulkStart.value || !selectedInstanceType.value) return
+  if (!assignmentToBulkStart.value || !selectedDistribution.value) return
   const assignment = assignmentToBulkStart.value
   showBulkStartModal.value = false
   bulkStartingId.value = assignment.id
@@ -459,7 +461,7 @@ async function confirmBulkStart() {
       props.groupId,
       assignment.scenario_id,
       {
-        instance_type: selectedInstanceType.value,
+        distribution: selectedDistribution.value,
         ...(backendsStore.selectedBackendId && { backend: backendsStore.selectedBackendId })
       }
     )
@@ -806,10 +808,10 @@ function openAssignModal() {
   showAssignModal.value = true
 }
 
-// When backend selection changes, reload instance types
+// When backend selection changes, reload distributions
 watch(() => backendsStore.selectedBackendId, () => {
-  selectedInstanceType.value = ''
-  loadInstanceTypes()
+  selectedDistribution.value = ''
+  loadDistributions()
 })
 
 onMounted(() => {
@@ -1141,10 +1143,10 @@ onUnmounted(() => {
       </div>
     </BaseModal>
 
-    <!-- Bulk Start Instance Type Modal -->
+    <!-- Bulk Start Distribution Modal -->
     <BaseModal
       :visible="showBulkStartModal"
-      :title="t('groupScenarios.selectInstanceType')"
+      :title="t('groupScenarios.selectDistribution')"
       size="medium"
       :show-default-footer="true"
       :confirm-text="t('groupScenarios.bulkStart')"
@@ -1153,7 +1155,7 @@ onUnmounted(() => {
       @close="showBulkStartModal = false"
     >
       <p class="instance-type-description">
-        {{ t('groupScenarios.instanceTypeDescription') }}
+        {{ t('groupScenarios.distributionDescription') }}
       </p>
       <!-- Backend selector (only if org has backends) -->
       <BackendSelector
@@ -1163,19 +1165,19 @@ onUnmounted(() => {
         :disabled="backendsStore.isLoading"
         @update:model-value="backendsStore.selectBackend($event)"
       />
-      <div v-if="loadingInstanceTypes" class="loading-state">
+      <div v-if="loadingDistributions" class="loading-state">
         <i class="fas fa-spinner fa-spin"></i>
       </div>
       <div v-else class="form-group">
-        <label>{{ t('groupScenarios.instanceType') }}</label>
-        <select v-model="selectedInstanceType" class="form-control">
-          <option value="" disabled>{{ t('groupScenarios.selectInstanceType') }}</option>
+        <label>{{ t('groupScenarios.distribution') }}</label>
+        <select v-model="selectedDistribution" class="form-control">
+          <option value="" disabled>{{ t('groupScenarios.selectDistribution') }}</option>
           <option
-            v-for="instance in instanceTypes"
-            :key="instance.prefix"
-            :value="instance.prefix"
+            v-for="dist in distributions"
+            :key="dist.prefix"
+            :value="dist.prefix"
           >
-            {{ instance.name }} — {{ instance.description }}
+            {{ dist.name }} — {{ dist.description }}
           </option>
         </select>
       </div>

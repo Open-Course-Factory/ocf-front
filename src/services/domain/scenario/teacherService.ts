@@ -56,11 +56,11 @@ export const teacherService = {
     return response.data
   },
 
-  async bulkStartScenario(groupId: string, scenarioId: string, data: { instance_type: string; backend?: string }): Promise<any> {
+  async bulkStartScenario(groupId: string, scenarioId: string, data: { distribution: string; backend?: string }): Promise<any> {
     // Longer timeout: challenge scenarios run setup.sh for each student (~90s each, parallelized in batches)
     const response = await axios.post(
       `/teacher/groups/${groupId}/scenarios/${scenarioId}/bulk-start`,
-      data,
+      { instance_type: data.distribution, backend: data.backend },
       { timeout: 300000 }
     )
     return response.data
@@ -80,14 +80,11 @@ export const teacherService = {
     return response.data?.data || response.data || []
   },
 
-  async getInstanceTypes(backendId?: string): Promise<any[]> {
+  async getDistributions(backendId?: string): Promise<any[]> {
     const params: Record<string, string> = {}
     if (backendId) params.backend = backendId
-    const response = await axios.get('/terminals/instance-types', { params })
-    const data = response.data
-    if (Array.isArray(data)) return data
-    if (data.instance_types && Array.isArray(data.instance_types)) return data.instance_types
-    return []
+    const response = await axios.get('/terminals/distributions', { params })
+    return response.data
   },
 
   // --- Scenario import/export operations ---

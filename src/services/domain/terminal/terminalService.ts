@@ -5,28 +5,11 @@
 
 import axios from 'axios'
 import type { Backend } from '../../../types/entities'
-import type { InstanceType } from '../../../types'
 import type {
   Distribution,
   SessionOptionsResponse,
   StartComposedSessionData
 } from '../../../types/terminal'
-
-export type { InstanceType }
-
-export interface InstanceTypeResponse {
-  instance_types: InstanceType[]
-}
-
-export interface StartSessionData {
-  terms: string
-  expiry?: number
-  instance_type?: string
-  name?: string
-  backend?: string
-  organization_id?: string
-  packages?: string[]
-}
 
 export interface UpdateTerminalRequest {
   name?: string
@@ -72,99 +55,7 @@ export interface ShareTerminalRequest {
   expires_at?: string
 }
 
-export interface InstanceAvailability {
-  available: boolean
-  matchingSizes: string[]
-  upgradeSizes: string[]
-  hasAllSizes: boolean
-}
-
-// Size ordering for sorting (smallest to largest)
-const SIZE_ORDER: Record<string, number> = {
-  'XS': 1, 'S': 2, 'M': 3, 'L': 4, 'XL': 5, 'XXL': 6
-}
-
-// Utility functions for size handling
-export const instanceUtils = {
-  // Parse size string into array
-  parseSizes(sizeString: string): string[] {
-    return sizeString.split('|').map(s => s.trim())
-  },
-
-  // Get the minimum size order value for sorting instances by their smallest size
-  getMinSizeOrder(sizeString: string): number {
-    const sizes = this.parseSizes(sizeString)
-    const orders = sizes.map(s => SIZE_ORDER[s.toUpperCase()] ?? 99)
-    return Math.min(...orders)
-  },
-
-  // Check if instance is available based on user's plan
-  checkAvailability(instance: InstanceType, allowedSizes: string[]): InstanceAvailability {
-    const instanceSizes = this.parseSizes(instance.size)
-
-    // Check if "all" is in allowed sizes (unlimited plan)
-    if (allowedSizes.includes('all')) {
-      return {
-        available: true,
-        matchingSizes: instanceSizes,
-        upgradeSizes: [],
-        hasAllSizes: true
-      }
-    }
-
-    // Find matching sizes
-    const matchingSizes = instanceSizes.filter(size =>
-      allowedSizes.includes(size)
-    )
-
-    const upgradeSizes = instanceSizes.filter(size =>
-      !allowedSizes.includes(size)
-    )
-
-    return {
-      available: matchingSizes.length > 0,
-      matchingSizes,
-      upgradeSizes,
-      hasAllSizes: matchingSizes.length === instanceSizes.length
-    }
-  },
-
-  // Get size display with badges
-  getSizeDisplay(sizeString: string): string[] {
-    return this.parseSizes(sizeString)
-  },
-
-  // Check if a specific size is allowed
-  isSizeAllowed(size: string, allowedSizes: string[]): boolean {
-    return allowedSizes.includes('all') || allowedSizes.includes(size)
-  }
-}
-
 export const terminalService = {
-  async getInstanceTypes(backendId?: string): Promise<InstanceType[]> {
-    const params: Record<string, string> = {}
-    if (backendId) {
-      params.backend = backendId
-    }
-    const response = await axios.get('/terminals/instance-types', { params })
-    const data = response.data
-
-    // Handle both formats: direct array or wrapped in instance_types
-    if (Array.isArray(data)) {
-      return data
-    } else if (data.instance_types && Array.isArray(data.instance_types)) {
-      return data.instance_types
-    } else {
-      console.error('Unexpected instance types response format:', data)
-      throw new Error('Invalid response format for instance types')
-    }
-  },
-
-  async startSession(sessionData: StartSessionData) {
-    const response = await axios.post('/terminals/start-session', sessionData)
-    return response.data
-  },
-
   async stopSession(sessionId: string) {
     const response = await axios.post(`/terminals/${sessionId}/stop`)
     return response.data

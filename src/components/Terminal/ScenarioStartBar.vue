@@ -180,8 +180,8 @@ const compatibleScenarios = computed(() => {
 async function resolveTerminalOsType() {
   if (!props.terminalInstanceType || terminalOsType.value) return
   try {
-    const types = await terminalService.getInstanceTypes()
-    const match = types.find(t => t.prefix === props.terminalInstanceType)
+    const distributions = await terminalService.getDistributions()
+    const match = distributions.find(d => d.prefix === props.terminalInstanceType)
     if (match?.os_type) {
       terminalOsType.value = match.os_type
     }

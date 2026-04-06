@@ -18,15 +18,6 @@ export interface InstanceType {
 }
 
 /**
- * Terminal instance availability check result
- */
-export interface InstanceAvailability {
-  available: boolean
-  requiredSizes: string[]
-  reason?: string
-}
-
-/**
  * Feature flag actor (user context)
  */
 export interface FeatureFlagActor {

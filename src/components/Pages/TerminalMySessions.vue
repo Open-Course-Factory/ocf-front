@@ -898,7 +898,7 @@ onMounted(() => {
 
   loadSessions()
   loadSharedSessions()
-  loadInstanceTypes()
+  loadDistributions()
 
   // Load groups if feature flag is enabled
   if (canFilterByGroups.value) {
@@ -1214,11 +1214,11 @@ function formatSyncTime(time: Date | string) {
   return formatDateTimeTz(time.toString())
 }
 
-async function loadInstanceTypes() {
+async function loadDistributions() {
   try {
-    instanceTypes.value = await terminalService.getInstanceTypes()
+    instanceTypes.value = await terminalService.getDistributions()
   } catch (error) {
-    console.error('Failed to load instance types:', error)
+    console.error('Failed to load distributions:', error)
   }
 }
 
@@ -1226,7 +1226,7 @@ function getInstanceName(prefix: string) {
   if (!prefix || !instanceTypes.value.length) {
     return prefix || 'Unknown'
   }
-  const instance = instanceTypes.value.find(type => type.prefix === prefix)
+  const instance = instanceTypes.value.find((d: any) => d.prefix === prefix)
   return instance ? instance.name : prefix
 }
 

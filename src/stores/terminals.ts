@@ -297,14 +297,6 @@ export const useTerminalsStore = defineStore('terminals', () => {
     ])
 
     // Actions spécifiques aux terminaux
-    const startTerminalSession = async (sessionData: { terms: string, expiry?: number, instance_type?: string, name?: string, backend?: string, organization_id?: string, hostname?: string }) => {
-        return withAsync(async () => {
-            const response = await axios.post('/terminals/start-session', sessionData)
-            await getUserSessions()
-            return response.data
-        }, 'terminals.startError')
-    }
-
     const stopTerminalSession = async (terminalId: string) => {
         return withAsync(async () => {
             await axios.post(`/terminals/${terminalId}/stop`)
@@ -349,7 +341,6 @@ export const useTerminalsStore = defineStore('terminals', () => {
         activeSessions,
         isLoading,
         error,
-        startTerminalSession,
         stopTerminalSession,
         getUserSessions,
         //getConsoleWebSocketUrl
