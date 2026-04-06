@@ -208,7 +208,7 @@ const { t } = useTranslations({
       recordingUnderstood: 'I understand',
       commandHistory: 'Command History',
       privacyPolicyLink: 'Learn more about how your data is handled',
-      termsAcceptance: 'I accept the terms of use of the terminal service.',
+      termsAcceptance: "J'accepte les conditions d'utilisation du service terminal.",
       errorStartingSession: 'Error starting session',
     }
   },
