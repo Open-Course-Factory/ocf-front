@@ -15,6 +15,10 @@
       </button>
     </div>
 
+    <p class="composer-subtitle">
+      {{ t('sessionComposer.subtitle') }}
+    </p>
+
     <!-- Step 1: Distribution Selection -->
     <fieldset class="composer-step">
       <legend>{{ t('sessionComposer.stepDistribution') }}</legend>
@@ -144,6 +148,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
+import { useNotification } from '../../composables/useNotification'
 import { terminalService } from '../../services/domain/terminal'
 import type { Distribution, SessionOptionSize, SessionOptionFeature, SessionOptionsResponse } from '../../types/terminal'
 
@@ -157,9 +162,10 @@ const props = defineProps<{
 const { t } = useTranslations({
   en: {
     sessionComposer: {
+      subtitle: 'Pick your environment and click Create — your terminal will be ready in about 30 seconds.',
       stepDistribution: 'Choose your environment',
       stepSize: 'Select resources',
-      stepFeatures: 'Enable features',
+      stepFeatures: 'Additional options',
       summary: 'Session summary',
       distribution: 'Environment',
       size: 'Resources',
@@ -179,13 +185,15 @@ const { t } = useTranslations({
       useCaseL: 'Multi-service, Docker',
       useCaseXL: 'Heavy workloads, clusters',
       repeatLast: 'Repeat last: {distribution} ({size})',
+      repeatLastUnavailable: 'The previously used environment is no longer available. Please select a new one.',
     }
   },
   fr: {
     sessionComposer: {
+      subtitle: 'Choisissez votre environnement et cliquez sur Cr\u00e9er \u2014 votre terminal sera pr\u00eat en 30 secondes environ.',
       stepDistribution: 'Choisissez votre environnement',
       stepSize: 'S\u00e9lectionnez les ressources',
-      stepFeatures: 'Activez les fonctionnalit\u00e9s',
+      stepFeatures: 'Options suppl\u00e9mentaires',
       summary: 'R\u00e9sum\u00e9 de la session',
       distribution: 'Environnement',
       size: 'Ressources',
@@ -205,9 +213,12 @@ const { t } = useTranslations({
       useCaseL: 'Multi-service, Docker',
       useCaseXL: 'Charges lourdes, clusters',
       repeatLast: 'R\u00e9p\u00e9ter : {distribution} ({size})',
+      repeatLastUnavailable: 'L\u0027environnement utilis\u00e9 pr\u00e9c\u00e9demment n\u0027est plus disponible. Veuillez en s\u00e9lectionner un nouveau.',
     }
   }
 })
+
+const { showWarning } = useNotification()
 
 // Last session config persistence
 const LAST_CONFIG_KEY = 'ocf-last-session-config'
@@ -334,7 +345,13 @@ async function repeatLastConfig() {
   if (!lastConfig.value) return
   // Find the distribution
   const dist = distributions.value.find(d => d.name === lastConfig.value!.distribution)
-  if (!dist) return
+  if (!dist) {
+    // Distribution no longer available — clear the stored config and inform user
+    localStorage.removeItem(LAST_CONFIG_KEY)
+    lastConfig.value = null
+    showWarning(t('sessionComposer.repeatLastUnavailable'))
+    return
+  }
   await selectDistribution(dist)
   // Select size
   if (sessionOptions.value) {
@@ -586,8 +603,9 @@ watch(() => props.organizationId, () => {
 }
 
 .size-specs {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-xs, 11px);
   color: var(--color-text-muted);
+  margin-top: 2px;
   white-space: nowrap;
 }
 
@@ -786,11 +804,18 @@ watch(() => props.organizationId, () => {
   vertical-align: middle;
 }
 
+/* Subtitle */
+.composer-subtitle {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm, 14px);
+  margin-bottom: var(--spacing-md, 16px);
+}
+
 /* Size use-case label */
 .size-use-case {
-  font-size: var(--font-size-xs, 11px);
-  color: var(--color-text-secondary);
-  margin-top: 2px;
+  font-size: var(--font-size-sm, 13px);
+  color: var(--color-text-primary);
+  margin-top: 4px;
 }
 
 /* Responsive */
