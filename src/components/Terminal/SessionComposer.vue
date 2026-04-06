@@ -79,7 +79,7 @@
               @click="size.allowed && selectSize(size)"
             >
               {{ size.key.toUpperCase() }}
-              <span v-if="size.key === selectedDistribution?.default_size_key" class="pill-dot" :title="t('sessionComposer.recommended')"></span>
+              <i v-if="size.key === selectedDistribution?.default_size_key" class="fas fa-star pill-recommended" :title="t('sessionComposer.recommended')"></i>
               <i v-if="!size.allowed" class="fas fa-lock pill-lock" />
             </button>
           </div>
@@ -628,18 +628,15 @@ watch(() => props.organizationId, () => {
   cursor: not-allowed;
 }
 
-.pill-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-success, #48bb78);
-  margin-left: 2px;
+.pill-recommended {
+  font-size: 8px;
+  margin-left: 3px;
+  color: var(--color-warning, #f6ad55);
   vertical-align: middle;
 }
 
-.size-pill.selected .pill-dot {
-  background: white;
+.size-pill.selected .pill-recommended {
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .pill-lock {
