@@ -520,7 +520,7 @@ watch(() => props.organizationId, () => {
 }
 
 .distribution-card.dedicated {
-  border-left: 3px solid var(--color-warning, #f6ad55);
+  border-left: 3px solid var(--color-info, #4299e1);
 }
 
 .distribution-card.dedicated.selected {
@@ -537,7 +537,7 @@ watch(() => props.organizationId, () => {
   top: 4px;
   right: 6px;
   font-size: 9px;
-  color: var(--color-warning, #f6ad55);
+  color: var(--color-info, #4299e1);
 }
 
 .dist-icon {
