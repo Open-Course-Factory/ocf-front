@@ -15,10 +15,6 @@
       </button>
     </div>
 
-    <p class="composer-subtitle">
-      {{ t('sessionComposer.subtitle') }}
-    </p>
-
     <!-- Step 1: Distribution Selection -->
     <fieldset class="composer-step">
       <legend>{{ t('sessionComposer.stepDistribution') }}</legend>
@@ -127,25 +123,11 @@
       </div>
     </fieldset>
 
-    <!-- Live Summary -->
-    <div v-if="selectedDistribution" class="composer-summary">
-      <h4>{{ t('sessionComposer.summary') }}</h4>
-      <div class="summary-items">
-        <div class="summary-item">
-          <span class="summary-label">{{ t('sessionComposer.distribution') }}</span>
-          <span class="summary-value">{{ selectedDistribution.description || selectedDistribution.name }}</span>
-        </div>
-        <div v-if="selectedSize" class="summary-item">
-          <span class="summary-label">{{ t('sessionComposer.size') }}</span>
-          <span class="summary-value">
-            {{ selectedSize.key.toUpperCase() }} — {{ selectedSize.cpu }} CPU, {{ selectedSize.memory }} RAM, {{ selectedSize.disk }}
-          </span>
-        </div>
-        <div v-if="activeFeatureNames.length" class="summary-item">
-          <span class="summary-label">{{ t('sessionComposer.features') }}</span>
-          <span class="summary-value">{{ activeFeatureNames.join(', ') }}</span>
-        </div>
-      </div>
+    <!-- Compact inline summary -->
+    <div v-if="selectedSize" class="composer-summary-inline">
+      <span class="summary-tag">{{ selectedDistribution?.description || selectedDistribution?.name }}</span>
+      <span class="summary-tag">{{ selectedSize.key.toUpperCase() }} · {{ selectedSize.memory }}</span>
+      <span v-if="activeFeatureNames.length" class="summary-tag">{{ activeFeatureNames.join(', ') }}</span>
     </div>
   </div>
 </template>
@@ -418,14 +400,14 @@ watch(() => props.organizationId, () => {
 .session-composer {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
 }
 
 /* Steps */
 .composer-step {
   border: var(--border-width-thin) solid var(--color-border-light);
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
   margin: 0;
 }
 
@@ -733,44 +715,22 @@ watch(() => props.organizationId, () => {
 }
 
 /* Summary */
-.composer-summary {
-  background: var(--color-bg-secondary);
-  border: var(--border-width-thin) solid var(--color-border-light);
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-md) var(--spacing-lg);
-}
-
-.composer-summary h4 {
-  margin: 0 0 var(--spacing-sm) 0;
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-}
-
-.summary-items {
+.composer-summary-inline {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: var(--spacing-xs);
-}
-
-.summary-item {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-xs) 0;
 }
 
-.summary-label {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+.summary-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
   font-weight: var(--font-weight-medium);
-}
-
-.summary-value {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-primary);
-  font-weight: var(--font-weight-semibold);
-  text-align: right;
 }
 
 /* Repeat last config */

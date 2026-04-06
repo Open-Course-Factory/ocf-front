@@ -23,13 +23,6 @@
 
 <template>
   <div class="terminal-creation-page">
-    <div class="page-header">
-      <h2>{{ t('terminalCreation.title') }}</h2>
-      <p class="page-description">
-        {{ t('terminalCreation.description') }}
-      </p>
-    </div>
-
     <div class="creation-container">
       <Suspense>
         <template #default>
