@@ -6,6 +6,11 @@
 import axios from 'axios'
 import type { Backend } from '../../../types/entities'
 import type { InstanceType } from '../../../types'
+import type {
+  Distribution,
+  SessionOptionsResponse,
+  StartComposedSessionData
+} from '../../../types/terminal'
 
 export type { InstanceType }
 
@@ -208,6 +213,25 @@ export const terminalService = {
 
   async setDefaultBackend(backendId: string): Promise<Backend> {
     const response = await axios.patch(`/terminals/backends/${backendId}/set-default`)
+    return response.data
+  },
+
+  async getDistributions(backendId?: string): Promise<Distribution[]> {
+    const params: Record<string, string> = {}
+    if (backendId) params.backend = backendId
+    const response = await axios.get('/terminals/distributions', { params })
+    return response.data
+  },
+
+  async getSessionOptions(distribution: string, backendId?: string): Promise<SessionOptionsResponse> {
+    const params: Record<string, string> = { distribution }
+    if (backendId) params.backend = backendId
+    const response = await axios.get('/terminals/session-options', { params })
+    return response.data
+  },
+
+  async startComposedSession(data: StartComposedSessionData) {
+    const response = await axios.post('/terminals/start-composed-session', data)
     return response.data
   }
 }

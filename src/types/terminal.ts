@@ -57,3 +57,69 @@ export interface SshKey extends BaseEntity {
   private_key?: string
   fingerprint?: string
 }
+
+/**
+ * Distribution available for session creation
+ */
+export interface Distribution {
+  name: string
+  prefix: string
+  description: string
+  os_type?: string
+  min_size_key?: string
+  default_size_key?: string
+  supported_features?: string[]
+}
+
+/**
+ * Size option returned by session-options endpoint
+ */
+export interface SessionOptionSize {
+  key: string
+  name: string
+  description?: string
+  cpu: number
+  cpu_allowance: string
+  memory: string
+  disk: string
+  processes: number
+  sort_order: number
+  allowed: boolean
+  reason?: string
+}
+
+/**
+ * Feature option returned by session-options endpoint
+ */
+export interface SessionOptionFeature {
+  key: string
+  name: string
+  description?: string
+  allowed: boolean
+  reason?: string
+}
+
+/**
+ * Response from GET /terminals/session-options
+ */
+export interface SessionOptionsResponse {
+  distribution: Distribution
+  allowed_sizes: SessionOptionSize[]
+  allowed_features: SessionOptionFeature[]
+}
+
+/**
+ * Request body for POST /terminals/start-composed-session
+ */
+export interface StartComposedSessionData {
+  distribution: string
+  size: string
+  features: Record<string, boolean>
+  terms: string
+  name?: string
+  expiry?: number
+  backend?: string
+  organization_id?: string
+  hostname?: string
+  packages?: string[]
+}
