@@ -53,13 +53,16 @@
         </button>
       </div>
 
-      <!-- Size + Features inline (inside the environment fieldset) -->
+      <!-- Size + Features (inside the environment fieldset) -->
       <div v-if="selectedDistribution" class="config-row">
+        <hr class="config-divider" />
+
         <!-- Size pills -->
         <div v-if="loadingOptions" class="skeleton-sizes">
           <div v-for="i in 4" :key="i" class="skeleton-pill" />
         </div>
         <div v-else-if="sessionOptions" class="size-strip">
+          <i class="fas fa-microchip config-icon"></i>
           <span class="config-label">{{ t('sessionComposer.size') }}</span>
           <div class="size-pills">
             <button
@@ -87,6 +90,7 @@
 
         <!-- Feature toggles inline -->
         <div v-if="selectedSize && availableFeatures.length > 0" class="feature-strip">
+          <i class="fas fa-puzzle-piece config-icon"></i>
           <span class="config-label">{{ t('sessionComposer.stepFeatures') }}</span>
           <div class="feature-chips">
             <label
@@ -106,6 +110,14 @@
               <span>{{ feature.name }}</span>
             </label>
           </div>
+        </div>
+
+        <!-- Unlock more power CTA (only for personal plans with locked items) -->
+        <div v-if="hasLockedItems && !isAssignedSubscription" class="unlock-cta">
+          <router-link to="/subscription-plans" class="unlock-link">
+            <i class="fas fa-bolt"></i>
+            {{ t('sessionComposer.unlockMore') }}
+          </router-link>
         </div>
       </div>
     </fieldset>
@@ -153,6 +165,7 @@ const { t } = useTranslations({
       useCaseXL: 'Heavy workloads, clusters',
       repeatLast: 'Repeat last: {distribution} ({size})',
       repeatLastUnavailable: 'The previously used environment is no longer available. Please select a new one.',
+      unlockMore: 'Unlock more power',
     }
   },
   fr: {
@@ -181,6 +194,7 @@ const { t } = useTranslations({
       useCaseXL: 'Charges lourdes, clusters',
       repeatLast: 'R\u00e9p\u00e9ter : {distribution} ({size})',
       repeatLastUnavailable: 'L\u0027environnement utilis\u00e9 pr\u00e9c\u00e9demment n\u0027est plus disponible. Veuillez en s\u00e9lectionner un nouveau.',
+      unlockMore: 'D\u00e9bloquer plus de puissance',
     }
   }
 })
@@ -216,6 +230,13 @@ const visibleSizes = computed(() => {
     return sessionOptions.value.allowed_sizes.filter(s => s.allowed)
   }
   return sessionOptions.value.allowed_sizes
+})
+
+const hasLockedItems = computed(() => {
+  if (!sessionOptions.value) return false
+  const hasLockedSizes = sessionOptions.value.allowed_sizes.some(s => !s.allowed)
+  const hasLockedFeatures = availableFeatures.value.some(f => !f.allowed)
+  return hasLockedSizes || hasLockedFeatures
 })
 
 // Methods
@@ -518,6 +539,21 @@ watch(() => props.organizationId, () => {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+  margin-top: var(--spacing-xs);
+}
+
+.config-divider {
+  border: none;
+  border-top: 1px solid var(--color-border-light);
+  margin: var(--spacing-xs) 0;
+}
+
+.config-icon {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
 }
 
 .config-label {
@@ -526,6 +562,32 @@ watch(() => props.organizationId, () => {
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+/* Unlock CTA */
+.unlock-cta {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--spacing-xs);
+}
+
+.unlock-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: var(--font-weight-semibold);
+  transition: opacity 0.15s;
+}
+
+.unlock-link:hover {
+  opacity: 0.8;
+}
+
+.unlock-link .fa-bolt {
+  color: var(--color-warning, #f6ad55);
 }
 
 /* Size pills — compact horizontal strip */
