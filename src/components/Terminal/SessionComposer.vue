@@ -112,14 +112,13 @@
           </div>
         </div>
 
-        <!-- Unlock more power CTA (only for personal plans with locked items) -->
-        <div v-if="hasLockedItems && !isAssignedSubscription" class="unlock-cta">
-          <router-link to="/subscription-plans" class="unlock-link">
-            <i class="fas fa-bolt"></i>
-            {{ t('sessionComposer.unlockMore') }}
-          </router-link>
-        </div>
       </div>
+
+      <!-- Unlock more power CTA (floating bottom-right, only for personal plans with locked items) -->
+      <router-link v-if="hasLockedItems && !isAssignedSubscription" to="/subscription-plans" class="unlock-link">
+        <i class="fas fa-bolt"></i>
+        {{ t('sessionComposer.unlockMore') }}
+      </router-link>
     </fieldset>
   </div>
 </template>
@@ -401,6 +400,7 @@ watch(() => props.organizationId, () => {
 
 /* Steps */
 .composer-step {
+  position: relative;
   border: var(--border-width-thin) solid var(--color-border-light);
   border-radius: var(--border-radius-md);
   padding: var(--spacing-sm) var(--spacing-md);
@@ -564,14 +564,10 @@ watch(() => props.organizationId, () => {
   letter-spacing: 0.5px;
 }
 
-/* Unlock CTA */
-.unlock-cta {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: var(--spacing-xs);
-}
-
 .unlock-link {
+  position: absolute;
+  bottom: var(--spacing-sm, 8px);
+  right: var(--spacing-md, 16px);
   display: inline-flex;
   align-items: center;
   gap: 6px;
