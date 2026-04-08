@@ -266,7 +266,6 @@ const performVerification = async (token: string) => {
       if (userStore.isAuthenticated) {
         try {
           userStore.emailVerified = true
-          userStore.emailVerifiedAt = new Date().toISOString()
           await userStore.refreshVerificationStatus()
         } catch (refreshError) {
           console.warn('Could not refresh verification status from backend:', refreshError)
