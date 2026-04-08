@@ -113,6 +113,10 @@ export class FieldBuilder {
     return this.type('checkbox')
   }
 
+  checkboxGroup(): this {
+    return this.type('checkbox-group')
+  }
+
   date(): this {
     return this.type('date')
   }

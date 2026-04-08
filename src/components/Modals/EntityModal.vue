@@ -149,6 +149,29 @@
             <label :for="name" class="checkbox-label">{{ field.label }}<span v-if="field.required" class="required-mark">*</span></label>
           </div>
 
+          <!-- Checkbox Group (multi-select stored as JSON array) -->
+          <div v-else-if="field.type == 'checkbox-group'" class="checkbox-group-container">
+            <div v-if="!checkboxGroupLoaded[name]" class="checkbox-group-loading">
+              <i class="fas fa-spinner fa-spin"></i>
+              {{ t('entityModal.loading') }}
+            </div>
+            <div v-else-if="checkboxGroupOptions[name]?.length === 0" class="checkbox-group-empty">
+              {{ t('entityModal.noOptionsAvailable') }}
+            </div>
+            <div v-for="option in (checkboxGroupOptions[name] || [])" :key="option.value" class="checkbox-group-item">
+              <input
+                type="checkbox"
+                :id="`${name}-${option.value}`"
+                :checked="isInCheckboxGroup(name, option.value)"
+                @change="toggleCheckboxGroupItem(name, option.value)"
+                class="form-checkbox"
+              />
+              <label :for="`${name}-${option.value}`" class="checkbox-group-label">
+                {{ option.text }}
+              </label>
+            </div>
+          </div>
+
           <!-- Text Input (default) -->
           <input
             v-else-if="field.type == 'input'"
@@ -205,6 +228,7 @@ const { t } = useTranslations({
       searching: 'Searching...',
       noResults: 'No results found',
       loading: 'Loading...',
+      noOptionsAvailable: 'No options available',
       requiredLegend: '* Required field'
     }
   },
@@ -225,6 +249,7 @@ const { t } = useTranslations({
       searching: 'Recherche en cours...',
       noResults: 'Aucun résultat trouvé',
       loading: 'Chargement...',
+      noOptionsAvailable: 'Aucune option disponible',
       requiredLegend: '* Champ obligatoire'
     }
   }
@@ -240,6 +265,10 @@ const searchableOptions = reactive<Record<string, any[]>>({});
 const isSearching = reactive<Record<string, boolean>>({});
 const showDropdown = reactive<Record<string, boolean>>({});
 const selectedItemText = reactive<Record<string, string>>({});
+
+// State for checkbox-group fields
+const checkboxGroupOptions = reactive<Record<string, any[]>>({});
+const checkboxGroupLoaded = reactive<Record<string, boolean>>({});
 
 const props = defineProps<{
   visible: boolean;
@@ -285,6 +314,8 @@ function validateFields() {
       // Check if field is required and empty
       const isEmpty = value.type === 'checkbox'
         ? false // Checkboxes are never empty (they're boolean)
+        : value.type === 'checkbox-group'
+        ? (!Array.isArray(data[key]) || data[key].length === 0)
         : value.type === 'number'
         ? (data[key] === undefined || data[key] === null || data[key] === '')
         : (data[key]?.toString().trim() === '' || data[key] === undefined);
@@ -327,8 +358,11 @@ function validateFields() {
 
 function formatFields() {
   Object.keys(data).forEach((key) => {
-    if (props.entityStore.fieldList.get(key).type == 'advanced-textarea') {
+    const fieldType = props.entityStore.fieldList.get(key)?.type;
+    if (fieldType === 'advanced-textarea') {
       data[key] = data[key].split('\n');
+    } else if (fieldType === 'checkbox-group') {
+      data[key] = JSON.stringify(data[key] || []);
     }
   });
 }
@@ -387,6 +421,15 @@ function populateDataFromEntity() {
           selectedItemText[key] = getItemDisplayText(key, value, entityValue);
           searchQueries[key] = selectedItemText[key];
         }
+      } else if (value.type === 'checkbox-group') {
+        const raw = props.entity[key];
+        if (Array.isArray(raw)) {
+          data[key] = [...raw];
+        } else if (typeof raw === 'string' && raw) {
+          try { data[key] = JSON.parse(raw); } catch { data[key] = []; }
+        } else {
+          data[key] = [];
+        }
       } else {
         data[key] = props.entity[key] || '';
       }
@@ -413,6 +456,21 @@ function prepareNeededField() {
         // Load options if optionsLoader is provided
         if (value.optionsLoader) {
           loadSearchableOptions(key, value);
+        }
+      } else if (value.type === 'checkbox-group') {
+        data[key] = [];
+        checkboxGroupOptions[key] = [];
+        checkboxGroupLoaded[key] = false;
+        if (value.optionsLoader) {
+          value.optionsLoader().then((opts: any[]) => {
+            checkboxGroupOptions[key] = opts;
+          }).catch(() => {
+            checkboxGroupOptions[key] = [];
+          }).finally(() => {
+            checkboxGroupLoaded[key] = true;
+          });
+        } else {
+          checkboxGroupLoaded[key] = true;
         }
       } else {
         data[key] = '';
@@ -521,6 +579,22 @@ function onSearchableBlur(fieldName: string) {
   }, 200);
 }
 
+// Check if a value is selected in a checkbox-group
+function isInCheckboxGroup(fieldName: string, value: string): boolean {
+  return Array.isArray(data[fieldName]) && data[fieldName].includes(value);
+}
+
+// Toggle a value in a checkbox-group
+function toggleCheckboxGroupItem(fieldName: string, value: string) {
+  if (!Array.isArray(data[fieldName])) data[fieldName] = [];
+  const idx = data[fieldName].indexOf(value);
+  if (idx >= 0) {
+    data[fieldName].splice(idx, 1);
+  } else {
+    data[fieldName].push(value);
+  }
+}
+
 // Get display text for a selected value
 function getItemDisplayText(fieldName: string, fieldConfig: any, value: any): string {
   if (!value) return '';
@@ -599,6 +673,47 @@ input[type="number"] {
 /* Date input styles */
 input[type="date"] {
   max-width: 250px;
+}
+
+/* Checkbox Group styles */
+.checkbox-group-container {
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-sm);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.checkbox-group-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) 0;
+}
+
+.checkbox-group-label {
+  margin: 0;
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--font-size-sm);
+}
+
+.checkbox-group-loading {
+  padding: var(--spacing-sm);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.checkbox-group-loading i {
+  margin-right: var(--spacing-xs);
+}
+
+.checkbox-group-empty {
+  padding: var(--spacing-sm);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
 }
 
 /* Searchable Select styles */
