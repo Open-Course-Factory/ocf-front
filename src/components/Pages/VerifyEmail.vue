@@ -46,7 +46,10 @@
         </div>
         <h2 class="state-title">{{ t('verifyEmail.alreadyVerified.title') }}</h2>
         <p class="state-message">{{ t('verifyEmail.alreadyVerified.message') }}</p>
-        <router-link to="/login" class="btn-primary">
+        <button v-if="userStore.isAuthenticated" class="btn-primary" @click="redirectAfterVerification">
+          {{ t('verifyEmail.alreadyVerified.goToDashboard') }}
+        </button>
+        <router-link v-else to="/login" class="btn-primary">
           {{ t('verifyEmail.alreadyVerified.goToLogin') }}
         </router-link>
       </div>
@@ -132,7 +135,8 @@ const { t } = useTranslations({
       alreadyVerified: {
         title: 'Already Verified',
         message: 'This email address has already been verified. You can log in now.',
-        goToLogin: 'Go to Login'
+        goToLogin: 'Go to Login',
+        goToDashboard: 'Go to Dashboard'
       },
       invalid: {
         title: 'Invalid Verification Link',
@@ -167,7 +171,8 @@ const { t } = useTranslations({
       alreadyVerified: {
         title: 'Déjà Vérifié',
         message: 'Cette adresse email a déjà été vérifiée. Vous pouvez vous connecter maintenant.',
-        goToLogin: 'Aller à la Connexion'
+        goToLogin: 'Aller à la Connexion',
+        goToDashboard: 'Aller au Tableau de Bord'
       },
       invalid: {
         title: 'Lien de Vérification Invalide',
@@ -257,6 +262,16 @@ const performVerification = async (token: string) => {
       userEmail.value = err.response?.data?.email || userStore.userEmail || ''
     } else if (status === 409) {
       state.value = 'alreadyVerified'
+      // Update user store since email is verified (409 = already verified)
+      if (userStore.isAuthenticated) {
+        try {
+          userStore.emailVerified = true
+          userStore.emailVerifiedAt = new Date().toISOString()
+          await userStore.refreshVerificationStatus()
+        } catch (refreshError) {
+          console.warn('Could not refresh verification status from backend:', refreshError)
+        }
+      }
     } else {
       state.value = 'invalid'
     }
