@@ -22,7 +22,7 @@
           {{ t('verifyEmail.success.redirecting', { seconds: redirectCountdown }) }}
         </div>
         <button class="btn-primary" @click="redirectAfterVerification">
-          {{ t('verifyEmail.success.goToDashboard') }}
+          {{ t('verifyEmail.success.continue') }}
         </button>
       </div>
 
@@ -47,7 +47,7 @@
         <h2 class="state-title">{{ t('verifyEmail.alreadyVerified.title') }}</h2>
         <p class="state-message">{{ t('verifyEmail.alreadyVerified.message') }}</p>
         <button v-if="userStore.isAuthenticated" class="btn-primary" @click="redirectAfterVerification">
-          {{ t('verifyEmail.alreadyVerified.goToDashboard') }}
+          {{ t('verifyEmail.alreadyVerified.continue') }}
         </button>
         <router-link v-else to="/login" class="btn-primary">
           {{ t('verifyEmail.alreadyVerified.goToLogin') }}
@@ -125,7 +125,7 @@ const { t } = useTranslations({
         title: 'Email Verified Successfully!',
         message: 'Your email has been verified. You can now access all features.',
         redirecting: 'Redirecting in {seconds} seconds...',
-        goToDashboard: 'Continue Now'
+        continue: 'Continue Now'
       },
       expired: {
         title: 'Verification Link Expired',
@@ -136,7 +136,7 @@ const { t } = useTranslations({
         title: 'Already Verified',
         message: 'This email address has already been verified. You can now access all features.',
         goToLogin: 'Go to Login',
-        goToDashboard: 'Continue'
+        continue: 'Continue'
       },
       invalid: {
         title: 'Invalid Verification Link',
@@ -161,7 +161,7 @@ const { t } = useTranslations({
         title: 'Email Vérifié avec Succès !',
         message: 'Votre email a été vérifié. Vous pouvez maintenant accéder à toutes les fonctionnalités.',
         redirecting: 'Redirection dans {seconds} secondes...',
-        goToDashboard: 'Continuer'
+        continue: 'Continuer'
       },
       expired: {
         title: 'Lien de Vérification Expiré',
@@ -172,7 +172,7 @@ const { t } = useTranslations({
         title: 'Déjà Vérifié',
         message: 'Cette adresse email a déjà été vérifiée. Vous pouvez maintenant accéder à toutes les fonctionnalités.',
         goToLogin: 'Aller à la Connexion',
-        goToDashboard: 'Continuer'
+        continue: 'Continuer'
       },
       invalid: {
         title: 'Lien de Vérification Invalide',
