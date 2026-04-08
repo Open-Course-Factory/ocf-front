@@ -124,8 +124,8 @@ const { t } = useTranslations({
       success: {
         title: 'Email Verified Successfully!',
         message: 'Your email has been verified. You can now access all features.',
-        redirecting: 'Redirecting to dashboard in {seconds} seconds...',
-        goToDashboard: 'Go to Dashboard Now'
+        redirecting: 'Redirecting in {seconds} seconds...',
+        goToDashboard: 'Continue Now'
       },
       expired: {
         title: 'Verification Link Expired',
@@ -134,9 +134,9 @@ const { t } = useTranslations({
       },
       alreadyVerified: {
         title: 'Already Verified',
-        message: 'This email address has already been verified. You can log in now.',
+        message: 'This email address has already been verified. You can now access all features.',
         goToLogin: 'Go to Login',
-        goToDashboard: 'Go to Dashboard'
+        goToDashboard: 'Continue'
       },
       invalid: {
         title: 'Invalid Verification Link',
@@ -160,8 +160,8 @@ const { t } = useTranslations({
       success: {
         title: 'Email Vérifié avec Succès !',
         message: 'Votre email a été vérifié. Vous pouvez maintenant accéder à toutes les fonctionnalités.',
-        redirecting: 'Redirection vers le tableau de bord dans {seconds} secondes...',
-        goToDashboard: 'Aller au Tableau de Bord'
+        redirecting: 'Redirection dans {seconds} secondes...',
+        goToDashboard: 'Continuer'
       },
       expired: {
         title: 'Lien de Vérification Expiré',
@@ -170,9 +170,9 @@ const { t } = useTranslations({
       },
       alreadyVerified: {
         title: 'Déjà Vérifié',
-        message: 'Cette adresse email a déjà été vérifiée. Vous pouvez vous connecter maintenant.',
+        message: 'Cette adresse email a déjà été vérifiée. Vous pouvez maintenant accéder à toutes les fonctionnalités.',
         goToLogin: 'Aller à la Connexion',
-        goToDashboard: 'Aller au Tableau de Bord'
+        goToDashboard: 'Continuer'
       },
       invalid: {
         title: 'Lien de Vérification Invalide',
