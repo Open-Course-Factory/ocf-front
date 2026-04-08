@@ -87,6 +87,19 @@
           </div>
         </div>
 
+        <!-- Fallback from personal subscription -->
+        <div v-if="subscription?.is_fallback" class="fallback-info">
+          <div class="fallback-card">
+            <i class="fas fa-info-circle text-info"></i>
+            <div>
+              <strong>{{ t('subscriptionPlans.personalFallback') }}</strong>
+              <div class="fallback-description">
+                {{ t('subscriptionPlans.personalFallbackDescription') }}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Période d'essai -->
         <div v-if="isTrialing" class="trial-info">
           <div class="trial-card">
@@ -530,6 +543,23 @@ function formatDate(dateString: string) {
 .trial-card {
   background-color: var(--color-info-bg);
   border-left: 4px solid var(--color-info);
+}
+
+.fallback-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-lg);
+  margin-bottom: var(--spacing-lg);
+  background-color: var(--color-info-bg);
+  border-left: 4px solid var(--color-info);
+}
+
+.fallback-description {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-xs);
 }
 
 .cancellation-card {
