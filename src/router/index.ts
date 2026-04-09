@@ -511,7 +511,11 @@ router.beforeEach(async (to, from, next) => {
     if (!permissionsStore.hasFeature(requiredPlanFeature)) {
       console.warn(`Plan feature "${requiredPlanFeature}" not available in current org context`);
       const settingsStore = useUserSettingsStore();
-      const defaultPage = settingsStore.settings.default_landing_page || '/terminal-sessions';
+      const validPages = settingsStore.availablePages.map((p: { value: string }) => p.value);
+      const savedPage = settingsStore.settings.default_landing_page;
+      const defaultPage = (savedPage && validPages.includes(savedPage))
+        ? savedPage
+        : (validPages.includes('/terminal-sessions') ? '/terminal-sessions' : validPages[0] || '/terminal-sessions');
       next(defaultPage);
       return;
     }

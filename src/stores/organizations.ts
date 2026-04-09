@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, unref } from 'vue'
 import { useBaseStore } from './baseStore'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
@@ -262,14 +262,6 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     )
   }
 
-  // Routes that require specific plan features (mirrors MainNavMenu planFeature mapping)
-  const routePlanFeatureMap: Record<string, string> = {
-    '/class-groups': 'multiple_groups',
-    '/class-groups-hierarchy': 'multiple_groups',
-    '/terminals': 'advanced_terminals',
-    '/terminal-creation': 'advanced_terminals',
-  }
-
   // Set current organization (persists to localStorage)
   const setCurrentOrganization = (organizationId: string) => {
     // Guard against redundant calls
@@ -298,20 +290,19 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     return Promise.all(refreshPromises).then(async () => {
       try {
         const { default: router } = await import('../router')
-        const currentPath = router.currentRoute.value.path
 
-        // Check if current route requires a plan feature
-        for (const [routePrefix, feature] of Object.entries(routePlanFeatureMap)) {
-          if (currentPath.startsWith(routePrefix)) {
-            if (!permissionsStore.hasFeature(feature)) {
-              // Redirect to user's default page
-              const { useUserSettingsStore } = await import('./userSettings')
-              const settingsStore = useUserSettingsStore()
-              const defaultPage = settingsStore.settings.default_landing_page || '/terminal-sessions'
-              router.push(defaultPage)
-            }
-            break
-          }
+        // Check if current route requires a plan feature via route meta
+        const requiredPlanFeature = router.currentRoute.value.meta.requiresPlanFeature as string | undefined
+        if (requiredPlanFeature && !permissionsStore.hasFeature(requiredPlanFeature)) {
+          const { useUserSettingsStore } = await import('./userSettings')
+          const settingsStore = useUserSettingsStore()
+          const pages = unref(settingsStore.availablePages) as { value: string }[]
+          const validPages = pages.map((p: { value: string }) => p.value)
+          const savedPage = settingsStore.settings.default_landing_page
+          const defaultPage = (savedPage && validPages.includes(savedPage))
+            ? savedPage
+            : (validPages.includes('/terminal-sessions') ? '/terminal-sessions' : validPages[0] || '/terminal-sessions')
+          router.push(defaultPage)
         }
       } catch {
         // Router not available (e.g., during test) — skip redirect
