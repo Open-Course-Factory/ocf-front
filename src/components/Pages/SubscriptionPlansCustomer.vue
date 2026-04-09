@@ -119,7 +119,7 @@
                   <!-- Concurrent Terminals -->
                   <div v-if="plan.max_concurrent_terminals" class="feature-item">
                     <i class="fas fa-terminal"></i>
-                    <span>{{ plan.max_concurrent_terminals }} {{ plan.max_concurrent_terminals === 1 ? t('plans.terminal') : t('plans.terminals') }}</span>
+                    <span>{{ plan.max_concurrent_terminals === -1 ? '∞' : plan.max_concurrent_terminals }} {{ plan.max_concurrent_terminals === 1 ? t('plans.terminal') : t('plans.terminals') }}</span>
                   </div>
 
                   <!-- Storage -->

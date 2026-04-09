@@ -89,7 +89,7 @@
               <div class="limit-item">
                 <i class="fas fa-laptop-code"></i>
                 <span class="limit-label">{{ t('subscription.maxTerminals') }}</span>
-                <span class="limit-value">{{ subscription.subscription_plan.max_concurrent_terminals }}</span>
+                <span class="limit-value">{{ subscription.subscription_plan.max_concurrent_terminals === -1 ? '∞' : subscription.subscription_plan.max_concurrent_terminals }}</span>
               </div>
               <div class="limit-item">
                 <i class="fas fa-clock"></i>

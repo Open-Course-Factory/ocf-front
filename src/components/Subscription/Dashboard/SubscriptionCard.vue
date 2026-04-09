@@ -137,7 +137,7 @@
           <div class="features-grid">
             <div v-if="planFeature('concurrent_terminals', 'max_concurrent_terminals')" class="feature-item">
               <i class="fas fa-terminal"></i>
-              <span>{{ planFeature('concurrent_terminals', 'max_concurrent_terminals') }} {{ t('subscriptionPlans.concurrentTerminals') }}</span>
+              <span>{{ formatLimit(planFeature('concurrent_terminals', 'max_concurrent_terminals')) }} {{ t('subscriptionPlans.concurrentTerminals') }}</span>
             </div>
             <div v-if="planFeature('session_duration_hours', 'max_session_duration_minutes')" class="feature-item">
               <i class="fas fa-clock"></i>
@@ -308,6 +308,12 @@ const planFeature = (legacyKey: string, planKey: string) => {
   const sub = props.subscription
   if (!sub) return null
   return sub.subscription_plan?.[planKey] ?? sub.plan_features?.[legacyKey] ?? null
+}
+
+// Format a plan limit: -1 means unlimited
+const formatLimit = (value: any) => {
+  if (value === -1) return '∞'
+  return value
 }
 
 // Format duration: if value is in minutes (from subscription_plan), convert to hours display

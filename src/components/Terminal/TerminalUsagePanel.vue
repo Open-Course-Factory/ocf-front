@@ -14,7 +14,7 @@
     >
       <i class="fas" :class="isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
       {{ t('terminals.currentUsage') }}
-      <span class="usage-badge">{{ currentCount }}/{{ maxCount }}</span>
+      <span class="usage-badge">{{ currentCount }}/{{ isUnlimited ? '∞' : maxCount }}</span>
     </button>
     <div v-show="isExpanded" class="collapsible-content">
       <div class="usage-header">
@@ -51,7 +51,7 @@
               <i class="fas fa-spinner fa-spin"></i>
             </span>
             <span v-else>{{ currentCount }}</span>
-            / {{ maxCount }}
+            / {{ isUnlimited ? '∞' : maxCount }}
             <small class="text-muted">({{ t('terminals.planLimit') }})</small>
           </span>
         </div>
@@ -148,6 +148,7 @@ interface Props {
 const props = defineProps<Props>()
 
 const isExpanded = ref(false)
+const isUnlimited = computed(() => !isFinite(props.maxCount))
 
 const planName = computed(() => {
   return props.subscription?.subscription_plan?.name ||

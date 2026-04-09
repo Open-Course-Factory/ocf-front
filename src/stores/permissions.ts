@@ -291,11 +291,13 @@ export const usePermissionsStore = defineStore('permissions', () => {
   }
 
   const getMaxConcurrentTerminals = computed((): number => {
-    return effectiveFeatures.value?.effective_features?.max_concurrent_terminals ?? 0
+    const val = effectiveFeatures.value?.effective_features?.max_concurrent_terminals ?? 0
+    return val === -1 ? Infinity : val
   })
 
   const getMaxCourses = computed((): number => {
-    return effectiveFeatures.value?.effective_features?.max_courses ?? 0
+    const val = effectiveFeatures.value?.effective_features?.max_courses ?? 0
+    return val === -1 ? Infinity : val
   })
 
   const getMaxSessionDuration = computed((): number => {

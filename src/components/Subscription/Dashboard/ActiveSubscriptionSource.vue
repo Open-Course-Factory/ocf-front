@@ -52,7 +52,7 @@
         <div class="features-grid">
           <div v-if="primarySubscription.subscription_plan?.max_concurrent_terminals" class="feature-item">
             <i class="fas fa-terminal"></i>
-            <span>{{ primarySubscription.subscription_plan.max_concurrent_terminals }} {{ t('subscriptions.terminals') }}</span>
+            <span>{{ primarySubscription.subscription_plan.max_concurrent_terminals === -1 ? '∞' : primarySubscription.subscription_plan.max_concurrent_terminals }} {{ t('subscriptions.terminals') }}</span>
           </div>
           <div v-if="primarySubscription.subscription_plan?.max_session_duration_minutes" class="feature-item">
             <i class="fas fa-clock"></i>
