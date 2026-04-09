@@ -226,16 +226,18 @@ const availableFeatures = computed<SessionOptionFeature[]>(() => sessionOptions.
 
 const visibleSizes = computed(() => {
   if (!sessionOptions.value) return []
+  // Always exclude sizes below distribution minimum — they don't exist for this distro
+  const sizes = sessionOptions.value.allowed_sizes.filter(s => s.reason !== 'min_size')
   if (props.isAssignedSubscription) {
     // Hide locked sizes for org-managed plans (students can't upgrade)
-    return sessionOptions.value.allowed_sizes.filter(s => s.allowed)
+    return sizes.filter(s => s.allowed)
   }
-  return sessionOptions.value.allowed_sizes
+  return sizes
 })
 
 const hasLockedItems = computed(() => {
   if (!sessionOptions.value) return false
-  const hasLockedSizes = sessionOptions.value.allowed_sizes.some(s => !s.allowed)
+  const hasLockedSizes = sessionOptions.value.allowed_sizes.some(s => !s.allowed && s.reason !== 'min_size')
   const hasLockedFeatures = availableFeatures.value.some(f => !f.allowed)
   return hasLockedSizes || hasLockedFeatures
 })
