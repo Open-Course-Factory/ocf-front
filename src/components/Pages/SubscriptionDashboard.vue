@@ -70,6 +70,12 @@
           @refresh="refreshUsage"
         />
 
+        <!-- Org Terminal Usage Panel (managers/owners only) -->
+        <OrgTerminalUsagePanel
+          v-if="showOrgTerminalPanel"
+          :organization-id="currentOrgId"
+        />
+
         <!-- Composant Factures Récentes (hidden for assigned users who don't pay) -->
         <RecentInvoices
           v-if="!isAssignedSubscription"
@@ -103,6 +109,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
+import { useOrganizationsStore } from '../../stores/organizations'
+import { usePermissionsStore } from '../../stores/permissions'
 import { extractErrorMessage } from '../../utils/formatters'
 import axios from 'axios'
 
@@ -111,11 +119,14 @@ import { SubscriptionCard, UsageOverview, RecentInvoices, AllSubscriptions, Acti
 import { CancelSubscriptionModal, ReactivateModal } from '../Subscription/Modals'
 import ErrorAlert from '../UI/ErrorAlert.vue'
 import UpgradeToTeamBanner from '../Common/UpgradeToTeamBanner.vue'
+import OrgTerminalUsagePanel from '../Terminal/OrgTerminalUsagePanel.vue'
 
 const { t } = useI18n()
 
 // Stores
 const subscriptionsStore = useSubscriptionsStore()
+const organizationsStore = useOrganizationsStore()
+const permissionsStore = usePermissionsStore()
 
 // État local
 const isLoading = ref(false)
@@ -153,6 +164,15 @@ const isAssignedSubscription = computed(() => {
   const sub = subscriptionsStore.currentSubscription
   if (!sub) return false
   return sub.subscription_type === 'assigned' || !!sub.subscription_batch_id
+})
+
+// Show org terminal usage panel when user can manage the current org
+const currentOrgId = computed(() => organizationsStore.currentOrganization?.id ?? null)
+
+const showOrgTerminalPanel = computed(() => {
+  const orgId = currentOrgId.value
+  if (!orgId) return false
+  return permissionsStore.canManageOrganization(orgId)
 })
 
 // Lifecycle

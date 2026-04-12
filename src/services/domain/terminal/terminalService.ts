@@ -8,7 +8,8 @@ import type { Backend } from '../../../types/entities'
 import type {
   Distribution,
   SessionOptionsResponse,
-  StartComposedSessionData
+  StartComposedSessionData,
+  OrgTerminalUsage
 } from '../../../types/terminal'
 
 export interface UpdateTerminalRequest {
@@ -124,6 +125,11 @@ export const terminalService = {
 
   async startComposedSession(data: StartComposedSessionData) {
     const response = await axios.post('/terminals/start-composed-session', data)
+    return response.data
+  },
+
+  async getOrgTerminalUsage(orgId: string): Promise<OrgTerminalUsage> {
+    const response = await axios.get(`/organizations/${orgId}/terminal-usage`)
     return response.data
   }
 }
