@@ -266,6 +266,54 @@ Remote terminal access with XTerm.js + guacamole-common-js:
 - SSH key management
 - Iframe-based terminal viewer (bypasses layout)
 
+#### Composed Session Architecture (added 2025)
+
+Session creation was refactored from a simple instance-type picker to a multi-step "composed session" model. The old `InstanceTypeSelector.vue` and `InstanceCard.vue` components were removed.
+
+**Key components:**
+
+- `src/components/Terminal/SessionComposer.vue` — the primary new component. Handles distribution selection, size pills, and feature toggles in a single unified UI inside a `<fieldset>`. Fetches its own data on mount.
+  - Props: `backendId?`, `organizationId?`, `disabled?`, `isAssignedSubscription?`
+  - Exposed (via `defineExpose`): `isReady`, `selectedDistribution`, `selectedSize`, `enabledFeatures`, `loadingOptions`, `loadDistributions()`, `saveLastConfig()`
+  - Persists last-used config to `localStorage` key `ocf-last-session-config` and auto-restores on next mount
+  - Watches `organizationId` prop — re-fetches session options when org context changes (different plan)
+  - Plan gating: locked sizes/features show a lock icon; `isAssignedSubscription=true` hides locked sizes entirely (learners can't upgrade); a "Unlock more power" CTA links to `/subscription-plans` for personal plans
+
+- `src/components/Terminal/TerminalStarter.vue` — embeds `SessionComposer` via a template ref (`composerRef`). Reads `composerRef.isReady`, `composerRef.selectedDistribution`, `composerRef.selectedSize`, and `composerRef.enabledFeatures` to build the `StartComposedSessionData` payload. Passes `organization_id` to the composed session request.
+
+- `src/components/Pages/ScenarioLauncher.vue` — org-scoped scenario browser. Lists available scenarios filtered by current org context (`organizationsStore.currentOrganization`). Handles launch, relaunch, and resume flows. Uses `ScenarioProvisioningOverlay` during provisioning with polling via `pollProvisioningStatus`.
+
+- `src/components/Terminal/ScenarioProvisioningOverlay.vue` — full-screen provisioning progress overlay shown while a scenario environment is being prepared. Props: `ready?`, `phase?` (`'terminal_creation' | 'setup_script' | 'step_setup'`), `cancellable?`. Emits `cancel`. Used by both `ScenarioLauncher` and `TerminalSessionView`.
+
+**New types in `src/types/terminal.ts`:**
+
+- `Distribution` — `{ name, prefix, description, os_type?, is_global, min_size_key?, default_size_key?, supported_features? }`
+- `SessionOptionSize` — per-size availability with `allowed` flag and `reason` string (`'plan_limit' | 'min_size' | 'plan_disabled' | 'not_supported' | 'size_too_small'`)
+- `SessionOptionFeature` — per-feature availability with same `allowed` / `reason` shape
+- `SessionOptionsResponse` — response from `GET /terminals/session-options` (`{ distribution, allowed_sizes, allowed_features }`)
+- `StartComposedSessionData` — request body for `POST /terminals/start-composed-session` (`{ distribution, size, features, terms, name?, expiry?, backend?, organization_id?, hostname?, packages? }`)
+
+**New service methods in `src/services/domain/terminal/terminalService.ts`:**
+
+```typescript
+getDistributions(backendId?: string): Promise<Distribution[]>
+// GET /terminals/distributions?backend=<id>
+
+getSessionOptions(distribution: string, backendId?: string, organizationId?: string): Promise<SessionOptionsResponse>
+// GET /terminals/session-options?distribution=<name>&backend=<id>&organization_id=<id>
+
+startComposedSession(data: StartComposedSessionData): Promise<{ session_id, console_url, expires_at, status }>
+// POST /terminals/start-composed-session
+```
+
+**Org context rules:**
+- `organization_id` is always passed to `getSessionOptions` so plan limits reflect the org's subscription, not the user's personal plan
+- `organization_id` is included in `StartComposedSessionData` when the user has an active org context
+- `isAssignedSubscription` is derived in `TerminalStarter` from `subscription_type === 'assigned' || !!subscription_batch_id`; when true, locked sizes are hidden from `SessionComposer` (learners can't choose unavailable sizes, unlike personal-plan users who see them grayed out with an upgrade link)
+
+**Distribution icon mapping (in `SessionComposer`):**
+Icons use FontAwesome 6 brand icons (`fab fa-ubuntu`, `fab fa-debian`, etc.) matched by substring of the distribution name. Brand colors (e.g., Ubuntu orange `#E95420`) are applied via inline `style`. Unknown distributions fall back to `fab fa-linux`. Dedicated (non-global) distributions show a server badge and a left blue border.
+
 ## Documentation Index
 
 For detailed information, see:
