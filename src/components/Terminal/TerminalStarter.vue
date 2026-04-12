@@ -95,12 +95,12 @@
           variant="primary"
           size="lg"
           class="launch-button"
-          :icon="isStarting ? 'fas fa-spinner fa-spin' : 'fas fa-rocket'"
-          :disabled="!isFormValid || isStarting"
-          :loading="isStarting"
+          :icon="isStarting ? 'fas fa-spinner fa-spin' : composerRef?.loadingOptions ? 'fas fa-spinner fa-spin' : 'fas fa-rocket'"
+          :disabled="!isFormValid || isStarting || !!composerRef?.loadingOptions"
+          :loading="isStarting || !!composerRef?.loadingOptions"
           @click="startNewSession"
         >
-          {{ isStarting ? t('terminalStarter.buttonStarting') : t('terminalStarter.launchTerminal') }}
+          {{ isStarting ? t('terminalStarter.buttonStarting') : composerRef?.loadingOptions ? t('terminalStarter.loadingOptions') : t('terminalStarter.launchTerminal') }}
         </Button>
       </div>
     </SettingsCard>
@@ -173,6 +173,7 @@ const { t } = useTranslations({
     },
     terminalStarter: {
       launchTerminal: 'Create session',
+      loadingOptions: 'Loading options...',
       buttonStarting: 'Starting...',
       readyToLaunch: 'Ready to Launch',
       capacityIssue: 'Capacity Issue',
@@ -218,6 +219,7 @@ const { t } = useTranslations({
     },
     terminalStarter: {
       launchTerminal: 'Créer une session',
+      loadingOptions: 'Chargement des options...',
       buttonStarting: 'Démarrage...',
       readyToLaunch: 'Prêt à Lancer',
       capacityIssue: 'Problème de Capacité',

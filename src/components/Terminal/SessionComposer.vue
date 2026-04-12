@@ -412,6 +412,7 @@ defineExpose({
   selectedSize,
   enabledFeatures,
   isReady: computed(() => !!selectedDistribution.value && !!selectedSize.value),
+  loadingOptions,
   loadDistributions,
   saveLastConfig
 })
