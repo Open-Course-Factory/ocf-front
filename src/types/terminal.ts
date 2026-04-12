@@ -110,6 +110,28 @@ export interface SessionOptionsResponse {
 }
 
 /**
+ * Per-user entry in org terminal usage response
+ */
+export interface OrgTerminalUsageUser {
+  user_id: string
+  display_name: string
+  email: string
+  active_count: number
+}
+
+/**
+ * Response from GET /organizations/:id/terminal-usage
+ */
+export interface OrgTerminalUsage {
+  organization_id: string
+  active_terminals: number
+  max_terminals: number
+  plan_name: string
+  is_fallback: boolean
+  users: OrgTerminalUsageUser[]
+}
+
+/**
  * Request body for POST /terminals/start-composed-session
  */
 export interface StartComposedSessionData {
