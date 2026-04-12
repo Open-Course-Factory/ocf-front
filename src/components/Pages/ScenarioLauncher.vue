@@ -90,7 +90,7 @@
               <span class="unavailable-notice-detail">{{ getUnavailableReason(scenario) }}</span>
             </div>
           </div>
-          <span class="unavailable-notice-hint">{{ getUnavailableHint(scenario) }}</span>
+          <span v-if="getUnavailableHint(scenario)" class="unavailable-notice-hint">{{ getUnavailableHint(scenario) }}</span>
         </div>
 
         <!-- Existing session notice -->
@@ -166,6 +166,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { scenarioSessionService, pollProvisioningStatus } from '../../services/domain/scenario'
 import { useOrganizationsStore } from '../../stores/organizations'
+import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import AdminBadge from '../Common/AdminBadge.vue'
@@ -174,7 +175,13 @@ import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay
 const router = useRouter()
 const { showError } = useNotification()
 const organizationsStore = useOrganizationsStore()
+const subscriptionsStore = useSubscriptionsStore()
 const currentOrgId = computed(() => organizationsStore.currentOrganization?.id || '')
+
+const isAssignedSubscription = computed(() => {
+  const sub = subscriptionsStore.currentSubscription
+  return sub?.subscription_type === 'assigned' || !!sub?.subscription_batch_id
+})
 
 const { t } = useTranslations({
   en: {
@@ -334,6 +341,8 @@ function getUnavailableHint(scenario: any): string {
   const reason = getScenarioBlockReason(scenario)
   switch (reason) {
     case 'plan':
+      // Org-managed subscribers can't upgrade — show nothing
+      if (isAssignedSubscription.value) return ''
       return t('launcher.unavailablePlanHint')
     case 'no_distribution':
       return t('launcher.unavailableNoDistributionHint')
