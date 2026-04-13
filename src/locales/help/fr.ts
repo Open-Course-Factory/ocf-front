@@ -99,7 +99,7 @@ export const helpFr = {
           },
           step3: {
             title: "Définir les Paramètres d'Accès",
-            description: "Configurez les paramètres d'accès : nom de session, options de partage et durée. Vous pouvez créer des sessions privées ou des sessions partagées avec votre équipe."
+            description: "Configurez votre session : nom, durée et autres paramètres."
           },
           step4: {
             title: "Lancer Votre Terminal",
@@ -394,10 +394,6 @@ export const helpFr = {
         },
 
         nextSteps: {
-          sharing: {
-            title: "Partage et Collaboration",
-            description: "Apprenez à partager vos terminaux avec d'autres utilisateurs"
-          },
           troubleshooting: {
             title: "Dépannage",
             description: "Solutions aux problèmes courants de gestion des sessions"
@@ -477,10 +473,6 @@ export const helpFr = {
           copyIframe: {
             title: "Copier le code iframe",
             description: "Générez et copiez le code d'intégration iframe pour intégrer le terminal dans des sites web externes ou des plateformes LMS."
-          },
-          manageAccess: {
-            title: "Gérer les accès",
-            description: "Ouvrez le panneau de gestion des accès pour ajouter ou supprimer des utilisateurs et configurer les permissions de partage."
           },
           syncSession: {
             title: "Synchroniser la session",
@@ -632,31 +624,6 @@ export const helpFr = {
           }
         },
 
-        sharingProblems: {
-          title: "Problèmes de partage",
-          cannotShare: {
-            title: "Impossible de partager un terminal",
-            checksTitle: "Vérifications :",
-            checks: {
-              check1: "La session est-elle active ?",
-              check2: "L'utilisateur destinataire existe-t-il ?",
-              check3: "Avez-vous les permissions de partage ?"
-            },
-            solutionTitle: "Solution :",
-            solution: "Synchronisez d'abord votre session, puis réessayez le partage avec un email valide."
-          },
-          cannotAccess: {
-            title: "Utilisateur ne peut pas accéder au terminal partagé",
-            checksTitle: "Points à vérifier :",
-            checks: {
-              check1: "Le partage n'a pas expiré",
-              check2: "L'utilisateur est connecté à son compte",
-              check3: "Les permissions sont correctes",
-              check4: "La session source est toujours active"
-            }
-          }
-        },
-
         performanceProblems: {
           title: "Problèmes de performance",
           slowTerminal: {
@@ -778,10 +745,6 @@ export const helpFr = {
           managingSessions: {
             title: "Gestion des sessions",
             description: "Optimisez votre utilisation des sessions terminal"
-          },
-          sharing: {
-            title: "Partage et collaboration",
-            description: "Maîtrisez les fonctionnalités de partage"
           }
         }
       },

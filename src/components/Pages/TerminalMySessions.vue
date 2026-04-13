@@ -584,7 +584,6 @@ const { t } = useTranslations({
       preview: 'Aperçu',
       iframePreviewInfo: 'Aperçu du terminal intégrable - Taille: 100% x 300px',
       buttonSyncSession: 'Sync',
-      buttonShare: 'Partager',
       buttonStop: 'Arrêter',
       buttonHideSession: 'Masquer',
       tooltipSync: 'Synchroniser cette session avec l\'API Terminal Trainer',
@@ -672,7 +671,7 @@ function isTerminalInactive(status: string): boolean {
 
 // Computed property for all sessions
 const allSessions = computed(() => {
-  return sessions.value.map(s => ({ ...s, isShared: false }))
+  return sessions.value
 })
 
 // Computed property to count only active sessions

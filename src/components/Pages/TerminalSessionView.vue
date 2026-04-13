@@ -520,6 +520,9 @@ async function loadSession() {
   error.value = ''
 
   try {
+    // NOTE: We fetch all user sessions and find the target by ID because no
+    // single-session GET endpoint exists on the backend yet.
+    // TODO: replace with GET /terminals/:id once that endpoint is added.
     const sessions = await axios.get('/terminals/user-sessions')
     const terminal = (sessions.data || []).find((s: any) => s.session_id === sessionId || s.id === sessionId)
 

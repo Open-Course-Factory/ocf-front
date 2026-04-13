@@ -99,7 +99,7 @@ export const helpEn = {
           },
           step3: {
             title: "Set Access Parameters",
-            description: "Configure access settings: session name, sharing options, and duration. You can create private sessions or sessions shared with your team."
+            description: "Configure your session: name, duration, and other settings."
           },
           step4: {
             title: "Launch Your Terminal",
@@ -394,10 +394,6 @@ export const helpEn = {
         },
 
         nextSteps: {
-          sharing: {
-            title: "Sharing & Collaboration",
-            description: "Learn how to share your terminals with other users"
-          },
           troubleshooting: {
             title: "Troubleshooting",
             description: "Solutions to common session management problems"
@@ -477,10 +473,6 @@ export const helpEn = {
           copyIframe: {
             title: "Copy Iframe Code",
             description: "Generate and copy the iframe embed code for integrating the terminal into external websites or LMS platforms."
-          },
-          manageAccess: {
-            title: "Manage Access",
-            description: "Open the access management panel to add or remove users and configure sharing permissions."
           },
           syncSession: {
             title: "Sync Session",
@@ -632,31 +624,6 @@ export const helpEn = {
           }
         },
 
-        sharingProblems: {
-          title: "Sharing problems",
-          cannotShare: {
-            title: "Cannot share a terminal",
-            checksTitle: "Checks:",
-            checks: {
-              check1: "Is the session active?",
-              check2: "Does the recipient user exist?",
-              check3: "Do you have sharing permissions?"
-            },
-            solutionTitle: "Solution:",
-            solution: "First sync your session, then retry sharing with a valid email."
-          },
-          cannotAccess: {
-            title: "User cannot access shared terminal",
-            checksTitle: "Points to check:",
-            checks: {
-              check1: "The share hasn't expired",
-              check2: "The user is logged into their account",
-              check3: "Permissions are correct",
-              check4: "The source session is still active"
-            }
-          }
-        },
-
         performanceProblems: {
           title: "Performance problems",
           slowTerminal: {
@@ -778,10 +745,6 @@ export const helpEn = {
           managingSessions: {
             title: "Managing sessions",
             description: "Optimize your terminal session usage"
-          },
-          sharing: {
-            title: "Sharing and collaboration",
-            description: "Master sharing features"
           }
         }
       },

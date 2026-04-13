@@ -332,13 +332,6 @@
             </div>
           </div>
           <div class="action-item">
-            <i class="fas fa-users-cog"></i>
-            <div>
-              <h4>{{ t('help.terminals.managingSessions.moreActions.manageAccess.title') }}</h4>
-              <p>{{ t('help.terminals.managingSessions.moreActions.manageAccess.description') }}</p>
-            </div>
-          </div>
-          <div class="action-item">
             <i class="fas fa-sync"></i>
             <div>
               <h4>{{ t('help.terminals.managingSessions.moreActions.syncSession.title') }}</h4>

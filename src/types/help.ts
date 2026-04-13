@@ -129,108 +129,6 @@ export interface HelpTranslations {
           };
         };
       };
-      sharing: {
-        title: string;
-        intro: string;
-        howToShare: {
-          title: string;
-        };
-        sharingSteps: {
-          description: string;
-          step1: {
-            title: string;
-            description: string;
-            button: string;
-          };
-          step2: {
-            title: string;
-            description: string;
-            item1: string;
-            item2: string;
-            item3: string;
-            item4: string;
-          };
-          step3: {
-            title: string;
-            description: string;
-          };
-        };
-        accessManagement: {
-          title: string;
-          description: string;
-          readOnly: {
-            description: string;
-            tag1: string;
-            tag2: string;
-            tag3: string;
-          };
-          readWrite: {
-            description: string;
-            tag1: string;
-            tag2: string;
-            tag3: string;
-          };
-          actionsTitle: string;
-          actions: {
-            manage: {
-              title: string;
-              description: string;
-            };
-            revoke: {
-              title: string;
-              description: string;
-            };
-            modify: {
-              title: string;
-              description: string;
-            };
-          };
-        };
-        permissions: {
-          title: string;
-          readOnly: {
-            title: string;
-            description: string;
-          };
-          readWrite: {
-            title: string;
-            description: string;
-          };
-          admin: {
-            title: string;
-            description: string;
-          };
-        };
-        useCases: {
-          title: string;
-          teaching: {
-            title: string;
-            description: string;
-          };
-          collaboration: {
-            title: string;
-            description: string;
-          };
-          support: {
-            title: string;
-            description: string;
-          };
-          presentation: {
-            title: string;
-            description: string;
-          };
-        };
-        security: {
-          title: string;
-          practices: {
-            practice1: string;
-            practice2: string;
-            practice3: string;
-            practice4: string;
-            practice5: string;
-          };
-        };
-      };
       troubleshooting: {
         title: string;
         intro: string;
@@ -353,10 +251,6 @@ export interface HelpTranslations {
             description: string;
           };
           managingSessions: {
-            title: string;
-            description: string;
-          };
-          sharing: {
             title: string;
             description: string;
           };
