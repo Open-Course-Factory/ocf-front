@@ -29,7 +29,6 @@ import 'element-plus/dist/index.css'
 import ElementPlus from 'element-plus'
 import { piniaPluginPersist } from './piniaPluginPersist'
 import { useCurrentUserStore } from './stores/currentUser'
-import { usePermissionsStore } from './stores/permissions'
 import { setupAxiosInterceptors, setupAxiosDefaults } from './services/core/http'
 import { featureFlagService } from './services/features'
 import i18n from './i18n'
@@ -123,10 +122,6 @@ async function initializeApp() {
             // Then load permissions
             await userStore.loadPermissions()
             console.log('✅ Permissions loaded successfully')
-
-            // Also load effective features for plan-gated routes
-            const permissionsStore = usePermissionsStore()
-            await permissionsStore.loadEffectiveFeatures()
         } catch (err: any) {
             console.warn('⚠️ User data/permissions loading failed:', err?.message || err)
         }

@@ -21,8 +21,6 @@
 
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import { useCurrentUserStore } from '../stores/currentUser';
-import { usePermissionsStore } from '../stores/permissions';
-import { useUserSettingsStore } from '../stores/userSettings';
 import { featureFlagService } from '../services/features';
 import { useSettingsNavigation } from '../composables/useSettingsNavigation';
 import { getCurrentActorRoles } from '../composables/useFeatureFlags';
@@ -504,22 +502,11 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // Check plan features (org-context-aware — blocks access when current org's plan lacks the feature)
-  const requiredPlanFeature = to.meta.requiresPlanFeature as string | undefined;
-  if (requiredPlanFeature) {
-    const permissionsStore = usePermissionsStore();
-    if (!permissionsStore.hasFeature(requiredPlanFeature)) {
-      console.warn(`Plan feature "${requiredPlanFeature}" not available in current org context`);
-      const settingsStore = useUserSettingsStore();
-      const validPages = settingsStore.availablePages.map((p: { value: string }) => p.value);
-      const savedPage = settingsStore.settings.default_landing_page;
-      const defaultPage = (savedPage && validPages.includes(savedPage))
-        ? savedPage
-        : (validPages.includes('/terminal-sessions') ? '/terminal-sessions' : validPages[0] || '/terminal-sessions');
-      next(defaultPage);
-      return;
-    }
-  }
+  // Plan feature check (requiresPlanFeature) is NOT done here.
+  // It is handled by the organizations store on org switch (setCurrentOrganization)
+  // which has the correct org context. The nav menu also hides/grays out
+  // items based on plan features reactively. Checking here caused timing bugs
+  // because effective features aren't loaded until after org context is set.
 
   // Check permissions (if route requires specific permissions)
   const requiredPermissions = to.meta.requiredPermissions as string[] | undefined;
