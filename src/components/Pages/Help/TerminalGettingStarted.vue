@@ -98,6 +98,9 @@
             <ul>
               <li v-html="t('help.terminals.gettingStarted.steps.configure.item1')"></li>
               <li v-html="t('help.terminals.gettingStarted.steps.configure.item2')"></li>
+              <li v-html="t('help.terminals.gettingStarted.steps.configure.item3')"></li>
+              <li v-html="t('help.terminals.gettingStarted.steps.configure.item4')"></li>
+              <li v-html="t('help.terminals.gettingStarted.steps.configure.item5')"></li>
             </ul>
           </div>
         </div>

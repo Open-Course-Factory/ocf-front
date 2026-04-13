@@ -95,8 +95,8 @@ export const helpEn = {
             description: "Go to the \"Terminal Creation\" page from the main menu. This page allows you to configure your new terminal session."
           },
           step2: {
-            title: "Choose Your Configuration",
-            description: "Select the type of environment you need (development, production, specific language, etc.). Each configuration comes with pre-installed tools adapted to your needs."
+            title: "Compose Your Environment",
+            description: "Use the session composer to select your environment in three steps: choose a <strong>distribution</strong> (e.g. Ubuntu, Debian), pick a <strong>size</strong> (S / M / L / XL), and enable optional <strong>features</strong> such as Docker or Kubernetes. A recommended size and the available features are pre-selected for you."
           },
           step3: {
             title: "Set Access Parameters",
@@ -131,9 +131,12 @@ export const helpEn = {
             button: "Create a session now"
           },
           configure: {
-            title: "Configure your session",
-            item1: "<strong>Terms of use:</strong> Accept the terms (required)",
-            item2: "<strong>Expiration time:</strong> Choose how long your session will remain active (optional)"
+            title: "Compose your environment",
+            item1: "<strong>Distribution:</strong> Choose the Linux distribution shown as cards with brand icons (e.g. Ubuntu, Debian). The system recommends the most common one by default.",
+            item2: "<strong>Size:</strong> Pick S, M, L, or XL using the size pills. Sizes locked by your plan appear greyed out with a lock icon — upgrade your plan to unlock them.",
+            item3: "<strong>Features:</strong> Toggle optional add-ons such as Docker or Kubernetes. Unavailable features are shown as disabled.",
+            item4: "<strong>Terms of use:</strong> Accept the terms (required)",
+            item5: "<strong>Expiration time:</strong> Choose how long your session will remain active (optional)"
           },
           launch: {
             title: "Launch the session",
@@ -164,8 +167,8 @@ export const helpEn = {
         },
 
         machineSizes: {
-          title: "Machine Sizes",
-          description: "Terminal sessions are available in different sizes, each offering different amounts of CPU and memory resources. The sizes available to you depend on your subscription plan.",
+          title: "Environment Sizes",
+          description: "When composing a session, you choose a size for your environment. Each size offers different amounts of CPU and memory. The sizes available to you depend on your subscription plan.",
           small: {
             title: "S - Small",
             description: "Lightweight environment for simple tasks, scripting, and basic development."
@@ -184,7 +187,7 @@ export const helpEn = {
           },
           planTip: {
             title: "Plan-based availability",
-            description: "Your subscription plan determines which machine sizes are available to you. Check your plan details to see your allowed sizes."
+            description: "Your subscription plan determines which sizes are available. Locked sizes appear greyed out with a lock icon in the session composer. On an org-managed subscription, unavailable sizes are hidden entirely. To unlock more sizes, upgrade your plan."
           }
         },
 
@@ -1577,7 +1580,8 @@ export const helpEn = {
           description: "When your subscription is assigned by an organization, your experience is streamlined: the billing section is hidden since the organization handles payments directly.",
           managedByAdmin: "Managed by your organization administrator who controls plan level and renewal",
           noBilling: "Simplified view without billing details, since the organization handles all payments",
-          sameFeatures: "Access to the same features and quotas as a personal subscription of the same tier"
+          sameFeatures: "Access to the same features and quotas as a personal subscription of the same tier",
+          sessionComposerNote: "When creating a session with an org-managed subscription, sizes and features that are not available under your plan are hidden entirely from the session composer — only options you can actually use are shown."
         },
 
         freePlan: {
@@ -2561,25 +2565,25 @@ export const helpEn = {
           title: "Starting a Scenario",
           description: "Follow these steps to launch your first interactive scenario.",
           step1: {
-            title: "Open a Terminal Session",
-            description: "First, make sure you have an active terminal session. Navigate to your terminal sessions page and start or select a session.",
+            title: "Open the Scenario Launcher",
+            description: "Navigate to the <strong>Scenarios</strong> section in the menu. You will see a list of scenarios available to you — the list is filtered to the ones assigned to your organization or group.",
             button: "My Terminal Sessions"
           },
           step2: {
-            title: "Launch a Scenario",
-            description: "Above your terminal, you will see a bar that says <strong>\"No scenario active on this terminal\"</strong>. Click the <strong>\"Start a Scenario\"</strong> button to open the scenario selection dialog."
+            title: "Browse and Select a Scenario",
+            description: "Browse the available scenarios. Each one displays its <strong>title</strong>, <strong>difficulty badge</strong> (beginner, intermediate, or advanced), and <strong>estimated completion time</strong>. Click <strong>\"Start\"</strong> on the scenario you want to work on."
           },
           step3: {
-            title: "Choose a Scenario",
-            description: "Browse the list of available scenarios. Each one displays its <strong>title</strong>, <strong>difficulty badge</strong> (beginner, intermediate, or advanced), and <strong>estimated completion time</strong>. Click on a scenario to start it."
+            title: "Environment Provisioning",
+            description: "The platform automatically provisions the right environment for that scenario — the correct distribution and size are selected for you. A provisioning overlay is shown while your environment is being prepared. You do not need to compose a session manually."
           },
           step4: {
             title: "The Scenario Panel Opens",
-            description: "Once you select a scenario, a <strong>panel opens on the right side</strong> of your terminal. This panel contains the instructions for your current step, and the terminal remains fully usable on the left."
+            description: "Once ready, a <strong>panel opens on the right side</strong> of your terminal. This panel contains the instructions for your current step, and the terminal remains fully usable on the left."
           },
           tip: {
             title: "Tip",
-            description: "You need an active terminal session before you can start a scenario. If you don't have one yet, create a terminal session first."
+            description: "If you already have a running scenario session, you can resume it directly from the scenario launcher — no need to recreate it."
           }
         },
 
@@ -2718,7 +2722,7 @@ export const helpEn = {
 
         overview: {
           title: "Overview",
-          description: "As a trainer, you can create interactive scenarios that guide learners through real-world exercises. Each scenario consists of ordered steps with instructions, verification scripts, and optional hints. Scenarios run on real Linux containers matching a chosen machine type, giving learners a hands-on experience."
+          description: "As a trainer, you can create interactive scenarios that guide learners through real-world exercises. Each scenario consists of ordered steps with instructions, verification scripts, and optional hints. Scenarios run on real Linux containers matching a chosen distribution, giving learners a hands-on experience."
         },
 
         creating: {
@@ -2734,8 +2738,8 @@ export const helpEn = {
             description: "Click <strong>\"Create\"</strong> and fill in the scenario details: <strong>title</strong>, <strong>description</strong>, <strong>difficulty level</strong> (beginner, intermediate, or advanced), and <strong>estimated completion time</strong> in minutes."
           },
           step3: {
-            title: "Choose the Machine Type",
-            description: "Select the <strong>machine type</strong> (Linux image) that learners' terminals will use for this scenario. This determines the operating system and pre-installed tools available during the exercise."
+            title: "Choose the Distribution",
+            description: "Select the <strong>distribution</strong> (Linux image) that learners' environments will use for this scenario. This determines the operating system and pre-installed tools available during the exercise. Launching the scenario automatically provisions the right environment — learners do not need to pick a size or features themselves."
           },
           tip: {
             title: "Tip",

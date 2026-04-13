@@ -222,6 +222,10 @@
             <i class="fas fa-check-circle"></i>
             <span>{{ t('help.account.subscription.assignedSubscriptions.sameFeatures') }}</span>
           </div>
+          <div class="feature-item">
+            <i class="fas fa-filter"></i>
+            <span>{{ t('help.account.subscription.assignedSubscriptions.sessionComposerNote') }}</span>
+          </div>
         </div>
       </section>
 

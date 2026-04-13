@@ -95,8 +95,8 @@ export const helpFr = {
             description: "Rendez-vous sur la page \"Création de Terminal\" depuis le menu principal. Cette page vous permet de configurer votre nouvelle session terminal."
           },
           step2: {
-            title: "Choisir Votre Configuration",
-            description: "Sélectionnez le type d'environnement dont vous avez besoin (développement, production, langage spécifique, etc.). Chaque configuration vient avec des outils pré-installés adaptés à vos besoins."
+            title: "Composer Votre Environnement",
+            description: "Utilisez le compositeur de session pour sélectionner votre environnement en trois étapes : choisissez une <strong>distribution</strong> (ex. Ubuntu, Debian), une <strong>taille</strong> (S / M / L / XL) et activez les <strong>fonctionnalités</strong> optionnelles comme Docker ou Kubernetes. Une taille recommandée et les fonctionnalités disponibles sont pré-sélectionnées pour vous."
           },
           step3: {
             title: "Définir les Paramètres d'Accès",
@@ -131,9 +131,12 @@ export const helpFr = {
             button: "Créer une session maintenant"
           },
           configure: {
-            title: "Configurer votre session",
-            item1: "<strong>Conditions d'utilisation :</strong> Acceptez les conditions (obligatoire)",
-            item2: "<strong>Durée d'expiration :</strong> Choisissez combien de temps votre session restera active (optionnel)"
+            title: "Composer votre environnement",
+            item1: "<strong>Distribution :</strong> Choisissez la distribution Linux affichée sous forme de cartes avec des icônes de marque (ex. Ubuntu, Debian). Le système recommande la plus courante par défaut.",
+            item2: "<strong>Taille :</strong> Sélectionnez S, M, L ou XL via les pastilles de taille. Les tailles verrouillées par votre plan apparaissent en grisé avec un cadenas — améliorez votre plan pour les débloquer.",
+            item3: "<strong>Fonctionnalités :</strong> Activez les modules optionnels tels que Docker ou Kubernetes. Les fonctionnalités indisponibles sont affichées comme désactivées.",
+            item4: "<strong>Conditions d'utilisation :</strong> Acceptez les conditions (obligatoire)",
+            item5: "<strong>Durée d'expiration :</strong> Choisissez combien de temps votre session restera active (optionnel)"
           },
           launch: {
             title: "Lancer la session",
@@ -164,8 +167,8 @@ export const helpFr = {
         },
 
         machineSizes: {
-          title: "Tailles de machine",
-          description: "Les sessions de terminal sont disponibles en différentes tailles, chacune offrant des quantités différentes de CPU et de mémoire. Les tailles disponibles dépendent de votre plan d'abonnement.",
+          title: "Tailles d'environnement",
+          description: "Lors de la composition d'une session, vous choisissez une taille pour votre environnement. Chaque taille offre des quantités différentes de CPU et de mémoire. Les tailles disponibles dépendent de votre plan d'abonnement.",
           small: {
             title: "S - Petite",
             description: "Environnement léger pour les tâches simples, le scripting et le développement basique."
@@ -184,7 +187,7 @@ export const helpFr = {
           },
           planTip: {
             title: "Disponibilité selon le plan",
-            description: "Votre plan d'abonnement détermine les tailles de machine auxquelles vous avez accès. Consultez les détails de votre plan pour connaître les tailles autorisées."
+            description: "Votre plan d'abonnement détermine les tailles disponibles. Les tailles verrouillées apparaissent en grisé avec un cadenas dans le compositeur de session. Sur un abonnement géré par l'organisation, les tailles indisponibles sont masquées. Pour débloquer plus de tailles, améliorez votre plan."
           }
         },
 
@@ -1577,7 +1580,8 @@ export const helpFr = {
           description: "Lorsque votre abonnement est attribué par une organisation, votre expérience est simplifiée : la section facturation est masquée puisque l'organisation gère directement les paiements.",
           managedByAdmin: "Géré par l'administrateur de votre organisation qui contrôle le niveau du plan et le renouvellement",
           noBilling: "Vue simplifiée sans détails de facturation, l'organisation prenant en charge tous les paiements",
-          sameFeatures: "Accès aux mêmes fonctionnalités et quotas qu'un abonnement personnel du même niveau"
+          sameFeatures: "Accès aux mêmes fonctionnalités et quotas qu'un abonnement personnel du même niveau",
+          sessionComposerNote: "Lors de la création d'une session avec un abonnement géré par l'organisation, les tailles et fonctionnalités non disponibles dans votre plan sont entièrement masquées dans le compositeur de session — seules les options accessibles vous sont présentées."
         },
 
         freePlan: {
@@ -2561,25 +2565,25 @@ export const helpFr = {
           title: "Démarrer un scénario",
           description: "Suivez ces étapes pour lancer votre premier scénario interactif.",
           step1: {
-            title: "Ouvrir une session terminal",
-            description: "Tout d'abord, assurez-vous d'avoir une session terminal active. Rendez-vous sur la page de vos sessions terminales et démarrez ou sélectionnez une session.",
+            title: "Ouvrir le lanceur de scénarios",
+            description: "Naviguez vers la section <strong>Scénarios</strong> dans le menu. Vous verrez une liste des scénarios disponibles — filtrée selon les scénarios assignés à votre organisation ou groupe.",
             button: "Mes sessions terminales"
           },
           step2: {
-            title: "Lancer un scénario",
-            description: "Au-dessus de votre terminal, vous verrez une barre indiquant <strong>\"Aucun scénario actif sur ce terminal\"</strong>. Cliquez sur le bouton <strong>\"Démarrer un scénario\"</strong> pour ouvrir la fenêtre de sélection des scénarios."
+            title: "Parcourir et sélectionner un scénario",
+            description: "Parcourez les scénarios disponibles. Chacun affiche son <strong>titre</strong>, son <strong>badge de difficulté</strong> (débutant, intermédiaire ou avancé) et sa <strong>durée estimée</strong>. Cliquez sur <strong>\"Démarrer\"</strong> sur le scénario que vous souhaitez réaliser."
           },
           step3: {
-            title: "Choisir un scénario",
-            description: "Parcourez la liste des scénarios disponibles. Chacun affiche son <strong>titre</strong>, son <strong>badge de difficulté</strong> (débutant, intermédiaire ou avancé) et sa <strong>durée estimée</strong>. Cliquez sur un scénario pour le démarrer."
+            title: "Provisionnement de l'environnement",
+            description: "La plateforme provisionne automatiquement le bon environnement pour ce scénario — la distribution et la taille correctes sont sélectionnées pour vous. Une superposition de provisionnement s'affiche pendant que votre environnement est en cours de préparation. Vous n'avez pas besoin de composer une session manuellement."
           },
           step4: {
             title: "Le panneau de scénario s'ouvre",
-            description: "Une fois le scénario sélectionné, un <strong>panneau s'ouvre sur le côté droit</strong> de votre terminal. Ce panneau contient les instructions de l'étape en cours, et le terminal reste entièrement utilisable sur la gauche."
+            description: "Une fois prêt, un <strong>panneau s'ouvre sur le côté droit</strong> de votre terminal. Ce panneau contient les instructions de l'étape en cours, et le terminal reste entièrement utilisable sur la gauche."
           },
           tip: {
             title: "Conseil",
-            description: "Vous avez besoin d'une session terminal active avant de pouvoir démarrer un scénario. Si vous n'en avez pas encore, créez d'abord une session terminal."
+            description: "Si vous avez déjà une session de scénario en cours, vous pouvez la reprendre directement depuis le lanceur de scénarios — pas besoin de la recréer."
           }
         },
 
@@ -2718,7 +2722,7 @@ export const helpFr = {
 
         overview: {
           title: "Vue d'ensemble",
-          description: "En tant que formateur, vous pouvez créer des scénarios interactifs qui guident les apprenants à travers des exercices concrets. Chaque scénario se compose d'étapes ordonnées avec des instructions, des scripts de vérification et des indices optionnels. Les scénarios s'exécutent sur de vrais conteneurs Linux correspondant au type de machine choisi, offrant aux apprenants une expérience pratique."
+          description: "En tant que formateur, vous pouvez créer des scénarios interactifs qui guident les apprenants à travers des exercices concrets. Chaque scénario se compose d'étapes ordonnées avec des instructions, des scripts de vérification et des indices optionnels. Les scénarios s'exécutent sur de vrais conteneurs Linux correspondant à la distribution choisie, offrant aux apprenants une expérience pratique."
         },
 
         creating: {
@@ -2734,8 +2738,8 @@ export const helpFr = {
             description: "Cliquez sur <strong>\"Créer\"</strong> et remplissez les détails du scénario : <strong>titre</strong>, <strong>description</strong>, <strong>niveau de difficulté</strong> (débutant, intermédiaire ou avancé) et <strong>durée estimée</strong> en minutes."
           },
           step3: {
-            title: "Choisir le type de machine",
-            description: "Sélectionnez le <strong>type de machine</strong> (image Linux) que les terminaux des apprenants utiliseront pour ce scénario. Cela détermine le système d'exploitation et les outils pré-installés disponibles pendant l'exercice."
+            title: "Choisir la distribution",
+            description: "Sélectionnez la <strong>distribution</strong> (image Linux) que les environnements des apprenants utiliseront pour ce scénario. Cela détermine le système d'exploitation et les outils pré-installés disponibles pendant l'exercice. Le lancement du scénario provisionne automatiquement le bon environnement — les apprenants n'ont pas besoin de choisir une taille ou des fonctionnalités eux-mêmes."
           },
           tip: {
             title: "Conseil",
