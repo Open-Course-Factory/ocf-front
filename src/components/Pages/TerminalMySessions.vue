@@ -1419,11 +1419,6 @@ async function hideAllInactiveSessions() {
   opacity: 0.7;
 }
 
-.metadata-item.shared-info {
-  color: var(--color-secondary);
-  font-weight: var(--font-weight-medium);
-}
-
 /* Status Badge */
 .status-badge {
   display: flex;
@@ -1536,19 +1531,6 @@ async function hideAllInactiveSessions() {
 
 .btn-icon.btn-view:hover:not(:disabled) {
   background-color: var(--color-success);
-  opacity: 0.85;
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
-}
-
-.btn-icon.btn-share {
-  background-color: var(--color-info);
-  color: var(--color-white);
-  border-radius: var(--border-radius-sm);
-}
-
-.btn-icon.btn-share:hover:not(:disabled) {
-  background-color: var(--color-info);
   opacity: 0.85;
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
@@ -1860,20 +1842,6 @@ async function hideAllInactiveSessions() {
 
 .session-title-display:hover .btn-edit-name {
   opacity: 1;
-}
-
-.read-only-indicator {
-  display: inline-flex;
-  align-items: center;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  opacity: 0.6;
-  margin-left: var(--spacing-xs);
-  cursor: help;
-}
-
-.read-only-indicator i {
-  font-size: var(--font-size-xs);
 }
 
 .session-title-edit {
