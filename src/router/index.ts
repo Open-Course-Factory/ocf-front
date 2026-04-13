@@ -553,7 +553,7 @@ router.beforeEach(async (to, from, next) => {
       });
       // Redirect to dashboard or home
       next({
-        name: 'TerminalMySessions', // Default page for authenticated users
+        name: 'TerminalSessions', // Default page for authenticated users
         query: { error: 'insufficient_permissions' }
       });
       return;
