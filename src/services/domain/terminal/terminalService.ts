@@ -16,46 +16,6 @@ export interface UpdateTerminalRequest {
   name?: string
 }
 
-export interface TerminalShareOutput {
-  id: string
-  terminal_id: string
-  shared_with_user_id?: string
-  shared_with_group_id?: string
-  shared_by_user_id: string
-  share_type: 'user' | 'group'
-  access_level: 'read' | 'write' | 'owner'
-  expires_at?: string
-  is_active: boolean
-  created_at: string
-}
-
-export interface SharedTerminalInfo {
-  terminal: {
-    id: string
-    session_id: string
-    user_id: string
-    status: string
-    expires_at: string
-    instance_type: string
-    machine_size?: string
-    created_at: string
-    name?: string
-  }
-  shared_by: string // User ID (for reference)
-  shared_by_display_name: string // User display name (use this for display)
-  access_level: 'read' | 'write' | 'owner'
-  expires_at?: string
-  shared_at: string
-  shares?: TerminalShareOutput[]
-}
-
-export interface ShareTerminalRequest {
-  shared_with_user_id?: string
-  shared_with_group_id?: string
-  access_level: 'read' | 'write' | 'owner'
-  expires_at?: string
-}
-
 export const terminalService = {
   async stopSession(sessionId: string) {
     const response = await axios.post(`/terminals/${sessionId}/stop`)
@@ -65,31 +25,6 @@ export const terminalService = {
   async syncSession(sessionId: string) {
     const response = await axios.post(`/terminals/${sessionId}/sync`)
     return response.data
-  },
-
-  // Terminal Sharing API functions
-  async shareTerminal(terminalId: string, data: ShareTerminalRequest): Promise<TerminalShareOutput> {
-    const response = await axios.post(`/terminals/${terminalId}/share`, data)
-    return response.data
-  },
-
-  async getSharedTerminals(): Promise<SharedTerminalInfo[]> {
-    const response = await axios.get('/terminals/shared-with-me')
-    return response.data
-  },
-
-  async getTerminalInfo(terminalId: string): Promise<SharedTerminalInfo> {
-    const response = await axios.get(`/terminals/${terminalId}/info`)
-    return response.data
-  },
-
-  async getTerminalShares(terminalId: string): Promise<TerminalShareOutput[]> {
-    const response = await axios.get(`/terminals/${terminalId}/shares`)
-    return response.data
-  },
-
-  async revokeAccess(terminalId: string, userId: string): Promise<void> {
-    await axios.delete(`/terminals/${terminalId}/share/${userId}`)
   },
 
   async updateTerminal(terminalId: string, data: UpdateTerminalRequest): Promise<any> {

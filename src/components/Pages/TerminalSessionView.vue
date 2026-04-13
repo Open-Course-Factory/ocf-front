@@ -181,7 +181,6 @@ import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { renderKillercodaMarkdown, loadScenarioImages } from '../../utils/killercodaMarkdown'
-import { terminalService } from '../../services/domain/terminal'
 import { scenarioSessionService } from '../../services/domain/scenario'
 import type { ScenarioInfo } from '../../services/domain/scenario'
 import { useTranslations } from '../../composables/useTranslations'
@@ -521,21 +520,26 @@ async function loadSession() {
   error.value = ''
 
   try {
-    const terminalInfo = await terminalService.getTerminalInfo(sessionId)
+    const sessions = await axios.get('/terminals/user-sessions')
+    const terminal = (sessions.data || []).find((s: any) => s.session_id === sessionId || s.id === sessionId)
+
+    if (!terminal) {
+      throw { response: { status: 404 } }
+    }
 
     sessionInfo.value = {
-      session_id: terminalInfo.terminal.session_id,
-      expires_at: terminalInfo.terminal.expires_at,
-      status: terminalInfo.terminal.status,
-      name: terminalInfo.terminal.name,
-      instance_type: terminalInfo.terminal.instance_type,
-      machine_size: terminalInfo.terminal.machine_size
+      session_id: terminal.session_id,
+      expires_at: terminal.expires_at,
+      status: terminal.status,
+      name: terminal.name,
+      instance_type: terminal.instance_type,
+      machine_size: terminal.machine_size
     }
 
     // Start expiration timer only for active sessions
-    const status = terminalInfo.terminal.status
-    if (terminalInfo.terminal.expires_at && status !== 'expired' && status !== 'stopped') {
-      startExpirationTimer(terminalInfo.terminal.expires_at)
+    const status = terminal.status
+    if (terminal.expires_at && status !== 'expired' && status !== 'stopped') {
+      startExpirationTimer(terminal.expires_at)
     }
 
     // Auto-detect linked scenario session (unless already set via query parameter or loading)

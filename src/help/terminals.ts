@@ -29,8 +29,8 @@ export function registerTerminalsHelp(store: ReturnType<typeof useHelpRegistrySt
       fr: 'Terminaux'
     },
     description: {
-      en: 'Learn how to create, manage and share your terminal sessions',
-      fr: 'Apprenez à créer, gérer et partager vos sessions de terminaux'
+      en: 'Learn how to create and manage your terminal sessions',
+      fr: 'Apprenez à créer et gérer vos sessions de terminaux'
     },
     icon: 'fas fa-terminal',
     featureFlag: 'terminal_management',
@@ -60,19 +60,6 @@ export function registerTerminalsHelp(store: ReturnType<typeof useHelpRegistrySt
           fr: 'Apprenez à gérer efficacement vos sessions terminal, synchroniser votre travail et accéder à vos environnements depuis n\'importe où.'
         },
         icon: 'fas fa-cogs'
-      },
-      {
-        route: 'terminals/sharing',
-        component: () => import('../components/Pages/Help/TerminalSharing.vue'),
-        title: {
-          en: 'Sharing & Collaboration',
-          fr: 'Partage et Collaboration'
-        },
-        description: {
-          en: 'Terminals can be shared with other users to facilitate collaboration, teaching, or technical support.',
-          fr: 'Les terminaux peuvent être partagés avec d\'autres utilisateurs pour faciliter la collaboration, l\'enseignement ou le support technique.'
-        },
-        icon: 'fas fa-share-alt'
       },
       {
         route: 'terminals/troubleshooting',

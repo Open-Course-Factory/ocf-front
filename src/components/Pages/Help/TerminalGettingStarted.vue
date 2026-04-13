@@ -319,11 +319,6 @@
             <p>{{ t('help.terminals.managingSessions.intro') }}</p>
           </router-link>
 
-          <router-link :to="`${helpRoutePrefix}/terminals/sharing`" class="next-step-card">
-            <i class="fas fa-share-alt"></i>
-            <h4>{{ t('help.sections.terminals.sharing') }}</h4>
-            <p>{{ t('help.terminals.sharing.intro') }}</p>
-          </router-link>
         </div>
       </section>
     </div>

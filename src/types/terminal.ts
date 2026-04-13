@@ -33,21 +33,6 @@ export interface TerminalSession extends BaseEntity {
 }
 
 /**
- * Terminal Share entity (extended to support group sharing)
- */
-export interface TerminalShare extends BaseEntity {
-  terminal_id: string
-  shared_with_user_id?: string
-  shared_with_group_id?: string
-  shared_by_user_id: string
-  share_type: 'user' | 'group'
-  access_level: 'read' | 'write' | 'owner'
-  expires_at?: string
-  is_active: boolean
-  metadata?: Record<string, any>
-}
-
-/**
  * SSH Key entity
  */
 export interface SshKey extends BaseEntity {

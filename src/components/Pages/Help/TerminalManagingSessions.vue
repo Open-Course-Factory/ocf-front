@@ -413,12 +413,6 @@
       <section class="help-section">
         <h2><i class="fas fa-question-circle"></i> {{ t('help.navigation.nextSteps') }}</h2>
         <div class="next-steps">
-          <router-link :to="`${helpRoutePrefix}/terminals/sharing`" class="next-step-card">
-            <i class="fas fa-share-alt"></i>
-            <h4>{{ t('help.terminals.managingSessions.nextSteps.sharing.title') }}</h4>
-            <p>{{ t('help.terminals.managingSessions.nextSteps.sharing.description') }}</p>
-          </router-link>
-
           <router-link :to="`${helpRoutePrefix}/terminals/troubleshooting`" class="next-step-card">
             <i class="fas fa-wrench"></i>
             <h4>{{ t('help.terminals.managingSessions.nextSteps.troubleshooting.title') }}</h4>

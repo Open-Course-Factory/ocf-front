@@ -33,7 +33,6 @@ export interface HelpTranslations {
         description: string;
         gettingStarted: string;
         managingSessions: string;
-        sharing: string;
         troubleshooting: string;
       };
       courses: {
@@ -83,7 +82,6 @@ export interface HelpTranslations {
         quickAccess: {
           title: string;
           mySessions: string;
-          sharedSessions: string;
           keys: string;
         };
       };

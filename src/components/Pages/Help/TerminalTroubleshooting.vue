@@ -220,43 +220,6 @@
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-share-alt"></i> {{ t('help.terminals.troubleshooting.sharingProblems.title') }}</h2>
-
-        <div class="problem-card">
-          <div class="problem-header">
-            <i class="fas fa-ban"></i>
-            <h3>{{ t('help.terminals.troubleshooting.sharingProblems.cannotShare.title') }}</h3>
-          </div>
-          <div class="problem-content">
-            <h4>{{ t('help.terminals.troubleshooting.sharingProblems.cannotShare.checksTitle') }}</h4>
-            <ul>
-              <li>{{ t('help.terminals.troubleshooting.sharingProblems.cannotShare.checks.check1') }}</li>
-              <li>{{ t('help.terminals.troubleshooting.sharingProblems.cannotShare.checks.check2') }}</li>
-              <li>{{ t('help.terminals.troubleshooting.sharingProblems.cannotShare.checks.check3') }}</li>
-            </ul>
-            <h4>{{ t('help.terminals.troubleshooting.sharingProblems.cannotShare.solutionTitle') }}</h4>
-            <p>{{ t('help.terminals.troubleshooting.sharingProblems.cannotShare.solution') }}</p>
-          </div>
-        </div>
-
-        <div class="problem-card">
-          <div class="problem-header">
-            <i class="fas fa-eye-slash"></i>
-            <h3>{{ t('help.terminals.troubleshooting.sharingProblems.cannotAccess.title') }}</h3>
-          </div>
-          <div class="problem-content">
-            <h4>{{ t('help.terminals.troubleshooting.sharingProblems.cannotAccess.checksTitle') }}</h4>
-            <ul>
-              <li>{{ t('help.terminals.troubleshooting.sharingProblems.cannotAccess.checks.check1') }}</li>
-              <li>{{ t('help.terminals.troubleshooting.sharingProblems.cannotAccess.checks.check2') }}</li>
-              <li>{{ t('help.terminals.troubleshooting.sharingProblems.cannotAccess.checks.check3') }}</li>
-              <li>{{ t('help.terminals.troubleshooting.sharingProblems.cannotAccess.checks.check4') }}</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section class="help-section">
         <h2><i class="fas fa-tachometer-alt"></i> {{ t('help.terminals.troubleshooting.performanceProblems.title') }}</h2>
 
         <div class="performance-tips">
@@ -480,11 +443,6 @@
             <p>{{ t('help.terminals.troubleshooting.resources.managingSessions.description') }}</p>
           </router-link>
 
-          <router-link :to="`${helpRoutePrefix}/terminals/sharing`" class="resource-card">
-            <i class="fas fa-share-alt"></i>
-            <h4>{{ t('help.terminals.troubleshooting.resources.sharing.title') }}</h4>
-            <p>{{ t('help.terminals.troubleshooting.resources.sharing.description') }}</p>
-          </router-link>
         </div>
       </section>
     </div>

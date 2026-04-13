@@ -149,7 +149,6 @@ const basicRoutes = [
       { path: 'scenarios', name: 'ScenarioLauncher', component: () => import('../components/Pages/ScenarioLauncher.vue'), meta: { requiresAuth: true } },
       { path: 'my-scenarios', name: 'MyScenarios', component: () => import('../components/Pages/MyScenarios.vue'), meta: { requiresAuth: true } },
       { path: 'terminal-session/:sessionId', name: 'TerminalSessionView', component: () => import('../components/Pages/TerminalSessionView.vue'), meta: { requiresAuth: true, collapseNav: true } },
-      { path: 'terminal-shared', redirect: '/terminal-sessions' }, // Redirect old route to unified sessions page
       { path: 'user-terminal-keys', name: 'UserTerminalKeys', component: UserTerminalKeys, meta: { requiresAuth: true, isSettings: true } },
       { path: 'class-groups', name: 'ClassGroups', component: ClassGroups, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresPlanFeature: 'multiple_groups' } },
       { path: 'class-groups-hierarchy', name: 'GroupHierarchyEditor', component: GroupHierarchyEditor, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresPlanFeature: 'multiple_groups' } },

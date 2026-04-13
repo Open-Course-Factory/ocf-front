@@ -190,7 +190,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { useEndStateConfig, type EndStateReason } from '../../composables/useEndStateConfig'
 import { getTerminalTheme } from '../../utils/terminalTheme'
-import { terminalService, type SharedTerminalInfo } from '../../services/domain/terminal/terminalService'
+import { terminalService } from '../../services/domain/terminal/terminalService'
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
 import RecordingIndicator from './RecordingIndicator.vue'
@@ -202,15 +202,6 @@ interface SessionInfo {
   console_url?: string
   expires_at?: string
   status?: string
-}
-
-// Helper to convert SharedTerminalInfo to SessionInfo
-function toSessionInfo(shared: SharedTerminalInfo): SessionInfo {
-  return {
-    session_id: shared.terminal.session_id,
-    expires_at: shared.terminal.expires_at,
-    status: shared.terminal.status
-  }
 }
 
 interface Props {
@@ -453,17 +444,6 @@ async function initializeTerminal() {
   if (!terminal.value) {
     const success = await initXterm()
     if (!success) return
-  }
-
-  // Fetch session info if not provided
-  if (!props.sessionInfo && displaySessionId.value) {
-    try {
-      const sharedInfo = await terminalService.getTerminalInfo(displaySessionId.value)
-      fetchedSessionInfo.value = toSessionInfo(sharedInfo)
-    } catch (err: any) {
-      console.error('Error fetching session info:', err)
-      // Continue anyway - we can still try to connect
-    }
   }
 
   if (!displaySessionId.value) {
@@ -717,12 +697,6 @@ async function reconnect() {
       await terminalService.syncSession(displaySessionId.value)
     } catch (err: any) {
       console.warn('Could not sync session:', err)
-    }
-    try {
-      const sharedInfo = await terminalService.getTerminalInfo(displaySessionId.value)
-      fetchedSessionInfo.value = toSessionInfo(sharedInfo)
-    } catch (err: any) {
-      console.warn('Could not refresh session info:', err)
     }
   }
 

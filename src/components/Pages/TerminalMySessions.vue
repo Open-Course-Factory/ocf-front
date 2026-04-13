@@ -112,7 +112,7 @@
         </div>
         <div v-else class="sessions-grid">
           <template v-for="session in activeSessions" :key="session.id || session.session_id">
-            <div :class="['session-card', { 'shared-terminal': session.isShared, 'dropdown-open': openDropdowns.has(session.id || session.session_id) }]">
+            <div :class="['session-card', { 'dropdown-open': openDropdowns.has(session.id || session.session_id) }]">
             <!-- Compact header with all info in one line -->
             <div class="card-header">
               <div class="header-left">
@@ -127,13 +127,6 @@
                   >
                     <i class="fas fa-pencil-alt"></i>
                   </button>
-                  <span
-                    v-else-if="session.isShared && session.access_level === 'read'"
-                    class="read-only-indicator"
-                    :title="t('terminalMySessions.readOnlyAccess')"
-                  >
-                    <i class="fas fa-lock"></i>
-                  </span>
                 </div>
                 <div v-else class="session-title-edit">
                   <input
@@ -156,10 +149,6 @@
 
                 <!-- Compact metadata -->
                 <div class="session-metadata">
-                  <span v-if="session.isShared" class="metadata-item shared-info" :title="`${t('terminalMySessions.sharedBy')}: ${session.shared_by}`">
-                    <i class="fas fa-share-alt"></i>
-                    {{ session.shared_by }}
-                  </span>
                   <span v-if="session.instance_type" class="metadata-item" :title="t('terminalMySessions.instanceType')">
                     <i class="fas fa-microchip"></i>
                     {{ getInstanceName(session.instance_type) }}
@@ -201,15 +190,7 @@
                     <i class="fas fa-external-link-alt"></i>
                   </button>
                   <button
-                    v-if="!isTerminalInactive(session.status) && !session.isShared"
-                    class="btn-icon btn-share"
-                    @click="openSharingModal(session.session_id)"
-                    :title="t('terminalMySessions.tooltipShare')"
-                  >
-                    <i class="fas fa-share-alt"></i>
-                  </button>
-                  <button
-                    v-if="session.status === 'active' && !session.isShared"
+                    v-if="session.status === 'active'"
                     class="btn-icon btn-stop"
                     @click="stopSession(session.session_id)"
                     :title="t('terminalMySessions.buttonStop')"
@@ -240,22 +221,8 @@
                         <span>{{ copiedIframes.has(session.session_id) ? t('terminalMySessions.copiedIframe') : t('terminalMySessions.copyIframeCode') }}</span>
                       </button>
 
-                      <!-- Manage access (only for owned terminals) -->
-                      <button
-                        v-if="!session.isShared"
-                        class="dropdown-item"
-                        @click="openAccessModal(session.session_id)"
-                      >
-                        <i class="fas fa-users-cog"></i>
-                        <span>{{ t('terminalMySessions.manageAccess') }}</span>
-                      </button>
-
-                      <!-- Divider -->
-                      <div v-if="!session.isShared" class="dropdown-divider"></div>
-
                       <!-- Sync session -->
                       <button
-                        v-if="!session.isShared"
                         class="dropdown-item"
                         @click="syncSession(session.session_id); closeDropdown(session.id || session.session_id)"
                         :title="t('terminalMySessions.tooltipSync')"
@@ -285,7 +252,7 @@
 
           <div v-show="showInactiveSessions" class="sessions-grid">
             <template v-for="session in inactiveSessions" :key="session.id || session.session_id">
-              <div :class="['session-card', 'inactive-terminal', { 'shared-terminal': session.isShared, 'dropdown-open': openDropdowns.has(session.id || session.session_id) }]">
+              <div :class="['session-card', 'inactive-terminal', { 'dropdown-open': openDropdowns.has(session.id || session.session_id) }]">
                 <!-- Compact header with all info in one line -->
                 <div class="card-header">
                   <div class="header-left">
@@ -300,13 +267,6 @@
                       >
                         <i class="fas fa-pencil-alt"></i>
                       </button>
-                      <span
-                        v-else-if="session.isShared && session.access_level === 'read'"
-                        class="read-only-indicator"
-                        :title="t('terminalMySessions.readOnlyAccess')"
-                      >
-                        <i class="fas fa-lock"></i>
-                      </span>
                     </div>
                     <div v-else class="session-title-edit">
                       <input
@@ -329,10 +289,6 @@
 
                     <!-- Compact metadata -->
                     <div class="session-metadata">
-                      <span v-if="session.isShared" class="metadata-item shared-info" :title="`${t('terminalMySessions.sharedBy')}: ${session.shared_by}`">
-                        <i class="fas fa-share-alt"></i>
-                        {{ session.shared_by }}
-                      </span>
                       <span v-if="session.instance_type" class="metadata-item" :title="t('terminalMySessions.instanceType')">
                         <i class="fas fa-microchip"></i>
                         {{ getInstanceName(session.instance_type) }}
@@ -385,7 +341,6 @@
                         <div v-if="openDropdowns.has(session.id || session.session_id)" class="dropdown-menu" @click.stop>
                           <!-- Sync session -->
                           <button
-                            v-if="!session.isShared"
                             class="dropdown-item"
                             @click="syncSession(session.session_id); closeDropdown(session.id || session.session_id)"
                             :title="t('terminalMySessions.tooltipSync')"
@@ -475,23 +430,6 @@
           </div>
         </div>
 
-        <!-- Shared sessions info note -->
-        <div v-if="syncAllResults.shared_sessions_added > 0 || syncAllResults.shared_sessions_removed > 0" class="sync-info-note">
-          <i class="fas fa-info-circle"></i>
-          <span v-if="syncAllResults.shared_sessions_added > 0 && syncAllResults.shared_sessions_removed > 0">
-            {{ t('terminalMySessions.sharedSessionsAddedAndRemoved', {
-              added: syncAllResults.shared_sessions_added,
-              removed: syncAllResults.shared_sessions_removed
-            }) }}
-          </span>
-          <span v-else-if="syncAllResults.shared_sessions_added > 0">
-            {{ t('terminalMySessions.sharedSessionsAdded', { count: syncAllResults.shared_sessions_added }) }}
-          </span>
-          <span v-else-if="syncAllResults.shared_sessions_removed > 0">
-            {{ t('terminalMySessions.sharedSessionsRemoved', { count: syncAllResults.shared_sessions_removed }) }}
-          </span>
-        </div>
-
         <div v-if="syncAllResults.errors && syncAllResults.errors.length > 0" class="sync-errors">
           <h4>{{ t('terminalMySessions.encounterededErrors') }}</h4>
           <ul>
@@ -502,27 +440,11 @@
         </div>
       </div>
     </BaseModal>
-
-    <!-- Modals de partage -->
-    <TerminalSharingModal
-      :show="showSharingModal"
-      :terminal-id="selectedTerminalId"
-      @close="closeSharingModal"
-      @shared="onTerminalShared"
-    />
-
-    <TerminalAccessModal
-      :show="showAccessModal"
-      :terminal-id="selectedTerminalId"
-      :refresh-trigger="accessModalRefreshTrigger"
-      @close="closeAccessModal"
-      @open-sharing="openSharingModal"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, defineAsyncComponent, computed, watch, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import axios from 'axios'
 import { terminalService } from '../../services/domain/terminal'
 import { useNotification } from '../../composables/useNotification'
@@ -578,14 +500,10 @@ const { t } = useTranslations({
       preview: 'Preview',
       iframePreviewInfo: 'Embeddable terminal preview - Size: 100% x 300px',
       buttonSyncSession: 'Sync',
-      buttonShare: 'Share',
-      buttonAccess: 'Access',
       buttonStop: 'Stop',
       buttonHideSession: 'Hide',
       tooltipSync: 'Sync this session with the Terminal Trainer API',
       tooltipSyncAll: 'Sync all sessions with the Terminal Trainer API',
-      tooltipShare: 'Share this terminal',
-      tooltipAccess: 'Manage access',
       tooltipHide: 'Hide this inactive session',
       tooltipHideAll: 'Hide all inactive sessions',
       noActiveSessions: 'No active sessions',
@@ -600,10 +518,6 @@ const { t } = useTranslations({
       syncDescriptionNoChanges: 'All owned sessions are already up to date. No changes detected.',
       updatedOwnedSessions: 'Owned sessions updated',
       updatedSessions: 'Sessions updated',
-      sharedSessionsRefreshed: 'Shared sessions have also been refreshed ({count} session(s)).',
-      sharedSessionsAdded: '{count} new shared session(s) added.',
-      sharedSessionsRemoved: '{count} shared session(s) removed.',
-      sharedSessionsAddedAndRemoved: '{added} shared session(s) added, {removed} removed.',
       errors: 'Errors',
       encounterededErrors: 'Encountered errors:',
       buttonOK: 'OK',
@@ -615,16 +529,10 @@ const { t } = useTranslations({
       errorHidingAll: 'Error hiding inactive terminals',
       errorLoading: 'Error loading sessions',
       errorStopping: 'Error stopping the session',
-      sharedWithMe: 'Shared with me',
-      sharedSessions: 'Shared Sessions',
-      sharedBy: 'Shared by',
-      accessLevel: 'Access level',
       moreActions: 'More actions',
       copied: 'Copied!',
       copiedIframe: 'Iframe code copied!',
       copyIframeCode: 'Copy iframe code',
-      manageAccess: 'Manage access',
-      readOnlyAccess: 'Read-only access - cannot edit name',
       statusActive: 'Active',
       statusStopped: 'Terminated',
       statusExpired: 'Expired',
@@ -677,13 +585,10 @@ const { t } = useTranslations({
       iframePreviewInfo: 'Aperçu du terminal intégrable - Taille: 100% x 300px',
       buttonSyncSession: 'Sync',
       buttonShare: 'Partager',
-      buttonAccess: 'Accès',
       buttonStop: 'Arrêter',
       buttonHideSession: 'Masquer',
       tooltipSync: 'Synchroniser cette session avec l\'API Terminal Trainer',
       tooltipSyncAll: 'Synchroniser toutes les sessions avec l\'API Terminal Trainer',
-      tooltipShare: 'Partager ce terminal',
-      tooltipAccess: 'Gérer les accès',
       tooltipHide: 'Masquer cette session inactive',
       tooltipHideAll: 'Masquer toutes les sessions inactives',
       noActiveSessions: 'Aucune session active',
@@ -698,10 +603,6 @@ const { t } = useTranslations({
       syncDescriptionNoChanges: 'Toutes les sessions possédées sont déjà à jour. Aucun changement détecté.',
       updatedOwnedSessions: 'Sessions possédées mises à jour',
       updatedSessions: 'Sessions mises à jour',
-      sharedSessionsRefreshed: 'Les sessions partagées ont également été actualisées ({count} session(s)).',
-      sharedSessionsAdded: '{count} nouvelle(s) session(s) partagée(s) ajoutée(s).',
-      sharedSessionsRemoved: '{count} session(s) partagée(s) supprimée(s).',
-      sharedSessionsAddedAndRemoved: '{added} session(s) partagée(s) ajoutée(s), {removed} supprimée(s).',
       errors: 'Erreurs',
       encounterededErrors: 'Erreurs rencontrées:',
       buttonOK: 'OK',
@@ -713,16 +614,10 @@ const { t } = useTranslations({
       errorHidingAll: 'Erreur lors du masquage des terminaux inactifs',
       errorLoading: 'Erreur lors du chargement des sessions',
       errorStopping: 'Erreur lors de l\'arrêt de la session',
-      sharedWithMe: 'Partagé avec moi',
-      sharedSessions: 'Sessions Partagées',
-      sharedBy: 'Partagé par',
-      accessLevel: 'Niveau d\'accès',
       moreActions: 'Plus d\'actions',
       copied: 'Copié !',
       copiedIframe: 'Code iframe copié !',
       copyIframeCode: 'Copier le code iframe',
-      manageAccess: 'Gérer les accès',
-      readOnlyAccess: 'Accès en lecture seule - impossible de modifier le nom',
       statusActive: 'Actif',
       statusStopped: 'Terminé',
       statusExpired: 'Expiré',
@@ -738,19 +633,13 @@ const { t } = useTranslations({
 // Import dynamique des composants
 import BaseModal from '../Modals/BaseModal.vue'
 import ErrorAlert from '../UI/ErrorAlert.vue'
-const TerminalSharingModal = defineAsyncComponent(() => import('../Terminal/TerminalSharingModal.vue'))
-const TerminalAccessModal = defineAsyncComponent(() => import('../Terminal/TerminalAccessModal.vue'))
 
 const sessions = ref([])
-const sharedSessions = ref([])
 const isLoading = ref(false)
 const error = ref('')
 const showHiddenTerminals = ref(false)
 const showInactiveSessions = ref(false)
 const selectedGroupFilter = ref<string>('all')
-
-// Snapshot of shared session IDs for tracking changes
-const sharedSessionIdsSnapshot = ref(new Set<string>())
 
 // États pour les fonctionnalités iframe
 const showPreviews = ref(new Set())
@@ -768,12 +657,6 @@ const syncAllResults = ref(null)
 
 const instanceTypes = ref([])
 
-// États pour les fonctionnalités de partage
-const showSharingModal = ref(false)
-const showAccessModal = ref(false)
-const selectedTerminalId = ref<string | null>(null)
-const accessModalRefreshTrigger = ref(0)
-
 // États pour l'édition des noms
 const editingNames = ref(new Map<string, { value: string }>())
 const savingNames = ref(new Set<string>())
@@ -787,29 +670,9 @@ function isTerminalInactive(status: string): boolean {
   return ['expired', 'stopped', 'terminated', 'system_limit'].includes(status?.toLowerCase())
 }
 
-// Computed property for all sessions (owned + shared)
+// Computed property for all sessions
 const allSessions = computed(() => {
-  // Mark owned sessions
-  const ownedWithFlag = sessions.value.map(s => ({ ...s, isShared: false }))
-
-  // Mark shared sessions and extract terminal data
-  const sharedWithFlag = sharedSessions.value.map(shared => {
-    const session = {
-      ...shared.terminal,
-      isShared: true,
-      shared_by: shared.shared_by_display_name || shared.shared_by, // Use display name, fallback to ID
-      access_level: shared.access_level
-    }
-
-    // Debug: Log shared session structure to check if id exists
-    if (shared.terminal && !shared.terminal.id) {
-      console.warn('Shared terminal missing id field:', shared.terminal)
-    }
-
-    return session
-  })
-
-  return [...ownedWithFlag, ...sharedWithFlag]
+  return sessions.value.map(s => ({ ...s, isShared: false }))
 })
 
 // Computed property to count only active sessions
@@ -897,7 +760,6 @@ onMounted(() => {
   document.addEventListener('click', handleClickOutside)
 
   loadSessions()
-  loadSharedSessions()
   loadDistributions()
 
   // Load groups if feature flag is enabled
@@ -909,7 +771,6 @@ onMounted(() => {
   const interval = setInterval(() => {
     checkExpiredSessions()
     loadSessions()
-    loadSharedSessions()
   }, 30000)
 
   // Cleanup on unmount
@@ -947,26 +808,6 @@ async function loadSessions() {
     sessions.value = []
   } finally {
     isLoading.value = false
-  }
-}
-
-async function loadSharedSessions() {
-  try {
-    const data = await terminalService.getSharedTerminals()
-    sharedSessions.value = data || []
-
-    // Update snapshot for change tracking (only if not in the middle of a sync)
-    const validTerminalIds = sharedSessions.value.map(s => s.terminal?.id).filter(id => id)
-    if (!isSyncing.value) {
-      sharedSessionIdsSnapshot.value = new Set(validTerminalIds)
-    }
-  } catch (err: any) {
-    console.error('Erreur lors du chargement des sessions partagées:', err)
-    // Don't show error for shared sessions as they're optional
-    sharedSessions.value = []
-    if (!isSyncing.value) {
-      sharedSessionIdsSnapshot.value = new Set()
-    }
   }
 }
 
@@ -1097,11 +938,7 @@ async function syncSession(sessionId: string) {
       timestamp: new Date()
     })
 
-    // Reload both owned and shared sessions (in case the synced session is shared)
-    await Promise.all([
-      loadSessions(),
-      loadSharedSessions()
-    ])
+    await loadSessions()
 
     return response.data
   } catch (err: any) {
@@ -1115,47 +952,12 @@ async function syncSession(sessionId: string) {
 async function syncAllSessions() {
   isSyncing.value = true
   try {
-    // Use the snapshot from the last MANUAL sync (or initial load)
-    // This represents the state from the last time the user clicked sync
-    const sharedSessionIdsBefore = new Set(sharedSessionIdsSnapshot.value)
-
     const response = await axios.post('/terminals/sync-all')
 
     syncAllResults.value = response.data
     lastSyncTime.value = new Date()
 
-    // Reload both owned and shared sessions
-    // loadSharedSessions will NOT update snapshot during sync (isSyncing.value = true)
-    await Promise.all([
-      loadSessions(),
-      loadSharedSessions()
-    ])
-
-    // Calculate shared sessions changes (only new additions or removals)
-    const sharedSessionIdsAfter = new Set(
-      sharedSessions.value.map(s => s.terminal?.id).filter(id => id)
-    )
-
-    // Find sessions that were added (in after but not in before snapshot)
-    const addedSessions = [...sharedSessionIdsAfter].filter(id => !sharedSessionIdsBefore.has(id))
-
-    // Find sessions that were removed (in before snapshot but not in after)
-    const removedSessions = [...sharedSessionIdsBefore].filter(id => !sharedSessionIdsAfter.has(id))
-
-    const sharedSessionsAdded = addedSessions.length
-    const sharedSessionsRemoved = removedSessions.length
-
-    // Add shared sessions info to results
-    syncAllResults.value = {
-      ...response.data,
-      shared_sessions_count: sharedSessionIdsAfter.size,
-      shared_sessions_added: sharedSessionsAdded,
-      shared_sessions_removed: sharedSessionsRemoved
-    }
-
-    // Update snapshot AFTER we've calculated the changes
-    // This becomes the baseline for the NEXT manual sync
-    sharedSessionIdsSnapshot.value = sharedSessionIdsAfter
+    await loadSessions()
 
     showSyncModal.value = true
 
@@ -1240,14 +1042,8 @@ function getTerminalDisplayName(session: any): string {
   return `Terminal ${prefix}`
 }
 
-function canEditName(session: any): boolean {
-  // Owner can always edit
-  if (!session.isShared) {
-    return true
-  }
-
-  // For shared sessions, only 'write' and 'owner' access levels can edit
-  return ['write', 'owner'].includes(session.access_level)
+function canEditName(_session: any): boolean {
+  return true
 }
 
 function startEditingName(terminalId: string, currentName: string | undefined) {
@@ -1266,10 +1062,7 @@ async function saveName(terminalId: string) {
 
   // Find the session to update
   const ownedIndex = sessions.value.findIndex(s => s.id === terminalId)
-  const sharedIndex = sharedSessions.value.findIndex(s => s.terminal.id === terminalId)
-
-  const previousNameOwned = ownedIndex !== -1 ? sessions.value[ownedIndex].name : undefined
-  const previousNameShared = sharedIndex !== -1 ? sharedSessions.value[sharedIndex].terminal?.name : undefined
+  const previousName = ownedIndex !== -1 ? sessions.value[ownedIndex].name : undefined
 
   // Optimistic update - create new objects to trigger reactivity
   if (ownedIndex !== -1) {
@@ -1279,37 +1072,16 @@ async function saveName(terminalId: string) {
     }
   }
 
-  if (sharedIndex !== -1 && sharedSessions.value[sharedIndex].terminal) {
-    sharedSessions.value[sharedIndex] = {
-      ...sharedSessions.value[sharedIndex],
-      terminal: {
-        ...sharedSessions.value[sharedIndex].terminal,
-        name: newName
-      }
-    }
-  }
-
   savingNames.value.add(terminalId)
 
   try {
     const response = await axios.patch(`/terminals/${terminalId}`, { name: newName })
 
     // Update with server response to ensure consistency
-    if (response.data && response.data.name !== undefined) {
-      if (ownedIndex !== -1) {
-        sessions.value[ownedIndex] = {
-          ...sessions.value[ownedIndex],
-          name: response.data.name
-        }
-      }
-      if (sharedIndex !== -1 && sharedSessions.value[sharedIndex].terminal) {
-        sharedSessions.value[sharedIndex] = {
-          ...sharedSessions.value[sharedIndex],
-          terminal: {
-            ...sharedSessions.value[sharedIndex].terminal,
-            name: response.data.name
-          }
-        }
+    if (response.data && response.data.name !== undefined && ownedIndex !== -1) {
+      sessions.value[ownedIndex] = {
+        ...sessions.value[ownedIndex],
+        name: response.data.name
       }
     }
 
@@ -1322,16 +1094,7 @@ async function saveName(terminalId: string) {
     if (ownedIndex !== -1) {
       sessions.value[ownedIndex] = {
         ...sessions.value[ownedIndex],
-        name: previousNameOwned
-      }
-    }
-    if (sharedIndex !== -1 && sharedSessions.value[sharedIndex].terminal) {
-      sharedSessions.value[sharedIndex] = {
-        ...sharedSessions.value[sharedIndex],
-        terminal: {
-          ...sharedSessions.value[sharedIndex].terminal,
-          name: previousNameShared
-        }
+        name: previousName
       }
     }
   } finally {
@@ -1339,56 +1102,9 @@ async function saveName(terminalId: string) {
   }
 }
 
-// Fonctions pour les fonctionnalités de partage
-async function openSharingModal(terminalId: string) {
-  // Close any open dropdowns first to prevent z-index issues
-  openDropdowns.value.clear()
-  // Wait for DOM to update (remove dropdown-open class from card)
-  await nextTick()
-
-  // If opening from AccessModal, close it temporarily
-  const wasAccessModalOpen = showAccessModal.value
-  if (wasAccessModalOpen) {
-    showAccessModal.value = false
-    await nextTick() // Wait for AccessModal to close
-  }
-
-  selectedTerminalId.value = terminalId
-  showSharingModal.value = true
-}
-
-function closeSharingModal() {
-  showSharingModal.value = false
-  selectedTerminalId.value = null
-}
-
-function onTerminalShared(terminalId: string) {
-  loadSessions()
-  // Reopen AccessModal and refresh its data after sharing
-  if (selectedTerminalId.value === terminalId) {
-    accessModalRefreshTrigger.value++
-    showAccessModal.value = true
-  }
-}
-
-async function openAccessModal(terminalId: string) {
-  // Close any open dropdowns first to prevent z-index issues
-  openDropdowns.value.clear()
-  // Wait for DOM to update (remove dropdown-open class from card)
-  await nextTick()
-  selectedTerminalId.value = terminalId
-  showAccessModal.value = true
-}
-
-function closeAccessModal() {
-  showAccessModal.value = false
-  selectedTerminalId.value = null
-}
-
 async function discardTerminal(terminalId: string) {
-  // Find the terminal in both owned and shared sessions to check its status
-  const terminal = sessions.value.find(s => s.id === terminalId) ||
-                   sharedSessions.value.find(s => s.terminal?.id === terminalId)?.terminal
+  // Find the terminal in owned sessions to check its status
+  const terminal = sessions.value.find(s => s.id === terminalId)
 
   // Prevent hiding active terminals
   if (terminal && terminal.status === 'active') {
@@ -1406,12 +1122,7 @@ async function discardTerminal(terminalId: string) {
 
   try {
     await axios.post(`/terminals/${terminalId}/hide`)
-
-    // Reload both owned and shared sessions to get updated list from backend
-    await Promise.all([
-      loadSessions(),
-      loadSharedSessions()
-    ])
+    await loadSessions()
   } catch (err: any) {
     console.error('Erreur lors du masquage du terminal:', err)
 
@@ -1439,17 +1150,11 @@ async function hideAllInactiveSessions() {
   if (!confirmed) return
 
   try {
-    // Hide all inactive terminals (both owned and shared)
     const hidePromises = inactive.map(session =>
       axios.post(`/terminals/${session.id}/hide`)
     )
     await Promise.all(hidePromises)
-
-    // Reload both owned and shared sessions to get updated list from backend
-    await Promise.all([
-      loadSessions(),
-      loadSharedSessions()
-    ])
+    await loadSessions()
   } catch (err: any) {
     console.error('Erreur lors du masquage global:', err)
     error.value = err.response?.data?.error_message || t('terminalMySessions.errorHidingAll')
@@ -1661,12 +1366,6 @@ async function hideAllInactiveSessions() {
 .session-card:hover {
   box-shadow: var(--shadow-sm);
   border-color: var(--color-border-medium);
-}
-
-/* Shared terminal - subtle background difference */
-.session-card.shared-terminal {
-  background: linear-gradient(to right, rgba(108, 117, 125, 0.03), var(--color-bg-primary));
-  border-left: 3px solid var(--color-secondary);
 }
 
 .card-header {
