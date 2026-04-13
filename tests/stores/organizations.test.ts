@@ -135,7 +135,7 @@ describe('organizations store', () => {
   })
 
   describe('setCurrentOrganization — Bug C3: no loading state / error handling', () => {
-    it('should return a promise (be async) so callers can await org switch completion', () => {
+    it('should return a promise (be async) so callers can await org switch completion', async () => {
       const store = useOrganizationsStore()
 
       // Set up the store with an org
@@ -162,9 +162,12 @@ describe('organizations store', () => {
       // is complete or if it failed.
       // This test expects it to return a Promise so callers can await it.
       expect(result).toBeInstanceOf(Promise)
+      // Must await to prevent the dangling promise (dynamic import + async .then chain)
+      // from bleeding into subsequent tests and causing timeouts
+      await result
     })
 
-    it('should handle errors from getCurrentSubscription without silently swallowing them', { timeout: 15000 }, async () => {
+    it('should handle errors from getCurrentSubscription without silently swallowing them', async () => {
       const subscriptionError = new Error('Subscription service unavailable')
       mockGetCurrentSubscription.mockRejectedValueOnce(subscriptionError)
 
