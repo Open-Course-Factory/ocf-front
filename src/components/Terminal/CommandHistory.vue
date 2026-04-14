@@ -44,6 +44,25 @@
         </button>
       </div>
     </div>
+    <!-- RGPD transparency notice -->
+    <div v-show="!isCollapsed" class="recording-notice">
+      <span class="recording-notice-summary">
+        <i class="fas fa-shield-alt recording-notice-icon"></i>
+        {{ t('notice.summary') }}
+        <button
+          class="recording-notice-toggle"
+          @click="noticeExpanded = !noticeExpanded"
+          :aria-expanded="noticeExpanded"
+        >{{ noticeExpanded ? '▲' : '▼' }} {{ t('notice.learnMore') }}</button>
+      </span>
+      <div v-if="noticeExpanded" class="recording-notice-details">
+        <p>{{ t('notice.details') }}</p>
+        <router-link to="/privacy" class="recording-notice-privacy-link">
+          <i class="fas fa-external-link-alt"></i> {{ t('notice.privacyLink') }}
+        </router-link>
+      </div>
+    </div>
+
     <div v-show="!isCollapsed" class="command-list" ref="commandListRef">
       <div v-if="filteredCommands.length === 0 && commands.length === 0 && !isLoading" class="empty-state">
         <i class="fas fa-terminal"></i>
@@ -128,6 +147,12 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { t } = useTranslations({
   en: {
+    notice: {
+      summary: 'Terminal commands are recorded for security auditing and pedagogy. Retention follows your subscription plan.',
+      learnMore: 'Learn more',
+      details: 'Recording serves two purposes: security auditing (if a container is misused, logs allow investigation) and pedagogy (trainers can review progress). Data is retained according to your subscription plan and is governed by our privacy policy.',
+      privacyLink: 'Privacy policy'
+    },
     history: {
       title: 'Command History',
       empty: 'No commands recorded yet. Start typing in the terminal to see your command history.',
@@ -157,6 +182,12 @@ const { t } = useTranslations({
     }
   },
   fr: {
+    notice: {
+      summary: 'Les commandes saisies dans le terminal sont enregistrées à des fins de sécurité et de pédagogie. La durée de conservation dépend de votre plan.',
+      learnMore: 'En savoir plus',
+      details: 'L\'enregistrement remplit deux objectifs : la sécurité (en cas de mauvaise utilisation d\'un conteneur, les journaux permettent une investigation) et la pédagogie (les formateurs peuvent suivre la progression). Les données sont conservées conformément à votre plan d\'abonnement et sont régies par notre politique de confidentialité.',
+      privacyLink: 'Politique de confidentialité'
+    },
     history: {
       title: 'Historique des commandes',
       empty: 'Aucune commande enregistrée. Commencez à taper dans le terminal pour voir votre historique de commandes.',
@@ -218,6 +249,7 @@ function toggleCollapse() {
   }
 }
 
+const noticeExpanded = ref(false)
 const commands = ref<CommandEntry[]>([])
 const isLoading = ref(false)
 const recordingDisabled = ref(false)
@@ -715,6 +747,73 @@ onBeforeUnmount(() => {
 
 .copy-btn .fa-check {
   color: var(--color-success, #28a745);
+}
+
+/* RGPD recording notice */
+.recording-notice {
+  padding: var(--spacing-xs) var(--spacing-md);
+  background-color: var(--color-info-bg);
+  border-bottom: var(--border-width-thin) solid var(--color-info-border);
+  font-size: var(--font-size-sm);
+  color: var(--color-info-text);
+}
+
+.recording-notice-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  line-height: 1.4;
+}
+
+.recording-notice-icon {
+  flex-shrink: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-info);
+}
+
+.recording-notice-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-info);
+  font-size: var(--font-size-xs);
+  padding: 0 var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  font-family: inherit;
+  text-decoration: underline;
+  white-space: nowrap;
+  transition: color var(--transition-fast);
+}
+
+.recording-notice-toggle:hover {
+  color: var(--color-info-hover);
+}
+
+.recording-notice-details {
+  margin-top: var(--spacing-xs);
+  padding-top: var(--spacing-xs);
+  border-top: 1px solid var(--color-info-border);
+}
+
+.recording-notice-details p {
+  margin: 0 0 var(--spacing-xs) 0;
+  line-height: 1.5;
+}
+
+.recording-notice-privacy-link {
+  color: var(--color-info);
+  text-decoration: underline;
+  font-size: var(--font-size-xs);
+  transition: color var(--transition-fast);
+}
+
+.recording-notice-privacy-link:hover {
+  color: var(--color-info-hover);
+}
+
+.recording-notice-privacy-link i {
+  font-size: var(--font-size-xs);
 }
 
 @media (max-width: 768px) {
