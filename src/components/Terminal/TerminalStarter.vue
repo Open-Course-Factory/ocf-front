@@ -592,6 +592,7 @@ async function startNewSession() {
       size: composer.selectedSize.key,
       features: composer.enabledFeatures,
       terms: t('terminalStarter.termsAcceptance'),
+      recording_enabled: 1,
       ...(nameInput.value.trim() && { name: nameInput.value.trim() }),
       ...(hostnameInput.value.trim() && { hostname: hostnameInput.value.trim() }),
       ...(backendsStore.selectedBackendId && { backend: backendsStore.selectedBackendId }),

@@ -124,6 +124,7 @@ export interface StartComposedSessionData {
   size: string
   features: Record<string, boolean>
   terms: string
+  recording_enabled: number
   name?: string
   expiry?: number
   backend?: string
