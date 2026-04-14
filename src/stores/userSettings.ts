@@ -39,6 +39,7 @@ export interface UserSettings {
     desktop_notifications?: boolean
     password_last_changed?: string
     two_factor_enabled?: boolean
+    recording_acknowledged_at?: string
     created_at?: string
     updated_at?: string
 }

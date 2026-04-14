@@ -144,6 +144,7 @@ import { useTerminalMetricsStore } from '../../stores/terminalMetrics'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { useTerminalBackendsStore } from '../../stores/terminalBackends'
 import { usePermissionsStore } from '../../stores/permissions'
+import { useUserSettingsStore } from '../../stores/userSettings'
 import { useNotification } from '../../composables/useNotification'
 import { useTranslations } from '../../composables/useTranslations'
 
@@ -164,6 +165,7 @@ const metricsStore = useTerminalMetricsStore()
 const organizationsStore = useOrganizationsStore()
 const backendsStore = useTerminalBackendsStore()
 const permissionsStore = usePermissionsStore()
+const userSettingsStore = useUserSettingsStore()
 
 // i18n setup
 const { t } = useTranslations({
@@ -272,9 +274,8 @@ const startStatus = ref('')
 
 // Recording acknowledgement: recording always happens (RGPD Art. 6.1.f — legitimate interest).
 // The modal informs the user; it does not gate recording.
-const RECORDING_ACK_KEY = 'terminal-recording-acknowledged'
 const showRecordingAcknowledgement = ref(false)
-const recordingAcknowledged = ref(localStorage.getItem(RECORDING_ACK_KEY) === '1')
+const recordingAcknowledged = computed(() => !!userSettingsStore.settings.recording_acknowledged_at)
 
 // Session information
 const sessionInfo = ref<any>(null)
@@ -504,9 +505,15 @@ function handleHostnameUpdate(value: string) {
   }
 }
 
-function handleRecordingAcknowledgement() {
-  recordingAcknowledged.value = true
-  localStorage.setItem(RECORDING_ACK_KEY, '1')
+async function handleRecordingAcknowledgement() {
+  const now = new Date().toISOString()
+  try {
+    await userSettingsStore.updateSettings({ recording_acknowledged_at: now })
+  } catch (err) {
+    // Non-fatal: user can still proceed, but we log the failure. The ack dialog
+    // will reappear on next launch until the backend record succeeds.
+    console.warn('Failed to persist recording acknowledgement:', err)
+  }
   showRecordingAcknowledgement.value = false
   startNewSession()
 }
@@ -665,8 +672,19 @@ function cleanup() {
 onMounted(async () => {
   await Promise.all([
     subscriptionsStore.getCurrentSubscription(),
-    loadCurrentTerminalUsage()
+    loadCurrentTerminalUsage(),
+    userSettingsStore.loadSettings()
   ])
+
+  // Graceful migration: if user had the legacy localStorage flag but no server-side record yet,
+  // persist it server-side and clear the local key.
+  const legacyAck = localStorage.getItem('terminal-recording-acknowledged')
+  if (legacyAck === '1' && !userSettingsStore.settings.recording_acknowledged_at) {
+    try {
+      await userSettingsStore.updateSettings({ recording_acknowledged_at: new Date().toISOString() })
+      localStorage.removeItem('terminal-recording-acknowledged')
+    } catch { /* silently retry next time */ }
+  }
 
   // Load organizations separately (must not break Promise.all if it fails)
   try {
