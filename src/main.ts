@@ -33,6 +33,8 @@ import { setupAxiosInterceptors, setupAxiosDefaults } from './services/core/http
 import { featureFlagService } from './services/features'
 import i18n from './i18n'
 import { registerAllHelp, registerHelpRoutes } from './help'
+import { helpFr } from './locales/help/fr'
+import { helpEn } from './locales/help/en'
 
 // Vuetify
 import 'vuetify/styles'
@@ -82,6 +84,14 @@ async function initializeApp() {
         .use(pinia)  // ← Pinia must be registered before feature flags are fetched!
         .use(i18n)
         .use(vuetify)
+
+    // Preload help translations synchronously so direct page loads of
+    // /help-public/* render translated content on first paint.
+    // vue-i18n v11 does not trigger reactivity from mergeLocaleMessage,
+    // so merging in onMounted (the old pattern in useHelpTranslations)
+    // leaves the first render stuck on raw keys.
+    i18n.global.mergeLocaleMessage('fr', helpFr)
+    i18n.global.mergeLocaleMessage('en', helpEn)
 
     // Register help sections into the help registry store
     registerAllHelp()
