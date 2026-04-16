@@ -104,6 +104,32 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
                     changing: "Changing...",
                     errorChangingPassword: "Error changing password"
                 },
+                deleteAccount: {
+                    title: "Danger Zone",
+                    description: "Permanently delete your account and all associated data. This action is irreversible.",
+                    button: "Delete my account",
+                    modalTitle: "Delete account",
+                    modalWarning: "This action is permanent and cannot be undone.",
+                    willDelete: "Will be permanently deleted:",
+                    willDeleteItems: {
+                        terminalSessions: "Terminal sessions",
+                        sshKeys: "SSH keys",
+                        scenarioHistory: "Scenario history and progress",
+                        memberships: "Group and organization memberships"
+                    },
+                    willAnonymize: "Will be anonymized (kept for accounting):",
+                    willAnonymizeItems: {
+                        invoices: "Invoices",
+                        paymentRecords: "Payment records"
+                    },
+                    mustTransfer: "You must first transfer ownership of any organizations or groups you own before deleting your account.",
+                    typeConfirmation: "Type {confirmText} to confirm:",
+                    confirm: "Permanently delete",
+                    cancel: "Cancel",
+                    deleting: "Deleting...",
+                    success: "Account deleted successfully",
+                    error: "Failed to delete account"
+                },
                 themes: {
                     light: "Light",
                     dark: "Dark",
@@ -172,6 +198,32 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
                     never: "Jamais",
                     changing: "Modification...",
                     errorChangingPassword: "Erreur lors du changement de mot de passe"
+                },
+                deleteAccount: {
+                    title: "Zone de danger",
+                    description: "Supprimer définitivement votre compte et toutes les données associées. Cette action est irréversible.",
+                    button: "Supprimer mon compte",
+                    modalTitle: "Suppression du compte",
+                    modalWarning: "Cette action est permanente et irréversible.",
+                    willDelete: "Seront supprimés définitivement :",
+                    willDeleteItems: {
+                        terminalSessions: "Sessions de terminal",
+                        sshKeys: "Clés SSH",
+                        scenarioHistory: "Historique et progression des scénarios",
+                        memberships: "Appartenances aux groupes et organisations"
+                    },
+                    willAnonymize: "Seront anonymisés (conservés pour la comptabilité) :",
+                    willAnonymizeItems: {
+                        invoices: "Factures",
+                        paymentRecords: "Enregistrements de paiement"
+                    },
+                    mustTransfer: "Vous devez d'abord transférer la propriété de toutes les organisations ou groupes dont vous êtes propriétaire avant de supprimer votre compte.",
+                    typeConfirmation: "Tapez {confirmText} pour confirmer :",
+                    confirm: "Supprimer définitivement",
+                    cancel: "Annuler",
+                    deleting: "Suppression...",
+                    success: "Compte supprimé avec succès",
+                    error: "Échec de la suppression du compte"
                 },
                 themes: {
                     light: "Clair",
