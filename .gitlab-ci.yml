@@ -65,7 +65,7 @@ typecheck:
 # ============================================================================
 
 include:
-  - component: usine.solution-libre.fr/gitlab/components/release/default@0.3.0
+  - component: usine.solution-libre.fr/gitlab/components/release/default@0.3.1
     inputs:
       # Enable all new features
       enable_version_check: true
