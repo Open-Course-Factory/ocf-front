@@ -27,7 +27,9 @@ import { isDemoMode, logDemoAction, simulateDelay, demoPayments, getDemoCurrentS
 import { featureFlagService } from '../services/features'
 import { formatDate as formatDateUtil } from '../utils/formatters'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
+import { pollUntil } from '../utils/pollUntil'
 import { useStatusFormatters } from '../composables/useStatusFormatters'
+import { useOrganizationsStore } from './organizations'
 
 export const useSubscriptionsStore = defineStore('subscriptions', () => {
 
@@ -94,7 +96,8 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
                 paymentProviderError: 'Payment provider error. Please try again or contact support.',
                 upgradeError: 'Failed to change subscription plan',
                 changingPlan: 'Changing plan...',
-                planChangedSuccess: 'Your subscription plan has been changed successfully!'
+                planChangedSuccess: 'Your subscription plan has been changed successfully!',
+                upgradeSyncTimeout: 'Your plan change was sent to Stripe but our server hasn\'t confirmed it yet. Please refresh in a moment.'
             }
         },
         fr: {
@@ -159,7 +162,8 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
                 paymentProviderError: 'Erreur du fournisseur de paiement. Veuillez réessayer ou contacter le support.',
                 upgradeError: 'Échec du changement de plan d\'abonnement',
                 changingPlan: 'Changement de plan...',
-                planChangedSuccess: 'Votre plan d\'abonnement a été changé avec succès !'
+                planChangedSuccess: 'Votre plan d\'abonnement a été changé avec succès !',
+                upgradeSyncTimeout: 'Votre changement de plan a bien été envoyé à Stripe, mais notre serveur n\'a pas encore reçu la confirmation. Merci d\'actualiser la page dans quelques instants.'
             }
         }
     })
@@ -379,37 +383,48 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
                 logDemoAction('Upgrading demo plan', { newPlanId, prorationBehavior })
                 await simulateDelay(1500)
                 result = { success: true, subscription: getDemoCurrentSubscription('active') }
-            } else {
-                const response = await axios.post('/user-subscriptions/upgrade', {
-                    new_plan_id: newPlanId,
-                    proration_behavior: prorationBehavior
-                })
-                result = response.data
-                console.log('Upgrade response:', result)
+                // In demo mode, reload usage metrics and return — no polling needed
+                await getUsageMetrics()
+                return result
             }
 
-            // Wait for Stripe webhook to process (optimized single wait)
-            console.log('Waiting for webhook to process...')
-            await new Promise(resolve => setTimeout(resolve, 3000))
+            const response = await axios.post('/user-subscriptions/upgrade', {
+                new_plan_id: newPlanId,
+                proration_behavior: prorationBehavior
+            })
+            result = response.data
 
-            // Recharger l'abonnement actuel
-            console.log('Reloading subscription after upgrade...')
-            await getCurrentSubscription()
-            console.log('Updated subscription:', currentSubscription.value)
+            // Build the current-subscription URL once, reflecting the active org
+            // context (if any). We call axios directly inside the polling loop
+            // instead of getCurrentSubscription() so the poll stays free of any
+            // dynamic import microtask chain (which stalls under vitest fake
+            // timers) and avoids re-resolving the org store on every attempt.
+            const orgStore = useOrganizationsStore()
+            const orgId = orgStore.currentOrganizationId
+            const currentUrl = orgId
+                ? `/user-subscriptions/current?organization_id=${orgId}`
+                : '/user-subscriptions/current'
 
-            // Only retry if plan_id doesn't match (webhook might be slow)
-            if (currentSubscription.value?.subscription_plan_id !== newPlanId) {
-                console.warn('Plan ID mismatch, waiting additional 2s for webhook...')
-                await new Promise(resolve => setTimeout(resolve, 2000))
+            // Poll the backend until the webhook has updated the subscription's plan
+            // (default 500ms × 20 = ~10s budget). If the sync times out, surface a
+            // friendly error message but still reload usage metrics and return the
+            // original upgrade result — the upgrade itself succeeded on Stripe's side.
+            const poll = await pollUntil(
+                async () => {
+                    const res = await axios.get(currentUrl)
+                    currentSubscription.value = res.data
+                    return res.data
+                },
+                (sub: any) => sub?.subscription_plan_id === newPlanId
+            )
 
-                console.log('Final reload attempt...')
-                await getCurrentSubscription()
-                console.log('Final subscription state:', currentSubscription.value)
+            if (!poll.matched) {
+                error.value = t('subscriptions.upgradeSyncTimeout')
             }
 
-            // Reload usage metrics
+            // Always refresh usage metrics — even on timeout, the new limits may
+            // have been applied server-side and the UI should reflect them.
             await getUsageMetrics()
-            console.log('Updated usage metrics:', usageMetrics.value)
 
             return result
         }, 'subscriptions.upgradeError', {
