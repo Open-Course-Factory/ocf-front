@@ -189,7 +189,6 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
                 data = getDemoCurrentSubscription('active') // You can change this to test different states
             } else {
                 // Pass org context to get subscription for current organization
-                const { useOrganizationsStore } = await import('./organizations')
                 const orgStore = useOrganizationsStore()
                 const orgId = orgStore.currentOrganizationId
                 const url = orgId
@@ -345,7 +344,6 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
                 data = getDemoUsageMetrics()
             } else {
                 // Pass org context for org-scoped limits
-                const { useOrganizationsStore } = await import('./organizations')
                 const orgStore = useOrganizationsStore()
                 const orgId = orgStore.currentOrganizationId
                 const url = orgId
@@ -411,9 +409,20 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
             // original upgrade result — the upgrade itself succeeded on Stripe's side.
             const poll = await pollUntil(
                 async () => {
-                    const res = await axios.get(currentUrl)
-                    currentSubscription.value = res.data
-                    return res.data
+                    try {
+                        const res = await axios.get(currentUrl)
+                        currentSubscription.value = res.data
+                    } catch {
+                        // Swallow transient errors — Stripe already accepted the
+                        // upgrade, but the backend sync may be briefly unavailable
+                        // (502 during webhook bursts, restarts, etc.). Letting the
+                        // error propagate would fail the whole upgrade flow; instead
+                        // we keep polling and let pollUntil time out if the sync
+                        // never arrives, surfacing the soft upgradeSyncTimeout
+                        // warning rather than a hard failure. Matches the pattern
+                        // used by scenarioSessionService.pollProvisioningStatus.
+                    }
+                    return currentSubscription.value
                 },
                 (sub: any) => sub?.subscription_plan_id === newPlanId
             )

@@ -180,6 +180,56 @@ describe('subscriptions store — upgradePlan polling', () => {
     expect(usageCalls.length).toBeGreaterThanOrEqual(1)
   })
 
+  it('upgradePlan — transient 5xx during polling does not break the upgrade', async () => {
+    // Simulate a transient 502 during polling: Stripe accepted the upgrade but
+    // the backend sync is briefly unavailable. Sequence on /current:
+    //   attempt 1 -> OLD plan
+    //   attempt 2 -> 502 (transient)
+    //   attempt 3 -> OLD plan
+    //   attempt 4 -> NEW plan
+    // The poll must swallow the 502 and keep going until the NEW plan arrives.
+    let currentCalls = 0
+    mockedAxios.get.mockImplementation(async (url: string) => {
+      if (url.startsWith('/user-subscriptions/current')) {
+        currentCalls++
+        if (currentCalls === 2) {
+          const err: any = new Error('Bad Gateway')
+          err.response = { status: 502, data: {} }
+          throw err
+        }
+        if (currentCalls >= 4) {
+          return { data: { id: 'sub-1', subscription_plan_id: 'plan-new', status: 'active' } }
+        }
+        return { data: { id: 'sub-1', subscription_plan_id: 'plan-old', status: 'active' } }
+      }
+      if (url.startsWith('/user-subscriptions/usage')) {
+        return { data: [] }
+      }
+      return { data: {} }
+    })
+    mockedAxios.post.mockResolvedValue({ data: { success: true } })
+
+    const store = useSubscriptionsStore()
+    const upgradePromise = store.upgradePlan('plan-new')
+
+    // 4 attempts need ~3 × 500ms = 1500ms between them; give a little headroom.
+    await vi.advanceTimersByTimeAsync(2500)
+
+    const result = await upgradePromise
+
+    // Upgrade resolved successfully — the transient error did not propagate.
+    expect(result).toEqual({ success: true })
+    // Final state reflects the new plan.
+    expect(store.currentSubscription?.subscription_plan_id).toBe('plan-new')
+    // No timeout warning was set.
+    expect(store.error).toBe('')
+    // Polling continued across the 502: at least 4 GETs to /current.
+    const currentGets = mockedAxios.get.mock.calls.filter(([url]) =>
+      typeof url === 'string' && url.startsWith('/user-subscriptions/current')
+    )
+    expect(currentGets.length).toBeGreaterThanOrEqual(4)
+  })
+
   it('does not poll in demo mode (short-circuits to simulated delay)', async () => {
     isDemoModeMock.mockReturnValue(true)
 
