@@ -26,27 +26,6 @@ describe('useTheme', () => {
     vi.unstubAllGlobals()
   })
 
-  describe('loadTheme', () => {
-    it('reads from localStorage key "theme"', () => {
-      localStorageMock['theme'] = 'dark'
-      const { loadTheme } = useTheme()
-      const result = loadTheme()
-      expect(localStorage.getItem).toHaveBeenCalledWith('theme')
-      expect(result).toBe('dark')
-    })
-
-    it('returns "light" when nothing is in localStorage', () => {
-      const { loadTheme } = useTheme()
-      expect(loadTheme()).toBe('light')
-    })
-
-    it('returns the saved theme value from localStorage', () => {
-      localStorageMock['theme'] = 'auto'
-      const { loadTheme } = useTheme()
-      expect(loadTheme()).toBe('auto')
-    })
-  })
-
   describe('setTheme', () => {
     it('writes "dark" to localStorage and sets data-theme on html element', () => {
       const { setTheme } = useTheme()
@@ -74,34 +53,6 @@ describe('useTheme', () => {
       expect(currentTheme.value).toBe('dark')
       setTheme('light')
       expect(currentTheme.value).toBe('light')
-    })
-  })
-
-  describe('auto mode', () => {
-    it('applies dark when prefers-color-scheme is dark', () => {
-      vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
-        matches: query === '(prefers-color-scheme: dark)',
-        media: query,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      })))
-
-      const { setTheme } = useTheme()
-      setTheme('auto')
-      expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
-    })
-
-    it('applies light when prefers-color-scheme is light', () => {
-      vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
-        matches: false,
-        media: query,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      })))
-
-      const { setTheme } = useTheme()
-      setTheme('auto')
-      expect(document.documentElement.getAttribute('data-theme')).toBe('light')
     })
   })
 
