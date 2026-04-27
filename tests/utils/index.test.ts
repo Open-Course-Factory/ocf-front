@@ -6,67 +6,30 @@ import {
   buildSelectData,
 } from '../../src/utils/index'
 
-describe('kebabToCamel', () => {
-  it('converts basic kebab-case to camelCase', () => {
-    expect(kebabToCamel('subscription-plans')).toBe('subscriptionPlans')
-  })
-
-  it('returns string unchanged if no hyphens', () => {
-    expect(kebabToCamel('users')).toBe('users')
-  })
-
-  it('handles multiple hyphens', () => {
-    expect(kebabToCamel('my-multi-word-string')).toBe('myMultiWordString')
-  })
-
-  it('handles single character segments', () => {
-    expect(kebabToCamel('a-b-c')).toBe('aBC')
-  })
-
-  it('handles empty string', () => {
-    expect(kebabToCamel('')).toBe('')
-  })
-})
-
-describe('getTranslationKey', () => {
-  it('delegates to kebabToCamel for kebab-case input', () => {
-    expect(getTranslationKey('subscription-plans')).toBe('subscriptionPlans')
-  })
-
-  it('returns unchanged string for non-kebab input', () => {
-    expect(getTranslationKey('users')).toBe('users')
-  })
-
-  it('handles complex entity names', () => {
-    expect(getTranslationKey('user-subscription-plans')).toBe('userSubscriptionPlans')
+describe('kebabToCamel + getTranslationKey', () => {
+  it.each([
+    ['subscription-plans', 'subscriptionPlans'],
+    ['users', 'users'],
+    ['my-multi-word-string', 'myMultiWordString'],
+    ['a-b-c', 'aBC'],
+    ['', ''],
+    ['user-subscription-plans', 'userSubscriptionPlans'],
+  ])('"%s" → %s', (input, expected) => {
+    expect(kebabToCamel(input)).toBe(expected)
+    expect(getTranslationKey(input)).toBe(expected)
   })
 })
 
 describe('formatPrice', () => {
-  it('formats basic EUR price from cents', () => {
-    const result = formatPrice(1999)
-    // 1999 cents = 19.99 EUR in fr-FR
-    expect(result).toContain('19,99')
-    expect(result).toContain('€')
-  })
-
-  it('formats USD price', () => {
-    const result = formatPrice(1999, 'USD')
-    // Still fr-FR locale but USD currency
-    expect(result).toContain('19,99')
-    expect(result).toContain('$')
-  })
-
-  it('formats zero price', () => {
-    const result = formatPrice(0)
-    expect(result).toContain('0,00')
-    expect(result).toContain('€')
-  })
-
-  it('handles lowercase currency code', () => {
-    const result = formatPrice(1999, 'eur')
-    expect(result).toContain('19,99')
-    expect(result).toContain('€')
+  it.each([
+    [1999, 'EUR', '19,99', '€'],
+    [1999, 'USD', '19,99', '$'],
+    [0, 'EUR', '0,00', '€'],
+    [1999, 'eur', '19,99', '€'],
+  ])('formatPrice(%i, %s) contains %s and %s', (amount, currency, expectedNum, expectedSymbol) => {
+    const result = formatPrice(amount, currency)
+    expect(result).toContain(expectedNum)
+    expect(result).toContain(expectedSymbol)
   })
 })
 

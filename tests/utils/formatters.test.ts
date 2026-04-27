@@ -112,45 +112,20 @@ describe('formatDateTime', () => {
 })
 
 describe('formatStorageSize', () => {
-  it('returns "0 B" for 0 bytes', () => {
-    expect(formatStorageSize(0)).toBe('0 B')
-  })
-
-  it('formats bytes range (< 1024)', () => {
-    expect(formatStorageSize(512)).toBe('512 B')
-  })
-
-  it('formats 1 byte', () => {
-    expect(formatStorageSize(1)).toBe('1 B')
-  })
-
-  it('formats kilobytes', () => {
-    expect(formatStorageSize(1536)).toBe('1.50 KB')
-  })
-
-  it('formats exactly 1 KB', () => {
-    expect(formatStorageSize(1024)).toBe('1.00 KB')
-  })
-
-  it('formats megabytes', () => {
-    expect(formatStorageSize(1048576)).toBe('1.00 MB')
-  })
-
-  it('formats megabytes with fractional part', () => {
-    expect(formatStorageSize(5242880)).toBe('5.00 MB')
-  })
-
-  it('formats gigabytes', () => {
-    expect(formatStorageSize(1073741824)).toBe('1.00 GB')
-  })
-
-  it('formats terabytes', () => {
-    expect(formatStorageSize(1099511627776)).toBe('1.00 TB')
-  })
-
-  it('respects custom decimal places', () => {
-    expect(formatStorageSize(1536, 0)).toBe('2 KB')
-    expect(formatStorageSize(1536, 3)).toBe('1.500 KB')
+  it.each([
+    [0, 2, '0 B'],
+    [1, 2, '1 B'],
+    [512, 2, '512 B'],
+    [1024, 2, '1.00 KB'],
+    [1536, 2, '1.50 KB'],
+    [1048576, 2, '1.00 MB'],
+    [5242880, 2, '5.00 MB'],
+    [1073741824, 2, '1.00 GB'],
+    [1099511627776, 2, '1.00 TB'],
+    [1536, 0, '2 KB'],
+    [1536, 3, '1.500 KB'],
+  ])('formatStorageSize(%i, %i) → %s', (bytes, decimals, expected) => {
+    expect(formatStorageSize(bytes, decimals)).toBe(expected)
   })
 })
 
@@ -200,32 +175,16 @@ describe('formatPercentage', () => {
 })
 
 describe('formatDuration', () => {
-  it('formats seconds only', () => {
-    expect(formatDuration(45)).toBe('45s')
-  })
-
-  it('formats minutes and seconds', () => {
-    expect(formatDuration(90)).toBe('1m 30s')
-  })
-
-  it('formats hours and minutes', () => {
-    expect(formatDuration(9000)).toBe('2h 30m')
-  })
-
-  it('formats hours, minutes and seconds', () => {
-    expect(formatDuration(3661)).toBe('1h 1m 1s')
-  })
-
-  it('returns "0s" for 0 seconds', () => {
-    expect(formatDuration(0)).toBe('0s')
-  })
-
-  it('formats exact hour with no trailing minutes/seconds', () => {
-    expect(formatDuration(3600)).toBe('1h')
-  })
-
-  it('formats exact minute with no trailing seconds', () => {
-    expect(formatDuration(60)).toBe('1m')
+  it.each([
+    [0, '0s'],
+    [45, '45s'],
+    [60, '1m'],
+    [90, '1m 30s'],
+    [3600, '1h'],
+    [3661, '1h 1m 1s'],
+    [9000, '2h 30m'],
+  ])('formatDuration(%i) → %s', (seconds, expected) => {
+    expect(formatDuration(seconds)).toBe(expected)
   })
 })
 
