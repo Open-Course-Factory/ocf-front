@@ -350,6 +350,14 @@
   --course-node-page-bg: #FFF3E6;
 }
 
+/* Scenario Editor Node Colors */
+:root {
+  --scenario-node-scenario: #00897B;
+  --scenario-node-scenario-bg: #E0F2F1;
+  --scenario-node-step: #E65100;
+  --scenario-node-step-bg: #FBE9E7;
+}
+
 /* Terminal Theme Colors (XTerm.js) */
 :root {
   --terminal-bg: #1e1e1e;
@@ -402,6 +410,10 @@
   --shadow-chapter-node: 0 4px 16px rgba(123, 104, 238, 0.3);
   --shadow-section-node: 0 4px 16px rgba(80, 200, 120, 0.3);
   --shadow-page-node: 0 4px 16px rgba(255, 165, 0, 0.3);
+
+  /* Colored shadows for scenario nodes */
+  --shadow-scenario-node: 0 4px 16px rgba(0, 137, 123, 0.3);
+  --shadow-step-node: 0 4px 16px rgba(230, 81, 0, 0.3);
 }
 
 /* Dark mode adjustments for domain-specific colors */
@@ -410,6 +422,9 @@
   --course-node-chapter-bg: rgba(123, 104, 238, 0.2);
   --course-node-section-bg: rgba(80, 200, 120, 0.2);
   --course-node-page-bg: rgba(255, 165, 0, 0.2);
+
+  --scenario-node-scenario-bg: rgba(0, 137, 123, 0.15);
+  --scenario-node-step-bg: rgba(230, 81, 0, 0.15);
 
   --terminal-bg: #1a1a1a;
   --terminal-border: #404040;
