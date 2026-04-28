@@ -1113,7 +1113,7 @@ const handleEdgeConnect = async (connection: any) => {
 }
 
 // Modal handlers - Scenario
-const openEditModal = (node: any) => {
+const openEditModal = async (node: any) => {
   if (node.data.entityType === 'scenario') {
     editingScenario.value = {
       nodeId: node.id,
@@ -1143,9 +1143,30 @@ const openEditModal = (node: any) => {
     showScenarioEditModal.value = true
     modalError.value = ''
   } else if (STEP_NODE_TYPES.includes(node.data.entityType)) {
-    editingStep.value = node.data
-    editingStepIsNew.value = node.data.isNew || false
     editingStepNodeId.value = node.id
+    editingStepIsNew.value = node.data.isNew || false
+
+    // Lazy load full step data (scripts are hidden by json:"-" on the model,
+    // so the include=steps response doesn't contain them)
+    if (node.data.entityId && !node.data.isNew && !node.data._scriptsLoaded) {
+      try {
+        const response = await axios.get(`/scenario-steps/${node.data.entityId}`)
+        const fullStep = response.data
+        // Merge fetched script data into the node data
+        node.data.verify_script = fullStep.verify_script || ''
+        node.data.background_script = fullStep.background_script || ''
+        node.data.foreground_script = fullStep.foreground_script || ''
+        node.data.text_content = fullStep.text_content || node.data.text_content || ''
+        node.data.hint_content = fullStep.hint_content || node.data.hint_content || ''
+        node.data.questions = fullStep.questions || node.data.questions || []
+        node.data._scriptsLoaded = true
+      } catch (err) {
+        console.error('Failed to load step scripts:', err)
+        // Open modal anyway with whatever data we have
+      }
+    }
+
+    editingStep.value = node.data
     showStepEditModal.value = true
   }
 }
