@@ -273,7 +273,6 @@ export class FeatureFlagService {
    */
   async refreshAfterLogin(): Promise<void> {
     console.log('🏴 Refreshing feature flags after login...')
-    this.lastFetch = 0 // Reset cache timestamp to force refresh
     await this.fetchFromBackend(true)
   }
 
