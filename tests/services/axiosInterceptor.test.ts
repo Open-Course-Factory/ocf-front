@@ -1,57 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-
-// Mock tokenService
-vi.mock('../../src/services/auth/tokenService', () => ({
-  tokenService: {
-    getAccessToken: vi.fn(),
-    hasValidToken: vi.fn()
-  }
-}))
-
-// Mock currentUser store
-vi.mock('../../src/stores/currentUser', () => ({
-  useCurrentUserStore: vi.fn(() => ({
-    autoLogout: vi.fn()
-  }))
-}))
-
-// Mock router
-vi.mock('../../src/router', () => ({
-  default: {
-    push: vi.fn(),
-    currentRoute: { value: { name: 'Home', fullPath: '/home' } }
-  }
-}))
-
-// Capture interceptor callbacks
-let requestInterceptor: Function
-let requestErrorInterceptor: Function
-let responseInterceptor: Function
-let responseErrorInterceptor: Function
-
-vi.mock('axios', () => ({
-  default: {
-    get: vi.fn(),
-    post: vi.fn(),
-    defaults: { baseURL: '', headers: { common: {} }, timeout: 30000 },
-    interceptors: {
-      request: {
-        use: vi.fn((onFulfilled: Function, onRejected: Function) => {
-          requestInterceptor = onFulfilled
-          requestErrorInterceptor = onRejected
-        }),
-        eject: vi.fn()
-      },
-      response: {
-        use: vi.fn((onFulfilled: Function, onRejected: Function) => {
-          responseInterceptor = onFulfilled
-          responseErrorInterceptor = onRejected
-        }),
-        eject: vi.fn()
-      }
-    }
-  }
-}))
+import { getAxiosInterceptorHarness } from '../helpers/axiosInterceptor'
 
 import axios from 'axios'
 import { tokenService } from '../../src/services/auth/tokenService'
@@ -61,6 +9,7 @@ import { setupAxiosInterceptors, setupAxiosDefaults } from '../../src/services/c
 
 const mockedTokenService = vi.mocked(tokenService)
 const mockedRouter = vi.mocked(router)
+const harness = getAxiosInterceptorHarness()
 
 describe('axiosInterceptor', () => {
   beforeEach(() => {
@@ -82,7 +31,7 @@ describe('axiosInterceptor', () => {
         headers: {} as any
       }
 
-      const result = requestInterceptor(config)
+      const result = harness.requestInterceptor(config)
       expect(result.headers.Authorization).toBe('Bearer my-token')
     })
 
@@ -96,7 +45,7 @@ describe('axiosInterceptor', () => {
         headers: {} as any
       }
 
-      const result = requestInterceptor(config)
+      const result = harness.requestInterceptor(config)
       expect(result.headers.Authorization).toBe('Bearer existing-token')
     })
 
@@ -110,7 +59,7 @@ describe('axiosInterceptor', () => {
         headers: {} as any
       }
 
-      const result = requestInterceptor(config)
+      const result = harness.requestInterceptor(config)
       expect(result.headers.Authorization).toBeUndefined()
     })
 
@@ -124,7 +73,7 @@ describe('axiosInterceptor', () => {
         headers: {} as any
       }
 
-      const result = requestInterceptor(config)
+      const result = harness.requestInterceptor(config)
       expect(result.headers.Authorization).toBeUndefined()
     })
 
@@ -138,13 +87,13 @@ describe('axiosInterceptor', () => {
         headers: {} as any
       }
 
-      const result = requestInterceptor(config)
+      const result = harness.requestInterceptor(config)
       expect(result.headers.Authorization).toBeUndefined()
     })
 
     it('rejects on request error', async () => {
       const error = new Error('Request setup failed')
-      await expect(requestErrorInterceptor(error)).rejects.toThrow('Request setup failed')
+      await expect(harness.requestErrorInterceptor(error)).rejects.toThrow('Request setup failed')
     })
   })
 
@@ -155,7 +104,7 @@ describe('axiosInterceptor', () => {
         config: { method: 'post', url: '/test' }
       }
 
-      const result = responseInterceptor(response)
+      const result = harness.responseInterceptor(response)
       expect(result).toBe(response)
     })
 
@@ -165,7 +114,7 @@ describe('axiosInterceptor', () => {
         config: { method: 'post', url: '/test' }
       }
 
-      await expect(responseErrorInterceptor(error)).rejects.toBe(error)
+      await expect(harness.responseErrorInterceptor(error)).rejects.toBe(error)
 
       // Verify useCurrentUserStore was called and autoLogout invoked
       const storeInstance = (useCurrentUserStore as any)()
@@ -178,7 +127,7 @@ describe('axiosInterceptor', () => {
         config: { method: 'post', url: '/test' }
       }
 
-      await expect(responseErrorInterceptor(error)).rejects.toBe(error)
+      await expect(harness.responseErrorInterceptor(error)).rejects.toBe(error)
       expect(mockedRouter.push).toHaveBeenCalledWith({
         name: 'VerifyEmail',
         query: { redirect: '/home' }
@@ -193,7 +142,7 @@ describe('axiosInterceptor', () => {
         config: { method: 'post', url: '/test' }
       }
 
-      await expect(responseErrorInterceptor(error)).rejects.toBe(error)
+      await expect(harness.responseErrorInterceptor(error)).rejects.toBe(error)
       expect(mockedRouter.push).not.toHaveBeenCalled()
     })
 
@@ -203,7 +152,7 @@ describe('axiosInterceptor', () => {
         config: { method: 'post', url: '/test' }
       }
 
-      await expect(responseErrorInterceptor(error)).rejects.toBe(error)
+      await expect(harness.responseErrorInterceptor(error)).rejects.toBe(error)
       expect(mockedRouter.push).not.toHaveBeenCalled()
     })
 
@@ -215,7 +164,7 @@ describe('axiosInterceptor', () => {
         config: { method: 'get', url: '/test' }
       }
 
-      await expect(responseErrorInterceptor(error)).rejects.toBe(error)
+      await expect(harness.responseErrorInterceptor(error)).rejects.toBe(error)
       expect(warnSpy).toHaveBeenCalledWith('503 Service Unavailable:', 'Service down')
     })
   })
