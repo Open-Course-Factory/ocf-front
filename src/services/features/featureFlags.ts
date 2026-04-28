@@ -66,6 +66,7 @@ export interface FeatureFlags {
 
   // Scenario features
   scenarios: FeatureFlagConfig
+  scenario_conception: FeatureFlagConfig
 
   // Documentation features
   help_documentation: FeatureFlagConfig
@@ -138,6 +139,13 @@ export class FeatureFlagService {
         type: 'ops',
         allowedRoles: ['administrator', 'member'],
         controlledFeatures: ['scenario_management', 'scenario_execution']
+      },
+      scenario_conception: {
+        enabled: false,
+        description: 'Enable visual scenario editor for teachers',
+        type: 'ops',
+        allowedRoles: ['administrator', 'member'],
+        controlledFeatures: ['scenario_editor']
       },
       // Documentation Features (can start enabled)
       help_documentation: {
