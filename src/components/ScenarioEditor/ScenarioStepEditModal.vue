@@ -231,7 +231,7 @@
               <label>{{ t('stepEdit.options') }}</label>
               <div class="options-list">
                 <div
-                  v-for="(option, oIdx) in question.options"
+                  v-for="(_option, oIdx) in question.options"
                   :key="oIdx"
                   class="option-row"
                 >

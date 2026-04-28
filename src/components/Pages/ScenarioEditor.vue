@@ -203,6 +203,10 @@ import FlowCanvas from '../GraphEditor/FlowCanvas.vue'
 import ScenarioStepListPanel from '../ScenarioEditor/ScenarioStepListPanel.vue'
 import ScenarioNode from '../ScenarioEditor/nodes/ScenarioNode.vue'
 import StepNode from '../ScenarioEditor/nodes/StepNode.vue'
+import TerminalStepNode from '../ScenarioEditor/nodes/TerminalStepNode.vue'
+import FlagStepNode from '../ScenarioEditor/nodes/FlagStepNode.vue'
+import InfoStepNode from '../ScenarioEditor/nodes/InfoStepNode.vue'
+import QuizStepNode from '../ScenarioEditor/nodes/QuizStepNode.vue'
 import ScenarioStepEditModal from '../ScenarioEditor/ScenarioStepEditModal.vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import axios from 'axios'
@@ -232,7 +236,15 @@ const { t } = useTranslations({
         scenario: 'Scenario',
         step: 'Step',
         scenarioDescription: 'Root scenario container',
-        stepDescription: 'Individual scenario step'
+        stepDescription: 'Individual scenario step',
+        terminalStep: 'Terminal Step',
+        terminalStepDescription: 'Step with terminal verification',
+        flagStep: 'Flag Step',
+        flagStepDescription: 'Step with flag capture challenge',
+        infoStep: 'Info Step',
+        infoStepDescription: 'Informational content step',
+        quizStep: 'Quiz Step',
+        quizStepDescription: 'Step with quiz questions'
       },
       // Modal
       saveEntity: 'Save',
@@ -278,7 +290,15 @@ const { t } = useTranslations({
         scenario: 'Scénario',
         step: 'Étape',
         scenarioDescription: 'Conteneur de scénario principal',
-        stepDescription: 'Étape individuelle du scénario'
+        stepDescription: 'Étape individuelle du scénario',
+        terminalStep: 'Étape Terminal',
+        terminalStepDescription: 'Étape avec vérification terminal',
+        flagStep: 'Étape Drapeau',
+        flagStepDescription: 'Étape avec capture de drapeau',
+        infoStep: 'Étape Information',
+        infoStepDescription: 'Étape de contenu informatif',
+        quizStep: 'Étape Quiz',
+        quizStepDescription: 'Étape avec questions de quiz'
       },
       // Modal
       saveEntity: 'Enregistrer',
@@ -312,26 +332,57 @@ const notification = useNotification()
 // Custom node types for VueFlow
 const customNodeTypes: Record<string, Component> = {
   scenario: markRaw(ScenarioNode),
-  step: markRaw(StepNode)
+  step: markRaw(StepNode),
+  terminal: markRaw(TerminalStepNode),
+  flag: markRaw(FlagStepNode),
+  info: markRaw(InfoStepNode),
+  quiz: markRaw(QuizStepNode)
 }
+
+// Step type node types (used in multiple places)
+const STEP_NODE_TYPES = ['terminal', 'flag', 'info', 'quiz']
 
 // Node type definitions for the library panel
 const scenarioNodeTypeDefinitions = computed((): NodeTypeDefinition[] => [
   {
     type: 'scenario',
-    icon: '🧪',
+    icon: '\u{1F9EA}',
     color: 'var(--scenario-node-scenario)',
     bgColor: 'var(--scenario-node-scenario-bg)',
     label: t('scenarioEditor.nodeTypes.scenario'),
     description: t('scenarioEditor.nodeTypes.scenarioDescription')
   },
   {
-    type: 'step',
-    icon: '📋',
-    color: 'var(--scenario-node-step)',
-    bgColor: 'var(--scenario-node-step-bg)',
-    label: t('scenarioEditor.nodeTypes.step'),
-    description: t('scenarioEditor.nodeTypes.stepDescription')
+    type: 'terminal',
+    icon: '\u{1F5A5}\uFE0F',
+    color: 'var(--scenario-node-terminal)',
+    bgColor: 'var(--scenario-node-terminal-bg)',
+    label: t('scenarioEditor.nodeTypes.terminalStep'),
+    description: t('scenarioEditor.nodeTypes.terminalStepDescription')
+  },
+  {
+    type: 'flag',
+    icon: '\u{1F6A9}',
+    color: 'var(--scenario-node-flag)',
+    bgColor: 'var(--scenario-node-flag-bg)',
+    label: t('scenarioEditor.nodeTypes.flagStep'),
+    description: t('scenarioEditor.nodeTypes.flagStepDescription')
+  },
+  {
+    type: 'info',
+    icon: '\u{1F4D6}',
+    color: 'var(--scenario-node-info)',
+    bgColor: 'var(--scenario-node-info-bg)',
+    label: t('scenarioEditor.nodeTypes.infoStep'),
+    description: t('scenarioEditor.nodeTypes.infoStepDescription')
+  },
+  {
+    type: 'quiz',
+    icon: '\u{2753}',
+    color: 'var(--scenario-node-quiz)',
+    bgColor: 'var(--scenario-node-quiz-bg)',
+    label: t('scenarioEditor.nodeTypes.quizStep'),
+    description: t('scenarioEditor.nodeTypes.quizStepDescription')
   }
 ])
 
@@ -474,15 +525,17 @@ const convertScenarioToNodes = (scenario: any) => {
 
   sortedSteps.forEach((step, stepIdx) => {
     const stepId = `step-${step.id}`
+    const nodeType = step.step_type && STEP_NODE_TYPES.includes(step.step_type) ? step.step_type : 'terminal'
 
     const stepNode = {
       id: stepId,
-      type: 'step',
+      type: nodeType,
       position: { x: 300, y: currentY },
       data: {
         label: step.title || `Step ${stepIdx + 1}`,
         entityId: step.id,
-        entityType: 'step',
+        entityType: nodeType,
+        step_type: nodeType,
         order: step.order || stepIdx + 1,
         text_content: step.text_content,
         hint_content: step.hint_content,
@@ -494,6 +547,7 @@ const convertScenarioToNodes = (scenario: any) => {
         has_flag: step.has_flag,
         flag_path: step.flag_path,
         flag_level: step.flag_level,
+        questions: step.questions,
         isNew: false,
         ...step
       }
@@ -573,6 +627,11 @@ const handleNodeDragStart = (nodeType: string) => {
 
 // Node added handler
 const handleNodeAdded = (node: any) => {
+  // Set step_type on new step-type nodes
+  if (node.data.isNew && STEP_NODE_TYPES.includes(node.type)) {
+    node.data.step_type = node.type
+    node.data.entityType = node.type
+  }
   if (node.data.isNew) {
     openEditModal(node)
   }
@@ -613,7 +672,7 @@ const handleToggleExpand = (nodeData: any) => {
 
   // Show/hide step nodes when scenario is collapsed/expanded
   if (node.data.entityType === 'scenario') {
-    const stepNodes = nodes.value.filter(n => n.data.entityType === 'step')
+    const stepNodes = nodes.value.filter(n => STEP_NODE_TYPES.includes(n.data.entityType))
     stepNodes.forEach(stepNode => {
       stepNode.hidden = !node.data.isExpanded
     })
@@ -621,7 +680,7 @@ const handleToggleExpand = (nodeData: any) => {
     // Show/hide edges connected to steps
     edges.value.forEach(edge => {
       const targetNode = nodes.value.find(n => n.id === edge.target)
-      if (targetNode?.data?.entityType === 'step') {
+      if (targetNode?.data?.entityType && STEP_NODE_TYPES.includes(targetNode.data.entityType)) {
         edge.hidden = !node.data.isExpanded
       }
     })
@@ -639,9 +698,9 @@ const handleSelectTree = (nodeData: any) => {
   const nodeIdsToSelect: string[] = [parentNode.id]
 
   if (parentNode.data.entityType === 'scenario') {
-    // Select all step nodes
+    // Select all step nodes (any step type)
     nodes.value
-      .filter(n => n.data.entityType === 'step')
+      .filter(n => STEP_NODE_TYPES.includes(n.data.entityType))
       .forEach(n => nodeIdsToSelect.push(n.id))
   }
 
@@ -655,9 +714,12 @@ const handleSelectTree = (nodeData: any) => {
 }
 
 // Valid parent→child type map for edge connections
-const VALID_CONNECTIONS: Record<string, string> = {
-  'scenario': 'step',
-  'step': 'step'
+const VALID_CONNECTIONS: Record<string, string[]> = {
+  'scenario': STEP_NODE_TYPES,
+  'terminal': STEP_NODE_TYPES,
+  'flag': STEP_NODE_TYPES,
+  'info': STEP_NODE_TYPES,
+  'quiz': STEP_NODE_TYPES
 }
 
 const handleEdgeConnect = async (connection: any) => {
@@ -668,7 +730,7 @@ const handleEdgeConnect = async (connection: any) => {
   const sourceType = sourceNode.data.entityType
   const targetType = targetNode.data.entityType
 
-  if (VALID_CONNECTIONS[sourceType] !== targetType) {
+  if (!VALID_CONNECTIONS[sourceType]?.includes(targetType)) {
     edges.value = edges.value.filter(e =>
       !(e.source === connection.source && e.target === connection.target)
     )
@@ -706,7 +768,7 @@ const openEditModal = (node: any) => {
     }
     showScenarioEditModal.value = true
     modalError.value = ''
-  } else if (node.data.entityType === 'step') {
+  } else if (STEP_NODE_TYPES.includes(node.data.entityType)) {
     editingStep.value = node.data
     editingStepIsNew.value = node.data.isNew || false
     editingStepNodeId.value = node.id
@@ -789,6 +851,11 @@ const handleSaveStep = async (formData: any) => {
   try {
     const stepData: Record<string, any> = { ...formData }
 
+    // Include step_type from the editing step's data
+    if (editingStep.value?.step_type) {
+      stepData.step_type = editingStep.value.step_type
+    }
+
     if (editingStepIsNew.value) {
       // New step: find parent scenario from edges
       if (editingStepNodeId.value) {
@@ -849,7 +916,7 @@ const confirmDelete = async () => {
     if (entityId && !node.data.isNew) {
       if (entityType === 'scenario') {
         await scenariosStore.deleteEntity('/scenarios', entityId)
-      } else if (entityType === 'step') {
+      } else if (STEP_NODE_TYPES.includes(entityType)) {
         await scenarioStepsStore.deleteEntity('/scenario-steps', entityId)
       }
     }
@@ -869,17 +936,17 @@ const syncOrderFromEdges = async (): Promise<number> => {
   let patchCount = 0
 
   const parentTypes = [
-    { parentType: 'scenario', childType: 'step', endpoint: '/scenario-steps', orderField: 'order' }
+    { parentType: 'scenario', endpoint: '/scenario-steps', orderField: 'order' }
   ]
 
-  for (const { parentType, childType, endpoint, orderField } of parentTypes) {
+  for (const { parentType, endpoint, orderField } of parentTypes) {
     const parentNodes = nodes.value.filter(n => n.data.entityType === parentType && n.data.entityId)
 
     for (const parentNode of parentNodes) {
       const firstChildEdge = edges.value.find(e => {
         if (e.source !== parentNode.id) return false
         const targetNode = nodes.value.find(n => n.id === e.target)
-        return targetNode?.data?.entityType === childType
+        return targetNode?.data?.entityType && STEP_NODE_TYPES.includes(targetNode.data.entityType)
       })
 
       if (!firstChildEdge) continue
@@ -895,7 +962,7 @@ const syncOrderFromEdges = async (): Promise<number> => {
         const nextEdge = edges.value.find(e => {
           if (e.source !== currentNodeId) return false
           const targetNode = nodes.value.find(n => n.id === e.target)
-          return targetNode?.data?.entityType === childType
+          return targetNode?.data?.entityType && STEP_NODE_TYPES.includes(targetNode.data.entityType)
         })
 
         currentNodeId = nextEdge ? nextEdge.target : null
@@ -914,7 +981,7 @@ const syncOrderFromEdges = async (): Promise<number> => {
             child.data.order = newOrder
             patchCount++
           } catch (err) {
-            console.error(`Failed to update order for ${childType} ${child.data.entityId}:`, err)
+            console.error(`Failed to update order for step ${child.data.entityId}:`, err)
           }
         }
       }
