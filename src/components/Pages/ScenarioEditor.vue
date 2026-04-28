@@ -17,7 +17,7 @@
               :key="scenario.id"
               :value="scenario.id"
             >
-              {{ scenario.name }} - {{ scenario.title }}
+              {{ scenario.name }} - {{ scenario.title }} ({{ scenario.organization_id ? (getScenarioOrgName(scenario) || t('scenarioEditor.orgLabel')) : (isAdmin ? t('scenarioEditor.platform') + ' \u{1F6E1}\uFE0F' : t('scenarioEditor.platform')) }})
             </option>
           </select>
 
@@ -36,9 +36,32 @@
             {{ t('scenarioEditor.import') }}
           </button>
 
+          <!-- Share to org -->
+          <button
+            v-if="canShareToOrg"
+            @click="openShareModal"
+            class="btn-share"
+          >
+            {{ t('scenarioEditor.shareToOrg') }}
+          </button>
+
           <!-- Debug info -->
           <span class="debug-info" v-if="nodes.length > 0">
-            📊 {{ nodes.length }} nodes, {{ edges.length }} edges
+            {{ nodes.length }} nodes, {{ edges.length }} edges
+          </span>
+        </div>
+
+        <!-- Org context badge for loaded scenario -->
+        <div v-if="currentScenario" class="scenario-org-badge">
+          <span class="org-tag">
+            {{ t('scenarioEditor.orgLabel') }}:
+            <template v-if="currentScenario.organization_id">
+              {{ getScenarioOrgName(currentScenario) || '—' }}
+            </template>
+            <template v-else>
+              {{ t('scenarioEditor.platform') }}
+              <AdminBadge v-if="isAdmin" icon-only />
+            </template>
           </span>
         </div>
       </div>
@@ -161,6 +184,30 @@
             :placeholder="t('scenarioEditor.enterDescription')"
           ></textarea>
         </div>
+
+        <!-- Org selector (admins can choose org or platform; non-admins see current org) -->
+        <div class="form-group" v-if="isAdmin">
+          <label>{{ t('scenarioEditor.orgLabel') }}</label>
+          <select v-model="editingScenario.organization_id" class="form-control">
+            <option :value="null">{{ t('scenarioEditor.platformOnly') }}</option>
+            <option
+              v-for="org in organizationsStore.userOrganizations"
+              :key="org.id"
+              :value="org.id"
+            >
+              {{ org.display_name || org.name }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group" v-else-if="organizationsStore.currentOrganization">
+          <label>{{ t('scenarioEditor.orgLabel') }}</label>
+          <input
+            type="text"
+            class="form-control"
+            :value="organizationsStore.currentOrganization.display_name || organizationsStore.currentOrganization.name"
+            disabled
+          />
+        </div>
       </div>
     </BaseModal>
 
@@ -187,6 +234,33 @@
     >
       <p>{{ t('scenarioEditor.deleteWarning', { type: deletingNode?.data?.entityType || 'item', name: deletingNode?.data?.label || '' }) }}</p>
     </BaseModal>
+
+    <!-- Share to Org Modal -->
+    <BaseModal
+      :visible="showShareModal"
+      :title="t('scenarioEditor.shareToOrg')"
+      size="small"
+      :show-default-footer="true"
+      :confirm-text="isSharing ? t('scenarioEditor.sharing') : t('scenarioEditor.shareToOrg')"
+      :cancel-text="t('scenarioEditor.cancel')"
+      :is-loading="isSharing"
+      @close="closeShareModal"
+      @confirm="handleShareToOrg"
+    >
+      <div class="form-group">
+        <label>{{ t('scenarioEditor.selectTargetOrg') }}</label>
+        <select v-model="shareTargetOrgId" class="form-control">
+          <option :value="null" disabled>{{ t('scenarioEditor.selectTargetOrg') }}</option>
+          <option
+            v-for="org in shareTargetOrgs"
+            :key="org.id"
+            :value="org.id"
+          >
+            {{ org.display_name || org.name }}
+          </option>
+        </select>
+      </div>
+    </BaseModal>
   </div>
 </template>
 
@@ -195,7 +269,9 @@ import { ref, onMounted, onUnmounted, computed, markRaw, type Component } from '
 import { useRoute, useRouter } from 'vue-router'
 import { useScenariosStore } from '../../stores/scenarios'
 import { useScenarioStepsStore } from '../../stores/scenarioSteps'
+import { useOrganizationsStore } from '../../stores/organizations'
 import { useTranslations } from '../../composables/useTranslations'
+import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useNotification } from '../../composables/useNotification'
 import NodeLibraryPanel from '../GraphEditor/NodeLibraryPanel.vue'
 import type { NodeTypeDefinition } from '../GraphEditor/NodeLibraryPanel.vue'
@@ -208,6 +284,7 @@ import FlagStepNode from '../ScenarioEditor/nodes/FlagStepNode.vue'
 import InfoStepNode from '../ScenarioEditor/nodes/InfoStepNode.vue'
 import QuizStepNode from '../ScenarioEditor/nodes/QuizStepNode.vue'
 import ScenarioStepEditModal from '../ScenarioEditor/ScenarioStepEditModal.vue'
+import AdminBadge from '../Common/AdminBadge.vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import axios from 'axios'
 
@@ -266,7 +343,15 @@ const { t } = useTranslations({
       delete: 'Delete',
       deleteWarning: 'Are you sure you want to delete this {type}: "{name}"? This action cannot be undone.',
       invalidConnection: 'Invalid connection: {source} cannot connect to {target}',
-      orderSynced: '{count} step order(s) updated'
+      orderSynced: '{count} step order(s) updated',
+      platform: 'Platform',
+      orgLabel: 'Organization',
+      shareToOrg: 'Share to organization',
+      shareSuccess: 'Scenario shared successfully',
+      shareError: 'Failed to share scenario',
+      selectTargetOrg: 'Select target organization',
+      platformOnly: 'Platform (admin only)',
+      sharing: 'Sharing...'
     }
   },
   fr: {
@@ -320,13 +405,23 @@ const { t } = useTranslations({
       delete: 'Supprimer',
       deleteWarning: 'Êtes-vous sûr de vouloir supprimer ce {type}: "{name}"? Cette action est irréversible.',
       invalidConnection: 'Connexion invalide : {source} ne peut pas se connecter à {target}',
-      orderSynced: '{count} ordre(s) d\'étape mis à jour'
+      orderSynced: '{count} ordre(s) d\'étape mis à jour',
+      platform: 'Plateforme',
+      orgLabel: 'Organisation',
+      shareToOrg: 'Partager avec une organisation',
+      shareSuccess: 'Scénario partagé avec succès',
+      shareError: 'Échec du partage du scénario',
+      selectTargetOrg: 'Sélectionner l\'organisation cible',
+      platformOnly: 'Plateforme (admin uniquement)',
+      sharing: 'Partage en cours...'
     }
   }
 })
 
 const scenariosStore = useScenariosStore()
 const scenarioStepsStore = useScenarioStepsStore()
+const organizationsStore = useOrganizationsStore()
+const { isAdmin } = useAdminViewMode()
 const notification = useNotification()
 
 // Custom node types for VueFlow
@@ -406,6 +501,31 @@ const editingStepNodeId = ref<string | null>(null)
 const deletingNode = ref<any>(null)
 const isSaving = ref(false)
 const modalError = ref('')
+
+// Share to org state
+const showShareModal = ref(false)
+const shareTargetOrgId = ref<string | null>(null)
+const isSharing = ref(false)
+
+// Org context helpers
+const getScenarioOrgName = (scenario: any): string | null => {
+  if (!scenario.organization_id) return null
+  const org = organizationsStore.getOrganizationById(scenario.organization_id)
+  return org?.display_name || org?.name || null
+}
+
+const canShareToOrg = computed(() => {
+  return selectedScenarioId.value &&
+    currentScenario.value &&
+    organizationsStore.userOrganizations.length > 1
+})
+
+const shareTargetOrgs = computed(() => {
+  if (!currentScenario.value) return []
+  return organizationsStore.userOrganizations.filter(
+    org => org.id !== currentScenario.value?.organization_id
+  )
+})
 
 // Resize state
 const treePanelWidth = ref(280)
@@ -597,6 +717,7 @@ const handleCreateNew = () => {
     difficulty: 'beginner',
     estimated_time: '',
     description: '',
+    organization_id: isAdmin.value ? null : (organizationsStore.currentOrganization?.id || null),
     isNew: true
   }
   showScenarioEditModal.value = true
@@ -796,6 +917,10 @@ const handleSaveScenario = async () => {
     }
 
     if (editingScenario.value.isNew) {
+      // Include organization_id when creating
+      if (editingScenario.value.organization_id) {
+        entityData.organization_id = editingScenario.value.organization_id
+      }
       const result = await scenariosStore.createEntity('/scenarios', entityData)
 
       if (result) {
@@ -891,6 +1016,39 @@ const handleSaveStep = async (formData: any) => {
   } catch (err: any) {
     console.error('Save step failed:', err)
     notification.showError(err.response?.data?.error_message || t('scenarioEditor.saveError'))
+  }
+}
+
+// Share to org handlers
+const openShareModal = () => {
+  shareTargetOrgId.value = null
+  showShareModal.value = true
+}
+
+const closeShareModal = () => {
+  showShareModal.value = false
+  shareTargetOrgId.value = null
+}
+
+const handleShareToOrg = async () => {
+  if (!shareTargetOrgId.value || !currentScenario.value?.id) return
+
+  isSharing.value = true
+  try {
+    await axios.post(`/organizations/${shareTargetOrgId.value}/scenarios/${currentScenario.value.id}/duplicate`)
+    notification.showSuccess(t('scenarioEditor.shareSuccess'))
+    // Reload scenarios to show the new duplicate
+    await scenariosStore.loadEntities('/scenarios?include=steps')
+    closeShareModal()
+  } catch (err: any) {
+    console.error('Share to org failed:', err)
+    notification.showError(
+      err.response?.data?.error_message ||
+      err.response?.data?.message ||
+      t('scenarioEditor.shareError')
+    )
+  } finally {
+    isSharing.value = false
   }
 }
 
@@ -1331,5 +1489,43 @@ textarea.form-control {
   resize: vertical;
   min-height: 80px;
   font-family: inherit;
+}
+
+/* Org context badge */
+.scenario-org-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.org-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-variant);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+/* Share button */
+.btn-share {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-share:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-primary);
 }
 </style>
