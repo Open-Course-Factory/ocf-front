@@ -610,11 +610,11 @@ const convertScenarioToNodes = (scenario: any) => {
 
   const steps = scenario.scenario_steps || scenario.scenarioSteps || scenario.steps || []
 
-  // Create scenario root node at top
+  // Create scenario root node at top-left
   const scenarioNode = {
     id: `scenario-${scenario.id}`,
     type: 'scenario',
-    position: { x: 300, y: 50 },
+    position: { x: 100, y: 50 },
     data: {
       label: scenario.title || scenario.name,
       entityId: scenario.id,
@@ -639,8 +639,11 @@ const convertScenarioToNodes = (scenario: any) => {
   // Sort steps by order
   const sortedSteps = [...steps].sort((a, b) => (a.order || 0) - (b.order || 0))
 
-  const STEP_SPACING_Y = 180
-  let currentY = 250
+  // Layout: scenario at top-left, first step below, then steps spread horizontally
+  const STEP_SPACING_X = 250      // Horizontal spacing between steps
+  const LEVEL_SPACING_Y = 200     // Vertical gap from scenario to step row
+  const stepRowY = 50 + LEVEL_SPACING_Y  // Steps row Y position
+  let currentX = 100              // Start at same X as scenario
   let previousStepId: string | null = null
 
   sortedSteps.forEach((step, stepIdx) => {
@@ -650,7 +653,7 @@ const convertScenarioToNodes = (scenario: any) => {
     const stepNode = {
       id: stepId,
       type: nodeType,
-      position: { x: 300, y: currentY },
+      position: { x: currentX, y: stepRowY },
       data: {
         label: step.title || `Step ${stepIdx + 1}`,
         entityId: step.id,
@@ -674,8 +677,8 @@ const convertScenarioToNodes = (scenario: any) => {
     }
     newNodes.push(stepNode)
 
-    // Connect steps vertically (chain: scenario → step1 → step2 → ...)
     if (stepIdx === 0) {
+      // First step: vertical edge from scenario (bottom → top)
       newEdges.push({
         id: `edge-${scenarioNode.id}-${stepId}`,
         source: scenarioNode.id,
@@ -686,18 +689,19 @@ const convertScenarioToNodes = (scenario: any) => {
         animated: false
       })
     } else if (previousStepId) {
+      // Subsequent steps: horizontal edge from previous step (right → left)
       newEdges.push({
         id: `edge-${previousStepId}-${stepId}`,
         source: previousStepId,
-        sourceHandle: 'bottom-source',
+        sourceHandle: 'right-source',
         target: stepId,
-        targetHandle: 'top',
+        targetHandle: 'left',
         type: 'smoothstep',
         animated: false
       })
     }
 
-    currentY += STEP_SPACING_Y
+    currentX += STEP_SPACING_X
     previousStepId = stepId
   })
 
