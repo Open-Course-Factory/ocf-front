@@ -187,6 +187,7 @@ const { hasPermission } = usePermissions();
 
 // Create reactive computed values for each flag we need to check
 const courseConceptionEnabled = createReactiveFlag('course_conception')
+const scenarioConceptionEnabled = createReactiveFlag('scenario_conception')
 const themeCustomizationEnabled = createReactiveFlag('theme_customization')
 const archiveGenerationsEnabled = createReactiveFlag('archive_generations')
 const sshKeyManagementEnabled = createReactiveFlag('ssh_key_management')
@@ -202,6 +203,8 @@ const isFeatureEnabled = (flagName: string): boolean => {
   switch (flagName) {
     case 'course_conception':
       return courseConceptionEnabled.value
+    case 'scenario_conception':
+      return scenarioConceptionEnabled.value
     case 'theme_customization':
       return themeCustomizationEnabled.value
     case 'archive_generations':
@@ -266,6 +269,13 @@ const menuCategories = computed((): MenuCategory[] => [
         label: t('navigation.courseEditor'),
         title: t('navigation.courseEditorTitle'),
         icon: 'fas fa-project-diagram'
+      },
+      {
+        route: '/scenario-editor',
+        label: t('navigation.scenarioEditor'),
+        title: t('navigation.scenarioEditorTitle'),
+        icon: 'fas fa-project-diagram',
+        featureFlag: 'scenario_conception'
       },
       {
         route: '/chapters',

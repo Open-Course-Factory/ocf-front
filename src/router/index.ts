@@ -138,6 +138,7 @@ const basicRoutes = [
       //{ path: 'dashboard', name: 'Dashboard', component: Dashboard, meta: { requiresAuth: true } },
       { path: 'courses', name: 'Courses', component: Courses, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
       { path: 'course-editor', name: 'CourseEditor', component: CourseEditor, meta: { requiresAuth: true, requiresFeature: 'course_conception', collapseNav: true } },
+      { path: 'scenario-editor', name: 'ScenarioEditor', component: () => import('../components/Pages/ScenarioEditor.vue'), meta: { requiresAuth: true, requiresFeature: 'scenario_conception', collapseNav: true } },
       { path: 'chapters', name: 'Chapters', component: Chapters, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
       { path: 'sections', name: 'Sections', component: Sections, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
       { path: 'pages', name: 'Pages', component: Pages, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
