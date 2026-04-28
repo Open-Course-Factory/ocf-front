@@ -86,7 +86,7 @@ const handleDragEnd = () => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--color-surface);
+  background: transparent;
 }
 
 .panel-header {

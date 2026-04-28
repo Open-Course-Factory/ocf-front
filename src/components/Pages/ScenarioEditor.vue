@@ -1599,8 +1599,8 @@ const stopResize = () => {
   display: flex;
   align-items: center;
   padding: 0.5rem 0.75rem;
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border-light);
   gap: 0.75rem;
   min-height: 3rem;
 }
@@ -1757,8 +1757,6 @@ const stopResize = () => {
 .panel {
   display: flex;
   flex-direction: column;
-  background: var(--color-surface);
-  border-right: 2px solid var(--color-border);
   overflow: hidden;
   position: relative;
 }
@@ -1768,11 +1766,14 @@ const stopResize = () => {
   min-width: 120px;
   max-width: 200px;
   flex-shrink: 0;
+  background: var(--color-bg-tertiary);
+  border-right: 1px solid var(--color-border-light);
 }
 
 .canvas-panel {
   flex: 1;
-  border-right: 2px solid var(--color-border);
+  background: var(--color-background);
+  border-right: 1px solid var(--color-border-light);
   min-width: 400px;
 }
 
@@ -1783,6 +1784,8 @@ const stopResize = () => {
   flex-shrink: 0;
   position: relative;
   transition: width 0.2s, min-width 0.2s;
+  background: var(--color-bg-secondary);
+  border-left: 1px solid var(--color-border-light);
 }
 
 .tree-panel.collapsed {
@@ -1798,18 +1801,18 @@ const stopResize = () => {
   top: 50%;
   transform: translateY(-50%);
   z-index: 20;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
   border-left: none;
   border-radius: 0 4px 4px 0;
   padding: 0.5rem 0.25rem;
   cursor: pointer;
-  color: var(--color-text-secondary);
-  transition: all 0.2s;
+  color: var(--color-text-muted);
+  transition: all 0.15s;
 }
 
 .panel-collapse-toggle:hover {
-  background: var(--color-surface-hover);
+  background: var(--color-bg-tertiary);
   color: var(--color-text-primary);
 }
 
