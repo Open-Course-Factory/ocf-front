@@ -104,4 +104,39 @@ describe('useTheme', () => {
       expect(currentTheme.value).toBe('dark')
     })
   })
+
+  describe('system-preference listener (auto mode)', () => {
+    it('re-applies theme when OS toggles dark/light while in auto mode', () => {
+      // Capture the change listener registered by the composable so we can
+      // simulate the OS toggling its color-scheme preference.
+      let changeListener: ((e: { matches: boolean }) => void) | null = null
+      let prefersDark = false
+
+      vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
+        get matches() { return query === '(prefers-color-scheme: dark)' && prefersDark },
+        media: query,
+        addEventListener: vi.fn((event: string, cb: (e: { matches: boolean }) => void) => {
+          if (event === 'change') changeListener = cb
+        }),
+        removeEventListener: vi.fn(),
+      })))
+
+      const { setTheme } = useTheme()
+      setTheme('auto')
+
+      // Initial state: OS prefers light → data-theme should be 'light'
+      expect(document.documentElement.getAttribute('data-theme')).toBe('light')
+      expect(changeListener).not.toBeNull()
+
+      // OS flips to dark → listener fires → composable should re-apply auto
+      prefersDark = true
+      changeListener!({ matches: true })
+      expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+
+      // OS flips back to light → listener fires → composable should flip back
+      prefersDark = false
+      changeListener!({ matches: false })
+      expect(document.documentElement.getAttribute('data-theme')).toBe('light')
+    })
+  })
 })
