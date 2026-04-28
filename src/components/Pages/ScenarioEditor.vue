@@ -370,7 +370,7 @@ const scenarioEditModalTitle = computed(() => {
 
 // Load all scenarios
 onMounted(async () => {
-  await scenariosStore.loadEntities('/scenarios?include=scenarioSteps')
+  await scenariosStore.loadEntities('/scenarios?include=steps')
 
   // Check if scenarioId is in URL query params
   const scenarioIdFromUrl = route.query.scenarioId as string | undefined
@@ -412,7 +412,7 @@ const handleScenarioSelect = async () => {
 
   try {
     // Load scenario with steps included
-    const response = await axios.get(`/scenarios/${selectedScenarioId.value}?include=scenarioSteps`)
+    const response = await axios.get(`/scenarios/${selectedScenarioId.value}?include=steps`)
     const scenario = response.data
 
     if (!scenario) {
@@ -741,7 +741,7 @@ const handleSaveScenario = async () => {
         if (newId) {
           selectedScenarioId.value = newId
           // Reload
-          await scenariosStore.loadEntities('/scenarios?include=scenarioSteps')
+          await scenariosStore.loadEntities('/scenarios?include=steps')
           await handleScenarioSelect()
           router.replace({ query: { scenarioId: newId } })
         }
