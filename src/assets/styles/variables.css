@@ -356,6 +356,16 @@
   --scenario-node-scenario-bg: #E0F2F1;
   --scenario-node-step: #E65100;
   --scenario-node-step-bg: #FBE9E7;
+
+  /* Step Type Node Colors */
+  --scenario-node-terminal: #E65100;
+  --scenario-node-terminal-bg: #FBE9E7;
+  --scenario-node-flag: #C62828;
+  --scenario-node-flag-bg: #FFEBEE;
+  --scenario-node-info: #1565C0;
+  --scenario-node-info-bg: #E3F2FD;
+  --scenario-node-quiz: #6A1B9A;
+  --scenario-node-quiz-bg: #F3E5F5;
 }
 
 /* Terminal Theme Colors (XTerm.js) */
@@ -414,6 +424,12 @@
   /* Colored shadows for scenario nodes */
   --shadow-scenario-node: 0 4px 16px rgba(0, 137, 123, 0.3);
   --shadow-step-node: 0 4px 16px rgba(230, 81, 0, 0.3);
+
+  /* Colored shadows for step type nodes */
+  --shadow-terminal-step-node: 0 4px 16px rgba(230, 81, 0, 0.3);
+  --shadow-flag-step-node: 0 4px 16px rgba(198, 40, 40, 0.3);
+  --shadow-info-step-node: 0 4px 16px rgba(21, 101, 192, 0.3);
+  --shadow-quiz-step-node: 0 4px 16px rgba(106, 27, 154, 0.3);
 }
 
 /* Dark mode adjustments for domain-specific colors */
@@ -425,6 +441,12 @@
 
   --scenario-node-scenario-bg: rgba(0, 137, 123, 0.15);
   --scenario-node-step-bg: rgba(230, 81, 0, 0.15);
+
+  /* Step Type Node Colors - Dark Mode */
+  --scenario-node-terminal-bg: rgba(230, 81, 0, 0.15);
+  --scenario-node-flag-bg: rgba(198, 40, 40, 0.15);
+  --scenario-node-info-bg: rgba(21, 101, 192, 0.15);
+  --scenario-node-quiz-bg: rgba(106, 27, 154, 0.15);
 
   --terminal-bg: #1a1a1a;
   --terminal-border: #404040;
