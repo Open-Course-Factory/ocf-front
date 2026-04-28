@@ -36,13 +36,13 @@
             {{ t('scenarioEditor.import') }}
           </button>
 
-          <!-- Share to org -->
+          <!-- Copy to org -->
           <button
-            v-if="canShareToOrg"
-            @click="openShareModal"
-            class="btn-share"
+            v-if="canCopyToOrg"
+            @click="openCopyModal"
+            class="btn-copy-org"
           >
-            {{ t('scenarioEditor.shareToOrg') }}
+            {{ t('scenarioEditor.copyToOrg') }}
           </button>
 
           <!-- Debug info -->
@@ -235,24 +235,24 @@
       <p>{{ t('scenarioEditor.deleteWarning', { type: deletingNode?.data?.entityType || 'item', name: deletingNode?.data?.label || '' }) }}</p>
     </BaseModal>
 
-    <!-- Share to Org Modal -->
+    <!-- Copy to Org Modal -->
     <BaseModal
-      :visible="showShareModal"
-      :title="t('scenarioEditor.shareToOrg')"
+      :visible="showCopyModal"
+      :title="t('scenarioEditor.copyToOrg')"
       size="small"
       :show-default-footer="true"
-      :confirm-text="isSharing ? t('scenarioEditor.sharing') : t('scenarioEditor.shareToOrg')"
+      :confirm-text="isCopying ? t('scenarioEditor.copying') : t('scenarioEditor.copyToOrg')"
       :cancel-text="t('scenarioEditor.cancel')"
-      :is-loading="isSharing"
-      @close="closeShareModal"
-      @confirm="handleShareToOrg"
+      :is-loading="isCopying"
+      @close="closeCopyModal"
+      @confirm="handleCopyToOrg"
     >
       <div class="form-group">
         <label>{{ t('scenarioEditor.selectTargetOrg') }}</label>
-        <select v-model="shareTargetOrgId" class="form-control">
+        <select v-model="copyTargetOrgId" class="form-control">
           <option :value="null" disabled>{{ t('scenarioEditor.selectTargetOrg') }}</option>
           <option
-            v-for="org in shareTargetOrgs"
+            v-for="org in copyTargetOrgs"
             :key="org.id"
             :value="org.id"
           >
@@ -346,12 +346,12 @@ const { t } = useTranslations({
       orderSynced: '{count} step order(s) updated',
       platform: 'Platform',
       orgLabel: 'Organization',
-      shareToOrg: 'Share to organization',
-      shareSuccess: 'Scenario shared successfully',
-      shareError: 'Failed to share scenario',
+      copyToOrg: 'Copy to organization',
+      copySuccess: 'Scenario copied successfully',
+      copyError: 'Failed to copy scenario',
       selectTargetOrg: 'Select target organization',
       platformOnly: 'Platform (admin only)',
-      sharing: 'Sharing...'
+      copying: 'Copying...'
     }
   },
   fr: {
@@ -408,12 +408,12 @@ const { t } = useTranslations({
       orderSynced: '{count} ordre(s) d\'étape mis à jour',
       platform: 'Plateforme',
       orgLabel: 'Organisation',
-      shareToOrg: 'Partager avec une organisation',
-      shareSuccess: 'Scénario partagé avec succès',
-      shareError: 'Échec du partage du scénario',
+      copyToOrg: 'Copier vers une organisation',
+      copySuccess: 'Scénario copié avec succès',
+      copyError: 'Échec de la copie du scénario',
       selectTargetOrg: 'Sélectionner l\'organisation cible',
       platformOnly: 'Plateforme (admin uniquement)',
-      sharing: 'Partage en cours...'
+      copying: 'Copie en cours...'
     }
   }
 })
@@ -502,10 +502,10 @@ const deletingNode = ref<any>(null)
 const isSaving = ref(false)
 const modalError = ref('')
 
-// Share to org state
-const showShareModal = ref(false)
-const shareTargetOrgId = ref<string | null>(null)
-const isSharing = ref(false)
+// Copy to org state
+const showCopyModal = ref(false)
+const copyTargetOrgId = ref<string | null>(null)
+const isCopying = ref(false)
 
 // Org context helpers
 const getScenarioOrgName = (scenario: any): string | null => {
@@ -514,13 +514,13 @@ const getScenarioOrgName = (scenario: any): string | null => {
   return org?.display_name || org?.name || null
 }
 
-const canShareToOrg = computed(() => {
+const canCopyToOrg = computed(() => {
   return selectedScenarioId.value &&
     currentScenario.value &&
     organizationsStore.userOrganizations.length > 1
 })
 
-const shareTargetOrgs = computed(() => {
+const copyTargetOrgs = computed(() => {
   if (!currentScenario.value) return []
   return organizationsStore.userOrganizations.filter(
     org => org.id !== currentScenario.value?.organization_id
@@ -1019,36 +1019,36 @@ const handleSaveStep = async (formData: any) => {
   }
 }
 
-// Share to org handlers
-const openShareModal = () => {
-  shareTargetOrgId.value = null
-  showShareModal.value = true
+// Copy to org handlers
+const openCopyModal = () => {
+  copyTargetOrgId.value = null
+  showCopyModal.value = true
 }
 
-const closeShareModal = () => {
-  showShareModal.value = false
-  shareTargetOrgId.value = null
+const closeCopyModal = () => {
+  showCopyModal.value = false
+  copyTargetOrgId.value = null
 }
 
-const handleShareToOrg = async () => {
-  if (!shareTargetOrgId.value || !currentScenario.value?.id) return
+const handleCopyToOrg = async () => {
+  if (!copyTargetOrgId.value || !currentScenario.value?.id) return
 
-  isSharing.value = true
+  isCopying.value = true
   try {
-    await axios.post(`/organizations/${shareTargetOrgId.value}/scenarios/${currentScenario.value.id}/duplicate`)
-    notification.showSuccess(t('scenarioEditor.shareSuccess'))
+    await axios.post(`/organizations/${copyTargetOrgId.value}/scenarios/${currentScenario.value.id}/duplicate`)
+    notification.showSuccess(t('scenarioEditor.copySuccess'))
     // Reload scenarios to show the new duplicate
     await scenariosStore.loadEntities('/scenarios?include=steps')
-    closeShareModal()
+    closeCopyModal()
   } catch (err: any) {
-    console.error('Share to org failed:', err)
+    console.error('Copy to org failed:', err)
     notification.showError(
       err.response?.data?.error_message ||
       err.response?.data?.message ||
-      t('scenarioEditor.shareError')
+      t('scenarioEditor.copyError')
     )
   } finally {
-    isSharing.value = false
+    isCopying.value = false
   }
 }
 
@@ -1510,8 +1510,8 @@ textarea.form-control {
   border-radius: 4px;
 }
 
-/* Share button */
-.btn-share {
+/* Copy to org button */
+.btn-copy-org {
   padding: 0.5rem 1rem;
   border: 1px solid var(--color-border);
   border-radius: 4px;
@@ -1524,7 +1524,7 @@ textarea.form-control {
   white-space: nowrap;
 }
 
-.btn-share:hover {
+.btn-copy-org:hover {
   background: var(--color-surface-hover);
   border-color: var(--color-primary);
 }
