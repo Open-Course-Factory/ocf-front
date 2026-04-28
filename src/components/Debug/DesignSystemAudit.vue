@@ -261,6 +261,93 @@
           </div>
         </div>
 
+        <!-- 3b. SCENARIO EDITOR NODES -->
+        <div class="audit-section">
+          <div class="section-title"><i class="fas fa-flask"></i> {{ t('designSystem.scenarioNodesTitle') }}</div>
+          <div class="section-body">
+            <div style="display:flex;gap:16px;">
+              <div style="flex:1;">
+                <div class="course-nodes-grid">
+                  <div class="course-node node-scenario">
+                    <div class="node-head"><span class="icon"><i class="fas fa-flask"></i></span><span class="title">Linux Rogue-Lite</span></div>
+                    <div class="node-meta-row"><span class="meta-badge difficulty-advanced">Advanced</span><span class="meta-text">10 steps</span></div>
+                    <div class="node-actions-bar">
+                      <button class="action-btn"><i class="fas fa-edit"></i></button>
+                      <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                    </div>
+                  </div>
+                  <div class="course-node node-terminal">
+                    <div class="node-head"><span class="icon"><i class="fas fa-terminal"></i></span><span class="title">Terminal</span></div>
+                    <div class="node-meta-row"><span class="meta-text">Step 1</span><span class="meta-indicator"><i class="fas fa-check-circle"></i></span></div>
+                    <div class="node-actions-bar">
+                      <button class="action-btn"><i class="fas fa-edit"></i></button>
+                      <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                    </div>
+                  </div>
+                  <div class="course-node node-flag">
+                    <div class="node-head"><span class="icon"><i class="fas fa-flag"></i></span><span class="title">Flag</span></div>
+                    <div class="node-meta-row"><span class="meta-text">Step 2</span><span class="meta-indicator"><i class="fas fa-flag"></i> Lv.3</span></div>
+                    <div class="node-actions-bar">
+                      <button class="action-btn"><i class="fas fa-edit"></i></button>
+                      <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                    </div>
+                  </div>
+                  <div class="course-node node-info">
+                    <div class="node-head"><span class="icon"><i class="fas fa-info-circle"></i></span><span class="title">Info</span></div>
+                    <div class="node-meta-row"><span class="meta-text">Step 3</span></div>
+                    <div class="node-actions-bar">
+                      <button class="action-btn"><i class="fas fa-edit"></i></button>
+                      <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                    </div>
+                  </div>
+                  <div class="course-node node-quiz">
+                    <div class="node-head"><span class="icon"><i class="fas fa-question-circle"></i></span><span class="title">Quiz</span></div>
+                    <div class="node-meta-row"><span class="meta-text">Step 4</span><span class="meta-indicator">3 Q.</span></div>
+                    <div class="node-actions-bar">
+                      <button class="action-btn"><i class="fas fa-edit"></i></button>
+                      <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Scenario Node Library -->
+              <div style="width:140px;flex-shrink:0;">
+                <div class="node-library">
+                  <div class="node-library-header">{{ t('designSystem.scenarioNodeLibrary') }}</div>
+                  <div class="node-library-items">
+                    <div class="node-library-item">
+                      <div class="node-library-preview lib-scenario">
+                        <i class="fas fa-flask"></i><span class="lib-label">Scenario</span>
+                      </div>
+                    </div>
+                    <div class="node-library-item">
+                      <div class="node-library-preview lib-terminal">
+                        <i class="fas fa-terminal"></i><span class="lib-label">Terminal</span>
+                      </div>
+                    </div>
+                    <div class="node-library-item">
+                      <div class="node-library-preview lib-flag">
+                        <i class="fas fa-flag"></i><span class="lib-label">Flag</span>
+                      </div>
+                    </div>
+                    <div class="node-library-item">
+                      <div class="node-library-preview lib-info">
+                        <i class="fas fa-info-circle"></i><span class="lib-label">Info</span>
+                      </div>
+                    </div>
+                    <div class="node-library-item">
+                      <div class="node-library-preview lib-quiz">
+                        <i class="fas fa-question-circle"></i><span class="lib-label">Quiz</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 4. TERMINAL COMPONENTS -->
         <div class="audit-section">
           <div class="section-title"><i class="fas fa-terminal"></i> {{ t('designSystem.terminalTitle') }}</div>
@@ -339,6 +426,8 @@ const { t } = useTranslations({
       actionButtonHover: 'Action button hover',
       userSettingsTitle: '5. UserSettingsMenu Overlay',
       courseNodesTitle: '3. Course Editor Nodes + Node Library',
+      scenarioNodesTitle: '3b. Scenario Editor Nodes + Node Library',
+      scenarioNodeLibrary: 'Nodes',
       courseTreePanel: 'Course Tree Panel',
       nodeLibrary: 'Node Library',
       terminalTitle: '4. Terminal Components',
@@ -372,6 +461,8 @@ const { t } = useTranslations({
       actionButtonHover: 'Survol bouton action',
       userSettingsTitle: '5. Menu Paramètres Utilisateur',
       courseNodesTitle: '3. Noeuds Éditeur de Cours + Bibliothèque',
+      scenarioNodesTitle: '3b. Noeuds Éditeur de Scénarios + Bibliothèque',
+      scenarioNodeLibrary: 'Noeuds',
       courseTreePanel: 'Panneau arbre de cours',
       nodeLibrary: 'Bibliothèque de noeuds',
       terminalTitle: '4. Composants Terminal',
@@ -916,6 +1007,89 @@ const surfaceItems = computed(() => [
   font-weight: 600;
   font-size: 0.85rem;
   color: var(--color-text-primary);
+}
+
+/* Scenario node variants */
+.course-node.node-scenario {
+  border-color: var(--scenario-node-scenario);
+  background: var(--scenario-node-scenario-bg);
+}
+
+.course-node.node-terminal {
+  border-color: var(--scenario-node-terminal);
+  background: var(--scenario-node-terminal-bg);
+}
+
+.course-node.node-flag {
+  border-color: var(--scenario-node-flag);
+  background: var(--scenario-node-flag-bg);
+}
+
+.course-node.node-info {
+  border-color: var(--scenario-node-info);
+  background: var(--scenario-node-info-bg);
+}
+
+.course-node.node-quiz {
+  border-color: var(--scenario-node-quiz);
+  background: var(--scenario-node-quiz-bg);
+}
+
+.node-library-preview.lib-scenario {
+  border-color: var(--scenario-node-scenario);
+  background: var(--scenario-node-scenario-bg);
+}
+
+.node-library-preview.lib-terminal {
+  border-color: var(--scenario-node-terminal);
+  background: var(--scenario-node-terminal-bg);
+}
+
+.node-library-preview.lib-flag {
+  border-color: var(--scenario-node-flag);
+  background: var(--scenario-node-flag-bg);
+}
+
+.node-library-preview.lib-info {
+  border-color: var(--scenario-node-info);
+  background: var(--scenario-node-info-bg);
+}
+
+.node-library-preview.lib-quiz {
+  border-color: var(--scenario-node-quiz);
+  background: var(--scenario-node-quiz-bg);
+}
+
+/* Node metadata row (shared by course + scenario nodes) */
+.course-node .node-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+}
+
+.meta-badge {
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-weight: 600;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.meta-badge.difficulty-advanced {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.meta-text {
+  color: var(--color-text-muted);
+}
+
+.meta-indicator {
+  color: var(--color-text-secondary);
 }
 
 /* ========================================
