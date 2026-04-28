@@ -1,95 +1,67 @@
 <template>
   <div class="scenario-editor">
     <div class="editor-header">
-      <div class="header-left">
-        <h1>{{ t('scenarioEditor.title') }}</h1>
-
-        <!-- Scenario Selector -->
-        <div class="scenario-selector">
-          <select
-            v-model="selectedScenarioId"
-            @change="handleScenarioSelect"
-            class="scenario-select"
+      <!-- Left: title + selector -->
+      <div class="header-primary">
+        <span class="header-title">{{ t('scenarioEditor.title') }}</span>
+        <select
+          v-model="selectedScenarioId"
+          @change="handleScenarioSelect"
+          class="scenario-select"
+        >
+          <option :value="null">{{ t('scenarioEditor.selectScenario') }}</option>
+          <option
+            v-for="scenario in allScenarios"
+            :key="scenario.id"
+            :value="scenario.id"
           >
-            <option :value="null">{{ t('scenarioEditor.selectScenario') }}</option>
-            <option
-              v-for="scenario in allScenarios"
-              :key="scenario.id"
-              :value="scenario.id"
-            >
-              {{ scenario.name }} - {{ scenario.title }} ({{ scenario.organization_id ? (getScenarioOrgName(scenario) || t('scenarioEditor.orgLabel')) : (isAdmin ? t('scenarioEditor.platform') + ' \u{1F6E1}\uFE0F' : t('scenarioEditor.platform')) }})
-            </option>
-          </select>
-
-          <button @click="handleCreateNew" class="btn-create">
-            {{ t('scenarioEditor.createNew') }}
-          </button>
-
-          <button
-            v-if="selectedScenarioId"
-            @click="handleImport"
-            class="btn-import"
-            :disabled="isImporting"
-          >
-            <span v-if="isImporting">⏳</span>
-            <span v-else>📥</span>
-            {{ t('scenarioEditor.import') }}
-          </button>
-
-          <!-- Export -->
-          <button
-            v-if="selectedScenarioId"
-            @click="handleExportJSON"
-            class="btn-export"
-            :title="t('scenarioEditor.exportJSON')"
-          >
-            📋 JSON
-          </button>
-          <button
-            v-if="selectedScenarioId"
-            @click="handleExportKillerCoda"
-            class="btn-export"
-            :title="t('scenarioEditor.exportKillerCoda')"
-          >
-            📦 KillerCoda
-          </button>
-
-          <!-- Copy to org -->
-          <button
-            v-if="canCopyToOrg"
-            @click="openCopyModal"
-            class="btn-copy-org"
-          >
-            {{ t('scenarioEditor.copyToOrg') }}
-          </button>
-
-          <!-- Debug info -->
-          <span class="debug-info" v-if="nodes.length > 0">
-            {{ nodes.length }} nodes, {{ edges.length }} edges
-          </span>
-        </div>
-
-        <!-- Org context badge for loaded scenario -->
-        <div v-if="currentScenario" class="scenario-org-badge">
-          <span class="org-tag">
-            {{ t('scenarioEditor.orgLabel') }}:
-            <template v-if="currentScenario.organization_id">
-              {{ getScenarioOrgName(currentScenario) || '—' }}
-            </template>
-            <template v-else>
-              {{ t('scenarioEditor.platform') }}
-              <AdminBadge v-if="isAdmin" icon-only />
-            </template>
-          </span>
-        </div>
+            {{ scenario.name }} - {{ scenario.title }}
+          </option>
+        </select>
+        <button @click="handleCreateNew" class="btn-icon btn-create" :title="t('scenarioEditor.createNew')">
+          <i class="fas fa-plus"></i>
+        </button>
       </div>
 
-      <div class="editor-actions">
-        <button @click="handleSave" class="btn-primary" :disabled="!selectedScenarioId && nodes.length === 0">
-          {{ t('scenarioEditor.save') }}
+      <!-- Center: context info -->
+      <div class="header-context" v-if="currentScenario">
+        <span class="org-tag" v-if="currentScenario.organization_id">
+          <i class="fas fa-building"></i> {{ getScenarioOrgName(currentScenario) || '—' }}
+        </span>
+        <span class="org-tag platform-tag" v-else>
+          <i class="fas fa-globe"></i> {{ t('scenarioEditor.platform') }}
+          <AdminBadge v-if="isAdmin" icon-only />
+        </span>
+        <span class="debug-info" v-if="nodes.length > 0">
+          {{ nodes.length }}n / {{ edges.length }}e
+        </span>
+      </div>
+
+      <!-- Right: actions -->
+      <div class="header-actions">
+        <!-- Secondary actions (icon-only) -->
+        <template v-if="selectedScenarioId">
+          <button @click="handleImport" class="btn-icon" :title="t('scenarioEditor.import')" :disabled="isImporting">
+            <i :class="isImporting ? 'fas fa-spinner fa-spin' : 'fas fa-file-import'"></i>
+          </button>
+          <button @click="handleExportJSON" class="btn-icon" :title="t('scenarioEditor.exportJSON')">
+            <i class="fas fa-file-code"></i>
+          </button>
+          <button @click="handleExportKillerCoda" class="btn-icon" :title="t('scenarioEditor.exportKillerCoda')">
+            <i class="fas fa-file-archive"></i>
+          </button>
+          <button v-if="canCopyToOrg" @click="openCopyModal" class="btn-icon" :title="t('scenarioEditor.copyToOrg')">
+            <i class="fas fa-copy"></i>
+          </button>
+          <span class="header-divider"></span>
+        </template>
+
+        <!-- Primary actions -->
+        <button @click="handleReset" class="btn-icon" :title="t('scenarioEditor.reset')">
+          <i class="fas fa-undo"></i>
         </button>
-        <button @click="handleReset" class="btn-secondary">
-          {{ t('scenarioEditor.reset') }}
+        <button @click="handleSave" class="btn-save" :disabled="!selectedScenarioId && nodes.length === 0">
+          <i class="fas fa-save"></i> {{ t('scenarioEditor.save') }}
         </button>
       </div>
     </div>
@@ -1625,46 +1597,43 @@ const stopResize = () => {
 
 .editor-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
+  padding: 0.5rem 0.75rem;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  gap: 2rem;
-}
-
-.header-left {
-  display: flex;
-  flex-direction: column;
   gap: 0.75rem;
-  flex: 1;
+  min-height: 3rem;
 }
 
-.editor-header h1 {
-  margin: 0;
-  font-size: 1.5rem;
-  color: var(--color-text-primary);
-}
-
-.scenario-selector {
+.header-primary {
   display: flex;
-  gap: 0.5rem;
   align-items: center;
-  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.header-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .scenario-select {
   flex: 1;
-  max-width: 500px;
-  padding: 0.5rem 0.75rem;
+  max-width: 320px;
+  min-width: 180px;
+  padding: 0.35rem 0.5rem;
   border: 1px solid var(--color-border);
   border-radius: 4px;
   background: var(--color-background);
   color: var(--color-text-primary);
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   cursor: pointer;
-  transition: border-color 0.2s;
+  transition: border-color 0.15s;
 }
 
 .scenario-select:hover {
@@ -1674,67 +1643,109 @@ const stopResize = () => {
 .scenario-select:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
 }
 
-.btn-create {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  background: var(--color-success);
-  color: white;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.btn-create:hover {
-  background: var(--color-success-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.btn-import {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  transition: all 0.2s;
-  white-space: nowrap;
+.header-context {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
-.btn-import:hover:not(:disabled) {
-  background: var(--color-surface-hover);
-  border-color: var(--color-primary);
-}
-
-.btn-import:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.org-tag {
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+  padding: 0.2rem 0.5rem;
+  background: var(--color-surface-variant);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
 }
 
 .debug-info {
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   color: var(--color-text-secondary);
-  padding: 0.25rem 0.5rem;
-  background: var(--color-surface-variant);
-  border-radius: 4px;
+  opacity: 0.6;
   white-space: nowrap;
 }
 
-.editor-actions {
+.header-actions {
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.25rem;
   flex-shrink: 0;
+}
+
+.header-divider {
+  width: 1px;
+  height: 1.2rem;
+  background: var(--color-border);
+  margin: 0 0.25rem;
+}
+
+/* Icon buttons */
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-icon:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+}
+
+.btn-icon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-icon.btn-create {
+  color: var(--color-success);
+}
+
+.btn-icon.btn-create:hover {
+  background: rgba(40, 167, 69, 0.1);
+  border-color: var(--color-success);
+}
+
+/* Save button (primary, with label) */
+.btn-save {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border: none;
+  border-radius: 4px;
+  background: var(--color-primary);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.btn-save:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .editor-container {
@@ -1753,9 +1764,9 @@ const stopResize = () => {
 }
 
 .library-panel {
-  width: 180px;
-  min-width: 150px;
-  max-width: 300px;
+  width: 140px;
+  min-width: 120px;
+  max-width: 200px;
   flex-shrink: 0;
 }
 
@@ -1809,25 +1820,6 @@ const stopResize = () => {
   border: 1px solid var(--color-border);
   border-radius: 4px;
   width: 1.5rem;
-}
-
-/* Export buttons */
-.btn-export {
-  padding: 0.35rem 0.6rem;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  cursor: pointer;
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.btn-export:hover {
-  background: var(--color-surface-hover);
-  border-color: var(--color-primary);
 }
 
 /* Resize handle for tree panel */
@@ -2002,41 +1994,4 @@ textarea.form-control {
   font-family: inherit;
 }
 
-/* Org context badge */
-.scenario-org-badge {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.org-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.6rem;
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-  background: var(--color-surface-variant);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-}
-
-/* Copy to org button */
-.btn-copy-org {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.btn-copy-org:hover {
-  background: var(--color-surface-hover);
-  border-color: var(--color-primary);
-}
 </style>

@@ -11,6 +11,7 @@
           :key="nodeType.type"
           class="node-type-item"
           draggable="true"
+          :title="nodeType.description"
           @dragstart="handleDragStart($event, nodeType)"
           @dragend="handleDragEnd"
         >
@@ -23,9 +24,6 @@
           >
             <span class="node-icon">{{ nodeType.icon }}</span>
             <span class="node-label">{{ nodeType.label }}</span>
-          </div>
-          <div class="node-description">
-            {{ nodeType.description }}
           </div>
         </div>
       </div>
@@ -92,15 +90,17 @@ const handleDragEnd = () => {
 }
 
 .panel-header {
-  padding: 1rem;
+  padding: 0.6rem 0.75rem;
   border-bottom: 1px solid var(--color-border);
 }
 
 .panel-header h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .panel-content {
@@ -108,80 +108,73 @@ const handleDragEnd = () => {
   flex-direction: column;
   flex: 1;
   overflow-y: auto;
-  padding: 1rem;
+  padding: 0.5rem;
 }
 
 .node-types {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.35rem;
 }
 
 .node-type-item {
   cursor: grab;
-  border-radius: 8px;
-  transition: all 0.2s;
+  border-radius: 6px;
+  transition: all 0.15s;
   user-select: none;
 }
 
 .node-type-item:active {
   cursor: grabbing;
+  opacity: 0.7;
 }
 
 .node-type-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .node-preview {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
   border: 2px solid;
-  border-radius: 8px;
-  transition: all 0.2s;
-}
-
-.node-type-item:hover .node-preview {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transform: translateY(-1px);
+  border-radius: 6px;
+  transition: all 0.15s;
 }
 
 .node-icon {
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .node-label {
   flex: 1;
   font-weight: 600;
-  font-size: 0.875rem;
-  color: var(--color-text-primary);
-}
-
-.node-description {
-  padding: 0.5rem 1rem;
   font-size: 0.75rem;
-  color: var(--color-text-secondary);
-  line-height: 1.4;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .library-footer {
   margin-top: auto;
-  padding-top: 1rem;
+  padding: 0.5rem;
   border-top: 1px solid var(--color-border);
 }
 
 .help-text {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   color: var(--color-text-secondary);
-  line-height: 1.4;
+  line-height: 1.3;
   text-align: center;
+  opacity: 0.7;
 }
 
-/* Drag state */
 .node-type-item.dragging {
   opacity: 0.5;
 }
