@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import {
   login,
+  loginFresh,
   closeUserMenu,
   switchToOrg,
   getCurrentOrgName,
@@ -44,21 +45,15 @@ test.describe('Org switcher visibility', () => {
 // ---------------------------------------------------------------------------
 test.describe('Default org selection', () => {
   test('Karim lands in FormaTech (team org preferred over personal)', async ({ page }) => {
-    // Clear any saved org preference from localStorage before login
-    await page.goto('/login');
-    await page.evaluate(() => localStorage.removeItem('currentOrganizationId'));
-
-    await login(page, 'karim@test.ocf', TEST_PASSWORD);
+    // Fresh login (cleared org preference) — exercises default-org selection
+    await loginFresh(page, 'karim@test.ocf', TEST_PASSWORD);
 
     const orgName = await getCurrentOrgName(page);
     expect(orgName).toContain('FormaTech');
   });
 
   test('Current org display shows Team badge for FormaTech', async ({ page }) => {
-    await page.goto('/login');
-    await page.evaluate(() => localStorage.removeItem('currentOrganizationId'));
-
-    await login(page, 'karim@test.ocf', TEST_PASSWORD);
+    await loginFresh(page, 'karim@test.ocf', TEST_PASSWORD);
 
     const orgType = await getCurrentOrgType(page);
     // The badge text should indicate Team (English: "Team", French: "Equipe")
@@ -72,10 +67,7 @@ test.describe('Default org selection', () => {
 // ---------------------------------------------------------------------------
 test.describe('Feature visibility on org switch', () => {
   test('Groups menu visibility changes on org switch', async ({ page }) => {
-    await page.goto('/login');
-    await page.evaluate(() => localStorage.removeItem('currentOrganizationId'));
-
-    await login(page, 'karim@test.ocf', TEST_PASSWORD);
+    await loginFresh(page, 'karim@test.ocf', TEST_PASSWORD);
 
     // In FormaTech (team org) - groups category should be visible and NOT disabled
     const groupsCategory = page.locator('[data-category="groups"]');
@@ -135,10 +127,7 @@ test.describe('Feature visibility on org switch', () => {
 // ---------------------------------------------------------------------------
 test.describe('Usage limits update on org switch', () => {
   test('Terminal usage limits change when switching orgs', async ({ page }) => {
-    await page.goto('/login');
-    await page.evaluate(() => localStorage.removeItem('currentOrganizationId'));
-
-    await login(page, 'karim@test.ocf', TEST_PASSWORD);
+    await loginFresh(page, 'karim@test.ocf', TEST_PASSWORD);
 
     // Navigate to subscription dashboard to see usage
     await page.goto('/subscription-dashboard');
@@ -184,10 +173,7 @@ test.describe('Usage limits update on org switch', () => {
 // ---------------------------------------------------------------------------
 test.describe('Route guard blocks feature-gated pages', () => {
   test('Class-groups page is blocked when plan feature is unavailable', async ({ page }) => {
-    await page.goto('/login');
-    await page.evaluate(() => localStorage.removeItem('currentOrganizationId'));
-
-    await login(page, 'karim@test.ocf', TEST_PASSWORD);
+    await loginFresh(page, 'karim@test.ocf', TEST_PASSWORD);
 
     // First, confirm Karim is in FormaTech (has multiple_groups feature)
     const orgName = await getCurrentOrgName(page);
@@ -229,10 +215,7 @@ test.describe('Route guard blocks feature-gated pages', () => {
 // ---------------------------------------------------------------------------
 test.describe('Plan features in subscription card', () => {
   test('Subscription card shows different plan features per org', async ({ page }) => {
-    await page.goto('/login');
-    await page.evaluate(() => localStorage.removeItem('currentOrganizationId'));
-
-    await login(page, 'karim@test.ocf', TEST_PASSWORD);
+    await loginFresh(page, 'karim@test.ocf', TEST_PASSWORD);
 
     // Navigate to subscription dashboard
     await page.goto('/subscription-dashboard');

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { login } from './helpers/auth';
+import { login, loginFresh } from './helpers/auth';
 
 const TEST_PASSWORD = 'OcfTest2026!';
 const TRAINER_EMAIL = 'marc@test.ocf';
@@ -302,8 +302,10 @@ test.describe('Session Composer — summary content', () => {
 // ---------------------------------------------------------------------------
 test.describe('Session Composer — plan size restrictions', () => {
   test('karim (Pro plan) sees XL as disabled with lock icon', async ({ page }) => {
-    // Karim has Pro plan: allows XS, S, M, L but NOT XL
-    await login(page, 'karim@test.ocf', TEST_PASSWORD);
+    // Karim has Pro plan: allows XS, S, M, L but NOT XL.
+    // Use loginFresh so the test starts in Karim's default org (FormaTech/Pro)
+    // regardless of any leftover localStorage from a previous test.
+    await loginFresh(page, 'karim@test.ocf', TEST_PASSWORD);
     await gotoTerminalCreation(page);
 
     // Select a distribution that has sizes
@@ -329,7 +331,8 @@ test.describe('Session Composer — plan size restrictions', () => {
   });
 
   test('karim (Pro plan) can select M size (allowed)', async ({ page }) => {
-    await login(page, 'karim@test.ocf', TEST_PASSWORD);
+    // Pro-plan assertions assume FormaTech context — pin it via loginFresh.
+    await loginFresh(page, 'karim@test.ocf', TEST_PASSWORD);
     await gotoTerminalCreation(page);
 
     await clickDistribution(page);
