@@ -46,7 +46,7 @@ vi.mock('../../src/composables/useAdminViewMode', () => ({
   }))
 }))
 
-import { useFeatureFlags, getCurrentActorRoles } from '../../src/composables/useFeatureFlags'
+import { useFeatureFlags } from '../../src/composables/useFeatureFlags'
 import { useCurrentUserStore } from '../../src/stores/currentUser'
 
 describe('useFeatureFlags', () => {
@@ -303,43 +303,9 @@ describe('useFeatureFlags', () => {
   })
 })
 
-describe('getCurrentActorRoles', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    vi.mocked(useCurrentUserStore).mockReturnValue({
-      userId: 'user-123',
-      userRoles: ['member'],
-      permissions: [],
-    } as any)
-  })
-
-  it('returns a computed with userId and roles from currentUser store', () => {
-    const actor = getCurrentActorRoles()
-    expect(actor.value.userId).toBe('user-123')
-    expect(actor.value.roles).toEqual(['member'])
-    expect(actor.value.role).toBe('member')
-  })
-
-  it('defaults to ["member"] when userRoles is empty', () => {
-    vi.mocked(useCurrentUserStore).mockReturnValue({
-      userId: 'user-123',
-      userRoles: [],
-      permissions: [],
-    } as any)
-
-    const actor = getCurrentActorRoles()
-    expect(actor.value.roles).toEqual(['member'])
-    expect(actor.value.role).toBe('member')
-  })
-
-  it('defaults to ["member"] when userRoles is undefined', () => {
-    vi.mocked(useCurrentUserStore).mockReturnValue({
-      userId: 'user-123',
-      userRoles: undefined,
-      permissions: [],
-    } as any)
-
-    const actor = getCurrentActorRoles()
-    expect(actor.value.roles).toEqual(['member'])
-  })
-})
+// NOTE: Tests for `getCurrentActorRoles` (which exercises the real reactive
+// reads from `useCurrentUserStore` and `useAdminViewMode`) live in
+// `getCurrentActorRoles.test.ts`. Those tests do NOT mock the store or the
+// admin-view-mode composable — mocking them here would defeat the point of
+// the test, since the function under test is exactly the bridge between
+// those two reactive sources and the resulting actor object.
