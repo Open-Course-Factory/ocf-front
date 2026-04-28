@@ -37,11 +37,16 @@
         </span>
       </div>
 
+      <!-- Read-only indicator -->
+      <span v-if="currentScenario && !canEditScenario" class="readonly-badge">
+        <i class="fas fa-lock"></i> {{ t('scenarioEditor.readOnly') }}
+      </span>
+
       <!-- Right: actions -->
       <div class="header-actions">
         <!-- Secondary actions (icon-only) -->
         <template v-if="selectedScenarioId">
-          <button @click="handleImport" class="btn-icon" :title="t('scenarioEditor.import')" :disabled="isImporting">
+          <button v-if="canEditScenario" @click="handleImport" class="btn-icon" :title="t('scenarioEditor.import')" :disabled="isImporting">
             <i :class="isImporting ? 'fas fa-spinner fa-spin' : 'fas fa-file-import'"></i>
           </button>
           <button @click="handleExportJSON" class="btn-icon" :title="t('scenarioEditor.exportJSON')">
@@ -57,10 +62,10 @@
         </template>
 
         <!-- Primary actions -->
-        <button @click="handleReset" class="btn-icon" :title="t('scenarioEditor.reset')">
+        <button v-if="canEditScenario" @click="handleReset" class="btn-icon" :title="t('scenarioEditor.reset')">
           <i class="fas fa-undo"></i>
         </button>
-        <button @click="handleSave" class="btn-save" :disabled="!selectedScenarioId && nodes.length === 0">
+        <button v-if="canEditScenario" @click="handleSave" class="btn-save" :disabled="!selectedScenarioId && nodes.length === 0">
           <i class="fas fa-save"></i> {{ t('scenarioEditor.save') }}
         </button>
       </div>
@@ -540,7 +545,9 @@ const { t } = useTranslations({
       exportError: 'Failed to export scenario',
       // Panel
       expandPanel: 'Expand panel',
-      collapsePanel: 'Collapse panel'
+      collapsePanel: 'Collapse panel',
+      readOnly: 'Read only',
+      readOnlyWarning: 'This scenario is read-only. Copy it to your organization to edit.'
     }
   },
   fr: {
@@ -639,7 +646,9 @@ const { t } = useTranslations({
       exportError: 'Échec de l\'exportation du scénario',
       // Panneau
       expandPanel: 'Déplier le panneau',
-      collapsePanel: 'Replier le panneau'
+      collapsePanel: 'Replier le panneau',
+      readOnly: 'Lecture seule',
+      readOnlyWarning: 'Ce scénario est en lecture seule. Copiez-le dans votre organisation pour le modifier.'
     }
   }
 })
@@ -747,6 +756,17 @@ const getScenarioOrgName = (scenario: any): string | null => {
   const org = organizationsStore.getOrganizationById(scenario.organization_id)
   return org?.display_name || org?.name || null
 }
+
+// Permission: can the current user edit the loaded scenario?
+// Admin can edit anything. Non-admin can only edit scenarios in their orgs.
+// Platform scenarios (no org) are admin-only.
+const canEditScenario = computed(() => {
+  if (!currentScenario.value) return false
+  if (isAdmin.value) return true
+  const scenarioOrgId = currentScenario.value.organization_id
+  if (!scenarioOrgId) return false // platform scenario = admin only
+  return organizationsStore.userOrganizations.some(org => org.id === scenarioOrgId)
+})
 
 const canCopyToOrg = computed(() => {
   return selectedScenarioId.value &&
@@ -1037,6 +1057,12 @@ const handleNodeDragStart = (nodeType: string) => {
 
 // Node added handler
 const handleNodeAdded = (node: any) => {
+  if (!canEditScenario.value) {
+    // Remove the node that was just dropped — read-only mode
+    nodes.value = nodes.value.filter(n => n.id !== node.id)
+    notification.showWarning(t('scenarioEditor.readOnlyWarning'))
+    return
+  }
   // Set step_type on new step-type nodes
   if (node.data.isNew && STEP_NODE_TYPES.includes(node.type)) {
     node.data.step_type = node.type
@@ -1165,6 +1191,12 @@ const handleEdgeConnect = async (connection: any) => {
 
 // Modal handlers - Scenario
 const openEditModal = async (node: any) => {
+  // Block editing for read-only scenarios (non-admin viewing platform/other-org scenarios)
+  if (!canEditScenario.value && !node.data.isNew) {
+    notification.showWarning(t('scenarioEditor.readOnlyWarning'))
+    return
+  }
+
   if (node.data.entityType === 'scenario') {
     editingScenario.value = {
       nodeId: node.id,
@@ -1405,6 +1437,10 @@ const handleCopyToOrg = async () => {
 
 // Delete modal
 const openDeleteModal = (node: any) => {
+  if (!canEditScenario.value) {
+    notification.showWarning(t('scenarioEditor.readOnlyWarning'))
+    return
+  }
   deletingNode.value = node
   showDeleteModal.value = true
 }
@@ -1670,6 +1706,21 @@ const stopResize = () => {
   color: var(--color-text-secondary);
   opacity: 0.6;
   white-space: nowrap;
+}
+
+.readonly-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-warning-text);
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .header-actions {
