@@ -36,6 +36,24 @@
             {{ t('scenarioEditor.import') }}
           </button>
 
+          <!-- Export -->
+          <button
+            v-if="selectedScenarioId"
+            @click="handleExportJSON"
+            class="btn-export"
+            :title="t('scenarioEditor.exportJSON')"
+          >
+            📋 JSON
+          </button>
+          <button
+            v-if="selectedScenarioId"
+            @click="handleExportKillerCoda"
+            class="btn-export"
+            :title="t('scenarioEditor.exportKillerCoda')"
+          >
+            📦 KillerCoda
+          </button>
+
           <!-- Copy to org -->
           <button
             v-if="canCopyToOrg"
@@ -109,16 +127,25 @@
         @edge-connect="handleEdgeConnect"
       />
 
-      <!-- Right Panel: Scenario Step List -->
-      <div class="panel tree-panel" :style="{ width: treePanelWidth + 'px' }">
-        <div
-          class="resize-handle"
-          :class="{ resizing: isResizing }"
-          @mousedown="startResize"
-        ></div>
-        <ScenarioStepListPanel
-          :scenarios="allScenarios"
-        />
+      <!-- Right Panel: Scenario Step List (foldable) -->
+      <div class="panel tree-panel" :class="{ collapsed: isRightPanelCollapsed }" :style="!isRightPanelCollapsed ? { width: treePanelWidth + 'px' } : {}">
+        <button
+          class="panel-collapse-toggle"
+          @click="isRightPanelCollapsed = !isRightPanelCollapsed"
+          :title="isRightPanelCollapsed ? t('scenarioEditor.expandPanel') : t('scenarioEditor.collapsePanel')"
+        >
+          <i :class="isRightPanelCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right'"></i>
+        </button>
+        <template v-if="!isRightPanelCollapsed">
+          <div
+            class="resize-handle"
+            :class="{ resizing: isResizing }"
+            @mousedown="startResize"
+          ></div>
+          <ScenarioStepListPanel
+            :scenarios="allScenarios"
+          />
+        </template>
       </div>
     </div>
 
@@ -534,7 +561,14 @@ const { t } = useTranslations({
       crashTraps: 'Enable crash traps (challenge mode)',
       crashTrapsHint: 'All flags deployed at start. Container crash resets progress.',
       gshEnabled: 'Enable GSH command',
-      isPublic: 'Public (available to all users)'
+      isPublic: 'Public (available to all users)',
+      // Export
+      exportJSON: 'Export as JSON',
+      exportKillerCoda: 'Export as KillerCoda archive',
+      exportError: 'Failed to export scenario',
+      // Panel
+      expandPanel: 'Expand panel',
+      collapsePanel: 'Collapse panel'
     }
   },
   fr: {
@@ -626,7 +660,14 @@ const { t } = useTranslations({
       crashTraps: 'Activer les pièges de crash (mode challenge)',
       crashTrapsHint: 'Tous les drapeaux déployés au démarrage. Un crash du conteneur réinitialise la progression.',
       gshEnabled: 'Activer la commande GSH',
-      isPublic: 'Public (disponible pour tous les utilisateurs)'
+      isPublic: 'Public (disponible pour tous les utilisateurs)',
+      // Export
+      exportJSON: 'Exporter en JSON',
+      exportKillerCoda: 'Exporter au format KillerCoda',
+      exportError: 'Échec de l\'exportation du scénario',
+      // Panneau
+      expandPanel: 'Déplier le panneau',
+      collapsePanel: 'Replier le panneau'
     }
   }
 })
@@ -702,6 +743,7 @@ const selectedScenarioId = ref<string | null>(null)
 const currentScenario = ref<any>(null)
 const allScenarios = computed(() => scenariosStore.entities)
 const isImporting = ref(false)
+const isRightPanelCollapsed = ref(false)
 
 // Modal state
 const showScenarioEditModal = ref(false)
@@ -976,6 +1018,43 @@ const handleImport = async () => {
     notification.showError(t('scenarioEditor.importError'))
   } finally {
     isImporting.value = false
+  }
+}
+
+// Export handlers
+const handleExportJSON = async () => {
+  if (!selectedScenarioId.value) return
+  try {
+    const response = await axios.get(`/scenarios/${selectedScenarioId.value}/export`, { params: { format: 'json' } })
+    const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${currentScenario.value?.name || 'scenario'}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    console.error('Export JSON failed:', err)
+    notification.showError(t('scenarioEditor.exportError'))
+  }
+}
+
+const handleExportKillerCoda = async () => {
+  if (!selectedScenarioId.value) return
+  try {
+    const response = await axios.get(`/scenarios/${selectedScenarioId.value}/export`, {
+      params: { format: 'killerkoda' },
+      responseType: 'blob'
+    })
+    const url = URL.createObjectURL(response.data)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${currentScenario.value?.name || 'scenario'}.tar.gz`
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    console.error('Export KillerCoda failed:', err)
+    notification.showError(t('scenarioEditor.exportError'))
   }
 }
 
@@ -1570,8 +1649,9 @@ const stopResize = () => {
 
 .scenario-selector {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.5rem;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .scenario-select {
@@ -1653,7 +1733,8 @@ const stopResize = () => {
 
 .editor-actions {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .editor-container {
@@ -1689,6 +1770,64 @@ const stopResize = () => {
   max-width: 600px;
   border-right: none;
   flex-shrink: 0;
+  position: relative;
+  transition: width 0.2s, min-width 0.2s;
+}
+
+.tree-panel.collapsed {
+  min-width: 2rem;
+  max-width: 2rem;
+  width: 2rem !important;
+  overflow: hidden;
+}
+
+.panel-collapse-toggle {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: none;
+  border-radius: 0 4px 4px 0;
+  padding: 0.5rem 0.25rem;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: all 0.2s;
+}
+
+.panel-collapse-toggle:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.tree-panel.collapsed .panel-collapse-toggle {
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  width: 1.5rem;
+}
+
+/* Export buttons */
+.btn-export {
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-export:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-primary);
 }
 
 /* Resize handle for tree panel */
