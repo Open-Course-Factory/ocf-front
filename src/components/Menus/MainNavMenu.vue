@@ -271,13 +271,6 @@ const menuCategories = computed((): MenuCategory[] => [
         icon: 'fas fa-project-diagram'
       },
       {
-        route: '/scenario-editor',
-        label: t('navigation.scenarioEditor'),
-        title: t('navigation.scenarioEditorTitle'),
-        icon: 'fas fa-project-diagram',
-        featureFlag: 'scenario_conception'
-      },
-      {
         route: '/chapters',
         label: t('chapters.pageTitle'),
         title: t('chapters.pageTitle'),
@@ -356,6 +349,13 @@ const menuCategories = computed((): MenuCategory[] => [
         label: t('navigation.scenarioHistory'),
         title: t('navigation.scenarioHistoryTitle'),
         icon: 'fas fa-flag-checkered'
+      },
+      {
+        route: '/scenario-editor',
+        label: t('navigation.scenarioEditor'),
+        title: t('navigation.scenarioEditorTitle'),
+        icon: 'fas fa-project-diagram',
+        featureFlag: 'scenario_conception'
       }
     ]
   },
