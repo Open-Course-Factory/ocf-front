@@ -71,8 +71,16 @@ vi.mock('../../src/composables/useStatusFormatters', () => ({
 
 import axios from 'axios'
 import { useSubscriptionsStore } from '../../src/stores/subscriptions'
+import { setupSubscriptionPollingMocks } from '../helpers/pollingHelper'
 
 const mockedAxios = vi.mocked(axios)
+
+const OLD_PLAN = { id: 'sub-1', subscription_plan_id: 'plan-old', status: 'active' }
+const NEW_PLAN = { id: 'sub-1', subscription_plan_id: 'plan-new', status: 'active' }
+
+const countCurrentGets = () => mockedAxios.get.mock.calls.filter(
+  ([url]) => typeof url === 'string' && url.startsWith('/user-subscriptions/current')
+).length
 
 describe('subscriptions store — upgradePlan polling', () => {
   beforeEach(() => {
@@ -87,24 +95,10 @@ describe('subscriptions store — upgradePlan polling', () => {
   })
 
   it('polls getCurrentSubscription until new plan is reflected (no arbitrary setTimeout(3000+2000))', async () => {
-    // GET /user-subscriptions/current should first return the OLD plan,
-    // then after a few poll attempts return the NEW plan.
-    let currentCalls = 0
-    mockedAxios.get.mockImplementation(async (url: string) => {
-      if (url.startsWith('/user-subscriptions/current')) {
-        currentCalls++
-        // Return new plan on 3rd poll onwards
-        if (currentCalls >= 3) {
-          return { data: { id: 'sub-1', subscription_plan_id: 'plan-new', status: 'active' } }
-        }
-        return { data: { id: 'sub-1', subscription_plan_id: 'plan-old', status: 'active' } }
-      }
-      if (url.startsWith('/user-subscriptions/usage')) {
-        return { data: [] }
-      }
-      return { data: {} }
+    // /current returns OLD on calls 1-2, NEW from call 3 onwards.
+    setupSubscriptionPollingMocks(mockedAxios, {
+      current: (n) => (n >= 3 ? NEW_PLAN : OLD_PLAN)
     })
-    mockedAxios.post.mockResolvedValue({ data: { success: true } })
 
     const store = useSubscriptionsStore()
     const upgradePromise = store.upgradePlan('plan-new')
@@ -125,21 +119,12 @@ describe('subscriptions store — upgradePlan polling', () => {
     expect(result).toEqual({ success: true })
     expect(store.currentSubscription?.subscription_plan_id).toBe('plan-new')
     // Proves we did in fact poll (not a single read)
-    expect(currentCalls).toBeGreaterThanOrEqual(3)
+    expect(countCurrentGets()).toBeGreaterThanOrEqual(3)
   })
 
   it('sets a timeout error key when the webhook never syncs, but resolves without throwing', async () => {
-    // GET /user-subscriptions/current always returns the OLD plan (webhook never arrives)
-    mockedAxios.get.mockImplementation(async (url: string) => {
-      if (url.startsWith('/user-subscriptions/current')) {
-        return { data: { id: 'sub-1', subscription_plan_id: 'plan-old', status: 'active' } }
-      }
-      if (url.startsWith('/user-subscriptions/usage')) {
-        return { data: [] }
-      }
-      return { data: {} }
-    })
-    mockedAxios.post.mockResolvedValue({ data: { success: true } })
+    // /current always returns the OLD plan (webhook never arrives).
+    setupSubscriptionPollingMocks(mockedAxios, { current: () => OLD_PLAN })
 
     const store = useSubscriptionsStore()
     const upgradePromise = store.upgradePlan('plan-new')
@@ -156,16 +141,10 @@ describe('subscriptions store — upgradePlan polling', () => {
   })
 
   it('still reloads usage metrics even when the plan sync times out', async () => {
-    mockedAxios.get.mockImplementation(async (url: string) => {
-      if (url.startsWith('/user-subscriptions/current')) {
-        return { data: { id: 'sub-1', subscription_plan_id: 'plan-old', status: 'active' } }
-      }
-      if (url.startsWith('/user-subscriptions/usage')) {
-        return { data: [{ metric_type: 'terminals', current_value: 2, limit_value: 10 }] }
-      }
-      return { data: {} }
+    setupSubscriptionPollingMocks(mockedAxios, {
+      current: () => OLD_PLAN,
+      usage: [{ metric_type: 'terminals', current_value: 2, limit_value: 10 }]
     })
-    mockedAxios.post.mockResolvedValue({ data: { success: true } })
 
     const store = useSubscriptionsStore()
     const upgradePromise = store.upgradePlan('plan-new')
@@ -188,26 +167,16 @@ describe('subscriptions store — upgradePlan polling', () => {
     //   attempt 3 -> OLD plan
     //   attempt 4 -> NEW plan
     // The poll must swallow the 502 and keep going until the NEW plan arrives.
-    let currentCalls = 0
-    mockedAxios.get.mockImplementation(async (url: string) => {
-      if (url.startsWith('/user-subscriptions/current')) {
-        currentCalls++
-        if (currentCalls === 2) {
+    setupSubscriptionPollingMocks(mockedAxios, {
+      current: (n) => {
+        if (n === 2) {
           const err: any = new Error('Bad Gateway')
           err.response = { status: 502, data: {} }
           throw err
         }
-        if (currentCalls >= 4) {
-          return { data: { id: 'sub-1', subscription_plan_id: 'plan-new', status: 'active' } }
-        }
-        return { data: { id: 'sub-1', subscription_plan_id: 'plan-old', status: 'active' } }
+        return n >= 4 ? NEW_PLAN : OLD_PLAN
       }
-      if (url.startsWith('/user-subscriptions/usage')) {
-        return { data: [] }
-      }
-      return { data: {} }
     })
-    mockedAxios.post.mockResolvedValue({ data: { success: true } })
 
     const store = useSubscriptionsStore()
     const upgradePromise = store.upgradePlan('plan-new')
@@ -224,10 +193,7 @@ describe('subscriptions store — upgradePlan polling', () => {
     // No timeout warning was set.
     expect(store.error).toBe('')
     // Polling continued across the 502: at least 4 GETs to /current.
-    const currentGets = mockedAxios.get.mock.calls.filter(([url]) =>
-      typeof url === 'string' && url.startsWith('/user-subscriptions/current')
-    )
-    expect(currentGets.length).toBeGreaterThanOrEqual(4)
+    expect(countCurrentGets()).toBeGreaterThanOrEqual(4)
   })
 
   it('does not poll in demo mode (short-circuits to simulated delay)', async () => {
