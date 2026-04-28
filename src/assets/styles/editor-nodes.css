@@ -1,0 +1,332 @@
+/*
+ * Open Course Factory - Editor Node Styles
+ * Copyright (C) 2023-2026 Solution Libre
+ *
+ * Shared styles for graph editor nodes and node library.
+ * Used by: DesignSystemAudit, BaseNode, NodeLibraryPanel,
+ *          CourseEditor, ScenarioEditor
+ *
+ * Single source of truth — change here, updates everywhere.
+ */
+
+/* ========================================
+   EDITOR NODES (graph canvas nodes)
+   ======================================== */
+
+.editor-node {
+  border: 2px solid;
+  border-radius: 8px;
+  padding: 0.75rem;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+  position: relative;
+}
+
+.editor-node:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.editor-node.is-selected {
+  border-width: 3px;
+  box-shadow: 0 0 0 3px var(--color-primary-shadow), var(--shadow-md);
+  transform: scale(1.02);
+}
+
+.editor-node.is-new {
+  border-style: dashed;
+}
+
+/* Node header (icon + title) */
+.editor-node .node-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.editor-node .node-head .icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.editor-node .node-head .title {
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: var(--color-text-primary);
+  word-wrap: break-word;
+  line-height: 1.3;
+}
+
+.editor-node .node-head .subtitle {
+  font-size: 0.65rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.1rem;
+}
+
+/* Node metadata row */
+.editor-node .node-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.4rem;
+}
+
+.editor-node .meta-badge {
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-weight: 600;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.editor-node .meta-badge.difficulty-beginner {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.editor-node .meta-badge.difficulty-intermediate {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.editor-node .meta-badge.difficulty-advanced {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+/* Node actions bar */
+.editor-node .node-actions-bar {
+  display: flex;
+  gap: 4px;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.editor-node .action-btn {
+  flex: 1;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  text-align: center;
+  transition: all 0.15s;
+  color: var(--color-text-secondary);
+}
+
+.editor-node .action-btn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.editor-node .action-btn.select-tree:hover {
+  background: var(--color-primary-bg);
+  border-color: var(--color-primary);
+}
+
+.editor-node .action-btn.delete:hover {
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger);
+}
+
+/* ========================================
+   COURSE NODE VARIANTS
+   ======================================== */
+
+.editor-node.node-course {
+  border-color: var(--course-node-course);
+  background: var(--course-node-course-bg);
+}
+
+.editor-node.node-chapter {
+  border-color: var(--course-node-chapter);
+  background: var(--course-node-chapter-bg);
+}
+
+.editor-node.node-section {
+  border-color: var(--course-node-section);
+  background: var(--course-node-section-bg);
+}
+
+.editor-node.node-page {
+  border-color: var(--course-node-page);
+  background: var(--course-node-page-bg);
+}
+
+/* ========================================
+   SCENARIO NODE VARIANTS
+   ======================================== */
+
+.editor-node.node-scenario {
+  border-color: var(--scenario-node-scenario);
+  background: var(--scenario-node-scenario-bg);
+}
+
+.editor-node.node-terminal {
+  border-color: var(--scenario-node-terminal);
+  background: var(--scenario-node-terminal-bg);
+}
+
+.editor-node.node-flag {
+  border-color: var(--scenario-node-flag);
+  background: var(--scenario-node-flag-bg);
+}
+
+.editor-node.node-info {
+  border-color: var(--scenario-node-info);
+  background: var(--scenario-node-info-bg);
+}
+
+.editor-node.node-quiz {
+  border-color: var(--scenario-node-quiz);
+  background: var(--scenario-node-quiz-bg);
+}
+
+/* ========================================
+   NODE LIBRARY PANEL
+   ======================================== */
+
+.node-library-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: transparent;
+}
+
+.node-library-panel .panel-header {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.node-library-panel .panel-header h3 {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.node-library-panel .panel-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.node-library-panel .node-types {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.node-library-item {
+  cursor: grab;
+  border-radius: 6px;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.node-library-item:active {
+  cursor: grabbing;
+  opacity: 0.7;
+}
+
+.node-library-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.node-library-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  border: 2px solid;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.node-library-preview .lib-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.node-library-preview .lib-label {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Course library variants */
+.node-library-preview.lib-course {
+  border-color: var(--course-node-course);
+  background: var(--course-node-course-bg);
+}
+
+.node-library-preview.lib-chapter {
+  border-color: var(--course-node-chapter);
+  background: var(--course-node-chapter-bg);
+}
+
+.node-library-preview.lib-section {
+  border-color: var(--course-node-section);
+  background: var(--course-node-section-bg);
+}
+
+.node-library-preview.lib-page {
+  border-color: var(--course-node-page);
+  background: var(--course-node-page-bg);
+}
+
+/* Scenario library variants */
+.node-library-preview.lib-scenario {
+  border-color: var(--scenario-node-scenario);
+  background: var(--scenario-node-scenario-bg);
+}
+
+.node-library-preview.lib-terminal {
+  border-color: var(--scenario-node-terminal);
+  background: var(--scenario-node-terminal-bg);
+}
+
+.node-library-preview.lib-flag {
+  border-color: var(--scenario-node-flag);
+  background: var(--scenario-node-flag-bg);
+}
+
+.node-library-preview.lib-info {
+  border-color: var(--scenario-node-info);
+  background: var(--scenario-node-info-bg);
+}
+
+.node-library-preview.lib-quiz {
+  border-color: var(--scenario-node-quiz);
+  background: var(--scenario-node-quiz-bg);
+}
+
+.node-library-panel .library-footer {
+  margin-top: auto;
+  padding: 0.5rem;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.node-library-panel .help-text {
+  margin: 0;
+  font-size: 0.65rem;
+  color: var(--color-text-secondary);
+  line-height: 1.3;
+  text-align: center;
+  opacity: 0.7;
+}

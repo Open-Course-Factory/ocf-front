@@ -187,28 +187,28 @@
             <div style="display:flex;gap:16px;">
               <div style="flex:1;">
                 <div class="course-nodes-grid">
-                  <div class="course-node node-course">
+                  <div class="editor-node node-course">
                     <div class="node-head"><span class="icon"><i class="fas fa-book"></i></span><span class="title">Intro to CS</span></div>
                     <div class="node-actions-bar">
                       <button class="action-btn"><i class="fas fa-edit"></i></button>
                       <button class="action-btn delete"><i class="fas fa-trash"></i></button>
                     </div>
                   </div>
-                  <div class="course-node node-chapter">
+                  <div class="editor-node node-chapter">
                     <div class="node-head"><span class="icon"><i class="fas fa-book-open"></i></span><span class="title">Chapter 1</span></div>
                     <div class="node-actions-bar">
                       <button class="action-btn"><i class="fas fa-edit"></i></button>
                       <button class="action-btn delete"><i class="fas fa-trash"></i></button>
                     </div>
                   </div>
-                  <div class="course-node node-section">
+                  <div class="editor-node node-section">
                     <div class="node-head"><span class="icon"><i class="fas fa-stream"></i></span><span class="title">Section A</span></div>
                     <div class="node-actions-bar">
                       <button class="action-btn"><i class="fas fa-edit"></i></button>
                       <button class="action-btn delete"><i class="fas fa-trash"></i></button>
                     </div>
                   </div>
-                  <div class="course-node node-page">
+                  <div class="editor-node node-page">
                     <div class="node-head"><span class="icon"><i class="fas fa-file-alt"></i></span><span class="title">Page 1</span></div>
                     <div class="node-actions-bar">
                       <button class="action-btn"><i class="fas fa-edit"></i></button>
@@ -268,41 +268,41 @@
             <div style="display:flex;gap:16px;">
               <div style="flex:1;">
                 <div class="course-nodes-grid">
-                  <div class="course-node node-scenario">
+                  <div class="editor-node node-scenario">
                     <div class="node-head"><span class="icon"><i class="fas fa-flask"></i></span><span class="title">Linux Rogue-Lite</span></div>
-                    <div class="node-meta-row"><span class="meta-badge difficulty-advanced">Advanced</span><span class="meta-text">10 steps</span></div>
+                    <div class="node-meta"><span class="meta-badge difficulty-advanced">Advanced</span><span class="meta-text">10 steps</span></div>
                     <div class="node-actions-bar">
                       <button class="action-btn"><i class="fas fa-edit"></i></button>
                       <button class="action-btn delete"><i class="fas fa-trash"></i></button>
                     </div>
                   </div>
-                  <div class="course-node node-terminal">
+                  <div class="editor-node node-terminal">
                     <div class="node-head"><span class="icon"><i class="fas fa-terminal"></i></span><span class="title">Terminal</span></div>
-                    <div class="node-meta-row"><span class="meta-text">Step 1</span><span class="meta-indicator"><i class="fas fa-check-circle"></i></span></div>
+                    <div class="node-meta"><span class="meta-text">Step 1</span><span class="meta-indicator"><i class="fas fa-check-circle"></i></span></div>
                     <div class="node-actions-bar">
                       <button class="action-btn"><i class="fas fa-edit"></i></button>
                       <button class="action-btn delete"><i class="fas fa-trash"></i></button>
                     </div>
                   </div>
-                  <div class="course-node node-flag">
+                  <div class="editor-node node-flag">
                     <div class="node-head"><span class="icon"><i class="fas fa-flag"></i></span><span class="title">Flag</span></div>
-                    <div class="node-meta-row"><span class="meta-text">Step 2</span><span class="meta-indicator"><i class="fas fa-flag"></i> Lv.3</span></div>
+                    <div class="node-meta"><span class="meta-text">Step 2</span><span class="meta-indicator"><i class="fas fa-flag"></i> Lv.3</span></div>
                     <div class="node-actions-bar">
                       <button class="action-btn"><i class="fas fa-edit"></i></button>
                       <button class="action-btn delete"><i class="fas fa-trash"></i></button>
                     </div>
                   </div>
-                  <div class="course-node node-info">
+                  <div class="editor-node node-info">
                     <div class="node-head"><span class="icon"><i class="fas fa-info-circle"></i></span><span class="title">Info</span></div>
-                    <div class="node-meta-row"><span class="meta-text">Step 3</span></div>
+                    <div class="node-meta"><span class="meta-text">Step 3</span></div>
                     <div class="node-actions-bar">
                       <button class="action-btn"><i class="fas fa-edit"></i></button>
                       <button class="action-btn delete"><i class="fas fa-trash"></i></button>
                     </div>
                   </div>
-                  <div class="course-node node-quiz">
+                  <div class="editor-node node-quiz">
                     <div class="node-head"><span class="icon"><i class="fas fa-question-circle"></i></span><span class="title">Quiz</span></div>
-                    <div class="node-meta-row"><span class="meta-text">Step 4</span><span class="meta-indicator">3 Q.</span></div>
+                    <div class="node-meta"><span class="meta-text">Step 4</span><span class="meta-indicator">3 Q.</span></div>
                     <div class="node-actions-bar">
                       <button class="action-btn"><i class="fas fa-edit"></i></button>
                       <button class="action-btn delete"><i class="fas fa-trash"></i></button>
@@ -855,7 +855,8 @@ const surfaceItems = computed(() => [
 }
 
 /* ========================================
-   3. COURSE EDITOR NODES
+   3. EDITOR NODES — styles from editor-nodes.css (global)
+   Only layout overrides for the audit grid go here.
    ======================================== */
 .course-nodes-grid {
   display: grid;
@@ -863,84 +864,7 @@ const surfaceItems = computed(() => [
   gap: 12px;
 }
 
-.course-node {
-  border: 2px solid;
-  border-radius: 8px;
-  padding: 0.75rem;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.2s;
-  position: relative;
-}
-
-.course-node:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
-}
-
-.course-node.node-course {
-  border-color: var(--course-node-course);
-  background: var(--course-node-course-bg);
-}
-
-.course-node.node-chapter {
-  border-color: var(--course-node-chapter);
-  background: var(--course-node-chapter-bg);
-}
-
-.course-node.node-section {
-  border-color: var(--course-node-section);
-  background: var(--course-node-section-bg);
-}
-
-.course-node.node-page {
-  border-color: var(--course-node-page);
-  background: var(--course-node-page-bg);
-}
-
-.course-node .node-head {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.course-node .node-head .icon { font-size: 1rem; }
-.course-node .node-head .title {
-  font-weight: 600;
-  font-size: 0.75rem;
-  color: var(--color-text-primary);
-}
-
-.course-node .node-actions-bar {
-  display: flex;
-  gap: 4px;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--color-border-light);
-}
-
-.course-node .action-btn {
-  flex: 1;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-light);
-  padding: 4px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.7rem;
-  text-align: center;
-  transition: all 0.15s;
-  color: var(--color-text-secondary);
-}
-
-.course-node .action-btn:hover {
-  background: var(--color-surface-hover);
-}
-
-.course-node .action-btn.delete:hover {
-  background: var(--color-danger-bg);
-  border-color: var(--color-danger);
-}
-
-/* Node Library Panel */
+/* Audit-specific: node library demo container */
 .node-library {
   background: var(--color-surface);
   border-radius: 8px;
@@ -961,135 +885,6 @@ const surfaceItems = computed(() => [
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-.node-library-item {
-  cursor: grab;
-  border-radius: 8px;
-  transition: all 0.2s;
-}
-
-.node-library-item:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
-}
-
-.node-library-preview {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.8rem;
-  border: 2px solid;
-  border-radius: 8px;
-}
-
-.node-library-preview.lib-course {
-  border-color: var(--course-node-course);
-  background: var(--course-node-course-bg);
-}
-
-.node-library-preview.lib-chapter {
-  border-color: var(--course-node-chapter);
-  background: var(--course-node-chapter-bg);
-}
-
-.node-library-preview.lib-section {
-  border-color: var(--course-node-section);
-  background: var(--course-node-section-bg);
-}
-
-.node-library-preview.lib-page {
-  border-color: var(--course-node-page);
-  background: var(--course-node-page-bg);
-}
-
-.node-library-preview .lib-label {
-  font-weight: 600;
-  font-size: 0.85rem;
-  color: var(--color-text-primary);
-}
-
-/* Scenario node variants */
-.course-node.node-scenario {
-  border-color: var(--scenario-node-scenario);
-  background: var(--scenario-node-scenario-bg);
-}
-
-.course-node.node-terminal {
-  border-color: var(--scenario-node-terminal);
-  background: var(--scenario-node-terminal-bg);
-}
-
-.course-node.node-flag {
-  border-color: var(--scenario-node-flag);
-  background: var(--scenario-node-flag-bg);
-}
-
-.course-node.node-info {
-  border-color: var(--scenario-node-info);
-  background: var(--scenario-node-info-bg);
-}
-
-.course-node.node-quiz {
-  border-color: var(--scenario-node-quiz);
-  background: var(--scenario-node-quiz-bg);
-}
-
-.node-library-preview.lib-scenario {
-  border-color: var(--scenario-node-scenario);
-  background: var(--scenario-node-scenario-bg);
-}
-
-.node-library-preview.lib-terminal {
-  border-color: var(--scenario-node-terminal);
-  background: var(--scenario-node-terminal-bg);
-}
-
-.node-library-preview.lib-flag {
-  border-color: var(--scenario-node-flag);
-  background: var(--scenario-node-flag-bg);
-}
-
-.node-library-preview.lib-info {
-  border-color: var(--scenario-node-info);
-  background: var(--scenario-node-info-bg);
-}
-
-.node-library-preview.lib-quiz {
-  border-color: var(--scenario-node-quiz);
-  background: var(--scenario-node-quiz-bg);
-}
-
-/* Node metadata row (shared by course + scenario nodes) */
-.course-node .node-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-bottom: 0.4rem;
-  font-size: 0.65rem;
-  color: var(--color-text-muted);
-}
-
-.meta-badge {
-  padding: 0.1rem 0.35rem;
-  border-radius: 3px;
-  font-weight: 600;
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.meta-badge.difficulty-advanced {
-  background: var(--color-danger-bg);
-  color: var(--color-danger);
-}
-
-.meta-text {
-  color: var(--color-text-muted);
-}
-
-.meta-indicator {
-  color: var(--color-text-secondary);
 }
 
 /* ========================================
