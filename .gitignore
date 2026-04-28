@@ -13,6 +13,10 @@ dist-ssr
 *.local
 vite.config.ts.timestamp*
 
+# Test reports (JUnit XML, coverage)
+reports/
+coverage/
+
 # Environment files
 .env
 .env.local
