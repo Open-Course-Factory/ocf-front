@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, type Component } from 'vue'
+import { ref, watch, provide, type Component } from 'vue'
 import { VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
@@ -69,6 +69,14 @@ const emit = defineEmits<{
   (e: 'select-tree', nodeData: any): void
   (e: 'edge-connect', connection: any): void
 }>()
+
+// Provide event handlers so custom node types can call them via inject
+provide('flowCanvasHandlers', {
+  onEdit: (nodeData: any) => handleEditNode(nodeData),
+  onDelete: (nodeData: any) => handleDeleteNode(nodeData),
+  onToggleExpand: (nodeData: any) => handleToggleExpand(nodeData),
+  onSelectTree: (nodeData: any) => handleSelectTree(nodeData)
+})
 
 // Local reactive state
 const nodesData = ref(props.nodes)

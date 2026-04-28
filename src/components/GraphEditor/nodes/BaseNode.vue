@@ -76,8 +76,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, inject } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
+
+// Inject FlowCanvas handlers (provided by GraphEditor FlowCanvas)
+const flowCanvasHandlers = inject<{
+  onEdit: (nodeData: any) => void
+  onDelete: (nodeData: any) => void
+  onToggleExpand: (nodeData: any) => void
+  onSelectTree: (nodeData: any) => void
+} | null>('flowCanvasHandlers', null)
 
 interface NodeData {
   label?: string
@@ -131,34 +139,35 @@ const subtitle = computed(() => {
 })
 
 const handleEdit = (event?: MouseEvent) => {
-  console.log('BaseNode: handleEdit called', props.data)
   if (event) {
     event.preventDefault()
     event.stopPropagation()
   }
   emit('edit', props.data)
+  flowCanvasHandlers?.onEdit(props.data)
 }
 
 const handleDelete = (event?: MouseEvent) => {
-  console.log('BaseNode: handleDelete called', props.data)
   if (event) {
     event.preventDefault()
     event.stopPropagation()
   }
   emit('delete', props.data)
+  flowCanvasHandlers?.onDelete(props.data)
 }
 
 const handleToggleExpand = () => {
   emit('toggle-expand', props.data)
+  flowCanvasHandlers?.onToggleExpand(props.data)
 }
 
 const handleSelectTree = (event?: MouseEvent) => {
-  console.log('BaseNode: handleSelectTree called', props.data)
   if (event) {
     event.preventDefault()
     event.stopPropagation()
   }
   emit('select-tree', props.data)
+  flowCanvasHandlers?.onSelectTree(props.data)
 }
 
 const handleContentClick = (event: MouseEvent) => {
@@ -188,8 +197,6 @@ const handleContentClick = (event: MouseEvent) => {
 }
 
 const handleContentDoubleClick = (event: MouseEvent) => {
-  console.log('BaseNode: handleContentDoubleClick triggered')
-
   // Prevent Vue Flow from handling this event
   event.preventDefault()
   event.stopPropagation()
@@ -202,12 +209,10 @@ const handleContentDoubleClick = (event: MouseEvent) => {
 
   // Don't select tree when Ctrl/Cmd is held (let Vue Flow handle multi-select)
   if (event.ctrlKey || event.metaKey) {
-    console.log('BaseNode: Ctrl/Cmd held, skipping select tree')
     return
   }
 
   // Select this node and all its children
-  console.log('BaseNode: calling handleSelectTree from double-click')
   handleSelectTree()
 }
 </script>

@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import BaseNode from './BaseNode.vue'
+import BaseNode from '../../GraphEditor/nodes/BaseNode.vue'
 
 interface Props {
   data: {

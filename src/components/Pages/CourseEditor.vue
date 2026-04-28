@@ -46,6 +46,9 @@
       <!-- Left Panel: Node Library -->
       <NodeLibraryPanel
         class="panel library-panel"
+        :node-types="courseNodeTypeDefinitions"
+        :panel-title="t('courseEditor.nodeLibraryTitle')"
+        :help-text="t('courseEditor.nodeLibraryHelp')"
         @node-drag-start="handleNodeDragStart"
       />
 
@@ -55,6 +58,10 @@
         :nodes="nodes"
         :edges="edges"
         :dragged-node-type="draggedNodeType"
+        :custom-node-types="customNodeTypes"
+        :empty-icon="'📚'"
+        :empty-title="t('courseEditor.nodeTypes.course')"
+        :empty-description="t('courseEditor.nodeLibraryHelp')"
         @nodes-change="handleNodesChange"
         @edges-change="handleEdgesChange"
         @update:nodes="nodes = $event"
@@ -169,16 +176,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, markRaw, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCoursesStore } from '../../stores/courses'
 import { useChaptersStore } from '../../stores/chapters'
 import { useSectionsStore } from '../../stores/sections'
 import { usePagesStore } from '../../stores/pages'
 import { useTranslations } from '../../composables/useTranslations'
-import NodeLibraryPanel from '../CourseEditor/NodeLibraryPanel.vue'
-import FlowCanvas from '../CourseEditor/FlowCanvas.vue'
+import NodeLibraryPanel from '../GraphEditor/NodeLibraryPanel.vue'
+import type { NodeTypeDefinition } from '../GraphEditor/NodeLibraryPanel.vue'
+import FlowCanvas from '../GraphEditor/FlowCanvas.vue'
 import CourseTreePanel from '../CourseEditor/CourseTreePanel.vue'
+import CourseNode from '../CourseEditor/nodes/CourseNode.vue'
+import ChapterNode from '../CourseEditor/nodes/ChapterNode.vue'
+import SectionNode from '../CourseEditor/nodes/SectionNode.vue'
+import PageNode from '../CourseEditor/nodes/PageNode.vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import { useNotification } from '../../composables/useNotification'
 import axios from 'axios'
@@ -221,7 +233,19 @@ const { t } = useTranslations({
       moveSuccess: 'Entity moved successfully',
       moveError: 'Failed to move entity',
       cascadeChildren: 'This will also delete {count} child entity(ies).',
-      orderSynced: '{count} entity order(s) updated'
+      orderSynced: '{count} entity order(s) updated',
+      nodeTypes: {
+        course: 'Course',
+        chapter: 'Chapter',
+        section: 'Section',
+        page: 'Page',
+        courseDescription: 'Root level course container',
+        chapterDescription: 'Major course division',
+        sectionDescription: 'Chapter subdivision',
+        pageDescription: 'Individual content page'
+      },
+      nodeLibraryTitle: 'Node Library',
+      nodeLibraryHelp: 'Drag a node type onto the canvas to create a new entity'
     }
   },
   fr: {
@@ -257,7 +281,19 @@ const { t } = useTranslations({
       moveSuccess: 'Entité déplacée avec succès',
       moveError: 'Échec du déplacement de l\'entité',
       cascadeChildren: 'Cela supprimera également {count} entité(s) enfant(s).',
-      orderSynced: '{count} ordre(s) d\'entité mis à jour'
+      orderSynced: '{count} ordre(s) d\'entité mis à jour',
+      nodeTypes: {
+        course: 'Cours',
+        chapter: 'Chapitre',
+        section: 'Section',
+        page: 'Page',
+        courseDescription: 'Conteneur de cours principal',
+        chapterDescription: 'Division majeure du cours',
+        sectionDescription: 'Sous-division de chapitre',
+        pageDescription: 'Page de contenu individuelle'
+      },
+      nodeLibraryTitle: 'Bibliothèque de Nœuds',
+      nodeLibraryHelp: 'Glissez un type de nœud sur le canevas pour créer une nouvelle entité'
     }
   }
 })
@@ -267,6 +303,50 @@ const chaptersStore = useChaptersStore()
 const sectionsStore = useSectionsStore()
 const pagesStore = usePagesStore()
 const notification = useNotification()
+
+// Custom node types for VueFlow
+const customNodeTypes: Record<string, Component> = {
+  course: markRaw(CourseNode),
+  chapter: markRaw(ChapterNode),
+  section: markRaw(SectionNode),
+  page: markRaw(PageNode)
+}
+
+// Node type definitions for the library panel
+const courseNodeTypeDefinitions = computed((): NodeTypeDefinition[] => [
+  {
+    type: 'course',
+    icon: '📚',
+    color: 'var(--course-node-course)',
+    bgColor: 'var(--course-node-course-bg)',
+    label: t('courseEditor.nodeTypes.course'),
+    description: t('courseEditor.nodeTypes.courseDescription')
+  },
+  {
+    type: 'chapter',
+    icon: '📖',
+    color: 'var(--course-node-chapter)',
+    bgColor: 'var(--course-node-chapter-bg)',
+    label: t('courseEditor.nodeTypes.chapter'),
+    description: t('courseEditor.nodeTypes.chapterDescription')
+  },
+  {
+    type: 'section',
+    icon: '📄',
+    color: 'var(--course-node-section)',
+    bgColor: 'var(--course-node-section-bg)',
+    label: t('courseEditor.nodeTypes.section'),
+    description: t('courseEditor.nodeTypes.sectionDescription')
+  },
+  {
+    type: 'page',
+    icon: '📃',
+    color: 'var(--course-node-page)',
+    bgColor: 'var(--course-node-page-bg)',
+    label: t('courseEditor.nodeTypes.page'),
+    description: t('courseEditor.nodeTypes.pageDescription')
+  }
+])
 
 // State
 const nodes = ref<any[]>([])
