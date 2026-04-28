@@ -220,7 +220,8 @@ const { t } = useTranslations({
       invalidConnection: 'Invalid connection: {source} cannot connect to {target}',
       moveSuccess: 'Entity moved successfully',
       moveError: 'Failed to move entity',
-      cascadeChildren: 'This will also delete {count} child entity(ies).'
+      cascadeChildren: 'This will also delete {count} child entity(ies).',
+      orderSynced: '{count} entity order(s) updated'
     }
   },
   fr: {
@@ -255,7 +256,8 @@ const { t } = useTranslations({
       invalidConnection: 'Connexion invalide : {source} ne peut pas se connecter à {target}',
       moveSuccess: 'Entité déplacée avec succès',
       moveError: 'Échec du déplacement de l\'entité',
-      cascadeChildren: 'Cela supprimera également {count} entité(s) enfant(s).'
+      cascadeChildren: 'Cela supprimera également {count} entité(s) enfant(s).',
+      orderSynced: '{count} ordre(s) d\'entité mis à jour'
     }
   }
 })
@@ -1153,11 +1155,89 @@ const loadNodePositions = () => {
   }
 }
 
+// Compute ordering from edge chains and PATCH backend
+// Walks the chain: parent → child1 → child2 → child3 and assigns order 1, 2, 3...
+const syncOrderFromEdges = async (): Promise<number> => {
+  let patchCount = 0
+
+  // For each parent type, find all parent nodes and walk their child chains
+  const parentTypes = [
+    { parentType: 'course', childType: 'chapter', endpoint: '/chapters', orderField: 'order' },
+    { parentType: 'chapter', childType: 'section', endpoint: '/sections', orderField: 'order' },
+    { parentType: 'section', childType: 'page', endpoint: '/pages', orderField: 'order' }
+  ]
+
+  for (const { parentType, childType, endpoint, orderField } of parentTypes) {
+    // Find all parent nodes of this type
+    const parentNodes = nodes.value.filter(n => n.data.entityType === parentType && n.data.entityId)
+
+    for (const parentNode of parentNodes) {
+      // Find the first child: the edge going from this parent to a child of the right type
+      const firstChildEdge = edges.value.find(e => {
+        if (e.source !== parentNode.id) return false
+        const targetNode = nodes.value.find(n => n.id === e.target)
+        return targetNode?.data?.entityType === childType
+      })
+
+      if (!firstChildEdge) continue
+
+      // Walk the chain: firstChild → secondChild → ...
+      const orderedChildren: any[] = []
+      let currentNodeId: string | null = firstChildEdge.target
+
+      while (currentNodeId) {
+        const currentNode = nodes.value.find(n => n.id === currentNodeId)
+        if (!currentNode) break
+        orderedChildren.push(currentNode)
+
+        // Find next sibling: edge from current node to another node of the same type
+        const nextEdge = edges.value.find(e => {
+          if (e.source !== currentNodeId) return false
+          const targetNode = nodes.value.find(n => n.id === e.target)
+          return targetNode?.data?.entityType === childType
+        })
+
+        currentNodeId = nextEdge ? nextEdge.target : null
+      }
+
+      // Compare with current order and PATCH if changed
+      for (let i = 0; i < orderedChildren.length; i++) {
+        const child = orderedChildren[i]
+        const newOrder = i + 1
+        const currentOrder = child.data.order ?? child.data.number ?? 0
+
+        if (child.data.entityId && !child.data.isNew && currentOrder !== newOrder) {
+          try {
+            await axios.patch(`${endpoint}/${child.data.entityId}`, {
+              [orderField]: newOrder
+            })
+            // Update local node data
+            child.data.order = newOrder
+            patchCount++
+          } catch (err) {
+            console.error(`Failed to update order for ${childType} ${child.data.entityId}:`, err)
+          }
+        }
+      }
+    }
+  }
+
+  return patchCount
+}
+
 // Save/Reset handlers
 const handleSave = async () => {
-  // Save all node positions
+  // Save node positions
   saveNodePositions()
-  alert('Node positions saved!')
+
+  // Sync ordering from edge chains to backend
+  const patchCount = await syncOrderFromEdges()
+
+  if (patchCount > 0) {
+    notification.showSuccess(t('courseEditor.orderSynced', { count: String(patchCount) }))
+  } else {
+    notification.showSuccess(t('courseEditor.saveSuccess'))
+  }
 }
 
 const handleReset = () => {
