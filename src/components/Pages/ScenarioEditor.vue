@@ -135,7 +135,21 @@
       @close="closeScenarioEditModal"
       @confirm="handleSaveScenario"
     >
-      <div class="modal-form">
+      <!-- Tabs -->
+      <div class="scenario-modal-tabs">
+        <button
+          v-for="tab in scenarioModalTabs"
+          :key="tab.key"
+          class="scenario-modal-tab"
+          :class="{ active: activeScenarioTab === tab.key }"
+          @click="activeScenarioTab = tab.key"
+        >
+          {{ tab.label }}
+        </button>
+      </div>
+
+      <!-- General tab -->
+      <div v-show="activeScenarioTab === 'general'" class="modal-form">
         <div class="form-group">
           <label>{{ t('scenarioEditor.scenarioName') }}</label>
           <input
@@ -156,23 +170,25 @@
           />
         </div>
 
-        <div class="form-group">
-          <label>{{ t('scenarioEditor.difficulty') }}</label>
-          <select v-model="editingScenario.difficulty" class="form-control">
-            <option value="beginner">{{ t('scenarioEditor.beginner') }}</option>
-            <option value="intermediate">{{ t('scenarioEditor.intermediate') }}</option>
-            <option value="advanced">{{ t('scenarioEditor.advanced') }}</option>
-          </select>
-        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>{{ t('scenarioEditor.difficulty') }}</label>
+            <select v-model="editingScenario.difficulty" class="form-control">
+              <option value="beginner">{{ t('scenarioEditor.beginner') }}</option>
+              <option value="intermediate">{{ t('scenarioEditor.intermediate') }}</option>
+              <option value="advanced">{{ t('scenarioEditor.advanced') }}</option>
+            </select>
+          </div>
 
-        <div class="form-group">
-          <label>{{ t('scenarioEditor.estimatedTime') }}</label>
-          <input
-            v-model="editingScenario.estimated_time"
-            type="text"
-            class="form-control"
-            placeholder="30m"
-          />
+          <div class="form-group">
+            <label>{{ t('scenarioEditor.estimatedTime') }}</label>
+            <input
+              v-model="editingScenario.estimated_time"
+              type="text"
+              class="form-control"
+              placeholder="30m"
+            />
+          </div>
         </div>
 
         <div class="form-group">
@@ -185,7 +201,7 @@
           ></textarea>
         </div>
 
-        <!-- Org selector (admins can choose org or platform; non-admins see current org) -->
+        <!-- Org selector -->
         <div class="form-group" v-if="isAdmin">
           <label>{{ t('scenarioEditor.orgLabel') }}</label>
           <select v-model="editingScenario.organization_id" class="form-control">
@@ -207,6 +223,143 @@
             :value="organizationsStore.currentOrganization.display_name || organizationsStore.currentOrganization.name"
             disabled
           />
+        </div>
+      </div>
+
+      <!-- Content tab -->
+      <div v-show="activeScenarioTab === 'content'" class="modal-form">
+        <div class="form-group">
+          <label>{{ t('scenarioEditor.introText') }}</label>
+          <textarea
+            v-model="editingScenario.intro_text"
+            class="form-control"
+            rows="6"
+            :placeholder="t('scenarioEditor.introTextPlaceholder')"
+          ></textarea>
+          <span class="form-hint">{{ t('scenarioEditor.markdownSupported') }}</span>
+        </div>
+
+        <div class="form-group">
+          <label>{{ t('scenarioEditor.finishText') }}</label>
+          <textarea
+            v-model="editingScenario.finish_text"
+            class="form-control"
+            rows="6"
+            :placeholder="t('scenarioEditor.finishTextPlaceholder')"
+          ></textarea>
+          <span class="form-hint">{{ t('scenarioEditor.markdownSupported') }}</span>
+        </div>
+
+        <div class="form-group">
+          <label>{{ t('scenarioEditor.objectives') }}</label>
+          <textarea
+            v-model="editingScenario.objectives"
+            class="form-control"
+            rows="3"
+            :placeholder="t('scenarioEditor.objectivesPlaceholder')"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>{{ t('scenarioEditor.prerequisites') }}</label>
+          <textarea
+            v-model="editingScenario.prerequisites"
+            class="form-control"
+            rows="3"
+            :placeholder="t('scenarioEditor.prerequisitesPlaceholder')"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- Setup tab -->
+      <div v-show="activeScenarioTab === 'setup'" class="modal-form">
+        <div class="form-group">
+          <label>{{ t('scenarioEditor.setupScript') }}</label>
+          <textarea
+            v-model="editingScenario.setup_script"
+            class="form-control script-editor"
+            rows="12"
+            :placeholder="t('scenarioEditor.setupScriptPlaceholder')"
+          ></textarea>
+          <span class="form-hint">{{ t('scenarioEditor.setupScriptHint') }}</span>
+        </div>
+      </div>
+
+      <!-- Options tab -->
+      <div v-show="activeScenarioTab === 'options'" class="modal-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>{{ t('scenarioEditor.instanceType') }}</label>
+            <input
+              v-model="editingScenario.instance_type"
+              type="text"
+              class="form-control"
+              placeholder="S"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>{{ t('scenarioEditor.hostname') }}</label>
+            <input
+              v-model="editingScenario.hostname"
+              type="text"
+              class="form-control"
+              placeholder="lab"
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>{{ t('scenarioEditor.osType') }}</label>
+            <select v-model="editingScenario.os_type" class="form-control">
+              <option value="">-</option>
+              <option value="deb">Debian (apt)</option>
+              <option value="rpm">RPM (dnf/yum)</option>
+              <option value="apk">Alpine (apk)</option>
+              <option value="pacman">Arch (pacman)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>{{ t('scenarioEditor.sourceType') }}</label>
+            <select v-model="editingScenario.source_type" class="form-control">
+              <option value="">-</option>
+              <option value="builtin">{{ t('scenarioEditor.sourceBuiltin') }}</option>
+              <option value="git">Git</option>
+              <option value="upload">Upload</option>
+              <option value="seed">Seed</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" v-model="editingScenario.flags_enabled" />
+            {{ t('scenarioEditor.flagsEnabled') }}
+          </label>
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" v-model="editingScenario.crash_traps" />
+            {{ t('scenarioEditor.crashTraps') }}
+          </label>
+          <span class="form-hint">{{ t('scenarioEditor.crashTrapsHint') }}</span>
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" v-model="editingScenario.gsh_enabled" />
+            {{ t('scenarioEditor.gshEnabled') }}
+          </label>
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" v-model="editingScenario.is_public" />
+            {{ t('scenarioEditor.isPublic') }}
+          </label>
         </div>
       </div>
     </BaseModal>
@@ -351,7 +504,37 @@ const { t } = useTranslations({
       copyError: 'Failed to copy scenario',
       selectTargetOrg: 'Select target organization',
       platformOnly: 'Platform (admin only)',
-      copying: 'Copying...'
+      copying: 'Copying...',
+      // Scenario modal tabs
+      tabGeneral: 'General',
+      tabContent: 'Content',
+      tabSetup: 'Setup',
+      tabOptions: 'Options',
+      // Content tab
+      introText: 'Introduction Text',
+      introTextPlaceholder: 'Markdown text shown before the first step...',
+      finishText: 'Completion Text',
+      finishTextPlaceholder: 'Markdown text shown after the last step...',
+      objectives: 'Objectives',
+      objectivesPlaceholder: 'Learning objectives for this scenario...',
+      prerequisites: 'Prerequisites',
+      prerequisitesPlaceholder: 'Required knowledge or setup...',
+      markdownSupported: 'Markdown supported',
+      // Setup tab
+      setupScript: 'Global Setup Script',
+      setupScriptPlaceholder: '#!/bin/bash\n# This script runs once at session start, before any step...',
+      setupScriptHint: 'Runs once when a student starts the scenario, before step 1. Use for global environment provisioning.',
+      // Options tab
+      instanceType: 'Machine Size',
+      hostname: 'Container Hostname',
+      osType: 'OS Type',
+      sourceType: 'Source Type',
+      sourceBuiltin: 'Built-in',
+      flagsEnabled: 'Enable CTF flags',
+      crashTraps: 'Enable crash traps (challenge mode)',
+      crashTrapsHint: 'All flags deployed at start. Container crash resets progress.',
+      gshEnabled: 'Enable GSH command',
+      isPublic: 'Public (available to all users)'
     }
   },
   fr: {
@@ -413,7 +596,37 @@ const { t } = useTranslations({
       copyError: 'Échec de la copie du scénario',
       selectTargetOrg: 'Sélectionner l\'organisation cible',
       platformOnly: 'Plateforme (admin uniquement)',
-      copying: 'Copie en cours...'
+      copying: 'Copie en cours...',
+      // Onglets du modal scénario
+      tabGeneral: 'Général',
+      tabContent: 'Contenu',
+      tabSetup: 'Installation',
+      tabOptions: 'Options',
+      // Onglet contenu
+      introText: 'Texte d\'introduction',
+      introTextPlaceholder: 'Texte markdown affiché avant la première étape...',
+      finishText: 'Texte de fin',
+      finishTextPlaceholder: 'Texte markdown affiché après la dernière étape...',
+      objectives: 'Objectifs',
+      objectivesPlaceholder: 'Objectifs pédagogiques de ce scénario...',
+      prerequisites: 'Prérequis',
+      prerequisitesPlaceholder: 'Connaissances ou configuration requises...',
+      markdownSupported: 'Markdown supporté',
+      // Onglet installation
+      setupScript: 'Script d\'installation global',
+      setupScriptPlaceholder: '#!/bin/bash\n# Ce script s\'exécute une fois au démarrage de la session, avant toute étape...',
+      setupScriptHint: 'S\'exécute une fois lorsqu\'un étudiant démarre le scénario, avant l\'étape 1. Pour le provisionnement global.',
+      // Onglet options
+      instanceType: 'Taille machine',
+      hostname: 'Nom d\'hôte du conteneur',
+      osType: 'Type d\'OS',
+      sourceType: 'Type de source',
+      sourceBuiltin: 'Intégré',
+      flagsEnabled: 'Activer les drapeaux CTF',
+      crashTraps: 'Activer les pièges de crash (mode challenge)',
+      crashTrapsHint: 'Tous les drapeaux déployés au démarrage. Un crash du conteneur réinitialise la progression.',
+      gshEnabled: 'Activer la commande GSH',
+      isPublic: 'Public (disponible pour tous les utilisateurs)'
     }
   }
 })
@@ -495,6 +708,13 @@ const showScenarioEditModal = ref(false)
 const showStepEditModal = ref(false)
 const showDeleteModal = ref(false)
 const editingScenario = ref<any>({})
+const activeScenarioTab = ref('general')
+const scenarioModalTabs = computed(() => [
+  { key: 'general', label: t('scenarioEditor.tabGeneral') },
+  { key: 'content', label: t('scenarioEditor.tabContent') },
+  { key: 'setup', label: t('scenarioEditor.tabSetup') },
+  { key: 'options', label: t('scenarioEditor.tabOptions') }
+])
 const editingStep = ref<any>(null)
 const editingStepIsNew = ref(false)
 const editingStepNodeId = ref<string | null>(null)
@@ -721,9 +941,23 @@ const handleCreateNew = () => {
     difficulty: 'beginner',
     estimated_time: '',
     description: '',
+    intro_text: '',
+    finish_text: '',
+    objectives: '',
+    prerequisites: '',
+    setup_script: '',
+    instance_type: 'S',
+    hostname: '',
+    os_type: 'deb',
+    source_type: 'builtin',
+    flags_enabled: false,
+    crash_traps: false,
+    gsh_enabled: false,
+    is_public: false,
     organization_id: isAdmin.value ? null : (organizationsStore.currentOrganization?.id || null),
     isNew: true
   }
+  activeScenarioTab.value = 'general'
   showScenarioEditModal.value = true
   modalError.value = ''
 }
@@ -889,8 +1123,23 @@ const openEditModal = (node: any) => {
       difficulty: node.data.difficulty || 'beginner',
       estimated_time: node.data.estimated_time || '',
       description: node.data.description || '',
+      intro_text: node.data.intro_text || '',
+      finish_text: node.data.finish_text || '',
+      objectives: node.data.objectives || '',
+      prerequisites: node.data.prerequisites || '',
+      setup_script: node.data.setup_script || '',
+      instance_type: node.data.instance_type || 'S',
+      hostname: node.data.hostname || '',
+      os_type: node.data.os_type || '',
+      source_type: node.data.source_type || '',
+      flags_enabled: node.data.flags_enabled || false,
+      crash_traps: node.data.crash_traps || false,
+      gsh_enabled: node.data.gsh_enabled || false,
+      is_public: node.data.is_public || false,
+      organization_id: node.data.organization_id || null,
       isNew: node.data.isNew || false
     }
+    activeScenarioTab.value = 'general'
     showScenarioEditModal.value = true
     modalError.value = ''
   } else if (STEP_NODE_TYPES.includes(node.data.entityType)) {
@@ -917,7 +1166,20 @@ const handleSaveScenario = async () => {
       title: editingScenario.value.title,
       difficulty: editingScenario.value.difficulty,
       estimated_time: editingScenario.value.estimated_time,
-      description: editingScenario.value.description
+      description: editingScenario.value.description,
+      intro_text: editingScenario.value.intro_text,
+      finish_text: editingScenario.value.finish_text,
+      objectives: editingScenario.value.objectives,
+      prerequisites: editingScenario.value.prerequisites,
+      setup_script: editingScenario.value.setup_script,
+      instance_type: editingScenario.value.instance_type,
+      hostname: editingScenario.value.hostname,
+      os_type: editingScenario.value.os_type,
+      source_type: editingScenario.value.source_type,
+      flags_enabled: editingScenario.value.flags_enabled,
+      crash_traps: editingScenario.value.crash_traps,
+      gsh_enabled: editingScenario.value.gsh_enabled,
+      is_public: editingScenario.value.is_public
     }
 
     if (editingScenario.value.isNew) {
@@ -952,6 +1214,19 @@ const handleSaveScenario = async () => {
           difficulty: editingScenario.value.difficulty,
           estimated_time: editingScenario.value.estimated_time,
           description: editingScenario.value.description,
+          intro_text: editingScenario.value.intro_text,
+          finish_text: editingScenario.value.finish_text,
+          objectives: editingScenario.value.objectives,
+          prerequisites: editingScenario.value.prerequisites,
+          setup_script: editingScenario.value.setup_script,
+          instance_type: editingScenario.value.instance_type,
+          hostname: editingScenario.value.hostname,
+          os_type: editingScenario.value.os_type,
+          source_type: editingScenario.value.source_type,
+          flags_enabled: editingScenario.value.flags_enabled,
+          crash_traps: editingScenario.value.crash_traps,
+          gsh_enabled: editingScenario.value.gsh_enabled,
+          is_public: editingScenario.value.is_public,
           isNew: false
         }
       }
@@ -1449,6 +1724,78 @@ const stopResize = () => {
 }
 
 /* Modal form styles */
+/* Scenario modal tabs */
+.scenario-modal-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--color-border);
+  margin-bottom: 1rem;
+}
+
+.scenario-modal-tab {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+}
+
+.scenario-modal-tab:hover {
+  color: var(--color-text-primary);
+}
+
+.scenario-modal-tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.form-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.script-editor {
+  font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  tab-size: 4;
+  resize: vertical;
+}
+
+.checkbox-group {
+  flex-direction: row !important;
+  align-items: center;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500 !important;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+
 .modal-form {
   display: flex;
   flex-direction: column;
