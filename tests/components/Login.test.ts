@@ -187,12 +187,12 @@ describe('Login', () => {
   describe('rendering', () => {
     it('renders the login form', () => {
       const wrapper = mountLogin()
-      expect(wrapper.find('form').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="login-form"]').exists()).toBe(true)
     })
 
     it('renders email input field', () => {
       const wrapper = mountLogin()
-      const emailInput = wrapper.find('input#email')
+      const emailInput = wrapper.find('[data-testid="login-email-input"]')
       expect(emailInput.exists()).toBe(true)
       expect(emailInput.attributes('type')).toBe('email')
       expect(emailInput.attributes('autocomplete')).toBe('email')
@@ -200,7 +200,7 @@ describe('Login', () => {
 
     it('renders password input field', () => {
       const wrapper = mountLogin()
-      const passwordInput = wrapper.find('input#password')
+      const passwordInput = wrapper.find('[data-testid="login-password-input"]')
       expect(passwordInput.exists()).toBe(true)
       expect(passwordInput.attributes('type')).toBe('password')
       expect(passwordInput.attributes('autocomplete')).toBe('current-password')
@@ -208,26 +208,26 @@ describe('Login', () => {
 
     it('renders remember me checkbox', () => {
       const wrapper = mountLogin()
-      const checkbox = wrapper.find('input#rememberMe')
+      const checkbox = wrapper.find('[data-testid="login-remember-me"]')
       expect(checkbox.exists()).toBe(true)
       expect(checkbox.attributes('type')).toBe('checkbox')
     })
 
     it('renders submit button', () => {
       const wrapper = mountLogin()
-      const submitBtn = wrapper.find('button[type="submit"]')
+      const submitBtn = wrapper.find('[data-testid="login-submit"]')
       expect(submitBtn.exists()).toBe(true)
     })
 
     it('renders forgot password link', () => {
       const wrapper = mountLogin()
-      const forgotLink = wrapper.find('.forgot-password')
+      const forgotLink = wrapper.find('[data-testid="login-forgot-password"]')
       expect(forgotLink.exists()).toBe(true)
     })
 
     it('renders register link', () => {
       const wrapper = mountLogin()
-      const registerDiv = wrapper.find('.register-link')
+      const registerDiv = wrapper.find('[data-testid="login-register-link"]')
       expect(registerDiv.exists()).toBe(true)
     })
   })
@@ -235,27 +235,27 @@ describe('Login', () => {
   describe('password toggle', () => {
     it('starts with password hidden', () => {
       const wrapper = mountLogin()
-      const passwordInput = wrapper.find('input#password')
+      const passwordInput = wrapper.find('[data-testid="login-password-input"]')
       expect(passwordInput.attributes('type')).toBe('password')
     })
 
     it('toggles password visibility when toggle button is clicked', async () => {
       const wrapper = mountLogin()
-      const toggleBtn = wrapper.find('.password-toggle')
+      const toggleBtn = wrapper.find('[data-testid="login-password-toggle"]')
       expect(toggleBtn.exists()).toBe(true)
 
       // Click to show password
       await toggleBtn.trigger('click')
-      expect(wrapper.find('input#password').attributes('type')).toBe('text')
+      expect(wrapper.find('[data-testid="login-password-input"]').attributes('type')).toBe('text')
 
       // Click to hide password again
       await toggleBtn.trigger('click')
-      expect(wrapper.find('input#password').attributes('type')).toBe('password')
+      expect(wrapper.find('[data-testid="login-password-input"]').attributes('type')).toBe('password')
     })
 
     it('toggles the eye icon on password toggle', async () => {
       const wrapper = mountLogin()
-      const toggleBtn = wrapper.find('.password-toggle')
+      const toggleBtn = wrapper.find('[data-testid="login-password-toggle"]')
 
       // Initially should show the "eye" icon (password is hidden)
       expect(toggleBtn.find('i').classes()).toContain('fa-eye')
@@ -283,11 +283,11 @@ describe('Login', () => {
       const wrapper = mountLogin()
 
       // Fill in credentials
-      await wrapper.find('input#email').setValue('test@example.com')
-      await wrapper.find('input#password').setValue('password123')
+      await wrapper.find('[data-testid="login-email-input"]').setValue('test@example.com')
+      await wrapper.find('[data-testid="login-password-input"]').setValue('password123')
 
       // Submit form
-      await wrapper.find('form').trigger('submit')
+      await wrapper.find('[data-testid="login-form"]').trigger('submit')
       await flushPromises()
 
       expect(mockPost).toHaveBeenCalledWith('/auth/login', {
@@ -301,12 +301,12 @@ describe('Login', () => {
 
       const wrapper = mountLogin()
 
-      await wrapper.find('input#email').setValue('bad@example.com')
-      await wrapper.find('input#password').setValue('wrongpass')
-      await wrapper.find('form').trigger('submit')
+      await wrapper.find('[data-testid="login-email-input"]').setValue('bad@example.com')
+      await wrapper.find('[data-testid="login-password-input"]').setValue('wrongpass')
+      await wrapper.find('[data-testid="login-form"]').trigger('submit')
       await flushPromises()
 
-      const alert = wrapper.find('.alert-danger')
+      const alert = wrapper.find('[data-testid="login-error"]')
       expect(alert.exists()).toBe(true)
       // useTranslations mock resolves the English translations from the component
       expect(alert.text()).toContain('Invalid email or password')
@@ -320,13 +320,13 @@ describe('Login', () => {
 
       const wrapper = mountLogin()
 
-      await wrapper.find('input#email').setValue('test@example.com')
-      await wrapper.find('input#password').setValue('password123')
-      await wrapper.find('form').trigger('submit')
+      await wrapper.find('[data-testid="login-email-input"]').setValue('test@example.com')
+      await wrapper.find('[data-testid="login-password-input"]').setValue('password123')
+      await wrapper.find('[data-testid="login-form"]').trigger('submit')
       await nextTick()
 
       // Submit button should be disabled during loading
-      const submitBtn = wrapper.find('button[type="submit"]')
+      const submitBtn = wrapper.find('[data-testid="login-submit"]')
       expect((submitBtn.element as HTMLButtonElement).disabled).toBe(true)
 
       // Should show the spinner text (resolved from component's inline translations)
@@ -349,12 +349,12 @@ describe('Login', () => {
       mockPost.mockRejectedValueOnce(new Error('fail'))
 
       const wrapper = mountLogin()
-      await wrapper.find('input#email').setValue('test@example.com')
-      await wrapper.find('input#password').setValue('wrong')
-      await wrapper.find('form').trigger('submit')
+      await wrapper.find('[data-testid="login-email-input"]').setValue('test@example.com')
+      await wrapper.find('[data-testid="login-password-input"]').setValue('wrong')
+      await wrapper.find('[data-testid="login-form"]').trigger('submit')
       await flushPromises()
 
-      expect(wrapper.find('.alert-danger').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="login-error"]').exists()).toBe(true)
 
       // Second submission — error should be cleared before the new attempt
       mockPost.mockResolvedValueOnce({
@@ -366,24 +366,24 @@ describe('Login', () => {
         }
       })
 
-      await wrapper.find('form').trigger('submit')
+      await wrapper.find('[data-testid="login-form"]').trigger('submit')
       await nextTick()
 
       // Error message should be cleared (the new request is in progress)
-      expect(wrapper.find('.alert-danger').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="login-error"]').exists()).toBe(false)
     })
   })
 
   describe('submit button state', () => {
     it('is enabled when not loading', () => {
       const wrapper = mountLogin()
-      const submitBtn = wrapper.find('button[type="submit"]')
+      const submitBtn = wrapper.find('[data-testid="login-submit"]')
       expect((submitBtn.element as HTMLButtonElement).disabled).toBe(false)
     })
 
     it('shows sign in text when not loading', () => {
       const wrapper = mountLogin()
-      const submitBtn = wrapper.find('button[type="submit"]')
+      const submitBtn = wrapper.find('[data-testid="login-submit"]')
       expect(submitBtn.text()).toContain('Sign in')
     })
   })
