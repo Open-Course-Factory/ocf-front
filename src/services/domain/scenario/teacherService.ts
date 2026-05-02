@@ -41,7 +41,7 @@ export const teacherService = {
     const response = await axios.get(
       `/teacher/groups/${groupId}/scenarios/${scenarioId}/results`
     )
-    return response.data || []
+    return response.data?.items || []
   },
 
   async getScenarioAnalytics(groupId: string): Promise<any> {

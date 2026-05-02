@@ -36,6 +36,25 @@ export async function login(page: Page, email: string, password: string): Promis
 }
 
 /**
+ * Log in with a clean org-selection state.
+ *
+ * Navigates to /login first, clears the persisted `currentOrganizationId` from
+ * localStorage, then runs the standard login flow. Use this when a test relies
+ * on the default-org selection logic (i.e. team org preferred over personal)
+ * rather than whatever the previous test left in localStorage.
+ *
+ * Equivalent to:
+ *   await page.goto('/login');
+ *   await page.evaluate(() => localStorage.removeItem('currentOrganizationId'));
+ *   await login(page, email, password);
+ */
+export async function loginFresh(page: Page, email: string, password: string): Promise<void> {
+  await page.goto('/login');
+  await page.evaluate(() => localStorage.removeItem('currentOrganizationId'));
+  await login(page, email, password);
+}
+
+/**
  * Open the user dropdown menu in TopMenu (if not already open).
  */
 export async function openUserMenu(page: Page): Promise<void> {

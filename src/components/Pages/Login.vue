@@ -8,13 +8,14 @@
         </router-link>
       </div>
       <h2>{{ t('login.title') }}</h2>
-      <form @submit.prevent="handleSubmit">
+      <form data-testid="login-form" @submit.prevent="handleSubmit">
         <div class="form-group">
           <label for="email">{{ t('login.emailLabel') }}</label>
           <input
             type="email"
             id="email"
             name="email"
+            data-testid="login-email-input"
             class="form-control"
             v-model="loginStore.email"
             autocomplete="email"
@@ -28,6 +29,7 @@
               :type="showPassword ? 'text' : 'password'"
               id="password"
               name="password"
+              data-testid="login-password-input"
               class="form-control"
               v-model="loginStore.password"
               autocomplete="current-password"
@@ -36,6 +38,7 @@
             <button
               type="button"
               class="password-toggle"
+              data-testid="login-password-toggle"
               @click="showPassword = !showPassword"
               :aria-label="showPassword ? t('login.hidePassword') : t('login.showPassword')"
             >
@@ -43,23 +46,23 @@
             </button>
           </div>
         </div>
-        <div v-if="errorMessage" class="alert alert-danger" role="alert">
+        <div v-if="errorMessage" class="alert alert-danger" role="alert" data-testid="login-error">
           {{ errorMessage }}
         </div>
         <div class="form-options">
           <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="rememberMe" v-model="loginStore.rememberMe" />
+            <input class="form-check-input" type="checkbox" id="rememberMe" data-testid="login-remember-me" v-model="loginStore.rememberMe" />
             <label class="form-check-label" for="rememberMe">{{ t('login.rememberMe') }}</label>
           </div>
-          <router-link to="/forgot-password" class="forgot-password">{{ t('login.forgotPassword') }}</router-link>
+          <router-link to="/forgot-password" class="forgot-password" data-testid="login-forgot-password">{{ t('login.forgotPassword') }}</router-link>
         </div>
-        <button type="submit" class="btn btn-primary btn-block" :disabled="isLoading">
+        <button type="submit" class="btn btn-primary btn-block" data-testid="login-submit" :disabled="isLoading">
           <span v-if="isLoading">
             <i class="fas fa-spinner fa-spin"></i> {{ t('login.signingIn') }}
           </span>
           <span v-else>{{ t('login.submitButton') }}</span>
         </button>
-        <div class="register-link">
+        <div class="register-link" data-testid="login-register-link">
           <p>{{ t('login.noAccount') }} <router-link to="/register">{{ t('login.registerLink') }}</router-link></p>
         </div>
       </form>

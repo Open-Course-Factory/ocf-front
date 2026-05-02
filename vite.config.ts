@@ -31,6 +31,15 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     include: ['tests/**/*.test.ts'],
+    // Emit a JUnit XML report so GitLab CI can parse it via
+    // `artifacts.reports.junit` and surface results in the pipeline Test tab.
+    // The default reporter is kept for human-readable console output.
+    // `addFileAttribute: true` adds `<testcase file="...">` which GitLab uses
+    // to group tests by file in the pipeline Test tab.
+    reporters: [
+      'default',
+      ['junit', { outputFile: 'reports/junit.xml', addFileAttribute: true }],
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

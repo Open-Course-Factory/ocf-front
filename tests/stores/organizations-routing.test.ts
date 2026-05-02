@@ -110,12 +110,9 @@ vi.mock('../../src/composables/useStatusFormatters', () => ({
   })
 }))
 
-import axios from 'axios'
 import { useOrganizationsStore } from '../../src/stores/organizations'
 
-const mockedAxios = vi.mocked(axios)
-
-describe('organizations store', () => {
+describe('organizations store — routing', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
@@ -132,106 +129,6 @@ describe('organizations store', () => {
       { value: '/courses', label: 'Courses' },
       { value: '/subscription-dashboard', label: 'Subscription Dashboard' }
     ]
-  })
-
-  describe('setCurrentOrganization — Bug C3: no loading state / error handling', () => {
-    it('should return a promise (be async) so callers can await org switch completion', async () => {
-      const store = useOrganizationsStore()
-
-      // Set up the store with an org
-      store.entities.push({
-        id: 'org-1',
-        name: 'test-org',
-        display_name: 'Test Org',
-        organization_type: 'team',
-        owner_user_id: 'user-1',
-        is_active: true,
-        max_groups: 5,
-        max_members: 10,
-        group_count: 0,
-        member_count: 1,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      } as any)
-
-      const result = store.setCurrentOrganization('org-1')
-
-      // BUG: setCurrentOrganization is synchronous (returns void), not async.
-      // It fires async calls (getCurrentSubscription, loadEffectiveFeatures)
-      // without awaiting them. The caller has no way to know when the switch
-      // is complete or if it failed.
-      // This test expects it to return a Promise so callers can await it.
-      expect(result).toBeInstanceOf(Promise)
-      // Must await to prevent the dangling promise (dynamic import + async .then chain)
-      // from bleeding into subsequent tests and causing timeouts
-      await result
-    })
-
-    it('should handle errors from getCurrentSubscription without silently swallowing them', async () => {
-      const subscriptionError = new Error('Subscription service unavailable')
-      mockGetCurrentSubscription.mockRejectedValueOnce(subscriptionError)
-
-      const store = useOrganizationsStore()
-      store.entities.push({
-        id: 'org-1',
-        name: 'test-org',
-        display_name: 'Test Org',
-        organization_type: 'team',
-        owner_user_id: 'user-1',
-        is_active: true,
-        max_groups: 5,
-        max_members: 10,
-        group_count: 0,
-        member_count: 1,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      } as any)
-
-      // setCurrentOrganization catches errors gracefully (console.warn, no crash)
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      await store.setCurrentOrganization('org-1')
-
-      expect(mockGetCurrentSubscription).toHaveBeenCalled()
-      // Error is logged, not thrown — org switch completes without crashing
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to refresh subscription'),
-        expect.any(Error)
-      )
-      consoleSpy.mockRestore()
-    })
-
-    it('should handle errors from loadEffectiveFeatures gracefully', async () => {
-      const featureError = new Error('Feature service unavailable')
-      mockLoadEffectiveFeatures.mockRejectedValueOnce(featureError)
-
-      const store = useOrganizationsStore()
-      store.entities.push({
-        id: 'org-1',
-        name: 'test-org',
-        display_name: 'Test Org',
-        organization_type: 'team',
-        owner_user_id: 'user-1',
-        is_active: true,
-        max_groups: 5,
-        max_members: 10,
-        group_count: 0,
-        member_count: 1,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      } as any)
-
-      // setCurrentOrganization catches errors gracefully (console.warn, no crash)
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      await store.setCurrentOrganization('org-1')
-
-      expect(mockLoadEffectiveFeatures).toHaveBeenCalled()
-      // Error is logged, not thrown — org switch completes without crashing
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to refresh features'),
-        expect.any(Error)
-      )
-      consoleSpy.mockRestore()
-    })
   })
 
   // Helper to create an org entity for tests
@@ -387,87 +284,6 @@ describe('organizations store', () => {
       // BUG: Current code falls back to '/terminal-sessions' which isn't available.
       // Correct behavior: use first available page ('/courses')
       expect(mockRouterPush).toHaveBeenCalledWith('/courses')
-    })
-  })
-
-  describe('setCurrentOrganization — Bug M6: no guard against redundant API calls', () => {
-    it('should NOT trigger subscription refresh when selecting the already-active org', () => {
-      const store = useOrganizationsStore()
-
-      // Set up the store with an org
-      store.entities.push({
-        id: 'org-1',
-        name: 'test-org',
-        display_name: 'Test Org',
-        organization_type: 'team',
-        owner_user_id: 'user-1',
-        is_active: true,
-        max_groups: 5,
-        max_members: 10,
-        group_count: 0,
-        member_count: 1,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      } as any)
-
-      // First call — should trigger refresh
-      store.setCurrentOrganization('org-1')
-      expect(mockGetCurrentSubscription).toHaveBeenCalledTimes(1)
-      expect(mockLoadEffectiveFeatures).toHaveBeenCalledTimes(1)
-
-      vi.clearAllMocks()
-
-      // Second call with SAME org — should NOT trigger refresh
-      // BUG: setCurrentOrganization does not check if the org is already selected.
-      // It unconditionally fires getCurrentSubscription() and loadEffectiveFeatures()
-      // even when the org ID hasn't changed.
-      store.setCurrentOrganization('org-1')
-      expect(mockGetCurrentSubscription).not.toHaveBeenCalled()
-      expect(mockLoadEffectiveFeatures).not.toHaveBeenCalled()
-    })
-
-    it('should trigger subscription refresh when selecting a DIFFERENT org', () => {
-      const store = useOrganizationsStore()
-
-      store.entities.push(
-        {
-          id: 'org-1',
-          name: 'test-org-1',
-          display_name: 'Test Org 1',
-          organization_type: 'team',
-          owner_user_id: 'user-1',
-          is_active: true,
-          max_groups: 5,
-          max_members: 10,
-          group_count: 0,
-          member_count: 1,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        } as any,
-        {
-          id: 'org-2',
-          name: 'test-org-2',
-          display_name: 'Test Org 2',
-          organization_type: 'team',
-          owner_user_id: 'user-1',
-          is_active: true,
-          max_groups: 5,
-          max_members: 10,
-          group_count: 0,
-          member_count: 1,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        } as any
-      )
-
-      // First call
-      store.setCurrentOrganization('org-1')
-      vi.clearAllMocks()
-
-      // Different org — SHOULD trigger refresh
-      store.setCurrentOrganization('org-2')
-      expect(mockGetCurrentSubscription).toHaveBeenCalledTimes(1)
-      expect(mockLoadEffectiveFeatures).toHaveBeenCalledTimes(1)
     })
   })
 })
