@@ -436,6 +436,7 @@ import { useScenarioStepsStore } from '../../stores/scenarioSteps'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { useClassGroupsStore } from '../../stores/classGroups'
 import { useUserMembershipsStore } from '../../stores/userMemberships'
+import { useCurrentUserStore } from '../../stores/currentUser'
 import { useTranslations } from '../../composables/useTranslations'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useNotification } from '../../composables/useNotification'
@@ -681,6 +682,7 @@ const scenarioStepsStore = useScenarioStepsStore()
 const organizationsStore = useOrganizationsStore()
 const classGroupsStore = useClassGroupsStore()
 const membershipsStore = useUserMembershipsStore()
+const currentUser = useCurrentUserStore()
 const { isAdmin } = useAdminViewMode()
 const notification = useNotification()
 
@@ -822,33 +824,78 @@ const allGroups = computed<any[]>(() => {
   return (anyStore.entities || []) as any[]
 })
 
+// Derive create scopes from data that's already loaded by the auth flow:
+//   - currentUser.userId (owner check)
+//   - currentUser.userRoles (Casbin bindings: `organization_manager:<id>`,
+//     `class-group_manager:<id>`)
+//   - membershipsStore.orgMemberships / groupMemberships (DB-backed, may
+//     come from a separate /me/memberships endpoint when available)
+//
+// Union of all three so a manageable scope shows up via whichever signal
+// was successful. Robust against an outage of any single source.
 const orgScopes = computed<Array<{ id: string; name: string }>>(() => {
   const out: Array<{ id: string; name: string }> = []
+  const seen = new Set<string>()
+  const userId = currentUser.userId
+  const roles = currentUser.userRoles || []
+
+  const add = (id: string, name?: string) => {
+    if (seen.has(id)) return
+    seen.add(id)
+    out.push({ id, name: name || `Organization ${id.slice(0, 8)}` })
+  }
+
+  // Source 1: owner of the organization (sync — userOrgs already loaded)
+  for (const org of organizationsStore.userOrganizations) {
+    if (org.owner_user_id === userId) {
+      add(org.id, org.display_name || org.name)
+    }
+  }
+  // Source 2: Casbin role binding `organization_manager:<orgId>`
+  for (const role of roles) {
+    if (role.startsWith('organization_manager:')) {
+      const orgId = role.slice('organization_manager:'.length)
+      const org = organizationsStore.userOrganizations.find(o => o.id === orgId)
+      add(orgId, org?.display_name || org?.name)
+    }
+  }
+  // Source 3: /me/memberships (best-effort — may 404)
   for (const m of membershipsStore.orgMemberships) {
     if (m.role !== 'manager' && m.role !== 'owner') continue
     const org = organizationsStore.userOrganizations.find(o => o.id === m.organization_id)
-    if (org) {
-      out.push({ id: org.id, name: org.display_name || org.name })
-    } else {
-      // Fallback: organization list not yet loaded — show short id so the
-      // user still gets the scope option (mirrors groupScopes behavior).
-      out.push({ id: m.organization_id, name: `Organization ${String(m.organization_id).slice(0, 8)}` })
-    }
+    add(m.organization_id, org?.display_name || org?.name)
   }
   return out
 })
 
 const groupScopes = computed<Array<{ id: string; name: string }>>(() => {
   const out: Array<{ id: string; name: string }> = []
+  const seen = new Set<string>()
+  const userId = currentUser.userId
+  const roles = currentUser.userRoles || []
+
+  const add = (id: string, name?: string) => {
+    if (seen.has(id)) return
+    seen.add(id)
+    out.push({ id, name: name || `Group ${id.slice(0, 8)}` })
+  }
+
+  for (const group of allGroups.value) {
+    if ((group as any).owner_user_id === userId) {
+      add(group.id, group.display_name || group.name)
+    }
+  }
+  for (const role of roles) {
+    if (role.startsWith('class-group_manager:')) {
+      const gid = role.slice('class-group_manager:'.length)
+      const g = allGroups.value.find((x: any) => x.id === gid)
+      add(gid, g?.display_name || g?.name)
+    }
+  }
   for (const m of membershipsStore.groupMemberships) {
     if (m.role !== 'manager' && m.role !== 'owner') continue
-    const group = allGroups.value.find((g: any) => g.id === m.group_id)
-    if (group) {
-      out.push({ id: group.id, name: group.display_name || group.name })
-    } else {
-      // Fallback: group list not yet available — show short id so user still sees something
-      out.push({ id: m.group_id, name: `Group ${String(m.group_id).slice(0, 8)}` })
-    }
+    const g = allGroups.value.find((x: any) => x.id === m.group_id)
+    add(m.group_id, g?.display_name || g?.name)
   }
   return out
 })
