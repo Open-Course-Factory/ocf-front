@@ -18,7 +18,7 @@
             {{ scenario.name }} - {{ scenario.title }}
           </option>
         </select>
-        <button @click="handleCreateNew" class="btn-icon btn-create" :title="t('scenarioEditor.createNew')">
+        <button v-if="canCreateScenario" @click="handleCreateNew" class="btn-icon btn-create" :title="t('scenarioEditor.createNew')">
           <i class="fas fa-plus"></i>
         </button>
       </div>
@@ -205,26 +205,33 @@
           ></textarea>
         </div>
 
-        <!-- Org selector -->
-        <div class="form-group" v-if="isAdmin">
-          <label>{{ t('scenarioEditor.orgLabel') }}</label>
-          <select v-model="editingScenario.organization_id" class="form-control">
-            <option :value="null">{{ t('scenarioEditor.platformOnly') }}</option>
-            <option
-              v-for="org in organizationsStore.userOrganizations"
-              :key="org.id"
-              :value="org.id"
-            >
-              {{ org.display_name || org.name }}
-            </option>
+        <!-- Scope picker (creation only) -->
+        <div class="form-group" v-if="editingScenario.isNew && availableCreateScopes.length > 0">
+          <label for="create-scope">{{ t('scenarioEditor.createScope') }}</label>
+          <select id="create-scope" v-model="editingScenario._scopeKey" class="form-control">
+            <optgroup v-if="platformScopeAvailable" :label="t('scenarioEditor.scopePlatform')">
+              <option value="platform:*">🛡️ {{ t('scenarioEditor.platformOnly') }}</option>
+            </optgroup>
+            <optgroup v-if="orgScopes.length" :label="t('scenarioEditor.scopeOrganizations')">
+              <option v-for="s in orgScopes" :key="`org:${s.id}`" :value="`org:${s.id}`">
+                {{ s.name }}
+              </option>
+            </optgroup>
+            <optgroup v-if="groupScopes.length" :label="t('scenarioEditor.scopeGroups')">
+              <option v-for="s in groupScopes" :key="`group:${s.id}`" :value="`group:${s.id}`">
+                {{ s.name }}
+              </option>
+            </optgroup>
           </select>
+          <p class="form-hint">{{ scopeHint }}</p>
         </div>
-        <div class="form-group" v-else-if="organizationsStore.currentOrganization">
+        <!-- Read-only org indicator (edit mode) -->
+        <div class="form-group" v-else-if="!editingScenario.isNew && currentScenarioOrgLabel">
           <label>{{ t('scenarioEditor.orgLabel') }}</label>
           <input
             type="text"
             class="form-control"
-            :value="organizationsStore.currentOrganization.display_name || organizationsStore.currentOrganization.name"
+            :value="currentScenarioOrgLabel"
             disabled
           />
         </div>
@@ -427,6 +434,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useScenariosStore } from '../../stores/scenarios'
 import { useScenarioStepsStore } from '../../stores/scenarioSteps'
 import { useOrganizationsStore } from '../../stores/organizations'
+import { useClassGroupsStore } from '../../stores/classGroups'
+import { useUserMembershipsStore } from '../../stores/userMemberships'
 import { useTranslations } from '../../composables/useTranslations'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useNotification } from '../../composables/useNotification'
@@ -509,6 +518,13 @@ const { t } = useTranslations({
       selectTargetOrg: 'Select target organization',
       platformOnly: 'Platform (admin only)',
       copying: 'Copying...',
+      createScope: 'Where to create',
+      scopePlatform: 'Platform',
+      scopeOrganizations: 'Organizations',
+      scopeGroups: 'Groups',
+      scopeHintPlatform: 'Visible to all platform users (admin only).',
+      scopeHintOrg: 'Available to all members of {name}.',
+      scopeHintGroup: 'Auto-assigned to {name}; lives in the group\'s organization.',
       // Scenario modal tabs
       tabGeneral: 'General',
       tabContent: 'Content',
@@ -610,6 +626,13 @@ const { t } = useTranslations({
       selectTargetOrg: 'Sélectionner l\'organisation cible',
       platformOnly: 'Plateforme (admin uniquement)',
       copying: 'Copie en cours...',
+      createScope: 'Emplacement de création',
+      scopePlatform: 'Plateforme',
+      scopeOrganizations: 'Organisations',
+      scopeGroups: 'Groupes',
+      scopeHintPlatform: 'Visible par tous les utilisateurs de la plateforme (admin uniquement).',
+      scopeHintOrg: 'Disponible pour tous les membres de {name}.',
+      scopeHintGroup: 'Auto-assigné à {name} ; rattaché à l\'organisation du groupe.',
       // Onglets du modal scénario
       tabGeneral: 'Général',
       tabContent: 'Contenu',
@@ -656,6 +679,8 @@ const { t } = useTranslations({
 const scenariosStore = useScenariosStore()
 const scenarioStepsStore = useScenarioStepsStore()
 const organizationsStore = useOrganizationsStore()
+const classGroupsStore = useClassGroupsStore()
+const membershipsStore = useUserMembershipsStore()
 const { isAdmin } = useAdminViewMode()
 const notification = useNotification()
 
@@ -781,6 +806,117 @@ const copyTargetOrgs = computed(() => {
   )
 })
 
+// Scope picker for creating new scenarios.
+// A scope describes where the new scenario lives. Endpoints are selected accordingly:
+//   - platform → POST /scenarios            (admin only)
+//   - org      → POST /organizations/:id/scenarios  (org manager+)
+//   - group    → POST /groups/:id/scenarios         (group manager+, auto-assigns)
+type CreateScope =
+  | { kind: 'platform' }
+  | { kind: 'org', id: string, name: string }
+  | { kind: 'group', id: string, name: string }
+
+const allGroups = computed<any[]>(() => {
+  // classGroupsStore.entities (from useBaseStore) holds the loaded list
+  const anyStore = classGroupsStore as any
+  return (anyStore.entities || []) as any[]
+})
+
+const orgScopes = computed<Array<{ id: string; name: string }>>(() => {
+  const out: Array<{ id: string; name: string }> = []
+  for (const m of membershipsStore.orgMemberships) {
+    if (m.role !== 'manager' && m.role !== 'owner') continue
+    const org = organizationsStore.userOrganizations.find(o => o.id === m.organization_id)
+    if (org) {
+      out.push({ id: org.id, name: org.display_name || org.name })
+    }
+  }
+  return out
+})
+
+const groupScopes = computed<Array<{ id: string; name: string }>>(() => {
+  const out: Array<{ id: string; name: string }> = []
+  for (const m of membershipsStore.groupMemberships) {
+    if (m.role !== 'manager' && m.role !== 'owner') continue
+    const group = allGroups.value.find((g: any) => g.id === m.group_id)
+    if (group) {
+      out.push({ id: group.id, name: group.display_name || group.name })
+    } else {
+      // Fallback: group list not yet available — show short id so user still sees something
+      out.push({ id: m.group_id, name: `Group ${String(m.group_id).slice(0, 8)}` })
+    }
+  }
+  return out
+})
+
+const platformScopeAvailable = computed(() => isAdmin.value)
+
+const availableCreateScopes = computed<CreateScope[]>(() => {
+  const scopes: CreateScope[] = []
+  if (platformScopeAvailable.value) scopes.push({ kind: 'platform' })
+  for (const s of orgScopes.value) scopes.push({ kind: 'org', id: s.id, name: s.name })
+  for (const s of groupScopes.value) scopes.push({ kind: 'group', id: s.id, name: s.name })
+  return scopes
+})
+
+const canCreateScenario = computed(() => availableCreateScopes.value.length > 0)
+
+const parseScopeKey = (key: string | undefined | null): CreateScope | null => {
+  if (!key) return null
+  const idx = key.indexOf(':')
+  if (idx === -1) return null
+  const kind = key.slice(0, idx)
+  const id = key.slice(idx + 1)
+  if (kind === 'platform') return { kind: 'platform' }
+  if (kind === 'org') {
+    const org = organizationsStore.userOrganizations.find(o => o.id === id)
+    return { kind: 'org', id, name: org?.display_name || org?.name || id }
+  }
+  if (kind === 'group') {
+    const group = allGroups.value.find((g: any) => g.id === id)
+    return { kind: 'group', id, name: group?.display_name || group?.name || id }
+  }
+  return null
+}
+
+const pickDefaultScopeKey = (): string => {
+  // 1. currentOrganization if user can manage it
+  const currentOrgId = organizationsStore.currentOrganization?.id
+  if (currentOrgId && membershipsStore.canManageOrg(currentOrgId)) {
+    return `org:${currentOrgId}`
+  }
+  // 2. first available org scope
+  if (orgScopes.value.length > 0) {
+    return `org:${orgScopes.value[0].id}`
+  }
+  // 3. first available group scope
+  if (groupScopes.value.length > 0) {
+    return `group:${groupScopes.value[0].id}`
+  }
+  // 4. platform if admin
+  if (platformScopeAvailable.value) return 'platform:*'
+  return ''
+}
+
+const scopeHint = computed(() => {
+  const scope = parseScopeKey(editingScenario.value?._scopeKey)
+  if (!scope) return ''
+  if (scope.kind === 'platform') return t('scenarioEditor.scopeHintPlatform')
+  if (scope.kind === 'org') {
+    return t('scenarioEditor.scopeHintOrg').replace('{name}', scope.name)
+  }
+  return t('scenarioEditor.scopeHintGroup').replace('{name}', scope.name)
+})
+
+const currentScenarioOrgLabel = computed<string | null>(() => {
+  if (!currentScenario.value) return null
+  if (!currentScenario.value.organization_id) {
+    return isAdmin.value ? t('scenarioEditor.platformOnly') : null
+  }
+  const org = organizationsStore.getOrganizationById(currentScenario.value.organization_id)
+  return org?.display_name || org?.name || null
+})
+
 // Resize state
 const treePanelWidth = ref(280)
 const isResizing = ref(false)
@@ -795,7 +931,15 @@ const scenarioEditModalTitle = computed(() => {
 
 // Load all scenarios
 onMounted(async () => {
-  await scenariosStore.loadEntities('/scenarios?include=steps')
+  // Fire scenarios + scope-picker prerequisites in parallel.
+  // Memberships and groups are required to render the create-scope picker;
+  // organizations are required to resolve org names. All three are independent.
+  await Promise.all([
+    scenariosStore.loadEntities('/scenarios?include=steps'),
+    organizationsStore.loadOrganizations().catch(() => null),
+    classGroupsStore.loadEntities().catch(() => null),
+    membershipsStore.ensureLoaded().catch(() => null),
+  ])
 
   // Check if scenarioId is in URL query params
   const scenarioIdFromUrl = route.query.scenarioId as string | undefined
@@ -1009,7 +1153,7 @@ const handleCreateNew = () => {
     crash_traps: false,
     gsh_enabled: false,
     is_public: false,
-    organization_id: isAdmin.value ? null : (organizationsStore.currentOrganization?.id || null),
+    _scopeKey: pickDefaultScopeKey(),
     isNew: true
   }
   activeScenarioTab.value = 'general'
@@ -1311,11 +1455,32 @@ const handleSaveScenario = async () => {
     }
 
     if (editingScenario.value.isNew) {
-      // Include organization_id when creating
-      if (editingScenario.value.organization_id) {
-        entityData.organization_id = editingScenario.value.organization_id
+      // Dispatch on scope: platform / organization / group → distinct endpoints.
+      const scope = parseScopeKey(editingScenario.value._scopeKey)
+      let result: any = null
+
+      if (!scope) {
+        modalError.value = t('scenarioEditor.saveError')
+        isSaving.value = false
+        return
       }
-      const result = await scenariosStore.createEntity('/scenarios', entityData)
+
+      if (scope.kind === 'platform') {
+        // Admin-only platform scenario (no org)
+        result = await scenariosStore.createEntity('/scenarios', entityData)
+      } else if (scope.kind === 'org') {
+        // Org-scoped: org_id is in the URL path; strip from body
+        const body = { ...entityData }
+        delete body.organization_id
+        const response = await axios.post(`/organizations/${scope.id}/scenarios`, body)
+        result = response.data?.data || response.data
+      } else if (scope.kind === 'group') {
+        // Group-scoped: group_id is in the URL path; auto-creates assignment
+        const body = { ...entityData }
+        delete body.organization_id
+        const response = await axios.post(`/groups/${scope.id}/scenarios`, body)
+        result = response.data?.data || response.data
+      }
 
       if (result) {
         const newId = result.id || result.data?.id
