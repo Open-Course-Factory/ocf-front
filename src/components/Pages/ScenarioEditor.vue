@@ -857,6 +857,25 @@ const handleScenarioSelect = async () => {
   }
 }
 
+// Deserialize a question's `options` field. The backend stores `options` as a
+// JSON string (TEXT column); the frontend QuestionData expects `options: string[]`.
+// Tolerates payloads that already arrive as arrays (e.g. demo mode) or invalid JSON.
+const deserializeQuestion = (q: any) => {
+  const raw = q?.options
+  let options: string[] = []
+  if (Array.isArray(raw)) {
+    options = raw
+  } else if (typeof raw === 'string' && raw.length > 0) {
+    try {
+      const parsed = JSON.parse(raw)
+      options = Array.isArray(parsed) ? parsed : []
+    } catch {
+      options = []
+    }
+  }
+  return { ...q, options }
+}
+
 // Convert scenario to nodes and edges (vertical layout)
 const convertScenarioToNodes = (scenario: any) => {
   const newNodes: any[] = []
@@ -924,9 +943,10 @@ const convertScenarioToNodes = (scenario: any) => {
         has_flag: step.has_flag,
         flag_path: step.flag_path,
         flag_level: step.flag_level,
-        questions: step.questions,
         isNew: false,
-        ...step
+        ...step,
+        // Deserialize `options` JSON-string → array (overrides the spread above)
+        questions: Array.isArray(step.questions) ? step.questions.map(deserializeQuestion) : []
       }
     }
     newNodes.push(stepNode)
@@ -1241,7 +1261,9 @@ const openEditModal = async (node: any) => {
         node.data.foreground_script = fullStep.foreground_script || ''
         node.data.text_content = fullStep.text_content || node.data.text_content || ''
         node.data.hint_content = fullStep.hint_content || node.data.hint_content || ''
-        node.data.questions = fullStep.questions || node.data.questions || []
+        node.data.questions = Array.isArray(fullStep.questions)
+          ? fullStep.questions.map(deserializeQuestion)
+          : (Array.isArray(node.data.questions) ? node.data.questions : [])
         node.data._scriptsLoaded = true
       } catch (err) {
         console.error('Failed to load step scripts:', err)
@@ -1355,14 +1377,83 @@ const closeStepEditModal = () => {
   editingStepNodeId.value = null
 }
 
+// Sync the quiz questions of a step against the dedicated
+// /scenario-step-questions endpoint. Diff strategy: match by `id`.
+//   - new (no id)             → POST
+//   - existing, kept          → PATCH (always; cheap, avoids deep diff)
+//   - existing, removed       → DELETE
+// Independent calls run in parallel via Promise.all. Failures bubble up.
+const syncStepQuestions = async (
+  stepId: string,
+  oldQuestions: any[],
+  newQuestions: any[]
+): Promise<void> => {
+  const oldList = Array.isArray(oldQuestions) ? oldQuestions : []
+  const newList = Array.isArray(newQuestions) ? newQuestions : []
+  const newIds = new Set(newList.map(q => q?.id).filter(Boolean))
+
+  const ops: Promise<any>[] = []
+
+  // DELETE: questions that had an id but are no longer present
+  oldList.forEach(oldQ => {
+    if (oldQ?.id && !newIds.has(oldQ.id)) {
+      ops.push(axios.delete(`/scenario-step-questions/${oldQ.id}`))
+    }
+  })
+
+  // CREATE / UPDATE
+  newList.forEach((q, idx) => {
+    const order = idx + 1 // 1-based, matches backend convention
+    const optionsJson = JSON.stringify(Array.isArray(q.options) ? q.options : [])
+    if (q?.id) {
+      // PATCH existing question
+      ops.push(axios.patch(`/scenario-step-questions/${q.id}`, {
+        order,
+        question_text: q.question_text || '',
+        question_type: q.question_type || 'multiple_choice',
+        options: optionsJson,
+        correct_answer: q.correct_answer ?? '',
+        explanation: q.explanation || '',
+        points: q.points || 1
+      }))
+    } else {
+      // POST new question
+      ops.push(axios.post('/scenario-step-questions', {
+        step_id: stepId,
+        order,
+        question_text: q.question_text || '',
+        question_type: q.question_type || 'multiple_choice',
+        options: optionsJson,
+        correct_answer: q.correct_answer ?? '',
+        explanation: q.explanation || '',
+        points: q.points || 1
+      }))
+    }
+  })
+
+  if (ops.length > 0) {
+    await Promise.all(ops)
+  }
+}
+
 const handleSaveStep = async (formData: any) => {
   try {
-    const stepData: Record<string, any> = { ...formData }
+    // The /scenario-steps endpoint has no Questions field — extract them
+    // and persist via the dedicated /scenario-step-questions endpoint instead.
+    const { questions: newQuestions, ...stepFields } = formData
+    const stepData: Record<string, any> = { ...stepFields }
 
     // Include step_type from the editing step's data
     if (editingStep.value?.step_type) {
       stepData.step_type = editingStep.value.step_type
     }
+
+    // Capture pre-save questions for the diff (existing IDs come from the server)
+    const oldQuestions: any[] = Array.isArray(editingStep.value?.questions)
+      ? editingStep.value.questions
+      : []
+
+    let stepId: string | undefined
 
     if (editingStepIsNew.value) {
       // New step: find parent scenario from edges
@@ -1382,12 +1473,20 @@ const handleSaveStep = async (formData: any) => {
         }
       }
 
-      await scenarioStepsStore.createEntity('/scenario-steps', stepData)
+      const created = await scenarioStepsStore.createEntity('/scenario-steps', stepData)
+      stepId = created?.id || created?.data?.id
     } else {
-      const entityId = editingStep.value?.entityId || editingStep.value?.id
-      if (entityId) {
-        await scenarioStepsStore.updateEntity('/scenario-steps', entityId, stepData)
+      stepId = editingStep.value?.entityId || editingStep.value?.id
+      if (stepId) {
+        await scenarioStepsStore.updateEntity('/scenario-steps', stepId, stepData)
       }
+    }
+
+    // Sync quiz questions only when this is a quiz step and we resolved the step id
+    const isQuizStep = (editingStep.value?.step_type === 'quiz') ||
+      (Array.isArray(newQuestions) && newQuestions.length > 0)
+    if (stepId && isQuizStep) {
+      await syncStepQuestions(stepId, oldQuestions, newQuestions || [])
     }
 
     // Reload scenario to get fresh data
