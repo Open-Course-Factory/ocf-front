@@ -449,14 +449,37 @@
                   </li>
                 </ul>
 
-                <button
-                  v-if="!quizResult.next_step"
-                  class="btn-secondary"
-                  @click="resetQuiz"
-                >
-                  <i class="fas fa-redo"></i>
-                  {{ t('scenarioPanel.tryQuizAgain') }}
-                </button>
+                <!--
+                  Learning mode (show_immediate_feedback=true): no auto-advance.
+                  The student reads the breakdown, then clicks Next / Finish.
+                  Optional "Try again" lets them retake before moving on.
+
+                  Exam mode (show_immediate_feedback=false): auto-advance fires
+                  in handleSubmitQuiz; no buttons shown here (student saw their
+                  score during the 2s pause and the panel transitions).
+                -->
+                <div v-if="currentStep!.show_immediate_feedback" class="quiz-results-actions">
+                  <button class="btn-secondary" @click="resetQuiz">
+                    <i class="fas fa-redo"></i>
+                    {{ t('scenarioPanel.tryQuizAgain') }}
+                  </button>
+                  <button
+                    v-if="quizResult.next_step !== undefined && quizResult.next_step !== null"
+                    class="verify-btn"
+                    @click="advanceFromQuiz"
+                  >
+                    {{ t('scenarioPanel.nextStepBtn') }}
+                    <i class="fas fa-arrow-right"></i>
+                  </button>
+                  <button
+                    v-else
+                    class="verify-btn"
+                    @click="finishFromQuiz"
+                  >
+                    <i class="fas fa-flag-checkered"></i>
+                    {{ t('scenarioPanel.finishScenario') }}
+                  </button>
+                </div>
               </div>
 
               <div v-if="quizSubmitError" class="verify-result failed" role="status" aria-live="polite">
@@ -600,6 +623,8 @@ const { t } = useTranslations({
       quizPosition: 'Question {n} of {total}',
       submitQuiz: 'Submit answers',
       tryQuizAgain: 'Try the quiz again',
+      nextStepBtn: 'Next step',
+      finishScenario: 'Finish scenario',
       quizScore: 'Score: {score}% ({correct}/{total} correct)',
       quizSubmitError: 'Failed to submit your answers. Please try again.',
       correctAnswerWas: 'Correct answer:',
@@ -673,6 +698,8 @@ const { t } = useTranslations({
       quizPosition: 'Question {n} sur {total}',
       submitQuiz: 'Soumettre les réponses',
       tryQuizAgain: 'Refaire le quiz',
+      nextStepBtn: 'Étape suivante',
+      finishScenario: 'Terminer le scénario',
       quizScore: 'Score : {score} % ({correct}/{total} bonnes réponses)',
       quizSubmitError: 'Échec de l\'envoi de vos réponses. Réessayez.',
       correctAnswerWas: 'Bonne réponse :',
@@ -1474,8 +1501,13 @@ async function handleSubmitQuiz() {
     quizResult.value = result
     clearQuizStorage()
 
-    // The backend advances the session pointer when next_step is set.
-    // Mirror the verify-pass flow: brief "Step validated!" then load next.
+    // Auto-advance only in exam mode (show_immediate_feedback=false).
+    // In learning mode the student stays on the results screen and clicks
+    // "Next step" or "Finish" themselves so they can read the breakdown.
+    if (currentStep.value?.show_immediate_feedback) {
+      return
+    }
+
     if (result.next_step !== undefined && result.next_step !== null) {
       isTransitioning.value = true
       transitionPhase.value = 'validated'
@@ -1484,12 +1516,12 @@ async function handleSubmitQuiz() {
         loadCurrentStep()
       }, 2000)
     } else {
-      // Last step submitted — show completion (after a short delay so the
-      // student can read their score/breakdown if displayed)
+      // Last step submitted in exam mode — show completion after a brief
+      // pause so the student can read their score.
       setTimeout(() => {
         isSessionCompleted.value = true
         emit('session-completed')
-      }, currentStep.value?.show_immediate_feedback ? 4000 : 2000)
+      }, 2000)
     }
   } catch (err: any) {
     console.error('Submit quiz failed:', err)
@@ -1506,6 +1538,22 @@ async function handleSubmitQuiz() {
 function resetQuiz() {
   resetQuizState()
   clearQuizStorage()
+}
+
+// Learning-mode quiz: student manually advances after reading the breakdown.
+function advanceFromQuiz() {
+  if (!quizResult.value) return
+  isTransitioning.value = true
+  transitionPhase.value = 'validated'
+  setTimeout(() => {
+    transitionPhase.value = 'loading'
+    loadCurrentStep()
+  }, 600)
+}
+
+function finishFromQuiz() {
+  isSessionCompleted.value = true
+  emit('session-completed')
 }
 
 // Start the elapsed timer when session start time becomes available
@@ -2852,6 +2900,12 @@ defineExpose({
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+}
+
+.quiz-results-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
 }
 
 .quiz-results-score {
