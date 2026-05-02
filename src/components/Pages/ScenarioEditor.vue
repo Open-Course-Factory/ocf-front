@@ -943,6 +943,7 @@ const convertScenarioToNodes = (scenario: any) => {
         has_flag: step.has_flag,
         flag_path: step.flag_path,
         flag_level: step.flag_level,
+        show_immediate_feedback: step.show_immediate_feedback ?? false,
         isNew: false,
         ...step,
         // Deserialize `options` JSON-string → array (overrides the spread above)
@@ -1261,6 +1262,7 @@ const openEditModal = async (node: any) => {
         node.data.foreground_script = fullStep.foreground_script || ''
         node.data.text_content = fullStep.text_content || node.data.text_content || ''
         node.data.hint_content = fullStep.hint_content || node.data.hint_content || ''
+        node.data.show_immediate_feedback = fullStep.show_immediate_feedback ?? node.data.show_immediate_feedback ?? false
         node.data.questions = Array.isArray(fullStep.questions)
           ? fullStep.questions.map(deserializeQuestion)
           : (Array.isArray(node.data.questions) ? node.data.questions : [])

@@ -187,6 +187,15 @@
             </div>
           </header>
 
+          <!-- Quiz-wide settings -->
+          <div class="quiz-settings">
+            <label class="quiz-toggle">
+              <input type="checkbox" v-model="formData.show_immediate_feedback" />
+              <span>{{ t('quizEdit.showImmediateFeedback') }}</span>
+            </label>
+            <p class="form-hint">{{ t('quizEdit.showImmediateFeedbackHint') }}</p>
+          </div>
+
           <!-- Empty state -->
           <div
             v-if="formData.questions.length === 0"
@@ -619,7 +628,9 @@ const { t } = useTranslations({
       confirmTypeChangeTitle: 'Change question type?',
       confirmTypeChangeBody: 'Switching from {from} to {to} will discard your current options. This cannot be undone.',
       confirmTypeChangeConfirm: 'Yes, change type',
-      cancel: 'Cancel'
+      cancel: 'Cancel',
+      showImmediateFeedback: 'Show feedback after submission',
+      showImmediateFeedbackHint: 'Off (default) = exam mode: students see only their score. On = learning mode: students see the correct answers and explanations.'
     }
   },
   fr: {
@@ -706,7 +717,9 @@ const { t } = useTranslations({
       confirmTypeChangeTitle: 'Changer le type de question ?',
       confirmTypeChangeBody: 'Passer de {from} à {to} effacera les options actuelles. Cette action est irréversible.',
       confirmTypeChangeConfirm: 'Oui, changer le type',
-      cancel: 'Annuler'
+      cancel: 'Annuler',
+      showImmediateFeedback: 'Afficher le retour après soumission',
+      showImmediateFeedbackHint: 'Désactivé (défaut) = mode examen : les étudiants ne voient que leur score. Activé = mode apprentissage : les étudiants voient les bonnes réponses et explications.'
     }
   }
 })
@@ -829,6 +842,7 @@ const formData = ref<Record<string, any>>({
   has_flag: false,
   flag_path: '',
   flag_level: 0,
+  show_immediate_feedback: false,
   questions: [] as QuestionData[]
 })
 
@@ -878,6 +892,7 @@ watch(() => [props.visible, props.stepData], () => {
         has_flag: props.stepData.has_flag || false,
         flag_path: props.stepData.flag_path || '',
         flag_level: props.stepData.flag_level || 0,
+        show_immediate_feedback: props.stepData.show_immediate_feedback ?? false,
         questions: (props.stepData.questions || []).map((q: any) => ({
           id: q.id,
           question_text: q.question_text || '',
@@ -900,6 +915,7 @@ watch(() => [props.visible, props.stepData], () => {
         has_flag: false,
         flag_path: '',
         flag_level: 0,
+        show_immediate_feedback: false,
         questions: []
       }
     }
@@ -1302,6 +1318,39 @@ const handleSave = () => {
   display: flex;
   gap: var(--spacing-xs);
   flex-shrink: 0;
+}
+
+/* Quiz-wide settings (e.g. immediate-feedback toggle) */
+.quiz-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--scenario-node-quiz-bg);
+  border: 1px solid var(--scenario-node-quiz);
+  border-radius: var(--border-radius-md);
+}
+
+.quiz-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.quiz-toggle input[type="checkbox"] {
+  margin: 0;
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--scenario-node-quiz);
+  cursor: pointer;
+}
+
+.quiz-settings .form-hint {
+  margin: 0;
 }
 
 .questions-tab__empty {
