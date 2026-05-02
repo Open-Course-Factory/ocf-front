@@ -1499,9 +1499,15 @@ const handleSaveStep = async (formData: any) => {
       await syncStepQuestions(stepId, oldQuestions, newQuestions || [])
     }
 
-    // Reload scenario to get fresh data
+    // Reload scenario to get fresh data — both for the canvas
+    // (handleScenarioSelect rebuilds nodes from a single-scenario fetch)
+    // and for the right-side step list panel (which reads from the
+    // scenarios store, not from currentScenario).
     if (selectedScenarioId.value) {
-      await handleScenarioSelect()
+      await Promise.all([
+        handleScenarioSelect(),
+        scenariosStore.loadEntities('/scenarios?include=steps')
+      ])
     }
 
     closeStepEditModal()
