@@ -210,7 +210,6 @@
           </div>
 
           <!-- Question cards -->
-          <!-- TODO: drag-reorder for questions and options once vue-draggable-plus is added -->
           <ul
             v-else
             class="questions-tab__list"
@@ -222,8 +221,17 @@
               v-for="(question, qIdx) in formData.questions"
               :key="`q-${qIdx}`"
               class="question-card"
-              :class="{ 'is-collapsed': collapsedQuestions.has(qIdx) }"
+              :class="{
+                'is-collapsed': collapsedQuestions.has(qIdx),
+                'is-dragging': dragSourceIdx === qIdx,
+                'is-drop-target': dragOverIdx === qIdx && dragSourceIdx !== qIdx
+              }"
               :aria-labelledby="`q-title-${qIdx}`"
+              :draggable="true"
+              @dragstart="handleQuestionDragStart($event, qIdx)"
+              @dragover.prevent="handleQuestionDragOver($event, qIdx)"
+              @drop.prevent="handleQuestionDrop($event, qIdx)"
+              @dragend="handleQuestionDragEnd"
             >
               <header
                 class="question-card__header"
@@ -849,6 +857,42 @@ const formData = ref<Record<string, any>>({
 const collapsedQuestions = ref(new Set<number>())
 const pendingTypeChange = ref<{ qIdx: number; from: QuestionType; to: QuestionType } | null>(null)
 
+// Native HTML5 drag-and-drop for question reordering. Same primitive as
+// the canvas library (no extra dependency). The `order` field is recomputed
+// from the array index by syncStepQuestions on save.
+const dragSourceIdx = ref<number | null>(null)
+const dragOverIdx = ref<number | null>(null)
+
+function handleQuestionDragStart(e: DragEvent, idx: number) {
+  if (!e.dataTransfer) return
+  dragSourceIdx.value = idx
+  e.dataTransfer.effectAllowed = 'move'
+  e.dataTransfer.setData('text/x-quiz-question-idx', String(idx))
+}
+
+function handleQuestionDragOver(e: DragEvent, idx: number) {
+  if (dragSourceIdx.value === null) return
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+  dragOverIdx.value = idx
+}
+
+function handleQuestionDrop(_e: DragEvent, targetIdx: number) {
+  const src = dragSourceIdx.value
+  dragSourceIdx.value = null
+  dragOverIdx.value = null
+  if (src === null || src === targetIdx) return
+  const arr = formData.value.questions as QuestionData[]
+  const [moved] = arr.splice(src, 1)
+  arr.splice(targetIdx, 0, moved)
+  // Indices shifted — clear collapse state to avoid hiding wrong cards.
+  collapsedQuestions.value = new Set()
+}
+
+function handleQuestionDragEnd() {
+  dragSourceIdx.value = null
+  dragOverIdx.value = null
+}
+
 // Deserialize correct_answer from backend string format → in-memory typed value
 const deserializeCorrectAnswer = (q: any): StoredCorrectAnswer => {
   const t_ = (q.question_type as QuestionType) || 'multiple_choice'
@@ -1392,6 +1436,16 @@ const handleSave = () => {
 .question-card:focus-within {
   border-color: var(--scenario-node-quiz);
   box-shadow: var(--shadow-focus-primary, 0 0 0 3px var(--scenario-node-quiz-bg));
+}
+
+/* Drag and drop feedback */
+.question-card.is-dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+
+.question-card.is-drop-target {
+  border-top: 3px solid var(--scenario-node-quiz);
 }
 
 .question-card::before {
