@@ -10,11 +10,38 @@ export interface CurrentStepResponse {
   total_steps: number
   title: string
   text?: string
+  text_content?: string
+  step_type?: string // 'terminal' | 'flag' | 'info' | 'quiz' (defaults to 'terminal' when empty)
+  show_immediate_feedback?: boolean // quiz only
+  questions?: CurrentStepQuestion[] // quiz only
   hint?: string
   status: string // 'locked' | 'active' | 'completed' | 'skipped'
   has_flag: boolean
   hints_total_count: number
   hints_revealed: number
+}
+
+export interface CurrentStepQuestion {
+  id: string
+  order: number
+  question_text: string
+  question_type: string // 'multiple_choice' | 'multi_answer' | 'true_false' | 'free_text'
+  options?: string | string[] // backend sends JSON-encoded string for choice types; may be array if pre-parsed
+}
+
+export interface QuizQuestionResult {
+  question_id: string
+  correct: boolean
+  correct_answer?: string
+  explanation?: string
+}
+
+export interface SubmitQuizResponse {
+  score: number // 0.0 - 1.0
+  correct_count: number
+  total: number
+  per_question_results: QuizQuestionResult[]
+  next_step?: number
 }
 
 export interface RevealHintResponse {
@@ -125,6 +152,11 @@ export const scenarioSessionService = {
 
   async submitFlag(sessionId: string, flag: string): Promise<SubmitFlagResponse> {
     const response = await axios.post(`/scenario-sessions/${sessionId}/submit-flag`, { flag })
+    return response.data
+  },
+
+  async submitQuiz(sessionId: string, answers: Record<string, string>): Promise<SubmitQuizResponse> {
+    const response = await axios.post(`/scenario-sessions/${sessionId}/submit-quiz`, { answers })
     return response.data
   },
 

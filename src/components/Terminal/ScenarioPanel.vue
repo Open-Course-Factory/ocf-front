@@ -107,6 +107,17 @@
 
       <!-- Active step content -->
       <template v-else-if="currentStep">
+        <!-- Step type indicator -->
+        <div
+          v-if="stepTypeMeta"
+          class="step-type-chip"
+          :class="`step-type-chip--${stepTypeMeta.key}`"
+          :style="{ '--step-type-color': stepTypeMeta.color, '--step-type-bg': stepTypeMeta.bg } as any"
+        >
+          <i :class="stepTypeMeta.icon"></i>
+          <span>{{ stepTypeMeta.label }}</span>
+        </div>
+
         <!-- Progress indicator -->
         <div class="progress-bar">
           <div class="progress-bar-top">
@@ -182,6 +193,7 @@
             <button
               v-if="revealedHints.length < displayedStep!.hints_total_count"
               class="hint-toggle"
+              :class="{ 'hint-nudge': hintNudgeActive }"
               :disabled="isRevealingHint"
               @click="handleRevealNextHint"
             >
@@ -208,57 +220,253 @@
             <div v-if="showHint" class="hint-content markdown-content" v-html="renderedDisplayedHintText"></div>
           </div>
 
-          <!-- Verify button (hidden when reviewing previous steps or in review mode) -->
+          <!-- Action area (hidden when reviewing previous steps or in review mode) -->
           <template v-if="!reviewingStep && !isReviewMode">
-          <button
-            v-if="!currentStep.has_flag"
-            class="verify-btn"
-            :disabled="isVerifying || !isActive"
-            @click="handleVerify"
-          >
-            <i :class="isVerifying ? 'fas fa-spinner fa-spin' : 'fas fa-check-circle'"></i>
-            {{ isVerifying ? t('scenarioPanel.verifying') : t('scenarioPanel.verify') }}
-          </button>
 
-          <!-- Verify result feedback -->
-          <div v-if="verifyResult && !currentStep.has_flag" class="verify-result" role="status" aria-live="polite" :class="{ passed: verifyResult.passed, failed: !verifyResult.passed }">
-            <div class="verify-result-header">
-              <i :class="verifyResult.passed ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
-              <span>{{ verifyResult.passed ? t('scenarioPanel.passed') : t('scenarioPanel.failed') }}</span>
-            </div>
-            <div v-if="verifyResult.output" class="verify-output">
-              <span class="output-label">{{ t('scenarioPanel.output') }}</span>
-              <pre class="output-text">{{ verifyResult.output }}</pre>
-            </div>
-          </div>
-
-          <!-- Flag input (only when step has_flag) -->
-          <div v-if="currentStep.has_flag" class="flag-section">
-            <div class="flag-input-row">
-              <input
-                v-model="flagValue"
-                type="text"
-                class="flag-input"
-                :placeholder="t('scenarioPanel.flagPlaceholder')"
-                :disabled="isSubmittingFlag || !isActive"
-                @keyup.enter="handleSubmitFlag"
-              />
+            <!-- Terminal step -->
+            <template v-if="resolvedStepType === 'terminal'">
               <button
-                class="flag-submit-btn"
-                :disabled="!flagValue.trim() || isSubmittingFlag || !isActive"
-                @click="handleSubmitFlag"
+                class="verify-btn"
+                :disabled="isVerifying || !isActive"
+                @click="handleVerify"
               >
-                <i :class="isSubmittingFlag ? 'fas fa-spinner fa-spin' : 'fas fa-paper-plane'"></i>
-                {{ isSubmittingFlag ? t('scenarioPanel.submitting') : t('scenarioPanel.submitFlag') }}
+                <i :class="isVerifying ? 'fas fa-spinner fa-spin' : 'fas fa-check-circle'"></i>
+                {{ isVerifying ? t('scenarioPanel.verifying') : t('scenarioPanel.verify') }}
               </button>
+
+              <div v-if="verifyResult" class="verify-result" role="status" aria-live="polite" :class="{ passed: verifyResult.passed, failed: !verifyResult.passed }">
+                <div class="verify-result-header">
+                  <i :class="verifyResult.passed ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+                  <span>{{ verifyResult.passed ? t('scenarioPanel.passed') : t('scenarioPanel.failed') }}</span>
+                </div>
+                <div v-if="verifyResult.output" class="verify-output">
+                  <span class="output-label">{{ t('scenarioPanel.output') }}</span>
+                  <pre class="output-text">{{ verifyResult.output }}</pre>
+                </div>
+              </div>
+            </template>
+
+            <!-- Flag step -->
+            <div v-else-if="resolvedStepType === 'flag'" class="flag-section">
+              <div class="flag-input-row">
+                <input
+                  v-model="flagValue"
+                  type="text"
+                  class="flag-input"
+                  :placeholder="t('scenarioPanel.flagPlaceholder')"
+                  :disabled="isSubmittingFlag || !isActive"
+                  @keyup.enter="handleSubmitFlag"
+                />
+                <button
+                  class="flag-submit-btn"
+                  :disabled="!flagValue.trim() || isSubmittingFlag || !isActive"
+                  @click="handleSubmitFlag"
+                >
+                  <i :class="isSubmittingFlag ? 'fas fa-spinner fa-spin' : 'fas fa-paper-plane'"></i>
+                  {{ isSubmittingFlag ? t('scenarioPanel.submitting') : t('scenarioPanel.submitFlag') }}
+                </button>
+              </div>
+              <p class="flag-hint">{{ t('scenarioPanel.flagHint') }}</p>
+              <div v-if="flagResult" class="flag-result" role="status" aria-live="polite" :class="{ correct: flagResult.correct, incorrect: !flagResult.correct }">
+                <i :class="flagResult.correct ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+                <span>{{ flagResult.correct ? t('scenarioPanel.flagCorrect') : t('scenarioPanel.flagIncorrect') }}</span>
+              </div>
             </div>
-            <p class="flag-hint">{{ t('scenarioPanel.flagHint') }}</p>
-            <!-- Flag result feedback -->
-            <div v-if="flagResult" class="flag-result" role="status" aria-live="polite" :class="{ correct: flagResult.correct, incorrect: !flagResult.correct }">
-              <i :class="flagResult.correct ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
-              <span>{{ flagResult.correct ? t('scenarioPanel.flagCorrect') : t('scenarioPanel.flagIncorrect') }}</span>
+
+            <!-- Info step -->
+            <div v-else-if="resolvedStepType === 'info'" class="info-step">
+              <p class="info-subtitle">
+                <i class="fas fa-book-open"></i>
+                {{ t('scenarioPanel.infoSubtitle') }}
+              </p>
+              <div class="info-actions">
+                <button
+                  v-if="(currentStep!.step_order ?? 0) > 0"
+                  class="btn-secondary"
+                  @click="goToPreviousStep"
+                >
+                  <i class="fas fa-arrow-left"></i>
+                  {{ t('scenarioPanel.previous') }}
+                </button>
+                <button
+                  class="verify-btn"
+                  :disabled="isVerifying || !isActive"
+                  @click="ackInfoStep"
+                >
+                  <i :class="isVerifying ? 'fas fa-spinner fa-spin' : 'fas fa-check'"></i>
+                  {{ isVerifying ? t('scenarioPanel.verifying') : t('scenarioPanel.infoAck') }}
+                </button>
+              </div>
+              <div v-if="verifyResult && !verifyResult.passed" class="verify-result failed" role="status" aria-live="polite">
+                <div class="verify-result-header">
+                  <i class="fas fa-times-circle"></i>
+                  <span>{{ verifyResult.output || t('scenarioPanel.failed') }}</span>
+                </div>
+              </div>
             </div>
-          </div>
+
+            <!-- Quiz step -->
+            <div v-else-if="resolvedStepType === 'quiz'" class="quiz-step">
+              <!-- Question entry view (shown until we have a result) -->
+              <template v-if="!quizResult && currentQuestion">
+                <div class="quiz-position">
+                  {{ t('scenarioPanel.quizPosition', { n: quizCurrentIndex + 1, total: quizQuestions.length }) }}
+                </div>
+
+                <div class="quiz-question">
+                  <p class="quiz-question-text">{{ currentQuestion.question_text }}</p>
+
+                  <!-- Multiple choice -->
+                  <div v-if="currentQuestion.question_type === 'multiple_choice'" class="quiz-options">
+                    <label
+                      v-for="(opt, idx) in parsedOptions"
+                      :key="idx"
+                      class="quiz-option"
+                      :class="{ 'quiz-option--checked': quizAnswers[currentQuestion.id] === String(idx) }"
+                    >
+                      <input
+                        type="radio"
+                        :name="`q-${currentQuestion.id}`"
+                        :value="String(idx)"
+                        v-model="quizAnswers[currentQuestion.id]"
+                      />
+                      <span>{{ opt }}</span>
+                    </label>
+                  </div>
+
+                  <!-- Multi-answer -->
+                  <div v-else-if="currentQuestion.question_type === 'multi_answer'" class="quiz-options">
+                    <label
+                      v-for="(opt, idx) in parsedOptions"
+                      :key="idx"
+                      class="quiz-option"
+                      :class="{ 'quiz-option--checked': isMultiAnswerChecked(currentQuestion.id, idx) }"
+                    >
+                      <input
+                        type="checkbox"
+                        :checked="isMultiAnswerChecked(currentQuestion.id, idx)"
+                        @change="toggleMultiAnswer(currentQuestion.id, idx)"
+                      />
+                      <span>{{ opt }}</span>
+                    </label>
+                  </div>
+
+                  <!-- True/False -->
+                  <div v-else-if="currentQuestion.question_type === 'true_false'" class="quiz-options quiz-tf">
+                    <label
+                      class="quiz-option"
+                      :class="{ 'quiz-option--checked': quizAnswers[currentQuestion.id] === 'true' }"
+                    >
+                      <input
+                        type="radio"
+                        :name="`q-${currentQuestion.id}`"
+                        value="true"
+                        v-model="quizAnswers[currentQuestion.id]"
+                      />
+                      <span>{{ t('scenarioPanel.true') }}</span>
+                    </label>
+                    <label
+                      class="quiz-option"
+                      :class="{ 'quiz-option--checked': quizAnswers[currentQuestion.id] === 'false' }"
+                    >
+                      <input
+                        type="radio"
+                        :name="`q-${currentQuestion.id}`"
+                        value="false"
+                        v-model="quizAnswers[currentQuestion.id]"
+                      />
+                      <span>{{ t('scenarioPanel.false') }}</span>
+                    </label>
+                  </div>
+
+                  <!-- Free text -->
+                  <div v-else class="quiz-free">
+                    <input
+                      type="text"
+                      class="quiz-free-input"
+                      v-model="quizAnswers[currentQuestion.id]"
+                      :placeholder="t('scenarioPanel.freeAnswerPlaceholder')"
+                    />
+                  </div>
+
+                  <div class="quiz-nav">
+                    <button
+                      v-if="quizCurrentIndex > 0"
+                      class="btn-secondary"
+                      @click="quizCurrentIndex--"
+                    >
+                      <i class="fas fa-arrow-left"></i>
+                      {{ t('scenarioPanel.previous') }}
+                    </button>
+                    <button
+                      v-if="quizCurrentIndex < quizQuestions.length - 1"
+                      class="verify-btn"
+                      :disabled="!hasAnsweredCurrent"
+                      @click="quizCurrentIndex++"
+                    >
+                      {{ t('scenarioPanel.next') }}
+                      <i class="fas fa-arrow-right"></i>
+                    </button>
+                    <button
+                      v-else
+                      class="verify-btn quiz-submit"
+                      :disabled="!allAnswered || isSubmittingQuiz"
+                      @click="handleSubmitQuiz"
+                    >
+                      <i :class="isSubmittingQuiz ? 'fas fa-spinner fa-spin' : 'fas fa-check'"></i>
+                      {{ isSubmittingQuiz ? t('scenarioPanel.submitting') : t('scenarioPanel.submitQuiz') }}
+                    </button>
+                  </div>
+                </div>
+              </template>
+
+              <!-- Quiz results -->
+              <div v-else-if="quizResult" class="quiz-results">
+                <h4 class="quiz-results-score">
+                  {{ t('scenarioPanel.quizScore', {
+                    score: Math.round(quizResult.score * 100),
+                    correct: quizResult.correct_count,
+                    total: quizResult.total
+                  }) }}
+                </h4>
+
+                <ul v-if="currentStep!.show_immediate_feedback && quizResult.per_question_results?.length" class="quiz-breakdown">
+                  <li
+                    v-for="r in quizResult.per_question_results"
+                    :key="r.question_id"
+                    class="quiz-breakdown-item"
+                    :class="{ 'is-correct': r.correct, 'is-incorrect': !r.correct }"
+                  >
+                    <div class="qb-line">
+                      <i :class="r.correct ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+                      <span class="qb-text">{{ findQuestionText(r.question_id) }}</span>
+                    </div>
+                    <div v-if="!r.correct && r.correct_answer" class="qb-correct">
+                      <strong>{{ t('scenarioPanel.correctAnswerWas') }}</strong>
+                      {{ formatCorrectAnswer(r) }}
+                    </div>
+                    <div v-if="r.explanation" class="qb-explanation">{{ r.explanation }}</div>
+                  </li>
+                </ul>
+
+                <button
+                  v-if="!quizResult.next_step"
+                  class="btn-secondary"
+                  @click="resetQuiz"
+                >
+                  <i class="fas fa-redo"></i>
+                  {{ t('scenarioPanel.tryQuizAgain') }}
+                </button>
+              </div>
+
+              <div v-if="quizSubmitError" class="verify-result failed" role="status" aria-live="polite">
+                <div class="verify-result-header">
+                  <i class="fas fa-times-circle"></i>
+                  <span>{{ quizSubmitError }}</span>
+                </div>
+              </div>
+            </div>
+
           </template>
         </div>
 
@@ -290,7 +498,15 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { renderKillercodaMarkdown, loadScenarioImages, revokeScenarioImageUrls } from '../../utils/killercodaMarkdown'
 import { scenarioSessionService } from '../../services/domain/scenario'
-import type { CurrentStepResponse, VerifyStepResponse, SubmitFlagResponse, ScenarioInfo } from '../../services/domain/scenario'
+import type {
+  CurrentStepResponse,
+  CurrentStepQuestion,
+  VerifyStepResponse,
+  SubmitFlagResponse,
+  SubmitQuizResponse,
+  QuizQuestionResult,
+  ScenarioInfo
+} from '../../services/domain/scenario'
 
 interface Props {
   scenarioSessionId: string
@@ -369,7 +585,27 @@ const { t } = useTranslations({
       hintTransparency: 'Your instructor can see how many hints you use.',
       sessionCompleted: 'Scenario Completed',
       sessionAbandoned: 'Scenario Abandoned',
-      elapsed: 'Elapsed'
+      elapsed: 'Elapsed',
+      // Step type chips
+      typeTerminal: 'Terminal',
+      typeFlag: 'Flag',
+      typeInfo: 'Reading',
+      typeQuiz: 'Quiz',
+      // Info step
+      infoSubtitle: 'Reading — no exercise',
+      infoAck: "I've read this, next",
+      previous: 'Previous',
+      next: 'Next',
+      // Quiz step
+      quizPosition: 'Question {n} of {total}',
+      submitQuiz: 'Submit answers',
+      tryQuizAgain: 'Try the quiz again',
+      quizScore: 'Score: {score}% ({correct}/{total} correct)',
+      quizSubmitError: 'Failed to submit your answers. Please try again.',
+      correctAnswerWas: 'Correct answer:',
+      freeAnswerPlaceholder: 'Type your answer...',
+      true: 'True',
+      false: 'False'
     }
   },
   fr: {
@@ -422,7 +658,27 @@ const { t } = useTranslations({
       hintTransparency: 'Votre formateur peut voir combien d\'indices vous utilisez.',
       sessionCompleted: 'Scénario terminé',
       sessionAbandoned: 'Scénario abandonné',
-      elapsed: 'Temps écoulé'
+      elapsed: 'Temps écoulé',
+      // Step type chips
+      typeTerminal: 'Terminal',
+      typeFlag: 'Drapeau',
+      typeInfo: 'Lecture',
+      typeQuiz: 'Quiz',
+      // Info step
+      infoSubtitle: 'Lecture — pas d\'exercice',
+      infoAck: 'J\'ai lu, suivant',
+      previous: 'Précédent',
+      next: 'Suivant',
+      // Quiz step
+      quizPosition: 'Question {n} sur {total}',
+      submitQuiz: 'Soumettre les réponses',
+      tryQuizAgain: 'Refaire le quiz',
+      quizScore: 'Score : {score} % ({correct}/{total} bonnes réponses)',
+      quizSubmitError: 'Échec de l\'envoi de vos réponses. Réessayez.',
+      correctAnswerWas: 'Bonne réponse :',
+      freeAnswerPlaceholder: 'Saisissez votre réponse...',
+      true: 'Vrai',
+      false: 'Faux'
     }
   }
 })
@@ -493,6 +749,44 @@ const flagResult = ref<SubmitFlagResponse | null>(null)
 const isTransitioning = ref(false)
 const transitionPhase = ref<'validated' | 'loading' | null>(null)
 
+// Quiz state
+const quizCurrentIndex = ref(0)
+const quizAnswers = ref<Record<string, string>>({})
+const multiAnswerSelections = ref<Record<string, number[]>>({})
+const isSubmittingQuiz = ref(false)
+const quizResult = ref<SubmitQuizResponse | null>(null)
+const quizSubmitError = ref<string>('')
+
+// Hint-nudge state (terminal step only): pulse hint button after 90s idle
+const HINT_NUDGE_DELAY_MS = 90000
+const hintNudgeActive = ref(false)
+const hintNudgeTimer: Ref<ReturnType<typeof setTimeout> | null> = ref(null)
+const hintNudgeDismissed = ref(false)
+
+function startHintNudgeTimer() {
+  stopHintNudgeTimer()
+  hintNudgeActive.value = false
+  if (hintNudgeDismissed.value) return
+  hintNudgeTimer.value = setTimeout(() => {
+    // Only pulse if a hint is still available and the user has not revealed any
+    if (
+      !hintNudgeDismissed.value &&
+      hasProgressiveHints.value &&
+      revealedHints.value.length === 0
+    ) {
+      hintNudgeActive.value = true
+    }
+  }, HINT_NUDGE_DELAY_MS)
+}
+
+function stopHintNudgeTimer() {
+  if (hintNudgeTimer.value) {
+    clearTimeout(hintNudgeTimer.value)
+    hintNudgeTimer.value = null
+  }
+  hintNudgeActive.value = false
+}
+
 // Step review navigation state
 const reviewingStep = ref<CurrentStepResponse | null>(null)
 const isLoadingReview = ref(false)
@@ -548,6 +842,219 @@ const hasProgressiveHints = computed(() => {
   return displayedStep.value && displayedStep.value.hints_total_count > 0
 })
 
+// Resolve the step type with backward-compat for legacy data: when step_type is empty,
+// fall back to has_flag-driven detection (flag vs terminal).
+const resolvedStepType = computed<'terminal' | 'flag' | 'info' | 'quiz'>(() => {
+  const st = displayedStep.value?.step_type
+  if (st === 'terminal' || st === 'flag' || st === 'info' || st === 'quiz') return st
+  return displayedStep.value?.has_flag ? 'flag' : 'terminal'
+})
+
+interface StepTypeMeta {
+  key: 'terminal' | 'flag' | 'info' | 'quiz'
+  icon: string
+  label: string
+  color: string
+  bg: string
+}
+
+const stepTypeMeta = computed<StepTypeMeta | null>(() => {
+  if (!displayedStep.value) return null
+  const map: Record<StepTypeMeta['key'], StepTypeMeta> = {
+    terminal: {
+      key: 'terminal',
+      icon: 'fas fa-terminal',
+      label: t('scenarioPanel.typeTerminal'),
+      color: 'var(--scenario-node-terminal)',
+      bg: 'var(--scenario-node-terminal-bg)'
+    },
+    flag: {
+      key: 'flag',
+      icon: 'fas fa-flag',
+      label: t('scenarioPanel.typeFlag'),
+      color: 'var(--scenario-node-flag)',
+      bg: 'var(--scenario-node-flag-bg)'
+    },
+    info: {
+      key: 'info',
+      icon: 'fas fa-book-open',
+      label: t('scenarioPanel.typeInfo'),
+      color: 'var(--scenario-node-info)',
+      bg: 'var(--scenario-node-info-bg)'
+    },
+    quiz: {
+      key: 'quiz',
+      icon: 'fas fa-question-circle',
+      label: t('scenarioPanel.typeQuiz'),
+      color: 'var(--scenario-node-quiz)',
+      bg: 'var(--scenario-node-quiz-bg)'
+    }
+  }
+  return map[resolvedStepType.value]
+})
+
+// Quiz computeds
+const quizQuestions = computed<CurrentStepQuestion[]>(() => {
+  const list = currentStep.value?.questions
+  return Array.isArray(list) ? list : []
+})
+
+const currentQuestion = computed(() => quizQuestions.value[quizCurrentIndex.value] || null)
+
+const parsedOptions = computed<string[]>(() => {
+  const q = currentQuestion.value
+  if (!q) return []
+  const opts = q.options
+  if (!opts) return []
+  if (Array.isArray(opts)) return opts as string[]
+  try {
+    const parsed = JSON.parse(String(opts))
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+})
+
+function isMultiAnswerChecked(questionId: string, idx: number): boolean {
+  return (multiAnswerSelections.value[questionId] || []).includes(idx)
+}
+
+function toggleMultiAnswer(questionId: string, idx: number) {
+  const current = multiAnswerSelections.value[questionId] || []
+  const pos = current.indexOf(idx)
+  if (pos >= 0) {
+    multiAnswerSelections.value[questionId] = current.filter(i => i !== idx)
+  } else {
+    multiAnswerSelections.value[questionId] = [...current, idx].sort((a, b) => a - b)
+  }
+}
+
+const hasAnsweredCurrent = computed(() => {
+  const q = currentQuestion.value
+  if (!q) return false
+  if (q.question_type === 'multi_answer') {
+    return (multiAnswerSelections.value[q.id]?.length ?? 0) > 0
+  }
+  return ((quizAnswers.value[q.id] || '') as string).toString().trim().length > 0
+})
+
+const allAnswered = computed(() => {
+  return quizQuestions.value.every(q => {
+    if (q.question_type === 'multi_answer') {
+      return (multiAnswerSelections.value[q.id]?.length ?? 0) > 0
+    }
+    return ((quizAnswers.value[q.id] || '') as string).toString().trim().length > 0
+  })
+})
+
+function findQuestionText(questionId: string): string {
+  const q = quizQuestions.value.find(x => x.id === questionId)
+  return q?.question_text || ''
+}
+
+function formatCorrectAnswer(r: QuizQuestionResult): string {
+  if (!r.correct_answer) return ''
+  const q = quizQuestions.value.find(x => x.id === r.question_id)
+  if (!q) return r.correct_answer
+  // multiple_choice: backend returns the index as a string — translate into the option text
+  if (q.question_type === 'multiple_choice') {
+    const opts = parseQuestionOptions(q)
+    const idx = Number(r.correct_answer)
+    if (!Number.isNaN(idx) && opts[idx] !== undefined) return opts[idx]
+    return r.correct_answer
+  }
+  // multi_answer: backend returns JSON array of indices — translate into joined option texts
+  if (q.question_type === 'multi_answer') {
+    try {
+      const arr = JSON.parse(r.correct_answer)
+      if (Array.isArray(arr)) {
+        const opts = parseQuestionOptions(q)
+        return arr.map((i: number) => opts[i]).filter(Boolean).join(', ')
+      }
+    } catch {
+      // fall through
+    }
+    return r.correct_answer
+  }
+  return r.correct_answer
+}
+
+function parseQuestionOptions(q: CurrentStepQuestion): string[] {
+  if (!q.options) return []
+  if (Array.isArray(q.options)) return q.options as string[]
+  try {
+    const parsed = JSON.parse(String(q.options))
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+// Persist quiz state across refresh — scoped per session+step
+const quizStorageKey = computed(() => {
+  if (!currentStep.value) return ''
+  return `ocf-quiz-${props.scenarioSessionId}-${currentStep.value.step_order}`
+})
+
+function loadQuizFromStorage() {
+  if (!quizStorageKey.value) return
+  try {
+    const raw = localStorage.getItem(quizStorageKey.value)
+    if (!raw) return
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object') {
+      quizAnswers.value = parsed.answers && typeof parsed.answers === 'object' ? parsed.answers : {}
+      multiAnswerSelections.value = parsed.multi && typeof parsed.multi === 'object' ? parsed.multi : {}
+      const idx = Number(parsed.idx)
+      if (!Number.isNaN(idx) && idx >= 0) {
+        quizCurrentIndex.value = idx
+      }
+    }
+  } catch {
+    // Ignore corrupt storage
+  }
+}
+
+function saveQuizToStorage() {
+  if (!quizStorageKey.value) return
+  try {
+    localStorage.setItem(quizStorageKey.value, JSON.stringify({
+      answers: quizAnswers.value,
+      multi: multiAnswerSelections.value,
+      idx: quizCurrentIndex.value
+    }))
+  } catch {
+    // Storage unavailable / quota — silently ignore
+  }
+}
+
+function clearQuizStorage() {
+  if (!quizStorageKey.value) return
+  try {
+    localStorage.removeItem(quizStorageKey.value)
+  } catch {
+    // ignore
+  }
+}
+
+function resetQuizState() {
+  quizCurrentIndex.value = 0
+  quizAnswers.value = {}
+  multiAnswerSelections.value = {}
+  quizResult.value = null
+  quizSubmitError.value = ''
+}
+
+watch(
+  [quizAnswers, multiAnswerSelections, quizCurrentIndex],
+  () => {
+    if (resolvedStepType.value === 'quiz' && !quizResult.value) {
+      saveQuizToStorage()
+    }
+  },
+  { deep: true }
+)
+
 function renderHintMarkdown(content: string): string {
   return renderKillercodaMarkdown(content)
 }
@@ -563,6 +1070,9 @@ async function handleRevealNextHint() {
       nextLevel
     )
     revealedHints.value.push({ level: result.level, content: result.content })
+    // Dismiss the hint-nudge for the rest of the session once a hint has been revealed
+    hintNudgeDismissed.value = true
+    stopHintNudgeTimer()
   } catch (err: any) {
     console.error('Failed to reveal hint:', err)
   } finally {
@@ -736,6 +1246,9 @@ async function loadCurrentStep() {
   hintAutoShown.value = false
   revealedHints.value = []
   reviewingStep.value = null
+  resetQuizState()
+  hintNudgeDismissed.value = false
+  stopHintNudgeTimer()
 
   try {
     const step = await scenarioSessionService.getCurrentStep(props.scenarioSessionId)
@@ -794,6 +1307,16 @@ async function loadCurrentStep() {
       const stepDir = `step${currentStep.value.step_order + 1}`
       loadScenarioImages(stepContentRef.value, scenarioInfo.value.id, stepDir)
     }
+  }
+
+  // Restore persisted quiz answers (if this step is a quiz and we have prior progress)
+  if (resolvedStepType.value === 'quiz' && currentStep.value) {
+    loadQuizFromStorage()
+  }
+
+  // Start the hint-nudge timer for terminal steps that still have an unrevealed hint
+  if (resolvedStepType.value === 'terminal' && hasProgressiveHints.value && revealedHints.value.length === 0) {
+    startHintNudgeTimer()
   }
 }
 
@@ -919,6 +1442,72 @@ async function handleAbandon() {
   }
 }
 
+// Info step: acknowledgement is handled by the existing verify endpoint —
+// the backend now auto-advances info steps on verify.
+async function ackInfoStep() {
+  if (isVerifying.value || !props.isActive) return
+  await handleVerify()
+}
+
+// Navigate back to the previous step for review (info step "Previous" button)
+async function goToPreviousStep() {
+  if (!currentStep.value) return
+  const targetOrder = currentStep.value.step_order - 1
+  if (targetOrder < 0) return
+  await navigateToStep(targetOrder)
+}
+
+async function handleSubmitQuiz() {
+  if (!allAnswered.value || isSubmittingQuiz.value || !props.isActive) return
+  isSubmittingQuiz.value = true
+  quizSubmitError.value = ''
+  try {
+    const payload: Record<string, string> = {}
+    for (const q of quizQuestions.value) {
+      if (q.question_type === 'multi_answer') {
+        payload[q.id] = JSON.stringify(multiAnswerSelections.value[q.id] || [])
+      } else {
+        payload[q.id] = (quizAnswers.value[q.id] || '').toString()
+      }
+    }
+    const result = await scenarioSessionService.submitQuiz(props.scenarioSessionId, payload)
+    quizResult.value = result
+    clearQuizStorage()
+
+    // The backend advances the session pointer when next_step is set.
+    // Mirror the verify-pass flow: brief "Step validated!" then load next.
+    if (result.next_step !== undefined && result.next_step !== null) {
+      isTransitioning.value = true
+      transitionPhase.value = 'validated'
+      setTimeout(() => {
+        transitionPhase.value = 'loading'
+        loadCurrentStep()
+      }, 2000)
+    } else {
+      // Last step submitted — show completion (after a short delay so the
+      // student can read their score/breakdown if displayed)
+      setTimeout(() => {
+        isSessionCompleted.value = true
+        emit('session-completed')
+      }, currentStep.value?.show_immediate_feedback ? 4000 : 2000)
+    }
+  } catch (err: any) {
+    console.error('Submit quiz failed:', err)
+    quizSubmitError.value =
+      err.response?.data?.error_message ||
+      err.response?.data?.message ||
+      err.message ||
+      t('scenarioPanel.quizSubmitError')
+  } finally {
+    isSubmittingQuiz.value = false
+  }
+}
+
+function resetQuiz() {
+  resetQuizState()
+  clearQuizStorage()
+}
+
 // Start the elapsed timer when session start time becomes available
 watch(sessionStartedAt, (val) => {
   if (val) {
@@ -950,6 +1539,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   stopElapsedTimer()
+  stopHintNudgeTimer()
   revokeScenarioImageUrls()
 })
 
@@ -2038,6 +2628,312 @@ defineExpose({
 
 .transition-text {
   font-weight: var(--font-weight-medium);
+}
+
+/* Step type chip */
+.step-type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin: var(--spacing-sm) var(--spacing-md) 0;
+  padding: 2px var(--spacing-sm);
+  background: var(--step-type-bg, var(--color-bg-secondary));
+  color: var(--step-type-color, var(--color-text-muted));
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  align-self: flex-start;
+  width: fit-content;
+}
+
+.step-type-chip i {
+  font-size: 0.85em;
+}
+
+/* Hint-nudge pulse on the hint button (after 90s of inactivity on a terminal step) */
+.hint-toggle.hint-nudge {
+  animation: hint-nudge-pulse 2.4s ease-in-out infinite;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+@keyframes hint-nudge-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--color-primary-light);
+  }
+  50% {
+    box-shadow: 0 0 0 6px var(--color-primary-light);
+  }
+}
+
+/* Info step */
+.info-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.info-subtitle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin: 0;
+  font-size: var(--font-size-xs);
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+.info-subtitle i {
+  color: var(--scenario-node-info);
+}
+
+.info-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: stretch;
+}
+
+.info-actions .btn-secondary {
+  flex-shrink: 0;
+}
+
+.info-actions .verify-btn {
+  flex: 1;
+}
+
+/* Generic secondary button (used in info + quiz nav) */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: var(--border-width-thin) solid var(--color-border-medium);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border-medium);
+  color: var(--color-text-primary);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Quiz step */
+.quiz-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.quiz-position {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.quiz-question {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.quiz-question-text {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-relaxed);
+}
+
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.quiz-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--color-bg-primary);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.quiz-option:hover {
+  border-color: var(--scenario-node-quiz);
+  background: var(--scenario-node-quiz-bg);
+}
+
+.quiz-option--checked {
+  border-color: var(--scenario-node-quiz);
+  background: var(--scenario-node-quiz-bg);
+}
+
+.quiz-option input[type="radio"],
+.quiz-option input[type="checkbox"] {
+  margin: 2px 0 0;
+  flex-shrink: 0;
+  accent-color: var(--scenario-node-quiz);
+}
+
+.quiz-option span {
+  flex: 1;
+  line-height: var(--line-height-relaxed);
+}
+
+.quiz-tf {
+  flex-direction: row;
+}
+
+.quiz-tf .quiz-option {
+  flex: 1;
+}
+
+.quiz-free-input {
+  width: 100%;
+  padding: var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--color-border-medium);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  transition: border-color var(--transition-fast);
+}
+
+.quiz-free-input:focus {
+  outline: none;
+  border-color: var(--scenario-node-quiz);
+  box-shadow: 0 0 0 3px var(--scenario-node-quiz-bg);
+}
+
+.quiz-nav {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+.quiz-nav .btn-secondary {
+  flex-shrink: 0;
+}
+
+.quiz-nav .verify-btn {
+  flex: 1;
+}
+
+.quiz-submit {
+  background: var(--scenario-node-quiz);
+}
+
+.quiz-submit:hover:not(:disabled) {
+  background: var(--scenario-node-quiz);
+  filter: brightness(0.92);
+}
+
+.quiz-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.quiz-results-score {
+  margin: 0;
+  padding: var(--spacing-md);
+  background: var(--scenario-node-quiz-bg);
+  border: var(--border-width-thin) solid var(--scenario-node-quiz);
+  border-radius: var(--border-radius-md);
+  color: var(--scenario-node-quiz);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+}
+
+.quiz-breakdown {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.quiz-breakdown-item {
+  padding: var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-primary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.quiz-breakdown-item.is-correct {
+  border-color: var(--color-success-border);
+  background: var(--color-success-bg);
+}
+
+.quiz-breakdown-item.is-incorrect {
+  border-color: var(--color-danger-border);
+  background: var(--color-danger-bg);
+}
+
+.qb-line {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.is-correct .qb-line i {
+  color: var(--color-success);
+}
+
+.is-incorrect .qb-line i {
+  color: var(--color-danger);
+}
+
+.qb-text {
+  flex: 1;
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-relaxed);
+}
+
+.qb-correct {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  padding-left: calc(var(--font-size-sm) + var(--spacing-sm));
+}
+
+.qb-correct strong {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+  margin-right: var(--spacing-xs);
+}
+
+.qb-explanation {
+  font-size: var(--font-size-xs);
+  font-style: italic;
+  color: var(--color-text-secondary);
+  padding-left: calc(var(--font-size-sm) + var(--spacing-sm));
 }
 
 /* Responsive breakpoints */
