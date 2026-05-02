@@ -1549,9 +1549,10 @@ const handleSave = () => {
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: 0.45rem 0.6rem;
+  padding: 0.45rem 0.6rem 0.45rem calc(0.6rem - 3px);
   border-radius: var(--border-radius-sm);
   border: 1px solid transparent;
+  border-left: 3px solid transparent;
   background: var(--color-background);
   transition: background 0.15s, border-color 0.15s;
 }
@@ -1561,9 +1562,13 @@ const handleSave = () => {
   background: var(--color-surface);
 }
 
+/*
+  The filled radio/checkbox is the primary state indicator. We add only
+  a quiet left-edge accent on the correct row for scannability, not a
+  full row wash — two strong signals for the same state read as noise.
+*/
 .option-row--correct {
-  background: var(--scenario-node-quiz-bg);
-  border-color: var(--scenario-node-quiz);
+  border-left-color: var(--scenario-node-quiz);
 }
 
 .option-row__correct {
