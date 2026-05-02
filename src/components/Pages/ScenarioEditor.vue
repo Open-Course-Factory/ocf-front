@@ -829,6 +829,10 @@ const orgScopes = computed<Array<{ id: string; name: string }>>(() => {
     const org = organizationsStore.userOrganizations.find(o => o.id === m.organization_id)
     if (org) {
       out.push({ id: org.id, name: org.display_name || org.name })
+    } else {
+      // Fallback: organization list not yet loaded — show short id so the
+      // user still gets the scope option (mirrors groupScopes behavior).
+      out.push({ id: m.organization_id, name: `Organization ${String(m.organization_id).slice(0, 8)}` })
     }
   }
   return out
