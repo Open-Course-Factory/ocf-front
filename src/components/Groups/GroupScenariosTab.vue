@@ -119,7 +119,17 @@ const { t } = useTranslations({
       stepOrder: 'Step',
       stepTitle: 'Title',
       stepStatus: 'Status',
+      stepType: 'Type',
+      stepResult: 'Result',
+      typeTerminal: 'Terminal',
+      typeFlag: 'Flag',
+      typeInfo: 'Reading',
+      typeQuiz: 'Quiz',
       attempts: 'Attempts',
+      attemptsCount: '{n} attempt(s)',
+      quizScorePct: '{score}%',
+      csvStepType: 'Step type',
+      csvQuizScore: 'Quiz score',
       hintsUsed: 'Hints',
       timeSpent: 'Time',
       completed: 'completed',
@@ -214,7 +224,17 @@ const { t } = useTranslations({
       stepOrder: 'Étape',
       stepTitle: 'Titre',
       stepStatus: 'Statut',
+      stepType: 'Type',
+      stepResult: 'Résultat',
+      typeTerminal: 'Terminal',
+      typeFlag: 'Drapeau',
+      typeInfo: 'Lecture',
+      typeQuiz: 'Quiz',
       attempts: 'Tentatives',
+      attemptsCount: '{n} tentative(s)',
+      quizScorePct: '{score} %',
+      csvStepType: 'Type d\'étape',
+      csvQuizScore: 'Score quiz',
       hintsUsed: 'Indices',
       timeSpent: 'Temps',
       completed: 'terminé',
@@ -285,9 +305,11 @@ interface ScenarioResultItem {
 interface SessionStepDetail {
   step_order: number
   step_title: string
+  step_type?: string
   status: string
   verify_attempts: number
   hints_revealed: number
+  quiz_score?: number
   completed_at?: string
   time_spent_seconds: number
 }
@@ -637,6 +659,48 @@ function isOrgScenario(assignment: ScenarioAssignment): boolean {
   return assignment.scenario?.organization_id != null
 }
 
+function normalizedStepType(stepType?: string): 'terminal' | 'flag' | 'info' | 'quiz' {
+  switch (stepType) {
+    case 'flag': return 'flag'
+    case 'info': return 'info'
+    case 'quiz': return 'quiz'
+    default: return 'terminal'
+  }
+}
+
+function stepTypeIcon(stepType?: string): string {
+  switch (normalizedStepType(stepType)) {
+    case 'flag': return 'fas fa-flag'
+    case 'info': return 'fas fa-book-open'
+    case 'quiz': return 'fas fa-question-circle'
+    default: return 'fas fa-terminal'
+  }
+}
+
+function stepTypeLabel(stepType?: string): string {
+  switch (normalizedStepType(stepType)) {
+    case 'flag': return t('groupScenarios.typeFlag')
+    case 'info': return t('groupScenarios.typeInfo')
+    case 'quiz': return t('groupScenarios.typeQuiz')
+    default: return t('groupScenarios.typeTerminal')
+  }
+}
+
+function quizScoreClass(score: number): string {
+  if (score >= 0.7) return 'quiz-score-success'
+  if (score >= 0.4) return 'quiz-score-warning'
+  return 'quiz-score-danger'
+}
+
+function formatQuizScorePct(score: number): string {
+  return t('groupScenarios.quizScorePct', { score: Math.round(score * 100) })
+}
+
+function formatQuizScoreCsv(score?: number): string {
+  if (score == null) return ''
+  return `${(score * 100).toFixed(1)}%`
+}
+
 function buildResultsCsv(results: ScenarioResultItem[]): string {
   const headers = [
     t('groupScenarios.export.name'),
@@ -685,8 +749,10 @@ function buildDetailCsv(details: Array<{ result: ScenarioResultItem; detail: Ses
     t('groupScenarios.export.grade'),
     t('groupScenarios.stepOrder'),
     t('groupScenarios.stepTitle'),
+    t('groupScenarios.csvStepType'),
     t('groupScenarios.stepStatus'),
     t('groupScenarios.attempts'),
+    t('groupScenarios.csvQuizScore'),
     t('groupScenarios.hintsUsed'),
     t('groupScenarios.timeSpent'),
     t('groupScenarios.completedAt')
@@ -702,8 +768,10 @@ function buildDetailCsv(details: Array<{ result: ScenarioResultItem; detail: Ses
         studentName, email, status, grade,
         step.step_order + 1,
         step.step_title,
+        normalizedStepType(step.step_type),
         step.status,
         step.verify_attempts,
+        formatQuizScoreCsv(step.quiz_score),
         step.hints_revealed,
         formatDuration(step.time_spent_seconds),
         step.completed_at ? formatDate(step.completed_at) : ''
@@ -1063,8 +1131,9 @@ onUnmounted(() => {
             <tr>
               <th>{{ t('groupScenarios.stepOrder') }}</th>
               <th>{{ t('groupScenarios.stepTitle') }}</th>
+              <th>{{ t('groupScenarios.stepType') }}</th>
               <th>{{ t('groupScenarios.stepStatus') }}</th>
-              <th>{{ t('groupScenarios.attempts') }}</th>
+              <th>{{ t('groupScenarios.stepResult') }}</th>
               <th>{{ t('groupScenarios.hintsUsed') }}</th>
               <th>{{ t('groupScenarios.timeSpent') }}</th>
               <th>{{ t('groupScenarios.completedAt') }}</th>
@@ -1075,9 +1144,32 @@ onUnmounted(() => {
               <td>{{ step.step_order + 1 }}</td>
               <td>{{ step.step_title }}</td>
               <td>
+                <span :class="['step-type-chip', `step-type-${normalizedStepType(step.step_type)}`]">
+                  <i :class="stepTypeIcon(step.step_type)"></i>
+                  <span class="step-type-label">{{ stepTypeLabel(step.step_type) }}</span>
+                </span>
+              </td>
+              <td>
                 <span :class="['status-chip', getStatusClass(step.status)]">{{ translateStatus(step.status) }}</span>
               </td>
-              <td>{{ step.verify_attempts }}</td>
+              <td>
+                <template v-if="normalizedStepType(step.step_type) === 'quiz'">
+                  <span
+                    v-if="step.quiz_score != null"
+                    :class="['quiz-score-badge', quizScoreClass(step.quiz_score)]"
+                  >
+                    {{ formatQuizScorePct(step.quiz_score) }}
+                  </span>
+                  <span v-else class="hints-none">&mdash;</span>
+                </template>
+                <template v-else-if="normalizedStepType(step.step_type) === 'info'">
+                  <i v-if="step.status === 'completed'" class="fas fa-check" :title="t('groupScenarios.completed')"></i>
+                  <span v-else class="hints-none">&mdash;</span>
+                </template>
+                <template v-else>
+                  {{ t('groupScenarios.attemptsCount', { n: step.verify_attempts }) }}
+                </template>
+              </td>
               <td>
                 <span v-if="step.hints_revealed > 0" class="hints-used-badge">
                   {{ step.hints_revealed }}
@@ -1431,6 +1523,66 @@ onUnmounted(() => {
 
 .hints-none {
   color: var(--color-text-muted);
+}
+
+.step-type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 2px 8px;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.step-type-chip i {
+  font-size: var(--font-size-xs);
+}
+
+.step-type-terminal {
+  background: var(--scenario-node-terminal-bg);
+  color: var(--scenario-node-terminal);
+}
+
+.step-type-flag {
+  background: var(--scenario-node-flag-bg);
+  color: var(--scenario-node-flag);
+}
+
+.step-type-info {
+  background: var(--scenario-node-info-bg);
+  color: var(--scenario-node-info);
+}
+
+.step-type-quiz {
+  background: var(--scenario-node-quiz-bg);
+  color: var(--scenario-node-quiz);
+}
+
+.quiz-score-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.quiz-score-success {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.quiz-score-warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.quiz-score-danger {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
 }
 
 .assignment-actions {
