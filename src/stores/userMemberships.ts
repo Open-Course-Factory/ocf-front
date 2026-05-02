@@ -79,6 +79,16 @@ export const useUserMembershipsStore = defineStore('userMemberships', () => {
                     err.response?.data?.message ||
                     err.message ||
                     'Failed to load memberships'
+      // Diagnostic dump — remove once the membership 404 is identified.
+      console.error('[userMemberships] load failed', {
+        message: err.message,
+        status: err.response?.status,
+        url: err.config?.url,
+        baseURL: err.config?.baseURL,
+        method: err.config?.method,
+        responseData: err.response?.data,
+        responseHeaders: err.response?.headers,
+      })
       // Keep going with empty arrays so UI just hides scoped actions
       orgMemberships.value = []
       groupMemberships.value = []
