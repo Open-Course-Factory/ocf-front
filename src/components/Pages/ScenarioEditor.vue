@@ -1392,12 +1392,16 @@ const syncStepQuestions = async (
   const newList = Array.isArray(newQuestions) ? newQuestions : []
   const newIds = new Set(newList.map(q => q?.id).filter(Boolean))
 
-  const ops: Promise<any>[] = []
+  const ops: { kind: 'delete' | 'patch' | 'post'; label: string; promise: Promise<any> }[] = []
 
   // DELETE: questions that had an id but are no longer present
   oldList.forEach(oldQ => {
     if (oldQ?.id && !newIds.has(oldQ.id)) {
-      ops.push(axios.delete(`/scenario-step-questions/${oldQ.id}`))
+      ops.push({
+        kind: 'delete',
+        label: `delete ${oldQ.id}`,
+        promise: axios.delete(`/scenario-step-questions/${oldQ.id}`)
+      })
     }
   })
 
@@ -1405,34 +1409,40 @@ const syncStepQuestions = async (
   newList.forEach((q, idx) => {
     const order = idx + 1 // 1-based, matches backend convention
     const optionsJson = JSON.stringify(Array.isArray(q.options) ? q.options : [])
+    const body = {
+      order,
+      question_text: q.question_text || '',
+      question_type: q.question_type || 'multiple_choice',
+      options: optionsJson,
+      correct_answer: q.correct_answer ?? '',
+      explanation: q.explanation || '',
+      points: q.points || 1
+    }
+    const label = `Q${order} "${(q.question_text || '').slice(0, 30)}"`
     if (q?.id) {
-      // PATCH existing question
-      ops.push(axios.patch(`/scenario-step-questions/${q.id}`, {
-        order,
-        question_text: q.question_text || '',
-        question_type: q.question_type || 'multiple_choice',
-        options: optionsJson,
-        correct_answer: q.correct_answer ?? '',
-        explanation: q.explanation || '',
-        points: q.points || 1
-      }))
+      ops.push({ kind: 'patch', label, promise: axios.patch(`/scenario-step-questions/${q.id}`, body) })
     } else {
-      // POST new question
-      ops.push(axios.post('/scenario-step-questions', {
-        step_id: stepId,
-        order,
-        question_text: q.question_text || '',
-        question_type: q.question_type || 'multiple_choice',
-        options: optionsJson,
-        correct_answer: q.correct_answer ?? '',
-        explanation: q.explanation || '',
-        points: q.points || 1
-      }))
+      ops.push({ kind: 'post', label, promise: axios.post('/scenario-step-questions', { step_id: stepId, ...body }) })
     }
   })
 
-  if (ops.length > 0) {
-    await Promise.all(ops)
+  if (ops.length === 0) return
+
+  const results = await Promise.allSettled(ops.map(o => o.promise))
+  const failures: string[] = []
+  results.forEach((r, i) => {
+    if (r.status === 'rejected') {
+      const op = ops[i]
+      const reason = r.reason?.response?.data?.error_message
+        || r.reason?.response?.data?.message
+        || r.reason?.message
+        || 'unknown error'
+      console.error(`[syncStepQuestions] ${op.kind} ${op.label} failed:`, reason, r.reason?.response?.data)
+      failures.push(`${op.label}: ${reason}`)
+    }
+  })
+  if (failures.length > 0) {
+    throw new Error(failures.join(' • '))
   }
 }
 
@@ -1497,7 +1507,8 @@ const handleSaveStep = async (formData: any) => {
     closeStepEditModal()
   } catch (err: any) {
     console.error('Save step failed:', err)
-    notification.showError(err.response?.data?.error_message || t('scenarioEditor.saveError'))
+    const detail = err.response?.data?.error_message || err.message || t('scenarioEditor.saveError')
+    notification.showError(detail)
   }
 }
 

@@ -809,6 +809,7 @@ type StoredCorrectAnswer = number | number[] | string
 type QuestionType = 'multiple_choice' | 'multi_answer' | 'true_false' | 'free_text'
 
 interface QuestionData {
+  id?: string
   question_text: string
   question_type: QuestionType
   options: string[]
@@ -878,6 +879,7 @@ watch(() => [props.visible, props.stepData], () => {
         flag_path: props.stepData.flag_path || '',
         flag_level: props.stepData.flag_level || 0,
         questions: (props.stepData.questions || []).map((q: any) => ({
+          id: q.id,
           question_text: q.question_text || '',
           question_type: (q.question_type as QuestionType) || 'multiple_choice',
           options: Array.isArray(q.options) ? [...q.options] : [],
