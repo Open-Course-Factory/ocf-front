@@ -62,11 +62,24 @@ export const useUserMembershipsStore = defineStore('userMemberships', () => {
 
     isLoading.value = true
     error.value = ''
+    console.warn('[userMemberships] BUILD-TAG: 5d2e8c0+ — about to fetch /me/memberships')
     try {
-      const [orgRes, groupRes] = await Promise.all([
-        axios.get('/organizations/me/memberships'),
-        axios.get('/groups/me/memberships'),
-      ])
+      const orgRes = await axios.get('/organizations/me/memberships').catch((e: any) => {
+        console.error('[userMemberships] orgs request error', {
+          status: e.response?.status,
+          url: e.config?.url,
+          baseURL: e.config?.baseURL,
+          fullURL: `${e.config?.baseURL || ''}${e.config?.url || ''}`,
+          headers: e.config?.headers,
+          responseHeaders: e.response?.headers,
+          responseData: e.response?.data,
+        })
+        throw e
+      })
+      const groupRes = await axios.get('/groups/me/memberships').catch((e: any) => {
+        console.error('[userMemberships] groups request error', { status: e.response?.status, url: e.config?.url })
+        throw e
+      })
 
       const orgs = orgRes.data?.data || orgRes.data || []
       const groups = groupRes.data?.data || groupRes.data || []
