@@ -94,7 +94,16 @@ watch(() => props.nodes, (newNodes, oldNodes) => {
     return oldNode && oldNode.hidden !== node.hidden
   })
 
-  if (lengthChanged || idsChanged || hiddenChanged) {
+  // After a save the parent rebuilds nodes via convertScenarioToNodes,
+  // so each node carries a fresh `data` object reference. Detect this
+  // so node-level changes (e.g. quiz question count) propagate even
+  // when the structural shape is identical.
+  const dataChanged = newNodes.some((node) => {
+    const oldNode = nodesData.value.find(n => n.id === node.id)
+    return oldNode && oldNode.data !== node.data
+  })
+
+  if (lengthChanged || idsChanged || hiddenChanged || dataChanged) {
     nodesData.value = newNodes
   }
 })
