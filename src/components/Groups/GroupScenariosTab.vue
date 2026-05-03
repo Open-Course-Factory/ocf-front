@@ -136,6 +136,14 @@ const { t } = useTranslations({
       quizScorePct: '{score}%',
       csvStepType: 'Step type',
       csvQuizScore: 'Quiz score',
+      csvQuestionOrder: 'Question',
+      csvQuestionText: 'Question text',
+      csvQuestionType: 'Question type',
+      csvStudentAnswer: 'Student answer',
+      csvCorrectAnswer: 'Correct answer',
+      csvIsCorrect: 'Correct?',
+      csvYes: 'Yes',
+      csvNo: 'No',
       hintsUsed: 'Hints',
       timeSpent: 'Time',
       completed: 'completed',
@@ -273,6 +281,14 @@ const { t } = useTranslations({
       quizScorePct: '{score} %',
       csvStepType: 'Type d\'étape',
       csvQuizScore: 'Score quiz',
+      csvQuestionOrder: 'Question',
+      csvQuestionText: 'Énoncé',
+      csvQuestionType: 'Type de question',
+      csvStudentAnswer: 'Réponse de l\'apprenant',
+      csvCorrectAnswer: 'Bonne réponse',
+      csvIsCorrect: 'Correcte ?',
+      csvYes: 'Oui',
+      csvNo: 'Non',
       hintsUsed: 'Indices',
       timeSpent: 'Temps',
       completed: 'terminé',
@@ -1160,30 +1176,6 @@ function formatQuizScoreCsv(score?: number): string {
   return `${(score * 100).toFixed(1)}%`
 }
 
-function buildResultsCsv(results: ScenarioResultItem[]): string {
-  const headers = [
-    t('groupScenarios.export.name'),
-    t('groupScenarios.export.email'),
-    t('groupScenarios.export.status'),
-    t('groupScenarios.export.grade'),
-    t('groupScenarios.export.progress'),
-    t('groupScenarios.export.hintsUsed'),
-    t('groupScenarios.export.started'),
-    t('groupScenarios.export.completed')
-  ]
-  const rows = results.map(r => [
-    r.user_name || r.user_id,
-    r.user_email || '',
-    r.status,
-    r.grade != null ? Math.round(r.grade) + '%' : '',
-    `${r.completed_steps}/${r.total_steps}`,
-    r.total_hints_used ?? 0,
-    r.started_at ? formatDate(r.started_at) : '',
-    r.completed_at ? formatDate(r.completed_at) : ''
-  ])
-  return [headers, ...rows].map(row => row.map(sanitizeCSVField).join(',')).join('\n')
-}
-
 function downloadCsv(csv: string, filename: string) {
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
@@ -1194,10 +1186,20 @@ function downloadCsv(csv: string, filename: string) {
   URL.revokeObjectURL(url)
 }
 
-function exportResultsCsv() {
-  if (scenarioResults.value.length === 0) return
-  const csv = buildResultsCsv(scenarioResults.value)
-  downloadCsv(csv, `scenario-results-${showResultsForAssignment.value?.scenario?.title || 'export'}.csv`)
+// Resolve a stored answer (string) to display text. For multiple_choice the
+// answer is an option index ("0", "1", ...) and we look up the text in the
+// options list. For other types it's the literal value. Returns '' when the
+// answer is empty.
+function resolveAnswerText(q: QuestionDetail, raw: string): string {
+  if (!raw) return ''
+  if (q.question_type === 'multiple_choice') {
+    const opts = parseQuizOptions(q.options)
+    const idx = Number(raw)
+    if (Number.isInteger(idx) && idx >= 0 && idx < opts.length) {
+      return opts[idx]
+    }
+  }
+  return raw
 }
 
 function buildDetailCsv(details: Array<{ result: ScenarioResultItem; detail: SessionDetailResponse }>): string {
@@ -1214,8 +1216,18 @@ function buildDetailCsv(details: Array<{ result: ScenarioResultItem; detail: Ses
     t('groupScenarios.csvQuizScore'),
     t('groupScenarios.hintsUsed'),
     t('groupScenarios.timeSpent'),
-    t('groupScenarios.completedAt')
+    t('groupScenarios.completedAt'),
+    // Per-question columns. Blank on step rows; filled on question rows
+    // (one extra row per quiz question, after the parent step row).
+    t('groupScenarios.csvQuestionOrder'),
+    t('groupScenarios.csvQuestionText'),
+    t('groupScenarios.csvQuestionType'),
+    t('groupScenarios.csvStudentAnswer'),
+    t('groupScenarios.csvCorrectAnswer'),
+    t('groupScenarios.csvIsCorrect')
   ]
+  const yes = t('groupScenarios.csvYes')
+  const no = t('groupScenarios.csvNo')
   const rows: any[][] = []
   for (const { result, detail } of details) {
     const studentName = result.user_name || result.user_id
@@ -1223,7 +1235,7 @@ function buildDetailCsv(details: Array<{ result: ScenarioResultItem; detail: Ses
     const status = result.status
     const grade = result.grade != null ? Math.round(result.grade) + '%' : ''
     for (const step of detail.steps) {
-      rows.push([
+      const stepCols = [
         studentName, email, status, grade,
         step.step_order + 1,
         step.step_title,
@@ -1234,10 +1246,45 @@ function buildDetailCsv(details: Array<{ result: ScenarioResultItem; detail: Ses
         step.hints_revealed,
         formatDuration(step.time_spent_seconds),
         step.completed_at ? formatDate(step.completed_at) : ''
-      ])
+      ]
+      // Step row: leave the 6 question columns blank.
+      rows.push([...stepCols, '', '', '', '', '', ''])
+      // Quiz step → one row per question, repeating the step columns so
+      // each row is self-contained for filtering / pivoting.
+      if (normalizedStepType(step.step_type) === 'quiz' && step.questions) {
+        for (let i = 0; i < step.questions.length; i++) {
+          const q = step.questions[i]
+          rows.push([
+            ...stepCols,
+            (q.order != null ? q.order + 1 : i + 1),
+            q.question_text,
+            q.question_type,
+            resolveAnswerText(q, q.student_answer),
+            resolveAnswerText(q, q.correct_answer),
+            q.is_correct ? yes : no
+          ])
+        }
+      }
     }
   }
   return [headers, ...rows].map(row => row.map(sanitizeCSVField).join(',')).join('\n')
+}
+
+async function exportResultsCsv() {
+  if (scenarioResults.value.length === 0) return
+  try {
+    const details = await Promise.all(
+      scenarioResults.value.map(async r => ({
+        result: r,
+        detail: await teacherService.getSessionDetail(props.groupId, r.session_id)
+      }))
+    )
+    const csv = buildDetailCsv(details)
+    const scenarioTitle = showResultsForAssignment.value?.scenario?.title || 'export'
+    downloadCsv(csv, `scenario-results-${scenarioTitle}.csv`)
+  } catch (err: any) {
+    notifyError(err.response?.data?.error || t('groupScenarios.exportError'))
+  }
 }
 
 async function exportSingleResult(result: ScenarioResultItem) {
