@@ -5,6 +5,52 @@
 
 import axios from 'axios'
 
+// Shape of one row in the paginated result list returned by
+// GET /teacher/groups/:groupId/scenarios/:scenarioId/results.
+// Owned here so views (GroupScenariosTab, future teacher dashboards) all
+// agree on the contract — see issue #204.
+export interface ScenarioResultItem {
+  session_id: string
+  user_id: string
+  user_name?: string
+  user_email?: string
+  status: string
+  grade?: number
+  current_step: number
+  total_steps: number
+  completed_steps: number
+  total_hints_used: number
+  started_at: string
+  completed_at?: string
+}
+
+// Shape of one row in /teacher/groups/:groupId/sessions/:sessionId/detail.
+export interface SessionStepDetail {
+  step_order: number
+  step_title: string
+  step_type?: string
+  status: string
+  verify_attempts: number
+  hints_revealed: number
+  quiz_score?: number
+  completed_at?: string
+  time_spent_seconds: number
+}
+
+export interface SessionDetailResponse {
+  session_id: string
+  user_id: string
+  user_name?: string
+  user_email?: string
+  scenario_id: string
+  scenario_title: string
+  status: string
+  grade?: number
+  started_at: string
+  completed_at?: string
+  steps: SessionStepDetail[]
+}
+
 export const teacherService = {
   // --- Group scenario assignment operations ---
 
@@ -37,7 +83,7 @@ export const teacherService = {
     return response.data?.sessions || response.data?.data || response.data || []
   },
 
-  async getScenarioResults(groupId: string, scenarioId: string): Promise<any[]> {
+  async getScenarioResults(groupId: string, scenarioId: string): Promise<ScenarioResultItem[]> {
     const response = await axios.get(
       `/teacher/groups/${groupId}/scenarios/${scenarioId}/results`
     )
@@ -49,7 +95,7 @@ export const teacherService = {
     return response.data
   },
 
-  async getSessionDetail(groupId: string, sessionId: string): Promise<any> {
+  async getSessionDetail(groupId: string, sessionId: string): Promise<SessionDetailResponse> {
     const response = await axios.get(
       `/teacher/groups/${groupId}/sessions/${sessionId}/detail`
     )

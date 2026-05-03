@@ -25,7 +25,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
-import { teacherService } from '../../services/domain/scenario'
+import { teacherService, type ScenarioResultItem, type SessionDetailResponse } from '../../services/domain/scenario'
 import { useTerminalBackendsStore } from '../../stores/terminalBackends'
 import BackendSelector from '../Terminal/BackendSelector.vue'
 import BaseModal from '../Modals/BaseModal.vue'
@@ -287,46 +287,8 @@ interface Distribution {
   is_global: boolean
 }
 
-interface ScenarioResultItem {
-  session_id: string
-  user_id: string
-  user_name?: string
-  user_email?: string
-  status: string
-  grade?: number
-  current_step: number
-  total_steps: number
-  completed_steps: number
-  total_hints_used: number
-  started_at: string
-  completed_at?: string
-}
-
-interface SessionStepDetail {
-  step_order: number
-  step_title: string
-  step_type?: string
-  status: string
-  verify_attempts: number
-  hints_revealed: number
-  quiz_score?: number
-  completed_at?: string
-  time_spent_seconds: number
-}
-
-interface SessionDetailResponse {
-  session_id: string
-  user_id: string
-  user_name?: string
-  user_email?: string
-  scenario_id: string
-  scenario_title: string
-  status: string
-  grade?: number
-  started_at: string
-  completed_at?: string
-  steps: SessionStepDetail[]
-}
+// (ScenarioResultItem / SessionStepDetail / SessionDetailResponse imported
+// from services/domain/scenario — single source of truth, see #204)
 
 // State
 const assignments = ref<ScenarioAssignment[]>([])
