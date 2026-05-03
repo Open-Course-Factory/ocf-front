@@ -183,21 +183,22 @@ describe('useScenarioEditorAccess (real stores + real admin-view-mode)', () => {
     user.userRoles = []
 
     const orgs = useOrganizationsStore()
-    // Inject directly via the underlying base store. We avoid mocking the
-    // store API and instead reach into its public `entities` ref.
-    ;(orgs as any).entities = [
-      {
-        id: 'org-1',
-        name: 'demo',
-        display_name: 'Demo Org',
-        owner_user_id: 'owner-7',
-        organization_type: 'team',
-        max_groups: 5,
-        max_members: 10,
-        is_active: true,
-        member_count: 1,
-      },
-    ]
+    // Populate the store via the same in-place mutation `loadOrganizations`
+    // uses (`base.entities.splice(...)`) so the reactive array's identity is
+    // preserved and `userOrganizations` (a computed over `getEntities()`)
+    // sees the new orgs. Replacing `orgs.entities` with a fresh array would
+    // shadow the closure-bound ref read by the computed.
+    ;(orgs as any).entities.push({
+      id: 'org-1',
+      name: 'demo',
+      display_name: 'Demo Org',
+      owner_user_id: 'owner-7',
+      organization_type: 'team',
+      max_groups: 5,
+      max_members: 10,
+      is_active: true,
+      member_count: 1,
+    })
 
     const { canAccessScenarioEditor } = useScenarioEditorAccess()
     expect(canAccessScenarioEditor.value).toBe(true)

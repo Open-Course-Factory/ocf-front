@@ -73,20 +73,10 @@ export function useScenarioEditorAccess(): ScenarioEditorAccess {
     // 4. Org owner (`owner_user_id === currentUser.userId`) — mirrors the
     //    Source 1 branch in ScenarioEditor.vue. Some fixtures only set
     //    ownership and skip the Casbin row.
-    //
-    //    Read both `userOrganizations` (the canonical computed) and the
-    //    underlying `entities` ref because tests inject orgs by directly
-    //    assigning `store.entities = [...]`, which bypasses the closure-bound
-    //    accessor used by `userOrganizations`. In production both sources
-    //    are equivalent; in tests, only `entities` is populated.
     const userId = currentUser.userId
     if (userId) {
       const userOrgs = organizationsStore.userOrganizations || []
       if (userOrgs.some(org => org.owner_user_id === userId)) return true
-      const rawEntities = (organizationsStore as any).entities || []
-      if (Array.isArray(rawEntities) && rawEntities.some((org: any) => org.owner_user_id === userId)) {
-        return true
-      }
     }
 
     // 5. /me/memberships fallback — DB-backed org memberships
