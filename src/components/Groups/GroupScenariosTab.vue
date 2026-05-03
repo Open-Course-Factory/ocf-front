@@ -184,7 +184,6 @@ const { t } = useTranslations({
       yourAnswer: 'Student answer',
       correctAnswer: 'Correct answer',
       studentAnswerCorrect: 'Student answer (correct)',
-      optionNotPicked: 'Not picked',
       correctIndicator: 'Correct',
       incorrectIndicator: 'Incorrect',
       noAnswer: 'No answer',
@@ -322,7 +321,6 @@ const { t } = useTranslations({
       yourAnswer: 'Réponse de l\'apprenant',
       correctAnswer: 'Bonne réponse',
       studentAnswerCorrect: 'Réponse de l\'apprenant (correcte)',
-      optionNotPicked: 'Non choisie',
       correctIndicator: 'Correcte',
       incorrectIndicator: 'Incorrecte',
       noAnswer: 'Pas de réponse',
@@ -1722,22 +1720,18 @@ onUnmounted(() => {
                                 {{ optionRoleText(opt, q) }}
                               </span>
                             </div>
-                            <!-- Explicit recap line so the trainer never has to infer
-                                 from colour alone which answer was picked vs correct. -->
-                            <div class="quiz-question-answers">
-                              <div class="quiz-answer-line">
-                                <span class="quiz-answer-label">{{ t('groupScenarios.yourAnswer') }}:</span>
-                                <span
-                                  class="quiz-answer-value"
-                                  :class="q.is_correct ? 'quiz-answer-correct' : 'quiz-answer-wrong'"
-                                >
-                                  {{ displayAnswer(q.student_answer) || t('groupScenarios.noAnswer') }}
-                                </span>
-                              </div>
-                              <div class="quiz-answer-line">
-                                <span class="quiz-answer-label">{{ t('groupScenarios.correctAnswer') }}:</span>
-                                <span class="quiz-answer-value quiz-answer-correct">{{ q.correct_answer }}</span>
-                              </div>
+                            <!-- If the student typed something that is not in the options
+                                 list (legacy data, edited options, etc.), surface it so the
+                                 trainer still sees what was actually submitted. -->
+                            <div
+                              v-if="q.student_answer
+                                && !parseQuizOptions(q.options).includes(q.student_answer)"
+                              class="quiz-answer-line"
+                            >
+                              <span class="quiz-answer-label">{{ t('groupScenarios.yourAnswer') }}:</span>
+                              <span class="quiz-answer-value quiz-answer-wrong">
+                                {{ displayAnswer(q.student_answer) }}
+                              </span>
                             </div>
                           </div>
                           <div v-else class="quiz-question-answers">
