@@ -440,6 +440,7 @@ import { useCurrentUserStore } from '../../stores/currentUser'
 import { useTranslations } from '../../composables/useTranslations'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useNotification } from '../../composables/useNotification'
+import { useScenarioGraph, STEP_NODE_TYPES } from '../../composables/useScenarioGraph'
 import NodeLibraryPanel from '../GraphEditor/NodeLibraryPanel.vue'
 import type { NodeTypeDefinition } from '../GraphEditor/NodeLibraryPanel.vue'
 import FlowCanvas from '../GraphEditor/FlowCanvas.vue'
@@ -696,9 +697,6 @@ const customNodeTypes: Record<string, Component> = {
   quiz: markRaw(QuizStepNode)
 }
 
-// Step type node types (used in multiple places)
-const STEP_NODE_TYPES = ['terminal', 'flag', 'info', 'quiz']
-
 // Node type definitions for the library panel
 const scenarioNodeTypeDefinitions = computed((): NodeTypeDefinition[] => [
   {
@@ -744,11 +742,27 @@ const scenarioNodeTypeDefinitions = computed((): NodeTypeDefinition[] => [
 ])
 
 // State
-const nodes = ref<any[]>([])
-const edges = ref<any[]>([])
 const draggedNodeType = ref<string | null>(null)
 const selectedScenarioId = ref<string | null>(null)
 const currentScenario = ref<any>(null)
+
+// Graph state + pure helpers (composable owns nodes/edges and conversion logic)
+const {
+  nodes,
+  edges,
+  convertScenarioToNodes,
+  syncOrderFromEdges,
+  saveNodePositions,
+  loadNodePositions,
+  clearNodePositions,
+  handleEdgeConnect,
+  deserializeQuestion
+} = useScenarioGraph({
+  selectedScenarioId,
+  onInvalidConnection: (sourceType, targetType) => {
+    notification.showWarning(t('scenarioEditor.invalidConnection', { source: sourceType, target: targetType }))
+  }
+})
 const allScenarios = computed(() => scenariosStore.entities)
 const isImporting = ref(false)
 const isRightPanelCollapsed = ref(false)
@@ -1052,132 +1066,7 @@ const handleScenarioSelect = async () => {
   }
 }
 
-// Deserialize a question's `options` field. The backend stores `options` as a
-// JSON string (TEXT column); the frontend QuestionData expects `options: string[]`.
-// Tolerates payloads that already arrive as arrays (e.g. demo mode) or invalid JSON.
-const deserializeQuestion = (q: any) => {
-  const raw = q?.options
-  let options: string[] = []
-  if (Array.isArray(raw)) {
-    options = raw
-  } else if (typeof raw === 'string' && raw.length > 0) {
-    try {
-      const parsed = JSON.parse(raw)
-      options = Array.isArray(parsed) ? parsed : []
-    } catch {
-      options = []
-    }
-  }
-  return { ...q, options }
-}
-
-// Convert scenario to nodes and edges (vertical layout)
-const convertScenarioToNodes = (scenario: any) => {
-  const newNodes: any[] = []
-  const newEdges: any[] = []
-
-  const steps = scenario.scenario_steps || scenario.scenarioSteps || scenario.steps || []
-
-  // Create scenario root node at top-left
-  const scenarioNode = {
-    id: `scenario-${scenario.id}`,
-    type: 'scenario',
-    position: { x: 100, y: 50 },
-    data: {
-      label: scenario.title || scenario.name,
-      entityId: scenario.id,
-      entityType: 'scenario',
-      difficulty: scenario.difficulty,
-      estimated_time: scenario.estimated_time,
-      flags_enabled: scenario.flags_enabled,
-      steps: steps,
-      isNew: false,
-      isExpanded: true,
-      ...scenario
-    }
-  }
-  newNodes.push(scenarioNode)
-
-  if (steps.length === 0) {
-    nodes.value = newNodes
-    edges.value = newEdges
-    return
-  }
-
-  // Sort steps by order
-  const sortedSteps = [...steps].sort((a, b) => (a.order || 0) - (b.order || 0))
-
-  // Layout: scenario at top-left, first step below, then steps spread horizontally
-  const STEP_SPACING_X = 250      // Horizontal spacing between steps
-  const LEVEL_SPACING_Y = 200     // Vertical gap from scenario to step row
-  const stepRowY = 50 + LEVEL_SPACING_Y  // Steps row Y position
-  let currentX = 100              // Start at same X as scenario
-  let previousStepId: string | null = null
-
-  sortedSteps.forEach((step, stepIdx) => {
-    const stepId = `step-${step.id}`
-    const nodeType = step.step_type && STEP_NODE_TYPES.includes(step.step_type) ? step.step_type : 'terminal'
-
-    const stepNode = {
-      id: stepId,
-      type: nodeType,
-      position: { x: currentX, y: stepRowY },
-      data: {
-        label: step.title || `Step ${stepIdx + 1}`,
-        entityId: step.id,
-        entityType: nodeType,
-        step_type: nodeType,
-        order: step.order || stepIdx + 1,
-        text_content: step.text_content,
-        hint_content: step.hint_content,
-        hint_file_id: step.hint_file_id,
-        verify_script: step.verify_script,
-        verify_script_id: step.verify_script_id,
-        background_script: step.background_script,
-        foreground_script: step.foreground_script,
-        has_flag: step.has_flag,
-        flag_path: step.flag_path,
-        flag_level: step.flag_level,
-        show_immediate_feedback: step.show_immediate_feedback ?? false,
-        isNew: false,
-        ...step,
-        // Deserialize `options` JSON-string → array (overrides the spread above)
-        questions: Array.isArray(step.questions) ? step.questions.map(deserializeQuestion) : []
-      }
-    }
-    newNodes.push(stepNode)
-
-    if (stepIdx === 0) {
-      // First step: vertical edge from scenario (bottom → top)
-      newEdges.push({
-        id: `edge-${scenarioNode.id}-${stepId}`,
-        source: scenarioNode.id,
-        sourceHandle: 'bottom-source',
-        target: stepId,
-        targetHandle: 'top',
-        type: 'smoothstep',
-        animated: false
-      })
-    } else if (previousStepId) {
-      // Subsequent steps: horizontal edge from previous step (right → left)
-      newEdges.push({
-        id: `edge-${previousStepId}-${stepId}`,
-        source: previousStepId,
-        sourceHandle: 'right-source',
-        target: stepId,
-        targetHandle: 'left',
-        type: 'smoothstep',
-        animated: false
-      })
-    }
-
-    currentX += STEP_SPACING_X
-    previousStepId = stepId
-  })
-
-  nodes.value = newNodes
-  edges.value = newEdges
-}
+// (graph helpers — convertScenarioToNodes, deserializeQuestion — moved to useScenarioGraph)
 
 // Create new scenario
 const handleCreateNew = () => {
@@ -1365,45 +1254,7 @@ const handleSelectTree = (nodeData: any) => {
   nodes.value = [...nodes.value]
 }
 
-// Valid parent→child type map for edge connections
-const VALID_CONNECTIONS: Record<string, string[]> = {
-  'scenario': STEP_NODE_TYPES,
-  'terminal': STEP_NODE_TYPES,
-  'flag': STEP_NODE_TYPES,
-  'info': STEP_NODE_TYPES,
-  'quiz': STEP_NODE_TYPES
-}
-
-const handleEdgeConnect = async (connection: any) => {
-  const sourceNode = nodes.value.find(n => n.id === connection.source)
-  const targetNode = nodes.value.find(n => n.id === connection.target)
-  if (!sourceNode || !targetNode) return
-
-  const sourceType = sourceNode.data.entityType
-  const targetType = targetNode.data.entityType
-
-  if (!VALID_CONNECTIONS[sourceType]?.includes(targetType)) {
-    edges.value = edges.value.filter(e =>
-      !(e.source === connection.source && e.target === connection.target)
-    )
-    notification.showWarning(t('scenarioEditor.invalidConnection', { source: sourceType, target: targetType }))
-    return
-  }
-
-  // If target is an existing step, update its scenario_id
-  if (targetNode.data.entityId && !targetNode.data.isNew && sourceNode.data.entityType === 'scenario') {
-    try {
-      await axios.patch(`/scenario-steps/${targetNode.data.entityId}`, {
-        scenario_id: sourceNode.data.entityId
-      })
-    } catch (err) {
-      console.error('Failed to sync edge connection:', err)
-      edges.value = edges.value.filter(e =>
-        !(e.source === connection.source && e.target === connection.target)
-      )
-    }
-  }
-}
+// (VALID_CONNECTIONS + handleEdgeConnect — moved to useScenarioGraph)
 
 // Modal handlers - Scenario
 const openEditModal = async (node: any) => {
@@ -1810,65 +1661,7 @@ const confirmDelete = async () => {
   }
 }
 
-// Sync order from edge chains (scenario → step1 → step2 → ...)
-const syncOrderFromEdges = async (): Promise<number> => {
-  let patchCount = 0
-
-  const parentTypes = [
-    { parentType: 'scenario', endpoint: '/scenario-steps', orderField: 'order' }
-  ]
-
-  for (const { parentType, endpoint, orderField } of parentTypes) {
-    const parentNodes = nodes.value.filter(n => n.data.entityType === parentType && n.data.entityId)
-
-    for (const parentNode of parentNodes) {
-      const firstChildEdge = edges.value.find(e => {
-        if (e.source !== parentNode.id) return false
-        const targetNode = nodes.value.find(n => n.id === e.target)
-        return targetNode?.data?.entityType && STEP_NODE_TYPES.includes(targetNode.data.entityType)
-      })
-
-      if (!firstChildEdge) continue
-
-      const orderedChildren: any[] = []
-      let currentNodeId: string | null = firstChildEdge.target
-
-      while (currentNodeId) {
-        const currentNode = nodes.value.find(n => n.id === currentNodeId)
-        if (!currentNode) break
-        orderedChildren.push(currentNode)
-
-        const nextEdge = edges.value.find(e => {
-          if (e.source !== currentNodeId) return false
-          const targetNode = nodes.value.find(n => n.id === e.target)
-          return targetNode?.data?.entityType && STEP_NODE_TYPES.includes(targetNode.data.entityType)
-        })
-
-        currentNodeId = nextEdge ? nextEdge.target : null
-      }
-
-      for (let i = 0; i < orderedChildren.length; i++) {
-        const child = orderedChildren[i]
-        const newOrder = i + 1
-        const currentOrder = child.data.order ?? 0
-
-        if (child.data.entityId && !child.data.isNew && currentOrder !== newOrder) {
-          try {
-            await axios.patch(`${endpoint}/${child.data.entityId}`, {
-              [orderField]: newOrder
-            })
-            child.data.order = newOrder
-            patchCount++
-          } catch (err) {
-            console.error(`Failed to update order for step ${child.data.entityId}:`, err)
-          }
-        }
-      }
-    }
-  }
-
-  return patchCount
-}
+// (syncOrderFromEdges + saveNodePositions/loadNodePositions — moved to useScenarioGraph)
 
 // Save/Reset handlers
 const handleSave = async () => {
@@ -1886,47 +1679,9 @@ const handleSave = async () => {
 const handleReset = () => {
   if (currentScenario.value) {
     if (selectedScenarioId.value) {
-      const storageKey = `scenarioEditor_positions_${selectedScenarioId.value}`
-      localStorage.removeItem(storageKey)
+      clearNodePositions(selectedScenarioId.value)
     }
     convertScenarioToNodes(currentScenario.value)
-  }
-}
-
-// Position persistence
-const saveNodePositions = () => {
-  if (!selectedScenarioId.value) return
-
-  const nodePositions = nodes.value.map(node => ({
-    id: node.id,
-    entityId: node.data.entityId,
-    position: node.position
-  }))
-
-  const storageKey = `scenarioEditor_positions_${selectedScenarioId.value}`
-  localStorage.setItem(storageKey, JSON.stringify(nodePositions))
-}
-
-const loadNodePositions = () => {
-  if (!selectedScenarioId.value) return
-
-  const storageKey = `scenarioEditor_positions_${selectedScenarioId.value}`
-  const saved = localStorage.getItem(storageKey)
-
-  if (!saved) return
-
-  try {
-    const savedPositions = JSON.parse(saved)
-    const positionMap = new Map(savedPositions.map((p: any) => [p.id, p.position]))
-
-    nodes.value.forEach(node => {
-      const savedPosition = positionMap.get(node.id)
-      if (savedPosition) {
-        node.position = savedPosition
-      }
-    })
-  } catch (err) {
-    console.error('Failed to load node positions:', err)
   }
 }
 
