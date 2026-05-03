@@ -429,7 +429,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, markRaw, watch, type Component } from 'vue'
+import { ref, onMounted, onUnmounted, computed, markRaw, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useScenariosStore } from '../../stores/scenarios'
 import { useScenarioStepsStore } from '../../stores/scenarioSteps'
@@ -911,21 +911,6 @@ const availableCreateScopes = computed<CreateScope[]>(() => {
 })
 
 const canCreateScenario = computed(() => availableCreateScopes.value.length > 0)
-
-// Temporary diagnostic — logs whenever the scope set changes so we can see
-// in the browser console what the editor actually computed for the user.
-watch(availableCreateScopes, (scopes) => {
-  console.log('[ScenarioEditor] availableCreateScopes', {
-    count: scopes.length,
-    scopes,
-    isAdmin: isAdmin.value,
-    orgMemberships: membershipsStore.orgMemberships,
-    groupMemberships: membershipsStore.groupMemberships,
-    membershipsLoaded: membershipsStore.isLoaded,
-    membershipsError: membershipsStore.error,
-    userOrgs: organizationsStore.userOrganizations.map(o => ({ id: o.id, name: o.display_name || o.name })),
-  })
-}, { immediate: true, deep: true })
 
 const parseScopeKey = (key: string | undefined | null): CreateScope | null => {
   if (!key) return null

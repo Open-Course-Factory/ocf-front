@@ -62,24 +62,11 @@ export const useUserMembershipsStore = defineStore('userMemberships', () => {
 
     isLoading.value = true
     error.value = ''
-    console.warn('[userMemberships] BUILD-TAG: 5d2e8c0+ — about to fetch /me/memberships')
     try {
-      const orgRes = await axios.get('/organizations/me/memberships').catch((e: any) => {
-        console.error('[userMemberships] orgs request error', {
-          status: e.response?.status,
-          url: e.config?.url,
-          baseURL: e.config?.baseURL,
-          fullURL: `${e.config?.baseURL || ''}${e.config?.url || ''}`,
-          headers: e.config?.headers,
-          responseHeaders: e.response?.headers,
-          responseData: e.response?.data,
-        })
-        throw e
-      })
-      const groupRes = await axios.get('/groups/me/memberships').catch((e: any) => {
-        console.error('[userMemberships] groups request error', { status: e.response?.status, url: e.config?.url })
-        throw e
-      })
+      const [orgRes, groupRes] = await Promise.all([
+        axios.get('/organizations/me/memberships'),
+        axios.get('/groups/me/memberships'),
+      ])
 
       const orgs = orgRes.data?.data || orgRes.data || []
       const groups = groupRes.data?.data || groupRes.data || []
@@ -92,16 +79,6 @@ export const useUserMembershipsStore = defineStore('userMemberships', () => {
                     err.response?.data?.message ||
                     err.message ||
                     'Failed to load memberships'
-      // Diagnostic dump — remove once the membership 404 is identified.
-      console.error('[userMemberships] load failed', {
-        message: err.message,
-        status: err.response?.status,
-        url: err.config?.url,
-        baseURL: err.config?.baseURL,
-        method: err.config?.method,
-        responseData: err.response?.data,
-        responseHeaders: err.response?.headers,
-      })
       // Keep going with empty arrays so UI just hides scoped actions
       orgMemberships.value = []
       groupMemberships.value = []
