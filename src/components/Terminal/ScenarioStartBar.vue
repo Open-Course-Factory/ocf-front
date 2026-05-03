@@ -63,6 +63,7 @@ import { ref, computed } from 'vue'
 import { scenarioSessionService, pollProvisioningStatus } from '../../services/domain/scenario'
 import { terminalService } from '../../services/domain/terminal'
 import { useTranslations } from '../../composables/useTranslations'
+import { useDifficultyLabel } from '../../composables/useDifficultyLabel'
 import { useNotification } from '../../composables/useNotification'
 import AdminBadge from '../Common/AdminBadge.vue'
 
@@ -105,10 +106,7 @@ const { t } = useTranslations({
       setupFailed: 'Environment setup failed. Please try again.',
       provisioning: 'Setting up environment... This may take a few minutes.',
       loadError: 'Failed to load scenarios.',
-      closePicker: 'Close',
-      difficultyBeginner: 'Beginner',
-      difficultyIntermediate: 'Intermediate',
-      difficultyAdvanced: 'Advanced'
+      closePicker: 'Close'
     }
   },
   fr: {
@@ -121,22 +119,12 @@ const { t } = useTranslations({
       setupFailed: 'La préparation de l\'environnement a échoué. Veuillez réessayer.',
       provisioning: 'Préparation de l\'environnement... Cela peut prendre quelques minutes.',
       loadError: 'Échec du chargement des scénarios.',
-      closePicker: 'Fermer',
-      difficultyBeginner: 'Débutant',
-      difficultyIntermediate: 'Intermédiaire',
-      difficultyAdvanced: 'Avancé'
+      closePicker: 'Fermer'
     }
   }
 })
 
-function translateDifficulty(difficulty: string): string {
-  const difficultyMap: Record<string, string> = {
-    beginner: t('scenarioStart.difficultyBeginner'),
-    intermediate: t('scenarioStart.difficultyIntermediate'),
-    advanced: t('scenarioStart.difficultyAdvanced')
-  }
-  return difficultyMap[difficulty] || difficulty
-}
+const translateDifficulty = useDifficultyLabel()
 
 // Size ordering for "at least" comparison
 const SIZE_ORDER: Record<string, number> = { 'XS': 1, 'S': 2, 'M': 3, 'L': 4, 'XL': 5, 'XXL': 6 }

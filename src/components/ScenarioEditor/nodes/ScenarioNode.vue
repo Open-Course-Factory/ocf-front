@@ -17,7 +17,7 @@
       <div class="node-title">{{ data.label || 'New Scenario' }}</div>
       <div v-if="data.difficulty" class="node-subtitle">
         <span class="difficulty-badge" :class="`difficulty-${data.difficulty}`">
-          {{ data.difficulty }}
+          {{ difficultyLabel(data.difficulty) }}
         </span>
       </div>
     </template>
@@ -40,6 +40,9 @@
 
 <script setup lang="ts">
 import BaseNode from '../../GraphEditor/nodes/BaseNode.vue'
+import { useDifficultyLabel } from '../../../composables/useDifficultyLabel'
+
+const difficultyLabel = useDifficultyLabel()
 
 interface Props {
   data: {

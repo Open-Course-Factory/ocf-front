@@ -32,7 +32,7 @@
             <span class="scenario-icon">🧪</span>
             <span class="scenario-name">{{ scenario.title || scenario.name }}</span>
             <span v-if="scenario.difficulty" class="difficulty-badge" :class="`difficulty-${scenario.difficulty}`">
-              {{ scenario.difficulty }}
+              {{ difficultyLabel(scenario.difficulty) }}
             </span>
           </div>
 
@@ -66,6 +66,7 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useScenariosStore } from '../../stores/scenarios'
 import { useTranslations } from '../../composables/useTranslations'
+import { useDifficultyLabel } from '../../composables/useDifficultyLabel'
 
 const { t } = useTranslations({
   en: {
@@ -87,6 +88,8 @@ const { t } = useTranslations({
     }
   }
 })
+
+const difficultyLabel = useDifficultyLabel()
 
 interface Props {
   scenarios?: any[]
@@ -326,7 +329,7 @@ defineExpose({ refreshScenarios })
 
 .step-item:hover {
   transform: translateX(2px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .step-order {
