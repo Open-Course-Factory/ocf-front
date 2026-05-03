@@ -1249,7 +1249,7 @@ const handleSave = () => {
 .form-control:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+  box-shadow: var(--shadow-focus-primary);
 }
 
 .form-control:disabled {
