@@ -932,37 +932,55 @@ function quizQuestionTotal(step: SessionStepDetail): number {
 //   'correct'         — the right answer (student picked something else)
 //   'student-wrong'   — student picked this AND it's wrong
 //   ''                — not picked, not the right answer
+//
+// Multiple-choice answers are stored as the option's index as a string —
+// the player (ScenarioPanel.vue) submits `String(idx)` and the backend
+// stores `correct_answer` as the same index string. So we compare indexes,
+// not the literal option text.
 type OptionRole = 'student-correct' | 'correct' | 'student-wrong' | ''
 type QuestionDetail = NonNullable<SessionStepDetail['questions']>[number]
 
-function optionRole(opt: string, q: QuestionDetail): OptionRole {
-  const isStudent = opt === q.student_answer
-  const isCorrect = opt === q.correct_answer
+function optionRole(optIdx: number, q: QuestionDetail): OptionRole {
+  const idxStr = String(optIdx)
+  const isStudent = idxStr === q.student_answer
+  const isCorrect = idxStr === q.correct_answer
   if (isStudent && isCorrect) return 'student-correct'
   if (isCorrect) return 'correct'
   if (isStudent) return 'student-wrong'
   return ''
 }
 
-function optionRoleClass(opt: string, q: QuestionDetail): string {
-  const role = optionRole(opt, q)
+function optionRoleClass(optIdx: number, q: QuestionDetail): string {
+  const role = optionRole(optIdx, q)
   return role ? `option-${role}` : ''
 }
 
-function optionRoleIcon(opt: string, q: QuestionDetail): string {
-  const role = optionRole(opt, q)
+function optionRoleIcon(optIdx: number, q: QuestionDetail): string {
+  const role = optionRole(optIdx, q)
   if (role === 'student-correct' || role === 'correct') return 'fas fa-check'
   if (role === 'student-wrong') return 'fas fa-times'
   return ''
 }
 
-function optionRoleText(opt: string, q: QuestionDetail): string {
-  switch (optionRole(opt, q)) {
+function optionRoleText(optIdx: number, q: QuestionDetail): string {
+  switch (optionRole(optIdx, q)) {
     case 'student-correct': return t('groupScenarios.studentAnswerCorrect')
     case 'correct':         return t('groupScenarios.correctAnswer')
     case 'student-wrong':   return t('groupScenarios.yourAnswer')
     default:                return ''
   }
+}
+
+// Returns true when student_answer is set but cannot be resolved against the
+// options list (legacy free-text-on-mc data, edited options, etc.). Used to
+// decide whether to show the orphan-answer fallback line. We accept either
+// the index form ("0") or the literal text form for backwards compat.
+function isOrphanStudentAnswer(q: QuestionDetail, options: string[]): boolean {
+  if (!q.student_answer) return false
+  const asIndex = Number(q.student_answer)
+  if (Number.isInteger(asIndex) && asIndex >= 0 && asIndex < options.length) return false
+  if (options.includes(q.student_answer)) return false
+  return true
 }
 
 // --- Per-step commands helpers ---
@@ -1708,24 +1726,24 @@ onUnmounted(() => {
                               v-for="(opt, optIdx) in parseQuizOptions(q.options)"
                               :key="optIdx"
                               class="quiz-question-option"
-                              :class="optionRoleClass(opt, q)"
+                              :class="optionRoleClass(optIdx, q)"
                             >
                               <span class="quiz-option-label">{{ opt }}</span>
                               <span
-                                v-if="optionRole(opt, q)"
+                                v-if="optionRole(optIdx, q)"
                                 class="quiz-option-tag"
-                                :class="'tag-' + optionRole(opt, q)"
+                                :class="'tag-' + optionRole(optIdx, q)"
                               >
-                                <i :class="optionRoleIcon(opt, q)"></i>
-                                {{ optionRoleText(opt, q) }}
+                                <i :class="optionRoleIcon(optIdx, q)"></i>
+                                {{ optionRoleText(optIdx, q) }}
                               </span>
                             </div>
-                            <!-- If the student typed something that is not in the options
-                                 list (legacy data, edited options, etc.), surface it so the
-                                 trainer still sees what was actually submitted. -->
+                            <!-- If the student's submitted value cannot be resolved as an
+                                 index OR a literal option (legacy data, edited options,
+                                 etc.), surface the raw value so the trainer still sees
+                                 what was actually submitted. -->
                             <div
-                              v-if="q.student_answer
-                                && !parseQuizOptions(q.options).includes(q.student_answer)"
+                              v-if="isOrphanStudentAnswer(q, parseQuizOptions(q.options))"
                               class="quiz-answer-line"
                             >
                               <span class="quiz-answer-label">{{ t('groupScenarios.yourAnswer') }}:</span>
