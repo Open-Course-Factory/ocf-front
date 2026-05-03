@@ -183,6 +183,8 @@ const { t } = useTranslations({
       question: 'Question',
       yourAnswer: 'Student answer',
       correctAnswer: 'Correct answer',
+      studentAnswerCorrect: 'Student answer (correct)',
+      optionNotPicked: 'Not picked',
       correctIndicator: 'Correct',
       incorrectIndicator: 'Incorrect',
       noAnswer: 'No answer',
@@ -319,6 +321,8 @@ const { t } = useTranslations({
       question: 'Question',
       yourAnswer: 'Réponse de l\'apprenant',
       correctAnswer: 'Bonne réponse',
+      studentAnswerCorrect: 'Réponse de l\'apprenant (correcte)',
+      optionNotPicked: 'Non choisie',
       correctIndicator: 'Correcte',
       incorrectIndicator: 'Incorrecte',
       noAnswer: 'Pas de réponse',
@@ -923,6 +927,44 @@ function quizCorrectCount(step: SessionStepDetail): number {
 
 function quizQuestionTotal(step: SessionStepDetail): number {
   return (step.questions || []).length
+}
+
+// Per multiple-choice option, returns one of:
+//   'student-correct' — student picked this AND it's the right answer
+//   'correct'         — the right answer (student picked something else)
+//   'student-wrong'   — student picked this AND it's wrong
+//   ''                — not picked, not the right answer
+type OptionRole = 'student-correct' | 'correct' | 'student-wrong' | ''
+type QuestionDetail = NonNullable<SessionStepDetail['questions']>[number]
+
+function optionRole(opt: string, q: QuestionDetail): OptionRole {
+  const isStudent = opt === q.student_answer
+  const isCorrect = opt === q.correct_answer
+  if (isStudent && isCorrect) return 'student-correct'
+  if (isCorrect) return 'correct'
+  if (isStudent) return 'student-wrong'
+  return ''
+}
+
+function optionRoleClass(opt: string, q: QuestionDetail): string {
+  const role = optionRole(opt, q)
+  return role ? `option-${role}` : ''
+}
+
+function optionRoleIcon(opt: string, q: QuestionDetail): string {
+  const role = optionRole(opt, q)
+  if (role === 'student-correct' || role === 'correct') return 'fas fa-check'
+  if (role === 'student-wrong') return 'fas fa-times'
+  return ''
+}
+
+function optionRoleText(opt: string, q: QuestionDetail): string {
+  switch (optionRole(opt, q)) {
+    case 'student-correct': return t('groupScenarios.studentAnswerCorrect')
+    case 'correct':         return t('groupScenarios.correctAnswer')
+    case 'student-wrong':   return t('groupScenarios.yourAnswer')
+    default:                return ''
+  }
 }
 
 // --- Per-step commands helpers ---
@@ -1668,28 +1710,43 @@ onUnmounted(() => {
                               v-for="(opt, optIdx) in parseQuizOptions(q.options)"
                               :key="optIdx"
                               class="quiz-question-option"
-                              :class="{
-                                'option-correct': opt === q.correct_answer,
-                                'option-student': opt === q.student_answer && opt !== q.correct_answer
-                              }"
+                              :class="optionRoleClass(opt, q)"
                             >
-                              <i
-                                v-if="opt === q.correct_answer"
-                                class="fas fa-check option-icon option-icon-correct"
-                                :title="t('groupScenarios.correctAnswer')"
-                              ></i>
-                              <i
-                                v-else-if="opt === q.student_answer"
-                                class="fas fa-times option-icon option-icon-student"
-                                :title="t('groupScenarios.yourAnswer')"
-                              ></i>
                               <span class="quiz-option-label">{{ opt }}</span>
+                              <span
+                                v-if="optionRole(opt, q)"
+                                class="quiz-option-tag"
+                                :class="'tag-' + optionRole(opt, q)"
+                              >
+                                <i :class="optionRoleIcon(opt, q)"></i>
+                                {{ optionRoleText(opt, q) }}
+                              </span>
+                            </div>
+                            <!-- Explicit recap line so the trainer never has to infer
+                                 from colour alone which answer was picked vs correct. -->
+                            <div class="quiz-question-answers">
+                              <div class="quiz-answer-line">
+                                <span class="quiz-answer-label">{{ t('groupScenarios.yourAnswer') }}:</span>
+                                <span
+                                  class="quiz-answer-value"
+                                  :class="q.is_correct ? 'quiz-answer-correct' : 'quiz-answer-wrong'"
+                                >
+                                  {{ displayAnswer(q.student_answer) || t('groupScenarios.noAnswer') }}
+                                </span>
+                              </div>
+                              <div class="quiz-answer-line">
+                                <span class="quiz-answer-label">{{ t('groupScenarios.correctAnswer') }}:</span>
+                                <span class="quiz-answer-value quiz-answer-correct">{{ q.correct_answer }}</span>
+                              </div>
                             </div>
                           </div>
                           <div v-else class="quiz-question-answers">
                             <div class="quiz-answer-line">
                               <span class="quiz-answer-label">{{ t('groupScenarios.yourAnswer') }}:</span>
-                              <span class="quiz-answer-value">
+                              <span
+                                class="quiz-answer-value"
+                                :class="q.is_correct ? 'quiz-answer-correct' : 'quiz-answer-wrong'"
+                              >
                                 {{ displayAnswer(q.student_answer) || t('groupScenarios.noAnswer') }}
                               </span>
                             </div>
@@ -2873,29 +2930,64 @@ onUnmounted(() => {
   color: var(--color-text-primary);
 }
 
+.quiz-question-option {
+  justify-content: space-between;
+}
+
+/* Student picked the right answer */
+.option-student-correct {
+  background: var(--color-success-bg);
+  border-color: var(--color-success-text);
+  color: var(--color-success-text);
+}
+
+/* Right answer (student picked something else) */
 .option-correct {
   background: var(--color-success-bg);
   border-color: var(--color-success-text);
   color: var(--color-success-text);
 }
 
-.option-student {
+/* Student picked the wrong answer */
+.option-student-wrong {
   background: var(--color-danger-bg);
   border-color: var(--color-danger-text);
   color: var(--color-danger-text);
 }
 
-.option-icon {
-  width: 1em;
-  text-align: center;
+.quiz-option-label {
+  flex: 1;
 }
 
-.option-icon-correct {
-  color: var(--color-success);
+.quiz-option-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 2px 8px;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
 }
 
-.option-icon-student {
-  color: var(--color-danger);
+.quiz-option-tag.tag-student-correct {
+  background: var(--color-success-text);
+  color: var(--color-bg-primary);
+}
+
+.quiz-option-tag.tag-correct {
+  background: var(--color-success-text);
+  color: var(--color-bg-primary);
+}
+
+.quiz-option-tag.tag-student-wrong {
+  background: var(--color-danger-text);
+  color: var(--color-bg-primary);
+}
+
+.quiz-answer-wrong {
+  color: var(--color-danger-text);
+  font-weight: var(--font-weight-semibold);
 }
 
 .quiz-question-answers {
