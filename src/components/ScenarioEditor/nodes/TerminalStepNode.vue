@@ -20,9 +20,9 @@
     <template #metadata>
       <div class="node-meta">
         <div class="step-indicators">
-          <span v-if="data.verify_script || data.verify_script_id" class="indicator indicator-verify" title="Has verify script">&#x2713;</span>
-          <span v-if="data.background_script" class="indicator indicator-background" title="Has background script">&#x2699;&#xFE0F;</span>
-          <span v-if="data.hint_content || data.hint_file_id" class="indicator indicator-hint" title="Has hint">&#x1F4A1;</span>
+          <span v-if="data.verify_script || data.verify_script_id" class="indicator indicator-verify" title="Has verify script" aria-label="Has verify script"><span aria-hidden="true">&#x2713;</span></span>
+          <span v-if="data.background_script" class="indicator indicator-background" title="Has background script" aria-label="Has background script"><span aria-hidden="true">&#x2699;&#xFE0F;</span></span>
+          <span v-if="data.hint_content || data.hint_file_id" class="indicator indicator-hint" title="Has hint" aria-label="Has hint"><span aria-hidden="true">&#x1F4A1;</span></span>
         </div>
         <span v-if="data.text_content" class="meta-item content-preview">
           {{ truncateContent(data.text_content) }}

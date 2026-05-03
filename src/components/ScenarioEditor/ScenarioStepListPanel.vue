@@ -2,19 +2,19 @@
   <div class="scenario-step-list-panel">
     <div class="panel-header">
       <h3>{{ t('stepList.title') }}</h3>
-      <button @click="refreshScenarios" class="btn-refresh" :disabled="isLoading">
-        <span class="refresh-icon">🔄</span>
+      <button @click="refreshScenarios" class="btn-refresh" :disabled="isLoading" :title="t('stepList.refresh')" :aria-label="t('stepList.refresh')">
+        <span class="refresh-icon" aria-hidden="true">🔄</span>
       </button>
     </div>
 
     <div class="panel-content">
       <div v-if="isLoading" class="loading-state">
-        <span class="loading-spinner">⏳</span>
+        <span class="loading-spinner" aria-hidden="true">⏳</span>
         <p>{{ t('stepList.loading') }}</p>
       </div>
 
       <div v-else-if="scenarios.length === 0" class="empty-state">
-        <span class="empty-icon">📭</span>
+        <span class="empty-icon" aria-hidden="true">📭</span>
         <p>{{ t('stepList.noScenarios') }}</p>
       </div>
 
@@ -28,8 +28,8 @@
             class="scenario-header"
             @click="toggleScenario(scenario.id)"
           >
-            <span class="expand-icon">{{ expandedScenarios[scenario.id] ? '▼' : '▶' }}</span>
-            <span class="scenario-icon">🧪</span>
+            <span class="expand-icon" aria-hidden="true">{{ expandedScenarios[scenario.id] ? '▼' : '▶' }}</span>
+            <span class="scenario-icon" aria-hidden="true">🧪</span>
             <span class="scenario-name">{{ scenario.title || scenario.name }}</span>
             <span v-if="scenario.difficulty" class="difficulty-badge" :class="`difficulty-${scenario.difficulty}`">
               {{ scenario.difficulty }}
@@ -47,9 +47,9 @@
               <span class="step-order">{{ step.order || '?' }}</span>
               <span class="step-title">{{ step.title }}</span>
               <div class="step-badges">
-                <span v-if="step.verify_script || step.verify_script_id" class="step-badge badge-verify" title="Verify">✓</span>
-                <span v-if="step.has_flag" class="step-badge badge-flag" title="Flag">🚩</span>
-                <span v-if="step.hint_content || step.hint_file_id" class="step-badge badge-hint" title="Hint">💡</span>
+                <span v-if="step.verify_script || step.verify_script_id" class="step-badge badge-verify" :title="t('stepList.verify')" :aria-label="t('stepList.verify')"><span aria-hidden="true">✓</span></span>
+                <span v-if="step.has_flag" class="step-badge badge-flag" :title="t('stepList.flag')" :aria-label="t('stepList.flag')"><span aria-hidden="true">🚩</span></span>
+                <span v-if="step.hint_content || step.hint_file_id" class="step-badge badge-hint" :title="t('stepList.hint')" :aria-label="t('stepList.hint')"><span aria-hidden="true">💡</span></span>
               </div>
             </div>
             <div v-if="getOrderedSteps(scenario).length === 0" class="no-steps">
@@ -74,7 +74,10 @@ const { t } = useTranslations({
       loading: 'Loading scenarios...',
       noScenarios: 'No scenarios available',
       noSteps: 'No steps in this scenario',
-      refresh: 'Refresh'
+      refresh: 'Refresh',
+      verify: 'Has verify script',
+      flag: 'Has flag',
+      hint: 'Has hint'
     }
   },
   fr: {
@@ -83,7 +86,10 @@ const { t } = useTranslations({
       loading: 'Chargement des scénarios...',
       noScenarios: 'Aucun scénario disponible',
       noSteps: 'Aucune étape dans ce scénario',
-      refresh: 'Actualiser'
+      refresh: 'Actualiser',
+      verify: 'Script de vérification',
+      flag: 'A un drapeau',
+      hint: 'A un indice'
     }
   }
 })

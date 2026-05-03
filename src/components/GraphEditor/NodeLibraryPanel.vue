@@ -11,9 +11,14 @@
           :key="nodeType.type"
           class="node-library-item"
           draggable="true"
+          tabindex="0"
+          role="button"
           :title="nodeType.description"
+          :aria-label="t('nodeLibrary.itemAriaLabel', { label: nodeType.label, description: nodeType.description })"
           @dragstart="handleDragStart($event, nodeType)"
           @dragend="handleDragEnd"
+          @keydown.enter.prevent="handleKeyboardAdd(nodeType)"
+          @keydown.space.prevent="handleKeyboardAdd(nodeType)"
         >
           <div
             class="node-library-preview"
@@ -22,7 +27,7 @@
               backgroundColor: nodeType.bgColor || 'transparent'
             }"
           >
-            <span class="lib-icon">{{ nodeType.icon }}</span>
+            <span class="lib-icon" aria-hidden="true">{{ nodeType.icon }}</span>
             <span class="lib-label">{{ nodeType.label }}</span>
           </div>
         </div>
@@ -36,6 +41,21 @@
 </template>
 
 <script setup lang="ts">
+import { useTranslations } from '../../composables/useTranslations'
+
+const { t } = useTranslations({
+  en: {
+    nodeLibrary: {
+      itemAriaLabel: '{label} — {description}. Press Enter or Space to add to canvas, or drag.'
+    }
+  },
+  fr: {
+    nodeLibrary: {
+      itemAriaLabel: '{label} — {description}. Appuyez sur Entrée ou Espace pour ajouter au canevas, ou glissez.'
+    }
+  }
+})
+
 export interface NodeTypeDefinition {
   type: string
   icon: string
@@ -59,6 +79,7 @@ withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   (e: 'node-drag-start', nodeType: string, data: any): void
   (e: 'node-drag-end'): void
+  (e: 'add-at-center', nodeType: string): void
 }>()
 
 const handleDragStart = (event: DragEvent, nodeType: NodeTypeDefinition) => {
@@ -78,6 +99,10 @@ const handleDragStart = (event: DragEvent, nodeType: NodeTypeDefinition) => {
 
 const handleDragEnd = () => {
   emit('node-drag-end')
+}
+
+const handleKeyboardAdd = (nodeType: NodeTypeDefinition) => {
+  emit('add-at-center', nodeType.type)
 }
 </script>
 

@@ -17,14 +17,14 @@
       @dblclick.stop="handleContentDoubleClick"
     >
       <div class="node-header">
-        <span class="node-icon">{{ icon }}</span>
+        <span class="node-icon" aria-hidden="true">{{ icon }}</span>
         <div class="node-title-container">
           <slot name="header">
             <div class="node-title">{{ dataLabel }}</div>
             <div v-if="subtitle" class="node-subtitle">{{ subtitle }}</div>
           </slot>
         </div>
-        <span v-if="isExpandable" class="expand-indicator">
+        <span v-if="isExpandable" class="expand-indicator" aria-hidden="true">
           {{ dataIsExpanded ? '▼' : '▶' }}
         </span>
       </div>
@@ -43,27 +43,30 @@
         @mousedown.stop
         @dblclick.stop
         class="action-btn select-tree-btn"
-        title="Select with children"
+        :title="t('baseNode.selectTree')"
+        :aria-label="t('baseNode.selectTree')"
       >
-        ☑️
+        <span aria-hidden="true">☑️</span>
       </button>
       <button
         @click="handleEdit($event)"
         @mousedown.stop
         @dblclick.stop
         class="action-btn"
-        title="Edit"
+        :title="t('baseNode.edit')"
+        :aria-label="t('baseNode.edit')"
       >
-        ✏️
+        <span aria-hidden="true">✏️</span>
       </button>
       <button
         @click="handleDelete($event)"
         @mousedown.stop
         @dblclick.stop
         class="action-btn delete-btn"
-        title="Delete"
+        :title="t('baseNode.delete')"
+        :aria-label="t('baseNode.delete')"
       >
-        🗑️
+        <span aria-hidden="true">🗑️</span>
       </button>
     </div>
 
@@ -78,6 +81,24 @@
 <script setup lang="ts">
 import { computed, ref, inject } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
+import { useTranslations } from '../../../composables/useTranslations'
+
+const { t } = useTranslations({
+  en: {
+    baseNode: {
+      edit: 'Edit',
+      delete: 'Delete',
+      selectTree: 'Select with children'
+    }
+  },
+  fr: {
+    baseNode: {
+      edit: 'Modifier',
+      delete: 'Supprimer',
+      selectTree: 'Sélectionner avec les enfants'
+    }
+  }
+})
 
 // Inject FlowCanvas handlers (provided by GraphEditor FlowCanvas)
 const flowCanvasHandlers = inject<{

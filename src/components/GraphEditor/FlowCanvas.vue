@@ -1,5 +1,9 @@
 <template>
-  <div class="flow-canvas">
+  <div
+    class="flow-canvas"
+    role="application"
+    :aria-label="t('flowCanvas.ariaLabel')"
+  >
     <VueFlow
       v-model:nodes="nodesData"
       v-model:edges="edgesData"
@@ -24,7 +28,7 @@
     </VueFlow>
 
     <div v-if="nodesData.length === 0" class="empty-state">
-      <div class="empty-icon">{{ emptyIcon }}</div>
+      <div class="empty-icon"><span aria-hidden="true">{{ emptyIcon }}</span></div>
       <h3>{{ emptyTitle }}</h3>
       <p>{{ emptyDescription }}</p>
     </div>
@@ -37,6 +41,20 @@ import { VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
+import { useTranslations } from '../../composables/useTranslations'
+
+const { t } = useTranslations({
+  en: {
+    flowCanvas: {
+      ariaLabel: 'Scenario graph editor canvas'
+    }
+  },
+  fr: {
+    flowCanvas: {
+      ariaLabel: 'Canevas de l\'éditeur de scénario'
+    }
+  }
+})
 
 interface Props {
   nodes: any[]
@@ -219,12 +237,33 @@ const handleConnect = (connection: any) => {
   emit('edge-connect', connection)
 }
 
+// Keyboard alternative to drag-and-drop: insert a new node at a sensible default
+// position (no viewport projection — keeps the implementation small and predictable)
+const addNodeAtCenter = (nodeType: string) => {
+  const newNode = {
+    id: `${nodeType}-new-${Date.now()}`,
+    type: nodeType,
+    position: { x: 100, y: 200 },
+    data: {
+      label: `New ${capitalizeFirst(nodeType)}`,
+      entityId: null,
+      entityType: nodeType,
+      isNew: true,
+      type: nodeType
+    }
+  }
+
+  nodesData.value = [...nodesData.value, newNode]
+  emit('node-added', newNode)
+}
+
 // Expose handlers so custom node types can call them via provide/inject or events
 defineExpose({
   handleEditNode,
   handleDeleteNode,
   handleToggleExpand,
-  handleSelectTree
+  handleSelectTree,
+  addNodeAtCenter
 })
 </script>
 

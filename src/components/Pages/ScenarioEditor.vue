@@ -18,8 +18,8 @@
             {{ scenario.name }} - {{ scenario.title }}
           </option>
         </select>
-        <button v-if="canCreateScenario" @click="handleCreateNew" class="btn-icon btn-create" :title="t('scenarioEditor.createNew')">
-          <i class="fas fa-plus"></i>
+        <button v-if="canCreateScenario" @click="handleCreateNew" class="btn-icon btn-create" :title="t('scenarioEditor.createNew')" :aria-label="t('scenarioEditor.createNew')">
+          <i class="fas fa-plus" aria-hidden="true"></i>
         </button>
       </div>
 
@@ -46,27 +46,27 @@
       <div class="header-actions">
         <!-- Secondary actions (icon-only) -->
         <template v-if="selectedScenarioId">
-          <button v-if="canEditScenario" @click="handleImport" class="btn-icon" :title="t('scenarioEditor.import')" :disabled="isImporting">
-            <i :class="isImporting ? 'fas fa-spinner fa-spin' : 'fas fa-file-import'"></i>
+          <button v-if="canEditScenario" @click="handleImport" class="btn-icon" :title="t('scenarioEditor.import')" :aria-label="t('scenarioEditor.import')" :disabled="isImporting">
+            <i :class="isImporting ? 'fas fa-spinner fa-spin' : 'fas fa-file-import'" aria-hidden="true"></i>
           </button>
-          <button @click="handleExportJSON" class="btn-icon" :title="t('scenarioEditor.exportJSON')">
-            <i class="fas fa-file-code"></i>
+          <button @click="handleExportJSON" class="btn-icon" :title="t('scenarioEditor.exportJSON')" :aria-label="t('scenarioEditor.exportJSON')">
+            <i class="fas fa-file-code" aria-hidden="true"></i>
           </button>
-          <button @click="handleExportKillerCoda" class="btn-icon" :title="t('scenarioEditor.exportKillerCoda')">
-            <i class="fas fa-file-archive"></i>
+          <button @click="handleExportKillerCoda" class="btn-icon" :title="t('scenarioEditor.exportKillerCoda')" :aria-label="t('scenarioEditor.exportKillerCoda')">
+            <i class="fas fa-file-archive" aria-hidden="true"></i>
           </button>
-          <button v-if="canCopyToOrg" @click="openCopyModal" class="btn-icon" :title="t('scenarioEditor.copyToOrg')">
-            <i class="fas fa-copy"></i>
+          <button v-if="canCopyToOrg" @click="openCopyModal" class="btn-icon" :title="t('scenarioEditor.copyToOrg')" :aria-label="t('scenarioEditor.copyToOrg')">
+            <i class="fas fa-copy" aria-hidden="true"></i>
           </button>
-          <span class="header-divider"></span>
+          <span class="header-divider" aria-hidden="true"></span>
         </template>
 
         <!-- Primary actions -->
-        <button v-if="canEditScenario" @click="handleReset" class="btn-icon" :title="t('scenarioEditor.reset')">
-          <i class="fas fa-undo"></i>
+        <button v-if="canEditScenario" @click="handleReset" class="btn-icon" :title="t('scenarioEditor.reset')" :aria-label="t('scenarioEditor.reset')">
+          <i class="fas fa-undo" aria-hidden="true"></i>
         </button>
         <button v-if="canEditScenario" @click="handleSave" class="btn-save" :disabled="!selectedScenarioId && nodes.length === 0">
-          <i class="fas fa-save"></i> {{ t('scenarioEditor.save') }}
+          <i class="fas fa-save" aria-hidden="true"></i> {{ t('scenarioEditor.save') }}
         </button>
       </div>
     </div>
@@ -79,10 +79,12 @@
         :panel-title="t('scenarioEditor.nodeLibraryTitle')"
         :help-text="t('scenarioEditor.nodeLibraryHelp')"
         @node-drag-start="handleNodeDragStart"
+        @add-at-center="handleAddAtCenter"
       />
 
       <!-- Center Panel: Flow Canvas -->
       <FlowCanvas
+        ref="flowCanvasRef"
         class="panel canvas-panel"
         :nodes="nodes"
         :edges="edges"
@@ -110,14 +112,25 @@
           class="panel-collapse-toggle"
           @click="isRightPanelCollapsed = !isRightPanelCollapsed"
           :title="isRightPanelCollapsed ? t('scenarioEditor.expandPanel') : t('scenarioEditor.collapsePanel')"
+          :aria-label="isRightPanelCollapsed ? t('scenarioEditor.expandPanel') : t('scenarioEditor.collapsePanel')"
+          :aria-expanded="!isRightPanelCollapsed"
         >
-          <i :class="isRightPanelCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right'"></i>
+          <i :class="isRightPanelCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right'" aria-hidden="true"></i>
         </button>
         <template v-if="!isRightPanelCollapsed">
           <div
             class="resize-handle"
             :class="{ resizing: isResizing }"
+            role="separator"
+            aria-orientation="vertical"
+            tabindex="0"
+            :aria-valuenow="treePanelWidth"
+            aria-valuemin="200"
+            aria-valuemax="600"
+            :aria-label="t('scenarioEditor.resizeHandleAriaLabel')"
             @mousedown="startResize"
+            @keydown.left.prevent="resizeWithKeyboard(-10)"
+            @keydown.right.prevent="resizeWithKeyboard(10)"
           ></div>
           <ScenarioStepListPanel
             :scenarios="allScenarios"
@@ -140,12 +153,22 @@
       @confirm="handleSaveScenario"
     >
       <!-- Tabs -->
-      <div class="scenario-modal-tabs">
+      <div
+        class="scenario-modal-tabs"
+        role="tablist"
+        :aria-label="t('scenarioEditor.tabsLabel')"
+        @keydown="onScenarioTabKeydown"
+      >
         <button
           v-for="tab in scenarioModalTabs"
           :key="tab.key"
+          :id="`scenario-tab-${tab.key}`"
           class="scenario-modal-tab"
           :class="{ active: activeScenarioTab === tab.key }"
+          role="tab"
+          :aria-selected="activeScenarioTab === tab.key"
+          :aria-controls="`scenario-panel-${tab.key}`"
+          :tabindex="activeScenarioTab === tab.key ? 0 : -1"
           @click="activeScenarioTab = tab.key"
         >
           {{ tab.label }}
@@ -153,10 +176,17 @@
       </div>
 
       <!-- General tab -->
-      <div v-show="activeScenarioTab === 'general'" class="modal-form">
+      <div
+        v-show="activeScenarioTab === 'general'"
+        id="scenario-panel-general"
+        class="modal-form"
+        role="tabpanel"
+        aria-labelledby="scenario-tab-general"
+      >
         <div class="form-group">
-          <label>{{ t('scenarioEditor.scenarioName') }}</label>
+          <label for="scenario-name">{{ t('scenarioEditor.scenarioName') }}</label>
           <input
+            id="scenario-name"
             v-model="editingScenario.name"
             type="text"
             class="form-control"
@@ -165,8 +195,9 @@
         </div>
 
         <div class="form-group">
-          <label>{{ t('scenarioEditor.scenarioTitle') }}</label>
+          <label for="scenario-title">{{ t('scenarioEditor.scenarioTitle') }}</label>
           <input
+            id="scenario-title"
             v-model="editingScenario.title"
             type="text"
             class="form-control"
@@ -176,8 +207,8 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label>{{ t('scenarioEditor.difficulty') }}</label>
-            <select v-model="editingScenario.difficulty" class="form-control">
+            <label for="scenario-difficulty">{{ t('scenarioEditor.difficulty') }}</label>
+            <select id="scenario-difficulty" v-model="editingScenario.difficulty" class="form-control">
               <option value="beginner">{{ t('scenarioEditor.beginner') }}</option>
               <option value="intermediate">{{ t('scenarioEditor.intermediate') }}</option>
               <option value="advanced">{{ t('scenarioEditor.advanced') }}</option>
@@ -185,8 +216,9 @@
           </div>
 
           <div class="form-group">
-            <label>{{ t('scenarioEditor.estimatedTime') }}</label>
+            <label for="scenario-estimated-time">{{ t('scenarioEditor.estimatedTime') }}</label>
             <input
+              id="scenario-estimated-time"
               v-model="editingScenario.estimated_time"
               type="text"
               class="form-control"
@@ -196,8 +228,9 @@
         </div>
 
         <div class="form-group">
-          <label>{{ t('scenarioEditor.description') }}</label>
+          <label for="scenario-description">{{ t('scenarioEditor.description') }}</label>
           <textarea
+            id="scenario-description"
             v-model="editingScenario.description"
             class="form-control"
             rows="3"
@@ -227,8 +260,9 @@
         </div>
         <!-- Read-only org indicator (edit mode) -->
         <div class="form-group" v-else-if="!editingScenario.isNew && currentScenarioOrgLabel">
-          <label>{{ t('scenarioEditor.orgLabel') }}</label>
+          <label for="scenario-org-readonly">{{ t('scenarioEditor.orgLabel') }}</label>
           <input
+            id="scenario-org-readonly"
             type="text"
             class="form-control"
             :value="currentScenarioOrgLabel"
@@ -238,10 +272,17 @@
       </div>
 
       <!-- Content tab -->
-      <div v-show="activeScenarioTab === 'content'" class="modal-form">
+      <div
+        v-show="activeScenarioTab === 'content'"
+        id="scenario-panel-content"
+        class="modal-form"
+        role="tabpanel"
+        aria-labelledby="scenario-tab-content"
+      >
         <div class="form-group">
-          <label>{{ t('scenarioEditor.introText') }}</label>
+          <label for="scenario-intro-text">{{ t('scenarioEditor.introText') }}</label>
           <textarea
+            id="scenario-intro-text"
             v-model="editingScenario.intro_text"
             class="form-control"
             rows="6"
@@ -251,8 +292,9 @@
         </div>
 
         <div class="form-group">
-          <label>{{ t('scenarioEditor.finishText') }}</label>
+          <label for="scenario-finish-text">{{ t('scenarioEditor.finishText') }}</label>
           <textarea
+            id="scenario-finish-text"
             v-model="editingScenario.finish_text"
             class="form-control"
             rows="6"
@@ -262,8 +304,9 @@
         </div>
 
         <div class="form-group">
-          <label>{{ t('scenarioEditor.objectives') }}</label>
+          <label for="scenario-objectives">{{ t('scenarioEditor.objectives') }}</label>
           <textarea
+            id="scenario-objectives"
             v-model="editingScenario.objectives"
             class="form-control"
             rows="3"
@@ -272,8 +315,9 @@
         </div>
 
         <div class="form-group">
-          <label>{{ t('scenarioEditor.prerequisites') }}</label>
+          <label for="scenario-prerequisites">{{ t('scenarioEditor.prerequisites') }}</label>
           <textarea
+            id="scenario-prerequisites"
             v-model="editingScenario.prerequisites"
             class="form-control"
             rows="3"
@@ -283,10 +327,17 @@
       </div>
 
       <!-- Setup tab -->
-      <div v-show="activeScenarioTab === 'setup'" class="modal-form">
+      <div
+        v-show="activeScenarioTab === 'setup'"
+        id="scenario-panel-setup"
+        class="modal-form"
+        role="tabpanel"
+        aria-labelledby="scenario-tab-setup"
+      >
         <div class="form-group">
-          <label>{{ t('scenarioEditor.setupScript') }}</label>
+          <label for="scenario-setup-script">{{ t('scenarioEditor.setupScript') }}</label>
           <textarea
+            id="scenario-setup-script"
             v-model="editingScenario.setup_script"
             class="form-control script-editor"
             rows="12"
@@ -297,11 +348,18 @@
       </div>
 
       <!-- Options tab -->
-      <div v-show="activeScenarioTab === 'options'" class="modal-form">
+      <div
+        v-show="activeScenarioTab === 'options'"
+        id="scenario-panel-options"
+        class="modal-form"
+        role="tabpanel"
+        aria-labelledby="scenario-tab-options"
+      >
         <div class="form-row">
           <div class="form-group">
-            <label>{{ t('scenarioEditor.instanceType') }}</label>
+            <label for="scenario-instance-type">{{ t('scenarioEditor.instanceType') }}</label>
             <input
+              id="scenario-instance-type"
               v-model="editingScenario.instance_type"
               type="text"
               class="form-control"
@@ -310,8 +368,9 @@
           </div>
 
           <div class="form-group">
-            <label>{{ t('scenarioEditor.hostname') }}</label>
+            <label for="scenario-hostname">{{ t('scenarioEditor.hostname') }}</label>
             <input
+              id="scenario-hostname"
               v-model="editingScenario.hostname"
               type="text"
               class="form-control"
@@ -322,8 +381,8 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label>{{ t('scenarioEditor.osType') }}</label>
-            <select v-model="editingScenario.os_type" class="form-control">
+            <label for="scenario-os-type">{{ t('scenarioEditor.osType') }}</label>
+            <select id="scenario-os-type" v-model="editingScenario.os_type" class="form-control">
               <option value="">-</option>
               <option value="deb">Debian (apt)</option>
               <option value="rpm">RPM (dnf/yum)</option>
@@ -333,8 +392,8 @@
           </div>
 
           <div class="form-group">
-            <label>{{ t('scenarioEditor.sourceType') }}</label>
-            <select v-model="editingScenario.source_type" class="form-control">
+            <label for="scenario-source-type">{{ t('scenarioEditor.sourceType') }}</label>
+            <select id="scenario-source-type" v-model="editingScenario.source_type" class="form-control">
               <option value="">-</option>
               <option value="builtin">{{ t('scenarioEditor.sourceBuiltin') }}</option>
               <option value="git">Git</option>
@@ -345,30 +404,30 @@
         </div>
 
         <div class="form-group checkbox-group">
-          <label class="checkbox-label">
-            <input type="checkbox" v-model="editingScenario.flags_enabled" />
+          <label class="checkbox-label" for="scenario-flags-enabled">
+            <input id="scenario-flags-enabled" type="checkbox" v-model="editingScenario.flags_enabled" />
             {{ t('scenarioEditor.flagsEnabled') }}
           </label>
         </div>
 
         <div class="form-group checkbox-group">
-          <label class="checkbox-label">
-            <input type="checkbox" v-model="editingScenario.crash_traps" />
+          <label class="checkbox-label" for="scenario-crash-traps">
+            <input id="scenario-crash-traps" type="checkbox" v-model="editingScenario.crash_traps" />
             {{ t('scenarioEditor.crashTraps') }}
           </label>
           <span class="form-hint">{{ t('scenarioEditor.crashTrapsHint') }}</span>
         </div>
 
         <div class="form-group checkbox-group">
-          <label class="checkbox-label">
-            <input type="checkbox" v-model="editingScenario.gsh_enabled" />
+          <label class="checkbox-label" for="scenario-gsh-enabled">
+            <input id="scenario-gsh-enabled" type="checkbox" v-model="editingScenario.gsh_enabled" />
             {{ t('scenarioEditor.gshEnabled') }}
           </label>
         </div>
 
         <div class="form-group checkbox-group">
-          <label class="checkbox-label">
-            <input type="checkbox" v-model="editingScenario.is_public" />
+          <label class="checkbox-label" for="scenario-is-public">
+            <input id="scenario-is-public" type="checkbox" v-model="editingScenario.is_public" />
             {{ t('scenarioEditor.isPublic') }}
           </label>
         </div>
@@ -412,8 +471,8 @@
       @confirm="handleCopyToOrg"
     >
       <div class="form-group">
-        <label>{{ t('scenarioEditor.selectTargetOrg') }}</label>
-        <select v-model="copyTargetOrgId" class="form-control">
+        <label for="copy-target-org">{{ t('scenarioEditor.selectTargetOrg') }}</label>
+        <select id="copy-target-org" v-model="copyTargetOrgId" class="form-control">
           <option :value="null" disabled>{{ t('scenarioEditor.selectTargetOrg') }}</option>
           <option
             v-for="org in copyTargetOrgs"
@@ -563,6 +622,8 @@ const { t } = useTranslations({
       // Panel
       expandPanel: 'Expand panel',
       collapsePanel: 'Collapse panel',
+      resizeHandleAriaLabel: 'Resize step list panel. Use left and right arrow keys to adjust width.',
+      tabsLabel: 'Scenario editor sections',
       readOnly: 'Read only',
       readOnlyWarning: 'This scenario is read-only. Copy it to your organization to edit.'
     }
@@ -671,6 +732,8 @@ const { t } = useTranslations({
       // Panneau
       expandPanel: 'Déplier le panneau',
       collapsePanel: 'Replier le panneau',
+      resizeHandleAriaLabel: 'Redimensionner le panneau de la liste d\'étapes. Utilisez les flèches gauche et droite pour ajuster la largeur.',
+      tabsLabel: 'Sections de l\'éditeur de scénario',
       readOnly: 'Lecture seule',
       readOnlyWarning: 'Ce scénario est en lecture seule. Copiez-le dans votre organisation pour le modifier.'
     }
@@ -1266,9 +1329,50 @@ const handleExportKillerCoda = async () => {
   }
 }
 
+// FlowCanvas ref (for keyboard alternative to drag-and-drop)
+const flowCanvasRef = ref<any>(null)
+
 // Drag handlers
 const handleNodeDragStart = (nodeType: string) => {
   draggedNodeType.value = nodeType
+}
+
+// Keyboard alternative to drag-and-drop: NodeLibraryPanel emits `add-at-center`
+// when a library item receives Enter/Space. We forward to the FlowCanvas.
+const handleAddAtCenter = (nodeType: string) => {
+  if (!canEditScenario.value && currentScenario.value) {
+    notification.showWarning(t('scenarioEditor.readOnlyWarning'))
+    return
+  }
+  flowCanvasRef.value?.addNodeAtCenter(nodeType)
+}
+
+// Tab keyboard navigation (WAI-ARIA tab pattern) for the scenario edit modal
+const onScenarioTabKeydown = (e: KeyboardEvent) => {
+  const keys = scenarioModalTabs.value.map(t_ => t_.key)
+  const i = keys.indexOf(activeScenarioTab.value)
+  if (i === -1) return
+  let next = i
+  if (e.key === 'ArrowRight') next = (i + 1) % keys.length
+  else if (e.key === 'ArrowLeft') next = (i - 1 + keys.length) % keys.length
+  else if (e.key === 'Home') next = 0
+  else if (e.key === 'End') next = keys.length - 1
+  else return
+  e.preventDefault()
+  activeScenarioTab.value = keys[next]
+  requestAnimationFrame(() => {
+    const el = document.getElementById(`scenario-tab-${keys[next]}`) as HTMLElement | null
+    el?.focus()
+  })
+}
+
+// Resize the tree panel via keyboard arrows (focused resize-handle)
+const resizeWithKeyboard = (delta: number) => {
+  const newWidth = treePanelWidth.value + delta
+  if (newWidth >= 200 && newWidth <= 600) {
+    treePanelWidth.value = newWidth
+    localStorage.setItem('scenarioEditor_treePanelWidth', treePanelWidth.value.toString())
+  }
 }
 
 // Node added handler
