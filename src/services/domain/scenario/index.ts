@@ -13,3 +13,10 @@ export type {
   ValidatedFlag
 } from './scenarioSessionService'
 export { teacherService } from './teacherService'
+export type {
+  SessionStepDetail,
+  SessionStepQuestionDetail,
+  SessionDetailResponse,
+  SessionCommand,
+  SessionCommandsResponse
+} from './teacherService'

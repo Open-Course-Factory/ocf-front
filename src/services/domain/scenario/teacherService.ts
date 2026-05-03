@@ -5,6 +5,71 @@
 
 import axios from 'axios'
 
+// Per-question result on a quiz step (returned by /detail endpoint)
+export interface SessionStepQuestionDetail {
+  id: string
+  order: number
+  question_text: string
+  // multiple_choice | free_text | true_false (multi_answer returned by some scenarios is also tolerated)
+  question_type: string
+  // JSON-encoded array string for multiple_choice; absent or empty otherwise
+  options?: string
+  correct_answer: string
+  student_answer: string
+  is_correct: boolean
+  points: number
+  explanation?: string
+}
+
+// Step shape inside SessionDetailResponse — mirror of backend GET /teacher/groups/:gid/sessions/:sid/detail
+export interface SessionStepDetail {
+  step_order: number
+  step_title: string
+  // 'terminal' | 'flag' | 'info' | 'quiz' (defaults to terminal when empty)
+  step_type?: string
+  status: string
+  verify_attempts: number
+  hints_revealed: number
+  // ISO timestamp; nil when previous step has not been completed yet
+  started_at?: string
+  completed_at?: string
+  time_spent_seconds: number
+  // 0..1 — only set for quiz steps
+  quiz_score?: number
+  // Present only for quiz steps; absent (or empty) for non-quiz steps
+  questions?: SessionStepQuestionDetail[]
+}
+
+export interface SessionDetailResponse {
+  session_id: string
+  user_id: string
+  user_name?: string
+  user_email?: string
+  scenario_id: string
+  scenario_title: string
+  status: string
+  // 0..1 (terminal/flag/info contribute 1.0 if completed, quiz contributes its quiz_score)
+  grade?: number
+  started_at: string
+  completed_at?: string
+  steps: SessionStepDetail[]
+}
+
+export interface SessionCommand {
+  session_uuid: string
+  sequence_num: number
+  command_text: string
+  // unix seconds
+  executed_at: number
+}
+
+export interface SessionCommandsResponse {
+  commands: SessionCommand[]
+  total: number
+  limit: number
+  offset: number
+}
+
 export const teacherService = {
   // --- Group scenario assignment operations ---
 
@@ -49,7 +114,7 @@ export const teacherService = {
     return response.data
   },
 
-  async getSessionDetail(groupId: string, sessionId: string): Promise<any> {
+  async getSessionDetail(groupId: string, sessionId: string): Promise<SessionDetailResponse> {
     const response = await axios.get(
       `/teacher/groups/${groupId}/sessions/${sessionId}/detail`
     )
@@ -61,17 +126,7 @@ export const teacherService = {
     sessionId: string,
     limit = 100,
     offset = 0
-  ): Promise<{
-    commands: Array<{
-      session_uuid: string
-      sequence_num: number
-      command_text: string
-      executed_at: number
-    }>
-    total: number
-    limit: number
-    offset: number
-  }> {
+  ): Promise<SessionCommandsResponse> {
     const response = await axios.get(
       `/teacher/groups/${groupId}/sessions/${sessionId}/commands`,
       { params: { limit, offset } }

@@ -26,6 +26,12 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { teacherService } from '../../services/domain/scenario'
+import type {
+  SessionStepDetail,
+  SessionDetailResponse,
+  SessionCommand
+} from '../../services/domain/scenario'
+import { sanitizeCSVField } from '../../utils/csv'
 import { useTerminalBackendsStore } from '../../stores/terminalBackends'
 import BackendSelector from '../Terminal/BackendSelector.vue'
 import BaseModal from '../Modals/BaseModal.vue'
@@ -172,6 +178,22 @@ const { t } = useTranslations({
       prevPage: 'Previous',
       nextPage: 'Next',
       pageInfo: '{start}-{end} of {total}',
+      showQuestions: 'Show questions',
+      hideQuestions: 'Hide questions',
+      question: 'Question',
+      yourAnswer: 'Student answer',
+      correctAnswer: 'Correct answer',
+      correctIndicator: 'Correct',
+      incorrectIndicator: 'Incorrect',
+      noAnswer: 'No answer',
+      questionsCorrect: '{correct}/{total} correct',
+      commandsModeAll: 'All commands',
+      commandsModePerStep: 'Per step',
+      commandsDuringStep: 'Commands during this step',
+      commandsNoneDuringStep: 'No commands during this step',
+      commandsCount: '{count} commands',
+      csvStepOrder: 'Step',
+      csvStepTitle: 'Step title',
       export: {
         name: 'Name',
         email: 'Email',
@@ -292,6 +314,22 @@ const { t } = useTranslations({
       prevPage: 'Précédent',
       nextPage: 'Suivant',
       pageInfo: '{start}-{end} sur {total}',
+      showQuestions: 'Afficher les questions',
+      hideQuestions: 'Masquer les questions',
+      question: 'Question',
+      yourAnswer: 'Réponse de l\'apprenant',
+      correctAnswer: 'Bonne réponse',
+      correctIndicator: 'Correcte',
+      incorrectIndicator: 'Incorrecte',
+      noAnswer: 'Pas de réponse',
+      questionsCorrect: '{correct}/{total} correctes',
+      commandsModeAll: 'Toutes les commandes',
+      commandsModePerStep: 'Par étape',
+      commandsDuringStep: 'Commandes pendant cette étape',
+      commandsNoneDuringStep: 'Aucune commande pendant cette étape',
+      commandsCount: '{count} commandes',
+      csvStepOrder: 'Étape',
+      csvStepTitle: 'Titre de l\'étape',
       export: {
         name: 'Nom',
         email: 'Email',
@@ -332,31 +370,7 @@ interface ScenarioResultItem {
   completed_at?: string
 }
 
-interface SessionStepDetail {
-  step_order: number
-  step_title: string
-  step_type?: string
-  status: string
-  verify_attempts: number
-  hints_revealed: number
-  quiz_score?: number
-  completed_at?: string
-  time_spent_seconds: number
-}
-
-interface SessionDetailResponse {
-  session_id: string
-  user_id: string
-  user_name?: string
-  user_email?: string
-  scenario_id: string
-  scenario_title: string
-  status: string
-  grade?: number
-  started_at: string
-  completed_at?: string
-  steps: SessionStepDetail[]
-}
+// SessionStepDetail and SessionDetailResponse are imported from teacherService
 
 // State
 const assignments = ref<ScenarioAssignment[]>([])
@@ -404,13 +418,7 @@ const detailResult = ref<ScenarioResultItem | null>(null)
 type DetailTab = 'steps' | 'commands'
 const detailActiveTab = ref<DetailTab>('steps')
 
-// Commands tab state
-interface SessionCommand {
-  session_uuid: string
-  sequence_num: number
-  command_text: string
-  executed_at: number
-}
+// Commands tab state — SessionCommand is imported from teacherService
 const commandsList = ref<SessionCommand[]>([])
 const commandsTotal = ref(0)
 const commandsLimit = 100
@@ -419,6 +427,24 @@ const commandsLoading = ref(false)
 const commandsLoaded = ref(false)
 const commandsError = ref('')
 const commandsNoTerminal = ref(false)
+
+// Commands view mode toggle (within Commands tab)
+type CommandsViewMode = 'all' | 'per-step'
+const commandsViewMode = ref<CommandsViewMode>('all')
+
+// All commands cache used by per-step grouping (separate from paginated commandsList)
+const allCommandsCache = ref<SessionCommand[]>([])
+const allCommandsLoading = ref(false)
+const allCommandsLoaded = ref(false)
+const allCommandsError = ref('')
+const COMMANDS_FETCH_BATCH = 1000
+const COMMANDS_FETCH_LIMIT = 5000
+
+// Per-step commands UI: which step orders are expanded in the per-step view
+const expandedStepOrders = ref<Set<number>>(new Set())
+
+// Per-quiz questions UI: which quiz step orders have their question detail expanded
+const expandedQuizSteps = ref<Set<number>>(new Set())
 
 // Selection state for multi-select export
 const selectedResults = ref<Set<string>>(new Set())
@@ -649,6 +675,13 @@ async function handleViewDetail(result: ScenarioResultItem) {
   commandsLoaded.value = false
   commandsError.value = ''
   commandsNoTerminal.value = false
+  commandsViewMode.value = 'all'
+  allCommandsCache.value = []
+  allCommandsLoading.value = false
+  allCommandsLoaded.value = false
+  allCommandsError.value = ''
+  expandedStepOrders.value = new Set()
+  expandedQuizSteps.value = new Set()
   try {
     sessionDetail.value = await teacherService.getSessionDetail(
       props.groupId,
@@ -758,15 +791,6 @@ function formatExecutedAt(unixSeconds: number): string {
   }
 }
 
-// CSV-safe field: escape quotes and prevent formula injection (=, +, -, @)
-function sanitizeCSVField(value: unknown): string {
-  let s = value == null ? '' : String(value)
-  if (/^[=+\-@]/.test(s)) {
-    s = "'" + s
-  }
-  return `"${s.replace(/"/g, '""')}"`
-}
-
 async function exportCommandsCsv() {
   if (!detailResult.value) return
   // For a small page (≤100), the visible page is enough; if more pages exist
@@ -793,25 +817,190 @@ async function exportCommandsCsv() {
 
   const result = detailResult.value
   const learner = result.user_name || result.user_email || result.user_id
-  const headers = [
+  const perStep = commandsViewMode.value === 'per-step'
+  const baseHeaders = [
     t('groupScenarios.commandSequence'),
     t('groupScenarios.command'),
     t('groupScenarios.commandExecutedAt'),
     t('groupScenarios.student')
   ]
-  const rows = allCommands.map(c => [
-    c.sequence_num,
-    c.command_text,
-    formatExecutedAt(c.executed_at),
-    learner
-  ])
+  const headers = perStep
+    ? [
+        t('groupScenarios.csvStepOrder'),
+        t('groupScenarios.csvStepTitle'),
+        t('groupScenarios.csvStepType'),
+        ...baseHeaders
+      ]
+    : baseHeaders
+
+  let rows: any[][]
+  if (perStep && sessionDetail.value) {
+    rows = []
+    const steps = sessionDetail.value.steps
+    // Build per-step buckets so each command appears once under the step it falls in.
+    for (const step of steps) {
+      const stepCommands = commandsForStepFromList(step, allCommands)
+      for (const c of stepCommands) {
+        rows.push([
+          step.step_order + 1,
+          step.step_title,
+          normalizedStepType(step.step_type),
+          c.sequence_num,
+          c.command_text,
+          formatExecutedAt(c.executed_at),
+          learner
+        ])
+      }
+    }
+  } else {
+    rows = allCommands.map(c => [
+      c.sequence_num,
+      c.command_text,
+      formatExecutedAt(c.executed_at),
+      learner
+    ])
+  }
   const csv = [headers, ...rows]
     .map(row => row.map(sanitizeCSVField).join(','))
     .join('\n')
 
   const safeLearner = learner.replace(/[^a-zA-Z0-9-_]/g, '_')
   const sessionShort = result.session_id.split('-')[0] || result.session_id.slice(0, 8)
-  downloadCsv(csv, `commands-${safeLearner}-${sessionShort}.csv`)
+  const suffix = perStep ? '-per-step' : ''
+  downloadCsv(csv, `commands-${safeLearner}-${sessionShort}${suffix}.csv`)
+}
+
+// Like commandsForStep but operates on an arbitrary command list (for CSV export).
+function commandsForStepFromList(step: SessionStepDetail, list: SessionCommand[]): SessionCommand[] {
+  if (!step.started_at) return []
+  const startMs = new Date(step.started_at).getTime()
+  if (Number.isNaN(startMs)) return []
+  const endMs = step.completed_at ? new Date(step.completed_at).getTime() : Date.now()
+  if (Number.isNaN(endMs)) return []
+  const startSec = startMs / 1000
+  const endSec = endMs / 1000
+  return list.filter(c => c.executed_at >= startSec && c.executed_at < endSec)
+}
+
+// --- Quiz question rendering helpers ---
+
+function toggleQuizStep(stepOrder: number) {
+  if (expandedQuizSteps.value.has(stepOrder)) {
+    expandedQuizSteps.value.delete(stepOrder)
+  } else {
+    expandedQuizSteps.value.add(stepOrder)
+  }
+  // Force reactivity update on Set
+  expandedQuizSteps.value = new Set(expandedQuizSteps.value)
+}
+
+function isQuizStepExpanded(stepOrder: number): boolean {
+  return expandedQuizSteps.value.has(stepOrder)
+}
+
+function parseQuizOptions(rawOptions?: string): string[] {
+  if (!rawOptions) return []
+  try {
+    const parsed = JSON.parse(rawOptions)
+    if (Array.isArray(parsed)) {
+      return parsed.map(v => String(v))
+    }
+    return []
+  } catch {
+    return []
+  }
+}
+
+// For multiple_choice questions the answer string is the option text;
+// for free_text/true_false it is the literal answer. Returns the value to render.
+function displayAnswer(answer: string): string {
+  return answer && answer.trim() !== '' ? answer : ''
+}
+
+function quizCorrectCount(step: SessionStepDetail): number {
+  return (step.questions || []).filter(q => q.is_correct).length
+}
+
+function quizQuestionTotal(step: SessionStepDetail): number {
+  return (step.questions || []).length
+}
+
+// --- Per-step commands helpers ---
+
+function setCommandsViewMode(mode: CommandsViewMode) {
+  if (commandsViewMode.value === mode) return
+  commandsViewMode.value = mode
+  if (mode === 'per-step' && !allCommandsLoaded.value && !allCommandsLoading.value) {
+    fetchAllSessionCommands()
+  }
+}
+
+async function fetchAllSessionCommands() {
+  if (!detailResult.value) return
+  allCommandsLoading.value = true
+  allCommandsError.value = ''
+  let collected: SessionCommand[] = []
+  try {
+    let offset = 0
+    while (collected.length < COMMANDS_FETCH_LIMIT) {
+      const data = await teacherService.getSessionCommands(
+        props.groupId,
+        detailResult.value.session_id,
+        COMMANDS_FETCH_BATCH,
+        offset
+      )
+      const batch = data.commands || []
+      collected = collected.concat(batch)
+      const total = data.total || 0
+      if (batch.length < COMMANDS_FETCH_BATCH || collected.length >= total) {
+        break
+      }
+      offset += COMMANDS_FETCH_BATCH
+    }
+    allCommandsCache.value = collected
+    allCommandsLoaded.value = true
+  } catch (err: any) {
+    if (err.response?.status === 404) {
+      // Session has no terminal — degrade to empty cache (UI will fall back to no-terminal state)
+      allCommandsCache.value = []
+      allCommandsLoaded.value = true
+      commandsNoTerminal.value = true
+    } else {
+      allCommandsError.value = err.response?.data?.error_message
+        || err.response?.data?.error
+        || err.response?.data?.message
+        || t('groupScenarios.commandsError')
+    }
+  } finally {
+    allCommandsLoading.value = false
+  }
+}
+
+// Returns the commands executed during a given step's time window.
+// step.started_at is inclusive; step.completed_at is exclusive (Date.now() for active step).
+// Commands' executed_at is unix SECONDS.
+function commandsForStep(step: SessionStepDetail): SessionCommand[] {
+  if (!step.started_at) return []
+  const startMs = new Date(step.started_at).getTime()
+  if (Number.isNaN(startMs)) return []
+  const endMs = step.completed_at ? new Date(step.completed_at).getTime() : Date.now()
+  if (Number.isNaN(endMs)) return []
+  const startSec = startMs / 1000
+  const endSec = endMs / 1000
+  return allCommandsCache.value.filter(c => c.executed_at >= startSec && c.executed_at < endSec)
+}
+
+function toggleStepRow(stepOrder: number) {
+  if (expandedStepOrders.value.has(stepOrder)) {
+    expandedStepOrders.value.delete(stepOrder)
+  } else {
+    expandedStepOrders.value.add(stepOrder)
+  }
+  expandedStepOrders.value = new Set(expandedStepOrders.value)
+}
+
+function isStepRowExpanded(stepOrder: number): boolean {
+  return expandedStepOrders.value.has(stepOrder)
 }
 
 function formatDuration(seconds: number): string {
@@ -934,7 +1123,7 @@ function buildResultsCsv(results: ScenarioResultItem[]): string {
     r.started_at ? formatDate(r.started_at) : '',
     r.completed_at ? formatDate(r.completed_at) : ''
   ])
-  return [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n')
+  return [headers, ...rows].map(row => row.map(sanitizeCSVField).join(',')).join('\n')
 }
 
 function downloadCsv(csv: string, filename: string) {
@@ -990,7 +1179,7 @@ function buildDetailCsv(details: Array<{ result: ScenarioResultItem; detail: Ses
       ])
     }
   }
-  return [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n')
+  return [headers, ...rows].map(row => row.map(sanitizeCSVField).join(',')).join('\n')
 }
 
 async function exportSingleResult(result: ScenarioResultItem) {
@@ -1384,45 +1573,141 @@ onUnmounted(() => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="step in sessionDetail.steps" :key="step.step_order">
-                <td>{{ step.step_order + 1 }}</td>
-                <td>{{ step.step_title }}</td>
-                <td>
-                  <span :class="['step-type-chip', `step-type-${normalizedStepType(step.step_type)}`]">
-                    <i :class="stepTypeIcon(step.step_type)"></i>
-                    <span class="step-type-label">{{ stepTypeLabel(step.step_type) }}</span>
-                  </span>
-                </td>
-                <td>
-                  <span :class="['status-chip', getStatusClass(step.status)]">{{ translateStatus(step.status) }}</span>
-                </td>
-                <td>
-                  <template v-if="normalizedStepType(step.step_type) === 'quiz'">
-                    <span
-                      v-if="step.quiz_score != null"
-                      :class="['quiz-score-badge', quizScoreClass(step.quiz_score)]"
-                    >
-                      {{ formatQuizScorePct(step.quiz_score) }}
+              <template v-for="step in sessionDetail.steps" :key="step.step_order">
+                <tr>
+                  <td>{{ step.step_order + 1 }}</td>
+                  <td>{{ step.step_title }}</td>
+                  <td>
+                    <span :class="['step-type-chip', `step-type-${normalizedStepType(step.step_type)}`]">
+                      <i :class="stepTypeIcon(step.step_type)"></i>
+                      <span class="step-type-label">{{ stepTypeLabel(step.step_type) }}</span>
+                    </span>
+                  </td>
+                  <td>
+                    <span :class="['status-chip', getStatusClass(step.status)]">{{ translateStatus(step.status) }}</span>
+                  </td>
+                  <td>
+                    <template v-if="normalizedStepType(step.step_type) === 'quiz'">
+                      <span
+                        v-if="step.quiz_score != null"
+                        :class="['quiz-score-badge', quizScoreClass(step.quiz_score)]"
+                      >
+                        {{ formatQuizScorePct(step.quiz_score) }}
+                      </span>
+                      <span v-else class="hints-none">&mdash;</span>
+                      <button
+                        v-if="step.questions && step.questions.length > 0"
+                        type="button"
+                        class="quiz-toggle-btn"
+                        :aria-expanded="isQuizStepExpanded(step.step_order)"
+                        :aria-controls="`quiz-questions-${step.step_order}`"
+                        @click="toggleQuizStep(step.step_order)"
+                      >
+                        <i :class="isQuizStepExpanded(step.step_order) ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
+                        {{ isQuizStepExpanded(step.step_order)
+                          ? t('groupScenarios.hideQuestions')
+                          : t('groupScenarios.showQuestions') }}
+                      </button>
+                    </template>
+                    <template v-else-if="normalizedStepType(step.step_type) === 'info'">
+                      <i v-if="step.status === 'completed'" class="fas fa-check" :title="t('groupScenarios.completed')"></i>
+                      <span v-else class="hints-none">&mdash;</span>
+                    </template>
+                    <template v-else>
+                      {{ t('groupScenarios.attemptsCount', { n: step.verify_attempts }) }}
+                    </template>
+                  </td>
+                  <td>
+                    <span v-if="step.hints_revealed > 0" class="hints-used-badge">
+                      {{ step.hints_revealed }}
                     </span>
                     <span v-else class="hints-none">&mdash;</span>
-                  </template>
-                  <template v-else-if="normalizedStepType(step.step_type) === 'info'">
-                    <i v-if="step.status === 'completed'" class="fas fa-check" :title="t('groupScenarios.completed')"></i>
-                    <span v-else class="hints-none">&mdash;</span>
-                  </template>
-                  <template v-else>
-                    {{ t('groupScenarios.attemptsCount', { n: step.verify_attempts }) }}
-                  </template>
-                </td>
-                <td>
-                  <span v-if="step.hints_revealed > 0" class="hints-used-badge">
-                    {{ step.hints_revealed }}
-                  </span>
-                  <span v-else class="hints-none">&mdash;</span>
-                </td>
-                <td>{{ formatDuration(step.time_spent_seconds) }}</td>
-                <td class="date-cell">{{ step.completed_at ? formatDate(step.completed_at) : '—' }}</td>
-              </tr>
+                  </td>
+                  <td>{{ formatDuration(step.time_spent_seconds) }}</td>
+                  <td class="date-cell">{{ step.completed_at ? formatDate(step.completed_at) : '—' }}</td>
+                </tr>
+                <tr
+                  v-if="normalizedStepType(step.step_type) === 'quiz'
+                    && step.questions && step.questions.length > 0
+                    && isQuizStepExpanded(step.step_order)"
+                  :key="`questions-${step.step_order}`"
+                  class="quiz-questions-row"
+                >
+                  <td :colspan="8" :id="`quiz-questions-${step.step_order}`">
+                    <div class="quiz-questions-block">
+                      <div class="quiz-questions-summary">
+                        {{ t('groupScenarios.questionsCorrect', {
+                          correct: quizCorrectCount(step),
+                          total: quizQuestionTotal(step)
+                        }) }}
+                      </div>
+                      <ol class="quiz-questions-list">
+                        <li
+                          v-for="(q, qIdx) in step.questions"
+                          :key="q.id || qIdx"
+                          class="quiz-question-item"
+                          :class="q.is_correct ? 'quiz-q-correct' : 'quiz-q-incorrect'"
+                        >
+                          <div class="quiz-question-header">
+                            <span class="quiz-question-label">
+                              {{ t('groupScenarios.question') }} {{ q.order != null ? q.order + 1 : qIdx + 1 }}
+                            </span>
+                            <span :class="['quiz-question-indicator', q.is_correct ? 'indicator-correct' : 'indicator-incorrect']">
+                              <i :class="q.is_correct ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+                              {{ q.is_correct
+                                ? t('groupScenarios.correctIndicator')
+                                : t('groupScenarios.incorrectIndicator') }}
+                            </span>
+                          </div>
+                          <div class="quiz-question-text">{{ q.question_text }}</div>
+                          <div
+                            v-if="q.question_type === 'multiple_choice' && parseQuizOptions(q.options).length > 0"
+                            class="quiz-question-options"
+                          >
+                            <div
+                              v-for="(opt, optIdx) in parseQuizOptions(q.options)"
+                              :key="optIdx"
+                              class="quiz-question-option"
+                              :class="{
+                                'option-correct': opt === q.correct_answer,
+                                'option-student': opt === q.student_answer && opt !== q.correct_answer
+                              }"
+                            >
+                              <i
+                                v-if="opt === q.correct_answer"
+                                class="fas fa-check option-icon option-icon-correct"
+                                :title="t('groupScenarios.correctAnswer')"
+                              ></i>
+                              <i
+                                v-else-if="opt === q.student_answer"
+                                class="fas fa-times option-icon option-icon-student"
+                                :title="t('groupScenarios.yourAnswer')"
+                              ></i>
+                              <span class="quiz-option-label">{{ opt }}</span>
+                            </div>
+                          </div>
+                          <div v-else class="quiz-question-answers">
+                            <div class="quiz-answer-line">
+                              <span class="quiz-answer-label">{{ t('groupScenarios.yourAnswer') }}:</span>
+                              <span class="quiz-answer-value">
+                                {{ displayAnswer(q.student_answer) || t('groupScenarios.noAnswer') }}
+                              </span>
+                            </div>
+                            <div class="quiz-answer-line">
+                              <span class="quiz-answer-label">{{ t('groupScenarios.correctAnswer') }}:</span>
+                              <span class="quiz-answer-value quiz-answer-correct">{{ q.correct_answer }}</span>
+                            </div>
+                          </div>
+                          <div v-if="q.explanation" class="quiz-question-explanation">
+                            <i class="fas fa-info-circle"></i>
+                            {{ q.explanation }}
+                          </div>
+                        </li>
+                      </ol>
+                    </div>
+                  </td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
@@ -1435,85 +1720,209 @@ onUnmounted(() => {
           role="tabpanel"
           aria-labelledby="detail-tab-commands"
         >
-          <div v-if="commandsLoading" class="loading-state" role="status">
-            <i class="fas fa-spinner fa-spin"></i>
-            <span class="loading-label">{{ t('groupScenarios.commandsLoading') }}</span>
-          </div>
-
-          <div v-else-if="commandsNoTerminal" class="empty-state">
-            <i class="fas fa-terminal"></i>
-            <p>{{ t('groupScenarios.commandsNoTerminal') }}</p>
-          </div>
-
-          <div v-else-if="commandsError" class="empty-state empty-state-error">
-            <i class="fas fa-exclamation-circle"></i>
-            <p>{{ commandsError }}</p>
-            <button class="btn btn-sm btn-primary" @click="fetchSessionCommands">
-              <i class="fas fa-redo"></i> {{ t('groupScenarios.retry') }}
+          <!-- Commands view mode segmented control -->
+          <div class="commands-mode-bar" role="group" :aria-label="t('groupScenarios.tabCommands')">
+            <button
+              type="button"
+              class="commands-mode-btn"
+              :class="{ active: commandsViewMode === 'all' }"
+              :aria-pressed="commandsViewMode === 'all'"
+              @click="setCommandsViewMode('all')"
+            >
+              <i class="fas fa-list"></i>
+              {{ t('groupScenarios.commandsModeAll') }}
+            </button>
+            <button
+              type="button"
+              class="commands-mode-btn"
+              :class="{ active: commandsViewMode === 'per-step' }"
+              :aria-pressed="commandsViewMode === 'per-step'"
+              @click="setCommandsViewMode('per-step')"
+            >
+              <i class="fas fa-layer-group"></i>
+              {{ t('groupScenarios.commandsModePerStep') }}
             </button>
           </div>
 
-          <div v-else-if="commandsList.length === 0" class="empty-state">
-            <i class="fas fa-terminal"></i>
-            <p>{{ t('groupScenarios.commandsEmpty') }}</p>
-          </div>
+          <!-- All-commands view -->
+          <template v-if="commandsViewMode === 'all'">
+            <div v-if="commandsLoading" class="loading-state" role="status">
+              <i class="fas fa-spinner fa-spin"></i>
+              <span class="loading-label">{{ t('groupScenarios.commandsLoading') }}</span>
+            </div>
 
-          <template v-else>
-            <div class="commands-toolbar">
-              <button
-                class="btn btn-sm btn-outline"
-                @click="exportCommandsCsv"
-                :disabled="commandsTotal === 0"
-              >
-                <i class="fas fa-file-csv"></i>
-                {{ t('groupScenarios.exportCommandsCsv') }}
+            <div v-else-if="commandsNoTerminal" class="empty-state">
+              <i class="fas fa-terminal"></i>
+              <p>{{ t('groupScenarios.commandsNoTerminal') }}</p>
+            </div>
+
+            <div v-else-if="commandsError" class="empty-state empty-state-error">
+              <i class="fas fa-exclamation-circle"></i>
+              <p>{{ commandsError }}</p>
+              <button class="btn btn-sm btn-primary" @click="fetchSessionCommands">
+                <i class="fas fa-redo"></i> {{ t('groupScenarios.retry') }}
               </button>
             </div>
-            <table class="commands-table" :aria-label="t('groupScenarios.tabCommands')">
-              <thead>
-                <tr>
-                  <th class="commands-col-seq">{{ t('groupScenarios.commandSequence') }}</th>
-                  <th class="commands-col-cmd">{{ t('groupScenarios.command') }}</th>
-                  <th class="commands-col-time">{{ t('groupScenarios.commandExecutedAt') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="cmd in commandsList" :key="`${cmd.session_uuid}-${cmd.sequence_num}`">
-                  <td class="commands-col-seq">{{ cmd.sequence_num }}</td>
-                  <td class="commands-col-cmd">
-                    <code class="commands-cmd-text">{{ cmd.command_text }}</code>
-                  </td>
-                  <td class="commands-col-time">{{ formatExecutedAt(cmd.executed_at) }}</td>
-                </tr>
-              </tbody>
-            </table>
-            <div class="commands-pagination">
-              <span class="commands-page-info">
-                {{ t('groupScenarios.pageInfo', {
-                  start: commandsPageStart,
-                  end: commandsPageEnd,
-                  total: commandsTotal
-                }) }}
-              </span>
-              <div class="commands-page-buttons">
+
+            <div v-else-if="commandsList.length === 0" class="empty-state">
+              <i class="fas fa-terminal"></i>
+              <p>{{ t('groupScenarios.commandsEmpty') }}</p>
+            </div>
+
+            <template v-else>
+              <div class="commands-toolbar">
                 <button
                   class="btn btn-sm btn-outline"
-                  :disabled="!commandsHasPrev || commandsLoading"
-                  @click="commandsPrevPage"
+                  @click="exportCommandsCsv"
+                  :disabled="commandsTotal === 0"
                 >
-                  <i class="fas fa-chevron-left"></i>
-                  {{ t('groupScenarios.prevPage') }}
-                </button>
-                <button
-                  class="btn btn-sm btn-outline"
-                  :disabled="!commandsHasNext || commandsLoading"
-                  @click="commandsNextPage"
-                >
-                  {{ t('groupScenarios.nextPage') }}
-                  <i class="fas fa-chevron-right"></i>
+                  <i class="fas fa-file-csv"></i>
+                  {{ t('groupScenarios.exportCommandsCsv') }}
                 </button>
               </div>
+              <table class="commands-table" :aria-label="t('groupScenarios.tabCommands')">
+                <thead>
+                  <tr>
+                    <th class="commands-col-seq">{{ t('groupScenarios.commandSequence') }}</th>
+                    <th class="commands-col-cmd">{{ t('groupScenarios.command') }}</th>
+                    <th class="commands-col-time">{{ t('groupScenarios.commandExecutedAt') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="cmd in commandsList" :key="`${cmd.session_uuid}-${cmd.sequence_num}`">
+                    <td class="commands-col-seq">{{ cmd.sequence_num }}</td>
+                    <td class="commands-col-cmd">
+                      <code class="commands-cmd-text">{{ cmd.command_text }}</code>
+                    </td>
+                    <td class="commands-col-time">{{ formatExecutedAt(cmd.executed_at) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="commands-pagination">
+                <span class="commands-page-info">
+                  {{ t('groupScenarios.pageInfo', {
+                    start: commandsPageStart,
+                    end: commandsPageEnd,
+                    total: commandsTotal
+                  }) }}
+                </span>
+                <div class="commands-page-buttons">
+                  <button
+                    class="btn btn-sm btn-outline"
+                    :disabled="!commandsHasPrev || commandsLoading"
+                    @click="commandsPrevPage"
+                  >
+                    <i class="fas fa-chevron-left"></i>
+                    {{ t('groupScenarios.prevPage') }}
+                  </button>
+                  <button
+                    class="btn btn-sm btn-outline"
+                    :disabled="!commandsHasNext || commandsLoading"
+                    @click="commandsNextPage"
+                  >
+                    {{ t('groupScenarios.nextPage') }}
+                    <i class="fas fa-chevron-right"></i>
+                  </button>
+                </div>
+              </div>
+            </template>
+          </template>
+
+          <!-- Per-step view -->
+          <template v-else>
+            <div v-if="allCommandsLoading" class="loading-state" role="status">
+              <i class="fas fa-spinner fa-spin"></i>
+              <span class="loading-label">{{ t('groupScenarios.commandsLoading') }}</span>
             </div>
+
+            <div v-else-if="commandsNoTerminal" class="empty-state">
+              <i class="fas fa-terminal"></i>
+              <p>{{ t('groupScenarios.commandsNoTerminal') }}</p>
+            </div>
+
+            <div v-else-if="allCommandsError" class="empty-state empty-state-error">
+              <i class="fas fa-exclamation-circle"></i>
+              <p>{{ allCommandsError }}</p>
+              <button class="btn btn-sm btn-primary" @click="fetchAllSessionCommands">
+                <i class="fas fa-redo"></i> {{ t('groupScenarios.retry') }}
+              </button>
+            </div>
+
+            <template v-else>
+              <div class="commands-toolbar">
+                <button
+                  class="btn btn-sm btn-outline"
+                  @click="exportCommandsCsv"
+                  :disabled="allCommandsCache.length === 0"
+                >
+                  <i class="fas fa-file-csv"></i>
+                  {{ t('groupScenarios.exportCommandsCsv') }}
+                </button>
+              </div>
+              <div class="per-step-list">
+                <div
+                  v-for="step in sessionDetail.steps"
+                  :key="`per-step-${step.step_order}`"
+                  class="per-step-item"
+                >
+                  <button
+                    type="button"
+                    class="per-step-header"
+                    :aria-expanded="isStepRowExpanded(step.step_order)"
+                    :aria-controls="`per-step-body-${step.step_order}`"
+                    @click="toggleStepRow(step.step_order)"
+                  >
+                    <i :class="isStepRowExpanded(step.step_order) ? 'fas fa-chevron-down' : 'fas fa-chevron-right'"></i>
+                    <span class="per-step-order">{{ step.step_order + 1 }}.</span>
+                    <span class="per-step-title">{{ step.step_title }}</span>
+                    <span :class="['step-type-chip', `step-type-${normalizedStepType(step.step_type)}`]">
+                      <i :class="stepTypeIcon(step.step_type)"></i>
+                      <span class="step-type-label">{{ stepTypeLabel(step.step_type) }}</span>
+                    </span>
+                    <span class="per-step-duration">
+                      <i class="fas fa-clock"></i>
+                      {{ formatDuration(step.time_spent_seconds) }}
+                    </span>
+                    <span class="per-step-count">
+                      {{ t('groupScenarios.commandsCount', {
+                        count: commandsForStep(step).length
+                      }) }}
+                    </span>
+                  </button>
+                  <div
+                    v-if="isStepRowExpanded(step.step_order)"
+                    :id="`per-step-body-${step.step_order}`"
+                    class="per-step-body"
+                  >
+                    <div v-if="commandsForStep(step).length === 0" class="per-step-empty">
+                      <i class="fas fa-terminal"></i>
+                      {{ t('groupScenarios.commandsNoneDuringStep') }}
+                    </div>
+                    <table v-else class="commands-table" :aria-label="t('groupScenarios.commandsDuringStep')">
+                      <thead>
+                        <tr>
+                          <th class="commands-col-seq">{{ t('groupScenarios.commandSequence') }}</th>
+                          <th class="commands-col-cmd">{{ t('groupScenarios.command') }}</th>
+                          <th class="commands-col-time">{{ t('groupScenarios.commandExecutedAt') }}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr
+                          v-for="cmd in commandsForStep(step)"
+                          :key="`${cmd.session_uuid}-${cmd.sequence_num}`"
+                        >
+                          <td class="commands-col-seq">{{ cmd.sequence_num }}</td>
+                          <td class="commands-col-cmd">
+                            <code class="commands-cmd-text">{{ cmd.command_text }}</code>
+                          </td>
+                          <td class="commands-col-time">{{ formatExecutedAt(cmd.executed_at) }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </template>
           </template>
         </div>
       </div>
@@ -2334,5 +2743,325 @@ onUnmounted(() => {
 .commands-page-buttons {
   display: flex;
   gap: var(--spacing-sm);
+}
+
+/* Quiz questions inline detail */
+.quiz-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-left: var(--spacing-sm);
+  padding: 2px 8px;
+  background: transparent;
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--border-radius-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  font-family: inherit;
+  transition: var(--transition-fast);
+}
+
+.quiz-toggle-btn:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.quiz-toggle-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.quiz-questions-row td {
+  background: var(--color-bg-secondary);
+  padding: var(--spacing-md) !important;
+}
+
+.quiz-questions-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.quiz-questions-summary {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.quiz-questions-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.quiz-question-item {
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-primary);
+}
+
+.quiz-q-correct {
+  border-left: 3px solid var(--color-success);
+}
+
+.quiz-q-incorrect {
+  border-left: 3px solid var(--color-danger);
+}
+
+.quiz-question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xs);
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.quiz-question-label {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.quiz-question-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  padding: 2px 8px;
+  border-radius: var(--border-radius-sm);
+}
+
+.indicator-correct {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.indicator-incorrect {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+.quiz-question-text {
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.quiz-question-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.quiz-question-option {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--color-border-light);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.option-correct {
+  background: var(--color-success-bg);
+  border-color: var(--color-success-text);
+  color: var(--color-success-text);
+}
+
+.option-student {
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger-text);
+  color: var(--color-danger-text);
+}
+
+.option-icon {
+  width: 1em;
+  text-align: center;
+}
+
+.option-icon-correct {
+  color: var(--color-success);
+}
+
+.option-icon-student {
+  color: var(--color-danger);
+}
+
+.quiz-question-answers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.quiz-answer-line {
+  display: flex;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.quiz-answer-label {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  min-width: 8em;
+}
+
+.quiz-answer-value {
+  color: var(--color-text-primary);
+  font-family: var(--font-family-monospace);
+  word-break: break-word;
+}
+
+.quiz-answer-correct {
+  color: var(--color-success-text);
+}
+
+.quiz-question-explanation {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-info-bg);
+  color: var(--color-info);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  display: flex;
+  gap: var(--spacing-xs);
+  align-items: flex-start;
+}
+
+/* Commands view-mode toggle (segmented control) */
+.commands-mode-bar {
+  display: inline-flex;
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  margin-bottom: var(--spacing-md);
+  background: var(--color-bg-primary);
+}
+
+.commands-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  transition: var(--transition-fast);
+}
+
+.commands-mode-btn + .commands-mode-btn {
+  border-left: 1px solid var(--color-border-medium);
+}
+
+.commands-mode-btn:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.commands-mode-btn.active {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.commands-mode-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Per-step accordion */
+.per-step-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.per-step-item {
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-primary);
+  overflow: hidden;
+}
+
+.per-step-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  text-align: left;
+  transition: var(--transition-fast);
+}
+
+.per-step-header:hover {
+  background: var(--color-surface-hover, var(--color-bg-tertiary));
+}
+
+.per-step-header:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.per-step-order {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  min-width: 2em;
+}
+
+.per-step-title {
+  flex: 1;
+  font-weight: var(--font-weight-medium);
+}
+
+.per-step-duration {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.per-step-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--border-radius-sm);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.per-step-body {
+  padding: var(--spacing-md);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.per-step-empty {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-sm) 0;
 }
 </style>
