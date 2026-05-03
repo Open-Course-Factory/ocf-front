@@ -102,6 +102,21 @@
         @toggle-expand="handleToggleExpand"
         @select-tree="handleSelectTree"
         @edge-connect="handleEdgeConnect"
+        @edge-insert="handleEdgeInsert"
+        @edge-insert-request="handleEdgeInsertRequest"
+      />
+
+      <!-- Inline picker for hover-+ click on edges -->
+      <InsertNodePicker
+        :visible="showInsertPicker"
+        :node-types="scenarioNodeTypeDefinitions"
+        :allowed-types="STEP_NODE_TYPES"
+        :client-x="insertPickerClientX"
+        :client-y="insertPickerClientY"
+        :header-text="t('scenarioEditor.insertStep')"
+        :aria-label="t('scenarioEditor.insertStep')"
+        @select="handleInsertPickerSelect"
+        @close="closeInsertPicker"
       />
 
       <!-- Right Panel: Scenario Step List (foldable) -->
@@ -443,6 +458,7 @@ import { useNotification } from '../../composables/useNotification'
 import NodeLibraryPanel from '../GraphEditor/NodeLibraryPanel.vue'
 import type { NodeTypeDefinition } from '../GraphEditor/NodeLibraryPanel.vue'
 import FlowCanvas from '../GraphEditor/FlowCanvas.vue'
+import InsertNodePicker from '../GraphEditor/InsertNodePicker.vue'
 import ScenarioStepListPanel from '../ScenarioEditor/ScenarioStepListPanel.vue'
 import ScenarioNode from '../ScenarioEditor/nodes/ScenarioNode.vue'
 import StepNode from '../ScenarioEditor/nodes/StepNode.vue'
@@ -564,7 +580,10 @@ const { t } = useTranslations({
       expandPanel: 'Expand panel',
       collapsePanel: 'Collapse panel',
       readOnly: 'Read only',
-      readOnlyWarning: 'This scenario is read-only. Copy it to your organization to edit.'
+      readOnlyWarning: 'This scenario is read-only. Copy it to your organization to edit.',
+      insertStep: 'Insert step',
+      insertStepHere: 'Insert a step here',
+      multiEdgeWarning: 'Cannot auto-rewire: node has multiple incoming or outgoing connections'
     }
   },
   fr: {
@@ -672,7 +691,10 @@ const { t } = useTranslations({
       expandPanel: 'Déplier le panneau',
       collapsePanel: 'Replier le panneau',
       readOnly: 'Lecture seule',
-      readOnlyWarning: 'Ce scénario est en lecture seule. Copiez-le dans votre organisation pour le modifier.'
+      readOnlyWarning: 'Ce scénario est en lecture seule. Copiez-le dans votre organisation pour le modifier.',
+      insertStep: 'Insérer une étape',
+      insertStepHere: 'Insérer une étape ici',
+      multiEdgeWarning: 'Recâblage auto impossible : le nœud a plusieurs connexions entrantes ou sortantes'
     }
   }
 })
@@ -771,6 +793,12 @@ const editingStepNodeId = ref<string | null>(null)
 const deletingNode = ref<any>(null)
 const isSaving = ref(false)
 const modalError = ref('')
+
+// Insert-on-edge picker state (hover-+ click → pick a step type → insert)
+const showInsertPicker = ref(false)
+const insertPickerClientX = ref(0)
+const insertPickerClientY = ref(0)
+const pendingInsertEdge = ref<{ edgeId: string; source: string; target: string; flowX: number; flowY: number } | null>(null)
 
 // Copy to org state
 const showCopyModal = ref(false)
@@ -1405,6 +1433,117 @@ const handleEdgeConnect = async (connection: any) => {
   }
 }
 
+// Drop-on-edge: split A → B into A → newNode → B. The new node was already
+// added by FlowCanvas, we just need to swap edges.
+const handleEdgeInsert = (payload: { node: any; edgeId: string; source: string; target: string }) => {
+  if (!canEditScenario.value) return
+  const { node: newNode, edgeId, source, target } = payload
+
+  // Only rewire when both endpoints would yield a valid step in the chain;
+  // otherwise fall back to the new node existing as an unconnected node so the
+  // user can wire it manually (matches pre-feature behaviour).
+  const sourceNode = nodes.value.find(n => n.id === source)
+  const targetNode = nodes.value.find(n => n.id === target)
+  if (!sourceNode || !targetNode) return
+
+  const sourceType = sourceNode.data.entityType
+  const newType = newNode.data.entityType
+  const targetType = targetNode.data.entityType
+  const sourceAcceptsNew = VALID_CONNECTIONS[sourceType]?.includes(newType)
+  const newAcceptsTarget = VALID_CONNECTIONS[newType]?.includes(targetType)
+  if (!sourceAcceptsNew || !newAcceptsTarget) return
+
+  const oldEdge = edges.value.find(e => e.id === edgeId)
+  const sourceHandle = oldEdge?.sourceHandle
+  const targetHandle = oldEdge?.targetHandle
+  const edgeType = oldEdge?.type || 'smoothstep'
+
+  // Replace the original edge with two new edges
+  edges.value = [
+    ...edges.value.filter(e => e.id !== edgeId),
+    {
+      id: `edge-${source}-${newNode.id}`,
+      source,
+      sourceHandle,
+      target: newNode.id,
+      targetHandle: 'top',
+      type: edgeType,
+      animated: false
+    },
+    {
+      id: `edge-${newNode.id}-${target}`,
+      source: newNode.id,
+      sourceHandle: 'right-source',
+      target,
+      targetHandle,
+      type: edgeType,
+      animated: false
+    }
+  ]
+}
+
+// Hover-+ click on an edge → open the picker at the click position.
+const handleEdgeInsertRequest = (payload: {
+  edgeId: string
+  source: string
+  target: string
+  flowX: number
+  flowY: number
+  clientX: number
+  clientY: number
+}) => {
+  if (!canEditScenario.value) {
+    notification.showWarning(t('scenarioEditor.readOnlyWarning'))
+    return
+  }
+  pendingInsertEdge.value = {
+    edgeId: payload.edgeId,
+    source: payload.source,
+    target: payload.target,
+    flowX: payload.flowX,
+    flowY: payload.flowY
+  }
+  insertPickerClientX.value = payload.clientX
+  insertPickerClientY.value = payload.clientY
+  showInsertPicker.value = true
+}
+
+const closeInsertPicker = () => {
+  showInsertPicker.value = false
+  pendingInsertEdge.value = null
+}
+
+const handleInsertPickerSelect = (nodeType: NodeTypeDefinition) => {
+  if (!pendingInsertEdge.value) {
+    closeInsertPicker()
+    return
+  }
+  const { edgeId, source, target, flowX, flowY } = pendingInsertEdge.value
+
+  // Build the new node mirroring what FlowCanvas does on drop
+  const newNode = {
+    id: `${nodeType.type}-new-${Date.now()}`,
+    type: nodeType.type,
+    position: { x: flowX - 100, y: flowY - 40 },
+    data: {
+      label: `New ${nodeType.type.charAt(0).toUpperCase()}${nodeType.type.slice(1)}`,
+      entityId: null,
+      entityType: nodeType.type,
+      step_type: nodeType.type,
+      isNew: true
+    }
+  }
+  nodes.value = [...nodes.value, newNode]
+
+  handleEdgeInsert({ node: newNode, edgeId, source, target })
+
+  closeInsertPicker()
+  // Open the edit modal for the new step (consistent with handleNodeAdded)
+  if (STEP_NODE_TYPES.includes(newNode.type)) {
+    openEditModal(newNode)
+  }
+}
+
 // Modal handlers - Scenario
 const openEditModal = async (node: any) => {
   // Block editing for read-only scenarios (non-admin viewing platform/other-org scenarios)
@@ -1800,7 +1939,14 @@ const confirmDelete = async () => {
       }
     }
 
-    // Remove from canvas
+    // Auto-rewire: when a node has exactly one incoming and one outgoing edge,
+    // replace both with a single edge from the upstream source to the downstream
+    // target so the chain order survives the deletion. The chain order is
+    // re-synced to the backend by `syncOrderFromEdges` on save.
+    rewireEdgesAroundDeletedNode(node)
+
+    // Remove from canvas (any remaining edges touching the node — usually none
+    // after rewire, but defensive in case there are duplicates)
     nodes.value = nodes.value.filter(n => n.id !== node.id)
     edges.value = edges.value.filter(e => e.source !== node.id && e.target !== node.id)
 
@@ -1808,6 +1954,57 @@ const confirmDelete = async () => {
   } catch (err) {
     console.error('Delete failed:', err)
   }
+}
+
+// Replace `incoming → deletedNode` and `deletedNode → outgoing` with a single
+// `incoming → outgoing` edge so the linear chain is preserved.
+const rewireEdgesAroundDeletedNode = (node: any) => {
+  const incoming = edges.value.filter(e => e.target === node.id)
+  const outgoing = edges.value.filter(e => e.source === node.id)
+
+  // Multi-parent or multi-child: in OCF's linear chain model this should not
+  // happen. Log a warning and let the standard removal happen without rewire.
+  if (incoming.length > 1 || outgoing.length > 1) {
+    console.warn(
+      '[ScenarioEditor] cannot auto-rewire: node has multiple incoming/outgoing edges',
+      { nodeId: node.id, incoming: incoming.length, outgoing: outgoing.length }
+    )
+    notification.showWarning(t('scenarioEditor.multiEdgeWarning'))
+    return
+  }
+
+  // Last child (incoming only, no outgoing): just drop the incoming edge below.
+  if (incoming.length === 1 && outgoing.length === 0) {
+    return
+  }
+
+  // No incoming and no outgoing: nothing to rewire.
+  if (incoming.length === 0 && outgoing.length === 0) {
+    return
+  }
+
+  // Orphan (outgoing only): drop the dangling outgoing.
+  if (incoming.length === 0 && outgoing.length === 1) {
+    return
+  }
+
+  // Standard case: bridge incoming.source → outgoing.target.
+  const inEdge = incoming[0]
+  const outEdge = outgoing[0]
+  const newEdge = {
+    id: `edge-${inEdge.source}-${outEdge.target}`,
+    source: inEdge.source,
+    sourceHandle: inEdge.sourceHandle,
+    target: outEdge.target,
+    targetHandle: outEdge.targetHandle,
+    type: inEdge.type || 'smoothstep',
+    animated: false,
+    hidden: inEdge.hidden || outEdge.hidden || false
+  }
+  edges.value = [
+    ...edges.value.filter(e => e.id !== inEdge.id && e.id !== outEdge.id),
+    newEdge
+  ]
 }
 
 // Sync order from edge chains (scenario → step1 → step2 → ...)

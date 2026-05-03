@@ -73,6 +73,21 @@
         @toggle-expand="handleToggleExpand"
         @select-tree="handleSelectTree"
         @edge-connect="handleEdgeConnect"
+        @edge-insert="handleEdgeInsert"
+        @edge-insert-request="handleEdgeInsertRequest"
+      />
+
+      <!-- Inline picker for hover-+ click on edges -->
+      <InsertNodePicker
+        :visible="showInsertPicker"
+        :node-types="courseNodeTypeDefinitions"
+        :allowed-types="insertPickerAllowedTypes"
+        :client-x="insertPickerClientX"
+        :client-y="insertPickerClientY"
+        :header-text="t('courseEditor.insertEntity')"
+        :aria-label="t('courseEditor.insertEntityHere')"
+        @select="handleInsertPickerSelect"
+        @close="closeInsertPicker"
       />
 
       <!-- Right Panel: Course Tree -->
@@ -186,6 +201,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import NodeLibraryPanel from '../GraphEditor/NodeLibraryPanel.vue'
 import type { NodeTypeDefinition } from '../GraphEditor/NodeLibraryPanel.vue'
 import FlowCanvas from '../GraphEditor/FlowCanvas.vue'
+import InsertNodePicker from '../GraphEditor/InsertNodePicker.vue'
 import CourseTreePanel from '../CourseEditor/CourseTreePanel.vue'
 import CourseNode from '../CourseEditor/nodes/CourseNode.vue'
 import ChapterNode from '../CourseEditor/nodes/ChapterNode.vue'
@@ -245,7 +261,10 @@ const { t } = useTranslations({
         pageDescription: 'Individual content page'
       },
       nodeLibraryTitle: 'Node Library',
-      nodeLibraryHelp: 'Drag a node type onto the canvas to create a new entity'
+      nodeLibraryHelp: 'Drag a node type onto the canvas to create a new entity',
+      insertEntity: 'Insert',
+      insertEntityHere: 'Insert here',
+      multiEdgeWarning: 'Cannot auto-rewire: node has multiple incoming or outgoing connections'
     }
   },
   fr: {
@@ -293,7 +312,10 @@ const { t } = useTranslations({
         pageDescription: 'Page de contenu individuelle'
       },
       nodeLibraryTitle: 'Bibliothèque de Nœuds',
-      nodeLibraryHelp: 'Glissez un type de nœud sur le canevas pour créer une nouvelle entité'
+      nodeLibraryHelp: 'Glissez un type de nœud sur le canevas pour créer une nouvelle entité',
+      insertEntity: 'Insérer',
+      insertEntityHere: 'Insérer ici',
+      multiEdgeWarning: 'Recâblage auto impossible : le nœud a plusieurs connexions entrantes ou sortantes'
     }
   }
 })
@@ -363,6 +385,13 @@ const editingEntity = ref<any>({})
 const deletingNode = ref<any>(null)
 const isSaving = ref(false)
 const modalError = ref('')
+
+// Insert-on-edge picker state (hover-+ click → pick a type → insert)
+const showInsertPicker = ref(false)
+const insertPickerClientX = ref(0)
+const insertPickerClientY = ref(0)
+const insertPickerAllowedTypes = ref<string[]>([])
+const pendingInsertEdge = ref<{ edgeId: string; source: string; target: string; flowX: number; flowY: number } | null>(null)
 
 // Resize state
 const treePanelWidth = ref(280)
@@ -1097,15 +1126,54 @@ const confirmDelete = async () => {
       }
     }
 
-    // Remove from canvas
+    // Auto-rewire: bridge incoming.source → outgoing.target so the chain order
+    // survives. Re-synced on save by syncOrderFromEdges.
+    rewireEdgesAroundDeletedNode(node)
+
+    // Remove from canvas (and any leftover edges touching the node)
     nodes.value = nodes.value.filter(n => n.id !== node.id)
-    // Remove connected edges
     edges.value = edges.value.filter(e => e.source !== node.id && e.target !== node.id)
 
     closeDeleteModal()
   } catch (err) {
     console.error('Delete failed:', err)
   }
+}
+
+// Replace `incoming → deletedNode` and `deletedNode → outgoing` with a single
+// `incoming → outgoing` edge so the linear chain is preserved.
+const rewireEdgesAroundDeletedNode = (node: any) => {
+  const incoming = edges.value.filter(e => e.target === node.id)
+  const outgoing = edges.value.filter(e => e.source === node.id)
+
+  if (incoming.length > 1 || outgoing.length > 1) {
+    console.warn(
+      '[CourseEditor] cannot auto-rewire: node has multiple incoming/outgoing edges',
+      { nodeId: node.id, incoming: incoming.length, outgoing: outgoing.length }
+    )
+    notification.showWarning(t('courseEditor.multiEdgeWarning'))
+    return
+  }
+
+  // Last child or pure orphan: nothing to bridge.
+  if (incoming.length === 0 || outgoing.length === 0) return
+
+  const inEdge = incoming[0]
+  const outEdge = outgoing[0]
+  const newEdge = {
+    id: `edge-${inEdge.source}-${outEdge.target}`,
+    source: inEdge.source,
+    sourceHandle: inEdge.sourceHandle,
+    target: outEdge.target,
+    targetHandle: outEdge.targetHandle,
+    type: inEdge.type || 'smoothstep',
+    animated: false,
+    hidden: inEdge.hidden || outEdge.hidden || false
+  }
+  edges.value = [
+    ...edges.value.filter(e => e.id !== inEdge.id && e.id !== outEdge.id),
+    newEdge
+  ]
 }
 
 // Entity manipulation handlers
@@ -1146,6 +1214,15 @@ const handleMoveEntity = async (entity: any, targetParent: any) => {
 
 // Valid parent→child type map for edge connections
 const VALID_CONNECTIONS: Record<string, string> = {
+  'course': 'chapter',
+  'chapter': 'section',
+  'section': 'page'
+}
+
+// Reverse lookup: which child type can be inserted between a parent of type X
+// and a sibling of the same child type. For drop-on-edge / hover-+ inside a
+// chain (e.g. chapter → chapter), the inserted node must match the child type.
+const CHILD_TYPE_FOR_PARENT: Record<string, string> = {
   'course': 'chapter',
   'chapter': 'section',
   'section': 'page'
@@ -1192,6 +1269,123 @@ const handleEdgeConnect = async (connection: any) => {
       notification.showError(t('courseEditor.moveError'))
     }
   }
+}
+
+// Drop-on-edge: split A → B into A → newNode → B by replacing the edge.
+const handleEdgeInsert = (payload: { node: any; edgeId: string; source: string; target: string }) => {
+  const { node: newNode, edgeId, source, target } = payload
+
+  const sourceNode = nodes.value.find(n => n.id === source)
+  const targetNode = nodes.value.find(n => n.id === target)
+  if (!sourceNode || !targetNode) return
+
+  const sourceType = sourceNode.data.entityType
+  const newType = newNode.data.entityType
+  const targetType = targetNode.data.entityType
+
+  // Inserted node must match the chain segment: parent → child OR sibling → sibling.
+  // Examples that work: chapter → (insert chapter) → chapter; course → (insert chapter) → chapter.
+  // If the new type doesn't fit, leave the original edge untouched.
+  const sourceAcceptsNew = VALID_CONNECTIONS[sourceType] === newType || sourceType === newType
+  const newAcceptsTarget = VALID_CONNECTIONS[newType] === targetType || newType === targetType
+  if (!sourceAcceptsNew || !newAcceptsTarget) return
+
+  const oldEdge = edges.value.find(e => e.id === edgeId)
+  const sourceHandle = oldEdge?.sourceHandle
+  const targetHandle = oldEdge?.targetHandle
+  const edgeType = oldEdge?.type || 'smoothstep'
+
+  edges.value = [
+    ...edges.value.filter(e => e.id !== edgeId),
+    {
+      id: `edge-${source}-${newNode.id}`,
+      source,
+      sourceHandle,
+      target: newNode.id,
+      targetHandle: 'top',
+      type: edgeType,
+      animated: false
+    },
+    {
+      id: `edge-${newNode.id}-${target}`,
+      source: newNode.id,
+      sourceHandle: 'bottom-source',
+      target,
+      targetHandle,
+      type: edgeType,
+      animated: false
+    }
+  ]
+}
+
+// Hover-+ click on an edge → open the picker. Restrict choices to the type
+// that fits the chain segment (e.g. chapter→chapter expects a chapter; or a
+// course→chapter edge expects a chapter).
+const handleEdgeInsertRequest = (payload: {
+  edgeId: string
+  source: string
+  target: string
+  flowX: number
+  flowY: number
+  clientX: number
+  clientY: number
+}) => {
+  const sourceNode = nodes.value.find(n => n.id === payload.source)
+  const targetNode = nodes.value.find(n => n.id === payload.target)
+  if (!sourceNode || !targetNode) return
+
+  const sourceType = sourceNode.data.entityType
+  const targetType = targetNode.data.entityType
+  // The expected type to insert is the target type (consistent with how the
+  // chain works: chapter→chapter siblings insert another chapter; course→chapter
+  // inserts another chapter to head the chain).
+  const expected = targetType || CHILD_TYPE_FOR_PARENT[sourceType] || ''
+  insertPickerAllowedTypes.value = expected ? [expected] : []
+
+  pendingInsertEdge.value = {
+    edgeId: payload.edgeId,
+    source: payload.source,
+    target: payload.target,
+    flowX: payload.flowX,
+    flowY: payload.flowY
+  }
+  insertPickerClientX.value = payload.clientX
+  insertPickerClientY.value = payload.clientY
+  showInsertPicker.value = true
+}
+
+const closeInsertPicker = () => {
+  showInsertPicker.value = false
+  pendingInsertEdge.value = null
+  insertPickerAllowedTypes.value = []
+}
+
+const handleInsertPickerSelect = (nodeType: NodeTypeDefinition) => {
+  if (!pendingInsertEdge.value) {
+    closeInsertPicker()
+    return
+  }
+  const { edgeId, source, target, flowX, flowY } = pendingInsertEdge.value
+
+  const newNode = {
+    id: `${nodeType.type}-new-${Date.now()}`,
+    type: nodeType.type,
+    position: { x: flowX - 100, y: flowY - 40 },
+    data: {
+      label: `New ${nodeType.type.charAt(0).toUpperCase()}${nodeType.type.slice(1)}`,
+      entityId: null,
+      entityType: nodeType.type,
+      isNew: true,
+      isExpanded: true
+    }
+  }
+  nodes.value = [...nodes.value, newNode]
+
+  handleEdgeInsert({ node: newNode, edgeId, source, target })
+
+  closeInsertPicker()
+  // Open the edit modal so the user can name/configure the new entity
+  openEditModal(newNode)
 }
 
 // Position persistence helpers
