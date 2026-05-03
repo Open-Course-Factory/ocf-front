@@ -222,21 +222,21 @@ const handleContentDoubleClick = (event: MouseEvent) => {
   border: 2px solid;
   border-radius: 8px;
   padding: 0.75rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   transition: all 0.2s;
   position: relative;
 }
 
 .custom-node:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
 
 .custom-node.is-selected {
   border-color: var(--color-primary);
   border-width: 3px;
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.3), 0 4px 16px rgba(74, 144, 226, 0.4);
-  background: linear-gradient(135deg, var(--color-surface) 0%, rgba(74, 144, 226, 0.05) 100%);
+  box-shadow: 0 0 0 3px var(--course-node-course-bg), var(--shadow-course-node);
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--course-node-course-bg) 100%);
   transform: scale(1.02);
 }
 
@@ -326,7 +326,7 @@ const handleContentDoubleClick = (event: MouseEvent) => {
   padding-top: 0.5rem;
   padding-bottom: 0.25rem;
   border-top: 2px solid var(--color-border);
-  background: rgba(0, 0, 0, 0.03);
+  background: var(--overlay-black-03);
   opacity: 1;
   transition: all 0.2s;
   position: relative;
@@ -344,7 +344,7 @@ const handleContentDoubleClick = (event: MouseEvent) => {
 }
 
 .node-actions:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--overlay-black-05);
   backdrop-filter: brightness(0.95);
 }
 
@@ -361,23 +361,23 @@ const handleContentDoubleClick = (event: MouseEvent) => {
   z-index: 1;
   pointer-events: auto;
   user-select: none;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-xs);
 }
 
 .action-btn:hover {
   background: var(--color-surface-hover);
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   z-index: 2;
 }
 
 .action-btn:active {
   transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-xs);
 }
 
 .select-tree-btn:hover {
-  background: rgba(74, 144, 226, 0.1);
+  background: var(--course-node-course-bg);
   border-color: var(--color-primary);
 }
 

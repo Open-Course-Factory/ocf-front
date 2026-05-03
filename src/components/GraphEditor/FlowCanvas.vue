@@ -18,7 +18,7 @@
       @edges-change="handleEdgesChange"
       @connect="handleConnect"
     >
-      <Background pattern-color="#aaa" :gap="16" />
+      <Background :pattern-color="patternColor" :gap="16" />
       <Controls />
       <MiniMap />
     </VueFlow>
@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, provide, type Component } from 'vue'
+import { ref, watch, provide, onMounted, onBeforeUnmount, type Component } from 'vue'
 import { VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
@@ -81,6 +81,40 @@ provide('flowCanvasHandlers', {
 // Local reactive state
 const nodesData = ref(props.nodes)
 const edgesData = ref(props.edges)
+
+// Background grid pattern color — read from CSS variable so it stays
+// theme-aware (light/dark mode). Vue Flow's <Background> takes a static
+// color string, so we re-read on mount and on theme changes.
+const patternColor = ref('#aaa')
+
+const refreshPatternColor = () => {
+  if (typeof window === 'undefined') return
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue('--color-border-light')
+    .trim()
+  if (value) {
+    patternColor.value = value
+  }
+}
+
+let themeObserver: MutationObserver | null = null
+
+onMounted(() => {
+  refreshPatternColor()
+  // Observe data-theme changes on <html> to react to light/dark switches
+  if (typeof window !== 'undefined' && 'MutationObserver' in window) {
+    themeObserver = new MutationObserver(() => refreshPatternColor())
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    })
+  }
+})
+
+onBeforeUnmount(() => {
+  themeObserver?.disconnect()
+  themeObserver = null
+})
 
 // Watch for prop changes - but preserve Vue Flow's internal state
 watch(() => props.nodes, (newNodes, oldNodes) => {
