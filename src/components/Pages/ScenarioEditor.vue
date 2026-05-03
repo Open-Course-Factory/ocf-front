@@ -140,20 +140,21 @@
       @confirm="handleSaveScenario"
     >
       <!-- Tabs -->
-      <div class="scenario-modal-tabs">
-        <button
-          v-for="tab in scenarioModalTabs"
-          :key="tab.key"
-          class="scenario-modal-tab"
-          :class="{ active: activeScenarioTab === tab.key }"
-          @click="activeScenarioTab = tab.key"
-        >
-          {{ tab.label }}
-        </button>
-      </div>
+      <TabStrip
+        v-model="activeScenarioTab"
+        :tabs="scenarioModalTabs"
+        :aria-label="t('scenarioEditor.title')"
+        class="modal-tabs-spacing"
+      />
 
       <!-- General tab -->
-      <div v-show="activeScenarioTab === 'general'" class="modal-form">
+      <div
+        v-show="activeScenarioTab === 'general'"
+        id="panel-general"
+        role="tabpanel"
+        aria-labelledby="tab-general"
+        class="modal-form"
+      >
         <div class="form-group">
           <label>{{ t('scenarioEditor.scenarioName') }}</label>
           <input
@@ -238,7 +239,13 @@
       </div>
 
       <!-- Content tab -->
-      <div v-show="activeScenarioTab === 'content'" class="modal-form">
+      <div
+        v-show="activeScenarioTab === 'content'"
+        id="panel-content"
+        role="tabpanel"
+        aria-labelledby="tab-content"
+        class="modal-form"
+      >
         <div class="form-group">
           <label>{{ t('scenarioEditor.introText') }}</label>
           <textarea
@@ -283,7 +290,13 @@
       </div>
 
       <!-- Setup tab -->
-      <div v-show="activeScenarioTab === 'setup'" class="modal-form">
+      <div
+        v-show="activeScenarioTab === 'setup'"
+        id="panel-setup"
+        role="tabpanel"
+        aria-labelledby="tab-setup"
+        class="modal-form"
+      >
         <div class="form-group">
           <label>{{ t('scenarioEditor.setupScript') }}</label>
           <textarea
@@ -297,7 +310,13 @@
       </div>
 
       <!-- Options tab -->
-      <div v-show="activeScenarioTab === 'options'" class="modal-form">
+      <div
+        v-show="activeScenarioTab === 'options'"
+        id="panel-options"
+        role="tabpanel"
+        aria-labelledby="tab-options"
+        class="modal-form"
+      >
         <div class="form-row">
           <div class="form-group">
             <label>{{ t('scenarioEditor.instanceType') }}</label>
@@ -455,6 +474,7 @@ import QuizStepNode from '../ScenarioEditor/nodes/QuizStepNode.vue'
 import ScenarioStepEditModal from '../ScenarioEditor/ScenarioStepEditModal.vue'
 import AdminBadge from '../Common/AdminBadge.vue'
 import BaseModal from '../Modals/BaseModal.vue'
+import TabStrip from '../Common/TabStrip.vue'
 import axios from 'axios'
 
 const route = useRoute()
@@ -1977,34 +1997,9 @@ const handleReset = () => {
 }
 
 /* Modal form styles */
-/* Scenario modal tabs */
-.scenario-modal-tabs {
-  display: flex;
-  gap: 0;
-  border-bottom: 2px solid var(--color-border);
+/* Tab strip styles live in TabStrip.vue. We just add a bottom margin between tabs and form. */
+.modal-tabs-spacing {
   margin-bottom: 1rem;
-}
-
-.scenario-modal-tab {
-  padding: 0.5rem 1rem;
-  border: none;
-  background: none;
-  color: var(--color-text-secondary);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  transition: all 0.2s;
-}
-
-.scenario-modal-tab:hover {
-  color: var(--color-text-primary);
-}
-
-.scenario-modal-tab.active {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
 }
 
 .form-row {
