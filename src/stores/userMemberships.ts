@@ -40,6 +40,12 @@ export interface GroupMembership {
  * Lightweight store for the current user's organization and group memberships,
  * used by UI surfaces that need to gate actions per-scope without N round-trips
  * (e.g. the scenario editor's "Create New" scope picker).
+ *
+ * Memberships are loaded via a single
+ *   GET /users/me?includes=organization_memberships,group_memberships
+ * call. The backend swallows per-include preload errors and returns the failed
+ * include as `[]`, so partial-failure protection (originally added for #216)
+ * is now enforced server-side — the store no longer needs Promise.allSettled.
  */
 export const useUserMembershipsStore = defineStore('userMemberships', () => {
   const orgMemberships = ref<OrgMembership[]>([])
@@ -63,41 +69,22 @@ export const useUserMembershipsStore = defineStore('userMemberships', () => {
     isLoading.value = true
     error.value = ''
     try {
-      // Use Promise.allSettled so a single endpoint failing doesn't wipe
-      // both arrays. Real prod incident (#216): users whose /organizations
-      // route 404'd lost their group memberships too, hiding groups they
-      // owned from the scenario editor's scope picker.
-      const [orgRes, groupRes] = await Promise.allSettled([
-        axios.get('/organizations/me/memberships'),
-        axios.get('/groups/me/memberships'),
-      ])
-
-      const orgs = orgRes.status === 'fulfilled'
-        ? (orgRes.value.data?.data ?? orgRes.value.data ?? [])
-        : []
-      const groups = groupRes.status === 'fulfilled'
-        ? (groupRes.value.data?.data ?? groupRes.value.data ?? [])
-        : []
-
-      orgMemberships.value = Array.isArray(orgs) ? orgs : []
-      groupMemberships.value = Array.isArray(groups) ? groups : []
+      const res = await axios.get('/users/me', {
+        params: { includes: 'organization_memberships,group_memberships' }
+      })
+      const user = res.data?.data ?? res.data ?? {}
+      const orgs = Array.isArray(user.organization_memberships) ? user.organization_memberships : []
+      const groups = Array.isArray(user.group_memberships) ? user.group_memberships : []
+      orgMemberships.value = orgs.map((m: any) => ({
+        organization_id: m.organization_id,
+        role: m.role,
+      }))
+      groupMemberships.value = groups.map((m: any) => ({
+        group_id: m.group_id,
+        role: m.role,
+      }))
       isLoaded.value = true
-
-      // Surface a partial-failure error for observability, but don't fail
-      // the load — the half that succeeded is still usable.
-      if (orgRes.status === 'rejected' || groupRes.status === 'rejected') {
-        const failed: any = orgRes.status === 'rejected'
-          ? (orgRes as any).reason
-          : (groupRes as any).reason
-        error.value = failed?.response?.data?.error_message ||
-                      failed?.response?.data?.message ||
-                      failed?.message ||
-                      'Failed to load some memberships'
-      }
     } catch (err: any) {
-      // Promise.allSettled doesn't throw, but keep the catch as a safety
-      // net for genuinely unexpected runtime errors (e.g., synchronous
-      // throws from a bad mock or interceptor).
       error.value = err.response?.data?.error_message ||
                     err.response?.data?.message ||
                     err.message ||
