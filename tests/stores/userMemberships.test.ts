@@ -1,20 +1,23 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { ref } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 
 /*
  * Tests for the `useUserMembershipsStore`.
  *
- * The store loads two endpoints (/organizations/me/memberships and
- * /groups/me/memberships) in parallel. Originally it used `Promise.all`,
- * which means a single failing endpoint rejects the whole load and wipes
- * BOTH membership arrays — even though the OTHER endpoint succeeded. This
- * caused a real prod bug (#216): the scenario editor's scope picker hid
- * groups for users whose group endpoint succeeded but whose org endpoint
- * 404'd (or vice versa).
+ * The store loads the current user's organization and group memberships via
+ * a single backend call:
  *
- * The fix switches to `Promise.allSettled` so each endpoint's result is
- * preserved independently. These tests pin that behavior.
+ *   GET /users/me?includes=organization_memberships,group_memberships
+ *
+ * The backend swallows per-include preload errors and returns an empty array
+ * for any failed include (see ocf-core src/auth/routes/usersRoutes/getUser.go),
+ * so partial-failure protection is enforced server-side: each include either
+ * arrives populated or as `[]`. Refs #217 (consolidates the previous dual-
+ * endpoint Promise.allSettled approach used to fix prod incident #216).
+ *
+ * The store maps the verbose membership records returned by /users/me to the
+ * lightweight `{organization_id, role}` / `{group_id, role}` shape consumed by
+ * UI surfaces such as the scenario editor's scope picker.
  */
 
 // ---- Boundary mocks ------------------------------------------------------
@@ -44,6 +47,27 @@ import { useUserMembershipsStore } from '../../src/stores/userMemberships'
 
 const mockedAxios = axios as unknown as { get: ReturnType<typeof vi.fn> }
 
+const USERS_ME_URL = '/users/me'
+const EXPECTED_INCLUDES = 'organization_memberships,group_memberships'
+
+/**
+ * Helper: assert that the store called /users/me with the expected
+ * `includes` query param. Both call shapes used by axios are accepted:
+ *   axios.get('/users/me', { params: { includes: '...' } })
+ *   axios.get('/users/me?includes=...')
+ */
+function expectUsersMeIncludesCall() {
+  expect(mockedAxios.get).toHaveBeenCalledTimes(1)
+  const [url, config] = mockedAxios.get.mock.calls[0]
+  const includes = config?.params?.includes
+  if (includes !== undefined) {
+    expect(url).toBe(USERS_ME_URL)
+    expect(includes).toBe(EXPECTED_INCLUDES)
+  } else {
+    expect(url).toBe(`${USERS_ME_URL}?includes=${EXPECTED_INCLUDES}`)
+  }
+}
+
 describe('useUserMembershipsStore.loadMemberships', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -51,23 +75,42 @@ describe('useUserMembershipsStore.loadMemberships', () => {
   })
 
   /**
-   * BEHAVIOR PROTECTED: When BOTH endpoints succeed, both arrays are
-   * populated. Baseline / smoke test.
+   * BEHAVIOR PROTECTED: When /users/me returns both includes populated, the
+   * store maps each verbose record to its lightweight shape. Baseline / smoke.
    */
-  it('populates both arrays when both endpoints succeed', async () => {
-    mockedAxios.get.mockImplementation((url: string) => {
-      if (url === '/organizations/me/memberships') {
-        return Promise.resolve({ data: { data: [{ organization_id: 'org-1', role: 'manager' }] } })
-      }
-      if (url === '/groups/me/memberships') {
-        return Promise.resolve({ data: { data: [{ group_id: 'group-1', role: 'owner' }] } })
-      }
-      return Promise.reject(new Error('unexpected url ' + url))
+  it('populates both arrays when /users/me returns both includes', async () => {
+    mockedAxios.get.mockResolvedValueOnce({
+      data: {
+        id: 'user-1',
+        email: 'tom@example.com',
+        organization_memberships: [
+          {
+            id: 'om-1',
+            organization_id: 'org-1',
+            user_id: 'user-1',
+            role: 'manager',
+            joined_at: '2025-01-01T00:00:00Z',
+            is_active: true,
+            created_at: '2025-01-01T00:00:00Z',
+            updated_at: '2025-01-01T00:00:00Z',
+          },
+        ],
+        group_memberships: [
+          {
+            id: 'gm-1',
+            group_id: 'group-1',
+            user_id: 'user-1',
+            role: 'owner',
+            joined_at: '2025-01-01T00:00:00Z',
+          },
+        ],
+      },
     })
 
     const store = useUserMembershipsStore()
     await store.loadMemberships()
 
+    expectUsersMeIncludesCall()
     expect(store.orgMemberships).toEqual([{ organization_id: 'org-1', role: 'manager' }])
     expect(store.groupMemberships).toEqual([{ group_id: 'group-1', role: 'owner' }])
     expect(store.isLoaded).toBe(true)
@@ -75,86 +118,93 @@ describe('useUserMembershipsStore.loadMemberships', () => {
   })
 
   /**
-   * BEHAVIOR PROTECTED: A failing /organizations/me/memberships call
-   * MUST NOT wipe the successful /groups/me/memberships result.
-   *
-   * GUT-CHECK: Today, with `Promise.all`, both arrays end up empty. After
-   * the fix (Promise.allSettled), the group array survives.
-   *
-   * This is the core regression test for issue #216.
+   * BEHAVIOR PROTECTED: When the backend swallowed the org_memberships preload
+   * error and returned an empty array for that include, the store keeps the
+   * surviving group_memberships and ends up with empty orgs. This mirrors the
+   * partial-failure protection from #216 — the failing include is empty, the
+   * other one survives, and the load completes cleanly (no error surfaced
+   * because the top-level /users/me call succeeded).
    */
-  it('keeps groupMemberships when only the orgs endpoint fails', async () => {
-    mockedAxios.get.mockImplementation((url: string) => {
-      if (url === '/organizations/me/memberships') {
-        return Promise.reject({
-          response: { status: 404, data: { error_message: 'no orgs route' } },
-          message: 'Request failed',
-        })
-      }
-      if (url === '/groups/me/memberships') {
-        return Promise.resolve({
-          data: { data: [{ group_id: 'group-1', role: 'owner' }] },
-        })
-      }
-      return Promise.reject(new Error('unexpected url ' + url))
+  it('keeps groupMemberships when backend returns empty organization_memberships', async () => {
+    mockedAxios.get.mockResolvedValueOnce({
+      data: {
+        id: 'user-1',
+        email: 'tom@example.com',
+        organization_memberships: [],
+        group_memberships: [
+          {
+            id: 'gm-1',
+            group_id: 'group-1',
+            user_id: 'user-1',
+            role: 'owner',
+            joined_at: '2025-01-01T00:00:00Z',
+          },
+        ],
+      },
     })
 
     const store = useUserMembershipsStore()
     await store.loadMemberships()
 
-    expect(store.groupMemberships).toEqual([{ group_id: 'group-1', role: 'owner' }])
+    expectUsersMeIncludesCall()
     expect(store.orgMemberships).toEqual([])
+    expect(store.groupMemberships).toEqual([{ group_id: 'group-1', role: 'owner' }])
     expect(store.isLoaded).toBe(true)
-    // Error surface is populated for observability, but the load completes.
-    expect(store.error).not.toBe('')
+    expect(store.error).toBe('')
   })
 
   /**
-   * BEHAVIOR PROTECTED: A failing /groups/me/memberships call MUST NOT
-   * wipe the successful /organizations/me/memberships result. Symmetric
-   * counterpart of the test above.
+   * BEHAVIOR PROTECTED: Symmetric counterpart — backend swallowed the
+   * group_memberships preload error and returned `[]` for that include while
+   * organization_memberships succeeded.
    */
-  it('keeps orgMemberships when only the groups endpoint fails', async () => {
-    mockedAxios.get.mockImplementation((url: string) => {
-      if (url === '/organizations/me/memberships') {
-        return Promise.resolve({
-          data: { data: [{ organization_id: 'org-1', role: 'manager' }] },
-        })
-      }
-      if (url === '/groups/me/memberships') {
-        return Promise.reject({
-          response: { status: 500, data: { message: 'internal error' } },
-          message: 'Request failed',
-        })
-      }
-      return Promise.reject(new Error('unexpected url ' + url))
+  it('keeps orgMemberships when backend returns empty group_memberships', async () => {
+    mockedAxios.get.mockResolvedValueOnce({
+      data: {
+        id: 'user-1',
+        email: 'tom@example.com',
+        organization_memberships: [
+          {
+            id: 'om-1',
+            organization_id: 'org-1',
+            user_id: 'user-1',
+            role: 'manager',
+            joined_at: '2025-01-01T00:00:00Z',
+            is_active: true,
+            created_at: '2025-01-01T00:00:00Z',
+            updated_at: '2025-01-01T00:00:00Z',
+          },
+        ],
+        group_memberships: [],
+      },
     })
 
     const store = useUserMembershipsStore()
     await store.loadMemberships()
 
+    expectUsersMeIncludesCall()
     expect(store.orgMemberships).toEqual([{ organization_id: 'org-1', role: 'manager' }])
     expect(store.groupMemberships).toEqual([])
     expect(store.isLoaded).toBe(true)
-    expect(store.error).not.toBe('')
+    expect(store.error).toBe('')
   })
 
   /**
-   * BEHAVIOR PROTECTED: When BOTH endpoints fail, both arrays are empty
-   * but `isLoaded` still becomes true (so consumers don't poll forever)
-   * and the error is surfaced.
+   * BEHAVIOR PROTECTED: When the top-level /users/me call itself fails (e.g.
+   * 500, network error, auth lapse), both arrays are cleared, an error is
+   * surfaced, and `isLoaded` still becomes true so consumers don't poll
+   * forever.
    */
-  it('clears both arrays and surfaces an error when both endpoints fail', async () => {
-    mockedAxios.get.mockImplementation(() => {
-      return Promise.reject({
-        response: { status: 500, data: { message: 'internal error' } },
-        message: 'Request failed',
-      })
+  it('clears both arrays and surfaces an error when /users/me fails', async () => {
+    mockedAxios.get.mockRejectedValueOnce({
+      response: { status: 500, data: { message: 'internal error' } },
+      message: 'Request failed',
     })
 
     const store = useUserMembershipsStore()
     await store.loadMemberships()
 
+    expectUsersMeIncludesCall()
     expect(store.orgMemberships).toEqual([])
     expect(store.groupMemberships).toEqual([])
     expect(store.isLoaded).toBe(true)
