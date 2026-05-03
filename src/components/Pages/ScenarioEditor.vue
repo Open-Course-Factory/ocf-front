@@ -127,272 +127,22 @@
     </div>
 
     <!-- Edit Scenario Modal -->
-    <BaseModal
+    <ScenarioEditModal
       :visible="showScenarioEditModal"
+      :editing-scenario="editingScenario"
       :title="scenarioEditModalTitle"
-      size="large"
-      :show-default-footer="true"
-      :confirm-text="t('scenarioEditor.saveEntity')"
-      :cancel-text="t('scenarioEditor.cancel')"
-      :is-loading="isSaving"
+      :is-saving="isSaving"
       :error-message="modalError"
+      :org-scopes="orgScopes"
+      :group-scopes="groupScopes"
+      :platform-scope-available="platformScopeAvailable"
+      :available-create-scopes="availableCreateScopes"
+      :scope-hint="scopeHint"
+      :current-scenario-org-label="currentScenarioOrgLabel"
+      :aria-label="t('scenarioEditor.title')"
       @close="closeScenarioEditModal"
-      @confirm="handleSaveScenario"
-    >
-      <!-- Tabs -->
-      <TabStrip
-        v-model="activeScenarioTab"
-        :tabs="scenarioModalTabs"
-        :aria-label="t('scenarioEditor.title')"
-        class="modal-tabs-spacing"
-      />
-
-      <!-- General tab -->
-      <div
-        v-show="activeScenarioTab === 'general'"
-        id="panel-general"
-        role="tabpanel"
-        aria-labelledby="tab-general"
-        class="modal-form"
-      >
-        <div class="form-group">
-          <label>{{ t('scenarioEditor.scenarioName') }}</label>
-          <input
-            v-model="editingScenario.name"
-            type="text"
-            class="form-control"
-            :placeholder="t('scenarioEditor.enterName')"
-          />
-        </div>
-
-        <div class="form-group">
-          <label>{{ t('scenarioEditor.scenarioTitle') }}</label>
-          <input
-            v-model="editingScenario.title"
-            type="text"
-            class="form-control"
-            :placeholder="t('scenarioEditor.enterTitle')"
-          />
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>{{ t('scenarioEditor.difficulty') }}</label>
-            <select v-model="editingScenario.difficulty" class="form-control">
-              <option value="beginner">{{ t('scenarioEditor.beginner') }}</option>
-              <option value="intermediate">{{ t('scenarioEditor.intermediate') }}</option>
-              <option value="advanced">{{ t('scenarioEditor.advanced') }}</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>{{ t('scenarioEditor.estimatedTime') }}</label>
-            <input
-              v-model="editingScenario.estimated_time"
-              type="text"
-              class="form-control"
-              placeholder="30m"
-            />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>{{ t('scenarioEditor.description') }}</label>
-          <textarea
-            v-model="editingScenario.description"
-            class="form-control"
-            rows="3"
-            :placeholder="t('scenarioEditor.enterDescription')"
-          ></textarea>
-        </div>
-
-        <!-- Scope picker (creation only) -->
-        <div class="form-group" v-if="editingScenario.isNew && availableCreateScopes.length > 0">
-          <label for="create-scope">{{ t('scenarioEditor.createScope') }}</label>
-          <select id="create-scope" v-model="editingScenario._scopeKey" class="form-control">
-            <optgroup v-if="platformScopeAvailable" :label="t('scenarioEditor.scopePlatform')">
-              <option value="platform:*">🛡️ {{ t('scenarioEditor.platformOnly') }}</option>
-            </optgroup>
-            <optgroup v-if="orgScopes.length" :label="t('scenarioEditor.scopeOrganizations')">
-              <option v-for="s in orgScopes" :key="`org:${s.id}`" :value="`org:${s.id}`">
-                {{ s.name }}
-              </option>
-            </optgroup>
-            <optgroup v-if="groupScopes.length" :label="t('scenarioEditor.scopeGroups')">
-              <option v-for="s in groupScopes" :key="`group:${s.id}`" :value="`group:${s.id}`">
-                {{ s.name }}
-              </option>
-            </optgroup>
-          </select>
-          <p class="form-hint">{{ scopeHint }}</p>
-        </div>
-        <!-- Read-only org indicator (edit mode) -->
-        <div class="form-group" v-else-if="!editingScenario.isNew && currentScenarioOrgLabel">
-          <label>{{ t('scenarioEditor.orgLabel') }}</label>
-          <input
-            type="text"
-            class="form-control"
-            :value="currentScenarioOrgLabel"
-            disabled
-          />
-        </div>
-      </div>
-
-      <!-- Content tab -->
-      <div
-        v-show="activeScenarioTab === 'content'"
-        id="panel-content"
-        role="tabpanel"
-        aria-labelledby="tab-content"
-        class="modal-form"
-      >
-        <div class="form-group">
-          <label>{{ t('scenarioEditor.introText') }}</label>
-          <textarea
-            v-model="editingScenario.intro_text"
-            class="form-control"
-            rows="6"
-            :placeholder="t('scenarioEditor.introTextPlaceholder')"
-          ></textarea>
-          <span class="form-hint">{{ t('scenarioEditor.markdownSupported') }}</span>
-        </div>
-
-        <div class="form-group">
-          <label>{{ t('scenarioEditor.finishText') }}</label>
-          <textarea
-            v-model="editingScenario.finish_text"
-            class="form-control"
-            rows="6"
-            :placeholder="t('scenarioEditor.finishTextPlaceholder')"
-          ></textarea>
-          <span class="form-hint">{{ t('scenarioEditor.markdownSupported') }}</span>
-        </div>
-
-        <div class="form-group">
-          <label>{{ t('scenarioEditor.objectives') }}</label>
-          <textarea
-            v-model="editingScenario.objectives"
-            class="form-control"
-            rows="3"
-            :placeholder="t('scenarioEditor.objectivesPlaceholder')"
-          ></textarea>
-        </div>
-
-        <div class="form-group">
-          <label>{{ t('scenarioEditor.prerequisites') }}</label>
-          <textarea
-            v-model="editingScenario.prerequisites"
-            class="form-control"
-            rows="3"
-            :placeholder="t('scenarioEditor.prerequisitesPlaceholder')"
-          ></textarea>
-        </div>
-      </div>
-
-      <!-- Setup tab -->
-      <div
-        v-show="activeScenarioTab === 'setup'"
-        id="panel-setup"
-        role="tabpanel"
-        aria-labelledby="tab-setup"
-        class="modal-form"
-      >
-        <div class="form-group">
-          <label>{{ t('scenarioEditor.setupScript') }}</label>
-          <textarea
-            v-model="editingScenario.setup_script"
-            class="form-control script-editor"
-            rows="12"
-            :placeholder="t('scenarioEditor.setupScriptPlaceholder')"
-          ></textarea>
-          <span class="form-hint">{{ t('scenarioEditor.setupScriptHint') }}</span>
-        </div>
-      </div>
-
-      <!-- Options tab -->
-      <div
-        v-show="activeScenarioTab === 'options'"
-        id="panel-options"
-        role="tabpanel"
-        aria-labelledby="tab-options"
-        class="modal-form"
-      >
-        <div class="form-row">
-          <div class="form-group">
-            <label>{{ t('scenarioEditor.instanceType') }}</label>
-            <input
-              v-model="editingScenario.instance_type"
-              type="text"
-              class="form-control"
-              placeholder="S"
-            />
-          </div>
-
-          <div class="form-group">
-            <label>{{ t('scenarioEditor.hostname') }}</label>
-            <input
-              v-model="editingScenario.hostname"
-              type="text"
-              class="form-control"
-              placeholder="lab"
-            />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>{{ t('scenarioEditor.osType') }}</label>
-            <select v-model="editingScenario.os_type" class="form-control">
-              <option value="">-</option>
-              <option value="deb">Debian (apt)</option>
-              <option value="rpm">RPM (dnf/yum)</option>
-              <option value="apk">Alpine (apk)</option>
-              <option value="pacman">Arch (pacman)</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>{{ t('scenarioEditor.sourceType') }}</label>
-            <select v-model="editingScenario.source_type" class="form-control">
-              <option value="">-</option>
-              <option value="builtin">{{ t('scenarioEditor.sourceBuiltin') }}</option>
-              <option value="git">Git</option>
-              <option value="upload">Upload</option>
-              <option value="seed">Seed</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-group checkbox-group">
-          <label class="checkbox-label">
-            <input type="checkbox" v-model="editingScenario.flags_enabled" />
-            {{ t('scenarioEditor.flagsEnabled') }}
-          </label>
-        </div>
-
-        <div class="form-group checkbox-group">
-          <label class="checkbox-label">
-            <input type="checkbox" v-model="editingScenario.crash_traps" />
-            {{ t('scenarioEditor.crashTraps') }}
-          </label>
-          <span class="form-hint">{{ t('scenarioEditor.crashTrapsHint') }}</span>
-        </div>
-
-        <div class="form-group checkbox-group">
-          <label class="checkbox-label">
-            <input type="checkbox" v-model="editingScenario.gsh_enabled" />
-            {{ t('scenarioEditor.gshEnabled') }}
-          </label>
-        </div>
-
-        <div class="form-group checkbox-group">
-          <label class="checkbox-label">
-            <input type="checkbox" v-model="editingScenario.is_public" />
-            {{ t('scenarioEditor.isPublic') }}
-          </label>
-        </div>
-      </div>
-    </BaseModal>
+      @save="handleSaveScenario"
+    />
 
     <!-- Edit Step Modal -->
     <ScenarioStepEditModal
@@ -472,9 +222,9 @@ import FlagStepNode from '../ScenarioEditor/nodes/FlagStepNode.vue'
 import InfoStepNode from '../ScenarioEditor/nodes/InfoStepNode.vue'
 import QuizStepNode from '../ScenarioEditor/nodes/QuizStepNode.vue'
 import ScenarioStepEditModal from '../ScenarioEditor/ScenarioStepEditModal.vue'
+import ScenarioEditModal from '../ScenarioEditor/ScenarioEditModal.vue'
 import AdminBadge from '../Common/AdminBadge.vue'
 import BaseModal from '../Modals/BaseModal.vue'
-import TabStrip from '../Common/TabStrip.vue'
 import axios from 'axios'
 
 const route = useRoute()
@@ -793,13 +543,6 @@ const showScenarioEditModal = ref(false)
 const showStepEditModal = ref(false)
 const showDeleteModal = ref(false)
 const editingScenario = ref<any>({})
-const activeScenarioTab = ref('general')
-const scenarioModalTabs = computed(() => [
-  { key: 'general', label: t('scenarioEditor.tabGeneral') },
-  { key: 'content', label: t('scenarioEditor.tabContent') },
-  { key: 'setup', label: t('scenarioEditor.tabSetup') },
-  { key: 'options', label: t('scenarioEditor.tabOptions') }
-])
 const editingStep = ref<any>(null)
 const editingStepIsNew = ref(false)
 const editingStepNodeId = ref<string | null>(null)
@@ -1098,7 +841,6 @@ const handleCreateNew = () => {
     _scopeKey: pickDefaultScopeKey(),
     isNew: true
   }
-  activeScenarioTab.value = 'general'
   showScenarioEditModal.value = true
   modalError.value = ''
 }
@@ -1291,7 +1033,6 @@ const openEditModal = async (node: any) => {
       organization_id: node.data.organization_id || null,
       isNew: node.data.isNew || false
     }
-    activeScenarioTab.value = 'general'
     showScenarioEditModal.value = true
     modalError.value = ''
   } else if (STEP_NODE_TYPES.includes(node.data.entityType)) {
@@ -1996,60 +1737,8 @@ const handleReset = () => {
   background: var(--color-surface-hover);
 }
 
-/* Modal form styles */
-/* Tab strip styles live in TabStrip.vue. We just add a bottom margin between tabs and form. */
-.modal-tabs-spacing {
-  margin-bottom: 1rem;
-}
-
-.form-row {
-  display: flex;
-  gap: 1rem;
-}
-
-.form-row .form-group {
-  flex: 1;
-}
-
-.form-hint {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-  font-style: italic;
-}
-
-.script-editor {
-  font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
-  font-size: 0.85rem;
-  line-height: 1.5;
-  tab-size: 4;
-  resize: vertical;
-}
-
-.checkbox-group {
-  flex-direction: row !important;
-  align-items: center;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 500 !important;
-  cursor: pointer;
-}
-
-.checkbox-label input[type="checkbox"] {
-  width: 1rem;
-  height: 1rem;
-  cursor: pointer;
-}
-
-.modal-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
+/* Modal form styles — only what's needed for the Copy-to-org modal.
+   Scenario edit modal styles live in ScenarioEditModal.vue */
 .form-group {
   display: flex;
   flex-direction: column;
