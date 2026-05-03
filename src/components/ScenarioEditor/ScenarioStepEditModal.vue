@@ -13,27 +13,11 @@
       </div>
 
       <!-- Tabs -->
-      <div
-        class="tabs"
-        role="tablist"
+      <TabStrip
+        v-model="activeTab"
+        :tabs="visibleTabs"
         :aria-label="t('stepEdit.tabsLabel')"
-        @keydown="onTabKeydown"
-      >
-        <button
-          v-for="tab in visibleTabs"
-          :key="tab.key"
-          :id="`tab-${tab.key}`"
-          class="tab-btn"
-          :class="{ active: activeTab === tab.key }"
-          role="tab"
-          :aria-selected="activeTab === tab.key"
-          :aria-controls="`panel-${tab.key}`"
-          :tabindex="activeTab === tab.key ? 0 : -1"
-          @click="activeTab = tab.key"
-        >
-          {{ tab.label }}
-        </button>
-      </div>
+      />
 
       <!-- Tab content -->
       <div class="tab-content">
@@ -546,6 +530,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import BaseModal from '../Modals/BaseModal.vue'
+import TabStrip from '../Common/TabStrip.vue'
 import { useTranslations } from '../../composables/useTranslations'
 
 const STEP_TYPES = ['terminal', 'flag', 'info', 'quiz'] as const
@@ -966,26 +951,6 @@ watch(() => [props.visible, props.stepData], () => {
   }
 }, { immediate: true })
 
-// Tab keyboard navigation (WAI-ARIA tab pattern)
-const onTabKeydown = (e: KeyboardEvent) => {
-  const keys = visibleTabs.value.map(t_ => t_.key)
-  const i = keys.indexOf(activeTab.value)
-  if (i === -1) return
-  let next = i
-  if (e.key === 'ArrowRight') next = (i + 1) % keys.length
-  else if (e.key === 'ArrowLeft') next = (i - 1 + keys.length) % keys.length
-  else if (e.key === 'Home') next = 0
-  else if (e.key === 'End') next = keys.length - 1
-  else return
-  e.preventDefault()
-  activeTab.value = keys[next]
-  // Move focus to the newly active tab on next tick
-  requestAnimationFrame(() => {
-    const el = document.getElementById(`tab-${keys[next]}`) as HTMLElement | null
-    el?.focus()
-  })
-}
-
 // Quiz question helpers
 const addQuestion = () => {
   formData.value.questions.push({
@@ -1167,40 +1132,7 @@ const handleSave = () => {
   font-weight: 600;
 }
 
-.tabs {
-  display: flex;
-  border-bottom: 2px solid var(--color-border);
-  gap: 0;
-}
-
-.tab-btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  background: none;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: all 0.2s;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-}
-
-.tab-btn:hover {
-  color: var(--color-text-primary);
-  background: var(--color-surface-hover);
-}
-
-.tab-btn.active {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
-  font-weight: 600;
-}
-
-.tab-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
-}
+/* Tab strip styles live in TabStrip.vue */
 
 .tab-content {
   min-height: 300px;
