@@ -157,6 +157,21 @@ const { t } = useTranslations({
       orgLibrary: 'Organization Library',
       groupScenarios: 'Group Scenarios',
       orgScenario: 'Org',
+      tabsLabel: 'Session detail tabs',
+      tabSteps: 'Steps',
+      tabCommands: 'Commands',
+      commandsLoading: 'Loading commands...',
+      commandsEmpty: 'No commands recorded yet',
+      commandsNoTerminal: 'This session never started a terminal',
+      commandsError: 'Failed to load commands',
+      retry: 'Retry',
+      commandSequence: '#',
+      command: 'Command',
+      commandExecutedAt: 'Executed at',
+      exportCommandsCsv: 'Export CSV',
+      prevPage: 'Previous',
+      nextPage: 'Next',
+      pageInfo: '{start}-{end} of {total}',
       export: {
         name: 'Name',
         email: 'Email',
@@ -262,6 +277,21 @@ const { t } = useTranslations({
       orgLibrary: 'Bibliothèque de l\'organisation',
       groupScenarios: 'Scénarios du groupe',
       orgScenario: 'Org',
+      tabsLabel: 'Onglets du détail de session',
+      tabSteps: 'Étapes',
+      tabCommands: 'Commandes',
+      commandsLoading: 'Chargement des commandes...',
+      commandsEmpty: 'Aucune commande enregistrée',
+      commandsNoTerminal: 'Cette session n\'a pas démarré de terminal',
+      commandsError: 'Échec du chargement des commandes',
+      retry: 'Réessayer',
+      commandSequence: 'N°',
+      command: 'Commande',
+      commandExecutedAt: 'Exécutée le',
+      exportCommandsCsv: 'Exporter CSV',
+      prevPage: 'Précédent',
+      nextPage: 'Suivant',
+      pageInfo: '{start}-{end} sur {total}',
       export: {
         name: 'Nom',
         email: 'Email',
@@ -368,6 +398,27 @@ const resultsRefreshInterval = ref<ReturnType<typeof setInterval> | null>(null)
 const showDetailModal = ref(false)
 const sessionDetail = ref<SessionDetailResponse | null>(null)
 const loadingDetail = ref(false)
+const detailResult = ref<ScenarioResultItem | null>(null)
+
+// Detail modal tabs
+type DetailTab = 'steps' | 'commands'
+const detailActiveTab = ref<DetailTab>('steps')
+
+// Commands tab state
+interface SessionCommand {
+  session_uuid: string
+  sequence_num: number
+  command_text: string
+  executed_at: number
+}
+const commandsList = ref<SessionCommand[]>([])
+const commandsTotal = ref(0)
+const commandsLimit = 100
+const commandsOffset = ref(0)
+const commandsLoading = ref(false)
+const commandsLoaded = ref(false)
+const commandsError = ref('')
+const commandsNoTerminal = ref(false)
 
 // Selection state for multi-select export
 const selectedResults = ref<Set<string>>(new Set())
@@ -589,6 +640,15 @@ async function handleViewDetail(result: ScenarioResultItem) {
   showDetailModal.value = true
   loadingDetail.value = true
   sessionDetail.value = null
+  detailResult.value = result
+  // Reset tab and commands state every time we open a session
+  detailActiveTab.value = 'steps'
+  commandsList.value = []
+  commandsTotal.value = 0
+  commandsOffset.value = 0
+  commandsLoaded.value = false
+  commandsError.value = ''
+  commandsNoTerminal.value = false
   try {
     sessionDetail.value = await teacherService.getSessionDetail(
       props.groupId,
@@ -600,6 +660,158 @@ async function handleViewDetail(result: ScenarioResultItem) {
   } finally {
     loadingDetail.value = false
   }
+}
+
+function closeDetailModal() {
+  showDetailModal.value = false
+  detailResult.value = null
+}
+
+// --- Commands tab ---
+
+async function fetchSessionCommands() {
+  if (!detailResult.value) return
+  commandsLoading.value = true
+  commandsError.value = ''
+  commandsNoTerminal.value = false
+  try {
+    const data = await teacherService.getSessionCommands(
+      props.groupId,
+      detailResult.value.session_id,
+      commandsLimit,
+      commandsOffset.value
+    )
+    commandsList.value = data.commands || []
+    commandsTotal.value = data.total || 0
+    commandsLoaded.value = true
+  } catch (err: any) {
+    if (err.response?.status === 404) {
+      // Session has no terminal — distinct UI from a generic error
+      commandsNoTerminal.value = true
+      commandsList.value = []
+      commandsTotal.value = 0
+      commandsLoaded.value = true
+    } else {
+      commandsError.value = err.response?.data?.error_message
+        || err.response?.data?.error
+        || err.response?.data?.message
+        || t('groupScenarios.commandsError')
+    }
+  } finally {
+    commandsLoading.value = false
+  }
+}
+
+function selectDetailTab(tab: DetailTab) {
+  detailActiveTab.value = tab
+  // Lazy-load commands the first time the tab is activated
+  if (tab === 'commands' && !commandsLoaded.value && !commandsLoading.value) {
+    fetchSessionCommands()
+  }
+}
+
+const detailTabs: ReadonlyArray<{ key: DetailTab; labelKey: string }> = [
+  { key: 'steps', labelKey: 'groupScenarios.tabSteps' },
+  { key: 'commands', labelKey: 'groupScenarios.tabCommands' }
+]
+
+function onDetailTabKeydown(e: KeyboardEvent) {
+  const keys: DetailTab[] = detailTabs.map(t_ => t_.key)
+  const i = keys.indexOf(detailActiveTab.value)
+  if (i === -1) return
+  let next = i
+  if (e.key === 'ArrowRight') next = (i + 1) % keys.length
+  else if (e.key === 'ArrowLeft') next = (i - 1 + keys.length) % keys.length
+  else if (e.key === 'Home') next = 0
+  else if (e.key === 'End') next = keys.length - 1
+  else return
+  e.preventDefault()
+  selectDetailTab(keys[next])
+  requestAnimationFrame(() => {
+    const el = document.getElementById(`detail-tab-${keys[next]}`) as HTMLElement | null
+    el?.focus()
+  })
+}
+
+const commandsHasPrev = computed(() => commandsOffset.value > 0)
+const commandsHasNext = computed(() => commandsOffset.value + commandsLimit < commandsTotal.value)
+const commandsPageStart = computed(() => commandsTotal.value === 0 ? 0 : commandsOffset.value + 1)
+const commandsPageEnd = computed(() => Math.min(commandsOffset.value + commandsLimit, commandsTotal.value))
+
+function commandsPrevPage() {
+  if (!commandsHasPrev.value) return
+  commandsOffset.value = Math.max(0, commandsOffset.value - commandsLimit)
+  fetchSessionCommands()
+}
+
+function commandsNextPage() {
+  if (!commandsHasNext.value) return
+  commandsOffset.value = commandsOffset.value + commandsLimit
+  fetchSessionCommands()
+}
+
+function formatExecutedAt(unixSeconds: number): string {
+  try {
+    return new Date(unixSeconds * 1000).toLocaleString()
+  } catch {
+    return String(unixSeconds)
+  }
+}
+
+// CSV-safe field: escape quotes and prevent formula injection (=, +, -, @)
+function sanitizeCSVField(value: unknown): string {
+  let s = value == null ? '' : String(value)
+  if (/^[=+\-@]/.test(s)) {
+    s = "'" + s
+  }
+  return `"${s.replace(/"/g, '""')}"`
+}
+
+async function exportCommandsCsv() {
+  if (!detailResult.value) return
+  // For a small page (≤100), the visible page is enough; if more pages exist
+  // and we want a full export, fetch all pages on demand. Keep KISS: one shot of all pages.
+  let allCommands: SessionCommand[] = []
+  try {
+    let offset = 0
+    while (true) {
+      const data = await teacherService.getSessionCommands(
+        props.groupId,
+        detailResult.value.session_id,
+        commandsLimit,
+        offset
+      )
+      const batch = data.commands || []
+      allCommands = allCommands.concat(batch)
+      if (batch.length < commandsLimit || allCommands.length >= (data.total || 0)) break
+      offset += commandsLimit
+    }
+  } catch (err: any) {
+    notifyError(err.response?.data?.error_message || t('groupScenarios.commandsError'))
+    return
+  }
+
+  const result = detailResult.value
+  const learner = result.user_name || result.user_email || result.user_id
+  const headers = [
+    t('groupScenarios.commandSequence'),
+    t('groupScenarios.command'),
+    t('groupScenarios.commandExecutedAt'),
+    t('groupScenarios.student')
+  ]
+  const rows = allCommands.map(c => [
+    c.sequence_num,
+    c.command_text,
+    formatExecutedAt(c.executed_at),
+    learner
+  ])
+  const csv = [headers, ...rows]
+    .map(row => row.map(sanitizeCSVField).join(','))
+    .join('\n')
+
+  const safeLearner = learner.replace(/[^a-zA-Z0-9-_]/g, '_')
+  const sessionShort = result.session_id.split('-')[0] || result.session_id.slice(0, 8)
+  downloadCsv(csv, `commands-${safeLearner}-${sessionShort}.csv`)
 }
 
 function formatDuration(seconds: number): string {
@@ -1109,8 +1321,8 @@ onUnmounted(() => {
       size="large"
       :show-default-footer="true"
       :confirm-text="t('groupScenarios.close')"
-      @confirm="showDetailModal = false"
-      @close="showDetailModal = false"
+      @confirm="closeDetailModal"
+      @close="closeDetailModal"
     >
       <div v-if="loadingDetail" class="loading-state">
         <i class="fas fa-spinner fa-spin"></i>
@@ -1126,61 +1338,184 @@ onUnmounted(() => {
           <div v-if="sessionDetail.completed_at"><strong>{{ t('groupScenarios.completedAt') }}:</strong> {{ formatDate(sessionDetail.completed_at) }}</div>
         </div>
 
-        <table class="steps-table">
-          <thead>
-            <tr>
-              <th>{{ t('groupScenarios.stepOrder') }}</th>
-              <th>{{ t('groupScenarios.stepTitle') }}</th>
-              <th>{{ t('groupScenarios.stepType') }}</th>
-              <th>{{ t('groupScenarios.stepStatus') }}</th>
-              <th>{{ t('groupScenarios.stepResult') }}</th>
-              <th>{{ t('groupScenarios.hintsUsed') }}</th>
-              <th>{{ t('groupScenarios.timeSpent') }}</th>
-              <th>{{ t('groupScenarios.completedAt') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="step in sessionDetail.steps" :key="step.step_order">
-              <td>{{ step.step_order + 1 }}</td>
-              <td>{{ step.step_title }}</td>
-              <td>
-                <span :class="['step-type-chip', `step-type-${normalizedStepType(step.step_type)}`]">
-                  <i :class="stepTypeIcon(step.step_type)"></i>
-                  <span class="step-type-label">{{ stepTypeLabel(step.step_type) }}</span>
-                </span>
-              </td>
-              <td>
-                <span :class="['status-chip', getStatusClass(step.status)]">{{ translateStatus(step.status) }}</span>
-              </td>
-              <td>
-                <template v-if="normalizedStepType(step.step_type) === 'quiz'">
-                  <span
-                    v-if="step.quiz_score != null"
-                    :class="['quiz-score-badge', quizScoreClass(step.quiz_score)]"
-                  >
-                    {{ formatQuizScorePct(step.quiz_score) }}
+        <!-- Tabs -->
+        <div
+          class="detail-tabs"
+          role="tablist"
+          :aria-label="t('groupScenarios.tabsLabel')"
+          @keydown="onDetailTabKeydown"
+        >
+          <button
+            v-for="tab in detailTabs"
+            :key="tab.key"
+            :id="`detail-tab-${tab.key}`"
+            class="detail-tab-btn"
+            :class="{ active: detailActiveTab === tab.key }"
+            role="tab"
+            :aria-selected="detailActiveTab === tab.key"
+            :aria-controls="`detail-panel-${tab.key}`"
+            :tabindex="detailActiveTab === tab.key ? 0 : -1"
+            type="button"
+            @click="selectDetailTab(tab.key)"
+          >
+            {{ t(tab.labelKey) }}
+          </button>
+        </div>
+
+        <!-- Steps panel -->
+        <div
+          v-if="detailActiveTab === 'steps'"
+          id="detail-panel-steps"
+          class="detail-tab-panel"
+          role="tabpanel"
+          aria-labelledby="detail-tab-steps"
+        >
+          <table class="steps-table">
+            <thead>
+              <tr>
+                <th>{{ t('groupScenarios.stepOrder') }}</th>
+                <th>{{ t('groupScenarios.stepTitle') }}</th>
+                <th>{{ t('groupScenarios.stepType') }}</th>
+                <th>{{ t('groupScenarios.stepStatus') }}</th>
+                <th>{{ t('groupScenarios.stepResult') }}</th>
+                <th>{{ t('groupScenarios.hintsUsed') }}</th>
+                <th>{{ t('groupScenarios.timeSpent') }}</th>
+                <th>{{ t('groupScenarios.completedAt') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="step in sessionDetail.steps" :key="step.step_order">
+                <td>{{ step.step_order + 1 }}</td>
+                <td>{{ step.step_title }}</td>
+                <td>
+                  <span :class="['step-type-chip', `step-type-${normalizedStepType(step.step_type)}`]">
+                    <i :class="stepTypeIcon(step.step_type)"></i>
+                    <span class="step-type-label">{{ stepTypeLabel(step.step_type) }}</span>
+                  </span>
+                </td>
+                <td>
+                  <span :class="['status-chip', getStatusClass(step.status)]">{{ translateStatus(step.status) }}</span>
+                </td>
+                <td>
+                  <template v-if="normalizedStepType(step.step_type) === 'quiz'">
+                    <span
+                      v-if="step.quiz_score != null"
+                      :class="['quiz-score-badge', quizScoreClass(step.quiz_score)]"
+                    >
+                      {{ formatQuizScorePct(step.quiz_score) }}
+                    </span>
+                    <span v-else class="hints-none">&mdash;</span>
+                  </template>
+                  <template v-else-if="normalizedStepType(step.step_type) === 'info'">
+                    <i v-if="step.status === 'completed'" class="fas fa-check" :title="t('groupScenarios.completed')"></i>
+                    <span v-else class="hints-none">&mdash;</span>
+                  </template>
+                  <template v-else>
+                    {{ t('groupScenarios.attemptsCount', { n: step.verify_attempts }) }}
+                  </template>
+                </td>
+                <td>
+                  <span v-if="step.hints_revealed > 0" class="hints-used-badge">
+                    {{ step.hints_revealed }}
                   </span>
                   <span v-else class="hints-none">&mdash;</span>
-                </template>
-                <template v-else-if="normalizedStepType(step.step_type) === 'info'">
-                  <i v-if="step.status === 'completed'" class="fas fa-check" :title="t('groupScenarios.completed')"></i>
-                  <span v-else class="hints-none">&mdash;</span>
-                </template>
-                <template v-else>
-                  {{ t('groupScenarios.attemptsCount', { n: step.verify_attempts }) }}
-                </template>
-              </td>
-              <td>
-                <span v-if="step.hints_revealed > 0" class="hints-used-badge">
-                  {{ step.hints_revealed }}
-                </span>
-                <span v-else class="hints-none">&mdash;</span>
-              </td>
-              <td>{{ formatDuration(step.time_spent_seconds) }}</td>
-              <td class="date-cell">{{ step.completed_at ? formatDate(step.completed_at) : '—' }}</td>
-            </tr>
-          </tbody>
-        </table>
+                </td>
+                <td>{{ formatDuration(step.time_spent_seconds) }}</td>
+                <td class="date-cell">{{ step.completed_at ? formatDate(step.completed_at) : '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Commands panel -->
+        <div
+          v-if="detailActiveTab === 'commands'"
+          id="detail-panel-commands"
+          class="detail-tab-panel"
+          role="tabpanel"
+          aria-labelledby="detail-tab-commands"
+        >
+          <div v-if="commandsLoading" class="loading-state" role="status">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span class="loading-label">{{ t('groupScenarios.commandsLoading') }}</span>
+          </div>
+
+          <div v-else-if="commandsNoTerminal" class="empty-state">
+            <i class="fas fa-terminal"></i>
+            <p>{{ t('groupScenarios.commandsNoTerminal') }}</p>
+          </div>
+
+          <div v-else-if="commandsError" class="empty-state empty-state-error">
+            <i class="fas fa-exclamation-circle"></i>
+            <p>{{ commandsError }}</p>
+            <button class="btn btn-sm btn-primary" @click="fetchSessionCommands">
+              <i class="fas fa-redo"></i> {{ t('groupScenarios.retry') }}
+            </button>
+          </div>
+
+          <div v-else-if="commandsList.length === 0" class="empty-state">
+            <i class="fas fa-terminal"></i>
+            <p>{{ t('groupScenarios.commandsEmpty') }}</p>
+          </div>
+
+          <template v-else>
+            <div class="commands-toolbar">
+              <button
+                class="btn btn-sm btn-outline"
+                @click="exportCommandsCsv"
+                :disabled="commandsTotal === 0"
+              >
+                <i class="fas fa-file-csv"></i>
+                {{ t('groupScenarios.exportCommandsCsv') }}
+              </button>
+            </div>
+            <table class="commands-table" :aria-label="t('groupScenarios.tabCommands')">
+              <thead>
+                <tr>
+                  <th class="commands-col-seq">{{ t('groupScenarios.commandSequence') }}</th>
+                  <th class="commands-col-cmd">{{ t('groupScenarios.command') }}</th>
+                  <th class="commands-col-time">{{ t('groupScenarios.commandExecutedAt') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="cmd in commandsList" :key="`${cmd.session_uuid}-${cmd.sequence_num}`">
+                  <td class="commands-col-seq">{{ cmd.sequence_num }}</td>
+                  <td class="commands-col-cmd">
+                    <code class="commands-cmd-text">{{ cmd.command_text }}</code>
+                  </td>
+                  <td class="commands-col-time">{{ formatExecutedAt(cmd.executed_at) }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="commands-pagination">
+              <span class="commands-page-info">
+                {{ t('groupScenarios.pageInfo', {
+                  start: commandsPageStart,
+                  end: commandsPageEnd,
+                  total: commandsTotal
+                }) }}
+              </span>
+              <div class="commands-page-buttons">
+                <button
+                  class="btn btn-sm btn-outline"
+                  :disabled="!commandsHasPrev || commandsLoading"
+                  @click="commandsPrevPage"
+                >
+                  <i class="fas fa-chevron-left"></i>
+                  {{ t('groupScenarios.prevPage') }}
+                </button>
+                <button
+                  class="btn btn-sm btn-outline"
+                  :disabled="!commandsHasNext || commandsLoading"
+                  @click="commandsNextPage"
+                >
+                  {{ t('groupScenarios.nextPage') }}
+                  <i class="fas fa-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+          </template>
+        </div>
       </div>
     </BaseModal>
 
@@ -1853,5 +2188,151 @@ onUnmounted(() => {
   .assignment-meta {
     flex-wrap: wrap;
   }
+}
+
+/* Detail modal tabs */
+.detail-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--color-border-light);
+  margin: var(--spacing-md) 0;
+}
+
+.detail-tab-btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  background: none;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  font-family: inherit;
+}
+
+.detail-tab-btn:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-surface-hover);
+}
+
+.detail-tab-btn.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.detail-tab-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.detail-tab-panel {
+  padding-top: var(--spacing-sm);
+}
+
+.loading-label {
+  margin-left: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.empty-state-error {
+  color: var(--color-danger);
+}
+
+.empty-state-error i {
+  opacity: 1;
+}
+
+/* Commands tab */
+.commands-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--spacing-sm);
+}
+
+.commands-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+}
+
+.commands-table thead th {
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-align: left;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  background-color: var(--color-bg-secondary);
+  border-bottom: 2px solid var(--color-border-light);
+  white-space: nowrap;
+}
+
+.commands-table tbody tr {
+  transition: background-color var(--transition-fast);
+}
+
+.commands-table tbody tr:hover {
+  background-color: var(--color-bg-secondary);
+}
+
+.commands-table tbody td {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border-light);
+  vertical-align: top;
+}
+
+.commands-col-seq {
+  width: 60px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.commands-col-cmd {
+  min-width: 200px;
+}
+
+.commands-cmd-text {
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-tertiary);
+  padding: 2px var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  word-break: break-all;
+}
+
+.commands-col-time {
+  white-space: nowrap;
+  width: 200px;
+  color: var(--color-text-secondary);
+}
+
+.commands-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--spacing-md);
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.commands-page-info {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.commands-page-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
 }
 </style>

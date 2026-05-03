@@ -56,6 +56,29 @@ export const teacherService = {
     return response.data
   },
 
+  async getSessionCommands(
+    groupId: string,
+    sessionId: string,
+    limit = 100,
+    offset = 0
+  ): Promise<{
+    commands: Array<{
+      session_uuid: string
+      sequence_num: number
+      command_text: string
+      executed_at: number
+    }>
+    total: number
+    limit: number
+    offset: number
+  }> {
+    const response = await axios.get(
+      `/teacher/groups/${groupId}/sessions/${sessionId}/commands`,
+      { params: { limit, offset } }
+    )
+    return response.data
+  },
+
   async bulkStartScenario(groupId: string, scenarioId: string, data: { distribution: string; backend?: string }): Promise<any> {
     // Longer timeout: challenge scenarios run setup.sh for each student (~90s each, parallelized in batches)
     const response = await axios.post(
