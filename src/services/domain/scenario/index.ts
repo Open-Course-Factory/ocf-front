@@ -14,6 +14,7 @@ export type {
 } from './scenarioSessionService'
 export { teacherService } from './teacherService'
 export type {
+  ScenarioResultItem,
   SessionStepDetail,
   SessionStepQuestionDetail,
   SessionDetailResponse,
