@@ -44,27 +44,52 @@
 
       <!-- Right: actions -->
       <div class="header-actions">
-        <!-- Secondary actions (icon-only) -->
+        <!-- Secondary actions live behind a ⋯ overflow menu to keep the header
+             compact and to push Reset away from Save (less footgun-prone). -->
         <template v-if="selectedScenarioId">
-          <button v-if="canEditScenario" @click="handleImport" class="btn-icon" :title="t('scenarioEditor.import')" :disabled="isImporting">
-            <i :class="isImporting ? 'fas fa-spinner fa-spin' : 'fas fa-file-import'"></i>
-          </button>
-          <button @click="handleExportJSON" class="btn-icon" :title="t('scenarioEditor.exportJSON')">
-            <i class="fas fa-file-code"></i>
-          </button>
-          <button @click="handleExportKillerCoda" class="btn-icon" :title="t('scenarioEditor.exportKillerCoda')">
-            <i class="fas fa-file-archive"></i>
-          </button>
-          <button v-if="canCopyToOrg" @click="openCopyModal" class="btn-icon" :title="t('scenarioEditor.copyToOrg')">
-            <i class="fas fa-copy"></i>
-          </button>
+          <div class="dropdown-container" ref="actionsMenuRef">
+            <button
+              class="btn-icon"
+              @click.stop="showActionsMenu = !showActionsMenu"
+              :title="t('scenarioEditor.moreActions')"
+              :aria-expanded="showActionsMenu"
+              aria-haspopup="true"
+            >
+              <i class="fas fa-ellipsis-h"></i>
+            </button>
+            <div v-if="showActionsMenu" class="dropdown-menu" @click.stop>
+              <button
+                v-if="canEditScenario"
+                class="dropdown-item"
+                :disabled="isImporting"
+                @click="handleImport(); showActionsMenu = false"
+              >
+                <i :class="isImporting ? 'fas fa-spinner fa-spin' : 'fas fa-file-import'"></i>
+                <span>{{ t('scenarioEditor.import') }}</span>
+              </button>
+              <button class="dropdown-item" @click="handleExportJSON(); showActionsMenu = false">
+                <i class="fas fa-file-code"></i>
+                <span>{{ t('scenarioEditor.exportJSON') }}</span>
+              </button>
+              <button class="dropdown-item" @click="handleExportKillerCoda(); showActionsMenu = false">
+                <i class="fas fa-file-archive"></i>
+                <span>{{ t('scenarioEditor.exportKillerCoda') }}</span>
+              </button>
+              <button v-if="canCopyToOrg" class="dropdown-item" @click="openCopyModal(); showActionsMenu = false">
+                <i class="fas fa-copy"></i>
+                <span>{{ t('scenarioEditor.copyToOrg') }}</span>
+              </button>
+              <div v-if="canEditScenario" class="dropdown-divider"></div>
+              <button v-if="canEditScenario" class="dropdown-item" @click="handleReset(); showActionsMenu = false">
+                <i class="fas fa-undo"></i>
+                <span>{{ t('scenarioEditor.reset') }}</span>
+              </button>
+            </div>
+          </div>
           <span class="header-divider"></span>
         </template>
 
         <!-- Primary actions -->
-        <button v-if="canEditScenario" @click="handleReset" class="btn-icon" :title="t('scenarioEditor.reset')">
-          <i class="fas fa-undo"></i>
-        </button>
         <button v-if="canEditScenario" @click="handleSave" class="btn-save" :disabled="!selectedScenarioId && nodes.length === 0">
           <i class="fas fa-save"></i> {{ t('scenarioEditor.save') }}
         </button>
@@ -104,12 +129,13 @@
         @edge-connect="handleEdgeConnect"
       />
 
-      <!-- Right Panel: Scenario Step List (foldable) -->
+      <!-- Right Panel: Scenario Step List (foldable, collapsed by default) -->
       <div class="panel tree-panel" :class="{ collapsed: isRightPanelCollapsed }" :style="!isRightPanelCollapsed ? { width: treePanelWidth + 'px' } : {}">
         <button
           class="panel-collapse-toggle"
-          @click="isRightPanelCollapsed = !isRightPanelCollapsed"
-          :title="isRightPanelCollapsed ? t('scenarioEditor.expandPanel') : t('scenarioEditor.collapsePanel')"
+          @click="toggleRightPanel"
+          :title="isRightPanelCollapsed ? t('scenarioEditor.panelTooltip') : t('scenarioEditor.collapsePanel')"
+          :aria-label="isRightPanelCollapsed ? t('scenarioEditor.expandPanel') : t('scenarioEditor.collapsePanel')"
         >
           <i :class="isRightPanelCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right'"></i>
         </button>
@@ -142,7 +168,7 @@
       <!-- Tabs -->
       <div class="scenario-modal-tabs">
         <button
-          v-for="tab in scenarioModalTabs"
+          v-for="tab in visibleScenarioTabs"
           :key="tab.key"
           class="scenario-modal-tab"
           :class="{ active: activeScenarioTab === tab.key }"
@@ -380,6 +406,8 @@
       :visible="showStepEditModal"
       :step-data="editingStep"
       :is-new="editingStepIsNew"
+      :is-saving="isSavingStep"
+      :error-message="stepSaveError"
       @close="closeStepEditModal"
       @save="handleSaveStep"
     />
@@ -563,8 +591,11 @@ const { t } = useTranslations({
       // Panel
       expandPanel: 'Expand panel',
       collapsePanel: 'Collapse panel',
+      panelTooltip: 'Drag steps from other scenarios as templates',
       readOnly: 'Read only',
-      readOnlyWarning: 'This scenario is read-only. Copy it to your organization to edit.'
+      readOnlyWarning: 'This scenario is read-only. Copy it to your organization to edit.',
+      // Header
+      moreActions: 'More actions'
     }
   },
   fr: {
@@ -671,8 +702,11 @@ const { t } = useTranslations({
       // Panneau
       expandPanel: 'Déplier le panneau',
       collapsePanel: 'Replier le panneau',
+      panelTooltip: 'Glissez des étapes d\'autres scénarios comme modèles',
       readOnly: 'Lecture seule',
-      readOnlyWarning: 'Ce scénario est en lecture seule. Copiez-le dans votre organisation pour le modifier.'
+      readOnlyWarning: 'Ce scénario est en lecture seule. Copiez-le dans votre organisation pour le modifier.',
+      // En-tête
+      moreActions: 'Plus d\'actions'
     }
   }
 })
@@ -751,7 +785,13 @@ const selectedScenarioId = ref<string | null>(null)
 const currentScenario = ref<any>(null)
 const allScenarios = computed(() => scenariosStore.entities)
 const isImporting = ref(false)
-const isRightPanelCollapsed = ref(false)
+// Right step-list panel collapsed by default — discoverability is improved by
+// the tooltip on the toggle button. Last user choice persists in localStorage.
+const isRightPanelCollapsed = ref(true)
+
+// Header overflow menu (Import / Export / Copy / Reset)
+const showActionsMenu = ref(false)
+const actionsMenuRef = ref<HTMLElement | null>(null)
 
 // Modal state
 const showScenarioEditModal = ref(false)
@@ -765,12 +805,25 @@ const scenarioModalTabs = computed(() => [
   { key: 'setup', label: t('scenarioEditor.tabSetup') },
   { key: 'options', label: t('scenarioEditor.tabOptions') }
 ])
+// At create time, only show General — the other tabs are hidden until first save
+// to reduce friction (Marc: "I have to fill 12 fields before I have anything to save").
+// Content stays visible because intro_text / objectives are useful at create.
+const visibleScenarioTabs = computed(() => {
+  if (editingScenario.value?.isNew) {
+    return scenarioModalTabs.value.filter(tab => tab.key === 'general' || tab.key === 'content')
+  }
+  return scenarioModalTabs.value
+})
 const editingStep = ref<any>(null)
 const editingStepIsNew = ref(false)
 const editingStepNodeId = ref<string | null>(null)
 const deletingNode = ref<any>(null)
 const isSaving = ref(false)
 const modalError = ref('')
+// Step modal save state — wired into ScenarioStepEditModal so save errors
+// surface inside the modal (instead of silently dropping behind a toast).
+const isSavingStep = ref(false)
+const stepSaveError = ref('')
 
 // Copy to org state
 const showCopyModal = ref(false)
@@ -1008,15 +1061,39 @@ onMounted(async () => {
     }
   }
 
+  // Restore right-panel collapsed/expanded user preference (defaults to collapsed)
+  const savedRightPanelCollapsed = localStorage.getItem('scenarioEditor_rightPanelCollapsed')
+  if (savedRightPanelCollapsed !== null) {
+    isRightPanelCollapsed.value = savedRightPanelCollapsed === 'true'
+  }
+
   // Add global mouse event listeners for resizing
   document.addEventListener('mousemove', handleResize)
   document.addEventListener('mouseup', stopResize)
+  // Click outside the header overflow menu closes it
+  document.addEventListener('click', handleDocumentClick)
 })
 
 onUnmounted(() => {
   document.removeEventListener('mousemove', handleResize)
   document.removeEventListener('mouseup', stopResize)
+  document.removeEventListener('click', handleDocumentClick)
 })
+
+// Click outside the actions menu container closes it. The trigger button uses
+// @click.stop, so this listener fires only for clicks outside the dropdown.
+const handleDocumentClick = (event: MouseEvent) => {
+  if (!showActionsMenu.value) return
+  const target = event.target as HTMLElement
+  if (actionsMenuRef.value && !actionsMenuRef.value.contains(target)) {
+    showActionsMenu.value = false
+  }
+}
+
+const toggleRightPanel = () => {
+  isRightPanelCollapsed.value = !isRightPanelCollapsed.value
+  localStorage.setItem('scenarioEditor_rightPanelCollapsed', String(isRightPanelCollapsed.value))
+}
 
 // Handle scenario selection
 const handleScenarioSelect = async () => {
@@ -1593,6 +1670,8 @@ const closeStepEditModal = () => {
   editingStep.value = null
   editingStepIsNew.value = false
   editingStepNodeId.value = null
+  isSavingStep.value = false
+  stepSaveError.value = ''
 }
 
 // Sync the quiz questions of a step against the dedicated
@@ -1665,6 +1744,8 @@ const syncStepQuestions = async (
 }
 
 const handleSaveStep = async (formData: any) => {
+  isSavingStep.value = true
+  stepSaveError.value = ''
   try {
     // The /scenario-steps endpoint has no Questions field — extract them
     // and persist via the dedicated /scenario-step-questions endpoint instead.
@@ -1731,8 +1812,16 @@ const handleSaveStep = async (formData: any) => {
     closeStepEditModal()
   } catch (err: any) {
     console.error('Save step failed:', err)
-    const detail = err.response?.data?.error_message || err.message || t('scenarioEditor.saveError')
+    const detail = err.response?.data?.error_message ||
+                   err.response?.data?.message ||
+                   err.message ||
+                   t('scenarioEditor.saveError')
+    // Surface the error inside the modal so the user keeps context (mirrors
+    // the scenario-edit modal pattern). The notification is a secondary signal.
+    stepSaveError.value = detail
     notification.showError(detail)
+  } finally {
+    isSavingStep.value = false
   }
 }
 
@@ -2380,6 +2469,108 @@ textarea.form-control {
   resize: vertical;
   min-height: 80px;
   font-family: inherit;
+}
+
+/* Header overflow menu — reuses dropdown-* tokens from TerminalMySessions.vue
+   pattern (no shared component yet; small enough to inline here) */
+.dropdown-container {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  min-width: 220px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-md, 6px);
+  box-shadow: var(--shadow-lg, 0 4px 12px rgba(0, 0, 0, 0.15));
+  z-index: 100;
+  padding: 0.25rem 0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.5rem 0.85rem;
+  background: none;
+  border: none;
+  text-align: left;
+  color: var(--color-text-primary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.dropdown-item:hover:not(:disabled) {
+  background: var(--color-bg-secondary);
+  color: var(--color-primary);
+}
+
+.dropdown-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dropdown-item i {
+  width: 1rem;
+  text-align: center;
+  opacity: 0.7;
+}
+
+.dropdown-item:hover:not(:disabled) i {
+  opacity: 1;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--color-border-light);
+  margin: 0.25rem 0;
+}
+
+/* Responsive: at narrow widths the library panel becomes a left-edge drawer
+   so the canvas keeps usable width. Toggle is the panel header itself. */
+@media (max-width: 1024px) {
+  .library-panel {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 30;
+    width: 140px;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.08);
+  }
+  .library-panel:hover,
+  .library-panel:focus-within {
+    transform: translateX(0);
+  }
+  .library-panel::after {
+    content: '\f0c9'; /* fa-bars */
+    font-family: 'Font Awesome 6 Free', 'Font Awesome 5 Free', FontAwesome;
+    font-weight: 900;
+    position: absolute;
+    right: -1.75rem;
+    top: 0.5rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border-light);
+    border-left: none;
+    border-radius: 0 4px 4px 0;
+    color: var(--color-text-secondary);
+    pointer-events: none;
+  }
+  .canvas-panel {
+    min-width: 0;
+  }
 }
 
 </style>
