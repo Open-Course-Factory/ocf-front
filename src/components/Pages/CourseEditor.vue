@@ -176,13 +176,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, markRaw, type Component } from 'vue'
+import { ref, onMounted, computed, markRaw, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCoursesStore } from '../../stores/courses'
 import { useChaptersStore } from '../../stores/chapters'
 import { useSectionsStore } from '../../stores/sections'
 import { usePagesStore } from '../../stores/pages'
 import { useTranslations } from '../../composables/useTranslations'
+import { useResizablePanel } from '../../composables/useResizablePanel'
 import NodeLibraryPanel from '../GraphEditor/NodeLibraryPanel.vue'
 import type { NodeTypeDefinition } from '../GraphEditor/NodeLibraryPanel.vue'
 import FlowCanvas from '../GraphEditor/FlowCanvas.vue'
@@ -364,11 +365,10 @@ const deletingNode = ref<any>(null)
 const isSaving = ref(false)
 const modalError = ref('')
 
-// Resize state
-const treePanelWidth = ref(280)
-const isResizing = ref(false)
-const resizeStartX = ref(0)
-const resizeStartWidth = ref(0)
+// Resize state (composable owns mousemove/mouseup listeners)
+const { panelWidth: treePanelWidth, isResizing, startResize } = useResizablePanel({
+  storageKey: 'courseEditor_treePanelWidth'
+})
 
 const editModalTitle = computed(() => {
   if (!editingEntity.value?.entityType) return ''
@@ -413,25 +413,6 @@ onMounted(async () => {
     selectedCourseId.value = courseIdFromUrl
     await handleCourseSelect()
   }
-
-  // Load saved panel width from localStorage
-  const savedWidth = localStorage.getItem('courseEditor_treePanelWidth')
-  if (savedWidth) {
-    const width = parseInt(savedWidth)
-    if (width >= 200 && width <= 600) {
-      treePanelWidth.value = width
-    }
-  }
-
-  // Add global mouse event listeners for resizing
-  document.addEventListener('mousemove', handleResize)
-  document.addEventListener('mouseup', stopResize)
-})
-
-// Cleanup on unmount
-onUnmounted(() => {
-  document.removeEventListener('mousemove', handleResize)
-  document.removeEventListener('mouseup', stopResize)
 })
 
 // Handle course selection
@@ -1335,34 +1316,7 @@ const handleReset = () => {
   }
 }
 
-// Panel resize handlers
-const startResize = (event: MouseEvent) => {
-  isResizing.value = true
-  resizeStartX.value = event.clientX
-  resizeStartWidth.value = treePanelWidth.value
-  event.preventDefault()
-}
-
-const handleResize = (event: MouseEvent) => {
-  if (!isResizing.value) return
-
-  // Calculate new width (resize from left edge, so we subtract)
-  const deltaX = resizeStartX.value - event.clientX
-  const newWidth = resizeStartWidth.value + deltaX
-
-  // Constrain to min/max
-  if (newWidth >= 200 && newWidth <= 600) {
-    treePanelWidth.value = newWidth
-  }
-}
-
-const stopResize = () => {
-  if (isResizing.value) {
-    isResizing.value = false
-    // Save to localStorage
-    localStorage.setItem('courseEditor_treePanelWidth', treePanelWidth.value.toString())
-  }
-}
+// (panel resize — moved to useResizablePanel)
 
 // Select node and all its descendants
 const handleSelectTree = (nodeData: any) => {
