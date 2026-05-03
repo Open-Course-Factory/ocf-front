@@ -1,75 +1,26 @@
 <template>
   <div class="scenario-editor">
-    <div class="editor-header">
-      <!-- Left: title + selector -->
-      <div class="header-primary">
-        <span class="header-title">{{ t('scenarioEditor.title') }}</span>
-        <select
-          v-model="selectedScenarioId"
-          @change="handleScenarioSelect"
-          class="scenario-select"
-        >
-          <option :value="null">{{ t('scenarioEditor.selectScenario') }}</option>
-          <option
-            v-for="scenario in allScenarios"
-            :key="scenario.id"
-            :value="scenario.id"
-          >
-            {{ scenario.name }} - {{ scenario.title }}
-          </option>
-        </select>
-        <button v-if="canCreateScenario" @click="handleCreateNew" class="btn-icon btn-create" :title="t('scenarioEditor.createNew')">
-          <i class="fas fa-plus"></i>
-        </button>
-      </div>
-
-      <!-- Center: context info -->
-      <div class="header-context" v-if="currentScenario">
-        <span class="org-tag" v-if="currentScenario.organization_id">
-          <i class="fas fa-building"></i> {{ getScenarioOrgName(currentScenario) || '—' }}
-        </span>
-        <span class="org-tag platform-tag" v-else>
-          <i class="fas fa-globe"></i> {{ t('scenarioEditor.platform') }}
-          <AdminBadge v-if="isAdmin" icon-only />
-        </span>
-        <span class="debug-info" v-if="nodes.length > 0">
-          {{ nodes.length }}n / {{ edges.length }}e
-        </span>
-      </div>
-
-      <!-- Read-only indicator -->
-      <span v-if="currentScenario && !canEditScenario" class="readonly-badge">
-        <i class="fas fa-lock"></i> {{ t('scenarioEditor.readOnly') }}
-      </span>
-
-      <!-- Right: actions -->
-      <div class="header-actions">
-        <!-- Secondary actions (icon-only) -->
-        <template v-if="selectedScenarioId">
-          <button v-if="canEditScenario" @click="handleImport" class="btn-icon" :title="t('scenarioEditor.import')" :disabled="isImporting">
-            <i :class="isImporting ? 'fas fa-spinner fa-spin' : 'fas fa-file-import'"></i>
-          </button>
-          <button @click="handleExportJSON" class="btn-icon" :title="t('scenarioEditor.exportJSON')">
-            <i class="fas fa-file-code"></i>
-          </button>
-          <button @click="handleExportKillerCoda" class="btn-icon" :title="t('scenarioEditor.exportKillerCoda')">
-            <i class="fas fa-file-archive"></i>
-          </button>
-          <button v-if="canCopyToOrg" @click="openCopyModal" class="btn-icon" :title="t('scenarioEditor.copyToOrg')">
-            <i class="fas fa-copy"></i>
-          </button>
-          <span class="header-divider"></span>
-        </template>
-
-        <!-- Primary actions -->
-        <button v-if="canEditScenario" @click="handleReset" class="btn-icon" :title="t('scenarioEditor.reset')">
-          <i class="fas fa-undo"></i>
-        </button>
-        <button v-if="canEditScenario" @click="handleSave" class="btn-save" :disabled="!selectedScenarioId && nodes.length === 0">
-          <i class="fas fa-save"></i> {{ t('scenarioEditor.save') }}
-        </button>
-      </div>
-    </div>
+    <ScenarioEditorHeader
+      v-model:selectedScenarioId="selectedScenarioId"
+      :scenarios="allScenarios"
+      :current-scenario="currentScenario"
+      :scenario-org-name="currentScenario ? getScenarioOrgName(currentScenario) : null"
+      :can-create-scenario="canCreateScenario"
+      :can-edit-scenario="canEditScenario"
+      :can-copy-to-org="!!canCopyToOrg"
+      :is-importing="isImporting"
+      :is-admin="isAdmin"
+      :node-count="nodes.length"
+      :edge-count="edges.length"
+      @select-change="handleScenarioSelect"
+      @create-new="handleCreateNew"
+      @import="handleImport"
+      @export-json="handleExportJSON"
+      @export-killercoda="handleExportKillerCoda"
+      @copy-to-org="openCopyModal"
+      @reset="handleReset"
+      @save="handleSave"
+    />
 
     <div class="editor-container">
       <!-- Left Panel: Node Library -->
@@ -223,7 +174,7 @@ import InfoStepNode from '../ScenarioEditor/nodes/InfoStepNode.vue'
 import QuizStepNode from '../ScenarioEditor/nodes/QuizStepNode.vue'
 import ScenarioStepEditModal from '../ScenarioEditor/ScenarioStepEditModal.vue'
 import ScenarioEditModal from '../ScenarioEditor/ScenarioEditModal.vue'
-import AdminBadge from '../Common/AdminBadge.vue'
+import ScenarioEditorHeader from '../ScenarioEditor/ScenarioEditorHeader.vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import axios from 'axios'
 
@@ -1439,173 +1390,7 @@ const handleReset = () => {
   background: var(--color-background);
 }
 
-.editor-header {
-  display: flex;
-  align-items: center;
-  padding: 0.5rem 0.75rem;
-  background: var(--color-bg-secondary);
-  border-bottom: 1px solid var(--color-border-light);
-  gap: 0.75rem;
-  min-height: 3rem;
-}
-
-.header-primary {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex: 1;
-  min-width: 0;
-}
-
-.header-title {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  white-space: nowrap;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.scenario-select {
-  flex: 1;
-  max-width: 320px;
-  min-width: 180px;
-  padding: 0.35rem 0.5rem;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background: var(--color-background);
-  color: var(--color-text-primary);
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-
-.scenario-select:hover {
-  border-color: var(--color-primary);
-}
-
-.scenario-select:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-light);
-}
-
-.header-context {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
-}
-
-.org-tag {
-  font-size: 0.7rem;
-  color: var(--color-text-secondary);
-  padding: 0.2rem 0.5rem;
-  background: var(--color-surface-variant);
-  border-radius: 3px;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  white-space: nowrap;
-}
-
-.debug-info {
-  font-size: 0.65rem;
-  color: var(--color-text-secondary);
-  opacity: 0.6;
-  white-space: nowrap;
-}
-
-.readonly-badge {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--color-warning-text);
-  background: var(--color-warning-bg);
-  border: 1px solid var(--color-warning-border);
-  padding: 0.2rem 0.5rem;
-  border-radius: 3px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  flex-shrink: 0;
-}
-
-.header-divider {
-  width: 1px;
-  height: 1.2rem;
-  background: var(--color-border);
-  margin: 0 0.25rem;
-}
-
-/* Icon buttons */
-.btn-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-icon:hover:not(:disabled) {
-  background: var(--color-surface-hover);
-  color: var(--color-text-primary);
-  border-color: var(--color-border);
-}
-
-.btn-icon:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.btn-icon.btn-create {
-  color: var(--color-success);
-}
-
-.btn-icon.btn-create:hover {
-  background: rgba(40, 167, 69, 0.1);
-  border-color: var(--color-success);
-}
-
-/* Save button (primary, with label) */
-.btn-save {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.75rem;
-  border: none;
-  border-radius: 4px;
-  background: var(--color-primary);
-  color: white;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-
-.btn-save:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-}
-
-.btn-save:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+/* Header styles live in ScenarioEditorHeader.vue */
 
 .editor-container {
   display: flex;
