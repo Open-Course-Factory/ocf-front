@@ -63,23 +63,45 @@ export const useUserMembershipsStore = defineStore('userMemberships', () => {
     isLoading.value = true
     error.value = ''
     try {
-      const [orgRes, groupRes] = await Promise.all([
+      // Use Promise.allSettled so a single endpoint failing doesn't wipe
+      // both arrays. Real prod incident (#216): users whose /organizations
+      // route 404'd lost their group memberships too, hiding groups they
+      // owned from the scenario editor's scope picker.
+      const [orgRes, groupRes] = await Promise.allSettled([
         axios.get('/organizations/me/memberships'),
         axios.get('/groups/me/memberships'),
       ])
 
-      const orgs = orgRes.data?.data || orgRes.data || []
-      const groups = groupRes.data?.data || groupRes.data || []
+      const orgs = orgRes.status === 'fulfilled'
+        ? (orgRes.value.data?.data ?? orgRes.value.data ?? [])
+        : []
+      const groups = groupRes.status === 'fulfilled'
+        ? (groupRes.value.data?.data ?? groupRes.value.data ?? [])
+        : []
 
       orgMemberships.value = Array.isArray(orgs) ? orgs : []
       groupMemberships.value = Array.isArray(groups) ? groups : []
       isLoaded.value = true
+
+      // Surface a partial-failure error for observability, but don't fail
+      // the load — the half that succeeded is still usable.
+      if (orgRes.status === 'rejected' || groupRes.status === 'rejected') {
+        const failed: any = orgRes.status === 'rejected'
+          ? (orgRes as any).reason
+          : (groupRes as any).reason
+        error.value = failed?.response?.data?.error_message ||
+                      failed?.response?.data?.message ||
+                      failed?.message ||
+                      'Failed to load some memberships'
+      }
     } catch (err: any) {
+      // Promise.allSettled doesn't throw, but keep the catch as a safety
+      // net for genuinely unexpected runtime errors (e.g., synchronous
+      // throws from a bad mock or interceptor).
       error.value = err.response?.data?.error_message ||
                     err.response?.data?.message ||
                     err.message ||
                     'Failed to load memberships'
-      // Keep going with empty arrays so UI just hides scoped actions
       orgMemberships.value = []
       groupMemberships.value = []
       isLoaded.value = true

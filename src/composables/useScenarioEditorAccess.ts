@@ -29,18 +29,20 @@
  * ANY of the following hold:
  *   - The user is a platform administrator (via `useAdminViewMode`)
  *     — and is NOT toggled to "view as standard user".
- *   - Their `userRoles` (Casbin bindings) contain `organization_manager:<id>`.
- *   - Their `userRoles` contain `class-group_manager:<id>`.
  *   - An organization in `useOrganizationsStore.userOrganizations` has
- *     `owner_user_id === useCurrentUserStore.userId`.
+ *     `owner_user_id === useCurrentUserStore.userId` (legacy fixtures
+ *     where only ownership is set).
  *   - `useUserMembershipsStore.orgMemberships` has a row with role
- *     `manager` or `owner`.
+ *     `manager` or `owner` (DB-backed source of truth).
  *   - `useUserMembershipsStore.groupMemberships` has a row with role
  *     `manager` or `owner`.
  *
- * Mirrors the union used by the in-page `orgScopes` / `groupScopes` /
- * `platformScopeAvailable` predicates in `ScenarioEditor.vue` so that gating
- * stays consistent across the menu, the router guard, and the in-page UI.
+ * Note: previous versions also matched `userRoles` against the Casbin
+ * prefixes `organization_manager:<id>` and `class-group_manager:<id>`. Those
+ * prefixes are NEVER produced by the backend (verified via grep across
+ * `ocf-core/src`). The membership store is the canonical role source, and
+ * Layer-2 backend enforcement is the security boundary; the frontend
+ * predicate just gates the UI.
  */
 import { computed, type ComputedRef } from 'vue'
 import { useCurrentUserStore } from '../stores/currentUser'
@@ -62,28 +64,20 @@ export function useScenarioEditorAccess(): ScenarioEditorAccess {
     // 1. Platform admin (unless toggled to "view as standard user")
     if (shouldShowAllData.value) return true
 
-    const roles = currentUser.userRoles || []
-
-    // 2. Casbin role binding `organization_manager:<id>`
-    if (roles.some(r => r.startsWith('organization_manager:'))) return true
-
-    // 3. Casbin role binding `class-group_manager:<id>`
-    if (roles.some(r => r.startsWith('class-group_manager:'))) return true
-
-    // 4. Org owner (`owner_user_id === currentUser.userId`) — mirrors the
-    //    Source 1 branch in ScenarioEditor.vue. Some fixtures only set
-    //    ownership and skip the Casbin row.
+    // 2. Org owner (`owner_user_id === currentUser.userId`) — kept for
+    //    legacy fixtures and demo orgs that only set ownership without
+    //    creating the corresponding membership row.
     const userId = currentUser.userId
     if (userId) {
       const userOrgs = organizationsStore.userOrganizations || []
       if (userOrgs.some(org => org.owner_user_id === userId)) return true
     }
 
-    // 5. /me/memberships fallback — DB-backed org memberships
+    // 3. /me/memberships — DB-backed org memberships (canonical source)
     const orgMs = membershipsStore.orgMemberships || []
     if (orgMs.some(m => m.role === 'manager' || m.role === 'owner')) return true
 
-    // 6. /me/memberships fallback — DB-backed group memberships
+    // 4. /me/memberships — DB-backed group memberships
     const groupMs = membershipsStore.groupMemberships || []
     if (groupMs.some(m => m.role === 'manager' || m.role === 'owner')) return true
 

@@ -142,33 +142,39 @@ describe('useScenarioEditorAccess (real stores + real admin-view-mode)', () => {
   })
 
   /**
-   * BEHAVIOR PROTECTED: Casbin role binding `organization_manager:<id>`
-   * is the canonical signal that the user manages an org. The editor's
-   * existing `orgScopes` predicate uses this same source, and the new gate
-   * MUST mirror it so signals stay consistent across the component and
-   * the composable.
+   * BEHAVIOR PROTECTED: The Casbin prefixes `organization_manager:<id>`
+   * and `class-group_manager:<id>` are NEVER produced by the backend
+   * (verified via grep across ocf-core/src — only one comment match, no
+   * actual binding). They were dead-code branches in the predicate and
+   * masked the real bug in #216 (a user added as group owner couldn't
+   * see the group in the scope picker because the live signal —
+   * /me/memberships — wasn't loaded reliably).
+   *
+   * The fix dropped both prefix checks and made the membership store the
+   * canonical role source. These tests pin that the dead prefixes alone
+   * (without a backing membership row) do NOT grant access — anything
+   * else would re-introduce dead code that future readers waste time
+   * understanding.
+   *
+   * GUT-CHECK: If anyone reintroduces the Casbin-prefix branch, these
+   * tests fail.
    */
-  it('returns true when userRoles contains an organization_manager binding', () => {
+  it('does NOT grant access for the dead `organization_manager:` Casbin prefix alone', () => {
     const user = useCurrentUserStore()
     user.userId = 'user-1'
     user.userRoles = ['organization_manager:org-abc']
 
     const { canAccessScenarioEditor } = useScenarioEditorAccess()
-    expect(canAccessScenarioEditor.value).toBe(true)
+    expect(canAccessScenarioEditor.value).toBe(false)
   })
 
-  /**
-   * BEHAVIOR PROTECTED: Same as above, for `class-group_manager:<id>`.
-   * A group manager who is not an org manager STILL needs access — they
-   * can author scenarios scoped to their group.
-   */
-  it('returns true when userRoles contains a class-group_manager binding', () => {
+  it('does NOT grant access for the dead `class-group_manager:` Casbin prefix alone', () => {
     const user = useCurrentUserStore()
     user.userId = 'user-1'
     user.userRoles = ['class-group_manager:group-xyz']
 
     const { canAccessScenarioEditor } = useScenarioEditorAccess()
-    expect(canAccessScenarioEditor.value).toBe(true)
+    expect(canAccessScenarioEditor.value).toBe(false)
   })
 
   /**
