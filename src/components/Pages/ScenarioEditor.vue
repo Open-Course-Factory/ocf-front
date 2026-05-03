@@ -429,7 +429,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, markRaw, type Component } from 'vue'
+import { ref, onMounted, computed, markRaw, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useScenariosStore } from '../../stores/scenarios'
 import { useScenarioStepsStore } from '../../stores/scenarioSteps'
@@ -441,6 +441,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useNotification } from '../../composables/useNotification'
 import { useScenarioGraph, STEP_NODE_TYPES } from '../../composables/useScenarioGraph'
+import { useResizablePanel } from '../../composables/useResizablePanel'
 import NodeLibraryPanel from '../GraphEditor/NodeLibraryPanel.vue'
 import type { NodeTypeDefinition } from '../GraphEditor/NodeLibraryPanel.vue'
 import FlowCanvas from '../GraphEditor/FlowCanvas.vue'
@@ -982,11 +983,10 @@ const currentScenarioOrgLabel = computed<string | null>(() => {
   return org?.display_name || org?.name || null
 })
 
-// Resize state
-const treePanelWidth = ref(280)
-const isResizing = ref(false)
-const resizeStartX = ref(0)
-const resizeStartWidth = ref(0)
+// Resize state (composable owns mousemove/mouseup listeners)
+const { panelWidth: treePanelWidth, isResizing, startResize } = useResizablePanel({
+  storageKey: 'scenarioEditor_treePanelWidth'
+})
 
 const scenarioEditModalTitle = computed(() => {
   return editingScenario.value?.isNew
@@ -1012,24 +1012,6 @@ onMounted(async () => {
     selectedScenarioId.value = scenarioIdFromUrl
     await handleScenarioSelect()
   }
-
-  // Load saved panel width from localStorage
-  const savedWidth = localStorage.getItem('scenarioEditor_treePanelWidth')
-  if (savedWidth) {
-    const width = parseInt(savedWidth)
-    if (width >= 200 && width <= 600) {
-      treePanelWidth.value = width
-    }
-  }
-
-  // Add global mouse event listeners for resizing
-  document.addEventListener('mousemove', handleResize)
-  document.addEventListener('mouseup', stopResize)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('mousemove', handleResize)
-  document.removeEventListener('mouseup', stopResize)
 })
 
 // Handle scenario selection
@@ -1685,31 +1667,7 @@ const handleReset = () => {
   }
 }
 
-// Panel resize handlers
-const startResize = (event: MouseEvent) => {
-  isResizing.value = true
-  resizeStartX.value = event.clientX
-  resizeStartWidth.value = treePanelWidth.value
-  event.preventDefault()
-}
-
-const handleResize = (event: MouseEvent) => {
-  if (!isResizing.value) return
-
-  const deltaX = resizeStartX.value - event.clientX
-  const newWidth = resizeStartWidth.value + deltaX
-
-  if (newWidth >= 200 && newWidth <= 600) {
-    treePanelWidth.value = newWidth
-  }
-}
-
-const stopResize = () => {
-  if (isResizing.value) {
-    isResizing.value = false
-    localStorage.setItem('scenarioEditor_treePanelWidth', treePanelWidth.value.toString())
-  }
-}
+// (panel resize — moved to useResizablePanel)
 </script>
 
 <style scoped>
