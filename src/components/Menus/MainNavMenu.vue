@@ -106,6 +106,7 @@ import { useSubscriptionBatchesStore } from '../../stores/subscriptionBatches.ts
 import { useOrganizationsStore } from '../../stores/organizations.ts';
 import { storeToRefs } from 'pinia';
 import { useFeatureFlags } from '../../composables/useFeatureFlags';
+import { useScenarioEditorAccess } from '../../composables/useScenarioEditorAccess';
 import { usePermissions } from '../../composables/usePermissions';
 import { usePermissionsStore } from '../../stores/permissions';
 import { useMenuCategories } from '../../composables/useMenuCategories';
@@ -185,6 +186,9 @@ const { createReactiveFlag, waitForInitialization } = useFeatureFlags();
 // Permissions
 const { hasPermission } = usePermissions();
 
+// Scenario editor access (manager / org-owner / admin gating, #213)
+const { canAccessScenarioEditor } = useScenarioEditorAccess();
+
 // Create reactive computed values for each flag we need to check
 const courseConceptionEnabled = createReactiveFlag('course_conception')
 const scenarioConceptionEnabled = createReactiveFlag('scenario_conception')
@@ -230,6 +234,7 @@ interface MenuItem {
   icon: string
   featureFlag?: string
   hideForAssignedOnly?: boolean
+  requiresScenarioManager?: boolean
   disabled?: boolean
   disabledTooltip?: string
 }
@@ -355,7 +360,8 @@ const menuCategories = computed((): MenuCategory[] => [
         label: t('navigation.scenarioEditor'),
         title: t('navigation.scenarioEditorTitle'),
         icon: 'fas fa-project-diagram',
-        featureFlag: 'scenario_conception'
+        featureFlag: 'scenario_conception',
+        requiresScenarioManager: true
       }
     ]
   },
@@ -566,6 +572,10 @@ const filteredCategories = computed(() => {
         items: category.items.filter(item => {
           // Hide items marked as not for assigned-only users
           if (item.hideForAssignedOnly && hasOnlyAssignedSubscription.value) {
+            return false
+          }
+          // Hide items that require scenario-manager access (#213)
+          if (item.requiresScenarioManager && !canAccessScenarioEditor.value) {
             return false
           }
           // Check item-level feature flag if it exists

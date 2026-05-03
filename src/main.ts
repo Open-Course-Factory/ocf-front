@@ -29,6 +29,7 @@ import 'element-plus/dist/index.css'
 import ElementPlus from 'element-plus'
 import { piniaPluginPersist } from './piniaPluginPersist'
 import { useCurrentUserStore } from './stores/currentUser'
+import { useUserMembershipsStore } from './stores/userMemberships'
 import { setupAxiosInterceptors, setupAxiosDefaults } from './services/core/http'
 import { featureFlagService } from './services/features'
 import i18n from './i18n'
@@ -132,6 +133,11 @@ async function initializeApp() {
             // Then load permissions
             await userStore.loadPermissions()
             console.log('✅ Permissions loaded successfully')
+
+            // Eager-load memberships so the scenario-editor gate (#213) and
+            // any other surface that depends on /me/memberships gets a stable
+            // answer on first paint instead of flickering once the data lands.
+            useUserMembershipsStore().ensureLoaded().catch(() => null)
         } catch (err: any) {
             console.warn('⚠️ User data/permissions loading failed:', err?.message || err)
         }

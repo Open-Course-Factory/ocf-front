@@ -24,6 +24,7 @@ import { useCurrentUserStore } from '../stores/currentUser';
 import { featureFlagService } from '../services/features';
 import { useSettingsNavigation } from '../composables/useSettingsNavigation';
 import { getCurrentActorRoles } from '../composables/useFeatureFlags';
+import { useScenarioEditorAccess } from '../composables/useScenarioEditorAccess';
 import Layout from '../components/Layout.vue';
 import Courses from '../components/Pages/Courses.vue';
 import Chapters from '../components/Pages/Chapters.vue';
@@ -138,7 +139,7 @@ const basicRoutes = [
       //{ path: 'dashboard', name: 'Dashboard', component: Dashboard, meta: { requiresAuth: true } },
       { path: 'courses', name: 'Courses', component: Courses, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
       { path: 'course-editor', name: 'CourseEditor', component: CourseEditor, meta: { requiresAuth: true, requiresFeature: 'course_conception', collapseNav: true } },
-      { path: 'scenario-editor', name: 'ScenarioEditor', component: () => import('../components/Pages/ScenarioEditor.vue'), meta: { requiresAuth: true, requiresFeature: 'scenario_conception', collapseNav: true } },
+      { path: 'scenario-editor', name: 'ScenarioEditor', component: () => import('../components/Pages/ScenarioEditor.vue'), meta: { requiresAuth: true, requiresFeature: 'scenario_conception', requiresScenarioManager: true, collapseNav: true } },
       { path: 'chapters', name: 'Chapters', component: Chapters, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
       { path: 'sections', name: 'Sections', component: Sections, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
       { path: 'pages', name: 'Pages', component: Pages, meta: { requiresAuth: true, requiresFeature: 'course_conception' } },
@@ -547,6 +548,22 @@ router.beforeEach(async (to, from, next) => {
     }
 
     console.log('✅ Permission check passed for', to.path);
+  }
+
+  // Scenario editor manager check (#213) — gates routes that declare
+  // `requiresScenarioManager: true`. Mirrors the redirect target used by
+  // the `requiredPermissions` branch above so the `TerminalSessions` toast
+  // handler picks up `error=insufficient_permissions`.
+  if (to.meta.requiresScenarioManager) {
+    const { canAccessScenarioEditor } = useScenarioEditorAccess()
+    if (!canAccessScenarioEditor.value) {
+      console.warn(`❌ Access denied to ${to.path}: not a scenario manager`);
+      next({
+        name: 'TerminalSessions',
+        query: { error: 'insufficient_permissions' }
+      });
+      return;
+    }
   }
 
   // Check email verification for payment-related routes

@@ -439,6 +439,7 @@ import { useUserMembershipsStore } from '../../stores/userMemberships'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import { useTranslations } from '../../composables/useTranslations'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
+import { useScenarioEditorAccess } from '../../composables/useScenarioEditorAccess'
 import { useNotification } from '../../composables/useNotification'
 import NodeLibraryPanel from '../GraphEditor/NodeLibraryPanel.vue'
 import type { NodeTypeDefinition } from '../GraphEditor/NodeLibraryPanel.vue'
@@ -684,6 +685,7 @@ const classGroupsStore = useClassGroupsStore()
 const membershipsStore = useUserMembershipsStore()
 const currentUser = useCurrentUserStore()
 const { isAdmin } = useAdminViewMode()
+const { canAccessScenarioEditor } = useScenarioEditorAccess()
 const notification = useNotification()
 
 // Custom node types for VueFlow
@@ -910,7 +912,14 @@ const availableCreateScopes = computed<CreateScope[]>(() => {
   return scopes
 })
 
-const canCreateScenario = computed(() => availableCreateScopes.value.length > 0)
+// `canCreateScenario` mirrors `canAccessScenarioEditor` (both reflect the
+// "is this user a manager / owner / admin somewhere?" predicate). The actual
+// list of scopes is still computed below for the create-scope picker — we
+// just gate the boolean check on the composable so the logic stays DRY with
+// the menu and router-guard surfaces (#213).
+const canCreateScenario = computed(() =>
+  canAccessScenarioEditor.value && availableCreateScopes.value.length > 0
+)
 
 const parseScopeKey = (key: string | undefined | null): CreateScope | null => {
   if (!key) return null

@@ -77,6 +77,7 @@ import axios from 'axios';
 import { useLoginStore } from '../../stores/login.ts';
 import { useCurrentUserStore } from '../../stores/currentUser.ts';
 import { useUserSettingsStore } from '../../stores/userSettings.ts';
+import { useUserMembershipsStore } from '../../stores/userMemberships.ts';
 import { useLocale } from '../../composables/useLocale';
 import { useTheme } from '../../composables/useTheme';
 import { useFeatureFlags } from '../../composables/useFeatureFlags';
@@ -164,6 +165,12 @@ async function redirect() {
       await refreshAfterLogin()
       await waitForInitialization()
       await currentUserStore.loadPermissions()
+
+      // Eager-load memberships so the scenario-editor gate (#213) gets a
+      // stable answer on first paint after login. Fire-and-forget — the
+      // store keeps empty arrays on failure so the UI just hides scoped
+      // actions instead of flickering.
+      useUserMembershipsStore().ensureLoaded().catch(() => null)
 
       // Load user settings
       const settings = await settingsStore.loadSettings();
