@@ -1575,6 +1575,7 @@ const handleSaveScenario = async () => {
           is_public: editingScenario.value.is_public,
           isNew: false
         }
+        nodes.value = [...nodes.value]
       }
     }
 
