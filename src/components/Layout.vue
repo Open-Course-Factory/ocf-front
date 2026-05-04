@@ -137,9 +137,11 @@ onUnmounted(() => {
 
 .main-nav-menu {
   position: fixed;
-  top: 60px; /* Height of the TopMenu */
+  /* Sit just below the TopMenu, which itself shifts down by the
+     impersonation banner height when active. */
+  top: calc(60px + var(--impersonation-banner-height, 0px));
   left: 0;
-  height: calc(100vh - 60px); /* Full height minus the TopMenu height */
+  height: calc(100vh - 60px - var(--impersonation-banner-height, 0px));
   width: 250px; /* Adjust width as needed */
   overflow-y: auto; /* Allow scrolling within the menu */
   background-color: var(--color-bg-dark);

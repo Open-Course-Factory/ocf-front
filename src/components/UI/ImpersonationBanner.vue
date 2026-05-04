@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { useImpersonationStore } from '../../stores/impersonation'
 import { useTranslations } from '../../composables/useTranslations'
 
@@ -72,6 +72,20 @@ const adminName = computed(() => {
   return store.impersonator?.username || ''
 })
 
+// Push the rest of the layout (TopMenu, side nav) down by the banner's
+// height when active. The banner itself is position:fixed at top:0; without
+// this offset it would cover the TopMenu instead of sitting above it.
+const BANNER_HEIGHT = '44px'
+function applyOffset(active: boolean) {
+  if (typeof document === 'undefined') return
+  document.documentElement.style.setProperty(
+    '--impersonation-banner-height',
+    active ? BANNER_HEIGHT : '0px'
+  )
+}
+watch(() => store.isImpersonating, applyOffset, { immediate: true })
+onUnmounted(() => applyOffset(false))
+
 async function onStop() {
   if (stopping.value) return
   stopping.value = true
@@ -90,10 +104,15 @@ async function onStop() {
 
 <style scoped>
 .impersonation-banner {
-  position: sticky;
+  /* Pinned at viewport top, ABOVE the fixed TopMenu (which uses
+     var(--z-index-modal) = 1050). The Layout's CSS variable
+     --impersonation-banner-height pushes TopMenu and the side nav down
+     so they don't sit underneath. */
+  position: fixed;
   top: 0;
-  z-index: var(--z-index-modal, 9999);
-  width: 100%;
+  left: 0;
+  right: 0;
+  z-index: 99999;
   background: var(--color-danger-bg);
   color: var(--color-danger-text);
   border-bottom: 2px solid var(--color-danger-border);

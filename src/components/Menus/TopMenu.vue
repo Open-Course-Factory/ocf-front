@@ -352,7 +352,7 @@ onUnmounted(() => {
   border-bottom: var(--border-width-thin) solid var(--color-border-light);
   background-color: var(--color-bg-primary);
   position: fixed;
-  top: 0;
+  top: var(--impersonation-banner-height, 0px);
   left: 0;
   z-index: var(--z-index-modal);
   padding: 0 var(--spacing-lg);
