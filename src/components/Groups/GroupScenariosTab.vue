@@ -196,6 +196,8 @@ const { t } = useTranslations({
       incorrectIndicator: 'Incorrect',
       noAnswer: 'No answer',
       questionsCorrect: '{correct}/{total} correct',
+      correctCount: '{correct}/{total} correct',
+      correctAnswers: 'Correct answers',
       commandsModeAll: 'All commands',
       commandsModePerStep: 'Per step',
       commandsDuringStep: 'Commands during this step',
@@ -341,6 +343,8 @@ const { t } = useTranslations({
       incorrectIndicator: 'Incorrecte',
       noAnswer: 'Pas de réponse',
       questionsCorrect: '{correct}/{total} correctes',
+      correctCount: '{correct}/{total} correctes',
+      correctAnswers: 'Réponses correctes',
       commandsModeAll: 'Toutes les commandes',
       commandsModePerStep: 'Par étape',
       commandsDuringStep: 'Commandes pendant cette étape',
@@ -380,6 +384,10 @@ interface ScenarioResultItem {
   user_email?: string
   status: string
   grade?: number
+  // Sum of correct quiz answers + correct flag captures
+  correct_count?: number
+  // Total quiz questions + count of flag-bearing steps in the scenario (static per scenario)
+  total_correct_possible?: number
   current_step: number
   total_steps: number
   completed_steps: number
@@ -1571,7 +1579,16 @@ onUnmounted(() => {
               </span>
             </td>
             <td>
-              {{ result.grade != null ? Math.round(result.grade) + '%' : t('groupScenarios.notGraded') }}
+              <div>{{ result.grade != null ? Math.round(result.grade) + '%' : t('groupScenarios.notGraded') }}</div>
+              <div
+                v-if="result.total_correct_possible && result.total_correct_possible > 0"
+                class="correct-count-sub"
+              >
+                {{ t('groupScenarios.correctCount', {
+                  correct: result.correct_count ?? 0,
+                  total: result.total_correct_possible
+                }) }}
+              </div>
             </td>
             <td>
               <div class="progress-cell">
@@ -1628,6 +1645,10 @@ onUnmounted(() => {
             <span :class="['status-chip', getStatusClass(sessionDetail.status)]">{{ translateStatus(sessionDetail.status) }}</span>
           </div>
           <div v-if="sessionDetail.grade != null"><strong>{{ t('groupScenarios.grade') }}:</strong> {{ Math.round(sessionDetail.grade) }}%</div>
+          <div v-if="sessionDetail.total_correct_possible && sessionDetail.total_correct_possible > 0">
+            <strong>{{ t('groupScenarios.correctAnswers') }}:</strong>
+            {{ sessionDetail.correct_count ?? 0 }}/{{ sessionDetail.total_correct_possible }}
+          </div>
           <div><strong>{{ t('groupScenarios.startedAt') }}:</strong> {{ formatDate(sessionDetail.started_at) }}</div>
           <div v-if="sessionDetail.completed_at"><strong>{{ t('groupScenarios.completedAt') }}:</strong> {{ formatDate(sessionDetail.completed_at) }}</div>
         </div>
@@ -2625,6 +2646,12 @@ onUnmounted(() => {
 .student-email {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+}
+
+.correct-count-sub {
+  font-size: 0.85em;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
 }
 
 .date-cell {

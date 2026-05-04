@@ -50,6 +50,10 @@ export interface SessionDetailResponse {
   status: string
   // 0..1 (terminal/flag/info contribute 1.0 if completed, quiz contributes its quiz_score)
   grade?: number
+  // Sum of correct quiz answers + correct flag captures across the session
+  correct_count?: number
+  // Total quiz questions + count of flag-bearing steps in the scenario (static per scenario)
+  total_correct_possible?: number
   started_at: string
   completed_at?: string
   steps: SessionStepDetail[]
