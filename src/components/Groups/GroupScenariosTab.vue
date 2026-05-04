@@ -1581,7 +1581,7 @@ onUnmounted(() => {
             <td>
               <div>{{ result.grade != null ? Math.round(result.grade) + '%' : t('groupScenarios.notGraded') }}</div>
               <div
-                v-if="result.total_correct_possible && result.total_correct_possible > 0"
+                v-if="result.total_correct_possible"
                 class="correct-count-sub"
               >
                 {{ t('groupScenarios.correctCount', {
@@ -1645,7 +1645,7 @@ onUnmounted(() => {
             <span :class="['status-chip', getStatusClass(sessionDetail.status)]">{{ translateStatus(sessionDetail.status) }}</span>
           </div>
           <div v-if="sessionDetail.grade != null"><strong>{{ t('groupScenarios.grade') }}:</strong> {{ Math.round(sessionDetail.grade) }}%</div>
-          <div v-if="sessionDetail.total_correct_possible && sessionDetail.total_correct_possible > 0">
+          <div v-if="sessionDetail.total_correct_possible">
             <strong>{{ t('groupScenarios.correctAnswers') }}:</strong>
             {{ sessionDetail.correct_count ?? 0 }}/{{ sessionDetail.total_correct_possible }}
           </div>
@@ -2649,7 +2649,7 @@ onUnmounted(() => {
 }
 
 .correct-count-sub {
-  font-size: 0.85em;
+  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   margin-top: 2px;
 }
