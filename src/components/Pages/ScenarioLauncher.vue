@@ -75,8 +75,17 @@
             <i class="fas fa-linux os-badge-icon"></i>
             {{ scenario.os_type }}
           </span>
-          <span v-if="scenario.instance_type" class="os-badge">
-            <i class="fas fa-microchip os-badge-icon"></i>
+          <span
+            v-if="scenario.instance_type"
+            :class="['os-badge', { 'os-badge--warning': !isInstanceTypeValid(scenario.instance_type) }]"
+            :title="!isInstanceTypeValid(scenario.instance_type)
+              ? t('launcher.unknownSizeWarning', { key: scenario.instance_type })
+              : ''"
+          >
+            <i
+              :class="!isInstanceTypeValid(scenario.instance_type) ? 'fas fa-exclamation-triangle os-badge-icon' : 'fas fa-microchip os-badge-icon'"
+              aria-hidden="true"
+            ></i>
             {{ scenario.instance_type }}
           </span>
         </div>
@@ -171,6 +180,8 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import AdminBadge from '../Common/AdminBadge.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
+import { terminalService } from '../../services/domain/terminal/terminalService'
+import type { Size } from '../../types/terminal'
 
 const router = useRouter()
 const { showError } = useNotification()
@@ -217,7 +228,8 @@ const { t } = useTranslations({
       difficultyIntermediate: 'Intermediate',
       difficultyAdvanced: 'Advanced',
       searchPlaceholder: 'Search scenarios...',
-      noMatchingScenarios: 'No matching scenarios'
+      noMatchingScenarios: 'No matching scenarios',
+      unknownSizeWarning: 'Size "{key}" is not in the catalog — will fall back to a default at launch'
     }
   },
   fr: {
@@ -253,13 +265,22 @@ const { t } = useTranslations({
       difficultyIntermediate: 'Intermédiaire',
       difficultyAdvanced: 'Avancé',
       searchPlaceholder: 'Rechercher des scénarios...',
-      noMatchingScenarios: 'Aucun scénario trouvé'
+      noMatchingScenarios: 'Aucun scénario trouvé',
+      unknownSizeWarning: 'Taille « {key} » absente du catalogue — repli sur une taille par défaut au lancement'
     }
   }
 })
 
 const scenarios = ref<any[]>([])
 const mySessions = ref<any[]>([])
+const sizes = ref<Size[]>([])
+
+// Returns true when the size is in the catalog (case-insensitive) OR when the
+// catalog could not be loaded (degraded mode — assume valid to avoid false positives).
+function isInstanceTypeValid(key: string): boolean {
+  if (!sizes.value.length) return true
+  return sizes.value.some(s => s.key.toUpperCase() === key.toUpperCase())
+}
 const isLoading = ref(false)
 const error = ref('')
 const isLaunching = ref(false)
@@ -441,7 +462,17 @@ async function handleCancelProvisioning() {
   await loadScenarios()
 }
 
-onMounted(loadScenarios)
+onMounted(() => {
+  loadScenarios()
+  // Best-effort: if the sizes endpoint isn't deployed yet (404/403), badge
+  // simply assumes every size is valid (degraded mode — no false warnings).
+  terminalService.getSizes()
+    .then(list => { sizes.value = list })
+    .catch(err => {
+      console.warn('[ScenarioLauncher] failed to load sizes catalog, badge warnings disabled', err)
+      sizes.value = []
+    })
+})
 
 // Re-fetch scenarios when org context changes (different plan = different availability)
 watch(currentOrgId, () => {
@@ -635,6 +666,12 @@ watch(currentOrgId, () => {
   background: var(--color-danger-bg);
   color: var(--color-danger-text);
   border-color: var(--color-danger-border);
+}
+
+.os-badge--warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  border-color: var(--color-warning-border);
 }
 
 /* Unavailability notice */

@@ -301,7 +301,23 @@
         <div class="form-row">
           <div class="form-group">
             <label>{{ t('scenarioEditor.instanceType') }}</label>
+            <select
+              v-if="sizes.length > 0"
+              v-model="editingScenario.instance_type"
+              class="form-control"
+            >
+              <option
+                v-if="editingScenario.instance_type && !sizes.some(s => s.key.toUpperCase() === String(editingScenario.instance_type).toUpperCase())"
+                :value="editingScenario.instance_type"
+              >
+                {{ t('scenarioEditor.instanceTypeUnknown', { key: editingScenario.instance_type }) }}
+              </option>
+              <option v-for="s in sizes" :key="s.key" :value="s.key">
+                {{ s.key }} — {{ s.name }} ({{ s.cpu }} vCPU, {{ s.memory }} RAM)
+              </option>
+            </select>
             <input
+              v-else
               v-model="editingScenario.instance_type"
               type="text"
               class="form-control"
@@ -454,6 +470,8 @@ import ScenarioStepEditModal from '../ScenarioEditor/ScenarioStepEditModal.vue'
 import AdminBadge from '../Common/AdminBadge.vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import axios from 'axios'
+import { terminalService } from '../../services/domain/terminal/terminalService'
+import type { Size } from '../../types/terminal'
 
 const route = useRoute()
 const router = useRouter()
@@ -547,6 +565,7 @@ const { t } = useTranslations({
       setupScriptHint: 'Runs once when a student starts the scenario, before step 1. Use for global environment provisioning.',
       // Options tab
       instanceType: 'Machine Size',
+      instanceTypeUnknown: '⚠️ {key} (unknown — will fall back at launch)',
       hostname: 'Container Hostname',
       osType: 'OS Type',
       sourceType: 'Source Type',
@@ -655,6 +674,7 @@ const { t } = useTranslations({
       setupScriptHint: 'S\'exécute une fois lorsqu\'un étudiant démarre le scénario, avant l\'étape 1. Pour le provisionnement global.',
       // Onglet options
       instanceType: 'Taille machine',
+      instanceTypeUnknown: '⚠️ {key} (inconnue — repli au lancement)',
       hostname: 'Nom d\'hôte du conteneur',
       osType: 'Type d\'OS',
       sourceType: 'Type de source',
@@ -920,6 +940,9 @@ const currentScenarioOrgLabel = computed<string | null>(() => {
   return org?.display_name || org?.name || null
 })
 
+// Machine size catalog (loaded on mount, used for the instance_type dropdown)
+const sizes = ref<Size[]>([])
+
 // Resize state
 const treePanelWidth = ref(280)
 const isResizing = ref(false)
@@ -942,6 +965,15 @@ onMounted(async () => {
     organizationsStore.loadOrganizations().catch(() => null),
     classGroupsStore.loadEntities().catch(() => null),
     membershipsStore.ensureLoaded().catch(() => null),
+    // Best-effort: if the sizes endpoint isn't deployed yet (404/403), fall back to plain text input.
+    terminalService.getSizes()
+      .then(list => {
+        sizes.value = [...list].sort((a, b) => a.sort_order - b.sort_order)
+      })
+      .catch(err => {
+        console.warn('[ScenarioEditor] failed to load sizes catalog, falling back to text input', err)
+        sizes.value = []
+      }),
   ])
 
   // Check if scenarioId is in URL query params
