@@ -179,7 +179,7 @@ const { showSuccess, showError: showErrorNotification, showWarning } = useNotifi
 // Backend caps CSV export at 100k rows. Keep this in sync with
 // ocf-core's maxCSVHistoryLimit (terminalTrainerService.go) and
 // tt-backend's maxBulkHistoryLimit (api_history.go).
-const MAX_CSV_EXPORT_LIMIT = 100_000
+const MAX_CSV_EXPORT_LIMIT = 100000
 
 // State
 const commands = ref<CommandEntry[]>([])
