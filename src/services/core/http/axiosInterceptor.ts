@@ -1,6 +1,7 @@
 import axios, { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { tokenService } from '../../auth/tokenService';
 import { useCurrentUserStore } from '../../../stores/currentUser';
+import { useImpersonationStore } from '../../../stores/impersonation';
 import router from '../../../router';
 
 // Request deduplication cache
@@ -27,6 +28,23 @@ export const setupAxiosInterceptors = () => {
         // Ensure Bearer token format as required by the payment API
         const bearerToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
         config.headers.Authorization = bearerToken;
+      }
+
+      // Add X-Impersonate-User header when an admin is actively impersonating.
+      // Skip for the impersonation endpoints themselves — the backend reads the
+      // impersonator from the auth context for /stop, and /start refuses to
+      // chain impersonations server-side, so we keep those calls clean.
+      const url = config.url || '';
+      const isImpersonationEndpoint = url.startsWith('admin/impersonate/') || url.startsWith('/admin/impersonate/');
+      if (!isImpersonationEndpoint) {
+        try {
+          const store = useImpersonationStore();
+          if (store.targetUserId) {
+            config.headers['X-Impersonate-User'] = store.targetUserId;
+          }
+        } catch (_e) {
+          // Pinia not yet initialized (e.g. during early bootstrap) — skip silently
+        }
       }
 
       // Request deduplication - only for GET requests
@@ -59,11 +77,30 @@ export const setupAxiosInterceptors = () => {
       }
       return response;
     },
-    (error) => {
+    async (error) => {
       // Clean up request from pending cache on error
       if (error.config?.method?.toLowerCase() === 'get') {
         const requestKey = getRequestKey(error.config);
         pendingRequests.delete(requestKey);
+      }
+
+      // Handle impersonation-specific 401s BEFORE the generic auto-logout:
+      // when the backend reports the impersonation session expired or is
+      // invalid, we silently clear the impersonation state but keep the
+      // admin's real session intact.
+      const errKey = error.response?.data?.error;
+      if (
+        error.response?.status === 401 &&
+        (errKey === 'impersonation_expired' || errKey === 'impersonation_invalid')
+      ) {
+        try {
+          const { useImpersonationStore } = await import('../../../stores/impersonation');
+          const store = useImpersonationStore();
+          await store.stop(true); // silent — backend already closed it
+        } catch (_e) {
+          // ignore — best-effort cleanup
+        }
+        return Promise.reject(error);
       }
 
       // Si on reçoit une 401, déconnecter automatiquement

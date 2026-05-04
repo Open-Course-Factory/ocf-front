@@ -30,6 +30,7 @@ import ElementPlus from 'element-plus'
 import { piniaPluginPersist } from './piniaPluginPersist'
 import { useCurrentUserStore } from './stores/currentUser'
 import { useUserMembershipsStore } from './stores/userMemberships'
+import { useImpersonationStore } from './stores/impersonation'
 import { setupAxiosInterceptors, setupAxiosDefaults } from './services/core/http'
 import { featureFlagService } from './services/features'
 import i18n from './i18n'
@@ -104,6 +105,11 @@ async function initializeApp() {
     const userStore = useCurrentUserStore()
     userStore.initializeAuth() // Initialize auth state from stored token
     console.log('🏴 Current user authenticated:', userStore.isAuthenticated)
+
+    // Restore impersonation target from sessionStorage so the first /auth/me
+    // call below carries the X-Impersonate-User header. The /auth/me response
+    // will then either confirm (impersonated_by present) or clear it.
+    useImpersonationStore().hydrate()
 
     // Step 3: Clear any stale localStorage flags to prevent conflicts with backend
     // Backend is the source of truth, localStorage is only for emergency fallback

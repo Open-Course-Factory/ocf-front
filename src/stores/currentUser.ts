@@ -223,6 +223,16 @@ export const useCurrentUserStore = defineStore('currentUser', {
                     userRoles: this.userRoles
                 });
 
+                // Sync impersonation state from the same /auth/me payload so
+                // the impersonation banner reflects the authoritative server
+                // view (including detecting silent server-side expiry).
+                try {
+                    const { useImpersonationStore } = await import('./impersonation');
+                    useImpersonationStore().applyAuthMeData(userData);
+                } catch (impErr: any) {
+                    console.warn('⚠️ Failed to sync impersonation state:', impErr?.message || impErr);
+                }
+
                 return userData;
             } catch (error: any) {
                 console.error('❌ Failed to load user data:', error);
