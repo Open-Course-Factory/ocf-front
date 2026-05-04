@@ -303,7 +303,7 @@
             <label>{{ t('scenarioEditor.instanceType') }}</label>
             <select
               v-if="sizes.length > 0"
-              v-model="editingScenario.instance_type"
+              v-model="instanceTypeModel"
               class="form-control"
             >
               <option
@@ -942,6 +942,24 @@ const currentScenarioOrgLabel = computed<string | null>(() => {
 
 // Machine size catalog (loaded on mount, used for the instance_type dropdown)
 const sizes = ref<Size[]>([])
+
+// Bridges v-model with the size <select>: if the stored instance_type
+// matches a catalog key case-insensitively, surface the catalog's
+// canonical key so the corresponding <option> gets selected. Writing
+// back stores whatever the dropdown picked (always the canonical case).
+const instanceTypeModel = computed<string>({
+  get() {
+    const current = editingScenario.value.instance_type
+    if (!current || sizes.value.length === 0) return current ?? ''
+    const match = sizes.value.find(
+      s => s.key.toUpperCase() === String(current).toUpperCase()
+    )
+    return match ? match.key : current
+  },
+  set(val: string) {
+    editingScenario.value.instance_type = val
+  }
+})
 
 // Resize state
 const treePanelWidth = ref(280)
