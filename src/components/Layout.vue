@@ -1,6 +1,7 @@
 <template>
-  <div class="wrapper">
+  <div class="layout-root">
     <ImpersonationBanner />
+    <div class="wrapper">
     <DemoModeBanner />
     <AdminNavMenu
       v-if="isInAdmin"
@@ -31,6 +32,7 @@
     </div>
     <ToastContainer />
     <FeedbackButton />
+    </div>
   </div>
 </template>
 
@@ -119,9 +121,18 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* Outer flex-column so the impersonation banner sits above the row layout
+   without competing for horizontal space with the side nav. */
+.layout-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
 .wrapper {
   display: flex;
-  height: 100vh;
+  flex: 1;
+  min-height: 0; /* allow children to shrink within flex column */
 }
 
 .main-nav-menu {

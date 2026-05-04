@@ -27,17 +27,20 @@
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
 
-defineProps<{
+withDefaults(defineProps<{
   categoryKey: string
   label: string
   icon: string
-  expanded: boolean
-  hasActiveItem: boolean
+  expanded?: boolean
+  hasActiveItem?: boolean
   collapsed: boolean
   disabled?: boolean
   disabledTooltip?: string
   popupStyle?: CSSProperties
-}>()
+}>(), {
+  expanded: false,
+  hasActiveItem: false,
+})
 
 defineEmits<{
   toggle: [key: string, event: Event]
