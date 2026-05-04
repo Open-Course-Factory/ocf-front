@@ -77,6 +77,7 @@ const { t } = useTranslations({
         allInvoices: 'All Invoices',
         invoiceCleanup: 'Invoice Cleanup',
         organizations: 'Organizations',
+        users: 'Users & Impersonation',
         terminalBackends: 'Terminal Backends',
         infrastructure: 'Infrastructure',
         security: 'Security',
@@ -109,6 +110,7 @@ const { t } = useTranslations({
         allInvoices: 'Toutes les Factures',
         invoiceCleanup: 'Nettoyage des Factures',
         organizations: 'Organisations',
+        users: 'Utilisateurs & Incarnation',
         terminalBackends: 'Backends Terminal',
         infrastructure: 'Infrastructure',
         security: 'Sécurité',
@@ -164,6 +166,11 @@ const adminCategories = computed<MenuCategory[]>(() => [
         route: '/admin/organizations',
         label: t('admin.items.organizations'),
         icon: 'fas fa-building'
+      },
+      {
+        route: '/admin/users',
+        label: t('admin.items.users'),
+        icon: 'fas fa-users-cog'
       },
       {
         route: '/admin/terminal-metrics',
