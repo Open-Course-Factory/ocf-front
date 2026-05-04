@@ -340,6 +340,12 @@ const basicRoutes = [
         meta: { requiresAuth: true, requiresAdmin: true }
       },
       {
+        path: 'admin/users',
+        name: 'AdminUsers',
+        component: () => import('../components/Pages/Admin/AdminUsers.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
         path: 'admin/invoice-cleanup',
         name: 'AdminInvoiceCleanup',
         component: () => import('../components/Pages/Admin/InvoiceCleanup.vue'),

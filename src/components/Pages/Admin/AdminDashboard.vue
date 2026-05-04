@@ -118,6 +118,10 @@ const { t } = useTranslations({
           title: 'Organizations',
           description: 'Manage organization backends and plans'
         },
+        users: {
+          title: 'User management',
+          description: 'Browse all users with their org and group memberships, and impersonate any user for debugging.'
+        },
         backends: {
           title: 'Backends',
           description: 'Manage terminal backend servers'
@@ -195,6 +199,10 @@ const { t } = useTranslations({
         organizations: {
           title: 'Organisations',
           description: 'Gérer les backends et plans des organisations'
+        },
+        users: {
+          title: 'Gestion des utilisateurs',
+          description: 'Parcourez tous les utilisateurs avec leurs appartenances organisations/groupes, et incarnez n’importe quel utilisateur pour le débogage.'
         },
         backends: {
           title: 'Backends',
@@ -281,6 +289,12 @@ const dashboardSections = computed(() => [
         title: t('adminDashboard.items.organizations.title'),
         description: t('adminDashboard.items.organizations.description'),
         icon: 'fas fa-building'
+      },
+      {
+        route: '/admin/users',
+        title: t('adminDashboard.items.users.title'),
+        description: t('adminDashboard.items.users.description'),
+        icon: 'fas fa-users-cog'
       },
       {
         route: '/admin/terminal-metrics',
