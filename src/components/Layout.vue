@@ -1,5 +1,6 @@
 <template>
   <div class="wrapper">
+    <ImpersonationBanner />
     <DemoModeBanner />
     <AdminNavMenu
       v-if="isInAdmin"
@@ -41,6 +42,7 @@ import MainNavMenu from './Menus/MainNavMenu.vue'
 import PreferencesNavMenu from './Menus/PreferencesNavMenu.vue'
 import TopMenu from './Menus/TopMenu.vue'
 import DemoModeBanner from './UI/DemoModeBanner.vue'
+import ImpersonationBanner from './UI/ImpersonationBanner.vue'
 import ToastContainer from './UI/ToastContainer.vue'
 import FeedbackButton from './Feedback/FeedbackButton.vue'
 import EmailVerificationBanner from './Auth/EmailVerificationBanner.vue'
