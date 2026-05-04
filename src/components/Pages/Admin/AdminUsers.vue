@@ -224,7 +224,6 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { useTranslations } from '../../../composables/useTranslations'
 import { useImpersonationStore } from '../../../stores/impersonation'
 import { useCurrentUserStore } from '../../../stores/currentUser'
@@ -307,7 +306,6 @@ const { t } = useTranslations({
   }
 })
 
-const router = useRouter()
 const impersonationStore = useImpersonationStore()
 const currentUserStore = useCurrentUserStore()
 
@@ -450,7 +448,10 @@ async function confirmImpersonate() {
     await impersonationStore.start(targetUser.value.id)
     showConfirmModal.value = false
     targetUser.value = null
-    await router.push('/')
+    // Full reload so all Pinia stores re-initialize under the impersonated identity.
+    // SPA navigation would keep admin's cached store state (current org, permissions,
+    // organization list, terminals, etc.) and break the UI in unpredictable ways.
+    window.location.href = '/'
   } catch (err: any) {
     confirmError.value =
       err?.response?.data?.error_message ||

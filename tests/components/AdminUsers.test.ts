@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
@@ -96,10 +96,23 @@ function mountAdminUsers() {
 }
 
 describe('AdminUsers', () => {
+  // Stub window.location so confirmImpersonate can safely assign to .href
+  // without actually navigating in the JSDOM test environment.
+  const originalLocation = window.location
+
   beforeEach(() => {
     vi.clearAllMocks()
     setActivePinia(createPinia())
     mockFetchAll.mockReset()
+    // @ts-ignore — JSDOM allows replacing location after delete
+    delete (window as any).location
+    // @ts-ignore
+    ;(window as any).location = { href: '' }
+  })
+
+  afterEach(() => {
+    // @ts-ignore
+    ;(window as any).location = originalLocation
   })
 
   it('renders empty state when no users', async () => {
@@ -292,6 +305,49 @@ describe('AdminUsers', () => {
     await flushPromises()
 
     expect(startSpy).toHaveBeenCalledWith('u1')
+  })
+
+  it('confirming modal triggers a hard reload to / after start succeeds', async () => {
+    mockFetchAll.mockResolvedValueOnce([
+      makeUser({ id: 'u1', username: 'alice', display_name: 'Alice' })
+    ])
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    const store = useImpersonationStore()
+    vi.spyOn(store, 'start').mockResolvedValue({
+      id: 'u1',
+      username: 'alice',
+      display_name: 'Alice',
+      email: 'alice@example.com'
+    })
+
+    await wrapper.find('button.impersonate-btn').trigger('click')
+    await nextTick()
+    await wrapper.find('button.impersonate-confirm').trigger('click')
+    await flushPromises()
+
+    // Hard reload required so all Pinia stores re-initialize as the
+    // impersonated user — SPA navigation would keep admin's stale state.
+    expect(window.location.href).toBe('/')
+  })
+
+  it('confirming modal does NOT reload when store.start() fails', async () => {
+    mockFetchAll.mockResolvedValueOnce([
+      makeUser({ id: 'u1', username: 'alice', display_name: 'Alice' })
+    ])
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    const store = useImpersonationStore()
+    vi.spyOn(store, 'start').mockRejectedValue(new Error('nope'))
+
+    await wrapper.find('button.impersonate-btn').trigger('click')
+    await nextTick()
+    await wrapper.find('button.impersonate-confirm').trigger('click')
+    await flushPromises()
+
+    expect(window.location.href).toBe('')
   })
 
   it('cancelling modal closes it without calling start', async () => {

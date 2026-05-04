@@ -77,7 +77,12 @@ async function onStop() {
   stopping.value = true
   try {
     await store.stop()
+    // Full reload so all Pinia stores re-initialize under the admin's own
+    // identity. SPA navigation would keep the impersonated user's cached
+    // store state and break the UI in unpredictable ways.
+    window.location.href = '/'
   } finally {
+    // Will run before navigation actually happens, that's fine.
     stopping.value = false
   }
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createI18n, type I18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
@@ -71,8 +71,21 @@ function activateImpersonation() {
 }
 
 describe('ImpersonationBanner', () => {
+  // Stub window.location so onStop can safely assign to .href
+  // without actually navigating in the JSDOM test environment.
+  const originalLocation = window.location
+
   beforeEach(() => {
     vi.clearAllMocks()
+    // @ts-ignore — JSDOM allows replacing location after delete
+    delete (window as any).location
+    // @ts-ignore
+    ;(window as any).location = { href: '' }
+  })
+
+  afterEach(() => {
+    // @ts-ignore
+    ;(window as any).location = originalLocation
   })
 
   it('renders nothing when not impersonating', () => {
@@ -111,6 +124,20 @@ describe('ImpersonationBanner', () => {
     expect(stopSpy).toHaveBeenCalledTimes(1)
     // Called with no arguments (NOT silent — silent would pass `true`)
     expect(stopSpy.mock.calls[0].length).toBe(0)
+  })
+
+  it('clicking stop triggers a hard reload to / after stop resolves', async () => {
+    const wrapper = mountBanner({ setupStore: activateImpersonation })
+    const store = useImpersonationStore()
+    vi.spyOn(store, 'stop').mockResolvedValue(undefined)
+
+    await wrapper.find('button.stop-impersonating').trigger('click')
+    // Wait for the stop() promise to resolve before asserting navigation.
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Hard reload required so all Pinia stores re-initialize as the admin —
+    // SPA navigation would keep the impersonated user's stale store state.
+    expect(window.location.href).toBe('/')
   })
 
   it('falls back to username if display_name is empty', () => {
