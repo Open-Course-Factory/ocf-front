@@ -9,12 +9,17 @@ import type {
   Distribution,
   SessionOptionsResponse,
   StartComposedSessionData,
-  OrgTerminalUsage
+  OrgTerminalUsage,
+  Size
 } from '../../../types/terminal'
 
 export interface UpdateTerminalRequest {
   name?: string
 }
+
+// Module-level cache so editor + launcher share a single in-flight request.
+// Backend already caches for 60s; this just deduplicates within the SPA lifetime.
+let sizesCache: Promise<Size[]> | null = null
 
 export const terminalService = {
   async stopSession(sessionId: string) {
@@ -48,6 +53,19 @@ export const terminalService = {
     if (backendId) params.backend = backendId
     const response = await axios.get('/terminals/distributions', { params })
     return response.data
+  },
+
+  async getSizes(): Promise<Size[]> {
+    if (!sizesCache) {
+      sizesCache = axios
+        .get<Size[]>('/terminals/sizes')
+        .then(r => r.data)
+        .catch(e => {
+          sizesCache = null
+          throw e
+        })
+    }
+    return sizesCache
   },
 
   async getSessionOptions(distribution: string, backendId?: string, organizationId?: string): Promise<SessionOptionsResponse> {

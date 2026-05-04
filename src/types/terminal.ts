@@ -58,6 +58,21 @@ export interface Distribution {
 }
 
 /**
+ * Machine size catalog entry returned by GET /terminals/sizes
+ */
+export interface Size {
+  key: string
+  name: string
+  description?: string
+  cpu: number
+  cpu_allowance?: string
+  memory: string
+  disk: string
+  processes: number
+  sort_order: number
+}
+
+/**
  * Size option returned by session-options endpoint
  */
 export interface SessionOptionSize {
