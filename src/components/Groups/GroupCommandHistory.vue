@@ -68,6 +68,8 @@ const { t } = useTranslations({
       // Toolbar
       includeStopped: 'Include stopped sessions',
       exportCsv: 'Export CSV',
+      exportCapNote: 'Limited to {limit} rows — contact support for larger exports.',
+      exportTruncatedWarning: 'Your group has {total} commands. Only the first {limit} are in this export — contact support for the full export.',
       refresh: 'Refresh',
 
       // Table headers
@@ -122,6 +124,8 @@ const { t } = useTranslations({
       // Toolbar
       includeStopped: 'Inclure les sessions arrêtées',
       exportCsv: 'Exporter CSV',
+      exportCapNote: 'Limité à {limit} lignes — contactez le support pour des exports plus volumineux.',
+      exportTruncatedWarning: 'Votre groupe contient {total} commandes. Seules les {limit} premières sont incluses dans cet export — contactez le support pour l\'export complet.',
       refresh: 'Actualiser',
 
       // Table headers
@@ -170,7 +174,12 @@ const { t } = useTranslations({
   }
 })
 
-const { showSuccess, showError: showErrorNotification } = useNotification()
+const { showSuccess, showError: showErrorNotification, showWarning } = useNotification()
+
+// Backend caps CSV export at 100k rows. Keep this in sync with
+// ocf-core's maxCSVHistoryLimit (terminalTrainerService.go) and
+// tt-backend's maxBulkHistoryLimit (api_history.go).
+const MAX_CSV_EXPORT_LIMIT = 100_000
 
 // State
 const commands = ref<CommandEntry[]>([])
@@ -297,10 +306,18 @@ async function fetchCommands() {
 }
 
 async function exportCsv() {
+  // Warn the user if the export will be truncated by the backend cap.
+  if (total.value > MAX_CSV_EXPORT_LIMIT) {
+    showWarning(t('groupCommandHistory.exportTruncatedWarning', {
+      total: total.value.toLocaleString(),
+      limit: MAX_CSV_EXPORT_LIMIT.toLocaleString()
+    }))
+  }
+
   try {
     const params: Record<string, string> = {
       format: 'csv',
-      limit: '1000'
+      limit: String(MAX_CSV_EXPORT_LIMIT)
     }
 
     if (includeStopped.value) {
@@ -432,6 +449,9 @@ onMounted(() => {
           <i class="fas fa-file-csv"></i>
           {{ t('groupCommandHistory.exportCsv') }}
         </button>
+        <span class="export-cap-note">
+          {{ t('groupCommandHistory.exportCapNote', { limit: MAX_CSV_EXPORT_LIMIT.toLocaleString() }) }}
+        </span>
         <button
           class="btn btn-secondary btn-sm"
           @click="handleRefresh"
@@ -626,7 +646,15 @@ onMounted(() => {
 
 .toolbar-actions {
   display: flex;
+  align-items: center;
   gap: var(--spacing-sm);
+}
+
+.export-cap-note {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-left: var(--spacing-sm);
+  white-space: nowrap;
 }
 
 /* Search */
@@ -904,6 +932,13 @@ onMounted(() => {
 
   .toolbar-actions {
     justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .export-cap-note {
+    margin-left: 0;
+    margin-top: var(--spacing-xs);
+    white-space: normal;
   }
 
   .student-email {
