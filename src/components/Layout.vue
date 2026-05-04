@@ -182,7 +182,9 @@ onUnmounted(() => {
   overflow-y: auto; /* Allow scrolling within the content area */
   -ms-overflow-style: none;  /* Internet Explorer 10+ */
   scrollbar-width: none;  /* Firefox */
-  margin-top: 60px;
+  /* Clear the fixed TopMenu, which itself shifts down by the impersonation
+     banner height when active. */
+  margin-top: calc(60px + var(--impersonation-banner-height, 0px));
 }
 
 /* Hide scrollbars for WebKit browsers */
