@@ -10,9 +10,7 @@
     <div class="banner-content">
       <i class="fas fa-user-secret banner-icon" aria-hidden="true"></i>
       <span class="banner-text">
-        <strong>{{ t('impersonationBanner.label') }}</strong>
-        <span class="space"> </span>
-        <span class="target-name">{{ targetName }}</span>
+        <strong>{{ t('impersonationBanner.label') }}</strong>&nbsp;<span class="target-name">{{ targetName }}</span>
         <span class="separator"> · </span>
         <span class="admin-info">
           {{ t('impersonationBanner.asAdmin') }} <strong>{{ adminName }}</strong>
