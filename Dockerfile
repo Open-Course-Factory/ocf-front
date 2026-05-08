@@ -3,7 +3,7 @@ FROM node:22-bookworm-slim AS build
 
 # VITE_* vars are statically replaced by Vite at build time (import.meta.env.*)
 # Defaults here are production values — CI can override via --build-arg if needed
-ARG VITE_API_URL="api.solution-libre.fr"
+ARG VITE_API_URL="api-ocf.labinux.net"
 ARG VITE_PROTOCOL="https"
 ARG VITE_FEATURE_COURSES_ENABLED="true"
 ARG VITE_FEATURE_LABS_ENABLED="true"
