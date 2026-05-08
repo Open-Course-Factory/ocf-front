@@ -165,16 +165,27 @@
               </div>
 
               <div class="header-right">
-                <!-- Status indicator -->
-                <span :class="['status-badge', getStatusClass(session.status)]" :title="getStatusLabel(session.status)">
+                <!-- State badge -->
+                <span :class="['status-badge', getStateBadgeClass(getEffectiveState(session))]" :title="getStateLabel(getEffectiveState(session))">
                   <i class="fas fa-circle"></i>
-                  {{ getStatusLabel(session.status) }}
+                  {{ transitioningLabel(session) || getStateLabel(getEffectiveState(session)) }}
+                </span>
+
+                <!-- Auto-delete countdown for stopped sessions -->
+                <span
+                  v-if="getEffectiveState(session) === 'stopped' && session.idle_until"
+                  class="idle-countdown"
+                  :title="t('terminalMySessions.idleUntilCountdown', { duration: formatTimeRemaining(session.idle_until) })"
+                >
+                  <i class="fas fa-hourglass-half"></i>
+                  {{ t('terminalMySessions.idleUntilCountdown', { duration: formatTimeRemaining(session.idle_until) }) }}
                 </span>
 
                 <!-- Action buttons -->
                 <div class="card-actions-compact">
+                  <!-- Open-in-page / Open-in-tab: only when running -->
                   <router-link
-                    v-if="session.status === 'active'"
+                    v-if="getEffectiveState(session) === 'running'"
                     class="btn-icon btn-view"
                     :to="{ name: 'TerminalSessionView', params: { sessionId: session.session_id } }"
                     :title="t('terminalMySessions.buttonOpenInPage')"
@@ -182,24 +193,56 @@
                     <i class="fas fa-desktop"></i>
                   </router-link>
                   <button
-                    v-if="session.status === 'active'"
+                    v-if="getEffectiveState(session) === 'running'"
                     class="btn-icon btn-primary"
                     @click="openTerminalInNewTab(session.session_id)"
                     :title="t('terminalMySessions.buttonOpen')"
                   >
                     <i class="fas fa-external-link-alt"></i>
                   </button>
+
+                  <!-- Play: only when stopped -->
                   <button
-                    v-if="session.status === 'active'"
+                    v-if="getEffectiveState(session) === 'stopped'"
+                    class="btn-icon btn-play"
+                    :data-testid="'btn-start-' + session.session_id"
+                    @click="handleStartSession(session.session_id)"
+                    :disabled="!!transitioning[session.session_id]"
+                    :title="t('terminalMySessions.tooltipStart')"
+                  >
+                    <i class="fas fa-play"></i>
+                  </button>
+
+                  <!-- Stop: only when running -->
+                  <button
+                    v-if="getEffectiveState(session) === 'running'"
                     class="btn-icon btn-stop"
-                    @click="stopSession(session.session_id)"
-                    :title="t('terminalMySessions.buttonStop')"
+                    :data-testid="'btn-stop-' + session.session_id"
+                    @click="handleStopSession(session.session_id)"
+                    :disabled="!!transitioning[session.session_id]"
+                    :title="t('terminalMySessions.tooltipStop')"
                   >
                     <i class="fas fa-stop"></i>
                   </button>
 
-                  <!-- Dropdown menu for additional actions -->
-                  <div class="dropdown-container" :ref="(el) => dropdownRefs.set(session.id || session.session_id, el as HTMLElement)">
+                  <!-- Trash: visible whenever not deleted -->
+                  <button
+                    v-if="getEffectiveState(session) !== 'deleted'"
+                    class="btn-icon btn-trash"
+                    :data-testid="'btn-trash-' + session.session_id"
+                    @click="askDeleteSession(session.session_id)"
+                    :disabled="!!transitioning[session.session_id]"
+                    :title="t('terminalMySessions.tooltipDelete')"
+                  >
+                    <i class="fas fa-trash"></i>
+                  </button>
+
+                  <!-- Dropdown menu for additional actions: only when running -->
+                  <div
+                    v-if="getEffectiveState(session) === 'running'"
+                    class="dropdown-container"
+                    :ref="(el) => dropdownRefs.set(session.id || session.session_id, el as HTMLElement)"
+                  >
                     <button
                       class="btn-icon"
                       @click.stop="toggleDropdown(session.id || session.session_id)"
@@ -305,10 +348,10 @@
                   </div>
 
                   <div class="header-right">
-                    <!-- Status indicator -->
-                    <span :class="['status-badge', getStatusClass(session.status)]" :title="getStatusLabel(session.status)">
+                    <!-- State badge -->
+                    <span :class="['status-badge', getStateBadgeClass(getEffectiveState(session))]" :title="getStateLabel(getEffectiveState(session))">
                       <i class="fas fa-circle"></i>
-                      {{ getStatusLabel(session.status) }}
+                      {{ getStateLabel(getEffectiveState(session)) }}
                     </span>
 
                     <!-- Action buttons -->
@@ -440,6 +483,42 @@
         </div>
       </div>
     </BaseModal>
+
+    <!-- Trash confirmation modal -->
+    <BaseModal
+      :visible="showDeleteConfirmModal"
+      :title="t('terminalMySessions.confirmDeleteTitle')"
+      title-icon="fas fa-trash"
+      size="small"
+      @close="cancelDeleteSession"
+    >
+      <p>{{ t('terminalMySessions.confirmDeleteBody') }}</p>
+      <div class="alert alert-danger delete-warning" data-testid="delete-warning">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>{{ t('terminalMySessions.confirmDeleteWarning') }}</span>
+      </div>
+
+      <template #footer>
+        <button
+          class="btn btn-danger"
+          data-testid="confirm-delete-cta"
+          @click="confirmDeleteSession"
+          :disabled="!!deleteInProgress"
+        >
+          <i class="fas fa-trash"></i>
+          {{ t('terminalMySessions.confirmDeleteConfirmCta') }}
+        </button>
+        <button
+          class="btn btn-secondary"
+          data-testid="cancel-delete-cta"
+          @click="cancelDeleteSession"
+          :disabled="!!deleteInProgress"
+        >
+          <i class="fas fa-times"></i>
+          {{ t('terminalMySessions.confirmDeleteCancelCta') }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -500,12 +579,34 @@ const { t } = useTranslations({
       preview: 'Preview',
       iframePreviewInfo: 'Embeddable terminal preview - Size: 100% x 300px',
       buttonSyncSession: 'Sync',
+      buttonStart: 'Start',
       buttonStop: 'Stop',
+      buttonDelete: 'Delete',
       buttonHideSession: 'Hide',
+      tooltipStart: 'Resume this session (preserves disk and history)',
+      tooltipStop: 'Stop this session (preserves disk so you can resume later)',
+      tooltipDelete: 'Delete this session permanently',
       tooltipSync: 'Sync this session with the Terminal Trainer API',
       tooltipSyncAll: 'Sync all sessions with the Terminal Trainer API',
       tooltipHide: 'Hide this inactive session',
       tooltipHideAll: 'Hide all inactive sessions',
+      stoppingInProgress: 'Stopping…',
+      startingInProgress: 'Starting…',
+      stateRunning: 'Running',
+      stateStopped: 'Stopped',
+      stateDeleted: 'Deleted',
+      idleUntilCountdown: 'Auto-deletes in {duration}',
+      durationDays: '{n}d {h}h',
+      durationHours: '{h}h {m}min',
+      durationMinutes: '{m}min',
+      durationSoon: 'less than a minute',
+      confirmDeleteTitle: 'Delete this session?',
+      confirmDeleteBody: 'This will permanently delete the terminal session.',
+      confirmDeleteWarning: 'The disk and command history will be lost and cannot be recovered.',
+      confirmDeleteConfirmCta: 'Delete permanently',
+      confirmDeleteCancelCta: 'Cancel',
+      errorStarting: 'Error starting the session',
+      errorDeleting: 'Error deleting the session',
       noActiveSessions: 'No active sessions',
       noActiveSessionsDesc: 'You have no active terminal sessions at the moment.',
       createNewSession: 'Create a new session',
@@ -584,12 +685,34 @@ const { t } = useTranslations({
       preview: 'Aperçu',
       iframePreviewInfo: 'Aperçu du terminal intégrable - Taille: 100% x 300px',
       buttonSyncSession: 'Sync',
+      buttonStart: 'Démarrer',
       buttonStop: 'Arrêter',
+      buttonDelete: 'Supprimer',
       buttonHideSession: 'Masquer',
+      tooltipStart: 'Reprendre cette session (conserve le disque et l\'historique)',
+      tooltipStop: 'Arrêter cette session (conserve le disque pour reprise ultérieure)',
+      tooltipDelete: 'Supprimer définitivement cette session',
       tooltipSync: 'Synchroniser cette session avec l\'API Terminal Trainer',
       tooltipSyncAll: 'Synchroniser toutes les sessions avec l\'API Terminal Trainer',
       tooltipHide: 'Masquer cette session inactive',
       tooltipHideAll: 'Masquer toutes les sessions inactives',
+      stoppingInProgress: 'Arrêt en cours…',
+      startingInProgress: 'Démarrage en cours…',
+      stateRunning: 'En cours',
+      stateStopped: 'Arrêté',
+      stateDeleted: 'Supprimé',
+      idleUntilCountdown: 'Suppression automatique dans {duration}',
+      durationDays: '{n}j {h}h',
+      durationHours: '{h}h {m}min',
+      durationMinutes: '{m}min',
+      durationSoon: 'moins d\'une minute',
+      confirmDeleteTitle: 'Supprimer cette session ?',
+      confirmDeleteBody: 'Cette action supprimera définitivement la session terminal.',
+      confirmDeleteWarning: 'Le disque et l\'historique des commandes seront perdus et ne pourront pas être récupérés.',
+      confirmDeleteConfirmCta: 'Supprimer définitivement',
+      confirmDeleteCancelCta: 'Annuler',
+      errorStarting: 'Erreur lors du démarrage de la session',
+      errorDeleting: 'Erreur lors de la suppression de la session',
       noActiveSessions: 'Aucune session active',
       noActiveSessionsDesc: 'Vous n\'avez aucune session terminal active pour le moment.',
       createNewSession: 'Créer une nouvelle session',
@@ -664,9 +787,39 @@ const savingNames = ref(new Set<string>())
 const openDropdowns = ref(new Set<string>())
 const dropdownRefs = ref(new Map<string, HTMLElement>())
 
-// Helper function to check if terminal is inactive
-function isTerminalInactive(status: string): boolean {
-  return ['expired', 'stopped', 'terminated', 'system_limit'].includes(status?.toLowerCase())
+// Per-session transition state ('starting' | 'stopping' | null)
+const transitioning = ref<Record<string, 'starting' | 'stopping' | null>>({})
+
+// Trash confirmation modal state
+const showDeleteConfirmModal = ref(false)
+const sessionPendingDelete = ref<string | null>(null)
+const deleteInProgress = ref(false)
+
+// Tick to refresh the auto-delete countdown every minute
+const countdownTick = ref(0)
+
+/**
+ * Returns the effective lifecycle state for a session.
+ * Prefers the new `state` field (running | stopped | deleted) when present.
+ * Falls back to the legacy `status` field for backward compatibility with
+ * un-deployed ocf-core versions:
+ *   - status='active' -> 'running'
+ *   - any other legacy status (stopped/expired/terminated/system_limit) -> 'deleted'
+ *     (the previous "stop" button actually deleted, so legacy stopped == gone)
+ */
+function getEffectiveState(session: any): 'running' | 'stopped' | 'deleted' {
+  if (session?.state === 'running' || session?.state === 'stopped' || session?.state === 'deleted') {
+    return session.state
+  }
+  if (session?.status === 'active' || session?.status === 'starting') {
+    return 'running'
+  }
+  return 'deleted'
+}
+
+// Helper: an "inactive" terminal (in the listing sense) is one that is deleted/gone
+function isTerminalInactive(session: any): boolean {
+  return getEffectiveState(session) === 'deleted'
 }
 
 // Computed property for all sessions
@@ -676,12 +829,12 @@ const allSessions = computed(() => {
 
 // Computed property to count only active sessions
 const activeSessionsCount = computed(() => {
-  return allSessions.value.filter(session => !isTerminalInactive(session.status)).length
+  return allSessions.value.filter(session => !isTerminalInactive(session)).length
 })
 
 // Computed property to count all inactive sessions (owned + shared)
 const inactiveSessionsCount = computed(() => {
-  return allSessions.value.filter(session => isTerminalInactive(session.status)).length
+  return allSessions.value.filter(session => isTerminalInactive(session)).length
 })
 
 // Feature flag check for group filtering
@@ -691,8 +844,8 @@ const canFilterByGroups = computed(() => isEnabled('class_groups'))
 // Backend now handles group filtering via query parameter, so we work with allSessions directly
 const sortedSessions = computed(() => {
   return [...allSessions.value].sort((a, b) => {
-    const aActive = !isTerminalInactive(a.status)
-    const bActive = !isTerminalInactive(b.status)
+    const aActive = !isTerminalInactive(a)
+    const bActive = !isTerminalInactive(b)
 
     // Active sessions first
     if (aActive && !bActive) return -1
@@ -705,12 +858,12 @@ const sortedSessions = computed(() => {
   })
 })
 
-// Split sorted sessions into active and inactive lists
+// Split sorted sessions: running + stopped go in "active list"; deleted goes in "inactive list"
 const activeSessions = computed(() =>
-  sortedSessions.value.filter(s => !isTerminalInactive(s.status))
+  sortedSessions.value.filter(s => !isTerminalInactive(s))
 )
 const inactiveSessions = computed(() =>
-  sortedSessions.value.filter(s => isTerminalInactive(s.status))
+  sortedSessions.value.filter(s => isTerminalInactive(s))
 )
 
 // Watch for toggle changes to reload sessions
@@ -772,9 +925,15 @@ onMounted(() => {
     loadSessions()
   }, 30000)
 
+  // Refresh the auto-delete countdown displays once per minute
+  const countdownInterval = setInterval(() => {
+    countdownTick.value++
+  }, 60_000)
+
   // Cleanup on unmount
   onUnmounted(() => {
     clearInterval(interval)
+    clearInterval(countdownInterval)
     document.removeEventListener('click', handleClickOutside)
   })
 })
@@ -810,50 +969,131 @@ async function loadSessions() {
   }
 }
 
-async function stopSession(sessionId: string) {
+async function handleStopSession(sessionId: string) {
   if (!sessionId) {
     console.error('Session ID manquant')
     return
   }
 
+  transitioning.value = { ...transitioning.value, [sessionId]: 'stopping' }
   try {
-    await axios.post(`/terminals/${sessionId}/stop`)
+    await terminalService.stopSession(sessionId)
     await loadSessions()
   } catch (err: any) {
     console.error('Erreur lors de l\'arrêt:', err)
     error.value = err.response?.data?.error_message || t('terminalMySessions.errorStopping')
+  } finally {
+    const next = { ...transitioning.value }
+    delete next[sessionId]
+    transitioning.value = next
   }
+}
+
+async function handleStartSession(sessionId: string) {
+  if (!sessionId) {
+    console.error('Session ID manquant')
+    return
+  }
+
+  transitioning.value = { ...transitioning.value, [sessionId]: 'starting' }
+  try {
+    await terminalService.startSession(sessionId)
+    await loadSessions()
+  } catch (err: any) {
+    console.error('Erreur lors du démarrage:', err)
+    error.value = err.response?.data?.error_message || t('terminalMySessions.errorStarting')
+  } finally {
+    const next = { ...transitioning.value }
+    delete next[sessionId]
+    transitioning.value = next
+  }
+}
+
+function askDeleteSession(sessionId: string) {
+  sessionPendingDelete.value = sessionId
+  showDeleteConfirmModal.value = true
+}
+
+function cancelDeleteSession() {
+  if (deleteInProgress.value) return
+  showDeleteConfirmModal.value = false
+  sessionPendingDelete.value = null
+}
+
+async function confirmDeleteSession() {
+  const sessionId = sessionPendingDelete.value
+  if (!sessionId) return
+
+  deleteInProgress.value = true
+  try {
+    await terminalService.deleteSession(sessionId)
+    showDeleteConfirmModal.value = false
+    sessionPendingDelete.value = null
+    await loadSessions()
+  } catch (err: any) {
+    console.error('Erreur lors de la suppression:', err)
+    error.value = err.response?.data?.error_message || t('terminalMySessions.errorDeleting')
+  } finally {
+    deleteInProgress.value = false
+  }
+}
+
+function transitioningLabel(session: any): string | null {
+  const t1 = transitioning.value[session.session_id]
+  if (t1 === 'stopping') return t('terminalMySessions.stoppingInProgress')
+  if (t1 === 'starting') return t('terminalMySessions.startingInProgress')
+  return null
+}
+
+/**
+ * State badge CSS class.
+ * - running -> green
+ * - stopped -> amber/warning
+ * - deleted -> muted/gray
+ */
+function getStateBadgeClass(state: 'running' | 'stopped' | 'deleted'): string {
+  switch (state) {
+    case 'running': return 'text-success'
+    case 'stopped': return 'text-warning'
+    case 'deleted': return 'text-muted'
+    default: return 'text-muted'
+  }
+}
+
+function getStateLabel(state: 'running' | 'stopped' | 'deleted'): string {
+  switch (state) {
+    case 'running': return t('terminalMySessions.stateRunning')
+    case 'stopped': return t('terminalMySessions.stateStopped')
+    case 'deleted': return t('terminalMySessions.stateDeleted')
+    default: return t('terminalMySessions.statusUnknown')
+  }
+}
+
+/**
+ * Format the time remaining until idle_until as a short, human-readable duration.
+ * Reads `countdownTick` so the displayed value refreshes when the tick advances.
+ */
+function formatTimeRemaining(idleUntil: string): string {
+  // Read the tick so this string re-evaluates each minute.
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  countdownTick.value
+  if (!idleUntil) return ''
+  const target = new Date(idleUntil).getTime()
+  if (Number.isNaN(target)) return ''
+  const diffMs = target - Date.now()
+  if (diffMs <= 60_000) return t('terminalMySessions.durationSoon')
+  const totalMinutes = Math.floor(diffMs / 60_000)
+  const days = Math.floor(totalMinutes / (60 * 24))
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60)
+  const minutes = totalMinutes % 60
+  if (days > 0) return t('terminalMySessions.durationDays', { n: days, h: hours })
+  if (hours > 0) return t('terminalMySessions.durationHours', { h: hours, m: minutes })
+  return t('terminalMySessions.durationMinutes', { m: minutes })
 }
 
 function formatDate(dateString: string) {
   if (!dateString) return '-'
   return formatDateTimeTz(dateString)
-}
-
-function getStatusClass(status: string) {
-  switch (status?.toLowerCase()) {
-    case 'active': return 'text-success'
-    case 'expired': return 'text-danger'
-    case 'stopped': return 'text-muted'
-    case 'system_limit': return 'text-danger'
-    default: return 'text-warning'
-  }
-}
-
-function getStatusLabel(status: string): string {
-  if (!status) return t('terminalMySessions.statusUnknown')
-
-  // Handle snake_case statuses
-  if (status.toLowerCase() === 'system_limit') {
-    return t('terminalMySessions.statusSystemLimit')
-  }
-
-  const statusKey = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
-  const translationKey = `terminalMySessions.status${statusKey}`
-
-  // Check if translation exists, otherwise return the original status
-  const translated = t(translationKey)
-  return translated !== translationKey ? translated : status
 }
 
 // Fonctions pour les fonctionnalités iframe
@@ -977,7 +1217,7 @@ async function checkExpiredSessions() {
   const now = new Date()
   const expiredSessions = sessions.value.filter(session => {
     // Skip already inactive sessions
-    if (isTerminalInactive(session.status)) return false
+    if (isTerminalInactive(session)) return false
 
     // Check if session has an expiration date
     if (!session.expires_at) return false
@@ -1105,8 +1345,8 @@ async function discardTerminal(terminalId: string) {
   // Find the terminal in owned sessions to check its status
   const terminal = sessions.value.find(s => s.id === terminalId)
 
-  // Prevent hiding active terminals
-  if (terminal && terminal.status === 'active') {
+  // Prevent hiding still-running terminals (works with both new state and legacy status)
+  if (terminal && getEffectiveState(terminal) === 'running') {
     error.value = t('terminalMySessions.errorHidingActive')
     return
   }
@@ -1138,7 +1378,7 @@ async function discardTerminal(terminalId: string) {
 async function hideAllInactiveSessions() {
   // Get all inactive sessions (both owned and shared)
   const inactive = allSessions.value.filter(session =>
-    isTerminalInactive(session.status)
+    isTerminalInactive(session)
   )
   if (inactive.length === 0) return
 
@@ -1534,6 +1774,64 @@ async function hideAllInactiveSessions() {
   opacity: 0.85;
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
+}
+
+/* Play (resume) button — green */
+.btn-icon.btn-play {
+  background-color: var(--color-success);
+  color: var(--color-white);
+  border-radius: var(--border-radius-sm);
+}
+
+.btn-icon.btn-play:hover:not(:disabled) {
+  background-color: var(--color-success);
+  opacity: 0.85;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Trash (delete permanently) button — red, more emphatic than stop */
+.btn-icon.btn-trash {
+  background-color: var(--color-bg-primary);
+  color: var(--color-danger);
+  border: var(--border-width-thin) solid var(--color-danger);
+  border-radius: var(--border-radius-sm);
+}
+
+.btn-icon.btn-trash:hover:not(:disabled) {
+  background-color: var(--color-danger);
+  color: var(--color-white);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Auto-delete countdown next to the badge */
+.idle-countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-warning-text);
+  background-color: var(--color-warning-bg);
+  border: var(--border-width-thin) solid var(--color-warning-border);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+}
+
+.idle-countdown i {
+  color: var(--color-warning);
+}
+
+/* Delete confirmation warning block inside the modal */
+.delete-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+}
+
+.delete-warning i {
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 /* iframe code textarea - specific style for modal content */
