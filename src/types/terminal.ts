@@ -30,6 +30,9 @@ export interface TerminalSession extends BaseEntity {
   terms?: string
   backend?: string
   organization_id?: string
+  state?: 'running' | 'stopped' | 'deleted'
+  persistence_mode?: 'ephemeral' | 'persistent'
+  idle_until?: string
 }
 
 /**
@@ -146,4 +149,5 @@ export interface StartComposedSessionData {
   organization_id?: string
   hostname?: string
   packages?: string[]
+  persistence_mode?: 'ephemeral' | 'persistent'
 }

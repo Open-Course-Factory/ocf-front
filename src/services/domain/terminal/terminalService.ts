@@ -27,6 +27,16 @@ export const terminalService = {
     return response.data
   },
 
+  async startSession(sessionId: string) {
+    const response = await axios.post(`/terminals/${sessionId}/start`)
+    return response.data
+  },
+
+  async deleteSession(sessionId: string) {
+    const response = await axios.delete(`/terminals/${sessionId}`)
+    return response.data
+  },
+
   async syncSession(sessionId: string) {
     const response = await axios.post(`/terminals/${sessionId}/sync`)
     return response.data
