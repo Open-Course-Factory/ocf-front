@@ -318,7 +318,15 @@ function getSizeUseCase(key: string): string {
 
 function saveLastConfig() {
   if (selectedDistribution.value && selectedSize.value) {
-    const config: LastSessionConfig = {
+    // Merge with any existing fields (e.g., persistence_mode written by
+    // TerminalStarter) so we don't clobber user preferences from sibling controls.
+    let existing: Record<string, unknown> = {}
+    try {
+      const stored = localStorage.getItem(LAST_CONFIG_KEY)
+      if (stored) existing = JSON.parse(stored) || {}
+    } catch { existing = {} }
+    const config = {
+      ...existing,
       distribution: selectedDistribution.value.name,
       size: selectedSize.value.key,
       features: { ...enabledFeatures.value }
