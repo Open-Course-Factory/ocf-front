@@ -43,10 +43,12 @@ vi.mock('../../src/services/domain/terminal', () => ({
 
 // Notification confirms are not used by the trash flow, but the page imports
 // useNotification for legacy paths (discardTerminal, hideAllInactiveSessions)
+// `showError` is spied so failure-path tests can assert a notification fired.
+const mockShowError = vi.fn()
 vi.mock('../../src/composables/useNotification', () => ({
   useNotification: () => ({
     showConfirm: vi.fn().mockResolvedValue(true),
-    showError: vi.fn(),
+    showError: (...args: any[]) => mockShowError(...args),
     showSuccess: vi.fn(),
     showInfo: vi.fn(),
     showWarning: vi.fn(),
@@ -275,6 +277,81 @@ describe('TerminalMySessions — 3-button action bar', () => {
       expect(mockStartSession).toHaveBeenCalledWith('sess-stopped')
       expect(mockStopSession).not.toHaveBeenCalled()
       expect(mockDeleteSession).not.toHaveBeenCalled()
+    })
+  })
+
+  // The handlers must NOT optimistically flip the visible state when the
+  // backend rejects the action. Failures must surface via showError, the row
+  // must stay as it was, and the per-session transitioning flag must clear.
+  describe('failure paths (no optimistic state flip)', () => {
+    function rejectWith(status: number, errorMessage = 'session is busy') {
+      return Object.assign(new Error('Request failed'), {
+        response: { status, data: { error_message: errorMessage } }
+      })
+    }
+
+    it('Stop returning 409 → row stays "running", showError fired, transitioning cleared', async () => {
+      mockStopSession.mockRejectedValueOnce(rejectWith(409, 'session is provisioning'))
+      const wrapper = mountPage([
+        { id: 'i', session_id: 'sess-running', state: 'running' }
+      ])
+      await flushPromises()
+
+      await wrapper.find('[data-testid="btn-stop-sess-running"]').trigger('click')
+      await flushPromises()
+
+      // No optimistic flip: Stop button is still there, Play is not.
+      expect(wrapper.find('[data-testid="btn-stop-sess-running"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="btn-start-sess-running"]').exists()).toBe(false)
+
+      // User-visible error notification fired with backend message.
+      expect(mockShowError).toHaveBeenCalledTimes(1)
+      expect(mockShowError.mock.calls[0][0]).toBe('session is provisioning')
+
+      // Stop button is enabled again (transitioning cleared).
+      const stopBtn = wrapper.find('[data-testid="btn-stop-sess-running"]').element as HTMLButtonElement
+      expect(stopBtn.disabled).toBe(false)
+    })
+
+    it('Start returning 409 → row stays "stopped", showError fired, transitioning cleared', async () => {
+      mockStartSession.mockRejectedValueOnce(rejectWith(409, 'capacity exhausted'))
+      const wrapper = mountPage([
+        { id: 'j', session_id: 'sess-stopped', state: 'stopped' }
+      ])
+      await flushPromises()
+
+      await wrapper.find('[data-testid="btn-start-sess-stopped"]').trigger('click')
+      await flushPromises()
+
+      // No optimistic flip: Play button still there, Stop not.
+      expect(wrapper.find('[data-testid="btn-start-sess-stopped"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="btn-stop-sess-stopped"]').exists()).toBe(false)
+
+      expect(mockShowError).toHaveBeenCalledTimes(1)
+      expect(mockShowError.mock.calls[0][0]).toBe('capacity exhausted')
+
+      const playBtn = wrapper.find('[data-testid="btn-start-sess-stopped"]').element as HTMLButtonElement
+      expect(playBtn.disabled).toBe(false)
+    })
+
+    it('Delete returning 409 → modal stays open, row preserved, showError fired', async () => {
+      mockDeleteSession.mockRejectedValueOnce(rejectWith(409, 'session is locked by another action'))
+      const wrapper = mountPage([
+        { id: 'h', session_id: 'sess-running', state: 'running' }
+      ])
+      await flushPromises()
+
+      await wrapper.find('[data-testid="btn-trash-sess-running"]').trigger('click')
+      await wrapper.find('[data-testid="confirm-delete-cta"]').trigger('click')
+      await flushPromises()
+
+      // Row is still here in its previous state (modal stays open so the user
+      // can either retry or cancel; the action was NOT optimistically applied).
+      expect(wrapper.find('[data-testid="btn-trash-sess-running"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="confirm-delete-cta"]').exists()).toBe(true)
+
+      expect(mockShowError).toHaveBeenCalledTimes(1)
+      expect(mockShowError.mock.calls[0][0]).toBe('session is locked by another action')
     })
   })
 })

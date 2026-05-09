@@ -533,7 +533,7 @@ import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import { useClassGroupsStore } from '../../stores/classGroups'
 import { extractErrorMessage } from '../../utils/formatters'
 
-const { showConfirm } = useNotification()
+const { showConfirm, showError } = useNotification()
 const { formatDateTime: formatDateTimeTz } = useFormatters()
 const { isEnabled } = useFeatureFlags()
 const groupStore = useClassGroupsStore()
@@ -607,6 +607,9 @@ const { t } = useTranslations({
       confirmDeleteCancelCta: 'Cancel',
       errorStarting: 'Error starting the session',
       errorDeleting: 'Error deleting the session',
+      stopFailed: 'Stop failed',
+      startFailed: 'Resume failed',
+      deleteFailed: 'Delete failed',
       noActiveSessions: 'No active sessions',
       noActiveSessionsDesc: 'You have no active terminal sessions at the moment.',
       createNewSession: 'Create a new session',
@@ -713,6 +716,9 @@ const { t } = useTranslations({
       confirmDeleteCancelCta: 'Annuler',
       errorStarting: 'Erreur lors du démarrage de la session',
       errorDeleting: 'Erreur lors de la suppression de la session',
+      stopFailed: 'Échec de la mise en pause',
+      startFailed: 'Échec de la reprise',
+      deleteFailed: 'Échec de la suppression',
       noActiveSessions: 'Aucune session active',
       noActiveSessionsDesc: 'Vous n\'avez aucune session terminal active pour le moment.',
       createNewSession: 'Créer une nouvelle session',
@@ -984,11 +990,20 @@ async function handleStopSession(sessionId: string) {
 
   transitioning.value = { ...transitioning.value, [sessionId]: 'stopping' }
   try {
+    // Service throws on non-2xx (axios default). Only on success do we refresh
+    // local state from the server so the UI reflects truth.
     await terminalService.stopSession(sessionId)
     await loadSessions()
   } catch (err: any) {
     console.error('Erreur lors de l\'arrêt:', err)
-    error.value = err.response?.data?.error_message || t('terminalMySessions.errorStopping')
+    const message = err.response?.data?.error_message || t('terminalMySessions.stopFailed')
+    showError(message, t('terminalMySessions.stopFailed'))
+    // Do NOT mutate the local session state here — the row stays as it was.
+    // On 409 (conflict), backend reality may have drifted; refetch so the UI
+    // catches up (e.g., another tab already stopped/started this session).
+    if (err.response?.status === 409) {
+      await loadSessions()
+    }
   } finally {
     const next = { ...transitioning.value }
     delete next[sessionId]
@@ -1004,11 +1019,19 @@ async function handleStartSession(sessionId: string) {
 
   transitioning.value = { ...transitioning.value, [sessionId]: 'starting' }
   try {
+    // Service throws on non-2xx (axios default). Only on success do we refresh
+    // local state from the server so the UI reflects truth.
     await terminalService.startSession(sessionId)
     await loadSessions()
   } catch (err: any) {
     console.error('Erreur lors du démarrage:', err)
-    error.value = err.response?.data?.error_message || t('terminalMySessions.errorStarting')
+    const message = err.response?.data?.error_message || t('terminalMySessions.startFailed')
+    showError(message, t('terminalMySessions.startFailed'))
+    // Do NOT mutate the local session state here — the row stays as it was.
+    // On 409, refetch to catch up to backend reality.
+    if (err.response?.status === 409) {
+      await loadSessions()
+    }
   } finally {
     const next = { ...transitioning.value }
     delete next[sessionId]
@@ -1033,13 +1056,21 @@ async function confirmDeleteSession() {
 
   deleteInProgress.value = true
   try {
+    // Service throws on non-2xx. Only flip local state and dismiss the modal
+    // after a confirmed success.
     await terminalService.deleteSession(sessionId)
     showDeleteConfirmModal.value = false
     sessionPendingDelete.value = null
     await loadSessions()
   } catch (err: any) {
     console.error('Erreur lors de la suppression:', err)
-    error.value = err.response?.data?.error_message || t('terminalMySessions.errorDeleting')
+    const message = err.response?.data?.error_message || t('terminalMySessions.deleteFailed')
+    showError(message, t('terminalMySessions.deleteFailed'))
+    // Do NOT mutate local state and do NOT close the modal — leave the user
+    // to either retry or cancel. On 409, refetch in case backend state shifted.
+    if (err.response?.status === 409) {
+      await loadSessions()
+    }
   } finally {
     deleteInProgress.value = false
   }
