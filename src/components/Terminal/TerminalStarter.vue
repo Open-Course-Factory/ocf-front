@@ -139,7 +139,6 @@ import { storeToRefs } from 'pinia'
 import axios from 'axios'
 import { terminalService } from '../../services/domain/terminal'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
-import { useTerminalMetricsStore } from '../../stores/terminalMetrics'
 
 import { useOrganizationsStore } from '../../stores/organizations'
 import { useTerminalBackendsStore } from '../../stores/terminalBackends'
@@ -161,7 +160,6 @@ const emit = defineEmits(['session-started'])
 
 // Stores
 const subscriptionsStore = useSubscriptionsStore()
-const metricsStore = useTerminalMetricsStore()
 const organizationsStore = useOrganizationsStore()
 const backendsStore = useTerminalBackendsStore()
 const permissionsStore = usePermissionsStore()
@@ -339,17 +337,50 @@ const refreshIntervalMinutes = computed(() => {
   return Math.floor(USAGE_REFRESH_INTERVAL / 60000)
 })
 
-// Three-state capacity hint — pure projection of metricsStore.serverStatus.
-// Single source of truth: the store applies the percent + GB thresholds, and
-// the backend's CheckRAMAvailability middleware is the ultimate authority.
+// Capacity check — single source of truth is the backend.
+// We call GET /terminals/capacity-check whenever distribution or size changes
+// (debounced 300ms) and render whatever the backend says. The same function
+// powers the launch middleware, so the indicator can never disagree with the
+// real launch decision.
+const capacityCheck = ref<{ status: 'ok' | 'warning' | 'critical' | 'unknown', reason: string } | null>(null)
+const isCheckingCapacity = ref(false)
+let capacityCheckTimer: ReturnType<typeof setTimeout> | null = null
+
+function scheduleCapacityCheck(distribution: string, size: string) {
+  if (capacityCheckTimer) clearTimeout(capacityCheckTimer)
+  capacityCheckTimer = setTimeout(async () => {
+    isCheckingCapacity.value = true
+    try {
+      capacityCheck.value = await terminalService.checkCapacity(distribution, size)
+    } catch {
+      // Hint only — don't bother the user with a toast. The real verdict comes
+      // from the launch endpoint.
+      capacityCheck.value = { status: 'unknown', reason: 'check_failed' }
+    } finally {
+      isCheckingCapacity.value = false
+    }
+  }, 300)
+}
+
+watch(
+  () => [composerRef.value?.selectedDistribution?.name, composerRef.value?.selectedSize?.key] as const,
+  ([dist, size]) => {
+    if (!dist || !size) {
+      capacityCheck.value = null
+      if (capacityCheckTimer) {
+        clearTimeout(capacityCheckTimer)
+        capacityCheckTimer = null
+      }
+      return
+    }
+    scheduleCapacityCheck(dist, size)
+  }
+)
+
 const capacityHint = computed<'ok' | 'warning' | 'critical' | 'unknown'>(() => {
-  // No distribution selected yet → no hint to show
   if (!composerRef.value?.selectedDistribution) return 'unknown'
-  const status = metricsStore.serverStatus
-  if (status === 'unknown') return 'unknown'
-  if (status === 'critical') return 'critical'
-  if (status === 'warning') return 'warning'
-  return 'ok'
+  if (isCheckingCapacity.value) return 'unknown'
+  return capacityCheck.value?.status ?? 'unknown'
 })
 
 const capacityStatusLevel = computed(() => {
@@ -664,6 +695,10 @@ function cleanup() {
     clearInterval(usageRefreshInterval)
     usageRefreshInterval = null
   }
+  if (capacityCheckTimer) {
+    clearTimeout(capacityCheckTimer)
+    capacityCheckTimer = null
+  }
 }
 
 onMounted(async () => {
@@ -709,20 +744,6 @@ onMounted(async () => {
       // Silently handle errors
     }
   }, USAGE_REFRESH_INTERVAL)
-
-  // Load initial metrics for capacity check
-  metricsStore.refreshMetrics(backendsStore.selectedBackendId || undefined)
-
-  // Periodic refresh of metrics (every 30 seconds)
-  const metricsRefreshInterval = setInterval(() => {
-    if (composerRef.value?.selectedDistribution) {
-      metricsStore.refreshMetrics(backendsStore.selectedBackendId || undefined)
-    }
-  }, 30000)
-
-  onBeforeUnmount(() => {
-    clearInterval(metricsRefreshInterval)
-  })
 })
 
 onBeforeUnmount(() => {

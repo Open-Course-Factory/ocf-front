@@ -94,5 +94,12 @@ export const terminalService = {
   async getOrgTerminalUsage(orgId: string): Promise<OrgTerminalUsage> {
     const response = await axios.get(`/organizations/${orgId}/terminal-usage`)
     return response.data
+  },
+
+  async checkCapacity(distribution: string, size: string): Promise<{ status: 'ok' | 'warning' | 'critical' | 'unknown', reason: string }> {
+    const response = await axios.get('/terminals/capacity-check', {
+      params: { distribution, size }
+    })
+    return response.data
   }
 }
