@@ -114,14 +114,21 @@ export const useTerminalMetricsStore = defineStore('terminalMetrics', () => {
 
   const serverStatus = computed(() => {
     if (!metrics.value) return 'unknown'
+    const m = metrics.value
 
-    // Critical: RAM < 1GB or CPU > 95%
-    if (metrics.value.ram_available_gb < 1.0 || metrics.value.cpu_percent > 95) {
+    // Critical: any of these triggers
+    //   RAM available < 1 GB (small-server floor)
+    //   RAM percent > 95 (matches backend's near-full threshold)
+    //   CPU percent > 95
+    if (m.ram_available_gb < 1.0 || m.ram_percent > 95 || m.cpu_percent > 95) {
       return 'critical'
     }
 
-    // Warning: RAM < 2GB or CPU > 80%
-    if (metrics.value.ram_available_gb < 2.0 || metrics.value.cpu_percent > 80) {
+    // Warning: any of these triggers
+    //   RAM available < 2 GB (small-server floor)
+    //   RAM percent > 85 (server is filling up — launch may be denied)
+    //   CPU percent > 80
+    if (m.ram_available_gb < 2.0 || m.ram_percent > 85 || m.cpu_percent > 80) {
       return 'warning'
     }
 

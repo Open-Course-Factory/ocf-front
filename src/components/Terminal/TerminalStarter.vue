@@ -339,32 +339,15 @@ const refreshIntervalMinutes = computed(() => {
   return Math.floor(USAGE_REFRESH_INTERVAL / 60000)
 })
 
-// Server capacity check
-const INSTANCE_RAM_REQUIREMENTS: Record<string, number> = {
-  'alpine': 0.5,
-  'debian': 1.0,
-  'ubuntu': 1.0,
-  'default': 1.0
-}
-const SYSTEM_RESERVE_GB = 0.6
-
-const serverMetrics = computed(() => metricsStore.metrics)
-
-// Three-state capacity hint aligned with metricsStore.serverStatus thresholds
-// (warning if RAM<2GB or CPU>80%, critical if RAM<1GB or CPU>95%). The
-// per-distribution check still runs so a heavy distro on a tight server is
-// reported as critical even when overall status is healthy/warning.
+// Three-state capacity hint — pure projection of metricsStore.serverStatus.
+// Single source of truth: the store applies the percent + GB thresholds, and
+// the backend's CheckRAMAvailability middleware is the ultimate authority.
 const capacityHint = computed<'ok' | 'warning' | 'critical' | 'unknown'>(() => {
-  const dist = composerRef.value?.selectedDistribution
-  if (!dist || !serverMetrics.value) return 'unknown'
-
+  // No distribution selected yet → no hint to show
+  if (!composerRef.value?.selectedDistribution) return 'unknown'
   const status = metricsStore.serverStatus
+  if (status === 'unknown') return 'unknown'
   if (status === 'critical') return 'critical'
-
-  const requiredRAM = getInstanceRAMRequirement(dist.name)
-  const totalRequired = requiredRAM + SYSTEM_RESERVE_GB
-  if (serverMetrics.value.ram_available_gb < totalRequired) return 'critical'
-
   if (status === 'warning') return 'warning'
   return 'ok'
 })
@@ -409,17 +392,6 @@ const isFormValid = computed(() => {
   if (currentTerminalCount.value >= maxTerminals.value) return false
   return true
 })
-
-// Helper functions
-function getInstanceRAMRequirement(instancePrefix: string): number {
-  const lowerPrefix = instancePrefix.toLowerCase()
-  for (const key in INSTANCE_RAM_REQUIREMENTS) {
-    if (lowerPrefix.includes(key)) {
-      return INSTANCE_RAM_REQUIREMENTS[key]
-    }
-  }
-  return INSTANCE_RAM_REQUIREMENTS['default']
-}
 
 async function loadCurrentTerminalUsage() {
   try {
