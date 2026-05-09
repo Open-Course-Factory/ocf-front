@@ -95,6 +95,7 @@ type SessionFixture = {
   status?: string
   state?: 'running' | 'stopped' | 'deleted'
   idle_until?: string
+  expires_at?: string
   name?: string
 }
 
@@ -179,6 +180,20 @@ describe('TerminalMySessions — 3-button action bar', () => {
       expect(wrapper.find('[data-testid="btn-stop-sess-legacy-expired"]').exists()).toBe(false)
       expect(wrapper.find('[data-testid="btn-start-sess-legacy-expired"]').exists()).toBe(false)
       expect(wrapper.find('[data-testid="btn-trash-sess-legacy-expired"]').exists()).toBe(false)
+    })
+  })
+
+  describe('expires_at invariant (defensive)', () => {
+    it('state="running" but expires_at in the past → treated as deleted (no primary actions)', async () => {
+      const pastDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      const wrapper = mountPage([
+        { id: 'k', session_id: 'sess-stale-running', state: 'running', expires_at: pastDate }
+      ])
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="btn-stop-sess-stale-running"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="btn-start-sess-stale-running"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="btn-trash-sess-stale-running"]').exists()).toBe(false)
     })
   })
 

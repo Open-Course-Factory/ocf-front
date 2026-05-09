@@ -808,6 +808,13 @@ const countdownTick = ref(0)
  *     (the previous "stop" button actually deleted, so legacy stopped == gone)
  */
 function getEffectiveState(session: any): 'running' | 'stopped' | 'deleted' {
+  // Invariant: any session whose expires_at is in the past is dead, regardless
+  // of what `state` says. Guards against stale state values (e.g., GORM AutoMigrate
+  // backfilling the new column with default 'running' on legacy rows, or any
+  // server-side race where state goes out of sync with expires_at).
+  if (session?.expires_at && new Date(session.expires_at).getTime() < Date.now()) {
+    return 'deleted'
+  }
   if (session?.state === 'running' || session?.state === 'stopped' || session?.state === 'deleted') {
     return session.state
   }
