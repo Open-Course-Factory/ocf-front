@@ -67,7 +67,7 @@
           </div>
           <div class="card-status-row">
             <span class="connection-label" :class="backend.connected ? 'text-success' : 'text-danger'">
-              {{ backend.connected ? t('terminalMetrics.healthy') : t('terminalMetrics.backendOffline') }}
+              {{ backend.connected ? t('terminalMetrics.connected') : t('terminalMetrics.backendOffline') }}
             </span>
             <span
               v-if="backend.connected && backendMetrics[backend.id]"

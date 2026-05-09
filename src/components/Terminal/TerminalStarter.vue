@@ -179,6 +179,7 @@ const { t } = useTranslations({
       buttonStarting: 'Starting...',
       readyToLaunch: 'Ready to Launch',
       capacityIssue: 'Capacity Issue',
+      capacityTight: 'Tight capacity — launch not guaranteed',
       checkingCapacity: 'Checking...',
       startingSession: 'Starting terminal session...',
       checkingLimits: 'Checking usage limits...',
@@ -202,6 +203,7 @@ const { t } = useTranslations({
       errorStarting: 'Startup Error',
       errorServerCapacity: 'Server at Capacity',
       errorServerCapacityMessage: 'The server does not have enough resources to create a new terminal session. Please try again in a few minutes or stop an existing terminal.',
+      errorServerCapacityBody: 'The server has insufficient resources to start a new session. Try again later or pick a smaller distribution.',
       activeSessions: '{count} active session | {count} active sessions',
       backendOffline: 'Server "{name}" is offline. Please select another server or try again later.',
       loadingInstanceTypes: 'Loading machine types...',
@@ -225,6 +227,7 @@ const { t } = useTranslations({
       buttonStarting: 'Démarrage...',
       readyToLaunch: 'Prêt à Lancer',
       capacityIssue: 'Problème de Capacité',
+      capacityTight: 'Capacité limitée — lancement non garanti',
       checkingCapacity: 'Vérification...',
       startingSession: 'Démarrage de la session terminal...',
       checkingLimits: 'Vérification des limites d\'utilisation...',
@@ -248,6 +251,7 @@ const { t } = useTranslations({
       errorStarting: 'Erreur de démarrage',
       errorServerCapacity: 'Serveur à Capacité Maximale',
       errorServerCapacityMessage: 'Le serveur n\'a pas suffisamment de ressources pour créer une nouvelle session terminal. Veuillez réessayer dans quelques minutes ou arrêter un terminal existant.',
+      errorServerCapacityBody: 'Le serveur n\'a pas assez de ressources pour démarrer une nouvelle session. Réessayez plus tard ou choisissez une distribution plus légère.',
       activeSessions: '{count} session active | {count} sessions actives',
       backendOffline: 'Le serveur « {name} » est hors ligne. Veuillez sélectionner un autre serveur ou réessayer plus tard.',
       loadingInstanceTypes: 'Chargement des types de machines...',
@@ -346,32 +350,40 @@ const SYSTEM_RESERVE_GB = 0.6
 
 const serverMetrics = computed(() => metricsStore.metrics)
 
-const canLaunchInstance = computed(() => {
+// Three-state capacity hint aligned with metricsStore.serverStatus thresholds
+// (warning if RAM<2GB or CPU>80%, critical if RAM<1GB or CPU>95%). The
+// per-distribution check still runs so a heavy distro on a tight server is
+// reported as critical even when overall status is healthy/warning.
+const capacityHint = computed<'ok' | 'warning' | 'critical' | 'unknown'>(() => {
   const dist = composerRef.value?.selectedDistribution
-  if (!dist || !serverMetrics.value) return null
+  if (!dist || !serverMetrics.value) return 'unknown'
 
-  // Check CPU - must be under 95%
-  if (serverMetrics.value.cpu_percent > 95) {
-    return false
-  }
+  const status = metricsStore.serverStatus
+  if (status === 'critical') return 'critical'
 
-  // Check RAM
   const requiredRAM = getInstanceRAMRequirement(dist.name)
   const totalRequired = requiredRAM + SYSTEM_RESERVE_GB
+  if (serverMetrics.value.ram_available_gb < totalRequired) return 'critical'
 
-  return serverMetrics.value.ram_available_gb >= totalRequired
+  if (status === 'warning') return 'warning'
+  return 'ok'
 })
 
 const capacityStatusLevel = computed(() => {
   if (!composerRef.value?.selectedDistribution) return 'neutral'
-  if (canLaunchInstance.value === null) return 'checking'
-  return canLaunchInstance.value ? 'ok' : 'error'
+  const hint = capacityHint.value
+  if (hint === 'unknown') return 'checking'
+  if (hint === 'critical') return 'error'
+  if (hint === 'warning') return 'warning'
+  return 'ok'
 })
 
 const capacityStatusIcon = computed(() => {
   switch (capacityStatusLevel.value) {
     case 'ok':
       return 'fas fa-check-circle'
+    case 'warning':
+      return 'fas fa-exclamation-triangle'
     case 'error':
       return 'fas fa-exclamation-circle'
     case 'checking':
@@ -383,10 +395,11 @@ const capacityStatusIcon = computed(() => {
 
 const capacityStatusText = computed(() => {
   if (!composerRef.value?.selectedDistribution) return ''
-  if (canLaunchInstance.value === null) return t('terminalStarter.checkingCapacity')
-  return canLaunchInstance.value
-    ? t('terminalStarter.readyToLaunch')
-    : t('terminalStarter.capacityIssue')
+  const hint = capacityHint.value
+  if (hint === 'unknown') return t('terminalStarter.checkingCapacity')
+  if (hint === 'critical') return t('terminalStarter.capacityIssue')
+  if (hint === 'warning') return t('terminalStarter.capacityTight')
+  return t('terminalStarter.readyToLaunch')
 })
 
 // Form validation
@@ -633,13 +646,25 @@ async function startNewSession() {
 
     if (error.response?.status === 503) {
       const backendName = error.response?.data?.backend_name || backendsStore.selectedBackend?.name
-      if (backendName) {
+      const backendMsg = error.response?.data?.error_message
+      // Only treat 503 as "offline" when the backend message actually indicates
+      // a connectivity problem. RAM exhaustion and quota also use 503 — those
+      // need a different message so the user understands the real cause.
+      const looksOffline = !backendMsg ||
+        /offline|unreachable|connection|n'est pas accessible/i.test(backendMsg)
+
+      if (looksOffline && backendName) {
         showErrorNotification(
           t('terminalStarter.backendOffline', { name: backendName }),
           t('terminalStarter.errorServerCapacity')
         )
       } else {
-        showErrorNotification(errorMsg, t('terminalStarter.errorServerCapacity'))
+        // Real capacity issue — surface the backend's actual reason if present,
+        // fall back to a generic capacity message otherwise.
+        showErrorNotification(
+          backendMsg || t('terminalStarter.errorServerCapacityBody'),
+          t('terminalStarter.errorServerCapacity')
+        )
       }
     } else if (error.response?.status === 400 && errorMsg.includes('not allowed in your plan')) {
       const confirmed = await showConfirm(
@@ -794,6 +819,15 @@ onBeforeUnmount(() => {
 
 .capacity-check-inline.status-ok i {
   color: var(--color-success);
+}
+
+.capacity-check-inline.status-warning {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.capacity-check-inline.status-warning i {
+  color: var(--color-warning);
 }
 
 .capacity-check-inline.status-error {
