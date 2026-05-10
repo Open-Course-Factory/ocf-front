@@ -67,6 +67,13 @@
               <label for="plan-active" class="checkbox-label">{{ t('planConfig.isActive') }}</label>
             </div>
           </div>
+
+          <div class="form-group">
+            <div class="checkbox-wrapper">
+              <input id="plan-catalog" v-model="formData.is_catalog" type="checkbox" class="form-checkbox" />
+              <label for="plan-catalog" class="checkbox-label">{{ t('planConfig.isCatalog') }}</label>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -181,6 +188,7 @@ const { t, te, locale } = useTranslations({
       requiredRole: 'Required Role',
       priority: 'Priority',
       isActive: 'Active',
+      isCatalog: 'Listed in catalog',
       stripeProductId: 'Stripe Product ID',
       stripePriceId: 'Stripe Price ID',
       noFeatures: 'No features configured. Create features in the Plan Features admin page first.',
@@ -213,6 +221,7 @@ const { t, te, locale } = useTranslations({
       requiredRole: 'Role Requis',
       priority: 'Priorite',
       isActive: 'Actif',
+      isCatalog: 'Visible dans le catalogue',
       stripeProductId: 'ID Produit Stripe',
       stripePriceId: 'ID Prix Stripe',
       noFeatures: 'Aucune fonctionnalite configuree. Creez des fonctionnalites dans la page admin Plan Features.',
@@ -250,7 +259,8 @@ const formData = reactive({
   trial_days: 0,
   required_role: '',
   priority: 0,
-  is_active: true
+  is_active: true,
+  is_catalog: true
 })
 
 const featureValues = reactive<Record<string, any>>({})
@@ -286,6 +296,7 @@ function populateFromPlan(plan: any) {
   formData.required_role = plan.required_role || ''
   formData.priority = plan.priority || 0
   formData.is_active = plan.is_active !== false
+  formData.is_catalog = plan.is_catalog !== false
 
   // Clear feature values
   Object.keys(featureValues).forEach(key => delete featureValues[key])
@@ -352,6 +363,7 @@ function resetForm() {
   formData.required_role = ''
   formData.priority = 0
   formData.is_active = true
+  formData.is_catalog = true
   Object.keys(featureValues).forEach(key => delete featureValues[key])
 
   // Initialize default feature values
