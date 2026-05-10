@@ -119,7 +119,7 @@
                 <div class="history-container">
                   <CommandHistory
                     :session-id="session.session_id"
-                    :is-active="session.status === 'active'"
+                    :is-active="isSessionActive(session)"
                   />
                 </div>
               </td>
@@ -136,6 +136,7 @@ import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
 import CommandHistory from '../Terminal/CommandHistory.vue'
+import { isSessionActive } from '../../utils/sessionState'
 
 interface TerminalSession {
   id: string

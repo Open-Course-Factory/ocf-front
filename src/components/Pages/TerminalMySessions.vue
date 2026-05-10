@@ -166,14 +166,14 @@
 
               <div class="header-right">
                 <!-- State badge -->
-                <span :class="['status-badge', getStateBadgeClass(getEffectiveState(session))]" :title="getStateLabel(getEffectiveState(session))">
+                <span :class="['status-badge', getStateBadgeClass(getEffectiveSessionState(session))]" :title="getStateLabel(getEffectiveSessionState(session))">
                   <i class="fas fa-circle"></i>
-                  {{ transitioningLabel(session) || getStateLabel(getEffectiveState(session)) }}
+                  {{ transitioningLabel(session) || getStateLabel(getEffectiveSessionState(session)) }}
                 </span>
 
                 <!-- Auto-delete countdown for stopped sessions -->
                 <span
-                  v-if="getEffectiveState(session) === 'stopped' && session.idle_until"
+                  v-if="getEffectiveSessionState(session) === 'stopped' && session.idle_until"
                   class="idle-countdown"
                   :title="t('terminalMySessions.idleUntilCountdown', { duration: formatTimeRemaining(session.idle_until) })"
                 >
@@ -185,7 +185,7 @@
                 <div class="card-actions-compact">
                   <!-- Open-in-page / Open-in-tab: only when running -->
                   <router-link
-                    v-if="getEffectiveState(session) === 'running'"
+                    v-if="getEffectiveSessionState(session) === 'running'"
                     class="btn-icon btn-view"
                     :to="{ name: 'TerminalSessionView', params: { sessionId: session.session_id } }"
                     :title="t('terminalMySessions.buttonOpenInPage')"
@@ -193,7 +193,7 @@
                     <i class="fas fa-desktop"></i>
                   </router-link>
                   <button
-                    v-if="getEffectiveState(session) === 'running'"
+                    v-if="getEffectiveSessionState(session) === 'running'"
                     class="btn-icon btn-primary"
                     @click="openTerminalInNewTab(session.session_id)"
                     :title="t('terminalMySessions.buttonOpen')"
@@ -203,7 +203,7 @@
 
                   <!-- Play: only when stopped -->
                   <button
-                    v-if="getEffectiveState(session) === 'stopped'"
+                    v-if="getEffectiveSessionState(session) === 'stopped'"
                     class="btn-icon btn-play"
                     :data-testid="'btn-start-' + session.session_id"
                     @click="handleStartSession(session.session_id)"
@@ -215,7 +215,7 @@
 
                   <!-- Stop: only when running -->
                   <button
-                    v-if="getEffectiveState(session) === 'running'"
+                    v-if="getEffectiveSessionState(session) === 'running'"
                     class="btn-icon btn-stop"
                     :data-testid="'btn-stop-' + session.session_id"
                     @click="handleStopSession(session.session_id)"
@@ -227,7 +227,7 @@
 
                   <!-- Trash: visible whenever not deleted -->
                   <button
-                    v-if="getEffectiveState(session) !== 'deleted'"
+                    v-if="getEffectiveSessionState(session) !== 'deleted'"
                     class="btn-icon btn-trash"
                     :data-testid="'btn-trash-' + session.session_id"
                     @click="askDeleteSession(session.session_id)"
@@ -239,7 +239,7 @@
 
                   <!-- Dropdown menu for additional actions: only when running -->
                   <div
-                    v-if="getEffectiveState(session) === 'running'"
+                    v-if="getEffectiveSessionState(session) === 'running'"
                     class="dropdown-container"
                     :ref="(el) => dropdownRefs.set(session.id || session.session_id, el as HTMLElement)"
                   >
@@ -349,9 +349,9 @@
 
                   <div class="header-right">
                     <!-- State badge -->
-                    <span :class="['status-badge', getStateBadgeClass(getEffectiveState(session))]" :title="getStateLabel(getEffectiveState(session))">
+                    <span :class="['status-badge', getStateBadgeClass(getEffectiveSessionState(session))]" :title="getStateLabel(getEffectiveSessionState(session))">
                       <i class="fas fa-circle"></i>
-                      {{ getStateLabel(getEffectiveState(session)) }}
+                      {{ getStateLabel(getEffectiveSessionState(session)) }}
                     </span>
 
                     <!-- Action buttons -->
@@ -532,6 +532,7 @@ import { useFormatters } from '../../composables/useFormatters'
 import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import { useClassGroupsStore } from '../../stores/classGroups'
 import { extractErrorMessage } from '../../utils/formatters'
+import { getEffectiveSessionState } from '../../utils/sessionState'
 
 const { showConfirm, showError } = useNotification()
 const { formatDateTime: formatDateTimeTz } = useFormatters()
@@ -804,35 +805,9 @@ const deleteInProgress = ref(false)
 // Tick to refresh the auto-delete countdown every minute
 const countdownTick = ref(0)
 
-/**
- * Returns the effective lifecycle state for a session.
- * Prefers the new `state` field (running | stopped | deleted) when present.
- * Falls back to the legacy `status` field for backward compatibility with
- * un-deployed ocf-core versions:
- *   - status='active' -> 'running'
- *   - any other legacy status (stopped/expired/terminated/system_limit) -> 'deleted'
- *     (the previous "stop" button actually deleted, so legacy stopped == gone)
- */
-function getEffectiveState(session: any): 'running' | 'stopped' | 'deleted' {
-  // Invariant: any session whose expires_at is in the past is dead, regardless
-  // of what `state` says. Guards against stale state values (e.g., GORM AutoMigrate
-  // backfilling the new column with default 'running' on legacy rows, or any
-  // server-side race where state goes out of sync with expires_at).
-  if (session?.expires_at && new Date(session.expires_at).getTime() < Date.now()) {
-    return 'deleted'
-  }
-  if (session?.state === 'running' || session?.state === 'stopped' || session?.state === 'deleted') {
-    return session.state
-  }
-  if (session?.status === 'active' || session?.status === 'starting') {
-    return 'running'
-  }
-  return 'deleted'
-}
-
 // Helper: an "inactive" terminal (in the listing sense) is one that is deleted/gone
 function isTerminalInactive(session: any): boolean {
-  return getEffectiveState(session) === 'deleted'
+  return getEffectiveSessionState(session) === 'deleted'
 }
 
 // Computed property for all sessions
@@ -1384,7 +1359,7 @@ async function discardTerminal(terminalId: string) {
   const terminal = sessions.value.find(s => s.id === terminalId)
 
   // Prevent hiding still-running terminals (works with both new state and legacy status)
-  if (terminal && getEffectiveState(terminal) === 'running') {
+  if (terminal && getEffectiveSessionState(terminal) === 'running') {
     error.value = t('terminalMySessions.errorHidingActive')
     return
   }

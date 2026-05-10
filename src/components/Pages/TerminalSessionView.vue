@@ -256,6 +256,7 @@ import ScenarioStartBar from '../Terminal/ScenarioStartBar.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
 import CommandHistory from '../Terminal/CommandHistory.vue'
 import BaseModal from '../Modals/BaseModal.vue'
+import { getEffectiveSessionState } from '../../utils/sessionState'
 
 const route = useRoute()
 const router = useRouter()
@@ -545,9 +546,14 @@ function stopScenarioSync() {
   }
 }
 
+const effectiveState = computed(() => getEffectiveSessionState(sessionInfo.value))
+
 const isSessionActive = computed(() => {
   if (!sessionInfo.value) return false
-  if (sessionInfo.value.status === 'expired' || sessionInfo.value.status === 'stopped') return false
+  if (effectiveState.value !== 'running') return false
+  // timeRemaining is a UI-only countdown; if it underflows, treat as inactive.
+  // (effectiveState already covers the expires_at invariant, but countdown
+  // may run for a bit before the next fetch — keep this as a belt-and-suspenders.)
   return timeRemaining.value > 0
 })
 
@@ -560,8 +566,11 @@ const terminalEndReason = computed<'completed' | 'abandoned' | 'expired' | 'stop
 
   // Terminal end-states only when session is no longer active
   if (isSessionActive.value) return ''
-  if (sessionInfo.value?.status === 'expired') return 'expired'
-  if (sessionInfo.value?.status === 'stopped') return 'stopped'
+
+  // Map effective state -> end reason. 'deleted' here means "TTL or trash" —
+  // display as expired for the banner to preserve existing user-facing copy.
+  if (effectiveState.value === 'stopped') return 'stopped'
+  if (effectiveState.value === 'deleted') return 'expired'
 
   // Fallback: no specific end reason (keep existing reconnect behavior)
   return ''
