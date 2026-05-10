@@ -139,7 +139,38 @@
 
       <!-- Session ended: show state-aware banner + history -->
       <template v-else>
-        <div v-if="activeEndBanner" class="session-end-banner" :class="activeEndBanner.toneClass" role="status">
+        <!-- Stopped: in-place resume / delete UI -->
+        <div v-if="terminalEndReason === 'stopped'" class="session-paused-banner" role="status">
+          <div class="paused-content">
+            <i class="fas fa-pause-circle paused-icon" aria-hidden="true"></i>
+            <div class="paused-text">
+              <strong>{{ t('sessionView.pausedTitle') }}</strong>
+              <span>{{ t('sessionView.pausedBody') }}</span>
+            </div>
+          </div>
+          <div class="paused-actions">
+            <button
+              class="btn-resume"
+              :disabled="isResuming || isDeleting"
+              @click="resumeSession"
+              data-testid="resume-session-cta"
+            >
+              <i class="fas" :class="isResuming ? 'fa-spinner fa-spin' : 'fa-play'"></i>
+              {{ isResuming ? t('sessionView.resuming') : t('sessionView.resumeButton') }}
+            </button>
+            <button
+              class="btn-trash"
+              :disabled="isResuming || isDeleting"
+              @click="askDelete"
+              data-testid="delete-session-cta"
+            >
+              <i class="fas fa-trash"></i>
+              {{ t('sessionView.deleteButton') }}
+            </button>
+          </div>
+        </div>
+        <!-- Other end states: navigation-only banner -->
+        <div v-else-if="activeEndBanner" class="session-end-banner" :class="activeEndBanner.toneClass" role="status">
           <div class="end-banner-left">
             <i :class="activeEndBanner.icon" class="end-banner-icon" aria-hidden="true"></i>
             <div class="end-banner-text">
@@ -166,6 +197,38 @@
       </template>
     </template>
 
+    <!-- Trash confirmation modal -->
+    <BaseModal
+      :visible="showDeleteConfirm"
+      :title="t('sessionView.deleteConfirmTitle')"
+      title-icon="fas fa-trash"
+      size="small"
+      @close="cancelDelete"
+    >
+      <p>{{ t('sessionView.deleteConfirmBody') }}</p>
+
+      <template #footer>
+        <button
+          class="btn btn-danger"
+          data-testid="confirm-delete-cta"
+          :disabled="isDeleting"
+          @click="deleteSession"
+        >
+          <i class="fas" :class="isDeleting ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
+          {{ t('sessionView.deleteConfirmCta') }}
+        </button>
+        <button
+          class="btn btn-secondary"
+          data-testid="cancel-delete-cta"
+          :disabled="isDeleting"
+          @click="cancelDelete"
+        >
+          <i class="fas fa-times"></i>
+          {{ t('sessionView.cancelCta') }}
+        </button>
+      </template>
+    </BaseModal>
+
     <!-- Full-screen provisioning overlay (shared with ScenarioLauncher) -->
     <ScenarioProvisioningOverlay
       v-if="scenarioLoading"
@@ -178,11 +241,12 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { renderKillercodaMarkdown, loadScenarioImages } from '../../utils/killercodaMarkdown'
 import { scenarioSessionService } from '../../services/domain/scenario'
 import type { ScenarioInfo } from '../../services/domain/scenario'
+import { terminalService } from '../../services/domain/terminal/terminalService'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { useEndStateConfig, type EndStateReason } from '../../composables/useEndStateConfig'
@@ -191,8 +255,10 @@ import ScenarioPanel from '../Terminal/ScenarioPanel.vue'
 import ScenarioStartBar from '../Terminal/ScenarioStartBar.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
 import CommandHistory from '../Terminal/CommandHistory.vue'
+import BaseModal from '../Modals/BaseModal.vue'
 
 const route = useRoute()
+const router = useRouter()
 const { showSuccess, showWarning, showError: showErrorNotification, showInfo } = useNotification()
 
 const { t } = useTranslations({
@@ -230,7 +296,18 @@ const { t } = useTranslations({
       recordingNotice: 'Your terminal commands are recorded for security and learning purposes.',
       learnMore: 'Learn more',
       gotIt: 'Got it',
-      dismissNotice: 'Dismiss recording notice'
+      dismissNotice: 'Dismiss recording notice',
+      pausedTitle: 'Session paused',
+      pausedBody: "The container's disk is preserved. Resume to pick up where you left off.",
+      resumeButton: 'Resume session',
+      resuming: 'Resuming…',
+      resumeFailed: 'Resume failed',
+      deleteButton: 'Delete permanently',
+      deleteFailed: 'Delete failed',
+      deleteConfirmTitle: 'Delete this session?',
+      deleteConfirmBody: 'The container disk and command history will be permanently lost.',
+      deleteConfirmCta: 'Delete',
+      cancelCta: 'Cancel'
     }
   },
   fr: {
@@ -267,7 +344,18 @@ const { t } = useTranslations({
       recordingNotice: 'Vos commandes terminal sont enregistrées à des fins de sécurité et d\'apprentissage.',
       learnMore: 'En savoir plus',
       gotIt: 'Compris',
-      dismissNotice: 'Fermer la notification d\'enregistrement'
+      dismissNotice: 'Fermer la notification d\'enregistrement',
+      pausedTitle: 'Session en pause',
+      pausedBody: 'Le disque du conteneur est conservé. Reprenez où vous en étiez.',
+      resumeButton: 'Reprendre la session',
+      resuming: 'Reprise…',
+      resumeFailed: 'Échec de la reprise',
+      deleteButton: 'Supprimer définitivement',
+      deleteFailed: 'Échec de la suppression',
+      deleteConfirmTitle: 'Supprimer cette session ?',
+      deleteConfirmBody: 'Le disque du conteneur et l\'historique des commandes seront perdus définitivement.',
+      deleteConfirmCta: 'Supprimer',
+      cancelCta: 'Annuler'
     }
   }
 })
@@ -512,6 +600,56 @@ async function stopSession() {
     )
   } finally {
     isStopping.value = false
+  }
+}
+
+// Resume + delete (shown in the "stopped" end-state UI)
+const isResuming = ref(false)
+const showDeleteConfirm = ref(false)
+const isDeleting = ref(false)
+
+async function resumeSession() {
+  if (!sessionInfo.value || isResuming.value) return
+  isResuming.value = true
+  try {
+    await terminalService.startSession(sessionInfo.value.session_id)
+    // Refetch — backend has updated status='active', new expires_at, possibly new IP.
+    // After loadSession() resolves, isSessionActive flips back to true and the
+    // terminal panel re-mounts (WebSocket reconnects naturally).
+    await loadSession()
+  } catch (err: any) {
+    console.error('Error resuming session:', err)
+    showErrorNotification(
+      err.response?.data?.error_message || err.message || t('sessionView.resumeFailed')
+    )
+  } finally {
+    isResuming.value = false
+  }
+}
+
+function askDelete() {
+  showDeleteConfirm.value = true
+}
+
+function cancelDelete() {
+  if (isDeleting.value) return
+  showDeleteConfirm.value = false
+}
+
+async function deleteSession() {
+  if (!sessionInfo.value || isDeleting.value) return
+  isDeleting.value = true
+  try {
+    await terminalService.deleteSession(sessionInfo.value.session_id)
+    showDeleteConfirm.value = false
+    router.push({ name: 'TerminalSessions' })
+  } catch (err: any) {
+    console.error('Error deleting session:', err)
+    showErrorNotification(
+      err.response?.data?.error_message || err.message || t('sessionView.deleteFailed')
+    )
+  } finally {
+    isDeleting.value = false
   }
 }
 
@@ -925,6 +1063,113 @@ onBeforeUnmount(() => {
   }
 
   .end-banner-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* Paused (stopped) banner with in-place resume / delete */
+.session-paused-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  border: var(--border-width-medium) solid var(--color-warning);
+  border-radius: var(--border-radius-md);
+  background-color: var(--color-bg-secondary);
+}
+
+.paused-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex: 1;
+  min-width: 0;
+}
+
+.paused-icon {
+  font-size: var(--font-size-xl);
+  color: var(--color-warning);
+  flex-shrink: 0;
+}
+
+.paused-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.paused-text strong {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.paused-text span {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.paused-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.btn-resume,
+.btn-trash {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  border: var(--border-width-medium) solid transparent;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.btn-resume {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+.btn-resume:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.btn-trash {
+  background-color: transparent;
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.btn-trash:hover:not(:disabled) {
+  background-color: var(--color-danger);
+  color: var(--color-white);
+}
+
+.btn-resume:disabled,
+.btn-trash:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .session-paused-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .paused-actions {
     width: 100%;
     justify-content: flex-start;
   }
