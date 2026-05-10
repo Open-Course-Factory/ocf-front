@@ -293,6 +293,16 @@ function populateFromPlan(plan: any) {
   const features = plan.features || []
   const allFeatures = planFeaturesStore.entities || []
 
+  // Mapping for boolean features that are persisted as dedicated columns on
+  // the plan (not via the features[] array). When such a mapping exists, we
+  // prefer the dedicated column over features[] membership so the toggle
+  // stays in sync with the actual saved value.
+  const booleanFieldMap: Record<string, string> = {
+    network_access: 'network_access_enabled',
+    data_persistence: 'data_persistence_enabled',
+    persistent_sessions_enabled: 'persistent_sessions_enabled'
+  }
+
   // Populate boolean features from plan.features array
   for (const f of allFeatures) {
     if (f.value_type === 'boolean') {
@@ -302,7 +312,14 @@ function populateFromPlan(plan: any) {
         const allowedSizes = plan.allowed_machine_sizes || []
         featureValues[f.key] = allowedSizes.includes(sizeSuffix)
       } else {
-        featureValues[f.key] = features.includes(f.key)
+        // Prefer dedicated column when one exists; otherwise fall back to
+        // features[] membership.
+        const planField = booleanFieldMap[f.key]
+        if (planField && typeof (plan as any)[planField] === 'boolean') {
+          featureValues[f.key] = (plan as any)[planField]
+        } else {
+          featureValues[f.key] = features.includes(f.key)
+        }
       }
     } else if (f.value_type === 'number') {
       // Map number features from dedicated plan fields
@@ -312,7 +329,8 @@ function populateFromPlan(plan: any) {
         data_persistence_gb: 'data_persistence_gb',
         command_history_retention_days: 'command_history_retention_days',
         max_courses: 'max_courses',
-        max_concurrent_users: 'max_concurrent_users'
+        max_concurrent_users: 'max_concurrent_users',
+        max_persistent_sessions: 'max_persistent_sessions'
       }
       const planField = fieldMap[f.key]
       if (planField && plan[planField] !== undefined) {
@@ -347,6 +365,31 @@ function resetForm() {
   }
 }
 
+// Returns the numeric value for a plan field. The form value (if present)
+// always wins -- including an intentional 0. When the form never had this
+// field (e.g. because the matching plan_features catalog row is missing or
+// has been stripped), we preserve the existing plan value rather than
+// silently overwriting it with 0.
+function numericFieldValue(key: string, planField: string): number {
+  if (key in featureValues) {
+    const v = featureValues[key]
+    return typeof v === 'number' ? v : 0
+  }
+  if (props.plan && typeof (props.plan as any)[planField] === 'number') {
+    return (props.plan as any)[planField]
+  }
+  return 0
+}
+
+// Same preserve-existing-value behavior for boolean dedicated columns.
+function booleanFieldValue(key: string, planField: string): boolean {
+  if (key in featureValues) return !!featureValues[key]
+  if (props.plan && typeof (props.plan as any)[planField] === 'boolean') {
+    return (props.plan as any)[planField]
+  }
+  return false
+}
+
 function handleSave() {
   const allFeatures = planFeaturesStore.entities || []
   const enabledFeatures: string[] = []
@@ -367,16 +410,19 @@ function handleSave() {
     ...formData,
     features: enabledFeatures,
     allowed_machine_sizes: allowedMachineSizes,
-    // Map number features to dedicated fields
-    max_session_duration_minutes: featureValues['max_session_duration_minutes'] || 0,
-    max_concurrent_terminals: featureValues['max_concurrent_terminals'] || 0,
-    data_persistence_gb: featureValues['data_persistence_gb'] || 0,
-    command_history_retention_days: featureValues['command_history_retention_days'] || 0,
-    max_courses: featureValues['max_courses'] || 0,
-    max_concurrent_users: featureValues['max_concurrent_users'] || 0,
-    // Map boolean terminal features to dedicated fields
-    network_access_enabled: !!featureValues['network_access'],
-    data_persistence_enabled: !!featureValues['data_persistence']
+    // Map number features to dedicated fields (preserve existing plan value
+    // when the form didn't include this field -- prevents silent 0 wipes).
+    max_session_duration_minutes: numericFieldValue('max_session_duration_minutes', 'max_session_duration_minutes'),
+    max_concurrent_terminals: numericFieldValue('max_concurrent_terminals', 'max_concurrent_terminals'),
+    data_persistence_gb: numericFieldValue('data_persistence_gb', 'data_persistence_gb'),
+    command_history_retention_days: numericFieldValue('command_history_retention_days', 'command_history_retention_days'),
+    max_courses: numericFieldValue('max_courses', 'max_courses'),
+    max_concurrent_users: numericFieldValue('max_concurrent_users', 'max_concurrent_users'),
+    max_persistent_sessions: numericFieldValue('max_persistent_sessions', 'max_persistent_sessions'),
+    // Map boolean terminal features to dedicated fields (same preserve semantics).
+    network_access_enabled: booleanFieldValue('network_access', 'network_access_enabled'),
+    data_persistence_enabled: booleanFieldValue('data_persistence', 'data_persistence_enabled'),
+    persistent_sessions_enabled: booleanFieldValue('persistent_sessions_enabled', 'persistent_sessions_enabled')
   }
 
   if (props.plan) {
