@@ -120,6 +120,15 @@
             <AdminBadge v-if="isAdminGranted" icon-only />
           </button>
           <button
+            v-if="canManage"
+            :class="['tab', { active: activeTab === 'student-sessions' }]"
+            @click="changeTab('student-sessions')"
+          >
+            <i class="fas fa-desktop"></i>
+            {{ t('organizations.studentSessions') }}
+            <AdminBadge v-if="isAdminGranted" icon-only />
+          </button>
+          <button
             :class="['tab', { active: activeTab === 'subscription' }]"
             @click="changeTab('subscription')"
           >
@@ -170,6 +179,11 @@
             />
           </div>
 
+          <!-- Student Sessions Tab -->
+          <div v-if="activeTab === 'student-sessions' && canManage" class="tab-panel">
+            <OrganizationStudentSessionsTab :organization-id="organizationId" />
+          </div>
+
           <!-- Subscription Tab -->
           <div v-if="activeTab === 'subscription'" class="tab-panel">
             <OrganizationSubscriptionManager
@@ -218,6 +232,7 @@ import {
   OrganizationSettingsTab
 } from '../Organizations'
 import OrganizationScenariosTab from '../Organizations/OrganizationScenariosTab.vue'
+import OrganizationStudentSessionsTab from '../Organizations/OrganizationStudentSessionsTab.vue'
 import AdminBadge from '../Common/AdminBadge.vue'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { usePermissionsStore } from '../../stores/permissions'
@@ -255,6 +270,7 @@ const { t } = useTranslations({
       overview: 'Overview',
       subscription: 'Subscription',
       scenarios: 'Scenarios',
+      studentSessions: 'Student Sessions',
       settings: 'Settings',
       notFound: 'Organization not found',
     }
@@ -273,6 +289,7 @@ const { t } = useTranslations({
       overview: 'Aperçu',
       subscription: 'Abonnement',
       scenarios: 'Scénarios',
+      studentSessions: 'Sessions des apprenants',
       settings: 'Paramètres',
       notFound: 'Organisation introuvable',
     }
