@@ -50,6 +50,21 @@ describe('getEffectiveSessionState', () => {
       name: 'no state, no status returns deleted',
       input: {},
       expected: 'deleted'
+    },
+    {
+      // Contract lock: protects against the regression in
+      // OrganizationStudentSessionsTab.vue where the badge read session.status
+      // directly. A live, running session can legitimately carry a stale
+      // legacy status='expired' from server-side bookkeeping; the SSOT helper
+      // MUST prefer state and return 'running'.
+      name: "state='running' wins over legacy status='expired' (SSOT contract)",
+      input: { state: 'running', status: 'expired', expires_at: FUTURE },
+      expected: 'running'
+    },
+    {
+      name: "state='stopped' wins over legacy status='active' (SSOT contract)",
+      input: { state: 'stopped', status: 'active', expires_at: FUTURE },
+      expected: 'stopped'
     }
   ]
 
