@@ -37,9 +37,9 @@
       <div class="status-filter">
         <select v-model="statusFilter" class="filter-select">
           <option value="all">{{ t('sessions.allStatuses') }}</option>
-          <option value="active">{{ t('sessions.statusActive') }}</option>
+          <option value="running">{{ t('sessions.statusRunning') }}</option>
           <option value="stopped">{{ t('sessions.statusStopped') }}</option>
-          <option value="expired">{{ t('sessions.statusExpired') }}</option>
+          <option value="deleted">{{ t('sessions.statusDeleted') }}</option>
         </select>
       </div>
     </div>
@@ -106,8 +106,8 @@
               </td>
               <td>{{ session.name || '-' }}</td>
               <td>
-                <span :class="['status-badge', `status-${getStatusClass(session.status)}`]">
-                  {{ t(`sessions.status${capitalize(session.status)}`) }}
+                <span :class="['status-badge', `status-${getEffectiveSessionState(session)}`]">
+                  {{ t(`sessions.status${capitalize(getEffectiveSessionState(session))}`) }}
                 </span>
               </td>
               <td>{{ session.instance_type || '-' }}</td>
@@ -136,7 +136,7 @@ import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
 import CommandHistory from '../Terminal/CommandHistory.vue'
-import { isSessionActive } from '../../utils/sessionState'
+import { isSessionActive, getEffectiveSessionState } from '../../utils/sessionState'
 
 interface TerminalSession {
   id: string
@@ -170,9 +170,9 @@ const { t } = useTranslations({
       noResults: 'No sessions match your search criteria.',
       searchPlaceholder: 'Search by student or session name...',
       allStatuses: 'All statuses',
-      statusActive: 'Active',
+      statusRunning: 'Running',
       statusStopped: 'Stopped',
-      statusExpired: 'Expired',
+      statusDeleted: 'Deleted',
       colStudent: 'Student',
       colName: 'Session Name',
       colStatus: 'Status',
@@ -192,9 +192,9 @@ const { t } = useTranslations({
       noResults: 'Aucune session ne correspond à vos critères de recherche.',
       searchPlaceholder: 'Rechercher par apprenant ou nom de session...',
       allStatuses: 'Tous les statuts',
-      statusActive: 'Active',
+      statusRunning: 'En cours',
       statusStopped: 'Arrêtée',
-      statusExpired: 'Expirée',
+      statusDeleted: 'Supprimée',
       colStudent: 'Apprenant',
       colName: 'Nom de la session',
       colStatus: 'Statut',
@@ -217,7 +217,7 @@ const filteredSessions = computed(() => {
   let result = sessions.value
 
   if (statusFilter.value !== 'all') {
-    result = result.filter(s => s.status === statusFilter.value)
+    result = result.filter(s => getEffectiveSessionState(s) === statusFilter.value)
   }
 
   if (searchQuery.value.trim()) {
@@ -235,15 +235,6 @@ const filteredSessions = computed(() => {
 function capitalize(str: string): string {
   if (!str) return ''
   return str.charAt(0).toUpperCase() + str.slice(1)
-}
-
-function getStatusClass(status: string): string {
-  switch (status) {
-    case 'active': return 'active'
-    case 'stopped': return 'stopped'
-    case 'expired': return 'expired'
-    default: return 'stopped'
-  }
 }
 
 function formatDateTime(dateStr: string): string {
@@ -476,7 +467,7 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-.status-active {
+.status-running {
   background: var(--color-success-bg);
   color: var(--color-success-text);
 }
@@ -486,7 +477,7 @@ onMounted(() => {
   color: var(--color-text-muted);
 }
 
-.status-expired {
+.status-deleted {
   background: var(--color-warning-bg);
   color: var(--color-warning-text);
 }
