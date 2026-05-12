@@ -92,6 +92,27 @@ export interface SessionOptionSize {
   sort_order: number
   allowed: boolean
   reason?: string
+  /** Parsed memory in MiB (server-computed, optional during dual-mode rollout) */
+  memory_mb?: number
+  /** floor(min(remaining_cpu / cpu, remaining_memory_mb / memory_mb)) — server-computed */
+  remaining_count?: number
+}
+
+/**
+ * Session quota block returned by session-options (budget mode).
+ * Tracks aggregate CPU + memory consumption against plan limits.
+ * Optional during dual-mode rollout — older backends omit this field.
+ */
+export interface SessionQuota {
+  /** 0 = unlimited */
+  max_cpu: number
+  /** 0 = unlimited */
+  max_memory_mb: number
+  used_cpu: number
+  used_memory_mb: number
+  remaining_cpu: number
+  remaining_memory_mb: number
+  scope: 'user' | 'organization' | 'unlimited'
 }
 
 /**
@@ -112,6 +133,8 @@ export interface SessionOptionsResponse {
   distribution: Distribution
   allowed_sizes: SessionOptionSize[]
   allowed_features: SessionOptionFeature[]
+  /** Budget-mode quota block — optional during dual-mode rollout */
+  quota?: SessionQuota
 }
 
 /**

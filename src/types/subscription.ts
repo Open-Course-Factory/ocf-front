@@ -54,7 +54,9 @@ export interface SubscriptionPlan extends BaseEntity {
 
   // Terminal-specific limits
   max_session_duration_minutes: number
+  /** @deprecated will be replaced by max_cpu + max_memory_mb in a future release */
   max_concurrent_terminals: number
+  /** @deprecated will be replaced by max_cpu + max_memory_mb in a future release */
   allowed_machine_sizes: string[] // ["XS", "S", "M", "L"]
   network_access_enabled: boolean
   data_persistence_enabled: boolean
@@ -63,6 +65,14 @@ export interface SubscriptionPlan extends BaseEntity {
   allowed_backends: string[]
   default_backend: string
   command_history_retention_days: number // 0 = no recording, >0 = days to retain
+
+  // Budget-mode limits (optional during dual-mode rollout)
+  /** Aggregate CPU budget across active terminals (0 = unlimited) */
+  max_cpu?: number
+  /** Aggregate memory budget in MiB across active terminals (0 = unlimited) */
+  max_memory_mb?: number
+  /** Discriminator: 'count' = legacy concurrent-terminal cap, 'budget' = CPU/memory budget */
+  quota_model?: 'count' | 'budget'
 
   // Tiered pricing (for bulk purchases)
   use_tiered_pricing: boolean
