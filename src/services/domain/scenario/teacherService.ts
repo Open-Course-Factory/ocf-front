@@ -125,6 +125,17 @@ export const teacherService = {
     return response.data
   },
 
+  async getSessionDetailsBulk(
+    groupId: string,
+    sessionIds: string[]
+  ): Promise<SessionDetailResponse[]> {
+    const response = await axios.post(
+      `/teacher/groups/${groupId}/sessions/details`,
+      { session_ids: sessionIds }
+    )
+    return response.data?.items || []
+  },
+
   async getSessionCommands(
     groupId: string,
     sessionId: string,

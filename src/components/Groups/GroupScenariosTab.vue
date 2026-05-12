@@ -1281,12 +1281,13 @@ function buildDetailCsv(details: Array<{ result: ScenarioResultItem; detail: Ses
 async function exportResultsCsv() {
   if (scenarioResults.value.length === 0) return
   try {
-    const details = await Promise.all(
-      scenarioResults.value.map(async r => ({
-        result: r,
-        detail: await teacherService.getSessionDetail(props.groupId, r.session_id)
-      }))
-    )
+    const ids = scenarioResults.value.map(r => r.session_id)
+    const detailList = await teacherService.getSessionDetailsBulk(props.groupId, ids)
+    // Zip by index — backend preserves input order per !227 contract.
+    const details = scenarioResults.value.map((result, i) => ({
+      result,
+      detail: detailList[i]
+    }))
     const csv = buildDetailCsv(details)
     const scenarioTitle = showResultsForAssignment.value?.scenario?.title || 'export'
     downloadCsv(csv, `scenario-results-${scenarioTitle}.csv`)
@@ -1311,12 +1312,12 @@ async function exportSelectedResults() {
   const selected = scenarioResults.value.filter(r => selectedResults.value.has(r.session_id))
   if (selected.length === 0) return
   try {
-    const details = await Promise.all(
-      selected.map(async r => ({
-        result: r,
-        detail: await teacherService.getSessionDetail(props.groupId, r.session_id)
-      }))
-    )
+    const ids = selected.map(r => r.session_id)
+    const detailList = await teacherService.getSessionDetailsBulk(props.groupId, ids)
+    const details = selected.map((result, i) => ({
+      result,
+      detail: detailList[i]
+    }))
     const csv = buildDetailCsv(details)
     const scenarioTitle = showResultsForAssignment.value?.scenario?.title || 'scenario'
     downloadCsv(csv, `${scenarioTitle}-${selected.length}-students.csv`)
