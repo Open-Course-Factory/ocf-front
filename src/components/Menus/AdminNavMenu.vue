@@ -89,6 +89,7 @@ const { t } = useTranslations({
         scenarioStepHints: 'Scenario Step Hints',
         scenarioSessions: 'Scenario Sessions',
         projectFiles: 'Project Files',
+        observability: 'Observability',
         featureFlags: 'Feature Flags',
         designSystem: 'Design System'
       }
@@ -122,6 +123,7 @@ const { t } = useTranslations({
         scenarioStepHints: 'Indices des Étapes',
         scenarioSessions: 'Sessions de Scénario',
         projectFiles: 'Fichiers Projet',
+        observability: 'Observabilité',
         featureFlags: 'Drapeaux de Fonctionnalités',
         designSystem: 'Système de Design'
       }
@@ -248,6 +250,11 @@ const adminCategories = computed<MenuCategory[]>(() => [
     label: t('admin.categories.debug'),
     icon: 'fas fa-bug',
     items: [
+      {
+        route: '/admin/observability',
+        label: t('admin.items.observability'),
+        icon: 'fas fa-heart-pulse'
+      },
       {
         route: '/debug/feature-flags',
         label: t('admin.items.featureFlags'),

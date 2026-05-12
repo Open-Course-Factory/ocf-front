@@ -150,6 +150,10 @@ const { t } = useTranslations({
           title: 'Sessions',
           description: 'Monitor active scenario sessions'
         },
+        observability: {
+          title: 'Observability',
+          description: 'Stripe sync, scenario sessions and recent hook errors'
+        },
         featureFlags: {
           title: 'Feature Flags',
           description: 'Manage feature flags'
@@ -231,6 +235,10 @@ const { t } = useTranslations({
         sessions: {
           title: 'Sessions',
           description: 'Suivre les sessions de scénario actives'
+        },
+        observability: {
+          title: 'Observabilité',
+          description: 'Synchronisation Stripe, sessions de scénarios et erreurs de hooks récentes'
         },
         featureFlags: {
           title: 'Drapeaux',
@@ -352,6 +360,12 @@ const dashboardSections = computed(() => [
     title: t('adminDashboard.sections.debug.title'),
     icon: 'fas fa-bug',
     items: [
+      {
+        route: '/admin/observability',
+        title: t('adminDashboard.items.observability.title'),
+        description: t('adminDashboard.items.observability.description'),
+        icon: 'fas fa-heart-pulse'
+      },
       {
         route: '/debug/feature-flags',
         title: t('adminDashboard.items.featureFlags.title'),

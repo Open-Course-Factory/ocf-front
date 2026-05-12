@@ -358,6 +358,12 @@ const basicRoutes = [
         meta: { requiresAuth: true, requiresAdmin: true }
       },
       {
+        path: 'admin/observability',
+        name: 'AdminObservability',
+        component: () => import('../components/Pages/Admin/AdminObservability.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
         path: 'admin/scenarios',
         name: 'AdminScenarios',
         component: () => import('../components/Pages/Admin/Scenarios.vue'),
