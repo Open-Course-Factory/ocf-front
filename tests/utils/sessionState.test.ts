@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { getEffectiveSessionState, isSessionActive } from '../../src/utils/sessionState'
+import {
+  getEffectiveSessionState,
+  isSessionActive,
+  canConnectToTerminal,
+  preConnectError
+} from '../../src/utils/sessionState'
 
 describe('getEffectiveSessionState', () => {
   // Lock the clock so expires_at comparisons are deterministic
@@ -105,4 +110,161 @@ describe('isSessionActive', () => {
   it('returns false when state is stopped', () => {
     expect(isSessionActive({ state: 'stopped', expires_at: FUTURE })).toBe(false)
   })
+})
+
+describe('canConnectToTerminal', () => {
+  // Lock the clock so expires_at comparisons are deterministic
+  const NOW = new Date('2026-05-10T12:00:00Z').getTime()
+  const FUTURE = new Date(NOW + 60 * 60 * 1000).toISOString() // +1h
+  const PAST = new Date(NOW - 60 * 60 * 1000).toISOString() // -1h
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(NOW)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  const cases: Array<{
+    name: string
+    session: Parameters<typeof canConnectToTerminal>[0]
+    isWebSocketOpen: boolean
+    expected: boolean
+  }> = [
+    {
+      name: 'WS closed → false regardless of running session',
+      session: { state: 'running', expires_at: FUTURE },
+      isWebSocketOpen: false,
+      expected: false
+    },
+    {
+      name: 'WS closed + null session → false',
+      session: null,
+      isWebSocketOpen: false,
+      expected: false
+    },
+    {
+      name: 'WS open + null session → trust WS (sessionInfo not yet loaded)',
+      session: null,
+      isWebSocketOpen: true,
+      expected: true
+    },
+    {
+      name: 'WS open + undefined session → trust WS (sessionInfo not yet loaded)',
+      session: undefined,
+      isWebSocketOpen: true,
+      expected: true
+    },
+    {
+      name: 'WS open + state=running + future expiry → true',
+      session: { state: 'running', expires_at: FUTURE },
+      isWebSocketOpen: true,
+      expected: true
+    },
+    {
+      name: 'WS open + state=stopped → false',
+      session: { state: 'stopped', expires_at: FUTURE },
+      isWebSocketOpen: true,
+      expected: false
+    },
+    {
+      name: 'WS open + state=deleted → false',
+      session: { state: 'deleted', expires_at: FUTURE },
+      isWebSocketOpen: true,
+      expected: false
+    },
+    {
+      name: 'WS open + past expiry → false (SSOT invariant)',
+      session: { state: 'running', expires_at: PAST },
+      isWebSocketOpen: true,
+      expected: false
+    },
+    {
+      // THE bug fix — protects against the regression where a live, running
+      // session carrying a stale legacy status='stopped' was treated as not
+      // connectable. SSOT must prefer state and return connectable.
+      name: "WS open + state='running' wins over legacy status='stopped' (THE bug fix)",
+      session: { state: 'running', status: 'stopped', expires_at: FUTURE },
+      isWebSocketOpen: true,
+      expected: true
+    },
+    {
+      name: "WS open + no state, legacy status='active' → true",
+      session: { status: 'active', expires_at: FUTURE },
+      isWebSocketOpen: true,
+      expected: true
+    }
+  ]
+
+  for (const c of cases) {
+    it(c.name, () => {
+      expect(canConnectToTerminal(c.session, c.isWebSocketOpen)).toBe(c.expected)
+    })
+  }
+})
+
+describe('preConnectError', () => {
+  // Lock the clock so expires_at comparisons are deterministic
+  const NOW = new Date('2026-05-10T12:00:00Z').getTime()
+  const FUTURE = new Date(NOW + 60 * 60 * 1000).toISOString() // +1h
+  const PAST = new Date(NOW - 60 * 60 * 1000).toISOString() // -1h
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(NOW)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  const cases: Array<{
+    name: string
+    session: Parameters<typeof preConnectError>[0]
+    expected: ReturnType<typeof preConnectError>
+  }> = [
+    {
+      name: 'null session → null (no error; caller decides)',
+      session: null,
+      expected: null
+    },
+    {
+      name: "state='running' + future expiry → null (connectable, no error)",
+      session: { state: 'running', expires_at: FUTURE },
+      expected: null
+    },
+    {
+      name: "state='stopped' → 'sessionEnded'",
+      session: { state: 'stopped', expires_at: FUTURE },
+      expected: 'sessionEnded'
+    },
+    {
+      name: "state='deleted' → 'sessionExpired'",
+      session: { state: 'deleted', expires_at: FUTURE },
+      expected: 'sessionExpired'
+    },
+    {
+      name: "past expiry overrides state → 'sessionExpired' (SSOT invariant)",
+      session: { state: 'running', expires_at: PAST },
+      expected: 'sessionExpired'
+    },
+    {
+      name: "no state, legacy status='active' → null (connectable)",
+      session: { status: 'active', expires_at: FUTURE },
+      expected: null
+    },
+    {
+      name: "no state, no status → 'sessionExpired' (default to ended)",
+      session: {},
+      expected: 'sessionExpired'
+    }
+  ]
+
+  for (const c of cases) {
+    it(c.name, () => {
+      expect(preConnectError(c.session)).toBe(c.expected)
+    })
+  }
 })
