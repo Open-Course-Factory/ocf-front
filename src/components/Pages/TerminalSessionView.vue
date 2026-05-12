@@ -596,7 +596,10 @@ async function stopSession() {
   isStopping.value = true
   try {
     await axios.post(`/terminals/${sessionInfo.value.session_id}/stop`)
-    sessionInfo.value.status = 'stopped'
+    // Refetch — backend has updated state='stopped' and may have other side effects.
+    // loadSession() does not call startExpirationTimer when status is 'stopped',
+    // so we still clear the stale countdown interval locally here.
+    await loadSession()
     timeRemaining.value = 0
     if (timerInterval) {
       clearInterval(timerInterval)

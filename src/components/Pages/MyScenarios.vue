@@ -342,7 +342,7 @@ async function handleAbandon(session: MyScenarioSession) {
   if (!confirm(t('myScenarios.abandonConfirm'))) return
   try {
     await scenarioSessionService.abandonSession(session.id)
-    session.status = 'abandoned'
+    await loadSessions()
   } catch {
     alert(t('myScenarios.abandonError'))
   }

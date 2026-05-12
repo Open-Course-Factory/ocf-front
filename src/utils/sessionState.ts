@@ -73,3 +73,35 @@ export function isSessionActive(
 ): boolean {
   return getEffectiveSessionState(session) === 'running'
 }
+
+/**
+ * Whether the WebSocket-backed terminal is currently usable: socket open AND
+ * the session is effectively running per the SSOT. If sessionInfo is not yet
+ * loaded, we trust the WebSocket state (the terminal page can open the WS
+ * before sessionInfo is fetched, and we don't want to flicker an error during
+ * that window).
+ */
+export function canConnectToTerminal(
+  session: SessionLifecycleFields | null | undefined,
+  isWebSocketOpen: boolean
+): boolean {
+  if (!isWebSocketOpen) return false
+  if (session == null) return true
+  return isSessionActive(session)
+}
+
+/**
+ * Pre-connection error label to show when the terminal is not yet connected.
+ * Returns null when the session is connectable (the caller should not show
+ * an error in that case). 'sessionEnded' for stopped sessions, 'sessionExpired'
+ * for deleted or expired sessions.
+ */
+export function preConnectError(
+  session: SessionLifecycleFields | null | undefined
+): 'sessionEnded' | 'sessionExpired' | null {
+  if (session == null) return null
+  const state = getEffectiveSessionState(session)
+  if (state === 'running') return null
+  if (state === 'stopped') return 'sessionEnded'
+  return 'sessionExpired'
+}

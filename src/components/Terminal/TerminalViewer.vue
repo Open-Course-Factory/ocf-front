@@ -190,6 +190,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { useEndStateConfig, type EndStateReason } from '../../composables/useEndStateConfig'
 import { getTerminalTheme } from '../../utils/terminalTheme'
+import { canConnectToTerminal, preConnectError } from '../../utils/sessionState'
 import { terminalService } from '../../services/domain/terminal/terminalService'
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
@@ -368,28 +369,10 @@ const displaySessionId = computed(() => {
   return Array.isArray(id) ? id[0] : id
 })
 
-// Computed: true connection status (WebSocket open AND session not expired)
-const isConnected = computed(() => {
-  if (!isWsOpen.value) return false
-
-  // If no sessionInfo, can't verify expiration - trust WebSocket state
-  if (!sessionInfo.value) return true
-
-  // Check session status
-  const validStatuses = ['running', 'active', 'starting']
-  if (sessionInfo.value.status && !validStatuses.includes(sessionInfo.value.status.toLowerCase())) {
-    return false
-  }
-
-  // Check expiration date if available
-  if (sessionInfo.value.expires_at) {
-    const expiresAt = new Date(sessionInfo.value.expires_at)
-    const now = new Date()
-    if (expiresAt <= now) return false
-  }
-
-  return true
-})
+// Computed: true connection status (WebSocket open AND session running per SSOT)
+const isConnected = computed(() =>
+  canConnectToTerminal(sessionInfo.value, isWsOpen.value)
+)
 
 // Initialize xterm.js modules
 async function initXterm(): Promise<boolean> {
@@ -519,30 +502,12 @@ async function connectToTerminal() {
   error.value = ''
 
   try {
-    // Check if session is expired BEFORE attempting connection
-    if (sessionInfo.value) {
-      // Check expiration
-      if (sessionInfo.value.expires_at) {
-        const expiresAt = new Date(sessionInfo.value.expires_at)
-        const now = new Date()
-
-        if (expiresAt <= now) {
-          error.value = t('terminal.sessionExpired')
-          isConnecting.value = false
-          return
-        }
-      }
-
-      // Check status
-      const validStatuses = ['running', 'active', 'starting']
-      if (sessionInfo.value.status && !validStatuses.includes(sessionInfo.value.status.toLowerCase())) {
-        const endedStatuses = ['stopped', 'exited', 'terminated', 'system_limit']
-        error.value = endedStatuses.includes(sessionInfo.value.status.toLowerCase())
-          ? t('terminal.sessionEnded')
-          : t('terminal.sessionExpired')
-        isConnecting.value = false
-        return
-      }
+    // Check if session is connectable BEFORE attempting connection
+    const errKey = preConnectError(sessionInfo.value)
+    if (errKey) {
+      error.value = t(`terminal.${errKey}`)
+      isConnecting.value = false
+      return
     }
 
     // Close existing connection
