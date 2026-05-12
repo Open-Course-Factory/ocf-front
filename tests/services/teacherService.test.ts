@@ -180,3 +180,78 @@ describe('teacherService.getSessionDetail', () => {
     expect(result.steps[0].questions).toBeUndefined()
   })
 })
+
+describe('teacherService.getSessionDetailsBulk', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('POSTs to the bulk endpoint with session_ids body', async () => {
+    const sessions: SessionDetailResponse[] = [
+      {
+        session_id: 's1',
+        user_id: 'user-1',
+        scenario_id: 'scenario-1',
+        scenario_title: 'Linux basics',
+        status: 'completed',
+        started_at: '2026-05-01T10:00:00Z',
+        steps: []
+      },
+      {
+        session_id: 's2',
+        user_id: 'user-2',
+        scenario_id: 'scenario-1',
+        scenario_title: 'Linux basics',
+        status: 'completed',
+        started_at: '2026-05-01T10:00:00Z',
+        steps: []
+      }
+    ]
+    mockedAxios.post.mockResolvedValueOnce({ data: { items: sessions } })
+
+    await teacherService.getSessionDetailsBulk('group-1', ['s1', 's2'])
+
+    expect(mockedAxios.post).toHaveBeenCalledWith(
+      '/teacher/groups/group-1/sessions/details',
+      { session_ids: ['s1', 's2'] }
+    )
+  })
+
+  it('returns the items array, not the wrapper', async () => {
+    const sessions: SessionDetailResponse[] = [
+      {
+        session_id: 'a',
+        user_id: 'u',
+        scenario_id: 'sc',
+        scenario_title: 'X',
+        status: 'completed',
+        started_at: '2026-05-01T10:00:00Z',
+        steps: []
+      },
+      {
+        session_id: 'b',
+        user_id: 'u',
+        scenario_id: 'sc',
+        scenario_title: 'X',
+        status: 'completed',
+        started_at: '2026-05-01T10:00:00Z',
+        steps: []
+      }
+    ]
+    mockedAxios.post.mockResolvedValueOnce({ data: { items: sessions } })
+
+    const result = await teacherService.getSessionDetailsBulk('group-1', ['a', 'b'])
+
+    expect(result).toEqual(sessions)
+    expect(Array.isArray(result)).toBe(true)
+    expect(result).toHaveLength(2)
+  })
+
+  it('returns empty array when items is missing or null', async () => {
+    mockedAxios.post.mockResolvedValueOnce({ data: {} })
+
+    const result = await teacherService.getSessionDetailsBulk('group-1', [])
+
+    expect(result).toEqual([])
+  })
+})
