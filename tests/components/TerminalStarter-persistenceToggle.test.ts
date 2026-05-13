@@ -257,7 +257,7 @@ describe('TerminalStarter — persistence toggle', () => {
   })
 
   describe('payload construction', () => {
-    it('includes persistence_mode = ephemeral by default for paid tiers', async () => {
+    it('defaults to persistence_mode = persistent for paid tiers (better UX out of the box)', async () => {
       setPaidPlan(true)
       const wrapper = mountStarter()
       await flushPromises()
@@ -266,23 +266,23 @@ describe('TerminalStarter — persistence toggle', () => {
 
       expect(mockStartComposed).toHaveBeenCalledTimes(1)
       const payload = mockStartComposed.mock.calls[0][0]
-      expect(payload.persistence_mode).toBe('ephemeral')
+      expect(payload.persistence_mode).toBe('persistent')
     })
 
-    it('includes persistence_mode = persistent after the user selects it', async () => {
+    it('includes persistence_mode = ephemeral after the user selects it', async () => {
       setPaidPlan(true)
       const wrapper = mountStarter()
       await flushPromises()
 
-      // Click the persistent radio (mark it checked, fire change).
-      const persistent = wrapper.find('[data-testid="persistence-persistent"]')
-      await persistent.setValue(true)
-      await persistent.trigger('change')
+      // Click the ephemeral radio (mark it checked, fire change).
+      const ephemeral = wrapper.find('[data-testid="persistence-ephemeral"]')
+      await ephemeral.setValue(true)
+      await ephemeral.trigger('change')
 
       await launchSession(wrapper)
 
       const payload = mockStartComposed.mock.calls[0][0]
-      expect(payload.persistence_mode).toBe('persistent')
+      expect(payload.persistence_mode).toBe('ephemeral')
     })
 
     it('omits persistence_mode entirely on the free tier (backend default applies)', async () => {
@@ -325,14 +325,16 @@ describe('TerminalStarter — persistence toggle', () => {
       expect(persistent.element.checked).toBe(true)
     })
 
-    it('falls back to ephemeral if the stored value is invalid JSON', async () => {
+    it('falls back to the plan-aware default if the stored value is invalid JSON', async () => {
+      // With invalid JSON we have no user preference. On a paid plan we now
+      // default to 'persistent' (better UX out of the box).
       localStorage.setItem('ocf-last-session-config', '{not valid json')
       setPaidPlan(true)
       const wrapper = mountStarter()
       await flushPromises()
 
-      const ephemeral = wrapper.find<HTMLInputElement>('[data-testid="persistence-ephemeral"]')
-      expect(ephemeral.element.checked).toBe(true)
+      const persistent = wrapper.find<HTMLInputElement>('[data-testid="persistence-persistent"]')
+      expect(persistent.element.checked).toBe(true)
     })
   })
 

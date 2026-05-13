@@ -456,14 +456,24 @@ const forcedEphemeral = computed<boolean>(() => {
   return props.activeScenario?.crash_traps === true
 })
 
-function readLastPersistenceMode(): PersistenceMode {
+/**
+ * Read the user's last-chosen persistence mode from localStorage.
+ *
+ * Returns `undefined` when the user has no recorded preference (or storage is
+ * unreadable). The caller decides what to default to in that case — when the
+ * plan supports persistence we now prefer 'persistent' so paid-tier users get
+ * the better UX without hunting through the advanced options.
+ */
+function readLastPersistenceMode(): PersistenceMode | undefined {
   try {
     const stored = localStorage.getItem(LAST_CONFIG_KEY)
-    if (!stored) return 'ephemeral'
+    if (!stored) return undefined
     const parsed = JSON.parse(stored)
-    return parsed?.persistence_mode === 'persistent' ? 'persistent' : 'ephemeral'
+    if (parsed?.persistence_mode === 'persistent') return 'persistent'
+    if (parsed?.persistence_mode === 'ephemeral') return 'ephemeral'
+    return undefined
   } catch {
-    return 'ephemeral'
+    return undefined
   }
 }
 
@@ -792,9 +802,11 @@ function cleanup() {
 }
 
 onMounted(async () => {
-  // Restore last-used persistence preference from localStorage. If the scenario
-  // forces ephemeral, the watcher will normalize it back when the prop is set.
-  persistenceMode.value = readLastPersistenceMode()
+  // Restore last-used persistence preference from localStorage. We hold off on
+  // the plan-aware default until the subscription has actually loaded — see
+  // below. If the scenario forces ephemeral, normalize immediately.
+  const stored = readLastPersistenceMode()
+  if (stored) persistenceMode.value = stored
   if (forcedEphemeral.value) {
     persistenceMode.value = 'ephemeral'
   }
@@ -804,6 +816,14 @@ onMounted(async () => {
     loadCurrentTerminalUsage(),
     userSettingsStore.loadSettings()
   ])
+
+  // Plan-aware default: once we know whether the plan allows persistence and
+  // the user hasn't picked anything yet, default to 'persistent' so paid-tier
+  // users get the better UX without digging through advanced options. Scenarios
+  // with crash_traps still force ephemeral and the watcher above normalises it.
+  if (!stored && !forcedEphemeral.value && persistentSessionsEnabled.value) {
+    persistenceMode.value = 'persistent'
+  }
 
   // Graceful migration: if user had the legacy localStorage flag but no server-side record yet,
   // persist it server-side and clear the local key.
