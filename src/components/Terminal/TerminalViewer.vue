@@ -39,7 +39,7 @@
         <span v-if="isConnected" class="status-connected">
           <i class="fas fa-circle"></i> {{ t('terminal.connected') }}
         </span>
-        <span v-else class="status-disconnected">
+        <span v-else-if="showDisconnectedIndicator" class="status-disconnected">
           <i class="fas fa-circle"></i> {{ t('terminal.disconnected') }}
         </span>
       </div>
@@ -114,7 +114,7 @@
           <span v-if="isConnected" class="status-connected">
             <i class="fas fa-circle"></i> {{ t('terminal.connected') }}
           </span>
-          <span v-else class="status-disconnected">
+          <span v-else-if="showDisconnectedIndicator" class="status-disconnected">
             <i class="fas fa-circle"></i>
             {{ isConnecting ? t('terminal.connecting') : t('terminal.disconnected') }}
           </span>
@@ -373,6 +373,18 @@ const displaySessionId = computed(() => {
 const isConnected = computed(() =>
   canConnectToTerminal(sessionInfo.value, isWsOpen.value)
 )
+
+// Suppress the "Déconnecté" status pill when the user intentionally stopped the
+// session (props.isStopping) or when an end-state overlay is already rendered.
+// In those windows the disconnect is expected — showing it as a red error
+// indicator is noise. Real disconnects (network drop, server crash) still
+// surface because isStopping=false and endReason='' in those cases.
+const showDisconnectedIndicator = computed(() => {
+  if (isConnected.value) return false
+  if (props.isStopping) return false
+  if (activeEndState.value) return false
+  return true
+})
 
 // Initialize xterm.js modules
 async function initXterm(): Promise<boolean> {
