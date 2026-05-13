@@ -91,7 +91,7 @@
             :has-scenario="terminalHadScenario"
             :scenario-session-id="scenarioSessionId"
             :scenario-flags-enabled="scenarioBriefing?.flags_enabled ?? false"
-            show-stop-button
+            :show-stop-button="isPersistent"
             :is-stopping="isStopping"
             @stop="stopSession"
             @recording-detected="isRecording = true"
@@ -128,7 +128,7 @@
           :end-reason="terminalEndReason"
           :has-scenario="terminalHadScenario"
           :show-history="!scenarioLoading"
-          show-stop-button
+          :show-stop-button="isPersistent"
           :is-stopping="isStopping"
           @stop="stopSession"
           @recording-detected="isRecording = true"
@@ -139,8 +139,12 @@
 
       <!-- Session ended: show state-aware banner + history -->
       <template v-else>
-        <!-- Stopped: in-place resume / delete UI -->
-        <div v-if="terminalEndReason === 'stopped'" class="session-paused-banner" role="status">
+        <!-- Stopped: in-place resume / delete UI.
+             Persistence guard: only persistent sessions have a resumable
+             "stopped" state. Ephemeral sessions are destroyed at expiry —
+             if one ever reaches state='stopped' (stale row, backend bug)
+             we must NOT offer Resume; fall through to activeEndBanner. -->
+        <div v-if="terminalEndReason === 'stopped' && isPersistent" class="session-paused-banner" role="status">
           <div class="paused-content">
             <i class="fas fa-pause-circle paused-icon" aria-hidden="true"></i>
             <div class="paused-text">
@@ -548,6 +552,13 @@ function stopScenarioSync() {
 }
 
 const effectiveState = computed(() => getEffectiveSessionState(sessionInfo.value))
+
+// SSOT for the persistent-vs-ephemeral gate. Mirrors the backend's
+// persistence_mode field (set at launch time by TerminalStarter's
+// persistence-toggle, gated on the plan's data_persistence_enabled).
+// Used to hide the Stop button for ephemeral sessions (they only support
+// Destroy) and to gate the "Session arrêtée" Resume banner.
+const isPersistent = computed(() => sessionInfo.value?.persistence_mode === 'persistent')
 
 const isSessionActive = computed(() => {
   if (!sessionInfo.value) return false

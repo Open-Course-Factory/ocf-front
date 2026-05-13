@@ -135,6 +135,9 @@ async function seedStoppedSession() {
         status: 'stopped',
         state: 'stopped',
         expires_at: futureExpiry,
+        // persistence_mode is required for the resume banner to render —
+        // only persistent sessions reach state='stopped' in production.
+        persistence_mode: 'persistent',
         name: 'My stopped session'
       }
     ]

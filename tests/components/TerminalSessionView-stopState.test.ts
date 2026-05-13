@@ -172,6 +172,10 @@ describe('TerminalSessionView — stop state propagation', () => {
           status: 'stopped',
           state: 'stopped',
           expires_at: futureExpiry,
+          // persistence_mode is required for the resume banner to render —
+          // only persistent sessions can legitimately reach state='stopped'.
+          // See TerminalSessionView-persistenceMode.test.ts for the gate.
+          persistence_mode: 'persistent',
           name: 'My stopped session'
         }
       ]
