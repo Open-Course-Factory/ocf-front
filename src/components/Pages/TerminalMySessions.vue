@@ -183,15 +183,18 @@
 
                 <!-- Action buttons -->
                 <div class="card-actions-compact">
-                  <!-- Open-in-page / Open-in-tab: only when running -->
+                  <!-- Open-in-page: available for running AND stopped sessions
+                       (stopped → user can review command history in the detail view).
+                       Only hidden once the session reaches 'deleted' (no container, no history left to inspect). -->
                   <router-link
-                    v-if="getEffectiveSessionState(session) === 'running'"
+                    v-if="getEffectiveSessionState(session) !== 'deleted'"
                     class="btn-icon btn-view"
                     :to="{ name: 'TerminalSessionView', params: { sessionId: session.session_id } }"
                     :title="t('terminalMySessions.buttonOpenInPage')"
                   >
                     <i class="fas fa-desktop"></i>
                   </router-link>
+                  <!-- Open-in-tab: only when running (a stopped session can't be attached to) -->
                   <button
                     v-if="getEffectiveSessionState(session) === 'running'"
                     class="btn-icon btn-primary"
@@ -213,14 +216,19 @@
                     <i class="fas fa-play"></i>
                   </button>
 
-                  <!-- Stop: only when running -->
+                  <!-- Stop: only when running.
+                       For ephemeral sessions, the button stays visible but is disabled
+                       (grayed) with a tooltip explaining why — Stop preserves a disk
+                       that doesn't exist for ephemeral sessions, so the user should
+                       use Destroy (trash) instead. We keep the affordance visible so
+                       the user can see the tooltip and understand the difference. -->
                   <button
                     v-if="getEffectiveSessionState(session) === 'running'"
                     class="btn-icon btn-stop"
                     :data-testid="'btn-stop-' + session.session_id"
                     @click="handleStopSession(session.session_id)"
-                    :disabled="!!transitioning[session.session_id]"
-                    :title="t('terminalMySessions.tooltipStop')"
+                    :disabled="!isSessionPersistent(session) || !!transitioning[session.session_id]"
+                    :title="isSessionPersistent(session) ? t('terminalMySessions.tooltipStop') : t('terminalMySessions.tooltipStopEphemeral')"
                   >
                     <i class="fas fa-stop"></i>
                   </button>
@@ -586,6 +594,7 @@ const { t } = useTranslations({
       buttonHideSession: 'Hide',
       tooltipStart: 'Resume this session (preserves disk and history)',
       tooltipStop: 'Stop this session (preserves disk so you can resume later)',
+      tooltipStopEphemeral: 'Persistence is not enabled for this terminal — use Destroy (trash) to terminate it.',
       tooltipDelete: 'Delete this session permanently',
       tooltipSync: 'Sync this session with the Terminal Trainer API',
       tooltipSyncAll: 'Sync all sessions with the Terminal Trainer API',
@@ -695,6 +704,7 @@ const { t } = useTranslations({
       buttonHideSession: 'Masquer',
       tooltipStart: 'Reprendre cette session (conserve le disque et l\'historique)',
       tooltipStop: 'Arrêter cette session (conserve le disque pour reprise ultérieure)',
+      tooltipStopEphemeral: 'La persistance n\'est pas activée pour ce terminal — utilisez Détruire (corbeille) pour le terminer.',
       tooltipDelete: 'Supprimer définitivement cette session',
       tooltipSync: 'Synchroniser cette session avec l\'API Terminal Trainer',
       tooltipSyncAll: 'Synchroniser toutes les sessions avec l\'API Terminal Trainer',
@@ -808,6 +818,16 @@ const countdownTick = ref(0)
 // Helper: an "inactive" terminal (in the listing sense) is one that is deleted/gone
 function isTerminalInactive(session: any): boolean {
   return getEffectiveSessionState(session) === 'deleted'
+}
+
+// SSOT for the persistent-vs-ephemeral gate. Mirrors the backend
+// `persistence_mode` field returned by GET /terminals/user-sessions
+// (set at launch time by TerminalStarter's persistence-toggle, gated on
+// the plan's data_persistence_enabled). Defaults to false when the field
+// is absent so we fail-safe to "ephemeral" semantics — Stop is disabled
+// and the user is steered toward Destroy.
+function isSessionPersistent(session: any): boolean {
+  return session?.persistence_mode === 'persistent'
 }
 
 // Computed property for all sessions

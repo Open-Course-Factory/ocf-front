@@ -99,6 +99,9 @@ type SessionFixture = {
   idle_until?: string
   expires_at?: string
   name?: string
+  // persistence_mode='persistent' enables the Stop button; default
+  // (undefined) treats the session as ephemeral and disables Stop.
+  persistence_mode?: 'ephemeral' | 'persistent'
 }
 
 function mountPage(sessions: SessionFixture[]) {
@@ -249,10 +252,12 @@ describe('TerminalMySessions — 3-button action bar', () => {
   })
 
   describe('start / stop wiring', () => {
-    it('clicking Stop on a running session calls terminalService.stopSession', async () => {
+    it('clicking Stop on a running persistent session calls terminalService.stopSession', async () => {
       mockStopSession.mockResolvedValueOnce({})
+      // Stop only makes sense for persistent sessions (Stop preserves the disk);
+      // ephemeral sessions render the button as disabled — see ephemeral test below.
       const wrapper = mountPage([
-        { id: 'i', session_id: 'sess-running', state: 'running' }
+        { id: 'i', session_id: 'sess-running', state: 'running', persistence_mode: 'persistent' }
       ])
       await flushPromises()
 
@@ -280,6 +285,50 @@ describe('TerminalMySessions — 3-button action bar', () => {
     })
   })
 
+  // Stop on an ephemeral session is meaningless — there is no persistent disk
+  // to preserve, so the affordance is rendered but disabled (grayed) with a
+  // tooltip explaining "use Destroy instead". The button must stay visible
+  // (NOT hidden) so the user can hover-discover the tooltip.
+  describe('Stop button is disabled (not hidden) for ephemeral sessions', () => {
+    it('running ephemeral session → Stop button visible but disabled', async () => {
+      const wrapper = mountPage([
+        // No persistence_mode set → defaults to ephemeral semantics
+        { id: 'eph', session_id: 'sess-eph', state: 'running' }
+      ])
+      await flushPromises()
+
+      const stopBtn = wrapper.find('[data-testid="btn-stop-sess-eph"]')
+      expect(stopBtn.exists()).toBe(true)
+      expect((stopBtn.element as HTMLButtonElement).disabled).toBe(true)
+    })
+
+    it('running ephemeral session → clicking disabled Stop does NOT call stopSession', async () => {
+      const wrapper = mountPage([
+        { id: 'eph2', session_id: 'sess-eph2', state: 'running', persistence_mode: 'ephemeral' }
+      ])
+      await flushPromises()
+
+      // Trigger the click — disabled buttons do not fire DOM events in real
+      // browsers, but JSDOM dispatches them anyway. The handler's no-op via
+      // :disabled is what we're asserting, not the platform's gating.
+      await wrapper.find('[data-testid="btn-stop-sess-eph2"]').trigger('click')
+      await flushPromises()
+
+      expect(mockStopSession).not.toHaveBeenCalled()
+    })
+
+    it('running persistent session → Stop button visible AND enabled', async () => {
+      const wrapper = mountPage([
+        { id: 'per', session_id: 'sess-per', state: 'running', persistence_mode: 'persistent' }
+      ])
+      await flushPromises()
+
+      const stopBtn = wrapper.find('[data-testid="btn-stop-sess-per"]')
+      expect(stopBtn.exists()).toBe(true)
+      expect((stopBtn.element as HTMLButtonElement).disabled).toBe(false)
+    })
+  })
+
   // The handlers must NOT optimistically flip the visible state when the
   // backend rejects the action. Failures must surface via showError, the row
   // must stay as it was, and the per-session transitioning flag must clear.
@@ -293,7 +342,7 @@ describe('TerminalMySessions — 3-button action bar', () => {
     it('Stop returning 409 → row stays "running", showError fired, transitioning cleared', async () => {
       mockStopSession.mockRejectedValueOnce(rejectWith(409, 'session is provisioning'))
       const wrapper = mountPage([
-        { id: 'i', session_id: 'sess-running', state: 'running' }
+        { id: 'i', session_id: 'sess-running', state: 'running', persistence_mode: 'persistent' }
       ])
       await flushPromises()
 
