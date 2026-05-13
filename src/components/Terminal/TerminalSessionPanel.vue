@@ -23,7 +23,11 @@
       :full-height="false"
       :show-stop-button="showStopButton"
       :is-stopping="isStopping"
+      :can-stop="canStop"
+      :show-destroy-button="showDestroyButton"
+      :is-destroying="isDestroying"
       @stop="$emit('stop')"
+      @destroy="$emit('destroy')"
       @session-warning="$emit('session-warning', $event)"
       @session-expired="$emit('session-expired')"
     />
@@ -70,6 +74,12 @@ interface Props {
   isRecording?: boolean
   showStopButton?: boolean
   isStopping?: boolean
+  // Forwarded to TerminalViewer — disables the Stop button (renders grayed)
+  // when false, showing the ephemeral tooltip instead of hiding the affordance.
+  canStop?: boolean
+  // Forwarded to TerminalViewer — adds a Destroy button (irreversible removal).
+  showDestroyButton?: boolean
+  isDestroying?: boolean
   showHistory?: boolean
   scenarioSessionId?: string
   scenarioFlagsEnabled?: boolean
@@ -81,6 +91,9 @@ withDefaults(defineProps<Props>(), {
   isRecording: false,
   showStopButton: false,
   isStopping: false,
+  canStop: true,
+  showDestroyButton: false,
+  isDestroying: false,
   showHistory: true,
   scenarioSessionId: undefined,
   scenarioFlagsEnabled: false,
@@ -90,6 +103,7 @@ withDefaults(defineProps<Props>(), {
 
 defineEmits<{
   stop: []
+  destroy: []
   'recording-detected': []
   'session-warning': [level: 'info' | 'warning' | 'danger']
   'session-expired': []
