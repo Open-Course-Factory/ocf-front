@@ -686,7 +686,16 @@ async function loadSession() {
       status: terminal.status,
       name: terminal.name,
       instance_type: terminal.instance_type,
-      machine_size: terminal.machine_size
+      machine_size: terminal.machine_size,
+      // SSOT — getEffectiveSessionState() prefers the new `state` field over
+      // the legacy `status` field. Dropping `state` here silently forces every
+      // downstream reader (effectiveState, terminalEndReason, the stopped
+      // banner) onto the legacy branch, which maps stopped→deleted→expired
+      // and hides the Resume + Delete CTAs. Keep this explicit list in sync
+      // with the API contract — see src/utils/sessionState.ts.
+      state: terminal.state,
+      persistence_mode: terminal.persistence_mode,
+      idle_until: terminal.idle_until
     }
 
     // Start expiration timer only for active sessions
