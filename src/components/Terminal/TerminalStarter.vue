@@ -226,6 +226,7 @@ const { t } = useTranslations({
       privacyPolicyLink: 'Learn more about how your data is handled',
       termsAcceptance: "J'accepte les conditions d'utilisation du service terminal.",
       errorStartingSession: 'Error starting session',
+      errorPersistencePlanDisabled: 'Persistent sessions are not available on your current plan. Choose ephemeral mode or upgrade.',
     }
   },
   fr: {
@@ -274,6 +275,7 @@ const { t } = useTranslations({
       privacyPolicyLink: 'En savoir plus sur le traitement de vos données',
       termsAcceptance: "J'accepte les conditions d'utilisation du service terminal.",
       errorStartingSession: 'Erreur lors du démarrage de la session',
+      errorPersistencePlanDisabled: 'Les sessions persistantes ne sont pas disponibles sur votre offre actuelle. Choisissez le mode éphémère ou améliorez votre offre.',
     }
   }
 })
@@ -601,6 +603,28 @@ function getLimitReachedMessage(source?: string): string {
   return getLocalizedLimitMessage({ source, isAssignedSubscription: isAssignedSubscription.value })
 }
 
+/**
+ * Detect a backend rejection caused by the plan not allowing persistent
+ * sessions. ocf-core wraps the error like:
+ *   "persistence_mode is not allowed: plan_disabled: persistence not available on your plan"
+ * It returns 400/403 depending on the layer. We match on the structured
+ * 'plan_disabled' marker plus a 'persistence' substring so this stays narrow
+ * and doesn't swallow unrelated plan_disabled rejections (e.g. machine size).
+ */
+function isPersistencePlanDisabledError(err: any): boolean {
+  const status = err?.response?.status
+  if (status !== 400 && status !== 403) return false
+  const data = err?.response?.data
+  const haystacks = [
+    typeof data === 'string' ? data : '',
+    data?.error_message,
+    data?.error,
+    data?.message,
+    err?.message
+  ].filter(Boolean).join(' ').toLowerCase()
+  return haystacks.includes('plan_disabled') && haystacks.includes('persistence')
+}
+
 function handleHostnameUpdate(value: string) {
   hostnameInput.value = value
   if (value === '') {
@@ -781,6 +805,14 @@ async function startNewSession() {
       if (confirmed) {
         window.open('/subscription-plans', '_blank')
       }
+    } else if (isPersistencePlanDisabledError(error)) {
+      // Defence-in-depth: the radio is only rendered when the plan allows
+      // persistence, but the backend may still reject if the plan changed
+      // mid-session. Translate the English BE message rather than leaking it.
+      showErrorNotification(
+        t('terminalStarter.errorPersistencePlanDisabled'),
+        t('terminalStarter.errorStarting')
+      )
     } else {
       showErrorNotification(errorMsg, t('terminalStarter.errorStarting'))
     }
