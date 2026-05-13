@@ -102,6 +102,58 @@
         </div>
       </FormGroup>
 
+      <!--
+        Persistence toggle. Only rendered when the active subscription plan
+        actually supports persistent sessions. Translation keys live under
+        terminalStarter.* (shared with the legacy inline location — kept stable
+        to minimise churn for downstream tooling / tests).
+      -->
+      <fieldset
+        v-if="persistencePlanEnabled"
+        class="persistence-toggle"
+        data-testid="persistence-toggle"
+      >
+        <legend class="persistence-legend">
+          <i class="fas fa-database"></i>
+          {{ t('terminalStarter.persistenceLabel') }}
+        </legend>
+        <div class="persistence-options" :class="{ 'is-disabled': forcedEphemeral }">
+          <label class="persistence-option">
+            <input
+              type="radio"
+              name="persistence-mode"
+              value="ephemeral"
+              :checked="persistenceMode === 'ephemeral'"
+              :disabled="forcedEphemeral || disabled"
+              data-testid="persistence-ephemeral"
+              @change="emit('update:persistenceMode', 'ephemeral')"
+            />
+            <span class="persistence-option-label">{{ t('terminalStarter.persistenceEphemeral') }}</span>
+          </label>
+          <label class="persistence-option">
+            <input
+              type="radio"
+              name="persistence-mode"
+              value="persistent"
+              :checked="persistenceMode === 'persistent'"
+              :disabled="forcedEphemeral || disabled"
+              data-testid="persistence-persistent"
+              @change="emit('update:persistenceMode', 'persistent')"
+            />
+            <span class="persistence-option-label">{{ t('terminalStarter.persistencePersistent') }}</span>
+          </label>
+        </div>
+        <p v-if="forcedEphemeral" class="persistence-hint persistence-hint-locked" data-testid="persistence-locked-hint">
+          <i class="fas fa-lock"></i>
+          {{ t('terminalStarter.crashTrapsForcesEphemeral') }}
+        </p>
+        <p v-else class="persistence-hint" data-testid="persistence-hint">
+          {{ persistenceMode === 'persistent'
+            ? t('terminalStarter.persistencePersistentHint')
+            : t('terminalStarter.persistenceEphemeralHint') }}
+        </p>
+      </fieldset>
+
       <div class="form-actions">
         <Button
           type="button"
@@ -126,6 +178,8 @@ import Button from '../UI/Button.vue'
 import BackendSelector from './BackendSelector.vue'
 import type { Backend } from '../../types/entities'
 
+type PersistenceMode = 'ephemeral' | 'persistent'
+
 interface Props {
   modelValue: string
   exerciseRef?: string
@@ -136,6 +190,16 @@ interface Props {
   backends?: Backend[]
   selectedBackendId?: string
   showBackendSelector?: boolean
+  /** Whether the active subscription plan supports persistent sessions. */
+  persistencePlanEnabled?: boolean
+  /** Current persistence mode selection. */
+  persistenceMode?: PersistenceMode
+  /**
+   * When true (active scenario has crash_traps=true), the radio is forced to
+   * 'ephemeral' and disabled. The parent is responsible for emitting the
+   * 'ephemeral' value when this flips on.
+   */
+  forcedEphemeral?: boolean
 }
 
 withDefaults(defineProps<Props>(), {
@@ -145,7 +209,10 @@ withDefaults(defineProps<Props>(), {
   defaultPackages: () => [],
   backends: () => [],
   selectedBackendId: '',
-  showBackendSelector: false
+  showBackendSelector: false,
+  persistencePlanEnabled: false,
+  persistenceMode: 'ephemeral',
+  forcedEphemeral: false
 })
 
 const emit = defineEmits<{
@@ -154,6 +221,7 @@ const emit = defineEmits<{
   'update:hostname': [value: string]
   'update:packages': [value: string]
   'update:selectedBackendId': [value: string]
+  'update:persistenceMode': [value: PersistenceMode]
   reset: []
 }>()
 
@@ -174,7 +242,13 @@ const { t } = useTranslations({
       packagesLabel: 'Startup Packages (Optional)',
       packagesPlaceholder: 'e.g., git, curl, vim, htop',
       packagesHelp: 'Comma-separated list of packages to install when the terminal starts. These are installed on top of the defaults.',
-      preInstalled: 'Pre-installed:'
+      preInstalled: 'Pre-installed:',
+      persistenceLabel: 'Save my work between sessions',
+      persistenceEphemeral: 'Discard when done',
+      persistencePersistent: 'Keep my work',
+      persistenceEphemeralHint: 'The container is removed shortly after stop. No saved state.',
+      persistencePersistentHint: 'The container disk is preserved for resumption (subject to your plan limits).',
+      crashTrapsForcesEphemeral: 'This scenario forces ephemeral sessions — your work is reset between attempts.'
     }
   },
   fr: {
@@ -193,7 +267,13 @@ const { t } = useTranslations({
       packagesLabel: 'Paquets de démarrage (Optionnel)',
       packagesPlaceholder: 'ex. git, curl, vim, htop',
       packagesHelp: 'Liste de paquets séparés par des virgules à installer au démarrage du terminal. Installés en plus des paquets par défaut.',
-      preInstalled: 'Pré-installés :'
+      preInstalled: 'Pré-installés :',
+      persistenceLabel: 'Conserver mon travail entre les sessions',
+      persistenceEphemeral: 'Tout effacer à la fin',
+      persistencePersistent: 'Conserver mon travail',
+      persistenceEphemeralHint: 'Le conteneur est supprimé peu après l\'arrêt. Aucun état conservé.',
+      persistencePersistentHint: 'Le disque du conteneur est conservé pour reprise (selon les limites de votre plan).',
+      crashTrapsForcesEphemeral: 'Ce scénario impose des sessions éphémères — votre travail est réinitialisé entre les tentatives.'
     }
   }
 })
@@ -297,6 +377,81 @@ function handlePackagesInput(event: Event) {
   border: var(--border-width-thin) solid var(--color-border-light);
   border-radius: var(--border-radius-sm);
   color: var(--color-text-secondary);
+}
+
+/* Persistence toggle (relocated from TerminalStarter for a cleaner launcher). */
+.persistence-toggle {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-secondary);
+}
+
+.persistence-legend {
+  padding: 0 var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.persistence-legend i {
+  color: var(--color-primary);
+}
+
+.persistence-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xs);
+}
+
+.persistence-options.is-disabled {
+  opacity: 0.6;
+}
+
+.persistence-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  cursor: pointer;
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+}
+
+.persistence-option input[type="radio"]:disabled {
+  cursor: not-allowed;
+}
+
+.persistence-option input[type="radio"]:disabled + .persistence-option-label {
+  cursor: not-allowed;
+  color: var(--color-text-muted);
+}
+
+.persistence-option-label {
+  user-select: none;
+}
+
+.persistence-hint {
+  margin: var(--spacing-sm) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.persistence-hint-locked {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  color: var(--color-warning-text, var(--color-text-secondary));
+}
+
+.persistence-hint-locked i {
+  margin-top: 2px;
+  color: var(--color-warning, var(--color-text-muted));
 }
 
 @media (max-width: 768px) {

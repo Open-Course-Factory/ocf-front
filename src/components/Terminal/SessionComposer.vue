@@ -222,7 +222,13 @@ const sortedDistributions = computed(() =>
 )
 
 // Computed
-const availableFeatures = computed<SessionOptionFeature[]>(() => sessionOptions.value?.allowed_features ?? [])
+// `persistence` was historically surfaced both here (as a feature chip) and
+// in the launcher (as a dedicated radio). The radio is the canonical UI —
+// filter the chip out so we don't render the same concept twice. The filter is
+// a defensive no-op once the backend stops emitting the feature.
+const availableFeatures = computed<SessionOptionFeature[]>(
+  () => (sessionOptions.value?.allowed_features ?? []).filter(f => f.key !== 'persistence')
+)
 
 const visibleSizes = computed(() => {
   if (!sessionOptions.value) return []
@@ -280,11 +286,14 @@ async function selectDistribution(dist: Distribution) {
       const firstAllowed = sessionOptions.value.allowed_sizes.find(s => s.allowed)
       if (firstAllowed) selectedSize.value = firstAllowed
     }
-    // Auto-enable all allowed features by default
+    // Auto-enable all allowed features by default. We deliberately skip
+    // `persistence` because that concept is owned by the launcher's
+    // persistence_mode radio — auto-toggling it as a feature would either be
+    // a no-op (BE ignores it) or fight the radio (if BE wires both).
     if (sessionOptions.value) {
       const defaults: Record<string, boolean> = {}
       for (const f of sessionOptions.value.allowed_features) {
-        if (f.allowed) {
+        if (f.allowed && f.key !== 'persistence') {
           defaults[f.key] = true
         }
       }

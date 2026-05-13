@@ -164,7 +164,10 @@ function mountStarter(props: Record<string, unknown> = {}) {
             return {}
           }
         },
-        TerminalAdvancedOptions: true,
+        // TerminalAdvancedOptions now hosts the persistence-mode radio, so we
+        // render the real component (not a stub) and rely on the v-show DOM
+        // (radios are still in the DOM, just visually hidden, when the section
+        // is collapsed — find() still works).
         TerminalUsagePanel: true,
         SettingsCard: { template: '<div><slot name="headerActions" /><slot /></div>' },
         Button: {
@@ -345,7 +348,7 @@ describe('TerminalStarter — persistence toggle', () => {
       const wrapper = mountStarter()
       await flushPromises()
 
-      const launchBtn = wrapper.find('[data-testid="launch-btn"]')
+      const launchBtn = findLaunchButton(wrapper)
       expect(launchBtn.attributes('disabled')).toBeDefined()
 
       // Even if a user manages to click, no session request goes out.
@@ -363,8 +366,18 @@ describe('TerminalStarter — persistence toggle', () => {
 
 // ---- Helpers ----
 
+/**
+ * Find the actual launch button. The Button stub hardcodes data-testid for
+ * every Button instance, and TerminalAdvancedOptions now renders a Reset
+ * Button before the launch section — so we scope the lookup to the launch
+ * section to avoid hitting the Reset button.
+ */
+function findLaunchButton(wrapper: VueWrapper) {
+  return wrapper.find('.launch-section [data-testid="launch-btn"]')
+}
+
 async function launchSession(wrapper: VueWrapper) {
-  const launchBtn = wrapper.find('[data-testid="launch-btn"]')
+  const launchBtn = findLaunchButton(wrapper)
   expect(launchBtn.exists()).toBe(true)
   await launchBtn.trigger('click')
   await flushPromises()
