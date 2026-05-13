@@ -189,7 +189,6 @@ import { useSubscriptionsStore } from '../../stores/subscriptions'
 
 import { useOrganizationsStore } from '../../stores/organizations'
 import { useTerminalBackendsStore } from '../../stores/terminalBackends'
-import { usePermissionsStore } from '../../stores/permissions'
 import { useUserSettingsStore } from '../../stores/userSettings'
 import { useNotification } from '../../composables/useNotification'
 import { useTranslations } from '../../composables/useTranslations'
@@ -219,7 +218,6 @@ const emit = defineEmits(['session-started'])
 const subscriptionsStore = useSubscriptionsStore()
 const organizationsStore = useOrganizationsStore()
 const backendsStore = useTerminalBackendsStore()
-const permissionsStore = usePermissionsStore()
 const userSettingsStore = useUserSettingsStore()
 
 // i18n setup
@@ -401,10 +399,20 @@ const allowedMachineSizes = computed(() => {
   return sizes
 })
 
+// Single source of truth for "what's my concurrent_terminals usage?" is the
+// `/user-subscriptions/usage?organization_id=...` endpoint exposed by the
+// subscriptions store as `usageMetrics`. The launcher reads BOTH the current
+// count (above, via `currentTerminalCount`) AND the limit from the same metric
+// so the badge, the form-validity gate, and the backend `/usage/check` gate
+// all agree by construction. -1 in `limit_value` means unlimited.
 const maxTerminals = computed(() => {
-  // Use permissions store as single source of truth (same as nav menu and other components)
-  // This reads from effectiveFeatures which is org-scoped and refreshed on org switch
-  return permissionsStore.getMaxConcurrentTerminals || 1
+  const metric = subscriptionsStore.usageMetrics?.find((m: any) =>
+    m.metric_type === 'concurrent_terminals' || m.name === 'concurrent_terminals'
+  )
+  if (!metric) return 0
+  const limit = metric.limit_value
+  if (limit === -1) return Infinity
+  return typeof limit === 'number' ? limit : 0
 })
 
 const refreshIntervalMinutes = computed(() => {
@@ -665,8 +673,10 @@ async function handleRecordingAcknowledgement() {
 watch(storeOrgId, async (newOrgId) => {
   currentTerminalCount.value = 0
   if (newOrgId) {
-    // Reload current usage count and backends for new org context
-    // Limits come from permissionsStore (reactive, already refreshed by setCurrentOrganization)
+    // Reload usage metrics for the new org context. Both current count and
+    // the concurrent_terminals limit are read from the same usageMetrics array
+    // (see `currentTerminalCount` and `maxTerminals` above), so a single fetch
+    // refreshes both reactively.
     await loadCurrentTerminalUsage().catch(() => {})
     await backendsStore.fetchBackends(newOrgId).catch(() => {})
   }

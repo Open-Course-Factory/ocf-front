@@ -68,10 +68,18 @@ vi.mock('../../src/composables/useNotification', () => ({
 }))
 
 // Stub the heavy stores so we can drive plan tier from each test.
+// `usageMetrics` is the SSOT the launcher reads for both current count AND
+// limit — providing a concurrent_terminals metric with a non-zero limit here
+// keeps the launch button enabled in tests that exercise the payload.
 const subscriptionsStub = {
   currentSubscription: { subscription_plan: { data_persistence_enabled: false } } as any,
+  usageMetrics: [
+    { metric_type: 'concurrent_terminals', current_value: 0, limit_value: 5 }
+  ] as any[],
   getCurrentSubscription: vi.fn().mockResolvedValue(undefined),
-  getUsageMetrics: vi.fn().mockResolvedValue([]),
+  getUsageMetrics: vi.fn().mockResolvedValue([
+    { metric_type: 'concurrent_terminals', current_value: 0, limit_value: 5 }
+  ]),
   checkUsageLimit: vi.fn().mockResolvedValue({ allowed: true })
 }
 vi.mock('../../src/stores/subscriptions', () => ({
@@ -322,6 +330,33 @@ describe('TerminalStarter — persistence toggle', () => {
 
       const ephemeral = wrapper.find<HTMLInputElement>('[data-testid="persistence-ephemeral"]')
       expect(ephemeral.element.checked).toBe(true)
+    })
+  })
+
+  describe('limit SSOT (usageMetrics, not permissionsStore)', () => {
+    it('blocks the launch and disables the button when usageMetrics reports limit_value=0 for the current org', async () => {
+      // The bug being fixed: the launcher used to fall back to `|| 1`, masking
+      // a 0 limit from the backend. With SSOT it must reflect 0 honestly and
+      // the form must be invalid.
+      subscriptionsStub.usageMetrics = [
+        { metric_type: 'concurrent_terminals', current_value: 0, limit_value: 0 }
+      ]
+      setPaidPlan(true)
+      const wrapper = mountStarter()
+      await flushPromises()
+
+      const launchBtn = wrapper.find('[data-testid="launch-btn"]')
+      expect(launchBtn.attributes('disabled')).toBeDefined()
+
+      // Even if a user manages to click, no session request goes out.
+      await launchBtn.trigger('click')
+      await flushPromises()
+      expect(mockStartComposed).not.toHaveBeenCalled()
+
+      // Restore the default for subsequent suites in this file.
+      subscriptionsStub.usageMetrics = [
+        { metric_type: 'concurrent_terminals', current_value: 0, limit_value: 5 }
+      ]
     })
   })
 })
