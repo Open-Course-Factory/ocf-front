@@ -150,6 +150,7 @@ import { useUserSettingsStore } from '../../stores/userSettings'
 import { useNotification } from '../../composables/useNotification'
 import { useTranslations } from '../../composables/useTranslations'
 import { useLimitReachedMessage } from '../../composables/useLimitReachedMessage'
+import { useComposeErrorMessage } from '../../composables/useComposeErrorMessage'
 
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
@@ -603,6 +604,10 @@ function getLimitReachedMessage(source?: string): string {
   return getLocalizedLimitMessage({ source, isAssignedSubscription: isAssignedSubscription.value })
 }
 
+// Localization for backend compose-session error wrapper — translates the
+// English `(status=N, name=X)` marker produced by ocf-core's FormatError.
+const { getComposeErrorMessage } = useComposeErrorMessage()
+
 /**
  * Detect a backend rejection caused by the plan not allowing persistent
  * sessions. ocf-core wraps the error like:
@@ -814,7 +819,12 @@ async function startNewSession() {
         t('terminalStarter.errorStarting')
       )
     } else {
-      showErrorNotification(errorMsg, t('terminalStarter.errorStarting'))
+      // ocf-core wraps tt-backend failures via FormatError as:
+      //   "Failed to start composed session: <description> (status=N, name=X)"
+      // Translate the wrapper if the marker is present; otherwise fall back
+      // to the raw message (preserves any unwrapped backend text).
+      const composeMsg = getComposeErrorMessage(errorMsg)
+      showErrorNotification(composeMsg ?? errorMsg, t('terminalStarter.errorStarting'))
     }
   } finally {
     isStarting.value = false
