@@ -192,6 +192,7 @@ import { useTerminalBackendsStore } from '../../stores/terminalBackends'
 import { useUserSettingsStore } from '../../stores/userSettings'
 import { useNotification } from '../../composables/useNotification'
 import { useTranslations } from '../../composables/useTranslations'
+import { useLimitReachedMessage } from '../../composables/useLimitReachedMessage'
 
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
@@ -637,14 +638,12 @@ watch(() => composerRef.value?.selectedDistribution, (dist) => {
   }
 })
 
+// Localization for backend 403 quota responses — delegates to the shared
+// composable so the resume path (TerminalSessionView) and any future
+// quota-gated surface produce identical wording for the same source.
+const { getLimitReachedMessage: getLocalizedLimitMessage } = useLimitReachedMessage()
 function getLimitReachedMessage(source?: string): string {
-  if (source === 'organization') {
-    return t('terminalStarter.errorLimitReachedOrg')
-  }
-  if (isAssignedSubscription.value) {
-    return t('terminalStarter.errorLimitReachedAssigned')
-  }
-  return t('terminalStarter.errorLimitReached')
+  return getLocalizedLimitMessage({ source, isAssignedSubscription: isAssignedSubscription.value })
 }
 
 function handleHostnameUpdate(value: string) {

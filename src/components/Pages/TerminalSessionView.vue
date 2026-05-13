@@ -250,6 +250,7 @@ import { terminalService } from '../../services/domain/terminal/terminalService'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { useEndStateConfig, type EndStateReason } from '../../composables/useEndStateConfig'
+import { useLimitReachedMessage } from '../../composables/useLimitReachedMessage'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
 import ScenarioPanel from '../Terminal/ScenarioPanel.vue'
 import ScenarioStartBar from '../Terminal/ScenarioStartBar.vue'
@@ -579,6 +580,11 @@ const terminalEndReason = computed<'completed' | 'abandoned' | 'expired' | 'stop
 // End banner config (shared composable)
 const { getEndStateConfig } = useEndStateConfig()
 
+// Localized quota-class error messages (shared with TerminalStarter).
+// Used by resumeSession's catch block to translate backend 403-with-source
+// responses instead of surfacing the raw English `error_message`.
+const { getLimitReachedMessage } = useLimitReachedMessage()
+
 const activeEndBanner = computed(() => {
   const reason = terminalEndReason.value
   if (!reason) return null
@@ -631,9 +637,17 @@ async function resumeSession() {
     await loadSession()
   } catch (err: any) {
     console.error('Error resuming session:', err)
-    showErrorNotification(
-      err.response?.data?.error_message || err.message || t('sessionView.resumeFailed')
-    )
+    // Localize quota-class 403s using the `source` returned by the backend.
+    // CheckLimit was removed from POST /:id/start (see ocf-core fix for slot-
+    // neutral resume), but other paths can still return a 403-with-source —
+    // and any future quota-gated surface that touches the resume flow gets
+    // the same UX for free. Fall back to the raw error_message for non-quota
+    // failures (RAM, network, ownership flap).
+    const source = err.response?.data?.source
+    const msg = source
+      ? getLimitReachedMessage({ source })
+      : (err.response?.data?.error_message || err.message || t('sessionView.resumeFailed'))
+    showErrorNotification(msg)
   } finally {
     isResuming.value = false
   }
