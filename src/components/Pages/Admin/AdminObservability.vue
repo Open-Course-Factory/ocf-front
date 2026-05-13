@@ -87,6 +87,26 @@
             <span class="counter-value-large">{{ metrics.stripe.panics }}</span>
           </div>
         </div>
+        <div class="queue-section">
+          <h3 class="queue-title">{{ t('adminObservability.stripe.queue.title') }}</h3>
+          <div class="counter-grid">
+            <div class="counter-cell">
+              <span class="counter-label">{{ t('adminObservability.stripe.queue.pendingDepth') }}</span>
+              <span class="counter-value-large">{{ metrics.stripe.queue.pending_depth }}</span>
+            </div>
+            <div class="counter-cell">
+              <span class="counter-label">{{ t('adminObservability.stripe.queue.retry') }}</span>
+              <span class="counter-value-large">{{ metrics.stripe.queue.retry }}</span>
+            </div>
+            <div
+              class="counter-cell"
+              :class="{ 'failure-nonzero': metrics.stripe.queue.exhausted > 0 }"
+            >
+              <span class="counter-label">{{ t('adminObservability.stripe.queue.exhausted') }}</span>
+              <span class="counter-value-large">{{ metrics.stripe.queue.exhausted }}</span>
+            </div>
+          </div>
+        </div>
       </article>
 
       <!-- Scenarios -->
@@ -192,7 +212,13 @@ const { t } = useTranslations({
         archive: 'Archive',
         success: 'Success',
         failure: 'Failure',
-        panics: 'Panics'
+        panics: 'Panics',
+        queue: {
+          title: 'Queue',
+          pendingDepth: 'Pending depth',
+          retry: 'Retries',
+          exhausted: 'Exhausted (max retries reached)'
+        }
       },
       scenarios: {
         title: 'Scenario sessions',
@@ -227,7 +253,13 @@ const { t } = useTranslations({
         archive: 'Archivage',
         success: 'Succès',
         failure: 'Échec',
-        panics: 'Paniques'
+        panics: 'Paniques',
+        queue: {
+          title: 'File d\'attente',
+          pendingDepth: 'En attente',
+          retry: 'Réessais',
+          exhausted: 'Épuisés (max atteint)'
+        }
       },
       scenarios: {
         title: 'Sessions de scénarios',
@@ -417,6 +449,24 @@ onMounted(refresh)
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: var(--spacing-md);
   padding: var(--spacing-lg);
+}
+
+.queue-section {
+  border-top: var(--border-width-thin) solid var(--color-border-light);
+}
+
+.queue-title {
+  margin: 0;
+  padding: var(--spacing-md) var(--spacing-lg) 0 var(--spacing-lg);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.queue-section .counter-grid {
+  padding-top: var(--spacing-md);
 }
 
 .counter-cell {

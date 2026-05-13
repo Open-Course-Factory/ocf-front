@@ -37,6 +37,11 @@ export type ObservabilityMetrics = {
     update: StripeOperationCounts
     archive: StripeOperationCounts
     panics: number
+    queue: {
+      retry: number
+      exhausted: number
+      pending_depth: number
+    }
   }
   scenarios: {
     setup_panics: number
