@@ -32,9 +32,13 @@ vi.mock('../../src/composables/useTranslations', () => ({
 }))
 
 // Mock organizations store (dynamically imported by getCurrentSubscription and getUsageMetrics)
+// The `mockCurrentOrganizationId` ref is mutated per-test to simulate org switches.
+const mockCurrentOrganizationId = { value: null as string | null }
 vi.mock('../../src/stores/organizations', () => ({
   useOrganizationsStore: () => ({
-    currentOrganizationId: null
+    get currentOrganizationId() {
+      return mockCurrentOrganizationId.value
+    }
   })
 }))
 
@@ -77,6 +81,7 @@ describe('subscriptions store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    mockCurrentOrganizationId.value = null
   })
 
   describe('getCurrentSubscription', () => {
@@ -286,6 +291,37 @@ describe('subscriptions store', () => {
 
       expect(result.allowed).toBe(false)
       expect(result.source).toBe('organization')
+    })
+
+    it('includes organization_id in the body when an org context is active', async () => {
+      mockCurrentOrganizationId.value = 'org-uuid-123'
+      mockedAxios.post.mockResolvedValue({
+        data: { allowed: true, source: 'organization', current_usage: 0, limit: 1, remaining: 1 }
+      })
+
+      const store = useSubscriptionsStore()
+      await store.checkUsageLimit('concurrent_terminals', 1)
+
+      expect(mockedAxios.post).toHaveBeenCalledWith('/user-subscriptions/usage/check', {
+        metric_type: 'concurrent_terminals',
+        increment: 1,
+        organization_id: 'org-uuid-123'
+      })
+    })
+
+    it('omits organization_id when no org context is active (global fallback)', async () => {
+      mockCurrentOrganizationId.value = null
+      mockedAxios.post.mockResolvedValue({
+        data: { allowed: true, source: 'personal', current_usage: 0, limit: 5, remaining: 5 }
+      })
+
+      const store = useSubscriptionsStore()
+      await store.checkUsageLimit('concurrent_terminals', 1)
+
+      expect(mockedAxios.post).toHaveBeenCalledWith('/user-subscriptions/usage/check', {
+        metric_type: 'concurrent_terminals',
+        increment: 1
+      })
     })
   })
 
