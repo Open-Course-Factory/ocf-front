@@ -28,9 +28,14 @@
  * code paths still write `status='expired'` independently). Components MUST
  * use this helper rather than reading either field directly.
  *
- * Invariant: a session whose `expires_at` is in the past is dead regardless
- * of what `state` says — guards against stale rows (GORM AutoMigrate
- * stamping `state='running'` on legacy rows, server-side races, etc.).
+ * Precedence: the canonical `state` field wins over `expires_at`. The
+ * `expires_at`-in-the-past check only applies when `state === 'running'`
+ * (zombie guard against stale rows / server-side races where the backend
+ * hasn't yet transitioned an expired row out of 'running'). Once the
+ * backend has set `state='stopped'` or `state='deleted'`, that is the
+ * canonical truth — the original expires_at refers to the previous active
+ * run's deadline and is naturally in the past, which is expected and not
+ * a reason to override the backend's terminal state.
  */
 export type EffectiveSessionState = 'running' | 'stopped' | 'deleted'
 
@@ -45,22 +50,30 @@ export function getEffectiveSessionState(
 ): EffectiveSessionState {
   if (!session) return 'deleted'
 
-  // expires_at invariant — past means dead.
-  if (session.expires_at && new Date(session.expires_at).getTime() < Date.now()) {
-    return 'deleted'
-  }
+  const isExpired =
+    !!session.expires_at && new Date(session.expires_at).getTime() < Date.now()
 
-  // Prefer the new `state` field when present.
-  if (
-    session.state === 'running' ||
-    session.state === 'stopped' ||
-    session.state === 'deleted'
-  ) {
+  // Canonical `state` from the backend wins. Why: 'stopped' and 'deleted' are
+  // terminal-ish states deliberately set by the backend; their expires_at
+  // (the previous active run's deadline) is naturally in the past once the
+  // session is stopped — overriding to 'deleted' would hide the "Session
+  // arrêtée — Resume / Delete" banner for persistent sessions and prevent
+  // users from resuming a backend-preserved container.
+  if (session.state === 'stopped' || session.state === 'deleted') {
     return session.state
   }
 
-  // Legacy fallback (old API responses pre-MR-D).
-  if (session.status === 'active' || session.status === 'starting') return 'running'
+  // Zombie guard: state='running' but expires_at in the past means the
+  // backend hasn't yet transitioned the row out of 'running' (server-side
+  // race, stale row from GORM AutoMigrate, etc.). Treat as deleted.
+  if (session.state === 'running') {
+    return isExpired ? 'deleted' : 'running'
+  }
+
+  // Legacy fallback (old API responses pre-MR-D). Same zombie guard applies.
+  if (session.status === 'active' || session.status === 'starting') {
+    return isExpired ? 'deleted' : 'running'
+  }
   return 'deleted'
 }
 

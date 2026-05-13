@@ -42,8 +42,23 @@ describe('getEffectiveSessionState', () => {
       expected: 'stopped'
     },
     {
+      // Bug fix: a persistent session auto-stopped after its 60s expiry
+      // (state='stopped', expires_at in the past — referring to the previous
+      // active run's deadline) must NOT be coerced to 'deleted'. The user
+      // needs to see the "Session arrêtée — Resume / Delete" banner so they
+      // can resume their preserved container + volume.
+      name: "state='stopped' with past expires_at returns 'stopped' (canonical state wins)",
+      input: { state: 'stopped', expires_at: PAST },
+      expected: 'stopped'
+    },
+    {
       name: "state='deleted' returns 'deleted'",
       input: { state: 'deleted', expires_at: FUTURE },
+      expected: 'deleted'
+    },
+    {
+      name: "state='deleted' with past expires_at returns 'deleted'",
+      input: { state: 'deleted', expires_at: PAST },
       expected: 'deleted'
     },
     {
