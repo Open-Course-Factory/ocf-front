@@ -32,7 +32,8 @@ describe('observabilityService.getMetrics', () => {
         create: { success: 0, failure: 0 },
         update: { success: 0, failure: 0 },
         archive: { success: 0, failure: 0 },
-        panics: 0
+        panics: 0,
+        queue: { retry: 0, exhausted: 0, pending_depth: 0 }
       },
       scenarios: {
         setup_panics: 0,
@@ -55,7 +56,8 @@ describe('observabilityService.getMetrics', () => {
         create: { success: 5, failure: 2 },
         update: { success: 1, failure: 0 },
         archive: { success: 0, failure: 0 },
-        panics: 0
+        panics: 0,
+        queue: { retry: 2, exhausted: 0, pending_depth: 0 }
       },
       scenarios: {
         setup_panics: 1,
@@ -79,6 +81,7 @@ describe('observabilityService.getMetrics', () => {
     const result = await observabilityService.getMetrics()
 
     expect(result.stripe.create.failure).toBe(2)
+    expect(result.stripe.queue.retry).toBe(2)
     expect(result.hooks.recent_errors).toHaveLength(1)
     expect(result.hooks.recent_errors[0].hook_name).toBe('stripe_subscription_plan_sync')
   })

@@ -34,7 +34,8 @@ const zeroMetrics: ObservabilityMetrics = {
     create: { success: 0, failure: 0 },
     update: { success: 0, failure: 0 },
     archive: { success: 0, failure: 0 },
-    panics: 0
+    panics: 0,
+    queue: { retry: 0, exhausted: 0, pending_depth: 0 }
   },
   scenarios: {
     setup_panics: 0,
@@ -49,7 +50,8 @@ const populatedMetrics: ObservabilityMetrics = {
     create: { success: 5, failure: 2 },
     update: { success: 1, failure: 0 },
     archive: { success: 0, failure: 0 },
-    panics: 0
+    panics: 0,
+    queue: { retry: 3, exhausted: 1, pending_depth: 5 }
   },
   scenarios: {
     setup_panics: 1,
@@ -110,5 +112,22 @@ describe('AdminObservability.vue', () => {
     await flushPromises()
 
     expect(mockedAxios.get).toHaveBeenCalledTimes(2)
+  })
+
+  it('renders the stripe.queue group when populated', async () => {
+    mockedAxios.get.mockResolvedValueOnce({ data: populatedMetrics })
+
+    const wrapper = mount(AdminObservability)
+    await flushPromises()
+
+    // The 3 queue counter labels (translation keys, since useTranslations is mocked passthrough).
+    expect(wrapper.text()).toContain('adminObservability.stripe.queue.pendingDepth')
+    expect(wrapper.text()).toContain('adminObservability.stripe.queue.retry')
+    expect(wrapper.text()).toContain('adminObservability.stripe.queue.exhausted')
+
+    // The 3 queue values from populatedMetrics (3, 1, 5).
+    expect(wrapper.text()).toContain('5')  // pending_depth
+    expect(wrapper.text()).toContain('3')  // retry
+    expect(wrapper.text()).toContain('1')  // exhausted
   })
 })
