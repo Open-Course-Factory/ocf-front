@@ -138,17 +138,37 @@ export interface SessionOptionsResponse {
 }
 
 /**
- * Per-user entry in org terminal usage response
+ * Per-user entry in org terminal usage response.
+ * In budget mode the backend also reports the user's aggregate CPU/RAM usage.
  */
 export interface OrgTerminalUsageUser {
   user_id: string
   display_name: string
   email: string
   active_count: number
+  /** Budget mode only — aggregate CPU consumed by this user's active sessions */
+  active_cpu?: number
+  /** Budget mode only — aggregate memory (MiB) consumed by this user's active sessions */
+  active_memory_mb?: number
 }
 
 /**
- * Response from GET /organizations/:id/terminal-usage
+ * Remaining capacity per catalog size for budget-mode plans.
+ * `remaining_count = floor(min(remaining_cpu / cpu, remaining_memory_mb / memory_mb))`.
+ */
+export interface SizeRemaining {
+  key: string
+  cpu: number
+  memory_mb: number
+  remaining_count: number
+}
+
+/**
+ * Response from GET /organizations/:id/terminal-usage.
+ *
+ * Backward-compatible: legacy count-mode fields (`active_terminals`, `max_terminals`)
+ * are always present. Budget-mode fields (`quota`, `remaining_by_size`) are optional
+ * and only populated when the org's plan uses `quota_model: 'budget'`.
  */
 export interface OrgTerminalUsage {
   organization_id: string
@@ -157,6 +177,10 @@ export interface OrgTerminalUsage {
   plan_name: string
   is_fallback: boolean
   users: OrgTerminalUsageUser[]
+  /** Budget mode — aggregate CPU/RAM quota across the organization */
+  quota?: SessionQuota
+  /** Budget mode — remaining capacity per catalog size */
+  remaining_by_size?: SizeRemaining[]
 }
 
 /**
