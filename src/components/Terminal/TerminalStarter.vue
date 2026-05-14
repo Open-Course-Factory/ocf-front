@@ -139,9 +139,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useRouter } from 'vue-router'
 
 import axios from 'axios'
 import { terminalService } from '../../services/domain/terminal'
+import { summarizeRemaining, isBudgetMode } from '../../utils/quotaFormatters'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 
 import { useOrganizationsStore } from '../../stores/organizations'
@@ -228,6 +230,12 @@ const { t } = useTranslations({
       termsAcceptance: "J'accepte les conditions d'utilisation du service terminal.",
       errorStartingSession: 'Error starting session',
       errorPersistencePlanDisabled: 'Persistent sessions are not available on your current plan. Choose ephemeral mode or upgrade.',
+      budgetExhausted: 'Your budget is full',
+      budgetExhaustedHint: 'You can still spawn: {summary}. Stop a session to free capacity.',
+      budgetExhaustedHintAll: 'Stop a running session to free capacity.',
+      budgetExhaustedActionUsage: 'View my usage',
+      planRestriction: "This size isn't included in your plan",
+      planRestrictionTitle: 'Size not in plan',
     }
   },
   fr: {
@@ -277,11 +285,18 @@ const { t } = useTranslations({
       termsAcceptance: "J'accepte les conditions d'utilisation du service terminal.",
       errorStartingSession: 'Erreur lors du démarrage de la session',
       errorPersistencePlanDisabled: 'Les sessions persistantes ne sont pas disponibles sur votre offre actuelle. Choisissez le mode éphémère ou améliorez votre offre.',
+      budgetExhausted: 'Votre budget est plein',
+      budgetExhaustedHint: 'Vous pouvez encore lancer : {summary}. Arrêtez une session pour libérer de la capacité.',
+      budgetExhaustedHintAll: 'Arrêtez une session en cours pour libérer de la capacité.',
+      budgetExhaustedActionUsage: 'Voir mon utilisation',
+      planRestriction: 'Cette taille n\'est pas incluse dans votre forfait',
+      planRestrictionTitle: 'Taille non incluse',
     }
   }
 })
 
 const { showConfirm, showError: showErrorNotification } = useNotification()
+const router = useRouter()
 
 // Panel state
 const showDebug = ref(false)
@@ -597,6 +612,75 @@ function isPersistencePlanDisabledError(err: any): boolean {
   return haystacks.includes('plan_disabled') && haystacks.includes('persistence')
 }
 
+/**
+ * Detect a budget-mode 403 rejection from POST /terminals/start-composed-session.
+ * The backend marks these with `source: "budget"` so we can show a more
+ * specific toast instead of the generic launch-error path.
+ */
+function isBudgetRejection(err: any): boolean {
+  if (err?.response?.status !== 403) return false
+  const data = err?.response?.data
+  return data?.source === 'budget'
+}
+
+/**
+ * Handle a budget-mode 403 from the launcher. Shows a budget-specific
+ * notification and refreshes the composer's session-options so the remaining
+ * counts on the pills reflect the latest server state.
+ */
+async function handleBudgetRejection(err: any): Promise<void> {
+  const data = err?.response?.data ?? {}
+  const reason: string | undefined = data.reason
+
+  // plan_restriction (D8): the size is gated by the plan, not by the live
+  // budget. Different copy: it's a permission issue, not a "stop a session"
+  // issue.
+  if (reason === 'plan_restriction') {
+    showErrorNotification(t('terminalStarter.planRestriction'), t('terminalStarter.planRestrictionTitle'))
+    return
+  }
+
+  // Refresh session-options so the composer's per-size badges reflect the
+  // current remaining counts (the user may now see "0 L" on the pill they
+  // tried to launch). We use the currently selected distribution if any.
+  const composer = composerRef.value
+  let summary = ''
+  try {
+    const distName = composer?.selectedDistribution?.name
+    if (distName) {
+      const freshOptions = await terminalService.getSessionOptions(
+        distName,
+        backendsStore.selectedBackendId || undefined,
+        selectedOrganizationId.value || undefined
+      )
+      if (isBudgetMode(freshOptions)) {
+        summary = summarizeRemaining(freshOptions.allowed_sizes, t('sessionComposer.or'))
+      }
+    }
+  } catch {
+    // Non-critical: fall back to the empty-summary copy.
+  }
+
+  // Also reload usage metrics so the badge + form-validity gate are in sync.
+  loadCurrentTerminalUsage().catch(() => {})
+
+  const hint = summary
+    ? t('terminalStarter.budgetExhaustedHint', { summary })
+    : t('terminalStarter.budgetExhaustedHintAll')
+
+  const confirmed = await showConfirm(
+    hint,
+    t('terminalStarter.budgetExhausted'),
+    {
+      confirmButtonText: t('terminalStarter.budgetExhaustedActionUsage'),
+      cancelButtonText: t('terminalStarter.errorDismiss')
+    }
+  )
+  if (confirmed) {
+    router.push('/subscription-dashboard').catch(() => {})
+  }
+}
+
 function handleHostnameUpdate(value: string) {
   hostnameInput.value = value
   if (value === '') {
@@ -743,7 +827,12 @@ async function startNewSession() {
 
     const errorMsg = error.response?.data?.error_message || error.message || t('terminalStarter.errorStartingSession')
 
-    if (error.response?.status === 503) {
+    if (isBudgetRejection(error)) {
+      // Budget-mode rejection (CPU/RAM budget exhausted, or plan-restricted
+      // size in advanced mode). Handled here BEFORE the generic 403/limit
+      // branches so the more informative copy wins.
+      await handleBudgetRejection(error)
+    } else if (error.response?.status === 503) {
       const backendName = error.response?.data?.backend_name || backendsStore.selectedBackend?.name
       const backendMsg = error.response?.data?.error_message
       // Only treat 503 as "offline" when the backend message actually indicates
