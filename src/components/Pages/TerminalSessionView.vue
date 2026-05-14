@@ -384,6 +384,14 @@ let timerInterval: NodeJS.Timeout | null = null
 // post-expiry polling schedules multiple sequential timeouts; onBeforeUnmount
 // must clear every one to avoid post-unmount axios calls.
 const expiryRefreshTimeouts = new Set<ReturnType<typeof setTimeout>>()
+// Flag set the moment the in-page countdown reaches zero and we apply the
+// optimistic local state transition (persistent → 'stopped', otherwise →
+// 'deleted'). Used by the silent refresh path to ignore a stale 'running'
+// response while ocf-core's auto-sync is still catching up — otherwise the
+// optimistic state would regress and the page would flash the wrong banner.
+// Cleared when the backend confirms a terminal state, when the user
+// explicitly resumes, and on unmount.
+let optimisticExpired = false
 let warned5min = false
 let warned1min = false
 let scenarioSyncInterval: ReturnType<typeof setInterval> | null = null
@@ -652,6 +660,9 @@ async function resumeSession() {
   isResuming.value = true
   try {
     await terminalService.startSession(sessionInfo.value.session_id)
+    // User explicitly resumed — drop the post-expiry guard so the next
+    // refresh accepts 'running' from the backend (that IS the truth now).
+    optimisticExpired = false
     // Refetch — backend has updated status='active', new expires_at, possibly new IP.
     // After loadSession() resolves, isSessionActive flips back to true and the
     // terminal panel re-mounts (WebSocket reconnects naturally).
@@ -785,16 +796,35 @@ async function refreshSessionInfo(): Promise<string | null> {
     )
     if (!terminal) return null
 
+    // Guard against regression: if we've already applied the optimistic
+    // post-expiry state and the backend hasn't caught up (still reports
+    // 'running'), keep the optimistic state. Otherwise the page would
+    // flash the wrong banner each time a poll lands while the auto-stop /
+    // auto-sync race is still in flight. We still refresh the other
+    // fields (expires_at, idle_until) since those are advisory.
+    const optimisticState =
+      optimisticExpired && terminal.state === 'running'
+        ? sessionInfo.value?.state ?? terminal.state
+        : terminal.state
+
     sessionInfo.value = {
       session_id: terminal.session_id,
       expires_at: terminal.expires_at,
       name: terminal.name,
       instance_type: terminal.instance_type,
       machine_size: terminal.machine_size,
-      state: terminal.state,
+      state: optimisticState,
       persistence_mode: terminal.persistence_mode,
       idle_until: terminal.idle_until
     }
+
+    // Backend has confirmed a terminal state — the optimistic guard is
+    // no longer needed. (A later regression to 'running' from the BE
+    // would be a real change, not a stale-cache artifact.)
+    if (terminal.state === 'stopped' || terminal.state === 'deleted') {
+      optimisticExpired = false
+    }
+
     return terminal.state || null
   } catch (err) {
     // Silent — surfacing this would defeat the purpose. Caller decides
@@ -873,6 +903,24 @@ function startExpirationTimer(expiresAt: string) {
     if (remaining <= 0) {
       clearInterval(timerInterval!)
       timerInterval = null
+      // Optimistically transition the local state to what the backend WILL
+      // be. Without this, getEffectiveSessionState({state:'running',
+      // expires_at:past}) falls into its zombie branch and returns 'deleted'
+      // — which renders the "Session expirée" banner for ~2s until the
+      // first silent poll resolves. For persistent sessions the correct
+      // banner is "Session arrêtée — Resume / Delete", so the flash is a
+      // visible UX bug. Predict the backend transition based on
+      // persistence_mode (persistent → auto-stop → 'stopped'; ephemeral →
+      // destroy → 'deleted') and apply it locally now. The silent poll
+      // remains as a backstop: if the backend confirms, the UI does not
+      // change; if it disagrees, the poll corrects.
+      if (sessionInfo.value) {
+        sessionInfo.value.state =
+          sessionInfo.value.persistence_mode === 'persistent'
+            ? 'stopped'
+            : 'deleted'
+        optimisticExpired = true
+      }
       // The in-page countdown is a UI approximation — only the backend knows
       // whether the session was auto-stopped (persistent) or destroyed
       // (ephemeral) at expiry. Poll silently with backoff so downstream
@@ -988,6 +1036,7 @@ onBeforeUnmount(() => {
     timerInterval = null
   }
   cancelExpiryRefreshTimeouts()
+  optimisticExpired = false
   stopScenarioSync()
 })
 </script>

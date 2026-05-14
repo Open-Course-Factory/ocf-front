@@ -156,9 +156,31 @@ function stoppedPayload(expiresAt: string) {
   }
 }
 
+function ephemeralRunningPayload(expiresAt: string) {
+  return {
+    data: [
+      {
+        session_id: 'sess-test',
+        status: 'active',
+        state: 'running',
+        expires_at: expiresAt,
+        persistence_mode: 'ephemeral',
+        name: 'Ephemeral running session'
+      }
+    ]
+  }
+}
+
 describe('TerminalSessionView — expiry timer refresh', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    // mockReset clears both call history AND any queued mockResolvedValueOnce /
+    // mockReturnValueOnce implementations — critical here because tests use
+    // hanging promises (`new Promise(() => {})`) that would otherwise bleed
+    // into the next test's initial-load GET and leave it stuck on the loading
+    // spinner forever. clearAllMocks() does NOT reset the implementation queue.
+    mockAxiosGet.mockReset()
+    mockAxiosPost.mockReset()
+    mockAxiosPost.mockResolvedValue({ data: {} })
     // Fake the clock so we can fast-forward past the in-page countdown
     // without actually waiting. setSystemTime locks Date.now() for the
     // component's timestamp math (expires_at - Date.now()).
@@ -339,5 +361,110 @@ describe('TerminalSessionView — expiry timer refresh', () => {
     await vi.advanceTimersByTimeAsync(60 * 1000)
     await flushPromises()
     expect(mockAxiosGet.mock.calls.length).toBe(callsBeforeUnmount)
+  })
+
+  // ----------------------------------------------------------------------
+  // Optimistic-state-on-timer-zero: prevents visual flash through the
+  // "Session expirée" branch while the silent poll is still in flight.
+  // ----------------------------------------------------------------------
+
+  it('persistent session: shows the stopped banner immediately at timer-zero, before any poll completes', async () => {
+    // The buggy code path: countdown hits 0, state is still 'running'
+    // locally + expires_at is now past => getEffectiveSessionState returns
+    // 'deleted' => the "Session expirée" banner is rendered until the
+    // first poll resolves and overwrites state with 'stopped'. The fix is
+    // to predict the backend transition (persistent -> stopped) and apply
+    // it locally the instant the timer fires, BEFORE the poll completes.
+    const initialExpiry = new Date(Date.now() + 5 * 1000).toISOString()
+    mockAxiosGet.mockResolvedValueOnce(runningPayload(initialExpiry))
+    // The silent refresh axios call must NOT resolve during this test —
+    // we want to inspect the DOM in the window between timer-zero and the
+    // first poll response. A never-resolving promise simulates that.
+    mockAxiosGet.mockReturnValueOnce(new Promise(() => {}))
+
+    const wrapper = mountView()
+    await flushPromises()
+    expect(mockAxiosGet).toHaveBeenCalledTimes(1)
+
+    // Advance past expiry but NOT through the post-expiry refresh delay,
+    // so the silent poll has been scheduled and even started, but its
+    // response is still pending (hung axios promise).
+    await vi.advanceTimersByTimeAsync(6 * 1000)
+    await flushPromises()
+
+    // CRITICAL: the page must already render the stopped banner with the
+    // Resume CTA — the optimistic local transition fires synchronously
+    // inside the interval tick that hits remaining<=0.
+    expect(wrapper.find('[data-testid="resume-session-cta"]').exists()).toBe(true)
+    // The "expired" notice (state='deleted' branch) must NOT be visible.
+    expect(wrapper.find('.session-expired-notice').exists()).toBe(false)
+
+    wrapper.unmount()
+  })
+
+  it('ephemeral session: shows the expired banner immediately at timer-zero, never a stuck state', async () => {
+    // Mirror case for ephemeral persistence: backend WILL destroy the
+    // session at expiry => predicted state is 'deleted' => the expired
+    // banner is the correct one. The Resume CTA must NOT appear.
+    const initialExpiry = new Date(Date.now() + 5 * 1000).toISOString()
+    mockAxiosGet.mockResolvedValueOnce(ephemeralRunningPayload(initialExpiry))
+    mockAxiosGet.mockReturnValueOnce(new Promise(() => {}))
+
+    const wrapper = mountView()
+    await flushPromises()
+    expect(mockAxiosGet).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(6 * 1000)
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="resume-session-cta"]').exists()).toBe(false)
+    // Ephemeral sessions must NOT render the stopped end-banner — the
+    // backend destroys them at expiry, so the correct banner is the
+    // 'expired' tone (warning), not the 'stopped' tone (info). A future
+    // mutation that flips the optimistic state for ephemeral sessions to
+    // 'stopped' would otherwise sneak past a generic "any end banner"
+    // assertion.
+    expect(wrapper.find('.session-end-banner.end-banner--info').exists()).toBe(false)
+    // Either the warning-tone expired banner OR the fallback notice (if
+    // useEndStateConfig is otherwise stubbed in tests) is acceptable.
+    const hasWarningBanner = wrapper.find('.session-end-banner.end-banner--warning').exists()
+    const hasFallbackNotice = wrapper.find('.session-expired-notice').exists()
+    expect(hasWarningBanner || hasFallbackNotice).toBe(true)
+
+    wrapper.unmount()
+  })
+
+  it('does not regress to running banner when poll temporarily reports running after timer-zero (persistent)', async () => {
+    // Backend race: ocf-core auto-sync hasn't caught up yet, so the first
+    // poll returns state='running'. WITHOUT a guard, the optimistic
+    // 'stopped' state we just set would get overwritten back to 'running'
+    // with a past expires_at, dropping us into the 'deleted' branch and
+    // flashing the "Session expirée" banner. WITH the guard, the optimistic
+    // state is preserved until the backend confirms a terminal state.
+    const initialExpiry = new Date(Date.now() + 5 * 1000).toISOString()
+    mockAxiosGet.mockResolvedValueOnce(runningPayload(initialExpiry))
+    // First post-expiry poll: backend still reports 'running' (race).
+    mockAxiosGet.mockResolvedValueOnce(runningPayload(initialExpiry))
+    // Subsequent polls: keep returning running so we never accidentally
+    // transition through a real 'stopped' response.
+    mockAxiosGet.mockResolvedValue(runningPayload(initialExpiry))
+
+    const wrapper = mountView()
+    await flushPromises()
+    expect(mockAxiosGet).toHaveBeenCalledTimes(1)
+
+    // Advance past countdown.
+    await vi.advanceTimersByTimeAsync(6 * 1000)
+    // Advance through the first scheduled refresh (2s).
+    await vi.advanceTimersByTimeAsync(2500)
+    await flushPromises()
+
+    // Even though the poll returned state='running', the page should NOT
+    // regress to showing the expired banner — the optimistic stopped
+    // state must hold until a terminal state arrives from the backend.
+    expect(wrapper.find('[data-testid="resume-session-cta"]').exists()).toBe(true)
+    expect(wrapper.find('.session-expired-notice').exists()).toBe(false)
+
+    wrapper.unmount()
   })
 })
