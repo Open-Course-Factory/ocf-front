@@ -237,7 +237,9 @@ describe('TerminalStarter — persistence toggle', () => {
       expect(wrapper.find('[data-testid="persistence-locked-hint"]').exists()).toBe(true)
     })
 
-    it('forces persistence_mode to ephemeral in the payload even if localStorage previously stored persistent', async () => {
+    it('forces persistence_mode to ephemeral in the payload regardless of stale localStorage', async () => {
+      // localStorage is no longer consulted for persistence_mode, but old
+      // installs may still hold a value. crash_traps must win regardless.
       localStorage.setItem(
         'ocf-last-session-config',
         JSON.stringify({ persistence_mode: 'persistent' })
@@ -297,44 +299,43 @@ describe('TerminalStarter — persistence toggle', () => {
     })
   })
 
-  describe('localStorage persistence', () => {
-    it('writes the chosen persistence_mode to ocf-last-session-config on change', async () => {
-      setPaidPlan(true)
-      const wrapper = mountStarter()
-      await flushPromises()
+  describe('persistence is never sticky (no localStorage round-trip)', () => {
+    // We intentionally do NOT persist persistence_mode across launcher mounts.
+    // Sticky behavior surprised users: picking 'ephemeral' for one run would
+    // silently apply to the next launch. The plan-aware default ('persistent'
+    // when the plan allows it) wins every mount.
 
-      const persistent = wrapper.find('[data-testid="persistence-persistent"]')
-      await persistent.setValue(true)
-      await persistent.trigger('change')
-
-      const stored = JSON.parse(localStorage.getItem('ocf-last-session-config') || '{}')
-      expect(stored.persistence_mode).toBe('persistent')
-    })
-
-    it('restores the last-saved persistence_mode on mount', async () => {
+    it('defaults to persistent on mount even when localStorage holds ephemeral from a previous session', async () => {
+      // Reproduces the reported bug shape: the previous launcher run wrote
+      // `persistence_mode: 'ephemeral'` to LAST_CONFIG_KEY. The next mount
+      // must ignore that and start on 'persistent' because the plan allows it.
       localStorage.setItem(
         'ocf-last-session-config',
-        JSON.stringify({ persistence_mode: 'persistent' })
+        JSON.stringify({ persistence_mode: 'ephemeral', distribution: 'ubuntu', size: 's' })
       )
       setPaidPlan(true)
+
       const wrapper = mountStarter()
       await flushPromises()
 
-      // The persistent radio should be checked after mount.
       const persistent = wrapper.find<HTMLInputElement>('[data-testid="persistence-persistent"]')
+      const ephemeral = wrapper.find<HTMLInputElement>('[data-testid="persistence-ephemeral"]')
       expect(persistent.element.checked).toBe(true)
+      expect(ephemeral.element.checked).toBe(false)
     })
 
-    it('falls back to the plan-aware default if the stored value is invalid JSON', async () => {
-      // With invalid JSON we have no user preference. On a paid plan we now
-      // default to 'persistent' (better UX out of the box).
-      localStorage.setItem('ocf-last-session-config', '{not valid json')
+    it('does not write persistence_mode to localStorage when the user toggles the radio', async () => {
       setPaidPlan(true)
       const wrapper = mountStarter()
       await flushPromises()
 
-      const persistent = wrapper.find<HTMLInputElement>('[data-testid="persistence-persistent"]')
-      expect(persistent.element.checked).toBe(true)
+      // User flips to ephemeral for this run only.
+      const ephemeral = wrapper.find('[data-testid="persistence-ephemeral"]')
+      await ephemeral.setValue(true)
+      await ephemeral.trigger('change')
+
+      const stored = JSON.parse(localStorage.getItem('ocf-last-session-config') ?? '{}')
+      expect(stored).not.toHaveProperty('persistence_mode')
     })
   })
 

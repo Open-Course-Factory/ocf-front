@@ -327,13 +327,16 @@ function getSizeUseCase(key: string): string {
 
 function saveLastConfig() {
   if (selectedDistribution.value && selectedSize.value) {
-    // Merge with any existing fields (e.g., persistence_mode written by
-    // TerminalStarter) so we don't clobber user preferences from sibling controls.
+    // Merge with any existing fields so we don't clobber user preferences from
+    // sibling controls. `persistence_mode` is intentionally stripped — the
+    // launcher no longer persists that choice across mounts (any value written
+    // by older builds is a stale artefact we clean up here).
     let existing: Record<string, unknown> = {}
     try {
       const stored = localStorage.getItem(LAST_CONFIG_KEY)
       if (stored) existing = JSON.parse(stored) || {}
     } catch { existing = {} }
+    delete existing.persistence_mode
     const config = {
       ...existing,
       distribution: selectedDistribution.value.name,
