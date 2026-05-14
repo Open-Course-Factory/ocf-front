@@ -714,24 +714,24 @@ async function loadSession() {
     sessionInfo.value = {
       session_id: terminal.session_id,
       expires_at: terminal.expires_at,
-      status: terminal.status,
       name: terminal.name,
       instance_type: terminal.instance_type,
       machine_size: terminal.machine_size,
-      // SSOT — getEffectiveSessionState() prefers the new `state` field over
-      // the legacy `status` field. Dropping `state` here silently forces every
-      // downstream reader (effectiveState, terminalEndReason, the stopped
-      // banner) onto the legacy branch, which maps stopped→deleted→expired
-      // and hides the Resume + Delete CTAs. Keep this explicit list in sync
-      // with the API contract — see src/utils/sessionState.ts.
+      // SSOT — getEffectiveSessionState() reads `state` (running/stopped/
+      // deleted). The legacy parallel `status` field was removed from the
+      // API contract; dropping `state` here silently forces every downstream
+      // reader (effectiveState, terminalEndReason, the stopped banner) onto
+      // the default-deleted branch and hides the Resume + Delete CTAs.
+      // Keep this explicit list in sync with the API contract — see
+      // src/utils/sessionState.ts.
       state: terminal.state,
       persistence_mode: terminal.persistence_mode,
       idle_until: terminal.idle_until
     }
 
-    // Start expiration timer only for active sessions
-    const status = terminal.status
-    if (terminal.expires_at && status !== 'expired' && status !== 'stopped') {
+    // Start expiration timer only for running sessions
+    const state = terminal.state
+    if (terminal.expires_at && state === 'running') {
       startExpirationTimer(terminal.expires_at)
     }
 
@@ -750,7 +750,7 @@ async function loadSession() {
     }
 
     // Start polling for scenario if none was detected yet
-    if (!scenarioSessionId.value && status !== 'expired' && status !== 'stopped') {
+    if (!scenarioSessionId.value && state === 'running') {
       startScenarioSync()
     }
   } catch (err: any) {

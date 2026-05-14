@@ -62,29 +62,9 @@ describe('getEffectiveSessionState', () => {
       expected: 'deleted'
     },
     {
-      name: "no state, status='active', future expires_at returns 'running' (legacy fallback)",
-      input: { status: 'active', expires_at: FUTURE },
-      expected: 'running'
-    },
-    {
-      name: 'no state, no status returns deleted',
+      name: 'no state returns deleted (the legacy status fallback was removed in MR !239)',
       input: {},
       expected: 'deleted'
-    },
-    {
-      // Contract lock: protects against the regression in
-      // OrganizationStudentSessionsTab.vue where the badge read session.status
-      // directly. A live, running session can legitimately carry a stale
-      // legacy status='expired' from server-side bookkeeping; the SSOT helper
-      // MUST prefer state and return 'running'.
-      name: "state='running' wins over legacy status='expired' (SSOT contract)",
-      input: { state: 'running', status: 'expired', expires_at: FUTURE },
-      expected: 'running'
-    },
-    {
-      name: "state='stopped' wins over legacy status='active' (SSOT contract)",
-      input: { state: 'stopped', status: 'active', expires_at: FUTURE },
-      expected: 'stopped'
     }
   ]
 
@@ -197,19 +177,19 @@ describe('canConnectToTerminal', () => {
       expected: false
     },
     {
-      // THE bug fix — protects against the regression where a live, running
-      // session carrying a stale legacy status='stopped' was treated as not
-      // connectable. SSOT must prefer state and return connectable.
-      name: "WS open + state='running' wins over legacy status='stopped' (THE bug fix)",
-      session: { state: 'running', status: 'stopped', expires_at: FUTURE },
+      // Post MR !239: the legacy parallel `status` field was removed from
+      // the API. `state` is the only signal; a 'running' state with a
+      // future expiry must be connectable.
+      name: "WS open + state='running' + future expiry → true",
+      session: { state: 'running', expires_at: FUTURE },
       isWebSocketOpen: true,
       expected: true
     },
     {
-      name: "WS open + no state, legacy status='active' → true",
-      session: { status: 'active', expires_at: FUTURE },
+      name: 'WS open + empty session shape → false (no state means we cannot prove connectable)',
+      session: {},
       isWebSocketOpen: true,
-      expected: true
+      expected: false
     }
   ]
 
@@ -266,12 +246,7 @@ describe('preConnectError', () => {
       expected: 'sessionExpired'
     },
     {
-      name: "no state, legacy status='active' → null (connectable)",
-      session: { status: 'active', expires_at: FUTURE },
-      expected: null
-    },
-    {
-      name: "no state, no status → 'sessionExpired' (default to ended)",
+      name: "no state → 'sessionExpired' (default to ended — the legacy status fallback was removed in MR !239)",
       session: {},
       expected: 'sessionExpired'
     }

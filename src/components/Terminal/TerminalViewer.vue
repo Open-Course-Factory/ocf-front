@@ -105,7 +105,7 @@
       <div class="terminal-info">
         <small class="text-muted">
           Session: {{ sessionInfo.session_id }} |
-          {{ t('terminal.status') }}: {{ sessionInfo.status }} |
+          {{ t('terminal.status') }}: {{ sessionInfo.state }} |
           <span v-if="isConnected" class="text-success">{{ t('terminal.websocketConnected') }}</span>
           <span v-else class="text-danger">{{ t('terminal.websocketDisconnected') }}</span>
         </small>
@@ -223,7 +223,7 @@ interface SessionInfo {
   session_id: string
   console_url?: string
   expires_at?: string
-  status?: string
+  state?: string
 }
 
 interface Props {

@@ -17,20 +17,22 @@ export interface Backend {
 }
 
 /**
- * Terminal Session entity
+ * Terminal Session entity. `state` is the SSOT lifecycle field driven by
+ * tt-backend (running, stopped, deleted, etc.). The legacy parallel
+ * `status` field was removed in MR !239 — readers must consume `state`
+ * via getEffectiveSessionState() in utils/sessionState.ts.
  */
 export interface TerminalSession extends BaseEntity {
   user_id: string
   session_id: string
   name?: string
   instance_type?: string
-  status: 'starting' | 'active' | 'stopped' | 'expired' | 'terminated'
   console_url?: string
   expires_at?: string
   terms?: string
   backend?: string
   organization_id?: string
-  state?: 'running' | 'stopped' | 'deleted'
+  state: 'running' | 'stopped' | 'deleted' | 'starting' | 'resuming' | 'hibernating'
   persistence_mode?: 'ephemeral' | 'persistent'
   idle_until?: string
 }

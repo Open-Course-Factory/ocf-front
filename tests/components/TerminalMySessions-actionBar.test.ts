@@ -164,27 +164,19 @@ describe('TerminalMySessions — 3-button action bar', () => {
     })
   })
 
-  describe('backward compatibility (legacy `status` field, no `state`)', () => {
-    it('legacy status="active" is treated as running', async () => {
+  describe('missing state field (post MR !239: legacy `status` parallel field was removed)', () => {
+    it('row with no `state` defaults to deleted — no action buttons rendered', async () => {
       const wrapper = mountPage([
-        { id: 'd', session_id: 'sess-legacy-active', status: 'active' }
+        { id: 'd', session_id: 'sess-no-state' }
       ])
       await flushPromises()
 
-      expect(wrapper.find('[data-testid="btn-stop-sess-legacy-active"]').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="btn-start-sess-legacy-active"]').exists()).toBe(false)
-      expect(wrapper.find('[data-testid="btn-trash-sess-legacy-active"]').exists()).toBe(true)
-    })
-
-    it('legacy status="expired" is treated as deleted (no primary actions)', async () => {
-      const wrapper = mountPage([
-        { id: 'e', session_id: 'sess-legacy-expired', status: 'expired' }
-      ])
-      await flushPromises()
-
-      expect(wrapper.find('[data-testid="btn-stop-sess-legacy-expired"]').exists()).toBe(false)
-      expect(wrapper.find('[data-testid="btn-start-sess-legacy-expired"]').exists()).toBe(false)
-      expect(wrapper.find('[data-testid="btn-trash-sess-legacy-expired"]').exists()).toBe(false)
+      // Without a `state` value, getEffectiveSessionState falls through to
+      // 'deleted'. The legacy `status` fallback was removed in MR !239, so
+      // there is nothing left to rescue the row.
+      expect(wrapper.find('[data-testid="btn-stop-sess-no-state"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="btn-start-sess-no-state"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="btn-trash-sess-no-state"]').exists()).toBe(false)
     })
   })
 

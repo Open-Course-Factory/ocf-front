@@ -22,11 +22,10 @@
 /*
  * Single source of truth for terminal session lifecycle state.
  *
- * The `state` field on a session (added in 2026) is the canonical lifecycle
- * indicator: 'running' | 'stopped' | 'deleted'. The legacy `status` field
- * is being phased out and can be out of sync with `state` (some ocf-core
- * code paths still write `status='expired'` independently). Components MUST
- * use this helper rather than reading either field directly.
+ * The `state` field on a session is the canonical lifecycle indicator:
+ * 'running' | 'stopped' | 'deleted'. The legacy parallel `status` field
+ * was removed from the API contract in MR !239 — components MUST use
+ * this helper rather than reading state directly.
  *
  * Precedence: the canonical `state` field wins over `expires_at`. The
  * `expires_at`-in-the-past check only applies when `state === 'running'`
@@ -41,7 +40,6 @@ export type EffectiveSessionState = 'running' | 'stopped' | 'deleted'
 
 export interface SessionLifecycleFields {
   state?: string | null
-  status?: string | null
   expires_at?: string | null
 }
 
@@ -70,10 +68,7 @@ export function getEffectiveSessionState(
     return isExpired ? 'deleted' : 'running'
   }
 
-  // Legacy fallback (old API responses pre-MR-D). Same zombie guard applies.
-  if (session.status === 'active' || session.status === 'starting') {
-    return isExpired ? 'deleted' : 'running'
-  }
+  // Unknown / empty state — be conservative.
   return 'deleted'
 }
 

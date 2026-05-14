@@ -45,7 +45,7 @@
           <i class="fas fa-info-circle"></i> {{ t('terminalStarter.status') }}
         </strong>
         <span :class="statusClass">
-          {{ sessionInfo?.status }}
+          {{ sessionInfo?.state }}
         </span>
       </div>
     </div>
@@ -77,7 +77,7 @@ interface SessionInfo {
   session_id: string
   console_url?: string
   expires_at?: string
-  status?: string
+  state?: string
 }
 
 interface Props {
@@ -148,15 +148,15 @@ const translatedInstanceDescription = computed(() => {
 })
 
 const statusClass = computed(() => {
-  const status = props.sessionInfo?.status?.toLowerCase()
-  switch (status) {
+  const state = props.sessionInfo?.state?.toLowerCase()
+  switch (state) {
     case 'running':
-    case 'active':
       return 'text-success'
     case 'stopped':
-    case 'inactive':
+    case 'deleted':
       return 'text-danger'
     case 'starting':
+    case 'resuming':
     case 'pending':
       return 'text-warning'
     default:
