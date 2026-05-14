@@ -380,6 +380,7 @@ const isStopping = ref(false)
 const isRecording = ref(false)
 const timeRemaining = ref(0)
 let timerInterval: NodeJS.Timeout | null = null
+let expiryRefreshTimeout: ReturnType<typeof setTimeout> | null = null
 let warned5min = false
 let warned1min = false
 let scenarioSyncInterval: ReturnType<typeof setInterval> | null = null
@@ -801,6 +802,21 @@ function startExpirationTimer(expiresAt: string) {
     if (remaining <= 0) {
       clearInterval(timerInterval!)
       timerInterval = null
+      // The in-page countdown is a UI approximation — only the backend knows
+      // whether the session was auto-stopped (persistent) or destroyed
+      // (ephemeral) at expiry. Re-fetch so downstream computeds (effectiveState,
+      // terminalEndReason) read fresh truth instead of the stale state='running'
+      // sessionInfo + past expires_at combination, which mis-renders "Session
+      // expirée" for persistent sessions that should show "Session arrêtée"
+      // with Resume + Delete CTAs. The 2s delay gives the BE auto-stop +
+      // ocf-core auto-sync race time to settle.
+      if (expiryRefreshTimeout) {
+        clearTimeout(expiryRefreshTimeout)
+      }
+      expiryRefreshTimeout = setTimeout(() => {
+        expiryRefreshTimeout = null
+        loadSession()
+      }, 2000)
     }
   }, 1000)
 }
@@ -903,6 +919,10 @@ onBeforeUnmount(() => {
   if (timerInterval) {
     clearInterval(timerInterval)
     timerInterval = null
+  }
+  if (expiryRefreshTimeout) {
+    clearTimeout(expiryRefreshTimeout)
+    expiryRefreshTimeout = null
   }
   stopScenarioSync()
 })
