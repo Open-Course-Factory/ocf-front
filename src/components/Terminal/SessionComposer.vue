@@ -59,6 +59,15 @@
         <div v-else-if="sessionOptions" class="size-strip">
           <i class="fas fa-microchip config-icon"></i>
           <span class="config-label">{{ t('sessionComposer.size') }}</span>
+          <!-- Budget summary line — only in budget mode, hidden when budget exhausted (handled by empty string). -->
+          <p v-if="budgetModeActive && budgetSummary" class="budget-summary">
+            <i class="fas fa-bolt budget-summary-icon"></i>
+            {{ t('sessionComposer.youCanSpawn', { summary: budgetSummary }) }}
+          </p>
+          <p v-else-if="budgetModeActive && !budgetSummary" class="budget-summary budget-summary-exhausted">
+            <i class="fas fa-exclamation-triangle budget-summary-icon"></i>
+            {{ t('sessionComposer.budgetAllExhausted') }}
+          </p>
           <div class="size-pills">
             <button
               v-for="size in visibleSizes"
@@ -67,14 +76,21 @@
               class="size-pill"
               :class="{
                 selected: selectedSize?.key === size.key,
-                disabled: !size.allowed
+                disabled: !size.allowed,
+                exhausted: budgetModeActive && size.remaining_count === 0
               }"
-              :disabled="!size.allowed || disabled"
-              :title="getSizeUseCase(size.key) + ' — ' + size.cpu + ' CPU ' + size.cpu_allowance + ', ' + size.memory"
-              @click="size.allowed && selectSize(size)"
+              :disabled="!size.allowed || disabled || (budgetModeActive && size.remaining_count === 0)"
+              :title="getSizeUseCase(size.key) + ' — ' + size.cpu + ' CPU ' + size.cpu_allowance + ', ' + size.memory + (!size.allowed ? ' — ' + getReasonText(size.reason) : '')"
+              @click="size.allowed && !(budgetModeActive && size.remaining_count === 0) && selectSize(size)"
             >
               {{ size.key.toUpperCase() }}
               <i v-if="size.key === selectedDistribution?.default_size_key" class="fas fa-star pill-recommended" :title="t('sessionComposer.recommended')"></i>
+              <span
+                v-if="typeof size.remaining_count === 'number'"
+                class="pill-badge"
+                :class="{ 'pill-badge-zero': size.remaining_count === 0 }"
+                :title="t('sessionComposer.remainingBadge', { n: size.remaining_count })"
+              >×{{ size.remaining_count }}</span>
               <i v-if="!size.allowed" class="fas fa-lock pill-lock" />
             </button>
           </div>
@@ -125,6 +141,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { terminalService } from '../../services/domain/terminal'
+import { summarizeRemaining, isBudgetMode } from '../../utils/quotaFormatters'
 import type { Distribution, SessionOptionSize, SessionOptionFeature, SessionOptionsResponse } from '../../types/terminal'
 
 const props = defineProps<{
@@ -161,6 +178,12 @@ const { t } = useTranslations({
       useCaseL: 'Multi-service, Docker',
       useCaseXL: 'Heavy workloads, clusters',
       unlockMore: 'Unlock more power',
+      youCanSpawn: 'You can spawn {summary}',
+      or: 'OR',
+      remainingBadge: '{n} remaining',
+      reasonPlanRestriction: 'Restricted by your plan',
+      reasonBudgetExhausted: "Budget exhausted — you can't spawn this size right now",
+      budgetAllExhausted: 'Budget exhausted. Stop a session to free capacity.',
     }
   },
   fr: {
@@ -189,6 +212,12 @@ const { t } = useTranslations({
       useCaseL: 'Multi-service, Docker',
       useCaseXL: 'Charges lourdes, clusters',
       unlockMore: 'D\u00e9bloquer plus de puissance',
+      youCanSpawn: 'Vous pouvez lancer {summary}',
+      or: 'OU',
+      remainingBadge: '{n} restant(s)',
+      reasonPlanRestriction: 'Restreint par votre forfait',
+      reasonBudgetExhausted: 'Budget \u00e9puis\u00e9 \u2014 vous ne pouvez pas lancer cette taille pour l\'instant',
+      budgetAllExhausted: 'Budget \u00e9puis\u00e9. Arr\u00eatez une session pour lib\u00e9rer de la capacit\u00e9.',
     }
   }
 })
@@ -230,15 +259,37 @@ const availableFeatures = computed<SessionOptionFeature[]>(
   () => (sessionOptions.value?.allowed_features ?? []).filter(f => f.key !== 'persistence')
 )
 
+const budgetModeActive = computed(() => isBudgetMode(sessionOptions.value ?? undefined))
+
+// Capacity-descending order (xl > l > m > s > xs). Used to lay out pills in
+// budget mode so the largest available size appears first.
+const CAPACITY_ORDER: Record<string, number> = { xl: 0, l: 1, m: 2, s: 3, xs: 4 }
+function capacityRank(key: string): number {
+  const idx = CAPACITY_ORDER[key.toLowerCase()]
+  return idx === undefined ? 99 : idx
+}
+
 const visibleSizes = computed(() => {
   if (!sessionOptions.value) return []
   // Always exclude sizes below distribution minimum — they don't exist for this distro
-  const sizes = sessionOptions.value.allowed_sizes.filter(s => s.reason !== 'min_size')
+  let sizes = sessionOptions.value.allowed_sizes.filter(s => s.reason !== 'min_size')
   if (props.isAssignedSubscription) {
     // Hide locked sizes for org-managed plans (students can't upgrade)
-    return sizes.filter(s => s.allowed)
+    sizes = sizes.filter(s => s.allowed)
+  }
+  // In budget mode, sort descending by capacity (xl, l, m, s, xs) so the
+  // largest available size is visually first. In count mode, keep the
+  // server-provided order (sort_order).
+  if (budgetModeActive.value) {
+    sizes = [...sizes].sort((a, b) => capacityRank(a.key) - capacityRank(b.key))
   }
   return sizes
+})
+
+// Top-line summary string — only shown in budget mode.
+const budgetSummary = computed(() => {
+  if (!budgetModeActive.value || !sessionOptions.value) return ''
+  return summarizeRemaining(sessionOptions.value.allowed_sizes, t('sessionComposer.or'))
 })
 
 const hasLockedItems = computed(() => {
@@ -274,16 +325,21 @@ async function selectDistribution(dist: Distribution) {
   loadingOptions.value = true
   try {
     sessionOptions.value = await terminalService.getSessionOptions(dist.name, props.backendId, props.organizationId)
-    // Auto-select default size if allowed
+    // A size is selectable when the plan allows it AND, in budget mode, there
+    // is at least one remaining_count > 0. In count mode remaining_count is
+    // undefined and the budget check collapses to true.
+    const isSelectable = (s: SessionOptionSize) =>
+      s.allowed && (s.remaining_count === undefined || s.remaining_count > 0)
+    // Auto-select default size if selectable
     if (dist.default_size_key && sessionOptions.value) {
       const defaultSize = sessionOptions.value.allowed_sizes.find(
-        s => s.key === dist.default_size_key && s.allowed
+        s => s.key === dist.default_size_key && isSelectable(s)
       )
       if (defaultSize) selectedSize.value = defaultSize
     }
-    // Fallback: auto-select smallest allowed size if nothing selected
+    // Fallback: auto-select first selectable size if nothing selected
     if (!selectedSize.value && sessionOptions.value) {
-      const firstAllowed = sessionOptions.value.allowed_sizes.find(s => s.allowed)
+      const firstAllowed = sessionOptions.value.allowed_sizes.find(isSelectable)
       if (firstAllowed) selectedSize.value = firstAllowed
     }
     // Auto-enable all allowed features by default. We deliberately skip
@@ -419,9 +475,13 @@ function getReasonText(reason?: string): string {
   switch (reason) {
     case 'plan_limit': return t('sessionComposer.requiresUpgrade')
     case 'min_size': return t('sessionComposer.belowMinSize')
+    case 'plan': return t('sessionComposer.notInPlan')
     case 'plan_disabled': return t('sessionComposer.notInPlan')
+    case 'plan_restriction': return t('sessionComposer.reasonPlanRestriction')
     case 'not_supported': return t('sessionComposer.notSupported')
     case 'size_too_small': return t('sessionComposer.sizeTooSmall')
+    case 'budget_cpu_exceeded': return t('sessionComposer.reasonBudgetExhausted')
+    case 'budget_memory_exceeded': return t('sessionComposer.reasonBudgetExhausted')
     default: return t('sessionComposer.unavailable')
   }
 }
@@ -709,6 +769,59 @@ watch(() => props.organizationId, () => {
 .size-pill.disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.size-pill.exhausted {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Budget summary line shown above the size pills */
+.budget-summary {
+  width: 100%;
+  margin: 0;
+  padding: 4px 8px;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.budget-summary-icon {
+  color: var(--color-primary);
+  font-size: 11px;
+}
+
+.budget-summary-exhausted {
+  color: var(--color-warning-text, var(--color-warning));
+}
+
+.budget-summary-exhausted .budget-summary-icon {
+  color: var(--color-warning);
+}
+
+/* Per-pill "×N remaining" badge — small, dimmed when zero */
+.pill-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: var(--border-radius-full, 999px);
+  background: var(--color-bg-tertiary, rgba(0, 0, 0, 0.08));
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.2;
+}
+
+.size-pill.selected .pill-badge {
+  background: rgba(255, 255, 255, 0.25);
+  color: var(--color-white, #fff);
+}
+
+.pill-badge-zero {
+  opacity: 0.55;
 }
 
 .pill-recommended {
