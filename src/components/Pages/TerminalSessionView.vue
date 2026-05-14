@@ -380,7 +380,10 @@ const isStopping = ref(false)
 const isRecording = ref(false)
 const timeRemaining = ref(0)
 let timerInterval: NodeJS.Timeout | null = null
-let expiryRefreshTimeout: ReturnType<typeof setTimeout> | null = null
+// All pending expiry-refresh setTimeout IDs. Tracked as a Set because the
+// post-expiry polling schedules multiple sequential timeouts; onBeforeUnmount
+// must clear every one to avoid post-unmount axios calls.
+const expiryRefreshTimeouts = new Set<ReturnType<typeof setTimeout>>()
 let warned5min = false
 let warned1min = false
 let scenarioSyncInterval: ReturnType<typeof setInterval> | null = null
@@ -768,6 +771,74 @@ async function loadSession() {
   }
 }
 
+// Silent refresh: re-fetch sessionInfo from the backend WITHOUT touching
+// isLoading or error. Used by the post-expiry polling so the page does not
+// flash the loading spinner over the existing content. Skips the scenario
+// auto-detect side effects — only the canonical session state matters here,
+// and a failure during silent refresh should be invisible to the user (the
+// next poll attempt will try again, and at worst the existing UI stays).
+async function refreshSessionInfo(): Promise<string | null> {
+  try {
+    const sessions = await axios.get('/terminals/user-sessions')
+    const terminal = (sessions.data || []).find(
+      (s: any) => s.session_id === sessionId || s.id === sessionId
+    )
+    if (!terminal) return null
+
+    sessionInfo.value = {
+      session_id: terminal.session_id,
+      expires_at: terminal.expires_at,
+      name: terminal.name,
+      instance_type: terminal.instance_type,
+      machine_size: terminal.machine_size,
+      state: terminal.state,
+      persistence_mode: terminal.persistence_mode,
+      idle_until: terminal.idle_until
+    }
+    return terminal.state || null
+  } catch (err) {
+    // Silent — surfacing this would defeat the purpose. Caller decides
+    // whether to keep polling.
+    console.warn('Silent session refresh failed:', err)
+    return null
+  }
+}
+
+// Backoff schedule for post-expiry polling. Reasoning: BE persistent
+// auto-stop fires immediately, but ocf-core's auto-sync to surface
+// state='stopped' on a subsequent GET can take 5+ seconds (observed
+// during manual testing). A single 2s tick lands too early. We back off
+// to 8s by the last attempt so the worst-case race is well covered, with
+// a total cap of ~28s — beyond that the user can manually refresh, and
+// we don't want to poll indefinitely.
+const EXPIRY_REFRESH_DELAYS_MS = [2000, 3000, 4000, 5000, 6000, 8000]
+
+function cancelExpiryRefreshTimeouts() {
+  for (const id of expiryRefreshTimeouts) {
+    clearTimeout(id)
+  }
+  expiryRefreshTimeouts.clear()
+}
+
+function scheduleExpiryRefresh(attempt: number) {
+  if (attempt >= EXPIRY_REFRESH_DELAYS_MS.length) {
+    // Cap reached — stop polling. The UI renders whatever the last
+    // refresh produced; the user can manually refresh if needed.
+    return
+  }
+  const delay = EXPIRY_REFRESH_DELAYS_MS[attempt]
+  const id = setTimeout(async () => {
+    expiryRefreshTimeouts.delete(id)
+    const state = await refreshSessionInfo()
+    if (state && state !== 'running') {
+      // Backend has caught up — done.
+      return
+    }
+    scheduleExpiryRefresh(attempt + 1)
+  }, delay)
+  expiryRefreshTimeouts.add(id)
+}
+
 function startExpirationTimer(expiresAt: string) {
   const expirationTime = new Date(expiresAt).getTime()
 
@@ -804,19 +875,15 @@ function startExpirationTimer(expiresAt: string) {
       timerInterval = null
       // The in-page countdown is a UI approximation — only the backend knows
       // whether the session was auto-stopped (persistent) or destroyed
-      // (ephemeral) at expiry. Re-fetch so downstream computeds (effectiveState,
-      // terminalEndReason) read fresh truth instead of the stale state='running'
-      // sessionInfo + past expires_at combination, which mis-renders "Session
-      // expirée" for persistent sessions that should show "Session arrêtée"
-      // with Resume + Delete CTAs. The 2s delay gives the BE auto-stop +
-      // ocf-core auto-sync race time to settle.
-      if (expiryRefreshTimeout) {
-        clearTimeout(expiryRefreshTimeout)
-      }
-      expiryRefreshTimeout = setTimeout(() => {
-        expiryRefreshTimeout = null
-        loadSession()
-      }, 2000)
+      // (ephemeral) at expiry. Poll silently with backoff so downstream
+      // computeds (effectiveState, terminalEndReason) read fresh truth
+      // instead of the stale state='running' sessionInfo + past expires_at
+      // combination, which mis-renders "Session expirée" for persistent
+      // sessions that should show "Session arrêtée" with Resume + Delete
+      // CTAs. Backoff lets the BE auto-stop + ocf-core auto-sync race
+      // settle without flashing the page spinner.
+      cancelExpiryRefreshTimeouts()
+      scheduleExpiryRefresh(0)
     }
   }, 1000)
 }
@@ -920,10 +987,7 @@ onBeforeUnmount(() => {
     clearInterval(timerInterval)
     timerInterval = null
   }
-  if (expiryRefreshTimeout) {
-    clearTimeout(expiryRefreshTimeout)
-    expiryRefreshTimeout = null
-  }
+  cancelExpiryRefreshTimeouts()
   stopScenarioSync()
 })
 </script>
