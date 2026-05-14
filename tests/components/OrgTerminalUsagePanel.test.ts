@@ -212,7 +212,8 @@ describe('OrgTerminalUsagePanel', () => {
       expect(cpuCells.length).toBe(2)
       expect(memCells.length).toBe(2)
       expect(cpuCells[0].text()).toMatch(/3/)
-      expect(memCells[0].text()).toMatch(/4\s*GiB/i)
+      // formatMemoryMb renders 4096 MiB as either "4 GiB" or "4.0 GiB" depending on precision.
+      expect(memCells[0].text()).toMatch(/4(?:\.0)?\s*GiB/i)
     })
 
     it('shows the "no remaining capacity" message when every size is full', async () => {
