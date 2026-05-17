@@ -22,7 +22,7 @@ function size(
 }
 
 describe('summarizeRemaining', () => {
-  it('returns top-3 sizes by remaining_count, ordered descending by capacity', () => {
+  it('returns up to 3 sizes ordered by capacity descending, omitting zero-remaining sizes', () => {
     const sizes: SessionOptionSize[] = [
       size('xs', 50),
       size('s', 25),
@@ -31,6 +31,33 @@ describe('summarizeRemaining', () => {
       size('xl', 3),
     ]
     expect(summarizeRemaining(sizes, 'OR')).toBe('3 XL OR 6 L OR 12 M')
+  })
+
+  it('keeps capacity-descending order even when small sizes have higher remaining_count', () => {
+    // XS has 200 remaining but XL still wins the top slot because it has higher
+    // capacity. A naive "top N by remaining_count" implementation would render
+    // "200 XS OR 100 S OR 50 M" — the test proves we do NOT do that.
+    const sizes: SessionOptionSize[] = [
+      size('xs', 200),
+      size('s', 100),
+      size('m', 50),
+      size('l', 4),
+      size('xl', 1),
+    ]
+    expect(summarizeRemaining(sizes, 'OR')).toBe('1 XL OR 4 L OR 50 M')
+  })
+
+  it('shows only the small sizes when large sizes are exhausted', () => {
+    // XL + L are full → they must not appear; the summary cascades to the
+    // smaller sizes in capacity-descending order.
+    const sizes: SessionOptionSize[] = [
+      size('xl', 0),
+      size('l', 0),
+      size('m', 4),
+      size('s', 9),
+      size('xs', 18),
+    ]
+    expect(summarizeRemaining(sizes, 'OR')).toBe('4 M OR 9 S OR 18 XS')
   })
 
   it('omits sizes whose remaining_count is 0', () => {
@@ -114,15 +141,34 @@ describe('summarizeRemaining', () => {
 })
 
 describe('isBudgetMode', () => {
-  it('returns true when response carries a quota block', () => {
+  it('returns true for any non-null quota regardless of scope', () => {
+    // The contract: presence of the quota field IS the budget-mode signal —
+    // no special-casing of scope values. Both 'user' and 'organization' must
+    // resolve to budget mode.
     expect(
       isBudgetMode({
         quota: { max_cpu: 4, max_memory_mb: 8192, used_cpu: 0, used_memory_mb: 0, remaining_cpu: 4, remaining_memory_mb: 8192, scope: 'user' },
       })
     ).toBe(true)
+    expect(
+      isBudgetMode({
+        quota: { max_cpu: 8, max_memory_mb: 16384, used_cpu: 1, used_memory_mb: 1024, remaining_cpu: 7, remaining_memory_mb: 15360, scope: 'organization' },
+      })
+    ).toBe(true)
   })
 
-  it('returns false when quota is undefined', () => {
+  it('returns true when quota is present with zero-value caps (unlimited sentinel preserved at value level)', () => {
+    // max_cpu === 0 / max_memory_mb === 0 means "no cap on that axis" — the
+    // response is still in budget mode, just with an unlimited budget. The
+    // function must not look at the values inside quota.
+    expect(
+      isBudgetMode({
+        quota: { max_cpu: 0, max_memory_mb: 0, used_cpu: 0, used_memory_mb: 0, remaining_cpu: 2147483647, remaining_memory_mb: 2147483647, scope: 'user' },
+      })
+    ).toBe(true)
+  })
+
+  it('returns false when quota is undefined (count mode)', () => {
     expect(isBudgetMode({})).toBe(false)
   })
 

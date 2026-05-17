@@ -30,13 +30,19 @@ function capacityRank(key: string): number {
 
 /**
  * Format remaining capacity as a size-count summary string,
- * e.g. "3 L OR 6 M OR 12 S".
+ * e.g. "3 XL OR 6 L OR 12 M".
  *
- * Picks the top 3 sizes by `remaining_count`, ordered by capacity descending
- * (xl, l, m, s, xs). Sizes with `remaining_count === 0` or missing are omitted.
+ * Picks up to 3 sizes ordered by capacity descending (xl > l > m > s > xs),
+ * skipping any size whose `remaining_count` is 0 or undefined. Unknown size
+ * keys are sorted after the catalog (they don't crowd out known sizes).
  *
  * Returns the empty string when no size has `remaining_count > 0` — callers
  * should treat that as "budget exhausted".
+ *
+ * The sort is deliberately capacity-descending (not by `remaining_count`):
+ * the largest available size is the most informative anchor for the user
+ * ("you can still launch an XL"), and capacity ties resolve to the larger
+ * size deterministically.
  *
  * @param sizes - allowed_sizes from a session-options response
  * @param joiner - localized "OR" / "OU" word (caller passes the translated value)
