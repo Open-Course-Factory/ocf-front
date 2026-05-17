@@ -80,3 +80,78 @@ export function summarizeRemaining(
 export function isBudgetMode(response?: { quota?: unknown } | null): boolean {
   return response?.quota != null
 }
+
+/**
+ * Canonical size catalog used by `formatBudgetAsSizes`.
+ *
+ * MUST stay in sync with the backend catalogs:
+ *   - tt-backend `backend/db.go` `dbSeedSizes`
+ *   - ocf-core   `src/payment/backfill/quota.go` `sizeCatalog`
+ *
+ * Order convention matches the rest of this file: descending by capacity
+ * (xl > l > m > s > xs). The plan-card summary picks the top-3 sizes that
+ * fit within the budget, in this order, so customers see the most impressive
+ * single-size bundles first.
+ */
+export const CANONICAL_SIZE_CATALOG = {
+  xs: { cpu: 1, memory_mb: 256 },
+  s: { cpu: 1, memory_mb: 512 },
+  m: { cpu: 2, memory_mb: 1024 },
+  l: { cpu: 4, memory_mb: 2048 },
+  xl: { cpu: 4, memory_mb: 4096 },
+} as const
+
+export type CanonicalSizeCatalog = typeof CANONICAL_SIZE_CATALOG
+
+/**
+ * Format a plan's budget (max_cpu + max_memory_mb) as a size-count summary,
+ * e.g. "3 L OR 6 M OR 12 S".
+ *
+ * For each canonical size, compute how many instances fit in the plan's
+ * budget (taking the binding axis between CPU and RAM). Pick the top 3
+ * sizes in descending capacity order, formatted as "N SIZE" and joined by
+ * the localized joiner.
+ *
+ * Returns the empty string when:
+ *   - the plan is in count mode (`quota_model !== 'budget'`), OR
+ *   - both `max_cpu` and `max_memory_mb` are 0 (unlimited budget — caller
+ *     renders "Unlimited capacity" instead).
+ *
+ * @param plan - the subscription plan (only the budget fields are read)
+ * @param catalog - canonical size catalog (use {@link CANONICAL_SIZE_CATALOG})
+ * @param joiner - localized "OR" / "OU" word (caller passes the translated value)
+ */
+export function formatBudgetAsSizes(
+  plan: { max_cpu?: number; max_memory_mb?: number; quota_model?: string },
+  catalog: CanonicalSizeCatalog,
+  joiner: string
+): string {
+  if (plan.quota_model !== 'budget') return ''
+
+  const maxCpu = plan.max_cpu ?? 0
+  const maxMemoryMb = plan.max_memory_mb ?? 0
+  if (maxCpu === 0 && maxMemoryMb === 0) return ''
+
+  type Entry = { key: string; count: number }
+  const entries: Entry[] = []
+
+  // Iterate sizes in capacity-descending order so the top-3 slice keeps the
+  // largest available size first (most informative anchor for the user).
+  for (const key of CAPACITY_ORDER) {
+    const size = catalog[key as keyof CanonicalSizeCatalog]
+    if (!size) continue
+    const byCpu = maxCpu === 0 ? Infinity : Math.floor(maxCpu / size.cpu)
+    const byMem = maxMemoryMb === 0 ? Infinity : Math.floor(maxMemoryMb / size.memory_mb)
+    const count = Math.min(byCpu, byMem)
+    if (count >= 1 && Number.isFinite(count)) {
+      entries.push({ key: key.toUpperCase(), count })
+    }
+  }
+
+  if (entries.length === 0) return ''
+
+  return entries
+    .slice(0, 3)
+    .map(e => `${e.count} ${e.key}`)
+    .join(` ${joiner} `)
+}

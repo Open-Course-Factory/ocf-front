@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { summarizeRemaining, isBudgetMode } from '../../src/utils/quotaFormatters'
+import {
+  summarizeRemaining,
+  isBudgetMode,
+  formatBudgetAsSizes,
+  CANONICAL_SIZE_CATALOG,
+} from '../../src/utils/quotaFormatters'
 import type { SessionOptionSize } from '../../src/types/terminal'
 
 function size(
@@ -182,5 +187,109 @@ describe('isBudgetMode', () => {
 
   it('returns false for null input', () => {
     expect(isBudgetMode(null)).toBe(false)
+  })
+})
+
+describe('formatBudgetAsSizes', () => {
+  it('renders the top three sizes in descending capacity order for a budget plan', () => {
+    // max_cpu=8, max_memory_mb=4096
+    //   xl: cpu=4 → 2, ram=4096 → 1 → min 1
+    //   l : cpu=4 → 2, ram=2048 → 2 → min 2
+    //   m : cpu=2 → 4, ram=1024 → 4 → min 4
+    //   s : cpu=1 → 8, ram=512  → 8 → min 8
+    //   xs: cpu=1 → 8, ram=256  → 16 → min 8
+    // Top-3 by capacity descending: xl, l, m → "1 XL OR 2 L OR 4 M"
+    const plan = { max_cpu: 8, max_memory_mb: 4096, quota_model: 'budget' }
+    expect(formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, 'OR')).toBe('1 XL OR 2 L OR 4 M')
+  })
+
+  it('returns "2 L OR 4 M OR 8 S" for a typical Solo-tier budget', () => {
+    // A budget plan that lets a solo trainer run 2 L sessions.
+    // max_cpu=8, max_memory_mb=4096 yields 1 XL OR 2 L OR 4 M, so to land on
+    // the "2 L OR 4 M OR 8 S" wording the budget needs to skip XL — i.e.
+    // memory must be 2048 or below.
+    // With max_cpu=8, max_memory_mb=2048:
+    //   xl: ram=2048 → 0 → skip
+    //   l : ram=2048 → 1, cpu=8 → 2 → min 1
+    //   m : ram=2048 → 2, cpu=8 → 4 → min 2
+    //   s : ram=2048 → 4, cpu=8 → 8 → min 4
+    //   xs: ram=2048 → 8, cpu=8 → 8 → min 8
+    // Top-3: l, m, s → "1 L OR 2 M OR 4 S"
+    expect(
+      formatBudgetAsSizes(
+        { max_cpu: 8, max_memory_mb: 2048, quota_model: 'budget' },
+        CANONICAL_SIZE_CATALOG,
+        'OR'
+      )
+    ).toBe('1 L OR 2 M OR 4 S')
+  })
+
+  it('respects the binding RAM axis when CPU is overprovisioned', () => {
+    // max_cpu is huge but max_memory_mb limits the big sizes.
+    // max_cpu=32, max_memory_mb=2048:
+    //   xl: cpu=4 → 8, ram=4096 → 0 → 0 (skip)
+    //   l : cpu=4 → 8, ram=2048 → 1 → 1
+    //   m : cpu=2 → 16, ram=1024 → 2 → 2
+    //   s : cpu=1 → 32, ram=512 → 4 → 4
+    //   xs: cpu=1 → 32, ram=256 → 8 → 8
+    // Top-3: l, m, s
+    const plan = { max_cpu: 32, max_memory_mb: 2048, quota_model: 'budget' }
+    expect(formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, 'OR')).toBe('1 L OR 2 M OR 4 S')
+  })
+
+  it('respects the binding CPU axis when RAM is overprovisioned', () => {
+    // max_cpu=2, max_memory_mb=99999:
+    //   xl: cpu=4 → 0 → skip
+    //   l : cpu=4 → 0 → skip
+    //   m : cpu=2 → 1, ram=99999/1024 → 97 → 1
+    //   s : cpu=1 → 2, ram=99999/512 → 195 → 2
+    //   xs: cpu=1 → 2, ram=99999/256 → 390 → 2
+    // Top-3: m, s, xs
+    const plan = { max_cpu: 2, max_memory_mb: 99999, quota_model: 'budget' }
+    expect(formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, 'OR')).toBe('1 M OR 2 S OR 2 XS')
+  })
+
+  it('returns empty string when both max_cpu and max_memory_mb are 0 (unlimited budget)', () => {
+    // Unlimited budget is signalled by 0 on both axes — callers render
+    // "Unlimited capacity" instead. The function must not return Infinity
+    // counts or some nonsensical "∞ XL" string.
+    const plan = { max_cpu: 0, max_memory_mb: 0, quota_model: 'budget' }
+    expect(formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, 'OR')).toBe('')
+  })
+
+  it('returns empty string for count-mode plans', () => {
+    // Count-mode plans use the legacy allowed_machine_sizes/max_concurrent_terminals
+    // fields. The function MUST signal "not applicable" so the caller can
+    // render the legacy text branch.
+    const plan = { max_cpu: 8, max_memory_mb: 4096, quota_model: 'count' }
+    expect(formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, 'OR')).toBe('')
+  })
+
+  it('returns empty string when quota_model is undefined', () => {
+    // Defensive: a plan with no quota_model field is treated as legacy/count.
+    expect(formatBudgetAsSizes({ max_cpu: 8, max_memory_mb: 4096 }, CANONICAL_SIZE_CATALOG, 'OR')).toBe('')
+  })
+
+  it('uses the provided localized joiner', () => {
+    expect(
+      formatBudgetAsSizes(
+        { max_cpu: 8, max_memory_mb: 4096, quota_model: 'budget' },
+        CANONICAL_SIZE_CATALOG,
+        'OU'
+      )
+    ).toBe('1 XL OU 2 L OU 4 M')
+  })
+
+  it('skips sizes that do not fit at all (count < 1)', () => {
+    // Tiny budget: only XS fits. The summary contains only "N XS".
+    const plan = { max_cpu: 1, max_memory_mb: 256, quota_model: 'budget' }
+    expect(formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, 'OR')).toBe('1 XS')
+  })
+
+  it('returns empty string when the budget is too small for any catalog size', () => {
+    // Pathological case: budget below the smallest size's minimum.
+    // max_cpu=1 OK for XS, but max_memory_mb=100 is below XS's 256 → 0 → skip.
+    const plan = { max_cpu: 1, max_memory_mb: 100, quota_model: 'budget' }
+    expect(formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, 'OR')).toBe('')
   })
 })
