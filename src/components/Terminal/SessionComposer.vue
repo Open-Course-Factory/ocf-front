@@ -141,7 +141,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { terminalService } from '../../services/domain/terminal'
-import { summarizeRemaining, isBudgetMode } from '../../utils/quotaFormatters'
+import { summarizeRemaining, isBudgetMode, capacityRank } from '../../utils/quotaFormatters'
 import type { Distribution, SessionOptionSize, SessionOptionFeature, SessionOptionsResponse } from '../../types/terminal'
 
 const props = defineProps<{
@@ -261,13 +261,8 @@ const availableFeatures = computed<SessionOptionFeature[]>(
 
 const budgetModeActive = computed(() => isBudgetMode(sessionOptions.value ?? undefined))
 
-// Capacity-descending order (xl > l > m > s > xs). Used to lay out pills in
-// budget mode so the largest available size appears first.
-const CAPACITY_ORDER: Record<string, number> = { xl: 0, l: 1, m: 2, s: 3, xs: 4 }
-function capacityRank(key: string): number {
-  const idx = CAPACITY_ORDER[key.toLowerCase()]
-  return idx === undefined ? 99 : idx
-}
+// Capacity-descending order (xl > l > m > s > xs) is provided by
+// `capacityRank` from `utils/quotaFormatters.ts` — single source of truth.
 
 const visibleSizes = computed(() => {
   if (!sessionOptions.value) return []
@@ -813,7 +808,7 @@ watch(() => props.organizationId, () => {
   margin-left: 4px;
   padding: 1px 6px;
   border-radius: var(--border-radius-full, 999px);
-  background: var(--color-bg-tertiary, rgba(0, 0, 0, 0.08));
+  background: var(--color-bg-tertiary, var(--color-surface-variant));
   color: var(--color-text-secondary);
   font-size: 10px;
   font-weight: var(--font-weight-semibold);
@@ -821,7 +816,9 @@ watch(() => props.organizationId, () => {
 }
 
 .size-pill.selected .pill-badge {
-  background: rgba(255, 255, 255, 0.25);
+  /* On the strong-primary background of a selected pill, a translucent white
+   * overlay reads cleanly in both light and dark themes. */
+  background: var(--overlay-white-25);
   color: var(--color-white, #fff);
 }
 

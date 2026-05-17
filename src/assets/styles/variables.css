@@ -399,6 +399,7 @@
   --overlay-white-10: rgba(255, 255, 255, 0.1);
   --overlay-white-15: rgba(255, 255, 255, 0.15);
   --overlay-white-20: rgba(255, 255, 255, 0.2);
+  --overlay-white-25: rgba(255, 255, 255, 0.25);
 
   /* Semi-transparent overlays for dark backgrounds */
   --overlay-black-03: rgba(0, 0, 0, 0.03);
