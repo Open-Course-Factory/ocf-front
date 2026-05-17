@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { summarizeRemaining, isBudgetMode } from '../../src/utils/quotaFormatters'
+import {
+  summarizeRemaining,
+  isBudgetMode,
+  capacityRank,
+  formatMemoryMb,
+} from '../../src/utils/quotaFormatters'
 import type { SessionOptionSize } from '../../src/types/terminal'
 
 function size(
@@ -182,5 +187,52 @@ describe('isBudgetMode', () => {
 
   it('returns false for null input', () => {
     expect(isBudgetMode(null)).toBe(false)
+  })
+})
+
+describe('capacityRank', () => {
+  it('returns a lower index for larger sizes (xl < l < m < s < xs)', () => {
+    // Lower rank = larger size, so it sorts to the front in ascending sort.
+    expect(capacityRank('xl')).toBeLessThan(capacityRank('l'))
+    expect(capacityRank('l')).toBeLessThan(capacityRank('m'))
+    expect(capacityRank('m')).toBeLessThan(capacityRank('s'))
+    expect(capacityRank('s')).toBeLessThan(capacityRank('xs'))
+  })
+
+  it('returns the sentinel rank for unknown size keys, placing them last', () => {
+    // Unknown keys must not crowd out known sizes in summaries / sorted tables.
+    const unknown = capacityRank('weird')
+    expect(unknown).toBeGreaterThan(capacityRank('xs'))
+  })
+
+  it('is case-insensitive', () => {
+    expect(capacityRank('XL')).toBe(capacityRank('xl'))
+    expect(capacityRank('M')).toBe(capacityRank('m'))
+  })
+})
+
+describe('formatMemoryMb', () => {
+  it('renders zero and negative inputs as "0 MiB"', () => {
+    expect(formatMemoryMb(0)).toBe('0 MiB')
+    expect(formatMemoryMb(-100)).toBe('0 MiB')
+  })
+
+  it('renders sub-GiB values in MiB', () => {
+    expect(formatMemoryMb(512)).toBe('512 MiB')
+    expect(formatMemoryMb(1023)).toBe('1023 MiB')
+  })
+
+  it('renders GiB-scale values under 10 GiB with one decimal', () => {
+    // 4096 MiB = 4.0 GiB. The decimal makes 4.5 GiB / 6.5 GiB readable too.
+    expect(formatMemoryMb(1024)).toBe('1.0 GiB')
+    expect(formatMemoryMb(4096)).toBe('4.0 GiB')
+    expect(formatMemoryMb(6656)).toBe('6.5 GiB')
+  })
+
+  it('renders 10 GiB and above without decimals', () => {
+    // Large budgets read better without a trailing ".0".
+    expect(formatMemoryMb(10240)).toBe('10 GiB')
+    expect(formatMemoryMb(16384)).toBe('16 GiB')
+    expect(formatMemoryMb(24576)).toBe('24 GiB')
   })
 })
