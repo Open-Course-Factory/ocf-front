@@ -104,8 +104,21 @@
                     <span>{{ plan.max_concurrent_users }} {{ plan.max_concurrent_users === 1 ? t('plans.user') : t('plans.users') }}</span>
                   </div>
 
-                  <!-- Machine Size -->
-                  <div v-if="plan.allowed_machine_sizes && plan.allowed_machine_sizes.length > 0" class="feature-item">
+                  <!-- Budget-mode capacity summary (size-count language) -->
+                  <div
+                    v-if="isBudgetPlan(plan)"
+                    class="feature-item budget-capacity"
+                    :title="t('pricingPlanCard.capacityTooltip')"
+                  >
+                    <i class="fas fa-server"></i>
+                    <span>{{ budgetCapacityText(plan) }}</span>
+                  </div>
+
+                  <!-- Legacy count-mode: Machine Size -->
+                  <div
+                    v-else-if="plan.allowed_machine_sizes && plan.allowed_machine_sizes.length > 0"
+                    class="feature-item"
+                  >
                     <i class="fas fa-server"></i>
                     <span>{{ formatMachineSizes(plan.allowed_machine_sizes) }} {{ t('plans.environments') }}</span>
                   </div>
@@ -116,8 +129,8 @@
                     <span>{{ formatSessionDuration(plan.max_session_duration_minutes) }}</span>
                   </div>
 
-                  <!-- Concurrent Terminals -->
-                  <div v-if="plan.max_concurrent_terminals" class="feature-item">
+                  <!-- Concurrent Terminals (legacy count-mode only) -->
+                  <div v-if="!isBudgetPlan(plan) && plan.max_concurrent_terminals" class="feature-item">
                     <i class="fas fa-terminal"></i>
                     <span>{{ plan.max_concurrent_terminals === -1 ? '∞' : plan.max_concurrent_terminals }} {{ plan.max_concurrent_terminals === 1 ? t('plans.terminal') : t('plans.terminals') }}</span>
                   </div>
@@ -227,11 +240,16 @@
                   {{ plan.max_concurrent_users || '-' }}
                 </td>
               </tr>
-              <!-- Machine Sizes -->
+              <!-- Capacity (size-count for budget plans, legacy list for count plans) -->
               <tr>
-                <td class="feature-col">{{ t('plans.machineSizes') }}</td>
+                <td class="feature-col" :title="t('pricingPlanCard.capacityTooltip')">{{ t('plans.machineSizes') }}</td>
                 <td v-for="plan in filteredPlans" :key="plan.id" :class="{ 'current-plan-col': isCurrentPlan(plan) }">
-                  {{ plan.allowed_machine_sizes ? formatMachineSizes(plan.allowed_machine_sizes) : '-' }}
+                  <template v-if="isBudgetPlan(plan)">
+                    {{ budgetCapacityText(plan) }}
+                  </template>
+                  <template v-else>
+                    {{ plan.allowed_machine_sizes ? formatMachineSizes(plan.allowed_machine_sizes) : '-' }}
+                  </template>
                 </td>
               </tr>
               <!-- Session Duration -->
@@ -241,11 +259,12 @@
                   {{ plan.max_session_duration_minutes ? formatSessionDuration(plan.max_session_duration_minutes) : '-' }}
                 </td>
               </tr>
-              <!-- Concurrent Terminals -->
-              <tr>
+              <!-- Concurrent Terminals (count-mode only) -->
+              <tr v-if="hasAnyCountModePlan">
                 <td class="feature-col">{{ t('plans.concurrentTerminals') }}</td>
                 <td v-for="plan in filteredPlans" :key="plan.id" :class="{ 'current-plan-col': isCurrentPlan(plan) }">
-                  {{ plan.max_concurrent_terminals || '-' }}
+                  <template v-if="isBudgetPlan(plan)">—</template>
+                  <template v-else>{{ plan.max_concurrent_terminals || '-' }}</template>
                 </td>
               </tr>
               <!-- Storage -->
@@ -309,6 +328,7 @@ import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import AdminBadge from '../Common/AdminBadge.vue'
 import router from '../../router/index'
 import { useNotification } from '../../composables/useNotification'
+import { formatBudgetAsSizes, CANONICAL_SIZE_CATALOG } from '../../utils/quotaFormatters'
 
 const { t, locale } = useTranslations({
   en: {
@@ -361,7 +381,13 @@ const { t, locale } = useTranslations({
       capabilities: 'Capabilities',
       managedByOrg: 'Your plan is managed by your organization',
       yourCurrentPlan: 'Your current plan',
-    }
+    },
+    pricingPlanCard: {
+      budgetCapacity: 'Includes up to {summary} simultaneous sessions',
+      or: 'OR',
+      capacityTooltip: 'Your plan\'s capacity, expressed as machine sizes you can spawn at once. Pick any combination that fits.',
+      unlimitedCapacity: 'Unlimited capacity',
+    },
   },
   fr: {
     plans: {
@@ -412,7 +438,13 @@ const { t, locale } = useTranslations({
       capabilities: 'Fonctionnalités',
       managedByOrg: 'Votre plan est géré par votre organisation',
       yourCurrentPlan: 'Votre plan actuel',
-    }
+    },
+    pricingPlanCard: {
+      budgetCapacity: 'Comprend jusqu\'à {summary} sessions simultanées',
+      or: 'OU',
+      capacityTooltip: 'La capacité de votre forfait, exprimée en tailles de machines que vous pouvez lancer simultanément. Choisissez la combinaison qui vous convient.',
+      unlimitedCapacity: 'Capacité illimitée',
+    },
   }
 })
 const { showSuccess, showError, showConfirm } = useNotification()
@@ -544,6 +576,28 @@ function formatMachineSize(size: string): string {
 function formatMachineSizes(sizes: string[]): string {
   return sizes.map(formatMachineSize).join(', ')
 }
+
+// Budget-mode helpers — render size-count language for plans driven by
+// max_cpu / max_memory_mb. See utils/quotaFormatters.formatBudgetAsSizes.
+function isBudgetPlan(plan: any): boolean {
+  return plan?.quota_model === 'budget'
+}
+
+function budgetCapacityText(plan: any): string {
+  if (!plan) return ''
+  const maxCpu = plan.max_cpu ?? 0
+  const maxMemoryMb = plan.max_memory_mb ?? 0
+  if (maxCpu === 0 && maxMemoryMb === 0) {
+    return t('pricingPlanCard.unlimitedCapacity')
+  }
+  const summary = formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, t('pricingPlanCard.or'))
+  if (!summary) return ''
+  return t('pricingPlanCard.budgetCapacity', { summary })
+}
+
+const hasAnyCountModePlan = computed(() =>
+  filteredPlans.value.some((p: any) => !isBudgetPlan(p))
+)
 
 // Feature capability labels for plan features array
 const featureLabels: Record<string, { en: string; fr: string }> = {

@@ -135,7 +135,20 @@
             {{ t('subscriptionPlans.planFeatures') }}
           </h5>
           <div class="features-grid">
-            <div v-if="planFeature('concurrent_terminals', 'max_concurrent_terminals')" class="feature-item">
+            <!-- Budget-mode capacity (size-count language) -->
+            <div
+              v-if="isBudgetPlan"
+              class="feature-item budget-capacity"
+              :title="t('pricingPlanCard.capacityTooltip')"
+            >
+              <i class="fas fa-server"></i>
+              <span>{{ budgetCapacityText }}</span>
+            </div>
+            <!-- Legacy count-mode: concurrent terminals -->
+            <div
+              v-else-if="planFeature('concurrent_terminals', 'max_concurrent_terminals')"
+              class="feature-item"
+            >
               <i class="fas fa-terminal"></i>
               <span>{{ formatLimit(planFeature('concurrent_terminals', 'max_concurrent_terminals')) }} {{ t('subscriptionPlans.concurrentTerminals') }}</span>
             </div>
@@ -143,7 +156,11 @@
               <i class="fas fa-clock"></i>
               <span>{{ formatDuration(planFeature('session_duration_hours', 'max_session_duration_minutes')) }} {{ t('subscriptionPlans.sessionDuration') }}</span>
             </div>
-            <div v-if="planFeature('allowed_machine_sizes', 'allowed_machine_sizes')" class="feature-item">
+            <!-- Legacy count-mode: allowed machine sizes -->
+            <div
+              v-if="!isBudgetPlan && planFeature('allowed_machine_sizes', 'allowed_machine_sizes')"
+              class="feature-item"
+            >
               <i class="fas fa-server"></i>
               <span>{{ planFeature('allowed_machine_sizes', 'allowed_machine_sizes').join(', ') }} {{ t('subscriptionPlans.allowedSizes') }}</span>
             </div>
@@ -235,8 +252,32 @@
 import { computed, onMounted } from 'vue'
 import { useSubscriptionPlansStore } from '../../../stores/subscriptionPlans'
 import { useSubscriptionTranslations } from '../composables/useSubscriptionTranslations'
+import { useTranslations } from '../../../composables/useTranslations'
+import { formatBudgetAsSizes, CANONICAL_SIZE_CATALOG } from '../../../utils/quotaFormatters'
 
 const { t } = useSubscriptionTranslations()
+
+// Register pricing-card keys alongside the subscription translations. These
+// keys are shared across pricing surfaces (plan list, dashboard card, etc.)
+// so the customer copy stays consistent.
+useTranslations({
+  en: {
+    pricingPlanCard: {
+      budgetCapacity: 'Includes up to {summary} simultaneous sessions',
+      or: 'OR',
+      capacityTooltip: 'Your plan\'s capacity, expressed as machine sizes you can spawn at once. Pick any combination that fits.',
+      unlimitedCapacity: 'Unlimited capacity',
+    },
+  },
+  fr: {
+    pricingPlanCard: {
+      budgetCapacity: 'Comprend jusqu\'à {summary} sessions simultanées',
+      or: 'OU',
+      capacityTooltip: 'La capacité de votre forfait, exprimée en tailles de machines que vous pouvez lancer simultanément. Choisissez la combinaison qui vous convient.',
+      unlimitedCapacity: 'Capacité illimitée',
+    },
+  },
+})
 
 interface Props {
   subscription: any | null
@@ -309,6 +350,29 @@ const planFeature = (legacyKey: string, planKey: string) => {
   if (!sub) return null
   return sub.subscription_plan?.[planKey] ?? sub.plan_features?.[legacyKey] ?? null
 }
+
+// Resolve the plan object we render — prefer the live entry from the store
+// (most up-to-date), fall back to the denormalized subscription_plan blob.
+const planForCapacity = computed<any>(() => {
+  return currentPlan.value || props.subscription?.subscription_plan || null
+})
+
+const isBudgetPlan = computed(() => {
+  return planForCapacity.value?.quota_model === 'budget'
+})
+
+const budgetCapacityText = computed(() => {
+  const plan = planForCapacity.value
+  if (!plan || plan.quota_model !== 'budget') return ''
+  const maxCpu = plan.max_cpu ?? 0
+  const maxMemoryMb = plan.max_memory_mb ?? 0
+  if (maxCpu === 0 && maxMemoryMb === 0) {
+    return t('pricingPlanCard.unlimitedCapacity')
+  }
+  const summary = formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, t('pricingPlanCard.or'))
+  if (!summary) return ''
+  return t('pricingPlanCard.budgetCapacity', { summary })
+})
 
 // Format a plan limit: -1 means unlimited
 const formatLimit = (value: any) => {
