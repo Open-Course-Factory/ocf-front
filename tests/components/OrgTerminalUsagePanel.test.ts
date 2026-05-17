@@ -235,20 +235,28 @@ describe('OrgTerminalUsagePanel', () => {
       expect(summary.text().toLowerCase()).toContain('no remaining')
     })
 
-    it('falls back to count mode when quota.scope is "unlimited"', async () => {
-      const unlimited: OrgTerminalUsage = {
+    it('renders count mode when usage has no quota field (count-mode plans)', async () => {
+      // Budget mode is signalled structurally by the presence of the `quota`
+      // block. Count-mode plans omit it entirely — there is no `scope:
+      // "unlimited"` sentinel anymore (see MR !237 / C8).
+      const noQuota: OrgTerminalUsage = {
         ...BUDGET_MODE_USAGE,
-        quota: { ...BUDGET_MODE_USAGE.quota!, scope: 'unlimited' }
+        // Drop both budget fields so the response matches a real count-mode payload.
+        quota: undefined,
+        remaining_by_size: undefined,
+        max_terminals: 10
       }
-      getOrgTerminalUsageMock.mockResolvedValue(unlimited)
+      getOrgTerminalUsageMock.mockResolvedValue(noQuota)
       const wrapper = mountPanel()
       await flushPromises()
       await wrapper.find('.collapsible-header').trigger('click')
       await flushPromises()
 
-      // Should render the legacy progress bar
+      // Should render the legacy progress bar — and none of the budget-mode UI.
       expect(wrapper.find('.progress-section').exists()).toBe(true)
       expect(wrapper.find('[data-testid="size-table"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="budget-summary"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="advanced-quota"]').exists()).toBe(false)
     })
   })
 })

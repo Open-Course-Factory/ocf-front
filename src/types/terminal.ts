@@ -101,7 +101,14 @@ export interface SessionOptionSize {
 /**
  * Session quota block returned by session-options (budget mode).
  * Tracks aggregate CPU + memory consumption against plan limits.
- * Optional during dual-mode rollout — older backends omit this field.
+ *
+ * **The presence of this field IS the budget-mode signal.** When the backend
+ * runs a plan in count mode, it MUST omit this field (do not emit a sentinel
+ * `scope: "unlimited"` — that variant was retired in MR !237). When this field
+ * is present, callers treat the response as budget mode regardless of values:
+ * - `max_cpu === 0` / `max_memory_mb === 0` mean "no cap on that axis"
+ *   (the server still emits a `remaining_*` MaxInt32 sentinel so the UI can
+ *   render "unlimited" capacity without re-interpreting `max_*`).
  */
 export interface SessionQuota {
   /** 0 = unlimited */
@@ -112,7 +119,7 @@ export interface SessionQuota {
   used_memory_mb: number
   remaining_cpu: number
   remaining_memory_mb: number
-  scope: 'user' | 'organization' | 'unlimited'
+  scope: 'user' | 'organization'
 }
 
 /**

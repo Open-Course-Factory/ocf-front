@@ -63,10 +63,14 @@ export function summarizeRemaining(
 }
 
 /**
- * True when the session-options response carries the top-level `quota` block
- * (i.e. the backend ran in budget mode for this plan). When false, the legacy
- * count-mode UI should be rendered.
+ * Single source of truth for the count-mode vs budget-mode distinction.
+ *
+ * Budget mode is signalled structurally by the presence of the top-level
+ * `quota` block in the session-options / org-usage response. Count mode is the
+ * absence of that field. This keeps consumers free of magic sentinel checks
+ * (the previous `scope === 'unlimited'` variant caused C8 — two callers
+ * disagreed on the rule).
  */
 export function isBudgetMode(response?: { quota?: unknown } | null): boolean {
-  return !!response && response.quota !== undefined && response.quota !== null
+  return response?.quota != null
 }

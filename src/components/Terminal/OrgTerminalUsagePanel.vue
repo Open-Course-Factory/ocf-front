@@ -236,6 +236,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { terminalService } from '../../services/domain/terminal/terminalService'
 import { usePermissionsStore } from '../../stores/permissions'
+import { isBudgetMode as isBudgetModeResponse } from '../../utils/quotaFormatters'
 import type { OrgTerminalUsage, SizeRemaining } from '../../types/terminal'
 
 // Catalog size ordering (largest first). Used for sorting per-size rows.
@@ -371,14 +372,11 @@ const badgeColorClass = computed(() => {
 const showWarning = computed(() => !isBudgetMode.value && usagePct.value >= 80)
 
 /**
- * Budget mode is on when the backend returns a quota block whose scope is
- * not 'unlimited'. Older backends omit the field entirely → falls back to
- * legacy count-mode rendering.
+ * Budget mode is signalled structurally by the presence of the top-level
+ * `quota` block — see `utils/quotaFormatters.ts:isBudgetMode`. Count-mode
+ * plans omit the field entirely.
  */
-const isBudgetMode = computed<boolean>(() => {
-  const q = usageData.value?.quota
-  return !!q && q.scope !== 'unlimited'
-})
+const isBudgetMode = computed<boolean>(() => isBudgetModeResponse(usageData.value))
 
 const budgetSummary = computed<string | null>(() => {
   if (!isBudgetMode.value) return null
