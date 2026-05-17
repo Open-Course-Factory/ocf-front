@@ -80,3 +80,60 @@ export function summarizeRemaining(
 export function isBudgetMode(response?: { quota?: unknown } | null): boolean {
   return response?.quota != null
 }
+
+/**
+ * Canonical size catalog used by the admin plan-editor composer.
+ *
+ * Mirrors the backend seeds — keep in sync with:
+ *   - tt-backend/backend/db.go (dbSeedSizes)
+ *   - ocf-core/src/payment/backfill/quota.go (sizeCatalog)
+ *
+ * Adding a new size requires updating BOTH backends AND this constant.
+ */
+export const CANONICAL_SIZE_CATALOG: Record<string, { cpu: number; memory_mb: number }> = {
+  xs: { cpu: 1, memory_mb: 256 },
+  s: { cpu: 1, memory_mb: 512 },
+  m: { cpu: 2, memory_mb: 1024 },
+  l: { cpu: 4, memory_mb: 2048 },
+  xl: { cpu: 4, memory_mb: 4096 }
+}
+
+/**
+ * One row of the admin size-quota composer: "students can spawn `count`
+ * machines of size `size_key`".
+ */
+export interface SizeQuotaRow {
+  size_key: string
+  count: number
+}
+
+/**
+ * D7 max() semantics: convert size-count rows to a raw CPU+RAM budget.
+ *
+ * For rows [1 L, 2 M, 4 S] the result is the max across rows on each axis,
+ * NOT the sum — the admin is describing alternative bundles a student can
+ * spawn, not a simultaneous allocation. So `MaxCPU = max(count × cpu)` and
+ * `MaxMemoryMB = max(count × memory_mb)` independently across rows.
+ *
+ * Rows with `count <= 0` or an unknown `size_key` are silently ignored.
+ *
+ * Empty input returns `{ max_cpu: 0, max_memory_mb: 0 }` — callers may decide
+ * to treat that as "no rows yet, save disabled" or as "unlimited" depending
+ * on the surrounding UI context.
+ */
+export function computeMaxFromRows(
+  rows: SizeQuotaRow[],
+  catalog: Record<string, { cpu: number; memory_mb: number }> = CANONICAL_SIZE_CATALOG
+): { max_cpu: number; max_memory_mb: number } {
+  let max_cpu = 0
+  let max_memory_mb = 0
+  for (const row of rows) {
+    const entry = catalog[row.size_key]
+    if (!entry) continue
+    const count = row.count > 0 ? row.count : 0
+    if (count === 0) continue
+    max_cpu = Math.max(max_cpu, count * entry.cpu)
+    max_memory_mb = Math.max(max_memory_mb, count * entry.memory_mb)
+  }
+  return { max_cpu, max_memory_mb }
+}
