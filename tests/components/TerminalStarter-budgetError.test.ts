@@ -1,10 +1,17 @@
 /**
  * Tests for budget-mode 403 error handling in TerminalStarter (MR-FRONT-A).
  *
+ * The previous version of this file asserted only that the notification
+ * composable was called. That allowed a wrong i18n key (or a missing
+ * translation) to slip through unnoticed: the spy fires either way. This
+ * version captures the actual message + title that the component renders, so
+ * tests fail when the wrong copy is shown.
+ *
  * Covers:
  *   - When the launch request rejects with 403 + source='budget', the
- *     starter shows a budget-specific confirm dialog (not the generic error
- *     toast) and refreshes session-options to refresh the per-size badges.
+ *     starter shows the size-count-agnostic budget confirm dialog (not the
+ *     generic error toast) and refreshes session-options to refresh the
+ *     per-size badges.
  *   - When `reason === 'plan_restriction'`, the starter shows the "size not
  *     in plan" copy and does NOT call getSessionOptions a second time.
  */
@@ -57,18 +64,45 @@ vi.mock('../../src/services/domain/terminal', () => ({
   }
 }))
 
-const showConfirmMock = vi.fn().mockResolvedValue(false)
-const showErrorMock = vi.fn()
+/**
+ * Captures every toast / confirm dialog the component renders so tests can
+ * assert on the visible message + title (not just "the spy was called"). The
+ * `confirmReturn` mailbox lets a test decide whether the user clicks
+ * Confirm or Cancel.
+ */
+interface RenderedToast {
+  level: 'confirm' | 'error' | 'success' | 'info' | 'warning' | 'message' | 'alert'
+  message: string
+  title?: string
+}
+const renderedToasts: RenderedToast[] = []
+let confirmReturn = false
+
 vi.mock('../../src/composables/useNotification', () => ({
   useNotification: () => ({
-    showConfirm: showConfirmMock,
-    showError: showErrorMock,
-    showSuccess: vi.fn(),
-    showInfo: vi.fn(),
-    showWarning: vi.fn(),
-    showMessage: vi.fn(),
-    showAlert: vi.fn(),
-    showPrompt: vi.fn()
+    showConfirm: async (message: string, title?: string) => {
+      renderedToasts.push({ level: 'confirm', message, title })
+      return confirmReturn
+    },
+    showError: (message: string, title?: string) => {
+      renderedToasts.push({ level: 'error', message, title })
+    },
+    showSuccess: (message: string, title?: string) => {
+      renderedToasts.push({ level: 'success', message, title })
+    },
+    showInfo: (message: string, title?: string) => {
+      renderedToasts.push({ level: 'info', message, title })
+    },
+    showWarning: (message: string, title?: string) => {
+      renderedToasts.push({ level: 'warning', message, title })
+    },
+    showMessage: (message: string) => {
+      renderedToasts.push({ level: 'message', message })
+    },
+    showAlert: async (message: string, title?: string) => {
+      renderedToasts.push({ level: 'alert', message, title })
+    },
+    showPrompt: async () => null,
   })
 }))
 
@@ -182,12 +216,13 @@ async function launchSession(wrapper: VueWrapper<any>) {
 describe('TerminalStarter — budget error handling', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    showConfirmMock.mockResolvedValue(false)
+    renderedToasts.length = 0
+    confirmReturn = false
     routerPushMock.mockResolvedValue(undefined)
     mockGetSessionOptions.mockClear()
   })
 
-  it('shows a budget-specific confirm dialog on 403 with source=budget', async () => {
+  it('renders the budget confirm dialog (not the generic error toast) on 403 source=budget', async () => {
     mockStartComposed.mockRejectedValueOnce({
       response: {
         status: 403,
@@ -205,15 +240,52 @@ describe('TerminalStarter — budget error handling', () => {
     await flushPromises()
     await launchSession(wrapper)
 
-    // Should not have shown the generic error toast.
-    expect(showErrorMock).not.toHaveBeenCalled()
-    // Should have shown the budget-specific confirm dialog.
-    expect(showConfirmMock).toHaveBeenCalledTimes(1)
-    // Should have refreshed session-options to refresh per-size badges.
+    // Exactly one toast, and it's a confirm — no generic error toast slipped through.
+    expect(renderedToasts.length).toBe(1)
+    const toast = renderedToasts[0]
+    expect(toast.level).toBe('confirm')
+    // The title carries the budget-exhausted headline. We assert on the
+    // resolved English copy so a missing translation or a renamed i18n key
+    // fails the test (the previous spy-call assertion would have passed).
+    expect(toast.title).toBe('Your budget is full')
+    // The message carries the size-count-agnostic hint. We accept either
+    // variant (summary vs. all-exhausted) because the session-options refresh
+    // result decides which one renders.
+    expect(toast.message).toMatch(/stop a (session|running session) to free capacity/i)
+    // Session-options must be refreshed so the per-size badges reflect the
+    // budget that just got exhausted.
     expect(mockGetSessionOptions).toHaveBeenCalled()
   })
 
-  it('navigates to /subscription-dashboard when the user confirms the dialog', async () => {
+  it('renders the "{summary} more sessions" hint when the refresh returns remaining capacity', async () => {
+    // The post-rejection refresh returns an XS slot still available — the
+    // hint must point the user at it ("You can still spawn: 4 XS …") instead
+    // of the all-exhausted copy.
+    mockStartComposed.mockRejectedValueOnce({
+      response: {
+        status: 403,
+        data: {
+          error_code: 403,
+          error_message: 'Budget exhausted',
+          source: 'budget',
+          reason: 'budget_memory_exceeded',
+        }
+      }
+    })
+
+    const wrapper = mountStarter()
+    await flushPromises()
+    await launchSession(wrapper)
+
+    expect(renderedToasts.length).toBe(1)
+    const toast = renderedToasts[0]
+    expect(toast.level).toBe('confirm')
+    // Default mock returns 4 XS available — the hint must include it.
+    expect(toast.message).toContain('4 XS')
+    expect(toast.message.toLowerCase()).toContain('free capacity')
+  })
+
+  it('navigates to /subscription-dashboard when the user confirms the budget dialog', async () => {
     mockStartComposed.mockRejectedValueOnce({
       response: {
         status: 403,
@@ -225,7 +297,7 @@ describe('TerminalStarter — budget error handling', () => {
         }
       }
     })
-    showConfirmMock.mockResolvedValueOnce(true)
+    confirmReturn = true
 
     const wrapper = mountStarter()
     await flushPromises()
@@ -234,7 +306,7 @@ describe('TerminalStarter — budget error handling', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/subscription-dashboard')
   })
 
-  it('shows the "plan restriction" error (no budget refresh) when reason=plan_restriction', async () => {
+  it('renders the plan-restriction error toast (no budget refresh) when reason=plan_restriction', async () => {
     mockStartComposed.mockRejectedValueOnce({
       response: {
         status: 403,
@@ -251,11 +323,46 @@ describe('TerminalStarter — budget error handling', () => {
     await flushPromises()
     await launchSession(wrapper)
 
-    // plan_restriction uses showError (size not in plan — informational), not
-    // the confirm dialog with "View my usage".
-    expect(showErrorMock).toHaveBeenCalledTimes(1)
-    expect(showConfirmMock).not.toHaveBeenCalled()
-    // No session-options refresh on plan_restriction (the budget didn't change).
+    // plan_restriction is a permission issue, not a live-budget issue: it must
+    // render as an error toast (not the confirm dialog with "View my usage").
+    expect(renderedToasts.length).toBe(1)
+    const toast = renderedToasts[0]
+    expect(toast.level).toBe('error')
+    expect(toast.title).toBe('Size not in plan')
+    expect(toast.message).toBe("This size isn't included in your plan")
+    // No session-options refresh on plan_restriction (the live budget didn't
+    // change — refreshing would mask the real cause).
     expect(mockGetSessionOptions).not.toHaveBeenCalled()
+  })
+
+  it('budget_cpu_exceeded and budget_memory_exceeded surface the same UX (collapsed reasons)', async () => {
+    // First call: cpu reason
+    mockStartComposed.mockRejectedValueOnce({
+      response: { status: 403, data: { source: 'budget', reason: 'budget_cpu_exceeded' } }
+    })
+    let wrapper = mountStarter()
+    await flushPromises()
+    await launchSession(wrapper)
+    const cpuToast = renderedToasts[renderedToasts.length - 1]
+    expect(cpuToast.level).toBe('confirm')
+    const cpuMessage = cpuToast.message
+    const cpuTitle = cpuToast.title
+
+    // Reset and repeat with memory reason
+    renderedToasts.length = 0
+    mockGetSessionOptions.mockClear()
+    mockStartComposed.mockRejectedValueOnce({
+      response: { status: 403, data: { source: 'budget', reason: 'budget_memory_exceeded' } }
+    })
+    wrapper = mountStarter()
+    await flushPromises()
+    await launchSession(wrapper)
+    const memToast = renderedToasts[renderedToasts.length - 1]
+    expect(memToast.level).toBe('confirm')
+
+    // Both granular reasons must collapse to the same customer-facing copy —
+    // the user shouldn't see "CPU" vs "memory" wording leak into the UI.
+    expect(memToast.title).toBe(cpuTitle)
+    expect(memToast.message).toBe(cpuMessage)
   })
 })
