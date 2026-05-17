@@ -165,8 +165,8 @@ export const helpFr = {
         },
 
         machineSizes: {
-          title: "Tailles d'environnement",
-          description: "Lors de la composition d'une session, vous choisissez une taille pour votre environnement. Chaque taille offre des quantités différentes de CPU et de mémoire. Les tailles disponibles dépendent de votre plan d'abonnement.",
+          title: "Tailles et capacité des environnements",
+          description: "Votre forfait inclut une capacité pour exécuter des environnements d'apprentissage. Vous pouvez la répartir entre n'importe quelle combinaison de tailles, tant que vous ne dépassez pas la limite globale du forfait. Le compositeur de session indique en permanence combien de sessions de chaque taille vous pouvez encore lancer.",
           small: {
             title: "S - Petite",
             description: "Environnement léger pour les tâches simples, le scripting et le développement basique."
@@ -183,9 +183,17 @@ export const helpFr = {
             title: "XL - Très Grande",
             description: "Ressources maximales pour les charges lourdes, les builds à grande échelle et les environnements de type production."
           },
+          budgetExplain: {
+            title: "Comment la capacité est consommée",
+            description: "Lorsque vous démarrez une session, la taille choisie est réservée sur votre capacité. Arrêter une session non persistante libère immédiatement sa capacité. Les sessions persistantes mobilisent la capacité jusqu'à leur suppression. Le compositeur affiche le résumé en nombre de tailles (\"3 L OU 6 M OU 12 S\") afin que vous sachiez toujours ce qu'il reste à lancer."
+          },
+          combinationExample: {
+            title: "À combiner librement",
+            description: "Exemple : un forfait avec la capacité de 2 sessions L peut aussi accueillir 4 sessions M, 8 sessions S, ou n'importe quel mélange qui rentre — par exemple 1 L + 2 M. Vous décidez comment répartir la capacité entre vos apprenants ou vos environnements."
+          },
           planTip: {
-            title: "Disponibilité selon le plan",
-            description: "Votre plan d'abonnement détermine les tailles disponibles. Les tailles verrouillées apparaissent en grisé avec un cadenas dans le compositeur de session. Sur un abonnement géré par l'organisation, les tailles indisponibles sont masquées. Pour débloquer plus de tailles, améliorez votre plan."
+            title: "Disponibilité selon le forfait",
+            description: "Votre forfait d'abonnement détermine la capacité globale et les tailles débloquées. Les tailles trop grandes pour votre forfait apparaissent en grisé avec un cadenas dans le compositeur de session. Sur un abonnement géré par l'organisation, les tailles indisponibles sont masquées. Pour augmenter votre capacité, améliorez votre forfait."
           }
         },
 
