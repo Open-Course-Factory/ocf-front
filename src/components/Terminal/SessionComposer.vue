@@ -182,8 +182,8 @@ const { t } = useTranslations({
       or: 'OR',
       remainingBadge: '{n} remaining',
       reasonPlanRestriction: 'Restricted by your plan',
-      reasonBudgetExhausted: "Budget exhausted — you can't spawn this size right now",
-      budgetAllExhausted: 'Budget exhausted. Stop a session to free capacity.',
+      reasonBudgetExhausted: 'No capacity left for this size right now — pick a smaller size or stop a session',
+      budgetAllExhausted: 'No capacity left — stop a session to free up resources.',
     }
   },
   fr: {
@@ -216,8 +216,8 @@ const { t } = useTranslations({
       or: 'OU',
       remainingBadge: '{n} restant(s)',
       reasonPlanRestriction: 'Restreint par votre forfait',
-      reasonBudgetExhausted: 'Budget \u00e9puis\u00e9 \u2014 vous ne pouvez pas lancer cette taille pour l\'instant',
-      budgetAllExhausted: 'Budget \u00e9puis\u00e9. Arr\u00eatez une session pour lib\u00e9rer de la capacit\u00e9.',
+      reasonBudgetExhausted: 'Plus de capacit\u00e9 pour cette taille \u2014 choisissez une taille plus petite ou arr\u00eatez une session',
+      budgetAllExhausted: 'Plus de capacit\u00e9 disponible \u2014 arr\u00eatez une session pour lib\u00e9rer des ressources.',
     }
   }
 })
@@ -480,8 +480,13 @@ function getReasonText(reason?: string): string {
     case 'plan_restriction': return t('sessionComposer.reasonPlanRestriction')
     case 'not_supported': return t('sessionComposer.notSupported')
     case 'size_too_small': return t('sessionComposer.sizeTooSmall')
-    case 'budget_cpu_exceeded': return t('sessionComposer.reasonBudgetExhausted')
-    case 'budget_memory_exceeded': return t('sessionComposer.reasonBudgetExhausted')
+    // The backend reports the granular cause (CPU vs memory) so it can act on
+    // it, but the user only needs to know "the size won't fit right now" —
+    // both reasons collapse to the same customer-facing message to keep the UX
+    // in size-count language (see memory entry `feedback_quota_ux_size_count.md`).
+    case 'budget_cpu_exceeded':
+    case 'budget_memory_exceeded':
+      return t('sessionComposer.reasonBudgetExhausted')
     default: return t('sessionComposer.unavailable')
   }
 }

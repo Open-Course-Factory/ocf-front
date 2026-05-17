@@ -244,10 +244,11 @@ describe('TerminalStarter — budget error handling', () => {
     expect(renderedToasts.length).toBe(1)
     const toast = renderedToasts[0]
     expect(toast.level).toBe('confirm')
-    // The title carries the budget-exhausted headline. We assert on the
-    // resolved English copy so a missing translation or a renamed i18n key
-    // fails the test (the previous spy-call assertion would have passed).
-    expect(toast.title).toBe('Your budget is full')
+    // The title carries the size-count-agnostic budget-exhausted headline.
+    // We assert on the resolved English copy so a missing translation or a
+    // renamed i18n key fails the test (the previous spy-call assertion would
+    // have passed regardless).
+    expect(toast.title).toBe("You've reached your plan's session limit")
     // The message carries the size-count-agnostic hint. We accept either
     // variant (summary vs. all-exhausted) because the session-options refresh
     // result decides which one renders.
@@ -282,6 +283,7 @@ describe('TerminalStarter — budget error handling', () => {
     expect(toast.level).toBe('confirm')
     // Default mock returns 4 XS available — the hint must include it.
     expect(toast.message).toContain('4 XS')
+    expect(toast.message).toContain('launch')
     expect(toast.message.toLowerCase()).toContain('free capacity')
   })
 
