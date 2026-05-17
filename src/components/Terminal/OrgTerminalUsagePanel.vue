@@ -234,47 +234,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
-import { terminalService } from '../../services/domain/terminal/terminalService'
+import { terminalService } from '../../services/domain/terminal'
 import { usePermissionsStore } from '../../stores/permissions'
-import { isBudgetMode as isBudgetModeResponse } from '../../utils/quotaFormatters'
+import {
+  isBudgetMode as isBudgetModeResponse,
+  summarizeRemaining,
+  formatMemoryMb,
+  capacityRank,
+} from '../../utils/quotaFormatters'
 import type { OrgTerminalUsage, SizeRemaining } from '../../types/terminal'
-
-// Catalog size ordering (largest first). Used for sorting per-size rows.
-const SIZE_ORDER: Record<string, number> = { xl: 0, l: 1, m: 2, s: 3, xs: 4 }
-
-/**
- * Build a customer-facing summary string from the top remaining sizes.
- * Picks up to 3 entries by descending capacity (xl > l > m > s > xs).
- * Returns null when nothing remains.
- *
- * NOTE: If src/utils/quotaFormatters.ts lands first (sibling MR-FRONT-A),
- * replace this inline helper with `import { summarizeRemaining } from
- * '../../utils/quotaFormatters'`.
- */
-function summarizeRemaining(sizes: SizeRemaining[] | undefined): string | null {
-  if (!sizes || sizes.length === 0) return null
-  const positive = sizes.filter(s => s.remaining_count > 0)
-  if (positive.length === 0) return null
-  const sorted = [...positive].sort((a, b) => {
-    const ao = SIZE_ORDER[a.key.toLowerCase()] ?? 99
-    const bo = SIZE_ORDER[b.key.toLowerCase()] ?? 99
-    return ao - bo
-  })
-  return sorted.slice(0, 3).map(s => `${s.remaining_count} ${s.key.toUpperCase()}`).join(' / ')
-}
-
-/**
- * Convert memory in MiB to a human-friendly GiB / MiB string.
- * Inline fallback until src/utils/quotaFormatters.ts lands.
- */
-function formatMemoryMb(mb: number): string {
-  if (mb <= 0) return '0 MiB'
-  if (mb >= 1024) {
-    const gib = mb / 1024
-    return `${gib.toFixed(gib >= 10 ? 0 : 1)} GiB`
-  }
-  return `${mb} MiB`
-}
 
 interface Props {
   organizationId: string | null
@@ -380,17 +348,18 @@ const isBudgetMode = computed<boolean>(() => isBudgetModeResponse(usageData.valu
 
 const budgetSummary = computed<string | null>(() => {
   if (!isBudgetMode.value) return null
-  return summarizeRemaining(usageData.value?.remaining_by_size)
+  // Shared helper joins with the passed joiner — pass "/" to preserve the
+  // existing "1 XL / 2 L / 3 M" layout (composer uses localized "OR" / "OU").
+  // It returns '' for the no-remaining-capacity case; we convert to null so
+  // the template can pick the "no remaining" copy via `v-if`.
+  const summary = summarizeRemaining(usageData.value?.remaining_by_size, '/')
+  return summary === '' ? null : summary
 })
 
 const sortedSizeRows = computed<SizeRemaining[]>(() => {
   const rows = usageData.value?.remaining_by_size
   if (!rows || rows.length === 0) return []
-  return [...rows].sort((a, b) => {
-    const ao = SIZE_ORDER[a.key.toLowerCase()] ?? 99
-    const bo = SIZE_ORDER[b.key.toLowerCase()] ?? 99
-    return ao - bo
-  })
+  return [...rows].sort((a, b) => capacityRank(a.key) - capacityRank(b.key))
 })
 
 const maxRemainingCount = computed<number>(() => {
