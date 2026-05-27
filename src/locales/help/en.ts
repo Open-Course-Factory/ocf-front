@@ -165,8 +165,8 @@ export const helpEn = {
         },
 
         machineSizes: {
-          title: "Environment Sizes",
-          description: "When composing a session, you choose a size for your environment. Each size offers different amounts of CPU and memory. The sizes available to you depend on your subscription plan.",
+          title: "Environment Sizes & Capacity",
+          description: "Your plan includes a capacity for running learning environments. You can split that capacity across any combination of machine sizes, as long as you do not exceed your overall plan limit. The session composer always shows how many sessions of each size you can still launch.",
           small: {
             title: "S - Small",
             description: "Lightweight environment for simple tasks, scripting, and basic development."
@@ -183,9 +183,17 @@ export const helpEn = {
             title: "XL - Extra Large",
             description: "Maximum resources for heavy workloads, large-scale builds, and production-like environments."
           },
+          budgetExplain: {
+            title: "How capacity is consumed",
+            description: "When you start a session, the size you pick is reserved from your capacity. Stopping a non-persistent session releases its capacity immediately. Persistent sessions reserve capacity until you delete them. The composer shows the size-count summary (\"3 L OR 6 M OR 12 S\") so you always know what is still launchable."
+          },
+          combinationExample: {
+            title: "Mix and match",
+            description: "Example: a plan with capacity for 2 L sessions can also support 4 M sessions, 8 S sessions, or any mix that fits — like 1 L + 2 M. You decide how to split the capacity between learners or environments."
+          },
           planTip: {
             title: "Plan-based availability",
-            description: "Your subscription plan determines which sizes are available. Locked sizes appear greyed out with a lock icon in the session composer. On an org-managed subscription, unavailable sizes are hidden entirely. To unlock more sizes, upgrade your plan."
+            description: "Your subscription plan determines the overall capacity and which sizes are unlocked. Sizes that are too large for your plan appear greyed out with a lock icon in the session composer. On an org-managed subscription, unavailable sizes are hidden entirely. To increase your capacity, upgrade your plan."
           }
         },
 

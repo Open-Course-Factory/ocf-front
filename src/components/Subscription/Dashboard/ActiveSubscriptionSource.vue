@@ -50,7 +50,20 @@
       <div v-if="hasFeatures" class="feature-highlights">
         <h5>{{ t('subscriptions.keyFeatures') }}</h5>
         <div class="features-grid">
-          <div v-if="primarySubscription.subscription_plan?.max_concurrent_terminals" class="feature-item">
+          <!-- Budget-mode capacity (size-count language) -->
+          <div
+            v-if="isBudgetPlan"
+            class="feature-item budget-capacity"
+            :title="t('pricingPlanCard.capacityTooltip')"
+          >
+            <i class="fas fa-server"></i>
+            <span>{{ budgetCapacityText }}</span>
+          </div>
+          <!-- Legacy count-mode: concurrent terminals -->
+          <div
+            v-else-if="primarySubscription.subscription_plan?.max_concurrent_terminals"
+            class="feature-item"
+          >
             <i class="fas fa-terminal"></i>
             <span>{{ primarySubscription.subscription_plan.max_concurrent_terminals === -1 ? '∞' : primarySubscription.subscription_plan.max_concurrent_terminals }} {{ t('subscriptions.terminals') }}</span>
           </div>
@@ -86,6 +99,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useTranslations } from '../../../composables/useTranslations'
+import { formatBudgetAsSizes, CANONICAL_SIZE_CATALOG } from '../../../utils/quotaFormatters'
 
 interface Props {
   primarySubscription: any | null
@@ -116,7 +130,13 @@ const { t } = useTranslations({
       subscriptionTypeAssigned: 'Assigned License',
       sourcePersonal: 'Self-paid subscription',
       sourceAssigned: 'Assigned by organization',
-    }
+    },
+    pricingPlanCard: {
+      budgetCapacity: 'Includes up to {summary} simultaneous sessions',
+      or: 'OR',
+      capacityTooltip: 'Your plan\'s capacity, expressed as machine sizes you can spawn at once. Pick any combination that fits.',
+      unlimitedCapacity: 'Unlimited capacity',
+    },
   },
   fr: {
     subscriptions: {
@@ -137,17 +157,41 @@ const { t } = useTranslations({
       subscriptionTypeAssigned: 'Licence attribuée',
       sourcePersonal: 'Abonnement auto-payé',
       sourceAssigned: 'Attribué par l\'organisation',
-    }
+    },
+    pricingPlanCard: {
+      budgetCapacity: 'Comprend jusqu\'à {summary} sessions simultanées',
+      or: 'OU',
+      capacityTooltip: 'La capacité de votre forfait, exprimée en tailles de machines que vous pouvez lancer simultanément. Choisissez la combinaison qui vous convient.',
+      unlimitedCapacity: 'Capacité illimitée',
+    },
   }
 })
 
 const hasFeatures = computed(() => {
   return !!(
+    isBudgetPlan.value ||
     props.primarySubscription?.subscription_plan?.max_concurrent_terminals ||
     props.primarySubscription?.subscription_plan?.max_session_duration_minutes ||
     props.primarySubscription?.subscription_plan?.data_persistence_gb ||
     props.primarySubscription?.subscription_plan?.network_access_enabled
   )
+})
+
+const isBudgetPlan = computed(() => {
+  return props.primarySubscription?.subscription_plan?.quota_model === 'budget'
+})
+
+const budgetCapacityText = computed(() => {
+  const plan = props.primarySubscription?.subscription_plan
+  if (!plan || plan.quota_model !== 'budget') return ''
+  const maxCpu = plan.max_cpu ?? 0
+  const maxMemoryMb = plan.max_memory_mb ?? 0
+  if (maxCpu === 0 && maxMemoryMb === 0) {
+    return t('pricingPlanCard.unlimitedCapacity')
+  }
+  const summary = formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, t('pricingPlanCard.or'))
+  if (!summary) return ''
+  return t('pricingPlanCard.budgetCapacity', { summary })
 })
 
 function getPlanName(): string {

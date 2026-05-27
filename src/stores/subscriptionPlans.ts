@@ -144,7 +144,10 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             syncErrorTitle: 'Sync error',
             assignToOrg: 'Assign to Organization',
             assignOrgSuccess: 'Plan assigned to organization successfully',
-            assignToUser: 'Assign to User'
+            assignToUser: 'Assign to User',
+            capacityLabel: 'Capacity',
+            capacityOr: 'OR',
+            capacityUnlimited: 'Unlimited capacity'
         }
         },
         fr: {
@@ -256,7 +259,10 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             syncErrorTitle: 'Erreur de synchronisation',
             assignToOrg: 'Assigner a une organisation',
             assignOrgSuccess: 'Plan assigne a l\'organisation avec succes',
-            assignToUser: 'Attribuer a un utilisateur'
+            assignToUser: 'Attribuer a un utilisateur',
+            capacityLabel: 'Capacité',
+            capacityOr: 'OU',
+            capacityUnlimited: 'Capacité illimitée'
         }
         }
     })
