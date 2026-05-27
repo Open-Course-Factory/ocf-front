@@ -3,9 +3,10 @@
  * rows into raw `max_cpu` + `max_memory_mb` values for the SubscriptionPlan
  * payload.
  *
- * D7 max() semantics: for rows [1 L, 2 M, 4 S], MaxCPU = max(1×4, 2×2, 4×1) = 4
- * and MaxMemoryMB = max(1×2048, 2×1024, 4×512) = 2048 ("students can spawn
- * ANY ONE of these bundles" — not all simultaneously).
+ * Sum semantics (reversed from D7 max() on 2026-05-28): for rows
+ * [1 XL, 1 XS], MaxCPU = 1×4 + 1×1 = 5 and MaxMemoryMB = 1×4096 + 1×256 =
+ * 4352 ("students get this total capacity, mix any way they want within it"
+ * — additive across rows on each axis).
  */
 
 import { describe, it, expect } from 'vitest'
@@ -17,32 +18,48 @@ describe('computeMaxFromRows', () => {
     expect(result).toEqual({ max_cpu: 0, max_memory_mb: 0 })
   })
 
-  it('computes a single L×1 row as the catalog L values (4 cpu, 2048 MB)', () => {
-    const result = computeMaxFromRows([{ size_key: 'l', count: 1 }])
-    expect(result).toEqual({ max_cpu: 4, max_memory_mb: 2048 })
+  it('computes a single XL×1 row as the catalog XL values (4 cpu, 4096 MB)', () => {
+    const result = computeMaxFromRows([{ size_key: 'xl', count: 1 }])
+    expect(result).toEqual({ max_cpu: 4, max_memory_mb: 4096 })
   })
 
-  it('applies max() across rows, not sum (D7 semantics)', () => {
-    // Rows: [1 L, 2 M, 4 S]
-    // CPU axis: max(1×4, 2×2, 4×1) = max(4, 4, 4) = 4
-    // RAM axis: max(1×2048, 2×1024, 4×512) = max(2048, 2048, 2048) = 2048
+  it('computes a single M×3 row by multiplying the catalog values (6 cpu, 3072 MB)', () => {
+    // Single row, multi-count — same result either max() or sum() would give.
+    const result = computeMaxFromRows([{ size_key: 'm', count: 3 }])
+    expect(result).toEqual({ max_cpu: 6, max_memory_mb: 3072 })
+  })
+
+  it('adds rows together on both axes (1 XL + 1 XS = 5 cpu, 4352 MB)', () => {
+    // The 2026-05-28 user test case: "1 XL plus 1 XS" must give MORE
+    // capacity than "1 XL alone", not the same. Sum semantics: 4+1=5 cpu,
+    // 4096+256=4352 MB.
+    const result = computeMaxFromRows([
+      { size_key: 'xl', count: 1 },
+      { size_key: 'xs', count: 1 }
+    ])
+    expect(result).toEqual({ max_cpu: 5, max_memory_mb: 4352 })
+  })
+
+  it('sums across rows when one row contributes more CPU and another more RAM (L×1 + M×2 = 8 cpu, 4096 MB)', () => {
+    // L×1 contributes 4 cpu + 2048 MB; M×2 contributes 4 cpu + 2048 MB.
+    // Sum: 8 cpu / 4096 MB. Under the old max() semantics this would have
+    // collapsed to 4 cpu / 2048 MB.
     const result = computeMaxFromRows([
       { size_key: 'l', count: 1 },
-      { size_key: 'm', count: 2 },
-      { size_key: 's', count: 4 }
+      { size_key: 'm', count: 2 }
     ])
-    expect(result).toEqual({ max_cpu: 4, max_memory_mb: 2048 })
+    expect(result).toEqual({ max_cpu: 8, max_memory_mb: 4096 })
   })
 
-  it('uses max() when CPU and memory peaks are on different rows', () => {
+  it('sums when CPU and memory peaks are on different rows (2 L + 1 XL = 12 cpu, 8192 MB)', () => {
     // Rows: [2 L (8 cpu, 4096 MB), 1 XL (4 cpu, 4096 MB)]
-    // CPU axis: max(2×4, 1×4) = max(8, 4) = 8 (peak at L)
-    // RAM axis: max(2×2048, 1×4096) = max(4096, 4096) = 4096 (tie)
+    // CPU axis: 2×4 + 1×4 = 12
+    // RAM axis: 2×2048 + 1×4096 = 8192
     const result = computeMaxFromRows([
       { size_key: 'l', count: 2 },
       { size_key: 'xl', count: 1 }
     ])
-    expect(result).toEqual({ max_cpu: 8, max_memory_mb: 4096 })
+    expect(result).toEqual({ max_cpu: 12, max_memory_mb: 8192 })
   })
 
   it('ignores rows with count 0', () => {

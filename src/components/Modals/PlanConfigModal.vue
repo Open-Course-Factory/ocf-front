@@ -191,6 +191,7 @@
                   {{ t('planConfig.sizeCapacity.ramValue', { n: ramGiB }) }}
                 </span>
               </div>
+              <p class="computed-preview-hint">{{ t('planConfig.sizeCapacity.computedBudgetHint') }}</p>
             </div>
           </div>
 
@@ -370,12 +371,13 @@ const { t, te, locale } = useTranslations({
       },
       sizeCapacity: {
         section: 'Size capacity',
-        subtitle: 'Students can spawn one of these combinations',
+        subtitle: 'Students can use this capacity freely — mix any way they want',
         rowSize: 'Size',
         rowCount: 'Count',
         addRow: 'Add row',
         removeRow: 'Remove',
         computedBudget: 'Computed budget',
+        computedBudgetHint: 'Total capacity students get — they split it however they want, not a fixed bundle.',
         cpuValue: '{n} vCPU',
         ramValue: '{n} GiB',
         advanced: 'Advanced (raw budget)'
@@ -427,12 +429,13 @@ const { t, te, locale } = useTranslations({
       },
       sizeCapacity: {
         section: 'Capacite par taille',
-        subtitle: "Les apprenants pourront lancer l'une de ces combinaisons",
+        subtitle: 'Les apprenants pourront utiliser cette capacite librement — la repartir comme ils veulent',
         rowSize: 'Taille',
         rowCount: 'Nombre',
         addRow: 'Ajouter une ligne',
         removeRow: 'Supprimer',
         computedBudget: 'Budget calcule',
+        computedBudgetHint: 'Capacite totale dont disposent les apprenants — ils la repartissent librement, ce n est pas un assortiment fige.',
         cpuValue: '{n} vCPU',
         ramValue: '{n} Gio',
         advanced: 'Avance (budget brut)'
@@ -1058,6 +1061,13 @@ watch(() => props.visible, async (newVal) => {
   gap: var(--spacing-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
+}
+
+.computed-preview-hint {
+  margin: var(--spacing-sm) 0 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
 }
 
 .advanced-fields {

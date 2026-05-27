@@ -108,12 +108,20 @@ export interface SizeQuotaRow {
 }
 
 /**
- * D7 max() semantics: convert size-count rows to a raw CPU+RAM budget.
+ * Sum semantics: convert size-count rows to a raw CPU+RAM budget.
  *
- * For rows [1 L, 2 M, 4 S] the result is the max across rows on each axis,
- * NOT the sum — the admin is describing alternative bundles a student can
- * spawn, not a simultaneous allocation. So `MaxCPU = max(count × cpu)` and
- * `MaxMemoryMB = max(count × memory_mb)` independently across rows.
+ * For rows [1 XL, 1 XS] the result is the sum across rows on each axis:
+ * `MaxCPU = (1×4) + (1×1) = 5`, `MaxMemoryMB = (1×4096) + (1×256) = 4352`.
+ *
+ * Mental model for the admin: each row contributes to a total capacity
+ * envelope. Students then split that envelope freely — they can spawn the
+ * exact bundles described, or any other combination of sizes that fits
+ * within the totals (e.g. trading 1 L for 2 M).
+ *
+ * Reverses the D7 max() decision (logged 2026-05-13) per the 2026-05-28
+ * user test: admins were confused that "1 XL + 1 XS" gave the same budget
+ * as "1 XL alone". Additive semantics matches the "total capacity, mix
+ * freely" mental model the customer-facing copy already uses.
  *
  * Rows with `count <= 0` or an unknown `size_key` are silently ignored.
  *
@@ -132,8 +140,8 @@ export function computeMaxFromRows(
     if (!entry) continue
     const count = row.count > 0 ? row.count : 0
     if (count === 0) continue
-    max_cpu = Math.max(max_cpu, count * entry.cpu)
-    max_memory_mb = Math.max(max_memory_mb, count * entry.memory_mb)
+    max_cpu += count * entry.cpu
+    max_memory_mb += count * entry.memory_mb
   }
   return { max_cpu, max_memory_mb }
 }

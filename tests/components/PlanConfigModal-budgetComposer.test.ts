@@ -2,8 +2,9 @@
  * Tests for the admin size-quota composer in PlanConfigModal.
  *
  * The composer lets an admin describe a plan in size-count language
- * ("students can spawn 1 L OR 2 M"); the frontend computes the raw
- * `max_cpu` + `max_memory_mb` budget (D7 max() semantics) before saving.
+ * ("students can use 1 L AND 2 M worth of capacity"); the frontend sums
+ * the rows into a raw `max_cpu` + `max_memory_mb` budget before saving
+ * (sum semantics, reversed from D7 on 2026-05-28).
  *
  * Assertions target rendered DOM and emitted payloads — no spy-call checks.
  */
@@ -158,12 +159,13 @@ describe('PlanConfigModal — size-quota composer (budget mode)', () => {
     const wrapper = mountModal()
     await flushPromises()
 
-    // Default starts as [L × 1] → CPU 4, RAM 2 GiB
+    // Default starts as [L × 1] → CPU 4, RAM 2 GiB (single row, same under
+    // sum and max).
     let preview = wrapper.find('[data-test="size-quota-preview"]')
     expect(preview.text()).toContain('4')
     expect(preview.text()).toContain('2')
 
-    // Change first row to M × 2 → MaxCPU = max(2×2) = 4 cpu, MaxRAM = max(2×1024) = 2048 MB
+    // Change first row to XL × 2 → sum is 2×4=8 cpu, 2×4096=8192 MB = 8 GiB.
     const firstRow = wrapper.findAll('[data-test="size-quota-row"]')[0]
     await firstRow.find('[data-test="size-quota-size"]').setValue('xl')
     await firstRow.find('[data-test="size-quota-count"]').setValue('2')
@@ -215,16 +217,16 @@ describe('PlanConfigModal — size-quota composer (budget mode)', () => {
 
     await wrapper.find('[data-test="plan-save-button"]').trigger('click')
 
-    // Expected:
+    // Expected (sum semantics, reversed from D7 on 2026-05-28):
     //   L×1: cpu=4 ram=2048
     //   M×2: cpu=4 ram=2048
-    //   max() across rows: cpu=4 ram=2048
+    //   sum across rows: cpu=8 ram=4096
     const emitted = wrapper.emitted('save')
     expect(emitted).toBeTruthy()
     const payload = emitted![0][0] as any
     expect(payload.quota_model).toBe('budget')
-    expect(payload.max_cpu).toBe(4)
-    expect(payload.max_memory_mb).toBe(2048)
+    expect(payload.max_cpu).toBe(8)
+    expect(payload.max_memory_mb).toBe(4096)
   })
 
   it('renders the legacy allowlist (count mode) when quota_model is set to count', async () => {
