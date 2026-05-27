@@ -77,6 +77,168 @@
         </div>
       </section>
 
+      <!-- Section 1.5: Quota model + size capacity / count-mode allowlist -->
+      <section class="form-section">
+        <h3 class="section-title">
+          <i class="fas fa-microchip"></i>
+          {{ t('planConfig.sizeCapacity.section') }}
+        </h3>
+
+        <!-- Quota model discriminator -->
+        <div class="quota-model-radio">
+          <label class="quota-model-label">{{ t('planConfig.quotaModel.label') }}</label>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input
+                type="radio"
+                value="budget"
+                :checked="formData.quota_model === 'budget'"
+                data-test="quota-model-budget"
+                @change="formData.quota_model = 'budget'"
+              />
+              <span>{{ t('planConfig.quotaModel.budget') }}</span>
+            </label>
+            <label class="radio-option">
+              <input
+                type="radio"
+                value="count"
+                :checked="formData.quota_model === 'count'"
+                data-test="quota-model-count"
+                @change="formData.quota_model = 'count'"
+              />
+              <span>{{ t('planConfig.quotaModel.count') }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Budget mode: size-quota composer -->
+        <div v-if="formData.quota_model === 'budget'" data-test="size-quota-composer" class="size-quota-composer">
+          <p class="composer-subtitle">{{ t('planConfig.sizeCapacity.subtitle') }}</p>
+
+          <div v-if="!advancedMode" data-test="size-quota-rows-list" class="size-quota-rows">
+            <div
+              v-for="(row, idx) in sizeRows"
+              :key="idx"
+              data-test="size-quota-row"
+              class="size-quota-row"
+            >
+              <div class="row-field">
+                <label :for="`size-row-${idx}-size`">{{ t('planConfig.sizeCapacity.rowSize') }}</label>
+                <select
+                  :id="`size-row-${idx}-size`"
+                  v-model="row.size_key"
+                  data-test="size-quota-size"
+                  class="form-control"
+                >
+                  <option v-for="key in sizeCatalogKeys" :key="key" :value="key">
+                    {{ key.toUpperCase() }}
+                  </option>
+                </select>
+              </div>
+              <div class="row-field">
+                <label :for="`size-row-${idx}-count`">{{ t('planConfig.sizeCapacity.rowCount') }}</label>
+                <input
+                  :id="`size-row-${idx}-count`"
+                  v-model.number="row.count"
+                  data-test="size-quota-count"
+                  type="number"
+                  min="1"
+                  class="form-control row-count-input"
+                />
+              </div>
+              <button
+                type="button"
+                class="btn btn-icon btn-remove"
+                data-test="size-quota-remove-row"
+                :aria-label="t('planConfig.sizeCapacity.removeRow')"
+                @click="removeRow(idx)"
+              >
+                <i class="fas fa-times"></i>
+              </button>
+              <div v-if="row.count < 1" data-test="size-quota-row-validation" class="validation-message">
+                {{ t('planConfig.validation.countPositive') }}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-secondary btn-add-row"
+              data-test="size-quota-add-row"
+              @click="addRow"
+            >
+              <i class="fas fa-plus"></i>
+              {{ t('planConfig.sizeCapacity.addRow') }}
+            </button>
+
+            <div
+              v-if="sizeRows.length === 0"
+              data-test="size-quota-validation"
+              class="validation-message validation-block"
+            >
+              <i class="fas fa-exclamation-triangle"></i>
+              {{ t('planConfig.validation.atLeastOneRow') }}
+            </div>
+
+            <div data-test="size-quota-preview" class="computed-preview">
+              <h4>{{ t('planConfig.sizeCapacity.computedBudget') }}</h4>
+              <div class="preview-values">
+                <span class="preview-value">
+                  <i class="fas fa-microchip"></i>
+                  {{ t('planConfig.sizeCapacity.cpuValue', { n: computedBudget.max_cpu }) }}
+                </span>
+                <span class="preview-value">
+                  <i class="fas fa-memory"></i>
+                  {{ t('planConfig.sizeCapacity.ramValue', { n: ramGiB }) }}
+                </span>
+              </div>
+              <p class="computed-preview-hint">{{ t('planConfig.sizeCapacity.computedBudgetHint') }}</p>
+            </div>
+          </div>
+
+          <div v-else data-test="size-quota-advanced-fields" class="advanced-fields">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="advanced-max-cpu">MaxCPU</label>
+                <input
+                  id="advanced-max-cpu"
+                  v-model.number="formData.max_cpu"
+                  data-test="advanced-max-cpu"
+                  type="number"
+                  min="0"
+                  class="form-control"
+                />
+              </div>
+              <div class="form-group">
+                <label for="advanced-max-memory-mb">MaxMemoryMB</label>
+                <input
+                  id="advanced-max-memory-mb"
+                  v-model.number="formData.max_memory_mb"
+                  data-test="advanced-max-memory-mb"
+                  type="number"
+                  min="0"
+                  class="form-control"
+                />
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="btn btn-link btn-advanced-toggle"
+            data-test="size-quota-advanced-toggle"
+            @click="toggleAdvanced"
+          >
+            <i :class="advancedMode ? 'fas fa-chevron-down' : 'fas fa-chevron-right'"></i>
+            {{ t('planConfig.sizeCapacity.advanced') }}
+          </button>
+        </div>
+
+        <!-- Count mode: legacy allowlist -->
+        <div v-else data-test="count-mode-section" class="count-mode-section">
+          <p class="count-mode-hint">{{ t('planConfig.countMode.hint') }}</p>
+        </div>
+      </section>
+
       <!-- Section 2: Plan Configuration (from catalog) -->
       <section class="form-section">
         <h3 class="section-title">
@@ -155,7 +317,12 @@
         <i class="fas fa-ban"></i>
         {{ t('planConfig.cancel') }}
       </button>
-      <button class="btn btn-primary" @click="handleSave">
+      <button
+        class="btn btn-primary"
+        :disabled="!isFormValid"
+        data-test="plan-save-button"
+        @click="handleSave"
+      >
         <i class="fas fa-save"></i>
         {{ plan ? t('planConfig.save') : t('planConfig.create') }}
       </button>
@@ -164,10 +331,11 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, watch, computed } from 'vue'
+import { reactive, ref, watch, computed } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { usePlanFeaturesStore } from '../../stores/planFeatures'
 import BaseModal from './BaseModal.vue'
+import { CANONICAL_SIZE_CATALOG, computeMaxFromRows, type SizeQuotaRow } from '../../utils/quotaFormatters'
 
 const { t, te, locale } = useTranslations({
   en: {
@@ -200,6 +368,31 @@ const { t, te, locale } = useTranslations({
         machine_sizes: 'Machine Sizes',
         terminal_limits: 'Terminal Limits',
         course_limits: 'Course Limits'
+      },
+      sizeCapacity: {
+        section: 'Size capacity',
+        subtitle: 'Students can use this capacity freely — mix any way they want',
+        rowSize: 'Size',
+        rowCount: 'Count',
+        addRow: 'Add row',
+        removeRow: 'Remove',
+        computedBudget: 'Computed budget',
+        computedBudgetHint: 'Total capacity students get — they split it however they want, not a fixed bundle.',
+        cpuValue: '{n} vCPU',
+        ramValue: '{n} GiB',
+        advanced: 'Advanced (raw budget)'
+      },
+      quotaModel: {
+        label: 'Quota model',
+        count: 'Count (legacy)',
+        budget: 'Budget (new)'
+      },
+      countMode: {
+        hint: 'Count mode uses the legacy allowed_machine_sizes allowlist and max_concurrent_terminals field from the Plan Configuration section below.'
+      },
+      validation: {
+        atLeastOneRow: 'At least one size row is required',
+        countPositive: 'Count must be at least 1'
       }
     }
   },
@@ -233,6 +426,31 @@ const { t, te, locale } = useTranslations({
         machine_sizes: 'Tailles de Machine',
         terminal_limits: 'Limites Terminal',
         course_limits: 'Limites de Cours'
+      },
+      sizeCapacity: {
+        section: 'Capacite par taille',
+        subtitle: 'Les apprenants pourront utiliser cette capacite librement — la repartir comme ils veulent',
+        rowSize: 'Taille',
+        rowCount: 'Nombre',
+        addRow: 'Ajouter une ligne',
+        removeRow: 'Supprimer',
+        computedBudget: 'Budget calcule',
+        computedBudgetHint: 'Capacite totale dont disposent les apprenants — ils la repartissent librement, ce n est pas un assortiment fige.',
+        cpuValue: '{n} vCPU',
+        ramValue: '{n} Gio',
+        advanced: 'Avance (budget brut)'
+      },
+      quotaModel: {
+        label: 'Modele de quota',
+        count: 'Nombre (heritage)',
+        budget: 'Budget (nouveau)'
+      },
+      countMode: {
+        hint: "Le mode Nombre utilise la liste allowed_machine_sizes et max_concurrent_terminals dans la section Configuration ci-dessous."
+      },
+      validation: {
+        atLeastOneRow: 'Au moins une ligne est requise',
+        countPositive: "Le nombre doit etre d'au moins 1"
       }
     }
   }
@@ -260,10 +478,46 @@ const formData = reactive({
   required_role: '',
   priority: 0,
   is_active: true,
-  is_catalog: true
+  is_catalog: true,
+  quota_model: 'budget' as 'budget' | 'count',
+  max_cpu: 0,
+  max_memory_mb: 0
 })
 
 const featureValues = reactive<Record<string, any>>({})
+
+// Size-quota composer state (budget mode only).
+const sizeRows = reactive<SizeQuotaRow[]>([{ size_key: 'l', count: 1 }])
+const advancedMode = ref(false)
+const sizeCatalogKeys = Object.keys(CANONICAL_SIZE_CATALOG)
+
+const computedBudget = computed(() => computeMaxFromRows(sizeRows))
+const ramGiB = computed(() => {
+  const mb = computedBudget.value.max_memory_mb
+  if (mb === 0) return 0
+  // Round to one decimal to avoid floating-point noise (2048 MiB = 2 GiB exactly).
+  return Math.round((mb / 1024) * 10) / 10
+})
+
+function addRow() {
+  sizeRows.push({ size_key: 'l', count: 1 })
+}
+
+function removeRow(index: number) {
+  sizeRows.splice(index, 1)
+}
+
+function toggleAdvanced() {
+  advancedMode.value = !advancedMode.value
+}
+
+const isFormValid = computed(() => {
+  if (formData.quota_model === 'budget' && !advancedMode.value) {
+    if (sizeRows.length === 0) return false
+    if (sizeRows.some(r => !r.size_key || r.count < 1)) return false
+  }
+  return true
+})
 
 const featuresByCategory = computed(() => planFeaturesStore.featuresByCategory)
 
@@ -297,6 +551,23 @@ function populateFromPlan(plan: any) {
   formData.priority = plan.priority || 0
   formData.is_active = plan.is_active !== false
   formData.is_catalog = plan.is_catalog !== false
+
+  // Quota model + budget fields.
+  formData.quota_model = plan.quota_model === 'count' ? 'count' : 'budget'
+  formData.max_cpu = typeof plan.max_cpu === 'number' ? plan.max_cpu : 0
+  formData.max_memory_mb = typeof plan.max_memory_mb === 'number' ? plan.max_memory_mb : 0
+
+  // Reset the size-quota composer. We can't reconstruct the original rows
+  // because the backend stores only the computed max — so if the plan has a
+  // non-zero raw budget we open the Advanced view by default and leave the
+  // composer empty. Admin can re-create rows if they want.
+  sizeRows.splice(0, sizeRows.length)
+  if (formData.max_cpu === 0 && formData.max_memory_mb === 0) {
+    sizeRows.push({ size_key: 'l', count: 1 })
+    advancedMode.value = false
+  } else {
+    advancedMode.value = true
+  }
 
   // Clear feature values
   Object.keys(featureValues).forEach(key => delete featureValues[key])
@@ -364,6 +635,11 @@ function resetForm() {
   formData.priority = 0
   formData.is_active = true
   formData.is_catalog = true
+  formData.quota_model = 'budget'
+  formData.max_cpu = 0
+  formData.max_memory_mb = 0
+  sizeRows.splice(0, sizeRows.length, { size_key: 'l', count: 1 })
+  advancedMode.value = false
   Object.keys(featureValues).forEach(key => delete featureValues[key])
 
   // Initialize default feature values
@@ -418,8 +694,21 @@ function handleSave() {
     }
   }
 
+  // In budget mode the composer is the source of truth unless the admin
+  // bypassed it via the Advanced disclosure. In count mode we don't send
+  // max_cpu / max_memory_mb at all — the legacy allowlist drives the limits.
+  let resolvedMaxCpu = formData.max_cpu
+  let resolvedMaxMemoryMb = formData.max_memory_mb
+  if (formData.quota_model === 'budget' && !advancedMode.value) {
+    const budget = computeMaxFromRows(sizeRows)
+    resolvedMaxCpu = budget.max_cpu
+    resolvedMaxMemoryMb = budget.max_memory_mb
+  }
+
   const planData: any = {
     ...formData,
+    max_cpu: resolvedMaxCpu,
+    max_memory_mb: resolvedMaxMemoryMb,
     features: enabledFeatures,
     allowed_machine_sizes: allowedMachineSizes,
     // Map number features to dedicated fields (preserve existing plan value
@@ -638,12 +927,198 @@ watch(() => props.visible, async (newVal) => {
   background-color: var(--color-secondary-dark, var(--color-secondary-hover));
 }
 
+.quota-model-radio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.quota-model-label {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.radio-group {
+  display: flex;
+  gap: var(--spacing-lg);
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+}
+
+.size-quota-composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.composer-subtitle {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.size-quota-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.size-quota-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: var(--spacing-md);
+  align-items: end;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
+}
+
+.row-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.row-field label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.row-count-input {
+  max-width: 100px;
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+}
+
+.btn-icon:hover {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.btn-add-row {
+  align-self: flex-start;
+}
+
+.btn-advanced-toggle {
+  align-self: flex-start;
+  background: transparent;
+  color: var(--color-text-secondary);
+  padding: var(--spacing-xs) 0;
+  border: none;
+  text-decoration: none;
+}
+
+.btn-advanced-toggle:hover {
+  color: var(--color-primary);
+}
+
+.computed-preview {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--color-bg-tertiary, var(--color-bg-secondary));
+  border-radius: var(--border-radius-md);
+  border: 1px dashed var(--color-border);
+}
+
+.computed-preview h4 {
+  margin: 0 0 var(--spacing-sm) 0;
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+}
+
+.preview-values {
+  display: flex;
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+.preview-value {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.computed-preview-hint {
+  margin: var(--spacing-sm) 0 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.advanced-fields {
+  padding: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
+}
+
+.validation-message {
+  font-size: var(--font-size-xs);
+  color: var(--color-danger);
+  margin-top: var(--spacing-xs);
+}
+
+.validation-block {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-danger-bg, rgba(220, 53, 69, 0.1));
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+}
+
+.count-mode-section {
+  padding: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
+}
+
+.count-mode-hint {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (max-width: 768px) {
   .form-grid {
     grid-template-columns: 1fr;
   }
 
   .stripe-info {
+    grid-template-columns: 1fr;
+  }
+
+  .size-quota-row {
     grid-template-columns: 1fr;
   }
 }
