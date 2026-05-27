@@ -11,7 +11,16 @@
  * either side can consume it.
  */
 
-import type { SessionOptionSize } from '../types/terminal'
+/**
+ * Minimal structural shape consumed by `summarizeRemaining`. Both
+ * `SessionOptionSize` (from session-options) and `SizeRemaining` (from
+ * org-usage) satisfy it — we only need the catalog key and the per-size
+ * remaining count.
+ */
+interface RemainingSizeLike {
+  key: string
+  remaining_count?: number
+}
 
 /**
  * Order convention: descending by capacity. L and XL share CPU; sorting by
@@ -20,11 +29,21 @@ import type { SessionOptionSize } from '../types/terminal'
  * the full XL memory footprint). See memory entry
  * `project_resource_quota_refactor.md`.
  */
-const CAPACITY_ORDER: ReadonlyArray<string> = ['xl', 'l', 'm', 's', 'xs']
+const CAPACITY_ORDER = ['xl', 'l', 'm', 's', 'xs'] as const
 
-function capacityRank(key: string): number {
-  const idx = CAPACITY_ORDER.indexOf(key.toLowerCase())
-  // Unknown keys go to the very end so they never crowd out known sizes.
+/**
+ * Returns the catalog rank of a size key in capacity-descending order
+ * (XL → 0, L → 1, M → 2, S → 3, XS → 4). Unknown keys are sorted last so
+ * they never crowd out known sizes.
+ *
+ * Use as a sort comparator: `sort((a, b) => capacityRank(a.key) - capacityRank(b.key))`
+ * gives largest-first ordering.
+ *
+ * Single source of truth for size ordering across budget-mode UI
+ * (SessionComposer, OrgTerminalUsagePanel, ...).
+ */
+export function capacityRank(key: string): number {
+  const idx = CAPACITY_ORDER.indexOf(key.toLowerCase() as typeof CAPACITY_ORDER[number])
   return idx === -1 ? CAPACITY_ORDER.length : idx
 }
 
@@ -48,7 +67,7 @@ function capacityRank(key: string): number {
  * @param joiner - localized "OR" / "OU" word (caller passes the translated value)
  */
 export function summarizeRemaining(
-  sizes: SessionOptionSize[] | undefined | null,
+  sizes: RemainingSizeLike[] | undefined | null,
   joiner: string
 ): string {
   if (!sizes || sizes.length === 0) return ''
@@ -66,6 +85,25 @@ export function summarizeRemaining(
   return topThree
     .map(s => `${s.remaining_count} ${s.key.toUpperCase()}`)
     .join(` ${joiner} `)
+}
+
+/**
+ * Format memory in MiB as a human-friendly "N GiB" / "N.N GiB" / "N MiB" string.
+ *
+ * Rules (chosen to keep small budgets readable without trailing decimals on
+ * large ones):
+ * - `mb <= 0`            → `"0 MiB"`
+ * - `1024 <= mb < 10240` → `"N.N GiB"` (one decimal, e.g. `4096 → "4.0 GiB"`)
+ * - `mb >= 10240`        → `"N GiB"` (no decimal, e.g. `16384 → "16 GiB"`)
+ * - otherwise            → `"N MiB"` (e.g. `512 → "512 MiB"`)
+ */
+export function formatMemoryMb(mb: number): string {
+  if (mb <= 0) return '0 MiB'
+  if (mb >= 1024) {
+    const gib = mb / 1024
+    return `${gib.toFixed(gib >= 10 ? 0 : 1)} GiB`
+  }
+  return `${mb} MiB`
 }
 
 /**

@@ -10,9 +10,10 @@ import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import type { OrgTerminalUsage } from '../../src/types/terminal'
 
-// Mock the terminal service so we control what the panel "fetches"
+// Mock the terminal service so we control what the panel "fetches".
+// Mock the barrel (canonical import path) so test setup matches sibling test files.
 const getOrgTerminalUsageMock = vi.fn()
-vi.mock('../../src/services/domain/terminal/terminalService', () => ({
+vi.mock('../../src/services/domain/terminal', () => ({
   terminalService: {
     getOrgTerminalUsage: (...args: unknown[]) => getOrgTerminalUsageMock(...args)
   }
