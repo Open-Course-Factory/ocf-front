@@ -34,6 +34,7 @@ import { useNotification } from '../../composables/useNotification'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import AdminBadge from '../Common/AdminBadge.vue'
 import router from '../../router/index.ts'
+import { formatBudgetAsSizes, CANONICAL_SIZE_CATALOG } from '../../utils/quotaFormatters'
 
 const { t } = useI18n()
 const { showError, showSuccess } = useNotification()
@@ -92,6 +93,33 @@ const entityStoreWithFiltering = computed(() => ({
 // Current subscription info
 const currentSubscription = computed(() => subscriptionsStore.currentSubscription)
 const hasActiveSubscription = computed(() => subscriptionsStore.hasActiveSubscription())
+
+// Helper to render a plan's capacity in the same size-count language the
+// pricing page uses. Closes the visibility gap reported in the first user
+// test: admins had to open each plan in edit mode to see budget. Returns:
+//   - budget plans: "1 XL OR 2 L OR 4 M" (or "Unlimited capacity" when both
+//     max_cpu and max_memory_mb are 0)
+//   - count plans: legacy "max_concurrent_terminals × sizes" summary, or null
+//     when neither field is set (so the row is hidden)
+const getCapacitySummary = (plan: any): string | null => {
+    if (plan.quota_model === 'budget') {
+        const maxCpu = plan.max_cpu ?? 0
+        const maxMemoryMb = plan.max_memory_mb ?? 0
+        if (maxCpu === 0 && maxMemoryMb === 0) {
+            return t('subscriptionPlans.capacityUnlimited')
+        }
+        const summary = formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, t('subscriptionPlans.capacityOr'))
+        return summary || null
+    }
+    const maxTerminals = plan.max_concurrent_terminals
+    const sizes = plan.allowed_machine_sizes
+    if (!maxTerminals && (!sizes || sizes.length === 0)) {
+        return null
+    }
+    const sizeList = Array.isArray(sizes) && sizes.length > 0 ? sizes.join(', ') : ''
+    const countPart = maxTerminals ? `${maxTerminals} ${t('subscriptionPlans.concurrentTerminals')}` : ''
+    return [countPart, sizeList].filter(Boolean).join(' — ')
+}
 
 // Helper to determine plan relationship
 const getPlanRelationship = (plan: any) => {
@@ -310,6 +338,15 @@ const syncWithStripe = async () => {
                     <!-- Actions spécifiques pour les plans d'abonnement -->
                     <div class="plan-actions">
                         <div class="plan-info">
+                            <div
+                                v-if="getCapacitySummary(entity)"
+                                class="plan-capacity"
+                                data-test="plan-capacity"
+                            >
+                                <i class="fas fa-microchip"></i>
+                                <span class="plan-capacity-label">{{ t('subscriptionPlans.capacityLabel') }}:</span>
+                                <span class="plan-capacity-value">{{ getCapacitySummary(entity) }}</span>
+                            </div>
                             <div class="price-display">
                                 <strong>{{ entityStore.formatPrice(entity.price_amount, entity.currency) }}</strong>
                                 <span class="billing-period">/ {{ entity.billing_interval }}</span>
@@ -471,6 +508,27 @@ const syncWithStripe = async () => {
 
 .plan-limits {
     margin: var(--spacing-xs) 0;
+}
+
+.plan-capacity {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    justify-content: flex-end;
+    margin-bottom: var(--spacing-xs);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    flex-wrap: wrap;
+}
+
+.plan-capacity-label {
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-muted);
+}
+
+.plan-capacity-value {
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
 }
 
 .plan-trial {
