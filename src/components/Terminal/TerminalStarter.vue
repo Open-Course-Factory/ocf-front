@@ -351,21 +351,13 @@ const currentTerminalCount = ref(0)
 const loadingUsage = ref(false)
 const refreshingUsage = ref(false)
 
-// Single source of truth for "what's my concurrent_terminals usage?" is the
-// `/user-subscriptions/usage?organization_id=...` endpoint exposed by the
-// subscriptions store as `usageMetrics`. The launcher reads BOTH the current
-// count (above, via `currentTerminalCount`) AND the limit from the same metric
-// so the badge, the form-validity gate, and the backend `/usage/check` gate
-// all agree by construction. -1 in `limit_value` means unlimited.
-const maxTerminals = computed(() => {
-  const metric = subscriptionsStore.usageMetrics?.find((m: any) =>
-    m.metric_type === 'concurrent_terminals' || m.name === 'concurrent_terminals'
-  )
-  if (!metric) return 0
-  const limit = metric.limit_value
-  if (limit === -1) return Infinity
-  return typeof limit === 'number' ? limit : 0
-})
+// Note: there is no front-end slot-count gate. The CPU/RAM budget engine on
+// the backend is the sole authoritative cap for terminals — `concurrent_terminals`
+// rows are no longer seeded with a real `limit_value` (see
+// userSubscriptionController.go in ocf-core), so a derived "maxTerminals" here
+// would resolve to 0 and block every launch after the first. The launcher lets
+// the user click and surfaces the backend's structured 403 (`source=budget`)
+// via the budget confirm dialog wired below.
 
 const refreshIntervalMinutes = computed(() => {
   return Math.floor(USAGE_REFRESH_INTERVAL / 60000)
@@ -482,10 +474,14 @@ watch(forcedEphemeral, (forced) => {
 })
 
 // Form validation
+// The composer must be ready (distribution + size selected, options loaded).
+// We deliberately do NOT gate the form on `currentTerminalCount`, capacity-check
+// status, or any derived slot limit: the backend's launch endpoint owns the
+// final decision (budget engine + plan validity) and surfaces structured
+// rejections that the catch block below turns into actionable copy (the
+// `budgetExhausted` confirm dialog, the plan-restriction toast, etc.).
 const isFormValid = computed(() => {
   if (!composerRef.value?.isReady) return false
-  // Check if user has reached terminal limit
-  if (currentTerminalCount.value >= maxTerminals.value) return false
   return true
 })
 
@@ -694,10 +690,9 @@ async function handleRecordingAcknowledgement() {
 watch(storeOrgId, async (newOrgId) => {
   currentTerminalCount.value = 0
   if (newOrgId) {
-    // Reload usage metrics for the new org context. Both current count and
-    // the concurrent_terminals limit are read from the same usageMetrics array
-    // (see `currentTerminalCount` and `maxTerminals` above), so a single fetch
-    // refreshes both reactively.
+    // Reload usage metrics for the new org context. `currentTerminalCount` is
+    // read from usageMetrics so the badge reflects the current org's usage.
+    // The launch-time gate is owned by the backend (budget engine).
     await loadCurrentTerminalUsage().catch(() => {})
     await backendsStore.fetchBackends(newOrgId).catch(() => {})
   }

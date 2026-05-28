@@ -339,30 +339,36 @@ describe('TerminalStarter — persistence toggle', () => {
     })
   })
 
-  describe('limit SSOT (usageMetrics, not permissionsStore)', () => {
-    it('blocks the launch and disables the button when usageMetrics reports limit_value=0 for the current org', async () => {
-      // The bug being fixed: the launcher used to fall back to `|| 1`, masking
-      // a 0 limit from the backend. With SSOT it must reflect 0 honestly and
-      // the form must be invalid.
+  describe('form validity is owned by the composer + backend, not by usageMetrics', () => {
+    it('keeps the launch button enabled when usageMetrics reports limit_value=0 and a session is already running', async () => {
+      // Post-cleanup reality: the backend no longer seeds a real `limit_value`
+      // for `concurrent_terminals` — the budget engine (CPU/RAM) is the sole
+      // authoritative cap. So usageMetrics typically returns `limit_value: 0`.
+      // A naive `count >= maxTerminals` gate would resolve to `1 >= 0` (true)
+      // and disable the button on every subsequent session, even when budget
+      // remains. The form must stay valid; the backend owns the rejection.
       subscriptionsStub.usageMetrics = [
-        { metric_type: 'concurrent_terminals', current_value: 0, limit_value: 0 }
+        { metric_type: 'concurrent_terminals', current_value: 1, limit_value: 0 }
       ]
+      subscriptionsStub.getUsageMetrics.mockResolvedValueOnce([
+        { metric_type: 'concurrent_terminals', current_value: 1, limit_value: 0 }
+      ])
       setPaidPlan(true)
       const wrapper = mountStarter()
       await flushPromises()
 
       const launchBtn = findLaunchButton(wrapper)
-      expect(launchBtn.attributes('disabled')).toBeDefined()
-
-      // Even if a user manages to click, no session request goes out.
-      await launchBtn.trigger('click')
-      await flushPromises()
-      expect(mockStartComposed).not.toHaveBeenCalled()
+      // The button must NOT be disabled: composer is ready, isStarting is
+      // false, loadingOptions is false. The slot-count gate is gone.
+      expect(launchBtn.attributes('disabled')).toBeUndefined()
 
       // Restore the default for subsequent suites in this file.
       subscriptionsStub.usageMetrics = [
         { metric_type: 'concurrent_terminals', current_value: 0, limit_value: 5 }
       ]
+      subscriptionsStub.getUsageMetrics.mockResolvedValue([
+        { metric_type: 'concurrent_terminals', current_value: 0, limit_value: 5 }
+      ])
     })
   })
 })
