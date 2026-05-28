@@ -64,6 +64,41 @@ describe('subscriptionPlans store', () => {
       expect(field!.toBeEdited).toBe(false)
     })
 
+    it('formats max_cpu values with a vCPU unit', () => {
+      const store = useSubscriptionPlansStore()
+      const field = store.fieldList.get('max_cpu')
+
+      expect(field!.displayValue).toBeTypeOf('function')
+      expect(field!.displayValue!(8)).toBe('8 vCPU')
+    })
+
+    it('formats max_memory_mb values with a GiB/MiB unit (never raw bytes)', () => {
+      const store = useSubscriptionPlansStore()
+      const field = store.fieldList.get('max_memory_mb')
+
+      expect(field!.displayValue).toBeTypeOf('function')
+      // Regression for the original bug: 4096 MiB used to render as "4.00 KB"
+      // because EntityCard.formatStorageSize treated the number as bytes.
+      expect(field!.displayValue!(4096)).toBe('4.0 GiB')
+      expect(field!.displayValue!(16384)).toBe('16 GiB')
+    })
+
+    it('shows unlimited capacity for max_cpu = 0', () => {
+      const store = useSubscriptionPlansStore()
+      const field = store.fieldList.get('max_cpu')
+
+      // The i18n mock returns the key itself; the production string is
+      // "Unlimited capacity" / "Capacité illimitée".
+      expect(field!.displayValue!(0)).toBe('subscriptionPlans.capacityUnlimited')
+    })
+
+    it('shows unlimited capacity for max_memory_mb = 0', () => {
+      const store = useSubscriptionPlansStore()
+      const field = store.fieldList.get('max_memory_mb')
+
+      expect(field!.displayValue!(0)).toBe('subscriptionPlans.capacityUnlimited')
+    })
+
     it('uses translated labels for created_at and updated_at (no raw key fallback)', () => {
       const store = useSubscriptionPlansStore()
       const createdAt = store.fieldList.get('created_at')

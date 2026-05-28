@@ -28,6 +28,7 @@ import { formatCurrency } from '../utils/formatters'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
+import { formatMemoryMb } from '../utils/quotaFormatters'
 import { buildSelectData } from '../utils'
 
 export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => {
@@ -46,8 +47,8 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             features: 'Features',
             max_courses: 'Max Courses',
             max_concurrent_users: 'Max Concurrent Users',
-            max_cpu: 'CPU budget (vCPU)',
-            max_memory_mb: 'RAM budget (MiB)',
+            max_cpu: 'CPU budget',
+            max_memory_mb: 'RAM budget',
             trial_days: 'Trial Days',
             created_at: 'Created at',
             updated_at: 'Updated at',
@@ -160,8 +161,8 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             features: 'Fonctionnalités',
             max_courses: 'Cours Maximum',
             max_concurrent_users: 'Utilisateurs Concurrents Max',
-            max_cpu: 'Budget CPU (vCPU)',
-            max_memory_mb: 'Budget RAM (MiB)',
+            max_cpu: 'Budget CPU',
+            max_memory_mb: 'Budget RAM',
             trial_days: 'Jours d\'Essai',
             created_at: 'Créé le',
             updated_at: 'Modifié le',
@@ -278,8 +279,18 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
         field('features', t('subscriptionPlans.features')).type('advanced-textarea').visible().creatable().updatable(),
         field('max_courses', t('subscriptionPlans.max_courses')).input().visible().creatable().updatable(),
         field('max_concurrent_users', t('subscriptionPlans.max_concurrent_users')).input().visible().creatable().updatable(),
-        field('max_cpu', t('subscriptionPlans.max_cpu')).input().visible().readonly(),
-        field('max_memory_mb', t('subscriptionPlans.max_memory_mb')).input().visible().readonly(),
+        field('max_cpu', t('subscriptionPlans.max_cpu')).input().visible().readonly()
+            .withDisplayFormatter((value: any) => {
+                const n = Number(value)
+                if (!Number.isFinite(n) || n === 0) return t('subscriptionPlans.capacityUnlimited')
+                return `${n} vCPU`
+            }),
+        field('max_memory_mb', t('subscriptionPlans.max_memory_mb')).input().visible().readonly()
+            .withDisplayFormatter((value: any) => {
+                const n = Number(value)
+                if (!Number.isFinite(n) || n === 0) return t('subscriptionPlans.capacityUnlimited')
+                return formatMemoryMb(n)
+            }),
         field('trial_days', t('subscriptionPlans.trial_days')).input().visible().creatable().updatable(),
         field('required_role', t('subscriptionPlans.required_role')).input().visible().creatable().updatable(),
         field('max_session_duration_minutes', t('subscriptionPlans.max_session_duration_minutes')).input().visible().creatable().updatable(),
