@@ -123,7 +123,7 @@
                     :style="{ width: `${cpuUsedPct}%` }"
                   ></div>
                 </div>
-                <span class="advanced-value">{{ usageData.quota.used_cpu }} / {{ usageData.quota.max_cpu }} vCPU</span>
+                <span class="advanced-value">{{ formatMcpuAsVcpu(usageData.quota.used_cpu) }} / {{ formatMcpuAsVcpu(usageData.quota.max_cpu) }} vCPU</span>
               </div>
               <div class="advanced-row">
                 <span class="advanced-label">{{ t('orgTerminalUsage.advancedMemory') }}</span>
@@ -168,7 +168,7 @@
                   data-testid="user-active-cpu"
                 >
                   <i class="fas fa-microchip"></i>
-                  <span class="user-metric-value">{{ user.active_cpu }}</span>
+                  <span class="user-metric-value">{{ formatMcpuAsVcpu(user.active_cpu) }}</span>
                   <span class="user-metric-unit">{{ t('orgTerminalUsage.userActiveCpu') }}</span>
                 </span>
                 <span
@@ -210,6 +210,7 @@ import {
   formatMemoryMb,
   capacityRank,
 } from '../../utils/quotaFormatters'
+import { formatMcpuAsVcpu } from '../../utils/formatters'
 import type { OrgTerminalUsage, SizeRemaining } from '../../types/terminal'
 
 interface Props {

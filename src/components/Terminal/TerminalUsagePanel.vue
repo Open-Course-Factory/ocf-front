@@ -73,7 +73,7 @@
             </div>
             <span class="bar-meta">
               <template v-if="cpuUnlimited">{{ t('terminals.unlimited') }}</template>
-              <template v-else>{{ usage.used_cpu }} / {{ usage.max_cpu }} vCPU</template>
+              <template v-else>{{ formatMcpuAsVcpu(usage.used_cpu) }} / {{ formatMcpuAsVcpu(usage.max_cpu) }} vCPU</template>
             </span>
           </div>
           <div class="bar-row">
@@ -162,6 +162,7 @@ import {
   formatMemoryMb,
   CANONICAL_SIZE_CATALOG
 } from '../../utils/quotaFormatters'
+import { formatMcpuAsVcpu } from '../../utils/formatters'
 import type { MyTerminalUsageResponse } from '../../types/terminal'
 
 const { t } = useTranslations({
