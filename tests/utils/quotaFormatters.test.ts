@@ -137,32 +137,29 @@ describe('summarizeRemaining', () => {
 
 describe('formatBudgetAsSizes', () => {
   it('renders the top three sizes in descending capacity order for a budget plan', () => {
-    // max_cpu=8, max_memory_mb=4096
-    //   xl: cpu=4 → 2, ram=4096 → 1 → min 1
-    //   l : cpu=4 → 2, ram=2048 → 2 → min 2
-    //   m : cpu=2 → 4, ram=1024 → 4 → min 4
-    //   s : cpu=1 → 8, ram=512  → 8 → min 8
-    //   xs: cpu=1 → 8, ram=256  → 16 → min 8
+    // max_cpu=8000 mCPU, max_memory_mb=4096
+    //   xl: cpu=4000 → 2, ram=4096 → 1 → min 1
+    //   l : cpu=4000 → 2, ram=2048 → 2 → min 2
+    //   m : cpu=2000 → 4, ram=1024 → 4 → min 4
+    //   s : cpu=1000 → 8, ram=512  → 8 → min 8
+    //   xs: cpu=500  → 16, ram=256 → 16 → min 16
     // Top-3 by capacity descending: xl, l, m → "1 XL OR 2 L OR 4 M"
-    const plan = { max_cpu: 8, max_memory_mb: 4096 }
+    const plan = { max_cpu: 8000, max_memory_mb: 4096 }
     expect(formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, 'OR')).toBe('1 XL OR 2 L OR 4 M')
   })
 
-  it('returns "2 L OR 4 M OR 8 S" for a typical Solo-tier budget', () => {
-    // A budget plan that lets a solo trainer run 2 L sessions.
-    // max_cpu=8, max_memory_mb=4096 yields 1 XL OR 2 L OR 4 M, so to land on
-    // the "2 L OR 4 M OR 8 S" wording the budget needs to skip XL — i.e.
-    // memory must be 2048 or below.
-    // With max_cpu=8, max_memory_mb=2048:
+  it('returns "1 L OR 2 M OR 4 S" for a typical Solo-tier budget', () => {
+    // A budget plan that lets a solo trainer run 1 L session.
+    // With max_cpu=8000 mCPU, max_memory_mb=2048:
     //   xl: ram=2048 → 0 → skip
-    //   l : ram=2048 → 1, cpu=8 → 2 → min 1
-    //   m : ram=2048 → 2, cpu=8 → 4 → min 2
-    //   s : ram=2048 → 4, cpu=8 → 8 → min 4
-    //   xs: ram=2048 → 8, cpu=8 → 8 → min 8
+    //   l : ram=2048 → 1, cpu=8000/4000 → 2 → min 1
+    //   m : ram=2048 → 2, cpu=8000/2000 → 4 → min 2
+    //   s : ram=2048 → 4, cpu=8000/1000 → 8 → min 4
+    //   xs: ram=2048 → 8, cpu=8000/500 → 16 → min 8
     // Top-3: l, m, s → "1 L OR 2 M OR 4 S"
     expect(
       formatBudgetAsSizes(
-        { max_cpu: 8, max_memory_mb: 2048 },
+        { max_cpu: 8000, max_memory_mb: 2048 },
         CANONICAL_SIZE_CATALOG,
         'OR'
       )
@@ -171,27 +168,27 @@ describe('formatBudgetAsSizes', () => {
 
   it('respects the binding RAM axis when CPU is overprovisioned', () => {
     // max_cpu is huge but max_memory_mb limits the big sizes.
-    // max_cpu=32, max_memory_mb=2048:
-    //   xl: cpu=4 → 8, ram=4096 → 0 → 0 (skip)
-    //   l : cpu=4 → 8, ram=2048 → 1 → 1
-    //   m : cpu=2 → 16, ram=1024 → 2 → 2
-    //   s : cpu=1 → 32, ram=512 → 4 → 4
-    //   xs: cpu=1 → 32, ram=256 → 8 → 8
+    // max_cpu=32000 mCPU, max_memory_mb=2048:
+    //   xl: cpu=4000 → 8, ram=4096 → 0 → 0 (skip)
+    //   l : cpu=4000 → 8, ram=2048 → 1 → 1
+    //   m : cpu=2000 → 16, ram=1024 → 2 → 2
+    //   s : cpu=1000 → 32, ram=512 → 4 → 4
+    //   xs: cpu=500 → 64, ram=256 → 8 → 8
     // Top-3: l, m, s
-    const plan = { max_cpu: 32, max_memory_mb: 2048 }
+    const plan = { max_cpu: 32000, max_memory_mb: 2048 }
     expect(formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, 'OR')).toBe('1 L OR 2 M OR 4 S')
   })
 
   it('respects the binding CPU axis when RAM is overprovisioned', () => {
-    // max_cpu=2, max_memory_mb=99999:
-    //   xl: cpu=4 → 0 → skip
-    //   l : cpu=4 → 0 → skip
-    //   m : cpu=2 → 1, ram=99999/1024 → 97 → 1
-    //   s : cpu=1 → 2, ram=99999/512 → 195 → 2
-    //   xs: cpu=1 → 2, ram=99999/256 → 390 → 2
+    // max_cpu=2000 mCPU, max_memory_mb=99999:
+    //   xl: cpu=2000/4000 → 0 → skip
+    //   l : cpu=2000/4000 → 0 → skip
+    //   m : cpu=2000/2000 → 1, ram=99999/1024 → 97 → 1
+    //   s : cpu=2000/1000 → 2, ram=99999/512 → 195 → 2
+    //   xs: cpu=2000/500 → 4, ram=99999/256 → 390 → 4
     // Top-3: m, s, xs
-    const plan = { max_cpu: 2, max_memory_mb: 99999 }
-    expect(formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, 'OR')).toBe('1 M OR 2 S OR 2 XS')
+    const plan = { max_cpu: 2000, max_memory_mb: 99999 }
+    expect(formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, 'OR')).toBe('1 M OR 2 S OR 4 XS')
   })
 
   it('returns empty string when both max_cpu and max_memory_mb are 0 (unlimited budget)', () => {
@@ -205,7 +202,7 @@ describe('formatBudgetAsSizes', () => {
   it('uses the provided localized joiner', () => {
     expect(
       formatBudgetAsSizes(
-        { max_cpu: 8, max_memory_mb: 4096 },
+        { max_cpu: 8000, max_memory_mb: 4096 },
         CANONICAL_SIZE_CATALOG,
         'OU'
       )
@@ -214,14 +211,14 @@ describe('formatBudgetAsSizes', () => {
 
   it('skips sizes that do not fit at all (count < 1)', () => {
     // Tiny budget: only XS fits. The summary contains only "N XS".
-    const plan = { max_cpu: 1, max_memory_mb: 256 }
+    const plan = { max_cpu: 500, max_memory_mb: 256 }
     expect(formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, 'OR')).toBe('1 XS')
   })
 
   it('returns empty string when the budget is too small for any catalog size', () => {
     // Pathological case: budget below the smallest size's minimum.
-    // max_cpu=1 OK for XS, but max_memory_mb=100 is below XS's 256 → 0 → skip.
-    const plan = { max_cpu: 1, max_memory_mb: 100 }
+    // max_cpu=500 OK for XS, but max_memory_mb=100 is below XS's 256 → 0 → skip.
+    const plan = { max_cpu: 500, max_memory_mb: 100 }
     expect(formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, 'OR')).toBe('')
   })
 })

@@ -139,23 +139,29 @@ export function formatElapsed(isoTime: string, nowMs: number = Date.now()): stri
  * Canonical size catalog used by `formatBudgetAsSizes` and the admin
  * plan-editor composer.
  *
- * MUST stay in sync with the backend catalogs:
- *   - tt-backend `backend/db.go` `dbSeedSizes`
- *   - ocf-core   `src/payment/backfill/quota.go` `sizeCatalog`
+ * UNITS: `cpu` is integer millicores (mCPU), `memory_mb` is MiB. The CPU
+ * column mirrors the budget cost in mCPU — e.g. XS = 500 mCPU because the
+ * tt-backend XS tier carries a 50% CPU allowance on a 1 vCPU slot.
+ *
+ * MUST stay in sync with the backend budget catalog:
+ *   - ocf-core   `src/payment/catalog/sizes.go` `sizeCatalog` (SSOT — mCPU)
+ *   - tt-backend `backend/db.go` `dbSeedSizes` describes the runtime tier
+ *     (vCPU + allowance string); the mCPU cost above is derived from it.
  *
  * Order convention matches the rest of this file: descending by capacity
  * (xl > l > m > s > xs). The plan-card summary picks the top-3 sizes that
  * fit within the budget, in this order, so customers see the most impressive
  * single-size bundles first.
  *
- * Adding a new size requires updating BOTH backends AND this constant.
+ * Adding a new size requires updating ocf-core's catalog, tt-backend's seed,
+ * AND this constant together.
  */
 export const CANONICAL_SIZE_CATALOG = {
-  xs: { cpu: 1, memory_mb: 256 },
-  s: { cpu: 1, memory_mb: 512 },
-  m: { cpu: 2, memory_mb: 1024 },
-  l: { cpu: 4, memory_mb: 2048 },
-  xl: { cpu: 4, memory_mb: 4096 },
+  xs: { cpu: 500, memory_mb: 256 },
+  s: { cpu: 1000, memory_mb: 512 },
+  m: { cpu: 2000, memory_mb: 1024 },
+  l: { cpu: 4000, memory_mb: 2048 },
+  xl: { cpu: 4000, memory_mb: 4096 },
 } as const
 
 export type CanonicalSizeCatalog = typeof CANONICAL_SIZE_CATALOG
@@ -172,8 +178,9 @@ export interface SizeQuotaRow {
 /**
  * Sum semantics: convert size-count rows to a raw CPU+RAM budget.
  *
- * For rows [1 XL, 1 XS] the result is the sum across rows on each axis:
- * `MaxCPU = (1×4) + (1×1) = 5`, `MaxMemoryMB = (1×4096) + (1×256) = 4352`.
+ * Returned units mirror the catalog: `max_cpu` in mCPU, `max_memory_mb` in MiB.
+ * For rows [1 XL, 1 XS] the result sums across rows on each axis:
+ * `MaxCPU = (1×4000) + (1×500) = 4500`, `MaxMemoryMB = (1×4096) + (1×256) = 4352`.
  *
  * Mental model for the admin: each row contributes to a total capacity
  * envelope. Students then split that envelope freely — they can spawn the

@@ -64,10 +64,11 @@ function makeUsage(overrides: Partial<MyTerminalUsageResponse> = {}): MyTerminal
     plan_name: 'Pro',
     plan_source: 'personal',
     plan_source_name: '',
-    max_cpu: 8,
+    // CPU values are mCPU on the wire (8 vCPU = 8000 mCPU).
+    max_cpu: 8000,
     max_memory_mb: 4096,
     max_session_duration_minutes: 60,
-    used_cpu: 4,
+    used_cpu: 4000,
     used_memory_mb: 2048,
     active_sessions: [
       {
@@ -106,16 +107,16 @@ describe('TerminalUsagePanel — live usage view', () => {
     const text = wrapper.text()
     // Plan + source rendered
     expect(text).toContain('Pro')
-    // Capacity summary uses the size-count helper, max_cpu=8/max_memory_mb=4096
-    // → "1 XL OR 2 L OR 4 M"
+    // Capacity summary uses the size-count helper, max_cpu=8000 mCPU /
+    // max_memory_mb=4096 → "1 XL OR 2 L OR 4 M"
     expect(text).toMatch(/1\s*XL/)
   })
 
   it('renders the CPU and RAM bars at the correct fill percentages', async () => {
     mockGetMyUsage.mockResolvedValue(makeUsage({
-      max_cpu: 8,
+      max_cpu: 8000,
       max_memory_mb: 4096,
-      used_cpu: 4,
+      used_cpu: 4000,
       used_memory_mb: 2048,
     }))
     const wrapper = mountPanel()

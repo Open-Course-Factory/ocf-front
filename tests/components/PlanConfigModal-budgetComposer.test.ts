@@ -165,20 +165,21 @@ describe('PlanConfigModal — size-quota composer (budget mode)', () => {
     const wrapper = await mountModal()
     await flushPromises()
 
-    // Default starts as [L × 1] → CPU 4, RAM 2 GiB (single row, same under
-    // sum and max).
+    // Default starts as [L × 1] → CPU 4 vCPU (4000 mCPU), RAM 2 GiB (single row,
+    // same under sum and max).
     let preview = wrapper.find('[data-test="size-quota-preview"]')
     expect(preview.text()).toContain('4')
     expect(preview.text()).toContain('2')
 
-    // Change first row to XL × 2 → sum is 2×4=8 cpu, 2×4096=8192 MB = 8 GiB.
+    // Change first row to XL × 2 → sum is 2×4=8 vCPU, 2×4096=8192 MB = 8 GiB.
     const firstRow = wrapper.findAll('[data-test="size-quota-row"]')[0]
     await firstRow.find('[data-test="size-quota-size"]').setValue('xl')
     await firstRow.find('[data-test="size-quota-count"]').setValue('2')
     await nextTick()
 
     preview = wrapper.find('[data-test="size-quota-preview"]')
-    // XL × 2 → CPU 8, RAM 8 GiB (XL = 4cpu/4096MB; 2×4=8, 2×4096=8192=8 GiB)
+    // XL × 2 → CPU 8 vCPU, RAM 8 GiB (XL = 4000mCPU/4096MB;
+    // CPU sum 8000 mCPU = "8 vCPU"; RAM sum 8192 MB = 8 GiB).
     expect(preview.text()).toContain('8')
   })
 
@@ -198,7 +199,8 @@ describe('PlanConfigModal — size-quota composer (budget mode)', () => {
     const wrapper = await mountModal({
       id: 'plan-123',
       name: 'Existing',
-      max_cpu: 6,
+      // 6000 mCPU = 6 vCPU on display
+      max_cpu: 6000,
       max_memory_mb: 4096,
       features: []
     })
@@ -207,7 +209,7 @@ describe('PlanConfigModal — size-quota composer (budget mode)', () => {
     // Empty composer (no default row pushed in for existing plans).
     expect(wrapper.findAll('[data-test="size-quota-row"]').length).toBe(0)
 
-    // Hint visible with the plan's current capacity.
+    // Hint visible with the plan's current capacity — formatted as vCPU.
     const hint = wrapper.find('[data-test="size-quota-no-breakdown-hint"]')
     expect(hint.exists()).toBe(true)
     expect(hint.text()).toContain('6')
@@ -239,7 +241,9 @@ describe('PlanConfigModal — size-quota composer (budget mode)', () => {
     const wrapper = await mountModal({
       id: 'plan-123',
       name: 'Existing',
-      max_cpu: 6,
+      // 6000 mCPU is preserved verbatim on the wire (no conversion when
+      // composer is untouched).
+      max_cpu: 6000,
       max_memory_mb: 4096,
       features: []
     })
@@ -252,7 +256,7 @@ describe('PlanConfigModal — size-quota composer (budget mode)', () => {
     const emitted = wrapper.emitted('save')
     expect(emitted).toBeTruthy()
     const payload = emitted![0][0] as any
-    expect(payload.max_cpu).toBe(6)
+    expect(payload.max_cpu).toBe(6000)
     expect(payload.max_memory_mb).toBe(4096)
   })
 
@@ -282,13 +286,13 @@ describe('PlanConfigModal — size-quota composer (budget mode)', () => {
     await wrapper.find('[data-test="plan-save-button"]').trigger('click')
 
     // Expected (sum semantics, reversed from D7 on 2026-05-28):
-    //   L×1: cpu=4 ram=2048
-    //   M×2: cpu=4 ram=2048
-    //   sum across rows: cpu=8 ram=4096
+    //   L×1: cpu=4000 mCPU ram=2048 MB
+    //   M×2: cpu=4000 mCPU ram=2048 MB
+    //   sum across rows: cpu=8000 mCPU ram=4096 MB
     const emitted = wrapper.emitted('save')
     expect(emitted).toBeTruthy()
     const payload = emitted![0][0] as any
-    expect(payload.max_cpu).toBe(8)
+    expect(payload.max_cpu).toBe(8000)
     expect(payload.max_memory_mb).toBe(4096)
   })
 

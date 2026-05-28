@@ -189,7 +189,7 @@ describe('SubscriptionPlans (admin list) — Capacity row', () => {
         billing_interval: 'month',
         is_active: true,
         is_catalog: true,
-        max_cpu: 8,
+        max_cpu: 8000,
         max_memory_mb: 4096,
       },
     ])
@@ -197,7 +197,7 @@ describe('SubscriptionPlans (admin list) — Capacity row', () => {
     const capacity = wrapper.find('[data-test="plan-capacity"]')
     expect(capacity.exists()).toBe(true)
     expect(capacity.text()).toContain('Capacity')
-    // Budget 8 cpu / 4096 MB fits exactly 1 XL OR 2 L OR 4 M.
+    // Budget 8000 mCPU / 4096 MB fits exactly 1 XL OR 2 L OR 4 M.
     expect(capacity.text()).toContain('1 XL')
     expect(capacity.text()).toContain('2 L')
     expect(capacity.text()).toContain('4 M')
@@ -256,7 +256,7 @@ describe('SubscriptionPlans (admin list) — Capacity row', () => {
         billing_interval: 'month',
         is_active: true,
         is_catalog: true,
-        max_cpu: 4,
+        max_cpu: 4000,
         max_memory_mb: 2048,
       },
       {
@@ -274,7 +274,7 @@ describe('SubscriptionPlans (admin list) — Capacity row', () => {
 
     const capacities = wrapper.findAll('[data-test="plan-capacity"]')
     expect(capacities.length).toBe(2)
-    // First row is the bounded budget plan: 4 cpu / 2048 MB = 1 L max.
+    // First row is the bounded budget plan: 4000 mCPU / 2048 MB = 1 L max.
     expect(capacities[0].text()).toContain('1 L')
     // Second row is the unlimited plan.
     expect(capacities[1].text()).toContain('Unlimited capacity')

@@ -174,7 +174,7 @@
               <div class="preview-values">
                 <span class="preview-value">
                   <i class="fas fa-microchip"></i>
-                  {{ t('planConfig.sizeCapacity.cpuValue', { n: computedBudget.max_cpu }) }}
+                  {{ t('planConfig.sizeCapacity.cpuValue', { n: formatMcpuAsVcpu(computedBudget.max_cpu) }) }}
                 </span>
                 <span class="preview-value">
                   <i class="fas fa-memory"></i>

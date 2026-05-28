@@ -103,7 +103,7 @@ describe('SubscriptionCard — budget capacity rendering', () => {
   })
 
   it('renders a size-count summary for a budget-mode plan', () => {
-    // max_cpu=8, max_memory_mb=4096 → "1 XL OR 2 L OR 4 M"
+    // max_cpu=8000 mCPU, max_memory_mb=4096 → "1 XL OR 2 L OR 4 M"
     const wrapper = mountCard({
       id: 'sub-1',
       status: 'active',
@@ -112,7 +112,7 @@ describe('SubscriptionCard — budget capacity rendering', () => {
       subscription_plan: {
         id: 'plan-1',
         name: 'Solo',
-        max_cpu: 8,
+        max_cpu: 8000,
         max_memory_mb: 4096,
         max_session_duration_minutes: 120,
       },
@@ -139,7 +139,7 @@ describe('SubscriptionCard — budget capacity rendering', () => {
           subscription_plan: {
             id: 'plan-1',
             name: 'Solo',
-            max_cpu: 8,
+            max_cpu: 8000,
             max_memory_mb: 4096,
           },
         },
