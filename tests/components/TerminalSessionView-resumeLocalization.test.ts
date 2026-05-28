@@ -2,8 +2,7 @@
  * Pins TerminalSessionView's resume-error localization seam.
  *
  * Bug: when resumeSession() catches a 403 from POST /terminals/:id/start,
- * it always showed the raw English `error_message` from the backend
- * ("Usage limit exceeded for concurrent_terminals. Current: 1, Limit: 1").
+ * it always showed the raw English `error_message` from the backend.
  * The launcher already has localized strings for the same situation —
  * `terminalStarter.errorLimitReached{Org,Assigned}` — keyed off the
  * `source` field the backend returns. This MR extracts that mapping
@@ -160,7 +159,7 @@ describe('TerminalSessionView — resume error localization', () => {
         status: 403,
         data: {
           error_code: 403,
-          error_message: 'Usage limit exceeded for concurrent_terminals. Current: 1, Limit: 1',
+          error_message: 'Usage limit exceeded. Current: 1, Limit: 1',
           source: 'organization'
         }
       }
@@ -183,7 +182,7 @@ describe('TerminalSessionView — resume error localization', () => {
     // the localized one was shown. The exact wording lives in i18n; we
     // check distinguishing fragments to keep the test resilient to copy
     // edits.
-    expect(shownMsg).not.toContain('Usage limit exceeded for concurrent_terminals')
+    expect(shownMsg).not.toContain('Usage limit exceeded. Current')
     expect(shownMsg.toLowerCase()).toContain('organization')
   })
 

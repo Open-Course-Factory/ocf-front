@@ -44,7 +44,6 @@ export const useUsageMetricsStore = defineStore('usageMetrics', () => {
                 courses: 'Courses',
                 courses_created: 'Courses Created',
                 concurrent_users: 'Concurrent Users',
-                concurrent_terminals: 'Concurrent Terminals',
                 terminal_sessions: 'Terminal Sessions',
                 storage: 'Storage',
                 storage_used: 'Storage Used',
@@ -76,7 +75,6 @@ export const useUsageMetricsStore = defineStore('usageMetrics', () => {
                 courses: 'Cours',
                 courses_created: 'Cours Créés',
                 concurrent_users: 'Utilisateurs Concurrents',
-                concurrent_terminals: 'Terminaux Concurrents',
                 terminal_sessions: 'Sessions Terminal',
                 storage: 'Stockage',
                 storage_used: 'Stockage Utilisé',
@@ -127,7 +125,6 @@ export const useUsageMetricsStore = defineStore('usageMetrics', () => {
             case 'active_users':
             case 'concurrent_users':
                 return 'fas fa-users';
-            case 'concurrent_terminals':
             case 'terminal_sessions':
                 return 'fas fa-terminal';
             case 'storage':

@@ -108,13 +108,9 @@ vi.mock('../../src/composables/useNotification', () => ({
 
 const subscriptionsStub = {
   currentSubscription: { subscription_plan: { data_persistence_enabled: false } } as any,
-  usageMetrics: [
-    { metric_type: 'concurrent_terminals', current_value: 0, limit_value: 5 }
-  ] as any[],
+  usageMetrics: [] as any[],
   getCurrentSubscription: vi.fn().mockResolvedValue(undefined),
-  getUsageMetrics: vi.fn().mockResolvedValue([
-    { metric_type: 'concurrent_terminals', current_value: 0, limit_value: 5 }
-  ]),
+  getUsageMetrics: vi.fn().mockResolvedValue([]),
   checkUsageLimit: vi.fn().mockResolvedValue({ allowed: true })
 }
 vi.mock('../../src/stores/subscriptions', () => ({

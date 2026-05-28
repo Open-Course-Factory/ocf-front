@@ -47,7 +47,7 @@ export interface EmailTemplate extends BaseEntity {
  */
 export interface UsageMetric extends BaseEntity {
   user_id: string
-  metric_type: 'concurrent_terminals' | 'courses' | 'lab_sessions'
+  metric_type: 'courses' | 'lab_sessions'
   current_value: number
   limit_value: number
   period_start: string

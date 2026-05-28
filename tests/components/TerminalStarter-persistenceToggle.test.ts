@@ -68,18 +68,12 @@ vi.mock('../../src/composables/useNotification', () => ({
 }))
 
 // Stub the heavy stores so we can drive plan tier from each test.
-// `usageMetrics` is the SSOT the launcher reads for both current count AND
-// limit — providing a concurrent_terminals metric with a non-zero limit here
-// keeps the launch button enabled in tests that exercise the payload.
+// Form validity is now owned by the composer (isReady) — no usageMetrics gate.
 const subscriptionsStub = {
   currentSubscription: { subscription_plan: { data_persistence_enabled: false } } as any,
-  usageMetrics: [
-    { metric_type: 'concurrent_terminals', current_value: 0, limit_value: 5 }
-  ] as any[],
+  usageMetrics: [] as any[],
   getCurrentSubscription: vi.fn().mockResolvedValue(undefined),
-  getUsageMetrics: vi.fn().mockResolvedValue([
-    { metric_type: 'concurrent_terminals', current_value: 0, limit_value: 5 }
-  ]),
+  getUsageMetrics: vi.fn().mockResolvedValue([]),
   checkUsageLimit: vi.fn().mockResolvedValue({ allowed: true })
 }
 vi.mock('../../src/stores/subscriptions', () => ({
@@ -340,35 +334,17 @@ describe('TerminalStarter — persistence toggle', () => {
   })
 
   describe('form validity is owned by the composer + backend, not by usageMetrics', () => {
-    it('keeps the launch button enabled when usageMetrics reports limit_value=0 and a session is already running', async () => {
-      // Post-cleanup reality: the backend no longer seeds a real `limit_value`
-      // for `concurrent_terminals` — the budget engine (CPU/RAM) is the sole
-      // authoritative cap. So usageMetrics typically returns `limit_value: 0`.
-      // A naive `count >= maxTerminals` gate would resolve to `1 >= 0` (true)
-      // and disable the button on every subsequent session, even when budget
-      // remains. The form must stay valid; the backend owns the rejection.
-      subscriptionsStub.usageMetrics = [
-        { metric_type: 'concurrent_terminals', current_value: 1, limit_value: 0 }
-      ]
-      subscriptionsStub.getUsageMetrics.mockResolvedValueOnce([
-        { metric_type: 'concurrent_terminals', current_value: 1, limit_value: 0 }
-      ])
+    it('keeps the launch button enabled regardless of usageMetrics contents (composer gate only)', async () => {
+      // The CPU/RAM budget engine on the backend is the sole authoritative
+      // cap; no front-end metric gates the form. The launch button must stay
+      // enabled whenever the composer is ready and the launcher is not
+      // already starting — even if usageMetrics is empty or stale.
       setPaidPlan(true)
       const wrapper = mountStarter()
       await flushPromises()
 
       const launchBtn = findLaunchButton(wrapper)
-      // The button must NOT be disabled: composer is ready, isStarting is
-      // false, loadingOptions is false. The slot-count gate is gone.
       expect(launchBtn.attributes('disabled')).toBeUndefined()
-
-      // Restore the default for subsequent suites in this file.
-      subscriptionsStub.usageMetrics = [
-        { metric_type: 'concurrent_terminals', current_value: 0, limit_value: 5 }
-      ]
-      subscriptionsStub.getUsageMetrics.mockResolvedValue([
-        { metric_type: 'concurrent_terminals', current_value: 0, limit_value: 5 }
-      ])
     })
   })
 })

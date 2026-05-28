@@ -23,12 +23,6 @@
     <SettingsCard :title="t('terminals.startNewSession')">
       <template #headerActions>
         <div class="header-actions-group">
-          <!-- Session Count Badge -->
-          <div v-if="currentTerminalCount > 0" class="session-count-badge">
-            <i class="fas fa-terminal"></i>
-            <span>{{ t('terminalStarter.activeSessions', { count: currentTerminalCount }) }}</span>
-          </div>
-
           <!-- Compact Capacity Check -->
           <div v-if="composerRef?.selectedDistribution" class="capacity-check-inline" :class="`status-${capacityStatusLevel}`">
             <i :class="capacityStatusIcon"></i>
@@ -83,7 +77,6 @@
       <!-- Usage & Quota -->
       <TerminalUsagePanel
         :subscription="currentSubscription"
-        :current-count="currentTerminalCount"
         :loading="loadingUsage"
         :refreshing="refreshingUsage"
         :refresh-interval-minutes="refreshIntervalMinutes"
@@ -149,7 +142,6 @@ import { useTerminalBackendsStore } from '../../stores/terminalBackends'
 import { useUserSettingsStore } from '../../stores/userSettings'
 import { useNotification } from '../../composables/useNotification'
 import { useTranslations } from '../../composables/useTranslations'
-import { useLimitReachedMessage } from '../../composables/useLimitReachedMessage'
 import { useComposeErrorMessage } from '../../composables/useComposeErrorMessage'
 
 import SettingsCard from '../UI/SettingsCard.vue'
@@ -194,14 +186,9 @@ const { t } = useTranslations({
       capacityTight: 'Tight capacity — launch not guaranteed',
       checkingCapacity: 'Checking...',
       startingSession: 'Starting terminal session...',
-      checkingLimits: 'Checking usage limits...',
       sendingRequest: 'Sending request to server...',
       sessionCreated: 'Session created, initializing terminal...',
       errorValidationInstance: 'Please select a machine type',
-      errorLimitReached: 'You have reached your limit of concurrent terminals. Please stop an existing terminal or upgrade your plan.',
-      errorLimitReachedOrg: 'You have reached the concurrent terminal limit provided by your organization\'s plan. You can upgrade to a personal plan for more, or contact your organization administrator.',
-      errorLimitReachedAssigned: 'You have used all your available terminals. Please close an existing terminal to start a new one.',
-      errorLimitReachedTitle: 'Limit Reached',
       errorInstanceNotAvailable: 'The selected machine is not available with your current plan. Please choose another machine or upgrade your plan.',
       errorInstanceNotAvailableOrg: 'The selected machine is not available with your organization\'s plan. You can upgrade to a personal plan, or contact your organization administrator.',
       errorInstanceNotAvailableTitle: 'Machine Not Available',
@@ -216,7 +203,6 @@ const { t } = useTranslations({
       errorServerCapacity: 'Server at Capacity',
       errorServerCapacityMessage: 'The server does not have enough resources to create a new terminal session. Please try again in a few minutes or stop an existing terminal.',
       errorServerCapacityBody: 'The server has insufficient resources to start a new session. Try again later or pick a smaller distribution.',
-      activeSessions: '{count} active session | {count} active sessions',
       backendOffline: 'Server "{name}" is offline. Please select another server or try again later.',
       loadingInstanceTypes: 'Loading machine types...',
       noInstanceTypesForBackend: 'No machine types available for this server.',
@@ -249,14 +235,9 @@ const { t } = useTranslations({
       capacityTight: 'Capacité limitée — lancement non garanti',
       checkingCapacity: 'Vérification...',
       startingSession: 'Démarrage de la session terminal...',
-      checkingLimits: 'Vérification des limites d\'utilisation...',
       sendingRequest: 'Envoi de la requête au serveur...',
       sessionCreated: 'Session créée, initialisation du terminal...',
       errorValidationInstance: 'Veuillez sélectionner un type de machine',
-      errorLimitReached: 'Vous avez atteint votre limite de terminaux simultanés. Veuillez arrêter un terminal existant ou mettre à niveau votre plan.',
-      errorLimitReachedOrg: 'Vous avez atteint la limite de terminaux simultanés fournie par le plan de votre organisation. Vous pouvez souscrire un plan personnel pour en avoir plus, ou contacter l\'administrateur de votre organisation.',
-      errorLimitReachedAssigned: 'Vous avez utilisé tous vos terminaux disponibles. Veuillez fermer un terminal existant pour en démarrer un nouveau.',
-      errorLimitReachedTitle: 'Limite atteinte',
       errorInstanceNotAvailable: 'La machine sélectionnée n\'est pas disponible avec votre plan actuel. Veuillez choisir une autre machine ou mettre à niveau votre plan.',
       errorInstanceNotAvailableOrg: 'La machine sélectionnée n\'est pas disponible avec le plan de votre organisation. Vous pouvez souscrire un plan personnel, ou contacter l\'administrateur de votre organisation.',
       errorInstanceNotAvailableTitle: 'Machine non disponible',
@@ -271,7 +252,6 @@ const { t } = useTranslations({
       errorServerCapacity: 'Serveur à Capacité Maximale',
       errorServerCapacityMessage: 'Le serveur n\'a pas suffisamment de ressources pour créer une nouvelle session terminal. Veuillez réessayer dans quelques minutes ou arrêter un terminal existant.',
       errorServerCapacityBody: 'Le serveur n\'a pas assez de ressources pour démarrer une nouvelle session. Réessayez plus tard ou choisissez une distribution plus légère.',
-      activeSessions: '{count} session active | {count} sessions actives',
       backendOffline: 'Le serveur « {name} » est hors ligne. Veuillez sélectionner un autre serveur ou réessayer plus tard.',
       loadingInstanceTypes: 'Chargement des types de machines...',
       noInstanceTypesForBackend: 'Aucun type de machine disponible sur ce serveur.',
@@ -310,10 +290,6 @@ const recordingAcknowledged = computed(() => !!userSettingsStore.settings.record
 
 // Session information
 const sessionInfo = ref<any>(null)
-let usageRefreshInterval: NodeJS.Timeout | null = null
-
-// Usage refresh configuration
-const USAGE_REFRESH_INTERVAL = 600000 // 10 minutes
 
 // Session Composer ref
 const composerRef = ref<InstanceType<typeof SessionComposer>>()
@@ -347,21 +323,21 @@ const isAssignedSubscription = computed(() => {
   const sub = currentSubscription.value
   return sub?.subscription_type === 'assigned' || !!sub?.subscription_batch_id
 })
-const currentTerminalCount = ref(0)
-const loadingUsage = ref(false)
-const refreshingUsage = ref(false)
 
 // Note: there is no front-end slot-count gate. The CPU/RAM budget engine on
-// the backend is the sole authoritative cap for terminals — `concurrent_terminals`
-// rows are no longer seeded with a real `limit_value` (see
-// userSubscriptionController.go in ocf-core), so a derived "maxTerminals" here
-// would resolve to 0 and block every launch after the first. The launcher lets
+// the backend is the sole authoritative cap for terminals. The launcher lets
 // the user click and surfaces the backend's structured 403 (`source=budget`)
 // via the budget confirm dialog wired below.
 
-const refreshIntervalMinutes = computed(() => {
-  return Math.floor(USAGE_REFRESH_INTERVAL / 60000)
-})
+// Usage panel state. We no longer track a current-terminal count here — the
+// backend doesn't expose one we can trust (the legacy `concurrent_terminals`
+// metric was decrement-only and drifted negative). The panel still renders
+// plan / capacity / session duration, and the refresh button re-syncs the
+// session list so finished sessions get reflected elsewhere in the UI.
+const loadingUsage = ref(false)
+const refreshingUsage = ref(false)
+const USAGE_REFRESH_INTERVAL = 600000 // 10 minutes
+const refreshIntervalMinutes = computed(() => Math.floor(USAGE_REFRESH_INTERVAL / 60000))
 
 // Capacity check — single source of truth is the backend.
 // We call GET /terminals/capacity-check whenever distribution or size changes
@@ -475,39 +451,15 @@ watch(forcedEphemeral, (forced) => {
 
 // Form validation
 // The composer must be ready (distribution + size selected, options loaded).
-// We deliberately do NOT gate the form on `currentTerminalCount`, capacity-check
-// status, or any derived slot limit: the backend's launch endpoint owns the
-// final decision (budget engine + plan validity) and surfaces structured
-// rejections that the catch block below turns into actionable copy (the
-// `budgetExhausted` confirm dialog, the plan-restriction toast, etc.).
+// We deliberately do NOT gate the form on capacity-check status or any derived
+// slot limit: the backend's launch endpoint owns the final decision (budget
+// engine + plan validity) and surfaces structured rejections that the catch
+// block below turns into actionable copy (the `budgetExhausted` confirm
+// dialog, the plan-restriction toast, etc.).
 const isFormValid = computed(() => {
   if (!composerRef.value?.isReady) return false
   return true
 })
-
-async function loadCurrentTerminalUsage() {
-  try {
-    loadingUsage.value = true
-
-    const usageMetrics = await subscriptionsStore.getUsageMetrics()
-
-    const terminalMetric = usageMetrics.find(metric =>
-      metric.metric_type === 'concurrent_terminals' ||
-      metric.name === 'concurrent_terminals'
-    )
-
-    if (terminalMetric) {
-      currentTerminalCount.value = terminalMetric.current_value || 0
-    } else {
-      currentTerminalCount.value = 0
-    }
-  } catch (error) {
-    console.error('Failed to load terminal usage:', error)
-    currentTerminalCount.value = 0
-  } finally {
-    loadingUsage.value = false
-  }
-}
 
 async function syncAllSessions() {
   try {
@@ -522,16 +474,9 @@ async function syncAllSessions() {
 async function refreshUsage() {
   try {
     refreshingUsage.value = true
-
-    try {
-      await syncAllSessions()
-    } catch (syncError) {
+    await syncAllSessions().catch((syncError) => {
       console.error('Failed to sync sessions:', syncError)
-    }
-
-    await loadCurrentTerminalUsage()
-  } catch (error) {
-    console.error('Failed to refresh usage:', error)
+    })
   } finally {
     refreshingUsage.value = false
   }
@@ -562,14 +507,6 @@ watch(() => composerRef.value?.selectedDistribution, (dist) => {
     hostnameInput.value = hostname
   }
 })
-
-// Localization for backend 403 quota responses — delegates to the shared
-// composable so the resume path (TerminalSessionView) and any future
-// quota-gated surface produce identical wording for the same source.
-const { getLimitReachedMessage: getLocalizedLimitMessage } = useLimitReachedMessage()
-function getLimitReachedMessage(source?: string): string {
-  return getLocalizedLimitMessage({ source, isAssignedSubscription: isAssignedSubscription.value })
-}
 
 // Localization for backend compose-session error wrapper — translates the
 // English `(status=N, name=X)` marker produced by ocf-core's FormatError.
@@ -644,9 +581,6 @@ async function handleBudgetRejection(err: any): Promise<void> {
     // Non-critical: fall back to the empty-summary copy.
   }
 
-  // Also reload usage metrics so the badge + form-validity gate are in sync.
-  loadCurrentTerminalUsage().catch(() => {})
-
   const hint = summary
     ? t('terminalStarter.budgetExhaustedHint', { summary })
     : t('terminalStarter.budgetExhaustedHintAll')
@@ -688,12 +622,7 @@ async function handleRecordingAcknowledgement() {
 
 // Watch for global organization changes — reload org-dependent data
 watch(storeOrgId, async (newOrgId) => {
-  currentTerminalCount.value = 0
   if (newOrgId) {
-    // Reload usage metrics for the new org context. `currentTerminalCount` is
-    // read from usageMetrics so the badge reflects the current org's usage.
-    // The launch-time gate is owned by the backend (budget engine).
-    await loadCurrentTerminalUsage().catch(() => {})
     await backendsStore.fetchBackends(newOrgId).catch(() => {})
   }
   // Reload distributions in composer (backend may have changed)
@@ -721,38 +650,9 @@ async function startNewSession() {
   // Sync sessions first to ensure finished sessions are updated
   try {
     await syncAllSessions()
-    // Refresh usage count after syncing
-    await loadCurrentTerminalUsage()
   } catch (syncError) {
     console.error('Failed to sync sessions before launch:', syncError)
     // Continue anyway - this is a best-effort sync
-  }
-
-  // Check usage limits
-  startStatus.value = t('terminalStarter.checkingLimits')
-
-  try {
-    const usageResult = await subscriptionsStore.checkUsageLimit('concurrent_terminals', 1)
-
-    if (!usageResult.allowed) {
-      const limitMsg = getLimitReachedMessage(usageResult.source)
-      showErrorNotification(
-        limitMsg,
-        t('terminalStarter.errorLimitReachedTitle')
-      )
-      return
-    }
-  } catch (error: any) {
-    console.error('Error checking usage limits:', error)
-    if (error.response?.status === 403 && error.response?.data?.error_message?.includes('Maximum concurrent terminals')) {
-      const source = error.response?.data?.source || (isAssignedSubscription.value ? 'organization' : 'personal')
-      const limitMsg = getLimitReachedMessage(source)
-      showErrorNotification(
-        error.response.data.error_message + ' ' + limitMsg,
-        t('terminalStarter.errorLimitReachedTitle')
-      )
-      return
-    }
   }
 
   isStarting.value = true
@@ -871,10 +771,6 @@ async function startNewSession() {
 }
 
 function cleanup() {
-  if (usageRefreshInterval) {
-    clearInterval(usageRefreshInterval)
-    usageRefreshInterval = null
-  }
   if (capacityCheckTimer) {
     clearTimeout(capacityCheckTimer)
     capacityCheckTimer = null
@@ -890,7 +786,6 @@ onMounted(async () => {
 
   await Promise.all([
     subscriptionsStore.getCurrentSubscription(),
-    loadCurrentTerminalUsage(),
     userSettingsStore.loadSettings()
   ])
 
@@ -929,15 +824,6 @@ onMounted(async () => {
   }
 
   // SessionComposer loads distributions on its own mount (via onMounted)
-
-  // Start periodic refresh of usage metrics
-  usageRefreshInterval = setInterval(async () => {
-    try {
-      await loadCurrentTerminalUsage()
-    } catch (error) {
-      // Silently handle errors
-    }
-  }, USAGE_REFRESH_INTERVAL)
 })
 
 onBeforeUnmount(() => {

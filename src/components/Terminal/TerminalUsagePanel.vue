@@ -14,10 +14,6 @@
     >
       <i class="fas" :class="isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
       {{ t('terminals.currentUsage') }}
-      <span class="usage-badge">
-        <i class="fas fa-coins"></i>
-        {{ currentCount }}
-      </span>
     </button>
     <div v-show="isExpanded" class="collapsible-content">
       <div class="usage-header">
@@ -58,18 +54,6 @@
         </div>
         <div class="usage-item">
           <span class="usage-label">
-            <i class="fas fa-terminal"></i>
-            {{ t('terminals.activeNow') }}:
-          </span>
-          <span class="usage-value">
-            <span v-if="loading || refreshing" class="text-muted">
-              <i class="fas fa-spinner fa-spin"></i>
-            </span>
-            <span v-else>{{ currentCount }}</span>
-          </span>
-        </div>
-        <div class="usage-item">
-          <span class="usage-label">
             <i class="fas fa-clock"></i>
             {{ capitalizeFirst(t('terminals.sessionDuration')) }}:
           </span>
@@ -105,7 +89,6 @@ const { t } = useTranslations({
       currentUsage: 'Current Usage',
       refreshUsage: 'Refresh usage',
       capacity: 'Capacity',
-      activeNow: 'Active now',
       unlimited: 'Unlimited',
       or: 'OR',
       sessionDuration: 'session duration',
@@ -123,7 +106,6 @@ const { t } = useTranslations({
       currentUsage: 'Utilisation Actuelle',
       refreshUsage: 'Actualiser l\'utilisation',
       capacity: 'Capacité',
-      activeNow: 'Actifs',
       unlimited: 'Illimité',
       or: 'OU',
       sessionDuration: 'durée de session',
@@ -140,7 +122,6 @@ const { t } = useTranslations({
 
 interface Props {
   subscription: Subscription | null
-  currentCount: number
   loading: boolean
   refreshing: boolean
   refreshIntervalMinutes: number
@@ -230,19 +211,6 @@ function capitalizeFirst(str: string): string {
   padding: var(--spacing-lg);
   background: var(--color-bg-primary);
   border-top: var(--border-width-thin) solid var(--color-border-light);
-}
-
-.usage-badge {
-  margin-left: auto;
-  padding: 4px 12px;
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-  border-radius: var(--border-radius-full);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
 }
 
 .usage-header {

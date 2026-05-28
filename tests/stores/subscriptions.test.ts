@@ -300,10 +300,10 @@ describe('subscriptions store', () => {
       })
 
       const store = useSubscriptionsStore()
-      await store.checkUsageLimit('concurrent_terminals', 1)
+      await store.checkUsageLimit('courses_created', 1)
 
       expect(mockedAxios.post).toHaveBeenCalledWith('/user-subscriptions/usage/check', {
-        metric_type: 'concurrent_terminals',
+        metric_type: 'courses_created',
         increment: 1,
         organization_id: 'org-uuid-123'
       })
@@ -316,10 +316,10 @@ describe('subscriptions store', () => {
       })
 
       const store = useSubscriptionsStore()
-      await store.checkUsageLimit('concurrent_terminals', 1)
+      await store.checkUsageLimit('courses_created', 1)
 
       expect(mockedAxios.post).toHaveBeenCalledWith('/user-subscriptions/usage/check', {
-        metric_type: 'concurrent_terminals',
+        metric_type: 'courses_created',
         increment: 1
       })
     })

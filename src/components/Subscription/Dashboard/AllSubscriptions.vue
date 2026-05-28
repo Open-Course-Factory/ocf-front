@@ -65,10 +65,6 @@
 
             <!-- Features summary -->
             <div v-if="subscription.plan_features" class="features-summary">
-              <span v-if="subscription.plan_features.concurrent_terminals">
-                <i class="fas fa-terminal"></i>
-                {{ subscription.plan_features.concurrent_terminals }} {{ t('subscriptionPlans.terminals') }}
-              </span>
               <span v-if="subscription.plan_features.session_duration_hours">
                 <i class="fas fa-clock"></i>
                 {{ subscription.plan_features.session_duration_hours }}h

@@ -121,7 +121,6 @@ export class FeatureFlagService {
         description: 'Enable terminal and practical work features',
         type: 'ops',
         allowedRoles: ['administrator', 'member'],
-        controlledMetrics: ['concurrent_terminals'], // Hide terminal-related metrics when disabled
         controlledFeatures: ['terminal_access']
       },
       // Group Management Features (start disabled to prevent flashing)
