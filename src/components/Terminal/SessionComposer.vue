@@ -80,7 +80,7 @@
                 exhausted: size.remaining_count === 0
               }"
               :disabled="!size.allowed || disabled || size.remaining_count === 0"
-              :title="getSizeUseCase(size.key) + ' — ' + size.cpu + ' CPU ' + size.cpu_allowance + ', ' + size.memory + (!size.allowed ? ' — ' + getReasonText(size.reason) : '')"
+              :title="getSizeUseCase(size.key) + ' — ' + getEffectiveCpuLabel(size.key) + ', ' + size.memory + (!size.allowed ? ' — ' + getReasonText(size.reason) : '')"
               @click="size.allowed && size.remaining_count !== 0 && selectSize(size)"
             >
               {{ size.key.toUpperCase() }}
@@ -94,7 +94,7 @@
             </button>
           </div>
           <span v-if="selectedSize" class="size-detail">
-            {{ getSizeUseCase(selectedSize.key) }} · {{ selectedSize.cpu }} CPU, {{ selectedSize.memory }}
+            {{ getSizeUseCase(selectedSize.key) }} · {{ getEffectiveCpuLabel(selectedSize.key) }}, {{ selectedSize.memory }}
           </span>
         </div>
 
@@ -140,7 +140,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { terminalService } from '../../services/domain/terminal'
-import { summarizeRemaining, capacityRank } from '../../utils/quotaFormatters'
+import { summarizeRemaining, capacityRank, CANONICAL_SIZE_CATALOG } from '../../utils/quotaFormatters'
+import { formatMcpuAsVcpu } from '../../utils/formatters'
 import type { Distribution, SessionOptionSize, SessionOptionFeature, SessionOptionsResponse } from '../../types/terminal'
 
 const props = defineProps<{
@@ -366,6 +367,17 @@ function getSizeUseCase(key: string): string {
     xl: t('sessionComposer.useCaseXL'),
   }
   return useCases[key.toLowerCase()] || ''
+}
+
+// Effective vCPU per size from the canonical mCPU catalog, formatted as a float.
+// tt-backend's raw `size.cpu` is the cpuset count BEFORE applying cpu_allowance
+// (XS reports `cpu=1, cpu_allowance='50%'` — the effective limit is 0.5 vCPU).
+// The budget engine charges the effective value (500 mCPU for XS), so the
+// picker must surface the same number, not the raw cpuset count.
+function getEffectiveCpuLabel(key: string): string {
+  const entry = CANONICAL_SIZE_CATALOG[key.toLowerCase() as keyof typeof CANONICAL_SIZE_CATALOG]
+  if (!entry) return ''
+  return `${formatMcpuAsVcpu(entry.cpu)} vCPU`
 }
 
 function saveLastConfig() {
