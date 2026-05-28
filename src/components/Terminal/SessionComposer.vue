@@ -59,6 +59,10 @@
         <div v-else-if="sessionOptions" class="size-strip">
           <i class="fas fa-microchip config-icon"></i>
           <span class="config-label">{{ t('sessionComposer.size') }}</span>
+          <p v-if="remainingResourcesLabel" class="budget-resources">
+            <i class="fas fa-server budget-summary-icon"></i>
+            {{ remainingResourcesLabel }}
+          </p>
           <!-- Budget summary line — hidden when budget exhausted (handled by empty string). -->
           <p v-if="budgetSummary" class="budget-summary">
             <i class="fas fa-bolt budget-summary-icon"></i>
@@ -140,7 +144,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { terminalService } from '../../services/domain/terminal'
-import { summarizeRemaining, capacityRank } from '../../utils/quotaFormatters'
+import { summarizeRemaining, capacityRank, formatMemoryMb } from '../../utils/quotaFormatters'
 import { formatMcpuAsVcpu, effectiveCpuMcpu } from '../../utils/formatters'
 import type { Distribution, SessionOptionSize, SessionOptionFeature, SessionOptionsResponse } from '../../types/terminal'
 
@@ -179,6 +183,9 @@ const { t } = useTranslations({
       useCaseXL: 'Heavy workloads, clusters',
       unlockMore: 'Unlock more power',
       youCanSpawn: 'You can spawn {summary}',
+      remainingResources: 'You have {cpu} and {mem} of RAM remaining',
+      unlimitedCpu: 'unlimited CPU',
+      unlimitedMem: 'unlimited RAM',
       or: 'OR',
       remainingBadge: '{n} remaining',
       reasonPlanRestriction: 'Restricted by your plan',
@@ -213,6 +220,9 @@ const { t } = useTranslations({
       useCaseXL: 'Charges lourdes, clusters',
       unlockMore: 'D\u00e9bloquer plus de puissance',
       youCanSpawn: 'Vous pouvez lancer {summary}',
+      remainingResources: 'Il vous reste {cpu} et {mem} de RAM',
+      unlimitedCpu: 'CPU illimité',
+      unlimitedMem: 'RAM illimitée',
       or: 'OU',
       remainingBadge: '{n} restant(s)',
       reasonPlanRestriction: 'Restreint par votre forfait',
@@ -279,6 +289,20 @@ const visibleSizes = computed(() => {
 const budgetSummary = computed(() => {
   if (!sessionOptions.value) return ''
   return summarizeRemaining(sessionOptions.value.allowed_sizes, t('sessionComposer.or'))
+})
+
+// Raw remaining CPU/RAM the user still has against the plan budget.
+// Shown above the size-count summary so they can see why a size is exhausted.
+const remainingResourcesLabel = computed(() => {
+  const quota = sessionOptions.value?.quota
+  if (!quota) return ''
+  const cpuPart = quota.max_cpu === 0
+    ? t('sessionComposer.unlimitedCpu')
+    : `${formatMcpuAsVcpu(quota.remaining_cpu)} vCPU`
+  const memPart = quota.max_memory_mb === 0
+    ? t('sessionComposer.unlimitedMem')
+    : formatMemoryMb(quota.remaining_memory_mb)
+  return t('sessionComposer.remainingResources', { cpu: cpuPart, mem: memPart })
 })
 
 const hasLockedItems = computed(() => {
@@ -789,6 +813,18 @@ watch(() => props.organizationId, () => {
   padding: 4px 8px;
   font-size: var(--font-size-xs, 12px);
   color: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.budget-resources {
+  width: 100%;
+  margin: 0;
+  padding: 4px 8px;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--color-text-primary);
+  font-weight: 500;
   display: inline-flex;
   align-items: center;
   gap: 6px;
