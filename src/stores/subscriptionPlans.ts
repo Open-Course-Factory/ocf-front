@@ -46,7 +46,11 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             features: 'Features',
             max_courses: 'Max Courses',
             max_concurrent_users: 'Max Concurrent Users',
+            max_cpu: 'CPU budget (vCPU)',
+            max_memory_mb: 'RAM budget (MiB)',
             trial_days: 'Trial Days',
+            created_at: 'Created at',
+            updated_at: 'Updated at',
             required_role: 'Required Role',
             is_active: 'Active',
             is_catalog: 'Catalog Plan',
@@ -156,7 +160,11 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             features: 'Fonctionnalités',
             max_courses: 'Cours Maximum',
             max_concurrent_users: 'Utilisateurs Concurrents Max',
+            max_cpu: 'Budget CPU (vCPU)',
+            max_memory_mb: 'Budget RAM (MiB)',
             trial_days: 'Jours d\'Essai',
+            created_at: 'Créé le',
+            updated_at: 'Modifié le',
             required_role: 'Rôle Requis',
             is_active: 'Actif',
             is_catalog: 'Plan catalogue',
@@ -270,6 +278,8 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
         field('features', t('subscriptionPlans.features')).type('advanced-textarea').visible().creatable().updatable(),
         field('max_courses', t('subscriptionPlans.max_courses')).input().visible().creatable().updatable(),
         field('max_concurrent_users', t('subscriptionPlans.max_concurrent_users')).input().visible().creatable().updatable(),
+        field('max_cpu', t('subscriptionPlans.max_cpu')).input().visible().readonly(),
+        field('max_memory_mb', t('subscriptionPlans.max_memory_mb')).input().visible().readonly(),
         field('trial_days', t('subscriptionPlans.trial_days')).input().visible().creatable().updatable(),
         field('required_role', t('subscriptionPlans.required_role')).input().visible().creatable().updatable(),
         field('max_session_duration_minutes', t('subscriptionPlans.max_session_duration_minutes')).input().visible().creatable().updatable(),
@@ -283,8 +293,8 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
         field('is_catalog', t('subscriptionPlans.is_catalog')).checkbox().visible().creatable().updatable(),
         field('stripe_product_id', t('subscriptionPlans.stripe_product_id')).input().hidden().readonly(),
         field('stripe_price_id', t('subscriptionPlans.stripe_price_id')).input().hidden().readonly(),
-        field('created_at', 'Created At').input().visible().readonly(),
-        field('updated_at', 'Updated At').input().visible().readonly()
+        field('created_at', t('subscriptionPlans.created_at')).input().visible().readonly(),
+        field('updated_at', t('subscriptionPlans.updated_at')).input().visible().readonly()
     ]))
 
     // Formatage du prix pour affichage
