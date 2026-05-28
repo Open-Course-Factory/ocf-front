@@ -27,6 +27,9 @@ export interface TerminalSession extends BaseEntity {
   session_id: string
   name?: string
   instance_type?: string
+  // Size key from catalog (XS/S/M/L/XL) — surfaced so the UI can display
+  // the budget weight of each session without re-fetching the catalog.
+  machine_size?: string
   console_url?: string
   expires_at?: string
   terms?: string
