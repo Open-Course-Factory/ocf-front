@@ -11,6 +11,7 @@ import {
   extractErrorMessage,
   formatMcpuAsVcpu,
   parseVcpuToMcpu,
+  effectiveCpuMcpu,
 } from '../../src/utils/formatters'
 
 describe('formatCurrency', () => {
@@ -283,6 +284,43 @@ describe('parseVcpuToMcpu', () => {
     for (const vcpu of [0.5, 1, 2, 4, 10]) {
       expect(formatMcpuAsVcpu(parseVcpuToMcpu(vcpu))).toBe(String(vcpu).replace(/\.0$/, ''))
     }
+  })
+})
+
+describe('effectiveCpuMcpu', () => {
+  it('prefers backend cpu_mcpu when positive', () => {
+    expect(effectiveCpuMcpu({ key: 'xs', cpu_mcpu: 500 })).toBe(500)
+  })
+
+  it('falls back to canonical catalog when cpu_mcpu is 0', () => {
+    expect(effectiveCpuMcpu({ key: 'xs', cpu_mcpu: 0 })).toBe(500)
+  })
+
+  it('falls back to canonical catalog when cpu_mcpu is missing', () => {
+    expect(effectiveCpuMcpu({ key: 'xs' })).toBe(500)
+  })
+
+  it('returns 0 for unknown key with no backend value', () => {
+    expect(effectiveCpuMcpu({ key: 'unknown' })).toBe(0)
+  })
+
+  it('returns backend value even when key is unknown (case-insensitive fallback not needed)', () => {
+    expect(effectiveCpuMcpu({ key: 'UNKNOWN', cpu_mcpu: 750 })).toBe(750)
+  })
+
+  it.each([
+    ['xs', 500],
+    ['s', 1000],
+    ['m', 2000],
+    ['l', 4000],
+    ['xl', 4000],
+  ])('resolves canonical key %s to %i mCPU', (key, expected) => {
+    expect(effectiveCpuMcpu({ key })).toBe(expected)
+  })
+
+  it('handles uppercase key in fallback path', () => {
+    expect(effectiveCpuMcpu({ key: 'XS' })).toBe(500)
+    expect(effectiveCpuMcpu({ key: 'M' })).toBe(2000)
   })
 })
 

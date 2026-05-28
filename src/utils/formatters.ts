@@ -3,6 +3,8 @@
  * Centralizes common formatting logic to avoid duplication across stores and components
  */
 
+import { CANONICAL_SIZE_CATALOG } from './quotaFormatters'
+
 /**
  * Common timezone options for user selection
  */
@@ -189,6 +191,26 @@ export function formatMcpuAsVcpu(mcpu: number): string {
 export function parseVcpuToMcpu(vcpu: number): number {
   if (!Number.isFinite(vcpu) || vcpu <= 0) return 0
   return Math.round(vcpu * 1000)
+}
+
+/**
+ * Resolves the effective CPU budget cost (in mCPU) for a size object.
+ * Prefers the backend's cpu_mcpu field; falls back to the canonical catalog
+ * when the backend didn't populate it (e.g., custom size unknown to ocf-core).
+ *
+ * SSOT for vCPU display in size dropdowns and pills — never use raw `size.cpu`
+ * (the tt-backend cpuset count) for user-facing labels, because it ignores the
+ * CPU allowance (XS reports `cpu=1` but the budget engine charges 500 mCPU).
+ *
+ * @example
+ * effectiveCpuMcpu({ key: 'xs', cpu_mcpu: 500 }) // 500
+ * effectiveCpuMcpu({ key: 'xs' })                // 500 (fallback to catalog)
+ * effectiveCpuMcpu({ key: 'unknown' })           // 0 (no catalog entry)
+ */
+export function effectiveCpuMcpu(size: { key: string; cpu_mcpu?: number }): number {
+  if (size.cpu_mcpu && size.cpu_mcpu > 0) return size.cpu_mcpu
+  const fallback = CANONICAL_SIZE_CATALOG[size.key.toLowerCase() as keyof typeof CANONICAL_SIZE_CATALOG]
+  return fallback ? fallback.cpu : 0
 }
 
 /**
