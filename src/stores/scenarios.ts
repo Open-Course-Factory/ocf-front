@@ -25,6 +25,7 @@ import { useBaseStore } from "./baseStore"
 import { useProjectFilesStore } from "./projectFiles"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
+import { formatMcpuAsVcpu, effectiveCpuMcpu } from '../utils/formatters'
 import axios from 'axios'
 
 export const useScenariosStore = defineStore('scenarios', () => {
@@ -198,7 +199,7 @@ export const useScenariosStore = defineStore('scenarios', () => {
                 try {
                     const response = await axios.get('/terminals/catalog-sizes')
                     const sizes: any[] = response.data || []
-                    return sizes.map((s: any) => ({ value: s.key, text: `${s.name} (${s.memory} RAM, ${s.cpu} CPU)`, id: s.key }))
+                    return sizes.map((s: any) => ({ value: s.key, text: `${s.name} (${s.memory} RAM, ${formatMcpuAsVcpu(effectiveCpuMcpu(s))} vCPU)`, id: s.key }))
                 } catch {
                     return []
                 }

@@ -313,7 +313,7 @@
                 {{ t('scenarioEditor.instanceTypeUnknown', { key: editingScenario.instance_type }) }}
               </option>
               <option v-for="s in sizes" :key="s.key" :value="s.key">
-                {{ s.key }} — {{ s.name }} ({{ s.cpu }} vCPU, {{ s.memory }} RAM)
+                {{ s.key }} — {{ s.name }} ({{ formatMcpuAsVcpu(effectiveCpuMcpu(s)) }} vCPU, {{ s.memory }} RAM)
               </option>
             </select>
             <input
@@ -472,6 +472,7 @@ import BaseModal from '../Modals/BaseModal.vue'
 import axios from 'axios'
 import { terminalService } from '../../services/domain/terminal/terminalService'
 import type { Size } from '../../types/terminal'
+import { formatMcpuAsVcpu, effectiveCpuMcpu } from '../../utils/formatters'
 
 const route = useRoute()
 const router = useRouter()
