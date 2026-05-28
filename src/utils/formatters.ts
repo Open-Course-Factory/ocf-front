@@ -143,6 +143,55 @@ export function formatStorageSize(bytes: number, decimals: number = 2): string {
 }
 
 /**
+ * Format a CPU budget expressed in millicores (mCPU) as a vCPU float string.
+ *
+ * The backend transports CPU budgets as integer millicores on the wire — for
+ * example XS = 500 mCPU, a 10 vCPU plan = 10000 mCPU. Users still think in
+ * vCPU, so the UI converts at the edge:
+ *
+ *   - divide by 1000 → vCPU
+ *   - drop the trailing `.0` for whole numbers (`"1"`, not `"1.0"`)
+ *   - keep up to 3 decimals so values like 250 mCPU render as `"0.25"`
+ *
+ * Returns `"0"` for 0, NaN, or non-finite input. Callers that want an
+ * "unlimited" sentinel must handle the 0 case themselves (the backend uses
+ * 0 = unlimited at the plan level; this helper has no opinion on semantics).
+ *
+ * @example
+ * formatMcpuAsVcpu(500)   // "0.5"
+ * formatMcpuAsVcpu(1000)  // "1"
+ * formatMcpuAsVcpu(2500)  // "2.5"
+ * formatMcpuAsVcpu(10000) // "10"
+ */
+export function formatMcpuAsVcpu(mcpu: number): string {
+  if (!Number.isFinite(mcpu) || mcpu === 0) return '0'
+  const vcpu = mcpu / 1000
+  // Round to 3 decimals to dodge floating-point noise (1500/1000 → 1.5 exactly,
+  // but some divisions like 333/1000 stay 0.333).
+  const rounded = Math.round(vcpu * 1000) / 1000
+  // Drop trailing ".0" / unnecessary zeros so whole numbers render as "1" not "1.0".
+  return rounded.toString()
+}
+
+/**
+ * Parse a vCPU float into an integer millicore (mCPU) value for the wire.
+ * Inverse of {@link formatMcpuAsVcpu}.
+ *
+ * Rounds to the nearest integer mCPU so user-entered values like `0.5` survive
+ * the round-trip exactly (`0.5 vCPU → 500 mCPU → "0.5"`). Returns `0` for
+ * non-finite input.
+ *
+ * @example
+ * parseVcpuToMcpu(0.5) // 500
+ * parseVcpuToMcpu(1)   // 1000
+ * parseVcpuToMcpu(2.5) // 2500
+ */
+export function parseVcpuToMcpu(vcpu: number): number {
+  if (!Number.isFinite(vcpu) || vcpu <= 0) return 0
+  return Math.round(vcpu * 1000)
+}
+
+/**
  * Format a number with locale-specific thousand separators
  * @param value - Number to format
  * @param locale - Locale for formatting (default: 'fr-FR')

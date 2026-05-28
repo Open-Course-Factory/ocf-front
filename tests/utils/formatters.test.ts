@@ -9,6 +9,8 @@ import {
   formatDuration,
   truncate,
   extractErrorMessage,
+  formatMcpuAsVcpu,
+  parseVcpuToMcpu,
 } from '../../src/utils/formatters'
 
 describe('formatCurrency', () => {
@@ -218,6 +220,69 @@ describe('truncate', () => {
   it('returns text equal to maxLength unchanged', () => {
     const text = 'Exactly twenty chars'
     expect(truncate(text, 20)).toBe(text)
+  })
+})
+
+describe('formatMcpuAsVcpu', () => {
+  it.each([
+    [0, '0'],
+    [250, '0.25'],
+    [500, '0.5'],
+    [1000, '1'],
+    [1500, '1.5'],
+    [2500, '2.5'],
+    [10000, '10'],
+    [10500, '10.5'],
+  ])('formatMcpuAsVcpu(%i) → %s', (mcpu, expected) => {
+    expect(formatMcpuAsVcpu(mcpu)).toBe(expected)
+  })
+
+  it('drops trailing .0 for whole numbers', () => {
+    expect(formatMcpuAsVcpu(1000)).toBe('1')
+    expect(formatMcpuAsVcpu(4000)).toBe('4')
+  })
+
+  it('keeps decimal for non-whole vCPU values', () => {
+    expect(formatMcpuAsVcpu(750)).toBe('0.75')
+    expect(formatMcpuAsVcpu(1250)).toBe('1.25')
+  })
+
+  it('handles non-finite or invalid input as "0"', () => {
+    expect(formatMcpuAsVcpu(Number.NaN)).toBe('0')
+    expect(formatMcpuAsVcpu(Number.POSITIVE_INFINITY)).toBe('0')
+  })
+})
+
+describe('parseVcpuToMcpu', () => {
+  it.each([
+    [0, 0],
+    [0.5, 500],
+    [1, 1000],
+    [1.5, 1500],
+    [2.5, 2500],
+    [10, 10000],
+    [10.5, 10500],
+    [0.25, 250],
+  ])('parseVcpuToMcpu(%f) → %i', (vcpu, expected) => {
+    expect(parseVcpuToMcpu(vcpu)).toBe(expected)
+  })
+
+  it('rounds to the nearest integer mCPU', () => {
+    // 0.333 vCPU → 333 mCPU
+    expect(parseVcpuToMcpu(0.333)).toBe(333)
+    // 0.3335 vCPU → 333.5 mCPU → 334 rounded
+    expect(parseVcpuToMcpu(0.3335)).toBe(334)
+  })
+
+  it('returns 0 for non-finite input', () => {
+    expect(parseVcpuToMcpu(Number.NaN)).toBe(0)
+    expect(parseVcpuToMcpu(Number.POSITIVE_INFINITY)).toBe(0)
+  })
+
+  it('round-trips small whole vCPU values', () => {
+    for (const vcpu of [0.5, 1, 2, 4, 10]) {
+      expect(formatMcpuAsVcpu(parseVcpuToMcpu(vcpu))).toBe(String(vcpu).replace(/\.0$/, ''))
+    }
   })
 })
 
