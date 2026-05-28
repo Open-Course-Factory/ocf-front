@@ -10,7 +10,8 @@ import type {
   SessionOptionsResponse,
   StartComposedSessionData,
   OrgTerminalUsage,
-  Size
+  Size,
+  MyTerminalUsageResponse
 } from '../../../types/terminal'
 
 export interface UpdateTerminalRequest {
@@ -93,6 +94,13 @@ export const terminalService = {
 
   async getOrgTerminalUsage(orgId: string): Promise<OrgTerminalUsage> {
     const response = await axios.get(`/organizations/${orgId}/terminal-usage`)
+    return response.data
+  },
+
+  async getMyUsage(organizationId?: string): Promise<MyTerminalUsageResponse> {
+    const params: Record<string, string> = {}
+    if (organizationId) params.organization_id = organizationId
+    const response = await axios.get('/terminals/my-usage', { params })
     return response.data
   },
 

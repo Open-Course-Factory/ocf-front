@@ -75,13 +75,7 @@
       />
 
       <!-- Usage & Quota -->
-      <TerminalUsagePanel
-        :subscription="currentSubscription"
-        :loading="loadingUsage"
-        :refreshing="refreshingUsage"
-        :refresh-interval-minutes="refreshIntervalMinutes"
-        @refresh="refreshUsage"
-      />
+      <TerminalUsagePanel :organization-id="storeOrgId || undefined" />
 
       <!-- Launch CTA -->
       <div class="launch-section">
@@ -329,15 +323,10 @@ const isAssignedSubscription = computed(() => {
 // the user click and surfaces the backend's structured 403 (`source=budget`)
 // via the budget confirm dialog wired below.
 
-// Usage panel state. We no longer track a current-terminal count here — the
-// backend doesn't expose one we can trust (the legacy `concurrent_terminals`
-// metric was decrement-only and drifted negative). The panel still renders
-// plan / capacity / session duration, and the refresh button re-syncs the
-// session list so finished sessions get reflected elsewhere in the UI.
-const loadingUsage = ref(false)
-const refreshingUsage = ref(false)
-const USAGE_REFRESH_INTERVAL = 600000 // 10 minutes
-const refreshIntervalMinutes = computed(() => Math.floor(USAGE_REFRESH_INTERVAL / 60000))
+// Usage panel state is owned by TerminalUsagePanel itself — it fetches and
+// auto-refreshes /terminals/my-usage internally. The starter only needs to
+// keep `syncAllSessions()` available so the launch path can flush stale
+// session state before submitting (see startNewSession() below).
 
 // Capacity check — single source of truth is the backend.
 // We call GET /terminals/capacity-check whenever distribution or size changes
@@ -468,17 +457,6 @@ async function syncAllSessions() {
   } catch (error) {
     console.error('Failed to sync sessions:', error)
     throw error
-  }
-}
-
-async function refreshUsage() {
-  try {
-    refreshingUsage.value = true
-    await syncAllSessions().catch((syncError) => {
-      console.error('Failed to sync sessions:', syncError)
-    })
-  } finally {
-    refreshingUsage.value = false
   }
 }
 

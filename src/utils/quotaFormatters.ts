@@ -107,6 +107,35 @@ export function formatMemoryMb(mb: number): string {
 }
 
 /**
+ * Format the elapsed time since an ISO 8601 timestamp as a short label.
+ *
+ * Output rules (chosen to keep the live session list compact):
+ *   - <  1 minute  → "Ns"   (e.g. `42s`)
+ *   - <  1 hour    → "Nm"   (e.g. `23m`)
+ *   - ≥  1 hour    → "NhMm" (e.g. `1h12`)
+ *
+ * Returns `"—"` when the input is empty or unparseable so the caller can
+ * still render something stable next to a paused/running indicator.
+ */
+export function formatElapsed(isoTime: string, nowMs: number = Date.now()): string {
+  if (!isoTime) return '—'
+  const parsed = Date.parse(isoTime)
+  if (!Number.isFinite(parsed)) return '—'
+  const diffMs = Math.max(0, nowMs - parsed)
+  const totalSeconds = Math.floor(diffMs / 1000)
+  if (totalSeconds < 60) {
+    return `${totalSeconds}s`
+  }
+  const totalMinutes = Math.floor(totalSeconds / 60)
+  if (totalMinutes < 60) {
+    return `${totalMinutes}m`
+  }
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  return `${hours}h${minutes.toString().padStart(2, '0')}`
+}
+
+/**
  * Canonical size catalog used by `formatBudgetAsSizes` and the admin
  * plan-editor composer.
  *

@@ -183,6 +183,51 @@ export interface OrgTerminalUsage {
 }
 
 /**
+ * One row of the active-sessions list returned by GET /terminals/my-usage.
+ *
+ * Stopped persistent sessions appear in this list because they still reserve
+ * CPU/RAM against the plan budget (per D6). Stopped ephemeral sessions are
+ * fully released and never appear here.
+ */
+export interface ActiveSession {
+  session_id: string
+  /** Falls back to instance type when blank */
+  name: string
+  /** "XS" | "S" | "M" | "L" | "XL" */
+  size_key: string
+  size_cpu: number
+  size_memory_mb: number
+  state: 'running' | 'stopped'
+  persistence_mode: 'ephemeral' | 'persistent'
+  /** ISO 8601 */
+  last_started_at: string
+  /** ISO 8601 */
+  expires_at: string
+}
+
+/**
+ * Response from GET /terminals/my-usage[?organization_id=<id>].
+ *
+ * The CPU/RAM envelope reflects either the user's personal plan or the org
+ * plan when an organization context is passed. `max_cpu === 0` /
+ * `max_memory_mb === 0` signals an unlimited axis (mirrors SessionQuota).
+ */
+export interface MyTerminalUsageResponse {
+  plan_name: string
+  plan_source: 'personal' | 'organization'
+  /** Org name when source = organization, otherwise empty string */
+  plan_source_name: string
+  /** 0 = unlimited */
+  max_cpu: number
+  /** 0 = unlimited */
+  max_memory_mb: number
+  max_session_duration_minutes: number
+  used_cpu: number
+  used_memory_mb: number
+  active_sessions: ActiveSession[]
+}
+
+/**
  * Request body for POST /terminals/start-composed-session
  */
 export interface StartComposedSessionData {
