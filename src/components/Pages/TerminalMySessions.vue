@@ -153,6 +153,10 @@
                     <i class="fas fa-microchip"></i>
                     {{ getInstanceName(session.instance_type) }}
                   </span>
+                  <span v-if="session.machine_size" class="metadata-item size-badge" :title="t('terminalMySessions.machineSizeLabel')">
+                    <i class="fas fa-memory"></i>
+                    {{ session.machine_size.toUpperCase() }}
+                  </span>
                   <span v-if="session.backend" class="metadata-item" :title="t('terminalMySessions.backend')">
                     <i class="fas fa-server"></i>
                     {{ session.backend }}
@@ -343,6 +347,10 @@
                       <span v-if="session.instance_type" class="metadata-item" :title="t('terminalMySessions.instanceType')">
                         <i class="fas fa-microchip"></i>
                         {{ getInstanceName(session.instance_type) }}
+                      </span>
+                      <span v-if="session.machine_size" class="metadata-item size-badge" :title="t('terminalMySessions.machineSizeLabel')">
+                        <i class="fas fa-memory"></i>
+                        {{ session.machine_size.toUpperCase() }}
                       </span>
                       <span v-if="session.backend" class="metadata-item" :title="t('terminalMySessions.backend')">
                         <i class="fas fa-server"></i>
@@ -573,6 +581,7 @@ const { t } = useTranslations({
       expiresAt: 'Expires on',
       userId: 'User',
       instanceType: 'Instance type',
+      machineSizeLabel: 'Size',
       backend: 'Backend',
       lastSynchronization: 'Last synchronization',
       previousStatus: 'Previous status',
@@ -683,6 +692,7 @@ const { t } = useTranslations({
       expiresAt: 'Expire le',
       userId: 'Utilisateur',
       instanceType: 'Type d\'instance',
+      machineSizeLabel: 'Taille',
       backend: 'Serveur',
       lastSynchronization: 'Dernière synchronisation',
       previousStatus: 'Statut précédent',
@@ -1690,6 +1700,22 @@ async function hideAllInactiveSessions() {
 .metadata-item i {
   font-size: var(--font-size-xs);
   opacity: 0.7;
+}
+
+/* Size badge — small pill with the catalog size key (XS/S/M/L/XL).
+   Reuses the metadata-item font-size and gap; adds a subtle background pill
+   so the size weight stands out from sibling metadata items. */
+.metadata-item.size-badge {
+  padding: 0 var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.5px;
+}
+
+.metadata-item.size-badge i {
+  opacity: 0.9;
 }
 
 /* Status Badge */
