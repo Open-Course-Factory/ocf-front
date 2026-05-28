@@ -102,7 +102,7 @@
             class="composer-hint"
           >
             <i class="fas fa-info-circle"></i>
-            {{ t('planConfig.sizeCapacity.noBreakdownHint', { cpu: formData.max_cpu, ram: formData.max_memory_mb }) }}
+            {{ t('planConfig.sizeCapacity.noBreakdownHint', { cpu: formatMcpuAsVcpu(formData.max_cpu), ram: formData.max_memory_mb }) }}
           </div>
 
           <div data-test="size-quota-rows-list" class="size-quota-rows">
@@ -284,6 +284,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { usePlanFeaturesStore } from '../../stores/planFeatures'
 import BaseModal from './BaseModal.vue'
 import { CANONICAL_SIZE_CATALOG, computeMaxFromRows, type SizeQuotaRow } from '../../utils/quotaFormatters'
+import { formatMcpuAsVcpu } from '../../utils/formatters'
 
 const { t, te, locale } = useTranslations({
   en: {

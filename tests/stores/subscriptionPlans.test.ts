@@ -64,12 +64,15 @@ describe('subscriptionPlans store', () => {
       expect(field!.toBeEdited).toBe(false)
     })
 
-    it('formats max_cpu values with a vCPU unit', () => {
+    it('formats max_cpu values (mCPU on wire) as vCPU floats', () => {
       const store = useSubscriptionPlansStore()
       const field = store.fieldList.get('max_cpu')
 
       expect(field!.displayValue).toBeTypeOf('function')
-      expect(field!.displayValue!(8)).toBe('8 vCPU')
+      // Backend stores integer millicores; UI shows vCPU (drops trailing .0).
+      expect(field!.displayValue!(8000)).toBe('8 vCPU')
+      expect(field!.displayValue!(500)).toBe('0.5 vCPU')
+      expect(field!.displayValue!(2500)).toBe('2.5 vCPU')
     })
 
     it('formats max_memory_mb values with a GiB/MiB unit (never raw bytes)', () => {

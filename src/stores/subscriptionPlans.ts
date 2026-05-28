@@ -24,7 +24,7 @@ import { computed } from "vue"
 import { useBaseStore } from "./baseStore"
 import { getDemoSubscriptionPlans, isDemoMode, logDemoAction, simulateDelay } from '../services/demo'
 import axios from 'axios'
-import { formatCurrency } from '../utils/formatters'
+import { formatCurrency, formatMcpuAsVcpu } from '../utils/formatters'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
@@ -283,7 +283,8 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             .withDisplayFormatter((value: any) => {
                 const n = Number(value)
                 if (!Number.isFinite(n) || n === 0) return t('subscriptionPlans.capacityUnlimited')
-                return `${n} vCPU`
+                // Backend stores CPU as integer millicores; users read in vCPU.
+                return `${formatMcpuAsVcpu(n)} vCPU`
             }),
         field('max_memory_mb', t('subscriptionPlans.max_memory_mb')).input().visible().readonly()
             .withDisplayFormatter((value: any) => {
