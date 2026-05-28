@@ -201,8 +201,8 @@ export const helpEn = {
           title: "Usage & Quota Panel",
           description: "Before creating a session, the usage panel displays your current resource consumption at a glance.",
           concurrentSessions: {
-            title: "Concurrent Sessions",
-            description: "Shows how many active terminal sessions you currently have compared to the maximum allowed by your plan."
+            title: "Plan Capacity",
+            description: "Your plan includes a CPU + memory budget; spawn any combination of sizes that fits within it. The panel shows how many additional sessions of each size you can still launch."
           },
           maxDuration: {
             title: "Maximum Session Duration",
@@ -1224,8 +1224,8 @@ export const helpEn = {
             description: "The number of courses currently active on your account. This count reflects courses in progress or published, helping you track your content output."
           },
           concurrentTerminals: {
-            title: "Concurrent Terminals",
-            description: "The number of terminal sessions running simultaneously. Your plan defines the maximum allowed, and the dashboard shows your current usage in real time."
+            title: "Terminal Capacity",
+            description: "Your plan includes a CPU + memory budget shared across active terminal sessions. Spawn any combination of sizes that fits — for example, 2 L sessions, or 4 M sessions, or 8 S sessions. The dashboard shows your current consumption and remaining capacity in real time."
           },
           concurrentUsers: {
             title: "Concurrent Users",

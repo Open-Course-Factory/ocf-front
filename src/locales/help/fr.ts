@@ -201,8 +201,8 @@ export const helpFr = {
           title: "Panneau d'utilisation et quotas",
           description: "Avant de créer une session, le panneau d'utilisation affiche votre consommation actuelle de ressources en un coup d'œil.",
           concurrentSessions: {
-            title: "Sessions simultanées",
-            description: "Indique le nombre de sessions terminal actives que vous utilisez actuellement par rapport au maximum autorisé par votre plan."
+            title: "Capacité du forfait",
+            description: "Votre forfait comprend un budget CPU + mémoire ; lancez n'importe quelle combinaison de tailles qui rentre dedans. Le panneau indique combien de sessions supplémentaires de chaque taille vous pouvez encore lancer."
           },
           maxDuration: {
             title: "Durée maximale de session",
@@ -1224,8 +1224,8 @@ export const helpFr = {
             description: "Le nombre de cours actuellement actifs sur votre compte. Ce compteur reflète les cours en cours ou publiés, vous permettant de suivre votre production de contenu."
           },
           concurrentTerminals: {
-            title: "Terminaux simultanés",
-            description: "Le nombre de sessions terminal fonctionnant simultanément. Votre plan définit le maximum autorisé, et le tableau de bord affiche votre utilisation actuelle en temps réel."
+            title: "Capacité Terminal",
+            description: "Votre forfait comprend un budget CPU + mémoire partagé entre les sessions terminal actives. Lancez n'importe quelle combinaison de tailles qui rentre dedans — par exemple, 2 sessions L, ou 4 sessions M, ou 8 sessions S. Le tableau de bord affiche votre consommation actuelle et votre capacité restante en temps réel."
           },
           concurrentUsers: {
             title: "Utilisateurs simultanés",
