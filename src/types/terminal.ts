@@ -72,12 +72,15 @@ export interface Size {
   key: string
   name: string
   description?: string
+  // Raw tt-backend cpuset count (NOT the budget cost). For user-facing vCPU display use cpu_mcpu instead.
   cpu: number
   cpu_allowance?: string
   memory: string
   disk: string
   processes: number
   sort_order: number
+  // Effective CPU budget cost in millicores (1000 = 1 vCPU). SSOT for vCPU display. 0/undefined means the backend didn't have this size in its budget catalog — fall back to CANONICAL_SIZE_CATALOG.
+  cpu_mcpu?: number
 }
 
 /**
@@ -87,6 +90,7 @@ export interface SessionOptionSize {
   key: string
   name: string
   description?: string
+  // Raw tt-backend cpuset count (NOT the budget cost). For user-facing vCPU display use cpu_mcpu instead.
   cpu: number
   cpu_allowance: string
   memory: string
@@ -99,6 +103,8 @@ export interface SessionOptionSize {
   memory_mb: number
   /** floor(min(remaining_cpu / cpu, remaining_memory_mb / memory_mb)) — server-computed */
   remaining_count: number
+  // Effective CPU budget cost in millicores (1000 = 1 vCPU). SSOT for vCPU display. 0/undefined means the backend didn't have this size in its budget catalog — fall back to CANONICAL_SIZE_CATALOG.
+  cpu_mcpu?: number
 }
 
 /**
