@@ -94,9 +94,12 @@ vi.mock('../../src/stores/planFeatures', () => ({
 
 import PlanConfigModal from '../../src/components/Modals/PlanConfigModal.vue'
 
-function mountModal(plan: any = null) {
-  return mount(PlanConfigModal, {
-    props: { visible: true, plan },
+async function mountModal(plan: any = null) {
+  // The component runs populateFromPlan / resetForm only when `visible`
+  // transitions from false to true (inside a watcher). Mount with visible
+  // false, then flip to true so the watcher fires.
+  const wrapper = mount(PlanConfigModal, {
+    props: { visible: false, plan },
     global: {
       stubs: {
         BaseModal: {
@@ -106,6 +109,9 @@ function mountModal(plan: any = null) {
       }
     }
   })
+  await wrapper.setProps({ visible: true })
+  await flushPromises()
+  return wrapper
 }
 
 describe('PlanConfigModal — size-quota composer (budget mode)', () => {
@@ -115,7 +121,7 @@ describe('PlanConfigModal — size-quota composer (budget mode)', () => {
   })
 
   it('renders the size-quota composer when quota model is budget', async () => {
-    const wrapper = mountModal()
+    const wrapper = await mountModal()
     await flushPromises()
 
     // Default new plan starts in budget mode → composer visible.
@@ -128,7 +134,7 @@ describe('PlanConfigModal — size-quota composer (budget mode)', () => {
   })
 
   it('appends a new row when the admin clicks "Add row"', async () => {
-    const wrapper = mountModal()
+    const wrapper = await mountModal()
     await flushPromises()
 
     const before = wrapper.findAll('[data-test="size-quota-row"]').length
@@ -140,7 +146,7 @@ describe('PlanConfigModal — size-quota composer (budget mode)', () => {
   })
 
   it('removes a row when the admin clicks "Remove" on that row', async () => {
-    const wrapper = mountModal()
+    const wrapper = await mountModal()
     await flushPromises()
 
     // Add a second row so we have at least 2 before deleting one.
@@ -156,7 +162,7 @@ describe('PlanConfigModal — size-quota composer (budget mode)', () => {
   })
 
   it('updates the computed CPU+RAM preview when the admin edits rows', async () => {
-    const wrapper = mountModal()
+    const wrapper = await mountModal()
     await flushPromises()
 
     // Default starts as [L × 1] → CPU 4, RAM 2 GiB (single row, same under
@@ -176,24 +182,82 @@ describe('PlanConfigModal — size-quota composer (budget mode)', () => {
     expect(preview.text()).toContain('8')
   })
 
-  it('hides the rows composer and shows raw inputs when advanced toggle is on', async () => {
-    const wrapper = mountModal()
+  it('never renders an Advanced raw-budget toggle or raw budget inputs', async () => {
+    // The size-rows composer is the single source of truth. There must not
+    // be any escape hatch into raw max_cpu / max_memory_mb inputs.
+    const wrapper = await mountModal()
     await flushPromises()
 
+    expect(wrapper.find('[data-test="size-quota-advanced-toggle"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="size-quota-advanced-fields"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="advanced-max-cpu"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="advanced-max-memory-mb"]').exists()).toBe(false)
+  })
 
-    await wrapper.find('[data-test="size-quota-advanced-toggle"]').trigger('click')
+  it('shows the no-breakdown hint and an empty composer when editing a plan with a raw budget', async () => {
+    const wrapper = await mountModal({
+      id: 'plan-123',
+      name: 'Existing',
+      max_cpu: 6,
+      max_memory_mb: 4096,
+      features: []
+    })
+    await flushPromises()
+
+    // Empty composer (no default row pushed in for existing plans).
+    expect(wrapper.findAll('[data-test="size-quota-row"]').length).toBe(0)
+
+    // Hint visible with the plan's current capacity.
+    const hint = wrapper.find('[data-test="size-quota-no-breakdown-hint"]')
+    expect(hint.exists()).toBe(true)
+    expect(hint.text()).toContain('6')
+    expect(hint.text()).toContain('4096')
+
+    // Adding a row swaps the hint for the live computed-budget preview.
+    await wrapper.find('[data-test="size-quota-add-row"]').trigger('click')
     await nextTick()
+    expect(wrapper.findAll('[data-test="size-quota-row"]').length).toBe(1)
+    expect(wrapper.find('[data-test="size-quota-preview"]').exists()).toBe(true)
+  })
 
-    // Composer rows hidden; raw inputs visible
-    expect(wrapper.find('[data-test="size-quota-rows-list"]').exists()).toBe(false)
-    expect(wrapper.find('[data-test="size-quota-advanced-fields"]').exists()).toBe(true)
-    expect(wrapper.find('[data-test="advanced-max-cpu"]').exists()).toBe(true)
-    expect(wrapper.find('[data-test="advanced-max-memory-mb"]').exists()).toBe(true)
+  it('shows the unlimited hint when editing a plan with max_cpu=0 and max_memory_mb=0', async () => {
+    const wrapper = await mountModal({
+      id: 'plan-unlim',
+      name: 'Unlimited',
+      max_cpu: 0,
+      max_memory_mb: 0,
+      features: []
+    })
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="size-quota-unlimited-hint"]').exists()).toBe(true)
+    // No default row — empty composer makes "add rows to limit it" obvious.
+    expect(wrapper.findAll('[data-test="size-quota-row"]').length).toBe(0)
+  })
+
+  it('preserves the existing raw budget when the admin saves without adding any row', async () => {
+    const wrapper = await mountModal({
+      id: 'plan-123',
+      name: 'Existing',
+      max_cpu: 6,
+      max_memory_mb: 4096,
+      features: []
+    })
+    await flushPromises()
+
+    // Composer is empty (no breakdown to reconstruct). Save without touching it.
+    expect(wrapper.findAll('[data-test="size-quota-row"]').length).toBe(0)
+    await wrapper.find('[data-test="plan-save-button"]').trigger('click')
+
+    const emitted = wrapper.emitted('save')
+    expect(emitted).toBeTruthy()
+    const payload = emitted![0][0] as any
+    expect(payload.max_cpu).toBe(6)
+    expect(payload.max_memory_mb).toBe(4096)
   })
 
   it('emits save payload with computed max_cpu and max_memory_mb from rows', async () => {
-    const wrapper = mountModal()
+    const wrapper = await mountModal()
     await flushPromises()
 
     // Set the default first row to [L × 1] (it already is by default).
@@ -229,7 +293,7 @@ describe('PlanConfigModal — size-quota composer (budget mode)', () => {
   })
 
   it('disables the save button and shows validation when budget mode has zero rows', async () => {
-    const wrapper = mountModal()
+    const wrapper = await mountModal()
     await flushPromises()
 
     // Remove the default row so there are zero rows in the composer.

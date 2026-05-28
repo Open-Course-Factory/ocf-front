@@ -87,7 +87,25 @@
         <div data-test="size-quota-composer" class="size-quota-composer">
           <p class="composer-subtitle">{{ t('planConfig.sizeCapacity.subtitle') }}</p>
 
-          <div v-if="!advancedMode" data-test="size-quota-rows-list" class="size-quota-rows">
+          <div
+            v-if="showUnlimitedHint"
+            data-test="size-quota-unlimited-hint"
+            class="composer-hint"
+          >
+            <i class="fas fa-info-circle"></i>
+            {{ t('planConfig.sizeCapacity.currentlyUnlimited') }}
+          </div>
+
+          <div
+            v-else-if="showNoBreakdownHint"
+            data-test="size-quota-no-breakdown-hint"
+            class="composer-hint"
+          >
+            <i class="fas fa-info-circle"></i>
+            {{ t('planConfig.sizeCapacity.noBreakdownHint', { cpu: formData.max_cpu, ram: formData.max_memory_mb }) }}
+          </div>
+
+          <div data-test="size-quota-rows-list" class="size-quota-rows">
             <div
               v-for="(row, idx) in sizeRows"
               :key="idx"
@@ -143,7 +161,7 @@
             </button>
 
             <div
-              v-if="sizeRows.length === 0"
+              v-if="sizeRows.length === 0 && !showUnlimitedHint && !showNoBreakdownHint"
               data-test="size-quota-validation"
               class="validation-message validation-block"
             >
@@ -151,7 +169,7 @@
               {{ t('planConfig.validation.atLeastOneRow') }}
             </div>
 
-            <div data-test="size-quota-preview" class="computed-preview">
+            <div v-if="sizeRows.length > 0" data-test="size-quota-preview" class="computed-preview">
               <h4>{{ t('planConfig.sizeCapacity.computedBudget') }}</h4>
               <div class="preview-values">
                 <span class="preview-value">
@@ -166,43 +184,6 @@
               <p class="computed-preview-hint">{{ t('planConfig.sizeCapacity.computedBudgetHint') }}</p>
             </div>
           </div>
-
-          <div v-else data-test="size-quota-advanced-fields" class="advanced-fields">
-            <div class="form-grid">
-              <div class="form-group">
-                <label for="advanced-max-cpu">MaxCPU</label>
-                <input
-                  id="advanced-max-cpu"
-                  v-model.number="formData.max_cpu"
-                  data-test="advanced-max-cpu"
-                  type="number"
-                  min="0"
-                  class="form-control"
-                />
-              </div>
-              <div class="form-group">
-                <label for="advanced-max-memory-mb">MaxMemoryMB</label>
-                <input
-                  id="advanced-max-memory-mb"
-                  v-model.number="formData.max_memory_mb"
-                  data-test="advanced-max-memory-mb"
-                  type="number"
-                  min="0"
-                  class="form-control"
-                />
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            class="btn btn-link btn-advanced-toggle"
-            data-test="size-quota-advanced-toggle"
-            @click="toggleAdvanced"
-          >
-            <i :class="advancedMode ? 'fas fa-chevron-down' : 'fas fa-chevron-right'"></i>
-            {{ t('planConfig.sizeCapacity.advanced') }}
-          </button>
         </div>
       </section>
 
@@ -347,7 +328,8 @@ const { t, te, locale } = useTranslations({
         computedBudgetHint: 'Total capacity students get — they split it however they want, not a fixed bundle.',
         cpuValue: '{n} vCPU',
         ramValue: '{n} GiB',
-        advanced: 'Advanced (raw budget)'
+        currentlyUnlimited: 'This plan currently has unlimited capacity. Add rows to set a limit.',
+        noBreakdownHint: "This plan's current capacity is {cpu} vCPU / {ram} MiB (no size breakdown stored). Add rows to redefine the capacity."
       },
       validation: {
         atLeastOneRow: 'At least one size row is required',
@@ -397,7 +379,8 @@ const { t, te, locale } = useTranslations({
         computedBudgetHint: 'Capacite totale dont disposent les apprenants — ils la repartissent librement, ce n est pas un assortiment fige.',
         cpuValue: '{n} vCPU',
         ramValue: '{n} Gio',
-        advanced: 'Avance (budget brut)'
+        currentlyUnlimited: 'Ce forfait a actuellement une capacite illimitee. Ajoutez des lignes pour definir une limite.',
+        noBreakdownHint: "La capacite actuelle de ce forfait est {cpu} vCPU / {ram} MiB (pas de repartition en tailles enregistree). Ajoutez des lignes pour redefinir la capacite."
       },
       validation: {
         atLeastOneRow: 'Au moins une ligne est requise',
@@ -436,10 +419,16 @@ const formData = reactive({
 
 const featureValues = reactive<Record<string, any>>({})
 
-// Size-quota composer state (budget mode only).
+// Size-quota composer state — the only way to set a plan's capacity.
 const sizeRows = reactive<SizeQuotaRow[]>([{ size_key: 'l', count: 1 }])
-const advancedMode = ref(false)
 const sizeCatalogKeys = Object.keys(CANONICAL_SIZE_CATALOG)
+
+// Hints shown when populating an existing plan that has a raw budget but
+// no size-row breakdown to reconstruct (the backend stores only the sum).
+// The admin can keep the existing budget by leaving the composer empty,
+// or redefine it by adding rows.
+const showUnlimitedHint = ref(false)
+const showNoBreakdownHint = ref(false)
 
 const computedBudget = computed(() => computeMaxFromRows(sizeRows))
 const ramGiB = computed(() => {
@@ -457,15 +446,18 @@ function removeRow(index: number) {
   sizeRows.splice(index, 1)
 }
 
-function toggleAdvanced() {
-  advancedMode.value = !advancedMode.value
-}
-
 const isFormValid = computed(() => {
-  if (!advancedMode.value) {
-    if (sizeRows.length === 0) return false
+  // When a hint is showing (existing plan with a raw budget but no row
+  // breakdown), an empty composer is valid — the admin is keeping the
+  // existing budget unchanged. Otherwise we require at least one well-formed
+  // row.
+  if (showUnlimitedHint.value || showNoBreakdownHint.value) {
+    if (sizeRows.length === 0) return true
     if (sizeRows.some(r => !r.size_key || r.count < 1)) return false
+    return true
   }
+  if (sizeRows.length === 0) return false
+  if (sizeRows.some(r => !r.size_key || r.count < 1)) return false
   return true
 })
 
@@ -507,15 +499,20 @@ function populateFromPlan(plan: any) {
   formData.max_memory_mb = typeof plan.max_memory_mb === 'number' ? plan.max_memory_mb : 0
 
   // Reset the size-quota composer. We can't reconstruct the original rows
-  // because the backend stores only the computed max — so if the plan has a
-  // non-zero raw budget we open the Advanced view by default and leave the
-  // composer empty. Admin can re-create rows if they want.
+  // because the backend stores only the computed max — so when populating
+  // an existing plan we show an empty composer plus a hint describing the
+  // current capacity. Admins can add rows to redefine the capacity, or
+  // leave the composer empty to keep the existing budget unchanged.
   sizeRows.splice(0, sizeRows.length)
   if (formData.max_cpu === 0 && formData.max_memory_mb === 0) {
-    sizeRows.push({ size_key: 'l', count: 1 })
-    advancedMode.value = false
+    // Plan is unlimited — show the hint, no default row so the admin sees
+    // explicitly that adding rows will introduce a limit.
+    showUnlimitedHint.value = true
+    showNoBreakdownHint.value = false
   } else {
-    advancedMode.value = true
+    // Plan has a raw budget with no row breakdown stored.
+    showUnlimitedHint.value = false
+    showNoBreakdownHint.value = true
   }
 
   // Clear feature values
@@ -579,7 +576,8 @@ function resetForm() {
   formData.max_cpu = 0
   formData.max_memory_mb = 0
   sizeRows.splice(0, sizeRows.length, { size_key: 'l', count: 1 })
-  advancedMode.value = false
+  showUnlimitedHint.value = false
+  showNoBreakdownHint.value = false
   Object.keys(featureValues).forEach(key => delete featureValues[key])
 
   // Initialize default feature values
@@ -629,11 +627,13 @@ function handleSave() {
     }
   }
 
-  // The composer is the source of truth unless the admin bypassed it via the
-  // Advanced disclosure (raw budget fields).
+  // The size-rows composer is the single source of truth for capacity.
+  // When the admin opened an existing plan and left the composer empty
+  // (preserve-existing-budget case), keep the plan's current max_cpu /
+  // max_memory_mb so unchanged plans round-trip safely.
   let resolvedMaxCpu = formData.max_cpu
   let resolvedMaxMemoryMb = formData.max_memory_mb
-  if (!advancedMode.value) {
+  if (sizeRows.length > 0) {
     const budget = computeMaxFromRows(sizeRows)
     resolvedMaxCpu = budget.max_cpu
     resolvedMaxMemoryMb = budget.max_memory_mb
@@ -952,17 +952,16 @@ watch(() => props.visible, async (newVal) => {
   align-self: flex-start;
 }
 
-.btn-advanced-toggle {
-  align-self: flex-start;
-  background: transparent;
+.composer-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--border-radius-md);
   color: var(--color-text-secondary);
-  padding: var(--spacing-xs) 0;
-  border: none;
-  text-decoration: none;
-}
-
-.btn-advanced-toggle:hover {
-  color: var(--color-primary);
+  font-size: var(--font-size-sm);
 }
 
 .computed-preview {
@@ -1000,12 +999,6 @@ watch(() => props.visible, async (newVal) => {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   font-style: italic;
-}
-
-.advanced-fields {
-  padding: var(--spacing-md);
-  background: var(--color-bg-secondary);
-  border-radius: var(--border-radius-md);
 }
 
 .validation-message {
