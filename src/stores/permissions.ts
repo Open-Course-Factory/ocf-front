@@ -110,8 +110,8 @@ export const usePermissionsStore = defineStore('permissions', () => {
             is_active: true,
             required_role: 'member',
             max_session_duration_minutes: 240,
-            max_concurrent_terminals: 10,
-            allowed_machine_sizes: ['XS', 'S', 'M', 'L'],
+            max_cpu: 16,
+            max_memory_mb: 16384,
             network_access_enabled: true,
             data_persistence_enabled: true,
             data_persistence_gb: 50,
@@ -290,11 +290,6 @@ export const usePermissionsStore = defineStore('permissions', () => {
     return effectiveFeatures.value.effective_features.features?.includes(featureName) ?? false
   }
 
-  const getMaxConcurrentTerminals = computed((): number => {
-    const val = effectiveFeatures.value?.effective_features?.max_concurrent_terminals ?? 0
-    return val === -1 ? Infinity : val
-  })
-
   const getMaxCourses = computed((): number => {
     const val = effectiveFeatures.value?.effective_features?.max_courses ?? 0
     return val === -1 ? Infinity : val
@@ -302,10 +297,6 @@ export const usePermissionsStore = defineStore('permissions', () => {
 
   const getMaxSessionDuration = computed((): number => {
     return effectiveFeatures.value?.effective_features?.max_session_duration_minutes ?? 60
-  })
-
-  const canCreateTerminal = computed((): boolean => {
-    return getMaxConcurrentTerminals.value > 0
   })
 
   const canUseAPI = computed((): boolean => {
@@ -384,10 +375,8 @@ export const usePermissionsStore = defineStore('permissions', () => {
 
     // Feature checks
     hasFeature,
-    getMaxConcurrentTerminals,
     getMaxCourses,
     getMaxSessionDuration,
-    canCreateTerminal,
     canUseAPI,
     canExportCourses,
 

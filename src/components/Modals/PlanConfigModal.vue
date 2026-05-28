@@ -77,42 +77,14 @@
         </div>
       </section>
 
-      <!-- Section 1.5: Quota model + size capacity / count-mode allowlist -->
+      <!-- Section 1.5: size capacity composer -->
       <section class="form-section">
         <h3 class="section-title">
           <i class="fas fa-microchip"></i>
           {{ t('planConfig.sizeCapacity.section') }}
         </h3>
 
-        <!-- Quota model discriminator -->
-        <div class="quota-model-radio">
-          <label class="quota-model-label">{{ t('planConfig.quotaModel.label') }}</label>
-          <div class="radio-group">
-            <label class="radio-option">
-              <input
-                type="radio"
-                value="budget"
-                :checked="formData.quota_model === 'budget'"
-                data-test="quota-model-budget"
-                @change="formData.quota_model = 'budget'"
-              />
-              <span>{{ t('planConfig.quotaModel.budget') }}</span>
-            </label>
-            <label class="radio-option">
-              <input
-                type="radio"
-                value="count"
-                :checked="formData.quota_model === 'count'"
-                data-test="quota-model-count"
-                @change="formData.quota_model = 'count'"
-              />
-              <span>{{ t('planConfig.quotaModel.count') }}</span>
-            </label>
-          </div>
-        </div>
-
-        <!-- Budget mode: size-quota composer -->
-        <div v-if="formData.quota_model === 'budget'" data-test="size-quota-composer" class="size-quota-composer">
+        <div data-test="size-quota-composer" class="size-quota-composer">
           <p class="composer-subtitle">{{ t('planConfig.sizeCapacity.subtitle') }}</p>
 
           <div v-if="!advancedMode" data-test="size-quota-rows-list" class="size-quota-rows">
@@ -231,11 +203,6 @@
             <i :class="advancedMode ? 'fas fa-chevron-down' : 'fas fa-chevron-right'"></i>
             {{ t('planConfig.sizeCapacity.advanced') }}
           </button>
-        </div>
-
-        <!-- Count mode: legacy allowlist -->
-        <div v-else data-test="count-mode-section" class="count-mode-section">
-          <p class="count-mode-hint">{{ t('planConfig.countMode.hint') }}</p>
         </div>
       </section>
 
@@ -382,14 +349,6 @@ const { t, te, locale } = useTranslations({
         ramValue: '{n} GiB',
         advanced: 'Advanced (raw budget)'
       },
-      quotaModel: {
-        label: 'Quota model',
-        count: 'Count (legacy)',
-        budget: 'Budget (new)'
-      },
-      countMode: {
-        hint: 'Count mode uses the legacy allowed_machine_sizes allowlist and max_concurrent_terminals field from the Plan Configuration section below.'
-      },
       validation: {
         atLeastOneRow: 'At least one size row is required',
         countPositive: 'Count must be at least 1'
@@ -440,14 +399,6 @@ const { t, te, locale } = useTranslations({
         ramValue: '{n} Gio',
         advanced: 'Avance (budget brut)'
       },
-      quotaModel: {
-        label: 'Modele de quota',
-        count: 'Nombre (heritage)',
-        budget: 'Budget (nouveau)'
-      },
-      countMode: {
-        hint: "Le mode Nombre utilise la liste allowed_machine_sizes et max_concurrent_terminals dans la section Configuration ci-dessous."
-      },
       validation: {
         atLeastOneRow: 'Au moins une ligne est requise',
         countPositive: "Le nombre doit etre d'au moins 1"
@@ -479,7 +430,6 @@ const formData = reactive({
   priority: 0,
   is_active: true,
   is_catalog: true,
-  quota_model: 'budget' as 'budget' | 'count',
   max_cpu: 0,
   max_memory_mb: 0
 })
@@ -512,7 +462,7 @@ function toggleAdvanced() {
 }
 
 const isFormValid = computed(() => {
-  if (formData.quota_model === 'budget' && !advancedMode.value) {
+  if (!advancedMode.value) {
     if (sizeRows.length === 0) return false
     if (sizeRows.some(r => !r.size_key || r.count < 1)) return false
   }
@@ -552,8 +502,7 @@ function populateFromPlan(plan: any) {
   formData.is_active = plan.is_active !== false
   formData.is_catalog = plan.is_catalog !== false
 
-  // Quota model + budget fields.
-  formData.quota_model = plan.quota_model === 'count' ? 'count' : 'budget'
+  // Budget fields.
   formData.max_cpu = typeof plan.max_cpu === 'number' ? plan.max_cpu : 0
   formData.max_memory_mb = typeof plan.max_memory_mb === 'number' ? plan.max_memory_mb : 0
 
@@ -588,26 +537,18 @@ function populateFromPlan(plan: any) {
   // Populate boolean features from plan.features array
   for (const f of allFeatures) {
     if (f.value_type === 'boolean') {
-      if (f.category === 'machine_sizes') {
-        // Machine size features: check allowed_machine_sizes
-        const sizeSuffix = f.key.replace('machine_size_', '').toUpperCase()
-        const allowedSizes = plan.allowed_machine_sizes || []
-        featureValues[f.key] = allowedSizes.includes(sizeSuffix)
+      // Prefer dedicated column when one exists; otherwise fall back to
+      // features[] membership.
+      const planField = booleanFieldMap[f.key]
+      if (planField && typeof (plan as any)[planField] === 'boolean') {
+        featureValues[f.key] = (plan as any)[planField]
       } else {
-        // Prefer dedicated column when one exists; otherwise fall back to
-        // features[] membership.
-        const planField = booleanFieldMap[f.key]
-        if (planField && typeof (plan as any)[planField] === 'boolean') {
-          featureValues[f.key] = (plan as any)[planField]
-        } else {
-          featureValues[f.key] = features.includes(f.key)
-        }
+        featureValues[f.key] = features.includes(f.key)
       }
     } else if (f.value_type === 'number') {
       // Map number features from dedicated plan fields
       const fieldMap: Record<string, string> = {
         max_session_duration_minutes: 'max_session_duration_minutes',
-        max_concurrent_terminals: 'max_concurrent_terminals',
         data_persistence_gb: 'data_persistence_gb',
         command_history_retention_days: 'command_history_retention_days',
         max_courses: 'max_courses',
@@ -635,7 +576,6 @@ function resetForm() {
   formData.priority = 0
   formData.is_active = true
   formData.is_catalog = true
-  formData.quota_model = 'budget'
   formData.max_cpu = 0
   formData.max_memory_mb = 0
   sizeRows.splice(0, sizeRows.length, { size_key: 'l', count: 1 })
@@ -681,25 +621,19 @@ function booleanFieldValue(key: string, planField: string): boolean {
 function handleSave() {
   const allFeatures = planFeaturesStore.entities || []
   const enabledFeatures: string[] = []
-  const allowedMachineSizes: string[] = []
 
-  // Build features array and machine sizes from feature values
+  // Build features array from feature values
   for (const f of allFeatures) {
     if (f.value_type === 'boolean' && featureValues[f.key]) {
       enabledFeatures.push(f.key)
-      if (f.category === 'machine_sizes') {
-        const sizeSuffix = f.key.replace('machine_size_', '').toUpperCase()
-        allowedMachineSizes.push(sizeSuffix)
-      }
     }
   }
 
-  // In budget mode the composer is the source of truth unless the admin
-  // bypassed it via the Advanced disclosure. In count mode we don't send
-  // max_cpu / max_memory_mb at all — the legacy allowlist drives the limits.
+  // The composer is the source of truth unless the admin bypassed it via the
+  // Advanced disclosure (raw budget fields).
   let resolvedMaxCpu = formData.max_cpu
   let resolvedMaxMemoryMb = formData.max_memory_mb
-  if (formData.quota_model === 'budget' && !advancedMode.value) {
+  if (!advancedMode.value) {
     const budget = computeMaxFromRows(sizeRows)
     resolvedMaxCpu = budget.max_cpu
     resolvedMaxMemoryMb = budget.max_memory_mb
@@ -710,11 +644,9 @@ function handleSave() {
     max_cpu: resolvedMaxCpu,
     max_memory_mb: resolvedMaxMemoryMb,
     features: enabledFeatures,
-    allowed_machine_sizes: allowedMachineSizes,
     // Map number features to dedicated fields (preserve existing plan value
     // when the form didn't include this field -- prevents silent 0 wipes).
     max_session_duration_minutes: numericFieldValue('max_session_duration_minutes', 'max_session_duration_minutes'),
-    max_concurrent_terminals: numericFieldValue('max_concurrent_terminals', 'max_concurrent_terminals'),
     data_persistence_gb: numericFieldValue('data_persistence_gb', 'data_persistence_gb'),
     command_history_retention_days: numericFieldValue('command_history_retention_days', 'command_history_retention_days'),
     max_courses: numericFieldValue('max_courses', 'max_courses'),

@@ -92,23 +92,19 @@ export interface SessionOptionSize {
   sort_order: number
   allowed: boolean
   reason?: string
-  /** Parsed memory in MiB (server-computed, optional during dual-mode rollout) */
-  memory_mb?: number
+  /** Parsed memory in MiB (server-computed) */
+  memory_mb: number
   /** floor(min(remaining_cpu / cpu, remaining_memory_mb / memory_mb)) — server-computed */
-  remaining_count?: number
+  remaining_count: number
 }
 
 /**
- * Session quota block returned by session-options (budget mode).
+ * Session quota block returned by session-options.
  * Tracks aggregate CPU + memory consumption against plan limits.
  *
- * **The presence of this field IS the budget-mode signal.** When the backend
- * runs a plan in count mode, it MUST omit this field (do not emit a sentinel
- * `scope: "unlimited"` — that variant was retired in MR !237). When this field
- * is present, callers treat the response as budget mode regardless of values:
- * - `max_cpu === 0` / `max_memory_mb === 0` mean "no cap on that axis"
- *   (the server still emits a `remaining_*` MaxInt32 sentinel so the UI can
- *   render "unlimited" capacity without re-interpreting `max_*`).
+ * Unlimited budget is signalled by `max_cpu === 0` / `max_memory_mb === 0` on the
+ * relevant axis (the server still emits a `remaining_*` MaxInt32 sentinel so the
+ * UI can render "unlimited" capacity without re-interpreting `max_*`).
  */
 export interface SessionQuota {
   /** 0 = unlimited */
@@ -140,23 +136,22 @@ export interface SessionOptionsResponse {
   distribution: Distribution
   allowed_sizes: SessionOptionSize[]
   allowed_features: SessionOptionFeature[]
-  /** Budget-mode quota block — optional during dual-mode rollout */
-  quota?: SessionQuota
+  quota: SessionQuota
 }
 
 /**
  * Per-user entry in org terminal usage response.
- * In budget mode the backend also reports the user's aggregate CPU/RAM usage.
+ * Reports the user's aggregate CPU/RAM usage across active sessions.
  */
 export interface OrgTerminalUsageUser {
   user_id: string
   display_name: string
   email: string
   active_count: number
-  /** Budget mode only — aggregate CPU consumed by this user's active sessions */
-  active_cpu?: number
-  /** Budget mode only — aggregate memory (MiB) consumed by this user's active sessions */
-  active_memory_mb?: number
+  /** Aggregate CPU consumed by this user's active sessions */
+  active_cpu: number
+  /** Aggregate memory (MiB) consumed by this user's active sessions */
+  active_memory_mb: number
 }
 
 /**
@@ -173,21 +168,18 @@ export interface SizeRemaining {
 /**
  * Response from GET /organizations/:id/terminal-usage.
  *
- * Backward-compatible: legacy count-mode fields (`active_terminals`, `max_terminals`)
- * are always present. Budget-mode fields (`quota`, `remaining_by_size`) are optional
- * and only populated when the org's plan uses `quota_model: 'budget'`.
+ * Reports the aggregate CPU/RAM budget envelope and remaining capacity per
+ * catalog size for the organization's active plan.
  */
 export interface OrgTerminalUsage {
   organization_id: string
-  active_terminals: number
-  max_terminals: number
   plan_name: string
   is_fallback: boolean
   users: OrgTerminalUsageUser[]
-  /** Budget mode — aggregate CPU/RAM quota across the organization */
-  quota?: SessionQuota
-  /** Budget mode — remaining capacity per catalog size */
-  remaining_by_size?: SizeRemaining[]
+  /** Aggregate CPU/RAM quota across the organization */
+  quota: SessionQuota
+  /** Remaining capacity per catalog size */
+  remaining_by_size: SizeRemaining[]
 }
 
 /**

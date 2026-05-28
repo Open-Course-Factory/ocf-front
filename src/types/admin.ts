@@ -60,10 +60,8 @@ export interface UsageMetric extends BaseEntity {
  * Usage Limits (from subscription plan)
  */
 export interface UsageLimits {
-  max_concurrent_terminals: number
   max_session_duration_minutes: number
   max_courses: number
-  allowed_machine_sizes: string[]
   network_access_enabled: boolean
   data_persistence_enabled: boolean
   data_persistence_gb: number

@@ -224,24 +224,8 @@ describe('PlanConfigModal — size-quota composer (budget mode)', () => {
     const emitted = wrapper.emitted('save')
     expect(emitted).toBeTruthy()
     const payload = emitted![0][0] as any
-    expect(payload.quota_model).toBe('budget')
     expect(payload.max_cpu).toBe(8)
     expect(payload.max_memory_mb).toBe(4096)
-  })
-
-  it('renders the legacy allowlist (count mode) when quota_model is set to count', async () => {
-    const wrapper = mountModal()
-    await flushPromises()
-
-    // Switch to count mode
-    await wrapper.find('[data-test="quota-model-count"]').setValue(true)
-    await nextTick()
-
-    // Budget composer is hidden
-    expect(wrapper.find('[data-test="size-quota-composer"]').exists()).toBe(false)
-
-    // Legacy count-mode UI is visible
-    expect(wrapper.find('[data-test="count-mode-section"]').exists()).toBe(true)
   })
 
   it('disables the save button and shows validation when budget mode has zero rows', async () => {

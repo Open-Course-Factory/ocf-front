@@ -84,8 +84,6 @@
       <TerminalUsagePanel
         :subscription="currentSubscription"
         :current-count="currentTerminalCount"
-        :max-count="maxTerminals"
-        :allowed-sizes="allowedMachineSizes"
         :loading="loadingUsage"
         :refreshing="refreshingUsage"
         :refresh-interval-minutes="refreshIntervalMinutes"
@@ -143,7 +141,7 @@ import { useRouter } from 'vue-router'
 
 import axios from 'axios'
 import { terminalService } from '../../services/domain/terminal'
-import { summarizeRemaining, isBudgetMode } from '../../utils/quotaFormatters'
+import { summarizeRemaining } from '../../utils/quotaFormatters'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 
 import { useOrganizationsStore } from '../../stores/organizations'
@@ -352,15 +350,6 @@ const isAssignedSubscription = computed(() => {
 const currentTerminalCount = ref(0)
 const loadingUsage = ref(false)
 const refreshingUsage = ref(false)
-
-// Computed properties
-const allowedMachineSizes = computed(() => {
-  const sizes = currentSubscription.value?.subscription_plan?.allowed_machine_sizes || []
-  if (sizes.length === 0) {
-    return ['XS']
-  }
-  return sizes
-})
 
 // Single source of truth for "what's my concurrent_terminals usage?" is the
 // `/user-subscriptions/usage?organization_id=...` endpoint exposed by the
@@ -653,9 +642,7 @@ async function handleBudgetRejection(err: any): Promise<void> {
         backendsStore.selectedBackendId || undefined,
         selectedOrganizationId.value || undefined
       )
-      if (isBudgetMode(freshOptions)) {
-        summary = summarizeRemaining(freshOptions.allowed_sizes, t('sessionComposer.or'))
-      }
+      summary = summarizeRemaining(freshOptions.allowed_sizes, t('sessionComposer.or'))
     }
   } catch {
     // Non-critical: fall back to the empty-summary copy.

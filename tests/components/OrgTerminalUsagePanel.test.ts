@@ -1,8 +1,7 @@
 /**
- * Tests for OrgTerminalUsagePanel — both legacy (count) and budget modes.
+ * Tests for OrgTerminalUsagePanel — budget mode.
  *
- * - Count mode: legacy single-bar UI (active_terminals / max_terminals)
- * - Budget mode: per-size remaining capacity + optional advanced vCPU/RAM toggle
+ * Renders per-size remaining capacity + optional advanced vCPU/RAM toggle.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -48,34 +47,10 @@ function mountPanel(): VueWrapper {
   })
 }
 
-const COUNT_MODE_USAGE: OrgTerminalUsage = {
-  organization_id: 'org-1',
-  plan_name: 'Trainer',
-  is_fallback: false,
-  active_terminals: 3,
-  max_terminals: 10,
-  users: [
-    {
-      user_id: 'u1',
-      display_name: 'Alice',
-      email: 'alice@example.com',
-      active_count: 2
-    },
-    {
-      user_id: 'u2',
-      display_name: 'Bob',
-      email: 'bob@example.com',
-      active_count: 1
-    }
-  ]
-}
-
 const BUDGET_MODE_USAGE: OrgTerminalUsage = {
   organization_id: 'org-1',
   plan_name: 'School',
   is_fallback: false,
-  active_terminals: 3,
-  max_terminals: 0, // unused in budget mode
   quota: {
     max_cpu: 12,
     max_memory_mb: 24576, // 24 GiB
@@ -115,36 +90,6 @@ const BUDGET_MODE_USAGE: OrgTerminalUsage = {
 describe('OrgTerminalUsagePanel', () => {
   beforeEach(() => {
     getOrgTerminalUsageMock.mockReset()
-  })
-
-  describe('count mode (legacy)', () => {
-    it('renders the legacy progress bar with active/max counts', async () => {
-      getOrgTerminalUsageMock.mockResolvedValue(COUNT_MODE_USAGE)
-      const wrapper = mountPanel()
-      await flushPromises()
-
-      // Expand
-      await wrapper.find('.collapsible-header').trigger('click')
-      await flushPromises()
-
-      expect(wrapper.find('.progress-section').exists()).toBe(true)
-      expect(wrapper.find('.progress-fill').exists()).toBe(true)
-
-      // Budget-specific summary should NOT render
-      expect(wrapper.find('[data-testid="budget-summary"]').exists()).toBe(false)
-      expect(wrapper.find('[data-testid="size-table"]').exists()).toBe(false)
-    })
-
-    it('hides the per-user CPU/RAM columns in count mode', async () => {
-      getOrgTerminalUsageMock.mockResolvedValue(COUNT_MODE_USAGE)
-      const wrapper = mountPanel()
-      await flushPromises()
-      await wrapper.find('.collapsible-header').trigger('click')
-      await flushPromises()
-
-      expect(wrapper.find('[data-testid="user-active-cpu"]').exists()).toBe(false)
-      expect(wrapper.find('[data-testid="user-active-memory"]').exists()).toBe(false)
-    })
   })
 
   describe('budget mode', () => {
@@ -236,28 +181,5 @@ describe('OrgTerminalUsagePanel', () => {
       expect(summary.text().toLowerCase()).toContain('no remaining')
     })
 
-    it('renders count mode when usage has no quota field (count-mode plans)', async () => {
-      // Budget mode is signalled structurally by the presence of the `quota`
-      // block. Count-mode plans omit it entirely — there is no `scope:
-      // "unlimited"` sentinel anymore (see MR !237 / C8).
-      const noQuota: OrgTerminalUsage = {
-        ...BUDGET_MODE_USAGE,
-        // Drop both budget fields so the response matches a real count-mode payload.
-        quota: undefined,
-        remaining_by_size: undefined,
-        max_terminals: 10
-      }
-      getOrgTerminalUsageMock.mockResolvedValue(noQuota)
-      const wrapper = mountPanel()
-      await flushPromises()
-      await wrapper.find('.collapsible-header').trigger('click')
-      await flushPromises()
-
-      // Should render the legacy progress bar — and none of the budget-mode UI.
-      expect(wrapper.find('.progress-section').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="size-table"]').exists()).toBe(false)
-      expect(wrapper.find('[data-testid="budget-summary"]').exists()).toBe(false)
-      expect(wrapper.find('[data-testid="advanced-quota"]').exists()).toBe(false)
-    })
   })
 })

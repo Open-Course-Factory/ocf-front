@@ -1,13 +1,11 @@
 /**
- * Tests for the budget-aware rendering of SessionComposer (MR-FRONT-A).
+ * Tests for the budget-aware rendering of SessionComposer.
  *
  * Covers:
- *   - In budget mode (top-level `quota` present + per-size `remaining_count`),
- *     each pill renders a `×N` badge.
+ *   - Each pill renders a `×N` badge for the per-size `remaining_count`.
  *   - Sizes whose `remaining_count === 0` are rendered disabled (cannot be
  *     selected).
- *   - The top-line "You can spawn …" summary is shown only in budget mode.
- *   - In count mode (no `quota`, no `remaining_count`), no badge / no summary.
+ *   - The top-line "You can spawn …" summary is shown for any non-empty budget.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -203,27 +201,6 @@ describe('SessionComposer — budget mode', () => {
     for (const p of disabledPills) {
       expect(p.attributes('disabled')).toBeDefined()
     }
-  })
-
-  it('does NOT render badges or summary in count mode (no quota, no remaining_count)', async () => {
-    mockGetSessionOptions.mockResolvedValue({
-      distribution: ubuntu,
-      allowed_sizes: [
-        size('xs', {}),
-        size('s', {}),
-        size('m', {}),
-      ],
-      allowed_features: [],
-      // quota is intentionally omitted (count mode / legacy plan)
-    })
-
-    const wrapper = mountComposer()
-    await flushPromises()
-    await flushPromises()
-    await flushPromises()
-
-    expect(wrapper.find('.pill-badge').exists()).toBe(false)
-    expect(wrapper.find('.budget-summary').exists()).toBe(false)
   })
 
   it('orders pills descending by capacity in budget mode (XL first)', async () => {

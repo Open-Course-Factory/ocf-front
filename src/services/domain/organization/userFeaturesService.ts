@@ -30,14 +30,6 @@ export const userFeaturesService = {
   },
 
   /**
-   * Get max concurrent terminals allowed for user
-   */
-  async getMaxConcurrentTerminals(): Promise<number> {
-    const features = await this.getUserEffectiveFeatures()
-    return features.effective_features.max_concurrent_terminals
-  },
-
-  /**
    * Get max courses allowed for user
    */
   async getMaxCourses(): Promise<number> {

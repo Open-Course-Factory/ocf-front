@@ -107,19 +107,6 @@ export function formatMemoryMb(mb: number): string {
 }
 
 /**
- * Single source of truth for the count-mode vs budget-mode distinction.
- *
- * Budget mode is signalled structurally by the presence of the top-level
- * `quota` block in the session-options / org-usage response. Count mode is the
- * absence of that field. This keeps consumers free of magic sentinel checks
- * (the previous `scope === 'unlimited'` variant caused C8 — two callers
- * disagreed on the rule).
- */
-export function isBudgetMode(response?: { quota?: unknown } | null): boolean {
-  return response?.quota != null
-}
-
-/**
  * Canonical size catalog used by `formatBudgetAsSizes` and the admin
  * plan-editor composer.
  *
@@ -202,22 +189,18 @@ export function computeMaxFromRows(
  * sizes in descending capacity order, formatted as "N SIZE" and joined by
  * the localized joiner.
  *
- * Returns the empty string when:
- *   - the plan is in count mode (`quota_model !== 'budget'`), OR
- *   - both `max_cpu` and `max_memory_mb` are 0 (unlimited budget — caller
- *     renders "Unlimited capacity" instead).
+ * Returns the empty string when both `max_cpu` and `max_memory_mb` are 0
+ * (unlimited budget — caller renders "Unlimited capacity" instead).
  *
  * @param plan - the subscription plan (only the budget fields are read)
  * @param catalog - canonical size catalog (use {@link CANONICAL_SIZE_CATALOG})
  * @param joiner - localized "OR" / "OU" word (caller passes the translated value)
  */
 export function formatBudgetAsSizes(
-  plan: { max_cpu?: number; max_memory_mb?: number; quota_model?: string },
+  plan: { max_cpu?: number; max_memory_mb?: number },
   catalog: CanonicalSizeCatalog,
   joiner: string
 ): string {
-  if (plan.quota_model !== 'budget') return ''
-
   const maxCpu = plan.max_cpu ?? 0
   const maxMemoryMb = plan.max_memory_mb ?? 0
   if (maxCpu === 0 && maxMemoryMb === 0) return ''

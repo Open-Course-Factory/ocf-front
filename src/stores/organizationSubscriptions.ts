@@ -146,10 +146,8 @@ export const useOrganizationSubscriptionsStore = defineStore('organizationSubscr
           has_active_subscription: true,
           features: ['advanced_terminals', 'multiple_groups', 'api_access'],
           usage_limits: {
-            max_concurrent_terminals: 10,
             max_session_duration_minutes: 240,
             max_courses: 50,
-            allowed_machine_sizes: ['XS', 'S', 'M', 'L'],
             network_access_enabled: true,
             data_persistence_enabled: true,
             data_persistence_gb: 50,

@@ -32,9 +32,7 @@ export interface User extends BaseEntity {
   max_terminals?: number
   can_export_courses?: boolean
   can_use_api?: boolean
-  max_concurrent_terminals?: number
   max_session_duration_minutes?: number
-  allowed_machine_sizes?: string[]
   network_access_enabled?: boolean
   data_persistence_enabled?: boolean
   data_persistence_gb?: number

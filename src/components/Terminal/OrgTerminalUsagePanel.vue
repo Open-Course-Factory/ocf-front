@@ -15,12 +15,9 @@
       <i class="fas" :class="isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
       <i class="fas fa-users-cog header-icon"></i>
       {{ t('orgTerminalUsage.title') }}
-      <span v-if="!loading && usageData && !isBudgetMode" class="usage-badge" :class="badgeColorClass">
-        {{ usageData.active_terminals }}/{{ usageData.max_terminals }}
-      </span>
-      <span v-else-if="!loading && usageData && isBudgetMode" class="usage-badge badge-budget">
+      <span v-if="!loading && usageData" class="usage-badge badge-budget">
         <i class="fas fa-coins"></i>
-        {{ usageData.active_terminals }}
+        {{ totalActiveSessions }}
       </span>
       <span v-else-if="loading" class="usage-badge">
         <i class="fas fa-spinner fa-spin"></i>
@@ -68,32 +65,7 @@
           </button>
         </div>
 
-        <!-- Warning banner -->
-        <div v-if="showWarning" class="warning-banner">
-          <i class="fas fa-exclamation-triangle"></i>
-          {{ t('orgTerminalUsage.warning') }}
-        </div>
-
-        <!-- COUNT MODE (legacy single bar) -->
-        <div v-if="!isBudgetMode" class="progress-section">
-          <div class="progress-label">
-            <span class="progress-text">
-              {{ t('orgTerminalUsage.inUse', { active: usageData.active_terminals, max: usageData.max_terminals }) }}
-            </span>
-            <span class="progress-pct" :class="progressColorClass">{{ usagePct }}%</span>
-          </div>
-          <div class="progress-track">
-            <div
-              class="progress-fill"
-              :class="progressColorClass"
-              :style="{ width: `${Math.min(usagePct, 100)}%` }"
-            ></div>
-          </div>
-        </div>
-
-        <!-- BUDGET MODE -->
-        <template v-else>
-          <!-- Top-line remaining-capacity summary -->
+        <!-- Top-line remaining-capacity summary -->
           <div class="budget-summary" data-testid="budget-summary">
             <i class="fas fa-coins"></i>
             <span v-if="budgetSummary === null">{{ t('orgTerminalUsage.noRemaining') }}</span>
@@ -151,7 +123,7 @@
                     :style="{ width: `${cpuUsedPct}%` }"
                   ></div>
                 </div>
-                <span class="advanced-value">{{ usageData.quota!.used_cpu }} / {{ usageData.quota!.max_cpu }} vCPU</span>
+                <span class="advanced-value">{{ usageData.quota.used_cpu }} / {{ usageData.quota.max_cpu }} vCPU</span>
               </div>
               <div class="advanced-row">
                 <span class="advanced-label">{{ t('orgTerminalUsage.advancedMemory') }}</span>
@@ -162,11 +134,10 @@
                     :style="{ width: `${memUsedPct}%` }"
                   ></div>
                 </div>
-                <span class="advanced-value">{{ formatMemoryMb(usageData.quota!.used_memory_mb) }} / {{ formatMemoryMb(usageData.quota!.max_memory_mb) }}</span>
+                <span class="advanced-value">{{ formatMemoryMb(usageData.quota.used_memory_mb) }} / {{ formatMemoryMb(usageData.quota.max_memory_mb) }}</span>
               </div>
             </div>
           </details>
-        </template>
 
         <!-- User breakdown -->
         <div class="users-section">
@@ -192,7 +163,6 @@
               </div>
               <div class="user-metrics">
                 <span
-                  v-if="isBudgetMode && user.active_cpu !== undefined"
                   class="user-metric user-metric-cpu"
                   :title="t('orgTerminalUsage.advancedCpu')"
                   data-testid="user-active-cpu"
@@ -202,7 +172,6 @@
                   <span class="user-metric-unit">{{ t('orgTerminalUsage.userActiveCpu') }}</span>
                 </span>
                 <span
-                  v-if="isBudgetMode && user.active_memory_mb !== undefined"
                   class="user-metric user-metric-memory"
                   :title="t('orgTerminalUsage.advancedMemory')"
                   data-testid="user-active-memory"
@@ -237,7 +206,6 @@ import { useTranslations } from '../../composables/useTranslations'
 import { terminalService } from '../../services/domain/terminal'
 import { usePermissionsStore } from '../../stores/permissions'
 import {
-  isBudgetMode as isBudgetModeResponse,
   summarizeRemaining,
   formatMemoryMb,
   capacityRank,
@@ -254,8 +222,6 @@ const { t } = useTranslations({
   en: {
     orgTerminalUsage: {
       title: 'Org Terminal Usage',
-      inUse: '{active} of {max} terminals in use',
-      warning: 'Warning: approaching terminal limit',
       noActiveTerminals: 'No active terminals',
       usersHeader: 'Active users',
       fallback: 'fallback plan',
@@ -278,8 +244,6 @@ const { t } = useTranslations({
   fr: {
     orgTerminalUsage: {
       title: 'Utilisation des terminaux',
-      inUse: '{active} terminaux sur {max} en cours d\'utilisation',
-      warning: 'Attention : limite presque atteinte',
       noActiveTerminals: 'Aucun terminal actif',
       usersHeader: 'Utilisateurs actifs',
       fallback: 'plan de secours',
@@ -318,36 +282,13 @@ const canManage = computed(() => {
   return permissionsStore.canManageOrganization(props.organizationId)
 })
 
-const usagePct = computed(() => {
-  if (!usageData.value || usageData.value.max_terminals <= 0) return 0
-  return Math.round((usageData.value.active_terminals / usageData.value.max_terminals) * 100)
+const totalActiveSessions = computed<number>(() => {
+  const users = usageData.value?.users
+  if (!users) return 0
+  return users.reduce((sum, u) => sum + u.active_count, 0)
 })
-
-const progressColorClass = computed(() => {
-  const pct = usagePct.value
-  if (pct > 80) return 'color-danger'
-  if (pct >= 60) return 'color-warning'
-  return 'color-success'
-})
-
-const badgeColorClass = computed(() => {
-  const pct = usagePct.value
-  if (pct > 80) return 'badge-danger'
-  if (pct >= 60) return 'badge-warning'
-  return 'badge-success'
-})
-
-const showWarning = computed(() => !isBudgetMode.value && usagePct.value >= 80)
-
-/**
- * Budget mode is signalled structurally by the presence of the top-level
- * `quota` block — see `utils/quotaFormatters.ts:isBudgetMode`. Count-mode
- * plans omit the field entirely.
- */
-const isBudgetMode = computed<boolean>(() => isBudgetModeResponse(usageData.value))
 
 const budgetSummary = computed<string | null>(() => {
-  if (!isBudgetMode.value) return null
   // Shared helper joins with the passed joiner — pass "/" to preserve the
   // existing "1 XL / 2 L / 3 M" layout (composer uses localized "OR" / "OU").
   // It returns '' for the no-remaining-capacity case; we convert to null so

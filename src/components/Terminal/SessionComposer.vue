@@ -59,12 +59,12 @@
         <div v-else-if="sessionOptions" class="size-strip">
           <i class="fas fa-microchip config-icon"></i>
           <span class="config-label">{{ t('sessionComposer.size') }}</span>
-          <!-- Budget summary line — only in budget mode, hidden when budget exhausted (handled by empty string). -->
-          <p v-if="budgetModeActive && budgetSummary" class="budget-summary">
+          <!-- Budget summary line — hidden when budget exhausted (handled by empty string). -->
+          <p v-if="budgetSummary" class="budget-summary">
             <i class="fas fa-bolt budget-summary-icon"></i>
             {{ t('sessionComposer.youCanSpawn', { summary: budgetSummary }) }}
           </p>
-          <p v-else-if="budgetModeActive && !budgetSummary" class="budget-summary budget-summary-exhausted">
+          <p v-else class="budget-summary budget-summary-exhausted">
             <i class="fas fa-exclamation-triangle budget-summary-icon"></i>
             {{ t('sessionComposer.budgetAllExhausted') }}
           </p>
@@ -77,16 +77,15 @@
               :class="{
                 selected: selectedSize?.key === size.key,
                 disabled: !size.allowed,
-                exhausted: budgetModeActive && size.remaining_count === 0
+                exhausted: size.remaining_count === 0
               }"
-              :disabled="!size.allowed || disabled || (budgetModeActive && size.remaining_count === 0)"
+              :disabled="!size.allowed || disabled || size.remaining_count === 0"
               :title="getSizeUseCase(size.key) + ' — ' + size.cpu + ' CPU ' + size.cpu_allowance + ', ' + size.memory + (!size.allowed ? ' — ' + getReasonText(size.reason) : '')"
-              @click="size.allowed && !(budgetModeActive && size.remaining_count === 0) && selectSize(size)"
+              @click="size.allowed && size.remaining_count !== 0 && selectSize(size)"
             >
               {{ size.key.toUpperCase() }}
               <i v-if="size.key === selectedDistribution?.default_size_key" class="fas fa-star pill-recommended" :title="t('sessionComposer.recommended')"></i>
               <span
-                v-if="typeof size.remaining_count === 'number'"
                 class="pill-badge"
                 :class="{ 'pill-badge-zero': size.remaining_count === 0 }"
                 :title="t('sessionComposer.remainingBadge', { n: size.remaining_count })"
@@ -141,7 +140,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { terminalService } from '../../services/domain/terminal'
-import { summarizeRemaining, isBudgetMode, capacityRank } from '../../utils/quotaFormatters'
+import { summarizeRemaining, capacityRank } from '../../utils/quotaFormatters'
 import type { Distribution, SessionOptionSize, SessionOptionFeature, SessionOptionsResponse } from '../../types/terminal'
 
 const props = defineProps<{
@@ -259,8 +258,6 @@ const availableFeatures = computed<SessionOptionFeature[]>(
   () => (sessionOptions.value?.allowed_features ?? []).filter(f => f.key !== 'persistence')
 )
 
-const budgetModeActive = computed(() => isBudgetMode(sessionOptions.value ?? undefined))
-
 // Capacity-descending order (xl > l > m > s > xs) is provided by
 // `capacityRank` from `utils/quotaFormatters.ts` — single source of truth.
 
@@ -272,18 +269,14 @@ const visibleSizes = computed(() => {
     // Hide locked sizes for org-managed plans (students can't upgrade)
     sizes = sizes.filter(s => s.allowed)
   }
-  // In budget mode, sort descending by capacity (xl, l, m, s, xs) so the
-  // largest available size is visually first. In count mode, keep the
-  // server-provided order (sort_order).
-  if (budgetModeActive.value) {
-    sizes = [...sizes].sort((a, b) => capacityRank(a.key) - capacityRank(b.key))
-  }
-  return sizes
+  // Sort descending by capacity (xl, l, m, s, xs) so the largest available
+  // size is visually first.
+  return [...sizes].sort((a, b) => capacityRank(a.key) - capacityRank(b.key))
 })
 
-// Top-line summary string — only shown in budget mode.
+// Top-line size-count summary of remaining capacity.
 const budgetSummary = computed(() => {
-  if (!budgetModeActive.value || !sessionOptions.value) return ''
+  if (!sessionOptions.value) return ''
   return summarizeRemaining(sessionOptions.value.allowed_sizes, t('sessionComposer.or'))
 })
 
@@ -320,11 +313,10 @@ async function selectDistribution(dist: Distribution) {
   loadingOptions.value = true
   try {
     sessionOptions.value = await terminalService.getSessionOptions(dist.name, props.backendId, props.organizationId)
-    // A size is selectable when the plan allows it AND, in budget mode, there
-    // is at least one remaining_count > 0. In count mode remaining_count is
-    // undefined and the budget check collapses to true.
+    // A size is selectable when the plan allows it AND there is at least one
+    // remaining_count > 0 in the budget envelope.
     const isSelectable = (s: SessionOptionSize) =>
-      s.allowed && (s.remaining_count === undefined || s.remaining_count > 0)
+      s.allowed && s.remaining_count > 0
     // Auto-select default size if selectable
     if (dist.default_size_key && sessionOptions.value) {
       const defaultSize = sessionOptions.value.allowed_sizes.find(
