@@ -157,10 +157,8 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { terminalService } from '../../services/domain/terminal'
 import {
-  formatBudgetAsSizes,
   formatElapsed,
-  formatMemoryMb,
-  CANONICAL_SIZE_CATALOG
+  formatMemoryMb
 } from '../../utils/quotaFormatters'
 import { formatMcpuAsVcpu } from '../../utils/formatters'
 import type { MyTerminalUsageResponse } from '../../types/terminal'
@@ -172,7 +170,6 @@ const { t } = useTranslations({
       refreshUsage: 'Refresh usage',
       capacity: 'Capacity',
       unlimited: 'Unlimited',
-      or: 'OR',
       sessionDuration: 'session duration',
       planSource: 'Plan',
       sourcePersonal: 'personal',
@@ -196,7 +193,6 @@ const { t } = useTranslations({
       refreshUsage: 'Actualiser l\'utilisation',
       capacity: 'Capacité',
       unlimited: 'Illimité',
-      or: 'OU',
       sessionDuration: 'durée de session',
       planSource: 'Plan',
       sourcePersonal: 'personnel',
@@ -301,12 +297,9 @@ const memUsedPct = computed<number>(() => {
 const capacityLabel = computed(() => {
   const u = usage.value
   if (!u) return '—'
-  const summary = formatBudgetAsSizes(
-    { max_cpu: u.max_cpu, max_memory_mb: u.max_memory_mb },
-    CANONICAL_SIZE_CATALOG,
-    t('terminals.or')
-  )
-  return summary || t('terminals.unlimited')
+  const cpuPart = u.max_cpu === 0 ? t('terminals.unlimited') : `${formatMcpuAsVcpu(u.max_cpu)} vCPU`
+  const memPart = u.max_memory_mb === 0 ? t('terminals.unlimited') : formatMemoryMb(u.max_memory_mb)
+  return `${cpuPart}, ${memPart}`
 })
 
 const sessionDurationLabel = computed(() => {
