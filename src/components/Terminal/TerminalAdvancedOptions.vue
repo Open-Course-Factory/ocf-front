@@ -35,7 +35,7 @@
           :value="modelValue"
           type="text"
           maxlength="255"
-          :placeholder="t('terminalStarter.namePlaceholder')"
+          :placeholder="effectiveNamePlaceholder"
           :disabled="disabled"
           @input="handleInput"
         />
@@ -171,7 +171,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import FormGroup from '../UI/FormGroup.vue'
 import Button from '../UI/Button.vue'
@@ -190,6 +190,13 @@ interface Props {
   backends?: Backend[]
   selectedBackendId?: string
   showBackendSelector?: boolean
+  /**
+   * Optional override for the terminal-name input placeholder.
+   * Parent computes a contextual prefill (e.g. distro-size-date) to hint
+   * the user about the default name that will be sent if the field stays empty.
+   * Falls back to the generic localized placeholder when blank.
+   */
+  namePlaceholder?: string
   /** Whether the active subscription plan supports persistent sessions. */
   persistencePlanEnabled?: boolean
   /** Current persistence mode selection. */
@@ -202,7 +209,7 @@ interface Props {
   forcedEphemeral?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   exerciseRef: '',
   hostname: '',
   packages: '',
@@ -210,6 +217,7 @@ withDefaults(defineProps<Props>(), {
   backends: () => [],
   selectedBackendId: '',
   showBackendSelector: false,
+  namePlaceholder: '',
   persistencePlanEnabled: false,
   persistenceMode: 'ephemeral',
   forcedEphemeral: false
@@ -279,6 +287,13 @@ const { t } = useTranslations({
 })
 
 const isExpanded = ref(false)
+
+// Prefer the parent-provided contextual placeholder (e.g. distro-size-date)
+// over the generic localized one — the parent signals it by passing a
+// non-empty string. Empty string falls back to the i18n default.
+const effectiveNamePlaceholder = computed(() =>
+  props.namePlaceholder?.trim() || t('terminalStarter.namePlaceholder')
+)
 
 function handleInput(event: Event) {
   const target = event.target as HTMLInputElement
