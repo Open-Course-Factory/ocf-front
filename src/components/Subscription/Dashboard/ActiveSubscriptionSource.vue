@@ -50,22 +50,14 @@
       <div v-if="hasFeatures" class="feature-highlights">
         <h5>{{ t('subscriptions.keyFeatures') }}</h5>
         <div class="features-grid">
-          <!-- Budget-mode capacity (size-count language) -->
+          <!-- Capacity (size-count language) -->
           <div
-            v-if="isBudgetPlan"
+            v-if="budgetCapacityText"
             class="feature-item budget-capacity"
             :title="t('pricingPlanCard.capacityTooltip')"
           >
             <i class="fas fa-server"></i>
             <span>{{ budgetCapacityText }}</span>
-          </div>
-          <!-- Legacy count-mode: concurrent terminals -->
-          <div
-            v-else-if="primarySubscription.subscription_plan?.max_concurrent_terminals"
-            class="feature-item"
-          >
-            <i class="fas fa-terminal"></i>
-            <span>{{ primarySubscription.subscription_plan.max_concurrent_terminals === -1 ? '∞' : primarySubscription.subscription_plan.max_concurrent_terminals }} {{ t('subscriptions.terminals') }}</span>
           </div>
           <div v-if="primarySubscription.subscription_plan?.max_session_duration_minutes" class="feature-item">
             <i class="fas fa-clock"></i>
@@ -120,7 +112,6 @@ const { t } = useTranslations({
       highestOfN: 'highest of {n} subscriptions',
       providedBy: 'Provided by',
       keyFeatures: 'Key Features',
-      terminals: 'concurrent terminals',
       storage: 'storage',
       networkAccess: 'Network access',
       sessionDuration: 'session duration',
@@ -147,7 +138,6 @@ const { t } = useTranslations({
       highestOfN: 'la plus élevée sur {n} abonnements',
       providedBy: 'Fourni par',
       keyFeatures: 'Fonctionnalités clés',
-      terminals: 'terminaux simultanés',
       storage: 'stockage',
       networkAccess: 'Accès réseau',
       sessionDuration: 'durée de session',
@@ -167,23 +157,9 @@ const { t } = useTranslations({
   }
 })
 
-const hasFeatures = computed(() => {
-  return !!(
-    isBudgetPlan.value ||
-    props.primarySubscription?.subscription_plan?.max_concurrent_terminals ||
-    props.primarySubscription?.subscription_plan?.max_session_duration_minutes ||
-    props.primarySubscription?.subscription_plan?.data_persistence_gb ||
-    props.primarySubscription?.subscription_plan?.network_access_enabled
-  )
-})
-
-const isBudgetPlan = computed(() => {
-  return props.primarySubscription?.subscription_plan?.quota_model === 'budget'
-})
-
 const budgetCapacityText = computed(() => {
   const plan = props.primarySubscription?.subscription_plan
-  if (!plan || plan.quota_model !== 'budget') return ''
+  if (!plan) return ''
   const maxCpu = plan.max_cpu ?? 0
   const maxMemoryMb = plan.max_memory_mb ?? 0
   if (maxCpu === 0 && maxMemoryMb === 0) {
@@ -192,6 +168,15 @@ const budgetCapacityText = computed(() => {
   const summary = formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, t('pricingPlanCard.or'))
   if (!summary) return ''
   return t('pricingPlanCard.budgetCapacity', { summary })
+})
+
+const hasFeatures = computed(() => {
+  return !!(
+    budgetCapacityText.value ||
+    props.primarySubscription?.subscription_plan?.max_session_duration_minutes ||
+    props.primarySubscription?.subscription_plan?.data_persistence_gb ||
+    props.primarySubscription?.subscription_plan?.network_access_enabled
+  )
 })
 
 function getPlanName(): string {

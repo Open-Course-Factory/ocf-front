@@ -1,15 +1,12 @@
 /**
- * Tests for the budget-mode capacity rendering on SubscriptionCard.vue.
+ * Tests for the capacity rendering on SubscriptionCard.vue.
  *
  * Contract:
- *   - For budget-mode plans (`quota_model === 'budget'`), the card renders
- *     a size-count summary like "Includes up to 1 XL OR 2 L OR 4 M
- *     simultaneous sessions" — NOT the legacy "N concurrent terminals"
- *     wording.
- *   - For count-mode plans, the legacy "concurrent terminals" and
- *     "allowed sizes" rows still render and the budget summary is absent.
- *   - For budget-mode plans with max_cpu === 0 AND max_memory_mb === 0
- *     (unlimited), the card renders the "Unlimited capacity" string.
+ *   - For plans with a non-zero budget, the card renders a size-count
+ *     summary like "Includes up to 1 XL OR 2 L OR 4 M simultaneous
+ *     sessions".
+ *   - For plans with max_cpu === 0 AND max_memory_mb === 0 (unlimited),
+ *     the card renders the "Unlimited capacity" string.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -45,9 +42,7 @@ const subscriptionPlansMessages = {
   en: {
     subscriptionPlans: {
       current_subscription_plan: 'Current plan',
-      concurrentTerminals: 'concurrent terminals',
       sessionDuration: 'session duration',
-      allowedSizes: 'allowed sizes',
       storage: 'storage',
       networkAccess: 'Network Access',
       planFeatures: 'Plan Features',
@@ -59,9 +54,7 @@ const subscriptionPlansMessages = {
   fr: {
     subscriptionPlans: {
       current_subscription_plan: 'Plan actuel',
-      concurrentTerminals: 'terminaux simultanés',
       sessionDuration: 'durée de session',
-      allowedSizes: 'tailles autorisées',
       storage: 'stockage',
       networkAccess: 'Accès Réseau',
       planFeatures: 'Fonctionnalités du Plan',
@@ -119,7 +112,6 @@ describe('SubscriptionCard — budget capacity rendering', () => {
       subscription_plan: {
         id: 'plan-1',
         name: 'Solo',
-        quota_model: 'budget',
         max_cpu: 8,
         max_memory_mb: 4096,
         max_session_duration_minutes: 120,
@@ -147,7 +139,6 @@ describe('SubscriptionCard — budget capacity rendering', () => {
           subscription_plan: {
             id: 'plan-1',
             name: 'Solo',
-            quota_model: 'budget',
             max_cpu: 8,
             max_memory_mb: 4096,
           },
@@ -175,7 +166,6 @@ describe('SubscriptionCard — budget capacity rendering', () => {
       subscription_plan: {
         id: 'plan-1',
         name: 'Enterprise',
-        quota_model: 'budget',
         max_cpu: 0,
         max_memory_mb: 0,
       },
@@ -184,46 +174,4 @@ describe('SubscriptionCard — budget capacity rendering', () => {
     expect(wrapper.text()).toContain('Unlimited capacity')
   })
 
-  it('renders the legacy concurrent-terminals wording for count-mode plans', () => {
-    const wrapper = mountCard({
-      id: 'sub-1',
-      status: 'active',
-      subscription_type: 'personal',
-      subscription_plan_id: 'plan-1',
-      subscription_plan: {
-        id: 'plan-1',
-        name: 'Starter',
-        quota_model: 'count',
-        max_concurrent_terminals: 3,
-        allowed_machine_sizes: ['S', 'M'],
-        max_session_duration_minutes: 60,
-      },
-    })
-
-    const text = wrapper.text()
-    expect(text).toContain('3')
-    expect(text).toContain('concurrent terminals')
-    // Budget-mode summary must NOT render for count plans.
-    expect(text).not.toContain('simultaneous sessions')
-    expect(text).not.toContain('OR')
-  })
-
-  it('does not render the budget summary when quota_model is missing (legacy plan)', () => {
-    // Plans without quota_model are treated as count-mode by the helper.
-    const wrapper = mountCard({
-      id: 'sub-1',
-      status: 'active',
-      subscription_type: 'personal',
-      subscription_plan_id: 'plan-1',
-      subscription_plan: {
-        id: 'plan-1',
-        name: 'Old Plan',
-        max_concurrent_terminals: 2,
-        allowed_machine_sizes: ['S'],
-      },
-    })
-
-    expect(wrapper.text()).not.toContain('simultaneous sessions')
-    expect(wrapper.text()).not.toContain('Unlimited capacity')
-  })
 })

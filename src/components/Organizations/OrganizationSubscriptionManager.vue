@@ -87,9 +87,9 @@
                 <span class="limit-value">{{ subscription.subscription_plan.max_concurrent_users }}</span>
               </div>
               <div class="limit-item">
-                <i class="fas fa-laptop-code"></i>
-                <span class="limit-label">{{ t('subscription.maxTerminals') }}</span>
-                <span class="limit-value">{{ subscription.subscription_plan.max_concurrent_terminals === -1 ? '∞' : subscription.subscription_plan.max_concurrent_terminals }}</span>
+                <i class="fas fa-server"></i>
+                <span class="limit-label">{{ t('subscription.capacity') }}</span>
+                <span class="limit-value">{{ capacityLabel(subscription.subscription_plan) }}</span>
               </div>
               <div class="limit-item">
                 <i class="fas fa-clock"></i>
@@ -225,6 +225,7 @@ import { useFormatters } from '../../composables/useFormatters'
 import { useNotification } from '../../composables/useNotification'
 import { useOrganizationSubscriptionsStore } from '../../stores/organizationSubscriptions'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
+import { formatBudgetAsSizes, CANONICAL_SIZE_CATALOG } from '../../utils/quotaFormatters'
 import type { OrganizationSubscription, SubscriptionPlan } from '../../types'
 
 interface Props {
@@ -239,6 +240,14 @@ const { showSuccess } = useNotification()
 const orgSubStore = useOrganizationSubscriptionsStore()
 const plansStore = useSubscriptionPlansStore()
 
+// Customer-facing capacity label: render the plan's CPU/RAM budget as a
+// size-count summary (e.g. "3 L OR 6 M OR 12 S"). 0/0 budget = unlimited.
+function capacityLabel(plan: SubscriptionPlan | undefined | null): string {
+  if (!plan) return '—'
+  const summary = formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, t('subscription.or'))
+  return summary || t('subscription.unlimited')
+}
+
 const { t } = useTranslations({
   en: {
     subscription: {
@@ -248,7 +257,8 @@ const { t } = useTranslations({
       features: 'Features',
       maxCourses: 'Max Courses',
       maxUsers: 'Max Users',
-      maxTerminals: 'Max Terminals',
+      capacity: 'Capacity',
+      or: 'OR',
       sessionDuration: 'Session Duration',
       currentPeriod: 'Current Period',
       cancelScheduled: 'Cancellation scheduled for',
@@ -289,7 +299,8 @@ const { t } = useTranslations({
       features: 'Fonctionnalités',
       maxCourses: 'Cours max',
       maxUsers: 'Utilisateurs max',
-      maxTerminals: 'Terminaux max',
+      capacity: 'Capacité',
+      or: 'OU',
       sessionDuration: 'Durée de session',
       currentPeriod: 'Période actuelle',
       cancelScheduled: 'Annulation prévue pour',

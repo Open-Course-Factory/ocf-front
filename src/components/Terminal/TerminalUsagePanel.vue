@@ -14,7 +14,10 @@
     >
       <i class="fas" :class="isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
       {{ t('terminals.currentUsage') }}
-      <span class="usage-badge">{{ currentCount }}/{{ isUnlimited ? '∞' : maxCount }}</span>
+      <span class="usage-badge">
+        <i class="fas fa-coins"></i>
+        {{ currentCount }}
+      </span>
     </button>
     <div v-show="isExpanded" class="collapsible-content">
       <div class="usage-header">
@@ -43,16 +46,26 @@
         </div>
         <div class="usage-item">
           <span class="usage-label">
+            <i class="fas fa-server"></i>
+            {{ t('terminals.capacity') }}:
+          </span>
+          <span class="usage-value">
+            <span v-if="loading || refreshing" class="text-muted">
+              <i class="fas fa-spinner fa-spin"></i>
+            </span>
+            <span v-else>{{ capacityLabel }}</span>
+          </span>
+        </div>
+        <div class="usage-item">
+          <span class="usage-label">
             <i class="fas fa-terminal"></i>
-            {{ capitalizeFirst(t('terminals.concurrentTerminals')) }}:
+            {{ t('terminals.activeNow') }}:
           </span>
           <span class="usage-value">
             <span v-if="loading || refreshing" class="text-muted">
               <i class="fas fa-spinner fa-spin"></i>
             </span>
             <span v-else>{{ currentCount }}</span>
-            / {{ isUnlimited ? '∞' : maxCount }}
-            <small class="text-muted">({{ t('terminals.planLimit') }})</small>
           </span>
         </div>
         <div class="usage-item">
@@ -62,15 +75,6 @@
           </span>
           <span class="usage-value">
             {{ sessionDuration }}h
-          </span>
-        </div>
-        <div v-if="allowedSizes.length > 0" class="usage-item">
-          <span class="usage-label">
-            <i class="fas fa-server"></i>
-            {{ t('terminalStarter.allowedSizes') }}:
-          </span>
-          <span class="usage-value">
-            {{ allowedSizes.join(', ') }}
           </span>
         </div>
       </div>
@@ -88,6 +92,7 @@
 import { ref, computed } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import Button from '../UI/Button.vue'
+import { formatBudgetAsSizes, CANONICAL_SIZE_CATALOG } from '../../utils/quotaFormatters'
 import type { Subscription } from '../../types'
 
 defineEmits<{
@@ -99,16 +104,15 @@ const { t } = useTranslations({
     terminals: {
       currentUsage: 'Current Usage',
       refreshUsage: 'Refresh usage',
-      concurrentTerminals: 'concurrent terminals',
+      capacity: 'Capacity',
+      activeNow: 'Active now',
+      unlimited: 'Unlimited',
+      or: 'OR',
       sessionDuration: 'session duration',
-      planLimit: 'plan limit',
       planSource: 'Plan',
       sourcePersonal: 'personal',
       sourceOrganization: 'provided by {orgName}',
       autoRefreshInfo: 'Usage data is automatically refreshed every {minutes} minutes.'
-    },
-    terminalStarter: {
-      allowedSizes: 'Allowed Sizes'
     },
     ui: {
       refresh: 'Refresh'
@@ -118,16 +122,15 @@ const { t } = useTranslations({
     terminals: {
       currentUsage: 'Utilisation Actuelle',
       refreshUsage: 'Actualiser l\'utilisation',
-      concurrentTerminals: 'terminaux simultanés',
+      capacity: 'Capacité',
+      activeNow: 'Actifs',
+      unlimited: 'Illimité',
+      or: 'OU',
       sessionDuration: 'durée de session',
-      planLimit: 'limite du plan',
       planSource: 'Plan',
       sourcePersonal: 'personnel',
       sourceOrganization: 'fourni par {orgName}',
       autoRefreshInfo: 'Les données d\'utilisation sont automatiquement actualisées toutes les {minutes} minutes.'
-    },
-    terminalStarter: {
-      allowedSizes: 'Tailles Autorisées'
     },
     ui: {
       refresh: 'Actualiser'
@@ -138,8 +141,6 @@ const { t } = useTranslations({
 interface Props {
   subscription: Subscription | null
   currentCount: number
-  maxCount: number
-  allowedSizes: string[]
   loading: boolean
   refreshing: boolean
   refreshIntervalMinutes: number
@@ -148,7 +149,6 @@ interface Props {
 const props = defineProps<Props>()
 
 const isExpanded = ref(false)
-const isUnlimited = computed(() => !isFinite(props.maxCount))
 
 const planName = computed(() => {
   return props.subscription?.subscription_plan?.name ||
@@ -175,6 +175,16 @@ const sessionDuration = computed(() => {
     return planMinutes / 60
   }
   return props.subscription?.plan_features?.session_duration_hours || 1
+})
+
+// Customer-facing capacity: render the plan's CPU/RAM budget as a size-count
+// summary (e.g. "3 L OR 6 M OR 12 S"). When the budget is 0/0 we treat that as
+// "unlimited" since size-count language cannot meaningfully express "∞".
+const capacityLabel = computed(() => {
+  const plan = props.subscription?.subscription_plan
+  if (!plan) return '—'
+  const summary = formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, t('terminals.or'))
+  return summary || t('terminals.unlimited')
 })
 
 function capitalizeFirst(str: string): string {
@@ -230,6 +240,9 @@ function capitalizeFirst(str: string): string {
   border-radius: var(--border-radius-full);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .usage-header {

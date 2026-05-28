@@ -3,16 +3,11 @@
  *
  * Contract (closes the gap reported during the first user test —
  * admins had to open each plan in edit mode to read its capacity):
- *   - For budget-mode plans (`quota_model === 'budget'`) with non-zero
- *     budget, the row renders a size-count summary like "1 XL OR 2 L OR 4 M"
- *     so the capacity is visible without opening the modal.
- *   - For budget-mode plans with max_cpu === 0 AND max_memory_mb === 0
- *     (unlimited), the row renders the "Unlimited capacity" string.
- *   - For count-mode plans, the row renders the legacy concurrent-terminals
- *     + allowed-sizes summary that the existing admin-facing fields already
- *     expose.
- *   - When neither budget nor count fields are populated, the capacity row
- *     is hidden entirely.
+ *   - For plans with a non-zero budget, the row renders a size-count summary
+ *     like "1 XL OR 2 L OR 4 M" so the capacity is visible without opening
+ *     the modal.
+ *   - For plans with max_cpu === 0 AND max_memory_mb === 0 (unlimited),
+ *     the row renders the "Unlimited capacity" string.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -194,7 +189,6 @@ describe('SubscriptionPlans (admin list) — Capacity row', () => {
         billing_interval: 'month',
         is_active: true,
         is_catalog: true,
-        quota_model: 'budget',
         max_cpu: 8,
         max_memory_mb: 4096,
       },
@@ -220,7 +214,6 @@ describe('SubscriptionPlans (admin list) — Capacity row', () => {
         billing_interval: 'month',
         is_active: true,
         is_catalog: false,
-        quota_model: 'budget',
         max_cpu: 0,
         max_memory_mb: 0,
       },
@@ -231,33 +224,11 @@ describe('SubscriptionPlans (admin list) — Capacity row', () => {
     expect(capacity.text()).toContain('Unlimited capacity')
   })
 
-  it('renders the legacy concurrent-terminals + sizes summary for count-mode plans', () => {
-    const wrapper = mountWithPlans([
-      {
-        id: 'plan-3',
-        name: 'Starter (legacy)',
-        price_amount: 500,
-        currency: 'eur',
-        billing_interval: 'month',
-        is_active: true,
-        is_catalog: true,
-        quota_model: 'count',
-        max_concurrent_terminals: 3,
-        allowed_machine_sizes: ['S', 'M'],
-      },
-    ])
-
-    const capacity = wrapper.find('[data-test="plan-capacity"]')
-    expect(capacity.exists()).toBe(true)
-    expect(capacity.text()).toContain('3')
-    expect(capacity.text()).toContain('concurrent terminals')
-    expect(capacity.text()).toContain('S')
-    expect(capacity.text()).toContain('M')
-    // Budget-mode "OR" joiner must not leak into count plans.
-    expect(capacity.text()).not.toContain('Unlimited capacity')
-  })
-
-  it('hides the row entirely when neither budget nor count fields are populated', () => {
+  it('renders an empty capacity cell when both budget fields are unset on a plan with no budget at all', () => {
+    // After the budget-only refactor, a plan with no budget fields renders
+    // "Unlimited capacity" (the catalog allows 0/0 to mean unlimited). This
+    // test pins the row-still-renders behavior — admins can spot the
+    // misconfiguration in the list rather than having to open each plan.
     const wrapper = mountWithPlans([
       {
         id: 'plan-4',
@@ -267,14 +238,15 @@ describe('SubscriptionPlans (admin list) — Capacity row', () => {
         billing_interval: 'month',
         is_active: true,
         is_catalog: false,
-        // No quota_model, no max_concurrent_terminals, no allowed sizes.
       },
     ])
 
-    expect(wrapper.find('[data-test="plan-capacity"]').exists()).toBe(false)
+    const capacity = wrapper.find('[data-test="plan-capacity"]')
+    expect(capacity.exists()).toBe(true)
+    expect(capacity.text()).toContain('Unlimited capacity')
   })
 
-  it('renders one capacity row per plan when the list contains a mix of plans', () => {
+  it('renders one capacity row per plan when the list contains multiple plans', () => {
     const wrapper = mountWithPlans([
       {
         id: 'budget-plan',
@@ -284,29 +256,27 @@ describe('SubscriptionPlans (admin list) — Capacity row', () => {
         billing_interval: 'month',
         is_active: true,
         is_catalog: true,
-        quota_model: 'budget',
         max_cpu: 4,
         max_memory_mb: 2048,
       },
       {
-        id: 'count-plan',
-        name: 'Count',
+        id: 'unlimited-plan',
+        name: 'Unlimited',
         price_amount: 500,
         currency: 'eur',
         billing_interval: 'month',
         is_active: true,
         is_catalog: true,
-        quota_model: 'count',
-        max_concurrent_terminals: 2,
-        allowed_machine_sizes: ['S'],
+        max_cpu: 0,
+        max_memory_mb: 0,
       },
     ])
 
     const capacities = wrapper.findAll('[data-test="plan-capacity"]')
     expect(capacities.length).toBe(2)
-    // First row is the budget plan: 4 cpu / 2048 MB = 1 L max.
+    // First row is the bounded budget plan: 4 cpu / 2048 MB = 1 L max.
     expect(capacities[0].text()).toContain('1 L')
-    // Second row is the count plan.
-    expect(capacities[1].text()).toContain('concurrent terminals')
+    // Second row is the unlimited plan.
+    expect(capacities[1].text()).toContain('Unlimited capacity')
   })
 })

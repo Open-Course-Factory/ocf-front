@@ -135,34 +135,18 @@
             {{ t('subscriptionPlans.planFeatures') }}
           </h5>
           <div class="features-grid">
-            <!-- Budget-mode capacity (size-count language) -->
+            <!-- Capacity (size-count language) -->
             <div
-              v-if="isBudgetPlan"
+              v-if="budgetCapacityText"
               class="feature-item budget-capacity"
               :title="t('pricingPlanCard.capacityTooltip')"
             >
               <i class="fas fa-server"></i>
               <span>{{ budgetCapacityText }}</span>
             </div>
-            <!-- Legacy count-mode: concurrent terminals -->
-            <div
-              v-else-if="planFeature('concurrent_terminals', 'max_concurrent_terminals')"
-              class="feature-item"
-            >
-              <i class="fas fa-terminal"></i>
-              <span>{{ formatLimit(planFeature('concurrent_terminals', 'max_concurrent_terminals')) }} {{ t('subscriptionPlans.concurrentTerminals') }}</span>
-            </div>
             <div v-if="planFeature('session_duration_hours', 'max_session_duration_minutes')" class="feature-item">
               <i class="fas fa-clock"></i>
               <span>{{ formatDuration(planFeature('session_duration_hours', 'max_session_duration_minutes')) }} {{ t('subscriptionPlans.sessionDuration') }}</span>
-            </div>
-            <!-- Legacy count-mode: allowed machine sizes -->
-            <div
-              v-if="!isBudgetPlan && planFeature('allowed_machine_sizes', 'allowed_machine_sizes')"
-              class="feature-item"
-            >
-              <i class="fas fa-server"></i>
-              <span>{{ planFeature('allowed_machine_sizes', 'allowed_machine_sizes').join(', ') }} {{ t('subscriptionPlans.allowedSizes') }}</span>
             </div>
             <div v-if="planFeature('storage_gb', 'data_persistence_gb')" class="feature-item">
               <i class="fas fa-hdd"></i>
@@ -357,13 +341,9 @@ const planForCapacity = computed<any>(() => {
   return currentPlan.value || props.subscription?.subscription_plan || null
 })
 
-const isBudgetPlan = computed(() => {
-  return planForCapacity.value?.quota_model === 'budget'
-})
-
 const budgetCapacityText = computed(() => {
   const plan = planForCapacity.value
-  if (!plan || plan.quota_model !== 'budget') return ''
+  if (!plan) return ''
   const maxCpu = plan.max_cpu ?? 0
   const maxMemoryMb = plan.max_memory_mb ?? 0
   if (maxCpu === 0 && maxMemoryMb === 0) {
@@ -373,12 +353,6 @@ const budgetCapacityText = computed(() => {
   if (!summary) return ''
   return t('pricingPlanCard.budgetCapacity', { summary })
 })
-
-// Format a plan limit: -1 means unlimited
-const formatLimit = (value: any) => {
-  if (value === -1) return '∞'
-  return value
-}
 
 // Format duration: if value is in minutes (from subscription_plan), convert to hours display
 const formatDuration = (value: any) => {

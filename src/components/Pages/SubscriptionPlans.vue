@@ -96,29 +96,19 @@ const hasActiveSubscription = computed(() => subscriptionsStore.hasActiveSubscri
 
 // Helper to render a plan's capacity in the same size-count language the
 // pricing page uses. Closes the visibility gap reported in the first user
-// test: admins had to open each plan in edit mode to see budget. Returns:
-//   - budget plans: "1 XL OR 2 L OR 4 M" (or "Unlimited capacity" when both
-//     max_cpu and max_memory_mb are 0)
-//   - count plans: legacy "max_concurrent_terminals × sizes" summary, or null
-//     when neither field is set (so the row is hidden)
+// test: admins had to open each plan in edit mode to see the budget.
+// Returns:
+//   - "1 XL OR 2 L OR 4 M" for a non-empty budget
+//   - "Unlimited capacity" when both max_cpu and max_memory_mb are 0
+//   - null when the plan has no budget fields populated (row is hidden)
 const getCapacitySummary = (plan: any): string | null => {
-    if (plan.quota_model === 'budget') {
-        const maxCpu = plan.max_cpu ?? 0
-        const maxMemoryMb = plan.max_memory_mb ?? 0
-        if (maxCpu === 0 && maxMemoryMb === 0) {
-            return t('subscriptionPlans.capacityUnlimited')
-        }
-        const summary = formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, t('subscriptionPlans.capacityOr'))
-        return summary || null
+    const maxCpu = plan.max_cpu ?? 0
+    const maxMemoryMb = plan.max_memory_mb ?? 0
+    if (maxCpu === 0 && maxMemoryMb === 0) {
+        return t('subscriptionPlans.capacityUnlimited')
     }
-    const maxTerminals = plan.max_concurrent_terminals
-    const sizes = plan.allowed_machine_sizes
-    if (!maxTerminals && (!sizes || sizes.length === 0)) {
-        return null
-    }
-    const sizeList = Array.isArray(sizes) && sizes.length > 0 ? sizes.join(', ') : ''
-    const countPart = maxTerminals ? `${maxTerminals} ${t('subscriptionPlans.concurrentTerminals')}` : ''
-    return [countPart, sizeList].filter(Boolean).join(' — ')
+    const summary = formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, t('subscriptionPlans.capacityOr'))
+    return summary || null
 }
 
 // Helper to determine plan relationship
