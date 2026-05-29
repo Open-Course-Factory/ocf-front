@@ -320,8 +320,21 @@ function translateDifficulty(difficulty: string): string {
   return map[difficulty] || difficulty
 }
 
+// Index mySessions by scenario_id once per reactive change.
+// The template calls getExistingSession() several times per card and the
+// sort/filter computeds also hit it per scenario, so a linear scan over
+// mySessions inside the helper was O(N·M) per render — the dominant cost
+// when the launcher has many scenarios.
+const existingSessionByScenario = computed(() => {
+  const map = new Map<string, any>()
+  for (const s of mySessions.value) {
+    if (s?.scenario_id) map.set(s.scenario_id, s)
+  }
+  return map
+})
+
 function getExistingSession(scenario: any): any | null {
-  return mySessions.value.find(s => s.scenario_id === scenario.id) || null
+  return existingSessionByScenario.value.get(scenario.id) || null
 }
 
 function getExistingSessionLabel(scenario: any): string {
