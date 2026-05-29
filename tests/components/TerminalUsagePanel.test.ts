@@ -107,9 +107,10 @@ describe('TerminalUsagePanel — live usage view', () => {
     const text = wrapper.text()
     // Plan + source rendered
     expect(text).toContain('Pro')
-    // Capacity summary uses the size-count helper, max_cpu=8000 mCPU /
-    // max_memory_mb=4096 → "1 XL OR 2 L OR 4 M"
-    expect(text).toMatch(/1\s*XL/)
+    // Capacity is rendered in raw vCPU/RAM (not size-count): max_cpu=8000 mCPU
+    // → "8 vCPU"; max_memory_mb=4096 → "4.0 GiB".
+    expect(text).toContain('8 vCPU')
+    expect(text).toContain('4.0 GiB')
   })
 
   it('renders the CPU and RAM bars at the correct fill percentages', async () => {
