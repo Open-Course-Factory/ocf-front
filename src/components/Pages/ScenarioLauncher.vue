@@ -386,19 +386,30 @@ function getUnavailableHint(scenario: any): string {
   }
 }
 
+// Discard out-of-order responses. onMounted + watch(currentOrgId) can both
+// fire loadScenarios concurrently; without this guard, a slower earlier
+// request can overwrite the result of a newer one, flashing stale data and
+// triggering an extra re-render.
+let loadGeneration = 0
+
 async function loadScenarios() {
+  const gen = ++loadGeneration
   isLoading.value = true
   error.value = ''
   try {
     const [scenarioData] = await Promise.all([
       scenarioSessionService.listScenarios(currentOrgId.value || undefined),
-      scenarioSessionService.getMyScenarioSessions().then(sessions => { mySessions.value = sessions }).catch(() => {})
+      scenarioSessionService.getMyScenarioSessions()
+        .then(sessions => { if (gen === loadGeneration) mySessions.value = sessions })
+        .catch(() => {})
     ])
+    if (gen !== loadGeneration) return
     scenarios.value = scenarioData
   } catch (err: any) {
+    if (gen !== loadGeneration) return
     error.value = err.response?.data?.error_message || t('launcher.loading')
   } finally {
-    isLoading.value = false
+    if (gen === loadGeneration) isLoading.value = false
   }
 }
 
