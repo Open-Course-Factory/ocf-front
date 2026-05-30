@@ -272,10 +272,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, type Ref } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, type Ref } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
-import { renderKillercodaMarkdown, loadScenarioImages, revokeScenarioImageUrls } from '../../utils/killercodaMarkdown'
+import { useScenarioSession } from '../../composables/useScenarioSession'
 import { scenarioSessionService } from '../../services/domain/scenario'
 import ScenarioElapsedTimer from './ScenarioElapsedTimer.vue'
 import ScenarioVerifyResult from './ScenarioVerifyResult.vue'
@@ -283,7 +283,6 @@ import ScenarioFlagSubmit from './ScenarioFlagSubmit.vue'
 import ScenarioQuizPanel from './ScenarioQuizPanel.vue'
 import ScenarioHintPanel from './ScenarioHintPanel.vue'
 import type {
-  CurrentStepResponse,
   VerifyStepResponse,
   SubmitFlagResponse,
   SubmitQuizResponse,
@@ -337,9 +336,6 @@ const { t } = useTranslations({
       noScenario: 'No active scenario',
       collapsePanel: 'Collapse panel',
       expandPanel: 'Expand panel',
-      copyCode: 'Copy',
-      codeCopied: 'Copied!',
-      pasteToTerminal: 'Paste to terminal',
       viewMyScenarios: 'View my scenarios',
       stepValidated: 'Step validated!',
       nextStep: 'Loading next step...',
@@ -383,9 +379,6 @@ const { t } = useTranslations({
       noScenario: 'Aucun scénario actif',
       collapsePanel: 'Replier le panneau',
       expandPanel: 'Déplier le panneau',
-      copyCode: 'Copier',
-      codeCopied: 'Copié !',
-      pasteToTerminal: 'Coller dans le terminal',
       viewMyScenarios: 'Voir mes scénarios',
       stepValidated: 'Étape validée !',
       nextStep: 'Chargement de l\'étape suivante...',
@@ -411,24 +404,43 @@ const { t } = useTranslations({
   }
 })
 
+// Session/step DATA, loading, review-navigation and DOM helpers live in the
+// composable; transient interaction state (verify/flag/quiz/hint) stays here.
+const session = useScenarioSession(
+  () => props.scenarioSessionId,
+  {
+    paste: (cmd) => emit('paste-command', cmd),
+    scenarioInfoLoaded: (info) => emit('scenario-info-loaded', info)
+  }
+)
+const {
+  isLoading,
+  loadError,
+  isSessionCompleted,
+  currentStep,
+  totalSteps,
+  scenarioInfo,
+  sessionStartedAt,
+  reviewingStep,
+  stepContentRef,
+  displayedStep,
+  renderedDisplayedStepText,
+  resolvedStepType,
+  hasProgressiveHints,
+  renderedFinishText,
+  navigateToStep,
+  backToCurrentStep,
+  goToPreviousStep,
+  handleExecClick
+} = session
+
 // State
 const isCollapsed = ref(false)
-const isLoading = ref(false)
-const loadError = ref(false)
-const isSessionCompleted = ref(false)
-const currentStep = ref<CurrentStepResponse | null>(null)
-const totalSteps = ref(0)
 const showHint = ref(false)
 
 // Progressive hints state
 const revealedHints = ref<Array<{ level: number; content: string }>>([])
 const isRevealingHint = ref(false)
-
-// Scenario metadata
-const scenarioInfo = ref<ScenarioInfo | null>(null)
-
-// Session timing (for completion summary)
-const sessionStartedAt = ref<string | null>(null)
 
 // Track whether we already auto-expanded the hint for the current step
 const hintAutoShown = ref(false)
@@ -481,13 +493,6 @@ function stopHintNudgeTimer() {
   hintNudgeActive.value = false
 }
 
-// Step review navigation state
-const reviewingStep = ref<CurrentStepResponse | null>(null)
-const isLoadingReview = ref(false)
-
-// Ref for step content container (for copy-to-clipboard injection)
-const stepContentRef = ref<HTMLElement | null>(null)
-
 // Step counter label (e.g. "Step 2 / 5" or "Étape 2 / 5")
 const stepCountLabel = computed(() => {
   if (!currentStep.value) return ''
@@ -512,32 +517,6 @@ const formattedElapsedTime = computed(() => {
   return `${totalMinutes}m ${seconds}s`
 })
 
-// Rendered finish_text (markdown) for the completion screen
-const renderedFinishText = computed(() => {
-  if (!scenarioInfo.value?.finish_text) return ''
-  return renderKillercodaMarkdown(scenarioInfo.value.finish_text)
-})
-
-// The displayed step: either the review step or the current step
-const displayedStep = computed(() => reviewingStep.value || currentStep.value)
-
-// Rendered markdown for the displayed step
-const renderedDisplayedStepText = computed(() => {
-  if (!displayedStep.value?.text) return ''
-  return renderKillercodaMarkdown(displayedStep.value.text)
-})
-
-const hasProgressiveHints = computed(() => {
-  return displayedStep.value && displayedStep.value.hints_total_count > 0
-})
-
-// Resolve the step type with backward-compat for legacy data: when step_type is empty,
-// fall back to has_flag-driven detection (flag vs terminal).
-const resolvedStepType = computed<'terminal' | 'flag' | 'info' | 'quiz'>(() => {
-  const st = displayedStep.value?.step_type
-  if (st === 'terminal' || st === 'flag' || st === 'info' || st === 'quiz') return st
-  return displayedStep.value?.has_flag ? 'flag' : 'terminal'
-})
 
 interface StepTypeMeta {
   key: 'terminal' | 'flag' | 'info' | 'quiz'
@@ -603,145 +582,26 @@ async function handleRevealNextHint() {
   }
 }
 
-// Navigate to a specific step for review
-async function navigateToStep(stepOrder: number) {
-  // If clicking the current step, exit review mode
-  if (currentStep.value && stepOrder === currentStep.value.step_order) {
-    reviewingStep.value = null
-    return
-  }
-  isLoadingReview.value = true
-  try {
-    const step = await scenarioSessionService.getStepByOrder(props.scenarioSessionId, stepOrder)
-    if (step) {
-      reviewingStep.value = step
-      showHint.value = false
-      revealedHints.value = []
-      if (step.hints_total_count > 0 && step.hints_revealed > 0) {
-        for (let level = 1; level <= step.hints_revealed; level++) {
-          try {
-            const hint = await scenarioSessionService.revealHint(
-              props.scenarioSessionId, step.step_order, level
-            )
-            revealedHints.value.push({ level: hint.level, content: hint.content })
-          } catch {
-            break
-          }
-        }
-      }
-      // Load images and copy buttons after review step renders
-      await nextTick()
-      if (stepContentRef.value) {
-        addCopyButtons(stepContentRef.value)
-        revokeScenarioImageUrls()
-        if (scenarioInfo.value?.id && step.step_order !== undefined) {
-          const stepDir = `step${step.step_order + 1}`
-          loadScenarioImages(stepContentRef.value, scenarioInfo.value.id, stepDir)
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('Could not load step for review:', err)
-  } finally {
-    isLoadingReview.value = false
-  }
-}
-
-function backToCurrentStep() {
-  reviewingStep.value = null
+// When entering review of a past step, reset the hint UI and load that step's
+// already-revealed hints (the composable owns the step fetch + DOM refresh;
+// hint state stays here). Clearing review (back to current) just hides the hint.
+watch(reviewingStep, async (step) => {
   showHint.value = false
-}
-
-// Load scenario metadata (name, description) from the API
-async function loadScenarioInfo() {
-  try {
-    const session = await scenarioSessionService.getSessionInfo(props.scenarioSessionId)
-    if (session?.started_at) {
-      sessionStartedAt.value = session.started_at
-    }
-    if (session?.scenario_id) {
-      scenarioInfo.value = await scenarioSessionService.getScenario(session.scenario_id)
-      if (scenarioInfo.value) {
-        emit('scenario-info-loaded', scenarioInfo.value)
-      }
-    }
-  } catch (err) {
-    // Non-critical: scenario name is a nice-to-have, fall back to generic title
-    console.warn('Could not load scenario info:', err)
-  }
-}
-
-// Handle clicks on {{exec}} commands (event delegation on markdown containers)
-function handleExecClick(event: MouseEvent) {
-  const target = event.target as HTMLElement
-  if (target.classList.contains('exec-command')) {
-    const command = target.textContent?.trim()
-    if (command) {
-      emit('paste-command', command)
-    }
-  }
-  if (target.classList.contains('copy-command')) {
-    const text = target.textContent?.trim()
-    if (text) {
-      navigator.clipboard.writeText(text)
-      target.classList.add('copied')
-      setTimeout(() => target.classList.remove('copied'), 1500)
-    }
-  }
-}
-
-// Add copy-to-clipboard and paste-to-terminal buttons to <pre><code> blocks
-function addCopyButtons(container: HTMLElement) {
-  const preBlocks = container.querySelectorAll('pre')
-  preBlocks.forEach(pre => {
-    // Skip if already processed
-    if (pre.parentElement?.classList.contains('code-block-wrapper')) return
-
-    const wrapper = document.createElement('div')
-    wrapper.className = 'code-block-wrapper'
-
-    const code = pre.querySelector('code')
-    const text = (code?.textContent || pre.textContent || '').trim()
-
-    // Copy button
-    const copyBtn = document.createElement('button')
-    copyBtn.className = 'copy-code-btn'
-    copyBtn.type = 'button'
-    copyBtn.innerHTML = `<i class="fas fa-copy"></i> <span>${t('scenarioPanel.copyCode')}</span>`
-    copyBtn.addEventListener('click', async () => {
+  if (!step) return
+  revealedHints.value = []
+  if (step.hints_total_count > 0 && step.hints_revealed > 0) {
+    for (let level = 1; level <= step.hints_revealed; level++) {
       try {
-        await navigator.clipboard.writeText(text)
-        copyBtn.innerHTML = `<i class="fas fa-check"></i> <span>${t('scenarioPanel.codeCopied')}</span>`
-        copyBtn.classList.add('copied')
-        setTimeout(() => {
-          copyBtn.innerHTML = `<i class="fas fa-copy"></i> <span>${t('scenarioPanel.copyCode')}</span>`
-          copyBtn.classList.remove('copied')
-        }, 2000)
+        const hint = await scenarioSessionService.revealHint(
+          props.scenarioSessionId, step.step_order, level
+        )
+        revealedHints.value.push({ level: hint.level, content: hint.content })
       } catch {
-        console.warn('Clipboard API not available')
+        break
       }
-    })
-
-    // Paste-to-terminal button (for single-line commands, or exec-block marked blocks)
-    const isExecBlock = pre.classList.contains('exec-block')
-    const isSingleLine = !text.includes('\n')
-    if ((isSingleLine || isExecBlock) && text.length > 0) {
-      const pasteBtn = document.createElement('button')
-      pasteBtn.className = 'paste-terminal-btn'
-      pasteBtn.type = 'button'
-      pasteBtn.innerHTML = `<i class="fas fa-terminal"></i>`
-      pasteBtn.title = t('scenarioPanel.pasteToTerminal')
-      pasteBtn.addEventListener('click', () => {
-        emit('paste-command', text)
-      })
-      wrapper.appendChild(pasteBtn)
     }
-
-    pre.parentNode?.insertBefore(wrapper, pre)
-    wrapper.appendChild(pre)
-    wrapper.appendChild(copyBtn)
-  })
-}
+  }
+})
 
 // Load collapse state from localStorage
 const COLLAPSE_KEY = 'scenario_panel_collapsed'
@@ -758,10 +618,7 @@ function toggleCollapse() {
 
 
 async function loadCurrentStep() {
-  if (!isTransitioning.value) {
-    isLoading.value = true
-  }
-  loadError.value = false
+  // Transient interaction state lives in the component — reset it here.
   verifyResult.value = null
   flagResult.value = null
   flagValue.value = ''
@@ -774,15 +631,12 @@ async function loadCurrentStep() {
   hintNudgeDismissed.value = false
   stopHintNudgeTimer()
 
-  try {
-    const step = await scenarioSessionService.getCurrentStep(props.scenarioSessionId)
-    currentStep.value = step
+  // The composable owns the step DATA load + DOM refresh and returns the step.
+  const step = await session.loadStepData({ skipSpinner: isTransitioning.value })
+  isTransitioning.value = false
+  transitionPhase.value = null
 
-    // Use total_steps from backend (fixed count, not client-side tracking)
-    if (step.total_steps) {
-      totalSteps.value = step.total_steps
-    }
-
+  if (step) {
     // Load already-revealed progressive hints
     if (step.hints_total_count > 0 && step.hints_revealed > 0) {
       for (let level = 1; level <= step.hints_revealed; level++) {
@@ -797,45 +651,10 @@ async function loadCurrentStep() {
       }
     }
 
-    // If the step status indicates session is completed
-    if (step.status === 'completed' && !step.title) {
-      isSessionCompleted.value = true
+    // Start the hint-nudge timer for terminal steps that still have an unrevealed hint
+    if (resolvedStepType.value === 'terminal' && hasProgressiveHints.value && revealedHints.value.length === 0) {
+      startHintNudgeTimer()
     }
-
-    // Load scenario info once (for name/description display and image loading)
-    if (!scenarioInfo.value) {
-      await loadScenarioInfo()
-    }
-
-  } catch (err: any) {
-    console.error('Failed to load scenario step:', err)
-    // If 404 or specific status, might mean session is completed
-    if (err.response?.status === 404 || err.response?.data?.status === 'completed') {
-      isSessionCompleted.value = true
-    } else {
-      loadError.value = true
-    }
-  } finally {
-    isLoading.value = false
-    isTransitioning.value = false
-    transitionPhase.value = null
-  }
-
-  // After loading spinner is hidden and step content is rendered,
-  // inject copy buttons and load images
-  await nextTick()
-  if (stepContentRef.value) {
-    addCopyButtons(stepContentRef.value)
-    revokeScenarioImageUrls()
-    if (scenarioInfo.value?.id && currentStep.value?.step_order !== undefined) {
-      const stepDir = `step${currentStep.value.step_order + 1}`
-      loadScenarioImages(stepContentRef.value, scenarioInfo.value.id, stepDir)
-    }
-  }
-
-  // Start the hint-nudge timer for terminal steps that still have an unrevealed hint
-  if (resolvedStepType.value === 'terminal' && hasProgressiveHints.value && revealedHints.value.length === 0) {
-    startHintNudgeTimer()
   }
 }
 
@@ -968,14 +787,6 @@ async function ackInfoStep() {
   await handleVerify()
 }
 
-// Navigate back to the previous step for review (info step "Previous" button)
-async function goToPreviousStep() {
-  if (!currentStep.value) return
-  const targetOrder = currentStep.value.step_order - 1
-  if (targetOrder < 0) return
-  await navigateToStep(targetOrder)
-}
-
 async function handleSubmitQuiz(payload: Record<string, string>) {
   if (isSubmittingQuiz.value || !props.isActive) return
   isSubmittingQuiz.value = true
@@ -1056,7 +867,6 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   stopHintNudgeTimer()
-  revokeScenarioImageUrls()
 })
 
 defineExpose({
