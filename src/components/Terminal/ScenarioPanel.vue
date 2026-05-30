@@ -231,31 +231,14 @@
             </template>
 
             <!-- Flag step -->
-            <div v-else-if="resolvedStepType === 'flag'" class="flag-section">
-              <div class="flag-input-row">
-                <input
-                  v-model="flagValue"
-                  type="text"
-                  class="flag-input"
-                  :placeholder="t('scenarioPanel.flagPlaceholder')"
-                  :disabled="isSubmittingFlag || !isActive"
-                  @keyup.enter="handleSubmitFlag"
-                />
-                <button
-                  class="flag-submit-btn"
-                  :disabled="!flagValue.trim() || isSubmittingFlag || !isActive"
-                  @click="handleSubmitFlag"
-                >
-                  <i :class="isSubmittingFlag ? 'fas fa-spinner fa-spin' : 'fas fa-paper-plane'"></i>
-                  {{ isSubmittingFlag ? t('scenarioPanel.submitting') : t('scenarioPanel.submitFlag') }}
-                </button>
-              </div>
-              <p class="flag-hint">{{ t('scenarioPanel.flagHint') }}</p>
-              <div v-if="flagResult" class="flag-result" role="status" aria-live="polite" :class="{ correct: flagResult.correct, incorrect: !flagResult.correct }">
-                <i :class="flagResult.correct ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
-                <span>{{ flagResult.correct ? t('scenarioPanel.flagCorrect') : t('scenarioPanel.flagIncorrect') }}</span>
-              </div>
-            </div>
+            <ScenarioFlagSubmit
+              v-else-if="resolvedStepType === 'flag'"
+              v-model="flagValue"
+              :is-active="isActive"
+              :is-submitting="isSubmittingFlag"
+              :result="flagResult"
+              @submit="handleSubmitFlag"
+            />
 
             <!-- Info step -->
             <div v-else-if="resolvedStepType === 'info'" class="info-step">
@@ -507,6 +490,7 @@ import { renderKillercodaMarkdown, loadScenarioImages, revokeScenarioImageUrls }
 import { scenarioSessionService } from '../../services/domain/scenario'
 import ScenarioElapsedTimer from './ScenarioElapsedTimer.vue'
 import ScenarioVerifyResult from './ScenarioVerifyResult.vue'
+import ScenarioFlagSubmit from './ScenarioFlagSubmit.vue'
 import type {
   CurrentStepResponse,
   CurrentStepQuestion,
@@ -552,12 +536,7 @@ const { t } = useTranslations({
       failed: 'Not quite right. Check the output and try again.',
       showHint: 'Show Hint',
       hideHint: 'Hide Hint',
-      submitFlag: 'Submit Flag',
       submitting: 'Submitting...',
-      flagCorrect: 'Correct!',
-      flagIncorrect: 'Incorrect flag. Try again.',
-      flagPlaceholder: 'Enter flag...',
-      flagHint: "Flags look like FLAG{'{'} abc123...{'}'}. Find it in the terminal to submit.",
       abandon: 'Abandon Scenario',
       abandonConfirm: 'This session will be marked as abandoned. You can start a new attempt later.',
       abandonTitle: 'Abandon Scenario',
@@ -623,12 +602,7 @@ const { t } = useTranslations({
       failed: 'Pas tout à fait. Vérifiez la sortie et réessayez.',
       showHint: 'Afficher l\'indice',
       hideHint: 'Masquer l\'indice',
-      submitFlag: 'Soumettre le flag',
       submitting: 'Envoi...',
-      flagCorrect: 'Correct !',
-      flagIncorrect: 'Flag incorrect. Réessayez.',
-      flagPlaceholder: 'Entrez le flag...',
-      flagHint: "Les flags sont au format FLAG{'{'} abc123...{'}'}. Trouvez-le dans le terminal pour le soumettre.",
       abandon: 'Abandonner le scénario',
       abandonConfirm: 'Cette session sera marquée comme abandonnée. Vous pourrez recommencer une nouvelle tentative plus tard.',
       abandonTitle: 'Abandonner le scénario',
@@ -1881,103 +1855,6 @@ defineExpose({
   font-size: var(--font-size-xs);
 }
 
-/* Verify button */
-/* Flag section */
-.flag-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.flag-input-row {
-  display: flex;
-  gap: var(--spacing-sm);
-}
-
-.flag-hint {
-  margin: 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  line-height: var(--line-height-relaxed);
-}
-
-.flag-input {
-  flex: 1;
-  min-width: 0;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: var(--border-width-thin) solid var(--color-border-medium);
-  border-radius: var(--border-radius-md);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-family-monospace);
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  transition: border-color var(--transition-fast);
-}
-
-.flag-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-focus-primary);
-}
-
-.flag-input:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.flag-submit-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  background: var(--color-primary);
-  color: var(--color-white);
-  border: none;
-  border-radius: var(--border-radius-md);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all var(--transition-fast);
-}
-
-.flag-submit-btn:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-}
-
-.flag-submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.flag-result {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--border-radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-}
-
-.flag-result.correct {
-  background: var(--color-success-bg);
-  color: var(--color-success-text);
-}
-
-.flag-result.correct i {
-  color: var(--color-success);
-}
-
-.flag-result.incorrect {
-  background: var(--color-danger-bg);
-  color: var(--color-danger-text);
-}
-
-.flag-result.incorrect i {
-  color: var(--color-danger);
-}
-
 /* Session actions */
 .session-actions {
   padding: var(--spacing-md);
@@ -2183,11 +2060,6 @@ defineExpose({
 
 .view-results-link:hover {
   opacity: 0.9;
-}
-
-.flag-submit-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
 }
 
 .abandon-btn:focus-visible {
