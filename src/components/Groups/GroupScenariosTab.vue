@@ -57,31 +57,11 @@ import BackendSelector from '../Terminal/BackendSelector.vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import ScenarioUploadModal from '../Modals/ScenarioUploadModal.vue'
 import ScenarioJSONImportModal from '../Modals/ScenarioJSONImportModal.vue'
-
-interface ScenarioAssignment {
-  id: string
-  scenario_id: string
-  group_id: string
-  scope: string
-  start_date?: string
-  deadline?: string
-  is_active: boolean
-  scenario?: {
-    id: string
-    name: string
-    title: string
-    difficulty: string
-    organization_id?: string
-  }
-}
-
-interface Scenario {
-  id: string
-  name: string
-  title: string
-  difficulty: string
-  source?: string
-}
+import RemoveAssignmentConfirmModal from './modals/RemoveAssignmentConfirmModal.vue'
+import ResetAssignmentModal from './modals/ResetAssignmentModal.vue'
+import ScenarioAssignmentResultModal from './modals/ScenarioAssignmentResultModal.vue'
+import AssignScenarioModal from './modals/AssignScenarioModal.vue'
+import type { ScenarioAssignment, Scenario, NoKeyUser, AssignmentResultError } from '../../types/groupScenarios'
 
 const props = defineProps<{
   groupId: string
@@ -96,17 +76,11 @@ const { t } = useTranslations({
       assignScenario: 'Assign Scenario',
       bulkStart: 'Start for All',
       removeAssignment: 'Remove',
-      deadline: 'Deadline',
-      startDate: 'Start Date',
       noStartDate: 'No start date',
       noAssignments: 'No scenarios assigned to this group yet.',
       assignSuccess: 'Scenario assigned successfully',
       bulkStartResult: 'Started {started} sessions, skipped {skipped}',
-      confirmRemove: 'Are you sure you want to remove this scenario assignment?',
-      selectScenario: 'Select a Scenario',
-      searchScenarios: 'Search scenarios...',
       cancel: 'Cancel',
-      confirm: 'Assign',
       difficulty: 'Difficulty',
       active: 'Active',
       inactive: 'Inactive',
@@ -116,20 +90,13 @@ const { t } = useTranslations({
       removeError: 'Failed to remove assignment',
       bulkStartError: 'Failed to start sessions',
       starting: 'Starting sessions...',
-      bulkStartTitle: 'Sessions Started',
-      confirmRemoveTitle: 'Remove Assignment',
       close: 'Close',
-      remove: 'Remove',
-      noKeyWarning: 'The following learners couldn\'t get a terminal key provisioned:',
       resetSessions: 'Reset Sessions',
-      resetConfirmTitle: 'Reset Scenario Sessions',
-      resetConfirm: 'This will abandon all active sessions for this scenario. Learners will need to restart. Continue?',
       resetSuccess: '{count} sessions reset',
       resetError: 'Failed to reset sessions',
       selectDistribution: 'Select Distribution',
       distribution: 'Distribution',
       distributionDescription: 'Choose the terminal distribution for all learners in this group.',
-      terminalErrors: 'Some terminals could not be created:',
       viewResults: 'Results',
       studentResults: 'Learner Results',
       student: 'Learner',
@@ -188,8 +155,6 @@ const { t } = useTranslations({
       exportKillercoda: 'Export KillerCoda',
       importSuccess: 'Scenario imported successfully',
       exportError: 'Failed to export scenario',
-      orgLibrary: 'Organization Library',
-      groupScenarios: 'Group Scenarios',
       orgScenario: 'Org',
       tabsLabel: 'Session detail tabs',
       tabSteps: 'Steps',
@@ -243,17 +208,11 @@ const { t } = useTranslations({
       assignScenario: 'Assigner un scénario',
       bulkStart: 'Démarrer pour tous',
       removeAssignment: 'Supprimer',
-      deadline: 'Date limite',
-      startDate: 'Date de début',
       noStartDate: 'Pas de date de début',
       noAssignments: 'Aucun scénario assigné à ce groupe.',
       assignSuccess: 'Scénario assigné avec succès',
       bulkStartResult: '{started} sessions démarrées, {skipped} ignorées',
-      confirmRemove: 'Êtes-vous sûr de vouloir supprimer cette assignation de scénario ?',
-      selectScenario: 'Sélectionner un scénario',
-      searchScenarios: 'Rechercher des scénarios...',
       cancel: 'Annuler',
-      confirm: 'Assigner',
       difficulty: 'Difficulté',
       active: 'Actif',
       inactive: 'Inactif',
@@ -263,20 +222,13 @@ const { t } = useTranslations({
       removeError: 'Échec de la suppression de l\'assignation',
       bulkStartError: 'Échec du démarrage des sessions',
       starting: 'Démarrage des sessions...',
-      bulkStartTitle: 'Sessions démarrées',
-      confirmRemoveTitle: 'Supprimer l\'assignation',
       close: 'Fermer',
-      remove: 'Supprimer',
-      noKeyWarning: 'Les apprenants suivants n\'ont pas pu recevoir de clé terminal :',
       resetSessions: 'Réinitialiser',
-      resetConfirmTitle: 'Réinitialiser les sessions',
-      resetConfirm: 'Ceci va abandonner toutes les sessions actives pour ce scénario. Les apprenants devront recommencer. Continuer ?',
       resetSuccess: '{count} sessions réinitialisées',
       resetError: 'Échec de la réinitialisation',
       selectDistribution: 'Sélectionner la distribution',
       distribution: 'Distribution',
       distributionDescription: 'Choisissez la distribution terminal pour tous les apprenants de ce groupe.',
-      terminalErrors: 'Certains terminaux n\'ont pas pu être créés :',
       viewResults: 'Résultats',
       studentResults: 'Résultats des apprenants',
       student: 'Apprenant(e)',
@@ -335,8 +287,6 @@ const { t } = useTranslations({
       exportKillercoda: 'Exporter KillerCoda',
       importSuccess: 'Scénario importé avec succès',
       exportError: 'Échec de l\'export du scénario',
-      orgLibrary: 'Bibliothèque de l\'organisation',
-      groupScenarios: 'Scénarios du groupe',
       orgScenario: 'Org',
       tabsLabel: 'Onglets du détail de session',
       tabSteps: 'Étapes',
@@ -423,15 +373,11 @@ const assignments = ref<ScenarioAssignment[]>([])
 const availableScenarios = ref<Scenario[]>([])
 const isLoading = ref(false)
 const showAssignModal = ref(false)
-const selectedScenarioId = ref('')
-const assignStartDate = ref('')
-const assignDeadline = ref('')
-const scenarioSearch = ref('')
 const bulkStartingId = ref<string | null>(null)
 const showResultModal = ref(false)
 const resultMessage = ref('')
-const resultNoKeyUsers = ref<Array<{ user_id?: string; user_name?: string; user_email?: string }>>([])
-const resultErrors = ref<Array<{ user_id?: string; error?: string }>>([])
+const resultNoKeyUsers = ref<NoKeyUser[]>([])
+const resultErrors = ref<AssignmentResultError[]>([])
 const showConfirmRemoveModal = ref(false)
 const assignmentToRemove = ref<ScenarioAssignment | null>(null)
 const showResetModal = ref(false)
@@ -505,22 +451,6 @@ const allSelected = computed({
   }
 })
 
-// Filtered scenarios for modal dropdown
-const filteredAvailableScenarios = computed(() => {
-  if (!scenarioSearch.value.trim()) return availableScenarios.value
-  const q = scenarioSearch.value.toLowerCase()
-  return availableScenarios.value.filter(
-    s => s.title.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)
-  )
-})
-
-const orgScenarios = computed(() =>
-  filteredAvailableScenarios.value.filter((s: any) => s.source === 'org')
-)
-const groupOnlyScenarios = computed(() =>
-  filteredAvailableScenarios.value.filter((s: any) => s.source === 'group')
-)
-
 // Load assignments
 async function loadAssignments() {
   isLoading.value = true
@@ -543,22 +473,18 @@ async function loadScenarios() {
 }
 
 // Assign scenario
-async function handleAssign() {
-  if (!selectedScenarioId.value) return
+async function handleAssign(payload: { scenarioId: string; startDate: string; deadline: string }) {
+  if (!payload.scenarioId) return
   try {
     await teacherService.assignScenarioToGroup(
       props.groupId,
-      selectedScenarioId.value,
+      payload.scenarioId,
       {
-        start_date: assignStartDate.value || undefined,
-        deadline: assignDeadline.value || undefined
+        start_date: payload.startDate || undefined,
+        deadline: payload.deadline || undefined
       }
     )
     showAssignModal.value = false
-    selectedScenarioId.value = ''
-    assignStartDate.value = ''
-    assignDeadline.value = ''
-    scenarioSearch.value = ''
     await loadAssignments()
   } catch (err: any) {
     notifyError(err.response?.data?.error_message || t('groupScenarios.assignError'))
@@ -1915,55 +1841,12 @@ onUnmounted(() => {
     </BaseModal>
 
     <!-- Assign Scenario Modal -->
-    <BaseModal
+    <AssignScenarioModal
       :visible="showAssignModal"
-      :title="t('groupScenarios.assignScenario')"
-      size="medium"
-      :show-default-footer="true"
-      :confirm-text="t('groupScenarios.confirm')"
-      :cancel-text="t('groupScenarios.cancel')"
-      @confirm="handleAssign"
+      :scenarios="availableScenarios"
+      @assign="handleAssign"
       @close="showAssignModal = false"
-    >
-      <div class="form-group">
-        <label>{{ t('groupScenarios.selectScenario') }}</label>
-        <input
-          v-model="scenarioSearch"
-          type="text"
-          class="form-control"
-          :placeholder="t('groupScenarios.searchScenarios')"
-        />
-        <select v-model="selectedScenarioId" class="form-control select-scenario">
-          <option value="" disabled>{{ t('groupScenarios.selectScenario') }}</option>
-          <optgroup v-if="orgScenarios.length > 0" :label="t('groupScenarios.orgLibrary')">
-            <option v-for="s in orgScenarios" :key="s.id" :value="s.id">
-              {{ s.title }} ({{ translateDifficulty(s.difficulty) }})
-            </option>
-          </optgroup>
-          <optgroup v-if="groupOnlyScenarios.length > 0" :label="t('groupScenarios.groupScenarios')">
-            <option v-for="s in groupOnlyScenarios" :key="s.id" :value="s.id">
-              {{ s.title }} ({{ translateDifficulty(s.difficulty) }})
-            </option>
-          </optgroup>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>{{ t('groupScenarios.startDate') }}</label>
-        <input
-          v-model="assignStartDate"
-          type="date"
-          class="form-control"
-        />
-      </div>
-      <div class="form-group">
-        <label>{{ t('groupScenarios.deadline') }}</label>
-        <input
-          v-model="assignDeadline"
-          type="date"
-          class="form-control"
-        />
-      </div>
-    </BaseModal>
+    />
 
     <!-- Bulk Start Distribution Modal -->
     <BaseModal
@@ -2006,73 +1889,29 @@ onUnmounted(() => {
     </BaseModal>
 
     <!-- Bulk Start Result Modal -->
-    <BaseModal
+    <ScenarioAssignmentResultModal
       :visible="showResultModal"
-      :title="t('groupScenarios.bulkStartTitle')"
-      size="medium"
-      :show-default-footer="true"
-      :confirm-text="t('groupScenarios.close')"
-      @confirm="showResultModal = false"
+      :message="resultMessage"
+      :no-key-users="resultNoKeyUsers"
+      :errors="resultErrors"
       @close="showResultModal = false"
-    >
-      <p class="result-message">
-        <i class="fas fa-check-circle result-icon"></i>
-        {{ resultMessage }}
-      </p>
-      <div v-if="resultNoKeyUsers.length > 0" class="no-key-warning">
-        <p class="no-key-title">
-          <i class="fas fa-exclamation-triangle"></i>
-          {{ t('groupScenarios.noKeyWarning') }}
-        </p>
-        <ul class="no-key-list">
-          <li v-for="(user, idx) in resultNoKeyUsers" :key="idx">
-            {{ user.user_name || user.user_email || user.user_id }}
-            <span v-if="user.user_email && user.user_name" class="no-key-email">
-              ({{ user.user_email }})
-            </span>
-          </li>
-        </ul>
-      </div>
-      <div v-if="resultErrors.length > 0" class="no-key-warning">
-        <p class="no-key-title">
-          <i class="fas fa-exclamation-triangle"></i>
-          {{ t('groupScenarios.terminalErrors') }}
-        </p>
-        <ul class="no-key-list">
-          <li v-for="(err, idx) in resultErrors" :key="idx">
-            {{ err.user_id }}: {{ err.error }}
-          </li>
-        </ul>
-      </div>
-    </BaseModal>
+    />
 
     <!-- Confirm Remove Modal -->
-    <BaseModal
+    <RemoveAssignmentConfirmModal
       :visible="showConfirmRemoveModal"
-      :title="t('groupScenarios.confirmRemoveTitle')"
-      size="small"
-      :show-default-footer="true"
-      :confirm-text="t('groupScenarios.remove')"
-      :cancel-text="t('groupScenarios.cancel')"
+      :assignment="assignmentToRemove"
       @confirm="confirmRemove"
       @close="showConfirmRemoveModal = false"
-    >
-      <p>{{ t('groupScenarios.confirmRemove') }}</p>
-    </BaseModal>
+    />
 
     <!-- Confirm Reset Modal -->
-    <BaseModal
+    <ResetAssignmentModal
       :visible="showResetModal"
-      :title="t('groupScenarios.resetConfirmTitle')"
-      size="small"
-      :show-default-footer="true"
-      :confirm-text="t('groupScenarios.resetSessions')"
-      :cancel-text="t('groupScenarios.cancel')"
+      :assignment="assignmentToReset"
       @confirm="confirmReset"
       @close="showResetModal = false"
-    >
-      <p>{{ t('groupScenarios.resetConfirm') }}</p>
-    </BaseModal>
+    />
 
     <!-- KillerCoda Upload Modal -->
     <ScenarioUploadModal
@@ -2339,56 +2178,6 @@ onUnmounted(() => {
   border-radius: var(--border-radius-md);
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
-}
-
-.select-scenario {
-  margin-top: var(--spacing-sm);
-}
-
-.result-message {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  color: var(--color-text-primary);
-  margin: 0;
-}
-
-.result-icon {
-  color: var(--color-success);
-  font-size: var(--font-size-lg);
-}
-
-.no-key-warning {
-  margin-top: var(--spacing-md);
-  padding: var(--spacing-sm) var(--spacing-md);
-  background-color: var(--color-warning-bg);
-  border: 1px solid var(--color-warning-border);
-  border-radius: var(--border-radius-md);
-}
-
-.no-key-title {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  color: var(--color-warning-text);
-  font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-sm);
-  margin: 0 0 var(--spacing-xs) 0;
-}
-
-.no-key-list {
-  margin: 0;
-  padding-left: var(--spacing-lg);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-}
-
-.no-key-list li {
-  margin-bottom: 2px;
-}
-
-.no-key-email {
-  color: var(--color-text-muted);
 }
 
 .instance-type-description {
