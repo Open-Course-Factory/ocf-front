@@ -1,0 +1,143 @@
+/*
+ * Open Course Factory - Front
+ * Copyright (C) 2023-2026 Solution Libre
+ *
+ * Shared scenario-panel styles used by ScenarioPanel.vue and its extracted
+ * children (ScenarioVerifyResult.vue, ...). Unscoped on purpose: every
+ * selector is prefixed with `.scenario-panel ` so it stays contained to the
+ * panel subtree and never leaks app-wide.
+ */
+
+.scenario-panel .verify-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-primary);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.scenario-panel .verify-btn:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+.scenario-panel .verify-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.scenario-panel .verify-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Verify result */
+.scenario-panel .verify-result {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+}
+
+.scenario-panel .verify-result.passed {
+  background: var(--color-success-bg);
+  border: var(--border-width-thin) solid var(--color-success-border);
+  color: var(--color-success-text);
+}
+
+.scenario-panel .verify-result.failed {
+  background: var(--color-danger-bg);
+  border: var(--border-width-thin) solid var(--color-danger-border);
+  color: var(--color-danger-text);
+}
+
+.scenario-panel .verify-result-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.scenario-panel .verify-result.passed .verify-result-header i {
+  color: var(--color-success);
+}
+
+.scenario-panel .verify-result.failed .verify-result-header i {
+  color: var(--color-danger);
+}
+
+.scenario-panel .verify-output {
+  margin-top: var(--spacing-sm);
+}
+
+.scenario-panel .output-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: inherit;
+  opacity: 0.8;
+}
+
+.scenario-panel .output-text {
+  margin: var(--spacing-xs) 0 0;
+  padding: var(--spacing-sm);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-xs);
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--color-text-primary);
+}
+
+/* Generic secondary button (used in info + quiz nav) */
+.scenario-panel .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: var(--border-width-thin) solid var(--color-border-medium);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.scenario-panel .btn-secondary:hover:not(:disabled) {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border-medium);
+  color: var(--color-text-primary);
+}
+
+.scenario-panel .btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Contextual overrides — info step + quiz nav */
+.scenario-panel .info-actions .btn-secondary {
+  flex-shrink: 0;
+}
+
+.scenario-panel .info-actions .verify-btn {
+  flex: 1;
+}
+
+.scenario-panel .quiz-nav .btn-secondary {
+  flex-shrink: 0;
+}
+
+.scenario-panel .quiz-nav .verify-btn {
+  flex: 1;
+}

@@ -222,25 +222,12 @@
 
             <!-- Terminal step -->
             <template v-if="resolvedStepType === 'terminal'">
-              <button
-                class="verify-btn"
-                :disabled="isVerifying || !isActive"
-                @click="handleVerify"
-              >
-                <i :class="isVerifying ? 'fas fa-spinner fa-spin' : 'fas fa-check-circle'"></i>
-                {{ isVerifying ? t('scenarioPanel.verifying') : t('scenarioPanel.verify') }}
-              </button>
-
-              <div v-if="verifyResult" class="verify-result" role="status" aria-live="polite" :class="{ passed: verifyResult.passed, failed: !verifyResult.passed }">
-                <div class="verify-result-header">
-                  <i :class="verifyResult.passed ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
-                  <span>{{ verifyResult.passed ? t('scenarioPanel.passed') : t('scenarioPanel.failed') }}</span>
-                </div>
-                <div v-if="verifyResult.output" class="verify-output">
-                  <span class="output-label">{{ t('scenarioPanel.output') }}</span>
-                  <pre class="output-text">{{ verifyResult.output }}</pre>
-                </div>
-              </div>
+              <ScenarioVerifyResult
+                :is-active="isActive"
+                :is-verifying="isVerifying"
+                :result="verifyResult"
+                @verify="handleVerify"
+              />
             </template>
 
             <!-- Flag step -->
@@ -519,6 +506,7 @@ import { useNotification } from '../../composables/useNotification'
 import { renderKillercodaMarkdown, loadScenarioImages, revokeScenarioImageUrls } from '../../utils/killercodaMarkdown'
 import { scenarioSessionService } from '../../services/domain/scenario'
 import ScenarioElapsedTimer from './ScenarioElapsedTimer.vue'
+import ScenarioVerifyResult from './ScenarioVerifyResult.vue'
 import type {
   CurrentStepResponse,
   CurrentStepQuestion,
@@ -560,9 +548,7 @@ const { t } = useTranslations({
     scenarioPanel: {
       title: 'Scenario',
       step: 'Step',
-      verify: 'Verify',
       verifying: 'Verifying...',
-      passed: 'Step completed!',
       failed: 'Not quite right. Check the output and try again.',
       showHint: 'Show Hint',
       hideHint: 'Hide Hint',
@@ -584,7 +570,6 @@ const { t } = useTranslations({
       error: 'Failed to load scenario data.',
       retry: 'Retry',
       noScenario: 'No active scenario',
-      output: 'Output',
       collapsePanel: 'Collapse panel',
       expandPanel: 'Expand panel',
       copyCode: 'Copy',
@@ -634,9 +619,7 @@ const { t } = useTranslations({
     scenarioPanel: {
       title: 'Scénario',
       step: 'Étape',
-      verify: 'Vérifier',
       verifying: 'Vérification...',
-      passed: 'Étape validée !',
       failed: 'Pas tout à fait. Vérifiez la sortie et réessayez.',
       showHint: 'Afficher l\'indice',
       hideHint: 'Masquer l\'indice',
@@ -658,7 +641,6 @@ const { t } = useTranslations({
       error: 'Échec du chargement des données du scénario.',
       retry: 'Réessayer',
       noScenario: 'Aucun scénario actif',
-      output: 'Sortie',
       collapsePanel: 'Replier le panneau',
       expandPanel: 'Déplier le panneau',
       copyCode: 'Copier',
@@ -1900,90 +1882,6 @@ defineExpose({
 }
 
 /* Verify button */
-.verify-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-sm);
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-primary);
-  color: var(--color-white);
-  border: none;
-  border-radius: var(--border-radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.verify-btn:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-  box-shadow: var(--shadow-sm);
-}
-
-.verify-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Verify result */
-.verify-result {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--border-radius-md);
-  font-size: var(--font-size-sm);
-}
-
-.verify-result.passed {
-  background: var(--color-success-bg);
-  border: var(--border-width-thin) solid var(--color-success-border);
-  color: var(--color-success-text);
-}
-
-.verify-result.failed {
-  background: var(--color-danger-bg);
-  border: var(--border-width-thin) solid var(--color-danger-border);
-  color: var(--color-danger-text);
-}
-
-.verify-result-header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  font-weight: var(--font-weight-medium);
-}
-
-.verify-result.passed .verify-result-header i {
-  color: var(--color-success);
-}
-
-.verify-result.failed .verify-result-header i {
-  color: var(--color-danger);
-}
-
-.verify-output {
-  margin-top: var(--spacing-sm);
-}
-
-.output-label {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: inherit;
-  opacity: 0.8;
-}
-
-.output-text {
-  margin: var(--spacing-xs) 0 0;
-  padding: var(--spacing-sm);
-  background: var(--color-bg-tertiary);
-  border-radius: var(--border-radius-sm);
-  font-family: var(--font-family-monospace);
-  font-size: var(--font-size-xs);
-  white-space: pre-wrap;
-  word-break: break-word;
-  color: var(--color-text-primary);
-}
-
 /* Flag section */
 .flag-section {
   display: flex;
@@ -2285,11 +2183,6 @@ defineExpose({
 
 .view-results-link:hover {
   opacity: 0.9;
-}
-
-.verify-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
 }
 
 .flag-submit-btn:focus-visible {
@@ -2675,42 +2568,6 @@ defineExpose({
   align-items: stretch;
 }
 
-.info-actions .btn-secondary {
-  flex-shrink: 0;
-}
-
-.info-actions .verify-btn {
-  flex: 1;
-}
-
-/* Generic secondary button (used in info + quiz nav) */
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: transparent;
-  color: var(--color-text-secondary);
-  border: var(--border-width-thin) solid var(--color-border-medium);
-  border-radius: var(--border-radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--color-bg-secondary);
-  border-color: var(--color-border-medium);
-  color: var(--color-text-primary);
-}
-
-.btn-secondary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 /* Quiz step */
 .quiz-step {
   display: flex;
@@ -2811,14 +2668,6 @@ defineExpose({
   display: flex;
   gap: var(--spacing-sm);
   margin-top: var(--spacing-sm);
-}
-
-.quiz-nav .btn-secondary {
-  flex-shrink: 0;
-}
-
-.quiz-nav .verify-btn {
-  flex: 1;
 }
 
 .quiz-submit {
@@ -2978,3 +2827,7 @@ defineExpose({
   }
 }
 </style>
+
+<!-- Shared scenario-panel styles (unscoped; every selector is prefixed with
+     `.scenario-panel ` so it stays contained to the panel subtree). -->
+<style src="./scenarioPanel.shared.css"></style>
