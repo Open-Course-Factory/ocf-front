@@ -31,6 +31,26 @@ import type {
   SessionDetailResponse,
   SessionCommand
 } from '../../services/domain/scenario'
+import {
+  parseQuizOptions,
+  optionRole,
+  optionRoleClass,
+  optionRoleIcon,
+  displayAnswer,
+  isOrphanStudentAnswer,
+  resolveAnswerText,
+  quizCorrectCount,
+  quizQuestionTotal,
+  normalizedStepType,
+  stepTypeIcon,
+  formatExecutedAt,
+  formatDuration,
+  formatDate,
+  getStatusClass,
+  getDifficultyClass,
+  quizScoreClass,
+  commandsForStepFromList
+} from '../../utils/scenarioDisplay'
 import { sanitizeCSVField } from '../../utils/csv'
 import { useTerminalBackendsStore } from '../../stores/terminalBackends'
 import BackendSelector from '../Terminal/BackendSelector.vue'
@@ -809,14 +829,6 @@ function commandsNextPage() {
   fetchSessionCommands()
 }
 
-function formatExecutedAt(unixSeconds: number): string {
-  try {
-    return new Date(unixSeconds * 1000).toLocaleString()
-  } catch {
-    return String(unixSeconds)
-  }
-}
-
 async function exportCommandsCsv() {
   if (!detailResult.value) return
   // For a small page (≤100), the visible page is enough; if more pages exist
@@ -865,7 +877,7 @@ async function exportCommandsCsv() {
     const steps = sessionDetail.value.steps
     // Build per-step buckets so each command appears once under the step it falls in.
     for (const step of steps) {
-      const stepCommands = commandsForStepFromList(step, allCommands)
+      const stepCommands = commandsForStepFromList(step, allCommands, Date.now())
       for (const c of stepCommands) {
         rows.push([
           step.step_order + 1,
@@ -896,18 +908,6 @@ async function exportCommandsCsv() {
   downloadCsv(csv, `commands-${safeLearner}-${sessionShort}${suffix}.csv`)
 }
 
-// Like commandsForStep but operates on an arbitrary command list (for CSV export).
-function commandsForStepFromList(step: SessionStepDetail, list: SessionCommand[]): SessionCommand[] {
-  if (!step.started_at) return []
-  const startMs = new Date(step.started_at).getTime()
-  if (Number.isNaN(startMs)) return []
-  const endMs = step.completed_at ? new Date(step.completed_at).getTime() : Date.now()
-  if (Number.isNaN(endMs)) return []
-  const startSec = startMs / 1000
-  const endSec = endMs / 1000
-  return list.filter(c => c.executed_at >= startSec && c.executed_at < endSec)
-}
-
 // --- Quiz question rendering helpers ---
 
 function toggleQuizStep(stepOrder: number) {
@@ -924,67 +924,7 @@ function isQuizStepExpanded(stepOrder: number): boolean {
   return expandedQuizSteps.value.has(stepOrder)
 }
 
-function parseQuizOptions(rawOptions?: string): string[] {
-  if (!rawOptions) return []
-  try {
-    const parsed = JSON.parse(rawOptions)
-    if (Array.isArray(parsed)) {
-      return parsed.map(v => String(v))
-    }
-    return []
-  } catch {
-    return []
-  }
-}
-
-// For multiple_choice questions the answer string is the option text;
-// for free_text/true_false it is the literal answer. Returns the value to render.
-function displayAnswer(answer: string): string {
-  return answer && answer.trim() !== '' ? answer : ''
-}
-
-function quizCorrectCount(step: SessionStepDetail): number {
-  return (step.questions || []).filter(q => q.is_correct).length
-}
-
-function quizQuestionTotal(step: SessionStepDetail): number {
-  return (step.questions || []).length
-}
-
-// Per multiple-choice option, returns one of:
-//   'student-correct' — student picked this AND it's the right answer
-//   'correct'         — the right answer (student picked something else)
-//   'student-wrong'   — student picked this AND it's wrong
-//   ''                — not picked, not the right answer
-//
-// Multiple-choice answers are stored as the option's index as a string —
-// the player (ScenarioPanel.vue) submits `String(idx)` and the backend
-// stores `correct_answer` as the same index string. So we compare indexes,
-// not the literal option text.
-type OptionRole = 'student-correct' | 'correct' | 'student-wrong' | ''
 type QuestionDetail = NonNullable<SessionStepDetail['questions']>[number]
-
-function optionRole(optIdx: number, q: QuestionDetail): OptionRole {
-  const idxStr = String(optIdx)
-  const isStudent = idxStr === q.student_answer
-  const isCorrect = idxStr === q.correct_answer
-  if (isStudent && isCorrect) return 'student-correct'
-  if (isCorrect) return 'correct'
-  if (isStudent) return 'student-wrong'
-  return ''
-}
-
-function optionRoleClass(optIdx: number, q: QuestionDetail): string {
-  const role = optionRole(optIdx, q)
-  return role ? `option-${role}` : ''
-}
-
-function optionRoleIcon(optIdx: number, q: QuestionDetail): string {
-  const role = optionRole(optIdx, q)
-  if (role === 'student-correct' || role === 'correct') return 'fas fa-check'
-  if (role === 'student-wrong') return 'fas fa-times'
-  return ''
-}
 
 function optionRoleText(optIdx: number, q: QuestionDetail): string {
   switch (optionRole(optIdx, q)) {
@@ -993,18 +933,6 @@ function optionRoleText(optIdx: number, q: QuestionDetail): string {
     case 'student-wrong':   return t('groupScenarios.yourAnswer')
     default:                return ''
   }
-}
-
-// Returns true when student_answer is set but cannot be resolved against the
-// options list (legacy free-text-on-mc data, edited options, etc.). Used to
-// decide whether to show the orphan-answer fallback line. We accept either
-// the index form ("0") or the literal text form for backwards compat.
-function isOrphanStudentAnswer(q: QuestionDetail, options: string[]): boolean {
-  if (!q.student_answer) return false
-  const asIndex = Number(q.student_answer)
-  if (Number.isInteger(asIndex) && asIndex >= 0 && asIndex < options.length) return false
-  if (options.includes(q.student_answer)) return false
-  return true
 }
 
 // --- Per-step commands helpers ---
@@ -1058,18 +986,11 @@ async function fetchAllSessionCommands() {
   }
 }
 
-// Returns the commands executed during a given step's time window.
-// step.started_at is inclusive; step.completed_at is exclusive (Date.now() for active step).
-// Commands' executed_at is unix SECONDS.
+// Returns the commands executed during a given step's time window, from the
+// in-memory command cache. Active step (no completed_at) uses Date.now() as the
+// open end. Pure window logic lives in commandsForStepFromList.
 function commandsForStep(step: SessionStepDetail): SessionCommand[] {
-  if (!step.started_at) return []
-  const startMs = new Date(step.started_at).getTime()
-  if (Number.isNaN(startMs)) return []
-  const endMs = step.completed_at ? new Date(step.completed_at).getTime() : Date.now()
-  if (Number.isNaN(endMs)) return []
-  const startSec = startMs / 1000
-  const endSec = endMs / 1000
-  return allCommandsCache.value.filter(c => c.executed_at >= startSec && c.executed_at < endSec)
+  return commandsForStepFromList(step, allCommandsCache.value, Date.now())
 }
 
 function toggleStepRow(stepOrder: number) {
@@ -1083,39 +1004,6 @@ function toggleStepRow(stepOrder: number) {
 
 function isStepRowExpanded(stepOrder: number): boolean {
   return expandedStepOrders.value.has(stepOrder)
-}
-
-function formatDuration(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`
-  const minutes = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  if (minutes < 60) return `${minutes}m ${secs}s`
-  const hours = Math.floor(minutes / 60)
-  return `${hours}h ${minutes % 60}m`
-}
-
-function formatDate(dateStr: string): string {
-  if (!dateStr) return ''
-  return new Date(dateStr).toLocaleString()
-}
-
-function getStatusClass(status: string): string {
-  switch (status) {
-    case 'completed': return 'status-completed'
-    case 'active': case 'in_progress': return 'status-active'
-    case 'locked': return 'status-locked'
-    case 'abandoned': return 'status-abandoned'
-    default: return ''
-  }
-}
-
-function getDifficultyClass(difficulty: string) {
-  switch (difficulty) {
-    case 'beginner': return 'difficulty-beginner'
-    case 'intermediate': return 'difficulty-intermediate'
-    case 'advanced': return 'difficulty-advanced'
-    default: return ''
-  }
 }
 
 function translateStatus(status: string): string {
@@ -1142,24 +1030,6 @@ function isOrgScenario(assignment: ScenarioAssignment): boolean {
   return assignment.scenario?.organization_id != null
 }
 
-function normalizedStepType(stepType?: string): 'terminal' | 'flag' | 'info' | 'quiz' {
-  switch (stepType) {
-    case 'flag': return 'flag'
-    case 'info': return 'info'
-    case 'quiz': return 'quiz'
-    default: return 'terminal'
-  }
-}
-
-function stepTypeIcon(stepType?: string): string {
-  switch (normalizedStepType(stepType)) {
-    case 'flag': return 'fas fa-flag'
-    case 'info': return 'fas fa-book-open'
-    case 'quiz': return 'fas fa-question-circle'
-    default: return 'fas fa-terminal'
-  }
-}
-
 function stepTypeLabel(stepType?: string): string {
   switch (normalizedStepType(stepType)) {
     case 'flag': return t('groupScenarios.typeFlag')
@@ -1167,12 +1037,6 @@ function stepTypeLabel(stepType?: string): string {
     case 'quiz': return t('groupScenarios.typeQuiz')
     default: return t('groupScenarios.typeTerminal')
   }
-}
-
-function quizScoreClass(score: number): string {
-  if (score >= 0.7) return 'quiz-score-success'
-  if (score >= 0.4) return 'quiz-score-warning'
-  return 'quiz-score-danger'
 }
 
 function formatQuizScorePct(score: number): string {
@@ -1192,22 +1056,6 @@ function downloadCsv(csv: string, filename: string) {
   link.download = filename
   link.click()
   URL.revokeObjectURL(url)
-}
-
-// Resolve a stored answer (string) to display text. For multiple_choice the
-// answer is an option index ("0", "1", ...) and we look up the text in the
-// options list. For other types it's the literal value. Returns '' when the
-// answer is empty.
-function resolveAnswerText(q: QuestionDetail, raw: string): string {
-  if (!raw) return ''
-  if (q.question_type === 'multiple_choice') {
-    const opts = parseQuizOptions(q.options)
-    const idx = Number(raw)
-    if (Number.isInteger(idx) && idx >= 0 && idx < opts.length) {
-      return opts[idx]
-    }
-  }
-  return raw
 }
 
 function buildDetailCsv(details: Array<{ result: ScenarioResultItem; detail: SessionDetailResponse }>): string {
