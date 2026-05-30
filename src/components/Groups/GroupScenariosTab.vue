@@ -22,7 +22,7 @@
 -->
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { teacherService } from '../../services/domain/scenario'
@@ -64,7 +64,9 @@ import ResetAssignmentModal from './modals/ResetAssignmentModal.vue'
 import ScenarioAssignmentResultModal from './modals/ScenarioAssignmentResultModal.vue'
 import AssignScenarioModal from './modals/AssignScenarioModal.vue'
 import BulkStartScenarioModal from './modals/BulkStartScenarioModal.vue'
+import AssignmentResultsView from './AssignmentResultsView.vue'
 import { useDistributionPicker } from '../../composables/useDistributionPicker'
+import { useAssignmentResults } from '../../composables/useAssignmentResults'
 import type { ScenarioAssignment, Scenario, NoKeyUser, AssignmentResultError, ScenarioResultItem } from '../../types/groupScenarios'
 
 const props = defineProps<{
@@ -98,16 +100,11 @@ const { t } = useTranslations({
       resetSuccess: '{count} sessions reset',
       resetError: 'Failed to reset sessions',
       viewResults: 'Results',
-      studentResults: 'Learner Results',
       student: 'Learner',
       status: 'Status',
       grade: 'Grade',
-      progress: 'Progress',
       startedAt: 'Started',
       completedAt: 'Completed',
-      actions: 'Actions',
-      viewDetails: 'Details',
-      noResults: 'No sessions yet for this scenario.',
       sessionDetail: 'Session Detail',
       stepOrder: 'Step',
       stepTitle: 'Title',
@@ -138,17 +135,9 @@ const { t } = useTranslations({
       locked: 'locked',
       abandoned: 'abandoned',
       in_progress: 'in progress',
-      notGraded: 'N/A',
-      back: 'Back',
       difficultyBeginner: 'Beginner',
       difficultyIntermediate: 'Intermediate',
       difficultyAdvanced: 'Advanced',
-      exportCsv: 'Export CSV',
-      selectAll: 'Select all',
-      exportStudent: 'Export this student',
-      selectedCount: '{count} selected',
-      exportSelected: 'Export selected',
-      clearSelection: 'Clear selection',
       importKillercoda: 'Import KillerCoda',
       importJson: 'Import JSON',
       exportJson: 'Export JSON',
@@ -181,7 +170,6 @@ const { t } = useTranslations({
       incorrectIndicator: 'Incorrect',
       noAnswer: 'No answer',
       questionsCorrect: '{correct}/{total} correct',
-      correctCount: '{correct}/{total} correct',
       correctAnswers: 'Correct answers',
       commandsModeAll: 'All commands',
       commandsModePerStep: 'Per step',
@@ -226,16 +214,11 @@ const { t } = useTranslations({
       resetSuccess: '{count} sessions réinitialisées',
       resetError: 'Échec de la réinitialisation',
       viewResults: 'Résultats',
-      studentResults: 'Résultats des apprenants',
       student: 'Apprenant(e)',
       status: 'Statut',
       grade: 'Note',
-      progress: 'Progression',
       startedAt: 'Début',
       completedAt: 'Fin',
-      actions: 'Actions',
-      viewDetails: 'Détails',
-      noResults: 'Aucune session pour ce scénario.',
       sessionDetail: 'Détail de la session',
       stepOrder: 'Étape',
       stepTitle: 'Titre',
@@ -266,17 +249,9 @@ const { t } = useTranslations({
       locked: 'verrouillé',
       abandoned: 'abandonné',
       in_progress: 'en cours',
-      notGraded: 'N/A',
-      back: 'Retour',
       difficultyBeginner: 'Débutant',
       difficultyIntermediate: 'Intermédiaire',
       difficultyAdvanced: 'Avancé',
-      exportCsv: 'Exporter CSV',
-      selectAll: 'Tout sélectionner',
-      exportStudent: 'Exporter cet étudiant',
-      selectedCount: '{count} sélectionné(s)',
-      exportSelected: 'Exporter la sélection',
-      clearSelection: 'Annuler la sélection',
       importKillercoda: 'Importer KillerCoda',
       importJson: 'Importer JSON',
       exportJson: 'Exporter JSON',
@@ -309,7 +284,6 @@ const { t } = useTranslations({
       incorrectIndicator: 'Incorrecte',
       noAnswer: 'Pas de réponse',
       questionsCorrect: '{correct}/{total} correctes',
-      correctCount: '{correct}/{total} correctes',
       correctAnswers: 'Réponses correctes',
       commandsModeAll: 'Toutes les commandes',
       commandsModePerStep: 'Par étape',
@@ -361,13 +335,17 @@ const assignmentToBulkStart = ref<ScenarioAssignment | null>(null)
 const showUploadModal = ref(false)
 const showJSONImportModal = ref(false)
 
-// Results view state
-const showResultsForAssignment = ref<ScenarioAssignment | null>(null)
-const scenarioResults = ref<ScenarioResultItem[]>([])
-const loadingResults = ref(false)
-
-// Auto-refresh interval
-const resultsRefreshInterval = ref<ReturnType<typeof setInterval> | null>(null)
+// Results view state + 30s polling + multi-select (composable-owned)
+const {
+  showResultsForAssignment,
+  scenarioResults,
+  loadingResults,
+  selectedResults,
+  handleViewResults,
+  closeResults,
+  toggleResult,
+  toggleSelectAll
+} = useAssignmentResults(() => props.groupId, () => notifyError(t('groupScenarios.loadError')))
 
 // Detail modal state
 const showDetailModal = ref(false)
@@ -406,19 +384,6 @@ const expandedStepOrders = ref<Set<number>>(new Set())
 
 // Per-quiz questions UI: which quiz step orders have their question detail expanded
 const expandedQuizSteps = ref<Set<number>>(new Set())
-
-// Selection state for multi-select export
-const selectedResults = ref<Set<string>>(new Set())
-const allSelected = computed({
-  get: () => scenarioResults.value.length > 0 && selectedResults.value.size === scenarioResults.value.length,
-  set: (val: boolean) => {
-    if (val) {
-      scenarioResults.value.forEach(r => selectedResults.value.add(r.session_id))
-    } else {
-      selectedResults.value.clear()
-    }
-  }
-})
 
 // Load assignments
 async function loadAssignments() {
@@ -541,47 +506,6 @@ async function confirmReset() {
     showResultModal.value = true
   } catch (err: any) {
     notifyError(err.response?.data?.error_message || t('groupScenarios.resetError'))
-  }
-}
-
-// View results for an assignment
-async function handleViewResults(assignment: ScenarioAssignment) {
-  showResultsForAssignment.value = assignment
-  loadingResults.value = true
-  scenarioResults.value = []
-  selectedResults.value.clear()
-  try {
-    scenarioResults.value = await teacherService.getScenarioResults(
-      props.groupId,
-      assignment.scenario_id
-    )
-  } catch (err: any) {
-    notifyError(err.response?.data?.error || t('groupScenarios.loadError'))
-  } finally {
-    loadingResults.value = false
-  }
-
-  // Start auto-refresh
-  if (resultsRefreshInterval.value) clearInterval(resultsRefreshInterval.value)
-  resultsRefreshInterval.value = setInterval(async () => {
-    if (!showResultsForAssignment.value) return
-    try {
-      scenarioResults.value = await teacherService.getScenarioResults(
-        props.groupId,
-        showResultsForAssignment.value.scenario_id
-      )
-    } catch {
-      // Silently ignore refresh errors
-    }
-  }, 30000)
-}
-
-function closeResults() {
-  showResultsForAssignment.value = null
-  scenarioResults.value = []
-  if (resultsRefreshInterval.value) {
-    clearInterval(resultsRefreshInterval.value)
-    resultsRefreshInterval.value = null
   }
 }
 
@@ -966,14 +890,6 @@ async function exportSelectedResults() {
   }
 }
 
-function toggleSelection(sessionId: string) {
-  if (selectedResults.value.has(sessionId)) {
-    selectedResults.value.delete(sessionId)
-  } else {
-    selectedResults.value.add(sessionId)
-  }
-}
-
 // Export handlers
 async function handleExportJSON(assignment: ScenarioAssignment) {
   try {
@@ -1013,12 +929,6 @@ function openAssignModal() {
 
 onMounted(() => {
   loadAssignments()
-})
-
-onUnmounted(() => {
-  if (resultsRefreshInterval.value) {
-    clearInterval(resultsRefreshInterval.value)
-  }
 })
 </script>
 
@@ -1133,112 +1043,21 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Student Results Panel -->
-    <div v-if="showResultsForAssignment" class="results-panel">
-      <div class="results-header">
-        <button @click="closeResults" class="btn btn-sm btn-outline">
-          <i class="fas fa-arrow-left"></i> {{ t('groupScenarios.back') }}
-        </button>
-        <h4>{{ t('groupScenarios.studentResults') }} — {{ showResultsForAssignment.scenario?.title }}</h4>
-        <button @click="exportResultsCsv" class="btn btn-sm btn-outline" :disabled="scenarioResults.length === 0">
-          <i class="fas fa-download"></i> {{ t('groupScenarios.exportCsv') }}
-        </button>
-      </div>
-
-      <div v-if="loadingResults" class="loading-state" role="status">
-        <i class="fas fa-spinner fa-spin"></i>
-      </div>
-
-      <div v-else-if="scenarioResults.length === 0" class="empty-state">
-        <p>{{ t('groupScenarios.noResults') }}</p>
-      </div>
-
-      <div v-else class="results-table-container">
-      <div v-if="selectedResults.size > 0" class="bulk-actions-bar">
-        <span>{{ t('groupScenarios.selectedCount', { count: selectedResults.size }) }}</span>
-        <button @click="exportSelectedResults" class="btn btn-sm btn-primary">
-          <i class="fas fa-download"></i> {{ t('groupScenarios.exportSelected') }}
-        </button>
-        <button @click="selectedResults.clear()" class="btn btn-sm btn-outline">
-          {{ t('groupScenarios.clearSelection') }}
-        </button>
-      </div>
-      <table class="results-table" :aria-label="t('groupScenarios.studentResults')">
-        <thead>
-          <tr>
-            <th class="checkbox-col">
-              <input type="checkbox" v-model="allSelected" :title="t('groupScenarios.selectAll')" />
-            </th>
-            <th>{{ t('groupScenarios.student') }}</th>
-            <th>{{ t('groupScenarios.status') }}</th>
-            <th>{{ t('groupScenarios.grade') }}</th>
-            <th>{{ t('groupScenarios.progress') }}</th>
-            <th>{{ t('groupScenarios.hintsUsed') }}</th>
-            <th>{{ t('groupScenarios.startedAt') }}</th>
-            <th>{{ t('groupScenarios.completedAt') }}</th>
-            <th>{{ t('groupScenarios.actions') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="result in scenarioResults" :key="result.session_id">
-            <td class="checkbox-col">
-              <input type="checkbox" :checked="selectedResults.has(result.session_id)" @change="toggleSelection(result.session_id)" />
-            </td>
-            <td>
-              <div class="student-name">{{ result.user_name || result.user_id }}</div>
-              <div v-if="result.user_email" class="student-email">{{ result.user_email }}</div>
-            </td>
-            <td>
-              <span :class="['status-chip', getStatusClass(result.status)]">
-                {{ translateStatus(result.status) }}
-              </span>
-            </td>
-            <td>
-              <div>{{ result.grade != null ? Math.round(result.grade) + '%' : t('groupScenarios.notGraded') }}</div>
-              <div
-                v-if="result.total_correct_possible"
-                class="correct-count-sub"
-              >
-                {{ t('groupScenarios.correctCount', {
-                  correct: result.correct_count ?? 0,
-                  total: result.total_correct_possible
-                }) }}
-              </div>
-            </td>
-            <td>
-              <div class="progress-cell">
-                <div class="progress-bar-bg">
-                  <div
-                    class="progress-bar-fill"
-                    :style="{ width: (result.total_steps > 0 ? (result.completed_steps / result.total_steps) * 100 : 0) + '%' }"
-                  ></div>
-                </div>
-                <span class="progress-text">{{ result.completed_steps }}/{{ result.total_steps }}</span>
-              </div>
-            </td>
-            <td>
-              <span v-if="result.total_hints_used > 0" class="hints-used-badge">
-                {{ result.total_hints_used }}
-              </span>
-              <span v-else class="hints-none">0</span>
-            </td>
-            <td class="date-cell">{{ formatDate(result.started_at) }}</td>
-            <td class="date-cell">{{ result.completed_at ? formatDate(result.completed_at) : '—' }}</td>
-            <td>
-              <div class="actions-cell">
-                <button @click="handleViewDetail(result)" class="btn btn-sm btn-outline">
-                  <i class="fas fa-eye"></i> {{ t('groupScenarios.viewDetails') }}
-                </button>
-                <button @click="exportSingleResult(result)" class="btn btn-sm btn-outline" :title="t('groupScenarios.exportStudent')">
-                  <i class="fas fa-download"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      </div>
-    </div>
+    <!-- Student Results Panel (inline) -->
+    <AssignmentResultsView
+      v-if="showResultsForAssignment"
+      :assignment="showResultsForAssignment"
+      :results="scenarioResults"
+      :loading="loadingResults"
+      :selected-results="selectedResults"
+      @close="closeResults"
+      @view-detail="handleViewDetail"
+      @export-all="exportResultsCsv"
+      @export-single="exportSingleResult"
+      @export-selected="exportSelectedResults"
+      @toggle-result="toggleResult"
+      @toggle-select-all="toggleSelectAll"
+    />
 
     <!-- Session Detail Modal -->
     <BaseModal
@@ -1972,35 +1791,6 @@ onUnmounted(() => {
 
 /* Form */
 
-.checkbox-col {
-  width: 2rem;
-  text-align: center;
-}
-
-.checkbox-col input[type="checkbox"] {
-  cursor: pointer;
-  accent-color: var(--color-primary);
-}
-
-.actions-cell {
-  display: flex;
-  align-items: stretch;
-  gap: var(--spacing-xs);
-}
-
-.bulk-actions-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-primary-bg);
-  border: var(--border-width-thin) solid var(--color-primary-border);
-  border-radius: var(--border-radius-md);
-  margin-bottom: var(--spacing-sm);
-  font-size: var(--font-size-sm);
-  color: var(--color-primary);
-}
-
 .btn-outline {
   background: transparent;
   border: 1px solid var(--color-border-medium);
@@ -2010,28 +1800,6 @@ onUnmounted(() => {
 .btn-outline:hover {
   background: var(--color-bg-tertiary);
   border-color: var(--color-border-dark);
-}
-
-.results-table-container {
-  overflow-x: auto;
-}
-
-/* Results panel */
-.results-panel {
-  margin-top: var(--spacing-lg);
-}
-
-.results-header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
-}
-
-.results-header h4 {
-  margin: 0;
-  color: var(--color-text-primary);
-  font-size: var(--font-size-md);
 }
 
 .results-table,
@@ -2063,51 +1831,8 @@ onUnmounted(() => {
   background-color: var(--color-bg-secondary);
 }
 
-.student-name {
-  font-weight: var(--font-weight-medium);
-}
-
-.student-email {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-
-.correct-count-sub {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  margin-top: 2px;
-}
-
 .date-cell {
   font-size: var(--font-size-xs);
-  white-space: nowrap;
-}
-
-.progress-cell {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.progress-bar-bg {
-  flex: 1;
-  height: 8px;
-  background-color: var(--color-bg-tertiary);
-  border-radius: 4px;
-  overflow: hidden;
-  min-width: 60px;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  background-color: var(--color-primary);
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.progress-text {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
   white-space: nowrap;
 }
 
