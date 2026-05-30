@@ -22,7 +22,7 @@
 -->
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { teacherService } from '../../services/domain/scenario'
@@ -53,7 +53,6 @@ import {
 } from '../../utils/scenarioDisplay'
 import { sanitizeCSVField } from '../../utils/csv'
 import { useTerminalBackendsStore } from '../../stores/terminalBackends'
-import BackendSelector from '../Terminal/BackendSelector.vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import ScenarioUploadModal from '../Modals/ScenarioUploadModal.vue'
 import ScenarioJSONImportModal from '../Modals/ScenarioJSONImportModal.vue'
@@ -61,6 +60,8 @@ import RemoveAssignmentConfirmModal from './modals/RemoveAssignmentConfirmModal.
 import ResetAssignmentModal from './modals/ResetAssignmentModal.vue'
 import ScenarioAssignmentResultModal from './modals/ScenarioAssignmentResultModal.vue'
 import AssignScenarioModal from './modals/AssignScenarioModal.vue'
+import BulkStartScenarioModal from './modals/BulkStartScenarioModal.vue'
+import { useDistributionPicker } from '../../composables/useDistributionPicker'
 import type { ScenarioAssignment, Scenario, NoKeyUser, AssignmentResultError } from '../../types/groupScenarios'
 
 const props = defineProps<{
@@ -80,7 +81,6 @@ const { t } = useTranslations({
       noAssignments: 'No scenarios assigned to this group yet.',
       assignSuccess: 'Scenario assigned successfully',
       bulkStartResult: 'Started {started} sessions, skipped {skipped}',
-      cancel: 'Cancel',
       difficulty: 'Difficulty',
       active: 'Active',
       inactive: 'Inactive',
@@ -94,9 +94,6 @@ const { t } = useTranslations({
       resetSessions: 'Reset Sessions',
       resetSuccess: '{count} sessions reset',
       resetError: 'Failed to reset sessions',
-      selectDistribution: 'Select Distribution',
-      distribution: 'Distribution',
-      distributionDescription: 'Choose the terminal distribution for all learners in this group.',
       viewResults: 'Results',
       studentResults: 'Learner Results',
       student: 'Learner',
@@ -212,7 +209,6 @@ const { t } = useTranslations({
       noAssignments: 'Aucun scénario assigné à ce groupe.',
       assignSuccess: 'Scénario assigné avec succès',
       bulkStartResult: '{started} sessions démarrées, {skipped} ignorées',
-      cancel: 'Annuler',
       difficulty: 'Difficulté',
       active: 'Actif',
       inactive: 'Inactif',
@@ -226,9 +222,6 @@ const { t } = useTranslations({
       resetSessions: 'Réinitialiser',
       resetSuccess: '{count} sessions réinitialisées',
       resetError: 'Échec de la réinitialisation',
-      selectDistribution: 'Sélectionner la distribution',
-      distribution: 'Distribution',
-      distributionDescription: 'Choisissez la distribution terminal pour tous les apprenants de ce groupe.',
       viewResults: 'Résultats',
       studentResults: 'Résultats des apprenants',
       student: 'Apprenant(e)',
@@ -339,13 +332,8 @@ const { t } = useTranslations({
 const { showError: notifyError } = useNotification()
 const backendsStore = useTerminalBackendsStore()
 
-interface Distribution {
-  prefix: string
-  name: string
-  description: string
-  os_type?: string
-  is_global: boolean
-}
+// Distribution picker (list + selection + loader; reloads on backend change)
+const { distributions, selectedDistribution, loadingDistributions, loadDistributions } = useDistributionPicker()
 
 interface ScenarioResultItem {
   session_id: string
@@ -384,9 +372,6 @@ const showResetModal = ref(false)
 const assignmentToReset = ref<ScenarioAssignment | null>(null)
 const showBulkStartModal = ref(false)
 const assignmentToBulkStart = ref<ScenarioAssignment | null>(null)
-const distributions = ref<Distribution[]>([])
-const selectedDistribution = ref('')
-const loadingDistributions = ref(false)
 
 // Import modal state
 const showUploadModal = ref(false)
@@ -488,23 +473,6 @@ async function handleAssign(payload: { scenarioId: string; startDate: string; de
     await loadAssignments()
   } catch (err: any) {
     notifyError(err.response?.data?.error_message || t('groupScenarios.assignError'))
-  }
-}
-
-// Load distributions for bulk start modal
-async function loadDistributions() {
-  loadingDistributions.value = true
-  try {
-    const backendId = backendsStore.selectedBackendId || undefined
-    distributions.value = await teacherService.getDistributions(backendId)
-    // Auto-select first if only one
-    if (distributions.value.length === 1) {
-      selectedDistribution.value = distributions.value[0].prefix
-    }
-  } catch (err: any) {
-    console.error('Failed to load distributions:', err)
-  } finally {
-    loadingDistributions.value = false
   }
 }
 
@@ -1164,12 +1132,6 @@ function openAssignModal() {
   loadScenarios()
   showAssignModal.value = true
 }
-
-// When backend selection changes, reload distributions
-watch(() => backendsStore.selectedBackendId, () => {
-  selectedDistribution.value = ''
-  loadDistributions()
-})
 
 onMounted(() => {
   loadAssignments()
@@ -1849,44 +1811,15 @@ onUnmounted(() => {
     />
 
     <!-- Bulk Start Distribution Modal -->
-    <BaseModal
+    <BulkStartScenarioModal
       :visible="showBulkStartModal"
-      :title="t('groupScenarios.selectDistribution')"
-      size="medium"
-      :show-default-footer="true"
-      :confirm-text="t('groupScenarios.bulkStart')"
-      :cancel-text="t('groupScenarios.cancel')"
+      :assignment="assignmentToBulkStart"
+      :distributions="distributions"
+      v-model:selected-distribution="selectedDistribution"
+      :loading-distributions="loadingDistributions"
       @confirm="confirmBulkStart"
       @close="showBulkStartModal = false"
-    >
-      <p class="instance-type-description">
-        {{ t('groupScenarios.distributionDescription') }}
-      </p>
-      <!-- Backend selector (only if org has backends) -->
-      <BackendSelector
-        v-if="backendsStore.backends.length > 0"
-        :model-value="backendsStore.selectedBackendId || ''"
-        :backends="backendsStore.backends"
-        :disabled="backendsStore.isLoading"
-        @update:model-value="backendsStore.selectBackend($event)"
-      />
-      <div v-if="loadingDistributions" class="loading-state">
-        <i class="fas fa-spinner fa-spin"></i>
-      </div>
-      <div v-else class="form-group">
-        <label>{{ t('groupScenarios.distribution') }}</label>
-        <select v-model="selectedDistribution" class="form-control">
-          <option value="" disabled>{{ t('groupScenarios.selectDistribution') }}</option>
-          <option
-            v-for="dist in distributions"
-            :key="dist.prefix"
-            :value="dist.prefix"
-          >
-            {{ dist.name }} — {{ dist.description }}
-          </option>
-        </select>
-      </div>
-    </BaseModal>
+    />
 
     <!-- Bulk Start Result Modal -->
     <ScenarioAssignmentResultModal
@@ -2160,31 +2093,6 @@ onUnmounted(() => {
 }
 
 /* Form */
-.form-group {
-  margin-bottom: var(--spacing-md);
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: var(--spacing-xs);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
-}
-
-.form-control {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-border-medium);
-  border-radius: var(--border-radius-md);
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
-}
-
-.instance-type-description {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  margin-bottom: var(--spacing-md);
-}
 
 .checkbox-col {
   width: 2rem;

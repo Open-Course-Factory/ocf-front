@@ -42,3 +42,11 @@ export interface AssignmentResultError {
   user_id: string
   error?: string
 }
+
+export interface Distribution {
+  prefix: string
+  name: string
+  description: string
+  os_type?: string
+  is_global: boolean
+}
