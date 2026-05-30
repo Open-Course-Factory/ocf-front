@@ -38,7 +38,6 @@ import {
   optionRoleIcon,
   displayAnswer,
   isOrphanStudentAnswer,
-  resolveAnswerText,
   quizCorrectCount,
   quizQuestionTotal,
   normalizedStepType,
@@ -51,7 +50,11 @@ import {
   quizScoreClass,
   commandsForStepFromList
 } from '../../utils/scenarioDisplay'
-import { sanitizeCSVField } from '../../utils/csv'
+import { downloadCsv, downloadJSON, downloadBlob } from '../../utils/download'
+import {
+  buildSessionDetailCsv,
+  buildCommandsCsv
+} from '../../utils/scenarioResultsCsv'
 import { useTerminalBackendsStore } from '../../stores/terminalBackends'
 import BaseModal from '../Modals/BaseModal.vue'
 import ScenarioUploadModal from '../Modals/ScenarioUploadModal.vue'
@@ -62,7 +65,7 @@ import ScenarioAssignmentResultModal from './modals/ScenarioAssignmentResultModa
 import AssignScenarioModal from './modals/AssignScenarioModal.vue'
 import BulkStartScenarioModal from './modals/BulkStartScenarioModal.vue'
 import { useDistributionPicker } from '../../composables/useDistributionPicker'
-import type { ScenarioAssignment, Scenario, NoKeyUser, AssignmentResultError } from '../../types/groupScenarios'
+import type { ScenarioAssignment, Scenario, NoKeyUser, AssignmentResultError, ScenarioResultItem } from '../../types/groupScenarios'
 
 const props = defineProps<{
   groupId: string
@@ -335,26 +338,7 @@ const backendsStore = useTerminalBackendsStore()
 // Distribution picker (list + selection + loader; reloads on backend change)
 const { distributions, selectedDistribution, loadingDistributions, loadDistributions } = useDistributionPicker()
 
-interface ScenarioResultItem {
-  session_id: string
-  user_id: string
-  user_name?: string
-  user_email?: string
-  status: string
-  grade?: number
-  // Sum of correct quiz answers + correct flag captures
-  correct_count?: number
-  // Total quiz questions + count of flag-bearing steps in the scenario (static per scenario)
-  total_correct_possible?: number
-  current_step: number
-  total_steps: number
-  completed_steps: number
-  total_hints_used: number
-  started_at: string
-  completed_at?: string
-}
-
-// SessionStepDetail and SessionDetailResponse are imported from teacherService
+// ScenarioResultItem, SessionStepDetail and SessionDetailResponse are imported
 
 // State
 const assignments = ref<ScenarioAssignment[]>([])
@@ -750,51 +734,21 @@ async function exportCommandsCsv() {
   const result = detailResult.value
   const learner = result.user_name || result.user_email || result.user_id
   const perStep = commandsViewMode.value === 'per-step'
-  const baseHeaders = [
-    t('groupScenarios.commandSequence'),
-    t('groupScenarios.command'),
-    t('groupScenarios.commandExecutedAt'),
-    t('groupScenarios.student')
-  ]
-  const headers = perStep
-    ? [
-        t('groupScenarios.csvStepOrder'),
-        t('groupScenarios.csvStepTitle'),
-        t('groupScenarios.csvStepType'),
-        ...baseHeaders
-      ]
-    : baseHeaders
-
-  let rows: any[][]
-  if (perStep && sessionDetail.value) {
-    rows = []
-    const steps = sessionDetail.value.steps
-    // Build per-step buckets so each command appears once under the step it falls in.
-    for (const step of steps) {
-      const stepCommands = commandsForStepFromList(step, allCommands, Date.now())
-      for (const c of stepCommands) {
-        rows.push([
-          step.step_order + 1,
-          step.step_title,
-          normalizedStepType(step.step_type),
-          c.sequence_num,
-          c.command_text,
-          formatExecutedAt(c.executed_at),
-          learner
-        ])
-      }
-    }
-  } else {
-    rows = allCommands.map(c => [
-      c.sequence_num,
-      c.command_text,
-      formatExecutedAt(c.executed_at),
-      learner
-    ])
+  const commandsLabels = {
+    commandSequence: t('groupScenarios.commandSequence'),
+    command: t('groupScenarios.command'),
+    commandExecutedAt: t('groupScenarios.commandExecutedAt'),
+    student: t('groupScenarios.student'),
+    stepOrder: t('groupScenarios.csvStepOrder'),
+    stepTitle: t('groupScenarios.csvStepTitle'),
+    stepType: t('groupScenarios.csvStepType')
   }
-  const csv = [headers, ...rows]
-    .map(row => row.map(sanitizeCSVField).join(','))
-    .join('\n')
+  const csv = buildCommandsCsv(allCommands, commandsLabels, {
+    learner,
+    perStep,
+    steps: sessionDetail.value?.steps,
+    now: Date.now()
+  })
 
   const safeLearner = learner.replace(/[^a-zA-Z0-9-_]/g, '_')
   const sessionShort = result.session_id.split('-')[0] || result.session_id.slice(0, 8)
@@ -937,87 +891,31 @@ function formatQuizScorePct(score: number): string {
   return t('groupScenarios.quizScorePct', { score: Math.round(score * 100) })
 }
 
-function formatQuizScoreCsv(score?: number): string {
-  if (score == null) return ''
-  return `${(score * 100).toFixed(1)}%`
-}
-
-function downloadCsv(csv: string, filename: string) {
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  link.click()
-  URL.revokeObjectURL(url)
-}
-
-function buildDetailCsv(details: Array<{ result: ScenarioResultItem; detail: SessionDetailResponse }>): string {
-  const headers = [
-    t('groupScenarios.export.name'),
-    t('groupScenarios.export.email'),
-    t('groupScenarios.export.status'),
-    t('groupScenarios.export.grade'),
-    t('groupScenarios.stepOrder'),
-    t('groupScenarios.stepTitle'),
-    t('groupScenarios.csvStepType'),
-    t('groupScenarios.stepStatus'),
-    t('groupScenarios.attempts'),
-    t('groupScenarios.csvQuizScore'),
-    t('groupScenarios.hintsUsed'),
-    t('groupScenarios.timeSpent'),
-    t('groupScenarios.completedAt'),
-    // Per-question columns. Blank on step rows; filled on question rows
-    // (one extra row per quiz question, after the parent step row).
-    t('groupScenarios.csvQuestionOrder'),
-    t('groupScenarios.csvQuestionText'),
-    t('groupScenarios.csvQuestionType'),
-    t('groupScenarios.csvStudentAnswer'),
-    t('groupScenarios.csvCorrectAnswer'),
-    t('groupScenarios.csvIsCorrect')
-  ]
-  const yes = t('groupScenarios.csvYes')
-  const no = t('groupScenarios.csvNo')
-  const rows: any[][] = []
-  for (const { result, detail } of details) {
-    const studentName = result.user_name || result.user_id
-    const email = result.user_email || ''
-    const status = result.status
-    const grade = result.grade != null ? Math.round(result.grade) + '%' : ''
-    for (const step of detail.steps) {
-      const stepCols = [
-        studentName, email, status, grade,
-        step.step_order + 1,
-        step.step_title,
-        normalizedStepType(step.step_type),
-        step.status,
-        step.verify_attempts,
-        formatQuizScoreCsv(step.quiz_score),
-        step.hints_revealed,
-        formatDuration(step.time_spent_seconds),
-        step.completed_at ? formatDate(step.completed_at) : ''
-      ]
-      // Step row: leave the 6 question columns blank.
-      rows.push([...stepCols, '', '', '', '', '', ''])
-      // Quiz step → one row per question, repeating the step columns so
-      // each row is self-contained for filtering / pivoting.
-      if (normalizedStepType(step.step_type) === 'quiz' && step.questions) {
-        for (let i = 0; i < step.questions.length; i++) {
-          const q = step.questions[i]
-          rows.push([
-            ...stepCols,
-            (q.order != null ? q.order + 1 : i + 1),
-            q.question_text,
-            q.question_type,
-            resolveAnswerText(q, q.student_answer),
-            resolveAnswerText(q, q.correct_answer),
-            q.is_correct ? yes : no
-          ])
-        }
-      }
-    }
+// Resolve the t()-backed labels for the session-detail CSV header + yes/no cells.
+function detailCsvLabels() {
+  return {
+    name: t('groupScenarios.export.name'),
+    email: t('groupScenarios.export.email'),
+    status: t('groupScenarios.export.status'),
+    grade: t('groupScenarios.export.grade'),
+    stepOrder: t('groupScenarios.stepOrder'),
+    stepTitle: t('groupScenarios.stepTitle'),
+    stepType: t('groupScenarios.csvStepType'),
+    stepStatus: t('groupScenarios.stepStatus'),
+    attempts: t('groupScenarios.attempts'),
+    quizScore: t('groupScenarios.csvQuizScore'),
+    hintsUsed: t('groupScenarios.hintsUsed'),
+    timeSpent: t('groupScenarios.timeSpent'),
+    completedAt: t('groupScenarios.completedAt'),
+    questionOrder: t('groupScenarios.csvQuestionOrder'),
+    questionText: t('groupScenarios.csvQuestionText'),
+    questionType: t('groupScenarios.csvQuestionType'),
+    studentAnswer: t('groupScenarios.csvStudentAnswer'),
+    correctAnswer: t('groupScenarios.csvCorrectAnswer'),
+    isCorrect: t('groupScenarios.csvIsCorrect'),
+    yes: t('groupScenarios.csvYes'),
+    no: t('groupScenarios.csvNo')
   }
-  return [headers, ...rows].map(row => row.map(sanitizeCSVField).join(',')).join('\n')
 }
 
 async function exportResultsCsv() {
@@ -1030,7 +928,7 @@ async function exportResultsCsv() {
       result,
       detail: detailList[i]
     }))
-    const csv = buildDetailCsv(details)
+    const csv = buildSessionDetailCsv(details, detailCsvLabels())
     const scenarioTitle = showResultsForAssignment.value?.scenario?.title || 'export'
     downloadCsv(csv, `scenario-results-${scenarioTitle}.csv`)
   } catch (err: any) {
@@ -1041,7 +939,7 @@ async function exportResultsCsv() {
 async function exportSingleResult(result: ScenarioResultItem) {
   try {
     const detail = await teacherService.getSessionDetail(props.groupId, result.session_id)
-    const csv = buildDetailCsv([{ result, detail }])
+    const csv = buildSessionDetailCsv([{ result, detail }], detailCsvLabels())
     const studentName = (result.user_name || result.user_id).replace(/[^a-zA-Z0-9-_]/g, '_')
     const scenarioTitle = showResultsForAssignment.value?.scenario?.title || 'scenario'
     downloadCsv(csv, `${scenarioTitle}-${studentName}.csv`)
@@ -1060,7 +958,7 @@ async function exportSelectedResults() {
       result,
       detail: detailList[i]
     }))
-    const csv = buildDetailCsv(details)
+    const csv = buildSessionDetailCsv(details, detailCsvLabels())
     const scenarioTitle = showResultsForAssignment.value?.scenario?.title || 'scenario'
     downloadCsv(csv, `${scenarioTitle}-${selected.length}-students.csv`)
   } catch (err: any) {
@@ -1074,26 +972,6 @@ function toggleSelection(sessionId: string) {
   } else {
     selectedResults.value.add(sessionId)
   }
-}
-
-// Download helpers
-function downloadJSON(data: any, filename: string) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
-}
-
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
 }
 
 // Export handlers

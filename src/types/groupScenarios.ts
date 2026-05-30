@@ -50,3 +50,22 @@ export interface Distribution {
   os_type?: string
   is_global: boolean
 }
+
+export interface ScenarioResultItem {
+  session_id: string
+  user_id: string
+  user_name?: string
+  user_email?: string
+  status: string
+  grade?: number
+  // Sum of correct quiz answers + correct flag captures
+  correct_count?: number
+  // Total quiz questions + count of flag-bearing steps in the scenario (static per scenario)
+  total_correct_possible?: number
+  current_step: number
+  total_steps: number
+  completed_steps: number
+  total_hints_used: number
+  started_at: string
+  completed_at?: string
+}
