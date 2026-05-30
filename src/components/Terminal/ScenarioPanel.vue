@@ -164,58 +164,17 @@
           <!-- Step text (rendered as markdown) -->
           <div v-if="displayedStep!.text" class="step-text markdown-content" v-html="renderedDisplayedStepText"></div>
 
-          <!-- Transparency notice for hint tracking -->
-          <div v-if="hasProgressiveHints && !reviewingStep" class="hint-transparency-notice">
-            <i class="fas fa-eye"></i>
-            <span>{{ t('scenarioPanel.hintTransparency') }}</span>
-          </div>
-
-          <!-- Progressive hints section -->
-          <div v-if="hasProgressiveHints" class="hint-section">
-            <!-- Hint counter -->
-            <div class="hint-header">
-              <i class="fas fa-lightbulb hint-icon"></i>
-              <span class="hint-counter">
-                {{ t('scenarioPanel.hintsAvailable', { used: revealedHints.length, total: displayedStep!.hints_total_count }) }}
-              </span>
-            </div>
-
-            <!-- Already revealed hints (always visible, stacked) -->
-            <div v-for="hint in revealedHints" :key="hint.level" class="hint-item">
-              <div class="hint-level-label">{{ t('scenarioPanel.hintLevel', { level: hint.level }) }}</div>
-              <div class="hint-content markdown-content" v-html="renderHintMarkdown(hint.content)"></div>
-            </div>
-
-            <!-- Reveal next hint button -->
-            <button
-              v-if="revealedHints.length < displayedStep!.hints_total_count"
-              class="hint-toggle"
-              :class="{ 'hint-nudge': hintNudgeActive }"
-              :disabled="isRevealingHint"
-              @click="handleRevealNextHint"
-            >
-              <i :class="isRevealingHint ? 'fas fa-spinner fa-spin' : 'fas fa-lightbulb'"></i>
-              {{ isRevealingHint
-                ? t('scenarioPanel.revealingHint')
-                : t('scenarioPanel.revealNextHint', { level: revealedHints.length + 1 })
-              }}
-            </button>
-
-            <!-- All hints used -->
-            <div v-if="revealedHints.length > 0 && revealedHints.length >= displayedStep!.hints_total_count" class="hints-exhausted">
-              <i class="fas fa-check-circle"></i>
-              {{ t('scenarioPanel.allHintsRevealed') }}
-            </div>
-          </div>
-
-          <!-- Legacy single hint (backward compat for old scenarios without progressive hints) -->
-          <div v-else-if="displayedStep!.hint" class="hint-section">
-            <button class="hint-toggle" @click="showHint = !showHint" :aria-expanded="showHint">
-              <i :class="showHint ? 'fas fa-eye-slash' : 'fas fa-lightbulb'"></i>
-              {{ showHint ? t('scenarioPanel.hideHint') : t('scenarioPanel.showHint') }}
-            </button>
-            <div v-if="showHint" class="hint-content markdown-content" v-html="renderedDisplayedHintText"></div>
-          </div>
+          <ScenarioHintPanel
+            :step="displayedStep"
+            :has-progressive-hints="hasProgressiveHints"
+            :revealed-hints="revealedHints"
+            :is-revealing-hint="isRevealingHint"
+            :show-hint="showHint"
+            :hint-nudge-active="hintNudgeActive"
+            :is-reviewing="!!reviewingStep"
+            @reveal-next="handleRevealNextHint"
+            @toggle-hint="showHint = !showHint"
+          />
 
           <!-- Action area (hidden when reviewing previous steps or in review mode) -->
           <template v-if="!reviewingStep && !isReviewMode">
@@ -322,6 +281,7 @@ import ScenarioElapsedTimer from './ScenarioElapsedTimer.vue'
 import ScenarioVerifyResult from './ScenarioVerifyResult.vue'
 import ScenarioFlagSubmit from './ScenarioFlagSubmit.vue'
 import ScenarioQuizPanel from './ScenarioQuizPanel.vue'
+import ScenarioHintPanel from './ScenarioHintPanel.vue'
 import type {
   CurrentStepResponse,
   VerifyStepResponse,
@@ -363,8 +323,6 @@ const { t } = useTranslations({
       step: 'Step',
       verifying: 'Verifying...',
       failed: 'Not quite right. Check the output and try again.',
-      showHint: 'Show Hint',
-      hideHint: 'Hide Hint',
       abandon: 'Abandon Scenario',
       abandonConfirm: 'This session will be marked as abandoned. You can start a new attempt later.',
       abandonTitle: 'Abandon Scenario',
@@ -390,12 +348,6 @@ const { t } = useTranslations({
       totalTime: 'Time Spent',
       reviewingStep: 'Reviewing step {step}',
       backToCurrent: 'Back to current step',
-      hintsAvailable: 'Hints: {used}/{total}',
-      hintLevel: 'Hint {level}',
-      revealNextHint: 'Show Hint {level}',
-      revealingHint: 'Loading...',
-      allHintsRevealed: 'All hints used',
-      hintTransparency: 'Your instructor can see how many hints you use.',
       sessionCompleted: 'Scenario Completed',
       sessionAbandoned: 'Scenario Abandoned',
       // Step type chips
@@ -417,8 +369,6 @@ const { t } = useTranslations({
       step: 'Étape',
       verifying: 'Vérification...',
       failed: 'Pas tout à fait. Vérifiez la sortie et réessayez.',
-      showHint: 'Afficher l\'indice',
-      hideHint: 'Masquer l\'indice',
       abandon: 'Abandonner le scénario',
       abandonConfirm: 'Cette session sera marquée comme abandonnée. Vous pourrez recommencer une nouvelle tentative plus tard.',
       abandonTitle: 'Abandonner le scénario',
@@ -444,12 +394,6 @@ const { t } = useTranslations({
       totalTime: 'Temps passé',
       reviewingStep: 'Révision de l\'étape {step}',
       backToCurrent: 'Retour à l\'étape en cours',
-      hintsAvailable: 'Indices : {used}/{total}',
-      hintLevel: 'Indice {level}',
-      revealNextHint: 'Révéler l\'indice {level}',
-      revealingHint: 'Chargement...',
-      allHintsRevealed: 'Tous les indices utilisés',
-      hintTransparency: 'Votre formateur peut voir combien d\'indices vous utilisez.',
       sessionCompleted: 'Scénario terminé',
       sessionAbandoned: 'Scénario abandonné',
       // Step type chips
@@ -583,11 +527,6 @@ const renderedDisplayedStepText = computed(() => {
   return renderKillercodaMarkdown(displayedStep.value.text)
 })
 
-const renderedDisplayedHintText = computed(() => {
-  if (!displayedStep.value?.hint) return ''
-  return renderKillercodaMarkdown(displayedStep.value.hint)
-})
-
 const hasProgressiveHints = computed(() => {
   return displayedStep.value && displayedStep.value.hints_total_count > 0
 })
@@ -642,10 +581,6 @@ const stepTypeMeta = computed<StepTypeMeta | null>(() => {
   }
   return map[resolvedStepType.value]
 })
-
-function renderHintMarkdown(content: string): string {
-  return renderKillercodaMarkdown(content)
-}
 
 async function handleRevealNextHint() {
   if (isRevealingHint.value || !displayedStep.value) return
@@ -1382,108 +1317,6 @@ defineExpose({
   color: var(--color-text-secondary);
 }
 
-/* Hint section */
-.hint-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.hint-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  background: var(--color-bg-secondary);
-  border: var(--border-width-thin) solid var(--color-border-light);
-  border-radius: var(--border-radius-md);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  align-self: flex-start;
-}
-
-.hint-toggle:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text-secondary);
-  border-color: var(--color-border-medium);
-}
-
-.hint-toggle i {
-  color: var(--color-warning);
-}
-
-.hint-content {
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-warning-bg);
-  border: var(--border-width-thin) solid var(--color-warning-border);
-  border-radius: var(--border-radius-md);
-  font-size: var(--font-size-sm);
-  color: var(--color-warning-text);
-  line-height: var(--line-height-relaxed);
-}
-
-.hint-header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-
-.hint-icon {
-  color: var(--color-warning);
-}
-
-.hint-counter {
-  font-weight: var(--font-weight-medium);
-}
-
-.hint-item {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-2xs);
-}
-
-.hint-level-label {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-warning);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.hints-exhausted {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  font-style: italic;
-}
-
-.hints-exhausted i {
-  color: var(--color-success);
-}
-
-.hint-transparency-notice {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  background: var(--color-bg-secondary);
-  border-radius: var(--border-radius-md);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  font-style: italic;
-}
-
-.hint-transparency-notice i {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-}
-
 /* Session actions */
 .session-actions {
   padding: var(--spacing-md);
@@ -1693,11 +1526,6 @@ defineExpose({
 
 .abandon-btn:focus-visible {
   outline: 2px solid var(--color-danger);
-  outline-offset: 2px;
-}
-
-.hint-toggle:focus-visible {
-  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -2024,22 +1852,6 @@ defineExpose({
 
 .step-type-chip i {
   font-size: 0.85em;
-}
-
-/* Hint-nudge pulse on the hint button (after 90s of inactivity on a terminal step) */
-.hint-toggle.hint-nudge {
-  animation: hint-nudge-pulse 2.4s ease-in-out infinite;
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-@keyframes hint-nudge-pulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 var(--color-primary-light);
-  }
-  50% {
-    box-shadow: 0 0 0 6px var(--color-primary-light);
-  }
 }
 
 /* Info step */
