@@ -61,9 +61,7 @@ const { t } = useTranslations({
       removeAssignment: 'Remove',
       noStartDate: 'No start date',
       noAssignments: 'No scenarios assigned to this group yet.',
-      assignSuccess: 'Scenario assigned successfully',
       bulkStartResult: 'Started {started} sessions, skipped {skipped}',
-      difficulty: 'Difficulty',
       active: 'Active',
       inactive: 'Inactive',
       noDeadline: 'No deadline',
@@ -72,7 +70,6 @@ const { t } = useTranslations({
       removeError: 'Failed to remove assignment',
       bulkStartError: 'Failed to start sessions',
       starting: 'Starting sessions...',
-      close: 'Close',
       resetSessions: 'Reset Sessions',
       resetSuccess: '{count} sessions reset',
       resetError: 'Failed to reset sessions',
@@ -101,18 +98,13 @@ const { t } = useTranslations({
       importJson: 'Import JSON',
       exportJson: 'Export JSON',
       exportKillercoda: 'Export KillerCoda',
-      importSuccess: 'Scenario imported successfully',
       exportError: 'Failed to export scenario',
       orgScenario: 'Org',
       export: {
         name: 'Name',
         email: 'Email',
         status: 'Status',
-        grade: 'Grade',
-        progress: 'Progress',
-        hintsUsed: 'Hints Used',
-        started: 'Started',
-        completed: 'Completed'
+        grade: 'Grade'
       }
     }
   },
@@ -124,9 +116,7 @@ const { t } = useTranslations({
       removeAssignment: 'Supprimer',
       noStartDate: 'Pas de date de début',
       noAssignments: 'Aucun scénario assigné à ce groupe.',
-      assignSuccess: 'Scénario assigné avec succès',
       bulkStartResult: '{started} sessions démarrées, {skipped} ignorées',
-      difficulty: 'Difficulté',
       active: 'Actif',
       inactive: 'Inactif',
       noDeadline: 'Pas de date limite',
@@ -135,7 +125,6 @@ const { t } = useTranslations({
       removeError: 'Échec de la suppression de l\'assignation',
       bulkStartError: 'Échec du démarrage des sessions',
       starting: 'Démarrage des sessions...',
-      close: 'Fermer',
       resetSessions: 'Réinitialiser',
       resetSuccess: '{count} sessions réinitialisées',
       resetError: 'Échec de la réinitialisation',
@@ -164,18 +153,13 @@ const { t } = useTranslations({
       importJson: 'Importer JSON',
       exportJson: 'Exporter JSON',
       exportKillercoda: 'Exporter KillerCoda',
-      importSuccess: 'Scénario importé avec succès',
       exportError: 'Échec de l\'export du scénario',
       orgScenario: 'Org',
       export: {
         name: 'Nom',
         email: 'Email',
         status: 'Statut',
-        grade: 'Note',
-        progress: 'Progression',
-        hintsUsed: 'Indices utilisés',
-        started: 'Début',
-        completed: 'Fin'
+        grade: 'Note'
       }
     }
   }
