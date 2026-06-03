@@ -1,5 +1,28 @@
+<!--
+/*
+ * Open Course Factory - Front
+ * Copyright (C) 2023-2026 Solution Libre
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * Copyright (c) - All Rights Reserved.
+ *
+ * See the LICENSE file for more information.
+ */
+-->
+
 <template>
-  <div class="assignment-card">
+  <div class="card assignment-card">
     <div class="assignment-info">
       <div class="assignment-title">
         {{ assignment.scenario?.title || assignment.scenario_id }}
@@ -10,7 +33,8 @@
       <div class="assignment-meta">
         <span
           v-if="assignment.scenario?.difficulty"
-          :class="['difficulty-badge', getDifficultyClass(assignment.scenario.difficulty)]"
+          class="badge"
+          :class="difficultyVariant"
         >
           {{ translateDifficulty(assignment.scenario.difficulty) }}
         </span>
@@ -22,7 +46,7 @@
           <i class="fas fa-calendar"></i>
           {{ assignment.deadline ? formatDate(assignment.deadline) : t('groupScenarios.noDeadline') }}
         </span>
-        <span :class="['status-chip', assignment.is_active ? 'status-active' : 'status-inactive']">
+        <span class="badge" :class="assignment.is_active ? 'badge-success' : 'badge-secondary'">
           {{ assignment.is_active ? t('groupScenarios.active') : t('groupScenarios.inactive') }}
         </span>
       </div>
@@ -30,12 +54,7 @@
       <!-- Progress -->
       <div class="assignment-progress">
         <template v-if="hasProgress">
-          <div class="progress-bar-bg">
-            <div
-              class="progress-bar-fill"
-              :style="{ width: (progress!.completed_count / progress!.total_count) * 100 + '%' }"
-            ></div>
-          </div>
+          <ProgressBar :value="progress!.completed_count" :max="progress!.total_count" />
           <span class="assignment-progress-text">
             <strong class="assignment-progress-count">{{ progress!.completed_count }}/{{ progress!.total_count }}</strong>
             <span class="assignment-progress-done">{{ t('groupScenarios.progressDone') }}</span>
@@ -45,81 +64,70 @@
             <span class="assignment-progress-avg-value">{{ Math.round(progress!.avg_grade) }}%</span>
           </span>
         </template>
-        <span v-else class="no-attempts">
-          <i class="fas fa-circle-notch"></i>
-          {{ t('groupScenarios.noAttempts') }}
-        </span>
+        <span v-else class="text-muted">{{ t('groupScenarios.noAttempts') }}</span>
       </div>
     </div>
 
-    <div v-if="canEditGroup" ref="containerRef" class="assignment-actions">
-      <button class="btn btn-primary btn-view-results" @click="$emit('view-results')">
+    <div v-if="canEditGroup" class="assignment-actions">
+      <button class="btn btn-primary btn-sm btn-view-results" @click="$emit('view-results')">
         <i class="fas fa-chart-bar"></i>
         {{ t('groupScenarios.viewResults') }}
         <i class="fas fa-arrow-right"></i>
       </button>
 
-      <div class="dropdown-container">
+      <DropdownMenu>
         <button
-          class="btn-icon"
-          @click.stop="toggleMenu"
-          :title="t('groupScenarios.moreActions')"
+          class="dropdown-item"
+          data-test="action-bulk-start"
+          :disabled="bulkStarting"
+          @click="$emit('bulk-start')"
         >
-          <i class="fas fa-ellipsis-v"></i>
+          <i :class="bulkStarting ? 'fas fa-spinner fa-spin' : 'fas fa-play'"></i>
+          <span>{{ bulkStarting ? t('groupScenarios.starting') : t('groupScenarios.bulkStart') }}</span>
         </button>
-
-        <div v-if="menuOpen" class="dropdown-menu" @click.stop>
-          <button
-            class="dropdown-item"
-            data-test="action-bulk-start"
-            :disabled="bulkStarting"
-            @click="$emit('bulk-start'); closeMenu()"
-          >
-            <i :class="bulkStarting ? 'fas fa-spinner fa-spin' : 'fas fa-play'"></i>
-            <span>{{ bulkStarting ? t('groupScenarios.starting') : t('groupScenarios.bulkStart') }}</span>
-          </button>
-          <button
-            class="dropdown-item"
-            data-test="action-reset"
-            @click="$emit('reset'); closeMenu()"
-          >
-            <i class="fas fa-undo"></i>
-            <span>{{ t('groupScenarios.resetSessions') }}</span>
-          </button>
-          <button
-            class="dropdown-item"
-            data-test="action-export-json"
-            @click="$emit('export-json'); closeMenu()"
-          >
-            <i class="fas fa-file-download"></i>
-            <span>{{ t('groupScenarios.exportJson') }}</span>
-          </button>
-          <button
-            class="dropdown-item"
-            data-test="action-export-archive"
-            @click="$emit('export-archive'); closeMenu()"
-          >
-            <i class="fas fa-file-archive"></i>
-            <span>{{ t('groupScenarios.exportKillercoda') }}</span>
-          </button>
-          <button
-            class="dropdown-item dropdown-item-danger"
-            data-test="action-remove"
-            @click="$emit('remove'); closeMenu()"
-          >
-            <i class="fas fa-trash"></i>
-            <span>{{ t('groupScenarios.removeAssignment') }}</span>
-          </button>
-        </div>
-      </div>
+        <button
+          class="dropdown-item"
+          data-test="action-reset"
+          @click="$emit('reset')"
+        >
+          <i class="fas fa-undo"></i>
+          <span>{{ t('groupScenarios.resetSessions') }}</span>
+        </button>
+        <button
+          class="dropdown-item"
+          data-test="action-export-json"
+          @click="$emit('export-json')"
+        >
+          <i class="fas fa-file-download"></i>
+          <span>{{ t('groupScenarios.exportJson') }}</span>
+        </button>
+        <button
+          class="dropdown-item"
+          data-test="action-export-archive"
+          @click="$emit('export-archive')"
+        >
+          <i class="fas fa-file-archive"></i>
+          <span>{{ t('groupScenarios.exportKillercoda') }}</span>
+        </button>
+        <button
+          class="dropdown-item dropdown-item--danger"
+          data-test="action-remove"
+          @click="$emit('remove')"
+        >
+          <i class="fas fa-trash"></i>
+          <span>{{ t('groupScenarios.removeAssignment') }}</span>
+        </button>
+      </DropdownMenu>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { computed } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
-import { getDifficultyClass, formatDate } from '../../utils/scenarioDisplay'
+import { formatDate } from '../../utils/scenarioDisplay'
+import ProgressBar from '../Common/ProgressBar.vue'
+import DropdownMenu from '../Common/DropdownMenu.vue'
 import type { ScenarioAssignment, AssignmentProgress } from '../../types/groupScenarios'
 
 const props = defineProps<{
@@ -153,7 +161,6 @@ const { t } = useTranslations({
       noStartDate: 'No start date',
       noDeadline: 'No deadline',
       orgScenario: 'Org',
-      moreActions: 'More actions',
       difficultyBeginner: 'Beginner',
       difficultyIntermediate: 'Intermediate',
       difficultyAdvanced: 'Advanced',
@@ -176,7 +183,6 @@ const { t } = useTranslations({
       noStartDate: 'Pas de date de début',
       noDeadline: 'Pas de date limite',
       orgScenario: 'Org',
-      moreActions: 'Plus d\'actions',
       difficultyBeginner: 'Débutant',
       difficultyIntermediate: 'Intermédiaire',
       difficultyAdvanced: 'Avancé',
@@ -190,6 +196,17 @@ const { t } = useTranslations({
 const isOrgScenario = computed(() => props.assignment.scenario?.organization_id != null)
 const hasProgress = computed(() => !!props.progress && props.progress.total_count > 0)
 
+// Difficulty → a DS badge variant. Kept distinct from the status badge's
+// success/secondary variants so the two badges never collide visually.
+const difficultyVariant = computed(() => {
+  switch (props.assignment.scenario?.difficulty) {
+    case 'beginner': return 'badge-primary'
+    case 'intermediate': return 'badge-warning'
+    case 'advanced': return 'badge-danger'
+    default: return 'badge-secondary'
+  }
+})
+
 function translateDifficulty(difficulty: string): string {
   const difficultyMap: Record<string, string> = {
     beginner: t('groupScenarios.difficultyBeginner'),
@@ -198,49 +215,16 @@ function translateDifficulty(difficulty: string): string {
   }
   return difficultyMap[difficulty] || difficulty
 }
-
-// --- Overflow dropdown (mirrors TerminalMySessions.vue) ---
-const containerRef = ref<HTMLElement | null>(null)
-const menuOpen = ref(false)
-
-function toggleMenu() {
-  menuOpen.value = !menuOpen.value
-}
-
-function closeMenu() {
-  menuOpen.value = false
-}
-
-function handleClickOutside(event: MouseEvent) {
-  const target = event.target as HTMLElement
-  if (containerRef.value && !containerRef.value.contains(target)) {
-    menuOpen.value = false
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
 </script>
 
 <style scoped>
+/* The DS `.card` supplies chrome (border/radius/shadow/bg/hover); this only
+   arranges the info row / progress / actions. */
 .assignment-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-md);
-  background-color: var(--color-bg-secondary);
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--border-radius-md);
-  transition: var(--transition-base);
-}
-
-.assignment-card:hover {
-  border-color: var(--color-border-medium);
+  gap: var(--spacing-md);
 }
 
 .assignment-info {
@@ -262,28 +246,6 @@ onUnmounted(() => {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   flex-wrap: wrap;
-}
-
-.difficulty-badge {
-  padding: 2px 8px;
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-}
-
-.difficulty-beginner {
-  background-color: var(--color-success-bg);
-  color: var(--color-success-text);
-}
-
-.difficulty-intermediate {
-  background-color: var(--color-warning-bg);
-  color: var(--color-warning-text);
-}
-
-.difficulty-advanced {
-  background-color: var(--color-danger-bg);
-  color: var(--color-danger-text);
 }
 
 .source-badge {
@@ -308,24 +270,7 @@ onUnmounted(() => {
   gap: var(--spacing-xs);
 }
 
-.status-chip {
-  padding: 2px 8px;
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-}
-
-.status-active {
-  background-color: var(--color-success-bg);
-  color: var(--color-success-text);
-}
-
-.status-inactive {
-  background-color: var(--color-danger-bg);
-  color: var(--color-danger-text);
-}
-
-/* Progress section */
+/* Progress row layout (bar comes from <ProgressBar>) */
 .assignment-progress {
   display: flex;
   align-items: center;
@@ -335,19 +280,8 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
-.progress-bar-bg {
+.assignment-progress :deep(.progress) {
   flex: 0 0 140px;
-  height: 8px;
-  background-color: var(--color-bg-tertiary);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  background-color: var(--color-primary);
-  border-radius: 4px;
-  transition: width 0.3s ease;
 }
 
 .assignment-progress-text {
@@ -385,15 +319,7 @@ onUnmounted(() => {
   font-variant-numeric: tabular-nums;
 }
 
-.no-attempts {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  color: var(--color-text-muted);
-  font-style: italic;
-}
-
-/* Actions */
+/* Actions row */
 .assignment-actions {
   display: flex;
   align-items: center;
@@ -406,105 +332,5 @@ onUnmounted(() => {
   align-items: center;
   gap: var(--spacing-xs);
   white-space: nowrap;
-}
-
-/* Overflow dropdown */
-.btn-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--color-text-secondary);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.btn-icon:hover:not(:disabled) {
-  background-color: var(--color-bg-tertiary);
-  color: var(--color-primary);
-}
-
-.dropdown-container {
-  position: relative;
-}
-
-.dropdown-menu {
-  position: absolute;
-  top: calc(100% + var(--spacing-xs));
-  right: 0;
-  min-width: 200px;
-  background-color: var(--color-bg-primary);
-  border: var(--border-width-thin) solid var(--color-border-light);
-  border-radius: var(--border-radius-md);
-  box-shadow: var(--shadow-lg);
-  z-index: 10;
-  overflow: hidden;
-}
-
-.dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-sm) var(--spacing-md);
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: none;
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.dropdown-item:hover:not(:disabled) {
-  background-color: var(--color-bg-secondary);
-  color: var(--color-primary);
-}
-
-.dropdown-item:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.dropdown-item i {
-  width: 18px;
-  text-align: center;
-  opacity: 0.7;
-}
-
-.dropdown-item:hover:not(:disabled) i {
-  opacity: 1;
-}
-
-.dropdown-item-danger {
-  color: var(--color-danger);
-}
-
-.dropdown-item-danger:hover:not(:disabled) {
-  background-color: var(--color-danger-bg);
-  color: var(--color-danger);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .assignment-card {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-md);
-  }
-
-  .assignment-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-
-  .assignment-meta {
-    flex-wrap: wrap;
-  }
 }
 </style>
