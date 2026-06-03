@@ -31,6 +31,7 @@ import { buildSessionDetailCsv } from '../../utils/scenarioResultsCsv'
 import { useTerminalBackendsStore } from '../../stores/terminalBackends'
 import ScenarioUploadModal from '../Modals/ScenarioUploadModal.vue'
 import ScenarioJSONImportModal from '../Modals/ScenarioJSONImportModal.vue'
+import BaseModal from '../Modals/BaseModal.vue'
 import RemoveAssignmentConfirmModal from './modals/RemoveAssignmentConfirmModal.vue'
 import ResetAssignmentModal from './modals/ResetAssignmentModal.vue'
 import ScenarioAssignmentResultModal from './modals/ScenarioAssignmentResultModal.vue'
@@ -493,21 +494,29 @@ onMounted(() => {
       />
     </div>
 
-    <!-- Student Results Panel (inline) -->
-    <AssignmentResultsView
-      v-if="showResultsForAssignment"
-      :assignment="showResultsForAssignment"
-      :results="scenarioResults"
-      :loading="loadingResults"
-      :selected-results="selectedResults"
+    <!-- Student Results Modal (focused) -->
+    <BaseModal
+      :visible="!!showResultsForAssignment"
+      size="xlarge"
+      :show-close="false"
+      no-padding
       @close="closeResults"
-      @view-detail="handleViewDetail"
-      @export-all="exportResultsCsv"
-      @export-single="exportSingleResult"
-      @export-selected="exportSelectedResults"
-      @toggle-result="toggleResult"
-      @toggle-select-all="toggleSelectAll"
-    />
+    >
+      <AssignmentResultsView
+        v-if="showResultsForAssignment"
+        :assignment="showResultsForAssignment"
+        :results="scenarioResults"
+        :loading="loadingResults"
+        :selected-results="selectedResults"
+        @close="closeResults"
+        @view-detail="handleViewDetail"
+        @export-all="exportResultsCsv"
+        @export-single="exportSingleResult"
+        @export-selected="exportSelectedResults"
+        @toggle-result="toggleResult"
+        @toggle-select-all="toggleSelectAll"
+      />
+    </BaseModal>
 
     <!-- Session Detail Modal -->
     <SessionDetailModal

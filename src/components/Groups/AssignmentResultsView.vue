@@ -217,7 +217,9 @@ function translateStatus(status: string): string {
 
 <style scoped>
 .results-panel {
-  margin-top: var(--spacing-lg);
+  /* Rendered inside an xlarge no-padding BaseModal — supply its own interior
+     padding instead of the old inline-panel top margin. */
+  padding: var(--spacing-lg);
 }
 
 .results-header {
