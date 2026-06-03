@@ -1,7 +1,7 @@
 # OCF Design System
 
-**Version:** 1.0.0
-**Last Updated:** 2025-10-09
+**Version:** 1.1.0
+**Last Updated:** 2026-06-04
 
 Complete guide to the Open Course Factory (OCF) design system - a comprehensive set of reusable styles, components, and patterns for consistent, theme-ready UI.
 
@@ -259,6 +259,9 @@ import './assets/styles/main.css'
 
 <!-- Outline variant -->
 <button class="btn btn-outline-primary">Outline</button>
+
+<!-- Icon-only button (square, transparent — for toolbars / overflow triggers) -->
+<button class="btn-icon" title="More actions"><i class="fas fa-ellipsis-v"></i></button>
 
 <!-- Disabled state -->
 <button class="btn btn-primary" disabled>Disabled</button>
@@ -619,6 +622,56 @@ function handleError(error) {
 </div>
 ```
 
+### Progress Bar
+
+`src/components/Common/ProgressBar.vue` — the SSOT for the ~4 hand-rolled bars across the app. Presentational and i18n-free: it renders only the bar; the consumer renders its own label/text alongside.
+
+**Props:** `value: number`, `max?: number` (default `100`), `variant?: 'primary' | 'success' | 'danger' | 'warning'` (default `'primary'`).
+
+Fill width = `clamp((value / max) * 100, 0, 100)`. Guards `max <= 0 → 0%` (no NaN/Infinity). A11y: `role="progressbar"` + `aria-valuenow`/`aria-valuemin`/`aria-valuemax`.
+
+```vue
+<script setup>
+import ProgressBar from '../Common/ProgressBar.vue'
+</script>
+
+<template>
+  <ProgressBar :value="completed" :max="total" />
+  <ProgressBar :value="score" :max="100" variant="success" />
+  <span>{{ completed }}/{{ total }} done</span>
+</template>
+```
+
+### Dropdown Menu
+
+`src/components/Common/DropdownMenu.vue` — the SSOT for row/overflow menus (replaces the ~4 hand-rolled dropdowns, e.g. in `TerminalMySessions.vue`). Owns the open/close + outside-click logic **once** so consumers don't re-implement it.
+
+**Props:** `align?: 'left' | 'right'` (default `'right'`).
+**Slots:** `#trigger` (optional; defaults to a `.btn-icon` ⋯ button) and the default slot for the menu items, which receives a `{ close }` slot prop. Clicking any item closes the menu automatically (the item's own `@click` still runs); clicking outside closes it too.
+
+```vue
+<script setup>
+import DropdownMenu from '../Common/DropdownMenu.vue'
+</script>
+
+<template>
+  <DropdownMenu align="right">
+    <!-- optional custom trigger: -->
+    <!-- <template #trigger><button class="btn btn-sm">Actions</button></template> -->
+    <button class="dropdown-item" @click="doExport">
+      <i class="fas fa-file-download"></i> <span>Export</span>
+    </button>
+    <button class="dropdown-item dropdown-item--danger" @click="doRemove">
+      <i class="fas fa-trash"></i> <span>Remove</span>
+    </button>
+    <!-- close programmatically when needed: -->
+    <template #default="{ close }">
+      <button class="dropdown-item" @click="run(); close()">Run & close</button>
+    </template>
+  </DropdownMenu>
+</template>
+```
+
 ---
 
 ## 🛠️ Utility Classes
@@ -831,6 +884,8 @@ function handleError(error) {
 ### Core Components
 
 - ✅ **SettingsCard** - Reusable card component
+- ✅ **ProgressBar** (`Common/ProgressBar.vue`) - Generic progress bar (value/max/variant), a11y `role="progressbar"`
+- ✅ **DropdownMenu** (`Common/DropdownMenu.vue`) - Generic overflow menu owning open/close + outside-click
 
 ### Page Components
 
@@ -1039,4 +1094,5 @@ When creating new reusable components, document them following this guide's form
 
 **Version History:**
 
+- v1.1.0 (2026-06-04) - Added `ProgressBar` and `DropdownMenu` reusable components + the `.btn-icon` button class
 - v1.0.0 (2025-10-09) - Initial comprehensive design system
