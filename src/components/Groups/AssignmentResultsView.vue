@@ -81,12 +81,7 @@
             </td>
             <td>
               <div class="progress-cell">
-                <div class="progress-bar-bg">
-                  <div
-                    class="progress-bar-fill"
-                    :style="{ width: (result.total_steps > 0 ? (result.completed_steps / result.total_steps) * 100 : 0) + '%' }"
-                  ></div>
-                </div>
+                <ProgressBar :value="result.completed_steps" :max="result.total_steps" />
                 <span class="progress-text">{{ result.completed_steps }}/{{ result.total_steps }}</span>
               </div>
             </td>
@@ -119,6 +114,7 @@
 import { computed } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { getStatusClass, formatDate } from '../../utils/scenarioDisplay'
+import ProgressBar from '../Common/ProgressBar.vue'
 import type { ScenarioAssignment, ScenarioResultItem } from '../../types/groupScenarios'
 
 const props = defineProps<{
@@ -350,20 +346,10 @@ function translateStatus(status: string): string {
   gap: var(--spacing-sm);
 }
 
-.progress-bar-bg {
+/* Constrain the shared <ProgressBar> within the table cell. */
+.progress-cell :deep(.progress) {
   flex: 1;
-  height: 8px;
-  background-color: var(--color-bg-tertiary);
-  border-radius: 4px;
-  overflow: hidden;
   min-width: 60px;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  background-color: var(--color-primary);
-  border-radius: 4px;
-  transition: width 0.3s ease;
 }
 
 .progress-text {

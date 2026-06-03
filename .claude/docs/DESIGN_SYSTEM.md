@@ -1,6 +1,6 @@
 # OCF Design System
 
-**Version:** 1.1.0
+**Version:** 1.1.1
 **Last Updated:** 2026-06-04
 
 Complete guide to the Open Course Factory (OCF) design system - a comprehensive set of reusable styles, components, and patterns for consistent, theme-ready UI.
@@ -626,9 +626,9 @@ function handleError(error) {
 
 `src/components/Common/ProgressBar.vue` — the SSOT for the ~4 hand-rolled bars across the app. Presentational and i18n-free: it renders only the bar; the consumer renders its own label/text alongside.
 
-**Props:** `value: number`, `max?: number` (default `100`), `variant?: 'primary' | 'success' | 'danger' | 'warning'` (default `'primary'`).
+**Props:** `value: number`, `max?: number` (default `100`), `variant?: 'primary' | 'success' | 'danger' | 'warning'` (default `'primary'`), `indeterminate?: boolean` (default `false`).
 
-Fill width = `clamp((value / max) * 100, 0, 100)`. Guards `max <= 0 → 0%` (no NaN/Infinity). A11y: `role="progressbar"` + `aria-valuenow`/`aria-valuemin`/`aria-valuemax`.
+Fill width = `clamp((value / max) * 100, 0, 100)`. Guards `max <= 0 → 0%` (no NaN/Infinity). A11y: `role="progressbar"` + `aria-valuenow`/`aria-valuemin`/`aria-valuemax`. With `indeterminate`, `value` is ignored, the fill animates across the track, and the track exposes `aria-busy="true"` and omits `aria-valuenow` — use it for "in progress" with no measurable value (e.g. a fire-and-forget import).
 
 ```vue
 <script setup>
@@ -639,6 +639,9 @@ import ProgressBar from '../Common/ProgressBar.vue'
   <ProgressBar :value="completed" :max="total" />
   <ProgressBar :value="score" :max="100" variant="success" />
   <span>{{ completed }}/{{ total }} done</span>
+
+  <!-- Indeterminate: animated, no measurable value -->
+  <ProgressBar :value="0" indeterminate />
 </template>
 ```
 
@@ -1094,5 +1097,6 @@ When creating new reusable components, document them following this guide's form
 
 **Version History:**
 
+- v1.1.1 (2026-06-04) - `ProgressBar` gains an `indeterminate` mode (animated, `aria-busy`, no `aria-valuenow`)
 - v1.1.0 (2026-06-04) - Added `ProgressBar` and `DropdownMenu` reusable components + the `.btn-icon` button class
 - v1.0.0 (2025-10-09) - Initial comprehensive design system

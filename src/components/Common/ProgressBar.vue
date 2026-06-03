@@ -28,11 +28,13 @@ interface Props {
   value: number
   max?: number
   variant?: 'primary' | 'success' | 'danger' | 'warning'
+  indeterminate?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   max: 100,
-  variant: 'primary'
+  variant: 'primary',
+  indeterminate: false
 })
 
 // Clamp to [0, 100]. The `max > 0` guard avoids NaN/Infinity on zero/empty input.
@@ -45,14 +47,18 @@ const pct = computed(() =>
   <div
     class="progress"
     role="progressbar"
-    :aria-valuenow="value"
+    :aria-busy="indeterminate ? 'true' : undefined"
+    :aria-valuenow="indeterminate ? undefined : value"
     aria-valuemin="0"
     :aria-valuemax="max"
   >
     <div
       class="progress-bar"
-      :class="'progress-bar--' + variant"
-      :style="{ width: pct + '%' }"
+      :class="[
+        'progress-bar--' + variant,
+        { 'progress-bar--indeterminate': indeterminate }
+      ]"
+      :style="indeterminate ? undefined : { width: pct + '%' }"
     ></div>
   </div>
 </template>
@@ -86,5 +92,17 @@ const pct = computed(() =>
 
 .progress-bar--warning {
   background: var(--color-warning);
+}
+
+/* Indeterminate: a partial fill slides across the track on a loop. */
+.progress-bar--indeterminate {
+  width: 40%;
+  border-radius: var(--border-radius-full);
+  animation: progress-bar-indeterminate 1.4s ease-in-out infinite;
+}
+
+@keyframes progress-bar-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
 }
 </style>

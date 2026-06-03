@@ -85,13 +85,11 @@
               <!-- Progress -->
               <div class="progress-row">
                 <span class="progress-label">{{ t('myScenarios.progress') }}</span>
-                <div class="progress-bar-container">
-                  <div
-                    class="progress-bar-fill"
-                    :style="{ width: progressPercent(session) + '%' }"
-                    :class="session.status"
-                  ></div>
-                </div>
+                <ProgressBar
+                  :value="progressPercent(session)"
+                  :max="100"
+                  :variant="progressVariant(session)"
+                />
                 <span class="progress-text">{{ session.completed_steps }} / {{ session.total_steps }}</span>
               </div>
 
@@ -164,6 +162,7 @@ import { useRouter } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
 import { scenarioSessionService } from '../../services/domain/scenario'
 import type { MyScenarioSession } from '../../services/domain/scenario'
+import ProgressBar from '../Common/ProgressBar.vue'
 
 const router = useRouter()
 
@@ -258,6 +257,17 @@ function statusLabel(status: string): string {
 function progressPercent(session: MyScenarioSession): number {
   if (!session.total_steps || session.total_steps === 0) return 0
   return Math.round((session.completed_steps / session.total_steps) * 100)
+}
+
+// Map session status → a ProgressBar variant, preserving the old fill colors:
+// completed → success (green), abandoned → danger (red), else (active/in
+// progress) → primary (blue).
+function progressVariant(session: MyScenarioSession): 'primary' | 'success' | 'danger' {
+  switch (session.status) {
+    case 'completed': return 'success'
+    case 'abandoned': return 'danger'
+    default: return 'primary'
+  }
 }
 
 function gradeClass(grade: number): string {
@@ -592,30 +602,9 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-.progress-bar-container {
+/* Let the shared <ProgressBar> stretch across the row (colour comes from its variant). */
+.progress-row :deep(.progress) {
   flex: 1;
-  height: 6px;
-  background: var(--color-bg-tertiary);
-  border-radius: var(--border-radius-full);
-  overflow: hidden;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  border-radius: var(--border-radius-full);
-  transition: width var(--transition-slow);
-}
-
-.progress-bar-fill.active {
-  background: var(--color-primary);
-}
-
-.progress-bar-fill.completed {
-  background: var(--color-success);
-}
-
-.progress-bar-fill.abandoned {
-  background: var(--color-danger);
 }
 
 .progress-text {

@@ -85,4 +85,34 @@ describe('ProgressBar', () => {
     expect(bar.attributes('aria-valuemin')).toBe('0')
     expect(bar.attributes('aria-valuemax')).toBe('20')
   })
+
+  describe('indeterminate mode', () => {
+    it('animates without a measurable value and exposes the indeterminate a11y contract', () => {
+      // No real progress value — just "in progress". value is ignored.
+      const wrapper = mount(ProgressBar, { props: { value: 12, max: 20, indeterminate: true } })
+
+      // Fill carries the animated modifier instead of a fixed width.
+      const fill = wrapper.find('.progress-bar')
+      expect(fill.classes()).toContain('progress-bar--indeterminate')
+
+      // Track signals busy and exposes NO meaningful aria-valuenow.
+      const track = wrapper.find('[role="progressbar"]')
+      expect(track.attributes('aria-busy')).toBe('true')
+      expect(track.attributes('aria-valuenow')).toBeUndefined()
+    })
+
+    it('defaults to false → determinate behavior is unchanged', () => {
+      const wrapper = mount(ProgressBar, { props: { value: 12, max: 20 } })
+
+      const fill = wrapper.find('.progress-bar')
+      // No indeterminate class; the determinate width is computed as before.
+      expect(fill.classes()).not.toContain('progress-bar--indeterminate')
+      expect(fill.attributes('style') || '').toMatch(/width:\s*60%/)
+
+      // Determinate a11y: aria-valuenow present, not busy.
+      const track = wrapper.find('[role="progressbar"]')
+      expect(track.attributes('aria-valuenow')).toBe('12')
+      expect(track.attributes('aria-busy')).not.toBe('true')
+    })
+  })
 })

@@ -7,9 +7,8 @@
       </div>
 
       <div class="progress-bar-container">
-        <div class="progress-bar">
-          <div class="progress-bar-fill" :style="{ width: '50%' }"></div>
-        </div>
+        <!-- No real progress value — indeterminate "in progress" affordance. -->
+        <ProgressBar :value="0" indeterminate />
       </div>
 
       <div class="progress-info">
@@ -149,6 +148,7 @@
 import { computed, ref } from 'vue'
 import type { ImportResponse, UserCredential } from '../../services/domain/bulkImport'
 import { useTranslations } from '../../composables/useTranslations'
+import ProgressBar from '../Common/ProgressBar.vue'
 
 const translations = {
   en: {
@@ -282,24 +282,9 @@ function downloadCredentials() {
   padding: 0 var(--spacing-lg);
 }
 
-.progress-bar {
-  height: 24px;
-  background: var(--color-bg-secondary);
-  border-radius: var(--border-radius-md);
-  overflow: hidden;
-  border: 1px solid var(--color-border-medium);
-}
-
-.progress-bar-fill {
-  height: 100%;
-  background: var(--color-primary);
-  transition: width 0.3s ease;
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+/* Make the shared bar read as a prominent "import in progress" indicator. */
+.progress-bar-container :deep(.progress) {
+  height: 16px;
 }
 
 .progress-info {
