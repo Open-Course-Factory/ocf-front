@@ -51,6 +51,13 @@ export interface Distribution {
   is_global: boolean
 }
 
+export interface AssignmentProgress {
+  scenario_id: string
+  total_count: number
+  completed_count: number
+  avg_grade: number | null
+}
+
 export interface ScenarioResultItem {
   session_id: string
   user_id: string

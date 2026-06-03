@@ -26,10 +26,6 @@ import { ref, onMounted } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { teacherService } from '../../services/domain/scenario'
-import {
-  formatDate,
-  getDifficultyClass
-} from '../../utils/scenarioDisplay'
 import { downloadCsv, downloadJSON, downloadBlob } from '../../utils/download'
 import { buildSessionDetailCsv } from '../../utils/scenarioResultsCsv'
 import { useTerminalBackendsStore } from '../../stores/terminalBackends'
@@ -42,9 +38,10 @@ import AssignScenarioModal from './modals/AssignScenarioModal.vue'
 import BulkStartScenarioModal from './modals/BulkStartScenarioModal.vue'
 import AssignmentResultsView from './AssignmentResultsView.vue'
 import SessionDetailModal from './SessionDetailModal.vue'
+import AssignmentCard from './AssignmentCard.vue'
 import { useDistributionPicker } from '../../composables/useDistributionPicker'
 import { useAssignmentResults } from '../../composables/useAssignmentResults'
-import type { ScenarioAssignment, Scenario, NoKeyUser, AssignmentResultError, ScenarioResultItem } from '../../types/groupScenarios'
+import type { ScenarioAssignment, Scenario, NoKeyUser, AssignmentResultError, ScenarioResultItem, AssignmentProgress } from '../../types/groupScenarios'
 
 const props = defineProps<{
   groupId: string
@@ -57,23 +54,14 @@ const { t } = useTranslations({
     groupScenarios: {
       assignedScenarios: 'Assigned Scenarios',
       assignScenario: 'Assign Scenario',
-      bulkStart: 'Start for All',
-      removeAssignment: 'Remove',
-      noStartDate: 'No start date',
       noAssignments: 'No scenarios assigned to this group yet.',
       bulkStartResult: 'Started {started} sessions, skipped {skipped}',
-      active: 'Active',
-      inactive: 'Inactive',
-      noDeadline: 'No deadline',
       loadError: 'Failed to load scenario assignments',
       assignError: 'Failed to assign scenario',
       removeError: 'Failed to remove assignment',
       bulkStartError: 'Failed to start sessions',
-      starting: 'Starting sessions...',
-      resetSessions: 'Reset Sessions',
       resetSuccess: '{count} sessions reset',
       resetError: 'Failed to reset sessions',
-      viewResults: 'Results',
       completedAt: 'Completed',
       stepOrder: 'Step',
       stepTitle: 'Title',
@@ -91,15 +79,9 @@ const { t } = useTranslations({
       csvNo: 'No',
       hintsUsed: 'Hints',
       timeSpent: 'Time',
-      difficultyBeginner: 'Beginner',
-      difficultyIntermediate: 'Intermediate',
-      difficultyAdvanced: 'Advanced',
       importKillercoda: 'Import KillerCoda',
       importJson: 'Import JSON',
-      exportJson: 'Export JSON',
-      exportKillercoda: 'Export KillerCoda',
       exportError: 'Failed to export scenario',
-      orgScenario: 'Org',
       export: {
         name: 'Name',
         email: 'Email',
@@ -112,23 +94,14 @@ const { t } = useTranslations({
     groupScenarios: {
       assignedScenarios: 'Scénarios assignés',
       assignScenario: 'Assigner un scénario',
-      bulkStart: 'Démarrer pour tous',
-      removeAssignment: 'Supprimer',
-      noStartDate: 'Pas de date de début',
       noAssignments: 'Aucun scénario assigné à ce groupe.',
       bulkStartResult: '{started} sessions démarrées, {skipped} ignorées',
-      active: 'Actif',
-      inactive: 'Inactif',
-      noDeadline: 'Pas de date limite',
       loadError: 'Échec du chargement des assignations',
       assignError: 'Échec de l\'assignation du scénario',
       removeError: 'Échec de la suppression de l\'assignation',
       bulkStartError: 'Échec du démarrage des sessions',
-      starting: 'Démarrage des sessions...',
-      resetSessions: 'Réinitialiser',
       resetSuccess: '{count} sessions réinitialisées',
       resetError: 'Échec de la réinitialisation',
-      viewResults: 'Résultats',
       completedAt: 'Fin',
       stepOrder: 'Étape',
       stepTitle: 'Titre',
@@ -146,15 +119,9 @@ const { t } = useTranslations({
       csvNo: 'Non',
       hintsUsed: 'Indices',
       timeSpent: 'Temps',
-      difficultyBeginner: 'Débutant',
-      difficultyIntermediate: 'Intermédiaire',
-      difficultyAdvanced: 'Avancé',
       importKillercoda: 'Importer KillerCoda',
       importJson: 'Importer JSON',
-      exportJson: 'Exporter JSON',
-      exportKillercoda: 'Exporter KillerCoda',
       exportError: 'Échec de l\'export du scénario',
-      orgScenario: 'Org',
       export: {
         name: 'Nom',
         email: 'Email',
@@ -177,6 +144,9 @@ const { distributions, selectedDistribution, loadingDistributions, loadDistribut
 const assignments = ref<ScenarioAssignment[]>([])
 const availableScenarios = ref<Scenario[]>([])
 const isLoading = ref(false)
+
+// Per-assignment progress (keyed by scenario_id). Nice-to-have — silent-fail.
+const progressByScenario = ref<Map<string, AssignmentProgress>>(new Map())
 const showAssignModal = ref(false)
 const bulkStartingId = ref<string | null>(null)
 const showResultModal = ref(false)
@@ -222,6 +192,21 @@ async function loadAssignments() {
   }
 }
 
+// Load per-assignment progress in one call. Silent-fail: progress is a
+// nice-to-have — on error leave the map empty so cards show "no attempts".
+async function loadProgress() {
+  try {
+    const rows = await teacherService.getAssignmentsProgress(props.groupId)
+    const map = new Map<string, AssignmentProgress>()
+    for (const row of rows) {
+      map.set(row.scenario_id, row)
+    }
+    progressByScenario.value = map
+  } catch {
+    // Ignore — leave whatever we had (cards fall back to "no attempts").
+  }
+}
+
 // Load available scenarios for the assign modal
 async function loadScenarios() {
   try {
@@ -245,6 +230,7 @@ async function handleAssign(payload: { scenarioId: string; startDate: string; de
     )
     showAssignModal.value = false
     await loadAssignments()
+    loadProgress()
   } catch (err: any) {
     notifyError(err.response?.data?.error_message || t('groupScenarios.assignError'))
   }
@@ -284,6 +270,7 @@ async function confirmBulkStart() {
     resultNoKeyUsers.value = data?.no_key_users || []
     resultErrors.value = data?.errors || []
     showResultModal.value = true
+    loadProgress()
   } catch (err: any) {
     notifyError(err.response?.data?.error || err.response?.data?.error_message || t('groupScenarios.bulkStartError'))
   } finally {
@@ -305,6 +292,7 @@ async function confirmRemove() {
     showConfirmRemoveModal.value = false
     assignmentToRemove.value = null
     await loadAssignments()
+    loadProgress()
   } catch (err: any) {
     notifyError(err.response?.data?.error_message || t('groupScenarios.removeError'))
   }
@@ -329,6 +317,7 @@ async function confirmReset() {
     resultMessage.value = t('groupScenarios.resetSuccess', { count })
     resultNoKeyUsers.value = []
     showResultModal.value = true
+    loadProgress()
   } catch (err: any) {
     notifyError(err.response?.data?.error_message || t('groupScenarios.resetError'))
   }
@@ -338,19 +327,6 @@ async function confirmReset() {
 function handleViewDetail(result: ScenarioResultItem) {
   selectedDetailResult.value = result
   showDetailModal.value = true
-}
-
-function translateDifficulty(difficulty: string): string {
-  const difficultyMap: Record<string, string> = {
-    beginner: t('groupScenarios.difficultyBeginner'),
-    intermediate: t('groupScenarios.difficultyIntermediate'),
-    advanced: t('groupScenarios.difficultyAdvanced')
-  }
-  return difficultyMap[difficulty] || difficulty
-}
-
-function isOrgScenario(assignment: ScenarioAssignment): boolean {
-  return assignment.scenario?.organization_id != null
 }
 
 // Resolve the t()-backed labels for the session-detail CSV header + yes/no cells.
@@ -467,6 +443,7 @@ function openAssignModal() {
 
 onMounted(() => {
   loadAssignments()
+  loadProgress()
 })
 </script>
 
@@ -500,85 +477,20 @@ onMounted(() => {
     </div>
 
     <div v-else class="assignments-list">
-      <div
+      <AssignmentCard
         v-for="assignment in assignments"
         :key="assignment.id"
-        class="assignment-card"
-      >
-        <div class="assignment-info">
-          <div class="assignment-title">
-            {{ assignment.scenario?.title || assignment.scenario_id }}
-            <span v-if="isOrgScenario(assignment)" class="source-badge org-badge">
-              <i class="fas fa-building"></i> {{ t('groupScenarios.orgScenario') }}
-            </span>
-          </div>
-          <div class="assignment-meta">
-            <span
-              v-if="assignment.scenario?.difficulty"
-              :class="['difficulty-badge', getDifficultyClass(assignment.scenario.difficulty)]"
-            >
-              {{ translateDifficulty(assignment.scenario.difficulty) }}
-            </span>
-            <span class="start-date-text">
-              <i class="fas fa-calendar-plus"></i>
-              {{ assignment.start_date ? formatDate(assignment.start_date) : t('groupScenarios.noStartDate') }}
-            </span>
-            <span class="deadline-text">
-              <i class="fas fa-calendar"></i>
-              {{ assignment.deadline ? formatDate(assignment.deadline) : t('groupScenarios.noDeadline') }}
-            </span>
-            <span :class="['status-chip', assignment.is_active ? 'status-active' : 'status-inactive']">
-              {{ assignment.is_active ? t('groupScenarios.active') : t('groupScenarios.inactive') }}
-            </span>
-          </div>
-        </div>
-        <div v-if="canEditGroup" class="assignment-actions">
-          <button
-            @click="handleExportJSON(assignment)"
-            class="btn btn-sm btn-outline"
-            :title="t('groupScenarios.exportJson')"
-          >
-            <i class="fas fa-file-download"></i>
-          </button>
-          <button
-            @click="handleExportArchive(assignment)"
-            class="btn btn-sm btn-outline"
-            :title="t('groupScenarios.exportKillercoda')"
-          >
-            <i class="fas fa-file-archive"></i>
-          </button>
-          <button
-            @click="handleViewResults(assignment)"
-            class="btn btn-sm btn-info"
-          >
-            <i class="fas fa-chart-bar"></i>
-            {{ t('groupScenarios.viewResults') }}
-          </button>
-          <button
-            @click="handleBulkStart(assignment)"
-            class="btn btn-sm btn-secondary"
-            :disabled="bulkStartingId === assignment.id"
-          >
-            <i :class="bulkStartingId === assignment.id ? 'fas fa-spinner fa-spin' : 'fas fa-play'"></i>
-            {{ bulkStartingId === assignment.id ? t('groupScenarios.starting') : t('groupScenarios.bulkStart') }}
-          </button>
-          <button
-            @click="handleReset(assignment)"
-            class="btn btn-sm btn-outline"
-            :title="t('groupScenarios.resetSessions')"
-          >
-            <i class="fas fa-undo"></i>
-            {{ t('groupScenarios.resetSessions') }}
-          </button>
-          <button
-            @click="handleRemove(assignment)"
-            class="btn btn-sm btn-danger"
-          >
-            <i class="fas fa-trash"></i>
-            {{ t('groupScenarios.removeAssignment') }}
-          </button>
-        </div>
-      </div>
+        :assignment="assignment"
+        :progress="progressByScenario.get(assignment.scenario_id) ?? null"
+        :can-edit-group="canEditGroup"
+        :bulk-starting="bulkStartingId === assignment.id"
+        @view-results="handleViewResults(assignment)"
+        @bulk-start="handleBulkStart(assignment)"
+        @reset="handleReset(assignment)"
+        @remove="handleRemove(assignment)"
+        @export-json="handleExportJSON(assignment)"
+        @export-archive="handleExportArchive(assignment)"
+      />
     </div>
 
     <!-- Student Results Panel (inline) -->
@@ -718,145 +630,5 @@ onMounted(() => {
   gap: var(--spacing-md);
 }
 
-.assignment-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-md);
-  background-color: var(--color-bg-secondary);
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--border-radius-md);
-  transition: var(--transition-base);
-}
-
-.assignment-card:hover {
-  border-color: var(--color-border-medium);
-}
-
-.assignment-info {
-  flex: 1;
-}
-
-.assignment-title {
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-md);
-  margin-bottom: var(--spacing-xs);
-}
-
-.assignment-meta {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.difficulty-badge {
-  padding: 2px 8px;
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-}
-
-.difficulty-beginner {
-  background-color: var(--color-success-bg);
-  color: var(--color-success-text);
-}
-
-.difficulty-intermediate {
-  background-color: var(--color-warning-bg);
-  color: var(--color-warning-text);
-}
-
-.difficulty-advanced {
-  background-color: var(--color-danger-bg);
-  color: var(--color-danger-text);
-}
-
-.source-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.7rem;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 500;
-}
-
-.org-badge {
-  background: var(--color-info-bg);
-  color: var(--color-info);
-}
-
-.start-date-text,
-.deadline-text {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-}
-
-.status-chip {
-  padding: 2px 8px;
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-}
-
-.status-active {
-  background-color: var(--color-success-bg);
-  color: var(--color-success-text);
-}
-
-.status-inactive {
-  background-color: var(--color-danger-bg);
-  color: var(--color-danger-text);
-}
-
-.assignment-actions {
-  display: flex;
-  gap: var(--spacing-sm);
-}
-
-/* Form */
-
-.btn-outline {
-  background: transparent;
-  border: 1px solid var(--color-border-medium);
-  color: var(--color-text-secondary);
-}
-
-.btn-outline:hover {
-  background: var(--color-bg-tertiary);
-  border-color: var(--color-border-dark);
-}
-
-.btn-info {
-  background-color: var(--color-primary);
-  color: var(--color-white);
-  border: none;
-}
-
-.btn-info:hover {
-  opacity: 0.9;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .assignment-card {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-md);
-  }
-
-  .assignment-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-
-  .assignment-meta {
-    flex-wrap: wrap;
-  }
-}
 
 </style>

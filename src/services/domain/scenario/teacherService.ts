@@ -4,6 +4,7 @@
  */
 
 import axios from 'axios'
+import type { AssignmentProgress } from '../../../types/groupScenarios'
 
 // Per-question result on a quiz step (returned by /detail endpoint)
 export interface SessionStepQuestionDetail {
@@ -82,6 +83,12 @@ export const teacherService = {
       params: { group_id: groupId }
     })
     return response.data?.data || response.data || []
+  },
+
+  // Per-assignment progress (attempt/completion counts + avg grade) for a group.
+  async getAssignmentsProgress(groupId: string): Promise<AssignmentProgress[]> {
+    const response = await axios.get(`/teacher/groups/${groupId}/assignments-progress`)
+    return response.data
   },
 
   async assignScenarioToGroup(groupId: string, scenarioId: string, data?: { start_date?: string; deadline?: string }): Promise<any> {
