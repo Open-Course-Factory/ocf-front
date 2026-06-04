@@ -124,7 +124,8 @@ export interface SessionQuota {
   used_memory_mb: number
   remaining_cpu: number
   remaining_memory_mb: number
-  scope: 'user' | 'organization'
+  /** `unlimited` = unconstrained plan; ignore per-size remaining counts. */
+  scope: 'user' | 'organization' | 'unlimited'
 }
 
 /**

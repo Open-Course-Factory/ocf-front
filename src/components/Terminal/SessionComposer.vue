@@ -63,8 +63,13 @@
             <i class="fas fa-server budget-summary-icon"></i>
             {{ remainingResourcesLabel }}
           </p>
+          <!-- Unlimited plans carry no per-size budget — show an uncapped affordance. -->
+          <p v-if="isUnlimited" class="budget-summary">
+            <i class="fas fa-infinity budget-summary-icon"></i>
+            {{ t('sessionComposer.budgetUnlimited') }}
+          </p>
           <!-- Budget summary line — hidden when budget exhausted (handled by empty string). -->
-          <p v-if="budgetSummary" class="budget-summary">
+          <p v-else-if="budgetSummary" class="budget-summary">
             <i class="fas fa-bolt budget-summary-icon"></i>
             {{ t('sessionComposer.youCanSpawn', { summary: budgetSummary }) }}
           </p>
@@ -81,15 +86,21 @@
               :class="{
                 selected: selectedSize?.key === size.key,
                 disabled: !size.allowed,
-                exhausted: size.remaining_count === 0
+                exhausted: isExhausted(size)
               }"
-              :disabled="!size.allowed || disabled || size.remaining_count === 0"
+              :disabled="!size.allowed || disabled || isExhausted(size)"
               :title="getSizeUseCase(size.key) + ' — ' + getEffectiveCpuLabel(size) + ', ' + size.memory + (!size.allowed ? ' — ' + getReasonText(size.reason) : '')"
-              @click="size.allowed && size.remaining_count !== 0 && selectSize(size)"
+              @click="size.allowed && !isExhausted(size) && selectSize(size)"
             >
               {{ size.key.toUpperCase() }}
               <i v-if="size.key === selectedDistribution?.default_size_key" class="fas fa-star pill-recommended" :title="t('sessionComposer.recommended')"></i>
               <span
+                v-if="isUnlimited"
+                class="pill-badge"
+                :title="t('sessionComposer.remainingUnlimited')"
+              >×∞</span>
+              <span
+                v-else
                 class="pill-badge"
                 :class="{ 'pill-badge-zero': size.remaining_count === 0 }"
                 :title="t('sessionComposer.remainingBadge', { n: size.remaining_count })"
@@ -188,6 +199,8 @@ const { t } = useTranslations({
       unlimitedMem: 'unlimited RAM',
       or: 'OR',
       remainingBadge: '{n} remaining',
+      remainingUnlimited: 'Unlimited',
+      budgetUnlimited: 'Unlimited capacity — spawn any size.',
       reasonPlanRestriction: 'Restricted by your plan',
       reasonBudgetExhausted: 'No capacity left for this size right now — pick a smaller size or stop a session',
       budgetAllExhausted: 'No capacity left — stop a session to free up resources.',
@@ -225,6 +238,8 @@ const { t } = useTranslations({
       unlimitedMem: 'RAM illimitée',
       or: 'OU',
       remainingBadge: '{n} restant(s)',
+      remainingUnlimited: 'Illimité',
+      budgetUnlimited: 'Capacité illimitée — lancez n\'importe quelle taille.',
       reasonPlanRestriction: 'Restreint par votre forfait',
       reasonBudgetExhausted: 'Plus de capacit\u00e9 pour cette taille \u2014 choisissez une taille plus petite ou arr\u00eatez une session',
       budgetAllExhausted: 'Plus de capacit\u00e9 disponible \u2014 arr\u00eatez une session pour lib\u00e9rer des ressources.',
@@ -269,6 +284,18 @@ const availableFeatures = computed<SessionOptionFeature[]>(
   () => (sessionOptions.value?.allowed_features ?? []).filter(f => f.key !== 'persistence')
 )
 
+// Unlimited plans: the backend signals this with `quota.scope === 'unlimited'`
+// and marks every size `allowed: true` with `remaining_count: 0`. That 0 means
+// "uncapped, ignore the count" — NOT "exhausted". Consume the backend flag
+// directly (SSOT) instead of inferring from max_cpu.
+const isUnlimited = computed(() => sessionOptions.value?.quota?.scope === 'unlimited')
+
+// A size is exhausted only in budget mode (scope user/organization). Under an
+// unlimited plan, remaining_count === 0 is meaningless and must not lock pills.
+function isExhausted(size: SessionOptionSize): boolean {
+  return !isUnlimited.value && size.remaining_count === 0
+}
+
 // Capacity-descending order (xl > l > m > s > xs) is provided by
 // `capacityRank` from `utils/quotaFormatters.ts` — single source of truth.
 
@@ -296,6 +323,9 @@ const budgetSummary = computed(() => {
 const remainingResourcesLabel = computed(() => {
   const quota = sessionOptions.value?.quota
   if (!quota) return ''
+  // Unlimited plans surface the uncapped affordance via the budget-summary line
+  // instead — avoid a redundant "unlimited CPU and unlimited RAM" duplicate.
+  if (isUnlimited.value) return ''
   const cpuPart = quota.max_cpu === 0
     ? t('sessionComposer.unlimitedCpu')
     : `${formatMcpuAsVcpu(quota.remaining_cpu)} vCPU`
@@ -338,10 +368,11 @@ async function selectDistribution(dist: Distribution) {
   loadingOptions.value = true
   try {
     sessionOptions.value = await terminalService.getSessionOptions(dist.name, props.backendId, props.organizationId)
-    // A size is selectable when the plan allows it AND there is at least one
-    // remaining_count > 0 in the budget envelope.
+    // A size is selectable when the plan allows it AND it isn't exhausted.
+    // Under an unlimited plan remaining_count is always 0 but the size is still
+    // selectable, so `isExhausted` (which honors quota.scope) is the gate.
     const isSelectable = (s: SessionOptionSize) =>
-      s.allowed && s.remaining_count > 0
+      s.allowed && !isExhausted(s)
     // Auto-select default size if selectable
     if (dist.default_size_key && sessionOptions.value) {
       const defaultSize = sessionOptions.value.allowed_sizes.find(
