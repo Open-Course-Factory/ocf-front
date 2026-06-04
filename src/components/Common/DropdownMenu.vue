@@ -59,7 +59,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="containerRef" class="dropdown-container">
+  <div ref="containerRef" class="ocf-dropdown">
     <!-- Trigger: custom #trigger slot, or the default .btn-icon ⋯ button. -->
     <div class="dropdown-trigger" @click.stop="toggle">
       <slot name="trigger">
@@ -73,8 +73,8 @@ onUnmounted(() => {
          item's own @click runs first), and `close` is exposed for explicit use. -->
     <div
       v-if="open"
-      class="dropdown-menu"
-      :class="'dropdown-menu--' + align"
+      class="ocf-dropdown-menu"
+      :class="'ocf-dropdown-menu--' + align"
       @click="close"
     >
       <slot :close="close" />
@@ -83,7 +83,7 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.dropdown-container {
+.ocf-dropdown {
   position: relative;
   display: inline-flex;
 }
@@ -92,7 +92,7 @@ onUnmounted(() => {
   display: inline-flex;
 }
 
-.dropdown-menu {
+.ocf-dropdown-menu {
   position: absolute;
   top: calc(100% + var(--spacing-xs));
   min-width: 200px;
@@ -104,16 +104,16 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.dropdown-menu--right {
+.ocf-dropdown-menu--right {
   right: 0;
 }
 
-.dropdown-menu--left {
+.ocf-dropdown-menu--left {
   left: 0;
 }
 
-/* Generic menu item look — consumers may pass plain .dropdown-item buttons. */
-.dropdown-menu :deep(.dropdown-item) {
+/* Generic menu item look — consumers may pass plain .ocf-dropdown-item buttons. */
+.ocf-dropdown-menu :deep(.ocf-dropdown-item) {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
@@ -129,27 +129,27 @@ onUnmounted(() => {
   transition: all var(--transition-fast);
 }
 
-.dropdown-menu :deep(.dropdown-item:hover:not(:disabled)) {
+.ocf-dropdown-menu :deep(.ocf-dropdown-item:hover:not(:disabled)) {
   background-color: var(--color-bg-secondary);
   color: var(--color-primary);
 }
 
-.dropdown-menu :deep(.dropdown-item:disabled) {
+.ocf-dropdown-menu :deep(.ocf-dropdown-item:disabled) {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.dropdown-menu :deep(.dropdown-item i) {
+.ocf-dropdown-menu :deep(.ocf-dropdown-item i) {
   width: 18px;
   text-align: center;
   opacity: 0.7;
 }
 
-.dropdown-menu :deep(.dropdown-item--danger) {
+.ocf-dropdown-menu :deep(.ocf-dropdown-item--danger) {
   color: var(--color-danger);
 }
 
-.dropdown-menu :deep(.dropdown-item--danger:hover:not(:disabled)) {
+.ocf-dropdown-menu :deep(.ocf-dropdown-item--danger:hover:not(:disabled)) {
   background-color: var(--color-danger-bg);
   color: var(--color-danger);
 }

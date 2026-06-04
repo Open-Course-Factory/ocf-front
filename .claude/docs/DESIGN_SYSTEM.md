@@ -652,6 +652,8 @@ import ProgressBar from '../Common/ProgressBar.vue'
 **Props:** `align?: 'left' | 'right'` (default `'right'`).
 **Slots:** `#trigger` (optional; defaults to a `.btn-icon` ⋯ button) and the default slot for the menu items, which receives a `{ close }` slot prop. Clicking any item closes the menu automatically (the item's own `@click` still runs); clicking outside closes it too.
 
+Classes are `ocf-`-namespaced to avoid colliding with Bootstrap's global `.dropdown-menu`/`.dropdown-item` (Bootstrap sets `.dropdown-menu { display:none }`).
+
 ```vue
 <script setup>
 import DropdownMenu from '../Common/DropdownMenu.vue'
@@ -661,15 +663,15 @@ import DropdownMenu from '../Common/DropdownMenu.vue'
   <DropdownMenu align="right">
     <!-- optional custom trigger: -->
     <!-- <template #trigger><button class="btn btn-sm">Actions</button></template> -->
-    <button class="dropdown-item" @click="doExport">
+    <button class="ocf-dropdown-item" @click="doExport">
       <i class="fas fa-file-download"></i> <span>Export</span>
     </button>
-    <button class="dropdown-item dropdown-item--danger" @click="doRemove">
+    <button class="ocf-dropdown-item ocf-dropdown-item--danger" @click="doRemove">
       <i class="fas fa-trash"></i> <span>Remove</span>
     </button>
     <!-- close programmatically when needed: -->
     <template #default="{ close }">
-      <button class="dropdown-item" @click="run(); close()">Run & close</button>
+      <button class="ocf-dropdown-item" @click="run(); close()">Run & close</button>
     </template>
   </DropdownMenu>
 </template>

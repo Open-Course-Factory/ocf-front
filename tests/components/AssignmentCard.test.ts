@@ -13,8 +13,8 @@
  *     count + `avg 78%` text alongside.
  *   - no-attempts: a DS `.text-muted` line (replaces `.no-attempts`).
  *   - primary action: `.btn.btn-primary` "View results" → emits `view-results`.
- *   - overflow: <DropdownMenu> (default trigger `.btn-icon`) → `.dropdown-menu`
- *     of `.dropdown-item` buttons carrying the same `data-test` attrs.
+ *   - overflow: <DropdownMenu> (default trigger `.btn-icon`) → `.ocf-dropdown-menu`
+ *     of `.ocf-dropdown-item` buttons carrying the same `data-test` attrs.
  *
  * i18n note: empty test messages → assert on DOM structure, prop-driven data
  * (title, dates, progress numbers) and emits, not translated chrome. Status is
@@ -175,12 +175,12 @@ describe('AssignmentCard', () => {
     it('hides the secondary actions until the ⋯ trigger is clicked', async () => {
       const wrapper = mountCard()
       // Closed initially: DropdownMenu renders no menu yet.
-      expect(wrapper.find('.dropdown-menu').exists()).toBe(false)
+      expect(wrapper.find('.ocf-dropdown-menu').exists()).toBe(false)
 
       await openMenu(wrapper)
-      expect(wrapper.find('.dropdown-menu').exists()).toBe(true)
+      expect(wrapper.find('.ocf-dropdown-menu').exists()).toBe(true)
       // Five secondary items.
-      expect(wrapper.findAll('.dropdown-menu .dropdown-item').length).toBe(5)
+      expect(wrapper.findAll('.ocf-dropdown-menu .ocf-dropdown-item').length).toBe(5)
     })
 
     it('emits each secondary action exactly once from its menu item', async () => {

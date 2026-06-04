@@ -78,7 +78,7 @@
 
       <DropdownMenu>
         <button
-          class="dropdown-item"
+          class="ocf-dropdown-item"
           data-test="action-bulk-start"
           :disabled="bulkStarting"
           @click="$emit('bulk-start')"
@@ -87,7 +87,7 @@
           <span>{{ bulkStarting ? t('groupScenarios.starting') : t('groupScenarios.bulkStart') }}</span>
         </button>
         <button
-          class="dropdown-item"
+          class="ocf-dropdown-item"
           data-test="action-reset"
           @click="$emit('reset')"
         >
@@ -95,7 +95,7 @@
           <span>{{ t('groupScenarios.resetSessions') }}</span>
         </button>
         <button
-          class="dropdown-item"
+          class="ocf-dropdown-item"
           data-test="action-export-json"
           @click="$emit('export-json')"
         >
@@ -103,7 +103,7 @@
           <span>{{ t('groupScenarios.exportJson') }}</span>
         </button>
         <button
-          class="dropdown-item"
+          class="ocf-dropdown-item"
           data-test="action-export-archive"
           @click="$emit('export-archive')"
         >
@@ -111,7 +111,7 @@
           <span>{{ t('groupScenarios.exportKillercoda') }}</span>
         </button>
         <button
-          class="dropdown-item dropdown-item--danger"
+          class="ocf-dropdown-item ocf-dropdown-item--danger"
           data-test="action-remove"
           @click="$emit('remove')"
         >
