@@ -112,7 +112,7 @@
       <!-- Personal subscription: full management controls -->
       <template v-if="!isAssigned">
         <button
-          v-if="isPersonalSubscription"
+          v-if="isPersonalSubscription && !isFreePlan"
           class="action-btn action-btn-primary"
           @click="emit('manage')"
           :disabled="isManaging"
@@ -127,7 +127,7 @@
         </router-link>
 
         <button
-          v-if="isPersonalSubscription && !isCanceled"
+          v-if="isPersonalSubscription && !isFreePlan && !isCanceled"
           class="action-btn action-btn-warning"
           @click="emit('cancel')"
         >
@@ -338,6 +338,11 @@ const isPersonalSubscription = computed(() => {
   const type = props.primarySubscription?.subscription_type
   return type === 'personal' || !type
 })
+
+// Free/trial plans have no Stripe subscription behind them, so Manage (Stripe
+// billing portal) and Cancel are meaningless and would error. Mirror
+// SubscriptionCard's `price_amount === 0` gate, read from the active plan blob.
+const isFreePlan = computed(() => props.primarySubscription?.subscription_plan?.price_amount === 0)
 
 // Assigned users may start their own plan only if they never bought one.
 const canStartPersonalSubscription = computed(() => {
