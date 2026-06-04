@@ -87,6 +87,16 @@
         id="packages"
         :help-text="t('terminalStarter.packagesHelp')"
       >
+        <template #label-suffix>
+          <span
+            v-if="!networkEnabled"
+            class="packages-network-warning"
+            data-testid="packages-network-required-hint"
+            :title="t('terminalStarter.packagesRequireNetwork')"
+          >
+            <i class="fas fa-lock"></i> {{ t('terminalStarter.packagesNetworkRequiredShort') }}
+          </span>
+        </template>
         <input
           id="packages"
           :value="packages"
@@ -96,14 +106,6 @@
           :disabled="disabled || !networkEnabled"
           @input="handlePackagesInput"
         />
-        <p
-          class="persistence-hint persistence-hint-locked packages-network-hint"
-          :class="{ 'is-reserved': networkEnabled }"
-          data-testid="packages-network-required-hint"
-        >
-          <i class="fas fa-lock"></i>
-          {{ t('terminalStarter.packagesRequireNetwork') }}
-        </p>
         <div v-if="defaultPackages.length > 0" class="default-packages">
           <small class="default-packages-label">{{ t('terminalStarter.preInstalled') }}</small>
           <span v-for="pkg in defaultPackages" :key="pkg" class="package-badge">{{ pkg }}</span>
@@ -320,6 +322,7 @@ const { t } = useTranslations({
       packagesPlaceholder: 'e.g., git, curl, vim, htop',
       packagesHelp: 'Comma-separated list of packages to install when the terminal starts. These are installed on top of the defaults. Requires internet access (enabled above).',
       packagesRequireNetwork: 'Enable internet access below to install startup packages.',
+      packagesNetworkRequiredShort: 'internet required',
       preInstalled: 'Pre-installed:',
       networkLabel: 'Internet access',
       networkOff: 'No internet',
@@ -352,6 +355,7 @@ const { t } = useTranslations({
       packagesPlaceholder: 'ex. git, curl, vim, htop',
       packagesHelp: 'Liste de paquets séparés par des virgules à installer au démarrage du terminal. Installés en plus des paquets par défaut. Nécessite l\'accès internet (activé ci-dessus).',
       packagesRequireNetwork: 'Activez l\'accès internet ci-dessous pour installer des paquets de démarrage.',
+      packagesNetworkRequiredShort: 'internet requis',
       preInstalled: 'Pré-installés :',
       networkLabel: 'Accès internet',
       networkOff: 'Sans internet',
@@ -560,12 +564,16 @@ function handlePackagesInput(event: Event) {
 }
 
 /*
- * The packages "internet required" hint always occupies its line so toggling
- * network on/off does not reflow the fieldsets below. When network is ON the
- * hint is hidden via visibility (NOT display) — its box still reserves space.
+ * The packages "internet required" warning sits inline beside the field title
+ * (via FormGroup's #label-suffix slot) and is rendered only when network is
+ * off. Because it lives on the existing label row, showing/hiding it never
+ * reflows the fields below — and there is no reserved gap when it's absent.
  */
-.packages-network-hint.is-reserved {
-  visibility: hidden;
+.packages-network-warning {
+  margin-left: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  font-weight: normal;
+  color: var(--color-text-muted);
 }
 
 @media (max-width: 768px) {

@@ -10,6 +10,7 @@
     <label v-if="label" :for="id" class="form-label">
       {{ label }}
       <span v-if="required" class="required">*</span>
+      <slot name="label-suffix"></slot>
     </label>
     <slot></slot>
     <small v-if="helpText" class="form-text">{{ helpText }}</small>

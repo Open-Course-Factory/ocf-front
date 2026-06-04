@@ -220,11 +220,10 @@ describe('TerminalAdvancedOptions', () => {
       const packages = w.find('input#packages')
       expect(packages.exists()).toBe(true)
       expect(packages.attributes('disabled')).toBeDefined()
-      // Reason hint explaining internet is required: always in the DOM (to
-      // reserve its space), visible — i.e. NOT in the reserved/hidden state.
+      // Reason warning explaining internet is required: rendered inline beside
+      // the field title when network is off.
       const hint = w.find('[data-testid="packages-network-required-hint"]')
       expect(hint.exists()).toBe(true)
-      expect(hint.classes()).not.toContain('is-reserved')
     })
 
     it('enables the packages input when network is allowed and on', () => {
@@ -233,11 +232,10 @@ describe('TerminalAdvancedOptions', () => {
       const packages = w.find('input#packages')
       expect(packages.exists()).toBe(true)
       expect(packages.attributes('disabled')).toBeUndefined()
-      // When network is on, the hint stays in the DOM but is visually hidden
-      // (reserved) via the is-reserved class so the layout never reflows.
+      // When network is on, the warning is not rendered at all — no reserved
+      // gap below the input, so the layout never reflows.
       const hint = w.find('[data-testid="packages-network-required-hint"]')
-      expect(hint.exists()).toBe(true)
-      expect(hint.classes()).toContain('is-reserved')
+      expect(hint.exists()).toBe(false)
     })
 
     it('enables the network radios when the plan allows network', () => {
