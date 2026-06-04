@@ -184,6 +184,58 @@ describe('TerminalAdvancedOptions', () => {
     })
   })
 
+  describe('network toggle + packages gating', () => {
+    it('hides the network toggle when networkPlanEnabled is false (default)', () => {
+      const w = mountComponent({ networkPlanEnabled: false, networkEnabled: false })
+
+      expect(w.find('[data-testid="network-toggle"]').exists()).toBe(false)
+    })
+
+    it('hides the packages input by default (network off)', () => {
+      // Packages are gated purely on networkEnabled in this component; the
+      // parent owns the plan-level gate (it only flips networkEnabled on when
+      // the plan allows it and clears packages when turning off).
+      const w = mountComponent({ networkPlanEnabled: false, networkEnabled: false })
+
+      expect(w.find('input#packages').exists()).toBe(false)
+    })
+
+    it('shows the network toggle but hides the packages input when network is allowed yet off', () => {
+      const w = mountComponent({ networkPlanEnabled: true, networkEnabled: false })
+
+      expect(w.find('[data-testid="network-toggle"]').exists()).toBe(true)
+      // Packages are gated on network being ON.
+      expect(w.find('input#packages').exists()).toBe(false)
+    })
+
+    it('shows the packages input when network is allowed and on', () => {
+      const w = mountComponent({ networkPlanEnabled: true, networkEnabled: true })
+
+      expect(w.find('[data-testid="network-toggle"]').exists()).toBe(true)
+      expect(w.find('input#packages').exists()).toBe(true)
+    })
+
+    it('emits update:networkEnabled=true when the "on" radio is selected', async () => {
+      const w = mountComponent({ networkPlanEnabled: true, networkEnabled: false })
+
+      await w.find('[data-testid="network-on"]').trigger('change')
+
+      const emitted = w.emitted('update:networkEnabled')
+      expect(emitted).toBeTruthy()
+      expect(emitted![emitted!.length - 1]).toEqual([true])
+    })
+
+    it('emits update:networkEnabled=false when the "off" radio is selected', async () => {
+      const w = mountComponent({ networkPlanEnabled: true, networkEnabled: true })
+
+      await w.find('[data-testid="network-off"]').trigger('change')
+
+      const emitted = w.emitted('update:networkEnabled')
+      expect(emitted).toBeTruthy()
+      expect(emitted![emitted!.length - 1]).toEqual([false])
+    })
+  })
+
   describe('i18n safety: no unescaped @ in translations', () => {
     it('does not trigger vue-i18n message compilation errors', async () => {
       // Regression test: vue-i18n treats @ as linked message syntax.
