@@ -178,6 +178,44 @@ describe('ActiveSubscriptionSource — money-flow action gating', () => {
     expect(wrapper.emitted('manage')).toBeTruthy()
   })
 
+  it('hides Manage and Cancel for a personal FREE-plan subscription (price_amount === 0)', () => {
+    // A $0 plan has no Stripe portal and nothing to cancel: Manage would
+    // trigger a broken portal call and Cancel a no-op on a free plan. The
+    // `!isFreePlan` gate must suppress both. (Contrast with the paid-personal
+    // test above, which asserts they DO render — together they pin the gate.)
+    const wrapper = mountSource({
+      id: 'sub-1',
+      status: 'active',
+      subscription_type: 'personal',
+      cancel_at_period_end: false,
+      subscription_plan: {
+        id: 'plan-free',
+        name: 'Free',
+        price_amount: 0,
+        max_cpu: 1000,
+        max_memory_mb: 512,
+      },
+    })
+
+    const text = wrapper.text()
+    expect(text).not.toContain('Manage Subscription')
+    expect(text).not.toContain('Cancel Subscription')
+
+    // No clickable Manage/Cancel button exists at all.
+    const gatedButtons = wrapper.findAll('button').filter(b => {
+      const label = b.text()
+      return (
+        label.includes('Manage Subscription') ||
+        label.includes('Cancel Subscription')
+      )
+    })
+    expect(gatedButtons).toHaveLength(0)
+
+    // The "Change Plan" link is intentionally NOT gated by isFreePlan — a
+    // free-plan user must still be able to upgrade.
+    expect(text).toContain('Change Plan')
+  })
+
   it('hides Manage / Cancel / Reactivate and shows the read-only "provided by" indication for an assigned subscription', () => {
     const wrapper = mountSource({
       id: 'sub-1',
