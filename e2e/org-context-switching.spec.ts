@@ -129,21 +129,33 @@ test.describe('Usage limits update on org switch', () => {
   test('Terminal usage limits change when switching orgs', async ({ page }) => {
     await loginFresh(page, 'karim@test.ocf', TEST_PASSWORD);
 
-    // Navigate to subscription dashboard to see usage
+    // The TerminalUsagePanel reads /terminals/my-usage and re-fetches when the
+    // org context (organizationId prop) changes. It shows the active plan's
+    // CPU/RAM budget (the "X / Y vCPU" + RAM limits in the bars section), which
+    // differs per plan: FormaTech (Pro) has a larger envelope than Personal (Trial).
+    // Capture the per-org limit text and assert it changes across orgs.
+    const getUsageLimits = async () => {
+      // Panel root appears once the dashboard mounts it (active subscription only).
+      await page.waitForSelector('[data-testid="terminal-usage-panel"]', { state: 'visible', timeout: 15_000 });
+      // Panel is collapsed by default — expand it so the bars render visibly.
+      const header = page.locator('[data-testid="terminal-usage-panel"] .collapsible-header');
+      if (!(await page.locator('[data-testid="usage-limits"]').isVisible().catch(() => false))) {
+        await header.click();
+      }
+      // The bars section only renders once usage data has loaded (async fetch),
+      // so waiting on it also covers the load / org-switch re-fetch.
+      await page.waitForSelector('[data-testid="usage-limits"]', { state: 'visible', timeout: 15_000 });
+      // Read the CPU/RAM limit text (e.g. "1 vCPU / 2 vCPU", "512 MB / 2 GB").
+      return (await page.locator('[data-testid="usage-limits"] .bar-meta').allInnerTexts())
+        .map(t => t.trim())
+        .join('|');
+    };
+
+    // Navigate to subscription dashboard to see usage (FormaTech context)
     await page.goto('/subscription-dashboard');
     await page.waitForSelector('.subscription-dashboard', { state: 'visible', timeout: 15_000 });
 
-    // Wait for usage overview to load
-    await page.waitForSelector('.usage-overview', { state: 'visible', timeout: 15_000 });
-
-    // Capture the usage text in FormaTech context
-    // Usage text format is: "X / Y" where Y is the limit
-    const getUsageTexts = async () => {
-      await page.waitForTimeout(500);
-      return await page.locator('.usage-text').allInnerTexts();
-    };
-
-    const formaTechUsage = await getUsageTexts();
+    const formaTechLimits = await getUsageLimits();
 
     // Switch to Personal org
     const orgNames = await getAvailableOrgNames(page);
@@ -157,14 +169,13 @@ test.describe('Usage limits update on org switch', () => {
 
     // Navigate again to ensure fresh data
     await page.goto('/subscription-dashboard');
-    await page.waitForSelector('.usage-overview', { state: 'visible', timeout: 15_000 });
+    await page.waitForSelector('.subscription-dashboard', { state: 'visible', timeout: 15_000 });
 
-    const personalUsage = await getUsageTexts();
+    const personalLimits = await getUsageLimits();
 
-    // The usage limits should be different between FormaTech (Pro = 10 terminals)
-    // and Personal (Trial = 1 terminal)
-    // We check that the text content differs (different limits)
-    expect(formaTechUsage.join('|')).not.toEqual(personalUsage.join('|'));
+    // The CPU/RAM budget should differ between FormaTech (Pro, larger envelope)
+    // and Personal (Trial, smaller envelope).
+    expect(formaTechLimits).not.toEqual(personalLimits);
   });
 });
 

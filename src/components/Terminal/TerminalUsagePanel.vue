@@ -6,7 +6,7 @@
 -->
 
 <template>
-  <div class="collapsible-section">
+  <div class="collapsible-section" data-testid="terminal-usage-panel">
     <button
       type="button"
       class="collapsible-header"
@@ -60,7 +60,7 @@
         </div>
 
         <!-- Progress bars -->
-        <div class="bars-section">
+        <div class="bars-section" data-testid="usage-limits">
           <div class="bar-row">
             <span class="bar-label">CPU</span>
             <div class="bar-track">
