@@ -1,5 +1,5 @@
 // Exports centralisés des composants Dashboard
-export { default as SubscriptionCard } from './SubscriptionCard.vue'
+export { default as NoSubscriptionCard } from './NoSubscriptionCard.vue'
 export { default as RecentInvoices } from './RecentInvoices.vue'
 export { default as AllSubscriptions } from './AllSubscriptions.vue'
 export { default as ActiveSubscriptionSource } from './ActiveSubscriptionSource.vue'
@@ -10,12 +10,6 @@ export interface DashboardProps {
   hasActiveSubscription: boolean
   recentInvoices: any[]
   isLoading?: boolean
-}
-
-export interface SubscriptionCardEmits {
-  manage: []
-  cancel: []
-  reactivate: []
 }
 
 export interface RecentInvoicesEmits {

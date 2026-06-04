@@ -1,5 +1,5 @@
 <template>
-  <div v-if="primarySubscription" class="active-subscription-source">
+  <div v-if="primarySubscription" class="active-subscription-source subscription-card">
     <div class="source-header">
       <div class="header-icon">
         <i class="fas fa-star"></i>
@@ -75,15 +75,92 @@
       </div>
     </div>
 
+    <!-- Status notices: trial / cancellation pending -->
+    <div v-if="isTrialing && trialEnd" class="status-notice trial-notice">
+      <i class="fas fa-gift"></i>
+      <p>
+        <strong>{{ t('subscriptionPlans.trialActive') }}</strong>
+        <span class="status-notice-detail">{{ t('subscriptionPlans.trialEndsOn') }} {{ formatDate(trialEnd) }}</span>
+      </p>
+    </div>
+
+    <div v-else-if="isCanceled && currentPeriodEnd" class="status-notice cancellation-notice">
+      <i class="fas fa-exclamation-triangle"></i>
+      <p>
+        <strong>{{ t('subscriptionPlans.subscriptionWillCancel') }}</strong>
+        <span class="status-notice-detail">{{ t('subscriptionPlans.accessUntil') }} {{ formatDate(currentPeriodEnd) }}</span>
+      </p>
+    </div>
+
+    <!-- Next billing date (not for assigned licenses, not while canceling) -->
+    <div v-else-if="!isAssigned && currentPeriodEnd" class="status-notice billing-notice">
+      <i class="fas fa-calendar-alt"></i>
+      <p>
+        <strong>{{ t('subscriptionPlans.nextBilling') }}</strong>
+        <span class="status-notice-detail">{{ formatDate(currentPeriodEnd) }}</span>
+      </p>
+    </div>
+
     <!-- Multiple subscriptions notice -->
     <div v-if="totalSubscriptions > 1" class="multiple-subs-notice">
       <i class="fas fa-info-circle"></i>
-      <p>
-        {{ t('subscriptions.multipleSubscriptionsNotice', { n: totalSubscriptions }) }}
-        <router-link to="#all-subscriptions" class="view-all-link">
-          {{ t('subscriptions.viewAll') }}
+      <p>{{ t('subscriptions.multipleSubscriptionsNotice', { n: totalSubscriptions }) }}</p>
+    </div>
+
+    <!-- Management actions -->
+    <div class="subscription-actions-bar">
+      <!-- Personal subscription: full management controls -->
+      <template v-if="!isAssigned">
+        <button
+          v-if="isPersonalSubscription"
+          class="action-btn action-btn-primary"
+          @click="emit('manage')"
+          :disabled="isManaging"
+        >
+          <i :class="isManaging ? 'fas fa-spinner fa-spin' : 'fas fa-cog'"></i>
+          {{ t('subscriptionPlans.manageSubscription') }}
+        </button>
+
+        <router-link v-if="isPersonalSubscription" to="/subscription-plans" class="action-btn action-btn-outline">
+          <i class="fas fa-exchange-alt"></i>
+          {{ t('subscriptionPlans.changePlan') }}
         </router-link>
-      </p>
+
+        <button
+          v-if="isPersonalSubscription && !isCanceled"
+          class="action-btn action-btn-warning"
+          @click="emit('cancel')"
+        >
+          <i class="fas fa-times"></i>
+          {{ t('subscriptionPlans.cancelSubscription') }}
+        </button>
+
+        <button
+          v-if="isPersonalSubscription && isCanceled"
+          class="action-btn action-btn-success"
+          @click="emit('reactivate')"
+          :disabled="isReactivating"
+        >
+          <i :class="isReactivating ? 'fas fa-spinner fa-spin' : 'fas fa-undo'"></i>
+          {{ t('subscriptionPlans.reactivateSubscription') }}
+        </button>
+      </template>
+
+      <!-- Assigned license: read-only, no payment actions -->
+      <div v-else class="assigned-license-actions">
+        <div class="assigned-info-message">
+          <i class="fas fa-info-circle"></i>
+          <p>{{ t('subscriptionPlans.bulkLicenseReadOnly') }}</p>
+        </div>
+
+        <div v-if="canStartPersonalSubscription" class="personal-subscription-option">
+          <p class="option-description">{{ t('subscriptionPlans.canStartPersonalSubscription') }}</p>
+          <router-link to="/subscription-plans" class="action-btn action-btn-outline">
+            <i class="fas fa-plus-circle"></i>
+            {{ t('subscriptionPlans.viewPlans') }}
+          </router-link>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -96,11 +173,23 @@ import { formatBudgetAsSizes, CANONICAL_SIZE_CATALOG } from '../../../utils/quot
 interface Props {
   primarySubscription: any | null
   totalSubscriptions?: number
+  allSubscriptions?: any[]
+  isManaging?: boolean
+  isReactivating?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  totalSubscriptions: 1
+  totalSubscriptions: 1,
+  allSubscriptions: () => [],
+  isManaging: false,
+  isReactivating: false
 })
+
+const emit = defineEmits<{
+  manage: []
+  cancel: []
+  reactivate: []
+}>()
 
 const { t } = useTranslations({
   en: {
@@ -116,7 +205,6 @@ const { t } = useTranslations({
       networkAccess: 'Network access',
       sessionDuration: 'session duration',
       multipleSubscriptionsNotice: 'You have {n} active subscriptions. If this one expires, the next highest priority subscription will automatically become active.',
-      viewAll: 'View all subscriptions',
       subscriptionTypePersonal: 'Personal Subscription',
       subscriptionTypeAssigned: 'Assigned License',
       subscriptionTypeOrganization: 'Organization',
@@ -129,6 +217,20 @@ const { t } = useTranslations({
       or: 'OR',
       capacityTooltip: 'Your plan\'s capacity, expressed as machine sizes you can spawn at once. Pick any combination that fits.',
       unlimitedCapacity: 'Unlimited capacity',
+    },
+    subscriptionPlans: {
+      manageSubscription: 'Manage Subscription',
+      changePlan: 'Change Plan',
+      cancelSubscription: 'Cancel Subscription',
+      reactivateSubscription: 'Reactivate Subscription',
+      nextBilling: 'Next Billing',
+      trialActive: 'Free Trial Active',
+      trialEndsOn: 'Trial ends on',
+      subscriptionWillCancel: 'Subscription will cancel',
+      accessUntil: 'Access until',
+      bulkLicenseReadOnly: 'This subscription was assigned to you and is managed by the license owner. You cannot modify or cancel it.',
+      canStartPersonalSubscription: 'Want your own subscription? You can still purchase a personal plan or start a free trial.',
+      viewPlans: 'View Plans',
     },
   },
   fr: {
@@ -144,7 +246,6 @@ const { t } = useTranslations({
       networkAccess: 'Accès réseau',
       sessionDuration: 'durée de session',
       multipleSubscriptionsNotice: 'Vous avez {n} abonnements actifs. Si celui-ci expire, le prochain abonnement de priorité la plus élevée deviendra automatiquement actif.',
-      viewAll: 'Voir tous les abonnements',
       subscriptionTypePersonal: 'Abonnement personnel',
       subscriptionTypeAssigned: 'Licence attribuée',
       subscriptionTypeOrganization: 'Organisation',
@@ -157,6 +258,20 @@ const { t } = useTranslations({
       or: 'OU',
       capacityTooltip: 'La capacité de votre forfait, exprimée en tailles de machines que vous pouvez lancer simultanément. Choisissez la combinaison qui vous convient.',
       unlimitedCapacity: 'Capacité illimitée',
+    },
+    subscriptionPlans: {
+      manageSubscription: 'Gérer l\'abonnement',
+      changePlan: 'Changer de plan',
+      cancelSubscription: 'Annuler l\'abonnement',
+      reactivateSubscription: 'Réactiver l\'abonnement',
+      nextBilling: 'Prochaine facturation',
+      trialActive: 'Essai gratuit actif',
+      trialEndsOn: 'L\'essai se termine le',
+      subscriptionWillCancel: 'L\'abonnement sera annulé',
+      accessUntil: 'Accès jusqu\'au',
+      bulkLicenseReadOnly: 'Cet abonnement vous a été attribué et est géré par le propriétaire de la licence. Vous ne pouvez pas le modifier ou l\'annuler.',
+      canStartPersonalSubscription: 'Vous voulez votre propre abonnement ? Vous pouvez toujours acheter un plan personnel ou commencer un essai gratuit.',
+      viewPlans: 'Voir les plans',
     },
   }
 })
@@ -205,6 +320,41 @@ function formatDuration(minutes: number): string {
     return `${hours}h ${t('subscriptions.sessionDuration')}`
   }
   return `${minutes}min ${t('subscriptions.sessionDuration')}`
+}
+
+// --- Subscription state (drives status notices + action gating) ---
+
+const isTrialing = computed(() => props.primarySubscription?.status === 'trialing')
+const isCanceled = computed(() => props.primarySubscription?.cancel_at_period_end === true)
+
+// Assigned (bulk-license) users don't pay, so they must never see
+// Manage / Cancel / Reactivate. Mirror SubscriptionCard's detection.
+const isAssigned = computed(() => {
+  const sub = props.primarySubscription
+  return sub?.subscription_type === 'assigned' || !!sub?.subscription_batch_id
+})
+
+const isPersonalSubscription = computed(() => {
+  const type = props.primarySubscription?.subscription_type
+  return type === 'personal' || !type
+})
+
+// Assigned users may start their own plan only if they never bought one.
+const canStartPersonalSubscription = computed(() => {
+  if (!props.allSubscriptions || props.allSubscriptions.length === 0) return true
+  return !props.allSubscriptions.some(sub => sub.subscription_type === 'personal')
+})
+
+const trialEnd = computed(() => props.primarySubscription?.trial_end ?? null)
+const currentPeriodEnd = computed(() => props.primarySubscription?.current_period_end ?? null)
+
+function formatDate(dateString: string | null): string {
+  if (!dateString) return '-'
+  try {
+    return new Date(dateString).toLocaleDateString('fr-FR')
+  } catch {
+    return dateString
+  }
 }
 </script>
 
@@ -399,15 +549,146 @@ function formatDuration(minutes: number): string {
   color: rgba(255, 255, 255, 0.9);
 }
 
-.view-all-link {
-  color: var(--color-white);
-  font-weight: 600;
-  text-decoration: underline;
-  margin-left: 6px;
+/*
+ * Status notices and action buttons live on the same fixed blue gradient as
+ * the rest of the hero, so they use translucent-white surfaces and white text
+ * on purpose (see the note at the top of this stylesheet).
+ */
+.status-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.view-all-link:hover {
+.status-notice i {
+  font-size: 1.125rem;
+  color: rgba(255, 255, 255, 0.9);
+  flex-shrink: 0;
+}
+
+.status-notice p {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--color-white);
+}
+
+.status-notice-detail {
+  font-weight: 400;
   color: rgba(255, 255, 255, 0.85);
+}
+
+.cancellation-notice {
+  background: rgba(255, 193, 7, 0.18);
+}
+
+.subscription-actions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 20px 24px;
+  background: rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.action-btn-primary {
+  background: var(--color-white);
+  color: var(--color-primary);
+}
+
+.action-btn-primary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.action-btn-outline {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--color-white);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.action-btn-outline:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.action-btn-warning {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--color-white);
+  border-color: rgba(255, 193, 7, 0.7);
+}
+
+.action-btn-warning:hover {
+  background: rgba(255, 193, 7, 0.2);
+}
+
+.action-btn-success {
+  background: var(--color-success);
+  color: var(--color-white);
+}
+
+.action-btn-success:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.assigned-license-actions {
+  flex: 1;
+}
+
+.assigned-info-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.assigned-info-message i {
+  font-size: 1.25rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.assigned-info-message p {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.personal-subscription-option {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.option-description {
+  margin: 0 0 12px 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 /* Responsive */
@@ -440,6 +721,14 @@ function formatDuration(minutes: number): string {
 
   .detail-label {
     min-width: unset;
+  }
+
+  .subscription-actions-bar {
+    flex-direction: column;
+  }
+
+  .action-btn {
+    justify-content: center;
   }
 }
 </style>

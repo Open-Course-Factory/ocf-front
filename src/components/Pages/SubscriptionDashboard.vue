@@ -32,26 +32,26 @@
       </div>
 
       <div v-else class="dashboard-content">
-        <!-- Composant Abonnement -->
-        <SubscriptionCard
-          :subscription="subscriptionsStore.currentSubscription"
-          :all-subscriptions="subscriptionsStore.allSubscriptions"
-          :has-active-subscription="subscriptionsStore.hasActiveSubscription()"
-          :last-canceled-subscription="lastCanceledSubscription"
-          :is-managing="isManaging"
-          :is-reactivating="isReactivating"
-          :is-activating-free-plan="isActivatingFreePlan"
-          @manage="openStripePortal"
-          @cancel="showCancelModal = true"
-          @reactivate="showReactivateModal = true"
-          @activate-free-plan="activateFreePlan"
-        />
-
-        <!-- Active Subscription Source -->
+        <!-- Active subscription: single info + actions panel -->
         <ActiveSubscriptionSource
           v-if="subscriptionsStore.hasActiveSubscription() && primarySubscription"
           :primary-subscription="primarySubscription"
+          :all-subscriptions="subscriptionsStore.allSubscriptions"
           :total-subscriptions="subscriptionsStore.allSubscriptions.length"
+          :is-managing="isManaging"
+          :is-reactivating="isReactivating"
+          @manage="openStripePortal"
+          @cancel="showCancelModal = true"
+          @reactivate="showReactivateModal = true"
+        />
+
+        <!-- No active subscription: standalone CTA -->
+        <NoSubscriptionCard
+          v-else
+          :last-canceled-subscription="lastCanceledSubscription"
+          :is-activating-free-plan="isActivatingFreePlan"
+          @activate-free-plan="activateFreePlan"
+          @reactivate="showReactivateModal = true"
         />
 
         <!-- All Subscriptions (Stacked View) - hidden for assigned-only users -->
@@ -112,7 +112,7 @@ import { extractErrorMessage } from '../../utils/formatters'
 import axios from 'axios'
 
 // Import des composants modulaires
-import { SubscriptionCard, RecentInvoices, AllSubscriptions, ActiveSubscriptionSource } from '../Subscription/Dashboard'
+import { NoSubscriptionCard, RecentInvoices, AllSubscriptions, ActiveSubscriptionSource } from '../Subscription/Dashboard'
 import { CancelSubscriptionModal, ReactivateModal } from '../Subscription/Modals'
 import ErrorAlert from '../UI/ErrorAlert.vue'
 import UpgradeToTeamBanner from '../Common/UpgradeToTeamBanner.vue'
