@@ -172,7 +172,7 @@ describe('SessionComposer — budget mode', () => {
     expect(wrapper.find('.budget-summary-exhausted').exists()).toBe(true)
   })
 
-  it('disables size pills whose remaining_count is 0', async () => {
+  it('marks size pills whose remaining_count is 0 as exhausted (dimmed, aria-disabled)', async () => {
     mockGetSessionOptions.mockResolvedValue({
       distribution: ubuntu,
       allowed_sizes: [
@@ -195,12 +195,57 @@ describe('SessionComposer — budget mode', () => {
     await flushPromises()
 
     const pills = wrapper.findAll('.size-pill')
-    // 3 pills total — find the disabled ones
-    const disabledPills = pills.filter(p => p.classes().includes('exhausted'))
-    expect(disabledPills.length).toBe(2)
-    for (const p of disabledPills) {
-      expect(p.attributes('disabled')).toBeDefined()
+    // 3 pills total — find the exhausted ones
+    const exhaustedPills = pills.filter(p => p.classes().includes('exhausted'))
+    expect(exhaustedPills.length).toBe(2)
+    for (const p of exhaustedPills) {
+      // Exhausted pills are no longer natively disabled — the user can still
+      // select them to inspect specs. They are flagged aria-disabled instead.
+      expect(p.attributes('disabled')).toBeUndefined()
+      expect(p.attributes('aria-disabled')).toBe('true')
     }
+  })
+
+  it('lets the user select an exhausted size to view its specs but keeps readiness false', async () => {
+    mockGetSessionOptions.mockResolvedValue({
+      distribution: ubuntu,
+      allowed_sizes: [
+        // Everything exhausted so auto-select picks nothing — start blocked.
+        size('s', { remaining_count: 0, allowed: true, reason: 'budget_cpu_exceeded' }),
+        size('m', { remaining_count: 0, allowed: true, reason: 'budget_cpu_exceeded' }),
+      ],
+      allowed_features: [],
+      quota: {
+        max_cpu: 1, max_memory_mb: 1024,
+        used_cpu: 1, used_memory_mb: 1024,
+        remaining_cpu: 0, remaining_memory_mb: 0,
+        scope: 'user'
+      }
+    })
+
+    const wrapper = mountComposer()
+    await flushPromises()
+    await flushPromises()
+    await flushPromises()
+
+    const vm = wrapper.vm as any
+    // Nothing launchable → nothing auto-selected → not ready.
+    expect(vm.selectedSize).toBeNull()
+    expect(vm.isReady).toBe(false)
+
+    // Click an exhausted pill — it must become the selection (specs visible)…
+    const exhaustedPill = wrapper.findAll('.size-pill').find(p => p.classes().includes('exhausted'))
+    expect(exhaustedPill).toBeTruthy()
+    await exhaustedPill!.trigger('click')
+    await flushPromises()
+
+    expect(vm.selectedSize).not.toBeNull()
+    // …but readiness stays false so the parent's Start button is disabled.
+    expect(vm.isReady).toBe(false)
+    // The specs line renders for the (now-selected) size.
+    expect(wrapper.find('.size-detail').exists()).toBe(true)
+    // And the "specs only" hint explains why it can't be launched.
+    expect(wrapper.find('[data-test="size-unavailable-hint"]').exists()).toBe(true)
   })
 
   it('orders pills descending by capacity in budget mode (XL first)', async () => {

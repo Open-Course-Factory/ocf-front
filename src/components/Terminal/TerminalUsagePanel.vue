@@ -122,6 +122,9 @@
               </span>
               <span class="session-name">{{ session.name || session.size_key }}</span>
               <span class="session-size">{{ session.size_key.toUpperCase() }}</span>
+              <span class="session-specs" data-test="session-specs">
+                {{ formatMcpuAsVcpu(session.size_cpu) }} vCPU · {{ formatMemoryMb(session.size_memory_mb) }}
+              </span>
               <span class="session-state">
                 {{ session.state === 'running' ? t('terminals.state.running') : t('terminals.state.paused') }}
               </span>
@@ -515,7 +518,7 @@ onBeforeUnmount(() => {
 
 .session-row {
   display: grid;
-  grid-template-columns: 1.5em 1fr 2.5em auto auto;
+  grid-template-columns: 1.5em 1fr 2.5em auto auto auto;
   align-items: center;
   gap: var(--spacing-md);
   padding: var(--spacing-xs) var(--spacing-md);
@@ -545,6 +548,13 @@ onBeforeUnmount(() => {
   font-family: var(--font-family-mono, monospace);
   font-weight: var(--font-weight-semibold);
   color: var(--color-primary);
+}
+
+.session-specs {
+  font-family: var(--font-family-mono, monospace);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs, 0.75rem);
+  white-space: nowrap;
 }
 
 .session-state {
@@ -632,6 +642,7 @@ onBeforeUnmount(() => {
     grid-template-columns: 1.5em 1fr auto;
   }
 
+  .session-specs,
   .session-state,
   .session-elapsed {
     display: none;

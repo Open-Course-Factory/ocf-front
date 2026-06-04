@@ -88,9 +88,10 @@
                 disabled: !size.allowed,
                 exhausted: isExhausted(size)
               }"
-              :disabled="!size.allowed || disabled || isExhausted(size)"
+              :disabled="disabled"
+              :aria-disabled="!size.allowed || isExhausted(size)"
               :title="getSizeUseCase(size.key) + ' — ' + getEffectiveCpuLabel(size) + ', ' + size.memory + (!size.allowed ? ' — ' + getReasonText(size.reason) : '')"
-              @click="size.allowed && !isExhausted(size) && selectSize(size)"
+              @click="selectSize(size)"
             >
               {{ size.key.toUpperCase() }}
               <i v-if="size.key === selectedDistribution?.default_size_key" class="fas fa-star pill-recommended" :title="t('sessionComposer.recommended')"></i>
@@ -110,6 +111,20 @@
           </div>
           <span v-if="selectedSize" class="size-detail">
             {{ getSizeUseCase(selectedSize.key) }} · {{ getEffectiveCpuLabel(selectedSize) }}, {{ selectedSize.memory }}
+          </span>
+          <!-- Specs-only hint: shown when the selected size can't be launched
+               (plan-locked or budget-exhausted) so the user knows they're just
+               inspecting it. -->
+          <span
+            v-if="selectedSizeBlockedReason"
+            class="size-unavailable-hint"
+            data-test="size-unavailable-hint"
+          >
+            <i class="fas fa-eye"></i>
+            {{ selectedSizeBlockedReason === 'plan'
+              ? getReasonText(selectedSize?.reason)
+              : t('sessionComposer.reasonBudgetExhausted') }}
+            — {{ t('sessionComposer.specsOnly') }}
           </span>
         </div>
 
@@ -204,6 +219,7 @@ const { t } = useTranslations({
       reasonPlanRestriction: 'Restricted by your plan',
       reasonBudgetExhausted: 'No capacity left for this size right now — pick a smaller size or stop a session',
       budgetAllExhausted: 'No capacity left — stop a session to free up resources.',
+      specsOnly: 'viewing specs only',
     }
   },
   fr: {
@@ -243,6 +259,7 @@ const { t } = useTranslations({
       reasonPlanRestriction: 'Restreint par votre forfait',
       reasonBudgetExhausted: 'Plus de capacit\u00e9 pour cette taille \u2014 choisissez une taille plus petite ou arr\u00eatez une session',
       budgetAllExhausted: 'Plus de capacit\u00e9 disponible \u2014 arr\u00eatez une session pour lib\u00e9rer des ressources.',
+      specsOnly: 'aper\u00e7u des caract\u00e9ristiques uniquement',
     }
   }
 })
@@ -305,6 +322,21 @@ const isUnlimited = computed(() => sessionOptions.value?.quota?.scope === 'unlim
 function isExhausted(size: SessionOptionSize): boolean {
   return !isUnlimited.value && size.remaining_count === 0
 }
+
+// A size can actually be launched only when the plan allows it AND it isn't
+// exhausted. The user may still *select* an unavailable size to inspect its
+// specs (see template) — but `isReady` gates the parent's Start button on this.
+function isLaunchable(size: SessionOptionSize): boolean {
+  return size.allowed && !isExhausted(size)
+}
+
+// True when a size is selected but cannot be launched (locked by plan or out of
+// budget). Drives the inline "specs only" hint near the start area.
+const selectedSizeBlockedReason = computed<'plan' | 'exhausted' | null>(() => {
+  const size = selectedSize.value
+  if (!size || isLaunchable(size)) return null
+  return size.allowed ? 'exhausted' : 'plan'
+})
 
 // Capacity-descending order (xl > l > m > s > xs) is provided by
 // `capacityRank` from `utils/quotaFormatters.ts` — single source of truth.
@@ -378,22 +410,19 @@ async function selectDistribution(dist: Distribution) {
   loadingOptions.value = true
   try {
     sessionOptions.value = await terminalService.getSessionOptions(dist.name, props.backendId, props.organizationId)
-    // A size is selectable when the plan allows it AND it isn't exhausted.
+    // Auto-select only a *launchable* size (plan-allowed AND not exhausted).
     // Under an unlimited plan remaining_count is always 0 but the size is still
-    // selectable, so `isExhausted` (which honors quota.scope) is the gate.
-    const isSelectable = (s: SessionOptionSize) =>
-      s.allowed && !isExhausted(s)
-    // Auto-select default size if selectable
+    // launchable, so `isLaunchable` (which honors quota.scope) is the gate.
     if (dist.default_size_key && sessionOptions.value) {
       const defaultSize = sessionOptions.value.allowed_sizes.find(
-        s => s.key === dist.default_size_key && isSelectable(s)
+        s => s.key === dist.default_size_key && isLaunchable(s)
       )
       if (defaultSize) selectedSize.value = defaultSize
     }
-    // Fallback: auto-select the LARGEST selectable size if nothing selected.
+    // Fallback: auto-select the LARGEST launchable size if nothing selected.
     // (Not the first in backend order — that lands on M when XS/S are locked.)
     if (!selectedSize.value && sessionOptions.value) {
-      const largestAllowed = pickLargestSelectableSize(sessionOptions.value.allowed_sizes, isSelectable)
+      const largestAllowed = pickLargestSelectableSize(sessionOptions.value.allowed_sizes, isLaunchable)
       if (largestAllowed) selectedSize.value = largestAllowed
     }
     // Auto-enable all allowed features by default. We deliberately skip
@@ -565,7 +594,14 @@ defineExpose({
   selectedSize,
   enabledFeatures,
   networkAllowed,
-  isReady: computed(() => !!selectedDistribution.value && !!selectedSize.value),
+  // Ready to launch only when a *launchable* size is selected. An exhausted or
+  // plan-locked size can be selected (to view its specs) but must keep the
+  // parent's Start button disabled.
+  isReady: computed(() =>
+    !!selectedDistribution.value &&
+    !!selectedSize.value &&
+    isLaunchable(selectedSize.value)
+  ),
   loadingOptions,
   loadDistributions,
   saveLastConfig
@@ -830,7 +866,7 @@ watch(() => props.organizationId, () => {
   white-space: nowrap;
 }
 
-.size-pill:hover:not(.disabled):not(:disabled) {
+.size-pill:hover:not(.disabled):not(.exhausted):not(:disabled) {
   border-color: var(--color-primary);
 }
 
@@ -840,14 +876,14 @@ watch(() => props.organizationId, () => {
   color: white;
 }
 
+/* Locked / exhausted pills stay clickable (so the user can inspect their specs)
+ * but remain visually dimmed to signal they can't be launched. */
 .size-pill.disabled {
   opacity: 0.4;
-  cursor: not-allowed;
 }
 
 .size-pill.exhausted {
   opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* Budget summary line shown above the size pills */
@@ -930,6 +966,20 @@ watch(() => props.organizationId, () => {
 .size-detail {
   font-size: var(--font-size-xs, 11px);
   color: var(--color-text-muted);
+}
+
+.size-unavailable-hint {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs, 11px);
+  color: var(--color-warning-text, var(--color-warning));
+}
+
+.size-unavailable-hint i {
+  color: var(--color-warning);
+  font-size: 11px;
 }
 
 /* Feature chips — compact inline toggles */

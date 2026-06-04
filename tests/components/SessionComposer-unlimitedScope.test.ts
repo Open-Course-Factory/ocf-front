@@ -160,7 +160,7 @@ describe('SessionComposer — unlimited scope', () => {
     expect(mPill.classes()).toContain('selected')
   })
 
-  it('still disables remaining_count 0 pills in budget mode (scope user)', async () => {
+  it('still marks remaining_count 0 pills as exhausted in budget mode (scope user)', async () => {
     mockGetSessionOptions.mockResolvedValue({
       distribution: ubuntu,
       allowed_sizes: [
@@ -185,10 +185,13 @@ describe('SessionComposer — unlimited scope', () => {
     const exhausted = wrapper.findAll('.size-pill').filter(p => p.classes().includes('exhausted'))
     expect(exhausted.length).toBe(2)
     for (const p of exhausted) {
-      expect(p.attributes('disabled')).toBeDefined()
+      // Exhausted pills stay selectable (specs inspection) but are flagged
+      // aria-disabled rather than natively disabled.
+      expect(p.attributes('disabled')).toBeUndefined()
+      expect(p.attributes('aria-disabled')).toBe('true')
     }
-    // The size with capacity stays selectable.
-    expect(pillForKey(wrapper, 'xs').attributes('disabled')).toBeUndefined()
+    // The size with capacity is not flagged unavailable.
+    expect(pillForKey(wrapper, 'xs').attributes('aria-disabled')).toBe('false')
   })
 
   it('keeps an unallowed size locked regardless of scope (unlimited)', async () => {
@@ -213,10 +216,13 @@ describe('SessionComposer — unlimited scope', () => {
     await flushPromises()
 
     const xlPill = pillForKey(wrapper, 'xl')
+    // Plan-locked: keeps its dimmed visual class and is flagged aria-disabled,
+    // but remains clickable so the user can inspect its specs.
     expect(xlPill.classes()).toContain('disabled')
-    expect(xlPill.attributes('disabled')).toBeDefined()
+    expect(xlPill.attributes('disabled')).toBeUndefined()
+    expect(xlPill.attributes('aria-disabled')).toBe('true')
 
-    // The allowed size remains selectable.
-    expect(pillForKey(wrapper, 'm').attributes('disabled')).toBeUndefined()
+    // The allowed size is not flagged unavailable.
+    expect(pillForKey(wrapper, 'm').attributes('aria-disabled')).toBe('false')
   })
 })

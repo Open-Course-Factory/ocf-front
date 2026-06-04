@@ -191,6 +191,39 @@ describe('TerminalUsagePanel — live usage view', () => {
     expect(rows[1].text()).toContain('exam-prep')
   })
 
+  it('renders each session machine size specs (vCPU + RAM) alongside the size key', async () => {
+    mockGetMyUsage.mockResolvedValue(makeUsage({
+      active_sessions: [
+        {
+          session_id: 'sess-1',
+          name: 'ubuntu-dev',
+          size_key: 'm',
+          // size_cpu is mCPU on the wire (500 = 0.5 vCPU).
+          size_cpu: 500,
+          size_memory_mb: 1024,
+          state: 'running',
+          persistence_mode: 'persistent',
+          last_started_at: new Date(Date.now() - 60 * 1000).toISOString(),
+          expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        }
+      ]
+    }))
+    const wrapper = mountPanel()
+    await flushPromises()
+    await wrapper.find('.collapsible-header').trigger('click')
+    await flushPromises()
+
+    const row = wrapper.find('[data-test="session-row"]')
+    expect(row.exists()).toBe(true)
+    // Uppercased size key.
+    expect(row.text()).toContain('M')
+    // Specs formatted via the shared helpers: 500 mCPU → "0.5 vCPU", 1024 MiB → "1.0 GiB".
+    const specs = row.find('[data-test="session-specs"]')
+    expect(specs.exists()).toBe(true)
+    expect(specs.text()).toContain('0.5 vCPU')
+    expect(specs.text()).toContain('1.0 GiB')
+  })
+
   it('renders the empty state when there are no active sessions', async () => {
     mockGetMyUsage.mockResolvedValue(makeUsage({ active_sessions: [] }))
     const wrapper = mountPanel()
