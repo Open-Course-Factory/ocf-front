@@ -276,12 +276,22 @@ const sortedDistributions = computed(() =>
 )
 
 // Computed
-// `persistence` was historically surfaced both here (as a feature chip) and
-// in the launcher (as a dedicated radio). The radio is the canonical UI —
-// filter the chip out so we don't render the same concept twice. The filter is
-// a defensive no-op once the backend stops emitting the feature.
+// `persistence` and `network` are both surfaced as dedicated toggles in the
+// launcher (a radio each), not as feature chips. Filter them out here so we
+// don't render the same concept twice. The filter is a defensive no-op once
+// the backend stops emitting these as features.
 const availableFeatures = computed<SessionOptionFeature[]>(
-  () => (sessionOptions.value?.allowed_features ?? []).filter(f => f.key !== 'persistence')
+  () => (sessionOptions.value?.allowed_features ?? []).filter(
+    f => f.key !== 'persistence' && f.key !== 'network'
+  )
+)
+
+// Whether the active plan allows network (internet egress) access. Drives the
+// launcher's network toggle visibility. Mirrors how persistence plan-gating is
+// derived, but sourced here because the per-distribution session-options carry
+// the authoritative `network` feature `allowed` flag.
+const networkAllowed = computed<boolean>(
+  () => (sessionOptions.value?.allowed_features ?? []).some(f => f.key === 'network' && f.allowed)
 )
 
 // Unlimited plans: the backend signals this with `quota.scope === 'unlimited'`
@@ -386,13 +396,14 @@ async function selectDistribution(dist: Distribution) {
       if (firstAllowed) selectedSize.value = firstAllowed
     }
     // Auto-enable all allowed features by default. We deliberately skip
-    // `persistence` because that concept is owned by the launcher's
-    // persistence_mode radio — auto-toggling it as a feature would either be
-    // a no-op (BE ignores it) or fight the radio (if BE wires both).
+    // `persistence` and `network` because those concepts are owned by the
+    // launcher's dedicated toggles — auto-enabling them here would fight those
+    // controls. `network` in particular is opt-in (off by default), so it must
+    // never be auto-enabled.
     if (sessionOptions.value) {
       const defaults: Record<string, boolean> = {}
       for (const f of sessionOptions.value.allowed_features) {
-        if (f.allowed && f.key !== 'persistence') {
+        if (f.allowed && f.key !== 'persistence' && f.key !== 'network') {
           defaults[f.key] = true
         }
       }
@@ -552,6 +563,7 @@ defineExpose({
   selectedDistribution,
   selectedSize,
   enabledFeatures,
+  networkAllowed,
   isReady: computed(() => !!selectedDistribution.value && !!selectedSize.value),
   loadingOptions,
   loadDistributions,

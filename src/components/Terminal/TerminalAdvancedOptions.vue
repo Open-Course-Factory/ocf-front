@@ -83,6 +83,7 @@
       </FormGroup>
 
       <FormGroup
+        v-if="networkEnabled"
         :label="t('terminalStarter.packagesLabel')"
         id="packages"
         :help-text="t('terminalStarter.packagesHelp')"
@@ -101,6 +102,54 @@
           <span v-for="pkg in defaultPackages" :key="pkg" class="package-badge">{{ pkg }}</span>
         </div>
       </FormGroup>
+
+      <!--
+        Network (internet egress) toggle. Only rendered when the active plan
+        allows network access. Opt-in: machines start with no internet by
+        default. Custom startup packages require network ON (enforced
+        server-side), so the packages FormGroup above is gated on networkEnabled.
+      -->
+      <fieldset
+        v-if="networkPlanEnabled"
+        class="persistence-toggle"
+        data-testid="network-toggle"
+      >
+        <legend class="persistence-legend">
+          <i class="fas fa-globe"></i>
+          {{ t('terminalStarter.networkLabel') }}
+        </legend>
+        <div class="persistence-options">
+          <label class="persistence-option">
+            <input
+              type="radio"
+              name="network-mode"
+              value="off"
+              :checked="!networkEnabled"
+              :disabled="disabled"
+              data-testid="network-off"
+              @change="emit('update:networkEnabled', false)"
+            />
+            <span class="persistence-option-label">{{ t('terminalStarter.networkOff') }}</span>
+          </label>
+          <label class="persistence-option">
+            <input
+              type="radio"
+              name="network-mode"
+              value="on"
+              :checked="networkEnabled"
+              :disabled="disabled"
+              data-testid="network-on"
+              @change="emit('update:networkEnabled', true)"
+            />
+            <span class="persistence-option-label">{{ t('terminalStarter.networkOn') }}</span>
+          </label>
+        </div>
+        <p class="persistence-hint" data-testid="network-hint">
+          {{ networkEnabled
+            ? t('terminalStarter.networkOnHint')
+            : t('terminalStarter.networkOffHint') }}
+        </p>
+      </fieldset>
 
       <!--
         Persistence toggle. Only rendered when the active subscription plan
@@ -197,6 +246,10 @@ interface Props {
    * Falls back to the generic localized placeholder when blank.
    */
   namePlaceholder?: string
+  /** Whether the active plan allows network (internet egress) access. */
+  networkPlanEnabled?: boolean
+  /** Current network (internet egress) selection. Opt-in — defaults to off. */
+  networkEnabled?: boolean
   /** Whether the active subscription plan supports persistent sessions. */
   persistencePlanEnabled?: boolean
   /** Current persistence mode selection. */
@@ -218,6 +271,8 @@ const props = withDefaults(defineProps<Props>(), {
   selectedBackendId: '',
   showBackendSelector: false,
   namePlaceholder: '',
+  networkPlanEnabled: false,
+  networkEnabled: false,
   persistencePlanEnabled: false,
   persistenceMode: 'ephemeral',
   forcedEphemeral: false
@@ -229,6 +284,7 @@ const emit = defineEmits<{
   'update:hostname': [value: string]
   'update:packages': [value: string]
   'update:selectedBackendId': [value: string]
+  'update:networkEnabled': [value: boolean]
   'update:persistenceMode': [value: PersistenceMode]
   reset: []
 }>()
@@ -249,8 +305,13 @@ const { t } = useTranslations({
       hostnameHelp: "Custom hostname for the terminal prompt (root{'@'}hostname). Lowercase, alphanumeric and hyphens, max 63 chars.",
       packagesLabel: 'Startup Packages (Optional)',
       packagesPlaceholder: 'e.g., git, curl, vim, htop',
-      packagesHelp: 'Comma-separated list of packages to install when the terminal starts. These are installed on top of the defaults.',
+      packagesHelp: 'Comma-separated list of packages to install when the terminal starts. These are installed on top of the defaults. Requires internet access (enabled above).',
       preInstalled: 'Pre-installed:',
+      networkLabel: 'Internet access',
+      networkOff: 'No internet',
+      networkOn: 'Allow internet',
+      networkOffHint: 'The terminal has no internet access. You cannot download packages or clone external repositories.',
+      networkOnHint: 'The terminal can reach the internet — download packages, clone repositories, and fetch external resources.',
       persistenceLabel: 'Save my work between sessions',
       persistenceEphemeral: 'Discard when done',
       persistencePersistent: 'Keep my work',
@@ -274,8 +335,13 @@ const { t } = useTranslations({
       hostnameHelp: "Nom d'hôte personnalisé pour le prompt (root{'@'}hostname). Minuscules, alphanumérique et tirets, 63 caractères max.",
       packagesLabel: 'Paquets de démarrage (Optionnel)',
       packagesPlaceholder: 'ex. git, curl, vim, htop',
-      packagesHelp: 'Liste de paquets séparés par des virgules à installer au démarrage du terminal. Installés en plus des paquets par défaut.',
+      packagesHelp: 'Liste de paquets séparés par des virgules à installer au démarrage du terminal. Installés en plus des paquets par défaut. Nécessite l\'accès internet (activé ci-dessus).',
       preInstalled: 'Pré-installés :',
+      networkLabel: 'Accès internet',
+      networkOff: 'Sans internet',
+      networkOn: 'Autoriser internet',
+      networkOffHint: 'Le terminal n\'a pas d\'accès internet. Vous ne pouvez ni installer de paquets ni cloner de dépôts externes.',
+      networkOnHint: 'Le terminal peut accéder à internet — installer des paquets, cloner des dépôts et récupérer des ressources externes.',
       persistenceLabel: 'Conserver mon travail entre les sessions',
       persistenceEphemeral: 'Tout effacer à la fin',
       persistencePersistent: 'Conserver mon travail',
