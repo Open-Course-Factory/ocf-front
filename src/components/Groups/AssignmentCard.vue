@@ -23,6 +23,7 @@
 
 <template>
   <div class="card assignment-card">
+    <div class="assignment-card-body">
     <div class="assignment-info">
       <div class="assignment-title">
         {{ assignment.scenario?.title || assignment.scenario_id }}
@@ -118,6 +119,7 @@
           <span>{{ t('groupScenarios.removeAssignment') }}</span>
         </button>
       </DropdownMenu>
+    </div>
     </div>
   </div>
 </template>
@@ -218,10 +220,26 @@ function translateDifficulty(difficulty: string): string {
 </script>
 
 <style scoped>
-/* The DS `.card` supplies chrome (border/radius/shadow/bg/hover); this only
-   arranges the info row / progress / actions. */
+/* The DS `.card` supplies chrome (border/radius/shadow/bg/hover) but NO padding
+   (that normally comes from `.card-body`, which we don't use here) — so add the
+   internal inset here. `container-type: inline-size` makes the card a query
+   container so the inner layout reacts to the CARD's own width, not the
+   viewport (the group-detail content area is a sub-768px container even when
+   the window is wide — a viewport `@media` query would never fire there). */
 .assignment-card {
+  padding: var(--spacing-md) var(--spacing-lg);
+  box-sizing: border-box;
+  container-type: inline-size;
+  /* The DS `.card` sets `overflow: hidden` (corner-clipping). This card has no
+     content that needs clipping, but the overflow menu (DropdownMenu) drops
+     below the trigger and would be CLIPPED by it — so let it escape the card. */
+  overflow: visible;
+}
+
+/* The actual layout: info on the left, actions on the right. */
+.assignment-card-body {
   display: flex;
+  flex-direction: row;
   justify-content: space-between;
   align-items: center;
   gap: var(--spacing-md);
@@ -332,5 +350,25 @@ function translateDifficulty(difficulty: string): string {
   align-items: center;
   gap: var(--spacing-xs);
   white-space: nowrap;
+}
+
+/* Narrow CARD width (e.g. the sub-768px group-detail content area): stack the
+   info block above the actions, with the actions full-width and right-aligned.
+   Uses a container query so it reacts to the card's width, not the viewport. */
+@container (max-width: 560px) {
+  .assignment-card-body {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-md);
+  }
+
+  .assignment-meta {
+    flex-wrap: wrap;
+  }
+
+  .assignment-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
 </style>
