@@ -38,6 +38,9 @@ export interface TerminalSession extends BaseEntity {
   state: 'running' | 'stopped' | 'deleted' | 'starting' | 'resuming' | 'hibernating'
   persistence_mode?: 'ephemeral' | 'persistent'
   idle_until?: string
+  // JSON string of the features enabled at composition time, e.g. `{"network":true}`.
+  // Omitted/empty for legacy sessions created before the composed-feature model.
+  composed_features?: string
 }
 
 /**

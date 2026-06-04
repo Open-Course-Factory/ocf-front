@@ -161,6 +161,13 @@
                     <i class="fas fa-server"></i>
                     {{ session.backend }}
                   </span>
+                  <span
+                    class="metadata-item network-badge"
+                    :class="sessionHasNetwork(session) ? 'network-on' : 'network-off'"
+                    :title="sessionHasNetwork(session) ? t('terminalMySessions.networkOn') : t('terminalMySessions.networkOff')"
+                  >
+                    <i :class="sessionHasNetwork(session) ? 'fas fa-globe' : 'fas fa-ban'"></i>
+                  </span>
                   <span v-if="session.expires_at" class="metadata-item" :title="t('terminalMySessions.expiresAt')">
                     <i class="fas fa-clock"></i>
                     {{ formatDate(session.expires_at) }}
@@ -356,6 +363,13 @@
                         <i class="fas fa-server"></i>
                         {{ session.backend }}
                       </span>
+                      <span
+                        class="metadata-item network-badge"
+                        :class="sessionHasNetwork(session) ? 'network-on' : 'network-off'"
+                        :title="sessionHasNetwork(session) ? t('terminalMySessions.networkOn') : t('terminalMySessions.networkOff')"
+                      >
+                        <i :class="sessionHasNetwork(session) ? 'fas fa-globe' : 'fas fa-ban'"></i>
+                      </span>
                       <span v-if="session.expires_at" class="metadata-item" :title="t('terminalMySessions.expiresAt')">
                         <i class="fas fa-clock"></i>
                         {{ formatDate(session.expires_at) }}
@@ -548,7 +562,7 @@ import { useFormatters } from '../../composables/useFormatters'
 import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import { useClassGroupsStore } from '../../stores/classGroups'
 import { extractErrorMessage } from '../../utils/formatters'
-import { getEffectiveSessionState } from '../../utils/sessionState'
+import { getEffectiveSessionState, sessionHasNetwork } from '../../utils/sessionState'
 
 const { showConfirm, showError } = useNotification()
 const { formatDateTime: formatDateTimeTz } = useFormatters()
@@ -582,6 +596,8 @@ const { t } = useTranslations({
       userId: 'User',
       instanceType: 'Instance type',
       machineSizeLabel: 'Size',
+      networkOn: 'Internet access: on',
+      networkOff: 'Internet access: off',
       backend: 'Backend',
       lastSynchronization: 'Last synchronization',
       previousStatus: 'Previous status',
@@ -693,6 +709,8 @@ const { t } = useTranslations({
       userId: 'Utilisateur',
       instanceType: 'Type d\'instance',
       machineSizeLabel: 'Taille',
+      networkOn: 'Accès internet : activé',
+      networkOff: 'Accès internet : désactivé',
       backend: 'Serveur',
       lastSynchronization: 'Dernière synchronisation',
       previousStatus: 'Statut précédent',
@@ -1716,6 +1734,24 @@ async function hideAllInactiveSessions() {
 
 .metadata-item.size-badge i {
   opacity: 0.9;
+}
+
+/* Network badge — globe icon coloured by whether internet access was enabled
+   at composition time. Reuses the size-badge pill shape for visual parity. */
+.metadata-item.network-badge {
+  padding: 0 var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--color-bg-secondary);
+}
+
+.metadata-item.network-badge.network-on i {
+  color: var(--color-success);
+  opacity: 1;
+}
+
+.metadata-item.network-badge.network-off i {
+  color: var(--color-text-muted);
+  opacity: 0.7;
 }
 
 /* Status Badge */

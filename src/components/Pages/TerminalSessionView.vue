@@ -33,6 +33,14 @@
           <i class="fas fa-arrow-left"></i>
           {{ t('sessionView.backToSessions') }}
         </router-link>
+        <span
+          class="network-badge"
+          :class="sessionHasNetwork(sessionInfo) ? 'network-on' : 'network-off'"
+          :title="sessionHasNetwork(sessionInfo) ? t('sessionView.networkOn') : t('sessionView.networkOff')"
+        >
+          <i :class="sessionHasNetwork(sessionInfo) ? 'fas fa-globe' : 'fas fa-ban'"></i>
+          {{ sessionHasNetwork(sessionInfo) ? t('sessionView.networkOn') : t('sessionView.networkOff') }}
+        </span>
       </div>
 
       <!-- Recording info notice -->
@@ -267,7 +275,7 @@ import ScenarioStartBar from '../Terminal/ScenarioStartBar.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
 import CommandHistory from '../Terminal/CommandHistory.vue'
 import BaseModal from '../Modals/BaseModal.vue'
-import { getEffectiveSessionState } from '../../utils/sessionState'
+import { getEffectiveSessionState, sessionHasNetwork } from '../../utils/sessionState'
 
 const route = useRoute()
 const router = useRouter()
@@ -278,6 +286,8 @@ const { t } = useTranslations({
     sessionView: {
       loading: 'Loading session...',
       backToSessions: 'Back to My Sessions',
+      networkOn: 'Internet access: on',
+      networkOff: 'Internet access: off',
       errorLoading: 'Unable to load session information.',
       errorNotFound: 'Session not found.',
       sessionExpired: 'Your terminal session has expired.',
@@ -326,6 +336,8 @@ const { t } = useTranslations({
     sessionView: {
       loading: 'Chargement de la session...',
       backToSessions: 'Retour aux sessions',
+      networkOn: 'Accès internet : activé',
+      networkOff: 'Accès internet : désactivé',
       errorLoading: 'Impossible de charger les informations de la session.',
       errorNotFound: 'Session introuvable.',
       sessionExpired: 'Votre session terminal a expiré.',
@@ -741,7 +753,10 @@ async function loadSession() {
       // src/utils/sessionState.ts.
       state: terminal.state,
       persistence_mode: terminal.persistence_mode,
-      idle_until: terminal.idle_until
+      idle_until: terminal.idle_until,
+      // JSON string of enabled features (e.g. `{"network":true}`) — carried so
+      // sessionHasNetwork() can render the internet-access indicator.
+      composed_features: terminal.composed_features
     }
 
     // Start expiration timer only for running sessions
@@ -815,7 +830,8 @@ async function refreshSessionInfo(): Promise<string | null> {
       machine_size: terminal.machine_size,
       state: optimisticState,
       persistence_mode: terminal.persistence_mode,
-      idle_until: terminal.idle_until
+      idle_until: terminal.idle_until,
+      composed_features: terminal.composed_features
     }
 
     // Backend has confirmed a terminal state — the optimistic guard is
@@ -1087,7 +1103,31 @@ onBeforeUnmount(() => {
 }
 
 .session-view-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
   margin-bottom: var(--spacing-md);
+}
+
+/* Internet-access indicator next to the back link. Globe = on (success),
+   crossed = off (muted). Mirrors the list-page network badge. */
+.network-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--color-bg-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.network-badge.network-on {
+  color: var(--color-success);
+}
+
+.network-badge.network-off {
+  color: var(--color-text-muted);
 }
 
 .back-link {

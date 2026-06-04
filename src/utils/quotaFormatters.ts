@@ -48,6 +48,31 @@ export function capacityRank(key: string): number {
 }
 
 /**
+ * Pick the largest selectable size from a list, by capacity (smallest
+ * `capacityRank` = largest size: xl > l > m > s > xs).
+ *
+ * The launcher's fallback preselection must land on the biggest size the user
+ * can actually launch — `Array.prototype.find` returns the first in backend
+ * order (smallest→largest), wrongly landing on M when XS/S are locked. This
+ * filters to selectable sizes and returns the one with the smallest rank.
+ *
+ * `isSelectable` lets the caller pass its own gate (plan-allowed AND not
+ * budget-exhausted). Returns `undefined` when no size is selectable.
+ */
+export function pickLargestSelectableSize<T extends { key: string }>(
+  sizes: T[] | undefined | null,
+  isSelectable: (size: T) => boolean
+): T | undefined {
+  if (!sizes || sizes.length === 0) return undefined
+  return sizes
+    .filter(isSelectable)
+    .reduce<T | undefined>((largest, size) => {
+      if (!largest) return size
+      return capacityRank(size.key) < capacityRank(largest.key) ? size : largest
+    }, undefined)
+}
+
+/**
  * Format remaining capacity as a size-count summary string,
  * e.g. "3 XL OR 6 L OR 12 M".
  *

@@ -155,7 +155,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { terminalService } from '../../services/domain/terminal'
-import { summarizeRemaining, capacityRank, formatMemoryMb } from '../../utils/quotaFormatters'
+import { summarizeRemaining, capacityRank, formatMemoryMb, pickLargestSelectableSize } from '../../utils/quotaFormatters'
 import { formatMcpuAsVcpu, effectiveCpuMcpu } from '../../utils/formatters'
 import type { Distribution, SessionOptionSize, SessionOptionFeature, SessionOptionsResponse } from '../../types/terminal'
 
@@ -390,10 +390,11 @@ async function selectDistribution(dist: Distribution) {
       )
       if (defaultSize) selectedSize.value = defaultSize
     }
-    // Fallback: auto-select first selectable size if nothing selected
+    // Fallback: auto-select the LARGEST selectable size if nothing selected.
+    // (Not the first in backend order — that lands on M when XS/S are locked.)
     if (!selectedSize.value && sessionOptions.value) {
-      const firstAllowed = sessionOptions.value.allowed_sizes.find(isSelectable)
-      if (firstAllowed) selectedSize.value = firstAllowed
+      const largestAllowed = pickLargestSelectableSize(sessionOptions.value.allowed_sizes, isSelectable)
+      if (largestAllowed) selectedSize.value = largestAllowed
     }
     // Auto-enable all allowed features by default. We deliberately skip
     // `persistence` and `network` because those concepts are owned by the

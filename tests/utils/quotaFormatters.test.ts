@@ -5,6 +5,7 @@ import {
   CANONICAL_SIZE_CATALOG,
   capacityRank,
   formatMemoryMb,
+  pickLargestSelectableSize,
 } from '../../src/utils/quotaFormatters'
 // Minimal shape — `summarizeRemaining` only reads `key` and `remaining_count`.
 type RemainingFixture = { key: string; remaining_count?: number }
@@ -267,5 +268,56 @@ describe('formatMemoryMb', () => {
     expect(formatMemoryMb(10240)).toBe('10 GiB')
     expect(formatMemoryMb(16384)).toBe('16 GiB')
     expect(formatMemoryMb(24576)).toBe('24 GiB')
+  })
+})
+
+describe('pickLargestSelectableSize', () => {
+  type SizeFixture = { key: string; allowed: boolean }
+  const isAllowed = (s: SizeFixture) => s.allowed
+
+  it('picks the largest allowed size when smaller sizes are locked', () => {
+    // Backend order is smallest→largest; XS/S locked, M/L/XL allowed.
+    const sizes: SizeFixture[] = [
+      { key: 'xs', allowed: false },
+      { key: 's', allowed: false },
+      { key: 'm', allowed: true },
+      { key: 'l', allowed: true },
+      { key: 'xl', allowed: true },
+    ]
+    expect(pickLargestSelectableSize(sizes, isAllowed)?.key).toBe('xl')
+  })
+
+  it('skips the largest size when it is locked and picks the next largest', () => {
+    const sizes: SizeFixture[] = [
+      { key: 'xs', allowed: true },
+      { key: 's', allowed: true },
+      { key: 'm', allowed: true },
+      { key: 'l', allowed: true },
+      { key: 'xl', allowed: false },
+    ]
+    expect(pickLargestSelectableSize(sizes, isAllowed)?.key).toBe('l')
+  })
+
+  it('returns undefined when no size is selectable', () => {
+    const sizes: SizeFixture[] = [
+      { key: 'xs', allowed: false },
+      { key: 'm', allowed: false },
+    ]
+    expect(pickLargestSelectableSize(sizes, isAllowed)).toBeUndefined()
+  })
+
+  it('returns undefined for empty / nullish input', () => {
+    expect(pickLargestSelectableSize([], isAllowed)).toBeUndefined()
+    expect(pickLargestSelectableSize(undefined, isAllowed)).toBeUndefined()
+    expect(pickLargestSelectableSize(null, isAllowed)).toBeUndefined()
+  })
+
+  it('is independent of input order', () => {
+    const sizes: SizeFixture[] = [
+      { key: 'm', allowed: true },
+      { key: 'xl', allowed: true },
+      { key: 's', allowed: true },
+    ]
+    expect(pickLargestSelectableSize(sizes, isAllowed)?.key).toBe('xl')
   })
 })

@@ -99,6 +99,30 @@ export function canConnectToTerminal(
 }
 
 /**
+ * Whether a session was composed with internet (network) access enabled.
+ *
+ * Single source of truth for the "does this session have internet" question.
+ * The backend surfaces enabled features as a JSON string on the session
+ * (`composed_features`, e.g. `{"network":true}`). Network access is opt-in,
+ * so anything that doesn't explicitly carry `network === true` — empty,
+ * undefined, malformed JSON, or a different feature set — is treated as off.
+ * Legacy sessions created before the composed-feature model have no
+ * `composed_features` and therefore display as off (acceptable by design).
+ */
+export function sessionHasNetwork(
+  session: { composed_features?: string | null } | null | undefined
+): boolean {
+  const raw = session?.composed_features
+  if (!raw) return false
+  try {
+    const parsed = JSON.parse(raw)
+    return parsed?.network === true
+  } catch {
+    return false
+  }
+}
+
+/**
  * Pre-connection error label to show when the terminal is not yet connected.
  * Returns null when the session is connectable (the caller should not show
  * an error in that case). 'sessionEnded' for stopped sessions, 'sessionExpired'

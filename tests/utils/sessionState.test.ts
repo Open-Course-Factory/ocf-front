@@ -3,7 +3,8 @@ import {
   getEffectiveSessionState,
   isSessionActive,
   canConnectToTerminal,
-  preConnectError
+  preConnectError,
+  sessionHasNetwork
 } from '../../src/utils/sessionState'
 
 describe('getEffectiveSessionState', () => {
@@ -257,4 +258,42 @@ describe('preConnectError', () => {
       expect(preConnectError(c.session)).toBe(c.expected)
     })
   }
+})
+
+describe('sessionHasNetwork', () => {
+  it('returns true when composed_features enables network', () => {
+    expect(sessionHasNetwork({ composed_features: '{"network":true}' })).toBe(true)
+  })
+
+  it('returns true when network is enabled alongside other features', () => {
+    expect(sessionHasNetwork({ composed_features: '{"docker":true,"network":true}' })).toBe(true)
+  })
+
+  it('returns false when network is explicitly disabled', () => {
+    expect(sessionHasNetwork({ composed_features: '{"network":false}' })).toBe(false)
+  })
+
+  it('returns false for an empty feature set', () => {
+    expect(sessionHasNetwork({ composed_features: '{}' })).toBe(false)
+  })
+
+  it('returns false when a different feature is enabled', () => {
+    expect(sessionHasNetwork({ composed_features: '{"docker":true}' })).toBe(false)
+  })
+
+  it('returns false when composed_features is missing (legacy session)', () => {
+    expect(sessionHasNetwork({})).toBe(false)
+    expect(sessionHasNetwork({ composed_features: undefined })).toBe(false)
+    expect(sessionHasNetwork({ composed_features: '' })).toBe(false)
+  })
+
+  it('returns false for malformed JSON', () => {
+    expect(sessionHasNetwork({ composed_features: '{network:true' })).toBe(false)
+    expect(sessionHasNetwork({ composed_features: 'not json' })).toBe(false)
+  })
+
+  it('returns false for null/undefined session', () => {
+    expect(sessionHasNetwork(null)).toBe(false)
+    expect(sessionHasNetwork(undefined)).toBe(false)
+  })
 })
