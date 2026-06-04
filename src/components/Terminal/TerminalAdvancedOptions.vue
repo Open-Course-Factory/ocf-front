@@ -96,7 +96,11 @@
           :disabled="disabled || !networkEnabled"
           @input="handlePackagesInput"
         />
-        <p v-if="!networkEnabled" class="persistence-hint persistence-hint-locked" data-testid="packages-network-required-hint">
+        <p
+          class="persistence-hint persistence-hint-locked packages-network-hint"
+          :class="{ 'is-reserved': networkEnabled }"
+          data-testid="packages-network-required-hint"
+        >
           <i class="fas fa-lock"></i>
           {{ t('terminalStarter.packagesRequireNetwork') }}
         </p>
@@ -315,7 +319,7 @@ const { t } = useTranslations({
       packagesLabel: 'Startup Packages (Optional)',
       packagesPlaceholder: 'e.g., git, curl, vim, htop',
       packagesHelp: 'Comma-separated list of packages to install when the terminal starts. These are installed on top of the defaults. Requires internet access (enabled above).',
-      packagesRequireNetwork: 'Enable internet access above to install startup packages.',
+      packagesRequireNetwork: 'Enable internet access below to install startup packages.',
       preInstalled: 'Pre-installed:',
       networkLabel: 'Internet access',
       networkOff: 'No internet',
@@ -347,7 +351,7 @@ const { t } = useTranslations({
       packagesLabel: 'Paquets de démarrage (Optionnel)',
       packagesPlaceholder: 'ex. git, curl, vim, htop',
       packagesHelp: 'Liste de paquets séparés par des virgules à installer au démarrage du terminal. Installés en plus des paquets par défaut. Nécessite l\'accès internet (activé ci-dessus).',
-      packagesRequireNetwork: 'Activez l\'accès internet ci-dessus pour installer des paquets de démarrage.',
+      packagesRequireNetwork: 'Activez l\'accès internet ci-dessous pour installer des paquets de démarrage.',
       preInstalled: 'Pré-installés :',
       networkLabel: 'Accès internet',
       networkOff: 'Sans internet',
@@ -553,6 +557,15 @@ function handlePackagesInput(event: Event) {
 .persistence-hint-locked i {
   margin-top: 2px;
   color: var(--color-warning, var(--color-text-muted));
+}
+
+/*
+ * The packages "internet required" hint always occupies its line so toggling
+ * network on/off does not reflow the fieldsets below. When network is ON the
+ * hint is hidden via visibility (NOT display) — its box still reserves space.
+ */
+.packages-network-hint.is-reserved {
+  visibility: hidden;
 }
 
 @media (max-width: 768px) {
