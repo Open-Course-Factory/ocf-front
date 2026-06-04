@@ -65,90 +65,18 @@
           </button>
         </div>
 
-        <!-- Top-line remaining-capacity summary -->
-          <div class="budget-summary" data-testid="budget-summary">
-            <i class="fas fa-coins"></i>
-            <span v-if="isUnlimited">{{ t('orgTerminalUsage.unlimitedCapacity') }}</span>
-            <span v-else-if="budgetSummary !== null">
-              {{ t('orgTerminalUsage.remainingSummary', { summary: budgetSummary }) }}
-            </span>
-            <span v-else>{{ t('orgTerminalUsage.noRemaining') }}</span>
-          </div>
+        <!-- Per-member limit subheader (the plan budget applies to EACH member) -->
+        <div class="per-member-limit" data-testid="per-member-limit">
+          <i class="fas fa-user-shield"></i>
+          <span v-if="isUnlimited">
+            {{ t('orgTerminalUsage.perMemberUnlimited', { plan: usageData.plan_name }) }}
+          </span>
+          <span v-else>
+            {{ t('orgTerminalUsage.perMemberLimit', { plan: usageData.plan_name, cpu: maxCpuLabel, mem: maxMemoryLabel }) }}
+          </span>
+        </div>
 
-          <!-- Per-size capacity table (skipped for unlimited plans) -->
-          <div v-if="!isUnlimited && sortedSizeRows.length > 0" class="size-table" data-testid="size-table">
-            <div class="size-table-header">
-              <i class="fas fa-server"></i>
-              {{ t('orgTerminalUsage.sizeTableHeader') }}
-            </div>
-            <ul class="size-rows">
-              <li
-                v-for="row in sortedSizeRows"
-                :key="row.key"
-                class="size-row"
-                data-testid="size-row"
-              >
-                <span class="size-row-label">{{ row.key.toUpperCase() }}</span>
-                <div class="size-row-bar">
-                  <div
-                    class="size-row-fill"
-                    :class="row.remaining_count > 0 ? 'color-success' : 'color-danger'"
-                    :style="{ width: `${sizeRowFillPct(row)}%` }"
-                  ></div>
-                </div>
-                <span class="size-row-meta">
-                  <span v-if="row.remaining_count > 0">
-                    {{ t('orgTerminalUsage.sizeAllowsMore', { n: row.remaining_count }) }}
-                  </span>
-                  <span v-else class="color-muted">
-                    {{ t('orgTerminalUsage.sizeNoneAvailable') }}
-                  </span>
-                </span>
-              </li>
-            </ul>
-          </div>
-
-          <!-- Advanced (vCPU / RAM) — collapsed by default -->
-          <details class="advanced-quota" data-testid="advanced-quota">
-            <summary class="advanced-summary">
-              <i class="fas fa-microchip"></i>
-              {{ t('orgTerminalUsage.advancedToggle') }}
-            </summary>
-            <div class="advanced-body">
-              <div class="advanced-row">
-                <span class="advanced-label">{{ t('orgTerminalUsage.advancedCpu') }}</span>
-                <div class="progress-track">
-                  <div
-                    v-if="!cpuUnlimited"
-                    class="progress-fill"
-                    :class="cpuColorClass"
-                    :style="{ width: `${cpuUsedPct}%` }"
-                  ></div>
-                </div>
-                <span class="advanced-value">
-                  <template v-if="cpuUnlimited">{{ t('orgTerminalUsage.unlimited') }}</template>
-                  <template v-else>{{ formatMcpuAsVcpu(usageData.quota.used_cpu) }} / {{ formatMcpuAsVcpu(usageData.quota.max_cpu) }} vCPU</template>
-                </span>
-              </div>
-              <div class="advanced-row">
-                <span class="advanced-label">{{ t('orgTerminalUsage.advancedMemory') }}</span>
-                <div class="progress-track">
-                  <div
-                    v-if="!memUnlimited"
-                    class="progress-fill"
-                    :class="memColorClass"
-                    :style="{ width: `${memUsedPct}%` }"
-                  ></div>
-                </div>
-                <span class="advanced-value">
-                  <template v-if="memUnlimited">{{ t('orgTerminalUsage.unlimited') }}</template>
-                  <template v-else>{{ formatMemoryMb(usageData.quota.used_memory_mb) }} / {{ formatMemoryMb(usageData.quota.max_memory_mb) }}</template>
-                </span>
-              </div>
-            </div>
-          </details>
-
-        <!-- User breakdown -->
+        <!-- Members list — each member's usage against the per-member cap -->
         <div class="users-section">
           <div class="users-header">
             <i class="fas fa-user-circle"></i>
@@ -170,29 +98,49 @@
                 </span>
                 <span class="user-email text-muted">{{ user.email }}</span>
               </div>
-              <div class="user-metrics">
-                <span
-                  class="user-metric user-metric-cpu"
-                  :title="t('orgTerminalUsage.advancedCpu')"
-                  data-testid="user-active-cpu"
-                >
-                  <i class="fas fa-microchip"></i>
-                  <span class="user-metric-value">{{ formatMcpuAsVcpu(user.active_cpu) }}</span>
-                  <span class="user-metric-unit">{{ t('orgTerminalUsage.userActiveCpu') }}</span>
-                </span>
-                <span
-                  class="user-metric user-metric-memory"
-                  :title="t('orgTerminalUsage.advancedMemory')"
-                  data-testid="user-active-memory"
-                >
-                  <i class="fas fa-memory"></i>
-                  <span class="user-metric-value">{{ formatMemoryMb(user.active_memory_mb) }}</span>
-                </span>
-                <span class="user-count" :class="{ 'count-warning': user.occupying_slots >= 2 }">
-                  <i class="fas fa-terminal"></i>
-                  {{ user.occupying_slots }}
-                </span>
+
+              <div class="user-usage">
+                <!-- CPU vs per-member cap -->
+                <div class="bar-row">
+                  <span class="bar-label">CPU</span>
+                  <div class="bar-track">
+                    <div
+                      v-if="!cpuUnlimited"
+                      class="bar-fill"
+                      :class="memberCpuColorClass(user)"
+                      data-testid="user-cpu-bar-fill"
+                      :style="{ width: `${memberCpuPct(user)}%` }"
+                    ></div>
+                  </div>
+                  <span class="bar-meta" data-testid="user-active-cpu">
+                    <template v-if="cpuUnlimited">{{ formatMcpuAsVcpu(user.active_cpu) }} vCPU</template>
+                    <template v-else>{{ formatMcpuAsVcpu(user.active_cpu) }} / {{ maxCpuLabel }} vCPU</template>
+                  </span>
+                </div>
+
+                <!-- RAM vs per-member cap -->
+                <div class="bar-row">
+                  <span class="bar-label">RAM</span>
+                  <div class="bar-track">
+                    <div
+                      v-if="!memUnlimited"
+                      class="bar-fill"
+                      :class="memberMemColorClass(user)"
+                      data-testid="user-mem-bar-fill"
+                      :style="{ width: `${memberMemPct(user)}%` }"
+                    ></div>
+                  </div>
+                  <span class="bar-meta" data-testid="user-active-memory">
+                    <template v-if="memUnlimited">{{ formatMemoryMb(user.active_memory_mb) }}</template>
+                    <template v-else>{{ formatMemoryMb(user.active_memory_mb) }} / {{ maxMemoryLabel }}</template>
+                  </span>
+                </div>
               </div>
+
+              <span class="user-count" :class="{ 'count-warning': user.occupying_slots >= 2 }">
+                <i class="fas fa-terminal"></i>
+                {{ user.occupying_slots }}
+              </span>
             </li>
           </ul>
         </div>
@@ -210,17 +158,17 @@
 </template>
 
 <script setup lang="ts">
+// Org plans apply their CPU/RAM budget PER MEMBER, not as a pooled org-wide
+// quota. An org's real ceiling is its backend's physical capacity, which this
+// panel does not have. So we show each member's usage against the per-member
+// cap — never an org-total / remaining-by-size view (that pool doesn't exist).
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { terminalService } from '../../services/domain/terminal'
 import { usePermissionsStore } from '../../stores/permissions'
-import {
-  summarizeRemaining,
-  formatMemoryMb,
-  capacityRank,
-} from '../../utils/quotaFormatters'
+import { formatMemoryMb } from '../../utils/quotaFormatters'
 import { formatMcpuAsVcpu } from '../../utils/formatters'
-import type { OrgTerminalUsage, SizeRemaining } from '../../types/terminal'
+import type { OrgTerminalUsage, OrgTerminalUsageUser } from '../../types/terminal'
 
 interface Props {
   organizationId: string | null
@@ -239,18 +187,8 @@ const { t } = useTranslations({
       retry: 'Retry',
       fetchError: 'Could not load terminal usage data.',
       autoRefreshInfo: 'Auto-refreshes every {seconds} seconds.',
-      remainingSummary: 'Your organization has the budget for {summary} more sessions.',
-      noRemaining: 'No remaining capacity.',
-      unlimitedCapacity: 'Your organization has unlimited terminal capacity.',
-      unlimited: 'Unlimited',
-      sizeTableHeader: 'Capacity per size',
-      sizeAllowsMore: '{n} more available',
-      sizeNoneAvailable: 'Budget allows 0 more',
-      advancedToggle: 'Show advanced (vCPU / RAM)',
-      advancedCpu: 'CPU used',
-      advancedMemory: 'RAM used',
-      userActiveCpu: 'CPU',
-      userActiveMemory: 'RAM',
+      perMemberLimit: 'Plan {plan} — per-member limit: {cpu} vCPU · {mem}',
+      perMemberUnlimited: 'Plan {plan} — unlimited per member (capped by the org\'s backend capacity)',
     }
   },
   fr: {
@@ -263,18 +201,8 @@ const { t } = useTranslations({
       retry: 'Réessayer',
       fetchError: 'Impossible de charger les données d\'utilisation des terminaux.',
       autoRefreshInfo: 'Actualisation automatique toutes les {seconds} secondes.',
-      remainingSummary: 'Votre organisation a le budget pour {summary} sessions supplémentaires.',
-      noRemaining: 'Plus de capacité disponible.',
-      unlimitedCapacity: 'Votre organisation dispose d\'une capacité de terminaux illimitée.',
-      unlimited: 'Illimité',
-      sizeTableHeader: 'Capacité par taille',
-      sizeAllowsMore: '{n} encore disponible(s)',
-      sizeNoneAvailable: 'Budget épuisé pour cette taille',
-      advancedToggle: 'Afficher l\'avancé (vCPU / RAM)',
-      advancedCpu: 'CPU utilisé',
-      advancedMemory: 'RAM utilisée',
-      userActiveCpu: 'CPU',
-      userActiveMemory: 'RAM',
+      perMemberLimit: 'Forfait {plan} — limite par membre : {cpu} vCPU · {mem}',
+      perMemberUnlimited: 'Forfait {plan} — illimité par membre (limité par la capacité du backend de l\'organisation)',
     }
   }
 })
@@ -296,59 +224,22 @@ const canManage = computed(() => {
   return permissionsStore.canManageOrganization(props.organizationId)
 })
 
-// Canonical org-wide budget-scope count (running + stopped-reserving), so the
-// badge matches the CPU/RAM budget rather than the running-only session count.
+// Canonical org-wide budget-scope count (running + stopped-reserving), shown as
+// an informational total in the header badge.
 const totalOccupyingSlots = computed<number>(() => usageData.value?.occupying_slots ?? 0)
 
-const budgetSummary = computed<string | null>(() => {
-  // Shared helper joins with the passed joiner — pass "/" to preserve the
-  // existing "1 XL / 2 L / 3 M" layout (composer uses localized "OR" / "OU").
-  // It returns '' for the no-remaining-capacity case; we convert to null so
-  // the template can pick the "no remaining" copy via `v-if`.
-  const summary = summarizeRemaining(usageData.value?.remaining_by_size, '/')
-  return summary === '' ? null : summary
-})
+// Per-member plan caps (0 = unlimited on that axis, server convention).
+const maxCpu = computed(() => usageData.value?.quota?.max_cpu ?? 0)
+const maxMemoryMb = computed(() => usageData.value?.quota?.max_memory_mb ?? 0)
 
-const sortedSizeRows = computed<SizeRemaining[]>(() => {
-  const rows = usageData.value?.remaining_by_size
-  if (!rows || rows.length === 0) return []
-  return [...rows].sort((a, b) => capacityRank(a.key) - capacityRank(b.key))
-})
-
-const maxRemainingCount = computed<number>(() => {
-  let max = 0
-  for (const row of sortedSizeRows.value) {
-    if (row.remaining_count > max) max = row.remaining_count
-  }
-  return max
-})
-
-function sizeRowFillPct(row: SizeRemaining): number {
-  // Show fill proportional to this size's remaining capacity relative to the
-  // largest remaining bucket. Empty buckets render an empty bar.
-  if (maxRemainingCount.value <= 0) return 0
-  return Math.min(100, Math.round((row.remaining_count / maxRemainingCount.value) * 100))
-}
-
-const cpuUsedPct = computed<number>(() => {
-  const q = usageData.value?.quota
-  if (!q || q.max_cpu <= 0) return 0
-  return Math.min(100, Math.round((q.used_cpu / q.max_cpu) * 100))
-})
-
-const memUsedPct = computed<number>(() => {
-  const q = usageData.value?.quota
-  if (!q || q.max_memory_mb <= 0) return 0
-  return Math.min(100, Math.round((q.used_memory_mb / q.max_memory_mb) * 100))
-})
-
-// An axis is unlimited when its budget is 0 (server convention). The plan is
-// unlimited overall when the backend says so via `scope`, or when both axes are.
-const cpuUnlimited = computed(() => (usageData.value?.quota?.max_cpu ?? 0) <= 0)
-const memUnlimited = computed(() => (usageData.value?.quota?.max_memory_mb ?? 0) <= 0)
+const cpuUnlimited = computed(() => maxCpu.value <= 0)
+const memUnlimited = computed(() => maxMemoryMb.value <= 0)
 const isUnlimited = computed(() => {
   return usageData.value?.quota?.scope === 'unlimited' || (cpuUnlimited.value && memUnlimited.value)
 })
+
+const maxCpuLabel = computed(() => formatMcpuAsVcpu(maxCpu.value))
+const maxMemoryLabel = computed(() => formatMemoryMb(maxMemoryMb.value))
 
 function colorClassForPct(pct: number): string {
   if (pct > 80) return 'color-danger'
@@ -356,8 +247,24 @@ function colorClassForPct(pct: number): string {
   return 'color-success'
 }
 
-const cpuColorClass = computed(() => colorClassForPct(cpuUsedPct.value))
-const memColorClass = computed(() => colorClassForPct(memUsedPct.value))
+// A member's usage as a percentage of their own per-member cap.
+function memberCpuPct(user: OrgTerminalUsageUser): number {
+  if (maxCpu.value <= 0) return 0
+  return Math.min(100, Math.round((user.active_cpu / maxCpu.value) * 100))
+}
+
+function memberMemPct(user: OrgTerminalUsageUser): number {
+  if (maxMemoryMb.value <= 0) return 0
+  return Math.min(100, Math.round((user.active_memory_mb / maxMemoryMb.value) * 100))
+}
+
+function memberCpuColorClass(user: OrgTerminalUsageUser): string {
+  return colorClassForPct(memberCpuPct(user))
+}
+
+function memberMemColorClass(user: OrgTerminalUsageUser): string {
+  return colorClassForPct(memberMemPct(user))
+}
 
 async function loadUsage() {
   if (!props.organizationId) return
@@ -475,21 +382,6 @@ onUnmounted(() => {
   font-weight: var(--font-weight-semibold);
 }
 
-.badge-success {
-  background: var(--color-success-bg);
-  color: var(--color-success);
-}
-
-.badge-warning {
-  background: var(--color-warning-bg);
-  color: var(--color-warning);
-}
-
-.badge-danger {
-  background: var(--color-danger-bg);
-  color: var(--color-danger);
-}
-
 /* Error banner */
 .error-banner {
   display: flex;
@@ -600,53 +492,22 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
-/* Warning banner */
-.warning-banner {
+/* Per-member limit subheader */
+.per-member-limit {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-sm) var(--spacing-md);
   margin-bottom: var(--spacing-md);
-  background: var(--color-warning-bg);
-  color: var(--color-warning-text);
+  background: var(--color-bg-secondary);
+  border-left: 3px solid var(--color-primary);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  border-left: 3px solid var(--color-warning);
+  color: var(--color-text-primary);
 }
 
-/* Progress bar */
-.progress-section {
-  margin-bottom: var(--spacing-lg);
-}
-
-.progress-label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-xs);
-  font-size: var(--font-size-sm);
-}
-
-.progress-text {
-  color: var(--color-text-secondary);
-}
-
-.progress-pct {
-  font-weight: var(--font-weight-semibold);
-}
-
-.progress-track {
-  height: 8px;
-  background: var(--color-bg-tertiary);
-  border-radius: var(--border-radius-full);
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  border-radius: var(--border-radius-full);
-  transition: width 0.4s ease;
+.per-member-limit i {
+  color: var(--color-primary);
 }
 
 /* Color utilities */
@@ -660,18 +521,6 @@ onUnmounted(() => {
 
 .color-danger {
   color: var(--color-danger);
-}
-
-.progress-fill.color-success {
-  background: var(--color-success);
-}
-
-.progress-fill.color-warning {
-  background: var(--color-warning);
-}
-
-.progress-fill.color-danger {
-  background: var(--color-danger);
 }
 
 /* Users section */
@@ -719,6 +568,7 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--spacing-md);
   padding: var(--spacing-sm) var(--spacing-md);
   background: var(--color-bg-secondary);
   border-radius: var(--border-radius-md);
@@ -730,6 +580,8 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  flex-shrink: 0;
+  width: 12em;
 }
 
 .user-name {
@@ -747,6 +599,62 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Per-member usage bars */
+.user-usage {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 3em 1fr auto;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.bar-label {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono, monospace);
+}
+
+.bar-track {
+  height: 8px;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--border-radius-full);
+  overflow: hidden;
+  border: var(--border-width-thin) solid var(--color-border-light);
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: var(--border-radius-full);
+  transition: width 0.4s ease;
+}
+
+.bar-fill.color-success {
+  background: var(--color-success);
+}
+
+.bar-fill.color-warning {
+  background: var(--color-warning);
+}
+
+.bar-fill.color-danger {
+  background: var(--color-danger);
+}
+
+.bar-meta {
+  font-family: var(--font-family-mono, monospace);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  font-size: var(--font-size-xs, 0.75rem);
 }
 
 .user-count {
@@ -784,179 +692,6 @@ onUnmounted(() => {
   gap: var(--spacing-xs);
 }
 
-/* Budget summary */
-.budget-summary {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  margin-bottom: var(--spacing-md);
-  background: var(--color-bg-secondary);
-  border-left: 3px solid var(--color-primary);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-primary);
-}
-
-.budget-summary i {
-  color: var(--color-primary);
-}
-
-/* Per-size table */
-.size-table {
-  margin-bottom: var(--spacing-lg);
-}
-
-.size-table-header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.size-rows {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-.size-row {
-  display: grid;
-  grid-template-columns: 3em 1fr auto;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-xs) var(--spacing-md);
-  background: var(--color-bg-secondary);
-  border: var(--border-width-thin) solid var(--color-border-light);
-  border-radius: var(--border-radius-md);
-  font-size: var(--font-size-sm);
-}
-
-.size-row-label {
-  font-weight: var(--font-weight-semibold);
-  font-family: var(--font-family-mono, monospace);
-  color: var(--color-text-primary);
-}
-
-.size-row-bar {
-  height: 6px;
-  background: var(--color-bg-tertiary);
-  border-radius: var(--border-radius-full);
-  overflow: hidden;
-}
-
-.size-row-fill {
-  height: 100%;
-  border-radius: var(--border-radius-full);
-  transition: width 0.3s ease;
-}
-
-.size-row-fill.color-success {
-  background: var(--color-success);
-}
-
-.size-row-fill.color-danger {
-  background: var(--color-danger);
-  opacity: 0.4;
-}
-
-.size-row-meta {
-  font-size: var(--font-size-xs, 0.75rem);
-  color: var(--color-text-secondary);
-  white-space: nowrap;
-}
-
-.color-muted {
-  color: var(--color-text-muted);
-}
-
-/* Advanced (vCPU / RAM) section */
-.advanced-quota {
-  margin-bottom: var(--spacing-md);
-  background: var(--color-bg-secondary);
-  border: var(--border-width-thin) solid var(--color-border-light);
-  border-radius: var(--border-radius-md);
-  padding: var(--spacing-sm) var(--spacing-md);
-}
-
-.advanced-summary {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
-  user-select: none;
-}
-
-.advanced-summary i {
-  color: var(--color-primary);
-}
-
-.advanced-body {
-  margin-top: var(--spacing-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.advanced-row {
-  display: grid;
-  grid-template-columns: 6em 1fr auto;
-  align-items: center;
-  gap: var(--spacing-md);
-  font-size: var(--font-size-xs, 0.75rem);
-}
-
-.advanced-label {
-  color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
-}
-
-.advanced-value {
-  font-family: var(--font-family-mono, monospace);
-  color: var(--color-text-primary);
-  white-space: nowrap;
-}
-
-/* User metrics (budget mode) */
-.user-metrics {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  flex-shrink: 0;
-  margin-left: var(--spacing-md);
-}
-
-.user-metric {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--font-size-xs, 0.75rem);
-  color: var(--color-text-secondary);
-  font-family: var(--font-family-mono, monospace);
-  white-space: nowrap;
-}
-
-.user-metric i {
-  color: var(--color-text-muted);
-}
-
-.user-metric-unit {
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  opacity: 0.7;
-}
-
 @media (max-width: 768px) {
   .collapsible-header {
     font-size: var(--font-size-sm);
@@ -967,22 +702,22 @@ onUnmounted(() => {
     padding: var(--spacing-md);
   }
 
+  .user-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .user-info {
+    width: auto;
+  }
+
   .user-email {
     display: none;
   }
 
-  .size-row {
-    grid-template-columns: 2.5em 1fr auto;
-    gap: var(--spacing-sm);
-  }
-
-  .advanced-row {
-    grid-template-columns: 1fr;
-    gap: var(--spacing-xs);
-  }
-
-  .user-metric-unit {
-    display: none;
+  .user-count {
+    margin-left: 0;
+    align-self: flex-end;
   }
 }
 </style>
