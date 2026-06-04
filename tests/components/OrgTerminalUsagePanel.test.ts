@@ -1,7 +1,15 @@
 /**
- * Tests for OrgTerminalUsagePanel — budget mode.
+ * Tests for OrgTerminalUsagePanel — per-member view.
  *
- * Renders per-size remaining capacity + optional advanced vCPU/RAM toggle.
+ * Org plans apply their CPU/RAM budget PER MEMBER, not as a pooled org-wide
+ * quota. The panel therefore renders:
+ *   - a per-member-limit subheader (or an "unlimited per member" line), and
+ *   - one row per active user, each showing that user's CPU/RAM usage against
+ *     the per-member cap plus their occupying-slot count.
+ *
+ * The old pooled framing (budget summary, per-size remaining table, advanced
+ * vCPU/RAM org totals, "no remaining capacity") was intentionally removed in
+ * 6f93f5a — these tests guard against it being reintroduced.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -47,44 +55,67 @@ function mountPanel(): VueWrapper {
   })
 }
 
-const BUDGET_MODE_USAGE: OrgTerminalUsage = {
+// Mount the panel, expand it, and flush the mocked fetch.
+async function mountExpanded(): Promise<VueWrapper> {
+  const wrapper = mountPanel()
+  await flushPromises()
+  await wrapper.find('.collapsible-header').trigger('click')
+  await flushPromises()
+  return wrapper
+}
+
+// Capped per-member plan: 4 vCPU (4000 mCPU) · 8 GiB per member.
+// CPU is transported in millicores (1000 mCPU = 1 vCPU).
+const CAPPED_USAGE: OrgTerminalUsage = {
   organization_id: 'org-1',
   plan_name: 'School',
   is_fallback: false,
+  occupying_slots: 3,
   quota: {
-    max_cpu: 12,
-    max_memory_mb: 24576, // 24 GiB
-    used_cpu: 5,
-    used_memory_mb: 6144, // 6 GiB used
-    remaining_cpu: 7,
-    remaining_memory_mb: 18432, // 18 GiB remaining
+    max_cpu: 4000,
+    max_memory_mb: 8192, // 8 GiB
+    used_cpu: 3000,
+    used_memory_mb: 6144,
+    remaining_cpu: 1000,
+    remaining_memory_mb: 2048,
     scope: 'organization'
   },
-  remaining_by_size: [
-    { key: 'xl', cpu: 8, memory_mb: 16384, remaining_count: 1 },
-    { key: 'l', cpu: 4, memory_mb: 8192, remaining_count: 1 },
-    { key: 'm', cpu: 2, memory_mb: 4096, remaining_count: 4 },
-    { key: 's', cpu: 1, memory_mb: 2048, remaining_count: 9 },
-    { key: 'xs', cpu: 1, memory_mb: 1024, remaining_count: 18 }
-  ],
+  remaining_by_size: [],
   users: [
     {
       user_id: 'u1',
       display_name: 'Alice',
       email: 'alice@example.com',
       active_count: 2,
-      active_cpu: 3,
-      active_memory_mb: 4096
+      occupying_slots: 2,
+      active_cpu: 2000, // 2 vCPU
+      active_memory_mb: 4096 // 4 GiB
     },
     {
       user_id: 'u2',
       display_name: 'Bob',
       email: 'bob@example.com',
       active_count: 1,
-      active_cpu: 2,
-      active_memory_mb: 2048
+      occupying_slots: 1,
+      active_cpu: 1000, // 1 vCPU
+      active_memory_mb: 2048 // 2 GiB
     }
   ]
+}
+
+// Unlimited per-member plan: max_cpu / max_memory_mb both 0 (server convention).
+const UNLIMITED_USAGE: OrgTerminalUsage = {
+  ...CAPPED_USAGE,
+  plan_name: 'Enterprise',
+  quota: {
+    max_cpu: 0,
+    max_memory_mb: 0,
+    used_cpu: 3000,
+    used_memory_mb: 6144,
+    remaining_cpu: 0,
+    remaining_memory_mb: 0,
+    scope: 'unlimited'
+  }
 }
 
 describe('OrgTerminalUsagePanel', () => {
@@ -92,94 +123,82 @@ describe('OrgTerminalUsagePanel', () => {
     getOrgTerminalUsageMock.mockReset()
   })
 
-  describe('budget mode', () => {
-    it('renders the budget summary line with top remaining sizes', async () => {
-      getOrgTerminalUsageMock.mockResolvedValue(BUDGET_MODE_USAGE)
-      const wrapper = mountPanel()
-      await flushPromises()
-      await wrapper.find('.collapsible-header').trigger('click')
-      await flushPromises()
+  describe('per-member view', () => {
+    it('renders the per-member-limit subheader with the plan cap (capped plan)', async () => {
+      getOrgTerminalUsageMock.mockResolvedValue(CAPPED_USAGE)
+      const wrapper = await mountExpanded()
 
-      const summary = wrapper.find('[data-testid="budget-summary"]')
-      expect(summary.exists()).toBe(true)
-      // The largest size with remaining capacity is XL (1 remaining)
-      expect(summary.text()).toMatch(/1\s*XL/i)
+      const subheader = wrapper.find('[data-testid="per-member-limit"]')
+      expect(subheader.exists()).toBe(true)
+      const text = subheader.text()
+      // Plan name, the per-member CPU cap (4 vCPU) and RAM cap (8 GiB) are shown.
+      expect(text).toContain('School')
+      expect(text).toMatch(/4\s*vCPU/i)
+      expect(text).toMatch(/8(?:\.0)?\s*GiB/i)
+      // It must NOT advertise an unlimited per-member allowance.
+      expect(text.toLowerCase()).not.toContain('unlimited')
     })
 
-    it('renders one size row per catalog size, ordered XL -> XS', async () => {
-      getOrgTerminalUsageMock.mockResolvedValue(BUDGET_MODE_USAGE)
-      const wrapper = mountPanel()
-      await flushPromises()
-      await wrapper.find('.collapsible-header').trigger('click')
-      await flushPromises()
+    it('shows the "unlimited per member" copy when the plan cap is 0', async () => {
+      getOrgTerminalUsageMock.mockResolvedValue(UNLIMITED_USAGE)
+      const wrapper = await mountExpanded()
 
-      const sizeTable = wrapper.find('[data-testid="size-table"]')
-      expect(sizeTable.exists()).toBe(true)
+      const subheader = wrapper.find('[data-testid="per-member-limit"]')
+      expect(subheader.exists()).toBe(true)
+      expect(subheader.text().toLowerCase()).toContain('unlimited')
 
-      const rows = wrapper.findAll('[data-testid="size-row"]')
-      expect(rows.length).toBe(5)
-
-      // First row should be the largest (XL)
-      expect(rows[0].text().toUpperCase()).toContain('XL')
+      // No per-member cap bars are rendered when there is no cap to fill.
+      expect(wrapper.find('[data-testid="user-cpu-bar-fill"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="user-mem-bar-fill"]').exists()).toBe(false)
     })
 
-    it('hides the legacy progress bar in budget mode', async () => {
-      getOrgTerminalUsageMock.mockResolvedValue(BUDGET_MODE_USAGE)
-      const wrapper = mountPanel()
-      await flushPromises()
-      await wrapper.find('.collapsible-header').trigger('click')
-      await flushPromises()
+    it('renders one row per active user with their used-vs-cap CPU/RAM', async () => {
+      getOrgTerminalUsageMock.mockResolvedValue(CAPPED_USAGE)
+      const wrapper = await mountExpanded()
 
-      expect(wrapper.find('.progress-section').exists()).toBe(false)
-    })
+      const rows = wrapper.findAll('.user-row')
+      expect(rows.length).toBe(2)
 
-    it('keeps the advanced (vCPU / RAM) section collapsed by default', async () => {
-      getOrgTerminalUsageMock.mockResolvedValue(BUDGET_MODE_USAGE)
-      const wrapper = mountPanel()
-      await flushPromises()
-      await wrapper.find('.collapsible-header').trigger('click')
-      await flushPromises()
-
-      const advanced = wrapper.find('[data-testid="advanced-quota"]')
-      expect(advanced.exists()).toBe(true)
-      // <details> defaults to closed (no `open` attribute)
-      expect(advanced.attributes('open')).toBeUndefined()
-    })
-
-    it('renders per-user CPU and RAM columns in budget mode', async () => {
-      getOrgTerminalUsageMock.mockResolvedValue(BUDGET_MODE_USAGE)
-      const wrapper = mountPanel()
-      await flushPromises()
-      await wrapper.find('.collapsible-header').trigger('click')
-      await flushPromises()
+      // Both users appear by name.
+      expect(rows[0].text()).toContain('Alice')
+      expect(rows[1].text()).toContain('Bob')
 
       const cpuCells = wrapper.findAll('[data-testid="user-active-cpu"]')
       const memCells = wrapper.findAll('[data-testid="user-active-memory"]')
       expect(cpuCells.length).toBe(2)
       expect(memCells.length).toBe(2)
-      expect(cpuCells[0].text()).toMatch(/3/)
-      // formatMemoryMb renders 4096 MiB as either "4 GiB" or "4.0 GiB" depending on precision.
-      expect(memCells[0].text()).toMatch(/4(?:\.0)?\s*GiB/i)
+
+      // Alice: 2 / 4 vCPU · 4.0 GiB / 8.0 GiB
+      expect(cpuCells[0].text()).toMatch(/2\s*\/\s*4\s*vCPU/i)
+      expect(memCells[0].text()).toMatch(/4(?:\.0)?\s*GiB\s*\/\s*8(?:\.0)?\s*GiB/i)
+
+      // Bob: 1 / 4 vCPU · 2.0 GiB / 8.0 GiB — distinct numbers from Alice.
+      expect(cpuCells[1].text()).toMatch(/1\s*\/\s*4\s*vCPU/i)
+      expect(memCells[1].text()).toMatch(/2(?:\.0)?\s*GiB\s*\/\s*8(?:\.0)?\s*GiB/i)
     })
 
-    it('shows the "no remaining capacity" message when every size is full', async () => {
-      const exhausted: OrgTerminalUsage = {
-        ...BUDGET_MODE_USAGE,
-        remaining_by_size: (BUDGET_MODE_USAGE.remaining_by_size || []).map(s => ({
-          ...s,
-          remaining_count: 0
-        }))
-      }
-      getOrgTerminalUsageMock.mockResolvedValue(exhausted)
-      const wrapper = mountPanel()
-      await flushPromises()
-      await wrapper.find('.collapsible-header').trigger('click')
-      await flushPromises()
+    it('renders each user\'s occupying-slot count', async () => {
+      getOrgTerminalUsageMock.mockResolvedValue(CAPPED_USAGE)
+      const wrapper = await mountExpanded()
 
-      const summary = wrapper.find('[data-testid="budget-summary"]')
-      expect(summary.exists()).toBe(true)
-      expect(summary.text().toLowerCase()).toContain('no remaining')
+      const counts = wrapper.findAll('.user-count')
+      expect(counts.length).toBe(2)
+      expect(counts[0].text()).toContain('2') // Alice
+      expect(counts[1].text()).toContain('1') // Bob
     })
 
+    it('does not render the removed pooled-budget UI (summary / size table / advanced totals)', async () => {
+      getOrgTerminalUsageMock.mockResolvedValue(CAPPED_USAGE)
+      const wrapper = await mountExpanded()
+
+      // The org-pooled framing was removed — none of these must come back.
+      expect(wrapper.find('[data-testid="budget-summary"]').exists()).toBe(false)
+      expect(wrapper.find('.budget-summary').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="size-table"]').exists()).toBe(false)
+      expect(wrapper.findAll('[data-testid="size-row"]').length).toBe(0)
+      expect(wrapper.find('[data-testid="advanced-quota"]').exists()).toBe(false)
+      expect(wrapper.find('.advanced-quota').exists()).toBe(false)
+      expect(wrapper.find('.progress-section').exists()).toBe(false)
+    })
   })
 })
