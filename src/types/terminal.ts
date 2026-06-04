@@ -160,7 +160,10 @@ export interface OrgTerminalUsageUser {
   user_id: string
   display_name: string
   email: string
+  /** Running-only session count (display). */
   active_count: number
+  /** Budget-scope count (running + stopped-reserving); matches active_cpu/active_memory_mb. */
+  occupying_slots: number
   /** Aggregate CPU consumed by this user's active sessions */
   active_cpu: number
   /** Aggregate memory (MiB) consumed by this user's active sessions */
@@ -189,6 +192,8 @@ export interface OrgTerminalUsage {
   plan_name: string
   is_fallback: boolean
   users: OrgTerminalUsageUser[]
+  /** Org-wide budget-scope count (running + stopped-reserving); matches quota.used_*. */
+  occupying_slots: number
   /** Aggregate CPU/RAM quota across the organization */
   quota: SessionQuota
   /** Remaining capacity per catalog size */

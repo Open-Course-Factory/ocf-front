@@ -17,7 +17,7 @@
       {{ t('orgTerminalUsage.title') }}
       <span v-if="!loading && usageData" class="usage-badge badge-budget">
         <i class="fas fa-coins"></i>
-        {{ totalActiveSessions }}
+        {{ totalOccupyingSlots }}
       </span>
       <span v-else-if="loading" class="usage-badge">
         <i class="fas fa-spinner fa-spin"></i>
@@ -188,9 +188,9 @@
                   <i class="fas fa-memory"></i>
                   <span class="user-metric-value">{{ formatMemoryMb(user.active_memory_mb) }}</span>
                 </span>
-                <span class="user-count" :class="{ 'count-warning': user.active_count >= 2 }">
+                <span class="user-count" :class="{ 'count-warning': user.occupying_slots >= 2 }">
                   <i class="fas fa-terminal"></i>
-                  {{ user.active_count }}
+                  {{ user.occupying_slots }}
                 </span>
               </div>
             </li>
@@ -296,11 +296,9 @@ const canManage = computed(() => {
   return permissionsStore.canManageOrganization(props.organizationId)
 })
 
-const totalActiveSessions = computed<number>(() => {
-  const users = usageData.value?.users
-  if (!users) return 0
-  return users.reduce((sum, u) => sum + u.active_count, 0)
-})
+// Canonical org-wide budget-scope count (running + stopped-reserving), so the
+// badge matches the CPU/RAM budget rather than the running-only session count.
+const totalOccupyingSlots = computed<number>(() => usageData.value?.occupying_slots ?? 0)
 
 const budgetSummary = computed<string | null>(() => {
   // Shared helper joins with the passed joiner — pass "/" to preserve the
