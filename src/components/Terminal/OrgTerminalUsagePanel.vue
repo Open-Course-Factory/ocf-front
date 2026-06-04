@@ -457,18 +457,18 @@ onUnmounted(() => {
 }
 
 .badge-success {
-  background: var(--color-success-bg, rgba(34, 197, 94, 0.12));
-  color: var(--color-success, #16a34a);
+  background: var(--color-success-bg);
+  color: var(--color-success);
 }
 
 .badge-warning {
-  background: var(--color-warning-bg, rgba(251, 191, 36, 0.15));
-  color: var(--color-warning, #d97706);
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
 }
 
 .badge-danger {
-  background: var(--color-danger-bg, rgba(239, 68, 68, 0.12));
-  color: var(--color-danger, #dc2626);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
 }
 
 /* Error banner */
@@ -477,8 +477,8 @@ onUnmounted(() => {
   align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-md) var(--spacing-lg);
-  background: var(--color-danger-bg, rgba(239, 68, 68, 0.1));
-  color: var(--color-danger-text, #dc2626);
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-sm);
 }
@@ -487,8 +487,8 @@ onUnmounted(() => {
   margin-left: auto;
   padding: 4px 12px;
   background: transparent;
-  border: var(--border-width-thin) solid var(--color-danger, #dc2626);
-  color: var(--color-danger, #dc2626);
+  border: var(--border-width-thin) solid var(--color-danger);
+  color: var(--color-danger);
   border-radius: var(--border-radius-sm);
   cursor: pointer;
   font-size: var(--font-size-sm);
@@ -499,7 +499,7 @@ onUnmounted(() => {
 }
 
 .retry-btn:hover {
-  background: var(--color-danger-bg, rgba(239, 68, 68, 0.1));
+  background: var(--color-danger-bg);
 }
 
 /* Skeleton */
@@ -588,12 +588,12 @@ onUnmounted(() => {
   gap: var(--spacing-sm);
   padding: var(--spacing-sm) var(--spacing-md);
   margin-bottom: var(--spacing-md);
-  background: var(--color-warning-bg, rgba(251, 191, 36, 0.15));
-  color: var(--color-warning-text, #92400e);
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  border-left: 3px solid var(--color-warning, #d97706);
+  border-left: 3px solid var(--color-warning);
 }
 
 /* Progress bar */
@@ -632,27 +632,27 @@ onUnmounted(() => {
 
 /* Color utilities */
 .color-success {
-  color: var(--color-success, #16a34a);
+  color: var(--color-success);
 }
 
 .color-warning {
-  color: var(--color-warning, #d97706);
+  color: var(--color-warning);
 }
 
 .color-danger {
-  color: var(--color-danger, #dc2626);
+  color: var(--color-danger);
 }
 
 .progress-fill.color-success {
-  background: var(--color-success, #16a34a);
+  background: var(--color-success);
 }
 
 .progress-fill.color-warning {
-  background: var(--color-warning, #d97706);
+  background: var(--color-warning);
 }
 
 .progress-fill.color-danger {
-  background: var(--color-danger, #dc2626);
+  background: var(--color-danger);
 }
 
 /* Users section */
@@ -743,7 +743,7 @@ onUnmounted(() => {
 }
 
 .user-count.count-warning {
-  color: var(--color-warning, #d97706);
+  color: var(--color-warning);
 }
 
 /* Info footer */
@@ -758,8 +758,8 @@ onUnmounted(() => {
 
 /* Budget-mode badge */
 .badge-budget {
-  background: var(--color-primary-bg, rgba(59, 130, 246, 0.12));
-  color: var(--color-primary, #2563eb);
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
@@ -841,11 +841,11 @@ onUnmounted(() => {
 }
 
 .size-row-fill.color-success {
-  background: var(--color-success, #16a34a);
+  background: var(--color-success);
 }
 
 .size-row-fill.color-danger {
-  background: var(--color-danger, #dc2626);
+  background: var(--color-danger);
   opacity: 0.4;
 }
 

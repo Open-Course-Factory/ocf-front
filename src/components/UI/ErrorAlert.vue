@@ -11,7 +11,7 @@
       class="btn btn-sm btn-outline-danger"
       type="button"
       @click="handleDismiss"
-      :aria-label="dismissLabel"
+      :aria-label="effectiveDismissLabel"
     >
       <i class="fas fa-times"></i>
     </button>
@@ -37,19 +37,29 @@
  * />
  */
 
+import { computed } from 'vue'
+import { useTranslations } from '../../composables/useTranslations'
+
 interface Props {
   /** Error message to display */
   message: string
   /** Whether the alert can be dismissed (default: true) */
   dismissible?: boolean
-  /** Aria label for dismiss button (default: 'Dismiss error') */
+  /** Aria label for dismiss button (defaults to a translated "Dismiss error") */
   dismissLabel?: string
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   dismissible: true,
-  dismissLabel: 'Dismiss error'
+  dismissLabel: undefined
 })
+
+const { t } = useTranslations({
+  en: { errorAlert: { dismiss: 'Dismiss error' } },
+  fr: { errorAlert: { dismiss: 'Ignorer l\'erreur' } }
+})
+
+const effectiveDismissLabel = computed(() => props.dismissLabel ?? t('errorAlert.dismiss'))
 
 interface Emits {
   /** Emitted when user clicks dismiss button */

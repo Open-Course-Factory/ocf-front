@@ -18,18 +18,14 @@ export function useSubscriptionTranslations() {
   
   // Force le chargement des traductions au premier appel
   if (!translationsLoaded) {
-    console.log('🔄 Chargement des traductions Subscription...')
-    
     try {
       // Import synchrone des stores pour déclencher l'enregistrement des traductions
       useSubscriptionsStore()
-      useUsageMetricsStore() 
+      useUsageMetricsStore()
       useInvoicesStore()
       useSubscriptionPlansStore()
-      
+
       translationsLoaded = true
-      console.log('✅ Traductions Subscription chargées')
-      
     } catch (error) {
       console.error('❌ Erreur lors du chargement des traductions:', error)
     }

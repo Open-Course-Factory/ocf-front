@@ -164,7 +164,7 @@ function getStatusText(status: string) {
   background: var(--color-bg-primary);
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   border: 1px solid var(--color-gray-200);
   min-width: 600px;
 }
@@ -205,7 +205,7 @@ function getStatusText(status: string) {
   gap: 8px;
   padding: 8px 16px;
   background: var(--color-primary);
-  color: white;
+  color: var(--color-white);
   border: none;
   border-radius: 6px;
   font-size: 0.875rem;
@@ -217,7 +217,7 @@ function getStatusText(status: string) {
 .collapse-toggle:hover {
   background: var(--color-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .collapse-toggle i {
@@ -246,7 +246,7 @@ function getStatusText(status: string) {
   align-items: flex-start;
   gap: 12px;
   padding: 12px 16px;
-  background: linear-gradient(135deg, rgba(13, 110, 253, 0.08) 0%, rgba(13, 110, 253, 0.04) 100%);
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary-light) 100%);
   border-left: 4px solid var(--color-info);
   border-radius: 8px;
   margin-bottom: 20px;
@@ -282,8 +282,8 @@ function getStatusText(status: string) {
 
 .subscription-item.is-primary {
   border-color: var(--color-primary);
-  background: linear-gradient(135deg, rgba(13, 110, 253, 0.05) 0%, var(--color-bg-primary) 100%);
-  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-bg-primary) 100%);
+  box-shadow: var(--shadow-md);
 }
 
 .primary-badge {
@@ -294,14 +294,14 @@ function getStatusText(status: string) {
   align-items: center;
   gap: 6px;
   background: var(--color-primary);
-  color: white;
+  color: var(--color-white);
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
+  box-shadow: var(--shadow-sm);
 }
 
 .primary-badge i {
@@ -346,13 +346,13 @@ function getStatusText(status: string) {
 }
 
 .type-badge.type-personal {
-  background-color: rgba(13, 110, 253, 0.1);
+  background-color: var(--color-primary-light);
   color: var(--color-primary);
   border: 1px solid var(--color-primary);
 }
 
 .type-badge.type-assigned {
-  background-color: rgba(108, 117, 125, 0.1);
+  background-color: var(--color-bg-tertiary);
   color: var(--color-secondary);
   border: 1px solid var(--color-secondary);
 }
@@ -440,34 +440,34 @@ function getStatusText(status: string) {
   opacity: 0.7;
 }
 
-/* Text color utilities */
+/* Status badge color utilities */
 .text-success {
-  background-color: rgba(40, 167, 69, 0.1);
+  background-color: var(--color-success-bg);
   color: var(--color-success);
 }
 
 .text-info {
-  background-color: rgba(23, 162, 184, 0.1);
+  background-color: var(--color-info-bg);
   color: var(--color-info);
 }
 
 .text-warning {
-  background-color: rgba(255, 193, 7, 0.1);
+  background-color: var(--color-warning-bg);
   color: var(--color-warning);
 }
 
 .text-danger {
-  background-color: rgba(220, 53, 69, 0.1);
+  background-color: var(--color-danger-bg);
   color: var(--color-danger);
 }
 
 .text-muted {
-  background-color: rgba(108, 117, 125, 0.1);
+  background-color: var(--color-bg-tertiary);
   color: var(--color-text-muted);
 }
 
 .text-secondary {
-  background-color: rgba(108, 117, 125, 0.1);
+  background-color: var(--color-bg-tertiary);
   color: var(--color-secondary);
 }
 

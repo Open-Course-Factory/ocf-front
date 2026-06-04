@@ -379,17 +379,7 @@ const currentPlan = computed(() => {
   const planId = props.subscription.subscription_plan_id ||
                  props.subscription.subscription_plan?.id
 
-  console.log('[SubscriptionCard] Looking up plan:', {
-    planId,
-    subscription: props.subscription,
-    availablePlans: subscriptionPlansStore.entities.map((p: any) => ({ id: p.id, name: p.name }))
-  })
-
-  const foundPlan = subscriptionPlansStore.entities.find((plan: any) => plan.id === planId)
-
-  console.log('[SubscriptionCard] Found plan:', foundPlan)
-
-  return foundPlan
+  return subscriptionPlansStore.entities.find((plan: any) => plan.id === planId)
 })
 
 const planName = computed(() => {
@@ -502,7 +492,7 @@ function formatDate(dateString: string) {
   justify-content: space-between;
   align-items: center;
   padding: var(--spacing-md);
-  background: linear-gradient(135deg, rgba(13, 110, 253, 0.08) 0%, var(--color-bg-secondary) 100%);
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-bg-secondary) 100%);
   border-bottom: 1px solid var(--color-border-light);
 }
 

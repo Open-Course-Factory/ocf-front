@@ -61,13 +61,10 @@
           :is-loading="isLoadingAllSubs"
         />
 
-        <!-- Composant Utilisation (seulement si abonnement actif) -->
-        <UsageOverview
+        <!-- Live terminal usage (budget bars + active sessions) -->
+        <TerminalUsagePanel
           v-if="subscriptionsStore.hasActiveSubscription()"
-          :metrics="usageMetrics"
-          :is-refreshing="isRefreshingUsage"
-          :is-loading="isLoadingUsage"
-          @refresh="refreshUsage"
+          :organization-id="currentOrgId || undefined"
         />
 
         <!-- Org Terminal Usage Panel (managers/owners only) -->
@@ -115,11 +112,12 @@ import { extractErrorMessage } from '../../utils/formatters'
 import axios from 'axios'
 
 // Import des composants modulaires
-import { SubscriptionCard, UsageOverview, RecentInvoices, AllSubscriptions, ActiveSubscriptionSource } from '../Subscription/Dashboard'
+import { SubscriptionCard, RecentInvoices, AllSubscriptions, ActiveSubscriptionSource } from '../Subscription/Dashboard'
 import { CancelSubscriptionModal, ReactivateModal } from '../Subscription/Modals'
 import ErrorAlert from '../UI/ErrorAlert.vue'
 import UpgradeToTeamBanner from '../Common/UpgradeToTeamBanner.vue'
 import OrgTerminalUsagePanel from '../Terminal/OrgTerminalUsagePanel.vue'
+import TerminalUsagePanel from '../Terminal/TerminalUsagePanel.vue'
 
 const { t } = useI18n()
 
@@ -132,7 +130,6 @@ const permissionsStore = usePermissionsStore()
 const isLoading = ref(false)
 const error = ref('')
 const isManaging = ref(false)
-const isRefreshingUsage = ref(false)
 const isCanceling = ref(false)
 const isReactivating = ref(false)
 const isActivatingFreePlan = ref(false)
@@ -140,18 +137,15 @@ const showCancelModal = ref(false)
 const showReactivateModal = ref(false)
 
 // Loading states for components
-const isLoadingUsage = ref(false)
 const isLoadingInvoices = ref(false)
 const isLoadingAllSubs = ref(false)
 
-// Données réactives — usageMetrics comes from the store (single source of truth, refreshed on org switch)
-const usageMetrics = computed(() => subscriptionsStore.usageMetrics || [])
+// Données réactives
 const recentInvoices = ref([])
 const lastCanceledSubscription = ref(null)
 const downloadingInvoices = ref<Set<string>>(new Set())
 
 // Caching timestamps to avoid redundant reloads
-const lastUsageLoad = ref<number>(0)
 const lastInvoicesLoad = ref<number>(0)
 const CACHE_DURATION = 60 * 1000 // 1 minute
 
@@ -186,7 +180,6 @@ async function loadDashboardData() {
   error.value = ''
 
   // Set loading states immediately for all components
-  isLoadingUsage.value = true
   isLoadingInvoices.value = true
   isLoadingAllSubs.value = true
 
@@ -196,12 +189,10 @@ async function loadDashboardData() {
     if (subscriptionsStore.hasActiveSubscription()) {
       await Promise.allSettled([
         loadAllSubscriptions(),
-        loadUsageMetrics(),
         loadRecentInvoices()
       ])
     } else {
       // If no active subscription, stop loading these components
-      isLoadingUsage.value = false
       isLoadingInvoices.value = false
       isLoadingAllSubs.value = false
       await loadLastCanceledSubscription()
@@ -210,7 +201,6 @@ async function loadDashboardData() {
     console.error('Erreur lors du chargement du dashboard:', err)
     error.value = extractErrorMessage(err, 'Erreur lors du chargement du tableau de bord')
     // Make sure to stop loading on error
-    isLoadingUsage.value = false
     isLoadingInvoices.value = false
     isLoadingAllSubs.value = false
   } finally {
@@ -235,26 +225,6 @@ async function loadAllSubscriptions() {
     console.warn('Impossible de charger tous les abonnements:', err)
   } finally {
     isLoadingAllSubs.value = false
-  }
-}
-
-async function loadUsageMetrics(force: boolean = false) {
-  // Usage metrics are stored in subscriptionsStore (single source of truth)
-  // The store is refreshed on org switch by setCurrentOrganization
-  const now = Date.now()
-  if (!force && (now - lastUsageLoad.value) < CACHE_DURATION && usageMetrics.value.length > 0) {
-    console.debug('Using cached usage metrics')
-    isLoadingUsage.value = false
-    return
-  }
-
-  try {
-    await subscriptionsStore.getUsageMetrics()
-    lastUsageLoad.value = now
-  } catch (err) {
-    console.warn('Impossible de charger les métriques d\'usage:', err)
-  } finally {
-    isLoadingUsage.value = false
   }
 }
 
@@ -292,15 +262,6 @@ async function loadLastCanceledSubscription() {
     }
   } catch (err) {
     console.warn('Impossible de charger l\'historique des abonnements:', err)
-  }
-}
-
-async function refreshUsage() {
-  isRefreshingUsage.value = true
-  try {
-    await loadUsageMetrics(true) // Force reload, bypass cache
-  } finally {
-    isRefreshingUsage.value = false
   }
 }
 

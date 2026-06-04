@@ -97,6 +97,7 @@ const { t } = useTranslations({
       converting: 'Converting organization...',
       successMessage: 'Organization converted to team successfully!',
       dismiss: 'Dismiss',
+      noOrgSelected: 'No organization selected',
     }
   },
   fr: {
@@ -114,6 +115,7 @@ const { t } = useTranslations({
       converting: 'Conversion en cours...',
       successMessage: 'Organisation convertie en équipe avec succès !',
       dismiss: 'Fermer',
+      noOrgSelected: 'Aucune organisation sélectionnée',
     }
   }
 })
@@ -140,7 +142,7 @@ const conversionError = ref('')
 
 const handleConvert = async () => {
   if (!currentOrganization.value) {
-    conversionError.value = 'No organization selected'
+    conversionError.value = t('upgradeToTeam.noOrgSelected')
     return
   }
 

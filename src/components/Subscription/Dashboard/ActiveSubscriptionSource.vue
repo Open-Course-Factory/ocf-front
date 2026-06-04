@@ -209,10 +209,17 @@ function formatDuration(minutes: number): string {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   border-radius: 16px;
   padding: 0;
-  box-shadow: 0 8px 24px rgba(13, 110, 253, 0.25);
+  box-shadow: var(--shadow-lg);
   color: var(--color-white);
   overflow: hidden;
 }
+
+/*
+ * This hero sits on a fixed blue gradient that does not change with the theme,
+ * so the white text and translucent white overlays below are intentional in
+ * both light and dark mode — they must stay legible against the blue, not the
+ * page background. They are kept as rgba(255,255,255,*) on purpose.
+ */
 
 .source-header {
   display: flex;
