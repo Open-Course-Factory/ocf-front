@@ -169,7 +169,7 @@ import type { MyTerminalUsageResponse } from '../../types/terminal'
 const { t } = useTranslations({
   en: {
     terminals: {
-      currentUsage: 'Current Usage',
+      currentUsage: 'My Usage',
       refreshUsage: 'Refresh usage',
       capacity: 'Capacity',
       unlimited: 'Unlimited',
@@ -192,7 +192,7 @@ const { t } = useTranslations({
   },
   fr: {
     terminals: {
-      currentUsage: 'Utilisation Actuelle',
+      currentUsage: 'Mon utilisation',
       refreshUsage: 'Actualiser l\'utilisation',
       capacity: 'Capacité',
       unlimited: 'Illimité',

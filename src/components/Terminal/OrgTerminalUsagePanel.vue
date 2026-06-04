@@ -68,14 +68,15 @@
         <!-- Top-line remaining-capacity summary -->
           <div class="budget-summary" data-testid="budget-summary">
             <i class="fas fa-coins"></i>
-            <span v-if="budgetSummary === null">{{ t('orgTerminalUsage.noRemaining') }}</span>
-            <span v-else>
+            <span v-if="isUnlimited">{{ t('orgTerminalUsage.unlimitedCapacity') }}</span>
+            <span v-else-if="budgetSummary !== null">
               {{ t('orgTerminalUsage.remainingSummary', { summary: budgetSummary }) }}
             </span>
+            <span v-else>{{ t('orgTerminalUsage.noRemaining') }}</span>
           </div>
 
-          <!-- Per-size capacity table -->
-          <div v-if="sortedSizeRows.length > 0" class="size-table" data-testid="size-table">
+          <!-- Per-size capacity table (skipped for unlimited plans) -->
+          <div v-if="!isUnlimited && sortedSizeRows.length > 0" class="size-table" data-testid="size-table">
             <div class="size-table-header">
               <i class="fas fa-server"></i>
               {{ t('orgTerminalUsage.sizeTableHeader') }}
@@ -118,23 +119,31 @@
                 <span class="advanced-label">{{ t('orgTerminalUsage.advancedCpu') }}</span>
                 <div class="progress-track">
                   <div
+                    v-if="!cpuUnlimited"
                     class="progress-fill"
                     :class="cpuColorClass"
                     :style="{ width: `${cpuUsedPct}%` }"
                   ></div>
                 </div>
-                <span class="advanced-value">{{ formatMcpuAsVcpu(usageData.quota.used_cpu) }} / {{ formatMcpuAsVcpu(usageData.quota.max_cpu) }} vCPU</span>
+                <span class="advanced-value">
+                  <template v-if="cpuUnlimited">{{ t('orgTerminalUsage.unlimited') }}</template>
+                  <template v-else>{{ formatMcpuAsVcpu(usageData.quota.used_cpu) }} / {{ formatMcpuAsVcpu(usageData.quota.max_cpu) }} vCPU</template>
+                </span>
               </div>
               <div class="advanced-row">
                 <span class="advanced-label">{{ t('orgTerminalUsage.advancedMemory') }}</span>
                 <div class="progress-track">
                   <div
+                    v-if="!memUnlimited"
                     class="progress-fill"
                     :class="memColorClass"
                     :style="{ width: `${memUsedPct}%` }"
                   ></div>
                 </div>
-                <span class="advanced-value">{{ formatMemoryMb(usageData.quota.used_memory_mb) }} / {{ formatMemoryMb(usageData.quota.max_memory_mb) }}</span>
+                <span class="advanced-value">
+                  <template v-if="memUnlimited">{{ t('orgTerminalUsage.unlimited') }}</template>
+                  <template v-else>{{ formatMemoryMb(usageData.quota.used_memory_mb) }} / {{ formatMemoryMb(usageData.quota.max_memory_mb) }}</template>
+                </span>
               </div>
             </div>
           </details>
@@ -222,7 +231,7 @@ const props = defineProps<Props>()
 const { t } = useTranslations({
   en: {
     orgTerminalUsage: {
-      title: 'Org Terminal Usage',
+      title: 'Organization Usage',
       noActiveTerminals: 'No active terminals',
       usersHeader: 'Active users',
       fallback: 'fallback plan',
@@ -232,6 +241,8 @@ const { t } = useTranslations({
       autoRefreshInfo: 'Auto-refreshes every {seconds} seconds.',
       remainingSummary: 'Your organization has the budget for {summary} more sessions.',
       noRemaining: 'No remaining capacity.',
+      unlimitedCapacity: 'Your organization has unlimited terminal capacity.',
+      unlimited: 'Unlimited',
       sizeTableHeader: 'Capacity per size',
       sizeAllowsMore: '{n} more available',
       sizeNoneAvailable: 'Budget allows 0 more',
@@ -244,7 +255,7 @@ const { t } = useTranslations({
   },
   fr: {
     orgTerminalUsage: {
-      title: 'Utilisation des terminaux',
+      title: 'Utilisation de l\'organisation',
       noActiveTerminals: 'Aucun terminal actif',
       usersHeader: 'Utilisateurs actifs',
       fallback: 'plan de secours',
@@ -254,6 +265,8 @@ const { t } = useTranslations({
       autoRefreshInfo: 'Actualisation automatique toutes les {seconds} secondes.',
       remainingSummary: 'Votre organisation a le budget pour {summary} sessions supplémentaires.',
       noRemaining: 'Plus de capacité disponible.',
+      unlimitedCapacity: 'Votre organisation dispose d\'une capacité de terminaux illimitée.',
+      unlimited: 'Illimité',
       sizeTableHeader: 'Capacité par taille',
       sizeAllowsMore: '{n} encore disponible(s)',
       sizeNoneAvailable: 'Budget épuisé pour cette taille',
@@ -329,6 +342,14 @@ const memUsedPct = computed<number>(() => {
   const q = usageData.value?.quota
   if (!q || q.max_memory_mb <= 0) return 0
   return Math.min(100, Math.round((q.used_memory_mb / q.max_memory_mb) * 100))
+})
+
+// An axis is unlimited when its budget is 0 (server convention). The plan is
+// unlimited overall when the backend says so via `scope`, or when both axes are.
+const cpuUnlimited = computed(() => (usageData.value?.quota?.max_cpu ?? 0) <= 0)
+const memUnlimited = computed(() => (usageData.value?.quota?.max_memory_mb ?? 0) <= 0)
+const isUnlimited = computed(() => {
+  return usageData.value?.quota?.scope === 'unlimited' || (cpuUnlimited.value && memUnlimited.value)
 })
 
 function colorClassForPct(pct: number): string {

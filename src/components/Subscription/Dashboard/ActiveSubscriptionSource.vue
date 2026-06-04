@@ -119,8 +119,10 @@ const { t } = useTranslations({
       viewAll: 'View all subscriptions',
       subscriptionTypePersonal: 'Personal Subscription',
       subscriptionTypeAssigned: 'Assigned License',
+      subscriptionTypeOrganization: 'Organization',
       sourcePersonal: 'Self-paid subscription',
       sourceAssigned: 'Assigned by organization',
+      sourceOrganization: 'Organization subscription',
     },
     pricingPlanCard: {
       budgetCapacity: 'Includes up to {summary} simultaneous sessions',
@@ -145,8 +147,10 @@ const { t } = useTranslations({
       viewAll: 'Voir tous les abonnements',
       subscriptionTypePersonal: 'Abonnement personnel',
       subscriptionTypeAssigned: 'Licence attribuée',
+      subscriptionTypeOrganization: 'Organisation',
       sourcePersonal: 'Abonnement auto-payé',
       sourceAssigned: 'Attribué par l\'organisation',
+      sourceOrganization: 'Abonnement de l\'organisation',
     },
     pricingPlanCard: {
       budgetCapacity: 'Comprend jusqu\'à {summary} sessions simultanées',
