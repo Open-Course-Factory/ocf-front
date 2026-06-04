@@ -25,6 +25,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { teacherService } from '../../services/domain/scenario'
+import { formatElapsed } from '../../utils/quotaFormatters'
 
 interface ActiveSession {
   user_id: string
@@ -116,17 +117,6 @@ async function loadActivity() {
   } finally {
     isLoading.value = false
   }
-}
-
-function formatElapsed(startedAt: string): string {
-  const start = new Date(startedAt)
-  const now = new Date()
-  const diffMs = now.getTime() - start.getTime()
-  const minutes = Math.floor(diffMs / 60000)
-  const hours = Math.floor(minutes / 60)
-  const mins = minutes % 60
-  if (hours > 0) return `${hours}h ${mins}m`
-  return `${mins}m`
 }
 
 function getStatusClass(status: string): string {

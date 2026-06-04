@@ -18,6 +18,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
+import { formatCompactDuration } from '../../utils/quotaFormatters'
 
 interface Props {
   expiresAt: string
@@ -64,13 +65,15 @@ const formattedTime = computed(() => {
   const s = remainingSeconds.value
   if (s <= 0) return '0:00'
 
-  const hours = Math.floor(s / 3600)
+  // For long remaining times, scale to days/weeks/years via the shared
+  // formatter so a multi-day session shows "3d" / "2w", not "8760h 0m".
+  if (s >= 3600) {
+    return formatCompactDuration(s, '0:00')
+  }
+
+  // Keep the fine-grained near-expiry feel: "Nm" under 1h, "MM:SS" under 5 min.
   const minutes = Math.floor((s % 3600) / 60)
   const seconds = s % 60
-
-  if (hours >= 1) {
-    return `${hours}h ${minutes}m`
-  }
   if (s >= 300) {
     return `${minutes}m`
   }

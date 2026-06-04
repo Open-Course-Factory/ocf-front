@@ -132,32 +132,94 @@ export function formatMemoryMb(mb: number): string {
 }
 
 /**
+ * Single source of truth for compact duration formatting across the product.
+ *
+ * Scales a duration to the largest sensible unit so long-running or
+ * long-remaining sessions never render as huge hour counts (e.g. the old
+ * `formatElapsed` could emit `17754497h24` ≈ 2026 years when fed a Go
+ * zero-time). Output is intentionally terse for dense session lists.
+ *
+ * Unit convention: BARE, LANGUAGE-NEUTRAL ABBREVIATIONS (`s`/`m`/`h`/`d`/`w`/`y`)
+ * — matching the pre-existing `s`/`m`/`h` units already shipped in this file.
+ * This keeps the helper a pure, i18n-free util (no translated words baked in);
+ * callers needing localized words can wrap the output, but the abbreviations
+ * read the same in en and fr.
+ *
+ * Output rules:
+ *   - non-finite or `< 0`  → `fallback` (default `''`; callers pick `'—'` / `'0s'`)
+ *   - `< 60s`              → `"Ns"`        (e.g. `42s`)
+ *   - `< 60m`              → `"Nm"`        (e.g. `23m`)
+ *   - `< 24h`              → `"NhMM"`      (2-digit minutes, e.g. `1h12` — matches the legacy hour form)
+ *   - `< 7d`               → `"Nd"` / `"Nd Hh"` (the `Hh` remainder only when the leftover hours are non-zero)
+ *   - `< 365d`             → `"Nw"`        (whole weeks)
+ *   - `>= 365d`            → `"Ny"`        (whole years, 365-day years)
+ *
+ * Pure and deterministic — no `Date.now()`, no locale, no side effects.
+ *
+ * @param seconds  - elapsed/remaining duration in seconds
+ * @param fallback - returned for negative / non-finite input (default `''`)
+ */
+export function formatCompactDuration(seconds: number, fallback: string = ''): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return fallback
+
+  const totalSeconds = Math.floor(seconds)
+  if (totalSeconds < 60) {
+    return `${totalSeconds}s`
+  }
+
+  const totalMinutes = Math.floor(totalSeconds / 60)
+  if (totalMinutes < 60) {
+    return `${totalMinutes}m`
+  }
+
+  const totalHours = Math.floor(totalMinutes / 60)
+  if (totalHours < 24) {
+    const minutes = totalMinutes % 60
+    return `${totalHours}h${minutes.toString().padStart(2, '0')}`
+  }
+
+  const totalDays = Math.floor(totalHours / 24)
+  if (totalDays < 7) {
+    const hours = totalHours % 24
+    return hours > 0 ? `${totalDays}d ${hours}h` : `${totalDays}d`
+  }
+
+  if (totalDays < 365) {
+    return `${Math.floor(totalDays / 7)}w`
+  }
+
+  return `${Math.floor(totalDays / 365)}y`
+}
+
+/**
+ * Earliest timestamp (ms) we treat as a real session time. Anything below this
+ * floor (notably Go's zero-time `0001-01-01T00:00:00Z`, which `Date.parse`
+ * happily turns into a huge NEGATIVE number that passes `Number.isFinite`) is
+ * a never-set field, not a real start — rendering it would yield garbage like
+ * `17754497h24` (≈ 2026 years). See memory: invalid-timestamp footgun.
+ */
+const SANE_TIMESTAMP_FLOOR_MS = Date.UTC(2000, 0, 1)
+
+/**
  * Format the elapsed time since an ISO 8601 timestamp as a short label.
  *
- * Output rules (chosen to keep the live session list compact):
- *   - <  1 minute  → "Ns"   (e.g. `42s`)
- *   - <  1 hour    → "Nm"   (e.g. `23m`)
- *   - ≥  1 hour    → "NhMm" (e.g. `1h12`)
+ * Delegates to {@link formatCompactDuration}, so long-running sessions scale to
+ * days / weeks / years instead of huge hour counts. For sub-day durations the
+ * output is unchanged from before (`Ns` / `Nm` / `NhMM`).
  *
- * Returns `"—"` when the input is empty or unparseable so the caller can
- * still render something stable next to a paused/running indicator.
+ * Returns `"—"` when the input is empty, unparseable, or an insane timestamp
+ * (a never-set Go zero-time / pre-2000 value) so the caller can still render
+ * something stable next to a paused/running indicator.
  */
 export function formatElapsed(isoTime: string, nowMs: number = Date.now()): string {
   if (!isoTime) return '—'
   const parsed = Date.parse(isoTime)
   if (!Number.isFinite(parsed)) return '—'
-  const diffMs = Math.max(0, nowMs - parsed)
-  const totalSeconds = Math.floor(diffMs / 1000)
-  if (totalSeconds < 60) {
-    return `${totalSeconds}s`
-  }
-  const totalMinutes = Math.floor(totalSeconds / 60)
-  if (totalMinutes < 60) {
-    return `${totalMinutes}m`
-  }
-  const hours = Math.floor(totalMinutes / 60)
-  const minutes = totalMinutes % 60
-  return `${hours}h${minutes.toString().padStart(2, '0')}`
+  // Reject never-set / nonsensical timestamps (Go zero-time parses to a huge
+  // negative epoch that would otherwise show as ~2026 years of elapsed time).
+  if (parsed <= 0 || parsed < SANE_TIMESTAMP_FLOOR_MS) return '—'
+  const elapsedSeconds = Math.max(0, (nowMs - parsed) / 1000)
+  return formatCompactDuration(elapsedSeconds, '—')
 }
 
 /**

@@ -6,6 +6,8 @@ import {
   capacityRank,
   formatMemoryMb,
   pickLargestSelectableSize,
+  formatCompactDuration,
+  formatElapsed,
 } from '../../src/utils/quotaFormatters'
 // Minimal shape — `summarizeRemaining` only reads `key` and `remaining_count`.
 type RemainingFixture = { key: string; remaining_count?: number }
@@ -319,5 +321,81 @@ describe('pickLargestSelectableSize', () => {
       { key: 's', allowed: true },
     ]
     expect(pickLargestSelectableSize(sizes, isAllowed)?.key).toBe('xl')
+  })
+})
+
+describe('formatCompactDuration', () => {
+  const HOUR = 3600
+  const DAY = 86400
+
+  it('returns the fallback for non-finite / negative input', () => {
+    expect(formatCompactDuration(NaN)).toBe('')
+    expect(formatCompactDuration(Infinity)).toBe('')
+    expect(formatCompactDuration(-1)).toBe('')
+    expect(formatCompactDuration(-1, '—')).toBe('—')
+    // A Go zero-time fed as "seconds elapsed" is hugely negative.
+    expect(formatCompactDuration(-63_000_000_000, '—')).toBe('—')
+  })
+
+  it('renders seconds under a minute', () => {
+    expect(formatCompactDuration(0)).toBe('0s')
+    expect(formatCompactDuration(42)).toBe('42s')
+    expect(formatCompactDuration(59)).toBe('59s')
+  })
+
+  it('transitions to minutes at 60s and stays minutes under an hour', () => {
+    expect(formatCompactDuration(60)).toBe('1m')
+    expect(formatCompactDuration(59 * 60)).toBe('59m')
+  })
+
+  it('transitions to the compact hour form at 60m and stays under a day', () => {
+    expect(formatCompactDuration(60 * 60)).toBe('1h00')
+    expect(formatCompactDuration(72 * 60)).toBe('1h12')
+    // 23h59m → still hours.
+    expect(formatCompactDuration(23 * HOUR + 59 * 60)).toBe('23h59')
+  })
+
+  it('transitions to days at 24h and shows leftover hours when non-trivial', () => {
+    expect(formatCompactDuration(24 * HOUR)).toBe('1d')
+    expect(formatCompactDuration(25 * HOUR)).toBe('1d 1h')
+    expect(formatCompactDuration(6 * DAY)).toBe('6d')
+    expect(formatCompactDuration(6 * DAY + 5 * HOUR)).toBe('6d 5h')
+  })
+
+  it('transitions to weeks at 7d and to years at 365d', () => {
+    expect(formatCompactDuration(7 * DAY)).toBe('1w')
+    expect(formatCompactDuration(364 * DAY)).toBe('52w')
+    expect(formatCompactDuration(365 * DAY)).toBe('1y')
+    // The 2026-year garbage value now scales to a sane "Ny".
+    expect(formatCompactDuration(2026 * 365 * DAY)).toBe('2026y')
+  })
+})
+
+describe('formatElapsed', () => {
+  // Fixed "now" so the multi-day / week / year cases are deterministic.
+  const NOW = Date.UTC(2026, 0, 1, 12, 0, 0)
+
+  it('returns "—" for a Go zero-time (THE bug)', () => {
+    // Date.parse('0001-01-01T00:00:00Z') is a huge NEGATIVE epoch that passes
+    // Number.isFinite — the old code rendered ~2026 years of elapsed time.
+    expect(formatElapsed('0001-01-01T00:00:00Z', NOW)).toBe('—')
+  })
+
+  it('returns "—" for empty / unparseable / pre-2000 input', () => {
+    expect(formatElapsed('', NOW)).toBe('—')
+    expect(formatElapsed('not-a-date', NOW)).toBe('—')
+    expect(formatElapsed('1999-12-31T23:59:59Z', NOW)).toBe('—')
+  })
+
+  it('renders a recent time as seconds / minutes', () => {
+    expect(formatElapsed(new Date(NOW - 30_000).toISOString(), NOW)).toBe('30s')
+    expect(formatElapsed(new Date(NOW - 5 * 60_000).toISOString(), NOW)).toBe('5m')
+  })
+
+  it('scales multi-day / multi-week / multi-year elapsed times', () => {
+    const DAY = 86_400_000
+    expect(formatElapsed(new Date(NOW - 3 * DAY).toISOString(), NOW)).toBe('3d')
+    expect(formatElapsed(new Date(NOW - 14 * DAY).toISOString(), NOW)).toBe('2w')
+    expect(formatElapsed(new Date(NOW - 800 * DAY).toISOString(), NOW)).toBe('2y')
   })
 })
