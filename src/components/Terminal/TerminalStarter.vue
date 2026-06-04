@@ -723,7 +723,13 @@ async function startNewSession() {
       session_id: response.session_id,
       console_url: response.console_url,
       expires_at: response.expires_at,
-      status: response.status
+      status: response.status,
+      // Mirror the network toggle the user just submitted so the post-create
+      // viewer's status bar shows the correct internet-access state. The backend
+      // omits composed_features for no-network sessions (omitempty), so we only
+      // set it when network was enabled; sessionHasNetwork() reads it the same
+      // way it reads the API value on the list/detail pages.
+      ...(networkEnabled.value && { composed_features: JSON.stringify({ network: true }) })
     }
 
     startStatus.value = t('terminalStarter.sessionCreated')

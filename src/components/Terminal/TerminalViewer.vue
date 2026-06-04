@@ -44,6 +44,14 @@
         </span>
       </div>
 
+      <span
+        class="network-indicator"
+        :class="hasNetwork ? 'network-on' : 'network-off'"
+        :title="hasNetwork ? t('terminal.networkOn') : t('terminal.networkOff')"
+      >
+        <i :class="hasNetwork ? 'fas fa-globe' : 'fas fa-ban'"></i>
+      </span>
+
       <RecordingIndicator :isRecording="isRecording" />
 
       <SessionCountdown
@@ -131,6 +139,13 @@
             {{ isConnecting ? t('terminal.connecting') : t('terminal.disconnected') }}
           </span>
         </div>
+        <span
+          class="network-indicator"
+          :class="hasNetwork ? 'network-on' : 'network-off'"
+          :title="hasNetwork ? t('terminal.networkOn') : t('terminal.networkOff')"
+        >
+          <i :class="hasNetwork ? 'fas fa-globe' : 'fas fa-ban'"></i>
+        </span>
         <RecordingIndicator :isRecording="isRecording" />
         <SessionCountdown
           v-if="sessionInfo?.expires_at"
@@ -211,7 +226,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { useEndStateConfig, type EndStateReason } from '../../composables/useEndStateConfig'
 import { getTerminalTheme } from '../../utils/terminalTheme'
-import { canConnectToTerminal, preConnectError } from '../../utils/sessionState'
+import { canConnectToTerminal, preConnectError, sessionHasNetwork } from '../../utils/sessionState'
 import { terminalService } from '../../services/domain/terminal/terminalService'
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
@@ -224,6 +239,9 @@ interface SessionInfo {
   console_url?: string
   expires_at?: string
   state?: string
+  // JSON string of enabled features (e.g. `{"network":true}`). Drives the
+  // internet-access indicator via sessionHasNetwork().
+  composed_features?: string
 }
 
 interface Props {
@@ -324,6 +342,8 @@ const { t } = useTranslations({
       stopDisabledEphemeral: 'This is an ephemeral session — use Destroy to terminate it (Stop preserves a disk that does not exist here).',
       destroy: 'Destroy',
       destroyTooltip: 'Destroy this session permanently (container and data will be lost).',
+      networkOn: 'Internet access: on',
+      networkOff: 'Internet access: off',
     }
   },
   fr: {
@@ -361,6 +381,8 @@ const { t } = useTranslations({
       stopDisabledEphemeral: 'Cette session est éphémère — utilisez Détruire pour la terminer (Arrêter conserverait un disque qui n\'existe pas ici).',
       destroy: 'Détruire',
       destroyTooltip: 'Détruire définitivement cette session (le conteneur et ses données seront perdus).',
+      networkOn: 'Accès internet : activé',
+      networkOff: 'Accès internet : désactivé',
       recording: 'REC',
       recordingTooltip: 'Les commandes sont enregistrées'
     }
@@ -402,6 +424,9 @@ let resizeObserver: ResizeObserver | null = null
 
 // Computed: active session info (prefer prop, fallback to fetched)
 const sessionInfo = computed(() => props.sessionInfo || fetchedSessionInfo.value)
+
+// Computed: whether this session has internet access (single source of truth)
+const hasNetwork = computed(() => sessionHasNetwork(sessionInfo.value))
 
 // Computed: session ID for display and connection
 const displaySessionId = computed(() => {
@@ -1028,6 +1053,24 @@ defineExpose({
 .btn:hover {
   opacity: 0.9;
   transform: translateY(-1px);
+}
+
+/* Internet-access indicator in the status bar. Globe = on (success),
+   crossed = off (muted). Sits alongside the recording / countdown badges. */
+.network-indicator {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--font-size-sm);
+  line-height: 1;
+  cursor: default;
+}
+
+.network-indicator.network-on {
+  color: var(--color-success);
+}
+
+.network-indicator.network-off {
+  color: var(--color-text-muted);
 }
 
 .text-muted {

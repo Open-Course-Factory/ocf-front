@@ -66,6 +66,9 @@ interface SessionInfo {
   expires_at?: string
   status?: string
   name?: string
+  // JSON string of enabled features (e.g. `{"network":true}`). Forwarded to
+  // TerminalViewer so it can render the internet-access indicator.
+  composed_features?: string
 }
 
 interface Props {
