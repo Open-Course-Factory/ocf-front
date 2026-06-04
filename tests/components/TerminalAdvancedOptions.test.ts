@@ -185,34 +185,63 @@ describe('TerminalAdvancedOptions', () => {
   })
 
   describe('network toggle + packages gating', () => {
-    it('hides the network toggle when networkPlanEnabled is false (default)', () => {
+    it('always renders the network toggle, even when networkPlanEnabled is false', () => {
       const w = mountComponent({ networkPlanEnabled: false, networkEnabled: false })
 
-      expect(w.find('[data-testid="network-toggle"]').exists()).toBe(false)
+      expect(w.find('[data-testid="network-toggle"]').exists()).toBe(true)
     })
 
-    it('hides the packages input by default (network off)', () => {
-      // Packages are gated purely on networkEnabled in this component; the
-      // parent owns the plan-level gate (it only flips networkEnabled on when
-      // the plan allows it and clears packages when turning off).
+    it('disables the network radios and shows a locked hint when the plan disallows network', () => {
       const w = mountComponent({ networkPlanEnabled: false, networkEnabled: false })
 
-      expect(w.find('input#packages').exists()).toBe(false)
+      const off = w.find('[data-testid="network-off"]')
+      const on = w.find('[data-testid="network-on"]')
+      expect(off.attributes('disabled')).toBeDefined()
+      expect(on.attributes('disabled')).toBeDefined()
+      // Forced visually to OFF.
+      expect((off.element as HTMLInputElement).checked).toBe(true)
+      expect((on.element as HTMLInputElement).checked).toBe(false)
+      // Locked reason hint shown.
+      expect(w.find('[data-testid="network-locked-hint"]').exists()).toBe(true)
     })
 
-    it('shows the network toggle but hides the packages input when network is allowed yet off', () => {
+    it('cannot be turned on when the plan disallows network (forced off)', () => {
+      // Even if a stale networkEnabled=true leaks in, the plan gate forces off.
+      const w = mountComponent({ networkPlanEnabled: false, networkEnabled: true })
+
+      const on = w.find('[data-testid="network-on"]')
+      expect(on.attributes('disabled')).toBeDefined()
+      expect((on.element as HTMLInputElement).checked).toBe(false)
+    })
+
+    it('always renders the packages input but disables it when network is off', () => {
       const w = mountComponent({ networkPlanEnabled: true, networkEnabled: false })
 
-      expect(w.find('[data-testid="network-toggle"]').exists()).toBe(true)
-      // Packages are gated on network being ON.
-      expect(w.find('input#packages').exists()).toBe(false)
+      const packages = w.find('input#packages')
+      expect(packages.exists()).toBe(true)
+      expect(packages.attributes('disabled')).toBeDefined()
+      // Reason hint explaining internet is required.
+      expect(w.find('[data-testid="packages-network-required-hint"]').exists()).toBe(true)
     })
 
-    it('shows the packages input when network is allowed and on', () => {
+    it('enables the packages input when network is allowed and on', () => {
       const w = mountComponent({ networkPlanEnabled: true, networkEnabled: true })
 
-      expect(w.find('[data-testid="network-toggle"]').exists()).toBe(true)
-      expect(w.find('input#packages').exists()).toBe(true)
+      const packages = w.find('input#packages')
+      expect(packages.exists()).toBe(true)
+      expect(packages.attributes('disabled')).toBeUndefined()
+      // No reason hint when network is on.
+      expect(w.find('[data-testid="packages-network-required-hint"]').exists()).toBe(false)
+    })
+
+    it('enables the network radios when the plan allows network', () => {
+      const w = mountComponent({ networkPlanEnabled: true, networkEnabled: false })
+
+      const off = w.find('[data-testid="network-off"]')
+      const on = w.find('[data-testid="network-on"]')
+      expect(off.attributes('disabled')).toBeUndefined()
+      expect(on.attributes('disabled')).toBeUndefined()
+      expect(w.find('[data-testid="network-locked-hint"]').exists()).toBe(false)
     })
 
     it('emits update:networkEnabled=true when the "on" radio is selected', async () => {

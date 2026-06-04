@@ -2,7 +2,7 @@
  * Tests for the opt-in network (internet egress) toggle on TerminalStarter.
  *
  * Covers the payload contract for the composed-session request:
- *   - features.network always mirrors the toggle (false by default, true when on).
+ *   - features.network defaults ON when the plan allows network, OFF otherwise.
  *   - packages are omitted when network is off (input is cleared + gated).
  *   - packages are included when network is on and the user typed some.
  *
@@ -180,7 +180,7 @@ describe('TerminalStarter — network toggle payload', () => {
     localStorage.clear()
   })
 
-  it('sends features.network = false by default and omits packages', async () => {
+  it('sends features.network = true by default when the plan allows network', async () => {
     const wrapper = mountStarter()
     await flushPromises()
 
@@ -188,31 +188,39 @@ describe('TerminalStarter — network toggle payload', () => {
 
     expect(mockStartComposed).toHaveBeenCalledTimes(1)
     const payload = mockStartComposed.mock.calls[0][0]
-    expect(payload.features.network).toBe(false)
+    expect(payload.features.network).toBe(true)
+    // No packages typed, so they're still omitted even though network is on.
     expect(payload.packages).toBeUndefined()
   })
 
-  it('sends features.network = true after the user turns internet on', async () => {
+  it('enables the packages input by default when the plan allows network', async () => {
     const wrapper = mountStarter()
     await flushPromises()
 
-    const networkOn = wrapper.find('[data-testid="network-on"]')
-    expect(networkOn.exists()).toBe(true)
-    await networkOn.trigger('change')
+    const packagesInput = wrapper.find('input#packages')
+    expect(packagesInput.exists()).toBe(true)
+    expect(packagesInput.attributes('disabled')).toBeUndefined()
+  })
+
+  it('sends features.network = false after the user turns internet off', async () => {
+    const wrapper = mountStarter()
+    await flushPromises()
+
+    const networkOff = wrapper.find('[data-testid="network-off"]')
+    expect(networkOff.exists()).toBe(true)
+    await networkOff.trigger('change')
 
     await launchSession(wrapper)
 
     const payload = mockStartComposed.mock.calls[0][0]
-    expect(payload.features.network).toBe(true)
+    expect(payload.features.network).toBe(false)
   })
 
-  it('includes packages only when network is on and packages were typed', async () => {
+  it('includes packages when network is on (default) and packages were typed', async () => {
     const wrapper = mountStarter()
     await flushPromises()
 
-    // Turn network on so the packages input is rendered + accepted.
-    await wrapper.find('[data-testid="network-on"]').trigger('change')
-
+    // Network defaults on, so the packages input is enabled out of the box.
     const packagesInput = wrapper.find('input#packages')
     expect(packagesInput.exists()).toBe(true)
     await packagesInput.setValue('git, curl')
@@ -224,13 +232,12 @@ describe('TerminalStarter — network toggle payload', () => {
     expect(payload.packages).toEqual(['git', 'curl'])
   })
 
-  it('clears typed packages and omits them when the user turns network back off', async () => {
+  it('clears typed packages and omits them when the user turns network off', async () => {
     const wrapper = mountStarter()
     await flushPromises()
 
-    // On → type packages → back off. Turning off clears the input, so the
+    // Default on → type packages → off. Turning off clears the input, so the
     // packages must not leak into the payload.
-    await wrapper.find('[data-testid="network-on"]').trigger('change')
     await wrapper.find('input#packages').setValue('git, curl')
     await wrapper.find('[data-testid="network-off"]').trigger('change')
 
@@ -241,11 +248,20 @@ describe('TerminalStarter — network toggle payload', () => {
     expect(payload.packages).toBeUndefined()
   })
 
-  it('does not render the network fieldset when the plan disallows network', async () => {
+  it('renders the network fieldset disabled and stays off when the plan disallows network', async () => {
     const wrapper = mountStarter(false)
     await flushPromises()
 
-    expect(wrapper.find('[data-testid="network-toggle"]').exists()).toBe(false)
+    // The toggle is always rendered now, but disabled + forced off.
+    const fieldset = wrapper.find('[data-testid="network-toggle"]')
+    expect(fieldset.exists()).toBe(true)
+    expect(wrapper.find('[data-testid="network-on"]').attributes('disabled')).toBeDefined()
+
+    await launchSession(wrapper)
+
+    const payload = mockStartComposed.mock.calls[0][0]
+    expect(payload.features.network).toBe(false)
+    expect(payload.packages).toBeUndefined()
   })
 })
 

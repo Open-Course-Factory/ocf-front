@@ -83,7 +83,6 @@
       </FormGroup>
 
       <FormGroup
-        v-if="networkEnabled"
         :label="t('terminalStarter.packagesLabel')"
         id="packages"
         :help-text="t('terminalStarter.packagesHelp')"
@@ -94,9 +93,13 @@
           type="text"
           maxlength="500"
           :placeholder="t('terminalStarter.packagesPlaceholder')"
-          :disabled="disabled"
+          :disabled="disabled || !networkEnabled"
           @input="handlePackagesInput"
         />
+        <p v-if="!networkEnabled" class="persistence-hint persistence-hint-locked" data-testid="packages-network-required-hint">
+          <i class="fas fa-lock"></i>
+          {{ t('terminalStarter.packagesRequireNetwork') }}
+        </p>
         <div v-if="defaultPackages.length > 0" class="default-packages">
           <small class="default-packages-label">{{ t('terminalStarter.preInstalled') }}</small>
           <span v-for="pkg in defaultPackages" :key="pkg" class="package-badge">{{ pkg }}</span>
@@ -104,13 +107,15 @@
       </FormGroup>
 
       <!--
-        Network (internet egress) toggle. Only rendered when the active plan
-        allows network access. Opt-in: machines start with no internet by
-        default. Custom startup packages require network ON (enforced
-        server-side), so the packages FormGroup above is gated on networkEnabled.
+        Network (internet egress) toggle. Always rendered. When the active plan
+        allows network it defaults ON (the parent owns the default); the user can
+        toggle it off. When the plan does NOT allow network, the controls are
+        disabled and forced OFF with a locked reason hint (mirrors the
+        persistence forced-ephemeral pattern). Custom startup packages require
+        network ON (enforced server-side), so the packages input above is
+        disabled while network is off.
       -->
       <fieldset
-        v-if="networkPlanEnabled"
         class="persistence-toggle"
         data-testid="network-toggle"
       >
@@ -118,14 +123,14 @@
           <i class="fas fa-globe"></i>
           {{ t('terminalStarter.networkLabel') }}
         </legend>
-        <div class="persistence-options">
+        <div class="persistence-options" :class="{ 'is-disabled': !networkPlanEnabled }">
           <label class="persistence-option">
             <input
               type="radio"
               name="network-mode"
               value="off"
-              :checked="!networkEnabled"
-              :disabled="disabled"
+              :checked="!effectiveNetworkEnabled"
+              :disabled="disabled || !networkPlanEnabled"
               data-testid="network-off"
               @change="emit('update:networkEnabled', false)"
             />
@@ -136,16 +141,20 @@
               type="radio"
               name="network-mode"
               value="on"
-              :checked="networkEnabled"
-              :disabled="disabled"
+              :checked="effectiveNetworkEnabled"
+              :disabled="disabled || !networkPlanEnabled"
               data-testid="network-on"
               @change="emit('update:networkEnabled', true)"
             />
             <span class="persistence-option-label">{{ t('terminalStarter.networkOn') }}</span>
           </label>
         </div>
-        <p class="persistence-hint" data-testid="network-hint">
-          {{ networkEnabled
+        <p v-if="!networkPlanEnabled" class="persistence-hint persistence-hint-locked" data-testid="network-locked-hint">
+          <i class="fas fa-lock"></i>
+          {{ t('terminalStarter.networkPlanDisabledHint') }}
+        </p>
+        <p v-else class="persistence-hint" data-testid="network-hint">
+          {{ effectiveNetworkEnabled
             ? t('terminalStarter.networkOnHint')
             : t('terminalStarter.networkOffHint') }}
         </p>
@@ -306,12 +315,14 @@ const { t } = useTranslations({
       packagesLabel: 'Startup Packages (Optional)',
       packagesPlaceholder: 'e.g., git, curl, vim, htop',
       packagesHelp: 'Comma-separated list of packages to install when the terminal starts. These are installed on top of the defaults. Requires internet access (enabled above).',
+      packagesRequireNetwork: 'Enable internet access above to install startup packages.',
       preInstalled: 'Pre-installed:',
       networkLabel: 'Internet access',
       networkOff: 'No internet',
       networkOn: 'Allow internet',
       networkOffHint: 'The terminal has no internet access. You cannot download packages or clone external repositories.',
       networkOnHint: 'The terminal can reach the internet — download packages, clone repositories, and fetch external resources.',
+      networkPlanDisabledHint: "Internet access isn't included in your plan.",
       persistenceLabel: 'Save my work between sessions',
       persistenceEphemeral: 'Discard when done',
       persistencePersistent: 'Keep my work',
@@ -336,12 +347,14 @@ const { t } = useTranslations({
       packagesLabel: 'Paquets de démarrage (Optionnel)',
       packagesPlaceholder: 'ex. git, curl, vim, htop',
       packagesHelp: 'Liste de paquets séparés par des virgules à installer au démarrage du terminal. Installés en plus des paquets par défaut. Nécessite l\'accès internet (activé ci-dessus).',
+      packagesRequireNetwork: 'Activez l\'accès internet ci-dessus pour installer des paquets de démarrage.',
       preInstalled: 'Pré-installés :',
       networkLabel: 'Accès internet',
       networkOff: 'Sans internet',
       networkOn: 'Autoriser internet',
       networkOffHint: 'Le terminal n\'a pas d\'accès internet. Vous ne pouvez ni installer de paquets ni cloner de dépôts externes.',
       networkOnHint: 'Le terminal peut accéder à internet — installer des paquets, cloner des dépôts et récupérer des ressources externes.',
+      networkPlanDisabledHint: 'L\'accès internet n\'est pas inclus dans votre offre.',
       persistenceLabel: 'Conserver mon travail entre les sessions',
       persistenceEphemeral: 'Tout effacer à la fin',
       persistencePersistent: 'Conserver mon travail',
@@ -359,6 +372,13 @@ const isExpanded = ref(false)
 // non-empty string. Empty string falls back to the i18n default.
 const effectiveNamePlaceholder = computed(() =>
   props.namePlaceholder?.trim() || t('terminalStarter.namePlaceholder')
+)
+
+// When the plan does not allow network, the toggle is forced visually to OFF
+// (and disabled) regardless of any stale parent value — mirrors how the
+// persistence toggle forces 'ephemeral' when crash_traps is set.
+const effectiveNetworkEnabled = computed(() =>
+  props.networkPlanEnabled && props.networkEnabled
 )
 
 function handleInput(event: Event) {
