@@ -74,6 +74,7 @@ const { t } = useTranslations({
       items: {
         subscriptionPlans: 'Subscription Plans',
         planFeatures: 'Plan Features',
+        organizationRolePlans: 'Organization Role Plans',
         allInvoices: 'All Invoices',
         invoiceCleanup: 'Invoice Cleanup',
         organizations: 'Organizations',
@@ -108,6 +109,7 @@ const { t } = useTranslations({
       items: {
         subscriptionPlans: 'Plans d\'Abonnement',
         planFeatures: 'Fonctionnalités des Plans',
+        organizationRolePlans: 'Plans par Rôle d\'Organisation',
         allInvoices: 'Toutes les Factures',
         invoiceCleanup: 'Nettoyage des Factures',
         organizations: 'Organisations',
@@ -146,6 +148,11 @@ const adminCategories = computed<MenuCategory[]>(() => [
         route: '/admin/plan-features',
         label: t('admin.items.planFeatures'),
         icon: 'fas fa-puzzle-piece'
+      },
+      {
+        route: '/admin/organization-role-plans',
+        label: t('admin.items.organizationRolePlans'),
+        icon: 'fas fa-link'
       },
       {
         route: '/invoices',

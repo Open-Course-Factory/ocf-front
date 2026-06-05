@@ -400,6 +400,12 @@ const basicRoutes = [
         meta: { requiresAuth: true, requiresAdmin: true }
       },
       {
+        path: 'admin/organization-role-plans',
+        name: 'AdminOrganizationRolePlans',
+        component: () => import('../components/Pages/Admin/OrganizationRolePlans.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
         path: 'admin/feedback-settings',
         name: 'FeedbackSettings',
         component: () => import('../components/Pages/FeedbackSettings.vue'),
