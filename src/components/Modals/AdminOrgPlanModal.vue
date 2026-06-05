@@ -103,6 +103,42 @@
         />
       </div>
 
+      <!-- Per-role plan overrides -->
+      <div class="section-divider">
+        <span>{{ t('adminOrgPlan.roleOverridesTitle') }}</span>
+      </div>
+
+      <div class="role-overrides">
+        <p class="role-overrides-help">
+          <i class="fas fa-info-circle"></i>
+          {{ t('adminOrgPlan.roleOverridesHelp') }}
+        </p>
+
+        <div
+          v-for="roleRow in roleRows"
+          :key="roleRow.role"
+          class="form-group role-override-row"
+        >
+          <label :for="`role-override-${roleRow.role}`">
+            {{ roleRow.label }}
+          </label>
+          <select
+            :id="`role-override-${roleRow.role}`"
+            v-model="roleSelections[roleRow.role]"
+            class="form-control"
+          >
+            <option value="">{{ t('adminOrgPlan.useDefaultPlan') }}</option>
+            <option
+              v-for="plan in activePlans"
+              :key="plan.id"
+              :value="plan.id"
+            >
+              {{ plan.name }} - {{ plansStore.formatPrice(plan.price_amount, plan.currency) }}/{{ plan.billing_interval }}
+            </option>
+          </select>
+        </div>
+      </div>
+
       <!-- Assign Confirmation -->
       <div v-if="showAssignConfirm" class="confirm-assign">
         <p class="confirm-text">
@@ -154,8 +190,8 @@
       <button
         v-if="!showAssignConfirm"
         class="btn btn-primary"
-        :disabled="saving || !selectedPlanId"
-        @click="showAssignConfirm = true"
+        :disabled="saving || !canSave"
+        @click="onPrimaryClick"
       >
         <i class="fas fa-check"></i>
         {{ currentSubscription ? t('adminOrgPlan.changePlanConfirm') : t('adminOrgPlan.assignPlan') }}
@@ -170,7 +206,11 @@ import { useTranslations } from '../../composables/useTranslations'
 import BaseModal from './BaseModal.vue'
 import { useOrganizationSubscriptionsStore } from '../../stores/organizationSubscriptions'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
+import { useOrganizationRolePlansStore } from '../../stores/organizationRolePlans'
+import type { OrganizationRolePlan } from '../../stores/organizationRolePlans'
 import type { SubscriptionPlan, OrganizationSubscription } from '../../types'
+
+type OrgRole = 'owner' | 'manager' | 'member'
 
 const props = defineProps<{
   visible: boolean
@@ -218,7 +258,14 @@ const { t } = useTranslations({
       statusTrialing: 'Trial',
       statusCanceled: 'Canceled',
       statusPastDue: 'Past Due',
-      statusPendingPayment: 'Pending'
+      statusPendingPayment: 'Pending',
+      roleOverridesTitle: 'Per-role plan overrides',
+      roleOverridesHelp: 'Assign a specific plan to a role. A role without an override inherits the organization\'s default plan above.',
+      useDefaultPlan: 'Use default plan (no override)',
+      roleOwner: 'Owner',
+      roleManager: 'Manager',
+      roleMember: 'Member',
+      overridesError: 'Failed to save role plan overrides'
     }
   },
   fr: {
@@ -253,13 +300,21 @@ const { t } = useTranslations({
       statusTrialing: 'Essai',
       statusCanceled: 'Annulé',
       statusPastDue: 'En retard',
-      statusPendingPayment: 'En attente'
+      statusPendingPayment: 'En attente',
+      roleOverridesTitle: 'Plans par rôle',
+      roleOverridesHelp: 'Attribuez un plan spécifique à un rôle. Un rôle sans plan dédié hérite du plan par défaut de l\'organisation ci-dessus.',
+      useDefaultPlan: 'Utiliser le plan par défaut (aucun)',
+      roleOwner: 'Propriétaire',
+      roleManager: 'Gestionnaire',
+      roleMember: 'Membre',
+      overridesError: 'Échec de l\'enregistrement des plans par rôle'
     }
   }
 })
 
 const orgSubStore = useOrganizationSubscriptionsStore()
 const plansStore = useSubscriptionPlansStore()
+const rolePlansStore = useOrganizationRolePlansStore()
 
 const selectedPlanId = ref('')
 const quantity = ref(1)
@@ -270,8 +325,41 @@ const showCancelConfirm = ref(false)
 const showAssignConfirm = ref(false)
 let autoCloseTimer: ReturnType<typeof setTimeout> | null = null
 
+// Per-role plan overrides
+const ROLES: OrgRole[] = ['owner', 'manager', 'member']
+// Current selection per role (plan id, or '' for "use default")
+const roleSelections = ref<Record<OrgRole, string>>({ owner: '', manager: '', member: '' })
+// Initial selection per role (to compute the diff on save)
+const initialRoleSelections = ref<Record<OrgRole, string>>({ owner: '', manager: '', member: '' })
+// Existing override records per role (id + current plan), if any
+const existingRolePlans = ref<Record<OrgRole, OrganizationRolePlan | null>>({
+  owner: null,
+  manager: null,
+  member: null
+})
+
+const roleRows = computed(() =>
+  ROLES.map((role) => ({
+    role,
+    label: t(`adminOrgPlan.role${role.charAt(0).toUpperCase()}${role.slice(1)}`)
+  }))
+)
+
 const activePlans = computed(() =>
   (plansStore.entities as SubscriptionPlan[]).filter((p: SubscriptionPlan) => p.is_active)
+)
+
+// Whether any role override differs from its initial value
+const hasRoleOverrideChanges = computed(() =>
+  ROLES.some((role) => roleSelections.value[role] !== initialRoleSelections.value[role])
+)
+
+// Primary button is enabled when a default plan can be (re)assigned OR overrides changed
+const canSave = computed(() => !!selectedPlanId.value || hasRoleOverrideChanges.value)
+
+// Whether the default-plan selection changed and should trigger a (re)subscribe
+const defaultPlanChanged = computed(() =>
+  !!selectedPlanId.value && selectedPlanId.value !== (props.currentPlanId || '')
 )
 
 const currentPlanName = computed(() => {
@@ -312,18 +400,90 @@ onMounted(async () => {
   await plansStore.ensurePlansLoaded()
 })
 
+// Load existing per-role overrides and pre-fill each row
+const loadRoleOverrides = async () => {
+  const blank: Record<OrgRole, string> = { owner: '', manager: '', member: '' }
+  roleSelections.value = { ...blank }
+  initialRoleSelections.value = { ...blank }
+  existingRolePlans.value = { owner: null, manager: null, member: null }
+
+  if (!props.organizationId) return
+
+  try {
+    const overrides = await rolePlansStore.loadOrganizationRolePlans(props.organizationId)
+    overrides.forEach((rp) => {
+      const role = rp.role as OrgRole
+      if (ROLES.includes(role)) {
+        existingRolePlans.value[role] = rp
+        roleSelections.value[role] = rp.subscription_plan_id || ''
+        initialRoleSelections.value[role] = rp.subscription_plan_id || ''
+      }
+    })
+  } catch {
+    // Surface a non-blocking error; default-plan management stays usable
+    error.value = error.value || rolePlansStore.error || t('adminOrgPlan.overridesError')
+  }
+}
+
+// Reconcile the (<=3) per-role override changes against their initial state
+const saveRoleOverrides = async () => {
+  const operations: Promise<unknown>[] = []
+
+  for (const role of ROLES) {
+    const current = roleSelections.value[role]
+    const initial = initialRoleSelections.value[role]
+    if (current === initial) continue
+
+    const existing = existingRolePlans.value[role]
+    if (!initial && current) {
+      // was default, now a specific plan -> create
+      operations.push(rolePlansStore.createRolePlan({
+        organization_id: props.organizationId,
+        role,
+        subscription_plan_id: current
+      }))
+    } else if (initial && current && existing) {
+      // had a plan, now a different plan -> update
+      operations.push(rolePlansStore.updateRolePlan(existing.id, { subscription_plan_id: current }))
+    } else if (initial && !current && existing) {
+      // had a plan, now default -> delete
+      operations.push(rolePlansStore.deleteRolePlan(existing.id))
+    }
+  }
+
+  if (operations.length > 0) {
+    await Promise.all(operations)
+  }
+}
+
+const onPrimaryClick = () => {
+  // A billing-affecting default-plan change needs explicit confirmation;
+  // override-only edits save directly.
+  if (defaultPlanChanged.value) {
+    showAssignConfirm.value = true
+  } else {
+    handleAssign()
+  }
+}
+
 const handleAssign = async () => {
-  if (!selectedPlanId.value) return
+  if (!canSave.value) return
 
   saving.value = true
   error.value = ''
   successMsg.value = ''
 
   try {
-    await orgSubStore.subscribeOrganization(props.organizationId, {
-      subscription_plan_id: selectedPlanId.value,
-      quantity: quantity.value > 0 ? quantity.value : undefined
-    })
+    // Only (re)subscribe when the default plan selection actually changed
+    if (defaultPlanChanged.value) {
+      await orgSubStore.subscribeOrganization(props.organizationId, {
+        subscription_plan_id: selectedPlanId.value,
+        quantity: quantity.value > 0 ? quantity.value : undefined
+      })
+    }
+
+    await saveRoleOverrides()
+
     successMsg.value = props.currentSubscription
       ? t('adminOrgPlan.changeSuccess')
       : t('adminOrgPlan.assignSuccess')
@@ -335,6 +495,7 @@ const handleAssign = async () => {
     error.value = err.response?.data?.error_message ||
                   err.response?.data?.message ||
                   orgSubStore.error ||
+                  rolePlansStore.error ||
                   t('adminOrgPlan.assignError')
   } finally {
     saving.value = false
@@ -376,15 +537,20 @@ const resetForm = () => {
   saving.value = false
   showCancelConfirm.value = false
   showAssignConfirm.value = false
+  const blank: Record<OrgRole, string> = { owner: '', manager: '', member: '' }
+  roleSelections.value = { ...blank }
+  initialRoleSelections.value = { ...blank }
+  existingRolePlans.value = { owner: null, manager: null, member: null }
 }
 
-// Pre-fill plan when modal opens with currentPlanId
-watch(() => props.visible, (newVisible) => {
+// Pre-fill plan + role overrides when modal opens
+watch(() => props.visible, async (newVisible) => {
   if (newVisible) {
     if (props.currentPlanId) {
       selectedPlanId.value = props.currentPlanId
     }
-    plansStore.ensurePlansLoaded()
+    await plansStore.ensurePlansLoaded()
+    await loadRoleOverrides()
   }
   if (!newVisible) {
     resetForm()
@@ -579,6 +745,26 @@ watch(() => props.visible, (newVisible) => {
   flex: 1;
   height: 1px;
   background: var(--color-border);
+}
+
+.role-overrides {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.role-overrides-help {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.role-override-row label {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
 }
 
 .form-group {

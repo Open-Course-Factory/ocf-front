@@ -19,129 +19,147 @@
  * See the LICENSE file for more information.
  */
 
-import { defineStore } from "pinia"
-import { computed } from 'vue'
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
 import axios from 'axios'
-import { useBaseStore } from "./baseStore"
 import { useStoreTranslations } from '../composables/useTranslations'
-import { field, buildFieldList } from '../utils/fieldBuilder'
+import { isDemoMode, logDemoAction } from '../services/demo'
+
+export interface OrganizationRolePlan {
+  id: string
+  organization_id: string
+  role: string
+  subscription_plan_id: string
+  subscription_plan?: {
+    id?: string
+    name?: string
+    [key: string]: any
+  }
+  [key: string]: any
+}
 
 export const useOrganizationRolePlansStore = defineStore('organizationRolePlans', () => {
+  const isLoading = ref(false)
+  const error = ref('')
 
-    const base = useBaseStore()
-
-    const { t } = useStoreTranslations({
-        en: {
-            organizationRolePlans: {
-                pageTitle: 'Organization Role Plans',
-                organization_id: 'Organization',
-                role: 'Role',
-                subscription_plan_id: 'Subscription Plan',
-                created_at: 'Created at',
-                updated_at: 'Updated at',
-                roleOwner: 'Owner',
-                roleManager: 'Manager',
-                roleMember: 'Member',
-                add: 'Add a role plan mapping',
-                modify: 'Modify the role plan mapping'
-            }
-        },
-        fr: {
-            organizationRolePlans: {
-                pageTitle: 'Plans par Rôle d\'Organisation',
-                organization_id: 'Organisation',
-                role: 'Rôle',
-                subscription_plan_id: 'Plan d\'Abonnement',
-                created_at: 'Créé le',
-                updated_at: 'Modifié le',
-                roleOwner: 'Propriétaire',
-                roleManager: 'Gestionnaire',
-                roleMember: 'Membre',
-                add: 'Ajouter une association rôle-plan',
-                modify: 'Modifier l\'association rôle-plan'
-            }
-        }
-    })
-
-    const fieldList = computed(() => buildFieldList([
-        field('id').hidden().readonly(),
-        field('organization_id', t('organizationRolePlans.organization_id'))
-            .searchableSelect()
-            .visible()
-            .creatable()
-            .required()
-            .withOptionsLoader(async () => {
-                try {
-                    const response = await axios.get('/organizations?limit=100')
-                    const orgs: any[] = response.data?.data || response.data || []
-                    return orgs.map((o: any) => ({
-                        value: o.id,
-                        text: o.display_name || o.name,
-                        id: o.id
-                    }))
-                } catch {
-                    return []
-                }
-            })
-            .withItemValue('id')
-            .withItemText('text'),
-        field('role', t('organizationRolePlans.role'))
-            .select()
-            .visible()
-            .creatable()
-            .updatable()
-            .required()
-            .withOptions([
-                { value: 'owner', text: t('organizationRolePlans.roleOwner') },
-                { value: 'manager', text: t('organizationRolePlans.roleManager') },
-                { value: 'member', text: t('organizationRolePlans.roleMember') }
-            ]),
-        field('subscription_plan_id', t('organizationRolePlans.subscription_plan_id'))
-            .searchableSelect()
-            .visible()
-            .creatable()
-            .updatable()
-            .required()
-            .withOptionsLoader(async () => {
-                try {
-                    const response = await axios.get('/subscription-plans')
-                    const plans: any[] = response.data?.data || response.data || []
-                    return plans.map((p: any) => ({
-                        value: p.id,
-                        text: p.name,
-                        id: p.id
-                    }))
-                } catch {
-                    return []
-                }
-            })
-            .withItemValue('id')
-            .withItemText('text'),
-        field('created_at', t('organizationRolePlans.created_at')).input().visible().readonly(),
-        field('updated_at', t('organizationRolePlans.updated_at')).input().visible().readonly()
-    ]))
-
-    const loadRolePlans = async () => {
-        return await base.loadEntities('/organization-role-plans')
+  const { t } = useStoreTranslations({
+    en: {
+      organizationRolePlans: {
+        loadError: 'Failed to load role plan overrides',
+        createError: 'Failed to create role plan override',
+        updateError: 'Failed to update role plan override',
+        deleteError: 'Failed to delete role plan override',
+      }
+    },
+    fr: {
+      organizationRolePlans: {
+        loadError: 'Échec du chargement des plans par rôle',
+        createError: 'Échec de la création du plan par rôle',
+        updateError: 'Échec de la modification du plan par rôle',
+        deleteError: 'Échec de la suppression du plan par rôle',
+      }
     }
+  })
 
-    const refreshRolePlans = async () => {
-        return await base.refreshEntities('/organization-role-plans')
-    }
+  // Load all role plan overrides for a given organization (client-side filtered)
+  const loadOrganizationRolePlans = async (organizationId: string): Promise<OrganizationRolePlan[]> => {
+    isLoading.value = true
+    error.value = ''
+    try {
+      if (isDemoMode()) {
+        logDemoAction('loadOrganizationRolePlans', { organizationId })
+        return []
+      }
 
-    let rolePlansLoaded = false
-    const ensureLoaded = async () => {
-        if (!rolePlansLoaded && base.entities.length === 0) {
-            await loadRolePlans()
-            rolePlansLoaded = true
-        }
+      const response = await axios.get('/organization-role-plans')
+      const all: OrganizationRolePlan[] = response.data?.data || response.data || []
+      return all.filter((rp) => rp.organization_id === organizationId)
+    } catch (err: any) {
+      error.value = err.response?.data?.error_message || err.message || t('organizationRolePlans.loadError')
+      throw err
+    } finally {
+      isLoading.value = false
     }
+  }
 
-    return {
-        ...base,
-        fieldList,
-        loadRolePlans,
-        refreshRolePlans,
-        ensureLoaded
+  // Create a role plan override
+  const createRolePlan = async (data: {
+    organization_id: string
+    role: string
+    subscription_plan_id: string
+  }): Promise<OrganizationRolePlan> => {
+    isLoading.value = true
+    error.value = ''
+    try {
+      if (isDemoMode()) {
+        logDemoAction('createRolePlan', data)
+        return { id: `demo-role-plan-${data.role}`, ...data }
+      }
+
+      const response = await axios.post('/organization-role-plans', data)
+      return response.data?.data || response.data
+    } catch (err: any) {
+      error.value = err.response?.data?.error_message || err.message || t('organizationRolePlans.createError')
+      throw err
+    } finally {
+      isLoading.value = false
     }
+  }
+
+  // Update a role plan override
+  const updateRolePlan = async (
+    id: string,
+    data: { subscription_plan_id: string }
+  ): Promise<OrganizationRolePlan> => {
+    isLoading.value = true
+    error.value = ''
+    try {
+      if (isDemoMode()) {
+        logDemoAction('updateRolePlan', { id, data })
+        return { id, ...data } as OrganizationRolePlan
+      }
+
+      const response = await axios.patch(`/organization-role-plans/${id}`, data)
+      return response.data?.data || response.data
+    } catch (err: any) {
+      error.value = err.response?.data?.error_message || err.message || t('organizationRolePlans.updateError')
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Delete a role plan override
+  const deleteRolePlan = async (id: string): Promise<void> => {
+    isLoading.value = true
+    error.value = ''
+    try {
+      if (isDemoMode()) {
+        logDemoAction('deleteRolePlan', { id })
+        return
+      }
+
+      await axios.delete(`/organization-role-plans/${id}`)
+    } catch (err: any) {
+      error.value = err.response?.data?.error_message || err.message || t('organizationRolePlans.deleteError')
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  return {
+    // State
+    isLoading,
+    error,
+
+    // Actions
+    loadOrganizationRolePlans,
+    createRolePlan,
+    updateRolePlan,
+    deleteRolePlan,
+
+    // Translations
+    t,
+  }
 })
