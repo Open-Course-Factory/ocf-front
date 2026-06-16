@@ -60,6 +60,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
                 add: 'Create invoice',
                 syncError: 'Error syncing invoices',
                 loadError: 'Error loading invoices',
+                downloadUnavailable: 'Invoice download is not available.',
             }
         },
         fr: {
@@ -90,6 +91,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
                 add: 'Créer une facture',
                 syncError: 'Erreur lors de la synchronisation des factures',
                 loadError: 'Erreur lors du chargement des factures',
+                downloadUnavailable: 'Le téléchargement de la facture n\'est pas disponible.',
             }
         }
     })
@@ -141,21 +143,20 @@ export const useInvoicesStore = defineStore('invoices', () => {
         'invoices.loadError'
     )
 
-    // Action pour télécharger une facture (utilise la nouvelle API)
-    const downloadInvoice = async (invoiceId: string) => {
-        try {
-            // Solution simple: utiliser window.location pour laisser le navigateur gérer la redirection
-            // Cela évite les problèmes CORS avec Stripe
-            const downloadUrl = `/invoices/${invoiceId}/download`;
+    // Ouvre l'URL Stripe pré-signée de la facture (PDF, ou page hébergée en repli).
+    // Ces URLs sont publiques : window.open contourne l'intercepteur axios, donc la
+    // route backend protégée par JWT n'est pas atteignable de cette manière.
+    const downloadInvoice = (invoiceId: string) => {
+        const invoice = base.entities.find((e: any) => e.id === invoiceId)
+        const url = invoice?.download_url || invoice?.stripe_hosted_url
 
-            // Ouvrir dans un nouvel onglet pour éviter de quitter la page
-            window.open(downloadUrl, '_blank');
-
-            return true;
-        } catch (error: any) {
-            console.error('Erreur lors du téléchargement:', error);
-            throw error;
+        if (!url) {
+            base.error.value = t('invoices.downloadUnavailable')
+            return false
         }
+
+        window.open(url, '_blank', 'noopener,noreferrer')
+        return true
     }
 
     // Fonction personnalisée pour les données de sélection (utilise l'utilitaire réutilisable)
