@@ -429,7 +429,8 @@ const menuCategories = computed((): MenuCategory[] => [
         route: '/subscription-plans',
         label: t('navigation.availablePlans'),
         title: t('navigation.availablePlansTitle'),
-        icon: 'fas fa-tags'
+        icon: 'fas fa-tags',
+        hideForAssignedOnly: true
       },
       {
         route: '/bulk-license-purchase',
