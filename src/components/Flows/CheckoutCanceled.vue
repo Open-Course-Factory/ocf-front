@@ -51,10 +51,9 @@
               <div class="action-content">
                 <h4>{{ t('checkoutCanceled.action1Title') }}</h4>
                 <p>{{ t('checkoutCanceled.action1Description') }}</p>
-                <button 
+                <button
                   class="btn btn-primary"
                   @click="retryCheckout"
-                  :disabled="!lastPlanId"
                 >
                   {{ t('checkoutCanceled.retryPayment') }}
                 </button>
@@ -121,8 +120,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
 import { SUPPORT_EMAIL } from '../../config/contact'
 
@@ -179,22 +177,12 @@ const { t } = useTranslations({
   }
 })
 
-const route = useRoute()
 const router = useRouter()
 
-const lastPlanId = ref('')
-
-onMounted(() => {
-  // Récupérer l'ID du plan depuis les paramètres d'URL ou le localStorage
-  lastPlanId.value = route.query.planId as string || localStorage.getItem('lastCheckoutPlan') || ''
-})
-
+// Checkout now goes straight to Stripe — there is no in-app Checkout route to
+// return to. Retry sends the user back to the plans page to restart the flow.
 function retryCheckout() {
-  if (lastPlanId.value) {
-    router.push({ name: 'Checkout', params: { planId: lastPlanId.value } })
-  } else {
-    router.push({ name: 'SubscriptionPlans' })
-  }
+  router.push({ name: 'SubscriptionPlans' })
 }
 </script>
 
