@@ -297,7 +297,7 @@
             </p>
             <p class="text-muted">
               <i class="fas fa-question-circle"></i>
-              <a href="mailto:support@opencourse.factory">{{ t('checkout.needHelp') }}</a>
+              <a href="mailto:contact@labinux.com">{{ t('checkout.needHelp') }}</a>
             </p>
           </div>
         </div>

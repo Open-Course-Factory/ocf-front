@@ -94,7 +94,7 @@
               <div class="step-content">
                 <h4>{{ t('checkoutSuccess.step3Title') }}</h4>
                 <p>{{ t('checkoutSuccess.step3Description') }}</p>
-                <a href="mailto:support@opencourse.factory" class="btn btn-outline-secondary">
+                <a href="mailto:contact@labinux.com" class="btn btn-outline-secondary">
                   {{ t('checkoutSuccess.contactSupport') }}
                 </a>
               </div>

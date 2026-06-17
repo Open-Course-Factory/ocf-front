@@ -81,7 +81,7 @@
               <div class="action-content">
                 <h4>{{ t('checkoutCanceled.action3Title') }}</h4>
                 <p>{{ t('checkoutCanceled.action3Description') }}</p>
-                <a href="mailto:support@opencourse.factory" class="btn btn-outline-secondary">
+                <a href="mailto:contact@labinux.com" class="btn btn-outline-secondary">
                   {{ t('checkoutCanceled.contactSupport') }}
                 </a>
               </div>
