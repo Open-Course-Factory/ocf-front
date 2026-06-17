@@ -23,15 +23,32 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useI18n } from 'vue-i18n';
 import Entity from './Entity.vue';
 import ErrorAlert from '../UI/ErrorAlert.vue';
 import { useBillingAddressesStore } from '../../stores/billingAddresses';
 import { useLoadingState } from '../../composables/useLoadingState';
+import { useTranslations } from '../../composables/useTranslations';
 import { extractErrorMessage } from '../../utils/formatters';
 import axios from 'axios';
 
-const { t } = useI18n();
+const { t } = useTranslations({
+  en: {
+    billingAddresses: {
+      default: 'Default',
+      setDefault: 'Set as default',
+      updating: 'Updating...',
+      updateError: 'Error updating the billing address',
+    },
+  },
+  fr: {
+    billingAddresses: {
+      default: 'Défaut',
+      setDefault: 'Définir par défaut',
+      updating: 'Mise à jour...',
+      updateError: 'Erreur lors de la mise à jour',
+    },
+  },
+});
 
 const entityStore = useBillingAddressesStore();
 const { isLoading: isSettingDefault, withLoading } = useLoadingState();
@@ -53,7 +70,7 @@ const setAsDefault = async (addressId: string) => {
 
         } catch (err: any) {
             console.error('Erreur lors de la définition comme défaut:', err);
-            error.value = extractErrorMessage(err, 'Erreur lors de la mise à jour');
+            error.value = extractErrorMessage(err, t('billingAddresses.updateError'));
         }
     });
 };
@@ -105,7 +122,7 @@ const setAsDefault = async (addressId: string) => {
                             <div v-if="entity.is_default" class="default-badge">
                                 <span class="badge badge-primary">
                                     <i class="fas fa-star"></i>
-                                    Défaut
+                                    {{ t('billingAddresses.default') }}
                                 </span>
                             </div>
                         </div>
@@ -119,7 +136,7 @@ const setAsDefault = async (addressId: string) => {
                         >
                             <i :class="isSettingDefault ? 'fas fa-spinner fa-spin' : 'fas fa-star'"></i>
                             <br>
-                            {{ isSettingDefault ? 'Mise à jour...' : 'Définir par défaut' }}
+                            {{ isSettingDefault ? t('billingAddresses.updating') : t('billingAddresses.setDefault') }}
                         </button>
                     </div>
                 </template>
