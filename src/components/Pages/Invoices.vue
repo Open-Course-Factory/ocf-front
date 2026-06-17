@@ -290,7 +290,7 @@ const getInvoiceStats = computed(() => {
                                     :class="['badge', entityStore.getStatusClass(entity.status)]"
                                 >
                                     <i :class="entityStore.getStatusIcon(entity.status)"></i>
-                                    {{ entity.status?.toUpperCase() || 'UNKNOWN' }}
+                                    {{ entityStore.getStatusLabel(entity.status) }}
                                 </span>
                             </div>
 
