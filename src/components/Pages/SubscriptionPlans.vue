@@ -135,12 +135,23 @@ onMounted(async () => {
 })
 
 // Fonction pour sélectionner un plan (Composition API)
+// Checkout goes straight to Stripe — the store redirects to response.url for
+// paid plans, or activates a free plan in place (free_plan flag).
 const selectPlan = async (plan: any) => {
     try {
         await entityStore.selectPlan(plan.id)
-        router.push({ name: 'Checkout', params: { planId: plan.id } })
+        const successUrl = `${window.location.origin}/checkout-success`
+        const cancelUrl = `${window.location.origin}/checkout-canceled`
+        const response = await subscriptionsStore.createCheckoutSession(plan.id, successUrl, cancelUrl)
+        if (response?.free_plan) {
+            showSuccess(t('subscriptions.planChangedSuccess'))
+            router.push('/subscription-dashboard')
+        }
     } catch (error) {
         console.error('Error selecting plan:', error)
+        if (subscriptionsStore.error) {
+            showError(subscriptionsStore.error, t('subscriptionPlans.subscriptionErrorTitle'))
+        }
     }
 }
 

@@ -245,23 +245,6 @@ const basicRoutes = [
         meta: { requiresAuth: true }
       },
 
-      // Route pour le checkout avec planId
-      {
-        path: 'checkout/:planId',
-        name: 'Checkout',
-        component: () => import('../components/Flows/CheckoutFlow.vue'),
-        meta: { requiresAuth: true, requiresEmailVerification: true },
-        props: true
-      },
-
-      // Route pour le checkout sans planId (sélection depuis la page des plans)
-      {
-        path: 'checkout',
-        name: 'CheckoutSelect',
-        component: () => import('../components/Flows/CheckoutFlow.vue'),
-        meta: { requiresAuth: true, requiresEmailVerification: true }
-      },
-
       // Route pour le succès de paiement (retour depuis Stripe)
       { 
         path: 'checkout-success', 
