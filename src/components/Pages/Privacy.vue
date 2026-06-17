@@ -13,7 +13,7 @@
           <div class="info-block">
             <p><strong>{{ t('privacy.dataController.publisher') }}:</strong> Solution Libre</p>
             <p><strong>{{ t('privacy.dataController.website') }}:</strong> <a href="https://solution-libre.fr" target="_blank" rel="noopener noreferrer">https://solution-libre.fr</a></p>
-            <p><strong>{{ t('privacy.dataController.email') }}:</strong> <a href="mailto:contact@labinux.com">contact@labinux.com</a></p>
+            <p><strong>{{ t('privacy.dataController.email') }}:</strong> <a :href="`mailto:${SUPPORT_EMAIL}`">{{ SUPPORT_EMAIL }}</a></p>
             <p><strong>{{ t('privacy.dataController.director') }}:</strong> Thomas Saquet</p>
           </div>
         </section>
@@ -116,7 +116,7 @@
         <section class="legal-section">
           <h2>{{ t('privacy.contact.title') }}</h2>
           <div class="info-block">
-            <p>{{ t('privacy.contact.exerciseRights') }}: <a href="mailto:contact@labinux.com">contact@labinux.com</a></p>
+            <p>{{ t('privacy.contact.exerciseRights') }}: <a :href="`mailto:${SUPPORT_EMAIL}`">{{ SUPPORT_EMAIL }}</a></p>
             <p><strong>{{ t('privacy.contact.controller') }}:</strong> Solution Libre, Thomas Saquet</p>
             <p><strong>{{ t('privacy.contact.authority') }}:</strong> CNIL — <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer">www.cnil.fr</a></p>
           </div>
@@ -134,6 +134,7 @@
 
 <script setup lang="ts">
 import { useTranslations } from '../../composables/useTranslations'
+import { SUPPORT_EMAIL } from '../../config/contact'
 
 const { t } = useTranslations({
   en: {

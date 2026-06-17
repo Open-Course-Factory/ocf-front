@@ -465,7 +465,7 @@
             <i class="fas fa-envelope"></i>
             <h4>{{ t('help.account.subscription.support.email.title') }}</h4>
             <p>{{ t('help.account.subscription.support.email.description') }}</p>
-            <a href="mailto:contact@labinux.com" class="btn btn-outline">
+            <a :href="`mailto:${SUPPORT_EMAIL}`" class="btn btn-outline">
               <i class="fas fa-envelope"></i>
               {{ t('help.account.subscription.support.email.button') }}
             </a>
@@ -475,7 +475,7 @@
             <i class="fas fa-credit-card"></i>
             <h4>{{ t('help.account.subscription.support.billing.title') }}</h4>
             <p>{{ t('help.account.subscription.support.billing.description') }}</p>
-            <a href="mailto:contact@labinux.com" class="btn btn-outline">
+            <a :href="`mailto:${SUPPORT_EMAIL}`" class="btn btn-outline">
               <i class="fas fa-calculator"></i>
               {{ t('help.account.subscription.support.billing.button') }}
             </a>
@@ -485,7 +485,7 @@
             <i class="fas fa-handshake"></i>
             <h4>{{ t('help.account.subscription.support.optimization.title') }}</h4>
             <p>{{ t('help.account.subscription.support.optimization.description') }}</p>
-            <a href="mailto:contact@labinux.com" class="btn btn-outline">
+            <a :href="`mailto:${SUPPORT_EMAIL}`" class="btn btn-outline">
               <i class="fas fa-lightbulb"></i>
               {{ t('help.account.subscription.support.optimization.button') }}
             </a>
@@ -524,6 +524,7 @@ import { onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useHelpTranslations } from '../../../composables/useHelpTranslations'
+import { SUPPORT_EMAIL } from '../../../config/contact'
 
 const { t } = useI18n()
 const { loadHelpTranslations } = useHelpTranslations()

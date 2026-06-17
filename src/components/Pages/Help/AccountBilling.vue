@@ -427,7 +427,7 @@
               <div>
                 <h4>{{ t('help.account.billing.support.email.title') }}</h4>
                 <p>{{ t('help.account.billing.support.email.description') }}</p>
-                <a href="mailto:contact@labinux.com?subject=Support Facturation" class="btn btn-outline">
+                <a :href="`mailto:${SUPPORT_EMAIL}?subject=Support Facturation`" class="btn btn-outline">
                   <i class="fas fa-envelope"></i>
                   {{ t('help.account.billing.support.email.button') }}
                 </a>
@@ -507,6 +507,7 @@ import { onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useHelpTranslations } from '../../../composables/useHelpTranslations'
+import { SUPPORT_EMAIL } from '../../../config/contact'
 
 const { t } = useI18n()
 const { loadHelpTranslations } = useHelpTranslations()

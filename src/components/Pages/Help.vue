@@ -91,8 +91,8 @@
     <div class="help-footer">
       <div class="contact-support">
         <h3><i class="fas fa-headset"></i> {{ t('help.contact.title') }}</h3>
-        <p>{{ t('help.contact.text') }} <a href="mailto:contact@labinux.com">contact@labinux.com</a></p>
-        <a href="mailto:contact@labinux.com" class="btn btn-primary">
+        <p>{{ t('help.contact.text') }} <a :href="`mailto:${SUPPORT_EMAIL}`">{{ SUPPORT_EMAIL }}</a></p>
+        <a :href="`mailto:${SUPPORT_EMAIL}`" class="btn btn-primary">
           <i class="fas fa-envelope"></i>
           {{ t('help.contact.title') }}
         </a>
@@ -105,6 +105,7 @@
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
+import { SUPPORT_EMAIL } from '../../config/contact'
 import { useLocale } from '../../composables/useLocale'
 import { useHelpRegistryStore } from '../../stores/helpRegistry'
 

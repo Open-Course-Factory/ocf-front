@@ -215,7 +215,7 @@
             <p>{{ t('landing.footer.description') }}</p>
             <p class="footer-contact">
               <i class="fas fa-envelope" aria-hidden="true"></i>
-              <a href="mailto:contact@labinux.com">contact@labinux.com</a>
+              <a :href="`mailto:${SUPPORT_EMAIL}`">{{ SUPPORT_EMAIL }}</a>
             </p>
           </div>
 
@@ -262,6 +262,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
+import { SUPPORT_EMAIL } from '../../config/contact'
 import { useVersionInfo } from '../../composables/useVersionInfo'
 import AlphaBadge from '../Common/AlphaBadge.vue'
 import LanguageSelector from '../UI/LanguageSelector.vue'

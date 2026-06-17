@@ -81,7 +81,7 @@
               <div class="action-content">
                 <h4>{{ t('checkoutCanceled.action3Title') }}</h4>
                 <p>{{ t('checkoutCanceled.action3Description') }}</p>
-                <a href="mailto:contact@labinux.com" class="btn btn-outline-secondary">
+                <a :href="`mailto:${SUPPORT_EMAIL}`" class="btn btn-outline-secondary">
                   {{ t('checkoutCanceled.contactSupport') }}
                 </a>
               </div>
@@ -124,6 +124,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
+import { SUPPORT_EMAIL } from '../../config/contact'
 
 const { t } = useTranslations({
   en: {

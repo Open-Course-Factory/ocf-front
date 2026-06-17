@@ -371,7 +371,7 @@
           </div>
 
           <div class="contact-action">
-            <a href="mailto:contact@labinux.com" class="btn btn-primary">
+            <a :href="`mailto:${SUPPORT_EMAIL}`" class="btn btn-primary">
               <i class="fas fa-envelope"></i>
               {{ t('help.terminals.troubleshooting.support.contactButton') }}
             </a>
@@ -454,6 +454,7 @@ import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useHelpTranslations } from '../../../composables/useHelpTranslations'
+import { SUPPORT_EMAIL } from '../../../config/contact'
 
 const route = useRoute()
 const { t } = useI18n()

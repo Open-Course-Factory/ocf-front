@@ -13,7 +13,7 @@
           <div class="info-block">
             <p><strong>{{ t('legal.siteInfo.publisher') }}:</strong> Solution Libre</p>
             <p><strong>{{ t('legal.siteInfo.website') }}:</strong> <a href="https://solution-libre.fr" target="_blank" rel="noopener noreferrer">https://solution-libre.fr</a></p>
-            <p><strong>{{ t('legal.siteInfo.email') }}:</strong> <a href="mailto:contact@labinux.com">contact@labinux.com</a></p>
+            <p><strong>{{ t('legal.siteInfo.email') }}:</strong> <a :href="`mailto:${SUPPORT_EMAIL}`">{{ SUPPORT_EMAIL }}</a></p>
             <p><strong>{{ t('legal.siteInfo.director') }}:</strong> Thomas Saquet</p>
           </div>
         </section>
@@ -109,6 +109,7 @@
 
 <script setup lang="ts">
 import { useTranslations } from '../../composables/useTranslations'
+import { SUPPORT_EMAIL } from '../../config/contact'
 
 const { t } = useTranslations({
   en: {

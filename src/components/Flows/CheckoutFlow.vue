@@ -297,7 +297,7 @@
             </p>
             <p class="text-muted">
               <i class="fas fa-question-circle"></i>
-              <a href="mailto:contact@labinux.com">{{ t('checkout.needHelp') }}</a>
+              <a :href="`mailto:${SUPPORT_EMAIL}`">{{ t('checkout.needHelp') }}</a>
             </p>
           </div>
         </div>
@@ -321,6 +321,7 @@ import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTranslations } from '../../composables/useTranslations'
 import { usePlanFormatters } from '../../composables/usePlanFormatters'
+import { SUPPORT_EMAIL } from '../../config/contact'
 import axios from 'axios'
 import { getCountryName } from '../../services/data'
 import BillingAddressModal from '../Modals/BillingAddressModal.vue'

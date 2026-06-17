@@ -94,7 +94,7 @@
               <div class="step-content">
                 <h4>{{ t('checkoutSuccess.step3Title') }}</h4>
                 <p>{{ t('checkoutSuccess.step3Description') }}</p>
-                <a href="mailto:contact@labinux.com" class="btn btn-outline-secondary">
+                <a :href="`mailto:${SUPPORT_EMAIL}`" class="btn btn-outline-secondary">
                   {{ t('checkoutSuccess.contactSupport') }}
                 </a>
               </div>
@@ -131,6 +131,7 @@ import { useRoute } from 'vue-router'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useTranslations } from '../../composables/useTranslations'
+import { SUPPORT_EMAIL } from '../../config/contact'
 
 const { t } = useTranslations({
   en: {
