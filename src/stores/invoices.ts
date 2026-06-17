@@ -55,6 +55,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
                 unpaid: 'Unpaid',
                 draft: 'Draft',
                 void: 'Void',
+                uncollectible: 'Uncollectible',
                 viewInStripe: 'View in Stripe',
                 modify: 'View invoice details',
                 add: 'Create invoice',
@@ -86,6 +87,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
                 unpaid: 'Non Payée',
                 draft: 'Brouillon',
                 void: 'Annulée',
+                uncollectible: 'Irrécouvrable',
                 viewInStripe: 'Voir dans Stripe',
                 modify: 'Voir les détails de la facture',
                 add: 'Créer une facture',
@@ -118,6 +120,21 @@ export const useInvoicesStore = defineStore('invoices', () => {
 
     // Use shared status formatters (utilise le composable réutilisable)
     const { getStatusClass, getStatusIcon } = useStatusFormatters('invoice')
+
+    // Libellé traduit du statut de la facture. Mappe les statuts Stripe
+    // (paid / open / void / uncollectible / draft) vers les clés i18n existantes.
+    const statusLabelKeys: Record<string, string> = {
+        paid: 'invoices.paid',
+        open: 'invoices.unpaid',
+        unpaid: 'invoices.unpaid',
+        void: 'invoices.void',
+        uncollectible: 'invoices.uncollectible',
+        draft: 'invoices.draft',
+    }
+    const getStatusLabel = (status: string | undefined): string => {
+        const key = statusLabelKeys[String(status).toLowerCase()]
+        return key ? t(key) : String(status ?? '').toUpperCase()
+    }
 
     // Vérifier si la facture est en retard
     const isOverdue = (invoice: any) => {
@@ -174,6 +191,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
         formatAmount,
         getStatusClass,
         getStatusIcon,
+        getStatusLabel,
         isOverdue,
         formatDate,
         syncInvoices,

@@ -33,7 +33,7 @@
             <strong># {{ invoice.invoice_number }}</strong>
             <span :class="['invoice-status', getStatusClass(invoice.status)]">
               <i :class="getStatusIcon(invoice.status)"></i>
-              {{ invoice.status?.toUpperCase() }}
+              {{ getStatusLabel(invoice.status) }}
             </span>
           </div>
           <div class="invoice-details">
@@ -104,6 +104,10 @@ function getStatusClass(status: string) {
 
 function getStatusIcon(status: string) {
   return invoicesStore.getStatusIcon(status)
+}
+
+function getStatusLabel(status: string) {
+  return invoicesStore.getStatusLabel(status)
 }
 
 function formatAmount(amount: number, currency: string) {
