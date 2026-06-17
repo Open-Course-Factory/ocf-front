@@ -46,6 +46,19 @@
 
       <!-- Plans display -->
       <template v-else-if="filteredPlans.length > 0">
+        <!-- Email verification gate: paid plans require a verified email -->
+        <div v-if="!emailVerified" class="verify-email-banner">
+          <i class="fas fa-envelope"></i>
+          <span>{{ t('plans.verifyEmailToSubscribe') }}</span>
+          <router-link
+            :to="{ name: 'VerifyEmail' }"
+            class="btn-verify-email"
+            data-test="verify-email-hint"
+          >
+            {{ t('plans.verifyEmailCta') }}
+          </router-link>
+        </div>
+
         <!-- View toggle -->
         <div class="view-toggle">
           <button
@@ -149,7 +162,8 @@
                   class="btn-compact"
                   :class="isCurrentPlan(plan) ? 'btn-current' : 'btn-subscribe-compact'"
                   @click="selectPlan(plan)"
-                  :disabled="!plan.is_active || isSubscribing"
+                  :disabled="!plan.is_active || isSubscribing || (plan.price_amount > 0 && !emailVerified)"
+                  :title="plan.price_amount > 0 && !emailVerified ? t('plans.verifyEmailToSubscribe') : ''"
                 >
                   <i v-if="isSubscribing" class="fas fa-spinner fa-spin"></i>
                   <i v-else class="fas fa-shopping-cart"></i>
@@ -268,7 +282,8 @@
                     v-if="!isCurrentPlan(plan)"
                     class="btn-compact btn-subscribe-compact"
                     @click="selectPlan(plan)"
-                    :disabled="!plan.is_active || isSubscribing"
+                    :disabled="!plan.is_active || isSubscribing || (plan.price_amount > 0 && !emailVerified)"
+                    :title="plan.price_amount > 0 && !emailVerified ? t('plans.verifyEmailToSubscribe') : ''"
                   >
                     {{ getPlanButtonText(plan) }}
                   </button>
@@ -287,6 +302,42 @@
         <p>{{ t('plans.noPlansDescription') }}</p>
       </div>
 
+      <!-- Coupon step for paid Subscribe: one screen before Stripe Checkout -->
+      <BaseModal
+        :visible="showCouponModal"
+        :title="pendingPlan ? t('plans.checkout.subscribeTo', { plan: pendingPlan.name }) : ''"
+        title-icon="fas fa-credit-card"
+        @close="cancelCheckout"
+      >
+        <div class="coupon-form">
+          <label for="couponCode">{{ t('plans.checkout.couponCode') }}</label>
+          <input
+            id="couponCode"
+            v-model="couponCode"
+            type="text"
+            class="coupon-input"
+            :placeholder="t('plans.checkout.couponPlaceholder')"
+            data-test="coupon-input"
+            @keyup.enter="confirmCheckout"
+          />
+        </div>
+        <template #footer>
+          <button
+            class="btn-compact btn-subscribe-compact"
+            :disabled="isSubscribing"
+            data-test="coupon-confirm"
+            @click="confirmCheckout"
+          >
+            <i v-if="isSubscribing" class="fas fa-spinner fa-spin"></i>
+            <i v-else class="fas fa-shopping-cart"></i>
+            <span>{{ pendingPlan ? getPlanButtonText(pendingPlan) : '' }}</span>
+          </button>
+          <button class="btn-cancel-checkout" @click="cancelCheckout">
+            {{ t('plans.checkout.cancel') }}
+          </button>
+        </template>
+      </BaseModal>
+
     </div>
   </div>
 </template>
@@ -295,10 +346,12 @@
 import { computed, onMounted, ref } from 'vue'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
+import { useCurrentUserStore } from '../../stores/currentUser'
 import { useTranslations } from '../../composables/useTranslations'
 import { usePlanFormatters } from '../../composables/usePlanFormatters'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import AdminBadge from '../Common/AdminBadge.vue'
+import BaseModal from '../Modals/BaseModal.vue'
 import router from '../../router/index'
 import { useNotification } from '../../composables/useNotification'
 import { formatBudgetAsSizes, CANONICAL_SIZE_CATALOG } from '../../utils/quotaFormatters'
@@ -352,12 +405,21 @@ const { t } = useTranslations({
       capabilities: 'Capabilities',
       managedByOrg: 'Your plan is managed by your organization',
       yourCurrentPlan: 'Your current plan',
+      emailNotVerified: 'Please verify your email address before subscribing to a paid plan.',
+      verifyEmailToSubscribe: 'Verify your email address to subscribe to a paid plan.',
+      verifyEmailCta: 'Verify my email',
     },
     pricingPlanCard: {
       budgetCapacity: 'Includes up to {summary} simultaneous sessions',
       or: 'OR',
       capacityTooltip: 'Your plan\'s capacity, expressed as machine sizes you can spawn at once. Pick any combination that fits.',
       unlimitedCapacity: 'Unlimited capacity',
+    },
+    checkout: {
+      couponCode: 'Coupon Code',
+      couponPlaceholder: 'Enter coupon code',
+      subscribeTo: 'Subscribe to {plan}',
+      cancel: 'Cancel',
     },
   },
   fr: {
@@ -405,12 +467,21 @@ const { t } = useTranslations({
       capabilities: 'Fonctionnalités',
       managedByOrg: 'Votre plan est géré par votre organisation',
       yourCurrentPlan: 'Votre plan actuel',
+      emailNotVerified: 'Veuillez vérifier votre adresse e-mail avant de souscrire à un plan payant.',
+      verifyEmailToSubscribe: 'Vérifiez votre adresse e-mail pour souscrire à un plan payant.',
+      verifyEmailCta: 'Vérifier mon e-mail',
     },
     pricingPlanCard: {
       budgetCapacity: 'Comprend jusqu\'à {summary} sessions simultanées',
       or: 'OU',
       capacityTooltip: 'La capacité de votre forfait, exprimée en tailles de machines que vous pouvez lancer simultanément. Choisissez la combinaison qui vous convient.',
       unlimitedCapacity: 'Capacité illimitée',
+    },
+    checkout: {
+      couponCode: 'Code promo',
+      couponPlaceholder: 'Entrez votre code promo',
+      subscribeTo: 'S\'abonner à {plan}',
+      cancel: 'Annuler',
     },
   }
 })
@@ -420,11 +491,24 @@ const { isAdmin } = useAdminViewMode()
 // Stores
 const entityStore = useSubscriptionPlansStore()
 const subscriptionsStore = useSubscriptionsStore()
+const currentUserStore = useCurrentUserStore()
 
 // State
 const isSubscribing = ref(false)
 const hasCurrentSubscription = ref(false)
 const viewMode = ref<'grid' | 'table'>('grid')
+
+// Paid checkout goes straight to Stripe. We collect an optional coupon in a
+// single in-app modal first; the plan + replace flag chosen at click time are
+// stashed here until the user confirms (or cancels) in that modal.
+const couponCode = ref('')
+const showCouponModal = ref(false)
+const pendingPlan = ref<any>(null)
+const pendingAllowReplace = ref(false)
+
+// Paid plans require a verified email — the backend rejects checkout otherwise,
+// so we gate the action (and the buttons) on the user's verification status.
+const emailVerified = computed(() => currentUserStore.emailVerified)
 
 // Check if user has an assigned (organization-managed) subscription
 const isAssignedUser = computed(() => {
@@ -693,6 +777,13 @@ async function selectPlan(plan: any) {
       // Special case: upgrading FROM free plan to paid plan
       // This is a new subscription, not an upgrade
       if (isCurrentlyOnFreePlan && plan.price_amount > 0) {
+        // Paid plans require a verified email.
+        if (!emailVerified.value) {
+          showError(t('plans.emailNotVerified'), t('plans.subscriptionErrorTitle'))
+          isSubscribing.value = false
+          return
+        }
+
         const confirmed = await showConfirm(
           t('plans.upgradeFromFreeConfirm', { plan: plan.name }),
           t('plans.upgradeFromFree')
@@ -703,14 +794,8 @@ async function selectPlan(plan: any) {
           return
         }
 
-        // For free plans, go to checkout with allowReplace flag
-        // Pass upgradeFromFree=true in the route query
-        await entityStore.selectPlan(plan.id)
-        router.push({
-          name: 'Checkout',
-          params: { planId: plan.id },
-          query: { upgradeFromFree: 'true' }
-        })
+        // Replace the existing free subscription (allowReplace=true) on checkout.
+        openCouponModal(plan, true)
         return
       }
 
@@ -760,8 +845,15 @@ async function selectPlan(plan: any) {
         }
       }
 
-      // For paid plans, go through checkout flow
-      router.push({ name: 'Checkout', params: { planId: plan.id } })
+      // Paid plans require a verified email.
+      if (!emailVerified.value) {
+        showError(t('plans.emailNotVerified'), t('plans.subscriptionErrorTitle'))
+        isSubscribing.value = false
+        return
+      }
+
+      // New paid subscription — collect an optional coupon, then go to Stripe.
+      openCouponModal(plan, false)
     }
   } catch (error: any) {
     console.error('Error selecting plan:', error)
@@ -771,6 +863,53 @@ async function selectPlan(plan: any) {
     }
   } finally {
     isSubscribing.value = false
+  }
+}
+
+// Open the single-step coupon modal for a paid plan. `allowReplace` is true only
+// when replacing an existing free subscription (the backend rejects a second
+// active subscription otherwise).
+function openCouponModal(plan: any, allowReplace: boolean) {
+  pendingPlan.value = plan
+  pendingAllowReplace.value = allowReplace
+  couponCode.value = ''
+  showCouponModal.value = true
+}
+
+function cancelCheckout() {
+  showCouponModal.value = false
+  pendingPlan.value = null
+}
+
+// Confirm the paid subscription: create the Stripe Checkout session (the store
+// redirects to response.url on success). An empty coupon field is sent as
+// undefined so no coupon_code key reaches the backend.
+async function confirmCheckout() {
+  const plan = pendingPlan.value
+  if (!plan) return
+
+  isSubscribing.value = true
+  try {
+    const successUrl = `${window.location.origin}/checkout-success`
+    const cancelUrl = `${window.location.origin}/checkout-canceled`
+    const coupon = couponCode.value.trim() || undefined
+
+    await subscriptionsStore.createCheckoutSession(
+      plan.id,
+      successUrl,
+      cancelUrl,
+      coupon,
+      pendingAllowReplace.value
+    )
+  } catch (error: any) {
+    console.error('Error creating checkout session:', error)
+    if (subscriptionsStore.error) {
+      showError(subscriptionsStore.error, t('plans.subscriptionErrorTitle'))
+    }
+  } finally {
+    isSubscribing.value = false
+    showCouponModal.value = false
+    pendingPlan.value = null
   }
 }
 </script>
@@ -1153,6 +1292,77 @@ async function selectPlan(plan: any) {
   margin: 0;
   color: var(--color-text-muted);
   font-size: var(--font-size-base);
+}
+
+/* Email verification banner */
+.verify-email-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--border-radius-md);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+}
+
+.verify-email-banner > i {
+  color: var(--color-warning);
+  font-size: var(--font-size-lg);
+}
+
+.btn-verify-email {
+  margin-left: auto;
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: var(--color-primary);
+  color: var(--color-white);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-verify-email:hover {
+  background: var(--color-primary-hover);
+}
+
+/* Coupon modal */
+.coupon-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.coupon-form label {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.coupon-input {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+}
+
+.btn-cancel-checkout {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.btn-cancel-checkout:hover {
+  background: var(--color-bg-tertiary);
 }
 
 /* View Toggle */
