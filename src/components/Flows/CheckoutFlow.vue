@@ -48,7 +48,7 @@
                   <h3>{{ selectedPlan.name }}</h3>
                   <div class="plan-price">
                     {{ formatPrice(selectedPlan.price_amount, selectedPlan.currency) }}
-                    <span class="billing-interval">/ {{ selectedPlan.billing_interval }}</span>
+                    <span class="billing-interval">/ {{ formatBillingInterval(selectedPlan.billing_interval) }}</span>
                   </div>
                 </div>
                 
@@ -61,7 +61,7 @@
                   <ul>
                     <li v-for="feature in selectedPlan.features" :key="feature">
                       <i class="fas fa-check text-success"></i>
-                      {{ feature }}
+                      {{ formatFeatureName(feature) }}
                     </li>
                   </ul>
                 </div>
@@ -205,7 +205,7 @@
                 <div class="summary-item">
                   <span class="item-description">
                     {{ selectedPlan?.name }}
-                    <small>({{ selectedPlan?.billing_interval }})</small>
+                    <small>({{ formatBillingInterval(selectedPlan?.billing_interval) }})</small>
                   </span>
                   <span class="item-price">
                     {{ formatPrice(selectedPlan?.price_amount || 0, selectedPlan?.currency) }}
@@ -320,9 +320,12 @@ import { useRoute } from 'vue-router'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTranslations } from '../../composables/useTranslations'
+import { usePlanFormatters } from '../../composables/usePlanFormatters'
 import axios from 'axios'
 import { getCountryName } from '../../services/data'
 import BillingAddressModal from '../Modals/BillingAddressModal.vue'
+
+const { formatFeatureName, formatBillingInterval } = usePlanFormatters()
 
 const { t } = useTranslations({
   en: {

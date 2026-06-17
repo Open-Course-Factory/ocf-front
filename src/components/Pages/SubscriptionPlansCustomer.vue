@@ -89,7 +89,7 @@
               </div>
               <div v-if="plan.is_active" class="plan-price-compact">
                 <span class="price-amount-compact">{{ formatPrice(plan.price_amount, plan.currency) }}</span>
-                <span class="billing-period-compact">/ {{ plan.billing_interval === 'year' ? t('plans.year') : t('plans.month') }}</span>
+                <span class="billing-period-compact">/ {{ formatBillingInterval(plan.billing_interval) }}</span>
               </div>
             </div>
 
@@ -211,7 +211,7 @@
                 <th v-for="plan in filteredPlans" :key="plan.id" :class="{ 'current-plan-col': isCurrentPlan(plan) }">
                   <div class="table-plan-header">
                     <span class="table-plan-name">{{ plan.name }}</span>
-                    <span v-if="plan.is_active" class="table-plan-price">{{ formatPrice(plan.price_amount, plan.currency) }}/{{ plan.billing_interval === 'year' ? t('plans.year') : t('plans.month') }}</span>
+                    <span v-if="plan.is_active" class="table-plan-price">{{ formatPrice(plan.price_amount, plan.currency) }}/{{ formatBillingInterval(plan.billing_interval) }}</span>
                     <span v-if="isCurrentPlan(plan)" class="table-current-badge">{{ t('plans.current') }}</span>
                   </div>
                 </th>
@@ -296,13 +296,16 @@ import { computed, onMounted, ref } from 'vue'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTranslations } from '../../composables/useTranslations'
+import { usePlanFormatters } from '../../composables/usePlanFormatters'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import AdminBadge from '../Common/AdminBadge.vue'
 import router from '../../router/index'
 import { useNotification } from '../../composables/useNotification'
 import { formatBudgetAsSizes, CANONICAL_SIZE_CATALOG } from '../../utils/quotaFormatters'
 
-const { t, locale } = useTranslations({
+const { formatFeatureName, formatBillingInterval } = usePlanFormatters()
+
+const { t } = useTranslations({
   en: {
     plans: {
       pageDescription: 'Choose the perfect plan for your needs',
@@ -534,30 +537,6 @@ function budgetCapacityText(plan: any): string {
   return t('pricingPlanCard.budgetCapacity', { summary })
 }
 
-// Feature capability labels for plan features array
-const featureLabels: Record<string, { en: string; fr: string }> = {
-  unlimited_courses: { en: 'Unlimited courses', fr: 'Formations illimitées' },
-  advanced_labs: { en: 'Advanced labs', fr: 'TP avancés' },
-  export: { en: 'Course export', fr: 'Export de cours' },
-  custom_themes: { en: 'Custom themes', fr: 'Thèmes personnalisés' },
-  bulk_purchase: { en: 'Volume licensing', fr: 'Licences en volume' },
-  group_management: { en: 'Group management', fr: 'Gestion des groupes' },
-  api_access: { en: 'API access', fr: 'Accès API' },
-  analytics: { en: 'Analytics dashboard', fr: 'Tableau de bord de suivi' },
-  priority_support: { en: 'Priority support', fr: 'Support prioritaire' },
-}
-
-function formatFeatureName(feature: string): string {
-  const label = featureLabels[feature]
-  if (label) {
-    return locale.value === 'fr' ? label.fr : label.en
-  }
-  // Fallback: title-case the snake_case key
-  return feature
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
-}
 
 // Methods
 onMounted(async () => {
