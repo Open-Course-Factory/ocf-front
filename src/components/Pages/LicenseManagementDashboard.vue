@@ -45,8 +45,34 @@
         </div>
       </div>
 
+      <!-- Purchase provisioning (returning from a bulk Stripe checkout) -->
+      <div
+        v-if="isPurchaseProcessing"
+        data-test="purchase-processing"
+        class="processing-section"
+      >
+        <i class="fas fa-spinner fa-spin fa-2x"></i>
+        <h3>{{ t('licenseDashboard.purchaseProcessing') }}</h3>
+        <p>{{ t('licenseDashboard.purchaseProcessingDescription') }}</p>
+      </div>
+
+      <!-- Provisioning is taking longer than the poll budget -->
+      <div
+        v-else-if="purchaseStillProcessing"
+        data-test="purchase-still-processing"
+        class="processing-section still-processing"
+      >
+        <i class="fas fa-clock fa-2x"></i>
+        <h3>{{ t('licenseDashboard.purchaseStillProcessing') }}</h3>
+        <p>{{ t('licenseDashboard.purchaseStillProcessingDescription') }}</p>
+        <button class="btn-secondary" @click="refreshBatches">
+          <i class="fas fa-sync-alt" :class="{ 'fa-spin': isLoading }"></i>
+          {{ t('licenseDashboard.refresh') }}
+        </button>
+      </div>
+
       <!-- Loading state -->
-      <div v-if="isLoading && batches.length === 0" class="loading-section">
+      <div v-else-if="isLoading && batches.length === 0" class="loading-section">
         <i class="fas fa-spinner fa-spin fa-2x"></i>
         <p>{{ t('licenseDashboard.loadingBatches') }}</p>
       </div>
@@ -244,6 +270,10 @@ const { t } = useTranslations({
       batchCancelledExternally: 'This batch was already cancelled in Stripe. The status has been updated.',
       refreshSuccess: 'License batches refreshed successfully',
       purchaseComplete: 'Bulk license purchase completed successfully!',
+      purchaseProcessing: 'Finalizing your purchase...',
+      purchaseProcessingDescription: 'Your payment went through. We are provisioning your licenses — this only takes a few seconds.',
+      purchaseStillProcessing: 'Your purchase is still being finalized',
+      purchaseStillProcessingDescription: 'Your payment was successful, but your licenses are taking a little longer than usual to appear. They will show up here shortly — no further action is needed.',
       status: {
         active: 'Active',
         cancelled: 'Cancelled',
@@ -287,6 +317,10 @@ const { t } = useTranslations({
       batchCancelledExternally: 'Ce lot a déjà été annulé dans Stripe. Le statut a été mis à jour.',
       refreshSuccess: 'Lots de licences actualisés avec succès',
       purchaseComplete: 'Achat de licences en gros terminé avec succès !',
+      purchaseProcessing: 'Finalisation de votre achat...',
+      purchaseProcessingDescription: 'Votre paiement a été accepté. Nous provisionnons vos licences — cela ne prend que quelques secondes.',
+      purchaseStillProcessing: 'Votre achat est en cours de finalisation',
+      purchaseStillProcessingDescription: 'Votre paiement a bien été effectué, mais vos licences mettent un peu plus de temps que d\'habitude à apparaître. Elles s\'afficheront ici sous peu — aucune action supplémentaire n\'est nécessaire.',
       status: {
         active: 'Actif',
         cancelled: 'Annulé',
@@ -307,6 +341,13 @@ const isLoading = ref(false)
 const showAddLicensesModal = ref(false)
 const selectedBatch = ref<SubscriptionBatch | null>(null)
 const selectedBatchIds = ref<string[]>([])
+
+// Webhook-lag handling for the return from a bulk Stripe checkout.
+// isPurchaseProcessing: polling for the freshly-purchased batch to be
+// provisioned. purchaseStillProcessing: the poll budget ran out without the
+// batch appearing (graceful notice, not an error / not the empty state).
+const isPurchaseProcessing = ref(false)
+const purchaseStillProcessing = ref(false)
 
 const batches = computed(() => {
   console.log('Batches computed:', batchStore.batches)
@@ -455,15 +496,72 @@ const formatDate = (dateString: string | undefined): string => {
   return formatDateTime(dateString).split(' ')[0] // Only show date, not time
 }
 
+/**
+ * Poll for the batch provisioned by a just-completed bulk Stripe checkout.
+ *
+ * The paid checkout redirects here with `?success=true` on a full page load, so
+ * the store starts empty and `GET /subscription-batches` may return nothing
+ * until the Stripe webhook lands. House style mirrors CheckoutSuccess.vue's
+ * webhook-lag poll: up to 10 attempts, 1s apart. We snapshot the batch ids
+ * already known on entry and stop as soon as an id outside that snapshot
+ * appears, so a repeat buyer waits for their NEW batch rather than settling on
+ * an existing one. Transient load errors are swallowed (like the subscription
+ * poll) so a brief 502 during a webhook burst doesn't abort the wait.
+ */
+async function pollForPurchasedBatch() {
+  const priorIds = new Set(batchStore.batches.map((b: SubscriptionBatch) => b.id))
+  const hasNewBatch = () => batchStore.batches.some((b: SubscriptionBatch) => !priorIds.has(b.id))
+
+  isPurchaseProcessing.value = true
+  purchaseStillProcessing.value = false
+
+  const maxAttempts = 10
+  const delayMs = 1000
+  let attempts = 0
+  let found = false
+
+  while (attempts < maxAttempts) {
+    try {
+      await batchStore.loadBatches()
+    } catch (err) {
+      // Swallow transient errors — the payment already succeeded; the batch
+      // sync may be briefly unavailable while the webhook is processed.
+      console.warn('Batch provisioning poll attempt failed, retrying:', err)
+    }
+
+    if (hasNewBatch()) {
+      found = true
+      break
+    }
+
+    attempts++
+    if (attempts < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
+    }
+  }
+
+  isPurchaseProcessing.value = false
+
+  if (found) {
+    showSuccess(t('licenseDashboard.purchaseComplete'))
+  } else {
+    // Budget exhausted — settle gracefully, never the empty state or an error.
+    purchaseStillProcessing.value = true
+  }
+
+  // Clean up the success flag so a refresh / back-navigation won't re-trigger.
+  router.replace({ query: {} })
+}
+
 // Lifecycle
 onMounted(async () => {
-  await loadBatches()
-
-  // Check for success parameter in URL (from payment redirect)
+  // Returning from a bulk Stripe checkout: poll for the provisioned batch
+  // instead of a single-shot load that would flash the empty state while the
+  // webhook is still in flight. Normal visits keep the single load + no poll.
   if (route.query.success === 'true') {
-    showSuccess(t('licenseDashboard.purchaseComplete'))
-    // Clean up URL
-    router.replace({ query: {} })
+    await pollForPurchasedBatch()
+  } else {
+    await loadBatches()
   }
 })
 </script>
@@ -591,6 +689,35 @@ onMounted(async () => {
 
 .loading-section i {
   margin-bottom: var(--spacing-md);
+}
+
+/* Purchase provisioning (post-checkout webhook lag) */
+.processing-section {
+  text-align: center;
+  padding: var(--spacing-3xl);
+  color: var(--color-text-muted);
+}
+
+.processing-section i {
+  margin-bottom: var(--spacing-lg);
+  color: var(--color-primary);
+}
+
+.processing-section.still-processing i {
+  color: var(--color-warning);
+}
+
+.processing-section h3 {
+  margin: 0 0 var(--spacing-md) 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xl);
+}
+
+.processing-section p {
+  margin: 0 auto var(--spacing-xl) auto;
+  max-width: 480px;
+  font-size: var(--font-size-base);
+  line-height: 1.5;
 }
 
 /* Empty State */
