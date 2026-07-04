@@ -37,9 +37,11 @@
  *                                              produced a batch.
  * ---------------------------------------------------------------------------
  *
- * EXPECTED STATE against current code: tests #1–#4 RED (single-shot load, no
- * processing/still-processing UI). The #5 guard is GREEN (normal visits must NOT
- * start polling) and pins that the fix doesn't over-trigger.
+ * EXPECTED STATE: tests #1–#5 are now GREEN — the polling fix shipped in
+ * `8c8a484`. Tests #6–#7 (added after a reviewer follow-up, at the bottom of
+ * this file) are the new RED phase: they pin the count-based `?prior=<N>` gate
+ * for repeat buyers and poll cancellation on unmount, both of which the shipped
+ * fix does not yet handle.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
@@ -225,5 +227,72 @@ describe('LicenseManagementDashboard — bulk purchase landing (?success=true)',
     expect(wrapper.find('[data-test="purchase-still-processing"]').exists()).toBe(false)
     expect(wrapper.find('.batch-card').exists()).toBe(true)
     wrapper.unmount()
+  })
+
+  // ===========================================================================
+  // Reviewer follow-up (#254 / MR !241) — two Important gaps in the shipped fix,
+  // both RED against the current code:
+  //
+  //  Gap 1 — the id snapshot is inert on the real redirect. Stripe returns via a
+  //  FULL PAGE LOAD, so the store is empty at mount and the "prior ids" snapshot
+  //  is empty; hasNewBatch() then degrades to any-batch, so a REPEAT buyer's
+  //  first load returns their OLD batches and the poll settles immediately with
+  //  a premature "purchase complete". Design fix: thread the pre-purchase batch
+  //  COUNT through the redirect as `?prior=<N>` and poll until batches.length > N
+  //  (absent/invalid prior → 0, preserving the empty→present path).
+  //
+  //  Gap 2 — the 10×1s poll is never cancelled. After the user navigates away it
+  //  keeps calling loadBatches()/writing refs, and the trailing
+  //  router.replace({ query: {} }) fires against whatever route they're on by
+  //  then. Design fix: cancel the loop on unmount — no more loadBatches, no
+  //  route replace.
+  // ===========================================================================
+
+  const OLD_BATCH = { ...BATCH, id: 'batch-old000001' }
+  const NEW_BATCH = { ...BATCH, id: 'batch-new000002' }
+
+  // ---- #6 RED: repeat buyer — ?prior=1 must not settle on the pre-existing batch ----
+  it('#6 with ?prior=1 and one pre-existing batch, does not settle on the old batch and keeps polling until a new one appears', async () => {
+    h.routeQuery.value = { success: 'true', prior: '1' }
+    // First poll returns the buyer's ONE existing (pre-purchase) batch; a later
+    // poll adds the freshly-provisioned second batch (length 2 > prior 1).
+    h.queue = [[OLD_BATCH], [OLD_BATCH, NEW_BATCH]]
+
+    const wrapper = mountDashboard()
+    await tick(0) // first poll → 1 batch, equal to prior → NOT the new one
+
+    // Today: the prior-ids snapshot is empty (full-page load), so the old batch
+    // counts as "new" and the poll settles here with a premature success toast.
+    expect(h.showSuccess).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-test="purchase-processing"]').exists()).toBe(true)
+
+    await tick(2000) // subsequent poll → 2 batches (> prior) → provisioning done
+
+    expect(h.showSuccess).toHaveBeenCalledWith('licenseDashboard.purchaseComplete')
+    expect(wrapper.find('[data-test="purchase-processing"]').exists()).toBe(false)
+    expect(h.loadBatches.mock.calls.length).toBeGreaterThanOrEqual(2)
+    wrapper.unmount()
+  })
+
+  // ---- #7 RED: poll is cancelled on unmount (navigating away mid-poll) ----
+  it('#7 stops polling and does not replace the route when unmounted mid-poll', async () => {
+    h.routeQuery.value = { success: 'true' } // prior absent → 0 (empty→present path)
+    h.queue = [] // batch never arrives → a live poll would run its full budget
+
+    const wrapper = mountDashboard()
+    await tick(0)    // attempt 1
+    await tick(1000) // attempt 2
+
+    const callsAtUnmount = h.loadBatches.mock.calls.length
+    // Still mid-poll: the loop hasn't settled, so the route hasn't been cleaned.
+    expect(h.routerReplace).not.toHaveBeenCalled()
+
+    wrapper.unmount()
+    await tick(20000) // drain any timers a still-running loop would fire
+
+    // Today the detached loop keeps calling loadBatches and finally replaces the
+    // route against whatever page the user has since navigated to.
+    expect(h.loadBatches.mock.calls.length).toBe(callsAtUnmount)
+    expect(h.routerReplace).not.toHaveBeenCalled()
   })
 })
