@@ -331,8 +331,20 @@ const handlePurchase = async () => {
   error.value = ''
 
   try {
+    // Capture the buyer's current batch count so the landing page can poll
+    // until a NEW batch is provisioned. Stripe returns via a full page load, so
+    // the landing page's store starts empty and can't know the pre-purchase
+    // count itself — we thread it through the success URL as `prior=<N>`. A
+    // repeat buyer already owns batches; a first-time buyer sends prior=0.
+    try {
+      await batchStore.loadBatches()
+    } catch {
+      // Non-fatal: fall back to whatever the store already holds.
+    }
+    const priorBatchCount = batchStore.batches.length
+
     // Create checkout URLs
-    const successUrl = `${window.location.origin}/license-management?success=true`
+    const successUrl = `${window.location.origin}/license-management?success=true&prior=${priorBatchCount}`
     const cancelUrl = `${window.location.origin}/bulk-license-purchase`
 
     // Create Stripe checkout session (will redirect to Stripe)

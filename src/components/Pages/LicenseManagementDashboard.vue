@@ -226,7 +226,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
 import { useSubscriptionBatchesStore } from '../../stores/subscriptionBatches'
@@ -496,21 +496,26 @@ const formatDate = (dateString: string | undefined): string => {
   return formatDateTime(dateString).split(' ')[0] // Only show date, not time
 }
 
+// Set on unmount so a poll in flight stops cleanly (no more loads, no ref
+// writes, no route replace against whatever page the user navigated to).
+let pollCancelled = false
+
 /**
  * Poll for the batch provisioned by a just-completed bulk Stripe checkout.
  *
- * The paid checkout redirects here with `?success=true` on a full page load, so
- * the store starts empty and `GET /subscription-batches` may return nothing
- * until the Stripe webhook lands. House style mirrors CheckoutSuccess.vue's
- * webhook-lag poll: up to 10 attempts, 1s apart. We snapshot the batch ids
- * already known on entry and stop as soon as an id outside that snapshot
- * appears, so a repeat buyer waits for their NEW batch rather than settling on
- * an existing one. Transient load errors are swallowed (like the subscription
- * poll) so a brief 502 during a webhook burst doesn't abort the wait.
+ * The paid checkout redirects here with `?success=true&prior=<N>` on a full
+ * page load, so the store starts empty and `GET /subscription-batches` may
+ * return nothing until the Stripe webhook lands. `prior` is the buyer's
+ * pre-purchase batch count (threaded by BulkLicensePurchase since a full reload
+ * loses any in-memory snapshot); we poll until `batches.length` exceeds it, so
+ * a repeat buyer waits for their NEW batch instead of settling on an existing
+ * one. Absent/invalid `prior` → 0, i.e. the empty→present path. House style
+ * mirrors CheckoutSuccess.vue's webhook-lag poll: up to 10 attempts, 1s apart.
+ * Transient load errors are swallowed (like the subscription poll) so a brief
+ * 502 during a webhook burst doesn't abort the wait.
  */
 async function pollForPurchasedBatch() {
-  const priorIds = new Set(batchStore.batches.map((b: SubscriptionBatch) => b.id))
-  const hasNewBatch = () => batchStore.batches.some((b: SubscriptionBatch) => !priorIds.has(b.id))
+  const prior = parseInt(route.query.prior as string, 10) || 0
 
   isPurchaseProcessing.value = true
   purchaseStillProcessing.value = false
@@ -521,6 +526,8 @@ async function pollForPurchasedBatch() {
   let found = false
 
   while (attempts < maxAttempts) {
+    if (pollCancelled) return
+
     try {
       await batchStore.loadBatches()
     } catch (err) {
@@ -529,7 +536,9 @@ async function pollForPurchasedBatch() {
       console.warn('Batch provisioning poll attempt failed, retrying:', err)
     }
 
-    if (hasNewBatch()) {
+    if (pollCancelled) return
+
+    if (batchStore.batches.length > prior) {
       found = true
       break
     }
@@ -539,6 +548,8 @@ async function pollForPurchasedBatch() {
       await new Promise((resolve) => setTimeout(resolve, delayMs))
     }
   }
+
+  if (pollCancelled) return
 
   isPurchaseProcessing.value = false
 
@@ -563,6 +574,10 @@ onMounted(async () => {
   } else {
     await loadBatches()
   }
+})
+
+onUnmounted(() => {
+  pollCancelled = true
 })
 </script>
 
