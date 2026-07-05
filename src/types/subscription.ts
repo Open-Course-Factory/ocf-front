@@ -44,7 +44,6 @@ export interface SubscriptionPlan extends BaseEntity {
   price?: number // Deprecated: use price_amount instead
   currency: string
   billing_interval: 'month' | 'year'
-  trial_days: number
   features: string[] // Human-readable features
   planned_features?: string[] // Features coming soon
   max_concurrent_users: number
@@ -89,7 +88,6 @@ export interface Subscription extends BaseEntity {
   is_primary: boolean // True if this is the active subscription being used
   current_period_start: string
   current_period_end: string
-  trial_end?: string
   cancel_at_period_end: boolean
   cancelled_at?: string
 

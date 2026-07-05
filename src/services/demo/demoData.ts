@@ -58,7 +58,6 @@ export class DemoDataService {
         ],
         max_courses: 5,
         max_concurrent_users: 2,
-        trial_days: 14,
         is_active: true,
         stripe_product_id: 'prod_demo_starter',
         stripe_price_id: 'price_demo_starter',
@@ -81,7 +80,6 @@ export class DemoDataService {
         ],
         max_courses: 25,
         max_concurrent_users: 10,
-        trial_days: 14,
         is_active: true,
         stripe_product_id: 'prod_demo_pro',
         stripe_price_id: 'price_demo_pro',
@@ -105,7 +103,6 @@ export class DemoDataService {
         ],
         max_courses: -1, // -1 = unlimited
         max_concurrent_users: -1,
-        trial_days: 30,
         is_active: true,
         stripe_product_id: 'prod_demo_enterprise',
         stripe_price_id: 'price_demo_enterprise',
@@ -122,7 +119,6 @@ export class DemoDataService {
         features: ['Legacy features'],
         max_courses: 10,
         max_concurrent_users: 5,
-        trial_days: 0,
         is_active: false, // Inactive plan for testing
         stripe_product_id: 'prod_demo_legacy',
         stripe_price_id: 'price_demo_legacy',
@@ -167,8 +163,7 @@ export class DemoDataService {
           status: 'active',
           current_period_start: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
           current_period_end: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-          cancel_at_period_end: false,
-          trial_end: null
+          cancel_at_period_end: false
         }
 
       case 'trialing':
@@ -177,8 +172,7 @@ export class DemoDataService {
           status: 'trialing',
           current_period_start: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
           current_period_end: new Date(Date.now() + 11 * 24 * 60 * 60 * 1000).toISOString(),
-          cancel_at_period_end: false,
-          trial_end: new Date(Date.now() + 11 * 24 * 60 * 60 * 1000).toISOString()
+          cancel_at_period_end: false
         }
 
       case 'canceled':
@@ -187,8 +181,7 @@ export class DemoDataService {
           status: 'active', // Still active but will cancel
           current_period_start: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
           current_period_end: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-          cancel_at_period_end: true,
-          trial_end: null
+          cancel_at_period_end: true
         }
 
       case 'past_due':
@@ -197,8 +190,7 @@ export class DemoDataService {
           status: 'past_due',
           current_period_start: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
           current_period_end: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          cancel_at_period_end: false,
-          trial_end: null
+          cancel_at_period_end: false
         }
 
       default:

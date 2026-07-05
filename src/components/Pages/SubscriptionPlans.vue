@@ -358,12 +358,6 @@ const syncWithStripe = async () => {
                                     <span v-if="entity.max_concurrent_users"> • {{ entity.max_concurrent_users }} {{ t('subscriptionPlans.users') }}</span>
                                 </small>
                             </div>
-                            <div class="plan-trial" v-if="entity.trial_days > 0">
-                                <small class="text-success">
-                                    <i class="fas fa-gift"></i>
-                                    {{ entity.trial_days }} {{ t('subscriptionPlans.freeTrialDays') }}
-                                </small>
-                            </div>
                         </div>
 
                         <!-- Buttons for plan actions (non-admins or admins viewing as user) -->
@@ -530,10 +524,6 @@ const syncWithStripe = async () => {
 .plan-capacity-value {
     font-weight: var(--font-weight-semibold);
     color: var(--color-text-primary);
-}
-
-.plan-trial {
-    margin-top: var(--spacing-xs);
 }
 
 .plan-buttons {

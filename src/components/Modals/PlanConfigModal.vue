@@ -47,11 +47,6 @@
           </div>
 
           <div class="form-group">
-            <label for="plan-trial">{{ t('planConfig.trialDays') }}</label>
-            <input id="plan-trial" v-model.number="formData.trial_days" type="number" class="form-control" min="0" />
-          </div>
-
-          <div class="form-group">
             <label for="plan-role">{{ t('planConfig.requiredRole') }}</label>
             <input id="plan-role" v-model="formData.required_role" type="text" class="form-control" />
           </div>
@@ -301,7 +296,6 @@ const { t, te, locale } = useTranslations({
       billingInterval: 'Billing Interval',
       monthly: 'Monthly',
       yearly: 'Yearly',
-      trialDays: 'Trial Days',
       requiredRole: 'Required Role',
       priority: 'Priority',
       isActive: 'Active',
@@ -352,7 +346,6 @@ const { t, te, locale } = useTranslations({
       billingInterval: 'Intervalle de Facturation',
       monthly: 'Mensuel',
       yearly: 'Annuel',
-      trialDays: "Jours d'Essai",
       requiredRole: 'Role Requis',
       priority: 'Priorite',
       isActive: 'Actif',
@@ -409,7 +402,6 @@ const formData = reactive({
   price_amount: 0,
   currency: 'eur',
   billing_interval: 'month',
-  trial_days: 0,
   required_role: '',
   priority: 0,
   is_active: true,
@@ -489,7 +481,6 @@ function populateFromPlan(plan: any) {
   formData.price_amount = plan.price_amount || 0
   formData.currency = plan.currency || 'eur'
   formData.billing_interval = plan.billing_interval || 'month'
-  formData.trial_days = plan.trial_days || 0
   formData.required_role = plan.required_role || ''
   formData.priority = plan.priority || 0
   formData.is_active = plan.is_active !== false
@@ -569,7 +560,6 @@ function resetForm() {
   formData.price_amount = 0
   formData.currency = 'eur'
   formData.billing_interval = 'month'
-  formData.trial_days = 0
   formData.required_role = ''
   formData.priority = 0
   formData.is_active = true

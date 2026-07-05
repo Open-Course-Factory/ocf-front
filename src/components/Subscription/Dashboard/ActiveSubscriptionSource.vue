@@ -75,16 +75,8 @@
       </div>
     </div>
 
-    <!-- Status notices: trial / cancellation pending -->
-    <div v-if="isTrialing && trialEnd" class="status-notice trial-notice">
-      <i class="fas fa-gift"></i>
-      <p>
-        <strong>{{ t('subscriptionPlans.trialActive') }}</strong>
-        <span class="status-notice-detail">{{ t('subscriptionPlans.trialEndsOn') }} {{ formatDate(trialEnd) }}</span>
-      </p>
-    </div>
-
-    <div v-else-if="isCanceled && currentPeriodEnd" class="status-notice cancellation-notice">
+    <!-- Status notice: cancellation pending -->
+    <div v-if="isCanceled && currentPeriodEnd" class="status-notice cancellation-notice">
       <i class="fas fa-exclamation-triangle"></i>
       <p>
         <strong>{{ t('subscriptionPlans.subscriptionWillCancel') }}</strong>
@@ -224,8 +216,6 @@ const { t } = useTranslations({
       cancelSubscription: 'Cancel Subscription',
       reactivateSubscription: 'Reactivate Subscription',
       nextBilling: 'Next Billing',
-      trialActive: 'Free Trial Active',
-      trialEndsOn: 'Trial ends on',
       subscriptionWillCancel: 'Subscription will cancel',
       accessUntil: 'Access until',
       bulkLicenseReadOnly: 'This subscription was assigned to you and is managed by the license owner. You cannot modify or cancel it.',
@@ -265,8 +255,6 @@ const { t } = useTranslations({
       cancelSubscription: 'Annuler l\'abonnement',
       reactivateSubscription: 'Réactiver l\'abonnement',
       nextBilling: 'Prochaine facturation',
-      trialActive: 'Essai gratuit actif',
-      trialEndsOn: 'L\'essai se termine le',
       subscriptionWillCancel: 'L\'abonnement sera annulé',
       accessUntil: 'Accès jusqu\'au',
       bulkLicenseReadOnly: 'Cet abonnement vous a été attribué et est géré par le propriétaire de la licence. Vous ne pouvez pas le modifier ou l\'annuler.',
@@ -324,7 +312,6 @@ function formatDuration(minutes: number): string {
 
 // --- Subscription state (drives status notices + action gating) ---
 
-const isTrialing = computed(() => props.primarySubscription?.status === 'trialing')
 const isCanceled = computed(() => props.primarySubscription?.cancel_at_period_end === true)
 
 // Assigned (bulk-license) users don't pay, so they must never see
@@ -350,7 +337,6 @@ const canStartPersonalSubscription = computed(() => {
   return !props.allSubscriptions.some(sub => sub.subscription_type === 'personal')
 })
 
-const trialEnd = computed(() => props.primarySubscription?.trial_end ?? null)
 const currentPeriodEnd = computed(() => props.primarySubscription?.current_period_end ?? null)
 
 function formatDate(dateString: string | null): string {

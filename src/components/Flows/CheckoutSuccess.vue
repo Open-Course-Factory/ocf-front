@@ -45,12 +45,7 @@
               <span class="value">{{ subscriptionDetails.billing_interval }}</span>
             </div>
             
-            <div v-if="subscriptionDetails.trial_end" class="trial-info">
-              <i class="fas fa-gift text-success"></i>
-              {{ t('checkoutSuccess.trialActive', { date: formatDate(subscriptionDetails.trial_end) }) }}
-            </div>
-            
-            <div v-else-if="subscriptionDetails.current_period_end" class="billing-info">
+            <div v-if="subscriptionDetails.current_period_end" class="billing-info">
               <i class="fas fa-calendar text-info"></i>
               {{ t('checkoutSuccess.nextBilling', { date: formatDate(subscriptionDetails.current_period_end) }) }}
             </div>
@@ -142,7 +137,6 @@ const { t } = useTranslations({
       plan: 'Plan',
       amount: 'Amount',
       billingInterval: 'Billing Cycle',
-      trialActive: 'Your free trial is active until {date}',
       nextBilling: 'Next billing on {date}',
       nextSteps: 'What\'s Next?',
       step1Title: 'Explore Your Dashboard',
@@ -167,7 +161,6 @@ const { t } = useTranslations({
       plan: 'Plan',
       amount: 'Montant',
       billingInterval: 'Cycle de Facturation',
-      trialActive: 'Votre essai gratuit est actif jusqu\'au {date}',
       nextBilling: 'Prochaine facturation le {date}',
       nextSteps: 'Et Maintenant ?',
       step1Title: 'Explorez Votre Tableau de Bord',
@@ -382,7 +375,7 @@ function formatDate(dateString: string) {
   font-weight: 500;
 }
 
-.trial-info, .billing-info {
+.billing-info {
   margin-top: 20px;
   padding: 15px;
   border-radius: 8px;
@@ -390,14 +383,6 @@ function formatDate(dateString: string) {
   align-items: center;
   gap: 10px;
   font-weight: 500;
-}
-
-.trial-info {
-  background-color: var(--color-success-bg);
-  color: var(--color-success-text);
-}
-
-.billing-info {
   background-color: var(--color-info-bg);
   color: var(--color-info-text);
 }

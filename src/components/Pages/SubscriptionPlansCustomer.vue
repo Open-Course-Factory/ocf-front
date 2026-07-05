@@ -368,7 +368,6 @@ const { t } = useTranslations({
       activePlan: 'Active Plan',
       noPlansTitle: 'No subscription plans available',
       noPlansDescription: 'Please check back later or contact support.',
-      startTrial: 'Start Trial',
       subscribe: 'Subscribe',
       changePlan: 'Change Plan',
       month: 'month',
@@ -431,7 +430,6 @@ const { t } = useTranslations({
       activePlan: 'Plan actif',
       noPlansTitle: 'Aucun plan d\'abonnement disponible',
       noPlansDescription: 'Veuillez vérifier plus tard ou contacter le support.',
-      startTrial: 'Essai gratuit',
       subscribe: 'S\'abonner',
       changePlan: 'Changer de plan',
       month: 'mois',
@@ -576,7 +574,7 @@ const getPlanButtonText = (plan: any) => {
   }
 
   if (!hasCurrentSubscription.value) {
-    return plan.trial_days > 0 ? t('plans.startTrial') : t('plans.subscribe')
+    return t('plans.subscribe')
   }
 
   const currentPlan = filteredPlans.value.find((p: any) => isCurrentPlan(p))
