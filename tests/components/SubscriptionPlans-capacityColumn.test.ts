@@ -90,7 +90,6 @@ const messages = {
       choosePlan: 'Choose Plan',
       upgrade: 'Upgrade',
       downgrade: 'Downgrade',
-      freeTrialDays: 'free trial days',
       statusActive: 'Active',
       statusInactive: 'Inactive',
       catalogPlan: 'Catalog',
