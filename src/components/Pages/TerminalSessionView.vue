@@ -261,6 +261,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { useEndStateConfig, type EndStateReason } from '../../composables/useEndStateConfig'
 import { useLimitReachedMessage } from '../../composables/useLimitReachedMessage'
+import { useDunningRejection } from '../../composables/useDunningRejection'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
 import ScenarioPanel from '../Terminal/ScenarioPanel.vue'
 import ScenarioStartBar from '../Terminal/ScenarioStartBar.vue'
@@ -271,7 +272,7 @@ import { getEffectiveSessionState } from '../../utils/sessionState'
 
 const route = useRoute()
 const router = useRouter()
-const { showSuccess, showWarning, showError: showErrorNotification, showInfo } = useNotification()
+const { showSuccess, showWarning, showError: showErrorNotification, showInfo, showConfirm } = useNotification()
 
 const { t } = useTranslations({
   en: {
@@ -614,6 +615,9 @@ const { getEndStateConfig } = useEndStateConfig()
 // responses instead of surfacing the raw English `error_message`.
 const { getLimitReachedMessage } = useLimitReachedMessage()
 
+// Dunning (past-due) rejection detection + copy, shared across terminal flows.
+const { isDunningRejection, getDunningCopy } = useDunningRejection()
+
 const activeEndBanner = computed(() => {
   const reason = terminalEndReason.value
   if (!reason) return null
@@ -669,6 +673,20 @@ async function resumeSession() {
     await loadSession()
   } catch (err: any) {
     console.error('Error resuming session:', err)
+    // Dunning (past-due) 402: detect BEFORE the source→limit mapping below,
+    // which would otherwise emit the wrong "concurrent terminal limit" copy.
+    // Offer the subscription dashboard so the user can settle the invoice.
+    if (isDunningRejection(err)) {
+      const copy = getDunningCopy()
+      const confirmed = await showConfirm(copy.message, copy.title, {
+        confirmButtonText: copy.action,
+        cancelButtonText: copy.dismiss
+      })
+      if (confirmed) {
+        Promise.resolve(router.push('/subscription-dashboard')).catch(() => {})
+      }
+      return
+    }
     // Localize quota-class 403s using the `source` returned by the backend.
     // CheckLimit was removed from POST /:id/start (see ocf-core fix for slot-
     // neutral resume), but other paths can still return a 403-with-source —

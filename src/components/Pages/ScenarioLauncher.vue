@@ -178,13 +178,15 @@ import { useOrganizationsStore } from '../../stores/organizations'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
+import { useDunningRejection } from '../../composables/useDunningRejection'
 import AdminBadge from '../Common/AdminBadge.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
 import { terminalService } from '../../services/domain/terminal/terminalService'
 import type { Size } from '../../types/terminal'
 
 const router = useRouter()
-const { showError } = useNotification()
+const { showError, showConfirm } = useNotification()
+const { isDunningRejection, getDunningCopy } = useDunningRejection()
 const organizationsStore = useOrganizationsStore()
 const subscriptionsStore = useSubscriptionsStore()
 const currentOrgId = computed(() => organizationsStore.currentOrganization?.id || '')
@@ -450,6 +452,19 @@ async function handleLaunchScenario(scenario: any) {
     provisioningMessage.value = ''
     provisioningPhase.value = ''
     provisioningSessionId.value = ''
+    // Dunning (past-due) 402: offer the subscription dashboard so the user can
+    // settle the overdue invoice, instead of toasting the raw backend text.
+    if (isDunningRejection(err)) {
+      const copy = getDunningCopy()
+      const confirmed = await showConfirm(copy.message, copy.title, {
+        confirmButtonText: copy.action,
+        cancelButtonText: copy.dismiss
+      })
+      if (confirmed) {
+        Promise.resolve(router.push('/subscription-dashboard')).catch(() => {})
+      }
+      return
+    }
     const msg = err.message === 'SETUP_FAILED' ? t('launcher.setupFailed')
       : err.message === 'SETUP_TIMEOUT' ? t('launcher.setupTimeout')
       : err.response?.data?.error_message || err.message || t('launcher.launchError')

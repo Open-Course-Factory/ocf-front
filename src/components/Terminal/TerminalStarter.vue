@@ -141,6 +141,7 @@ import { useUserSettingsStore } from '../../stores/userSettings'
 import { useNotification } from '../../composables/useNotification'
 import { useTranslations } from '../../composables/useTranslations'
 import { useComposeErrorMessage } from '../../composables/useComposeErrorMessage'
+import { useDunningRejection } from '../../composables/useDunningRejection'
 
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
@@ -273,6 +274,7 @@ const { t } = useTranslations({
 
 const { showConfirm, showError: showErrorNotification } = useNotification()
 const router = useRouter()
+const { isDunningRejection, getDunningCopy } = useDunningRejection()
 
 // Panel state
 const showDebug = ref(false)
@@ -635,6 +637,23 @@ async function handleBudgetRejection(err: any): Promise<void> {
   }
 }
 
+/**
+ * Handle a dunning (past-due) 402 from the launcher. Offers the subscription
+ * dashboard so the user can settle the overdue invoice; on confirm, navigate
+ * there. Copy + detection live in useDunningRejection so the resume and
+ * scenario-launch flows share the exact same treatment.
+ */
+async function handleDunningRejection(): Promise<void> {
+  const copy = getDunningCopy()
+  const confirmed = await showConfirm(copy.message, copy.title, {
+    confirmButtonText: copy.action,
+    cancelButtonText: copy.dismiss
+  })
+  if (confirmed) {
+    Promise.resolve(router.push('/subscription-dashboard')).catch(() => {})
+  }
+}
+
 function handleHostnameUpdate(value: string) {
   hostnameInput.value = value
   if (value === '') {
@@ -763,7 +782,12 @@ async function startNewSession() {
 
     const errorMsg = error.response?.data?.error_message || error.message || t('terminalStarter.errorStartingSession')
 
-    if (isBudgetRejection(error)) {
+    if (isDunningRejection(error)) {
+      // Dunning (past-due subscription out of grace): a 402 payment issue.
+      // Handled FIRST so the dedicated "settle your invoice" treatment wins
+      // over the generic budget/limit branches, routing to the dashboard.
+      await handleDunningRejection()
+    } else if (isBudgetRejection(error)) {
       // Budget-mode rejection (CPU/RAM budget exhausted, or plan-restricted
       // size in advanced mode). Handled here BEFORE the generic 403/limit
       // branches so the more informative copy wins.
