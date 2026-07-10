@@ -834,7 +834,7 @@ watch(() => props.visible, async (newVal) => {
 
 .btn-primary {
   background-color: var(--color-primary);
-  color: white;
+  color: var(--color-white);
 }
 
 .btn-primary:hover {
@@ -843,7 +843,7 @@ watch(() => props.visible, async (newVal) => {
 
 .btn-secondary {
   background-color: var(--color-secondary, var(--color-gray-600));
-  color: white;
+  color: var(--color-white);
 }
 
 .btn-secondary:hover {
@@ -1003,7 +1003,7 @@ watch(() => props.visible, async (newVal) => {
   align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-danger-bg, rgba(220, 53, 69, 0.1));
+  background: var(--color-danger-bg);
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-sm);
 }

@@ -361,7 +361,7 @@ watch(() => props.visible, (newVisible) => {
   color: var(--color-text-primary);
   font-size: var(--font-size-base);
   transition: all var(--transition-fast);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
 }
 
 .form-control:focus {
@@ -550,7 +550,7 @@ select.form-control {
 
 .btn-primary {
   background-color: var(--color-primary);
-  color: white;
+  color: var(--color-white);
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -559,7 +559,7 @@ select.form-control {
 
 .btn-secondary {
   background-color: var(--color-secondary, var(--color-gray-600));
-  color: white;
+  color: var(--color-white);
 }
 
 .btn-secondary:hover:not(:disabled) {

@@ -264,7 +264,7 @@ const addPaymentMethod = async () => {
 
 .refresh-btn:hover:not(:disabled) {
     background-color: var(--color-success-text);
-    color: white;
+    color: var(--color-white);
 }
 
 .alert {
@@ -322,9 +322,9 @@ const addPaymentMethod = async () => {
     border-radius: 8px;
     padding: 15px;
     background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
-    color: white;
+    color: var(--color-white);
     min-width: 260px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-card);
 }
 
 .card-icon {
@@ -372,7 +372,7 @@ const addPaymentMethod = async () => {
     padding: 0.25em 0.5em;
     font-size: 0.75em;
     border-radius: 0.25rem;
-    color: white;
+    color: var(--color-white);
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -422,12 +422,12 @@ const addPaymentMethod = async () => {
 
 .btn-primary {
     background-color: var(--color-primary);
-    color: white;
+    color: var(--color-white);
 }
 
 .btn-success {
     background-color: var(--color-success);
-    color: white;
+    color: var(--color-white);
 }
 
 .btn-outline-primary {
@@ -448,6 +448,6 @@ const addPaymentMethod = async () => {
 
 .btn:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-card);
 }
 </style>
