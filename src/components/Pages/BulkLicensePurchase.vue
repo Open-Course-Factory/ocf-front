@@ -309,8 +309,7 @@ const groups = computed(() => {
 
 // Methods
 const formatCurrency = (amount: number | undefined): string => {
-  if (amount === undefined) return '€0.00'
-  return formatCurrencyUtil(amount, 'EUR')
+  return formatCurrencyUtil(amount ?? 0, 'EUR')
 }
 
 const selectPlan = (planId: string) => {

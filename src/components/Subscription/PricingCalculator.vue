@@ -90,7 +90,7 @@
         </div>
         <div class="summary-row">
           <span class="summary-label">{{ t('pricingCalculator.averagePerLicense') }}</span>
-          <span class="summary-value">{{ formatCurrency(preview.average_per_license) }}</span>
+          <span class="summary-value">{{ formatFromCurrency(preview.average_per_license) }}</span>
         </div>
 
         <!-- Discount Percentage Badge -->
@@ -132,7 +132,7 @@
                 <strong>{{ t('pricingCalculator.bulkPurchase', { count: localQuantity }) }}</strong>
                 <span class="recommended-badge">{{ t('pricingCalculator.recommended') }}</span>
               </td>
-              <td><strong>{{ formatCurrency(preview.average_per_license) }}</strong></td>
+              <td><strong>{{ formatFromCurrency(preview.average_per_license) }}</strong></td>
               <td>
                 <strong>{{ formatCents(preview.total_monthly_cost) }}</strong>
               </td>
@@ -180,6 +180,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useSubscriptionBatchesStore } from '../../stores/subscriptionBatches'
+import { formatCurrency } from '../../utils/formatters'
 import type { PricingBreakdown } from '../../types/entities'
 
 const props = defineProps<{
@@ -203,6 +204,7 @@ const { t } = useTranslations({
       howManyLicenses: 'How many licenses do you need?',
       licenses: 'licenses',
       calculating: 'Calculating pricing...',
+      loadError: 'Unable to calculate pricing. Please try again.',
       pricingBreakdown: 'Pricing Breakdown',
       totalMonthly: 'Total Monthly Cost',
       month: 'month',
@@ -232,6 +234,7 @@ const { t } = useTranslations({
       howManyLicenses: 'Combien de licences avez-vous besoin ?',
       licenses: 'licences',
       calculating: 'Calcul du prix...',
+      loadError: 'Impossible de calculer le prix. Veuillez réessayer.',
       pricingBreakdown: 'Détail du Prix',
       totalMonthly: 'Coût Mensuel Total',
       month: 'mois',
@@ -301,19 +304,23 @@ const loadPricingPreview = async () => {
     const data = await batchStore.getPricingPreview(props.planId, localQuantity.value)
     preview.value = data
   } catch (err: any) {
-    error.value = err.response?.data?.error_message || err.response?.data?.message || t('pricingCalculator.calculating')
+    error.value = err.response?.data?.error_message || err.response?.data?.message || t('pricingCalculator.loadError')
   } finally {
     isLoading.value = false
   }
 }
 
+// Cents → localized currency string via the shared Intl formatter (locale-aware,
+// multi-currency, dark-mode agnostic). Used for the cents-denominated fields.
 const formatCents = (cents: number): string => {
-  const amount = cents / 100
-  return `€${amount.toFixed(2)}`
+  return formatCurrency(cents, preview.value?.currency || 'EUR')
 }
 
-const formatCurrency = (amount: number): string => {
-  return `€${amount.toFixed(2)}`
+// `average_per_license` arrives already in currency units (e.g. 9.33), while the
+// shared formatter expects cents — scale up so it round-trips exactly. Units are
+// unchanged; only the formatting is centralized.
+const formatFromCurrency = (amount: number): string => {
+  return formatCurrency(Math.round(amount * 100), preview.value?.currency || 'EUR')
 }
 
 const handlePurchase = () => {

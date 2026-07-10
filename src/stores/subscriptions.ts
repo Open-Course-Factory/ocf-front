@@ -557,10 +557,6 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         return formatDateUtil(dateString, 'fr-FR', '-')
     }
 
-    const isTrialing = () => {
-        return currentSubscription.value?.status === 'trialing'
-    }
-
     const isCanceled = () => {
         return currentSubscription.value?.cancel_at_period_end === true
     }
@@ -606,7 +602,6 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         getStatusClass,
         getStatusIcon,
         formatDate,
-        isTrialing,
         isCanceled,
         hasActiveSubscription
     }

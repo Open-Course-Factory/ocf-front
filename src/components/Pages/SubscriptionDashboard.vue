@@ -109,6 +109,7 @@ import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { usePermissionsStore } from '../../stores/permissions'
 import { extractErrorMessage } from '../../utils/formatters'
+import { useTranslations } from '../../composables/useTranslations'
 import axios from 'axios'
 
 // Import des composants modulaires
@@ -120,6 +121,32 @@ import OrgTerminalUsagePanel from '../Terminal/OrgTerminalUsagePanel.vue'
 import TerminalUsagePanel from '../Terminal/TerminalUsagePanel.vue'
 
 const { t } = useI18n()
+
+// Localized fallbacks for API errors that don't carry a server message.
+// Registered on the shared i18n instance so the useI18n() `t` above resolves
+// them alongside the store-registered `subscriptions.*` keys.
+useTranslations({
+  en: {
+    subscriptionDashboard: {
+      loadError: 'Error loading the dashboard',
+      portalError: 'Unable to open the management portal',
+      cancelError: 'Failed to cancel subscription',
+      reactivateError: 'Failed to reactivate subscription',
+      freePlanUnavailable: 'Free trial plan not available',
+      freePlanActivateError: 'Failed to activate free plan'
+    }
+  },
+  fr: {
+    subscriptionDashboard: {
+      loadError: 'Erreur lors du chargement du tableau de bord',
+      portalError: 'Impossible d\'ouvrir le portail de gestion',
+      cancelError: 'Échec de l\'annulation de l\'abonnement',
+      reactivateError: 'Échec de la réactivation de l\'abonnement',
+      freePlanUnavailable: 'Le plan d\'essai gratuit n\'est pas disponible',
+      freePlanActivateError: 'Échec de l\'activation du plan gratuit'
+    }
+  }
+})
 
 // Stores
 const subscriptionsStore = useSubscriptionsStore()
@@ -199,7 +226,7 @@ async function loadDashboardData() {
     }
   } catch (err: any) {
     console.error('Erreur lors du chargement du dashboard:', err)
-    error.value = extractErrorMessage(err, 'Erreur lors du chargement du tableau de bord')
+    error.value = extractErrorMessage(err, t('subscriptionDashboard.loadError'))
     // Make sure to stop loading on error
     isLoadingInvoices.value = false
     isLoadingAllSubs.value = false
@@ -275,7 +302,7 @@ async function openStripePortal() {
     await subscriptionsStore.createPortalSession(returnUrl)
   } catch (err: any) {
     console.error('Erreur ouverture portail:', err)
-    error.value = extractErrorMessage(err, 'Impossible d\'ouvrir le portail de gestion')
+    error.value = extractErrorMessage(err, t('subscriptionDashboard.portalError'))
   } finally {
     isManaging.value = false
   }
@@ -292,7 +319,7 @@ async function confirmCancellation(cancelImmediately: boolean) {
     )
   } catch (err: any) {
     console.error('Error canceling subscription:', err)
-    error.value = extractErrorMessage(err, 'Failed to cancel subscription')
+    error.value = extractErrorMessage(err, t('subscriptionDashboard.cancelError'))
   } finally {
     isCanceling.value = false
     showCancelModal.value = false
@@ -307,7 +334,7 @@ async function confirmReactivation() {
     await subscriptionsStore.reactivateSubscription(subscriptionsStore.currentSubscription.id)
   } catch (err: any) {
     console.error('Error reactivating subscription:', err)
-    error.value = extractErrorMessage(err, 'Failed to reactivate subscription')
+    error.value = extractErrorMessage(err, t('subscriptionDashboard.reactivateError'))
   } finally {
     isReactivating.value = false
     showReactivateModal.value = false
@@ -327,7 +354,7 @@ async function activateFreePlan() {
     const freePlan = plansStore.entities.find((plan: any) => plan.price_amount === 0 && plan.is_active)
 
     if (!freePlan) {
-      error.value = 'Free trial plan not available'
+      error.value = t('subscriptionDashboard.freePlanUnavailable')
       return
     }
 
@@ -347,7 +374,7 @@ async function activateFreePlan() {
     }
   } catch (err: any) {
     console.error('Error activating free plan:', err)
-    error.value = extractErrorMessage(err, 'Failed to activate free plan')
+    error.value = extractErrorMessage(err, t('subscriptionDashboard.freePlanActivateError'))
   } finally {
     isActivatingFreePlan.value = false
   }

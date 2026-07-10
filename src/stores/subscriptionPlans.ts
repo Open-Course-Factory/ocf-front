@@ -369,7 +369,6 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
                     return await loadPlans()
                 } else {
                     const response = await axios.post('/subscription-plans/sync-stripe')
-                    console.log('Subscription plans sync result:', response.data)
 
                     // Adapt backend response to expected frontend format
                     const data = response.data

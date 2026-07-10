@@ -167,8 +167,6 @@ export const useSubscriptionBatchesStore = defineStore('subscriptionBatches', ()
 
   // Computed properties
   const batches = computed(() => {
-    console.log('Store batches computed called, base.entities:', base.entities)
-    console.log('Store batches computed, length:', base.entities.length)
     return base.entities as SubscriptionBatch[]
   })
   const activeBatches = computed(() =>
@@ -180,16 +178,11 @@ export const useSubscriptionBatchesStore = defineStore('subscriptionBatches', ()
    */
   const loadBatches = async () => {
     return await baseAsync(async () => {
-      console.log('Store: calling bulkLicenseService.getMyBatches()')
       const data = await bulkLicenseService.getMyBatches()
-      console.log('Store: received data from API:', data)
-      console.log('Store: data length:', data?.length)
 
       // Update reactive array properly - don't replace the reference!
       base.entities.splice(0, base.entities.length, ...data)
 
-      console.log('Store: base.entities after assignment:', base.entities)
-      console.log('Store: base.entities length:', base.entities.length)
       return data
     }, 'subscriptionBatches.loadError')
   }

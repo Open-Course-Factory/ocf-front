@@ -48,6 +48,7 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', () => {
                 add: 'Add a payment method',
                 cardEnding: 'Card ending in',
                 expires: 'Expires',
+                defaultLabel: 'Default',
                 syncError: 'Error syncing payment methods',
                 loadError: 'Error loading payment methods',
             }
@@ -69,6 +70,7 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', () => {
                 add: 'Ajouter une méthode de paiement',
                 cardEnding: 'Carte se terminant par',
                 expires: 'Expire',
+                defaultLabel: 'Défaut',
                 syncError: 'Erreur lors de la synchronisation des méthodes de paiement',
                 loadError: 'Erreur lors du chargement des méthodes de paiement',
             }
@@ -161,7 +163,7 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', () => {
     const getSelectDatas = (inputEntities: any[]) => {
         return buildSelectData(inputEntities, (method) => {
             const displayName = formatPaymentMethod(method);
-            return method.is_default ? `${displayName} (Défaut)` : displayName;
+            return method.is_default ? `${displayName} (${t('paymentMethods.defaultLabel')})` : displayName;
         })
     }
 

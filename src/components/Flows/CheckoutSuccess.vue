@@ -200,14 +200,12 @@ onMounted(async () => {
       // Check if we have a subscription now
       if (subscriptionsStore.currentSubscription) {
         subscriptionDetails.value = subscriptionsStore.currentSubscription
-        console.log('Subscription loaded:', subscriptionDetails.value)
         break
       }
 
       // Wait before next attempt
       attempts++
       if (attempts < maxAttempts) {
-        console.log(`Waiting for subscription... (attempt ${attempts}/${maxAttempts})`)
         await new Promise(resolve => setTimeout(resolve, delayMs))
       }
     }

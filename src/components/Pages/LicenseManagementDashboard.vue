@@ -264,6 +264,7 @@ const { t } = useTranslations({
       confirmDelete: 'Are you sure you want to permanently delete this canceled batch? This action cannot be undone.',
       confirmBulkDelete: 'Are you sure you want to permanently delete {count} canceled batches? This action cannot be undone.',
       addSuccess: 'Licenses added successfully',
+      addError: 'Failed to add licenses',
       deleteSuccess: 'Batch deleted successfully',
       bulkDeleteSuccess: '{count} batches deleted successfully',
       deleteError: 'Failed to delete batch',
@@ -311,6 +312,7 @@ const { t } = useTranslations({
       confirmDelete: 'Êtes-vous sûr de vouloir supprimer définitivement ce lot annulé ? Cette action ne peut pas être annulée.',
       confirmBulkDelete: 'Êtes-vous sûr de vouloir supprimer définitivement {count} lots annulés ? Cette action ne peut pas être annulée.',
       addSuccess: 'Licences ajoutées avec succès',
+      addError: 'Échec de l\'ajout des licences',
       deleteSuccess: 'Lot supprimé avec succès',
       bulkDeleteSuccess: '{count} lots supprimés avec succès',
       deleteError: 'Échec de la suppression du lot',
@@ -350,24 +352,20 @@ const isPurchaseProcessing = ref(false)
 const purchaseStillProcessing = ref(false)
 
 const batches = computed(() => {
-  console.log('Batches computed:', batchStore.batches)
   return batchStore.batches
 })
 
 // Methods
 const loadBatches = async () => {
-  console.log('loadBatches called')
   isLoading.value = true
 
   try {
     await batchStore.loadBatches()
-    console.log('Batches loaded successfully:', batchStore.batches.length, 'batches')
   } catch (err: any) {
     console.error('Error loading batches:', err)
     showError(extractErrorMessage(err, t('licenseDashboard.loadingBatches')))
   } finally {
     isLoading.value = false
-    console.log('isLoading set to false, batches.length:', batchStore.batches.length)
   }
 }
 
@@ -409,7 +407,7 @@ const handleAddLicenses = async (newQuantity: number) => {
     closeAddLicensesModal()
   } catch (err: any) {
     console.error('Error adding licenses:', err)
-    showError(extractErrorMessage(err, 'Failed to add licenses'))
+    showError(extractErrorMessage(err, t('licenseDashboard.addError')))
   }
 }
 
