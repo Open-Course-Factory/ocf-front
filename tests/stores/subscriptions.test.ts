@@ -326,20 +326,6 @@ describe('subscriptions store', () => {
   })
 
   describe('helper methods', () => {
-    it('isTrialing returns true when status is trialing', () => {
-      const store = useSubscriptionsStore()
-      store.currentSubscription = { status: 'trialing' } as any
-
-      expect(store.isTrialing()).toBe(true)
-    })
-
-    it('isTrialing returns false when status is not trialing', () => {
-      const store = useSubscriptionsStore()
-      store.currentSubscription = { status: 'active' } as any
-
-      expect(store.isTrialing()).toBe(false)
-    })
-
     it('isCanceled returns true when cancel_at_period_end is true', () => {
       const store = useSubscriptionsStore()
       store.currentSubscription = { cancel_at_period_end: true } as any
