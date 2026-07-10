@@ -111,3 +111,55 @@ describe('invoices store - downloadInvoice', () => {
     expect(result).toBe(false)
   })
 })
+
+// RED — the backend (ocf-core !277) can now emit invoice status 'refunded' /
+// 'partially_refunded'. The store's status formatters must give these DEDICATED
+// treatments instead of the generic fallbacks (label = raw UPPERCASED status,
+// class = 'text-secondary', icon = 'fas fa-question-circle'). Pinned loosely:
+// we assert the value is no longer the fallback, not the exact copy/class.
+//
+// t() is mocked (useStoreTranslations → key passthrough), so a DEDICATED label
+// resolves to its translation key (e.g. 'invoices.refunded'); the raw fallback
+// resolves to the uppercased status. The #guard block pins the existing
+// paid/unpaid statuses so adding refunds doesn't disturb them.
+describe('invoices store - refund status formatting (#257)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  const refundStatuses: Array<{ status: string; raw: string }> = [
+    { status: 'refunded', raw: 'REFUNDED' },
+    { status: 'partially_refunded', raw: 'PARTIALLY_REFUNDED' },
+  ]
+
+  it.each(refundStatuses)('getStatusLabel is a dedicated translated label for $status', ({ status, raw }) => {
+    const store = useInvoicesStore()
+    const label = store.getStatusLabel(status)
+    // Not the raw uppercased fallback …
+    expect(label).not.toBe(raw)
+    // … but a mapped invoices.* translation key (key passthrough in tests).
+    expect(label.startsWith('invoices.')).toBe(true)
+  })
+
+  it.each(refundStatuses)('getStatusClass is dedicated (not the text-secondary fallback) for $status', ({ status }) => {
+    const store = useInvoicesStore()
+    expect(store.getStatusClass(status)).not.toBe('text-secondary')
+  })
+
+  it.each(refundStatuses)('getStatusIcon is dedicated (not the fa-question-circle fallback) for $status', ({ status }) => {
+    const store = useInvoicesStore()
+    expect(store.getStatusIcon(status)).not.toBe('fas fa-question-circle')
+  })
+
+  it('[guard] paid/unpaid statuses keep their existing label/class/icon', () => {
+    const store = useInvoicesStore()
+    expect(store.getStatusLabel('paid')).toBe('invoices.paid')
+    expect(store.getStatusClass('paid')).toBe('text-success')
+    expect(store.getStatusIcon('paid')).toBe('fas fa-check-circle')
+
+    // 'open'/'unpaid' both map to the unpaid label; class/icon key off 'unpaid'.
+    expect(store.getStatusLabel('open')).toBe('invoices.unpaid')
+    expect(store.getStatusClass('unpaid')).toBe('text-warning')
+    expect(store.getStatusIcon('unpaid')).toBe('fas fa-clock')
+  })
+})
