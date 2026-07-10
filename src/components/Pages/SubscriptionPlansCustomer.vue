@@ -182,7 +182,6 @@
               <div class="bulk-header">
                 <i class="fas fa-layer-group"></i>
                 <span>{{ t('plans.volumePricing') }}</span>
-                <AdminBadge v-if="isAdmin" icon-only />
               </div>
               <p class="bulk-description">
                 {{ t('plans.volumeDescription') }}
@@ -650,9 +649,7 @@ function formatPrice(amount: number, currency: string = 'EUR') {
 }
 
 function hasBulkPurchaseFeature(plan: any): boolean {
-  // Only show bulk purchase for admins/trainers, not regular members/learners
-  if (!isAdmin.value) return false
-  // Simplified: any plan with tiered pricing supports bulk purchase
+  // Any plan with tiered pricing supports bulk purchase
   return plan.use_tiered_pricing === true
 }
 
