@@ -420,6 +420,67 @@ describe('SubscriptionPlansCustomer — direct-to-Stripe checkout', () => {
     })
   })
 
+  // ---- Volume (bulk) pricing visibility gate ----
+  // WHY: 2026-07-10. `hasBulkPurchaseFeature` gated the "Voir les tarifs en
+  // volume" entry point behind `isAdmin`. Real trainers are Casbin `Member`s,
+  // never platform admins, so the exact users the Trainer plan's degressive
+  // pricing targets never saw the PricingCalculator entry point. The section
+  // must show for ANY plan with `use_tiered_pricing === true`, regardless of
+  // admin status. These render as a NON-admin (the default useAdminViewMode
+  // mock above returns isAdmin=false), i.e. as a real trainer would.
+  const TIERED_PLAN = {
+    id: 'plan-trainer',
+    name: 'Formateur',
+    price_amount: 3900,
+    currency: 'eur',
+    billing_interval: 'month',
+    is_active: true,
+    priority: 15,
+    use_tiered_pricing: true,
+  }
+
+  const FLAT_PLAN = {
+    id: 'plan-flat',
+    name: 'Flat',
+    price_amount: 1200,
+    currency: 'eur',
+    billing_interval: 'month',
+    is_active: true,
+    priority: 12,
+    use_tiered_pricing: false,
+  }
+
+  describe('volume pricing section visibility', () => {
+    function findCard(wrapper: any, planName: string) {
+      return wrapper
+        .findAll('.plan-card-compact')
+        .find((c: any) => c.text().includes(planName))
+    }
+
+    it('shows the volume pricing section to non-admin users for a tiered-pricing plan', async () => {
+      const wrapper = mountPage([TIERED_PLAN])
+      await flushPromises()
+      await wrapper.vm.$nextTick()
+
+      const card = findCard(wrapper, 'Formateur')
+      expect(card, 'plan card should render').toBeTruthy()
+      // The entry point to the PricingCalculator — its section and the
+      // "view bulk pricing" button must be present for a real trainer.
+      expect(card.find('.bulk-purchase-section').exists()).toBe(true)
+      expect(card.find('button.btn-bulk-purchase').exists()).toBe(true)
+    })
+
+    it('does not show the volume pricing section for plans without tiered pricing', async () => {
+      const wrapper = mountPage([FLAT_PLAN])
+      await flushPromises()
+      await wrapper.vm.$nextTick()
+
+      const card = findCard(wrapper, 'Flat')
+      expect(card, 'plan card should render').toBeTruthy()
+      expect(card.find('.bulk-purchase-section').exists()).toBe(false)
+    })
+  })
+
   // ---- Checkout modal i18n key resolution ----
   // WHY: 2026-07-10 payment go-live review. The coupon/checkout modal is the
   // last screen a paying customer sees before Stripe. Its strings are
