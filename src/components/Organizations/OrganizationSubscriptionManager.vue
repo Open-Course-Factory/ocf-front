@@ -327,8 +327,8 @@ const { t } = useTranslations({
       subscriptionCanceled: 'Abonnement annulé avec succès',
       subscriptionReactivated: 'Abonnement réactivé avec succès',
       planChanged: 'Plan modifié avec succès',
-      seats: 'Sieges',
-      quantity: 'Quantite (sieges)',
+      seats: 'Sièges',
+      quantity: 'Quantité (sièges)',
       confirmPlan: 'Confirmer',
       cancelChoice: 'Annuler',
     }

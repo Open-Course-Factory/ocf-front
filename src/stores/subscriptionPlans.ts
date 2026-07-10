@@ -252,9 +252,9 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             syncFailedPlans: 'Plans en échec :',
             syncErrorTitle: 'Erreur de synchronisation',
             subscriptionErrorTitle: 'Erreur d\'abonnement',
-            assignToOrg: 'Assigner a une organisation',
-            assignOrgSuccess: 'Plan assigne a l\'organisation avec succes',
-            assignToUser: 'Attribuer a un utilisateur',
+            assignToOrg: 'Assigner à une organisation',
+            assignOrgSuccess: 'Plan assigné à l\'organisation avec succès',
+            assignToUser: 'Attribuer à un utilisateur',
             capacityLabel: 'Capacité',
             capacityOr: 'OU',
             capacityUnlimited: 'Capacité illimitée'

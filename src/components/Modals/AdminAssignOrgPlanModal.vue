@@ -188,16 +188,16 @@ const { t } = useTranslations({
   },
   fr: {
     assignOrgPlan: {
-      title: 'Assigner un plan a une organisation',
-      description: 'Selectionnez une organisation et un plan a assigner.',
+      title: 'Assigner un plan à une organisation',
+      description: 'Sélectionnez une organisation et un plan à assigner.',
       searchOrganization: 'Rechercher une organisation',
       searchPlaceholder: 'Entrer le nom de l\'organisation...',
       searching: 'Chargement des organisations...',
-      noResults: 'Aucune organisation trouvee',
+      noResults: 'Aucune organisation trouvée',
       members: 'membres',
       selectPlan: 'Plan d\'abonnement',
-      choosePlan: '-- Selectionnez un plan --',
-      quantity: 'Quantite (sieges)',
+      choosePlan: '-- Sélectionnez un plan --',
+      quantity: 'Quantité (sièges)',
       quantityPlaceholder: '1',
       assign: 'Assigner le plan',
       cancel: 'Annuler',
@@ -205,8 +205,8 @@ const { t } = useTranslations({
       assignConfirmText: 'Êtes-vous sûr de vouloir assigner ce plan ? Cela affectera la facturation de l\'organisation.',
       confirmOrganization: 'Organisation',
       confirmPlan: 'Plan',
-      assignSuccess: 'Plan assigne a l\'organisation avec succes',
-      assignError: 'Echec de l\'assignation du plan a l\'organisation'
+      assignSuccess: 'Plan assigné à l\'organisation avec succès',
+      assignError: 'Échec de l\'assignation du plan à l\'organisation'
     }
   }
 })

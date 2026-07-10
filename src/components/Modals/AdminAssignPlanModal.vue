@@ -128,18 +128,18 @@ const { t } = useTranslations({
   },
   fr: {
     adminAssign: {
-      title: 'Attribuer un Plan a un Utilisateur',
+      title: 'Attribuer un Plan à un Utilisateur',
       userId: 'ID Utilisateur',
       userIdPlaceholder: "Entrez l'ID utilisateur...",
       plan: 'Plan',
-      durationDays: 'Duree (jours)',
+      durationDays: 'Durée (jours)',
       days: 'jours',
       cancel: 'Annuler',
       confirm: 'Attribuer le Plan',
       goBack: 'Retour',
       assignConfirmText: 'Êtes-vous sûr de vouloir attribuer ce plan ? Cela affectera la facturation de l\'utilisateur.',
-      success: 'Plan attribue avec succes',
-      error: "Echec de l'attribution du plan"
+      success: 'Plan attribué avec succès',
+      error: "Échec de l'attribution du plan"
     }
   }
 })
