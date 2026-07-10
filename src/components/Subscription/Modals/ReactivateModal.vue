@@ -18,13 +18,13 @@
       <h4>{{ t('subscriptions.subscriptionDetails') }}</h4>
       <div class="detail-row">
         <span class="label">{{ t('subscriptions.plan') }}:</span>
-        <span class="value">{{ subscription.plan_name }}</span>
+        <span class="value">{{ subscription.subscription_plan?.name || subscription.plan_name }}</span>
       </div>
-      <div class="detail-row" v-if="subscription.plan_price">
+      <div class="detail-row" v-if="subscription.subscription_plan?.price_amount">
         <span class="label">{{ t('subscriptions.price') }}:</span>
         <span class="value">
-          {{ formatPrice(subscription.plan_price, subscription.currency) }}
-          / {{ subscription.billing_interval }}
+          {{ formatPrice(subscription.subscription_plan.price_amount, subscription.subscription_plan.currency) }}
+          / {{ subscription.subscription_plan.billing_interval }}
         </span>
       </div>
       <div class="detail-row" v-if="subscription.current_period_end">
