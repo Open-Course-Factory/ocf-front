@@ -49,6 +49,8 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', () => {
                 cardEnding: 'Card ending in',
                 expires: 'Expires',
                 defaultLabel: 'Default',
+                cardLabel: 'Card',
+                unknownType: 'Unknown',
                 syncError: 'Error syncing payment methods',
                 loadError: 'Error loading payment methods',
             }
@@ -71,6 +73,8 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', () => {
                 cardEnding: 'Carte se terminant par',
                 expires: 'Expire',
                 defaultLabel: 'Défaut',
+                cardLabel: 'Carte',
+                unknownType: 'Inconnu',
                 syncError: 'Erreur lors de la synchronisation des méthodes de paiement',
                 loadError: 'Erreur lors du chargement des méthodes de paiement',
             }
@@ -111,13 +115,13 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', () => {
     // Formatage pour affichage
     const formatPaymentMethod = (method: any) => {
         if (method.type === 'card') {
-            const brand = method.card_brand?.toUpperCase() || 'CARD';
+            const brand = method.card_brand?.toUpperCase() || t('paymentMethods.cardLabel');
             const last4 = method.card_last4;
             const expires = `${method.card_exp_month?.toString().padStart(2, '0')}/${method.card_exp_year}`;
             
             return `${brand} •••• ${last4} (${expires})`;
         }
-        return method.type || 'Unknown';
+        return method.type || t('paymentMethods.unknownType');
     }
 
     // Vérifier si la carte expire bientôt
@@ -148,15 +152,10 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', () => {
 
     // Action pour définir comme méthode par défaut
     const setAsDefault = async (paymentMethodId: string) => {
-        try {
-            await axios.post(`/payment-methods/${paymentMethodId}/set-default`);
-            // Recharger les méthodes de paiement après modification
-            await syncAndLoadPaymentMethods();
-            return true;
-        } catch (error) {
-            console.error('Erreur lors de la définition comme défaut:', error);
-            throw error;
-        }
+        await axios.post(`/payment-methods/${paymentMethodId}/set-default`);
+        // Recharger les méthodes de paiement après modification
+        await syncAndLoadPaymentMethods();
+        return true;
     }
 
     // Fonction personnalisée pour les données de sélection (utilise l'utilitaire réutilisable)
