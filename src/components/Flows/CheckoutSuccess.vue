@@ -251,11 +251,11 @@ function formatDate(dateString: string) {
 }
 
 .success-content {
-  background: white;
+  background: var(--color-surface);
   border-radius: 20px;
   padding: 40px;
   text-align: center;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-modal);
 }
 
 /* Animation de checkmark */
@@ -424,7 +424,7 @@ function formatDate(dateString: string) {
   align-items: center;
   justify-content: center;
   margin: 0 auto 15px auto;
-  color: white;
+  color: var(--color-white);
   font-size: 1.5rem;
 }
 
@@ -482,13 +482,13 @@ function formatDate(dateString: string) {
 .btn-primary {
   background-color: var(--color-primary);
   border-color: var(--color-primary);
-  color: white;
+  color: var(--color-white);
 }
 
 .btn-success {
   background-color: var(--color-success);
   border-color: var(--color-success);
-  color: white;
+  color: var(--color-white);
 }
 
 .btn-outline-primary {
@@ -505,7 +505,7 @@ function formatDate(dateString: string) {
 
 .btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-card);
 }
 
 /* Responsive */

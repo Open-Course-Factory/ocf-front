@@ -259,7 +259,7 @@ watch(() => props.visible, (newVal) => {
 
 .btn-preset.active {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-white);
   border-color: var(--color-primary);
 }
 
@@ -352,7 +352,7 @@ watch(() => props.visible, (newVal) => {
 
 .btn-primary {
   background-color: var(--color-primary);
-  color: white;
+  color: var(--color-white);
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -361,7 +361,7 @@ watch(() => props.visible, (newVal) => {
 
 .btn-secondary {
   background-color: var(--color-secondary, var(--color-gray-600));
-  color: white;
+  color: var(--color-white);
 }
 
 .btn-secondary:hover:not(:disabled) {

@@ -202,11 +202,11 @@ function retryCheckout() {
 }
 
 .canceled-content {
-  background: white;
+  background: var(--color-surface);
   border-radius: 20px;
   padding: 40px;
   text-align: center;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-modal);
 }
 
 /* Icône d'annulation */
@@ -219,7 +219,7 @@ function retryCheckout() {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--color-white);
   font-size: 2.5rem;
   animation: pulse 2s infinite;
 }
@@ -316,7 +316,7 @@ function retryCheckout() {
 
 .action-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-lg);
 }
 
 .action-card.primary {
@@ -333,7 +333,7 @@ function retryCheckout() {
   align-items: center;
   justify-content: center;
   margin: 0 auto 15px auto;
-  color: white;
+  color: var(--color-white);
   font-size: 1.5rem;
 }
 
@@ -428,7 +428,7 @@ function retryCheckout() {
 .btn-primary {
   background-color: var(--color-primary);
   border-color: var(--color-primary);
-  color: white;
+  color: var(--color-white);
 }
 
 .btn-outline-primary {
@@ -457,7 +457,7 @@ function retryCheckout() {
 
 .btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-card);
 }
 
 /* Couleurs des textes */

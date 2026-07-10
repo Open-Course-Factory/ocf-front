@@ -303,7 +303,7 @@ const { t } = useTranslations({
   gap: 4px;
   padding: 4px 10px;
   background: linear-gradient(135deg, var(--color-warning-amber) 0%, var(--color-warning-amber-light) 100%);
-  color: white;
+  color: var(--color-white);
   border-radius: 12px;
   font-size: 0.6875rem;
   font-weight: 700;

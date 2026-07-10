@@ -508,7 +508,7 @@ const formatLimit = (value: number): string => {
 
 .card-header {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
-  color: white;
+  color: var(--color-white);
   padding: 2rem;
   display: flex;
   justify-content: space-between;
@@ -692,7 +692,7 @@ const formatLimit = (value: number): string => {
 
 .btn-primary {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-white);
 }
 
 .btn-primary:hover {
