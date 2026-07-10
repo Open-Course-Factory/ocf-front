@@ -407,18 +407,18 @@ const { t } = useTranslations({
       emailNotVerified: 'Please verify your email address before subscribing to a paid plan.',
       verifyEmailToSubscribe: 'Verify your email address to subscribe to a paid plan.',
       verifyEmailCta: 'Verify my email',
+      checkout: {
+        couponCode: 'Coupon Code',
+        couponPlaceholder: 'Enter coupon code',
+        subscribeTo: 'Subscribe to {plan}',
+        cancel: 'Cancel',
+      },
     },
     pricingPlanCard: {
       budgetCapacity: 'Includes up to {summary} simultaneous sessions',
       or: 'OR',
       capacityTooltip: 'Your plan\'s capacity, expressed as machine sizes you can spawn at once. Pick any combination that fits.',
       unlimitedCapacity: 'Unlimited capacity',
-    },
-    checkout: {
-      couponCode: 'Coupon Code',
-      couponPlaceholder: 'Enter coupon code',
-      subscribeTo: 'Subscribe to {plan}',
-      cancel: 'Cancel',
     },
   },
   fr: {
@@ -468,18 +468,18 @@ const { t } = useTranslations({
       emailNotVerified: 'Veuillez vérifier votre adresse e-mail avant de souscrire à un plan payant.',
       verifyEmailToSubscribe: 'Vérifiez votre adresse e-mail pour souscrire à un plan payant.',
       verifyEmailCta: 'Vérifier mon e-mail',
+      checkout: {
+        couponCode: 'Code promo',
+        couponPlaceholder: 'Entrez votre code promo',
+        subscribeTo: 'S\'abonner à {plan}',
+        cancel: 'Annuler',
+      },
     },
     pricingPlanCard: {
       budgetCapacity: 'Comprend jusqu\'à {summary} sessions simultanées',
       or: 'OU',
       capacityTooltip: 'La capacité de votre forfait, exprimée en tailles de machines que vous pouvez lancer simultanément. Choisissez la combinaison qui vous convient.',
       unlimitedCapacity: 'Capacité illimitée',
-    },
-    checkout: {
-      couponCode: 'Code promo',
-      couponPlaceholder: 'Entrez votre code promo',
-      subscribeTo: 'S\'abonner à {plan}',
-      cancel: 'Annuler',
     },
   }
 })
