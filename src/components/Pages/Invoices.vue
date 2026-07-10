@@ -42,6 +42,7 @@ const { t } = useTranslations({
       total: 'Total',
       paid: 'Paid',
       unpaid: 'Unpaid',
+      refunded: 'Refunded',
       totalRevenue: 'Total Revenue',
       filterByStatus: 'Filter by status:',
       allInvoices: 'All invoices',
@@ -49,6 +50,9 @@ const { t } = useTranslations({
       unpaidFilter: 'Unpaid',
       drafts: 'Drafts',
       voided: 'Voided',
+      refundedFilter: 'Refunded',
+      partiallyRefundedFilter: 'Partially refunded',
+      refundedAmount: 'refunded:',
       refreshInvoices: 'Refresh invoices',
       refresh: 'Refresh',
       noInvoices: 'No invoices',
@@ -70,6 +74,7 @@ const { t } = useTranslations({
       total: 'Total',
       paid: 'Payées',
       unpaid: 'Non payées',
+      refunded: 'Remboursées',
       totalRevenue: 'CA Total',
       filterByStatus: 'Filtrer par statut :',
       allInvoices: 'Toutes les factures',
@@ -77,6 +82,9 @@ const { t } = useTranslations({
       unpaidFilter: 'Non payées',
       drafts: 'Brouillons',
       voided: 'Annulées',
+      refundedFilter: 'Remboursées',
+      partiallyRefundedFilter: 'Partiellement remboursées',
+      refundedAmount: 'dont remboursé :',
       refreshInvoices: 'Actualiser les factures',
       refresh: 'Actualiser',
       noInvoices: 'Aucune facture',
@@ -166,14 +174,20 @@ const getInvoiceStats = computed(() => {
     const totalCount = invoices.length;
     const paidCount = invoices.filter((inv: any) => inv.status === 'paid').length;
     const unpaidCount = invoices.filter((inv: any) => inv.status === 'unpaid').length;
+    // A refunded invoice is not 'paid', so it already falls out of every existing
+    // bucket — surface it explicitly (full + partial refunds counted together).
+    const refundedCount = invoices.filter(
+        (inv: any) => inv.status === 'refunded' || inv.status === 'partially_refunded'
+    ).length;
     const totalAmount = invoices
         .filter((inv: any) => inv.status === 'paid')
         .reduce((sum: number, inv: any) => sum + (inv.amount || 0), 0);
-    
+
     return {
         total: totalCount,
         paid: paidCount,
         unpaid: unpaidCount,
+        refunded: refundedCount,
         totalAmount: entityStore.formatAmount(totalAmount, 'EUR')
     };
 });
@@ -204,6 +218,10 @@ const getInvoiceStats = computed(() => {
                         <div class="stat-value">{{ getInvoiceStats.unpaid }}</div>
                         <div class="stat-label">{{ t('invoices.unpaid') }}</div>
                     </div>
+                    <div class="stat-card refunded">
+                        <div class="stat-value">{{ getInvoiceStats.refunded }}</div>
+                        <div class="stat-label">{{ t('invoices.refunded') }}</div>
+                    </div>
                     <div class="stat-card info">
                         <div class="stat-value">{{ getInvoiceStats.totalAmount }}</div>
                         <div class="stat-label">{{ t('invoices.totalRevenue') }}</div>
@@ -222,6 +240,8 @@ const getInvoiceStats = computed(() => {
                             <option value="unpaid">{{ t('invoices.unpaidFilter') }}</option>
                             <option value="draft">{{ t('invoices.drafts') }}</option>
                             <option value="void">{{ t('invoices.voided') }}</option>
+                            <option value="refunded">{{ t('invoices.refundedFilter') }}</option>
+                            <option value="partially_refunded">{{ t('invoices.partiallyRefundedFilter') }}</option>
                         </select>
                     </div>
                     <button
@@ -261,6 +281,10 @@ const getInvoiceStats = computed(() => {
                                 <div class="invoice-amount">
                                     <span class="amount-value">
                                         {{ entityStore.formatAmount(entity.amount, entity.currency) }}
+                                    </span>
+                                    <span v-if="entity.amount_refunded > 0" class="refunded-amount">
+                                        {{ t('invoices.refundedAmount') }}
+                                        {{ entityStore.formatAmount(entity.amount_refunded, entity.currency) }}
                                     </span>
                                 </div>
                             </div>
@@ -526,6 +550,14 @@ const getInvoiceStats = computed(() => {
 .text-danger { color: var(--color-danger-text) !important; background-color: var(--color-danger-bg); }
 .text-muted { color: var(--color-gray-600) !important; background-color: var(--color-gray-50); }
 .text-secondary { color: var(--color-gray-600) !important; background-color: var(--color-gray-200); }
+.text-info { color: var(--color-info-text) !important; background-color: var(--color-info-bg); }
+
+.refunded-amount {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.85rem;
+    color: var(--color-info-text);
+}
 
 .overdue-warning {
     color: var(--color-danger);

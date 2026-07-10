@@ -186,8 +186,9 @@ export interface Invoice extends BaseEntity {
   user_subscription?: UserSubscription
   stripe_invoice_id?: string
   amount: number
+  amount_refunded?: number
   currency: string
-  status: 'draft' | 'open' | 'paid' | 'void' | 'uncollectible'
+  status: 'draft' | 'open' | 'paid' | 'void' | 'uncollectible' | 'refunded' | 'partially_refunded'
   invoice_number?: string
   invoice_date?: string
   due_date?: string

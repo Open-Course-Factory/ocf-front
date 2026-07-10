@@ -15,6 +15,8 @@ export const STATUS_CLASS_MAPS = {
     unpaid: 'text-warning',
     draft: 'text-muted',
     void: 'text-danger',
+    refunded: 'text-info',
+    partially_refunded: 'text-warning',
   },
   // Subscription statuses
   subscription: {
@@ -58,6 +60,8 @@ export const STATUS_ICON_MAPS = {
     unpaid: 'fas fa-clock',
     draft: 'fas fa-file',
     void: 'fas fa-times-circle',
+    refunded: 'fas fa-rotate-left',
+    partially_refunded: 'fas fa-rotate-left',
   },
   subscription: {
     active: 'fas fa-check-circle',

@@ -56,6 +56,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
                 draft: 'Draft',
                 void: 'Void',
                 uncollectible: 'Uncollectible',
+                refunded: 'Refunded',
+                partiallyRefunded: 'Partially refunded',
                 viewInStripe: 'View in Stripe',
                 modify: 'View invoice details',
                 add: 'Create invoice',
@@ -88,6 +90,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
                 draft: 'Brouillon',
                 void: 'Annulée',
                 uncollectible: 'Irrécouvrable',
+                refunded: 'Remboursée',
+                partiallyRefunded: 'Partiellement remboursée',
                 viewInStripe: 'Voir dans Stripe',
                 modify: 'Voir les détails de la facture',
                 add: 'Créer une facture',
@@ -130,6 +134,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
         void: 'invoices.void',
         uncollectible: 'invoices.uncollectible',
         draft: 'invoices.draft',
+        refunded: 'invoices.refunded',
+        partially_refunded: 'invoices.partiallyRefunded',
     }
     const getStatusLabel = (status: string | undefined): string => {
         const key = statusLabelKeys[String(status).toLowerCase()]
