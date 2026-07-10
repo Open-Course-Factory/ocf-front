@@ -42,7 +42,8 @@ const { t } = useTranslations({
       default: 'Default',
       inactive: 'Inactive',
       setDefault: 'Set as default',
-      loadError: 'Error loading payment methods',
+      cardLabel: 'Card',
+      unknownType: 'Unknown',
       updateError: 'Error updating',
       portalError: 'Unable to open the management portal'
     }
@@ -54,7 +55,8 @@ const { t } = useTranslations({
       default: 'Défaut',
       inactive: 'Inactive',
       setDefault: 'Définir par défaut',
-      loadError: 'Erreur lors du chargement des méthodes de paiement',
+      cardLabel: 'Carte',
+      unknownType: 'Inconnu',
       updateError: 'Erreur lors de la mise à jour',
       portalError: 'Impossible d\'ouvrir le portail de gestion'
     }
@@ -87,7 +89,6 @@ const setAsDefault = async (paymentMethodId: string) => {
         try {
             await entityStore.setAsDefault(paymentMethodId);
         } catch (err: any) {
-            console.error('Error setting payment method as default:', err);
             error.value = extractErrorMessage(err, t('paymentMethods.updateError'));
         }
     });
@@ -102,7 +103,6 @@ const addPaymentMethod = async () => {
         // Note: Quand l'utilisateur reviendra du portail,
         // la page se rechargera et les méthodes seront automatiquement synchronisées
     } catch (err: any) {
-        console.error('Error opening portal:', err);
         error.value = err.response?.data?.error_message || t('paymentMethods.portalError');
     }
 };
@@ -135,7 +135,7 @@ const addPaymentMethod = async () => {
             </div>
 
             <!-- Message si pas de méthodes de paiement -->
-            <div v-if="entityStore.entities.length === 0" class="empty-state">
+            <div v-if="entityStore.entities.length === 0 && !entityStore.isLoading" class="empty-state">
                 <i class="fas fa-credit-card fa-3x"></i>
                 <h4>{{ ti18n('ui.noPaymentMethods') }}</h4>
                 <p>{{ ti18n('ui.addCardToPurchase') }}</p>
@@ -164,7 +164,7 @@ const addPaymentMethod = async () => {
                                 <!-- Informations de la carte -->
                                 <div class="card-info">
                                     <div class="card-brand">
-                                        {{ entity.card_brand?.toUpperCase() || 'CARD' }}
+                                        {{ entity.card_brand?.toUpperCase() || t('paymentMethods.cardLabel') }}
                                     </div>
                                     <div class="card-number">
                                         •••• •••• •••• {{ entity.card_last4 }}
