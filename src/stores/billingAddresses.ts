@@ -40,6 +40,9 @@ export const useBillingAddressesStore = defineStore('billingAddresses', () => {
         en: {
             billingAddresses: {
                 pageTitle: 'Billing Addresses',
+                company_name: 'Company name',
+                siret: 'SIRET',
+                vat_number: 'VAT number',
                 line1: 'Address Line 1',
                 line2: 'Address Line 2',
                 city: 'City',
@@ -55,6 +58,9 @@ export const useBillingAddressesStore = defineStore('billingAddresses', () => {
         fr: {
             billingAddresses: {
                 pageTitle: 'Adresses de Facturation',
+                company_name: 'Raison sociale',
+                siret: 'SIRET',
+                vat_number: 'N° TVA intracommunautaire',
                 line1: 'Adresse Ligne 1',
                 line2: 'Adresse Ligne 2',
                 city: 'Ville',
@@ -71,6 +77,13 @@ export const useBillingAddressesStore = defineStore('billingAddresses', () => {
 
     const fieldList = buildFieldList([
         field('id', 'ID').input().hidden().readonly(),
+        // B2B fields stay optional (B2C leaves them empty). No client-side format
+        // validation here: the ocf-core BillingAddress hook is the authority for
+        // SIRET (14 digits) / VAT / company-name length. Duplicating the rules in
+        // FieldBuilder would risk drift from the server contract.
+        field('company_name', t('billingAddresses.company_name')).input().visible().editable(),
+        field('siret', t('billingAddresses.siret')).input().visible().editable(),
+        field('vat_number', t('billingAddresses.vat_number')).input().visible().editable(),
         field('line1', t('billingAddresses.line1')).input().visible().editable().required(),
         field('line2', t('billingAddresses.line2')).input().visible().editable(),
         field('city', t('billingAddresses.city')).input().visible().editable().required(),
@@ -93,6 +106,7 @@ export const useBillingAddressesStore = defineStore('billingAddresses', () => {
     // Formatage de l'adresse pour affichage
     const formatAddress = (address: any) => {
         const parts = [
+            address.company_name, // Company identity leads the line for B2B invoices; filtered out when empty (B2C)
             address.line1,
             address.line2,
             `${address.postal_code} ${address.city}`,

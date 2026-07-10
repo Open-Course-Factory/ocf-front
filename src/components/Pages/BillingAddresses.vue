@@ -111,6 +111,8 @@ const setAsDefault = async (addressId: string) => {
                         <!-- Affichage formaté de l'adresse -->
                         <div class="address-preview">
                             <div class="formatted-address">
+                                <div v-if="entity.company_name"><strong>{{ entity.company_name }}</strong></div>
+                                <div v-if="entity.siret" class="text-muted">{{ t('billingAddresses.siret') }}: {{ entity.siret }}</div>
                                 <div><strong>{{ entity.line1 }}</strong></div>
                                 <div v-if="entity.line2" class="text-muted">{{ entity.line2 }}</div>
                                 <div>{{ entity.postal_code }} {{ entity.city }}</div>
