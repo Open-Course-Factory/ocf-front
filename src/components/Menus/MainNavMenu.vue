@@ -113,6 +113,7 @@ import { useMenuCategories } from '../../composables/useMenuCategories';
 import { useHelpRegistryStore } from '../../stores/helpRegistry';
 import { useLocale } from '../../composables/useLocale';
 import { useTranslations } from '../../composables/useTranslations';
+import { isAssignedSubscription } from '../../utils/subscriptionHelpers';
 
 const helpStore = useHelpRegistryStore()
 const { currentLocale } = useLocale()
@@ -165,9 +166,7 @@ const { isPersonalOrganization } = storeToRefs(organizationsStore);
 // Check if user has only assigned subscriptions (no personal/self-paid)
 const subscriptionsStore = useSubscriptionsStore();
 const hasOnlyAssignedSubscription = computed(() => {
-  const current = subscriptionsStore.currentSubscription
-  if (!current) return false
-  return current.subscription_type === 'assigned' || !!current.subscription_batch_id
+  return isAssignedSubscription(subscriptionsStore.currentSubscription)
 });
 
 // Check if user has infrastructure access (admin or org with incus_ui_enabled)

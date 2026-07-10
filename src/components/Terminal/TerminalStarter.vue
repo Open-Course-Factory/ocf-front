@@ -38,7 +38,7 @@
         :backend-id="selectedBackendId || undefined"
         :organization-id="selectedOrganizationId || undefined"
         :disabled="isStarting"
-        :is-assigned-subscription="isAssignedSubscription"
+        :is-assigned-subscription="isAssigned"
       />
 
       <!-- Progress indicator -->
@@ -150,6 +150,7 @@ import TerminalAdvancedOptions from './TerminalAdvancedOptions.vue'
 import TerminalUsagePanel from './TerminalUsagePanel.vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import type { StartComposedSessionData } from '../../types/terminal'
+import { isAssignedSubscription } from '../../utils/subscriptionHelpers'
 
 // Props
 interface ActiveScenarioLike {
@@ -349,10 +350,7 @@ const selectedInstanceDefaultPackages = computed(() => [] as string[])
 
 // Subscription and usage state
 const currentSubscription = computed(() => subscriptionsStore.currentSubscription)
-const isAssignedSubscription = computed(() => {
-  const sub = currentSubscription.value
-  return sub?.subscription_type === 'assigned' || !!sub?.subscription_batch_id
-})
+const isAssigned = computed(() => isAssignedSubscription(currentSubscription.value))
 
 // Note: there is no front-end slot-count gate. The CPU/RAM budget engine on
 // the backend is the sole authoritative cap for terminals. The launcher lets

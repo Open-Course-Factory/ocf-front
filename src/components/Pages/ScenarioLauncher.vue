@@ -183,6 +183,7 @@ import AdminBadge from '../Common/AdminBadge.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
 import { terminalService } from '../../services/domain/terminal/terminalService'
 import type { Size } from '../../types/terminal'
+import { isAssignedSubscription } from '../../utils/subscriptionHelpers'
 
 const router = useRouter()
 const { showError, showConfirm } = useNotification()
@@ -191,10 +192,7 @@ const organizationsStore = useOrganizationsStore()
 const subscriptionsStore = useSubscriptionsStore()
 const currentOrgId = computed(() => organizationsStore.currentOrganization?.id || '')
 
-const isAssignedSubscription = computed(() => {
-  const sub = subscriptionsStore.currentSubscription
-  return sub?.subscription_type === 'assigned' || !!sub?.subscription_batch_id
-})
+const isAssigned = computed(() => isAssignedSubscription(subscriptionsStore.currentSubscription))
 
 const { t } = useTranslations({
   en: {
@@ -378,7 +376,7 @@ function getUnavailableHint(scenario: any): string {
   switch (reason) {
     case 'plan':
       // Org-managed subscribers can't upgrade — show nothing
-      if (isAssignedSubscription.value) return ''
+      if (isAssigned.value) return ''
       return t('launcher.unavailablePlanHint')
     case 'no_distribution':
       return t('launcher.unavailableNoDistributionHint')

@@ -161,6 +161,7 @@
 import { computed } from 'vue'
 import { useTranslations } from '../../../composables/useTranslations'
 import { formatBudgetAsSizes, CANONICAL_SIZE_CATALOG } from '../../../utils/quotaFormatters'
+import { isAssignedSubscription } from '../../../utils/subscriptionHelpers'
 
 interface Props {
   primarySubscription: any | null
@@ -316,10 +317,7 @@ const isCanceled = computed(() => props.primarySubscription?.cancel_at_period_en
 
 // Assigned (bulk-license) users don't pay, so they must never see
 // Manage / Cancel / Reactivate. Mirror SubscriptionCard's detection.
-const isAssigned = computed(() => {
-  const sub = props.primarySubscription
-  return sub?.subscription_type === 'assigned' || !!sub?.subscription_batch_id
-})
+const isAssigned = computed(() => isAssignedSubscription(props.primarySubscription))
 
 const isPersonalSubscription = computed(() => {
   const type = props.primarySubscription?.subscription_type

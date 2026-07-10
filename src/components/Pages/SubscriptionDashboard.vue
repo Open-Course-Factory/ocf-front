@@ -17,7 +17,7 @@
       </div>
 
       <!-- Upgrade to Team Banner (hide for assigned subscriptions) -->
-      <UpgradeToTeamBanner v-if="!isAssignedSubscription" />
+      <UpgradeToTeamBanner v-if="!isAssigned" />
 
       <!-- Messages d'erreur globaux (utilise le nouveau composant ErrorAlert) -->
       <ErrorAlert
@@ -56,7 +56,7 @@
 
         <!-- All Subscriptions (Stacked View) - hidden for assigned-only users -->
         <AllSubscriptions
-          v-if="!isAssignedSubscription && subscriptionsStore.hasActiveSubscription() && subscriptionsStore.allSubscriptions.length > 1"
+          v-if="!isAssigned && subscriptionsStore.hasActiveSubscription() && subscriptionsStore.allSubscriptions.length > 1"
           :subscriptions="subscriptionsStore.allSubscriptions"
           :is-loading="isLoadingAllSubs"
         />
@@ -75,7 +75,7 @@
 
         <!-- Composant Factures Récentes (hidden for assigned users who don't pay) -->
         <RecentInvoices
-          v-if="!isAssignedSubscription"
+          v-if="!isAssigned"
           :invoices="recentInvoices"
           :downloading-ids="downloadingInvoices"
           :is-loading="isLoadingInvoices"
@@ -119,6 +119,7 @@ import ErrorAlert from '../UI/ErrorAlert.vue'
 import UpgradeToTeamBanner from '../Common/UpgradeToTeamBanner.vue'
 import OrgTerminalUsagePanel from '../Terminal/OrgTerminalUsagePanel.vue'
 import TerminalUsagePanel from '../Terminal/TerminalUsagePanel.vue'
+import { isAssignedSubscription } from '../../utils/subscriptionHelpers'
 
 const { t } = useI18n()
 
@@ -181,11 +182,7 @@ const primarySubscription = computed(() => {
   return subscriptionsStore.currentSubscription
 })
 
-const isAssignedSubscription = computed(() => {
-  const sub = subscriptionsStore.currentSubscription
-  if (!sub) return false
-  return sub.subscription_type === 'assigned' || !!sub.subscription_batch_id
-})
+const isAssigned = computed(() => isAssignedSubscription(subscriptionsStore.currentSubscription))
 
 // Show org terminal usage panel when user can manage the current org
 const currentOrgId = computed(() => organizationsStore.currentOrganization?.id ?? null)

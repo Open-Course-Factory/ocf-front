@@ -354,6 +354,7 @@ import BaseModal from '../Modals/BaseModal.vue'
 import router from '../../router/index'
 import { useNotification } from '../../composables/useNotification'
 import { formatBudgetAsSizes, CANONICAL_SIZE_CATALOG } from '../../utils/quotaFormatters'
+import { isAssignedSubscription } from '../../utils/subscriptionHelpers'
 
 const { formatFeatureName, formatBillingInterval } = usePlanFormatters()
 
@@ -509,8 +510,7 @@ const emailVerified = computed(() => currentUserStore.emailVerified)
 
 // Check if user has an assigned (organization-managed) subscription
 const isAssignedUser = computed(() => {
-  const subscription = subscriptionsStore.currentSubscription
-  return subscription?.subscription_type === 'assigned'
+  return isAssignedSubscription(subscriptionsStore.currentSubscription)
 })
 
 // Computed
@@ -676,8 +676,7 @@ async function selectPlan(plan: any) {
       const currentSubscription = subscriptionsStore.currentSubscription
 
       // Check if current subscription is assigned (gift)
-      const isAssignedSubscription = currentSubscription?.subscription_type === 'assigned' ||
-                                      currentSubscription?.subscription_batch_id
+      const isAssigned = isAssignedSubscription(currentSubscription)
 
       // Check if user has ever purchased a personal subscription
       const allSubs = subscriptionsStore.allSubscriptions || []
@@ -685,7 +684,7 @@ async function selectPlan(plan: any) {
 
       // RULE: Cannot downgrade from assigned subscription
       // EXCEPTION: Can always access free trial if never purchased anything personal
-      if (isAssignedSubscription) {
+      if (isAssigned) {
         const currentPriority = currentSubscription?.subscription_plan?.priority ?? 0
         const targetPriority = plan.priority ?? 0
 
