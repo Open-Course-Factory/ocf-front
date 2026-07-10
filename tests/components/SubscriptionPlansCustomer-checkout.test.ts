@@ -419,4 +419,63 @@ describe('SubscriptionPlansCustomer — direct-to-Stripe checkout', () => {
       expect(btn.attributes('disabled')).toBeUndefined()
     })
   })
+
+  // ---- Checkout modal i18n key resolution ----
+  // WHY: 2026-07-10 payment go-live review. The coupon/checkout modal is the
+  // last screen a paying customer sees before Stripe. Its strings are
+  // registered under a top-level `checkout` namespace, but the template reads
+  // them under `plans.checkout.*` — so every label resolves to a raw dotted
+  // key (e.g. "plans.checkout.subscribeTo") shown verbatim to the customer.
+  // These pin the RESOLVED text so a broken key path can't slip through again.
+  // They read visible rendered text (not data-test selectors) on purpose — a
+  // selector-only test would happily pass on a raw key.
+  describe('checkout modal renders resolved strings, not raw i18n keys', () => {
+    async function openCouponModal() {
+      const wrapper = mountPage([PAID_PLAN])
+      await flushPromises()
+      await wrapper.vm.$nextTick()
+      await clickSubscribe(wrapper, 'Solo')
+      await wrapper.vm.$nextTick()
+      await flushPromises()
+      return wrapper
+    }
+
+    it('renders the resolved modal title, not the raw plans.checkout.subscribeTo key', async () => {
+      const wrapper = await openCouponModal()
+
+      const title = wrapper.find('.base-modal-title')
+      expect(title.exists(), 'checkout modal title should render').toBe(true)
+      expect(title.text()).not.toContain('plans.checkout.')
+      // Registered EN string is "Subscribe to {plan}".
+      expect(title.text()).toContain('Subscribe to Solo')
+    })
+
+    it('renders the resolved coupon label, not the raw plans.checkout.couponCode key', async () => {
+      const wrapper = await openCouponModal()
+
+      const label = wrapper.find('label[for="couponCode"]')
+      expect(label.exists(), 'coupon label should render').toBe(true)
+      expect(label.text()).not.toContain('plans.checkout.')
+      expect(label.text()).toBe('Coupon Code')
+    })
+
+    it('renders the resolved coupon placeholder, not the raw plans.checkout.couponPlaceholder key', async () => {
+      const wrapper = await openCouponModal()
+
+      const input = wrapper.find('[data-test="coupon-input"]')
+      expect(input.exists(), 'coupon input should render').toBe(true)
+      const placeholder = input.attributes('placeholder') ?? ''
+      expect(placeholder).not.toContain('plans.checkout.')
+      expect(placeholder).toBe('Enter coupon code')
+    })
+
+    it('renders the resolved cancel button, not the raw plans.checkout.cancel key', async () => {
+      const wrapper = await openCouponModal()
+
+      const cancel = wrapper.find('.btn-cancel-checkout')
+      expect(cancel.exists(), 'cancel button should render').toBe(true)
+      expect(cancel.text()).not.toContain('plans.checkout.')
+      expect(cancel.text()).toBe('Cancel')
+    })
+  })
 })
