@@ -86,7 +86,7 @@ interface Props {
   showHistory?: boolean
   scenarioSessionId?: string
   scenarioFlagsEnabled?: boolean
-  endReason?: 'completed' | 'abandoned' | 'expired' | 'stopped' | 'setup_failed' | ''
+  endReason?: 'completed' | 'abandoned' | 'expired' | 'stopped' | 'revoked' | 'setup_failed' | ''
   hasScenario?: boolean
 }
 

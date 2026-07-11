@@ -272,7 +272,7 @@ interface Props {
   icon?: string
   fullHeight?: boolean
   // End-of-session state (when set, shows state-aware overlay instead of error)
-  endReason?: 'completed' | 'abandoned' | 'expired' | 'stopped' | 'setup_failed' | ''
+  endReason?: 'completed' | 'abandoned' | 'expired' | 'stopped' | 'revoked' | 'setup_failed' | ''
   // Whether this terminal was part of a scenario (affects navigation in end-state)
   hasScenario?: boolean
 }

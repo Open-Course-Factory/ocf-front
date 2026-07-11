@@ -31,6 +31,11 @@ const endStateTranslations = {
         body: 'This terminal session has been stopped. You can start a new one from your sessions page.',
         primary: 'Back to Sessions'
       },
+      revoked: {
+        title: 'Session ended',
+        body: 'Your session was stopped because your subscription or license is no longer active. Contact your trainer or check your subscription to continue.',
+        primary: 'Check my subscription'
+      },
       setup_failed: {
         title: 'Setup Failed',
         body: 'The scenario environment could not be prepared. This is usually a temporary issue. Please try again.',
@@ -64,6 +69,11 @@ const endStateTranslations = {
         body: 'Cette session terminal a été arrêtée. Vous pouvez en démarrer une nouvelle depuis votre page de sessions.',
         primary: 'Retour aux sessions'
       },
+      revoked: {
+        title: 'Session interrompue',
+        body: "Votre session a été arrêtée car votre abonnement ou votre licence n'est plus actif. Contactez votre formateur ou vérifiez votre abonnement pour continuer.",
+        primary: 'Vérifier mon abonnement'
+      },
       setup_failed: {
         title: 'Échec de la préparation',
         body: 'L\'environnement du scénario n\'a pas pu être préparé. Il s\'agit généralement d\'un problème temporaire. Veuillez réessayer.',
@@ -77,7 +87,7 @@ const endStateTranslations = {
   }
 }
 
-export type EndStateReason = 'completed' | 'abandoned' | 'expired' | 'stopped' | 'setup_failed'
+export type EndStateReason = 'completed' | 'abandoned' | 'expired' | 'stopped' | 'revoked' | 'setup_failed'
 
 export interface EndStateConfig {
   icon: string
@@ -133,6 +143,16 @@ export function useEndStateConfig() {
       primaryRoute: { name: hasScenario ? 'ScenarioLauncher' : 'TerminalSessions' },
       secondaryLabel: hasScenario ? t('endState.backToSessions') : undefined,
       secondaryRoute: hasScenario ? { name: 'TerminalSessions' } : undefined
+    }),
+    revoked: () => ({
+      icon: 'fas fa-ban',
+      tone: 'warning',
+      title: t('endState.revoked.title'),
+      body: t('endState.revoked.body'),
+      primaryLabel: t('endState.revoked.primary'),
+      primaryRoute: { name: 'SubscriptionPlans' },
+      secondaryLabel: t('endState.backToSessions'),
+      secondaryRoute: { name: 'TerminalSessions' }
     }),
     setup_failed: () => ({
       icon: 'fas fa-exclamation-triangle',

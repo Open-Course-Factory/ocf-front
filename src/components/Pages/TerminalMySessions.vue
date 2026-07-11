@@ -562,7 +562,7 @@ import { useFormatters } from '../../composables/useFormatters'
 import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import { useClassGroupsStore } from '../../stores/classGroups'
 import { extractErrorMessage } from '../../utils/formatters'
-import { getEffectiveSessionState, sessionHasNetwork } from '../../utils/sessionState'
+import { getEffectiveSessionState, sessionHasNetwork, type EffectiveSessionState } from '../../utils/sessionState'
 
 const { showConfirm, showError } = useNotification()
 const { formatDateTime: formatDateTimeTz } = useFormatters()
@@ -1112,7 +1112,7 @@ function transitioningLabel(session: any): string | null {
  * - stopped -> amber/warning
  * - deleted -> muted/gray
  */
-function getStateBadgeClass(state: 'running' | 'stopped' | 'deleted'): string {
+function getStateBadgeClass(state: EffectiveSessionState): string {
   switch (state) {
     case 'running': return 'text-success'
     case 'stopped': return 'text-warning'
@@ -1121,7 +1121,7 @@ function getStateBadgeClass(state: 'running' | 'stopped' | 'deleted'): string {
   }
 }
 
-function getStateLabel(state: 'running' | 'stopped' | 'deleted'): string {
+function getStateLabel(state: EffectiveSessionState): string {
   switch (state) {
     case 'running': return t('terminalMySessions.stateRunning')
     case 'stopped': return t('terminalMySessions.stateStopped')

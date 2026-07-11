@@ -589,7 +589,7 @@ const isSessionActive = computed(() => {
 })
 
 // Determine the end-of-session reason using priority resolution
-const terminalEndReason = computed<'completed' | 'abandoned' | 'expired' | 'stopped' | 'setup_failed' | ''>(() => {
+const terminalEndReason = computed<'completed' | 'abandoned' | 'expired' | 'stopped' | 'revoked' | 'setup_failed' | ''>(() => {
   // Scenario end-states take priority (may fire before terminal status updates)
   if (scenarioSessionStatus.value === 'completed') return 'completed'
   if (scenarioSessionStatus.value === 'abandoned') return 'abandoned'
@@ -600,7 +600,10 @@ const terminalEndReason = computed<'completed' | 'abandoned' | 'expired' | 'stop
 
   // Map effective state -> end reason. 'deleted' here means "TTL or trash" —
   // display as expired for the banner to preserve existing user-facing copy.
+  // 'revoked' is a billing/entitlement stop, kept distinct from a TTL expiry
+  // so the banner can show honest copy instead of "time limit reached".
   if (effectiveState.value === 'stopped') return 'stopped'
+  if (effectiveState.value === 'revoked') return 'revoked'
   if (effectiveState.value === 'deleted') return 'expired'
 
   // Fallback: no specific end reason (keep existing reconnect behavior)

@@ -36,7 +36,7 @@
  * run's deadline and is naturally in the past, which is expected and not
  * a reason to override the backend's terminal state.
  */
-export type EffectiveSessionState = 'running' | 'stopped' | 'deleted'
+export type EffectiveSessionState = 'running' | 'stopped' | 'deleted' | 'revoked'
 
 export interface SessionLifecycleFields {
   state?: string | null
@@ -51,13 +51,20 @@ export function getEffectiveSessionState(
   const isExpired =
     !!session.expires_at && new Date(session.expires_at).getTime() < Date.now()
 
-  // Canonical `state` from the backend wins. Why: 'stopped' and 'deleted' are
-  // terminal-ish states deliberately set by the backend; their expires_at
-  // (the previous active run's deadline) is naturally in the past once the
-  // session is stopped — overriding to 'deleted' would hide the "Session
+  // Canonical `state` from the backend wins. Why: 'stopped', 'deleted' and
+  // 'revoked' are terminal-ish states deliberately set by the backend; their
+  // expires_at (the previous active run's deadline) is naturally in the past
+  // once the session ends — overriding to 'deleted' would hide the "Session
   // arrêtée — Resume / Delete" banner for persistent sessions and prevent
-  // users from resuming a backend-preserved container.
-  if (session.state === 'stopped' || session.state === 'deleted') {
+  // users from resuming a backend-preserved container. 'revoked' is a
+  // billing/entitlement stop (plan lapse, license revocation) that must
+  // survive as its own state so downstream copy stays honest instead of
+  // dishonestly reusing the "time limit reached" expired banner.
+  if (
+    session.state === 'stopped' ||
+    session.state === 'deleted' ||
+    session.state === 'revoked'
+  ) {
     return session.state
   }
 
