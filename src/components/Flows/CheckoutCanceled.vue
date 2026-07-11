@@ -120,7 +120,7 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
 import { SUPPORT_EMAIL } from '../../config/contact'
 
@@ -177,12 +177,20 @@ const { t } = useTranslations({
   }
 })
 
+const route = useRoute()
 const router = useRouter()
 
 // Checkout now goes straight to Stripe — there is no in-app Checkout route to
 // return to. Retry sends the user back to the plans page to restart the flow.
+// The cancel URL carries the picked plan (`?planId=…`); forward it so the plans
+// page keeps that context instead of dropping the user on the bare list.
 function retryCheckout() {
-  router.push({ name: 'SubscriptionPlans' })
+  const planId = route.query.planId
+  if (planId) {
+    router.push({ name: 'SubscriptionPlans', query: { planId: String(planId) } })
+  } else {
+    router.push({ name: 'SubscriptionPlans' })
+  }
 }
 </script>
 

@@ -957,7 +957,9 @@ async function confirmCheckout() {
   isSubscribing.value = true
   try {
     const successUrl = `${window.location.origin}/checkout-success`
-    const cancelUrl = `${window.location.origin}/checkout-canceled`
+    // Carry the picked plan through so the canceled page can offer a Retry that
+    // returns the user straight to this plan instead of the bare plans list.
+    const cancelUrl = `${window.location.origin}/checkout-canceled?planId=${plan.id}`
     const coupon = couponCode.value.trim() || undefined
 
     await subscriptionsStore.createCheckoutSession(

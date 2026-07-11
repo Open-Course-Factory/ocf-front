@@ -8,7 +8,45 @@
 <template>
   <div class="checkout-success">
     <div class="success-container">
-      <div class="success-content">
+      <!-- Payment received, webhook still syncing the subscription: reassure the
+           user their money landed instead of claiming an unverified activation. -->
+      <div v-if="status === 'polling'" class="success-content pending-content">
+        <div class="pending-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+        </div>
+        <div class="success-message">
+          <h1>{{ t('checkoutSuccess.pendingTitle') }}</h1>
+          <p class="lead">{{ t('checkoutSuccess.pendingActivating') }}</p>
+        </div>
+      </div>
+
+      <!-- Poll budget drained without the webhook landing: still not an error —
+           the payment is in, activation just trails. Offer a manual re-check. -->
+      <div v-else-if="status === 'pending'" class="success-content pending-content">
+        <div class="pending-icon">
+          <i class="fas fa-clock"></i>
+        </div>
+        <div class="success-message">
+          <h1>{{ t('checkoutSuccess.pendingTitle') }}</h1>
+          <p class="lead">{{ t('checkoutSuccess.pendingMessage') }}</p>
+        </div>
+        <div class="pending-actions">
+          <!-- Manual re-poll instead of an unbounded background poll: the budget
+               already expired, so let the user decide when to re-check. -->
+          <button class="btn btn-outline-primary" @click="pollForSubscription">
+            <i class="fas fa-sync-alt"></i>
+            {{ t('checkoutSuccess.refresh') }}
+          </button>
+          <router-link to="/subscription-dashboard" class="btn btn-primary">
+            <i class="fas fa-tachometer-alt"></i>
+            {{ t('checkoutSuccess.goToDashboard') }}
+          </router-link>
+        </div>
+      </div>
+
+      <!-- Activation confirmed: the welcome + subscription details are only
+           shown once the subscription has actually landed. -->
+      <div v-else class="success-content">
         <!-- Animation de succès -->
         <div class="success-animation">
           <div class="checkmark">
@@ -18,13 +56,13 @@
             </div>
           </div>
         </div>
-        
+
         <!-- Message principal -->
         <div class="success-message">
           <h1>{{ t('checkoutSuccess.title') }}</h1>
           <p class="lead">{{ t('checkoutSuccess.subtitle') }}</p>
         </div>
-        
+
         <!-- Détails de l'abonnement -->
         <div v-if="subscriptionDetails" class="subscription-details">
           <div class="details-card">
@@ -133,6 +171,10 @@ const { t } = useTranslations({
     checkoutSuccess: {
       title: 'Welcome to Open Course Factory!',
       subtitle: 'Your subscription has been activated successfully.',
+      pendingTitle: 'Payment received',
+      pendingActivating: 'Activating your subscription…',
+      pendingMessage: 'Your payment was received successfully. Activating your subscription may take a few moments. It will appear in your dashboard as soon as it is ready.',
+      refresh: 'Refresh',
       subscriptionDetails: 'Subscription Details',
       plan: 'Plan',
       amount: 'Amount',
@@ -157,6 +199,10 @@ const { t } = useTranslations({
     checkoutSuccess: {
       title: 'Bienvenue dans Open Course Factory !',
       subtitle: 'Votre abonnement a été activé avec succès.',
+      pendingTitle: 'Paiement reçu',
+      pendingActivating: 'Activation de votre abonnement en cours…',
+      pendingMessage: 'Votre paiement a bien été reçu. L\'activation de votre abonnement peut prendre quelques instants. Il apparaîtra dans votre tableau de bord dès qu\'il sera prêt.',
+      refresh: 'Actualiser',
       subscriptionDetails: 'Détails de l\'Abonnement',
       plan: 'Plan',
       amount: 'Montant',
@@ -184,11 +230,17 @@ const subscriptionsStore = useSubscriptionsStore()
 const subscriptionPlansStore = useSubscriptionPlansStore()
 
 const subscriptionDetails = ref(null)
-const isLoading = ref(true)
 
-onMounted(async () => {
-  // Récupérer les détails de l'abonnement depuis l'API
-  // Poll for up to 10 seconds to wait for webhook to process
+// Drives the reassuring copy the just-paid user reads: 'polling' while we wait
+// for the Stripe webhook to sync the subscription, 'activated' once it lands,
+// 'pending' if the poll budget drains first (payment is in, activation trails).
+const status = ref<'polling' | 'activated' | 'pending'>('polling')
+
+// Poll getCurrentSubscription() until the webhook-synced subscription appears or
+// the budget runs out. Also re-runnable on demand from the exhausted state so
+// the user can re-check without an unbounded background poll.
+async function pollForSubscription() {
+  status.value = 'polling'
   const maxAttempts = 10
   const delayMs = 1000
   let attempts = 0
@@ -197,29 +249,27 @@ onMounted(async () => {
     while (attempts < maxAttempts) {
       await subscriptionsStore.getCurrentSubscription()
 
-      // Check if we have a subscription now
       if (subscriptionsStore.currentSubscription) {
         subscriptionDetails.value = subscriptionsStore.currentSubscription
-        break
+        status.value = 'activated'
+        return
       }
 
-      // Wait before next attempt
       attempts++
       if (attempts < maxAttempts) {
         await new Promise(resolve => setTimeout(resolve, delayMs))
       }
     }
 
-    if (!subscriptionsStore.currentSubscription) {
-      console.warn('Subscription not loaded after polling. Webhook may still be processing.')
-      // Still show the success page, just without details
-    }
+    // Webhook still hasn't landed — reassure rather than claim activation.
+    status.value = 'pending'
   } catch (error) {
     console.error('Erreur lors du chargement de l\'abonnement:', error)
-  } finally {
-    isLoading.value = false
+    status.value = 'pending'
   }
-})
+}
+
+onMounted(pollForSubscription)
 
 function formatPrice(amount: number, currency: string = 'EUR') {
   return subscriptionPlansStore.formatPrice(amount, currency)
@@ -256,6 +306,38 @@ function formatDate(dateString: string) {
   padding: 40px;
   text-align: center;
   box-shadow: var(--shadow-modal);
+}
+
+/* États d'attente (paiement reçu, activation en cours / différée) */
+.pending-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.pending-spinner {
+  font-size: 3rem;
+  color: var(--color-primary);
+}
+
+.pending-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: var(--color-info-bg);
+  color: var(--color-info-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+}
+
+.pending-actions {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 /* Animation de checkmark */
