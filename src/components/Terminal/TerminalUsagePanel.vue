@@ -59,6 +59,27 @@
           <span class="info-value">{{ capacityLabel }}</span>
         </div>
 
+        <!-- Remaining capacity in size-count language (primary line) -->
+        <div
+          class="info-line remaining-capacity"
+          :class="{ 'is-exhausted': remainingCapacity.kind === 'exhausted' }"
+          data-testid="remaining-capacity"
+        >
+          <span class="info-label">
+            <i class="fas fa-rocket"></i>
+            {{ t('terminals.remainingCapacity') }}:
+          </span>
+          <span class="info-value">
+            <template v-if="remainingCapacity.kind === 'unlimited'">
+              {{ t('terminals.remainingUnlimited') }}
+            </template>
+            <template v-else-if="remainingCapacity.kind === 'exhausted'">
+              {{ t('terminals.remainingExhausted') }}
+            </template>
+            <template v-else>≈ {{ remainingCapacity.sizes }}</template>
+          </span>
+        </div>
+
         <!-- Progress bars -->
         <div class="bars-section" data-testid="usage-limits">
           <div class="bar-row">
@@ -161,7 +182,9 @@ import { useNotification } from '../../composables/useNotification'
 import { terminalService } from '../../services/domain/terminal'
 import {
   formatElapsed,
-  formatMemoryMb
+  formatMemoryMb,
+  summarizeRemainingBudget,
+  CANONICAL_SIZE_CATALOG
 } from '../../utils/quotaFormatters'
 import { formatMcpuAsVcpu } from '../../utils/formatters'
 import type { MyTerminalUsageResponse } from '../../types/terminal'
@@ -178,6 +201,10 @@ const { t } = useTranslations({
       sourcePersonal: 'personal',
       sourceOrganization: 'provided by {orgName}',
       fetchError: 'Could not load usage data.',
+      remainingCapacity: 'Remaining capacity',
+      remainingUnlimited: 'unlimited',
+      remainingExhausted: 'No capacity left — stop a session to start another',
+      or: 'OR',
       budget: {
         cpuUsed: 'CPU used',
         memUsed: 'RAM used',
@@ -201,6 +228,10 @@ const { t } = useTranslations({
       sourcePersonal: 'personnel',
       sourceOrganization: 'fourni par {orgName}',
       fetchError: 'Impossible de charger les données d\'utilisation.',
+      remainingCapacity: 'Capacité restante',
+      remainingUnlimited: 'illimitée',
+      remainingExhausted: 'Plus de capacité — arrêtez une session pour en lancer une autre',
+      or: 'OU',
       budget: {
         cpuUsed: 'CPU utilisé',
         memUsed: 'RAM utilisée',
@@ -304,6 +335,13 @@ const capacityLabel = computed(() => {
   const memPart = u.max_memory_mb === 0 ? t('terminals.unlimited') : formatMemoryMb(u.max_memory_mb)
   return `${cpuPart}, ${memPart}`
 })
+
+// Primary "how much can I still launch" line, in the customer's size-count
+// language (SSOT with the plan cards via summarizeRemainingBudget). Derived from
+// the remaining budget (max − used); the raw CPU/RAM bars below stay as detail.
+const remainingCapacity = computed(() =>
+  summarizeRemainingBudget(usage.value ?? {}, CANONICAL_SIZE_CATALOG, t('terminals.or'))
+)
 
 const sessionDurationLabel = computed(() => {
   const minutes = usage.value?.max_session_duration_minutes ?? 0
@@ -428,6 +466,10 @@ onBeforeUnmount(() => {
 
 .footer-line {
   margin-top: var(--spacing-xs);
+}
+
+.remaining-capacity.is-exhausted .info-value {
+  color: var(--color-warning);
 }
 
 .text-muted {

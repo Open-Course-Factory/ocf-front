@@ -351,3 +351,75 @@ export function formatBudgetAsSizes(
     .map(e => `${e.count} ${e.key}`)
     .join(` ${joiner} `)
 }
+
+/**
+ * Discriminated result of {@link summarizeRemainingBudget}. `sizes` is only
+ * populated for `kind === 'sizes'`; it is `''` for the other two states.
+ */
+export interface RemainingBudgetSummary {
+  kind: 'unlimited' | 'exhausted' | 'sizes'
+  sizes: string
+}
+
+/**
+ * Live usage envelope: the plan's caps plus what is currently consumed. A cap
+ * of 0 means "uncapped on this axis" (server convention). Both units mirror the
+ * catalog — `*_cpu` in mCPU, `*_memory_mb` in MiB.
+ */
+interface BudgetUsageLike {
+  max_cpu?: number
+  max_memory_mb?: number
+  used_cpu?: number
+  used_memory_mb?: number
+}
+
+/**
+ * Summarize how much capacity is still launchable as a size-count string,
+ * derived from the REMAINING budget (max − used) so the usage panel speaks the
+ * same size-count language as the plan cards. Delegates the size-fitting to
+ * {@link formatBudgetAsSizes} — no parallel implementation.
+ *
+ * The tricky part is that `0` on an axis is overloaded: it means "unlimited"
+ * when it is the plan's CAP (max), but "used up" when it is the REMAINING
+ * budget of a capped axis. Feeding a used-up capped plan straight into
+ * `formatBudgetAsSizes` (which reads max 0 as unlimited) would print an
+ * infinite-capacity line for an exhausted plan — hence this discriminated
+ * return instead of a bare string:
+ *   - `unlimited` — both axes uncapped (plan has no cap at all)
+ *   - `exhausted` — a capped axis has ≤ 0 remaining, or the remaining budget is
+ *     positive but below the smallest catalog size (formatBudgetAsSizes → '')
+ *   - `sizes`     — otherwise, the remaining budget rendered as "N L OR M …"
+ *
+ * @param usage - the live budget envelope (caps + consumption)
+ * @param catalog - canonical size catalog (use {@link CANONICAL_SIZE_CATALOG})
+ * @param joiner - localized "OR" / "OU" word (caller passes the translated value)
+ */
+export function summarizeRemainingBudget(
+  usage: BudgetUsageLike,
+  catalog: CanonicalSizeCatalog,
+  joiner: string
+): RemainingBudgetSummary {
+  const cpuCapped = (usage.max_cpu ?? 0) > 0
+  const memCapped = (usage.max_memory_mb ?? 0) > 0
+
+  if (!cpuCapped && !memCapped) return { kind: 'unlimited', sizes: '' }
+
+  // Uncapped axis contributes 0 → formatBudgetAsSizes reads that as Infinity, so
+  // the capped axis binds the count.
+  const remainingCpu = cpuCapped ? (usage.max_cpu ?? 0) - (usage.used_cpu ?? 0) : 0
+  const remainingMemoryMb = memCapped ? (usage.max_memory_mb ?? 0) - (usage.used_memory_mb ?? 0) : 0
+
+  if ((cpuCapped && remainingCpu <= 0) || (memCapped && remainingMemoryMb <= 0)) {
+    return { kind: 'exhausted', sizes: '' }
+  }
+
+  const sizes = formatBudgetAsSizes(
+    { max_cpu: remainingCpu, max_memory_mb: remainingMemoryMb },
+    catalog,
+    joiner
+  )
+  // Positive-but-too-small remaining budget: nothing fits → exhausted.
+  if (sizes === '') return { kind: 'exhausted', sizes: '' }
+
+  return { kind: 'sizes', sizes }
+}
