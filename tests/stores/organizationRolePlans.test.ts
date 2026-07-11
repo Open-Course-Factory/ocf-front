@@ -9,10 +9,10 @@
  * What is pinned:
  *   - which endpoint + HTTP verb each method calls
  *   - the `response.data?.data || response.data` unwrap (wrapped and bare shapes)
- *   - loadOrganizationRolePlans' CLIENT-SIDE filter by organization_id — the
- *     endpoint returns ALL role plans; the store returns only this org's. This is
- *     a store-specific contract AdminOrgPlanModal depends on, so it is pinned
- *     explicitly.
+ *   - loadOrganizationRolePlans hits the org-SCOPED endpoint
+ *     GET /organizations/:id/role-plans (core !286, part of #386) and returns its
+ *     payload AS-IS — the backend now filters server-side (OrgRole manager+, admin
+ *     bypass), so there is no client-side filter left to pin.
  *   - the error fallback landing in error.value
  *   - isLoading true during flight, false after BOTH success and failure
  *   - demo-mode short-circuit (no network)
@@ -83,31 +83,30 @@ describe('organizationRolePlans store (characterization #267)', () => {
   })
 
   describe('loadOrganizationRolePlans', () => {
-    it('GETs /organization-role-plans and returns only the requested org (from wrapped data)', async () => {
-      const all = [
+    it('GETs the org-scoped /organizations/:id/role-plans and returns the wrapped payload as-is', async () => {
+      const scoped = [
         { id: 'rp-1', organization_id: 'org-A', role: 'member', subscription_plan_id: 'plan-A' },
-        { id: 'rp-2', organization_id: 'org-B', role: 'member', subscription_plan_id: 'plan-B' },
         { id: 'rp-3', organization_id: 'org-A', role: 'manager', subscription_plan_id: 'plan-C' }
       ]
-      mockedAxios.get.mockResolvedValueOnce({ data: { data: all } })
+      mockedAxios.get.mockResolvedValueOnce({ data: { data: scoped } })
       const store = useOrganizationRolePlansStore()
 
       const result = await store.loadOrganizationRolePlans('org-A')
 
-      expect(mockedAxios.get).toHaveBeenCalledWith('/organization-role-plans')
+      expect(mockedAxios.get).toHaveBeenCalledWith('/organizations/org-A/role-plans')
       expect(result.map((rp) => rp.id)).toEqual(['rp-1', 'rp-3'])
     })
 
-    it('filters a bare response.data array (no nested .data)', async () => {
-      const all = [
-        { id: 'rp-1', organization_id: 'org-A', role: 'member', subscription_plan_id: 'plan-A' },
+    it('returns a bare response.data array (no nested .data) as-is', async () => {
+      const scoped = [
         { id: 'rp-2', organization_id: 'org-B', role: 'member', subscription_plan_id: 'plan-B' }
       ]
-      mockedAxios.get.mockResolvedValueOnce({ data: all })
+      mockedAxios.get.mockResolvedValueOnce({ data: scoped })
       const store = useOrganizationRolePlansStore()
 
       const result = await store.loadOrganizationRolePlans('org-B')
 
+      expect(mockedAxios.get).toHaveBeenCalledWith('/organizations/org-B/role-plans')
       expect(result.map((rp) => rp.id)).toEqual(['rp-2'])
     })
 
