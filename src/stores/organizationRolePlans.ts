@@ -20,11 +20,7 @@
  */
 
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import axios from 'axios'
-import { useStoreTranslations } from '../composables/useTranslations'
-import { isDemoMode, logDemoAction } from '../services/demo'
-import { createAsyncWrapper } from '../utils/asyncWrapper'
+import { useBaseStore } from './baseStore'
 
 export interface OrganizationRolePlan {
   id: string
@@ -40,99 +36,34 @@ export interface OrganizationRolePlan {
 }
 
 export const useOrganizationRolePlansStore = defineStore('organizationRolePlans', () => {
-  const isLoading = ref(false)
-  const error = ref('')
-  const withAsync = createAsyncWrapper({ isLoading, error })
+  const base = useBaseStore()
 
-  const { t } = useStoreTranslations({
-    en: {
-      organizationRolePlans: {
-        loadError: 'Failed to load role plan overrides',
-        createError: 'Failed to create role plan override',
-        updateError: 'Failed to update role plan override',
-        deleteError: 'Failed to delete role plan override',
-      }
-    },
-    fr: {
-      organizationRolePlans: {
-        loadError: 'Échec du chargement des plans par rôle',
-        createError: 'Échec de la création du plan par rôle',
-        updateError: 'Échec de la modification du plan par rôle',
-        deleteError: 'Échec de la suppression du plan par rôle',
-      }
-    }
-  })
+  // Role plan overrides are listed via an org-scoped endpoint but created,
+  // updated, and deleted via the flat /organization-role-plans resource.
+  const loadOrganizationRolePlans = (organizationId: string): Promise<OrganizationRolePlan[]> =>
+    base.loadEntities(`/organizations/${organizationId}/role-plans`, () => [])
 
-  // Load role plan overrides for a given organization (server-scoped via org-scoped endpoint)
-  const loadOrganizationRolePlans = async (organizationId: string): Promise<OrganizationRolePlan[]> => {
-    return withAsync(async () => {
-      if (isDemoMode()) {
-        logDemoAction('loadOrganizationRolePlans', { organizationId })
-        return []
-      }
-
-      const response = await axios.get(`/organizations/${organizationId}/role-plans`)
-      return response.data?.data || response.data || []
-    }, 'organizationRolePlans.loadError')
-  }
-
-  // Create a role plan override
-  const createRolePlan = async (data: {
+  const createRolePlan = (data: {
     organization_id: string
     role: string
     subscription_plan_id: string
-  }): Promise<OrganizationRolePlan> => {
-    return withAsync(async () => {
-      if (isDemoMode()) {
-        logDemoAction('createRolePlan', data)
-        return { id: `demo-role-plan-${data.role}`, ...data }
-      }
+  }): Promise<OrganizationRolePlan> =>
+    base.createEntity('/organization-role-plans', data)
 
-      const response = await axios.post('/organization-role-plans', data)
-      return response.data?.data || response.data
-    }, 'organizationRolePlans.createError')
-  }
-
-  // Update a role plan override
-  const updateRolePlan = async (
+  const updateRolePlan = (
     id: string,
     data: { subscription_plan_id: string }
-  ): Promise<OrganizationRolePlan> => {
-    return withAsync(async () => {
-      if (isDemoMode()) {
-        logDemoAction('updateRolePlan', { id, data })
-        return { id, ...data } as OrganizationRolePlan
-      }
+  ): Promise<OrganizationRolePlan> =>
+    base.updateEntity('/organization-role-plans', id, data)
 
-      const response = await axios.patch(`/organization-role-plans/${id}`, data)
-      return response.data?.data || response.data
-    }, 'organizationRolePlans.updateError')
-  }
-
-  // Delete a role plan override
-  const deleteRolePlan = async (id: string): Promise<void> => {
-    return withAsync(async () => {
-      if (isDemoMode()) {
-        logDemoAction('deleteRolePlan', { id })
-        return
-      }
-
-      await axios.delete(`/organization-role-plans/${id}`)
-    }, 'organizationRolePlans.deleteError')
-  }
+  const deleteRolePlan = (id: string) =>
+    base.deleteEntity('/organization-role-plans', id)
 
   return {
-    // State
-    isLoading,
-    error,
-
-    // Actions
+    ...base,
     loadOrganizationRolePlans,
     createRolePlan,
     updateRolePlan,
     deleteRolePlan,
-
-    // Translations
-    t,
   }
 })
