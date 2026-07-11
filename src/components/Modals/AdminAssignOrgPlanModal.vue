@@ -73,20 +73,12 @@
         <label for="plan-select">
           {{ t('assignOrgPlan.selectPlan') }}
         </label>
-        <select
-          id="plan-select"
+        <PlanSelect
           v-model="selectedPlanId"
-          class="form-control"
-        >
-          <option value="">{{ t('assignOrgPlan.choosePlan') }}</option>
-          <option
-            v-for="plan in activePlans"
-            :key="plan.id"
-            :value="plan.id"
-          >
-            {{ plan.name }} - {{ plansStore.formatPrice(plan.price_amount, plan.currency) }}/{{ plan.billing_interval }}
-          </option>
-        </select>
+          v-model:selected-name="selectedPlanName"
+          select-id="plan-select"
+          :placeholder="t('assignOrgPlan.choosePlan')"
+        />
       </div>
 
       <!-- Quantity Input -->
@@ -147,10 +139,11 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import BaseModal from './BaseModal.vue'
+import PlanSelect from '../Common/PlanSelect.vue'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { useOrganizationSubscriptionsStore } from '../../stores/organizationSubscriptions'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
-import type { Organization, SubscriptionPlan } from '../../types'
+import type { Organization } from '../../types'
 
 const props = defineProps<{
   visible: boolean
@@ -218,26 +211,17 @@ const plansStore = useSubscriptionPlansStore()
 const searchQuery = ref('')
 const selectedOrganizationId = ref('')
 const selectedPlanId = ref('')
+const selectedPlanName = ref('')
 const quantity = ref(1)
 const isSearching = ref(false)
 const isAssigning = ref(false)
 const showAssignConfirm = ref(false)
 const error = ref('')
 
-const activePlans = computed(() =>
-  (plansStore.entities as SubscriptionPlan[]).filter((p: SubscriptionPlan) => p.is_active)
-)
-
 const selectedOrganizationName = computed(() => {
   if (!selectedOrganizationId.value) return ''
   const org = (orgsStore.organizations as Organization[]).find(o => o.id === selectedOrganizationId.value)
   return org?.display_name || selectedOrganizationId.value
-})
-
-const selectedPlanName = computed(() => {
-  if (!selectedPlanId.value) return ''
-  const plan = activePlans.value.find(p => p.id === selectedPlanId.value)
-  return plan ? `${plan.name} - ${plansStore.formatPrice(plan.price_amount, plan.currency)}/${plan.billing_interval}` : selectedPlanId.value
 })
 
 const filteredOrganizations = computed(() => {

@@ -94,10 +94,12 @@
 import { ref, computed } from 'vue'
 import { useSubscriptionTranslations } from '../composables/useSubscriptionTranslations'
 import { useAdminViewMode } from '../../../composables/useAdminViewMode'
+import { useStatusFormatters } from '../../../composables/useStatusFormatters'
 import AdminBadge from '../../Common/AdminBadge.vue'
 
 const { t } = useSubscriptionTranslations()
 const { isAdmin } = useAdminViewMode()
+const { getStatusClass, getStatusIcon } = useStatusFormatters('subscription')
 
 const isExpanded = ref(false)
 
@@ -128,30 +130,6 @@ const sortedSubscriptions = computed(() => {
 
 function getPlanName(subscription: any): string {
   return subscription.subscription_plan?.name || subscription.plan_name || t('subscriptionPlans.unknownPlan')
-}
-
-function getStatusClass(status: string) {
-  switch (status?.toLowerCase()) {
-    case 'active': return 'text-success'
-    case 'trialing': return 'text-info'
-    case 'canceled': return 'text-warning'
-    case 'past_due': return 'text-danger'
-    case 'unpaid': return 'text-danger'
-    case 'incomplete': return 'text-muted'
-    default: return 'text-secondary'
-  }
-}
-
-function getStatusIcon(status: string) {
-  switch (status?.toLowerCase()) {
-    case 'active': return 'fas fa-check-circle'
-    case 'trialing': return 'fas fa-gift'
-    case 'canceled': return 'fas fa-times-circle'
-    case 'past_due': return 'fas fa-exclamation-triangle'
-    case 'unpaid': return 'fas fa-credit-card'
-    case 'incomplete': return 'fas fa-hourglass-half'
-    default: return 'fas fa-question-circle'
-  }
 }
 
 function getStatusText(status: string) {

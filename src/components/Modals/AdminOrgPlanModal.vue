@@ -72,20 +72,12 @@
         <label for="plan-select">
           {{ t('adminOrgPlan.selectPlan') }}
         </label>
-        <select
-          id="plan-select"
+        <PlanSelect
           v-model="selectedPlanId"
-          class="form-control"
-        >
-          <option value="">{{ t('adminOrgPlan.choosePlan') }}</option>
-          <option
-            v-for="plan in activePlans"
-            :key="plan.id"
-            :value="plan.id"
-          >
-            {{ plan.name }} - {{ plansStore.formatPrice(plan.price_amount, plan.currency) }}/{{ plan.billing_interval }}
-          </option>
-        </select>
+          v-model:selected-name="selectedPlanName"
+          select-id="plan-select"
+          :placeholder="t('adminOrgPlan.choosePlan')"
+        />
       </div>
 
       <!-- Quantity Input -->
@@ -122,20 +114,11 @@
           <label :for="`role-override-${roleRow.role}`">
             {{ roleRow.label }}
           </label>
-          <select
-            :id="`role-override-${roleRow.role}`"
+          <PlanSelect
             v-model="roleSelections[roleRow.role]"
-            class="form-control"
-          >
-            <option value="">{{ t('adminOrgPlan.useDefaultPlan') }}</option>
-            <option
-              v-for="plan in activePlans"
-              :key="plan.id"
-              :value="plan.id"
-            >
-              {{ plan.name }} - {{ plansStore.formatPrice(plan.price_amount, plan.currency) }}/{{ plan.billing_interval }}
-            </option>
-          </select>
+            :select-id="`role-override-${roleRow.role}`"
+            :placeholder="t('adminOrgPlan.useDefaultPlan')"
+          />
         </div>
       </div>
 
@@ -204,6 +187,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import BaseModal from './BaseModal.vue'
+import PlanSelect from '../Common/PlanSelect.vue'
 import { useOrganizationSubscriptionsStore } from '../../stores/organizationSubscriptions'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useOrganizationRolePlansStore } from '../../stores/organizationRolePlans'
@@ -317,6 +301,7 @@ const plansStore = useSubscriptionPlansStore()
 const rolePlansStore = useOrganizationRolePlansStore()
 
 const selectedPlanId = ref('')
+const selectedPlanName = ref('')
 const quantity = ref(1)
 const saving = ref(false)
 const error = ref('')
@@ -345,10 +330,6 @@ const roleRows = computed(() =>
   }))
 )
 
-const activePlans = computed(() =>
-  (plansStore.entities as SubscriptionPlan[]).filter((p: SubscriptionPlan) => p.is_active)
-)
-
 // Whether any role override differs from its initial value
 const hasRoleOverrideChanges = computed(() =>
   ROLES.some((role) => roleSelections.value[role] !== initialRoleSelections.value[role])
@@ -367,14 +348,8 @@ const currentPlanName = computed(() => {
   if (props.currentSubscription.subscription_plan?.name) {
     return props.currentSubscription.subscription_plan.name
   }
-  const plan = activePlans.value.find(p => p.id === props.currentSubscription?.subscription_plan_id)
+  const plan = (plansStore.entities as SubscriptionPlan[]).find(p => p.id === props.currentSubscription?.subscription_plan_id)
   return plan?.name || props.currentSubscription.subscription_plan_id
-})
-
-const selectedPlanName = computed(() => {
-  if (!selectedPlanId.value) return ''
-  const plan = activePlans.value.find(p => p.id === selectedPlanId.value)
-  return plan ? `${plan.name} - ${plansStore.formatPrice(plan.price_amount, plan.currency)}/${plan.billing_interval}` : selectedPlanId.value
 })
 
 const statusLabel = (status: string) => {

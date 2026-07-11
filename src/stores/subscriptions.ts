@@ -450,70 +450,6 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         })
     }
 
-    // Vérifier les limites d'utilisation
-    // Returns { allowed: boolean, source?: 'personal' | 'organization', current_usage?, limit?, remaining?, ... }
-    //
-    // SSOT note: this gate MUST resolve the same effective plan as the display
-    // path (`GET /user-subscriptions/usage?organization_id=`). The backend is
-    // the single owner of "which plan applies to this user in this org" — the
-    // frontend only forwards the current org context. Without organization_id,
-    // the backend falls back to the user's global highest-priority plan, which
-    // diverges from what the launcher displays and produces the bug where the
-    // launcher shows "0/1 sessions" (from the org plan) but the Start button
-    // raises "Limite atteinte" (from a sibling personal plan).
-    // Sibling code paths that pass organization_id the same way:
-    //   - getCurrentSubscription (above)
-    //   - getUsageMetrics (below)
-    //   - upgradePlan polling URL (below)
-    const checkUsageLimit = async (metricType: string, requestedAmount: number = 1) => {
-        try {
-            let result: any
-
-            if (isDemoMode()) {
-                logDemoAction('Checking demo usage limit', { metricType, requestedAmount })
-                result = await demoPayments.checkUsageLimit(metricType, requestedAmount)
-                return {
-                    allowed: result.allowed,
-                    source: result.source || 'personal',
-                    current_usage: result.current_usage,
-                    limit: result.limit,
-                    remaining: result.remaining
-                }
-            } else {
-                const payload: any = {
-                    metric_type: metricType,
-                    increment: requestedAmount
-                }
-                // Forward the current org context so the gate resolves the
-                // user's effective plan for that org (matching the launcher's
-                // display path). Omit the key entirely when there's no org
-                // context — the backend then falls back to the global plan.
-                const orgStore = useOrganizationsStore()
-                const orgId = orgStore.currentOrganizationId
-                if (orgId) {
-                    payload.organization_id = orgId
-                }
-                const response = await axios.post('/user-subscriptions/usage/check', payload)
-                const data = response.data
-                return {
-                    allowed: data.allowed,
-                    source: data.source || 'personal',
-                    current_usage: data.current_usage,
-                    limit: data.limit,
-                    remaining: data.remaining
-                }
-            }
-        } catch (err: any) {
-            error.value = err.response?.data?.error_message ||
-                         err.response?.data?.message ||
-                         t('subscriptions.usageLimitError')
-            return {
-                allowed: false,
-                source: err.response?.data?.source || 'personal'
-            }
-        }
-    }
-
     // Synchroniser les limites d'utilisation avec le backend
     const syncUsageLimits = async () => {
         try {
@@ -594,7 +530,6 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         upgradePlan,
         getUsageMetrics,
         getFilteredUsageMetrics,
-        checkUsageLimit,
         syncUsageLimits,
         adminAssignPlan,
 

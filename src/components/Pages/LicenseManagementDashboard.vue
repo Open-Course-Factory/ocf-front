@@ -217,6 +217,7 @@
 
     <!-- Add Licenses Modal -->
     <AddLicensesModal
+      ref="addLicensesModalRef"
       :visible="showAddLicensesModal"
       :batch="selectedBatch"
       @close="closeAddLicensesModal"
@@ -341,6 +342,7 @@ const { showError, showSuccess, showConfirm } = useNotification()
 
 const isLoading = ref(false)
 const showAddLicensesModal = ref(false)
+const addLicensesModalRef = ref<InstanceType<typeof AddLicensesModal> | null>(null)
 const selectedBatch = ref<SubscriptionBatch | null>(null)
 const selectedBatchIds = ref<string[]>([])
 
@@ -407,6 +409,8 @@ const handleAddLicenses = async (newQuantity: number) => {
     closeAddLicensesModal()
   } catch (err: any) {
     console.error('Error adding licenses:', err)
+    // Clear the modal's stuck submit spinner so the user can retry.
+    addLicensesModalRef.value?.resetSubmitting()
     showError(extractErrorMessage(err, t('licenseDashboard.addError')))
   }
 }

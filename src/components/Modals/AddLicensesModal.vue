@@ -173,6 +173,14 @@ const resetForm = () => {
   isAdding.value = false
 }
 
+// Called by the parent when its persist fails: clear the submit spinner while
+// keeping the entered quantity so the user can retry.
+const resetSubmitting = () => {
+  isAdding.value = false
+}
+
+defineExpose({ resetSubmitting })
+
 // Set initial value when modal opens
 watch(() => props.visible, (newVisible) => {
   if (newVisible && props.batch) {

@@ -20,11 +20,11 @@
 
       <div class="form-group">
         <label for="assign-plan">{{ t('adminAssign.plan') }}</label>
-        <select id="assign-plan" v-model="selectedPlanId" class="form-control">
-          <option v-for="plan in activePlans" :key="plan.id" :value="plan.id">
-            {{ plan.name }} - {{ plansStore.formatPrice(plan.price_amount, plan.currency) }}/{{ plan.billing_interval }}
-          </option>
-        </select>
+        <PlanSelect
+          v-model="selectedPlanId"
+          v-model:selected-name="selectedPlanName"
+          select-id="assign-plan"
+        />
       </div>
 
       <div class="form-group">
@@ -103,11 +103,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import BaseModal from './BaseModal.vue'
+import PlanSelect from '../Common/PlanSelect.vue'
 
 const { t } = useTranslations({
   en: {
@@ -158,21 +159,12 @@ const subscriptionsStore = useSubscriptionsStore()
 
 const userId = ref('')
 const selectedPlanId = ref('')
+const selectedPlanName = ref('')
 const durationDays = ref(365)
 const isAssigning = ref(false)
 const showAssignConfirm = ref(false)
 const errorMsg = ref('')
 const successMsg = ref('')
-
-const activePlans = computed(() => {
-  return plansStore.entities.filter((p: any) => p.is_active)
-})
-
-const selectedPlanName = computed(() => {
-  if (!selectedPlanId.value) return ''
-  const plan = activePlans.value.find((p: any) => p.id === selectedPlanId.value)
-  return plan ? `${plan.name} - ${plansStore.formatPrice(plan.price_amount, plan.currency)}/${plan.billing_interval}` : selectedPlanId.value
-})
 
 async function handleAssign() {
   if (!userId.value || !selectedPlanId.value) return
@@ -201,11 +193,9 @@ watch(() => props.visible, (newVal) => {
     showAssignConfirm.value = false
     userId.value = ''
     durationDays.value = 365
-    if (props.planId) {
-      selectedPlanId.value = props.planId
-    } else if (activePlans.value.length > 0) {
-      selectedPlanId.value = activePlans.value[0].id
-    }
+    // Clear so PlanSelect re-selects the first active plan; a provided
+    // planId takes precedence.
+    selectedPlanId.value = props.planId || ''
     plansStore.ensurePlansLoaded()
   }
 })

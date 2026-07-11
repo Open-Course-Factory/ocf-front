@@ -95,19 +95,20 @@ describe('AllSubscriptions — status icon (CURRENT local behavior)', () => {
     expect(wrapper.find('.status-badge i').classes()).toContain(expectedIcon)
   })
 
-  // Divergent tripwire: delegating to useStatusFormatters('subscription') will
-  // change these. Composable values in the comment; update on delegation.
-  const divergentIconCases: Array<[string, string, string]> = [
-    ['trialing', 'fa-gift', 'fa-flask'],
-    ['canceled', 'fa-times-circle', 'fa-ban'],
-    ['unpaid', 'fa-credit-card', 'fa-exclamation-circle'],
+  // Delegation done: these three now use the shared
+  // useStatusFormatters('subscription') icons. Previous local overrides were
+  // trialing fa-gift, canceled fa-times-circle, unpaid fa-credit-card.
+  const delegatedIconCases: Array<[string, string]> = [
+    ['trialing', 'fa-flask'],
+    ['canceled', 'fa-ban'],
+    ['unpaid', 'fa-exclamation-circle'],
   ]
 
-  it.each(divergentIconCases)(
-    'status "%s" → CURRENT icon "%s" (composable would give "%s")',
-    async (status, currentIcon) => {
+  it.each(delegatedIconCases)(
+    'status "%s" → shared composable icon "%s"',
+    async (status, expectedIcon) => {
       const wrapper = await mountExpanded(status)
-      expect(wrapper.find('.status-badge i').classes()).toContain(currentIcon)
+      expect(wrapper.find('.status-badge i').classes()).toContain(expectedIcon)
     }
   )
 })
