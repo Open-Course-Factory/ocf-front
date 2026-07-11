@@ -79,6 +79,28 @@ describe('getEffectiveSessionState', () => {
     expect(getEffectiveSessionState(null)).toBe('deleted')
     expect(getEffectiveSessionState(undefined)).toBe('deleted')
   })
+
+  // Issue #272 / ocf-core #388: the backend now emits a distinct
+  // state='revoked' when a session is terminated for billing / entitlement
+  // reasons (plan lapse, license revocation) — NOT a TTL expiry. This is a
+  // canonical terminal state that must survive as its own effective state so
+  // downstream copy can be honest ("subscription/license no longer active")
+  // instead of dishonestly reusing the "time limit reached" expired banner.
+  // TODAY this falls into the "unknown / empty state" branch and returns
+  // 'deleted' — which the banner maps to 'expired'. That is the RED.
+  it("state='revoked' returns 'revoked' (billing/entitlement stop, not a TTL expiry)", () => {
+    expect(getEffectiveSessionState({ state: 'revoked', expires_at: FUTURE }) as string).toBe(
+      'revoked'
+    )
+  })
+
+  it("state='revoked' with past expires_at still returns 'revoked' (canonical state wins over expiry)", () => {
+    // A revoked session's expires_at is naturally in the past (the previous
+    // run's deadline); the revocation reason must not be masked as expiry.
+    expect(getEffectiveSessionState({ state: 'revoked', expires_at: PAST }) as string).toBe(
+      'revoked'
+    )
+  })
 })
 
 describe('isSessionActive', () => {
