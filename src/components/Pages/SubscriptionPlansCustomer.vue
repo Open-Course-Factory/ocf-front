@@ -337,6 +337,39 @@
         </template>
       </BaseModal>
 
+      <!-- Plan-change confirmation: one reusable modal for both the free→paid and
+           paid→paid branches (replaces the imperative showConfirm dialog). -->
+      <BaseModal
+        :visible="showPlanChangeModal"
+        :title="t('plans.changePlan')"
+        title-icon="fas fa-exchange-alt"
+        @close="resolvePlanChange(false)"
+      >
+        <div class="plan-change-confirm">
+          <p>{{ t('subscriptions.changePlanWarning') }}</p>
+          <p v-if="planChangeShowProration" class="plan-change-proration">
+            {{ t('subscriptions.prorationAlwaysInvoiceDesc') }}
+          </p>
+        </div>
+        <template #footer>
+          <button
+            class="btn-compact btn-subscribe-compact"
+            data-test="confirm-plan-change"
+            @click="resolvePlanChange(true)"
+          >
+            <i class="fas fa-check"></i>
+            <span>{{ t('plans.confirmChange') }}</span>
+          </button>
+          <button
+            class="btn-cancel-checkout"
+            data-test="cancel-plan-change"
+            @click="resolvePlanChange(false)"
+          >
+            {{ t('plans.checkout.cancel') }}
+          </button>
+        </template>
+      </BaseModal>
+
     </div>
   </div>
 </template>
@@ -355,6 +388,7 @@ import router from '../../router/index'
 import { useNotification } from '../../composables/useNotification'
 import { formatBudgetAsSizes, CANONICAL_SIZE_CATALOG } from '../../utils/quotaFormatters'
 import { isAssignedSubscription } from '../../utils/subscriptionHelpers'
+import { pollUntil } from '../../utils/pollUntil'
 
 const { formatFeatureName, formatBillingInterval } = usePlanFormatters()
 
@@ -370,6 +404,7 @@ const { t } = useTranslations({
       noPlansDescription: 'Please check back later or contact support.',
       subscribe: 'Subscribe',
       changePlan: 'Change Plan',
+      confirmChange: 'Confirm change',
       month: 'month',
       year: 'year',
       user: 'user',
@@ -432,6 +467,7 @@ const { t } = useTranslations({
       noPlansDescription: 'Veuillez vérifier plus tard ou contacter le support.',
       subscribe: 'S\'abonner',
       changePlan: 'Changer de plan',
+      confirmChange: 'Confirmer le changement',
       month: 'mois',
       year: 'an',
       user: 'utilisateur',
@@ -503,6 +539,14 @@ const couponCode = ref('')
 const showCouponModal = ref(false)
 const pendingPlan = ref<any>(null)
 const pendingAllowReplace = ref(false)
+
+// Declarative plan-change confirmation modal. It replaces the imperative
+// showConfirm dialog on the free→paid and paid→paid branches; selectPlan awaits
+// the promise returned by confirmPlanChange() and resumes when the user clicks
+// confirm or cancel in the modal.
+const showPlanChangeModal = ref(false)
+const planChangeShowProration = ref(false)
+let planChangeResolve: ((confirmed: boolean) => void) | null = null
 
 // Paid plans require a verified email — the backend rejects checkout otherwise,
 // so we gate the action (and the buttons) on the user's verification status.
@@ -723,49 +767,8 @@ async function selectPlan(plan: any) {
 
       // Special case: downgrade to free plan requires cancellation first
       if (plan.price_amount === 0) {
-        const confirmed = await showConfirm(
-          t('plans.switchToFreeConfirm'),
-          t('plans.switchToFreePlan')
-        )
-
-        if (!confirmed) {
-          isSubscribing.value = false
-          return
-        }
-
-        // Cancel current subscription immediately
-        await subscriptionsStore.cancelSubscription(
-          subscriptionsStore.currentSubscription.id,
-          true // cancel immediately
-        )
-
-        // Reload subscription state to clear current subscription
-        await checkCurrentSubscription()
-
-        // Wait a moment for cancellation to fully process on backend
-        await new Promise(resolve => setTimeout(resolve, 1500))
-
-        // Now activate the free plan
-        const successUrl = `${window.location.origin}/subscription-dashboard?success=true`
-        const cancelUrl = `${window.location.origin}/subscription-plans`
-
-        const response = await subscriptionsStore.createCheckoutSession(
-          plan.id,
-          successUrl,
-          cancelUrl
-        )
-
-        if (response?.free_plan) {
-          showSuccess(t('plans.switchedToFreeSuccess'))
-          // Reload to show the new free subscription
-          await checkCurrentSubscription()
-          await loadPlans()
-          return
-        } else {
-          // If no free_plan flag but no error, something went wrong
-          console.error('Unexpected response:', response)
-          showError(t('plans.freeActivationError'), t('plans.activationErrorTitle'))
-        }
+        await switchToFreePlan(plan)
+        return
       }
 
       // Special case: upgrading FROM free plan to paid plan
@@ -778,10 +781,7 @@ async function selectPlan(plan: any) {
           return
         }
 
-        const confirmed = await showConfirm(
-          t('plans.upgradeFromFreeConfirm', { plan: plan.name }),
-          t('plans.upgradeFromFree')
-        )
+        const confirmed = await confirmPlanChange({ proration: false })
 
         if (!confirmed) {
           isSubscribing.value = false
@@ -793,13 +793,9 @@ async function selectPlan(plan: any) {
         return
       }
 
-      // For paid-to-paid upgrades/downgrades
-      // Show confirmation dialog
-      const confirmed = await showConfirm(
-        `${t('subscriptions.changePlanWarning')}\n\n` +
-        `${t('subscriptions.prorationAlwaysInvoiceDesc')}`,
-        t('plans.changePlan')
-      )
+      // For paid-to-paid upgrades/downgrades: confirm the immediate proration
+      // charge in the declarative modal before calling the upgrade endpoint.
+      const confirmed = await confirmPlanChange({ proration: true })
 
       if (!confirmed) {
         isSubscribing.value = false
@@ -858,6 +854,82 @@ async function selectPlan(plan: any) {
   } finally {
     isSubscribing.value = false
   }
+}
+
+// Downgrade an active paid subscription to the free plan. Cancellation is
+// eventually consistent on the backend, so we must NOT activate the free plan
+// on a fixed delay (the old setTimeout(1500) could fire while the paid sub was
+// still active, leaving the user cancelled with no plan). Instead we poll until
+// the subscription is reported inactive, then activate; if that state never
+// arrives within the poll budget we surface an error and do NOT activate.
+async function switchToFreePlan(plan: any) {
+  const confirmed = await showConfirm(
+    t('plans.switchToFreeConfirm'),
+    t('plans.switchToFreePlan')
+  )
+
+  if (!confirmed) return
+
+  // Cancel current subscription immediately
+  await subscriptionsStore.cancelSubscription(
+    subscriptionsStore.currentSubscription.id,
+    true // cancel immediately
+  )
+
+  // Await a confirmed-cancelled state (bounded ~10s budget via pollUntil).
+  const poll = await pollUntil(
+    async () => {
+      await subscriptionsStore.getCurrentSubscription()
+      return subscriptionsStore.hasActiveSubscription()
+    },
+    (stillActive: boolean) => stillActive === false
+  )
+
+  if (!poll.matched) {
+    // The cancellation never landed — do NOT activate a free plan on top of a
+    // subscription the backend still considers active.
+    showError(t('plans.freeActivationError'), t('plans.activationErrorTitle'))
+    return
+  }
+
+  // Now activate the free plan
+  const successUrl = `${window.location.origin}/subscription-dashboard?success=true`
+  const cancelUrl = `${window.location.origin}/subscription-plans`
+
+  const response = await subscriptionsStore.createCheckoutSession(
+    plan.id,
+    successUrl,
+    cancelUrl
+  )
+
+  if (response?.free_plan) {
+    showSuccess(t('plans.switchedToFreeSuccess'))
+    // Reload to show the new free subscription
+    await checkCurrentSubscription()
+    await loadPlans()
+  } else {
+    // If no free_plan flag but no error, something went wrong
+    console.error('Unexpected response:', response)
+    showError(t('plans.freeActivationError'), t('plans.activationErrorTitle'))
+  }
+}
+
+// Open the declarative plan-change confirmation modal and resolve once the user
+// confirms or cancels. `proration` toggles the immediate-billing copy shown on
+// the paid→paid path.
+function confirmPlanChange(opts: { proration: boolean }): Promise<boolean> {
+  planChangeShowProration.value = opts.proration
+  showPlanChangeModal.value = true
+  return new Promise<boolean>(resolve => {
+    planChangeResolve = resolve
+  })
+}
+
+function resolvePlanChange(confirmed: boolean) {
+  showPlanChangeModal.value = false
+  const resolve = planChangeResolve
+  planChangeResolve = null
+  resolve?.(confirmed)
 }
 
 // Open the single-step coupon modal for a paid plan. `allowReplace` is true only
