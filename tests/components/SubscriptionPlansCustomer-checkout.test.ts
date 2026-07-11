@@ -252,6 +252,17 @@ async function flushPromises() {
   await new Promise(resolve => setTimeout(resolve, 0))
 }
 
+// Confirm the declarative plan-change modal (free→paid and paid→paid now route
+// through it before proceeding — see issue #263). Replaces the auto-confirmed
+// showConfirm mock that used to advance these flows.
+async function confirmPlanChange(wrapper: any) {
+  const confirm = wrapper.find('[data-test="confirm-plan-change"]')
+  expect(confirm.exists(), 'plan-change confirmation modal should render').toBe(true)
+  await confirm.trigger('click')
+  await wrapper.vm.$nextTick()
+  await flushPromises()
+}
+
 describe('SubscriptionPlansCustomer — direct-to-Stripe checkout', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -325,6 +336,7 @@ describe('SubscriptionPlansCustomer — direct-to-Stripe checkout', () => {
     await wrapper.vm.$nextTick()
 
     await clickSubscribe(wrapper, 'Solo')
+    await confirmPlanChange(wrapper)
     await completeCouponStep(wrapper, '')
 
     expect(createCheckoutSession).toHaveBeenCalledTimes(1)
@@ -356,7 +368,7 @@ describe('SubscriptionPlansCustomer — direct-to-Stripe checkout', () => {
     await wrapper.vm.$nextTick()
 
     await clickSubscribe(wrapper, 'Pro')
-    await flushPromises()
+    await confirmPlanChange(wrapper)
 
     expect(upgradePlan).toHaveBeenCalledTimes(1)
     expect(upgradePlan).toHaveBeenCalledWith('plan-pro', 'always_invoice')
