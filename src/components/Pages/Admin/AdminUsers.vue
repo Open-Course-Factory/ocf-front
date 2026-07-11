@@ -28,150 +28,76 @@
       <p class="page-subtitle">{{ t('adminUsers.pageSubtitle') }}</p>
     </div>
 
-    <!-- Toolbar -->
-    <div class="toolbar">
-      <div class="search-wrapper">
-        <i class="fas fa-search search-icon"></i>
-        <input
-          v-model="searchQuery"
-          type="text"
-          class="search-input"
-          :placeholder="t('adminUsers.searchPlaceholder')"
-        />
-      </div>
-      <span class="user-count">
-        {{ filteredUsers.length }} / {{ users.length }}
-      </span>
-    </div>
+    <EntityTable
+      :columns="columns"
+      :rows="users"
+      :loading="loading"
+      :error="error"
+      searchable
+      show-count
+      :search-filter="searchFilter"
+      :search-placeholder="t('adminUsers.searchPlaceholder')"
+      :initial-sort="initialSort"
+      empty-icon="fa-users"
+      :empty-text="t('adminUsers.noUsers')"
+    >
+      <template #cell-display_name="{ row }">
+        <div class="user-cell">
+          <span class="user-display">{{ row.display_name || row.username }}</span>
+          <span class="user-username">@{{ row.username }}</span>
+        </div>
+      </template>
 
-    <!-- Loading State -->
-    <div v-if="loading" class="loading-state">
-      <i class="fas fa-spinner fa-spin fa-3x"></i>
-      <p>{{ t('adminUsers.loading') }}</p>
-    </div>
+      <template #cell-email="{ row }">
+        <span class="email-cell">{{ row.email }}</span>
+      </template>
 
-    <!-- Error State -->
-    <div v-else-if="error" class="error-state">
-      <i class="fas fa-exclamation-triangle fa-3x"></i>
-      <p>{{ error }}</p>
-    </div>
+      <template #cell-is_active="{ row }">
+        <span :class="['status-badge', row.is_active ? 'status-active' : 'status-inactive']">
+          {{ row.is_active ? t('adminUsers.statusActive') : t('adminUsers.statusInactive') }}
+        </span>
+      </template>
 
-    <!-- Empty State -->
-    <div v-else-if="filteredUsers.length === 0" class="empty-state">
-      <i class="fas fa-users fa-3x"></i>
-      <p>{{ t('adminUsers.noUsers') }}</p>
-    </div>
+      <template #cell-is_admin="{ row }">
+        <span v-if="!row.is_admin" class="role-badge role-member">
+          {{ t('adminUsers.roleMember') }}
+        </span>
+        <AdminBadge v-else />
+      </template>
 
-    <!-- Users Table -->
-    <div v-else class="table-wrapper">
-      <table class="users-table">
-        <thead>
-          <tr>
-            <th
-              class="sortable-header"
-              data-sort="display_name"
-              @click="toggleSort('display_name')"
-            >
-              {{ t('adminUsers.colUser') }}
-              <i :class="getSortIcon('display_name')"></i>
-            </th>
-            <th
-              class="sortable-header"
-              data-sort="email"
-              @click="toggleSort('email')"
-            >
-              {{ t('adminUsers.colEmail') }}
-              <i :class="getSortIcon('email')"></i>
-            </th>
-            <th
-              class="sortable-header"
-              data-sort="is_active"
-              @click="toggleSort('is_active')"
-            >
-              {{ t('adminUsers.colStatus') }}
-              <i :class="getSortIcon('is_active')"></i>
-            </th>
-            <th
-              class="sortable-header"
-              data-sort="is_admin"
-              @click="toggleSort('is_admin')"
-            >
-              {{ t('adminUsers.colRole') }}
-              <i :class="getSortIcon('is_admin')"></i>
-            </th>
-            <th
-              class="sortable-header"
-              data-sort="org_count"
-              @click="toggleSort('org_count')"
-            >
-              {{ t('adminUsers.colOrganizations') }}
-              <i :class="getSortIcon('org_count')"></i>
-            </th>
-            <th
-              class="sortable-header"
-              data-sort="group_count"
-              @click="toggleSort('group_count')"
-            >
-              {{ t('adminUsers.colGroups') }}
-              <i :class="getSortIcon('group_count')"></i>
-            </th>
-            <th>{{ t('adminUsers.colActions') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="user in filteredUsers" :key="user.id">
-            <td>
-              <div class="user-cell">
-                <span class="user-display">{{ user.display_name || user.username }}</span>
-                <span class="user-username">@{{ user.username }}</span>
-              </div>
-            </td>
-            <td class="email-cell">{{ user.email }}</td>
-            <td>
-              <span :class="['status-badge', user.is_active ? 'status-active' : 'status-inactive']">
-                {{ user.is_active ? t('adminUsers.statusActive') : t('adminUsers.statusInactive') }}
-              </span>
-            </td>
-            <td>
-              <span v-if="!user.is_admin" class="role-badge role-member">
-                {{ t('adminUsers.roleMember') }}
-              </span>
-              <AdminBadge v-else />
-            </td>
-            <td>
-              <div v-if="user.organizations.length > 0" class="chip-list">
-                <span v-for="org in user.organizations" :key="org.id" class="chip">
-                  <span class="chip-name">{{ org.name }}</span>
-                  <span class="chip-role">{{ org.role }}</span>
-                </span>
-              </div>
-              <span v-else class="text-muted text-italic">{{ t('adminUsers.none') }}</span>
-            </td>
-            <td>
-              <div v-if="user.groups.length > 0" class="chip-list">
-                <span v-for="group in user.groups" :key="group.id" class="chip">
-                  <span class="chip-name">{{ group.name }}</span>
-                  <span class="chip-role">{{ group.role }}</span>
-                </span>
-              </div>
-              <span v-else class="text-muted text-italic">{{ t('adminUsers.none') }}</span>
-            </td>
-            <td class="actions-cell">
-              <button
-                type="button"
-                class="impersonate-btn"
-                :disabled="isImpersonateDisabled(user.id)"
-                :title="impersonateButtonTitle(user.id)"
-                @click="openConfirmModal(user)"
-              >
-                <i class="fas fa-user-secret"></i>
-                {{ t('adminUsers.impersonate') }}
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <template #cell-organizations="{ row }">
+        <div v-if="row.organizations.length > 0" class="chip-list">
+          <span v-for="org in row.organizations" :key="org.id" class="chip">
+            <span class="chip-name">{{ org.name }}</span>
+            <span class="chip-role">{{ org.role }}</span>
+          </span>
+        </div>
+        <span v-else class="text-muted text-italic">{{ t('adminUsers.none') }}</span>
+      </template>
+
+      <template #cell-groups="{ row }">
+        <div v-if="row.groups.length > 0" class="chip-list">
+          <span v-for="group in row.groups" :key="group.id" class="chip">
+            <span class="chip-name">{{ group.name }}</span>
+            <span class="chip-role">{{ group.role }}</span>
+          </span>
+        </div>
+        <span v-else class="text-muted text-italic">{{ t('adminUsers.none') }}</span>
+      </template>
+
+      <template #row-actions="{ row }">
+        <button
+          type="button"
+          class="impersonate-btn"
+          :disabled="isImpersonateDisabled(row.id)"
+          :title="impersonateButtonTitle(row.id)"
+          @click="openConfirmModal(row)"
+        >
+          <i class="fas fa-user-secret"></i>
+          {{ t('adminUsers.impersonate') }}
+        </button>
+      </template>
+    </EntityTable>
 
     <!-- Confirmation Modal -->
     <BaseModal
@@ -225,9 +151,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useTranslations } from '../../../composables/useTranslations'
+import { type SortState } from '../../../composables/useClientTable'
+import type { TableColumn } from '../../../utils/tableColumns'
 import { useImpersonationStore } from '../../../stores/impersonation'
 import { useCurrentUserStore } from '../../../stores/currentUser'
 import { adminUsersService, type AdminUserListing } from '../../../services/admin/usersService'
+import EntityTable from '../../Generic/EntityTable.vue'
 import BaseModal from '../../Modals/BaseModal.vue'
 import AdminBadge from '../../Common/AdminBadge.vue'
 
@@ -237,7 +166,6 @@ const { t } = useTranslations({
       pageTitle: 'User management',
       pageSubtitle: 'Browse all users with their org and group memberships, and impersonate any user for debugging.',
       searchPlaceholder: 'Search by name, email, organization or group...',
-      loading: 'Loading users...',
       loadError: 'Failed to load users',
       noUsers: 'No users found',
       colUser: 'User',
@@ -246,7 +174,6 @@ const { t } = useTranslations({
       colRole: 'Role',
       colOrganizations: 'Organizations',
       colGroups: 'Groups',
-      colActions: 'Actions',
       statusActive: 'Active',
       statusInactive: 'Disabled',
       roleMember: 'Member',
@@ -273,7 +200,6 @@ const { t } = useTranslations({
       pageTitle: 'Gestion des utilisateurs',
       pageSubtitle: 'Parcourez tous les utilisateurs avec leurs appartenances organisations/groupes, et incarnez n’importe quel utilisateur pour le débogage.',
       searchPlaceholder: 'Rechercher par nom, email, organisation ou groupe...',
-      loading: 'Chargement des utilisateurs...',
       loadError: 'Echec du chargement des utilisateurs',
       noUsers: 'Aucun utilisateur trouvé',
       colUser: 'Utilisateur',
@@ -282,7 +208,6 @@ const { t } = useTranslations({
       colRole: 'Rôle',
       colOrganizations: 'Organisations',
       colGroups: 'Groupes',
-      colActions: 'Actions',
       statusActive: 'Actif',
       statusInactive: 'Désactivé',
       roleMember: 'Membre',
@@ -309,25 +234,10 @@ const { t } = useTranslations({
 const impersonationStore = useImpersonationStore()
 const currentUserStore = useCurrentUserStore()
 
-type SortColumn =
-  | 'display_name'
-  | 'email'
-  | 'is_active'
-  | 'is_admin'
-  | 'org_count'
-  | 'group_count'
-
-interface SortState {
-  column: SortColumn
-  direction: 'asc' | 'desc'
-}
-
 // State
 const users = ref<AdminUserListing[]>([])
 const loading = ref(false)
 const error = ref('')
-const searchQuery = ref('')
-const sortState = ref<SortState>({ column: 'display_name', direction: 'asc' })
 
 // Modal state
 const showConfirmModal = ref(false)
@@ -335,19 +245,55 @@ const targetUser = ref<AdminUserListing | null>(null)
 const starting = ref(false)
 const confirmError = ref('')
 
-// Helpers
-function getSortIcon(column: SortColumn): string {
-  if (sortState.value.column !== column) return 'fas fa-sort'
-  return sortState.value.direction === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'
-}
+const initialSort: SortState = { key: 'display_name', dir: 'asc' }
 
-function toggleSort(column: SortColumn) {
-  if (sortState.value.column === column) {
-    sortState.value.direction = sortState.value.direction === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortState.value.column = column
-    sortState.value.direction = 'asc'
+const columns = computed<TableColumn<AdminUserListing>[]>(() => [
+  {
+    key: 'display_name',
+    label: t('adminUsers.colUser'),
+    sortable: true,
+    sortValue: (u) => (u.display_name || u.username || '').toLowerCase()
+  },
+  {
+    key: 'email',
+    label: t('adminUsers.colEmail'),
+    sortable: true,
+    sortValue: (u) => (u.email || '').toLowerCase()
+  },
+  {
+    key: 'is_active',
+    label: t('adminUsers.colStatus'),
+    sortable: true,
+    sortValue: (u) => (u.is_active ? 1 : 0)
+  },
+  {
+    key: 'is_admin',
+    label: t('adminUsers.colRole'),
+    sortable: true,
+    sortValue: (u) => (u.is_admin ? 1 : 0)
+  },
+  {
+    key: 'organizations',
+    label: t('adminUsers.colOrganizations'),
+    sortable: true,
+    sortValue: (u) => u.organizations?.length || 0
+  },
+  {
+    key: 'groups',
+    label: t('adminUsers.colGroups'),
+    sortable: true,
+    sortValue: (u) => u.groups?.length || 0
   }
+])
+
+function searchFilter(user: AdminUserListing, query: string): boolean {
+  const q = query.toLowerCase()
+  if (user.username?.toLowerCase().includes(q)) return true
+  if (user.display_name?.toLowerCase().includes(q)) return true
+  if (user.email?.toLowerCase().includes(q)) return true
+  if (user.organizations?.some((o) => o.name?.toLowerCase().includes(q))) return true
+  if (user.groups?.some((g) => g.name?.toLowerCase().includes(q))) return true
+  return false
 }
 
 function isImpersonateDisabled(userId: string): boolean {
@@ -361,64 +307,6 @@ function impersonateButtonTitle(userId: string): string {
   if (userId === currentUserStore.userId) return t('adminUsers.impersonateDisabledSelf')
   return ''
 }
-
-const filteredUsers = computed(() => {
-  let list = [...users.value]
-
-  // Search filter
-  const q = searchQuery.value.trim().toLowerCase()
-  if (q) {
-    list = list.filter(u => {
-      if (u.username?.toLowerCase().includes(q)) return true
-      if (u.display_name?.toLowerCase().includes(q)) return true
-      if (u.email?.toLowerCase().includes(q)) return true
-      if (u.organizations?.some(o => o.name?.toLowerCase().includes(q))) return true
-      if (u.groups?.some(g => g.name?.toLowerCase().includes(q))) return true
-      return false
-    })
-  }
-
-  // Sort
-  const { column, direction } = sortState.value
-  list.sort((a, b) => {
-    let va: string | number
-    let vb: string | number
-    switch (column) {
-      case 'display_name':
-        va = (a.display_name || a.username || '').toLowerCase()
-        vb = (b.display_name || b.username || '').toLowerCase()
-        break
-      case 'email':
-        va = (a.email || '').toLowerCase()
-        vb = (b.email || '').toLowerCase()
-        break
-      case 'is_active':
-        va = a.is_active ? 1 : 0
-        vb = b.is_active ? 1 : 0
-        break
-      case 'is_admin':
-        va = a.is_admin ? 1 : 0
-        vb = b.is_admin ? 1 : 0
-        break
-      case 'org_count':
-        va = a.organizations?.length || 0
-        vb = b.organizations?.length || 0
-        break
-      case 'group_count':
-        va = a.groups?.length || 0
-        vb = b.groups?.length || 0
-        break
-      default:
-        return 0
-    }
-    const cmp = typeof va === 'number' && typeof vb === 'number'
-      ? va - vb
-      : String(va).localeCompare(String(vb))
-    return direction === 'asc' ? cmp : -cmp
-  })
-
-  return list
-})
 
 const confirmTitle = computed(() => {
   const name = targetUser.value?.display_name || targetUser.value?.username || ''
@@ -505,114 +393,7 @@ onMounted(async () => {
   font-size: var(--font-size-base);
 }
 
-/* Toolbar */
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
-  flex-wrap: wrap;
-}
-
-.search-wrapper {
-  position: relative;
-  flex: 1;
-  min-width: 240px;
-}
-
-.search-icon {
-  position: absolute;
-  left: var(--spacing-md);
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--color-text-muted);
-  pointer-events: none;
-}
-
-.search-input {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) calc(var(--spacing-md) + 1.5em);
-  border: 2px solid var(--color-border-medium);
-  border-radius: var(--border-radius-md);
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-base);
-  transition: border-color var(--transition-fast);
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.user-count {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  white-space: nowrap;
-  font-weight: var(--font-weight-medium);
-}
-
-/* Table */
-.table-wrapper {
-  overflow-x: auto;
-}
-
-.users-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--color-bg-primary);
-  border: var(--border-width-thin) solid var(--color-border-light);
-  border-radius: var(--border-radius-lg);
-  overflow: hidden;
-}
-
-.users-table thead {
-  background: var(--color-bg-secondary);
-}
-
-.users-table th {
-  padding: var(--spacing-md) var(--spacing-lg);
-  text-align: left;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 2px solid var(--color-border-light);
-  white-space: nowrap;
-}
-
-.users-table td {
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-bottom: var(--border-width-thin) solid var(--color-border-light);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-base);
-  vertical-align: middle;
-}
-
-.users-table tbody tr:hover {
-  background: var(--color-bg-secondary);
-}
-
-.users-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.sortable-header {
-  cursor: pointer;
-  user-select: none;
-  transition: color var(--transition-fast);
-}
-
-.sortable-header:hover {
-  color: var(--color-primary);
-}
-
-.sortable-header i {
-  margin-left: var(--spacing-xs);
-  font-size: var(--font-size-xs);
-}
-
+/* User cell */
 .user-cell {
   display: flex;
   flex-direction: column;
@@ -708,11 +489,7 @@ onMounted(async () => {
   font-style: italic;
 }
 
-/* Actions cell */
-.actions-cell {
-  white-space: nowrap;
-}
-
+/* Impersonate button */
 .impersonate-btn {
   display: inline-flex;
   align-items: center;
@@ -736,27 +513,6 @@ onMounted(async () => {
 .impersonate-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-/* States */
-.loading-state,
-.error-state,
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-3xl);
-  gap: var(--spacing-lg);
-  color: var(--color-text-secondary);
-}
-
-.error-state {
-  color: var(--color-danger-text);
-}
-
-.empty-state i {
-  opacity: 0.4;
 }
 
 /* Confirmation modal */
@@ -804,21 +560,6 @@ onMounted(async () => {
 @media (max-width: 768px) {
   .admin-users-page {
     padding: var(--spacing-md);
-  }
-
-  .toolbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .search-wrapper {
-    min-width: unset;
-  }
-
-  .users-table th,
-  .users-table td {
-    padding: var(--spacing-sm) var(--spacing-md);
-    font-size: var(--font-size-sm);
   }
 }
 </style>

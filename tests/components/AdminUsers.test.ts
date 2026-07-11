@@ -120,7 +120,7 @@ describe('AdminUsers', () => {
     const wrapper = mountAdminUsers()
     await flushPromises()
 
-    expect(wrapper.find('.empty-state').exists()).toBe(true)
+    expect(wrapper.find('.ocf-entity-table__state').exists()).toBe(true)
     expect(wrapper.text().toLowerCase()).toContain('no users')
   })
 
@@ -224,7 +224,7 @@ describe('AdminUsers', () => {
     const wrapper = mountAdminUsers()
     await flushPromises()
 
-    const search = wrapper.find('input[type="text"].search-input')
+    const search = wrapper.find('input[type="text"].ocf-entity-table__search-input')
     expect(search.exists()).toBe(true)
     await search.setValue('alice')
     await nextTick()
