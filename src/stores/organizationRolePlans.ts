@@ -63,7 +63,7 @@ export const useOrganizationRolePlansStore = defineStore('organizationRolePlans'
     }
   })
 
-  // Load all role plan overrides for a given organization (client-side filtered)
+  // Load role plan overrides for a given organization (server-scoped via org-scoped endpoint)
   const loadOrganizationRolePlans = async (organizationId: string): Promise<OrganizationRolePlan[]> => {
     return withAsync(async () => {
       if (isDemoMode()) {
@@ -71,9 +71,8 @@ export const useOrganizationRolePlansStore = defineStore('organizationRolePlans'
         return []
       }
 
-      const response = await axios.get('/organization-role-plans')
-      const all: OrganizationRolePlan[] = response.data?.data || response.data || []
-      return all.filter((rp) => rp.organization_id === organizationId)
+      const response = await axios.get(`/organizations/${organizationId}/role-plans`)
+      return response.data?.data || response.data || []
     }, 'organizationRolePlans.loadError')
   }
 
