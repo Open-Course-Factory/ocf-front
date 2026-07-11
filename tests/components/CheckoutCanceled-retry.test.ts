@@ -82,4 +82,25 @@ describe('CheckoutCanceled — Retry navigation', () => {
     expect(target).toMatchObject({ name: 'SubscriptionPlans' })
     expect(target).not.toMatchObject({ name: 'Checkout' })
   })
+
+  // Persona finding (issue #270): Retry drops the plan the user had picked, so
+  // they land on the bare plans list and must hunt for it again. The cancel URL
+  // carries the planId in its query (`?planId=...`); Retry should forward it so
+  // the plans page can restore that context. Today `retryCheckout` pushes
+  // `{ name: 'SubscriptionPlans' }` with no query → RED.
+  it('forwards the picked planId from the query so the plans page can restore it', async () => {
+    const wrapper = mountCanceled()
+    await wrapper.vm.$nextTick()
+
+    const retryBtn = wrapper
+      .findAll('button')
+      .find(b => b.text().toLowerCase().includes('retry'))
+    await retryBtn!.trigger('click')
+
+    expect(routerPush).toHaveBeenCalledTimes(1)
+    expect(routerPush.mock.calls[0][0]).toMatchObject({
+      name: 'SubscriptionPlans',
+      query: { planId: 'plan-solo' },
+    })
+  })
 })
