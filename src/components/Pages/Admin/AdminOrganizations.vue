@@ -11,126 +11,75 @@
       <h2><i class="fas fa-building"></i> {{ t('adminOrgs.pageTitle') }}</h2>
     </div>
 
-    <!-- Toolbar -->
-    <div class="toolbar">
-      <div class="search-wrapper">
-        <i class="fas fa-search search-icon"></i>
-        <input
-          v-model="searchQuery"
-          type="text"
-          class="search-input"
-          :placeholder="t('adminOrgs.searchPlaceholder')"
-        />
-      </div>
-      <select v-model="typeFilter" class="type-filter">
-        <option value="all">{{ t('adminOrgs.filterAll') }}</option>
-        <option value="personal">{{ t('adminOrgs.filterPersonal') }}</option>
-        <option value="team">{{ t('adminOrgs.filterTeam') }}</option>
-      </select>
-      <span class="org-count">
-        {{ filteredOrganizations.length }} / {{ organizationsStore.organizations.length }}
-      </span>
-    </div>
+    <EntityTable
+      :columns="columns"
+      :rows="typeFilteredOrganizations"
+      :loading="loading"
+      :error="error"
+      searchable
+      :search-filter="searchFilter"
+      :search-placeholder="t('adminOrgs.searchPlaceholder')"
+      :initial-sort="{ key: 'display_name', dir: 'asc' }"
+      show-count
+      empty-icon="fa-building"
+      :empty-text="t('adminOrgs.noOrgs')"
+    >
+      <template #toolbar-extra>
+        <select v-model="typeFilter" class="type-filter">
+          <option value="all">{{ t('adminOrgs.filterAll') }}</option>
+          <option value="personal">{{ t('adminOrgs.filterPersonal') }}</option>
+          <option value="team">{{ t('adminOrgs.filterTeam') }}</option>
+        </select>
+      </template>
 
-    <!-- Loading State -->
-    <div v-if="loading" class="loading-state">
-      <i class="fas fa-spinner fa-spin fa-3x"></i>
-      <p>{{ t('adminOrgs.loading') }}</p>
-    </div>
+      <template #cell-type="{ row }">
+        <span :class="['type-badge', `type-${row.organization_type}`]">
+          {{ row.organization_type === 'personal' ? t('adminOrgs.filterPersonal') : t('adminOrgs.filterTeam') }}
+        </span>
+      </template>
 
-    <!-- Error State -->
-    <div v-else-if="error" class="error-state">
-      <i class="fas fa-exclamation-triangle fa-3x"></i>
-      <p>{{ error }}</p>
-    </div>
+      <template #cell-plan="{ row }">
+        <template v-if="getPlanDisplay(row.id)">
+          <span class="plan-name">{{ getPlanDisplay(row.id)!.name }}</span>
+          <span class="plan-price">{{ getPlanDisplay(row.id)!.price }}</span>
+        </template>
+        <span v-else class="text-muted text-italic">{{ t('adminOrgs.noPlan') }}</span>
+      </template>
 
-    <!-- Empty State -->
-    <div v-else-if="filteredOrganizations.length === 0" class="empty-state">
-      <i class="fas fa-building fa-3x"></i>
-      <p>{{ t('adminOrgs.noOrgs') }}</p>
-    </div>
+      <template #cell-backends="{ row }">
+        <template v-if="orgConfigs[row.id]?.allowed_backends?.length > 0">
+          <span
+            v-for="backendId in orgConfigs[row.id].allowed_backends"
+            :key="backendId"
+            class="backend-tag"
+          >
+            {{ getBackendName(backendId) }}
+          </span>
+        </template>
+        <span v-else class="text-muted text-italic">{{ t('adminOrgs.systemDefault') }}</span>
+      </template>
 
-    <!-- Organizations Table -->
-    <div v-else class="table-wrapper">
-      <table class="org-table">
-        <thead>
-          <tr>
-            <th
-              class="sortable-header"
-              @click="toggleSort('display_name')"
-            >
-              {{ t('adminOrgs.colOrganization') }}
-              <i :class="getSortIcon('display_name')"></i>
-            </th>
-            <th
-              class="sortable-header"
-              @click="toggleSort('organization_type')"
-            >
-              {{ t('adminOrgs.colType') }}
-              <i :class="getSortIcon('organization_type')"></i>
-            </th>
-            <th
-              class="sortable-header"
-              @click="toggleSort('member_count')"
-            >
-              {{ t('adminOrgs.colMembers') }}
-              <i :class="getSortIcon('member_count')"></i>
-            </th>
-            <th>{{ t('adminOrgs.colPlan') }}</th>
-            <th>{{ t('adminOrgs.colBackends') }}</th>
-            <th>{{ t('adminOrgs.colActions') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="org in filteredOrganizations" :key="org.id">
-            <td>{{ org.display_name }}</td>
-            <td>
-              <span :class="['type-badge', `type-${org.organization_type}`]">
-                {{ org.organization_type === 'personal' ? t('adminOrgs.filterPersonal') : t('adminOrgs.filterTeam') }}
-              </span>
-            </td>
-            <td>{{ org.member_count ?? 0 }}</td>
-            <td>
-              <template v-if="getPlanDisplay(org.id)">
-                <span class="plan-name">{{ getPlanDisplay(org.id)!.name }}</span>
-                <span class="plan-price">{{ getPlanDisplay(org.id)!.price }}</span>
-              </template>
-              <span v-else class="text-muted text-italic">{{ t('adminOrgs.noPlan') }}</span>
-            </td>
-            <td>
-              <template v-if="orgConfigs[org.id]?.allowed_backends?.length > 0">
-                <span
-                  v-for="backendId in orgConfigs[org.id].allowed_backends"
-                  :key="backendId"
-                  class="backend-tag"
-                >
-                  {{ getBackendName(backendId) }}
-                </span>
-              </template>
-              <span v-else class="text-muted text-italic">{{ t('adminOrgs.systemDefault') }}</span>
-            </td>
-            <td class="actions-cell">
-              <Button
-                variant="outline-primary"
-                size="sm"
-                icon="fas fa-server"
-                @click="openBackendModal(org)"
-              >
-                {{ t('adminOrgs.backendsBtn') }}
-              </Button>
-              <Button
-                variant="outline-primary"
-                size="sm"
-                icon="fas fa-credit-card"
-                @click="openPlanModal(org)"
-              >
-                {{ t('adminOrgs.planBtn') }}
-              </Button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <template #row-actions="{ row }">
+        <div class="org-row-actions">
+          <Button
+            variant="outline-primary"
+            size="sm"
+            icon="fas fa-server"
+            @click="openBackendModal(row)"
+          >
+            {{ t('adminOrgs.backendsBtn') }}
+          </Button>
+          <Button
+            variant="outline-primary"
+            size="sm"
+            icon="fas fa-credit-card"
+            @click="openPlanModal(row)"
+          >
+            {{ t('adminOrgs.planBtn') }}
+          </Button>
+        </div>
+      </template>
+    </EntityTable>
 
     <!-- Backend Config Modal -->
     <BaseModal
@@ -215,9 +164,11 @@ import { useOrganizationsStore } from '../../../stores/organizations'
 import { useTerminalBackendsStore } from '../../../stores/terminalBackends'
 import { useSubscriptionPlansStore } from '../../../stores/subscriptionPlans'
 import { useTranslations } from '../../../composables/useTranslations'
+import EntityTable from '../../Generic/EntityTable.vue'
 import Button from '../../UI/Button.vue'
 import BaseModal from '../../Modals/BaseModal.vue'
 import AdminOrgPlanModal from '../../Modals/AdminOrgPlanModal.vue'
+import type { TableColumn } from '../../../utils/tableColumns'
 import type { Organization, OrganizationSubscription } from '../../../types'
 
 const organizationsStore = useOrganizationsStore()
@@ -232,7 +183,6 @@ const { t } = useTranslations({
       filterAll: 'All',
       filterPersonal: 'Personal',
       filterTeam: 'Team',
-      loading: 'Loading organizations...',
       noOrgs: 'No organizations found',
       loadError: 'Failed to load organizations',
       colOrganization: 'Organization',
@@ -240,7 +190,6 @@ const { t } = useTranslations({
       colMembers: 'Members',
       colPlan: 'Plan',
       colBackends: 'Backends',
-      colActions: 'Actions',
       noPlan: 'No plan',
       systemDefault: 'System default',
       backendsBtn: 'Backends',
@@ -262,7 +211,6 @@ const { t } = useTranslations({
       filterAll: 'Toutes',
       filterPersonal: 'Personnel',
       filterTeam: 'Equipe',
-      loading: 'Chargement des organisations...',
       noOrgs: 'Aucune organisation trouvée',
       loadError: 'Échec du chargement des organisations',
       colOrganization: 'Organisation',
@@ -270,7 +218,6 @@ const { t } = useTranslations({
       colMembers: 'Membres',
       colPlan: 'Plan',
       colBackends: 'Backends',
-      colActions: 'Actions',
       noPlan: 'Aucun plan',
       systemDefault: 'Défaut système',
       backendsBtn: 'Backends',
@@ -290,10 +237,7 @@ const { t } = useTranslations({
 // State
 const loading = ref(false)
 const error = ref('')
-const searchQuery = ref('')
 const typeFilter = ref<'all' | 'personal' | 'team'>('all')
-const sortColumn = ref<'display_name' | 'organization_type' | 'member_count'>('display_name')
-const sortDirection = ref<'asc' | 'desc'>('asc')
 
 // Per-org data
 const orgConfigs: Record<string, { allowed_backends: string[]; default_backend: string }> = reactive({})
@@ -315,54 +259,31 @@ const planModalOrgName = ref('')
 const planModalCurrentPlanId = ref<string | undefined>(undefined)
 const planModalCurrentSub = ref<OrganizationSubscription | undefined>(undefined)
 
-// Helpers
-function getSortIcon(column: string): string {
-  if (sortColumn.value !== column) return 'fas fa-sort'
-  return sortDirection.value === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'
-}
+// Table configuration. Search and sort are handled by EntityTable; the page only
+// applies the organization-type filter (a page-level domain concern) to the rows.
+const columns = computed<TableColumn<Organization>[]>(() => [
+  { key: 'display_name', label: t('adminOrgs.colOrganization'), sortable: true },
+  { key: 'type', label: t('adminOrgs.colType'), sortable: true, sortValue: (o) => o.organization_type ?? '' },
+  {
+    key: 'member_count',
+    label: t('adminOrgs.colMembers'),
+    sortable: true,
+    sortValue: (o) => o.member_count ?? 0,
+    format: (v) => String(v ?? 0)
+  },
+  { key: 'plan', label: t('adminOrgs.colPlan') },
+  { key: 'backends', label: t('adminOrgs.colBackends') }
+])
 
-const filteredOrganizations = computed(() => {
-  let orgs = [...organizationsStore.organizations]
-
-  // Filter by search
-  if (searchQuery.value.trim()) {
-    const q = searchQuery.value.toLowerCase()
-    orgs = orgs.filter(org =>
-      org.display_name?.toLowerCase().includes(q) ||
-      org.name?.toLowerCase().includes(q)
-    )
-  }
-
-  // Filter by type
-  if (typeFilter.value !== 'all') {
-    orgs = orgs.filter(org => org.organization_type === typeFilter.value)
-  }
-
-  // Sort
-  orgs.sort((a, b) => {
-    let valA: any, valB: any
-    switch (sortColumn.value) {
-      case 'display_name':
-        valA = (a.display_name || '').toLowerCase()
-        valB = (b.display_name || '').toLowerCase()
-        break
-      case 'organization_type':
-        valA = a.organization_type
-        valB = b.organization_type
-        break
-      case 'member_count':
-        valA = a.member_count || 0
-        valB = b.member_count || 0
-        break
-      default:
-        return 0
-    }
-    const cmp = typeof valA === 'number' ? valA - valB : String(valA).localeCompare(String(valB))
-    return sortDirection.value === 'asc' ? cmp : -cmp
-  })
-
-  return orgs
+const typeFilteredOrganizations = computed(() => {
+  if (typeFilter.value === 'all') return organizationsStore.organizations
+  return organizationsStore.organizations.filter(org => org.organization_type === typeFilter.value)
 })
+
+function searchFilter(org: Organization, query: string): boolean {
+  const q = query.toLowerCase()
+  return !!org.display_name?.toLowerCase().includes(q) || !!org.name?.toLowerCase().includes(q)
+}
 
 const availableDefaultBackends = computed(() => {
   if (editAllowedBackends.value.length === 0) return []
@@ -386,15 +307,6 @@ function getPlanDisplay(orgId: string): { name: string; price: string } | null {
   return {
     name: plan.name,
     price: plansStore.formatPrice(plan.price_amount, plan.currency) + '/' + plan.billing_interval
-  }
-}
-
-function toggleSort(column: 'display_name' | 'organization_type' | 'member_count') {
-  if (sortColumn.value === column) {
-    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortColumn.value = column
-    sortDirection.value = 'asc'
   }
 }
 
@@ -546,46 +458,7 @@ onMounted(async () => {
   gap: var(--spacing-md);
 }
 
-/* Toolbar */
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
-  flex-wrap: wrap;
-}
-
-.search-wrapper {
-  position: relative;
-  flex: 1;
-  min-width: 200px;
-}
-
-.search-icon {
-  position: absolute;
-  left: var(--spacing-md);
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--color-text-muted);
-  pointer-events: none;
-}
-
-.search-input {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) calc(var(--spacing-md) + 1.5em);
-  border: 2px solid var(--color-border-medium);
-  border-radius: var(--border-radius-md);
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-base);
-  transition: border-color var(--transition-fast);
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
+/* Type filter (toolbar-extra slot) */
 .type-filter {
   padding: var(--spacing-sm) var(--spacing-md);
   border: 2px solid var(--color-border-medium);
@@ -600,74 +473,6 @@ onMounted(async () => {
 .type-filter:focus {
   outline: none;
   border-color: var(--color-primary);
-}
-
-.org-count {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  white-space: nowrap;
-  font-weight: var(--font-weight-medium);
-}
-
-/* Table */
-.table-wrapper {
-  overflow-x: auto;
-}
-
-.org-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--color-bg-primary);
-  border: var(--border-width-thin) solid var(--color-border-light);
-  border-radius: var(--border-radius-lg);
-  overflow: hidden;
-}
-
-.org-table thead {
-  background: var(--color-bg-secondary);
-}
-
-.org-table th {
-  padding: var(--spacing-md) var(--spacing-lg);
-  text-align: left;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 2px solid var(--color-border-light);
-  white-space: nowrap;
-}
-
-.org-table td {
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-bottom: var(--border-width-thin) solid var(--color-border-light);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-base);
-  vertical-align: middle;
-}
-
-.org-table tbody tr:hover {
-  background: var(--color-bg-secondary);
-}
-
-.org-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.sortable-header {
-  cursor: pointer;
-  user-select: none;
-  transition: color var(--transition-fast);
-}
-
-.sortable-header:hover {
-  color: var(--color-primary);
-}
-
-.sortable-header i {
-  margin-left: var(--spacing-xs);
-  font-size: var(--font-size-xs);
 }
 
 /* Type Badge */
@@ -726,32 +531,11 @@ onMounted(async () => {
   font-style: italic;
 }
 
-/* Actions cell */
-.actions-cell {
+/* Row actions */
+.org-row-actions {
   display: flex;
   gap: var(--spacing-sm);
   flex-wrap: wrap;
-}
-
-/* Loading / Error / Empty States */
-.loading-state,
-.error-state,
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-3xl);
-  gap: var(--spacing-lg);
-  color: var(--color-text-secondary);
-}
-
-.error-state {
-  color: var(--color-danger-text);
-}
-
-.empty-state i {
-  opacity: 0.4;
 }
 
 /* Config modal content */
@@ -868,22 +652,7 @@ onMounted(async () => {
     gap: var(--spacing-md);
   }
 
-  .toolbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .search-wrapper {
-    min-width: unset;
-  }
-
-  .org-table th,
-  .org-table td {
-    padding: var(--spacing-sm) var(--spacing-md);
-    font-size: var(--font-size-sm);
-  }
-
-  .actions-cell {
+  .org-row-actions {
     flex-direction: column;
   }
 }
