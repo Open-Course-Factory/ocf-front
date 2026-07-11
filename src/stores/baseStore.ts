@@ -460,9 +460,10 @@ export const useBaseStore = () => {
     }
 
     // Generic CRUD operations
-    const createEntity = async (endpoint: string, entityData: any) => {
+    const createEntity = async (endpoint: string, entityData: any, options?: { skipHooks?: boolean }) => {
         return withAsync(async () => {
-            const processedData = await executeBeforeCreateHook(entityData)
+            const skipHooks = options?.skipHooks === true
+            const processedData = skipHooks ? entityData : await executeBeforeCreateHook(entityData)
 
             let response: any
 
@@ -485,7 +486,9 @@ export const useBaseStore = () => {
             // Add to local entities
             entities.push(response.data)
 
-            await executeAfterCreateHook(response.data, entityData)
+            if (!skipHooks) {
+                await executeAfterCreateHook(response.data, entityData)
+            }
 
             return response.data
         }, 'errors.createEntity')

@@ -1198,8 +1198,9 @@ async function handleImportFile(event: Event) {
           }
         }
 
-        // createEntity runs the create hooks (accepted for imports)
-        await props.entityStore.createEntity(`/${props.entityName}`, cleanEntity);
+        // Imports skip the create hooks — hook side effects (generation jobs,
+        // subgroup creation) must not fire when replaying a bulk JSON dump.
+        await props.entityStore.createEntity(`/${props.entityName}`, cleanEntity, { skipHooks: true });
         successCount++;
       } catch (err: any) {
         console.error('Import entity error:', err);

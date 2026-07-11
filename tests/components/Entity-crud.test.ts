@@ -80,7 +80,8 @@ import Entity from '../../src/components/Pages/Entity.vue'
 import { useBaseStore } from '../../src/stores/baseStore'
 
 // Wrapped in reactive() to mirror the Pinia store proxy used in production:
-// deleteEntity reassigns `store.entities = filtered`, which must be tracked.
+// deleteEntity mutates `store.entities` in place (findIndex + splice), which
+// must be tracked reactively.
 function makeThemesStore() {
   const base = useBaseStore()
   const fieldList = new Map<string, any>([
