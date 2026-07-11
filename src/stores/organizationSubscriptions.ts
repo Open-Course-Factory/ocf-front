@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import axios from 'axios'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { isDemoMode, logDemoAction } from '../services/demo'
+import { createAsyncWrapper } from '../utils/asyncWrapper'
 import type {
   OrganizationFeatures,
   SubscribeOrganizationRequest,
@@ -12,6 +13,7 @@ import type {
 export const useOrganizationSubscriptionsStore = defineStore('organizationSubscriptions', () => {
   const isLoading = ref(false)
   const error = ref('')
+  const withAsync = createAsyncWrapper({ isLoading, error })
 
   // Translations
   const { t } = useStoreTranslations({
@@ -45,9 +47,7 @@ export const useOrganizationSubscriptionsStore = defineStore('organizationSubscr
 
   // Load organization subscription
   const loadOrganizationSubscription = async (organizationId: string) => {
-    isLoading.value = true
-    error.value = ''
-    try {
+    return withAsync(async () => {
       if (isDemoMode()) {
         logDemoAction('loadOrganizationSubscription', { organizationId })
         return {
@@ -68,19 +68,12 @@ export const useOrganizationSubscriptionsStore = defineStore('organizationSubscr
 
       const response = await axios.get(`/organizations/${organizationId}/subscription`)
       return response.data.data || response.data
-    } catch (err: any) {
-      error.value = err.response?.data?.error_message || err.message || t('organizationSubscriptions.loadError')
-      throw err
-    } finally {
-      isLoading.value = false
-    }
+    }, 'organizationSubscriptions.loadError')
   }
 
   // Subscribe organization to plan
   const subscribeOrganization = async (organizationId: string, data: SubscribeOrganizationRequest) => {
-    isLoading.value = true
-    error.value = ''
-    try {
+    return withAsync(async () => {
       if (!data.subscription_plan_id) {
         throw new Error(t('organizationSubscriptions.planRequired'))
       }
@@ -105,19 +98,12 @@ export const useOrganizationSubscriptionsStore = defineStore('organizationSubscr
 
       const response = await axios.post(`/organizations/${organizationId}/subscribe`, data)
       return response.data.data || response.data
-    } catch (err: any) {
-      error.value = err.response?.data?.error_message || err.message || t('organizationSubscriptions.subscribeError')
-      throw err
-    } finally {
-      isLoading.value = false
-    }
+    }, 'organizationSubscriptions.subscribeError')
   }
 
   // Cancel organization subscription
   const cancelOrganizationSubscription = async (organizationId: string, cancelAtPeriodEnd: boolean = true) => {
-    isLoading.value = true
-    error.value = ''
-    try {
+    return withAsync(async () => {
       if (isDemoMode()) {
         logDemoAction('cancelOrganizationSubscription', { organizationId, cancelAtPeriodEnd })
         return
@@ -125,19 +111,12 @@ export const useOrganizationSubscriptionsStore = defineStore('organizationSubscr
 
       const requestData: CancelOrganizationSubscriptionRequest = { cancel_at_period_end: cancelAtPeriodEnd }
       await axios.delete(`/organizations/${organizationId}/subscription`, { data: requestData })
-    } catch (err: any) {
-      error.value = err.response?.data?.error_message || err.message || t('organizationSubscriptions.cancelError')
-      throw err
-    } finally {
-      isLoading.value = false
-    }
+    }, 'organizationSubscriptions.cancelError')
   }
 
   // Get organization features
   const loadOrganizationFeatures = async (organizationId: string): Promise<OrganizationFeatures> => {
-    isLoading.value = true
-    error.value = ''
-    try {
+    return withAsync(async () => {
       if (isDemoMode()) {
         logDemoAction('loadOrganizationFeatures', { organizationId })
         return {
@@ -157,12 +136,7 @@ export const useOrganizationSubscriptionsStore = defineStore('organizationSubscr
 
       const response = await axios.get(`/organizations/${organizationId}/features`)
       return response.data.data || response.data
-    } catch (err: any) {
-      error.value = err.response?.data?.error_message || err.message || t('organizationSubscriptions.loadError')
-      throw err
-    } finally {
-      isLoading.value = false
-    }
+    }, 'organizationSubscriptions.loadError')
   }
 
   return {

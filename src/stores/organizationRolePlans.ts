@@ -24,6 +24,7 @@ import { ref } from 'vue'
 import axios from 'axios'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { isDemoMode, logDemoAction } from '../services/demo'
+import { createAsyncWrapper } from '../utils/asyncWrapper'
 
 export interface OrganizationRolePlan {
   id: string
@@ -41,6 +42,7 @@ export interface OrganizationRolePlan {
 export const useOrganizationRolePlansStore = defineStore('organizationRolePlans', () => {
   const isLoading = ref(false)
   const error = ref('')
+  const withAsync = createAsyncWrapper({ isLoading, error })
 
   const { t } = useStoreTranslations({
     en: {
@@ -63,9 +65,7 @@ export const useOrganizationRolePlansStore = defineStore('organizationRolePlans'
 
   // Load all role plan overrides for a given organization (client-side filtered)
   const loadOrganizationRolePlans = async (organizationId: string): Promise<OrganizationRolePlan[]> => {
-    isLoading.value = true
-    error.value = ''
-    try {
+    return withAsync(async () => {
       if (isDemoMode()) {
         logDemoAction('loadOrganizationRolePlans', { organizationId })
         return []
@@ -74,12 +74,7 @@ export const useOrganizationRolePlansStore = defineStore('organizationRolePlans'
       const response = await axios.get('/organization-role-plans')
       const all: OrganizationRolePlan[] = response.data?.data || response.data || []
       return all.filter((rp) => rp.organization_id === organizationId)
-    } catch (err: any) {
-      error.value = err.response?.data?.error_message || err.message || t('organizationRolePlans.loadError')
-      throw err
-    } finally {
-      isLoading.value = false
-    }
+    }, 'organizationRolePlans.loadError')
   }
 
   // Create a role plan override
@@ -88,9 +83,7 @@ export const useOrganizationRolePlansStore = defineStore('organizationRolePlans'
     role: string
     subscription_plan_id: string
   }): Promise<OrganizationRolePlan> => {
-    isLoading.value = true
-    error.value = ''
-    try {
+    return withAsync(async () => {
       if (isDemoMode()) {
         logDemoAction('createRolePlan', data)
         return { id: `demo-role-plan-${data.role}`, ...data }
@@ -98,12 +91,7 @@ export const useOrganizationRolePlansStore = defineStore('organizationRolePlans'
 
       const response = await axios.post('/organization-role-plans', data)
       return response.data?.data || response.data
-    } catch (err: any) {
-      error.value = err.response?.data?.error_message || err.message || t('organizationRolePlans.createError')
-      throw err
-    } finally {
-      isLoading.value = false
-    }
+    }, 'organizationRolePlans.createError')
   }
 
   // Update a role plan override
@@ -111,9 +99,7 @@ export const useOrganizationRolePlansStore = defineStore('organizationRolePlans'
     id: string,
     data: { subscription_plan_id: string }
   ): Promise<OrganizationRolePlan> => {
-    isLoading.value = true
-    error.value = ''
-    try {
+    return withAsync(async () => {
       if (isDemoMode()) {
         logDemoAction('updateRolePlan', { id, data })
         return { id, ...data } as OrganizationRolePlan
@@ -121,31 +107,19 @@ export const useOrganizationRolePlansStore = defineStore('organizationRolePlans'
 
       const response = await axios.patch(`/organization-role-plans/${id}`, data)
       return response.data?.data || response.data
-    } catch (err: any) {
-      error.value = err.response?.data?.error_message || err.message || t('organizationRolePlans.updateError')
-      throw err
-    } finally {
-      isLoading.value = false
-    }
+    }, 'organizationRolePlans.updateError')
   }
 
   // Delete a role plan override
   const deleteRolePlan = async (id: string): Promise<void> => {
-    isLoading.value = true
-    error.value = ''
-    try {
+    return withAsync(async () => {
       if (isDemoMode()) {
         logDemoAction('deleteRolePlan', { id })
         return
       }
 
       await axios.delete(`/organization-role-plans/${id}`)
-    } catch (err: any) {
-      error.value = err.response?.data?.error_message || err.message || t('organizationRolePlans.deleteError')
-      throw err
-    } finally {
-      isLoading.value = false
-    }
+    }, 'organizationRolePlans.deleteError')
   }
 
   return {
