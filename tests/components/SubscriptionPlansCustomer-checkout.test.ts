@@ -297,7 +297,9 @@ describe('SubscriptionPlansCustomer — direct-to-Stripe checkout', () => {
       const [planId, successUrl, cancelUrl, coupon] = createCheckoutSession.mock.calls[0]
       expect(planId).toBe('plan-solo')
       expect(successUrl).toBe(`${ORIGIN}/checkout-success`)
-      expect(cancelUrl).toBe(`${ORIGIN}/checkout-canceled`)
+      // Cancel URL now carries the picked plan so the canceled page can offer a
+      // Retry that returns straight to it (issue #270).
+      expect(cancelUrl).toBe(`${ORIGIN}/checkout-canceled?planId=plan-solo`)
       expect(coupon).toBe('SUMMER25')
     })
 
@@ -343,7 +345,8 @@ describe('SubscriptionPlansCustomer — direct-to-Stripe checkout', () => {
     const call = createCheckoutSession.mock.calls[0]
     expect(call[0]).toBe('plan-solo')
     expect(call[1]).toBe(`${ORIGIN}/checkout-success`)
-    expect(call[2]).toBe(`${ORIGIN}/checkout-canceled`)
+    // Cancel URL now carries the picked plan (issue #270).
+    expect(call[2]).toBe(`${ORIGIN}/checkout-canceled?planId=plan-solo`)
     expect(call[4]).toBe(true)
     // Must NOT route into the removed in-app Checkout wizard.
     expect(routerPush).not.toHaveBeenCalledWith(
