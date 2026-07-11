@@ -277,7 +277,7 @@ export const useBaseStore = () => {
     }
 
     // API Loading Methods
-    const loadEntities = async (endpoint: string, demoDataProvider?: () => any[]) => {
+    const loadEntities = async (endpoint: string, demoDataProvider?: () => any[], config?: any) => {
         return withAsync(async () => {
             let data: any[]
 
@@ -287,7 +287,7 @@ export const useBaseStore = () => {
                 data = demoDataProvider()
             } else {
                 logDemoAction(`Loading real data from ${endpoint}`)
-                const response = await axios.get(endpoint)
+                const response = config ? await axios.get(endpoint, config) : await axios.get(endpoint)
                 // Handle both direct array responses and paginated responses
                 data = response.data?.data || response.data || []
             }
@@ -401,6 +401,52 @@ export const useBaseStore = () => {
                 logDemoAction(`Error loading data with cursor: ${error.value}`)
             }
         })
+    }
+
+    // Fetch every page of an entity (page/size pagination) and return the full list.
+    // Used for exports; extraParams carries caller-side filters (e.g. active UI filters).
+    const fetchAllEntities = async (endpoint: string, extraParams: Record<string, any> = {}) => {
+        if (isDemoMode()) {
+            logDemoAction(`Fetching all demo entities for ${endpoint}`)
+            return [...entities]
+        }
+
+        const allEntities: any[] = []
+        let page = 1
+        const size = 100
+        let hasMore = true
+
+        while (hasMore) {
+            const params = new URLSearchParams()
+            params.append('page', page.toString())
+            params.append('size', size.toString())
+
+            // Include same nested data as the paginated list
+            const includeList = [...includeParams.children, ...includeParams.parents]
+            if (includeList.length > 0) {
+                params.append('include', includeList.join(','))
+            }
+
+            // Caller-supplied filters
+            Object.entries(extraParams).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== '') {
+                    params.append(key, String(value))
+                }
+            })
+
+            const response = await axios.get(`${endpoint}?${params}`)
+            const data = response.data?.data || response.data || []
+            allEntities.push(...data)
+
+            const totalPages = response.data?.totalPages || 1
+            hasMore = page < totalPages
+            page++
+
+            // Safety limit
+            if (page > 1000) break
+        }
+
+        return allEntities
     }
 
     const refreshEntities = async (endpoint: string, demoDataProvider?: () => any[]) => {
@@ -559,6 +605,7 @@ export const useBaseStore = () => {
         lastLoaded,
         loadEntities,
         loadEntitiesWithCursor,
+        fetchAllEntities,
         refreshEntities,
         clearEntities,
         createEntity,

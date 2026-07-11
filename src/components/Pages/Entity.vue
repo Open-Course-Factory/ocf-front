@@ -282,7 +282,6 @@
 </template>
 
 <script setup lang="ts">
-import axios from 'axios';
 import { ref, onBeforeMount, computed, reactive, watch, nextTick } from 'vue';
 import EntityModal from '../Modals/EntityModal.vue';
 import EntityCard from '../Cards/EntityCard.vue';
@@ -859,56 +858,8 @@ async function getEntitiesWithCursor(entityName: string, store: any, cursor: str
       }
     });
 
-    // Check if store supports cursor-based pagination
-    if (store.loadEntitiesWithCursor && typeof store.loadEntitiesWithCursor === 'function') {
-      result = await store.loadEntitiesWithCursor(`/${entityName}`, cursor, size, apiFilters);
-    } else {
-      // Determine pagination strategy based on backend support
-      let response: any;
-
-      // Backend supports cursor pagination when cursor parameter is present
-      console.log('Using cursor pagination with cursor:', cursor || '(empty for first page)');
-
-      const cursorParams = new URLSearchParams();
-      cursorParams.append('cursor', cursor || ''); // ✅ Always include cursor param, even if empty
-      cursorParams.append('limit', size.toString());
-
-      // Add include parameter from store configuration (generic approach)
-      if (props.entityStore.includeParams) {
-        const includeList = [
-          ...props.entityStore.includeParams.children,
-          ...props.entityStore.includeParams.parents
-        ];
-        if (includeList.length > 0) {
-          cursorParams.append('include', includeList.join(','));
-        }
-      }
-
-      // Add filter parameters (already filtered at the top of this function)
-      Object.entries(apiFilters).forEach(([key, value]) => {
-        cursorParams.append(key, value);
-      });
-
-      response = await axios.get(`/${entityName}?${cursorParams}`);
-
-      // Handle cursor-based response (backend always returns cursor format when cursor param is present)
-      console.log('✅ Backend supports cursor pagination');
-      result = {
-        data: response.data?.data || response.data || [],
-        nextCursor: response.data?.nextCursor || null, // ✅ Use exact cursor from API
-        hasMore: response.data?.hasMore || false,
-        total: response.data?.total || 0
-      };
-
-      // Update store entities manually for fallback
-      // Replace entities if it's the first page OR if filters are active
-      // Append entities only for pagination without filters
-      if (cursor && currentPageIndex.value > 0 && !hasActiveFilters.value) {
-        store.entities.push(...result.data);
-      } else {
-        store.entities.splice(0, store.entities.length, ...result.data);
-      }
-    }
+    // All consumer stores extend useBaseStore, which provides cursor pagination.
+    result = await store.loadEntitiesWithCursor(`/${entityName}`, cursor, size, apiFilters);
 
     // Update pagination state
     totalItems.value = result.total || 0;
@@ -972,11 +923,9 @@ async function getEntitiesWithCursor(entityName: string, store: any, cursor: str
 }
 
 // Get entities without pagination for parent/sub entities
-async function getEntitiesWithoutPagination(entityName: string, store: Store) {
+async function getEntitiesWithoutPagination(entityName: string, store: any) {
   try {
-    const response = await axios.get(`/${entityName}`, { params: { size: 100 } });
-    const entities = response.data?.data || response.data || [];
-    store.entities = entities;
+    await store.loadEntities(`/${entityName}`, undefined, { params: { size: 100 } });
     if (store.getSelectDatas) {
       store.selectDatas = store.getSelectDatas(store.entities);
     }
@@ -989,32 +938,23 @@ async function getEntitiesWithoutPagination(entityName: string, store: Store) {
 
 async function addEntity(data: Record<string, string>) {
   try {
-    // Exécuter le hook beforeCreate si défini
-    const processedData = await props.entityStore.executeBeforeCreateHook?.(data) || data;
-
-    // Inject active parent filter values into creation data
+    // Inject active parent filter values into creation data.
+    // Note: this now precedes the store's beforeCreate hook (createEntity runs it).
     if (props.entityStore.parentEntitiesStores?.size > 0) {
       for (const [filterKey] of props.entityStore.parentEntitiesStores) {
-        if (activeFilters[filterKey] && !processedData[filterKey]) {
-          processedData[filterKey] = activeFilters[filterKey];
+        if (activeFilters[filterKey] && !data[filterKey]) {
+          data[filterKey] = activeFilters[filterKey];
         }
       }
     }
 
-    const response = await axios.post(`/${props.entityName}`, processedData);
-    
-    const newEntity = response.data;
-    props.entityStore.entities.push(newEntity);
-    
+    // createEntity runs beforeCreate/afterCreate hooks and appends the new entity.
+    await props.entityStore.createEntity(`/${props.entityName}`, data);
+
     if (props.entityStore.getSelectDatas) {
       props.entityStore.selectDatas = props.entityStore.getSelectDatas(props.entityStore.entities);
     }
-    
-    // Exécuter le hook afterCreate si défini (générique)
-    if (props.entityStore.executeAfterCreateHook) {
-      await props.entityStore.executeAfterCreateHook(newEntity, data);
-    }
-    
+
     showModal.value = false;
   } catch (error) {
     console.error('Error while adding ' + props.entityName, error);
@@ -1041,17 +981,11 @@ async function deleteEntity(keyId: string) {
       }
     }
 
-    await axios.delete(`/${props.entityName}/${keyId}`);
-    
-    props.entityStore.entities = props.entityStore.entities.filter((entity: any) => entity.id !== keyId);
-    
+    // deleteEntity removes the entity locally and runs the afterDelete hook.
+    await props.entityStore.deleteEntity(`/${props.entityName}`, keyId);
+
     if (props.entityStore.getSelectDatas) {
       props.entityStore.selectDatas = props.entityStore.getSelectDatas(props.entityStore.entities);
-    }
-    
-    // Exécuter le hook afterDelete si défini (générique)
-    if (props.entityStore.executeAfterDeleteHook) {
-      await props.entityStore.executeAfterDeleteHook(keyId);
     }
   } catch (error) {
     console.error('Error while deleting ' + props.entityName, error);
@@ -1180,45 +1114,15 @@ function openModal(entity: any) {
 async function exportEntities() {
   isExporting.value = true;
   try {
-    const allEntities: any[] = [];
-    let page = 1;
-    const size = 100;
-    let hasMore = true;
-
-    while (hasMore) {
-      const params = new URLSearchParams();
-      params.append('page', page.toString());
-      params.append('size', size.toString());
-
-      // Include same include params as the current page
-      if (props.entityStore.includeParams) {
-        const includeList = [
-          ...props.entityStore.includeParams.children,
-          ...props.entityStore.includeParams.parents
-        ];
-        if (includeList.length > 0) {
-          params.append('include', includeList.join(','));
-        }
+    // Pass active UI filters through to the store's paginated fetch
+    const filterParams: Record<string, string> = {};
+    Object.entries(activeFilters).forEach(([key, value]) => {
+      if (value && value !== '') {
+        filterParams[key] = value;
       }
+    });
 
-      // Include active filters
-      Object.entries(activeFilters).forEach(([key, value]) => {
-        if (value && value !== '') {
-          params.append(key, value);
-        }
-      });
-
-      const response = await axios.get(`/${props.entityName}?${params}`);
-      const data = response.data?.data || response.data || [];
-      allEntities.push(...data);
-
-      const totalPages = response.data?.totalPages || 1;
-      hasMore = page < totalPages;
-      page++;
-
-      // Safety limit
-      if (page > 1000) break;
-    }
+    const allEntities = await props.entityStore.fetchAllEntities(`/${props.entityName}`, filterParams);
 
     // Build filename with current date
     const now = new Date();
@@ -1294,7 +1198,8 @@ async function handleImportFile(event: Event) {
           }
         }
 
-        await axios.post(`/${props.entityName}`, cleanEntity);
+        // createEntity runs the create hooks (accepted for imports)
+        await props.entityStore.createEntity(`/${props.entityName}`, cleanEntity);
         successCount++;
       } catch (err: any) {
         console.error('Import entity error:', err);
