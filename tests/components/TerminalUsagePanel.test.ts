@@ -17,6 +17,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import type { MyTerminalUsageResponse } from '../../src/types/terminal'
+import { formatBudgetAsSizes, CANONICAL_SIZE_CATALOG } from '../../src/utils/quotaFormatters'
 
 // ---- Mocks (must be set up before component import) ----
 
@@ -267,5 +268,105 @@ describe('TerminalUsagePanel — live usage view', () => {
     await flushPromises()
 
     expect(enWrapper.text()).toContain('Capacity')
+  })
+})
+
+describe('TerminalUsagePanel — remaining capacity as sizes', () => {
+  // Policy (feedback_quota_ux_size_count): the panel must speak the customer's
+  // language — "how many more machines can I launch" — not raw GiB/vCPU. This
+  // primary line is derived from the REMAINING budget (max − used) via the same
+  // formatBudgetAsSizes helper the plan cards use, so the two never drift. The
+  // raw CPU/RAM bars stay as secondary detail.
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  async function mountExpanded(
+    overrides: Partial<MyTerminalUsageResponse> = {},
+    locale: 'en' | 'fr' = 'en'
+  ) {
+    mockGetMyUsage.mockResolvedValue(makeUsage(overrides))
+    const wrapper = mountPanel({}, locale)
+    await flushPromises()
+    await wrapper.find('.collapsible-header').trigger('click')
+    await flushPromises()
+    return wrapper
+  }
+
+  it('renders a primary size-count line from the remaining budget, using the shared helper', async () => {
+    // Default fixture: max 8000/4096, used 4000/2048 → remaining 4000/2048.
+    // The rendered line MUST equal formatBudgetAsSizes on that remaining budget
+    // (SSOT with the plan cards), not a parallel reimplementation.
+    const expectedSizes = formatBudgetAsSizes(
+      { max_cpu: 4000, max_memory_mb: 2048 },
+      CANONICAL_SIZE_CATALOG,
+      'OR'
+    )
+    expect(expectedSizes).toBe('1 L OR 2 M OR 4 S') // guard the fixture math
+
+    const wrapper = await mountExpanded()
+    const line = wrapper.find('[data-testid="remaining-capacity"]')
+    expect(line.exists()).toBe(true)
+
+    const text = line.text()
+    expect(text).toContain('Remaining capacity')
+    // Approximate marker — it's a best-fit estimate, not an exact allocation.
+    expect(text).toContain('≈')
+    expect(text).toContain(expectedSizes)
+  })
+
+  it('keeps the raw CPU/RAM bars as secondary detail alongside the size-count line', async () => {
+    const wrapper = await mountExpanded()
+    // The new line must not replace the bars.
+    expect(wrapper.find('[data-testid="remaining-capacity"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="cpu-bar-fill"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="mem-bar-fill"]').exists()).toBe(true)
+  })
+
+  it('shows the remaining line in the localized joiner (fr → OU)', async () => {
+    const expectedSizes = formatBudgetAsSizes(
+      { max_cpu: 4000, max_memory_mb: 2048 },
+      CANONICAL_SIZE_CATALOG,
+      'OU'
+    )
+    expect(expectedSizes).toBe('1 L OU 2 M OU 4 S')
+
+    const wrapper = await mountExpanded({}, 'fr')
+    const line = wrapper.find('[data-testid="remaining-capacity"]')
+    expect(line.exists()).toBe(true)
+    const text = line.text()
+    expect(text).toContain('Capacité restante')
+    expect(text).toContain(expectedSizes)
+  })
+
+  it('says unlimited (not "≈ 0") when the plan has no cap', async () => {
+    const wrapper = await mountExpanded(
+      { max_cpu: 0, max_memory_mb: 0, used_cpu: 0, used_memory_mb: 0 },
+      'fr'
+    )
+    const line = wrapper.find('[data-testid="remaining-capacity"]')
+    expect(line.exists()).toBe(true)
+    const text = line.text()
+    expect(text).toMatch(/illimit/i)
+    expect(text).not.toContain('≈ 0')
+  })
+
+  it('renders an actionable message (not "≈ 0 ×") when the budget is fully consumed', async () => {
+    // Capped plan, fully used → remaining CPU/RAM are 0. This must NOT read as
+    // unlimited, and must NOT print a nonsensical "≈ 0" size line — it should
+    // tell the user how to free capacity.
+    const wrapper = await mountExpanded({
+      max_cpu: 8000,
+      max_memory_mb: 4096,
+      used_cpu: 8000,
+      used_memory_mb: 4096,
+    })
+    const line = wrapper.find('[data-testid="remaining-capacity"]')
+    expect(line.exists()).toBe(true)
+    const text = line.text()
+    expect(text).not.toContain('≈')
+    expect(text).not.toMatch(/\bOR\b/) // no size-count string
+    // Actionable: point the user at stopping a session to reclaim budget.
+    expect(text.toLowerCase()).toContain('stop a session')
   })
 })
