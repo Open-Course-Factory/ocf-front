@@ -513,25 +513,7 @@ const handleCourseSelect = async () => {
 
   try {
     // Load full course with nested data
-    console.log('=== LOADING COURSE ===')
-    console.log('Course ID:', selectedCourseId.value)
-
     const course = await coursesStore.fetchCourseById(selectedCourseId.value)
-
-    console.log('=== RAW COURSE DATA ===')
-    console.log('Course object:', course)
-    console.log('Course chapters:', course?.chapters)
-    console.log('Chapters type:', Array.isArray(course?.chapters))
-    console.log('Chapters length:', course?.chapters?.length)
-
-    if (course?.chapters && course.chapters.length > 0) {
-      console.log('First chapter:', course.chapters[0])
-      console.log('First chapter sections:', course.chapters[0].sections)
-      if (course.chapters[0].sections && course.chapters[0].sections.length > 0) {
-        console.log('First section:', course.chapters[0].sections[0])
-        console.log('First section pages:', course.chapters[0].sections[0].pages)
-      }
-    }
 
     if (!course) {
       console.error('Course not found')
@@ -554,8 +536,6 @@ const convertCourseToNodes = (course: Course) => {
   const newNodes: any[] = []
   const newEdges: any[] = []
 
-  console.log('Converting course to nodes:', course)
-  console.log('Course has chapters:', course.chapters?.length)
 
   // Create course node (root)
   const courseNode = {
@@ -584,7 +564,6 @@ const convertCourseToNodes = (course: Course) => {
   }
 
   const chapters = [...course.chapters].sort((a, b) => (a.order || 0) - (b.order || 0))
-  console.log('Processing chapters:', chapters.length)
 
   // Layout configuration - NEW VERTICAL LAYOUT
   const CHAPTER_SPACING_Y = 200      // Chapters stacked vertically (reduced from 250)
@@ -641,7 +620,6 @@ const convertCourseToNodes = (course: Course) => {
       })
     }
 
-    console.log(`Chapter ${chapterIdx + 1}: ${chapter.title} (${chapter.sections?.length || 0} sections)`)
 
     // Process sections (HORIZONTAL layout from chapter)
     if (chapter.sections && chapter.sections.length > 0) {
@@ -697,7 +675,6 @@ const convertCourseToNodes = (course: Course) => {
           })
         }
 
-        console.log(`  Section ${sectionIdx + 1}: ${section.title} (${section.pages?.length || 0} pages)`)
 
         // Process pages (VERTICAL layout from section)
         if (section.pages && section.pages.length > 0) {
@@ -765,7 +742,6 @@ const convertCourseToNodes = (course: Course) => {
               })
             }
 
-            console.log(`    Page ${pageIdx + 1}: ${page.title} (ID: ${page.id || 'no-id'})`)
 
             // Move down for next page (vertical stacking)
             pageY += PAGE_SPACING_Y
@@ -786,11 +762,6 @@ const convertCourseToNodes = (course: Course) => {
 
   nodes.value = newNodes
   edges.value = newEdges
-  console.log('=== FINAL RESULT ===')
-  console.log('Total nodes created:', newNodes.length)
-  console.log('Total edges created:', newEdges.length)
-  console.log('Nodes:', newNodes.map(n => `${n.type}:${n.data.label}`))
-  console.log('Edges:', newEdges.map(e => `${e.source}->${e.target}`))
 }
 
 // Create new course
@@ -826,7 +797,6 @@ const handleEntityDragStart = (_entity: any, entityType: string) => {
 
 // Node added handler
 const handleNodeAdded = (node: any) => {
-  console.log('Node added:', node)
   // Node is already added to nodes array by FlowCanvas
   // If it's a new entity, open edit modal
   if (node.data.isNew) {
@@ -838,7 +808,6 @@ const handleNodeAdded = (node: any) => {
 const handleNodesChange = (changes: any[]) => {
   // Handle node position changes, additions, deletions
   // Vue Flow handles this automatically, we just track it
-  console.log('Nodes changed:', changes)
 
   // Check if any position changes occurred
   const hasPositionChanges = changes.some(change =>
@@ -851,18 +820,16 @@ const handleNodesChange = (changes: any[]) => {
   }
 }
 
-const handleEdgesChange = (changes: any[]) => {
-  // Handle edge changes (connections between nodes)
-  console.log('Edges changed:', changes)
+const handleEdgesChange = () => {
+  // Edge changes are handled by Vue Flow directly; no extra bookkeeping needed.
 }
 
 // Node interaction handlers
-const handleNodeClick = (event: any) => {
-  console.log('Node clicked:', event)
+const handleNodeClick = () => {
+  // No-op: node selection is handled inside the node components.
 }
 
 const handlePaneClick = () => {
-  console.log('Pane clicked - clearing all selections')
   // Clear all selections when clicking on empty canvas
   nodes.value.forEach(node => {
     node.selected = false
@@ -873,8 +840,6 @@ const handlePaneClick = () => {
 
 // Toggle expand/collapse for nodes with children
 const handleToggleExpand = (nodeData: any) => {
-  console.log('Toggle expand for:', nodeData)
-
   // Find the node by matching data
   const node = nodes.value.find(n => n.data.entityId === nodeData.entityId)
   if (!node) return
@@ -990,8 +955,6 @@ const closeEditModal = () => {
 }
 
 const handleSaveEntity = async () => {
-  console.log('=== handleSaveEntity called ===')
-  console.log('editingEntity:', editingEntity.value)
 
   isSaving.value = true
   modalError.value = ''
@@ -1005,15 +968,12 @@ const handleSaveEntity = async () => {
       description: editingEntity.value.description
     }
 
-    console.log('Entity data to save:', entityData)
 
     let result
     const entityType = editingEntity.value.entityType
-    console.log('Entity type:', entityType, 'isNew:', editingEntity.value.isNew)
 
     if (editingEntity.value.isNew) {
       // Create new entity - inject parent ID from graph edges
-      console.log('Creating new entity...')
       const nodeId = editingEntity.value.nodeId
       if (entityType !== 'course') {
         // Find incoming edge to determine parent
@@ -1055,7 +1015,6 @@ const handleSaveEntity = async () => {
     } else {
       // Update existing entity
       const entityId = editingEntity.value.entityId
-      console.log('Updating existing entity with ID:', entityId)
       switch (entityType) {
         case 'course':
           result = await coursesStore.updateEntity('/courses', entityId, entityData)
@@ -1074,7 +1033,6 @@ const handleSaveEntity = async () => {
       }
     }
 
-    console.log('Save successful, result:', result)
 
     // Handle newly created course: load it into the editor
     if (editingEntity.value.isNew && entityType === 'course' && result) {
@@ -1175,14 +1133,11 @@ const confirmDelete = async () => {
 }
 
 // Entity manipulation handlers
-const handleDuplicateEntity = async (entity: any, entityType: string) => {
-  // Duplicate entity to another course
-  console.log('Duplicate entity:', entity, entityType)
-  // TODO: Implement duplication logic
+const handleDuplicateEntity = async (_entity: any, _entityType: string) => {
+  // TODO: Implement duplication logic (duplicate entity to another course).
 }
 
 const handleMoveEntity = async (entity: any, targetParent: any) => {
-  console.log('Move entity:', entity, 'to', targetParent)
   try {
     const entityType = entity.entityType || entity.type
     const parentField = getParentFieldName(entityType)
@@ -1318,7 +1273,6 @@ const handleReset = () => {
     if (selectedCourseId.value) {
       const storageKey = `courseEditor_positions_${selectedCourseId.value}`
       localStorage.removeItem(storageKey)
-      console.log('Cleared saved positions')
     }
 
     // Regenerate layout
@@ -1330,8 +1284,6 @@ const handleReset = () => {
 
 // Select node and all its descendants
 const handleSelectTree = (nodeData: any) => {
-  console.log('Select tree for node:', nodeData)
-
   // Find the parent node
   const parentNode = nodes.value.find(n => n.data.entityId === nodeData.entityId)
   if (!parentNode) return
@@ -1394,7 +1346,6 @@ const handleSelectTree = (nodeData: any) => {
   // Force reactivity update
   nodes.value = [...nodes.value]
 
-  console.log('Selected nodes:', nodeIdsToSelect)
 }
 </script>
 

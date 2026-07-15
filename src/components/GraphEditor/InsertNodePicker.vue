@@ -9,7 +9,7 @@
   >
     <div class="picker-header">{{ headerText }}</div>
     <button
-      v-for="nodeType in nodeTypes"
+      v-for="nodeType in filteredNodeTypes"
       :key="nodeType.type"
       type="button"
       class="picker-item"
@@ -92,9 +92,6 @@ const onDocumentKeyDown = (event: KeyboardEvent) => {
     emit('close')
   }
 }
-
-// Replace the unfiltered `nodeTypes` we render with the filtered list
-const nodeTypes = computed(() => filteredNodeTypes.value)
 
 watch(
   () => props.visible,

@@ -93,6 +93,7 @@ const emit = defineEmits<{
 .end-state--expired .end-state-icon { color: var(--color-warning); }
 .end-state--stopped .end-state-icon { color: var(--color-info); }
 .end-state--setup_failed .end-state-icon { color: var(--color-danger); }
+.end-state--revoked .end-state-icon { color: var(--color-warning); }
 .end-state--disconnected .end-state-icon { color: var(--color-warning); }
 
 .end-state-title {
