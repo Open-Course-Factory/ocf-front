@@ -52,6 +52,9 @@ interface UseScenarioGraphOptions {
   selectedScenarioId: Ref<string | null>
   // Hook called when an invalid edge connection is dropped (read-only message).
   onInvalidConnection?: (sourceType: string, targetType: string) => void
+  // Hook called when a node cannot be auto-rewired on delete because it has
+  // multiple incoming/outgoing edges (unexpected in the linear chain model).
+  onMultiEdgeRewireBlocked?: () => void
 }
 
 export function useScenarioGraph(options: UseScenarioGraphOptions) {
@@ -299,6 +302,93 @@ export function useScenarioGraph(options: UseScenarioGraphOptions) {
     }
   }
 
+  // Drop/insert on an edge: split A → B into A → newNode → B. The new node is
+  // expected to already exist in `nodes`; this only swaps the edges. No-ops when
+  // the endpoints wouldn't yield a valid chain (caller can leave the node
+  // unconnected for manual wiring, matching pre-feature behaviour).
+  function insertNodeOnEdge(payload: { node: any; edgeId: string; source: string; target: string }) {
+    const { node: newNode, edgeId, source, target } = payload
+
+    const sourceNode = nodes.value.find(n => n.id === source)
+    const targetNode = nodes.value.find(n => n.id === target)
+    if (!sourceNode || !targetNode) return
+
+    const sourceType = sourceNode.data.entityType
+    const newType = newNode.data.entityType
+    const targetType = targetNode.data.entityType
+    const sourceAcceptsNew = VALID_CONNECTIONS[sourceType]?.includes(newType)
+    const newAcceptsTarget = VALID_CONNECTIONS[newType]?.includes(targetType)
+    if (!sourceAcceptsNew || !newAcceptsTarget) return
+
+    const oldEdge = edges.value.find(e => e.id === edgeId)
+    const sourceHandle = oldEdge?.sourceHandle
+    const targetHandle = oldEdge?.targetHandle
+    const edgeType = oldEdge?.type || 'smoothstep'
+
+    edges.value = [
+      ...edges.value.filter(e => e.id !== edgeId),
+      {
+        id: `edge-${source}-${newNode.id}`,
+        source,
+        sourceHandle,
+        target: newNode.id,
+        targetHandle: 'top',
+        type: edgeType,
+        animated: false
+      },
+      {
+        id: `edge-${newNode.id}-${target}`,
+        source: newNode.id,
+        sourceHandle: 'right-source',
+        target,
+        targetHandle,
+        type: edgeType,
+        animated: false
+      }
+    ]
+  }
+
+  // Replace `incoming → deletedNode` and `deletedNode → outgoing` with a single
+  // `incoming → outgoing` edge so the linear chain is preserved on delete.
+  function rewireEdgesAroundDeletedNode(node: any) {
+    const incoming = edges.value.filter(e => e.target === node.id)
+    const outgoing = edges.value.filter(e => e.source === node.id)
+
+    // Multi-parent or multi-child: should not happen in OCF's linear chain
+    // model. Warn (via the caller's hook) and skip the rewire.
+    if (incoming.length > 1 || outgoing.length > 1) {
+      console.warn(
+        '[useScenarioGraph] cannot auto-rewire: node has multiple incoming/outgoing edges',
+        { nodeId: node.id, incoming: incoming.length, outgoing: outgoing.length }
+      )
+      options.onMultiEdgeRewireBlocked?.()
+      return
+    }
+
+    // Last child, orphan, or isolated: nothing to bridge.
+    if (incoming.length === 0 || outgoing.length === 0) {
+      return
+    }
+
+    // Standard case: bridge incoming.source → outgoing.target.
+    const inEdge = incoming[0]
+    const outEdge = outgoing[0]
+    const newEdge = {
+      id: `edge-${inEdge.source}-${outEdge.target}`,
+      source: inEdge.source,
+      sourceHandle: inEdge.sourceHandle,
+      target: outEdge.target,
+      targetHandle: outEdge.targetHandle,
+      type: inEdge.type || 'smoothstep',
+      animated: false,
+      hidden: inEdge.hidden || outEdge.hidden || false
+    }
+    edges.value = [
+      ...edges.value.filter(e => e.id !== inEdge.id && e.id !== outEdge.id),
+      newEdge
+    ]
+  }
+
   return {
     nodes,
     edges,
@@ -308,6 +398,8 @@ export function useScenarioGraph(options: UseScenarioGraphOptions) {
     loadNodePositions,
     clearNodePositions,
     handleEdgeConnect,
+    insertNodeOnEdge,
+    rewireEdgesAroundDeletedNode,
     deserializeQuestion
   }
 }

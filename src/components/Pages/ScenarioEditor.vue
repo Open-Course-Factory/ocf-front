@@ -58,6 +58,21 @@
         @toggle-expand="handleToggleExpand"
         @select-tree="handleSelectTree"
         @edge-connect="handleEdgeConnect"
+        @edge-insert="handleEdgeInsert"
+        @edge-insert-request="handleEdgeInsertRequest"
+      />
+
+      <!-- Inline picker for hover-+ click on edges -->
+      <InsertNodePicker
+        :visible="showInsertPicker"
+        :node-types="scenarioNodeTypeDefinitions"
+        :allowed-types="[...STEP_NODE_TYPES]"
+        :client-x="insertPickerClientX"
+        :client-y="insertPickerClientY"
+        :header-text="t('scenarioEditor.insertStep')"
+        :aria-label="t('scenarioEditor.insertStep')"
+        @select="handleInsertPickerSelect"
+        @close="closeInsertPicker"
       />
 
       <!-- Right Panel: Scenario Step List (foldable) -->
@@ -200,6 +215,7 @@ import { useResizablePanel } from '../../composables/useResizablePanel'
 import NodeLibraryPanel from '../GraphEditor/NodeLibraryPanel.vue'
 import type { NodeTypeDefinition } from '../GraphEditor/NodeLibraryPanel.vue'
 import FlowCanvas from '../GraphEditor/FlowCanvas.vue'
+import InsertNodePicker from '../GraphEditor/InsertNodePicker.vue'
 import ScenarioStepListPanel from '../ScenarioEditor/ScenarioStepListPanel.vue'
 import ScenarioNode from '../ScenarioEditor/nodes/ScenarioNode.vue'
 import StepNode from '../ScenarioEditor/nodes/StepNode.vue'
@@ -337,7 +353,11 @@ const { t } = useTranslations({
       previewConfirmBody: 'A real terminal will be provisioned (counts against your concurrent terminal limit). Walk through the scenario as a student would, then close the session when done.',
       previewConfirmAction: 'Start preview',
       previewStarting: 'Starting preview...',
-      previewError: 'Failed to start preview'
+      previewError: 'Failed to start preview',
+      // Insert-on-edge (drop-on-edge / hover-+)
+      insertStep: 'Insert step',
+      insertStepHere: 'Insert a step here',
+      multiEdgeWarning: 'Cannot auto-rewire: node has multiple incoming or outgoing connections'
     }
   },
   fr: {
@@ -457,7 +477,11 @@ const { t } = useTranslations({
       previewConfirmBody: 'Un terminal réel sera provisionné (compte dans votre limite de terminaux concurrents). Parcourez le scénario comme le ferait un étudiant, puis fermez la session une fois terminé.',
       previewConfirmAction: 'Démarrer la prévisualisation',
       previewStarting: 'Démarrage...',
-      previewError: 'Échec du démarrage de la prévisualisation'
+      previewError: 'Échec du démarrage de la prévisualisation',
+      // Insertion sur une arête (drop-on-edge / survol-+)
+      insertStep: 'Insérer une étape',
+      insertStepHere: 'Insérer une étape ici',
+      multiEdgeWarning: 'Recâblage auto impossible : le nœud a plusieurs connexions entrantes ou sortantes'
     }
   }
 })
@@ -540,11 +564,16 @@ const {
   loadNodePositions,
   clearNodePositions,
   handleEdgeConnect,
+  insertNodeOnEdge,
+  rewireEdgesAroundDeletedNode,
   deserializeQuestion
 } = useScenarioGraph({
   selectedScenarioId,
   onInvalidConnection: (sourceType, targetType) => {
     notification.showWarning(t('scenarioEditor.invalidConnection', { source: sourceType, target: targetType }))
+  },
+  onMultiEdgeRewireBlocked: () => {
+    notification.showWarning(t('scenarioEditor.multiEdgeWarning'))
   }
 })
 const allScenarios = computed(() => scenariosStore.entities)
@@ -573,6 +602,12 @@ const stepSaveError = ref('')
 const showCopyModal = ref(false)
 const copyTargetOrgId = ref<string | null>(null)
 const isCopying = ref(false)
+
+// Insert-on-edge picker state (hover-+ click → pick a step type → insert)
+const showInsertPicker = ref(false)
+const insertPickerClientX = ref(0)
+const insertPickerClientY = ref(0)
+const pendingInsertEdge = ref<{ edgeId: string; source: string; target: string; flowX: number; flowY: number } | null>(null)
 
 // "Play as student" preview state
 const showPreviewConfirmModal = ref(false)
@@ -1061,6 +1096,75 @@ const handleSelectTree = (nodeData: any) => {
 
 // (VALID_CONNECTIONS + handleEdgeConnect — moved to useScenarioGraph)
 
+// Drop-on-edge: FlowCanvas already added the node; delegate the edge-swap to the
+// graph composable (guarded here for read-only scenarios).
+const handleEdgeInsert = (payload: { node: any; edgeId: string; source: string; target: string }) => {
+  if (!canEditScenario.value) return
+  insertNodeOnEdge(payload)
+}
+
+// Hover-+ click on an edge → open the picker at the click position.
+const handleEdgeInsertRequest = (payload: {
+  edgeId: string
+  source: string
+  target: string
+  flowX: number
+  flowY: number
+  clientX: number
+  clientY: number
+}) => {
+  if (!canEditScenario.value) {
+    notification.showWarning(t('scenarioEditor.readOnlyWarning'))
+    return
+  }
+  pendingInsertEdge.value = {
+    edgeId: payload.edgeId,
+    source: payload.source,
+    target: payload.target,
+    flowX: payload.flowX,
+    flowY: payload.flowY
+  }
+  insertPickerClientX.value = payload.clientX
+  insertPickerClientY.value = payload.clientY
+  showInsertPicker.value = true
+}
+
+const closeInsertPicker = () => {
+  showInsertPicker.value = false
+  pendingInsertEdge.value = null
+}
+
+const handleInsertPickerSelect = (nodeType: NodeTypeDefinition) => {
+  if (!pendingInsertEdge.value) {
+    closeInsertPicker()
+    return
+  }
+  const { edgeId, source, target, flowX, flowY } = pendingInsertEdge.value
+
+  // Build the new node mirroring what FlowCanvas does on drop
+  const newNode = {
+    id: `${nodeType.type}-new-${Date.now()}`,
+    type: nodeType.type,
+    position: { x: flowX - 100, y: flowY - 40 },
+    data: {
+      label: `New ${nodeType.type.charAt(0).toUpperCase()}${nodeType.type.slice(1)}`,
+      entityId: null,
+      entityType: nodeType.type,
+      step_type: nodeType.type,
+      isNew: true
+    }
+  }
+  nodes.value = [...nodes.value, newNode]
+
+  handleEdgeInsert({ node: newNode, edgeId, source, target })
+
+  closeInsertPicker()
+  // Open the edit modal for the new step (consistent with handleNodeAdded)
+  if ((STEP_NODE_TYPES as readonly string[]).includes(newNode.type)) {
+    openEditModal(newNode)
+  }
+}
+
 // Modal handlers - Scenario
 const openEditModal = async (node: any) => {
   // Block editing for read-only scenarios (non-admin viewing platform/other-org scenarios)
@@ -1468,7 +1572,12 @@ const confirmDelete = async () => {
       }
     }
 
-    // Remove from canvas
+    // Auto-rewire the linear chain so deleting a middle node bridges its
+    // upstream and downstream neighbours (chain order is re-synced on save).
+    rewireEdgesAroundDeletedNode(node)
+
+    // Remove from canvas (any remaining edges touching the node — usually none
+    // after rewire, but defensive in case there are duplicates)
     nodes.value = nodes.value.filter(n => n.id !== node.id)
     edges.value = edges.value.filter(e => e.source !== node.id && e.target !== node.id)
 
