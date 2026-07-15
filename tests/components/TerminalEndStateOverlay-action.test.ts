@@ -5,9 +5,9 @@
  * (navigation only). The live-session reconnect feature (ocf-front #278) needs
  * the primary button to trigger an in-place ACTION (reconnect) rather than a
  * route change. These tests pin that contract:
- *   - a config with primaryActionKey renders a <button> that emits `action`
- *     with the key (RED today — the overlay only knows router-links)
- *   - a plain route config still renders a <router-link> (regression fence)
+ *   - a button with kind:'action' renders a <button> that emits `action`
+ *     with its actionKey
+ *   - a button with kind:'route' renders a <router-link> (regression fence)
  */
 
 import { describe, it, expect } from 'vitest'
@@ -34,12 +34,8 @@ const actionConfig: EndStateConfig = {
   tone: 'warning',
   title: 'Terminal Disconnected',
   body: 'Your terminal connection was lost, but your environment is still running.',
-  primaryLabel: 'Reconnect',
-  primaryRoute: { name: 'TerminalSessions' },
-  primaryActionKey: 'reconnect',
-  secondaryLabel: 'End Session',
-  secondaryRoute: { name: 'TerminalSessions' },
-  secondaryActionKey: 'endSession'
+  primary: { kind: 'action', label: 'Reconnect', actionKey: 'reconnect' },
+  secondary: { kind: 'action', label: 'End Session', actionKey: 'endSession' }
 }
 
 const routeConfig: EndStateConfig = {
@@ -47,10 +43,8 @@ const routeConfig: EndStateConfig = {
   tone: 'success',
   title: 'Session Complete',
   body: 'Well done!',
-  primaryLabel: 'View My Scenarios',
-  primaryRoute: { name: 'MyScenarios' },
-  secondaryLabel: 'Back to Sessions',
-  secondaryRoute: { name: 'TerminalSessions' }
+  primary: { kind: 'route', label: 'View My Scenarios', route: { name: 'MyScenarios' } },
+  secondary: { kind: 'route', label: 'Back to Sessions', route: { name: 'TerminalSessions' } }
 }
 
 describe('TerminalEndStateOverlay — action buttons', () => {

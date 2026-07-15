@@ -189,11 +189,11 @@
             </div>
           </div>
           <div class="end-banner-actions">
-            <router-link :to="activeEndBanner.primaryRoute" class="end-banner-btn-primary" :class="activeEndBanner.toneClass">
-              {{ activeEndBanner.primaryLabel }}
+            <router-link v-if="activeEndBanner.primary.kind === 'route'" :to="activeEndBanner.primary.route" class="end-banner-btn-primary" :class="activeEndBanner.toneClass">
+              {{ activeEndBanner.primary.label }}
             </router-link>
-            <router-link v-if="activeEndBanner.secondaryRoute" :to="activeEndBanner.secondaryRoute" class="end-banner-btn-secondary">
-              {{ activeEndBanner.secondaryLabel }}
+            <router-link v-if="activeEndBanner.secondary && activeEndBanner.secondary.kind === 'route'" :to="activeEndBanner.secondary.route" class="end-banner-btn-secondary">
+              {{ activeEndBanner.secondary.label }}
             </router-link>
           </div>
         </div>

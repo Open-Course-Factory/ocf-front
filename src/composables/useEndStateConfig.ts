@@ -105,17 +105,21 @@ export type EndStateReason = 'completed' | 'abandoned' | 'expired' | 'stopped' |
 // navigating. The consumer wires the concrete handler for each key.
 export type EndStateActionKey = 'reconnect' | 'endSession'
 
+// A single end-state button. Discriminated on `kind`: a 'route' button
+// navigates via <router-link>; an 'action' button emits its actionKey for the
+// consumer to handle in place. This makes invalid combinations (both a route
+// and an action, or neither) unrepresentable.
+export type EndStateButton =
+  | { kind: 'route'; label: string; route: { name: string } }
+  | { kind: 'action'; label: string; actionKey: EndStateActionKey }
+
 export interface EndStateConfig {
   icon: string
   tone: string
   title: string
   body: string
-  primaryLabel: string
-  primaryRoute: { name: string }
-  primaryActionKey?: EndStateActionKey
-  secondaryLabel?: string
-  secondaryRoute?: { name: string }
-  secondaryActionKey?: EndStateActionKey
+  primary: EndStateButton
+  secondary?: EndStateButton
 }
 
 export function useEndStateConfig() {
@@ -127,75 +131,70 @@ export function useEndStateConfig() {
       tone: 'success',
       title: t('endState.completed.title'),
       body: t('endState.completed.body'),
-      primaryLabel: t('endState.completed.primary'),
-      primaryRoute: { name: 'MyScenarios' },
-      secondaryLabel: t('endState.backToSessions'),
-      secondaryRoute: { name: 'TerminalSessions' }
+      primary: { kind: 'route', label: t('endState.completed.primary'), route: { name: 'MyScenarios' } },
+      secondary: { kind: 'route', label: t('endState.backToSessions'), route: { name: 'TerminalSessions' } }
     }),
     abandoned: () => ({
       icon: 'fas fa-door-open',
       tone: 'info',
       title: t('endState.abandoned.title'),
       body: t('endState.abandoned.body'),
-      primaryLabel: t('endState.abandoned.primary'),
-      primaryRoute: { name: 'MyScenarios' },
-      secondaryLabel: t('endState.backToSessions'),
-      secondaryRoute: { name: 'TerminalSessions' }
+      primary: { kind: 'route', label: t('endState.abandoned.primary'), route: { name: 'MyScenarios' } },
+      secondary: { kind: 'route', label: t('endState.backToSessions'), route: { name: 'TerminalSessions' } }
     }),
     expired: (hasScenario?: boolean) => ({
       icon: 'fas fa-hourglass-end',
       tone: 'warning',
       title: t('endState.expired.title'),
       body: hasScenario ? t('endState.expiredScenario') : t('endState.expired.body'),
-      primaryLabel: hasScenario ? t('endState.backToScenarios') : t('endState.expired.primary'),
-      primaryRoute: { name: hasScenario ? 'ScenarioLauncher' : 'TerminalSessions' },
-      secondaryLabel: hasScenario ? t('endState.backToSessions') : undefined,
-      secondaryRoute: hasScenario ? { name: 'TerminalSessions' } : undefined
+      primary: {
+        kind: 'route',
+        label: hasScenario ? t('endState.backToScenarios') : t('endState.expired.primary'),
+        route: { name: hasScenario ? 'ScenarioLauncher' : 'TerminalSessions' }
+      },
+      secondary: hasScenario
+        ? { kind: 'route', label: t('endState.backToSessions'), route: { name: 'TerminalSessions' } }
+        : undefined
     }),
     stopped: (hasScenario?: boolean) => ({
       icon: 'fas fa-stop-circle',
       tone: 'info',
       title: t('endState.stopped.title'),
       body: hasScenario ? t('endState.stoppedScenario') : t('endState.stopped.body'),
-      primaryLabel: hasScenario ? t('endState.backToScenarios') : t('endState.stopped.primary'),
-      primaryRoute: { name: hasScenario ? 'ScenarioLauncher' : 'TerminalSessions' },
-      secondaryLabel: hasScenario ? t('endState.backToSessions') : undefined,
-      secondaryRoute: hasScenario ? { name: 'TerminalSessions' } : undefined
+      primary: {
+        kind: 'route',
+        label: hasScenario ? t('endState.backToScenarios') : t('endState.stopped.primary'),
+        route: { name: hasScenario ? 'ScenarioLauncher' : 'TerminalSessions' }
+      },
+      secondary: hasScenario
+        ? { kind: 'route', label: t('endState.backToSessions'), route: { name: 'TerminalSessions' } }
+        : undefined
     }),
     revoked: () => ({
       icon: 'fas fa-ban',
       tone: 'warning',
       title: t('endState.revoked.title'),
       body: t('endState.revoked.body'),
-      primaryLabel: t('endState.revoked.primary'),
-      primaryRoute: { name: 'SubscriptionPlans' },
-      secondaryLabel: t('endState.backToSessions'),
-      secondaryRoute: { name: 'TerminalSessions' }
+      primary: { kind: 'route', label: t('endState.revoked.primary'), route: { name: 'SubscriptionPlans' } },
+      secondary: { kind: 'route', label: t('endState.backToSessions'), route: { name: 'TerminalSessions' } }
     }),
     setup_failed: () => ({
       icon: 'fas fa-exclamation-triangle',
       tone: 'danger',
       title: t('endState.setup_failed.title'),
       body: t('endState.setup_failed.body'),
-      primaryLabel: t('endState.setup_failed.primary'),
-      primaryRoute: { name: 'ScenarioLauncher' },
-      secondaryLabel: t('endState.backToSessions'),
-      secondaryRoute: { name: 'TerminalSessions' }
+      primary: { kind: 'route', label: t('endState.setup_failed.primary'), route: { name: 'ScenarioLauncher' } },
+      secondary: { kind: 'route', label: t('endState.backToSessions'), route: { name: 'TerminalSessions' } }
     }),
     disconnected: () => ({
       icon: 'fas fa-plug',
       tone: 'warning',
       title: t('endState.disconnected.title'),
       body: t('endState.disconnected.body'),
-      // Both buttons are in-place actions (see primaryActionKey/secondaryActionKey):
-      // Reconnect resumes the still-running environment, End Session stops it.
-      // primaryRoute/secondaryRoute are type-satisfying fallbacks only.
-      primaryLabel: t('endState.disconnected.primary'),
-      primaryRoute: { name: 'TerminalSessions' },
-      primaryActionKey: 'reconnect',
-      secondaryLabel: t('endState.disconnected.secondary'),
-      secondaryRoute: { name: 'TerminalSessions' },
-      secondaryActionKey: 'endSession'
+      // Both buttons are in-place actions: Reconnect resumes the still-running
+      // environment, End Session stops it.
+      primary: { kind: 'action', label: t('endState.disconnected.primary'), actionKey: 'reconnect' },
+      secondary: { kind: 'action', label: t('endState.disconnected.secondary'), actionKey: 'endSession' }
     })
   }
 

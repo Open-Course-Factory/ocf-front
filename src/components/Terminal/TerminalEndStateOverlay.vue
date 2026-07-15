@@ -18,29 +18,31 @@
       <p class="end-state-body">{{ config.body }}</p>
       <div class="end-state-actions">
         <button
-          v-if="config.primaryActionKey"
+          v-if="config.primary.kind === 'action'"
           type="button"
           class="end-state-btn"
           :class="'btn--' + config.tone"
-          @click="emit('action', config.primaryActionKey)"
+          @click="emit('action', config.primary.actionKey)"
         >
-          {{ config.primaryLabel }}
+          {{ config.primary.label }}
         </button>
-        <router-link v-else :to="config.primaryRoute" class="end-state-btn" :class="'btn--' + config.tone">
-          {{ config.primaryLabel }}
+        <router-link v-else :to="config.primary.route" class="end-state-btn" :class="'btn--' + config.tone">
+          {{ config.primary.label }}
         </router-link>
 
-        <button
-          v-if="config.secondaryActionKey"
-          type="button"
-          class="end-state-btn-secondary"
-          @click="emit('action', config.secondaryActionKey)"
-        >
-          {{ config.secondaryLabel }}
-        </button>
-        <router-link v-else-if="config.secondaryRoute" :to="config.secondaryRoute" class="end-state-btn-secondary">
-          {{ config.secondaryLabel }}
-        </router-link>
+        <template v-if="config.secondary">
+          <button
+            v-if="config.secondary.kind === 'action'"
+            type="button"
+            class="end-state-btn-secondary"
+            @click="emit('action', config.secondary.actionKey)"
+          >
+            {{ config.secondary.label }}
+          </button>
+          <router-link v-else :to="config.secondary.route" class="end-state-btn-secondary">
+            {{ config.secondary.label }}
+          </router-link>
+        </template>
       </div>
     </div>
   </div>

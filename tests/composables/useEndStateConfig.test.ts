@@ -84,8 +84,8 @@ describe('useEndStateConfig — revoked (billing/entitlement stop)', () => {
   it('offers an actionable primary CTA to the subscription page + secondary back to sessions', () => {
     const config = getConfig('revoked' as EndStateReason, 'en')
 
-    expect(config.primaryRoute).toEqual({ name: 'SubscriptionPlans' })
-    expect(config.secondaryRoute).toEqual({ name: 'TerminalSessions' })
+    expect(config.primary).toEqual({ kind: 'route', label: 'Check my subscription', route: { name: 'SubscriptionPlans' } })
+    expect(config.secondary).toEqual({ kind: 'route', label: 'Back to Sessions', route: { name: 'TerminalSessions' } })
     // A revocation is not a success — the tone must not read as celebratory.
     expect(config.tone).not.toBe('success')
   })
@@ -112,8 +112,7 @@ describe('useEndStateConfig — disconnected (live-session reconnect)', () => {
   it('primary button is a Reconnect ACTION (not a route navigation)', () => {
     const config = getConfig('disconnected' as EndStateReason, 'en')
 
-    expect(config.primaryActionKey).toBe('reconnect')
-    expect(config.primaryLabel).toBe('Reconnect')
+    expect(config.primary).toEqual({ kind: 'action', label: 'Reconnect', actionKey: 'reconnect' })
     // tone must not read as celebratory — this is an interruption.
     expect(config.tone).not.toBe('success')
   })
@@ -121,14 +120,13 @@ describe('useEndStateConfig — disconnected (live-session reconnect)', () => {
   it('offers a secondary End Session ACTION (stop the still-running environment)', () => {
     const config = getConfig('disconnected' as EndStateReason, 'en')
 
-    expect(config.secondaryActionKey).toBe('endSession')
-    expect(config.secondaryLabel).toBe('End Session')
+    expect(config.secondary).toEqual({ kind: 'action', label: 'End Session', actionKey: 'endSession' })
   })
 
   it('French: secondary End Session label is localized', () => {
     const config = getConfig('disconnected' as EndStateReason, 'fr')
 
-    expect(config.secondaryLabel).toBe('Terminer la session')
+    expect(config.secondary?.label).toBe('Terminer la session')
   })
 })
 
