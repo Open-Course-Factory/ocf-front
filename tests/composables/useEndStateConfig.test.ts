@@ -91,6 +91,40 @@ describe('useEndStateConfig — revoked (billing/entitlement stop)', () => {
   })
 })
 
+describe('useEndStateConfig — disconnected (live-session reconnect)', () => {
+  it('English: honest copy — connection lost, environment still running', () => {
+    const config = getConfig('disconnected' as EndStateReason, 'en')
+
+    expect(config.title).toBe('Terminal Disconnected')
+    expect(config.body).toContain('still running')
+    // A disconnect is recoverable — it must NOT read as a terminal end.
+    expect(config.body).not.toContain('has ended')
+    expect(config.title).not.toContain('Expired')
+  })
+
+  it('French: honest copy — connexion perdue, environnement toujours actif', () => {
+    const config = getConfig('disconnected' as EndStateReason, 'fr')
+
+    expect(config.title).toBe('Terminal déconnecté')
+    expect(config.body).toContain('toujours actif')
+  })
+
+  it('primary button is a Reconnect ACTION (not a route navigation)', () => {
+    const config = getConfig('disconnected' as EndStateReason, 'en')
+
+    expect(config.primaryActionKey).toBe('reconnect')
+    expect(config.primaryLabel).toBe('Reconnect')
+    // tone must not read as celebratory — this is an interruption.
+    expect(config.tone).not.toBe('success')
+  })
+
+  it('offers a secondary route back to the sessions list', () => {
+    const config = getConfig('disconnected' as EndStateReason, 'en')
+
+    expect(config.secondaryRoute).toEqual({ name: 'TerminalSessions' })
+  })
+})
+
 describe('useEndStateConfig — expired guard (regression fence)', () => {
   it('English: expired still shows the time-limit copy (unchanged)', () => {
     const config = getConfig('expired', 'en')
