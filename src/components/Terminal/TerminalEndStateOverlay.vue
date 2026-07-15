@@ -17,10 +17,28 @@
       <h3 class="end-state-title">{{ config.title }}</h3>
       <p class="end-state-body">{{ config.body }}</p>
       <div class="end-state-actions">
-        <router-link :to="config.primaryRoute" class="end-state-btn" :class="'btn--' + config.tone">
+        <button
+          v-if="config.primaryActionKey"
+          type="button"
+          class="end-state-btn"
+          :class="'btn--' + config.tone"
+          @click="emit('action', config.primaryActionKey)"
+        >
+          {{ config.primaryLabel }}
+        </button>
+        <router-link v-else :to="config.primaryRoute" class="end-state-btn" :class="'btn--' + config.tone">
           {{ config.primaryLabel }}
         </router-link>
-        <router-link v-if="config.secondaryRoute" :to="config.secondaryRoute" class="end-state-btn-secondary">
+
+        <button
+          v-if="config.secondaryActionKey"
+          type="button"
+          class="end-state-btn-secondary"
+          @click="emit('action', config.secondaryActionKey)"
+        >
+          {{ config.secondaryLabel }}
+        </button>
+        <router-link v-else-if="config.secondaryRoute" :to="config.secondaryRoute" class="end-state-btn-secondary">
           {{ config.secondaryLabel }}
         </router-link>
       </div>
@@ -29,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import type { EndStateConfig, EndStateReason } from '../../composables/useEndStateConfig'
+import type { EndStateConfig, EndStateReason, EndStateActionKey } from '../../composables/useEndStateConfig'
 
 interface Props {
   reason: EndStateReason
@@ -37,6 +55,10 @@ interface Props {
 }
 
 defineProps<Props>()
+
+const emit = defineEmits<{
+  (e: 'action', key: EndStateActionKey): void
+}>()
 </script>
 
 <style scoped>
@@ -69,6 +91,7 @@ defineProps<Props>()
 .end-state--expired .end-state-icon { color: var(--color-warning); }
 .end-state--stopped .end-state-icon { color: var(--color-info); }
 .end-state--setup_failed .end-state-icon { color: var(--color-danger); }
+.end-state--disconnected .end-state-icon { color: var(--color-warning); }
 
 .end-state-title {
   margin: 0 0 var(--spacing-sm);
@@ -99,6 +122,7 @@ defineProps<Props>()
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
+  font-family: inherit;
   text-decoration: none;
   cursor: pointer;
   border: none;
@@ -118,6 +142,7 @@ defineProps<Props>()
   border: none;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
+  font-family: inherit;
   text-decoration: underline;
   cursor: pointer;
   padding: var(--spacing-xs);

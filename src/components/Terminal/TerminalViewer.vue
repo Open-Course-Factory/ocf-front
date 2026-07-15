@@ -87,7 +87,7 @@
 
     <div class="terminal-wrapper">
       <div ref="terminalRef" class="terminal-container" :class="{ 'terminal-full-height': fullHeight }"></div>
-      <TerminalEndStateOverlay v-if="activeEndState" :reason="(endReason as EndStateReason)" :config="activeEndState" />
+      <TerminalEndStateOverlay v-if="activeEndState" :reason="(effectiveEndReason as EndStateReason)" :config="activeEndState" @action="handleEndStateAction" />
       <div v-else-if="error" class="terminal-error">
         <i class="fas fa-exclamation-triangle fa-2x"></i>
         <h3>{{ t('terminal.connectionError') }}</h3>
@@ -187,7 +187,7 @@
     <!-- Terminal container -->
     <div class="terminal-wrapper">
       <div class="terminal-container" ref="terminalRef"></div>
-      <TerminalEndStateOverlay v-if="activeEndState" :reason="(endReason as EndStateReason)" :config="activeEndState" />
+      <TerminalEndStateOverlay v-if="activeEndState" :reason="(effectiveEndReason as EndStateReason)" :config="activeEndState" @action="handleEndStateAction" />
       <div v-else-if="error" class="terminal-error">
         <i class="fas fa-exclamation-triangle fa-2x"></i>
         <h3>{{ t('terminal.connectionError') }}</h3>
@@ -224,7 +224,7 @@ import { useRoute } from 'vue-router'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
-import { useEndStateConfig, type EndStateReason } from '../../composables/useEndStateConfig'
+import { useEndStateConfig, type EndStateReason, type EndStateActionKey } from '../../composables/useEndStateConfig'
 import { getTerminalTheme } from '../../utils/terminalTheme'
 import { canConnectToTerminal, preConnectError, sessionHasNetwork } from '../../utils/sessionState'
 import { terminalService } from '../../services/domain/terminal/terminalService'
@@ -396,7 +396,22 @@ const userStore = useCurrentUserStore()
 // End state configuration (shared composable)
 const { getEndStateConfig } = useEndStateConfig()
 
+// Runtime disconnect state: set when the WebSocket closes after a successful
+// connection (shell exit / connection lost). Unlike props.endReason (driven by
+// the parent from backend status), this is an internal, recoverable state that
+// offers a Reconnect action. Cleared on a successful (re)connect.
+const isDisconnected = ref(false)
+
+// The reason actually rendered by the overlay: the runtime disconnect takes
+// precedence over the prop-driven end reason.
+const effectiveEndReason = computed<EndStateReason | ''>(() =>
+  isDisconnected.value ? 'disconnected' : props.endReason
+)
+
 const activeEndState = computed(() => {
+  if (isDisconnected.value) {
+    return getEndStateConfig('disconnected') ?? null
+  }
   if (!props.endReason) return null
   return getEndStateConfig(props.endReason as EndStateReason, { hasScenario: props.hasScenario }) ?? null
 })
@@ -613,6 +628,7 @@ async function connectToTerminal() {
       isWsOpen.value = true
       isConnecting.value = false
       showReconnectButton.value = false
+      isDisconnected.value = false
       error.value = ''
 
       // Clear old terminal content before attaching new session
@@ -678,9 +694,13 @@ async function connectToTerminal() {
           )
         }
       } else if (wasConnected) {
-        // WebSocket closed while session was active = shell exited or connection lost
-        error.value = t('terminal.sessionEnded')
+        // WebSocket closed while session was active = shell exited or connection
+        // lost. The environment is usually still running, so surface the
+        // recoverable "disconnected" end-state (with a Reconnect action) instead
+        // of a dead-end error.
+        isDisconnected.value = true
         showReconnectButton.value = false
+        error.value = ''
       } else {
         // Connection failed before session was established - offer reconnect
         error.value = event.reason
@@ -726,6 +746,14 @@ async function connectToTerminal() {
 // Reload the page
 function reloadPage() {
   window.location.reload()
+}
+
+// Handle an action button emitted by the end-state overlay (e.g. Reconnect).
+function handleEndStateAction(key: EndStateActionKey) {
+  if (key === 'reconnect') {
+    isDisconnected.value = false
+    reconnect()
+  }
 }
 
 // Reconnect terminal

@@ -41,6 +41,11 @@ const endStateTranslations = {
         body: 'The scenario environment could not be prepared. This is usually a temporary issue. Please try again.',
         primary: 'Back to Scenarios'
       },
+      disconnected: {
+        title: 'Terminal Disconnected',
+        body: 'Your terminal connection was lost, but your environment is still running. Reconnect to pick up where you left off.',
+        primary: 'Reconnect'
+      },
       backToSessions: 'Back to Sessions',
       backToScenarios: 'Back to Scenarios',
       expiredScenario: 'Your terminal session has reached its time limit. You can relaunch the scenario from the scenario list.',
@@ -79,6 +84,11 @@ const endStateTranslations = {
         body: 'L\'environnement du scénario n\'a pas pu être préparé. Il s\'agit généralement d\'un problème temporaire. Veuillez réessayer.',
         primary: 'Retour aux scénarios'
       },
+      disconnected: {
+        title: 'Terminal déconnecté',
+        body: 'La connexion à votre terminal a été perdue, mais votre environnement est toujours actif. Reconnectez-vous pour reprendre où vous en étiez.',
+        primary: 'Se reconnecter'
+      },
       backToSessions: 'Retour aux sessions',
       backToScenarios: 'Retour aux scénarios',
       expiredScenario: 'Votre session terminal a atteint sa limite de temps. Vous pouvez relancer le scénario depuis la liste des scénarios.',
@@ -87,7 +97,11 @@ const endStateTranslations = {
   }
 }
 
-export type EndStateReason = 'completed' | 'abandoned' | 'expired' | 'stopped' | 'revoked' | 'setup_failed'
+export type EndStateReason = 'completed' | 'abandoned' | 'expired' | 'stopped' | 'revoked' | 'setup_failed' | 'disconnected'
+
+// Action buttons trigger an in-place handler (emitted by the overlay) instead of
+// navigating. The consumer wires the concrete handler for each key.
+export type EndStateActionKey = 'reconnect'
 
 export interface EndStateConfig {
   icon: string
@@ -96,8 +110,10 @@ export interface EndStateConfig {
   body: string
   primaryLabel: string
   primaryRoute: { name: string }
+  primaryActionKey?: EndStateActionKey
   secondaryLabel?: string
   secondaryRoute?: { name: string }
+  secondaryActionKey?: EndStateActionKey
 }
 
 export function useEndStateConfig() {
@@ -161,6 +177,19 @@ export function useEndStateConfig() {
       body: t('endState.setup_failed.body'),
       primaryLabel: t('endState.setup_failed.primary'),
       primaryRoute: { name: 'ScenarioLauncher' },
+      secondaryLabel: t('endState.backToSessions'),
+      secondaryRoute: { name: 'TerminalSessions' }
+    }),
+    disconnected: () => ({
+      icon: 'fas fa-plug',
+      tone: 'warning',
+      title: t('endState.disconnected.title'),
+      body: t('endState.disconnected.body'),
+      primaryLabel: t('endState.disconnected.primary'),
+      // primaryRoute is a type-satisfying fallback only — the overlay renders an
+      // action button (Reconnect) because primaryActionKey is set.
+      primaryRoute: { name: 'TerminalSessions' },
+      primaryActionKey: 'reconnect',
       secondaryLabel: t('endState.backToSessions'),
       secondaryRoute: { name: 'TerminalSessions' }
     })
