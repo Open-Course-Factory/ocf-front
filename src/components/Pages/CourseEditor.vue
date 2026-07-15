@@ -73,7 +73,7 @@
         @toggle-expand="handleToggleExpand"
         @select-tree="handleSelectTree"
         @edge-connect="handleEdgeConnect"
-        @edge-insert="handleEdgeInsert"
+        @edge-insert="insertNodeOnEdge"
         @edge-insert-request="handleEdgeInsertRequest"
       />
 
@@ -192,6 +192,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, markRaw, type Component } from 'vue'
+import { useGraphEditor } from '../../composables/useGraphEditor'
 import { useRoute, useRouter } from 'vue-router'
 import { useCoursesStore } from '../../stores/courses'
 import { useChaptersStore } from '../../stores/chapters'
@@ -372,12 +373,64 @@ const courseNodeTypeDefinitions = computed((): NodeTypeDefinition[] => [
 ])
 
 // State
-const nodes = ref<any[]>([])
-const edges = ref<any[]>([])
 const draggedNodeType = ref<string | null>(null)
 const selectedCourseId = ref<string | null>(null)
 const currentCourse = ref<Course | null>(null)
 const courses = computed(() => coursesStore.entities)
+
+// Shared graph-editor logic (nodes/edges, edge connect/insert, delete-rewire,
+// order-from-chain sync, position persistence). Course-specific rules injected
+// via config; convertCourseToNodes and the picker UI stay in this component.
+const {
+  nodes,
+  edges,
+  insertNodeOnEdge,
+  rewireEdgesAroundDeletedNode,
+  handleEdgeConnect,
+  syncOrderFromEdges,
+  saveNodePositions,
+  loadNodePositions
+} = useGraphEditor({
+  selectedId: selectedCourseId,
+  storagePrefix: 'courseEditor',
+  isValidConnection: (sourceType, targetType) => VALID_CONNECTIONS[sourceType] === targetType,
+  isValidInsertion: (sourceType, newType, targetType) =>
+    (VALID_CONNECTIONS[sourceType] === newType || sourceType === newType) &&
+    (VALID_CONNECTIONS[newType] === targetType || newType === targetType),
+  insertSecondEdgeSourceHandle: 'bottom-source',
+  // A valid connection to an existing entity patches the child's parent FK.
+  syncConnection: async (sourceNode, targetNode) => {
+    if (targetNode.data.entityId && !targetNode.data.isNew) {
+      const targetType = targetNode.data.entityType
+      const parentField = getParentFieldName(targetType)
+      const endpoint = targetType === 'chapter' ? '/chapters' :
+                       targetType === 'section' ? '/sections' :
+                       targetType === 'page' ? '/pages' : null
+      if (!parentField || !sourceNode.data.entityId || !endpoint) return false
+      try {
+        await axios.patch(`${endpoint}/${targetNode.data.entityId}`, {
+          [parentField]: sourceNode.data.entityId
+        })
+      } catch (err) {
+        console.error('Failed to sync edge connection:', err)
+        notification.showError(t('courseEditor.moveError'))
+        return true // undo the edge on failure
+      }
+    }
+    return false
+  },
+  orderLevels: [
+    { parentType: 'course', isChild: (type) => type === 'chapter', endpoint: '/chapters', orderField: 'order' },
+    { parentType: 'chapter', isChild: (type) => type === 'section', endpoint: '/sections', orderField: 'order' },
+    { parentType: 'section', isChild: (type) => type === 'page', endpoint: '/pages', orderField: 'order' }
+  ],
+  onInvalidConnection: (sourceType, targetType) => {
+    notification.showWarning(t('courseEditor.invalidConnection', { source: sourceType, target: targetType }))
+  },
+  onMultiEdgeRewireBlocked: () => {
+    notification.showWarning(t('courseEditor.multiEdgeWarning'))
+  }
+})
 
 // Modal state
 const showEditModal = ref(false)
@@ -1121,42 +1174,6 @@ const confirmDelete = async () => {
   }
 }
 
-// Replace `incoming → deletedNode` and `deletedNode → outgoing` with a single
-// `incoming → outgoing` edge so the linear chain is preserved.
-const rewireEdgesAroundDeletedNode = (node: any) => {
-  const incoming = edges.value.filter(e => e.target === node.id)
-  const outgoing = edges.value.filter(e => e.source === node.id)
-
-  if (incoming.length > 1 || outgoing.length > 1) {
-    console.warn(
-      '[CourseEditor] cannot auto-rewire: node has multiple incoming/outgoing edges',
-      { nodeId: node.id, incoming: incoming.length, outgoing: outgoing.length }
-    )
-    notification.showWarning(t('courseEditor.multiEdgeWarning'))
-    return
-  }
-
-  // Last child or pure orphan: nothing to bridge.
-  if (incoming.length === 0 || outgoing.length === 0) return
-
-  const inEdge = incoming[0]
-  const outEdge = outgoing[0]
-  const newEdge = {
-    id: `edge-${inEdge.source}-${outEdge.target}`,
-    source: inEdge.source,
-    sourceHandle: inEdge.sourceHandle,
-    target: outEdge.target,
-    targetHandle: outEdge.targetHandle,
-    type: inEdge.type || 'smoothstep',
-    animated: false,
-    hidden: inEdge.hidden || outEdge.hidden || false
-  }
-  edges.value = [
-    ...edges.value.filter(e => e.id !== inEdge.id && e.id !== outEdge.id),
-    newEdge
-  ]
-}
-
 // Entity manipulation handlers
 const handleDuplicateEntity = async (entity: any, entityType: string) => {
   // Duplicate entity to another course
@@ -1207,96 +1224,6 @@ const CHILD_TYPE_FOR_PARENT: Record<string, string> = {
   'course': 'chapter',
   'chapter': 'section',
   'section': 'page'
-}
-
-const handleEdgeConnect = async (connection: any) => {
-  const sourceNode = nodes.value.find(n => n.id === connection.source)
-  const targetNode = nodes.value.find(n => n.id === connection.target)
-  if (!sourceNode || !targetNode) return
-
-  const sourceType = sourceNode.data.entityType
-  const targetType = targetNode.data.entityType
-
-  // Validate type compatibility
-  if (VALID_CONNECTIONS[sourceType] !== targetType) {
-    // Remove the invalid edge
-    edges.value = edges.value.filter(e =>
-      !(e.source === connection.source && e.target === connection.target)
-    )
-    notification.showWarning(t('courseEditor.invalidConnection', { source: sourceType, target: targetType }))
-    return
-  }
-
-  // If target has a real entityId, PATCH the parent foreign key
-  if (targetNode.data.entityId && !targetNode.data.isNew) {
-    const parentField = getParentFieldName(targetType)
-    if (!parentField || !sourceNode.data.entityId) return
-
-    const endpoint = targetType === 'chapter' ? '/chapters' :
-                     targetType === 'section' ? '/sections' :
-                     targetType === 'page' ? '/pages' : null
-    if (!endpoint) return
-
-    try {
-      await axios.patch(`${endpoint}/${targetNode.data.entityId}`, {
-        [parentField]: sourceNode.data.entityId
-      })
-    } catch (err) {
-      console.error('Failed to sync edge connection:', err)
-      // Remove the edge on failure
-      edges.value = edges.value.filter(e =>
-        !(e.source === connection.source && e.target === connection.target)
-      )
-      notification.showError(t('courseEditor.moveError'))
-    }
-  }
-}
-
-// Drop-on-edge: split A → B into A → newNode → B by replacing the edge.
-const handleEdgeInsert = (payload: { node: any; edgeId: string; source: string; target: string }) => {
-  const { node: newNode, edgeId, source, target } = payload
-
-  const sourceNode = nodes.value.find(n => n.id === source)
-  const targetNode = nodes.value.find(n => n.id === target)
-  if (!sourceNode || !targetNode) return
-
-  const sourceType = sourceNode.data.entityType
-  const newType = newNode.data.entityType
-  const targetType = targetNode.data.entityType
-
-  // Inserted node must match the chain segment: parent → child OR sibling → sibling.
-  // Examples that work: chapter → (insert chapter) → chapter; course → (insert chapter) → chapter.
-  // If the new type doesn't fit, leave the original edge untouched.
-  const sourceAcceptsNew = VALID_CONNECTIONS[sourceType] === newType || sourceType === newType
-  const newAcceptsTarget = VALID_CONNECTIONS[newType] === targetType || newType === targetType
-  if (!sourceAcceptsNew || !newAcceptsTarget) return
-
-  const oldEdge = edges.value.find(e => e.id === edgeId)
-  const sourceHandle = oldEdge?.sourceHandle
-  const targetHandle = oldEdge?.targetHandle
-  const edgeType = oldEdge?.type || 'smoothstep'
-
-  edges.value = [
-    ...edges.value.filter(e => e.id !== edgeId),
-    {
-      id: `edge-${source}-${newNode.id}`,
-      source,
-      sourceHandle,
-      target: newNode.id,
-      targetHandle: 'top',
-      type: edgeType,
-      animated: false
-    },
-    {
-      id: `edge-${newNode.id}-${target}`,
-      source: newNode.id,
-      sourceHandle: 'bottom-source',
-      target,
-      targetHandle,
-      type: edgeType,
-      animated: false
-    }
-  ]
 }
 
 // Hover-+ click on an edge → open the picker. Restrict choices to the type
@@ -1362,122 +1289,11 @@ const handleInsertPickerSelect = (nodeType: NodeTypeDefinition) => {
   }
   nodes.value = [...nodes.value, newNode]
 
-  handleEdgeInsert({ node: newNode, edgeId, source, target })
+  insertNodeOnEdge({ node: newNode, edgeId, source, target })
 
   closeInsertPicker()
   // Open the edit modal so the user can name/configure the new entity
   openEditModal(newNode)
-}
-
-// Position persistence helpers
-const saveNodePositions = () => {
-  if (!selectedCourseId.value) return
-
-  const nodePositions = nodes.value.map(node => ({
-    id: node.id,
-    entityId: node.data.entityId,
-    position: node.position
-  }))
-
-  const storageKey = `courseEditor_positions_${selectedCourseId.value}`
-  localStorage.setItem(storageKey, JSON.stringify(nodePositions))
-  console.log('Auto-saved node positions:', nodePositions.length)
-}
-
-const loadNodePositions = () => {
-  if (!selectedCourseId.value) return
-
-  const storageKey = `courseEditor_positions_${selectedCourseId.value}`
-  const saved = localStorage.getItem(storageKey)
-
-  if (!saved) return
-
-  try {
-    const savedPositions = JSON.parse(saved)
-    const positionMap = new Map(savedPositions.map((p: any) => [p.id, p.position]))
-
-    // Apply saved positions to nodes - directly mutate to preserve Vue Flow state
-    nodes.value.forEach(node => {
-      const savedPosition = positionMap.get(node.id)
-      if (savedPosition) {
-        node.position = savedPosition
-      }
-    })
-
-    console.log('Loaded node positions:', savedPositions.length)
-  } catch (err) {
-    console.error('Failed to load node positions:', err)
-  }
-}
-
-// Compute ordering from edge chains and PATCH backend
-// Walks the chain: parent → child1 → child2 → child3 and assigns order 1, 2, 3...
-const syncOrderFromEdges = async (): Promise<number> => {
-  let patchCount = 0
-
-  // For each parent type, find all parent nodes and walk their child chains
-  const parentTypes = [
-    { parentType: 'course', childType: 'chapter', endpoint: '/chapters', orderField: 'order' },
-    { parentType: 'chapter', childType: 'section', endpoint: '/sections', orderField: 'order' },
-    { parentType: 'section', childType: 'page', endpoint: '/pages', orderField: 'order' }
-  ]
-
-  for (const { parentType, childType, endpoint, orderField } of parentTypes) {
-    // Find all parent nodes of this type
-    const parentNodes = nodes.value.filter(n => n.data.entityType === parentType && n.data.entityId)
-
-    for (const parentNode of parentNodes) {
-      // Find the first child: the edge going from this parent to a child of the right type
-      const firstChildEdge = edges.value.find(e => {
-        if (e.source !== parentNode.id) return false
-        const targetNode = nodes.value.find(n => n.id === e.target)
-        return targetNode?.data?.entityType === childType
-      })
-
-      if (!firstChildEdge) continue
-
-      // Walk the chain: firstChild → secondChild → ...
-      const orderedChildren: any[] = []
-      let currentNodeId: string | null = firstChildEdge.target
-
-      while (currentNodeId) {
-        const currentNode = nodes.value.find(n => n.id === currentNodeId)
-        if (!currentNode) break
-        orderedChildren.push(currentNode)
-
-        // Find next sibling: edge from current node to another node of the same type
-        const nextEdge = edges.value.find(e => {
-          if (e.source !== currentNodeId) return false
-          const targetNode = nodes.value.find(n => n.id === e.target)
-          return targetNode?.data?.entityType === childType
-        })
-
-        currentNodeId = nextEdge ? nextEdge.target : null
-      }
-
-      // Compare with current order and PATCH if changed
-      for (let i = 0; i < orderedChildren.length; i++) {
-        const child = orderedChildren[i]
-        const newOrder = i + 1
-        const currentOrder = child.data.order ?? child.data.number ?? 0
-
-        if (child.data.entityId && !child.data.isNew && currentOrder !== newOrder) {
-          try {
-            await axios.patch(`${endpoint}/${child.data.entityId}`, {
-              [orderField]: newOrder
-            })
-            // Update local node data
-            child.data.order = newOrder
-            patchCount++
-          } catch (err) {
-            console.error(`Failed to update order for ${childType} ${child.data.entityId}:`, err)
-          }
-        }
-      }
-    }
-  }
-
-  return patchCount
 }
 
 // Save/Reset handlers

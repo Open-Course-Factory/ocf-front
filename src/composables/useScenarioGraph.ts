@@ -2,18 +2,19 @@
  * Open Course Factory - Front
  * Copyright (C) 2023-2026 Solution Libre
  *
- * Pure graph logic for the scenario editor — no rendering.
+ * Scenario-editor graph logic — a thin preset over the shared useGraphEditor
+ * (topology, edge-connect/insert, order sync, position persistence). This file
+ * keeps the scenario-specific bits: the linear step-chain connection rules, the
+ * scenario_id foreign-key sync, and convertScenarioToNodes.
  *
- * Owns the nodes/edges refs, conversion from a scenario payload to nodes/edges,
- * order synchronization from the visual edge chain, position persistence,
- * and edge-connect validation.
- *
- * Extracted from src/components/Pages/ScenarioEditor.vue during the Wave 12
- * refactor to keep the page component focused on layout and orchestration.
+ * Extracted from ScenarioEditor.vue during the Wave 12 split; generalized onto
+ * useGraphEditor during the FRONT-2 de-duplication (#280). The public API is
+ * unchanged so callers and tests are unaffected.
  */
 
-import { ref, type Ref } from 'vue'
+import { type Ref } from 'vue'
 import axios from 'axios'
+import { useGraphEditor } from './useGraphEditor'
 
 // Step types are first-class node types in the canvas
 export const STEP_NODE_TYPES = ['terminal', 'flag', 'info', 'quiz'] as const
@@ -26,6 +27,10 @@ export const VALID_CONNECTIONS: Record<string, readonly string[]> = {
   flag: STEP_NODE_TYPES,
   info: STEP_NODE_TYPES,
   quiz: STEP_NODE_TYPES
+}
+
+function isStepType(type: string): boolean {
+  return (STEP_NODE_TYPES as readonly string[]).includes(type)
 }
 
 // Deserialize a question's `options` field. The backend stores `options` as a
@@ -58,8 +63,37 @@ interface UseScenarioGraphOptions {
 }
 
 export function useScenarioGraph(options: UseScenarioGraphOptions) {
-  const nodes = ref<any[]>([])
-  const edges = ref<any[]>([])
+  const graph = useGraphEditor({
+    selectedId: options.selectedScenarioId,
+    storagePrefix: 'scenarioEditor',
+    isValidConnection: (sourceType, targetType) =>
+      VALID_CONNECTIONS[sourceType]?.includes(targetType) ?? false,
+    isValidInsertion: (sourceType, newType, targetType) =>
+      (VALID_CONNECTIONS[sourceType]?.includes(newType) ?? false) &&
+      (VALID_CONNECTIONS[newType]?.includes(targetType) ?? false),
+    insertSecondEdgeSourceHandle: 'right-source',
+    // Only a scenario → existing-step connection carries a foreign key to patch.
+    syncConnection: async (sourceNode, targetNode) => {
+      if (targetNode.data.entityId && !targetNode.data.isNew && sourceNode.data.entityType === 'scenario') {
+        try {
+          await axios.patch(`/scenario-steps/${targetNode.data.entityId}`, {
+            scenario_id: sourceNode.data.entityId
+          })
+        } catch (err) {
+          console.error('Failed to sync edge connection:', err)
+          return true // undo the edge on failure
+        }
+      }
+      return false
+    },
+    orderLevels: [
+      { parentType: 'scenario', isChild: isStepType, endpoint: '/scenario-steps', orderField: 'order' }
+    ],
+    onInvalidConnection: options.onInvalidConnection,
+    onMultiEdgeRewireBlocked: options.onMultiEdgeRewireBlocked
+  })
+
+  const { nodes, edges } = graph
 
   // Convert scenario to nodes and edges (vertical layout: scenario top-left,
   // first step below, then a horizontal row of subsequent steps).
@@ -104,7 +138,7 @@ export function useScenarioGraph(options: UseScenarioGraphOptions) {
 
     sortedSteps.forEach((step, stepIdx) => {
       const stepId = `step-${step.id}`
-      const nodeType = step.step_type && (STEP_NODE_TYPES as readonly string[]).includes(step.step_type) ? step.step_type : 'terminal'
+      const nodeType = step.step_type && isStepType(step.step_type) ? step.step_type : 'terminal'
 
       const stepNode = {
         id: stepId,
@@ -165,241 +199,17 @@ export function useScenarioGraph(options: UseScenarioGraphOptions) {
     edges.value = newEdges
   }
 
-  // Sync order from edge chains (scenario → step1 → step2 → ...).
-  // Walks the chain from each scenario root and patches /scenario-steps/:id with
-  // the new `order`. Returns the number of patches issued.
-  async function syncOrderFromEdges(): Promise<number> {
-    let patchCount = 0
-
-    const parentTypes = [
-      { parentType: 'scenario', endpoint: '/scenario-steps', orderField: 'order' }
-    ]
-
-    for (const { parentType, endpoint, orderField } of parentTypes) {
-      const parentNodes = nodes.value.filter(n => n.data.entityType === parentType && n.data.entityId)
-
-      for (const parentNode of parentNodes) {
-        const firstChildEdge = edges.value.find(e => {
-          if (e.source !== parentNode.id) return false
-          const targetNode = nodes.value.find(n => n.id === e.target)
-          return targetNode?.data?.entityType && (STEP_NODE_TYPES as readonly string[]).includes(targetNode.data.entityType)
-        })
-
-        if (!firstChildEdge) continue
-
-        const orderedChildren: any[] = []
-        let currentNodeId: string | null = firstChildEdge.target
-
-        while (currentNodeId) {
-          const currentNode = nodes.value.find(n => n.id === currentNodeId)
-          if (!currentNode) break
-          orderedChildren.push(currentNode)
-
-          const nextEdge = edges.value.find(e => {
-            if (e.source !== currentNodeId) return false
-            const targetNode = nodes.value.find(n => n.id === e.target)
-            return targetNode?.data?.entityType && (STEP_NODE_TYPES as readonly string[]).includes(targetNode.data.entityType)
-          })
-
-          currentNodeId = nextEdge ? nextEdge.target : null
-        }
-
-        for (let i = 0; i < orderedChildren.length; i++) {
-          const child = orderedChildren[i]
-          const newOrder = i + 1
-          const currentOrder = child.data.order ?? 0
-
-          if (child.data.entityId && !child.data.isNew && currentOrder !== newOrder) {
-            try {
-              await axios.patch(`${endpoint}/${child.data.entityId}`, {
-                [orderField]: newOrder
-              })
-              child.data.order = newOrder
-              patchCount++
-            } catch (err) {
-              console.error(`Failed to update order for step ${child.data.entityId}:`, err)
-            }
-          }
-        }
-      }
-    }
-
-    return patchCount
-  }
-
-  // Position persistence (per-scenario localStorage).
-  function saveNodePositions() {
-    if (!options.selectedScenarioId.value) return
-
-    const nodePositions = nodes.value.map(node => ({
-      id: node.id,
-      entityId: node.data.entityId,
-      position: node.position
-    }))
-
-    const storageKey = `scenarioEditor_positions_${options.selectedScenarioId.value}`
-    localStorage.setItem(storageKey, JSON.stringify(nodePositions))
-  }
-
-  function loadNodePositions() {
-    if (!options.selectedScenarioId.value) return
-
-    const storageKey = `scenarioEditor_positions_${options.selectedScenarioId.value}`
-    const saved = localStorage.getItem(storageKey)
-
-    if (!saved) return
-
-    try {
-      const savedPositions = JSON.parse(saved)
-      const positionMap = new Map(savedPositions.map((p: any) => [p.id, p.position]))
-
-      nodes.value.forEach(node => {
-        const savedPosition = positionMap.get(node.id)
-        if (savedPosition) {
-          node.position = savedPosition
-        }
-      })
-    } catch (err) {
-      console.error('Failed to load node positions:', err)
-    }
-  }
-
-  function clearNodePositions(scenarioId: string) {
-    const storageKey = `scenarioEditor_positions_${scenarioId}`
-    localStorage.removeItem(storageKey)
-  }
-
-  // Validate a new edge connection. Removes the edge in-place if invalid;
-  // patches the target step's scenario_id on the server when the source is a
-  // scenario and the target is an existing (non-new) step.
-  async function handleEdgeConnect(connection: any) {
-    const sourceNode = nodes.value.find(n => n.id === connection.source)
-    const targetNode = nodes.value.find(n => n.id === connection.target)
-    if (!sourceNode || !targetNode) return
-
-    const sourceType = sourceNode.data.entityType
-    const targetType = targetNode.data.entityType
-
-    if (!VALID_CONNECTIONS[sourceType]?.includes(targetType)) {
-      edges.value = edges.value.filter(e =>
-        !(e.source === connection.source && e.target === connection.target)
-      )
-      options.onInvalidConnection?.(sourceType, targetType)
-      return
-    }
-
-    if (targetNode.data.entityId && !targetNode.data.isNew && sourceNode.data.entityType === 'scenario') {
-      try {
-        await axios.patch(`/scenario-steps/${targetNode.data.entityId}`, {
-          scenario_id: sourceNode.data.entityId
-        })
-      } catch (err) {
-        console.error('Failed to sync edge connection:', err)
-        edges.value = edges.value.filter(e =>
-          !(e.source === connection.source && e.target === connection.target)
-        )
-      }
-    }
-  }
-
-  // Drop/insert on an edge: split A → B into A → newNode → B. The new node is
-  // expected to already exist in `nodes`; this only swaps the edges. No-ops when
-  // the endpoints wouldn't yield a valid chain (caller can leave the node
-  // unconnected for manual wiring, matching pre-feature behaviour).
-  function insertNodeOnEdge(payload: { node: any; edgeId: string; source: string; target: string }) {
-    const { node: newNode, edgeId, source, target } = payload
-
-    const sourceNode = nodes.value.find(n => n.id === source)
-    const targetNode = nodes.value.find(n => n.id === target)
-    if (!sourceNode || !targetNode) return
-
-    const sourceType = sourceNode.data.entityType
-    const newType = newNode.data.entityType
-    const targetType = targetNode.data.entityType
-    const sourceAcceptsNew = VALID_CONNECTIONS[sourceType]?.includes(newType)
-    const newAcceptsTarget = VALID_CONNECTIONS[newType]?.includes(targetType)
-    if (!sourceAcceptsNew || !newAcceptsTarget) return
-
-    const oldEdge = edges.value.find(e => e.id === edgeId)
-    const sourceHandle = oldEdge?.sourceHandle
-    const targetHandle = oldEdge?.targetHandle
-    const edgeType = oldEdge?.type || 'smoothstep'
-
-    edges.value = [
-      ...edges.value.filter(e => e.id !== edgeId),
-      {
-        id: `edge-${source}-${newNode.id}`,
-        source,
-        sourceHandle,
-        target: newNode.id,
-        targetHandle: 'top',
-        type: edgeType,
-        animated: false
-      },
-      {
-        id: `edge-${newNode.id}-${target}`,
-        source: newNode.id,
-        sourceHandle: 'right-source',
-        target,
-        targetHandle,
-        type: edgeType,
-        animated: false
-      }
-    ]
-  }
-
-  // Replace `incoming → deletedNode` and `deletedNode → outgoing` with a single
-  // `incoming → outgoing` edge so the linear chain is preserved on delete.
-  function rewireEdgesAroundDeletedNode(node: any) {
-    const incoming = edges.value.filter(e => e.target === node.id)
-    const outgoing = edges.value.filter(e => e.source === node.id)
-
-    // Multi-parent or multi-child: should not happen in OCF's linear chain
-    // model. Warn (via the caller's hook) and skip the rewire.
-    if (incoming.length > 1 || outgoing.length > 1) {
-      console.warn(
-        '[useScenarioGraph] cannot auto-rewire: node has multiple incoming/outgoing edges',
-        { nodeId: node.id, incoming: incoming.length, outgoing: outgoing.length }
-      )
-      options.onMultiEdgeRewireBlocked?.()
-      return
-    }
-
-    // Last child, orphan, or isolated: nothing to bridge.
-    if (incoming.length === 0 || outgoing.length === 0) {
-      return
-    }
-
-    // Standard case: bridge incoming.source → outgoing.target.
-    const inEdge = incoming[0]
-    const outEdge = outgoing[0]
-    const newEdge = {
-      id: `edge-${inEdge.source}-${outEdge.target}`,
-      source: inEdge.source,
-      sourceHandle: inEdge.sourceHandle,
-      target: outEdge.target,
-      targetHandle: outEdge.targetHandle,
-      type: inEdge.type || 'smoothstep',
-      animated: false,
-      hidden: inEdge.hidden || outEdge.hidden || false
-    }
-    edges.value = [
-      ...edges.value.filter(e => e.id !== inEdge.id && e.id !== outEdge.id),
-      newEdge
-    ]
-  }
-
   return {
     nodes,
     edges,
     convertScenarioToNodes,
-    syncOrderFromEdges,
-    saveNodePositions,
-    loadNodePositions,
-    clearNodePositions,
-    handleEdgeConnect,
-    insertNodeOnEdge,
-    rewireEdgesAroundDeletedNode,
+    syncOrderFromEdges: graph.syncOrderFromEdges,
+    saveNodePositions: graph.saveNodePositions,
+    loadNodePositions: graph.loadNodePositions,
+    clearNodePositions: graph.clearNodePositions,
+    handleEdgeConnect: graph.handleEdgeConnect,
+    insertNodeOnEdge: graph.insertNodeOnEdge,
+    rewireEdgesAroundDeletedNode: graph.rewireEdgesAroundDeletedNode,
     deserializeQuestion
   }
 }
