@@ -40,8 +40,9 @@
         @click="emit('create-new')"
         class="btn-icon btn-create"
         :title="t('scenarioEditor.createNew')"
+        :aria-label="t('scenarioEditor.createNew')"
       >
-        <i class="fas fa-plus"></i>
+        <i class="fas fa-plus" aria-hidden="true"></i>
       </button>
     </div>
 
@@ -73,34 +74,36 @@
           @click="emit('import')"
           class="btn-icon"
           :title="t('scenarioEditor.import')"
+          :aria-label="t('scenarioEditor.import')"
           :disabled="isImporting"
         >
-          <i :class="isImporting ? 'fas fa-spinner fa-spin' : 'fas fa-file-import'"></i>
+          <i :class="isImporting ? 'fas fa-spinner fa-spin' : 'fas fa-file-import'" aria-hidden="true"></i>
         </button>
-        <button @click="emit('export-json')" class="btn-icon" :title="t('scenarioEditor.exportJSON')">
-          <i class="fas fa-file-code"></i>
+        <button @click="emit('export-json')" class="btn-icon" :title="t('scenarioEditor.exportJSON')" :aria-label="t('scenarioEditor.exportJSON')">
+          <i class="fas fa-file-code" aria-hidden="true"></i>
         </button>
-        <button @click="emit('export-killercoda')" class="btn-icon" :title="t('scenarioEditor.exportKillerCoda')">
-          <i class="fas fa-file-archive"></i>
+        <button @click="emit('export-killercoda')" class="btn-icon" :title="t('scenarioEditor.exportKillerCoda')" :aria-label="t('scenarioEditor.exportKillerCoda')">
+          <i class="fas fa-file-archive" aria-hidden="true"></i>
         </button>
-        <button v-if="canCopyToOrg" @click="emit('copy-to-org')" class="btn-icon" :title="t('scenarioEditor.copyToOrg')">
-          <i class="fas fa-copy"></i>
+        <button v-if="canCopyToOrg" @click="emit('copy-to-org')" class="btn-icon" :title="t('scenarioEditor.copyToOrg')" :aria-label="t('scenarioEditor.copyToOrg')">
+          <i class="fas fa-copy" aria-hidden="true"></i>
         </button>
         <button
           v-if="canPreview"
           @click="emit('preview')"
           class="btn-icon"
           :title="t('scenarioEditor.playAsStudent')"
+          :aria-label="t('scenarioEditor.playAsStudent')"
           :disabled="isPreviewLoading"
         >
-          <i :class="isPreviewLoading ? 'fas fa-spinner fa-spin' : 'fas fa-play'"></i>
+          <i :class="isPreviewLoading ? 'fas fa-spinner fa-spin' : 'fas fa-play'" aria-hidden="true"></i>
         </button>
-        <span class="header-divider"></span>
+        <span class="header-divider" aria-hidden="true"></span>
       </template>
 
       <!-- Primary actions -->
-      <button v-if="canEditScenario" @click="emit('reset')" class="btn-icon" :title="t('scenarioEditor.reset')">
-        <i class="fas fa-undo"></i>
+      <button v-if="canEditScenario" @click="emit('reset')" class="btn-icon" :title="t('scenarioEditor.reset')" :aria-label="t('scenarioEditor.reset')">
+        <i class="fas fa-undo" aria-hidden="true"></i>
       </button>
       <button
         v-if="canEditScenario"
@@ -108,7 +111,7 @@
         class="btn-save"
         :disabled="!selectedScenarioId && nodeCount === 0"
       >
-        <i class="fas fa-save"></i> {{ t('scenarioEditor.save') }}
+        <i class="fas fa-save" aria-hidden="true"></i> {{ t('scenarioEditor.save') }}
       </button>
     </div>
   </div>

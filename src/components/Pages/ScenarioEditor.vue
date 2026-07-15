@@ -33,10 +33,12 @@
         :panel-title="t('scenarioEditor.nodeLibraryTitle')"
         :help-text="t('scenarioEditor.nodeLibraryHelp')"
         @node-drag-start="handleNodeDragStart"
+        @add-at-center="handleAddAtCenter"
       />
 
       <!-- Center Panel: Flow Canvas -->
       <FlowCanvas
+        ref="flowCanvasRef"
         class="panel canvas-panel"
         :nodes="nodes"
         :edges="edges"
@@ -64,14 +66,25 @@
           class="panel-collapse-toggle"
           @click="isRightPanelCollapsed = !isRightPanelCollapsed"
           :title="isRightPanelCollapsed ? t('scenarioEditor.expandPanel') : t('scenarioEditor.collapsePanel')"
+          :aria-label="isRightPanelCollapsed ? t('scenarioEditor.expandPanel') : t('scenarioEditor.collapsePanel')"
+          :aria-expanded="!isRightPanelCollapsed"
         >
-          <i :class="isRightPanelCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right'"></i>
+          <i :class="isRightPanelCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right'" aria-hidden="true"></i>
         </button>
         <template v-if="!isRightPanelCollapsed">
           <div
             class="resize-handle"
             :class="{ resizing: isResizing }"
+            role="separator"
+            aria-orientation="vertical"
+            tabindex="0"
+            :aria-valuenow="treePanelWidth"
+            aria-valuemin="200"
+            aria-valuemax="600"
+            :aria-label="t('scenarioEditor.resizeHandleAriaLabel')"
             @mousedown="startResize"
+            @keydown.left.prevent="resizeBy(-10)"
+            @keydown.right.prevent="resizeBy(10)"
           ></div>
           <ScenarioStepListPanel
             :scenarios="allScenarios"
@@ -94,7 +107,7 @@
       :scope-hint="scopeHint"
       :current-scenario-org-label="currentScenarioOrgLabel"
       :sizes="sizes"
-      :aria-label="t('scenarioEditor.title')"
+      :aria-label="t('scenarioEditor.tabsLabel')"
       @close="closeScenarioEditModal"
       @save="handleSaveScenario"
     />
@@ -152,8 +165,8 @@
       @confirm="handleCopyToOrg"
     >
       <div class="form-group">
-        <label>{{ t('scenarioEditor.selectTargetOrg') }}</label>
-        <select v-model="copyTargetOrgId" class="form-control">
+        <label for="copy-target-org">{{ t('scenarioEditor.selectTargetOrg') }}</label>
+        <select id="copy-target-org" v-model="copyTargetOrgId" class="form-control">
           <option :value="null" disabled>{{ t('scenarioEditor.selectTargetOrg') }}</option>
           <option
             v-for="org in copyTargetOrgs"
@@ -310,6 +323,8 @@ const { t } = useTranslations({
       // Panel
       expandPanel: 'Expand panel',
       collapsePanel: 'Collapse panel',
+      resizeHandleAriaLabel: 'Resize step list panel. Use left and right arrow keys to adjust width.',
+      tabsLabel: 'Scenario editor sections',
       readOnly: 'Read only',
       readOnlyWarning: 'This scenario is read-only. Copy it to your organization to edit.',
       // Play as student (preview)
@@ -426,6 +441,8 @@ const { t } = useTranslations({
       // Panneau
       expandPanel: 'Déplier le panneau',
       collapsePanel: 'Replier le panneau',
+      resizeHandleAriaLabel: 'Redimensionner le panneau de la liste d\'étapes. Utilisez les flèches gauche et droite pour ajuster la largeur.',
+      tabsLabel: 'Sections de l\'éditeur de scénario',
       readOnly: 'Lecture seule',
       readOnlyWarning: 'Ce scénario est en lecture seule. Copiez-le dans votre organisation pour le modifier.',
       // Jouer comme étudiant (prévisualisation)
@@ -706,7 +723,7 @@ const currentScenarioOrgLabel = computed<string | null>(() => {
 const sizes = ref<Size[]>([])
 
 // Resize state (composable owns mousemove/mouseup listeners)
-const { panelWidth: treePanelWidth, isResizing, startResize } = useResizablePanel({
+const { panelWidth: treePanelWidth, isResizing, startResize, resizeBy } = useResizablePanel({
   storageKey: 'scenarioEditor_treePanelWidth'
 })
 
@@ -907,9 +924,22 @@ const handleConfirmPreview = async () => {
   }
 }
 
+// FlowCanvas ref (for keyboard alternative to drag-and-drop)
+const flowCanvasRef = ref<any>(null)
+
 // Drag handlers
 const handleNodeDragStart = (nodeType: string) => {
   draggedNodeType.value = nodeType
+}
+
+// Keyboard alternative to drag-and-drop: NodeLibraryPanel emits `add-at-center`
+// when a library item receives Enter/Space. We forward to the FlowCanvas.
+const handleAddAtCenter = (nodeType: string) => {
+  if (!canEditScenario.value && currentScenario.value) {
+    notification.showWarning(t('scenarioEditor.readOnlyWarning'))
+    return
+  }
+  flowCanvasRef.value?.addNodeAtCenter(nodeType)
 }
 
 // Node added handler

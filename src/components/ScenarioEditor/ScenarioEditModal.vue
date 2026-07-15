@@ -46,8 +46,9 @@
       class="modal-form"
     >
       <div class="form-group">
-        <label>{{ t('scenarioEditor.scenarioName') }}</label>
+        <label for="scenario-name">{{ t('scenarioEditor.scenarioName') }}</label>
         <input
+          id="scenario-name"
           v-model="model.name"
           type="text"
           class="form-control"
@@ -56,8 +57,9 @@
       </div>
 
       <div class="form-group">
-        <label>{{ t('scenarioEditor.scenarioTitle') }}</label>
+        <label for="scenario-title">{{ t('scenarioEditor.scenarioTitle') }}</label>
         <input
+          id="scenario-title"
           v-model="model.title"
           type="text"
           class="form-control"
@@ -67,8 +69,8 @@
 
       <div class="form-row">
         <div class="form-group">
-          <label>{{ t('scenarioEditor.difficulty') }}</label>
-          <select v-model="model.difficulty" class="form-control">
+          <label for="scenario-difficulty">{{ t('scenarioEditor.difficulty') }}</label>
+          <select id="scenario-difficulty" v-model="model.difficulty" class="form-control">
             <option value="beginner">{{ t('scenarioEditor.beginner') }}</option>
             <option value="intermediate">{{ t('scenarioEditor.intermediate') }}</option>
             <option value="advanced">{{ t('scenarioEditor.advanced') }}</option>
@@ -76,8 +78,9 @@
         </div>
 
         <div class="form-group">
-          <label>{{ t('scenarioEditor.estimatedTime') }}</label>
+          <label for="scenario-estimated-time">{{ t('scenarioEditor.estimatedTime') }}</label>
           <input
+            id="scenario-estimated-time"
             v-model="model.estimated_time"
             type="text"
             class="form-control"
@@ -87,8 +90,9 @@
       </div>
 
       <div class="form-group">
-        <label>{{ t('scenarioEditor.description') }}</label>
+        <label for="scenario-description">{{ t('scenarioEditor.description') }}</label>
         <textarea
+          id="scenario-description"
           v-model="model.description"
           class="form-control"
           rows="3"
@@ -118,8 +122,9 @@
       </div>
       <!-- Read-only org indicator (edit mode) -->
       <div class="form-group" v-else-if="!model.isNew && currentScenarioOrgLabel">
-        <label>{{ t('scenarioEditor.orgLabel') }}</label>
+        <label for="scenario-org-readonly">{{ t('scenarioEditor.orgLabel') }}</label>
         <input
+          id="scenario-org-readonly"
           type="text"
           class="form-control"
           :value="currentScenarioOrgLabel"
@@ -137,8 +142,9 @@
       class="modal-form"
     >
       <div class="form-group">
-        <label>{{ t('scenarioEditor.introText') }}</label>
+        <label for="scenario-intro-text">{{ t('scenarioEditor.introText') }}</label>
         <textarea
+          id="scenario-intro-text"
           v-model="model.intro_text"
           class="form-control"
           rows="6"
@@ -148,8 +154,9 @@
       </div>
 
       <div class="form-group">
-        <label>{{ t('scenarioEditor.finishText') }}</label>
+        <label for="scenario-finish-text">{{ t('scenarioEditor.finishText') }}</label>
         <textarea
+          id="scenario-finish-text"
           v-model="model.finish_text"
           class="form-control"
           rows="6"
@@ -159,8 +166,9 @@
       </div>
 
       <div class="form-group">
-        <label>{{ t('scenarioEditor.objectives') }}</label>
+        <label for="scenario-objectives">{{ t('scenarioEditor.objectives') }}</label>
         <textarea
+          id="scenario-objectives"
           v-model="model.objectives"
           class="form-control"
           rows="3"
@@ -169,8 +177,9 @@
       </div>
 
       <div class="form-group">
-        <label>{{ t('scenarioEditor.prerequisites') }}</label>
+        <label for="scenario-prerequisites">{{ t('scenarioEditor.prerequisites') }}</label>
         <textarea
+          id="scenario-prerequisites"
           v-model="model.prerequisites"
           class="form-control"
           rows="3"
@@ -188,8 +197,9 @@
       class="modal-form"
     >
       <div class="form-group">
-        <label>{{ t('scenarioEditor.setupScript') }}</label>
+        <label for="scenario-setup-script">{{ t('scenarioEditor.setupScript') }}</label>
         <textarea
+          id="scenario-setup-script"
           v-model="model.setup_script"
           class="form-control script-editor"
           rows="12"
@@ -209,9 +219,10 @@
     >
       <div class="form-row">
         <div class="form-group">
-          <label>{{ t('scenarioEditor.instanceType') }}</label>
+          <label for="scenario-instance-type">{{ t('scenarioEditor.instanceType') }}</label>
           <select
             v-if="sizes.length > 0"
+            id="scenario-instance-type"
             v-model="instanceTypeModel"
             class="form-control"
           >
@@ -227,6 +238,7 @@
           </select>
           <input
             v-else
+            id="scenario-instance-type"
             v-model="model.instance_type"
             type="text"
             class="form-control"
@@ -235,8 +247,9 @@
         </div>
 
         <div class="form-group">
-          <label>{{ t('scenarioEditor.hostname') }}</label>
+          <label for="scenario-hostname">{{ t('scenarioEditor.hostname') }}</label>
           <input
+            id="scenario-hostname"
             v-model="model.hostname"
             type="text"
             class="form-control"
@@ -247,8 +260,8 @@
 
       <div class="form-row">
         <div class="form-group">
-          <label>{{ t('scenarioEditor.osType') }}</label>
-          <select v-model="model.os_type" class="form-control">
+          <label for="scenario-os-type">{{ t('scenarioEditor.osType') }}</label>
+          <select id="scenario-os-type" v-model="model.os_type" class="form-control">
             <option value="">-</option>
             <option value="deb">Debian (apt)</option>
             <option value="rpm">RPM (dnf/yum)</option>
@@ -258,8 +271,8 @@
         </div>
 
         <div class="form-group">
-          <label>{{ t('scenarioEditor.sourceType') }}</label>
-          <select v-model="model.source_type" class="form-control">
+          <label for="scenario-source-type">{{ t('scenarioEditor.sourceType') }}</label>
+          <select id="scenario-source-type" v-model="model.source_type" class="form-control">
             <option value="">-</option>
             <option value="builtin">{{ t('scenarioEditor.sourceBuiltin') }}</option>
             <option value="git">Git</option>
@@ -270,30 +283,30 @@
       </div>
 
       <div class="form-group checkbox-group">
-        <label class="checkbox-label">
-          <input type="checkbox" v-model="model.flags_enabled" />
+        <label class="checkbox-label" for="scenario-flags-enabled">
+          <input id="scenario-flags-enabled" type="checkbox" v-model="model.flags_enabled" />
           {{ t('scenarioEditor.flagsEnabled') }}
         </label>
       </div>
 
       <div class="form-group checkbox-group">
-        <label class="checkbox-label">
-          <input type="checkbox" v-model="model.crash_traps" />
+        <label class="checkbox-label" for="scenario-crash-traps">
+          <input id="scenario-crash-traps" type="checkbox" v-model="model.crash_traps" />
           {{ t('scenarioEditor.crashTraps') }}
         </label>
         <span class="form-hint">{{ t('scenarioEditor.crashTrapsHint') }}</span>
       </div>
 
       <div class="form-group checkbox-group">
-        <label class="checkbox-label">
-          <input type="checkbox" v-model="model.gsh_enabled" />
+        <label class="checkbox-label" for="scenario-gsh-enabled">
+          <input id="scenario-gsh-enabled" type="checkbox" v-model="model.gsh_enabled" />
           {{ t('scenarioEditor.gshEnabled') }}
         </label>
       </div>
 
       <div class="form-group checkbox-group">
-        <label class="checkbox-label">
-          <input type="checkbox" v-model="model.is_public" />
+        <label class="checkbox-label" for="scenario-is-public">
+          <input id="scenario-is-public" type="checkbox" v-model="model.is_public" />
           {{ t('scenarioEditor.isPublic') }}
         </label>
       </div>

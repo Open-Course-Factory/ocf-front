@@ -79,6 +79,17 @@ export function useResizablePanel(options: UseResizablePanelOptions) {
     }
   }
 
+  // Keyboard-driven resize (a11y): adjust width by `delta` px, clamped to the
+  // bounds, and persist immediately. Used by the focused resize handle's
+  // arrow-key handlers.
+  function resizeBy(delta: number) {
+    const newWidth = panelWidth.value + delta
+    if (newWidth >= minWidth && newWidth <= maxWidth) {
+      panelWidth.value = newWidth
+      localStorage.setItem(options.storageKey, panelWidth.value.toString())
+    }
+  }
+
   onMounted(() => {
     loadPanelWidth()
     document.addEventListener('mousemove', handleResize)
@@ -94,6 +105,7 @@ export function useResizablePanel(options: UseResizablePanelOptions) {
     panelWidth,
     isResizing,
     startResize,
+    resizeBy,
     loadPanelWidth
   }
 }

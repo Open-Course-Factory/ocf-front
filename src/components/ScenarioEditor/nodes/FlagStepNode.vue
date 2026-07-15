@@ -28,7 +28,7 @@
           </span>
         </div>
         <div v-if="data.hint_content || data.hint_file_id" class="step-indicators">
-          <span class="indicator indicator-hint" title="Has hint">&#x1F4A1;</span>
+          <span class="indicator indicator-hint" title="Has hint" aria-label="Has hint"><span aria-hidden="true">&#x1F4A1;</span></span>
         </div>
       </div>
     </template>

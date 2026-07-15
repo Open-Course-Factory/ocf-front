@@ -25,13 +25,13 @@
     <template #metadata>
       <div v-if="data.entityId" class="node-meta">
         <span class="meta-item" v-if="data.steps">
-          📋 {{ data.steps?.length || 0 }} steps
+          <span aria-hidden="true">📋</span> {{ data.steps?.length || 0 }} steps
         </span>
         <span class="meta-item" v-if="data.estimated_time">
-          ⏱️ {{ data.estimated_time }}
+          <span aria-hidden="true">⏱️</span> {{ data.estimated_time }}
         </span>
         <span class="meta-item" v-if="data.flags_enabled">
-          🚩 flags
+          <span aria-hidden="true">🚩</span> flags
         </span>
       </div>
     </template>
