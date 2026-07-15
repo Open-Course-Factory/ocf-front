@@ -402,12 +402,20 @@ const instanceTypeModel = computed<string>({
 })
 
 const activeTab = ref('general')
-const tabs = computed(() => [
+const allTabs = computed(() => [
   { key: 'general', label: t('scenarioEditor.tabGeneral') },
   { key: 'content', label: t('scenarioEditor.tabContent') },
   { key: 'setup', label: t('scenarioEditor.tabSetup') },
   { key: 'options', label: t('scenarioEditor.tabOptions') }
 ])
+// At create time, only show General + Content — the Setup/Options tabs are
+// hidden until first save to reduce friction (Marc: "I have to fill 12 fields
+// before I have anything to save").
+const tabs = computed(() =>
+  model.value.isNew
+    ? allTabs.value.filter(tab => tab.key === 'general' || tab.key === 'content')
+    : allTabs.value
+)
 
 // Reset to the first tab whenever the modal opens.
 watch(() => props.visible, (vis) => {

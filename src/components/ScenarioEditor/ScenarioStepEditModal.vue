@@ -3,6 +3,8 @@
     :visible="visible"
     :title="modalTitle"
     size="large"
+    :is-loading="isSaving"
+    :error-message="errorMessage"
     @close="emit('close')"
   >
     <div class="step-edit-form">
@@ -37,18 +39,6 @@
               type="text"
               class="form-control"
               :placeholder="t('stepEdit.titlePlaceholder')"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="step-order">{{ t('stepEdit.order') }}</label>
-            <input
-              id="step-order"
-              :value="formData.order"
-              type="number"
-              class="form-control"
-              readonly
-              disabled
             />
           </div>
 
@@ -551,7 +541,6 @@ const { t } = useTranslations({
       createQuiz: 'Create Quiz Step',
       title: 'Title',
       titlePlaceholder: 'Enter step title...',
-      order: 'Order',
       textContent: 'Text Content',
       textContentPlaceholder: 'Enter the step instructions...',
       hintContent: 'Hint Content',
@@ -640,7 +629,6 @@ const { t } = useTranslations({
       createQuiz: 'Créer une étape Quiz',
       title: 'Titre',
       titlePlaceholder: 'Saisir le titre de l’étape...',
-      order: 'Ordre',
       textContent: 'Contenu texte',
       textContentPlaceholder: 'Saisir les instructions de l’étape...',
       hintContent: 'Contenu de l’indice',
@@ -721,11 +709,15 @@ interface Props {
   visible: boolean
   stepData?: any
   isNew?: boolean
+  isSaving?: boolean
+  errorMessage?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   stepData: undefined,
-  isNew: false
+  isNew: false,
+  isSaving: false,
+  errorMessage: ''
 })
 
 const emit = defineEmits<{
@@ -1223,6 +1215,13 @@ const handleSave = () => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+}
+
+/* Reflow flag fields to single-column on phones */
+@media (max-width: 600px) {
+  .flag-fields {
+    grid-template-columns: 1fr;
+  }
 }
 
 .form-group-inline {

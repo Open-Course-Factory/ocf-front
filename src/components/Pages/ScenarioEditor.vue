@@ -64,8 +64,8 @@
       <div class="panel tree-panel" :class="{ collapsed: isRightPanelCollapsed }" :style="!isRightPanelCollapsed ? { width: treePanelWidth + 'px' } : {}">
         <button
           class="panel-collapse-toggle"
-          @click="isRightPanelCollapsed = !isRightPanelCollapsed"
-          :title="isRightPanelCollapsed ? t('scenarioEditor.expandPanel') : t('scenarioEditor.collapsePanel')"
+          @click="toggleRightPanel"
+          :title="isRightPanelCollapsed ? t('scenarioEditor.panelTooltip') : t('scenarioEditor.collapsePanel')"
           :aria-label="isRightPanelCollapsed ? t('scenarioEditor.expandPanel') : t('scenarioEditor.collapsePanel')"
           :aria-expanded="!isRightPanelCollapsed"
         >
@@ -117,6 +117,8 @@
       :visible="showStepEditModal"
       :step-data="editingStep"
       :is-new="editingStepIsNew"
+      :is-saving="isSavingStep"
+      :error-message="stepSaveError"
       @close="closeStepEditModal"
       @save="handleSaveStep"
     />
@@ -323,6 +325,8 @@ const { t } = useTranslations({
       // Panel
       expandPanel: 'Expand panel',
       collapsePanel: 'Collapse panel',
+      panelTooltip: 'Drag steps from other scenarios as templates',
+      moreActions: 'More actions',
       resizeHandleAriaLabel: 'Resize step list panel. Use left and right arrow keys to adjust width.',
       tabsLabel: 'Scenario editor sections',
       readOnly: 'Read only',
@@ -441,6 +445,8 @@ const { t } = useTranslations({
       // Panneau
       expandPanel: 'Déplier le panneau',
       collapsePanel: 'Replier le panneau',
+      panelTooltip: 'Glissez des étapes d\'autres scénarios comme modèles',
+      moreActions: 'Plus d\'actions',
       resizeHandleAriaLabel: 'Redimensionner le panneau de la liste d\'étapes. Utilisez les flèches gauche et droite pour ajuster la largeur.',
       tabsLabel: 'Sections de l\'éditeur de scénario',
       readOnly: 'Lecture seule',
@@ -543,7 +549,9 @@ const {
 })
 const allScenarios = computed(() => scenariosStore.entities)
 const isImporting = ref(false)
-const isRightPanelCollapsed = ref(false)
+// Right step-list panel collapsed by default — discoverability comes from the
+// tooltip on the toggle. Last user choice persists in localStorage.
+const isRightPanelCollapsed = ref(true)
 
 // Modal state
 const showScenarioEditModal = ref(false)
@@ -556,6 +564,10 @@ const editingStepNodeId = ref<string | null>(null)
 const deletingNode = ref<any>(null)
 const isSaving = ref(false)
 const modalError = ref('')
+// Step modal save state — wired into ScenarioStepEditModal so save errors
+// surface inside the modal instead of only behind a toast.
+const isSavingStep = ref(false)
+const stepSaveError = ref('')
 
 // Copy to org state
 const showCopyModal = ref(false)
@@ -754,6 +766,12 @@ onMounted(async () => {
       }),
   ])
 
+  // Restore right-panel collapsed/expanded user preference (defaults to collapsed)
+  const savedRightPanelCollapsed = localStorage.getItem('scenarioEditor_rightPanelCollapsed')
+  if (savedRightPanelCollapsed !== null) {
+    isRightPanelCollapsed.value = savedRightPanelCollapsed === 'true'
+  }
+
   // Check if scenarioId is in URL query params
   const scenarioIdFromUrl = route.query.scenarioId as string | undefined
   if (scenarioIdFromUrl) {
@@ -761,6 +779,11 @@ onMounted(async () => {
     await handleScenarioSelect()
   }
 })
+
+const toggleRightPanel = () => {
+  isRightPanelCollapsed.value = !isRightPanelCollapsed.value
+  localStorage.setItem('scenarioEditor_rightPanelCollapsed', String(isRightPanelCollapsed.value))
+}
 
 // Handle scenario selection
 const handleScenarioSelect = async () => {
@@ -1226,6 +1249,8 @@ const closeStepEditModal = () => {
   editingStep.value = null
   editingStepIsNew.value = false
   editingStepNodeId.value = null
+  isSavingStep.value = false
+  stepSaveError.value = ''
 }
 
 // Sync the quiz questions of a step against the dedicated
@@ -1298,6 +1323,8 @@ const syncStepQuestions = async (
 }
 
 const handleSaveStep = async (formData: any) => {
+  isSavingStep.value = true
+  stepSaveError.value = ''
   try {
     // The /scenario-steps endpoint has no Questions field — extract them
     // and persist via the dedicated /scenario-step-questions endpoint instead.
@@ -1364,8 +1391,16 @@ const handleSaveStep = async (formData: any) => {
     closeStepEditModal()
   } catch (err: any) {
     console.error('Save step failed:', err)
-    const detail = err.response?.data?.error_message || err.message || t('scenarioEditor.saveError')
+    const detail = err.response?.data?.error_message ||
+                   err.response?.data?.message ||
+                   err.message ||
+                   t('scenarioEditor.saveError')
+    // Surface the error inside the modal so the user keeps context (mirrors
+    // the scenario-edit modal pattern). The notification is a secondary signal.
+    stepSaveError.value = detail
     notification.showError(detail)
+  } finally {
+    isSavingStep.value = false
   }
 }
 
@@ -1650,6 +1685,48 @@ textarea.form-control {
   resize: vertical;
   min-height: 80px;
   font-family: inherit;
+}
+
+/* Responsive: at narrow widths the library panel becomes a left-edge drawer
+   so the canvas keeps usable width. Toggle is the panel header itself. */
+@media (max-width: 1024px) {
+  .library-panel {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 30;
+    width: 140px;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.08);
+  }
+  .library-panel:hover,
+  .library-panel:focus-within {
+    transform: translateX(0);
+  }
+  .library-panel::after {
+    content: '\f0c9'; /* fa-bars */
+    font-family: 'Font Awesome 6 Free', 'Font Awesome 5 Free', FontAwesome;
+    font-weight: 900;
+    position: absolute;
+    right: -1.75rem;
+    top: 0.5rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border-light);
+    border-left: none;
+    border-radius: 0 4px 4px 0;
+    color: var(--color-text-secondary);
+    pointer-events: none;
+  }
+  .canvas-panel {
+    min-width: 0;
+  }
 }
 
 </style>

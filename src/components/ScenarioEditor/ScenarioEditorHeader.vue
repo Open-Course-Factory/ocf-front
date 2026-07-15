@@ -67,27 +67,50 @@
 
     <!-- Right: actions -->
     <div class="header-actions">
-      <!-- Secondary actions (icon-only) -->
+      <!-- Secondary actions live behind a ⋯ overflow menu to keep the header
+           compact and to push Reset away from Save (less footgun-prone). -->
       <template v-if="selectedScenarioId">
-        <button
-          v-if="canEditScenario"
-          @click="emit('import')"
-          class="btn-icon"
-          :title="t('scenarioEditor.import')"
-          :aria-label="t('scenarioEditor.import')"
-          :disabled="isImporting"
-        >
-          <i :class="isImporting ? 'fas fa-spinner fa-spin' : 'fas fa-file-import'" aria-hidden="true"></i>
-        </button>
-        <button @click="emit('export-json')" class="btn-icon" :title="t('scenarioEditor.exportJSON')" :aria-label="t('scenarioEditor.exportJSON')">
-          <i class="fas fa-file-code" aria-hidden="true"></i>
-        </button>
-        <button @click="emit('export-killercoda')" class="btn-icon" :title="t('scenarioEditor.exportKillerCoda')" :aria-label="t('scenarioEditor.exportKillerCoda')">
-          <i class="fas fa-file-archive" aria-hidden="true"></i>
-        </button>
-        <button v-if="canCopyToOrg" @click="emit('copy-to-org')" class="btn-icon" :title="t('scenarioEditor.copyToOrg')" :aria-label="t('scenarioEditor.copyToOrg')">
-          <i class="fas fa-copy" aria-hidden="true"></i>
-        </button>
+        <div class="dropdown-container" ref="actionsMenuRef">
+          <button
+            class="btn-icon"
+            @click.stop="showActionsMenu = !showActionsMenu"
+            :title="t('scenarioEditor.moreActions')"
+            :aria-label="t('scenarioEditor.moreActions')"
+            :aria-expanded="showActionsMenu"
+            aria-haspopup="true"
+          >
+            <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
+          </button>
+          <div v-if="showActionsMenu" class="dropdown-menu" @click.stop>
+            <button
+              v-if="canEditScenario"
+              class="dropdown-item"
+              :disabled="isImporting"
+              @click="emit('import'); showActionsMenu = false"
+            >
+              <i :class="isImporting ? 'fas fa-spinner fa-spin' : 'fas fa-file-import'" aria-hidden="true"></i>
+              <span>{{ t('scenarioEditor.import') }}</span>
+            </button>
+            <button class="dropdown-item" @click="emit('export-json'); showActionsMenu = false">
+              <i class="fas fa-file-code" aria-hidden="true"></i>
+              <span>{{ t('scenarioEditor.exportJSON') }}</span>
+            </button>
+            <button class="dropdown-item" @click="emit('export-killercoda'); showActionsMenu = false">
+              <i class="fas fa-file-archive" aria-hidden="true"></i>
+              <span>{{ t('scenarioEditor.exportKillerCoda') }}</span>
+            </button>
+            <button v-if="canCopyToOrg" class="dropdown-item" @click="emit('copy-to-org'); showActionsMenu = false">
+              <i class="fas fa-copy" aria-hidden="true"></i>
+              <span>{{ t('scenarioEditor.copyToOrg') }}</span>
+            </button>
+            <div v-if="canEditScenario" class="dropdown-divider"></div>
+            <button v-if="canEditScenario" class="dropdown-item" @click="emit('reset'); showActionsMenu = false">
+              <i class="fas fa-undo" aria-hidden="true"></i>
+              <span>{{ t('scenarioEditor.reset') }}</span>
+            </button>
+          </div>
+        </div>
+        <!-- Preview stays visible in the primary row (not hidden in the overflow) -->
         <button
           v-if="canPreview"
           @click="emit('preview')"
@@ -102,9 +125,6 @@
       </template>
 
       <!-- Primary actions -->
-      <button v-if="canEditScenario" @click="emit('reset')" class="btn-icon" :title="t('scenarioEditor.reset')" :aria-label="t('scenarioEditor.reset')">
-        <i class="fas fa-undo" aria-hidden="true"></i>
-      </button>
       <button
         v-if="canEditScenario"
         @click="emit('save')"
@@ -118,6 +138,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue'
 import AdminBadge from '../Common/AdminBadge.vue'
 import { useTranslations } from '../../composables/useTranslations'
 
@@ -151,6 +172,28 @@ const emit = defineEmits<{
   (e: 'reset'): void
   (e: 'save'): void
 }>()
+
+// Header overflow menu (Import / Export / Copy / Reset)
+const showActionsMenu = ref(false)
+const actionsMenuRef = ref<HTMLElement | null>(null)
+
+// Click outside the actions menu container closes it. The trigger button uses
+// @click.stop, so this listener fires only for clicks outside the dropdown.
+const handleDocumentClick = (event: MouseEvent) => {
+  if (!showActionsMenu.value) return
+  const target = event.target as HTMLElement
+  if (actionsMenuRef.value && !actionsMenuRef.value.contains(target)) {
+    showActionsMenu.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleDocumentClick)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleDocumentClick)
+})
 
 // Re-emit native <select> change as both v-model update + a select-change
 // hook so the parent can run side effects (load the scenario) after the
@@ -335,5 +378,65 @@ const { t } = useTranslations({ en: {}, fr: {} })
 .btn-save:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Header overflow menu — reuses dropdown-* tokens from the TerminalMySessions.vue
+   pattern (no shared component yet; small enough to inline here) */
+.dropdown-container {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  min-width: 220px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-md, 6px);
+  box-shadow: var(--shadow-lg, 0 4px 12px rgba(0, 0, 0, 0.15));
+  z-index: 100;
+  padding: 0.25rem 0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.5rem 0.85rem;
+  background: none;
+  border: none;
+  text-align: left;
+  color: var(--color-text-primary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.dropdown-item:hover:not(:disabled) {
+  background: var(--color-bg-secondary);
+  color: var(--color-primary);
+}
+
+.dropdown-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dropdown-item i {
+  width: 1rem;
+  text-align: center;
+  opacity: 0.7;
+}
+
+.dropdown-item:hover:not(:disabled) i {
+  opacity: 1;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--color-border-light);
+  margin: 0.25rem 0;
 }
 </style>
