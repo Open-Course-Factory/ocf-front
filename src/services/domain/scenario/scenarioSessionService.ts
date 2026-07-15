@@ -140,6 +140,18 @@ export const scenarioSessionService = {
     return response.data
   },
 
+  async previewScenario(scenarioId: string, options?: { backend?: string; organization_id?: string }): Promise<{
+    scenario_session_id: string
+    terminal_session_id: string
+    status: string
+  }> {
+    // Trainer-side preview: backend POST /scenarios/:id/preview creates a real
+    // terminal + scenario session bypassing the assignment check.
+    // Long timeout matches launchScenario — terminal provisioning takes time.
+    const response = await axios.post(`/scenarios/${scenarioId}/preview`, options || {}, { timeout: 180000 })
+    return response.data
+  },
+
   async getCurrentStep(sessionId: string): Promise<CurrentStepResponse> {
     const response = await axios.get(`/scenario-sessions/${sessionId}/current-step`)
     return response.data

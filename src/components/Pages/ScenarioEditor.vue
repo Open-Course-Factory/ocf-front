@@ -12,12 +12,15 @@
       :is-admin="isAdmin"
       :node-count="nodes.length"
       :edge-count="edges.length"
+      :can-preview="canPreviewScenario"
+      :is-preview-loading="isPreviewLoading"
       @select-change="handleScenarioSelect"
       @create-new="handleCreateNew"
       @import="handleImport"
       @export-json="handleExportJSON"
       @export-killercoda="handleExportKillerCoda"
       @copy-to-org="openCopyModal"
+      @preview="openPreviewConfirm"
       @reset="handleReset"
       @save="handleSave"
     />
@@ -120,6 +123,22 @@
       <p>{{ t('scenarioEditor.deleteWarning', { type: deletingNode?.data?.entityType || 'item', name: deletingNode?.data?.label || '' }) }}</p>
     </BaseModal>
 
+    <!-- Preview ("Play as student") Confirmation Modal -->
+    <BaseModal
+      :visible="showPreviewConfirmModal"
+      :title="t('scenarioEditor.previewConfirmTitle')"
+      size="small"
+      :show-default-footer="true"
+      :confirm-text="isPreviewLoading ? t('scenarioEditor.previewStarting') : t('scenarioEditor.previewConfirmAction')"
+      :cancel-text="t('scenarioEditor.cancel')"
+      :is-loading="isPreviewLoading"
+      confirm-icon="fas fa-play"
+      @close="closePreviewConfirm"
+      @confirm="handleConfirmPreview"
+    >
+      <p>{{ t('scenarioEditor.previewConfirmBody') }}</p>
+    </BaseModal>
+
     <!-- Copy to Org Modal -->
     <BaseModal
       :visible="showCopyModal"
@@ -179,6 +198,7 @@ import ScenarioEditorHeader from '../ScenarioEditor/ScenarioEditorHeader.vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import axios from 'axios'
 import { terminalService } from '../../services/domain/terminal/terminalService'
+import { scenarioSessionService } from '../../services/domain/scenario'
 import type { Size } from '../../types/terminal'
 
 const route = useRoute()
@@ -291,7 +311,14 @@ const { t } = useTranslations({
       expandPanel: 'Expand panel',
       collapsePanel: 'Collapse panel',
       readOnly: 'Read only',
-      readOnlyWarning: 'This scenario is read-only. Copy it to your organization to edit.'
+      readOnlyWarning: 'This scenario is read-only. Copy it to your organization to edit.',
+      // Play as student (preview)
+      playAsStudent: 'Play as student',
+      previewConfirmTitle: 'Preview this scenario?',
+      previewConfirmBody: 'A real terminal will be provisioned (counts against your concurrent terminal limit). Walk through the scenario as a student would, then close the session when done.',
+      previewConfirmAction: 'Start preview',
+      previewStarting: 'Starting preview...',
+      previewError: 'Failed to start preview'
     }
   },
   fr: {
@@ -400,7 +427,14 @@ const { t } = useTranslations({
       expandPanel: 'Déplier le panneau',
       collapsePanel: 'Replier le panneau',
       readOnly: 'Lecture seule',
-      readOnlyWarning: 'Ce scénario est en lecture seule. Copiez-le dans votre organisation pour le modifier.'
+      readOnlyWarning: 'Ce scénario est en lecture seule. Copiez-le dans votre organisation pour le modifier.',
+      // Jouer comme étudiant (prévisualisation)
+      playAsStudent: 'Jouer comme étudiant',
+      previewConfirmTitle: 'Prévisualiser ce scénario ?',
+      previewConfirmBody: 'Un terminal réel sera provisionné (compte dans votre limite de terminaux concurrents). Parcourez le scénario comme le ferait un étudiant, puis fermez la session une fois terminé.',
+      previewConfirmAction: 'Démarrer la prévisualisation',
+      previewStarting: 'Démarrage...',
+      previewError: 'Échec du démarrage de la prévisualisation'
     }
   }
 })
@@ -510,6 +544,19 @@ const modalError = ref('')
 const showCopyModal = ref(false)
 const copyTargetOrgId = ref<string | null>(null)
 const isCopying = ref(false)
+
+// "Play as student" preview state
+const showPreviewConfirmModal = ref(false)
+const isPreviewLoading = ref(false)
+
+// Scenario must have at least one step node to be previewable
+const hasSteps = computed(() =>
+  nodes.value.some(n => STEP_NODE_TYPES.includes(n.type))
+)
+
+const canPreviewScenario = computed(() =>
+  !!selectedScenarioId.value && canEditScenario.value && hasSteps.value
+)
 
 // Org context helpers
 const getScenarioOrgName = (scenario: any): string | null => {
@@ -817,6 +864,46 @@ const handleExportKillerCoda = async () => {
   } catch (err) {
     console.error('Export KillerCoda failed:', err)
     notification.showError(t('scenarioEditor.exportError'))
+  }
+}
+
+// "Play as student" — launch a trainer-side preview session in a new tab.
+// The backend POST /scenarios/:id/preview bypasses the assignment check and
+// provisions a real terminal, so the trainer experiences the scenario exactly
+// as a learner would.
+const openPreviewConfirm = () => {
+  if (!canPreviewScenario.value) return
+  showPreviewConfirmModal.value = true
+}
+
+const closePreviewConfirm = () => {
+  if (isPreviewLoading.value) return
+  showPreviewConfirmModal.value = false
+}
+
+const handleConfirmPreview = async () => {
+  if (!selectedScenarioId.value) return
+  isPreviewLoading.value = true
+  try {
+    const orgId = currentScenario.value?.organization_id || undefined
+    const result = await scenarioSessionService.previewScenario(selectedScenarioId.value, {
+      organization_id: orgId
+    })
+    // Open the player in a new tab — same route the launcher uses to view a session.
+    const previewRoute = router.resolve({
+      name: 'TerminalSessionView',
+      params: { sessionId: result.terminal_session_id }
+    })
+    window.open(previewRoute.href, '_blank', 'noopener')
+    showPreviewConfirmModal.value = false
+  } catch (err: any) {
+    const msg = err?.response?.data?.error_message
+      || err?.response?.data?.message
+      || err?.message
+      || t('scenarioEditor.previewError')
+    notification.showError(msg)
+  } finally {
+    isPreviewLoading.value = false
   }
 }
 

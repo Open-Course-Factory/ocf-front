@@ -86,6 +86,15 @@
         <button v-if="canCopyToOrg" @click="emit('copy-to-org')" class="btn-icon" :title="t('scenarioEditor.copyToOrg')">
           <i class="fas fa-copy"></i>
         </button>
+        <button
+          v-if="canPreview"
+          @click="emit('preview')"
+          class="btn-icon"
+          :title="t('scenarioEditor.playAsStudent')"
+          :disabled="isPreviewLoading"
+        >
+          <i :class="isPreviewLoading ? 'fas fa-spinner fa-spin' : 'fas fa-play'"></i>
+        </button>
         <span class="header-divider"></span>
       </template>
 
@@ -121,6 +130,8 @@ interface Props {
   isAdmin: boolean
   nodeCount: number
   edgeCount: number
+  canPreview: boolean
+  isPreviewLoading: boolean
 }
 
 defineProps<Props>()
@@ -133,6 +144,7 @@ const emit = defineEmits<{
   (e: 'export-json'): void
   (e: 'export-killercoda'): void
   (e: 'copy-to-org'): void
+  (e: 'preview'): void
   (e: 'reset'): void
   (e: 'save'): void
 }>()
