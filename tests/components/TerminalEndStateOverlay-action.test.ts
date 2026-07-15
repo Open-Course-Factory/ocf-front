@@ -37,8 +37,9 @@ const actionConfig: EndStateConfig = {
   primaryLabel: 'Reconnect',
   primaryRoute: { name: 'TerminalSessions' },
   primaryActionKey: 'reconnect',
-  secondaryLabel: 'Back to Sessions',
-  secondaryRoute: { name: 'TerminalSessions' }
+  secondaryLabel: 'End Session',
+  secondaryRoute: { name: 'TerminalSessions' },
+  secondaryActionKey: 'endSession'
 }
 
 const routeConfig: EndStateConfig = {
@@ -65,12 +66,16 @@ describe('TerminalEndStateOverlay — action buttons', () => {
     expect(wrapper.emitted('action')![0]).toEqual(['reconnect'])
   })
 
-  it('still renders the secondary route as a router-link when it has no action key', () => {
+  it('renders the secondary as a <button> and emits `action` with its key when clicked', async () => {
     const wrapper = mountOverlay('disconnected', actionConfig)
 
-    const secondary = wrapper.find('a.router-link-stub')
+    const secondary = wrapper.find('button.end-state-btn-secondary')
     expect(secondary.exists()).toBe(true)
-    expect(secondary.text()).toContain('Back to Sessions')
+    expect(secondary.text()).toContain('End Session')
+
+    await secondary.trigger('click')
+    expect(wrapper.emitted('action')).toBeTruthy()
+    expect(wrapper.emitted('action')!.at(-1)).toEqual(['endSession'])
   })
 
   it('regression: a plain route config renders the primary as a router-link (no button)', () => {

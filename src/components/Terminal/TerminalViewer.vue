@@ -396,24 +396,24 @@ const userStore = useCurrentUserStore()
 // End state configuration (shared composable)
 const { getEndStateConfig } = useEndStateConfig()
 
-// Runtime disconnect state: set when the WebSocket closes after a successful
-// connection (shell exit / connection lost). Unlike props.endReason (driven by
-// the parent from backend status), this is an internal, recoverable state that
-// offers a Reconnect action. Cleared on a successful (re)connect.
-const isDisconnected = ref(false)
+// Runtime end-state, driven by events inside this component rather than by the
+// parent's props.endReason (which reflects backend status). Set to 'disconnected'
+// when the WebSocket closes after a successful connection (shell exit /
+// connection lost) — a recoverable state offering Reconnect / End Session — and
+// to 'stopped' once the user ends the session from that overlay. Cleared on a
+// successful (re)connect.
+const runtimeEndReason = ref<EndStateReason | ''>('')
 
-// The reason actually rendered by the overlay: the runtime disconnect takes
+// The reason actually rendered by the overlay: the runtime end-state takes
 // precedence over the prop-driven end reason.
 const effectiveEndReason = computed<EndStateReason | ''>(() =>
-  isDisconnected.value ? 'disconnected' : props.endReason
+  runtimeEndReason.value || props.endReason
 )
 
 const activeEndState = computed(() => {
-  if (isDisconnected.value) {
-    return getEndStateConfig('disconnected') ?? null
-  }
-  if (!props.endReason) return null
-  return getEndStateConfig(props.endReason as EndStateReason, { hasScenario: props.hasScenario }) ?? null
+  const reason = effectiveEndReason.value
+  if (!reason) return null
+  return getEndStateConfig(reason as EndStateReason, { hasScenario: props.hasScenario }) ?? null
 })
 
 // State
@@ -423,6 +423,7 @@ const socket = ref<WebSocket | null>(null)
 const isWsOpen = ref(false)
 const isConnecting = ref(false)
 const showReconnectButton = ref(false)
+const isEndingSession = ref(false)
 const error = ref('')
 const loadingMessage = ref(t('terminal.initializingTerminal'))
 const fetchedSessionInfo = ref<SessionInfo | null>(null)
@@ -628,7 +629,7 @@ async function connectToTerminal() {
       isWsOpen.value = true
       isConnecting.value = false
       showReconnectButton.value = false
-      isDisconnected.value = false
+      runtimeEndReason.value = ''
       error.value = ''
 
       // Clear old terminal content before attaching new session
@@ -696,9 +697,9 @@ async function connectToTerminal() {
       } else if (wasConnected) {
         // WebSocket closed while session was active = shell exited or connection
         // lost. The environment is usually still running, so surface the
-        // recoverable "disconnected" end-state (with a Reconnect action) instead
+        // recoverable "disconnected" end-state (Reconnect / End Session) instead
         // of a dead-end error.
-        isDisconnected.value = true
+        runtimeEndReason.value = 'disconnected'
         showReconnectButton.value = false
         error.value = ''
       } else {
@@ -748,11 +749,32 @@ function reloadPage() {
   window.location.reload()
 }
 
-// Handle an action button emitted by the end-state overlay (e.g. Reconnect).
+// Handle an action button emitted by the end-state overlay (Reconnect / End Session).
 function handleEndStateAction(key: EndStateActionKey) {
   if (key === 'reconnect') {
-    isDisconnected.value = false
+    runtimeEndReason.value = ''
     reconnect()
+  } else if (key === 'endSession') {
+    endSession()
+  }
+}
+
+// End the still-running environment from the disconnect end-state, then show the
+// standard "stopped" end-state. Best-effort: we transition to 'stopped' even if
+// the stop request fails, so the user is never stuck on the disconnect overlay.
+async function endSession() {
+  if (isEndingSession.value) return
+  const sessionId = displaySessionId.value
+  isEndingSession.value = true
+  try {
+    if (sessionId) {
+      await terminalService.stopSession(sessionId)
+    }
+  } catch (err) {
+    console.error('Error ending session from disconnect overlay:', err)
+  } finally {
+    isEndingSession.value = false
+    runtimeEndReason.value = 'stopped'
   }
 }
 

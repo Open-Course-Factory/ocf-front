@@ -118,10 +118,17 @@ describe('useEndStateConfig — disconnected (live-session reconnect)', () => {
     expect(config.tone).not.toBe('success')
   })
 
-  it('offers a secondary route back to the sessions list', () => {
+  it('offers a secondary End Session ACTION (stop the still-running environment)', () => {
     const config = getConfig('disconnected' as EndStateReason, 'en')
 
-    expect(config.secondaryRoute).toEqual({ name: 'TerminalSessions' })
+    expect(config.secondaryActionKey).toBe('endSession')
+    expect(config.secondaryLabel).toBe('End Session')
+  })
+
+  it('French: secondary End Session label is localized', () => {
+    const config = getConfig('disconnected' as EndStateReason, 'fr')
+
+    expect(config.secondaryLabel).toBe('Terminer la session')
   })
 })
 

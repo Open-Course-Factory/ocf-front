@@ -44,7 +44,8 @@ const endStateTranslations = {
       disconnected: {
         title: 'Terminal Disconnected',
         body: 'Your terminal connection was lost, but your environment is still running. Reconnect to pick up where you left off.',
-        primary: 'Reconnect'
+        primary: 'Reconnect',
+        secondary: 'End Session'
       },
       backToSessions: 'Back to Sessions',
       backToScenarios: 'Back to Scenarios',
@@ -87,7 +88,8 @@ const endStateTranslations = {
       disconnected: {
         title: 'Terminal déconnecté',
         body: 'La connexion à votre terminal a été perdue, mais votre environnement est toujours actif. Reconnectez-vous pour reprendre où vous en étiez.',
-        primary: 'Se reconnecter'
+        primary: 'Se reconnecter',
+        secondary: 'Terminer la session'
       },
       backToSessions: 'Retour aux sessions',
       backToScenarios: 'Retour aux scénarios',
@@ -101,7 +103,7 @@ export type EndStateReason = 'completed' | 'abandoned' | 'expired' | 'stopped' |
 
 // Action buttons trigger an in-place handler (emitted by the overlay) instead of
 // navigating. The consumer wires the concrete handler for each key.
-export type EndStateActionKey = 'reconnect'
+export type EndStateActionKey = 'reconnect' | 'endSession'
 
 export interface EndStateConfig {
   icon: string
@@ -185,13 +187,15 @@ export function useEndStateConfig() {
       tone: 'warning',
       title: t('endState.disconnected.title'),
       body: t('endState.disconnected.body'),
+      // Both buttons are in-place actions (see primaryActionKey/secondaryActionKey):
+      // Reconnect resumes the still-running environment, End Session stops it.
+      // primaryRoute/secondaryRoute are type-satisfying fallbacks only.
       primaryLabel: t('endState.disconnected.primary'),
-      // primaryRoute is a type-satisfying fallback only — the overlay renders an
-      // action button (Reconnect) because primaryActionKey is set.
       primaryRoute: { name: 'TerminalSessions' },
       primaryActionKey: 'reconnect',
-      secondaryLabel: t('endState.backToSessions'),
-      secondaryRoute: { name: 'TerminalSessions' }
+      secondaryLabel: t('endState.disconnected.secondary'),
+      secondaryRoute: { name: 'TerminalSessions' },
+      secondaryActionKey: 'endSession'
     })
   }
 
