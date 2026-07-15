@@ -140,7 +140,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import AdminBadge from '../Common/AdminBadge.vue'
-import { useTranslations } from '../../composables/useTranslations'
+import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
 
 interface Props {
   scenarios: any[]
@@ -205,10 +205,8 @@ function onSelectChange(e: Event) {
   emit('select-change')
 }
 
-// Header doesn't register translations of its own — the parent ScenarioEditor
-// already merges the entire scenarioEditor.* namespace into the global i18n
-// instance, and useTranslations() with no messages still gives us a working `t`.
-const { t } = useTranslations({ en: {}, fr: {} })
+// Registers the shared scenarioEditor.* namespace so the header is self-contained.
+const { t } = useScenarioEditorI18n()
 </script>
 
 <style scoped>

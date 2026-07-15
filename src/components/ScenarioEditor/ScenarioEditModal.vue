@@ -318,7 +318,7 @@
 import { ref, computed, watch } from 'vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import TabStrip from '../Common/TabStrip.vue'
-import { useTranslations } from '../../composables/useTranslations'
+import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
 import type { Size } from '../../types/terminal'
 import { formatMcpuAsVcpu, effectiveCpuMcpu } from '../../utils/formatters'
 
@@ -360,24 +360,7 @@ const emit = defineEmits<{
   (e: 'save'): void
 }>()
 
-const { t } = useTranslations({
-  en: {
-    scenarioEditor: {
-      tabGeneral: 'General',
-      tabContent: 'Content',
-      tabSetup: 'Setup',
-      tabOptions: 'Options'
-    }
-  },
-  fr: {
-    scenarioEditor: {
-      tabGeneral: 'Général',
-      tabContent: 'Contenu',
-      tabSetup: 'Installation',
-      tabOptions: 'Options'
-    }
-  }
-})
+const { t } = useScenarioEditorI18n()
 
 // Local proxy that mutates the parent's editingScenario (objects are
 // reference-semantic in Vue — mutating fields is observed by reactivity).
