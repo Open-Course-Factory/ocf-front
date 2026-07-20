@@ -86,6 +86,15 @@
     </template>
 
     <div class="terminal-wrapper">
+      <div
+        v-if="supervisionBanner"
+        class="supervision-banner"
+        :class="{ 'supervision-banner-controlled': supervisionBanner.controlled }"
+        role="status"
+      >
+        <span class="supervision-banner-icon" aria-hidden="true">{{ supervisionBanner.icon }}</span>
+        <span>{{ supervisionBanner.text }}</span>
+      </div>
       <div ref="terminalRef" class="terminal-container" :class="{ 'terminal-full-height': fullHeight }"></div>
       <TerminalEndStateOverlay v-if="activeEndState" :reason="(effectiveEndReason as EndStateReason)" :config="activeEndState" @action="handleEndStateAction" />
       <div v-else-if="error" class="terminal-error">
@@ -186,6 +195,15 @@
 
     <!-- Terminal container -->
     <div class="terminal-wrapper">
+      <div
+        v-if="supervisionBanner"
+        class="supervision-banner"
+        :class="{ 'supervision-banner-controlled': supervisionBanner.controlled }"
+        role="status"
+      >
+        <span class="supervision-banner-icon" aria-hidden="true">{{ supervisionBanner.icon }}</span>
+        <span>{{ supervisionBanner.text }}</span>
+      </div>
       <div class="terminal-container" ref="terminalRef"></div>
       <TerminalEndStateOverlay v-if="activeEndState" :reason="(effectiveEndReason as EndStateReason)" :config="activeEndState" @action="handleEndStateAction" />
       <div v-else-if="error" class="terminal-error">
@@ -228,6 +246,11 @@ import { useEndStateConfig, type EndStateReason, type EndStateActionKey } from '
 import { getTerminalTheme } from '../../utils/terminalTheme'
 import { canConnectToTerminal, preConnectError, sessionHasNetwork } from '../../utils/sessionState'
 import { terminalService } from '../../services/domain/terminal/terminalService'
+import {
+  routeSupervisionFrame,
+  initialSupervisionState,
+  type SupervisionState
+} from '../../services/domain/terminal/supervisionProtocol'
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
 import RecordingIndicator from './RecordingIndicator.vue'
@@ -275,6 +298,13 @@ interface Props {
   endReason?: 'completed' | 'abandoned' | 'expired' | 'stopped' | 'revoked' | 'setup_failed' | ''
   // Whether this terminal was part of a scenario (affects navigation in end-state)
   hasScenario?: boolean
+  // Supervision-aware console: when true, the console connection carries control
+  // frames (a trainer may watch or take control of this learner's terminal). The
+  // socket is wired through routeSupervisionFrame instead of the plain AttachAddon
+  // so control metadata never leaks into the shell, and a learner-facing banner is
+  // shown while watched/controlled. Default false keeps the normal console path
+  // byte-for-byte unchanged.
+  supervisionEnabled?: boolean
 }
 
 const emit = defineEmits<{
@@ -302,7 +332,8 @@ const props = withDefaults(defineProps<Props>(), {
   icon: undefined,
   fullHeight: true,
   endReason: '',
-  hasScenario: false
+  hasScenario: false,
+  supervisionEnabled: false
 })
 
 // Translations
@@ -344,6 +375,8 @@ const { t } = useTranslations({
       destroyTooltip: 'Destroy this session permanently (container and data will be lost).',
       networkOn: 'Internet access: on',
       networkOff: 'Internet access: off',
+      supervisionWatched: 'A trainer is watching this session',
+      supervisionControlled: 'A trainer has taken control of this session',
     }
   },
   fr: {
@@ -384,7 +417,9 @@ const { t } = useTranslations({
       networkOn: 'Accès internet : activé',
       networkOff: 'Accès internet : désactivé',
       recording: 'REC',
-      recordingTooltip: 'Les commandes sont enregistrées'
+      recordingTooltip: 'Les commandes sont enregistrées',
+      supervisionWatched: 'Un formateur observe cette session',
+      supervisionControlled: 'Un formateur a pris le contrôle de cette session',
     }
   }
 })
@@ -427,6 +462,24 @@ const isEndingSession = ref(false)
 const error = ref('')
 const loadingMessage = ref(t('terminal.initializingTerminal'))
 const fetchedSessionInfo = ref<SessionInfo | null>(null)
+
+// Supervision indicator state (only meaningful when props.supervisionEnabled).
+// Driven by binary control frames routed through routeSupervisionFrame.
+const supervisionState = ref<SupervisionState>(initialSupervisionState())
+const supervisionBanner = computed(() => {
+  if (!props.supervisionEnabled) return null
+  if (supervisionState.value.controlled) {
+    return { icon: '✋', text: t('terminal.supervisionControlled'), controlled: true }
+  }
+  if (supervisionState.value.watched) {
+    return { icon: '👁', text: t('terminal.supervisionWatched'), controlled: false }
+  }
+  return null
+})
+
+// Disposable for the learner's outgoing-keystroke listener in supervised mode
+// (re-created on each (re)connect; disposed to avoid double-sending on reconnect).
+let supervisedDataDisposable: { dispose: () => void } | null = null
 
 // xterm.js modules (lazy loaded)
 let Terminal: any = null
@@ -585,6 +638,43 @@ function setupResizeObserver() {
   window.addEventListener('resize', handleResize)
 }
 
+// Supervision-aware socket wiring (used instead of AttachAddon when
+// props.supervisionEnabled). Incoming TEXT frames are written to xterm; incoming
+// BINARY frames are parsed as control metadata and update the learner indicator
+// (never written to the shell). Outgoing keystrokes are forwarded as TEXT frames.
+function attachSupervisedSocket() {
+  if (!socket.value || socket.value.readyState !== WebSocket.OPEN) return
+
+  // Deliver binary control frames as ArrayBuffer so we can distinguish them from
+  // text output synchronously in onmessage.
+  socket.value.binaryType = 'arraybuffer'
+  supervisionState.value = initialSupervisionState()
+
+  socket.value.onmessage = (event: MessageEvent) => {
+    const isBinary = event.data instanceof ArrayBuffer
+    const text = isBinary ? new TextDecoder().decode(event.data as ArrayBuffer) : (event.data as string)
+    const routed = routeSupervisionFrame(text, isBinary, supervisionState.value)
+    if (routed.route === 'terminal') {
+      terminal.value?.write(text)
+    } else if (routed.route === 'control') {
+      supervisionState.value = routed.state
+    }
+    // 'ignore' → drop (malformed / unknown control frame)
+  }
+
+  // Forward the learner's keystrokes to the shell as TEXT frames. Re-created on
+  // each (re)connect; dispose the previous listener to avoid double-sending.
+  if (supervisedDataDisposable) {
+    try { supervisedDataDisposable.dispose() } catch { /* not yet loaded */ }
+    supervisedDataDisposable = null
+  }
+  supervisedDataDisposable = terminal.value.onData((data: string) => {
+    if (socket.value && socket.value.readyState === WebSocket.OPEN) {
+      socket.value.send(data)
+    }
+  })
+}
+
 // Connect to terminal via WebSocket
 async function connectToTerminal() {
   if (!displaySessionId.value || !terminal.value) {
@@ -616,6 +706,11 @@ async function connectToTerminal() {
     const token = userStore.secretToken
 
     let wsUrl = `${protocol}://${apiUrl}/api/v1/terminals/${displaySessionId.value}/console?width=${terminal.value.cols}&height=${terminal.value.rows}`
+    // Opt the console into supervision control frames so the learner indicator
+    // can react to a trainer watching / taking control.
+    if (props.supervisionEnabled) {
+      wsUrl += `&control=1`
+    }
     if (token) {
       wsUrl += `&token=${encodeURIComponent(token)}`
     } else {
@@ -645,7 +740,12 @@ async function connectToTerminal() {
         attachAddon = null
       }
 
-      if (socket.value && socket.value.readyState === WebSocket.OPEN) {
+      if (props.supervisionEnabled) {
+        // Supervision-aware wiring: control frames must never reach the shell,
+        // so we bypass AttachAddon and route every frame through
+        // routeSupervisionFrame instead.
+        attachSupervisedSocket()
+      } else if (socket.value && socket.value.readyState === WebSocket.OPEN) {
         attachAddon = new AttachAddon(socket.value)
         try {
           terminal.value.loadAddon(attachAddon)
@@ -832,6 +932,15 @@ function cleanup() {
   if (socket.value) {
     socket.value.close()
     socket.value = null
+  }
+
+  if (supervisedDataDisposable) {
+    try {
+      supervisedDataDisposable.dispose()
+    } catch {
+      // Listener may not be fully loaded yet
+    }
+    supervisedDataDisposable = null
   }
 
   // Dispose addons before terminal to avoid "addon not loaded" errors
@@ -1103,6 +1212,37 @@ defineExpose({
 .btn:hover {
   opacity: 0.9;
   transform: translateY(-1px);
+}
+
+/* Learner-facing supervision banner: sits at the top of the terminal, visible
+   whenever a trainer is watching (info) or has taken control (danger). */
+.supervision-banner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  background-color: var(--color-info-bg);
+  color: var(--color-info-text);
+  border-bottom: var(--border-width-thin) solid var(--color-info-border);
+}
+
+.supervision-banner-controlled {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger-text);
+  border-bottom-color: var(--color-danger-border);
+}
+
+.supervision-banner-icon {
+  font-size: var(--font-size-md);
+  line-height: 1;
 }
 
 /* Internet-access indicator in the status bar. Globe = on (success),

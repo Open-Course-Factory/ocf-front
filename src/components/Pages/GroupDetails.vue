@@ -35,7 +35,7 @@ import { userService, type User } from '../../services/domain/user'
 import type { ClassGroup } from '../../types'
 import type { Organization } from '../../types/organization'
 import axios from 'axios'
-import { GroupOverviewTab, GroupMembersManager, GroupSettingsTab, GroupCommandHistory, GroupScenariosTab, GroupActivityTab, GroupAnalyticsTab } from '../Groups'
+import { GroupOverviewTab, GroupMembersManager, GroupSettingsTab, GroupCommandHistory, GroupScenariosTab, GroupActivityTab, GroupAnalyticsTab, GroupLiveSessionsTab } from '../Groups'
 import AdminBadge from '../Common/AdminBadge.vue'
 
 const route = useRoute()
@@ -56,6 +56,7 @@ const { t } = useTranslations({
       tabOverview: 'Overview',
       tabMembers: 'Members',
       tabScenarios: 'Scenarios',
+      tabLiveSessions: 'Live sessions',
       tabActivity: 'Activity',
       tabAnalytics: 'Analytics',
       tabHistory: 'Command History',
@@ -83,6 +84,7 @@ const { t } = useTranslations({
       tabOverview: 'Aperçu',
       tabMembers: 'Membres',
       tabScenarios: 'Scénarios',
+      tabLiveSessions: 'Sessions en direct',
       tabActivity: 'Activité',
       tabAnalytics: 'Analyses',
       tabHistory: 'Historique des commandes',
@@ -110,8 +112,8 @@ const groupOrganization = ref<Organization | null>(null)
 const isLoading = ref(true)
 const isMembersLoading = ref(false)
 const error = ref('')
-const activeTab = ref<'overview' | 'members' | 'scenarios' | 'activity' | 'analytics' | 'history' | 'settings'>(
-  (route.query.tab as 'overview' | 'members' | 'scenarios' | 'activity' | 'analytics' | 'history' | 'settings') || 'overview'
+const activeTab = ref<'overview' | 'members' | 'scenarios' | 'live' | 'activity' | 'analytics' | 'history' | 'settings'>(
+  (route.query.tab as 'overview' | 'members' | 'scenarios' | 'live' | 'activity' | 'analytics' | 'history' | 'settings') || 'overview'
 )
 
 // Ref to members manager for member count
@@ -268,8 +270,8 @@ watch(() => route.params.id, async () => {
 
 // Sync activeTab with URL query parameter (for browser back/forward)
 watch(() => route.query.tab, (newTab) => {
-  if (newTab && typeof newTab === 'string' && ['overview', 'members', 'scenarios', 'activity', 'analytics', 'history', 'settings'].includes(newTab)) {
-    activeTab.value = newTab as 'overview' | 'members' | 'scenarios' | 'activity' | 'analytics' | 'history' | 'settings'
+  if (newTab && typeof newTab === 'string' && ['overview', 'members', 'scenarios', 'live', 'activity', 'analytics', 'history', 'settings'].includes(newTab)) {
+    activeTab.value = newTab as 'overview' | 'members' | 'scenarios' | 'live' | 'activity' | 'analytics' | 'history' | 'settings'
   }
 })
 
@@ -390,6 +392,14 @@ watch(activeTab, (newTab) => {
           {{ t('groupDetails.tabScenarios') }}
         </button>
         <button
+          v-if="canEditGroup"
+          @click="activeTab = 'live'"
+          :class="['tab-button', { active: activeTab === 'live' }]"
+        >
+          <i class="fas fa-eye"></i>
+          {{ t('groupDetails.tabLiveSessions') }}
+        </button>
+        <button
           v-if="canViewHistory"
           @click="activeTab = 'activity'"
           :class="['tab-button', { active: activeTab === 'activity' }]"
@@ -454,6 +464,12 @@ watch(activeTab, (newTab) => {
           :group-id="groupId!"
           :can-edit-group="canEditGroup"
           :organization-id="currentGroup?.organization_id"
+        />
+
+        <GroupLiveSessionsTab
+          v-if="activeTab === 'live'"
+          :group-id="groupId!"
+          :can-supervise="canEditGroup"
         />
 
         <GroupActivityTab
