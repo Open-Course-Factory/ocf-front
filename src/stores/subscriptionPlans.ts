@@ -397,9 +397,11 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
     const syncAndLoadPlans = async () => {
         try {
             // D'abord synchroniser avec Stripe
-            await syncPlansWithStripe()
-            // Puis charger les plans
-            return await loadPlans()
+            const syncResult = await syncPlansWithStripe()
+            // Puis rafraîchir la liste des plans
+            await loadPlans()
+            // Retourner le résultat de synchronisation (lu par le composant)
+            return syncResult
         } catch (error) {
             console.error('Erreur lors de la synchronisation et du chargement:', error)
             throw error
