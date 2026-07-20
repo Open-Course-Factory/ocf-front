@@ -47,13 +47,16 @@ const { t } = useTranslations({
             importing: 'Importing...',
             stripeSyncDescription: 'Sync pushes local plans to Stripe. Mirror also archives Stripe products missing locally. Import pulls plans from Stripe into the database.',
             mirrorConfirmTitle: 'Confirm mirror to Stripe',
-            mirrorConfirmIntro: 'The following Stripe products are not in your database and will be archived:',
-            mirrorConfirmEmpty: 'No Stripe products will be archived. Local plans will be pushed to Stripe.',
+            mirrorConfirmIntro: 'The following Stripe products are not in your database and will be archived in Stripe:',
+            mirrorConfirmEmpty: 'No Stripe products will be archived. Local plans will be pushed to Stripe; your local plans are untouched.',
             mirrorConfirmButton: 'Archive and mirror',
             importConfirmTitle: 'Confirm import from Stripe',
             importConfirmBody: 'This will create or overwrite local plans from your Stripe products. Existing local plans matching a Stripe product will be updated. Continue?',
             importConfirmButton: 'Import from Stripe',
             confirmCancel: 'Cancel',
+            syncCompleteTitle: 'Sync complete',
+            mirrorCompleteTitle: 'Mirror complete',
+            importCompleteTitle: 'Import complete',
             syncCreated: 'Created:',
             syncUpdated: 'Updated:',
             syncArchived: 'Archived:',
@@ -74,13 +77,16 @@ const { t } = useTranslations({
             importing: 'Importation...',
             stripeSyncDescription: 'Synchroniser pousse les plans locaux vers Stripe. Répliquer archive aussi les produits Stripe absents localement. Importer récupère les plans depuis Stripe dans la base de données.',
             mirrorConfirmTitle: 'Confirmer la réplication vers Stripe',
-            mirrorConfirmIntro: 'Les produits Stripe suivants ne sont pas dans votre base de données et seront archivés :',
-            mirrorConfirmEmpty: 'Aucun produit Stripe ne sera archivé. Les plans locaux seront poussés vers Stripe.',
+            mirrorConfirmIntro: 'Les produits Stripe suivants ne sont pas dans votre base de données et seront archivés dans Stripe :',
+            mirrorConfirmEmpty: 'Aucun produit Stripe ne sera archivé. Les plans locaux seront poussés vers Stripe ; vos plans locaux restent inchangés.',
             mirrorConfirmButton: 'Archiver et répliquer',
             importConfirmTitle: 'Confirmer l\'importation depuis Stripe',
             importConfirmBody: 'Ceci va créer ou écraser les plans locaux à partir de vos produits Stripe. Les plans locaux correspondant à un produit Stripe seront mis à jour. Continuer ?',
             importConfirmButton: 'Importer depuis Stripe',
             confirmCancel: 'Annuler',
+            syncCompleteTitle: 'Synchronisation terminée',
+            mirrorCompleteTitle: 'Réplication terminée',
+            importCompleteTitle: 'Importation terminée',
             syncCreated: 'Créés :',
             syncUpdated: 'Mis à jour :',
             syncArchived: 'Archivés :',
@@ -105,6 +111,16 @@ const upgradingPlanId = ref<string | null>(null)
 const isSyncing = ref(false)
 const syncResult = ref<any>(null)
 const showSyncResult = ref(false)
+// Which Stripe operation produced the current result panel — drives its title.
+const syncResultOp = ref<'sync' | 'mirror' | 'import'>('sync')
+
+const syncResultTitle = computed(() => {
+    switch (syncResultOp.value) {
+        case 'mirror': return t('subscriptionPlans.mirrorCompleteTitle')
+        case 'import': return t('subscriptionPlans.importCompleteTitle')
+        default: return t('subscriptionPlans.syncCompleteTitle')
+    }
+})
 
 // Mirror (two-way sync) confirm dialog state
 const showMirrorConfirm = ref(false)
@@ -243,10 +259,24 @@ const upgradePlan = async (plan: any) => {
     }
 }
 
+// Auto-dismiss the result panel after 10s, but only for a clean run: keep it
+// on screen when there were failures or when products were archived in Stripe
+// (the archived list is an audit trail the admin should be able to read).
+const autoHideResult = (result: any) => {
+    const failedLen = result?.details?.failed?.length ?? 0
+    const archivedLen = result?.details?.archived?.length ?? 0
+    if (failedLen === 0 && archivedLen === 0) {
+        setTimeout(() => {
+            showSyncResult.value = false
+        }, 10000)
+    }
+}
+
 // Fonction pour synchroniser les plans avec Stripe
 const syncWithStripe = async () => {
     if (isSyncing.value) return
 
+    syncResultOp.value = 'sync'
     isSyncing.value = true
     syncResult.value = null
     showSyncResult.value = false
@@ -257,13 +287,7 @@ const syncWithStripe = async () => {
 
         syncResult.value = result
         showSyncResult.value = true
-
-        // Auto-hide success message after 10 seconds
-        if ((result as any)?.details?.failed?.length === 0) {
-            setTimeout(() => {
-                showSyncResult.value = false
-            }, 10000)
-        }
+        autoHideResult(result)
     } catch (error: any) {
         console.error('Error syncing plans with Stripe:', error)
         syncResult.value = {
@@ -311,6 +335,7 @@ const cancelMirror = () => {
 const confirmMirror = async () => {
     if (isSyncing.value) return
 
+    syncResultOp.value = 'mirror'
     showMirrorConfirm.value = false
     isSyncing.value = true
     syncResult.value = null
@@ -321,12 +346,7 @@ const confirmMirror = async () => {
         await entityStore.refreshPlans()
         syncResult.value = result
         showSyncResult.value = true
-
-        if ((result as any)?.details?.failed?.length === 0) {
-            setTimeout(() => {
-                showSyncResult.value = false
-            }, 10000)
-        }
+        autoHideResult(result)
     } catch (error: any) {
         console.error('Error mirroring plans to Stripe:', error)
         syncResult.value = {
@@ -353,6 +373,7 @@ const cancelImport = () => {
 const confirmImport = async () => {
     if (isSyncing.value) return
 
+    syncResultOp.value = 'import'
     showImportConfirm.value = false
     isSyncing.value = true
     syncResult.value = null
@@ -362,12 +383,7 @@ const confirmImport = async () => {
         const result = await entityStore.importPlansFromStripe()
         syncResult.value = result
         showSyncResult.value = true
-
-        if ((result as any)?.details?.failed?.length === 0) {
-            setTimeout(() => {
-                showSyncResult.value = false
-            }, 10000)
-        }
+        autoHideResult(result)
     } catch (error: any) {
         console.error('Error importing plans from Stripe:', error)
         syncResult.value = {
@@ -435,7 +451,7 @@ const confirmImport = async () => {
                     <div v-if="syncResult.success" class="alert alert-success">
                         <div class="result-header">
                             <i class="fas fa-check-circle"></i>
-                            <strong>{{ t('subscriptionPlans.syncSuccess') }}</strong>
+                            <strong>{{ syncResultTitle }}</strong>
                             <button
                                 class="btn btn-sm btn-outline-success"
                                 @click="showSyncResult = false"
@@ -687,12 +703,6 @@ const confirmImport = async () => {
                 :visible="showMirrorConfirm"
                 :title="t('subscriptionPlans.mirrorConfirmTitle')"
                 title-icon="fas fa-broom"
-                :show-default-footer="true"
-                :confirm-text="t('subscriptionPlans.mirrorConfirmButton')"
-                confirm-icon="fas fa-broom"
-                :cancel-text="t('subscriptionPlans.confirmCancel')"
-                :is-loading="isSyncing"
-                @confirm="confirmMirror"
                 @close="cancelMirror"
             >
                 <div v-if="mirrorPreview?.details?.archived?.length > 0" class="mirror-preview">
@@ -704,6 +714,17 @@ const confirmImport = async () => {
                 <p v-else class="mirror-preview-empty">
                     {{ t('subscriptionPlans.mirrorConfirmEmpty') }}
                 </p>
+
+                <!-- Destructive action: confirm styled as danger -->
+                <template #footer>
+                    <button class="btn btn-danger" @click="confirmMirror">
+                        <i class="fas fa-broom"></i>
+                        {{ t('subscriptionPlans.mirrorConfirmButton') }}
+                    </button>
+                    <button class="btn btn-secondary" @click="cancelMirror">
+                        {{ t('subscriptionPlans.confirmCancel') }}
+                    </button>
+                </template>
             </BaseModal>
 
             <!-- Import from Stripe confirmation (overwrites local plans) -->
@@ -888,17 +909,6 @@ const confirmImport = async () => {
 
 .stripe-sync-buttons .btn {
   align-self: auto;
-}
-
-.btn-danger {
-  background-color: var(--color-danger);
-  border: 1px solid var(--color-danger);
-  color: white;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background-color: var(--color-danger-text);
-  border-color: var(--color-danger-text);
 }
 
 .mirror-archived-list {
