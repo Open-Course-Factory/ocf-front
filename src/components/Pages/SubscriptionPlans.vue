@@ -23,20 +23,76 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import Entity from './Entity.vue'
 import AdminAssignOrgPlanModal from '../Modals/AdminAssignOrgPlanModal.vue'
 import PlanConfigModal from '../Modals/PlanConfigModal.vue'
 import AdminAssignPlanModal from '../Modals/AdminAssignPlanModal.vue'
+import BaseModal from '../Modals/BaseModal.vue'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useNotification } from '../../composables/useNotification'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
+import { useTranslations } from '../../composables/useTranslations'
 import AdminBadge from '../Common/AdminBadge.vue'
 import router from '../../router/index.ts'
 import { formatBudgetAsSizes, CANONICAL_SIZE_CATALOG } from '../../utils/quotaFormatters'
 
-const { t } = useI18n()
+const { t } = useTranslations({
+    en: {
+        subscriptionPlans: {
+            syncToStripe: 'Sync to Stripe',
+            mirrorToStripe: 'Mirror to Stripe',
+            importFromStripe: 'Import from Stripe',
+            mirroring: 'Mirroring...',
+            importing: 'Importing...',
+            stripeSyncDescription: 'Sync pushes local plans to Stripe. Mirror also archives Stripe products missing locally. Import pulls plans from Stripe into the database.',
+            mirrorConfirmTitle: 'Confirm mirror to Stripe',
+            mirrorConfirmIntro: 'The following Stripe products are not in your database and will be archived:',
+            mirrorConfirmEmpty: 'No Stripe products will be archived. Local plans will be pushed to Stripe.',
+            mirrorConfirmButton: 'Archive and mirror',
+            importConfirmTitle: 'Confirm import from Stripe',
+            importConfirmBody: 'This will create or overwrite local plans from your Stripe products. Existing local plans matching a Stripe product will be updated. Continue?',
+            importConfirmButton: 'Import from Stripe',
+            confirmCancel: 'Cancel',
+            syncCreated: 'Created:',
+            syncUpdated: 'Updated:',
+            syncArchived: 'Archived:',
+            syncPriceMigrated: 'Prices migrated:',
+            syncCreatedPlans: 'Created plans:',
+            syncUpdatedPlans: 'Updated plans:',
+            syncArchivedPlans: 'Archived in Stripe:',
+            syncPriceMigratedPlans: 'Migrated prices:',
+            syncPriceMigratedNote: 'Existing subscribers keep their current price.'
+        }
+    },
+    fr: {
+        subscriptionPlans: {
+            syncToStripe: 'Synchroniser vers Stripe',
+            mirrorToStripe: 'Répliquer vers Stripe',
+            importFromStripe: 'Importer depuis Stripe',
+            mirroring: 'Réplication...',
+            importing: 'Importation...',
+            stripeSyncDescription: 'Synchroniser pousse les plans locaux vers Stripe. Répliquer archive aussi les produits Stripe absents localement. Importer récupère les plans depuis Stripe dans la base de données.',
+            mirrorConfirmTitle: 'Confirmer la réplication vers Stripe',
+            mirrorConfirmIntro: 'Les produits Stripe suivants ne sont pas dans votre base de données et seront archivés :',
+            mirrorConfirmEmpty: 'Aucun produit Stripe ne sera archivé. Les plans locaux seront poussés vers Stripe.',
+            mirrorConfirmButton: 'Archiver et répliquer',
+            importConfirmTitle: 'Confirmer l\'importation depuis Stripe',
+            importConfirmBody: 'Ceci va créer ou écraser les plans locaux à partir de vos produits Stripe. Les plans locaux correspondant à un produit Stripe seront mis à jour. Continuer ?',
+            importConfirmButton: 'Importer depuis Stripe',
+            confirmCancel: 'Annuler',
+            syncCreated: 'Créés :',
+            syncUpdated: 'Mis à jour :',
+            syncArchived: 'Archivés :',
+            syncPriceMigrated: 'Prix migrés :',
+            syncCreatedPlans: 'Plans créés :',
+            syncUpdatedPlans: 'Plans mis à jour :',
+            syncArchivedPlans: 'Archivés dans Stripe :',
+            syncPriceMigratedPlans: 'Prix migrés :',
+            syncPriceMigratedNote: 'Les abonnés existants conservent leur prix actuel.'
+        }
+    }
+})
 const { showError, showSuccess } = useNotification()
 
 const entityStore = useSubscriptionPlansStore()
@@ -49,6 +105,13 @@ const upgradingPlanId = ref<string | null>(null)
 const isSyncing = ref(false)
 const syncResult = ref<any>(null)
 const showSyncResult = ref(false)
+
+// Mirror (two-way sync) confirm dialog state
+const showMirrorConfirm = ref(false)
+const mirrorPreview = ref<any>(null)
+
+// Import (Stripe → DB) confirm dialog state
+const showImportConfirm = ref(false)
 const showAssignOrgModal = ref(false)
 const assignOrgPreselectedPlanId = ref<string | undefined>(undefined)
 
@@ -212,6 +275,110 @@ const syncWithStripe = async () => {
         isSyncing.value = false
     }
 }
+
+// Mirror to Stripe — step 1: dry run to preview which Stripe products would be
+// archived, then open the confirm dialog.
+const startMirror = async () => {
+    if (isSyncing.value) return
+
+    isSyncing.value = true
+    syncResult.value = null
+    showSyncResult.value = false
+    mirrorPreview.value = null
+
+    try {
+        const preview = await entityStore.mirrorPlansToStripe(true)
+        mirrorPreview.value = preview
+        showMirrorConfirm.value = true
+    } catch (error: any) {
+        console.error('Error previewing Stripe mirror:', error)
+        syncResult.value = {
+            success: false,
+            error: error.response?.data?.error_message || error.message
+        }
+        showSyncResult.value = true
+    } finally {
+        isSyncing.value = false
+    }
+}
+
+const cancelMirror = () => {
+    showMirrorConfirm.value = false
+    mirrorPreview.value = null
+}
+
+// Mirror to Stripe — step 2: run the real mirror and refresh the plan list.
+const confirmMirror = async () => {
+    if (isSyncing.value) return
+
+    showMirrorConfirm.value = false
+    isSyncing.value = true
+    syncResult.value = null
+    showSyncResult.value = false
+
+    try {
+        const result = await entityStore.mirrorPlansToStripe(false)
+        await entityStore.refreshPlans()
+        syncResult.value = result
+        showSyncResult.value = true
+
+        if ((result as any)?.details?.failed?.length === 0) {
+            setTimeout(() => {
+                showSyncResult.value = false
+            }, 10000)
+        }
+    } catch (error: any) {
+        console.error('Error mirroring plans to Stripe:', error)
+        syncResult.value = {
+            success: false,
+            error: error.response?.data?.error_message || error.message
+        }
+        showSyncResult.value = true
+    } finally {
+        isSyncing.value = false
+        mirrorPreview.value = null
+    }
+}
+
+// Import from Stripe — open the confirmation dialog first (destructive).
+const startImport = () => {
+    if (isSyncing.value) return
+    showImportConfirm.value = true
+}
+
+const cancelImport = () => {
+    showImportConfirm.value = false
+}
+
+const confirmImport = async () => {
+    if (isSyncing.value) return
+
+    showImportConfirm.value = false
+    isSyncing.value = true
+    syncResult.value = null
+    showSyncResult.value = false
+
+    try {
+        const result = await entityStore.importPlansFromStripe()
+        syncResult.value = result
+        showSyncResult.value = true
+
+        if ((result as any)?.details?.failed?.length === 0) {
+            setTimeout(() => {
+                showSyncResult.value = false
+            }, 10000)
+        }
+    } catch (error: any) {
+        console.error('Error importing plans from Stripe:', error)
+        syncResult.value = {
+            success: false,
+            error: error.response?.data?.error_message || error.message
+        }
+        showSyncResult.value = true
+    } finally {
+        isSyncing.value = false
+    }
+}
 </script>
 
 <template>
@@ -226,14 +393,32 @@ const syncWithStripe = async () => {
             <!-- Admin controls (visible uniquement en mode admin complet) -->
             <div v-if="shouldShowAllData" class="admin-controls">
                 <AdminBadge />
-                <button
-                    class="btn btn-primary"
-                    @click="syncWithStripe"
-                    :disabled="isSyncing"
-                >
-                    <i :class="isSyncing ? 'fas fa-spinner fa-spin' : 'fas fa-sync'"></i>
-                    {{ isSyncing ? t('subscriptionPlans.syncing') : t('subscriptionPlans.syncWithStripe') }}
-                </button>
+                <div class="stripe-sync-buttons">
+                    <button
+                        class="btn btn-primary"
+                        @click="syncWithStripe"
+                        :disabled="isSyncing"
+                    >
+                        <i :class="isSyncing ? 'fas fa-spinner fa-spin' : 'fas fa-arrow-up'"></i>
+                        {{ isSyncing ? t('subscriptionPlans.syncing') : t('subscriptionPlans.syncToStripe') }}
+                    </button>
+                    <button
+                        class="btn btn-danger"
+                        @click="startMirror"
+                        :disabled="isSyncing"
+                    >
+                        <i :class="isSyncing ? 'fas fa-spinner fa-spin' : 'fas fa-broom'"></i>
+                        {{ isSyncing ? t('subscriptionPlans.mirroring') : t('subscriptionPlans.mirrorToStripe') }}
+                    </button>
+                    <button
+                        class="btn btn-secondary"
+                        @click="startImport"
+                        :disabled="isSyncing"
+                    >
+                        <i :class="isSyncing ? 'fas fa-spinner fa-spin' : 'fas fa-arrow-down'"></i>
+                        {{ isSyncing ? t('subscriptionPlans.importing') : t('subscriptionPlans.importFromStripe') }}
+                    </button>
+                </div>
                 <button
                     class="btn btn-secondary"
                     @click="openAssignOrgModal()"
@@ -242,7 +427,7 @@ const syncWithStripe = async () => {
                     {{ t('subscriptionPlans.assignToOrg') }}
                 </button>
                 <small class="text-muted">
-                    {{ t('subscriptionPlans.syncDescription') }}
+                    {{ t('subscriptionPlans.stripeSyncDescription') }}
                 </small>
 
                 <!-- Sync Results -->
@@ -260,13 +445,29 @@ const syncWithStripe = async () => {
                         </div>
 
                         <div class="result-summary">
-                            <div class="summary-item">
+                            <div v-if="syncResult.total_plans !== undefined" class="summary-item">
                                 <span class="label">{{ t('subscriptionPlans.syncTotalPlans') }}</span>
                                 <span class="value">{{ syncResult.total_plans }}</span>
                             </div>
-                            <div class="summary-item">
+                            <div v-if="syncResult.synced_count !== undefined" class="summary-item">
                                 <span class="label">{{ t('subscriptionPlans.syncSynced') }}</span>
                                 <span class="value success">{{ syncResult.synced_count }}</span>
+                            </div>
+                            <div v-if="syncResult.created_count !== undefined" class="summary-item">
+                                <span class="label">{{ t('subscriptionPlans.syncCreated') }}</span>
+                                <span class="value success">{{ syncResult.created_count }}</span>
+                            </div>
+                            <div v-if="syncResult.updated_count !== undefined" class="summary-item">
+                                <span class="label">{{ t('subscriptionPlans.syncUpdated') }}</span>
+                                <span class="value success">{{ syncResult.updated_count }}</span>
+                            </div>
+                            <div v-if="syncResult.archived_count > 0" class="summary-item">
+                                <span class="label">{{ t('subscriptionPlans.syncArchived') }}</span>
+                                <span class="value danger">{{ syncResult.archived_count }}</span>
+                            </div>
+                            <div v-if="syncResult.details?.price_migrated?.length > 0" class="summary-item">
+                                <span class="label">{{ t('subscriptionPlans.syncPriceMigrated') }}</span>
+                                <span class="value info">{{ syncResult.details.price_migrated.length }}</span>
                             </div>
                             <div v-if="syncResult.skipped_count > 0" class="summary-item">
                                 <span class="label">{{ t('subscriptionPlans.syncSkipped') }}</span>
@@ -280,26 +481,53 @@ const syncWithStripe = async () => {
 
                         <!-- Detailed Results -->
                         <div v-if="syncResult.details" class="result-details">
-                            <div v-if="syncResult.details.synced.length > 0" class="detail-section">
+                            <div v-if="syncResult.details.synced?.length > 0" class="detail-section">
                                 <h6><i class="fas fa-check"></i> {{ t('subscriptionPlans.syncSyncedPlans') }}</h6>
                                 <ul>
                                     <li v-for="plan in syncResult.details.synced" :key="plan">{{ plan }}</li>
                                 </ul>
                             </div>
 
-                            <div v-if="syncResult.details.skipped.length > 0" class="detail-section">
+                            <div v-if="syncResult.details.created?.length > 0" class="detail-section">
+                                <h6><i class="fas fa-plus"></i> {{ t('subscriptionPlans.syncCreatedPlans') }}</h6>
+                                <ul>
+                                    <li v-for="plan in syncResult.details.created" :key="plan">{{ plan }}</li>
+                                </ul>
+                            </div>
+
+                            <div v-if="syncResult.details.updated?.length > 0" class="detail-section">
+                                <h6><i class="fas fa-pen"></i> {{ t('subscriptionPlans.syncUpdatedPlans') }}</h6>
+                                <ul>
+                                    <li v-for="plan in syncResult.details.updated" :key="plan">{{ plan }}</li>
+                                </ul>
+                            </div>
+
+                            <div v-if="syncResult.details.price_migrated?.length > 0" class="detail-section">
+                                <h6><i class="fas fa-tags"></i> {{ t('subscriptionPlans.syncPriceMigratedPlans') }}</h6>
+                                <p class="detail-note">{{ t('subscriptionPlans.syncPriceMigratedNote') }}</p>
+                                <ul>
+                                    <li v-for="plan in syncResult.details.price_migrated" :key="plan">{{ plan }}</li>
+                                </ul>
+                            </div>
+
+                            <div v-if="syncResult.details.archived?.length > 0" class="detail-section">
+                                <h6><i class="fas fa-box-archive"></i> {{ t('subscriptionPlans.syncArchivedPlans') }}</h6>
+                                <ul>
+                                    <li v-for="plan in syncResult.details.archived" :key="plan">{{ plan }}</li>
+                                </ul>
+                            </div>
+
+                            <div v-if="syncResult.details.skipped?.length > 0" class="detail-section">
                                 <h6><i class="fas fa-info-circle"></i> {{ t('subscriptionPlans.syncSkippedPlans') }}</h6>
                                 <ul>
                                     <li v-for="plan in syncResult.details.skipped" :key="plan">{{ plan }}</li>
                                 </ul>
                             </div>
 
-                            <div v-if="syncResult.details.failed.length > 0" class="detail-section">
+                            <div v-if="syncResult.details.failed?.length > 0" class="detail-section">
                                 <h6><i class="fas fa-exclamation-triangle"></i> {{ t('subscriptionPlans.syncFailedPlans') }}</h6>
                                 <ul>
-                                    <li v-for="failure in syncResult.details.failed" :key="failure.id">
-                                        <strong>{{ failure.name }}</strong>: {{ failure.error }}
-                                    </li>
+                                    <li v-for="(failure, i) in syncResult.details.failed" :key="i">{{ failure }}</li>
                                 </ul>
                             </div>
                         </div>
@@ -452,6 +680,46 @@ const syncWithStripe = async () => {
                 :plan-id="assignPlanId"
                 @close="closeAssignModal"
             />
+
+            <!-- Mirror to Stripe confirmation (dry-run preview of archived products) -->
+            <BaseModal
+                :visible="showMirrorConfirm"
+                :title="t('subscriptionPlans.mirrorConfirmTitle')"
+                title-icon="fas fa-broom"
+                :show-default-footer="true"
+                :confirm-text="t('subscriptionPlans.mirrorConfirmButton')"
+                confirm-icon="fas fa-broom"
+                :cancel-text="t('subscriptionPlans.confirmCancel')"
+                :is-loading="isSyncing"
+                @confirm="confirmMirror"
+                @close="cancelMirror"
+            >
+                <div v-if="mirrorPreview?.details?.archived?.length > 0" class="mirror-preview">
+                    <p>{{ t('subscriptionPlans.mirrorConfirmIntro') }}</p>
+                    <ul class="mirror-archived-list">
+                        <li v-for="plan in mirrorPreview.details.archived" :key="plan">{{ plan }}</li>
+                    </ul>
+                </div>
+                <p v-else class="mirror-preview-empty">
+                    {{ t('subscriptionPlans.mirrorConfirmEmpty') }}
+                </p>
+            </BaseModal>
+
+            <!-- Import from Stripe confirmation (overwrites local plans) -->
+            <BaseModal
+                :visible="showImportConfirm"
+                :title="t('subscriptionPlans.importConfirmTitle')"
+                title-icon="fas fa-arrow-down"
+                :show-default-footer="true"
+                :confirm-text="t('subscriptionPlans.importConfirmButton')"
+                confirm-icon="fas fa-arrow-down"
+                :cancel-text="t('subscriptionPlans.confirmCancel')"
+                :is-loading="isSyncing"
+                @confirm="confirmImport"
+                @close="cancelImport"
+            >
+                <p>{{ t('subscriptionPlans.importConfirmBody') }}</p>
+            </BaseModal>
         </div>
     </div>
 </template>
@@ -609,6 +877,47 @@ const syncWithStripe = async () => {
 
 .admin-controls .btn {
   align-self: flex-start;
+}
+
+.stripe-sync-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.stripe-sync-buttons .btn {
+  align-self: auto;
+}
+
+.btn-danger {
+  background-color: var(--color-danger);
+  border: 1px solid var(--color-danger);
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--color-danger-text);
+  border-color: var(--color-danger-text);
+}
+
+.mirror-archived-list {
+  margin: var(--spacing-sm) 0 0 0;
+  padding-left: var(--spacing-lg);
+}
+
+.mirror-archived-list li {
+  margin-bottom: var(--spacing-xs);
+}
+
+.mirror-preview-empty {
+  color: var(--color-text-secondary);
+}
+
+.detail-note {
+  margin: 0 0 var(--spacing-xs) 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-style: italic;
 }
 
 /* Sync Results */

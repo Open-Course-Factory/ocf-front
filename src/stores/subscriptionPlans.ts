@@ -122,6 +122,8 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             allowed_backends: 'Allowed Backends',
             default_backend: 'Default Backend',
             syncError: 'Error syncing subscription plans',
+            mirrorError: 'Error mirroring subscription plans to Stripe',
+            importError: 'Error importing subscription plans from Stripe',
             activating: 'Activating...',
             startFreeTrial: 'Start Free Trial',
             maxCourses: 'courses max',
@@ -231,6 +233,8 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             allowed_backends: 'Backends Autorisés',
             default_backend: 'Backend par Défaut',
             syncError: 'Erreur lors de la synchronisation des plans',
+            mirrorError: 'Erreur lors de la réplication des plans vers Stripe',
+            importError: 'Erreur lors de l\'importation des plans depuis Stripe',
             activating: 'Activation...',
             startFreeTrial: 'Démarrer l\'essai gratuit',
             maxCourses: 'cours max',
@@ -353,7 +357,39 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
         return isAdmin || (plan.is_active && plan.is_catalog)
     }
 
-    // Synchroniser les plans avec Stripe
+    // Backend may serialize empty slices as null — treat any non-array as [].
+    const asArray = (value: any): any[] => (Array.isArray(value) ? value : [])
+
+    // Adapt the ocf-core StripeSyncResult ({ created, updated, price_migrated,
+    // archived, skipped, failed } — string[] each) to the shape the UI reads.
+    // Shared by both the one-way sync and the mirror (two-way) endpoints.
+    const adaptStripeSyncResult = (data: any) => {
+        const created = asArray(data?.created)
+        const updated = asArray(data?.updated)
+        const priceMigrated = asArray(data?.price_migrated)
+        const archived = asArray(data?.archived)
+        const skipped = asArray(data?.skipped)
+        const failed = asArray(data?.failed)
+
+        return {
+            success: true,
+            synced_count: created.length + updated.length,
+            skipped_count: skipped.length,
+            failed_count: failed.length,
+            archived_count: archived.length,
+            // price_migrated and archived do NOT count toward total_plans.
+            total_plans: created.length + updated.length + skipped.length + failed.length,
+            details: {
+                synced: [...created, ...updated],
+                skipped,
+                failed,
+                price_migrated: priceMigrated,
+                archived
+            }
+        }
+    }
+
+    // Synchroniser les plans avec Stripe (one-way: DB → Stripe, no archival)
     const syncPlansWithStripe = async () => {
         return await baseAsync(
             async () => {
@@ -364,27 +400,79 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
                     return await loadPlans()
                 } else {
                     const response = await axios.post('/subscription-plans/sync-stripe')
-
-                    // Adapt backend response to expected frontend format
-                    const data = response.data
-                    const adapted = {
-                        success: true,
-                        synced_count: data.synced_plans?.length || 0,
-                        skipped_count: data.skipped_plans?.length || 0,
-                        failed_count: data.failed_plans?.length || 0,
-                        total_plans: data.total_plans || 0,
-                        message: `Synchronisé ${data.synced_plans?.length || 0} plan(s) avec succès`,
-                        details: {
-                            synced: data.synced_plans || [],
-                            skipped: data.skipped_plans || [],
-                            failed: data.failed_plans || []
-                        }
-                    }
-
-                    return adapted
+                    return adaptStripeSyncResult(response.data)
                 }
             },
             'subscriptionPlans.syncError'
+        );
+    }
+
+    // Répliquer les plans vers Stripe (two-way: archive les produits Stripe absents
+    // de la base). dryRun=true prévisualise ce qui serait archivé sans écrire.
+    const mirrorPlansToStripe = async (dryRun: boolean) => {
+        return await baseAsync(
+            async () => {
+                if (isDemoMode()) {
+                    logDemoAction(`Mirroring demo subscription plans to Stripe (dry_run=${dryRun})`)
+                    await simulateDelay(2000)
+                    return adaptStripeSyncResult({})
+                } else {
+                    const response = await axios.post(
+                        '/subscription-plans/sync-stripe/mirror',
+                        undefined,
+                        { params: { dry_run: dryRun } }
+                    )
+                    return adaptStripeSyncResult(response.data)
+                }
+            },
+            'subscriptionPlans.mirrorError'
+        );
+    }
+
+    // Importer les plans depuis Stripe (Stripe → DB) puis rafraîchir la liste locale.
+    const importPlansFromStripe = async () => {
+        return await baseAsync(
+            async () => {
+                if (isDemoMode()) {
+                    logDemoAction('Importing demo subscription plans from Stripe')
+                    await simulateDelay(2000)
+                    await loadPlans()
+                    return {
+                        success: true,
+                        created_count: 0,
+                        updated_count: 0,
+                        skipped_count: 0,
+                        failed_count: 0,
+                        details: { created: [], updated: [], skipped: [], failed: [] }
+                    }
+                }
+
+                const response = await axios.post('/subscription-plans/import-stripe')
+                const data = response.data || {}
+                const failed = asArray(data.failed_plans).map((f: any) =>
+                    `${f?.stripe_product_id ?? ''} / ${f?.stripe_price_id ?? ''}: ${f?.error ?? ''}`
+                )
+
+                const adapted = {
+                    success: true,
+                    created_count: data.created_plans || 0,
+                    updated_count: data.updated_plans || 0,
+                    skipped_count: data.skipped_plans || 0,
+                    failed_count: asArray(data.failed_plans).length,
+                    details: {
+                        created: asArray(data.created_details),
+                        updated: asArray(data.updated_details),
+                        skipped: asArray(data.skipped_details),
+                        failed
+                    }
+                }
+
+                // Refresh the local plan list to reflect the imported plans.
+                await loadPlans()
+
+                return adapted
+            },
+            'subscriptionPlans.importError'
         );
     }
 
@@ -426,6 +514,8 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
         canViewPlan,
         ensurePlansLoaded,
         syncPlansWithStripe,
-        syncAndLoadPlans
+        syncAndLoadPlans,
+        mirrorPlansToStripe,
+        importPlansFromStripe
     }
 })
