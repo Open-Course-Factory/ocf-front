@@ -17,6 +17,7 @@
       :is-recording="isRecording"
       :end-reason="endReason"
       :has-scenario="hasScenario"
+      supervision-enabled
       use-settings-card
       :title="sessionInfo?.name || ('Terminal ' + (sessionInfo?.session_id?.substring(0, 8) || ''))"
       icon="fas fa-terminal"

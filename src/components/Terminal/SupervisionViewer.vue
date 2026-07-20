@@ -25,7 +25,12 @@
   <div
     class="supervision-viewer"
     :class="{ 'supervision-viewer-compact': compact }"
+    :role="compact ? 'button' : undefined"
+    :tabindex="compact ? 0 : undefined"
+    :aria-label="compact ? t('supervisionViewer.focusAria', { name: learnerName || sessionId }) : undefined"
     @click="compact ? emit('expand') : undefined"
+    @keydown.enter.prevent="compact ? emit('expand') : undefined"
+    @keydown.space.prevent="compact ? emit('expand') : undefined"
   >
     <!-- Header: learner + observer/control status + take-hand button -->
     <div class="supervision-viewer-header">
@@ -36,12 +41,20 @@
 
       <div class="supervision-viewer-status">
         <span
-          v-if="controlState.controlled"
+          v-if="hasControl"
           class="supervision-chip supervision-chip-danger"
           :title="t('supervisionViewer.controlledTooltip')"
         >
           <i class="fas fa-hand-paper"></i>
           {{ t('supervisionViewer.controlled') }}
+        </span>
+        <span
+          v-else-if="isControlledByOther"
+          class="supervision-chip supervision-chip-muted"
+          :title="t('supervisionViewer.controlledByOtherTooltip')"
+        >
+          <i class="fas fa-hand-paper"></i>
+          {{ t('supervisionViewer.controlledByOther') }}
         </span>
         <span
           v-if="controlState.observers > 1"
@@ -59,7 +72,8 @@
           v-if="!compact"
           class="btn btn-sm"
           :class="hasControl ? 'btn-danger' : 'btn-primary'"
-          :disabled="!isConnected || controlState.ended"
+          :disabled="!isConnected || controlState.ended || isControlledByOther"
+          :title="isControlledByOther ? t('supervisionViewer.controlledByOtherTooltip') : undefined"
           @click.stop="toggleControl"
         >
           <i :class="hasControl ? 'fas fa-hand-rock' : 'fas fa-hand-paper'"></i>
@@ -130,11 +144,13 @@ const { t } = useTranslations({
       releaseHand: 'Release',
       connecting: 'Connecting to session…',
       controlled: 'You are in control',
-      controlledTooltip: 'A trainer currently controls this session',
-      observers: 'Observers',
+      controlledTooltip: 'You currently control this session',
+      controlledByOther: 'Controlled by another trainer',
+      controlledByOtherTooltip: 'Another trainer currently holds the hand on this session',
       observersTooltip: 'Number of trainers watching this session',
       ended: 'Session ended',
       expand: 'Click to focus',
+      focusAria: 'Focus {name}’s session',
       connectionError: 'Unable to connect to this session'
     }
   },
@@ -144,11 +160,13 @@ const { t } = useTranslations({
       releaseHand: 'Rendre la main',
       connecting: 'Connexion à la session…',
       controlled: 'Vous avez le contrôle',
-      controlledTooltip: 'Un formateur contrôle actuellement cette session',
-      observers: 'Observateurs',
+      controlledTooltip: 'Vous contrôlez actuellement cette session',
+      controlledByOther: 'Sous contrôle d\'un autre formateur',
+      controlledByOtherTooltip: 'Un autre formateur a actuellement la main sur cette session',
       observersTooltip: 'Nombre de formateurs observant cette session',
       ended: 'Session terminée',
       expand: 'Cliquer pour agrandir',
+      focusAria: 'Agrandir la session de {name}',
       connectionError: 'Impossible de se connecter à cette session'
     }
   }
@@ -171,8 +189,8 @@ let resizeObserver: ResizeObserver | null = null
 
 // Read-only-by-default control gate. Keystrokes are only forwarded once the
 // supervisor explicitly takes the hand.
-const { hasControl, takeHand, releaseHand, forwardKeystroke, controlActionKey } =
-  useSupervisionControl(() => socket.value)
+const { hasControl, takeHand, releaseHand, forwardKeystroke, controlActionKey, isControlledByOther } =
+  useSupervisionControl(() => socket.value, () => controlState.value.controlled)
 
 function toggleControl() {
   if (hasControl.value) {
@@ -199,8 +217,9 @@ async function initTerminal() {
     theme: getTerminalTheme(),
     scrollback: 1000,
     convertEol: true,
-    // Observer-only by default; disabling stdin makes the read-only intent
-    // explicit even before the hand is taken.
+    // stdin stays enabled so xterm still emits onData once the hand is taken;
+    // read-only-by-default is enforced in forwardKeystroke (a no-op until then),
+    // not by disabling stdin (which would also block typing after taking control).
     disableStdin: false
   })
 
@@ -339,9 +358,16 @@ defineExpose({
   transition: border-color var(--transition-base), transform var(--transition-fast);
 }
 
-.supervision-viewer-compact:hover {
+.supervision-viewer-compact:hover,
+.supervision-viewer-compact:focus,
+.supervision-viewer-compact:focus-within {
   border-color: var(--color-primary);
   transform: translateY(-2px);
+}
+
+.supervision-viewer-compact:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .supervision-viewer-header {
@@ -453,7 +479,9 @@ defineExpose({
   pointer-events: none;
 }
 
-.supervision-viewer-compact:hover .supervision-viewer-expand-hint {
+.supervision-viewer-compact:hover .supervision-viewer-expand-hint,
+.supervision-viewer-compact:focus .supervision-viewer-expand-hint,
+.supervision-viewer-compact:focus-within .supervision-viewer-expand-hint {
   opacity: 1;
 }
 

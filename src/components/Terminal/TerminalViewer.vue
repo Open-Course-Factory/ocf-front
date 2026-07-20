@@ -90,12 +90,13 @@
         v-if="supervisionBanner"
         class="supervision-banner"
         :class="{ 'supervision-banner-controlled': supervisionBanner.controlled }"
-        role="status"
+        :role="supervisionBanner.controlled ? 'alert' : 'status'"
+        :aria-live="supervisionBanner.controlled ? 'assertive' : 'polite'"
       >
         <span class="supervision-banner-icon" aria-hidden="true">{{ supervisionBanner.icon }}</span>
         <span>{{ supervisionBanner.text }}</span>
       </div>
-      <div ref="terminalRef" class="terminal-container" :class="{ 'terminal-full-height': fullHeight }"></div>
+      <div ref="terminalRef" class="terminal-container" :class="{ 'terminal-full-height': fullHeight, 'has-supervision-banner': supervisionBanner }"></div>
       <TerminalEndStateOverlay v-if="activeEndState" :reason="(effectiveEndReason as EndStateReason)" :config="activeEndState" @action="handleEndStateAction" />
       <div v-else-if="error" class="terminal-error">
         <i class="fas fa-exclamation-triangle fa-2x"></i>
@@ -199,12 +200,13 @@
         v-if="supervisionBanner"
         class="supervision-banner"
         :class="{ 'supervision-banner-controlled': supervisionBanner.controlled }"
-        role="status"
+        :role="supervisionBanner.controlled ? 'alert' : 'status'"
+        :aria-live="supervisionBanner.controlled ? 'assertive' : 'polite'"
       >
         <span class="supervision-banner-icon" aria-hidden="true">{{ supervisionBanner.icon }}</span>
         <span>{{ supervisionBanner.text }}</span>
       </div>
-      <div class="terminal-container" ref="terminalRef"></div>
+      <div class="terminal-container" ref="terminalRef" :class="{ 'has-supervision-banner': supervisionBanner }"></div>
       <TerminalEndStateOverlay v-if="activeEndState" :reason="(effectiveEndReason as EndStateReason)" :config="activeEndState" @action="handleEndStateAction" />
       <div v-else-if="error" class="terminal-error">
         <i class="fas fa-exclamation-triangle fa-2x"></i>
@@ -1215,13 +1217,24 @@ defineExpose({
 }
 
 /* Learner-facing supervision banner: sits at the top of the terminal, visible
-   whenever a trainer is watching (info) or has taken control (danger). */
+   whenever a trainer is watching (info) or has taken control (danger). It is
+   absolutely positioned so it overlays the wrapper's rounded corners cleanly;
+   the terminal container reserves matching space (.has-supervision-banner) so no
+   PTY output is ever hidden underneath it. Keep --supervision-banner-height in
+   sync with the banner's box height (line-height + vertical padding). */
+.terminal-wrapper,
+.terminal-viewer {
+  --supervision-banner-height: 2rem;
+}
+
 .supervision-banner {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   z-index: 50;
+  box-sizing: border-box;
+  height: var(--supervision-banner-height);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1232,6 +1245,12 @@ defineExpose({
   background-color: var(--color-info-bg);
   color: var(--color-info-text);
   border-bottom: var(--border-width-thin) solid var(--color-info-border);
+}
+
+/* Reserve space so the top PTY row is never covered by the overlaid banner. */
+.terminal-container.has-supervision-banner {
+  box-sizing: border-box;
+  padding-top: var(--supervision-banner-height);
 }
 
 .supervision-banner-controlled {

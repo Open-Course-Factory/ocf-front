@@ -39,13 +39,28 @@ export interface SupervisionControl {
   releaseHand: () => void
   forwardKeystroke: (data: string) => void
   controlActionKey: ComputedRef<'takeHand' | 'releaseHand'>
+  isControlledByOther: ComputedRef<boolean>
 }
 
-export function useSupervisionControl(getSocket: () => MinimalSocket | null): SupervisionControl {
+/**
+ * @param getSocket  the live supervise socket (or null).
+ * @param isGloballyControlled  optional getter for the session's GLOBAL controlled
+ *   state (set by ANY trainer's took_hand frame). It must NEVER leak into
+ *   `hasControl` — that stays a purely LOCAL signal ("this client took the hand").
+ *   `isControlledByOther` distinguishes "someone else holds the hand".
+ */
+export function useSupervisionControl(
+  getSocket: () => MinimalSocket | null,
+  isGloballyControlled?: () => boolean
+): SupervisionControl {
   const hasControl = ref(false)
 
   const controlActionKey = computed<'takeHand' | 'releaseHand'>(() =>
     hasControl.value ? 'releaseHand' : 'takeHand'
+  )
+
+  const isControlledByOther = computed<boolean>(() =>
+    isGloballyControlled?.() === true && !hasControl.value
   )
 
   function takeHand() {
@@ -69,5 +84,5 @@ export function useSupervisionControl(getSocket: () => MinimalSocket | null): Su
     }
   }
 
-  return { hasControl, takeHand, releaseHand, forwardKeystroke, controlActionKey }
+  return { hasControl, takeHand, releaseHand, forwardKeystroke, controlActionKey, isControlledByOther }
 }

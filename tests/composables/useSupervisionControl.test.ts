@@ -27,6 +27,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
+import { ref } from 'vue'
 import { useSupervisionControl } from '../../src/composables/useSupervisionControl'
 
 function fakeSocket() {
@@ -88,5 +89,77 @@ describe('useSupervisionControl — take / release toggle', () => {
     socket.send.mockClear()
     forwardKeystroke('whoami\r')
     expect(socket.send).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * Issue #288 UX bug: the "You are in control" / "Vous avez le contrôle" chip was
+ * driven by the GLOBAL controlled state (set by ANY trainer's took_hand frame),
+ * so when a DIFFERENT trainer held the hand the current trainer was wrongly told
+ * they were in control.
+ *
+ * `hasControl` is the LOCAL signal (this client took the hand) and drives the
+ * "you are in control" affordance. `isControlledByOther` is the new computed that
+ * distinguishes "someone ELSE holds the hand" — the composable reads the global
+ * controlled state via an optional getter passed as the 2nd argument, WITHOUT
+ * letting it leak into `hasControl`.
+ *
+ * Added surface (implement to this):
+ *   useSupervisionControl(
+ *     getSocket: () => Pick<WebSocket,'send'|'readyState'> | null,
+ *     isGloballyControlled?: () => boolean,
+ *   ): SupervisionControl & { isControlledByOther: ComputedRef<boolean> }
+ */
+describe('useSupervisionControl — local vs global control (issue #288 chip bug)', () => {
+  const fakeSocket = () => ({ send: vi.fn(), readyState: WebSocket.OPEN })
+
+  it('isControlledByOther is false when no global-control info is provided', () => {
+    const { isControlledByOther } = useSupervisionControl(() => fakeSocket())
+    expect(isControlledByOther.value).toBe(false)
+  })
+
+  it('when ANOTHER trainer holds the hand, hasControl stays false and isControlledByOther is true', () => {
+    const globallyControlled = ref(true)
+    const { hasControl, isControlledByOther } = useSupervisionControl(
+      () => fakeSocket(),
+      () => globallyControlled.value,
+    )
+    // The global controlled flag must NEVER leak into the local "you are in control" signal.
+    expect(hasControl.value).toBe(false)
+    expect(isControlledByOther.value).toBe(true)
+  })
+
+  it('when THIS client took the hand, isControlledByOther is false even though global control is also true', () => {
+    // The server echoes our own took_hand back into the global state.
+    const globallyControlled = ref(false)
+    const socket = fakeSocket()
+    const { takeHand, hasControl, isControlledByOther } = useSupervisionControl(
+      () => socket,
+      () => globallyControlled.value,
+    )
+
+    takeHand()
+    globallyControlled.value = true
+
+    expect(hasControl.value).toBe(true)
+    expect(isControlledByOther.value).toBe(false)
+  })
+
+  it('reflects a live switch: another trainer takes over after we release', () => {
+    const globallyControlled = ref(false)
+    const socket = fakeSocket()
+    const { takeHand, releaseHand, hasControl, isControlledByOther } = useSupervisionControl(
+      () => socket,
+      () => globallyControlled.value,
+    )
+
+    takeHand()
+    globallyControlled.value = true
+    expect(isControlledByOther.value).toBe(false)
+
+    releaseHand()
+    // We released but the session is still globally controlled by someone else.
+    expect(hasControl.value).toBe(false)
+    expect(isControlledByOther.value).toBe(true)
   })
 })
