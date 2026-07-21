@@ -541,7 +541,6 @@ function populateFromPlan(plan: any) {
         data_persistence_gb: 'data_persistence_gb',
         command_history_retention_days: 'command_history_retention_days',
         max_courses: 'max_courses',
-        max_concurrent_users: 'max_concurrent_users',
         max_persistent_sessions: 'max_persistent_sessions'
       }
       const planField = fieldMap[f.key]
@@ -641,7 +640,6 @@ function handleSave() {
     data_persistence_gb: numericFieldValue('data_persistence_gb', 'data_persistence_gb'),
     command_history_retention_days: numericFieldValue('command_history_retention_days', 'command_history_retention_days'),
     max_courses: numericFieldValue('max_courses', 'max_courses'),
-    max_concurrent_users: numericFieldValue('max_concurrent_users', 'max_concurrent_users'),
     max_persistent_sessions: numericFieldValue('max_persistent_sessions', 'max_persistent_sessions'),
     // Map boolean terminal features to dedicated fields (same preserve semantics).
     network_access_enabled: booleanFieldValue('network_access', 'network_access_enabled'),

@@ -104,7 +104,6 @@ export const usePermissionsStore = defineStore('permissions', () => {
             currency: 'EUR',
             billing_interval: 'month',
             features: ['advanced_terminals', 'api_access', 'multiple_groups'],
-            max_concurrent_users: 100,
             max_courses: 50,
             is_active: true,
             required_role: 'member',

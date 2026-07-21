@@ -82,11 +82,6 @@
                 <span class="limit-value">{{ formatLimit(subscription.subscription_plan.max_courses) }}</span>
               </div>
               <div class="limit-item">
-                <i class="fas fa-users"></i>
-                <span class="limit-label">{{ t('subscription.maxUsers') }}</span>
-                <span class="limit-value">{{ subscription.subscription_plan.max_concurrent_users }}</span>
-              </div>
-              <div class="limit-item">
                 <i class="fas fa-server"></i>
                 <span class="limit-label">{{ t('subscription.capacity') }}</span>
                 <span class="limit-value">{{ capacityLabel(subscription.subscription_plan) }}</span>
@@ -256,7 +251,6 @@ const { t } = useTranslations({
       currentPlan: 'Current Plan',
       features: 'Features',
       maxCourses: 'Max Courses',
-      maxUsers: 'Max Users',
       capacity: 'Capacity',
       or: 'OR',
       sessionDuration: 'Session Duration',
@@ -298,7 +292,6 @@ const { t } = useTranslations({
       currentPlan: 'Plan actuel',
       features: 'Fonctionnalités',
       maxCourses: 'Cours max',
-      maxUsers: 'Utilisateurs max',
       capacity: 'Capacité',
       or: 'OU',
       sessionDuration: 'Durée de session',

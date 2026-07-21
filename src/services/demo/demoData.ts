@@ -52,12 +52,10 @@ export class DemoDataService {
         billing_interval: 'month',
         features: [
           'Create up to 5 courses',
-          '2 concurrent users in labs',
           'Basic support',
           'Community access'
         ],
         max_courses: 5,
-        max_concurrent_users: 2,
         is_active: true,
         stripe_product_id: 'prod_demo_starter',
         stripe_price_id: 'price_demo_starter',
@@ -73,13 +71,11 @@ export class DemoDataService {
         billing_interval: 'month',
         features: [
           'Create up to 25 courses',
-          '10 concurrent users in labs',
           'Priority support',
           'Advanced analytics',
           'Custom branding'
         ],
         max_courses: 25,
-        max_concurrent_users: 10,
         is_active: true,
         stripe_product_id: 'prod_demo_pro',
         stripe_price_id: 'price_demo_pro',
@@ -95,14 +91,12 @@ export class DemoDataService {
         billing_interval: 'month',
         features: [
           'Unlimited courses',
-          'Unlimited concurrent users',
           'Dedicated support',
           'Custom integrations',
           'SLA guarantee',
           'Advanced security'
         ],
         max_courses: -1, // -1 = unlimited
-        max_concurrent_users: -1,
         is_active: true,
         stripe_product_id: 'prod_demo_enterprise',
         stripe_price_id: 'price_demo_enterprise',
@@ -118,7 +112,6 @@ export class DemoDataService {
         billing_interval: 'month',
         features: ['Legacy features'],
         max_courses: 10,
-        max_concurrent_users: 5,
         is_active: false, // Inactive plan for testing
         stripe_product_id: 'prod_demo_legacy',
         stripe_price_id: 'price_demo_legacy',

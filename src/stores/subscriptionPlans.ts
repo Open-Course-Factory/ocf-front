@@ -46,7 +46,6 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             currency: 'Currency',
             features: 'Features',
             max_courses: 'Max Courses',
-            max_concurrent_users: 'Max Concurrent Users',
             max_cpu: 'CPU budget',
             max_memory_mb: 'RAM budget',
             created_at: 'Created at',
@@ -127,7 +126,6 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             activating: 'Activating...',
             startFreeTrial: 'Start Free Trial',
             maxCourses: 'courses max',
-            users: 'users',
             statusActive: 'Active',
             statusInactive: 'Inactive',
             syncSuccess: 'Sync successful!',
@@ -158,7 +156,6 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             currency: 'Devise',
             features: 'Fonctionnalités',
             max_courses: 'Cours Maximum',
-            max_concurrent_users: 'Utilisateurs Concurrents Max',
             max_cpu: 'Budget CPU',
             max_memory_mb: 'Budget RAM',
             created_at: 'Créé le',
@@ -239,7 +236,6 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             activating: 'Activation...',
             startFreeTrial: 'Démarrer l\'essai gratuit',
             maxCourses: 'cours max',
-            users: 'utilisateurs',
             statusActive: 'Actif',
             statusInactive: 'Inactif',
             syncSuccess: 'Synchronisation réussie !',
@@ -274,7 +270,6 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
         field('currency', t('subscriptionPlans.currency')).input().visible().creatable(),
         field('features', t('subscriptionPlans.features')).type('advanced-textarea').visible().creatable().updatable(),
         field('max_courses', t('subscriptionPlans.max_courses')).input().visible().creatable().updatable(),
-        field('max_concurrent_users', t('subscriptionPlans.max_concurrent_users')).input().visible().creatable().updatable(),
         field('max_cpu', t('subscriptionPlans.max_cpu')).input().visible().readonly()
             .withDisplayFormatter((value: any) => {
                 const n = Number(value)

@@ -111,12 +111,6 @@
               <!-- Left Column: Key Features -->
               <div class="features-column">
                 <div class="key-features">
-                  <!-- Concurrent Users -->
-                  <div v-if="plan.max_concurrent_users" class="feature-item">
-                    <i class="fas fa-users"></i>
-                    <span>{{ plan.max_concurrent_users }} {{ plan.max_concurrent_users === 1 ? t('plans.user') : t('plans.users') }}</span>
-                  </div>
-
                   <!-- Capacity (size-count language) -->
                   <div
                     v-if="budgetCapacityText(plan)"
@@ -231,13 +225,6 @@
               </tr>
             </thead>
             <tbody>
-              <!-- Concurrent Users -->
-              <tr>
-                <td class="feature-col">{{ t('plans.concurrentUsers') }}</td>
-                <td v-for="plan in filteredPlans" :key="plan.id" :class="{ 'current-plan-col': isCurrentPlan(plan) }">
-                  {{ plan.max_concurrent_users || '-' }}
-                </td>
-              </tr>
               <!-- Capacity (size-count language) -->
               <tr>
                 <td class="feature-col" :title="t('pricingPlanCard.capacityTooltip')">{{ t('plans.capacity') }}</td>
@@ -407,8 +394,6 @@ const { t } = useTranslations({
       confirmChange: 'Confirm change',
       month: 'month',
       year: 'year',
-      user: 'user',
-      users: 'concurrent users',
       hourMax: '{hours} hour max | {hours} hours max',
       oneHourMax: '1 hour max',
       hoursMax: '{hours} hours max',
@@ -431,7 +416,6 @@ const { t } = useTranslations({
       subscriptionErrorTitle: 'Subscription Error',
       gridView: 'Grid view',
       comparePlans: 'Compare plans',
-      concurrentUsers: 'Concurrent users',
       capacity: 'Capacity',
       sessionDuration: 'Session duration',
       storage: 'Storage',
@@ -470,8 +454,6 @@ const { t } = useTranslations({
       confirmChange: 'Confirmer le changement',
       month: 'mois',
       year: 'an',
-      user: 'utilisateur',
-      users: 'utilisateurs simultanés',
       oneHourMax: '1 heure max',
       hoursMax: '{hours} heures max',
       ephemeralOnly: 'Données réinitialisées',
@@ -493,7 +475,6 @@ const { t } = useTranslations({
       subscriptionErrorTitle: 'Erreur d\'abonnement',
       gridView: 'Vue grille',
       comparePlans: 'Comparer les plans',
-      concurrentUsers: 'Utilisateurs simultanés',
       capacity: 'Capacité',
       sessionDuration: 'Durée de session',
       storage: 'Stockage',
