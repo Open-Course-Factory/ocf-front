@@ -271,6 +271,31 @@ describe('TerminalViewer — supervision indicator in the title bar', () => {
       expect(chip.attributes('aria-live')).toBe('assertive')
     })
 
+    it('flips the SAME chip from watched to controlled live (no remount) — aria/text/icon all update', async () => {
+      const wrapper = mountViewer()
+
+      await setSupervision(wrapper, { watched: true })
+      const watchedChip = wrapper.find('.terminal-header .supervision-chip')
+      expect(watchedChip.exists()).toBe(true)
+      expect(watchedChip.attributes('role')).toBe('status')
+      expect(watchedChip.attributes('aria-live')).toBe('polite')
+      expect(watchedChip.text()).toContain(WATCHED_TEXT)
+      expect(watchedChip.text()).toContain('👁')
+
+      // Trainer takes the hand on the already-mounted, already-watched session.
+      await setSupervision(wrapper, { watched: true, controlled: true })
+
+      const controlledChip = wrapper.find('.terminal-header .supervision-chip')
+      // Same DOM node upgraded in place (no :key remount) — the live-region update
+      // is what a screen reader announces assertively.
+      expect(controlledChip.element).toBe(watchedChip.element)
+      expect(controlledChip.classes()).toContain('supervision-chip-controlled')
+      expect(controlledChip.attributes('role')).toBe('alert')
+      expect(controlledChip.attributes('aria-live')).toBe('assertive')
+      expect(controlledChip.text()).toContain(CONTROLLED_TEXT)
+      expect(controlledChip.text()).toContain('✋')
+    })
+
     it('never renders a .supervision-banner or has-supervision-banner across none↔watched↔controlled', async () => {
       const wrapper = mountViewer()
 
