@@ -500,7 +500,7 @@ const canRemoveMember = (member: OrganizationMember): boolean => {
 
 const updateMemberRole = async (member: OrganizationMember) => {
   try {
-    await axios.patch(`/organizations/${props.organizationId}/members/${member.id}`, {
+    await axios.patch(`/organization-members/${member.id}`, {
       role: member.role
     })
     toast.success(t('members.roleUpdated'))
@@ -526,7 +526,7 @@ const removeMember = async () => {
 
   isRemoving.value = true
   try {
-    await axios.delete(`/organizations/${props.organizationId}/members/${memberToRemove.value.id}`)
+    await axios.delete(`/organization-members/${memberToRemove.value.id}`)
     closeRemoveConfirm()
     await loadMembers()
     toast.success(t('members.memberRemoved'))
