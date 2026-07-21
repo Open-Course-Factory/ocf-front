@@ -28,54 +28,70 @@
   old flow banner shifted the terminal — the bug this fixes). When there is no title
   bar to host it, the parent renders it as an `overlay` chip over the terminal.
 
+  `sizer` mode renders the SAME box, invisible and out of the a11y tree, so it can
+  reserve the chip's width inside SupervisionSlot — identical metrics by construction
+  (it IS a chip). In sizer mode the icon is a ::before (keyed by variant) instead of a
+  text node, so the element's text content stays exactly the message string.
+
   Distinct from the trainer-side `.supervision-chip` in SupervisionViewer.vue: that
   one badges the observer/control status on a supervisor's tile. Both are scoped, so
   the shared class name does not collide.
 -->
 <template>
   <div
-    class="supervision-chip"
-    :class="{
-      'supervision-chip-controlled': controlled,
-      'supervision-chip-overlay': overlay
-    }"
-    :role="controlled ? 'alert' : 'status'"
-    :aria-live="controlled ? 'assertive' : 'polite'"
+    class="supervision-chip-box"
+    :class="sizer
+      ? ['supervision-slot-sizer', controlled ? 'supervision-slot-sizer-controlled' : 'supervision-slot-sizer-watched']
+      : ['supervision-chip', { 'supervision-chip-controlled': controlled, 'supervision-chip-overlay': overlay }]"
+    :role="sizer ? undefined : (controlled ? 'alert' : 'status')"
+    :aria-live="sizer ? undefined : (controlled ? 'assertive' : 'polite')"
+    :aria-hidden="sizer ? 'true' : undefined"
   >
-    <span class="supervision-chip-icon" aria-hidden="true">{{ icon }}</span>
+    <span v-if="!sizer" class="supervision-chip-icon" aria-hidden="true">{{ icon }}</span>
     <span class="supervision-chip-text">{{ text }}</span>
   </div>
 </template>
 
 <script setup lang="ts">
 interface Props {
-  icon: string
   text: string
   controlled: boolean
+  // Unused in sizer mode (the ::before icon is keyed by `controlled`).
+  icon?: string
   // When there is no header to host the chip, the parent renders it absolutely
   // positioned over the terminal so the RGPD-mandatory indicator stays visible.
   overlay?: boolean
+  // Invisible width-reservation instance for SupervisionSlot (see its comment).
+  sizer?: boolean
 }
 
 withDefaults(defineProps<Props>(), {
-  overlay: false
+  icon: '',
+  overlay: false,
+  sizer: false
 })
 </script>
 
 <style scoped>
-.supervision-chip {
+/* Box metrics shared by the visible chip and its sizer twin — the single source of
+   truth for the reserved width. */
+.supervision-chip-box {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
   padding: 2px var(--spacing-sm);
-  border-radius: var(--border-radius-full);
+  border: var(--border-width-thin) solid transparent;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   line-height: 1.4;
   white-space: nowrap;
+}
+
+.supervision-chip {
+  border-radius: var(--border-radius-full);
   background-color: var(--color-info-bg);
   color: var(--color-info-text);
-  border: var(--border-width-thin) solid var(--color-info-border);
+  border-color: var(--color-info-border);
 }
 
 .supervision-chip-controlled {
@@ -95,5 +111,25 @@ withDefaults(defineProps<Props>(), {
 .supervision-chip-icon {
   font-size: 1em;
   line-height: 1;
+}
+
+/* Sizer twin: invisible and out of flow-affecting concerns except width. The icon is
+   a ::before so it reserves the icon+gap width without entering text content. */
+.supervision-slot-sizer {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.supervision-slot-sizer::before {
+  font-size: 1em;
+  line-height: 1;
+}
+
+.supervision-slot-sizer-watched::before {
+  content: '👁';
+}
+
+.supervision-slot-sizer-controlled::before {
+  content: '✋';
 }
 </style>

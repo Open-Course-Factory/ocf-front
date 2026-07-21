@@ -27,22 +27,19 @@
   The chip appears/changes on the teacher's click, which the learner can't
   anticipate — so the header row's geometry must NOT depend on supervision state,
   or the sibling controls would jump. This slot is ALWAYS rendered (while the
-  capability is on) and holds two invisible sizers, one per message variant, that
-  reserve the WIDEST variant's width by construction. The visible chip is grid-
-  stacked over them and only exists in an active state; when idle there is no chip,
-  hence no live region, so assistive tech announces nothing.
-
-  Sizers are `visibility: hidden` (not `display: none`, which would reserve no box)
-  and `aria-hidden` (never announced). Their box metrics mirror `.supervision-chip`
-  in SupervisionChip.vue — keep the two in sync if the chip's padding/font changes.
+  capability is on) and holds two invisible SupervisionChip sizer instances, one per
+  message variant, that reserve the WIDEST variant's width — identical metrics to the
+  visible chip by construction, since they ARE chips. The visible chip is grid-stacked
+  over them and only exists in an active state; when idle there is no chip, hence no
+  live region, so assistive tech announces nothing.
 -->
 <template>
   <div
     class="supervision-slot"
     :class="chip ? 'supervision-slot-active' : 'supervision-slot-idle'"
   >
-    <span class="supervision-slot-sizer supervision-slot-sizer-watched" aria-hidden="true">{{ watchedText }}</span>
-    <span class="supervision-slot-sizer supervision-slot-sizer-controlled" aria-hidden="true">{{ controlledText }}</span>
+    <SupervisionChip sizer :controlled="false" :text="watchedText" />
+    <SupervisionChip sizer :controlled="true" :text="controlledText" />
     <SupervisionChip
       v-if="chip"
       :icon="chip.icon"
@@ -64,7 +61,7 @@ interface ChipState {
 interface Props {
   // The active chip to show, or null when idle (only the sizers render).
   chip: ChipState | null
-  // Both message variants, used verbatim by the width-reserving sizers.
+  // Both message variants, used verbatim by the width-reserving sizer chips.
   watchedText: string
   controlledText: string
 }
@@ -83,37 +80,5 @@ defineProps<Props>()
 
 .supervision-slot > * {
   grid-area: 1 / 1;
-}
-
-/* Reserves the chip's box without painting it. Box metrics MUST match
-   .supervision-chip (SupervisionChip.vue) so the reserved width equals the real
-   chip width and siblings never shift when it appears. The icon is a ::before so it
-   reserves the chip's icon+gap width without landing in the element's text content
-   (the sizer's text must stay exactly the message string). */
-.supervision-slot-sizer {
-  visibility: hidden;
-  pointer-events: none;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: 2px var(--spacing-sm);
-  border: var(--border-width-thin) solid transparent;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  line-height: 1.4;
-  white-space: nowrap;
-}
-
-.supervision-slot-sizer::before {
-  font-size: 1em;
-  line-height: 1;
-}
-
-.supervision-slot-sizer-watched::before {
-  content: '👁';
-}
-
-.supervision-slot-sizer-controlled::before {
-  content: '✋';
 }
 </style>
