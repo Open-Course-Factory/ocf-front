@@ -269,11 +269,18 @@ async function loadSessions() {
   }
 }
 
-// The parent resolves `canSupervise` from an async members-load, so it is often
-// still false on the first render. Re-run once it flips to true so the learner is
-// not stuck on the stale permission banner until the next poll.
+// `canSupervise` resolves from the parent's async members-load and can flip either
+// way mid-view (late grant, or a demotion / lapsed plan). Re-run on grant so the
+// learner is not stuck on the stale banner until the next poll; on revocation clear
+// the roster so the error branch renders and the live tile WebSockets tear down
+// immediately instead of streaming until the poll catches up.
 watch(() => props.canSupervise, (canSupervise) => {
-  if (canSupervise) loadSessions()
+  if (canSupervise) {
+    loadSessions()
+  } else {
+    sessions.value = []
+    error.value = t('liveSessions.permissionError')
+  }
 })
 
 onMounted(() => {

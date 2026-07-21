@@ -91,6 +91,23 @@ describe('GroupLiveSessionsTab — permission gate vs. async canSupervise', () =
     expect(wrapper.find('.live-sessions-error').exists()).toBe(false)
   })
 
+  it('shows the banner and tears the tiles down when canSupervise flips to false, without waiting for a poll', async () => {
+    getGroupLiveSessions.mockResolvedValue([
+      { session_id: 's1', user_id: 'u-1', user_name: 'User 1' }
+    ])
+
+    const wrapper = mountTab({ canSupervise: true })
+    await flushPromises()
+    expect(wrapper.find('.live-sessions-error').exists()).toBe(false)
+    expect(wrapper.findAll('.live-sessions-tile')).toHaveLength(1)
+
+    await wrapper.setProps({ canSupervise: false })
+    await flushPromises()
+
+    expect(wrapper.find('.live-sessions-error').text()).toMatch(PERMISSION_TEXT)
+    expect(wrapper.findAll('.live-sessions-tile')).toHaveLength(0)
+  })
+
   it('shows the permission banner on a real 403 rejection from the service', async () => {
     getGroupLiveSessions.mockRejectedValueOnce({
       response: { status: 403, data: { error_message: 'Supervision requires a higher plan' } }
