@@ -93,13 +93,13 @@ async function mountViewer() {
     props: { sessionId: 'sess-1', autoConnect: true },
     global: { plugins: [createTestI18n()] }
   })
-  // onMounted lazily imports the (mocked) xterm modules, THEN opens the socket. The
-  // first dynamic import resolves a tick later than the cached ones, so poll until
-  // connect() has created the socket instead of assuming a fixed number of ticks.
-  for (let i = 0; i < 20 && FakeWebSocket.instances.length === 0; i++) {
-    await new Promise(resolve => setTimeout(resolve, 0))
-    await nextTick()
-  }
+  // onMounted lazily imports the (mocked) xterm modules, THEN opens the socket. That
+  // chain resolves a variable number of ticks later, so wait on the socket actually
+  // existing (real-time poll) rather than a fixed tick budget — the latter under-waits
+  // on slow CI runners and lands lastSocket() === undefined.
+  await vi.waitFor(() => {
+    if (FakeWebSocket.instances.length === 0) throw new Error('supervise socket not yet created')
+  })
   return wrapper
 }
 
