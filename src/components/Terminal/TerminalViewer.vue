@@ -24,6 +24,16 @@
 <template>
   <!-- SettingsCard wrapper mode -->
   <SettingsCard v-if="useSettingsCard" :title="title" :icon="icon">
+    <template v-if="supervisionChip" #headerCenter>
+      <div class="supervision-center-anchor">
+        <SupervisionChip
+          :icon="supervisionChip.icon"
+          :text="supervisionChip.text"
+          :controlled="supervisionChip.controlled"
+        />
+      </div>
+    </template>
+
     <template #headerActions>
       <Button
         variant="warning"
@@ -83,13 +93,6 @@
       >
         {{ t('terminal.destroy') }}
       </Button>
-
-      <SupervisionSlot
-        v-if="supervisionEnabled"
-        :chip="supervisionChip"
-        :watched-text="t('terminal.supervisionWatched')"
-        :controlled-text="t('terminal.supervisionControlled')"
-      />
     </template>
 
     <div class="terminal-wrapper">
@@ -160,11 +163,14 @@
           @warning="handleSessionWarning"
           @expired="handleSessionExpired"
         />
-        <SupervisionSlot
-          v-if="supervisionEnabled"
-          :chip="supervisionChip"
-          :watched-text="t('terminal.supervisionWatched')"
-          :controlled-text="t('terminal.supervisionControlled')"
+      </div>
+      <!-- Centered indicator, absolutely positioned so it never displaces the
+           session info or the controls. Sibling of both, not inside either. -->
+      <div v-if="supervisionChip" class="supervision-center-anchor">
+        <SupervisionChip
+          :icon="supervisionChip.icon"
+          :text="supervisionChip.text"
+          :controlled="supervisionChip.controlled"
         />
       </div>
       <div class="terminal-controls" v-if="!hideControls">
@@ -261,7 +267,6 @@ import RecordingIndicator from './RecordingIndicator.vue'
 import SessionCountdown from './SessionCountdown.vue'
 import TerminalEndStateOverlay from './TerminalEndStateOverlay.vue'
 import SupervisionChip from './SupervisionChip.vue'
-import SupervisionSlot from './SupervisionSlot.vue'
 
 interface SessionInfo {
   session_id: string
@@ -1036,6 +1041,21 @@ defineExpose({
   background-color: var(--color-bg-secondary);
   border-bottom: var(--border-width-thin) solid var(--color-border-medium);
   flex-shrink: 0;
+  /* Containing block for the absolutely-centered supervision indicator. */
+  position: relative;
+}
+
+/* Centers the supervision chip over the whole title bar without joining the flex
+   flow, so it never displaces the side groups. Clicks fall through to the bar; a
+   long title + narrow bar degrade gracefully (max-width + ellipsis on the chip). */
+.supervision-center-anchor {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  max-width: min(60%, 22rem);
+  pointer-events: none;
 }
 
 .session-info {

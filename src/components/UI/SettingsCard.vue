@@ -9,6 +9,9 @@
   <div class="card">
     <div class="card-header">
       <h2><i v-if="icon" :class="icon"></i> {{ title }}</h2>
+      <!-- Optional centered overlay (e.g. a status indicator). Absolutely positioned
+           by the consumer, so it never participates in the header's flex flow. -->
+      <slot name="headerCenter"></slot>
       <div v-if="$slots.headerActions" class="header-actions">
         <slot name="headerActions"></slot>
       </div>
@@ -33,6 +36,8 @@ withDefaults(defineProps<{
   display: flex;
   justify-content: space-between;
   align-items: center;
+  /* Containing block for an absolutely-positioned #headerCenter overlay. */
+  position: relative;
 }
 
 .header-actions {
