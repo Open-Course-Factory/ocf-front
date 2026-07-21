@@ -1,0 +1,58 @@
+/*
+ * Open Course Factory - Supervision button styles
+ * Copyright (C) 2023-2026 Solution Libre
+ *
+ * Shared button styles for the terminal-supervision UI (SupervisionViewer and the
+ * live-session wall in GroupLiveSessionsTab), which previously each re-declared an
+ * identical scoped `.btn` set.
+ *
+ * They are namespaced `ocf-btn` on purpose: this app loads Bootstrap globally, whose
+ * `.btn` would otherwise win or lose by stylesheet load order (a known collision).
+ * An `ocf-`-prefixed name cannot collide, so these can live in one globally-imported
+ * sheet instead of being scoped per component. Colors and spacing come from design
+ * tokens for dark-mode safety.
+ */
+
+.ocf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--btn-padding-md);
+  font-size: var(--font-size-sm);
+  border: var(--border-width-thin) solid transparent;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.ocf-btn-sm {
+  padding: var(--btn-padding-sm);
+  font-size: var(--font-size-xs);
+}
+
+.ocf-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ocf-btn:not(:disabled):hover {
+  opacity: 0.9;
+}
+
+.ocf-btn-primary {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  border-color: var(--color-primary);
+}
+
+.ocf-btn-secondary {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-medium);
+}
+
+.ocf-btn-danger {
+  background-color: var(--color-danger);
+  color: var(--color-white);
+  border-color: var(--color-danger);
+}

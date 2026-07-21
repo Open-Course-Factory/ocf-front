@@ -302,8 +302,8 @@ interface Props {
   hasScenario?: boolean
   // Supervision-aware console: when true, the console connection carries control
   // frames (a trainer may watch or take control of this learner's terminal). The
-  // socket is wired through routeSupervisionFrame instead of the plain AttachAddon
-  // so control metadata never leaks into the shell, and a learner-facing banner is
+  // socket is wired through the shared supervision message handler instead of the
+  // plain AttachAddon so control metadata never leaks into the shell, and a banner is
   // shown while watched/controlled. Default false keeps the normal console path
   // byte-for-byte unchanged.
   supervisionEnabled?: boolean
@@ -737,9 +737,8 @@ async function connectToTerminal() {
       }
 
       if (props.supervisionEnabled) {
-        // Supervision-aware wiring: control frames must never reach the shell,
-        // so we bypass AttachAddon and route every frame through
-        // routeSupervisionFrame instead.
+        // Supervision-aware wiring: control frames must never reach the shell, so we
+        // bypass AttachAddon and route every frame through the shared handler instead.
         attachSupervisedSocket()
       } else if (socket.value && socket.value.readyState === WebSocket.OPEN) {
         attachAddon = new AttachAddon(socket.value)

@@ -70,8 +70,8 @@
 
         <button
           v-if="!compact"
-          class="btn btn-sm"
-          :class="hasControl ? 'btn-danger' : 'btn-primary'"
+          class="ocf-btn ocf-btn-sm"
+          :class="hasControl ? 'ocf-btn-danger' : 'ocf-btn-primary'"
           :disabled="!isConnected || controlState.ended || isControlledByOther"
           :title="isControlledByOther ? t('supervisionViewer.controlledByOtherTooltip') : undefined"
           @click.stop="toggleControl"
@@ -478,44 +478,7 @@ onBeforeUnmount(cleanup)
   opacity: 1;
 }
 
-/* Buttons (mirrors the shared button tokens used across the app) */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: var(--font-size-xs);
-  border: var(--border-width-thin) solid transparent;
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.btn-sm {
-  padding: 3px 8px;
-  font-size: 11px;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background-color: var(--color-primary);
-  color: var(--color-white);
-  border-color: var(--color-primary);
-}
-
-.btn-danger {
-  background-color: var(--color-danger);
-  color: var(--color-white);
-  border-color: var(--color-danger);
-}
-
-.btn:not(:disabled):hover {
-  opacity: 0.9;
-}
+/* Button styles are shared via assets/styles/supervision-buttons.css (.ocf-btn*). */
 
 .supervision-viewer :deep(.xterm) {
   height: 100% !important;

@@ -76,9 +76,15 @@ function tileOrder(wrapper: ReturnType<typeof mountTab>): (string | undefined)[]
   return wrapper.findAll('.live-sessions-tile').map(t => t.attributes('data-session-id'))
 }
 
+// Envelope-aware: the wall persists a { v: 1, order } envelope; a legacy bare array
+// is still read for back-compat. Returns the order regardless of which shape is on disk.
 function storedOrder(): string[] | null {
   const raw = localStorage.getItem(ORDER_KEY)
-  return raw ? JSON.parse(raw) : null
+  if (!raw) return null
+  const parsed = JSON.parse(raw)
+  if (Array.isArray(parsed)) return parsed as string[]
+  if (parsed && typeof parsed === 'object' && Array.isArray(parsed.order)) return parsed.order as string[]
+  return null
 }
 
 // One shared dataTransfer instance so a setData-in-dragstart / getData-in-drop
