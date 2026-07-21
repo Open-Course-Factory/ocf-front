@@ -83,20 +83,17 @@
       >
         {{ t('terminal.destroy') }}
       </Button>
+
+      <SupervisionChip
+        v-if="supervisionChip"
+        :icon="supervisionChip.icon"
+        :text="supervisionChip.text"
+        :controlled="supervisionChip.controlled"
+      />
     </template>
 
     <div class="terminal-wrapper">
-      <div
-        v-if="supervisionBanner"
-        class="supervision-banner"
-        :class="{ 'supervision-banner-controlled': supervisionBanner.controlled }"
-        :role="supervisionBanner.controlled ? 'alert' : 'status'"
-        :aria-live="supervisionBanner.controlled ? 'assertive' : 'polite'"
-      >
-        <span class="supervision-banner-icon" aria-hidden="true">{{ supervisionBanner.icon }}</span>
-        <span>{{ supervisionBanner.text }}</span>
-      </div>
-      <div ref="terminalRef" class="terminal-container" :class="{ 'terminal-full-height': fullHeight, 'has-supervision-banner': supervisionBanner }"></div>
+      <div ref="terminalRef" class="terminal-container" :class="{ 'terminal-full-height': fullHeight }"></div>
       <TerminalEndStateOverlay v-if="activeEndState" :reason="(effectiveEndReason as EndStateReason)" :config="activeEndState" @action="handleEndStateAction" />
       <div v-else-if="error" class="terminal-error">
         <i class="fas fa-exclamation-triangle fa-2x"></i>
@@ -163,6 +160,12 @@
           @warning="handleSessionWarning"
           @expired="handleSessionExpired"
         />
+        <SupervisionChip
+          v-if="supervisionChip"
+          :icon="supervisionChip.icon"
+          :text="supervisionChip.text"
+          :controlled="supervisionChip.controlled"
+        />
       </div>
       <div class="terminal-controls" v-if="!hideControls">
         <button
@@ -196,17 +199,16 @@
 
     <!-- Terminal container -->
     <div class="terminal-wrapper">
-      <div
-        v-if="supervisionBanner"
-        class="supervision-banner"
-        :class="{ 'supervision-banner-controlled': supervisionBanner.controlled }"
-        :role="supervisionBanner.controlled ? 'alert' : 'status'"
-        :aria-live="supervisionBanner.controlled ? 'assertive' : 'polite'"
-      >
-        <span class="supervision-banner-icon" aria-hidden="true">{{ supervisionBanner.icon }}</span>
-        <span>{{ supervisionBanner.text }}</span>
-      </div>
-      <div class="terminal-container" ref="terminalRef" :class="{ 'has-supervision-banner': supervisionBanner }"></div>
+      <!-- With a header the chip lives in it; without one it overlays the terminal
+           so the learner indicator survives without shifting the layout. -->
+      <SupervisionChip
+        v-if="supervisionChip && !showHeader"
+        overlay
+        :icon="supervisionChip.icon"
+        :text="supervisionChip.text"
+        :controlled="supervisionChip.controlled"
+      />
+      <div class="terminal-container" ref="terminalRef"></div>
       <TerminalEndStateOverlay v-if="activeEndState" :reason="(effectiveEndReason as EndStateReason)" :config="activeEndState" @action="handleEndStateAction" />
       <div v-else-if="error" class="terminal-error">
         <i class="fas fa-exclamation-triangle fa-2x"></i>
@@ -258,6 +260,7 @@ import Button from '../UI/Button.vue'
 import RecordingIndicator from './RecordingIndicator.vue'
 import SessionCountdown from './SessionCountdown.vue'
 import TerminalEndStateOverlay from './TerminalEndStateOverlay.vue'
+import SupervisionChip from './SupervisionChip.vue'
 
 interface SessionInfo {
   session_id: string
@@ -468,7 +471,7 @@ const fetchedSessionInfo = ref<SessionInfo | null>(null)
 // Supervision indicator state (only meaningful when props.supervisionEnabled).
 // Driven by binary control frames routed through routeSupervisionFrame.
 const supervisionState = ref<SupervisionState>(initialSupervisionState())
-const supervisionBanner = computed(() => {
+const supervisionChip = computed(() => {
   if (!props.supervisionEnabled) return null
   if (supervisionState.value.controlled) {
     return { icon: '✋', text: t('terminal.supervisionControlled'), controlled: true }
@@ -1209,53 +1212,8 @@ defineExpose({
   transform: translateY(-1px);
 }
 
-/* Learner-facing supervision banner: sits at the top of the terminal, visible
-   whenever a trainer is watching (info) or has taken control (danger). It is
-   absolutely positioned so it overlays the wrapper's rounded corners cleanly;
-   the terminal container reserves matching space (.has-supervision-banner) so no
-   PTY output is ever hidden underneath it. Keep --supervision-banner-height in
-   sync with the banner's box height (line-height + vertical padding). */
-.terminal-wrapper,
-.terminal-viewer {
-  --supervision-banner-height: 2rem;
-}
-
-.supervision-banner {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
-  box-sizing: border-box;
-  height: var(--supervision-banner-height);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-xs) var(--spacing-md);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  background-color: var(--color-info-bg);
-  color: var(--color-info-text);
-  border-bottom: var(--border-width-thin) solid var(--color-info-border);
-}
-
-/* Reserve space so the top PTY row is never covered by the overlaid banner. */
-.terminal-container.has-supervision-banner {
-  box-sizing: border-box;
-  padding-top: var(--supervision-banner-height);
-}
-
-.supervision-banner-controlled {
-  background-color: var(--color-danger-bg);
-  color: var(--color-danger-text);
-  border-bottom-color: var(--color-danger-border);
-}
-
-.supervision-banner-icon {
-  font-size: var(--font-size-md);
-  line-height: 1;
-}
+/* The learner-facing supervision indicator now lives in the title bar as a chip
+   (see SupervisionChip.vue) so it never shifts the terminal's layout box. */
 
 /* Internet-access indicator in the status bar. Globe = on (success),
    crossed = off (muted). Sits alongside the recording / countdown badges. */
