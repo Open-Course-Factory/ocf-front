@@ -29,8 +29,8 @@
     :tabindex="compact ? 0 : undefined"
     :aria-label="compact ? t('supervisionViewer.focusAria', { name: learnerName || sessionId }) : undefined"
     @click="compact ? emit('expand') : undefined"
-    @keydown.enter.prevent="compact ? emit('expand') : undefined"
-    @keydown.space.prevent="compact ? emit('expand') : undefined"
+    @keydown.enter="onActivationKey"
+    @keydown.space="onActivationKey"
   >
     <!-- Header: learner + observer/control status + take-hand button -->
     <div class="supervision-viewer-header">
@@ -191,6 +191,16 @@ let resizeObserver: ResizeObserver | null = null
 // supervisor explicitly takes the hand.
 const { hasControl, takeHand, releaseHand, forwardKeystroke, controlActionKey, isControlledByOther } =
   useSupervisionControl(() => socket.value, () => controlState.value.controlled)
+
+// Only the compact tile is keyboard-activatable. Guarding on `compact` here (not
+// via `.prevent`, which fires unconditionally) keeps space/enter bubbling up from
+// the focused viewer's xterm from being cancelled — otherwise supervisor-typed
+// spaces never reach the shell.
+function onActivationKey(event: KeyboardEvent) {
+  if (!props.compact) return
+  event.preventDefault()
+  emit('expand')
+}
 
 function toggleControl() {
   if (hasControl.value) {

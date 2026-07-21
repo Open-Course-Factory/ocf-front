@@ -93,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { supervisionService, type LiveSession } from '../../services/domain/terminal/supervisionService'
 import SupervisionViewer from '../Terminal/SupervisionViewer.vue'
@@ -185,6 +185,13 @@ async function loadSessions() {
     isLoading.value = false
   }
 }
+
+// The parent resolves `canSupervise` from an async members-load, so it is often
+// still false on the first render. Re-run once it flips to true so the learner is
+// not stuck on the stale permission banner until the next poll.
+watch(() => props.canSupervise, (canSupervise) => {
+  if (canSupervise) loadSessions()
+})
 
 onMounted(() => {
   loadSessions()
