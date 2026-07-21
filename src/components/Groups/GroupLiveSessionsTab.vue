@@ -283,6 +283,15 @@ watch(() => props.canSupervise, (canSupervise) => {
   }
 })
 
+// The parent (GroupDetails) reloads in place on group change rather than remounting
+// this tab, so switch the roster and the per-group stored order over to the new
+// group instead of leaving both pointing at the previous one (a drag would then
+// persist stale order under the new group's key).
+watch(() => props.groupId, () => {
+  loadStoredOrder()
+  loadSessions()
+})
+
 onMounted(() => {
   loadStoredOrder()
   loadSessions()

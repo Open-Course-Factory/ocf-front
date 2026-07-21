@@ -149,6 +149,22 @@ describe('GroupLiveSessionsTab — wall drag & drop reorder', () => {
     expect(storedOrder()).toEqual(after)
   })
 
+  it('reloads the roster and the new group’s stored order when groupId changes in place', async () => {
+    localStorage.setItem(ORDER_KEY, JSON.stringify(['s3', 's1', 's2']))
+    localStorage.setItem('ocf-live-wall-order-g2', JSON.stringify(['s2', 's3', 's1']))
+
+    const wrapper = mountTab()
+    await flushPromises()
+    expect(tileOrder(wrapper)).toEqual(['s3', 's1', 's2'])
+    expect(getGroupLiveSessions).toHaveBeenCalledWith(GROUP_ID)
+
+    await wrapper.setProps({ groupId: 'g2' })
+    await flushPromises()
+
+    expect(getGroupLiveSessions).toHaveBeenCalledWith('g2')
+    expect(tileOrder(wrapper)).toEqual(['s2', 's3', 's1'])
+  })
+
   it('preserves the custom order across a subsequent loadSessions returning the same set in server order', async () => {
     localStorage.setItem(ORDER_KEY, JSON.stringify(['s3', 's1', 's2']))
 
