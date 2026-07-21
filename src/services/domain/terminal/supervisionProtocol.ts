@@ -111,6 +111,45 @@ export function routeSupervisionFrame(
 }
 
 /**
+ * Build a `socket.onmessage` handler that decodes a supervise frame and dispatches
+ * it — the boilerplate SupervisionViewer and TerminalViewer would otherwise each
+ * re-implement (a drift there re-opens the control-JSON-in-shell bug the router
+ * exists to prevent). Pure: it reads only `event.data`, and drives the caller's
+ * state/terminal/observer hooks.
+ *
+ * - TEXT frame     → onTerminal(text); state untouched.
+ * - BINARY control → setState(routedState); onObserversChange fires only when the
+ *                    observer count actually changed relative to the pre-frame state.
+ * - malformed/unknown BINARY → dropped (nothing called, never thrown).
+ */
+export function createSupervisionMessageHandler(opts: {
+  getState: () => SupervisionState
+  setState: (state: SupervisionState) => void
+  onTerminal: (text: string) => void
+  onObserversChange?: (count: number) => void
+}): (event: MessageEvent) => void {
+  return (event: MessageEvent) => {
+    const isBinary = event.data instanceof ArrayBuffer
+    const text = isBinary
+      ? new TextDecoder().decode(event.data as ArrayBuffer)
+      : (event.data as string)
+
+    const current = opts.getState()
+    const routed = routeSupervisionFrame(text, isBinary, current)
+
+    if (routed.route === 'terminal') {
+      opts.onTerminal(text)
+    } else if (routed.route === 'control') {
+      opts.setState(routed.state)
+      if (routed.state.observers !== current.observers) {
+        opts.onObserversChange?.(routed.state.observers)
+      }
+    }
+    // 'ignore' → drop (malformed / unknown control frame)
+  }
+}
+
+/**
  * The in-band control envelope a supervisor sends to take / release the hand.
  * Sent as a TEXT frame (plain JSON string) on the supervise socket — NOT binary
  * (unlike the resize message, which is TextEncoder-encoded), and NOT to

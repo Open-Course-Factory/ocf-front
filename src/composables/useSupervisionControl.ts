@@ -26,6 +26,10 @@
  * shell until they explicitly take the hand. The button label toggles between
  * "take hand" and "release hand" via `controlActionKey`. The wire format is
  * pinned once in supervisionProtocol (sendTakeHand / sendReleaseHand).
+ *
+ * NOTE: `hasControl` is optimistic and local — it flips as soon as the supervisor
+ * clicks, and a server rejection of the take/release is NOT rolled back here; the
+ * button stays flipped until the next authoritative control frame corrects it.
  */
 
 import { ref, computed, type Ref, type ComputedRef } from 'vue'

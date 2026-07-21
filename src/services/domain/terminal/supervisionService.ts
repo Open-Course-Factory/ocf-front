@@ -30,7 +30,6 @@ export interface LiveSession {
   session_id: string
   user_id: string
   user_name?: string
-  status?: string
 }
 
 export const supervisionService = {

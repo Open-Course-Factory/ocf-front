@@ -249,7 +249,7 @@ import { getTerminalTheme } from '../../utils/terminalTheme'
 import { canConnectToTerminal, preConnectError, sessionHasNetwork } from '../../utils/sessionState'
 import { terminalService } from '../../services/domain/terminal/terminalService'
 import {
-  routeSupervisionFrame,
+  createSupervisionMessageHandler,
   initialSupervisionState,
   type SupervisionState
 } from '../../services/domain/terminal/supervisionProtocol'
@@ -652,17 +652,11 @@ function attachSupervisedSocket() {
   socket.value.binaryType = 'arraybuffer'
   supervisionState.value = initialSupervisionState()
 
-  socket.value.onmessage = (event: MessageEvent) => {
-    const isBinary = event.data instanceof ArrayBuffer
-    const text = isBinary ? new TextDecoder().decode(event.data as ArrayBuffer) : (event.data as string)
-    const routed = routeSupervisionFrame(text, isBinary, supervisionState.value)
-    if (routed.route === 'terminal') {
-      terminal.value?.write(text)
-    } else if (routed.route === 'control') {
-      supervisionState.value = routed.state
-    }
-    // 'ignore' → drop (malformed / unknown control frame)
-  }
+  socket.value.onmessage = createSupervisionMessageHandler({
+    getState: () => supervisionState.value,
+    setState: (state) => { supervisionState.value = state },
+    onTerminal: (text) => { terminal.value?.write(text) }
+  })
 
   // Forward the learner's keystrokes to the shell as TEXT frames. Re-created on
   // each (re)connect; dispose the previous listener to avoid double-sending.

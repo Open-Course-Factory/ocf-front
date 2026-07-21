@@ -109,7 +109,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { getTerminalTheme } from '../../utils/terminalTheme'
 import { buildSuperviseWsUrl } from '../../services/domain/terminal/supervisionService'
 import {
-  routeSupervisionFrame,
+  createSupervisionMessageHandler,
   initialSupervisionState,
   type SupervisionState
 } from '../../services/domain/terminal/supervisionProtocol'
@@ -133,8 +133,6 @@ const emit = defineEmits<{
   expand: []
   // Emitted when live output arrives — lets the wall highlight active tiles.
   activity: []
-  // Emitted when the observer count changes — lets the wall badge shared tiles.
-  observers: [count: number]
 }>()
 
 const { t } = useTranslations({
@@ -275,24 +273,14 @@ function connect() {
       terminal?.reset()
     }
 
-    socket.value.onmessage = (event: MessageEvent) => {
-      const isBinary = event.data instanceof ArrayBuffer
-      const text = isBinary
-        ? new TextDecoder().decode(event.data as ArrayBuffer)
-        : (event.data as string)
-      const routed = routeSupervisionFrame(text, isBinary, controlState.value)
-      if (routed.route === 'terminal') {
+    socket.value.onmessage = createSupervisionMessageHandler({
+      getState: () => controlState.value,
+      setState: (state) => { controlState.value = state },
+      onTerminal: (text) => {
         terminal?.write(text)
         emit('activity')
-      } else if (routed.route === 'control') {
-        const prevObservers = controlState.value.observers
-        controlState.value = routed.state
-        if (routed.state.observers !== prevObservers) {
-          emit('observers', routed.state.observers)
-        }
       }
-      // 'ignore' → drop
-    }
+    })
 
     socket.value.onclose = () => {
       isConnected.value = false
@@ -346,11 +334,6 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(cleanup)
-
-defineExpose({
-  isConnected: () => isConnected.value,
-  hasControl: () => hasControl.value
-})
 </script>
 
 <style scoped>
