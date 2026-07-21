@@ -42,6 +42,31 @@
  *     `has-supervision-banner` class on `.terminal-container` (the layout-shift
  *     vectors). Neither must appear in any state, in any branch.
  *
+ * ── RESERVED-SLOT CONTRACT (owner UX rule: a dynamic indicator must NEVER ────────
+ *    displace the sibling controls — the trigger is the teacher's click, which the
+ *    learner can't anticipate, so the header row's geometry must not depend on
+ *    supervision state) ──────────────────────────────────────────────────────────
+ *   • In BOTH header hosts (SettingsCard `#headerActions` and standalone
+ *     `.terminal-header`), a `.supervision-slot` element is ALWAYS rendered while
+ *     `supervisionEnabled` — in idle, watched AND controlled states. The slot is
+ *     NEVER v-if'd on the transient watched/controlled state (that is what used to
+ *     reflow the buttons). It IS gated on the capability: no `supervisionEnabled`,
+ *     no slot (nothing to reserve).
+ *   • The slot carries a class-based state marker: `.supervision-slot-idle` when
+ *     idle, `.supervision-slot-active` when watched or controlled. Content
+ *     visibility is class-driven, not achieved by inserting/removing the slot.
+ *   • Reserved sizing: the slot contains exactly TWO invisible sizers
+ *     `.supervision-slot-sizer` (both `aria-hidden="true"`), one holding the watched
+ *     text and one the controlled text, present in ALL three states — so the slot's
+ *     width equals the widest message variant regardless of state.
+ *   • The visible layer is the `.supervision-chip`, rendered INSIDE the slot and
+ *     only in active states (still `v-if`'d on `supervisionChip`; the sizers hold the
+ *     width when it is absent). When idle there is no `.supervision-chip` at all, so
+ *     the live region does not exist and AT announces nothing. The sizers, being
+ *     aria-hidden, are never announced or seen.
+ *   • Overlay host (`showHeader=false`) is already layout-inert (absolute) — it needs
+ *     no slot and is UNCHANGED.
+ *
  * The chip is only rendered when `supervisionEnabled` AND the session is watched or
  * controlled — driven by the internal `supervisionState` ref (whose flip logic is
  * already covered by supervisionControlFrame.test.ts / supervisionMessageHandler
@@ -349,6 +374,153 @@ describe('TerminalViewer — supervision indicator in the title bar', () => {
       expect(wrapper.find('.supervision-chip').exists()).toBe(false)
       expect(wrapper.find('.supervision-banner').exists()).toBe(false)
       expect(wrapper.find('.terminal-container').classes()).not.toContain('has-supervision-banner')
+    })
+  })
+
+  // ── RESERVED SLOT: the header row must not reflow when supervision toggles ──
+  // Owner UX rule — a dynamic indicator, triggered by the teacher's unanticipated
+  // click, must never displace the learner's controls. jsdom can't measure pixels,
+  // so we pin the STRUCTURE that guarantees stable geometry by construction: an
+  // always-present slot plus two invisible sizers holding both message variants.
+  // These are pure additions — every existing `.supervision-chip` assertion above
+  // still holds because the visible chip stays v-if'd, now inside the slot.
+  describe('reserved slot — no sibling displacement (SettingsCard #headerActions)', () => {
+    const HOST = '.header-actions-stub'
+
+    it('renders the .supervision-slot in the header in ALL states (idle, watched, controlled)', async () => {
+      const wrapper = mountViewer({ useSettingsCard: true })
+
+      for (const s of [{}, { watched: true }, { watched: true, controlled: true }]) {
+        await setSupervision(wrapper, s)
+        expect(wrapper.find(`${HOST} .supervision-slot`).exists()).toBe(true)
+      }
+    })
+
+    it('marks the slot idle vs active by CLASS (never by inserting/removing the slot)', async () => {
+      const wrapper = mountViewer({ useSettingsCard: true })
+
+      await setSupervision(wrapper, {})
+      let slot = wrapper.find(`${HOST} .supervision-slot`)
+      expect(slot.classes()).toContain('supervision-slot-idle')
+      expect(slot.classes()).not.toContain('supervision-slot-active')
+
+      await setSupervision(wrapper, { watched: true })
+      slot = wrapper.find(`${HOST} .supervision-slot`)
+      expect(slot.classes()).toContain('supervision-slot-active')
+      expect(slot.classes()).not.toContain('supervision-slot-idle')
+
+      await setSupervision(wrapper, { watched: true, controlled: true })
+      slot = wrapper.find(`${HOST} .supervision-slot`)
+      expect(slot.classes()).toContain('supervision-slot-active')
+      expect(slot.classes()).not.toContain('supervision-slot-idle')
+    })
+
+    it('reserves width with two aria-hidden sizers (watched + controlled text) in ALL states', async () => {
+      const wrapper = mountViewer({ useSettingsCard: true })
+
+      for (const s of [{}, { watched: true }, { watched: true, controlled: true }]) {
+        await setSupervision(wrapper, s)
+        const sizers = wrapper.findAll(`${HOST} .supervision-slot .supervision-slot-sizer`)
+        // Exactly two invisible sizers, always present, so the slot is as wide as the
+        // widest variant regardless of the live state.
+        expect(sizers).toHaveLength(2)
+        sizers.forEach(sizer => expect(sizer.attributes('aria-hidden')).toBe('true'))
+        const texts = sizers.map(z => z.text())
+        expect(texts).toContain(WATCHED_TEXT)
+        expect(texts).toContain(CONTROLLED_TEXT)
+      }
+    })
+
+    it('when active, the visible chip lives INSIDE the slot (not a bare flex child)', async () => {
+      const wrapper = mountViewer({ useSettingsCard: true })
+      await setSupervision(wrapper, { watched: true })
+
+      expect(wrapper.find(`${HOST} .supervision-slot .supervision-chip`).exists()).toBe(true)
+    })
+
+    it('when idle, the slot announces nothing to AT: no live region, and sizers stay aria-hidden', async () => {
+      const wrapper = mountViewer({ useSettingsCard: true })
+      await setSupervision(wrapper, {})
+
+      const slot = wrapper.find(`${HOST} .supervision-slot`)
+      expect(slot.exists()).toBe(true)
+      // No visible/announced live region while idle (the chip is absent, not merely
+      // emptied) — an empty status/alert region would announce silence to a reader.
+      expect(slot.find('[role="status"]').exists()).toBe(false)
+      expect(slot.find('[role="alert"]').exists()).toBe(false)
+      expect(slot.find('.supervision-chip').exists()).toBe(false)
+      // The only content is the two aria-hidden sizers.
+      const sizers = wrapper.findAll(`${HOST} .supervision-slot .supervision-slot-sizer`)
+      expect(sizers).toHaveLength(2)
+      sizers.forEach(sizer => expect(sizer.attributes('aria-hidden')).toBe('true'))
+    })
+
+    it('renders NO slot when the supervision capability is off (nothing to reserve)', async () => {
+      const wrapper = mountViewer({ useSettingsCard: true, supervisionEnabled: false })
+      await setSupervision(wrapper, { watched: true })
+
+      expect(wrapper.find('.supervision-slot').exists()).toBe(false)
+      expect(wrapper.find('.supervision-chip').exists()).toBe(false)
+    })
+  })
+
+  describe('reserved slot — no sibling displacement (standalone .terminal-header)', () => {
+    const HOST = '.terminal-header'
+
+    it('renders the .supervision-slot in the header in ALL states (idle, watched, controlled)', async () => {
+      const wrapper = mountViewer()
+
+      for (const s of [{}, { watched: true }, { watched: true, controlled: true }]) {
+        await setSupervision(wrapper, s)
+        expect(wrapper.find(`${HOST} .supervision-slot`).exists()).toBe(true)
+      }
+    })
+
+    it('marks the slot idle vs active by CLASS', async () => {
+      const wrapper = mountViewer()
+
+      await setSupervision(wrapper, {})
+      expect(wrapper.find(`${HOST} .supervision-slot`).classes()).toContain('supervision-slot-idle')
+
+      await setSupervision(wrapper, { watched: true })
+      const slot = wrapper.find(`${HOST} .supervision-slot`)
+      expect(slot.classes()).toContain('supervision-slot-active')
+      expect(slot.classes()).not.toContain('supervision-slot-idle')
+    })
+
+    it('reserves width with two aria-hidden sizers (watched + controlled text) in ALL states', async () => {
+      const wrapper = mountViewer()
+
+      for (const s of [{}, { watched: true }, { watched: true, controlled: true }]) {
+        await setSupervision(wrapper, s)
+        const sizers = wrapper.findAll(`${HOST} .supervision-slot .supervision-slot-sizer`)
+        expect(sizers).toHaveLength(2)
+        sizers.forEach(sizer => expect(sizer.attributes('aria-hidden')).toBe('true'))
+        const texts = sizers.map(z => z.text())
+        expect(texts).toContain(WATCHED_TEXT)
+        expect(texts).toContain(CONTROLLED_TEXT)
+      }
+    })
+
+    it('when active, the visible chip lives INSIDE the slot', async () => {
+      const wrapper = mountViewer()
+      await setSupervision(wrapper, { watched: true, controlled: true })
+
+      expect(wrapper.find(`${HOST} .supervision-slot .supervision-chip`).exists()).toBe(true)
+    })
+  })
+
+  // Overlay host is absolute (out of flow) — it needs no reserved slot. Pin that the
+  // reserved-slot machinery is header-only so it is not accidentally required here.
+  describe('reserved slot — overlay host stays layout-inert (no slot needed)', () => {
+    it('renders the overlay chip without a .supervision-slot when there is no header', async () => {
+      const wrapper = mountViewer({ showHeader: false })
+      await setSupervision(wrapper, { watched: true })
+
+      const chip = wrapper.find('.supervision-chip')
+      expect(chip.exists()).toBe(true)
+      expect(chip.classes()).toContain('supervision-chip-overlay')
+      expect(wrapper.find('.supervision-slot').exists()).toBe(false)
     })
   })
 })

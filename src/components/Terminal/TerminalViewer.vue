@@ -84,11 +84,11 @@
         {{ t('terminal.destroy') }}
       </Button>
 
-      <SupervisionChip
-        v-if="supervisionChip"
-        :icon="supervisionChip.icon"
-        :text="supervisionChip.text"
-        :controlled="supervisionChip.controlled"
+      <SupervisionSlot
+        v-if="supervisionEnabled"
+        :chip="supervisionChip"
+        :watched-text="t('terminal.supervisionWatched')"
+        :controlled-text="t('terminal.supervisionControlled')"
       />
     </template>
 
@@ -160,11 +160,11 @@
           @warning="handleSessionWarning"
           @expired="handleSessionExpired"
         />
-        <SupervisionChip
-          v-if="supervisionChip"
-          :icon="supervisionChip.icon"
-          :text="supervisionChip.text"
-          :controlled="supervisionChip.controlled"
+        <SupervisionSlot
+          v-if="supervisionEnabled"
+          :chip="supervisionChip"
+          :watched-text="t('terminal.supervisionWatched')"
+          :controlled-text="t('terminal.supervisionControlled')"
         />
       </div>
       <div class="terminal-controls" v-if="!hideControls">
@@ -261,6 +261,7 @@ import RecordingIndicator from './RecordingIndicator.vue'
 import SessionCountdown from './SessionCountdown.vue'
 import TerminalEndStateOverlay from './TerminalEndStateOverlay.vue'
 import SupervisionChip from './SupervisionChip.vue'
+import SupervisionSlot from './SupervisionSlot.vue'
 
 interface SessionInfo {
   session_id: string
