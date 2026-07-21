@@ -35,7 +35,7 @@ vi.mock('@xterm/xterm', () => ({
     rows = 24
   }
 }))
-vi.mock('@xterm/addon-fit', () => ({ FitAddon: class { fit() {} dispose() {} } }))
+vi.mock('@xterm/addon-fit', () => ({ FitAddon: class { activate() {} fit() {} dispose() {} } }))
 
 vi.mock('../../src/stores/currentUser', () => ({
   useCurrentUserStore: () => ({ secretToken: 'tok' })

@@ -71,13 +71,23 @@
         <p>{{ t('liveSessions.empty') }}</p>
       </div>
 
-      <!-- Wall grid -->
+      <!-- Wall grid — tiles are draggable to arrange the wall (order persisted per group) -->
       <div v-else class="live-sessions-grid">
         <div
-          v-for="session in sessions"
+          v-for="session in orderedSessions"
           :key="session.session_id"
           class="live-sessions-tile"
-          :class="{ 'live-sessions-tile-active': activeTiles.has(session.session_id) }"
+          :data-session-id="session.session_id"
+          :class="{
+            'live-sessions-tile-active': activeTiles.has(session.session_id),
+            'live-sessions-tile-dragging': draggingId === session.session_id
+          }"
+          :title="t('liveSessions.dragHint')"
+          draggable="true"
+          @dragstart="onTileDragStart(session.session_id, $event)"
+          @dragover.prevent
+          @drop.prevent="onTileDrop(session.session_id, $event)"
+          @dragend="draggingId = null"
         >
           <SupervisionViewer
             compact
@@ -114,6 +124,7 @@ const { t } = useTranslations({
       retry: 'Retry',
       backToWall: 'Back to the wall',
       unknownLearner: 'Learner',
+      dragHint: 'Drag to rearrange the wall',
       loadError: 'Failed to load live sessions',
       permissionError: 'You do not have permission to supervise sessions in this group. Supervision may require a higher plan.'
     }
@@ -128,6 +139,7 @@ const { t } = useTranslations({
       retry: 'Réessayer',
       backToWall: 'Retour au mur',
       unknownLearner: 'Apprenant',
+      dragHint: 'Glisser pour réorganiser le mur',
       loadError: 'Échec du chargement des sessions en direct',
       permissionError: 'Vous n’avez pas la permission de superviser les sessions de ce groupe. La supervision peut nécessiter un forfait supérieur.'
     }
@@ -142,6 +154,77 @@ const focusedSessionId = ref<string | null>(null)
 const activeTiles = ref<Set<string>>(new Set())
 const activityTimers = new Map<string, ReturnType<typeof setTimeout>>()
 let pollInterval: ReturnType<typeof setInterval> | null = null
+
+// Trainer-defined wall order (session_ids), persisted per group. The stored array
+// drives rendering; the drop handler only rewrites it — ordering itself lives in
+// applyStoredOrder alone (single source of truth).
+const wallOrder = ref<string[]>([])
+const draggingId = ref<string | null>(null)
+const orderStorageKey = computed(() => `ocf-live-wall-order-${props.groupId}`)
+
+// Stored order first (skipping ids no longer live), then any new sessions appended
+// in server order. Pure — used only by the render computed below.
+function applyStoredOrder(list: LiveSession[], order: string[]): LiveSession[] {
+  const byId = new Map(list.map(s => [s.session_id, s]))
+  const ordered: LiveSession[] = []
+  const seen = new Set<string>()
+  for (const id of order) {
+    const s = byId.get(id)
+    if (s && !seen.has(id)) {
+      ordered.push(s)
+      seen.add(id)
+    }
+  }
+  for (const s of list) {
+    if (!seen.has(s.session_id)) {
+      ordered.push(s)
+      seen.add(s.session_id)
+    }
+  }
+  return ordered
+}
+
+const orderedSessions = computed(() => applyStoredOrder(sessions.value, wallOrder.value))
+
+function loadStoredOrder() {
+  try {
+    const raw = localStorage.getItem(orderStorageKey.value)
+    wallOrder.value = raw ? JSON.parse(raw) : []
+  } catch {
+    wallOrder.value = []
+  }
+}
+
+function persistWallOrder(order: string[]) {
+  wallOrder.value = order
+  try {
+    localStorage.setItem(orderStorageKey.value, JSON.stringify(order))
+  } catch {
+    /* storage unavailable — order stays in-memory for the session */
+  }
+}
+
+function onTileDragStart(sessionId: string, event: DragEvent) {
+  draggingId.value = sessionId
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', sessionId)
+  }
+}
+
+function onTileDrop(targetId: string, event: DragEvent) {
+  const sourceId = draggingId.value || event.dataTransfer?.getData('text/plain') || ''
+  draggingId.value = null
+  if (!sourceId || sourceId === targetId) return
+
+  const ids = orderedSessions.value.map(s => s.session_id)
+  const from = ids.indexOf(sourceId)
+  const to = ids.indexOf(targetId)
+  if (from === -1 || to === -1) return
+  ids.splice(from, 1)
+  ids.splice(to, 0, sourceId)
+  persistWallOrder(ids)
+}
 
 const focusedSession = computed(() =>
   sessions.value.find(s => s.session_id === focusedSessionId.value) || null
@@ -194,6 +277,7 @@ watch(() => props.canSupervise, (canSupervise) => {
 })
 
 onMounted(() => {
+  loadStoredOrder()
   loadSessions()
   // Refresh the roster periodically so newly-started / ended sessions appear.
   pollInterval = setInterval(loadSessions, 30000)
@@ -261,12 +345,20 @@ onUnmounted(() => {
 
 .live-sessions-tile {
   border-radius: var(--border-radius-md);
-  transition: box-shadow var(--transition-base);
+  transition: box-shadow var(--transition-base), opacity var(--transition-fast);
+  cursor: grab;
 }
 
 /* Highlight a tile that just produced output (recent activity). */
 .live-sessions-tile-active {
   box-shadow: 0 0 0 2px var(--color-success);
+}
+
+/* The tile currently being dragged. */
+.live-sessions-tile-dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+  outline: 2px dashed var(--color-primary);
 }
 
 .live-sessions-focused {
