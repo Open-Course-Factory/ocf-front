@@ -182,6 +182,56 @@
         </div>
       </section>
 
+      <!-- Section 1.6: Supervision & backend routing (dedicated columns) -->
+      <section class="form-section">
+        <h3 class="section-title">
+          <i class="fas fa-eye"></i>
+          {{ t('planConfig.supervisionSection') }}
+        </h3>
+
+        <div class="form-grid">
+          <div class="form-group form-group-wide">
+            <div class="checkbox-wrapper">
+              <input
+                id="plan-supervision"
+                v-model="formData.session_supervision_enabled"
+                data-test="plan-supervision-toggle"
+                type="checkbox"
+                class="form-checkbox"
+              />
+              <label for="plan-supervision" class="checkbox-label">
+                {{ t('planConfig.sessionSupervisionEnabled') }}
+              </label>
+            </div>
+            <p class="field-hint">{{ t('planConfig.sessionSupervisionHint') }}</p>
+          </div>
+
+          <div class="form-group">
+            <label for="plan-default-backend">{{ t('planConfig.defaultBackend') }}</label>
+            <input
+              id="plan-default-backend"
+              v-model="formData.default_backend"
+              data-test="plan-default-backend"
+              type="text"
+              class="form-control"
+            />
+            <p class="field-hint">{{ t('planConfig.defaultBackendHint') }}</p>
+          </div>
+
+          <div class="form-group">
+            <label for="plan-allowed-backends">{{ t('planConfig.allowedBackends') }}</label>
+            <textarea
+              id="plan-allowed-backends"
+              v-model="allowedBackendsText"
+              data-test="plan-allowed-backends"
+              class="form-control"
+              rows="3"
+            />
+            <p class="field-hint">{{ t('planConfig.allowedBackendsHint') }}</p>
+          </div>
+        </div>
+      </section>
+
       <!-- Section 2: Plan Configuration (from catalog) -->
       <section class="form-section">
         <h3 class="section-title">
@@ -288,6 +338,13 @@ const { t, te, locale } = useTranslations({
       editTitle: 'Edit Plan',
       identitySection: 'Plan Identity',
       configSection: 'Plan Configuration',
+      supervisionSection: 'Supervision & backend routing',
+      sessionSupervisionEnabled: 'Session supervision (trainer)',
+      sessionSupervisionHint: 'Gates the live class wall and take-hand for trainers.',
+      defaultBackend: 'Default backend',
+      defaultBackendHint: 'Backend used when the organization has no backend configured (empty = platform default).',
+      allowedBackends: 'Allowed backends',
+      allowedBackendsHint: 'One backend per line (empty = all backends allowed).',
       stripeSection: 'Stripe Information',
       name: 'Plan Name',
       description: 'Description',
@@ -338,6 +395,13 @@ const { t, te, locale } = useTranslations({
       editTitle: 'Modifier le Plan',
       identitySection: 'Identite du Plan',
       configSection: 'Configuration du Plan',
+      supervisionSection: 'Supervision et routage backend',
+      sessionSupervisionEnabled: 'Supervision des sessions (formateur)',
+      sessionSupervisionHint: 'Active le mur de classe en direct et la reprise en main pour les formateurs.',
+      defaultBackend: 'Backend par defaut',
+      defaultBackendHint: "Backend utilise quand l'organisation n'a pas de backend configure (vide = defaut plateforme).",
+      allowedBackends: 'Backends autorises',
+      allowedBackendsHint: 'Un backend par ligne (vide = tous les backends autorises).',
       stripeSection: 'Informations Stripe',
       name: 'Nom du Plan',
       description: 'Description',
@@ -407,10 +471,17 @@ const formData = reactive({
   is_active: true,
   is_catalog: true,
   max_cpu: 0,
-  max_memory_mb: 0
+  max_memory_mb: 0,
+  session_supervision_enabled: false,
+  default_backend: ''
 })
 
 const featureValues = reactive<Record<string, any>>({})
+
+// allowed_backends is edited as newline-separated text (mirrors the
+// advanced-textarea array-field convention used elsewhere) and parsed into a
+// string[] on save.
+const allowedBackendsText = ref('')
 
 // Size-quota composer state — the only way to set a plan's capacity.
 const sizeRows = reactive<SizeQuotaRow[]>([{ size_key: 'l', count: 1 }])
@@ -490,6 +561,13 @@ function populateFromPlan(plan: any) {
   formData.max_cpu = typeof plan.max_cpu === 'number' ? plan.max_cpu : 0
   formData.max_memory_mb = typeof plan.max_memory_mb === 'number' ? plan.max_memory_mb : 0
 
+  // Supervision + backend routing (dedicated columns).
+  formData.session_supervision_enabled = plan.session_supervision_enabled === true
+  formData.default_backend = plan.default_backend || ''
+  allowedBackendsText.value = Array.isArray(plan.allowed_backends)
+    ? plan.allowed_backends.join('\n')
+    : ''
+
   // Reset the size-quota composer. We can't reconstruct the original rows
   // because the backend stores only the computed max — so when populating
   // an existing plan we show an empty composer plus a hint describing the
@@ -565,6 +643,9 @@ function resetForm() {
   formData.is_catalog = true
   formData.max_cpu = 0
   formData.max_memory_mb = 0
+  formData.session_supervision_enabled = false
+  formData.default_backend = ''
+  allowedBackendsText.value = ''
   sizeRows.splice(0, sizeRows.length, { size_key: 'l', count: 1 })
   showUnlimitedHint.value = false
   showNoBreakdownHint.value = false
@@ -644,7 +725,14 @@ function handleSave() {
     // Map boolean terminal features to dedicated fields (same preserve semantics).
     network_access_enabled: booleanFieldValue('network_access', 'network_access_enabled'),
     data_persistence_enabled: booleanFieldValue('data_persistence', 'data_persistence_enabled'),
-    persistent_sessions_enabled: booleanFieldValue('persistent_sessions_enabled', 'persistent_sessions_enabled')
+    persistent_sessions_enabled: booleanFieldValue('persistent_sessions_enabled', 'persistent_sessions_enabled'),
+    // Supervision + backend routing (dedicated columns). default_backend and
+    // session_supervision_enabled ride along via the formData spread above;
+    // allowed_backends is parsed from the newline-separated textarea.
+    allowed_backends: allowedBackendsText.value
+      .split('\n')
+      .map(s => s.trim())
+      .filter(Boolean)
   }
 
   if (props.plan) {
@@ -735,6 +823,12 @@ watch(() => props.visible, async (newVal) => {
   margin: 0;
   cursor: pointer;
   user-select: none;
+}
+
+.field-hint {
+  margin: var(--spacing-xs) 0 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
 
 .feature-category {
