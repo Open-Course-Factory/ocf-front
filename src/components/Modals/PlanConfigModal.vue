@@ -232,7 +232,7 @@
               class="form-control"
             >
               <option value="">{{ t('planConfig.platformDefaultOption') }}</option>
-              <option v-for="backend in backends" :key="backend.id" :value="backend.id">
+              <option v-for="backend in defaultBackendOptions" :key="backend.id" :value="backend.id">
                 {{ backend.name }}
               </option>
             </select>
@@ -248,40 +248,43 @@
           </div>
 
           <div class="form-group">
-            <label>{{ t('planConfig.allowedBackends') }}</label>
-            <div v-if="backendPickerAvailable" class="backend-checkbox-list">
-              <div
-                v-for="option in allowedBackendOptions"
-                :key="option.id"
-                class="checkbox-wrapper"
-              >
-                <input
-                  :id="`allowed-backend-${option.id}`"
-                  v-model="selectedAllowedBackends"
-                  :value="option.id"
-                  data-test="plan-allowed-backend-option"
-                  type="checkbox"
-                  class="form-checkbox"
-                />
-                <label :for="`allowed-backend-${option.id}`" class="checkbox-label">
-                  {{ option.name }}
-                </label>
+            <fieldset v-if="backendPickerAvailable" class="backend-fieldset">
+              <legend>{{ t('planConfig.allowedBackends') }}</legend>
+              <div class="backend-checkbox-list">
+                <div
+                  v-for="option in allowedBackendOptions"
+                  :key="option.id"
+                  class="checkbox-wrapper"
+                >
+                  <input
+                    :id="`allowed-backend-${option.id}`"
+                    v-model="selectedAllowedBackends"
+                    :value="option.id"
+                    data-test="plan-allowed-backend-option"
+                    type="checkbox"
+                    class="form-checkbox"
+                  />
+                  <label :for="`allowed-backend-${option.id}`" class="checkbox-label">
+                    {{ option.name }}
+                  </label>
+                </div>
+                <p v-if="allowedBackendOptions.length === 0" class="field-hint">
+                  {{ t('planConfig.noBackendsAvailable') }}
+                </p>
               </div>
-              <p v-if="allowedBackendOptions.length === 0" class="field-hint">
-                {{ t('planConfig.noBackendsAvailable') }}
-              </p>
-            </div>
-            <textarea
-              v-else
-              id="plan-allowed-backends"
-              v-model="allowedBackendsText"
-              data-test="plan-allowed-backends"
-              class="form-control"
-              rows="3"
-            />
-            <p class="field-hint">
-              {{ backendPickerAvailable ? t('planConfig.allowedBackendsPickerHint') : t('planConfig.allowedBackendsHint') }}
-            </p>
+              <p class="field-hint">{{ t('planConfig.allowedBackendsPickerHint') }}</p>
+            </fieldset>
+            <template v-else>
+              <label for="plan-allowed-backends">{{ t('planConfig.allowedBackends') }}</label>
+              <textarea
+                id="plan-allowed-backends"
+                v-model="allowedBackendsText"
+                data-test="plan-allowed-backends"
+                class="form-control"
+                rows="3"
+              />
+              <p class="field-hint">{{ t('planConfig.allowedBackendsHint') }}</p>
+            </template>
           </div>
         </div>
       </section>
@@ -477,6 +480,18 @@ const formData = reactive({
 const backends = ref<Backend[]>([])
 const backendPickerAvailable = ref(false)
 const selectedAllowedBackends = ref<string[]>([])
+
+// Options for the default-backend select: every known backend, plus the plan's
+// saved default when it no longer exists in the fetched list, so opening and
+// saving an old plan never silently drops (or overwrites) the routing rule.
+const defaultBackendOptions = computed<Array<{ id: string; name: string }>>(() => {
+  const options = backends.value.map(b => ({ id: b.id, name: b.name }))
+  const saved = formData.default_backend
+  if (saved && !options.some(o => o.id === saved)) {
+    options.push({ id: saved, name: saved })
+  }
+  return options
+})
 
 // Options for the allowed-backends checkbox list: every known backend, plus any
 // id saved on the plan that no longer exists in the list, so opening and saving
@@ -763,6 +778,20 @@ watch(() => props.visible, (newVal) => {
   margin: var(--spacing-xs) 0 0 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+}
+
+.backend-fieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.backend-fieldset legend {
+  padding: 0;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
 }
 
 .backend-checkbox-list {
