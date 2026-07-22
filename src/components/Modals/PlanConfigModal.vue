@@ -224,7 +224,20 @@
 
           <div class="form-group">
             <label for="plan-default-backend">{{ t('planConfig.defaultBackend') }}</label>
+            <select
+              v-if="backendPickerAvailable"
+              id="plan-default-backend"
+              v-model="formData.default_backend"
+              data-test="plan-default-backend"
+              class="form-control"
+            >
+              <option value="">{{ t('planConfig.platformDefaultOption') }}</option>
+              <option v-for="backend in backends" :key="backend.id" :value="backend.id">
+                {{ backend.name }}
+              </option>
+            </select>
             <input
+              v-else
               id="plan-default-backend"
               v-model="formData.default_backend"
               data-test="plan-default-backend"
@@ -235,15 +248,40 @@
           </div>
 
           <div class="form-group">
-            <label for="plan-allowed-backends">{{ t('planConfig.allowedBackends') }}</label>
+            <label>{{ t('planConfig.allowedBackends') }}</label>
+            <div v-if="backendPickerAvailable" class="backend-checkbox-list">
+              <div
+                v-for="option in allowedBackendOptions"
+                :key="option.id"
+                class="checkbox-wrapper"
+              >
+                <input
+                  :id="`allowed-backend-${option.id}`"
+                  v-model="selectedAllowedBackends"
+                  :value="option.id"
+                  data-test="plan-allowed-backend-option"
+                  type="checkbox"
+                  class="form-checkbox"
+                />
+                <label :for="`allowed-backend-${option.id}`" class="checkbox-label">
+                  {{ option.name }}
+                </label>
+              </div>
+              <p v-if="allowedBackendOptions.length === 0" class="field-hint">
+                {{ t('planConfig.noBackendsAvailable') }}
+              </p>
+            </div>
             <textarea
+              v-else
               id="plan-allowed-backends"
               v-model="allowedBackendsText"
               data-test="plan-allowed-backends"
               class="form-control"
               rows="3"
             />
-            <p class="field-hint">{{ t('planConfig.allowedBackendsHint') }}</p>
+            <p class="field-hint">
+              {{ backendPickerAvailable ? t('planConfig.allowedBackendsPickerHint') : t('planConfig.allowedBackendsHint') }}
+            </p>
           </div>
         </div>
       </section>
@@ -291,6 +329,8 @@ import { useTranslations } from '../../composables/useTranslations'
 import BaseModal from './BaseModal.vue'
 import { CANONICAL_SIZE_CATALOG, computeMaxFromRows, type SizeQuotaRow } from '../../utils/quotaFormatters'
 import { formatMcpuAsVcpu } from '../../utils/formatters'
+import { terminalService } from '../../services/domain/terminal/terminalService'
+import type { Backend } from '../../types/terminal'
 
 const { t } = useTranslations({
   en: {
@@ -305,8 +345,11 @@ const { t } = useTranslations({
       groupManagementHint: 'Lets plan holders create and manage learner groups.',
       defaultBackend: 'Default backend',
       defaultBackendHint: 'Backend used when the organization has no backend configured (empty = platform default).',
+      platformDefaultOption: 'Platform default',
       allowedBackends: 'Allowed backends',
       allowedBackendsHint: 'One backend per line (empty = all backends allowed).',
+      allowedBackendsPickerHint: 'Tick the backends this plan may use (none ticked = all backends allowed).',
+      noBackendsAvailable: 'No backends available.',
       stripeSection: 'Stripe Information',
       name: 'Plan Name',
       description: 'Description',
@@ -356,8 +399,11 @@ const { t } = useTranslations({
       groupManagementHint: 'Permet aux titulaires du forfait de créer et gérer des groupes d\'apprenants.',
       defaultBackend: 'Backend par défaut',
       defaultBackendHint: "Backend utilisé quand l'organisation n'a pas de backend configuré (vide = défaut plateforme).",
+      platformDefaultOption: 'Défaut plateforme',
       allowedBackends: 'Backends autorisés',
       allowedBackendsHint: 'Un backend par ligne (vide = tous les backends autorisés).',
+      allowedBackendsPickerHint: 'Cochez les backends que ce forfait peut utiliser (aucun coché = tous les backends autorisés).',
+      noBackendsAvailable: 'Aucun backend disponible.',
       stripeSection: 'Informations Stripe',
       name: 'Nom du Plan',
       description: 'Description',
@@ -424,10 +470,42 @@ const formData = reactive({
   default_backend: ''
 })
 
-// allowed_backends is edited as newline-separated text (mirrors the
-// advanced-textarea array-field convention used elsewhere) and parsed into a
-// string[] on save.
+// Backend routing is normally driven by a picker fed from
+// terminalService.getBackends(): a <select> for the default backend and a
+// checkbox list for allowed_backends. If that call fails the modal falls back
+// to the free-text controls below so admins are never blocked.
+const backends = ref<Backend[]>([])
+const backendPickerAvailable = ref(false)
+const selectedAllowedBackends = ref<string[]>([])
+
+// Options for the allowed-backends checkbox list: every known backend, plus any
+// id saved on the plan that no longer exists in the list, so opening and saving
+// an old plan never silently drops a routing rule.
+const allowedBackendOptions = computed<Array<{ id: string; name: string }>>(() => {
+  const options = backends.value.map(b => ({ id: b.id, name: b.name }))
+  const known = new Set(options.map(o => o.id))
+  for (const id of selectedAllowedBackends.value) {
+    if (!known.has(id)) {
+      options.push({ id, name: id })
+    }
+  }
+  return options
+})
+
+// Fallback free-text mode only: allowed_backends edited as newline-separated
+// text and parsed into a string[] on save.
 const allowedBackendsText = ref('')
+
+async function loadBackends() {
+  try {
+    backends.value = await terminalService.getBackends()
+    backendPickerAvailable.value = true
+  } catch {
+    // Backend outage — keep the free-text fallback so the editor stays usable.
+    backends.value = []
+    backendPickerAvailable.value = false
+  }
+}
 
 // Size-quota composer state — the only way to set a plan's capacity.
 const sizeRows = reactive<SizeQuotaRow[]>([{ size_key: 'l', count: 1 }])
@@ -490,9 +568,9 @@ function populateFromPlan(plan: any) {
   formData.session_supervision_enabled = plan.session_supervision_enabled === true
   formData.group_management_enabled = plan.group_management_enabled === true
   formData.default_backend = plan.default_backend || ''
-  allowedBackendsText.value = Array.isArray(plan.allowed_backends)
-    ? plan.allowed_backends.join('\n')
-    : ''
+  const savedAllowed = Array.isArray(plan.allowed_backends) ? plan.allowed_backends : []
+  selectedAllowedBackends.value = [...savedAllowed]
+  allowedBackendsText.value = savedAllowed.join('\n')
 
   // Reset the size-quota composer. We can't reconstruct the original rows
   // because the backend stores only the computed max — so when populating
@@ -527,6 +605,7 @@ function resetForm() {
   formData.session_supervision_enabled = false
   formData.group_management_enabled = false
   formData.default_backend = ''
+  selectedAllowedBackends.value = []
   allowedBackendsText.value = ''
   sizeRows.splice(0, sizeRows.length, { size_key: 'l', count: 1 })
   showUnlimitedHint.value = false
@@ -578,12 +657,14 @@ function handleSave() {
     persistent_sessions_enabled: preservedBoolean('persistent_sessions_enabled'),
     // Supervision, group management + backend routing (dedicated columns).
     // session_supervision_enabled, group_management_enabled and default_backend
-    // ride along via the formData spread above; allowed_backends is parsed from
-    // the newline-separated textarea.
-    allowed_backends: allowedBackendsText.value
-      .split('\n')
-      .map(s => s.trim())
-      .filter(Boolean)
+    // ride along via the formData spread above. allowed_backends comes from the
+    // checked picker boxes, or the newline-separated textarea in fallback mode.
+    allowed_backends: backendPickerAvailable.value
+      ? [...selectedAllowedBackends.value]
+      : allowedBackendsText.value
+          .split('\n')
+          .map(s => s.trim())
+          .filter(Boolean)
   }
 
   if (props.plan) {
@@ -595,6 +676,9 @@ function handleSave() {
 
 watch(() => props.visible, (newVal) => {
   if (newVal) {
+    // Load the backend list once per open so the picker reflects the current
+    // catalog; falls back to free text if the call fails.
+    loadBackends()
     if (props.plan) {
       populateFromPlan(props.plan)
     } else {
@@ -679,6 +763,15 @@ watch(() => props.visible, (newVal) => {
   margin: var(--spacing-xs) 0 0 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+}
+
+.backend-checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
 }
 
 .stripe-info {
