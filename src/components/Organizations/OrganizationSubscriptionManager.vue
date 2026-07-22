@@ -68,9 +68,13 @@
           <div v-if="subscription.subscription_plan" class="features-section">
             <h4>{{ t('subscription.features') }}</h4>
             <ul class="features-list">
-              <li v-for="(feature, index) in subscription.subscription_plan.features" :key="index">
+              <li
+                v-for="(bullet, index) in derivePlanBullets(subscription.subscription_plan)"
+                :key="index"
+                data-test="plan-bullet"
+              >
                 <i class="fas fa-check-circle"></i>
-                {{ feature }}
+                {{ bullet }}
               </li>
             </ul>
 
@@ -216,6 +220,7 @@ import BaseModal from '../Modals/BaseModal.vue'
 import AdminBadge from '../Common/AdminBadge.vue'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useTranslations } from '../../composables/useTranslations'
+import { usePlanFormatters } from '../../composables/usePlanFormatters'
 import { useFormatters } from '../../composables/useFormatters'
 import { useNotification } from '../../composables/useNotification'
 import { useOrganizationSubscriptionsStore } from '../../stores/organizationSubscriptions'
@@ -230,6 +235,7 @@ interface Props {
 
 const props = defineProps<Props>()
 const { formatDate, formatPrice } = useFormatters()
+const { derivePlanBullets } = usePlanFormatters()
 const { isAdmin } = useAdminViewMode()
 const { showSuccess } = useNotification()
 const orgSubStore = useOrganizationSubscriptionsStore()
