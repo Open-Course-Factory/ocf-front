@@ -248,4 +248,54 @@ describe('PlanConfigModal — backend picker', () => {
     expect(payload.default_backend).toBe('incus-main')
     expect(payload.allowed_backends).toEqual(['incus-main', 'incus-edge'])
   })
+
+  // Stale-backend safety: a backend can be removed from the platform after a
+  // plan already references it. The picker must never silently drop that saved
+  // value — an admin who opens and re-saves an untouched plan must not lose the
+  // routing they configured just because the backend is momentarily gone from
+  // the fetched list.
+  it('keeps a saved allowed backend that no longer exists in the fetched list', async () => {
+    const wrapper = await mountModal({
+      id: 'plan-1',
+      name: 'Routed',
+      max_cpu: 0,
+      max_memory_mb: 0,
+      default_backend: '',
+      allowed_backends: ['incus-gone']
+    })
+    await flushPromises()
+
+    const stale = allowedCheckbox(wrapper, 'incus-gone')
+    expect(stale).toBeTruthy()
+    expect((stale!.element as HTMLInputElement).checked).toBe(true)
+
+    await wrapper.find('[data-test="plan-save-button"]').trigger('click')
+
+    const payload = wrapper.emitted('save')![0][0] as any
+    expect(payload.allowed_backends).toContain('incus-gone')
+  })
+
+  it('shows a saved default backend that no longer exists in the fetched list as the selected option', async () => {
+    const wrapper = await mountModal({
+      id: 'plan-1',
+      name: 'Routed',
+      max_cpu: 0,
+      max_memory_mb: 0,
+      default_backend: 'incus-gone',
+      allowed_backends: []
+    })
+    await flushPromises()
+
+    const select = wrapper.find('select[data-test="plan-default-backend"]')
+    expect(select.exists()).toBe(true)
+
+    const values = select.findAll('option').map(o => (o.element as HTMLOptionElement).value)
+    expect(values).toContain('incus-gone')
+    expect((select.element as HTMLSelectElement).value).toBe('incus-gone')
+
+    await wrapper.find('[data-test="plan-save-button"]').trigger('click')
+
+    const payload = wrapper.emitted('save')![0][0] as any
+    expect(payload.default_backend).toBe('incus-gone')
+  })
 })
