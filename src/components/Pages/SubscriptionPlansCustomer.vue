@@ -108,43 +108,18 @@
 
             <!-- Plan Content in Two Columns -->
             <div class="plan-content-compact">
-              <!-- Left Column: Key Features -->
+              <!-- Left Column: capabilities generated from typed fields -->
               <div class="features-column">
                 <div class="key-features">
-                  <!-- Capacity (size-count language) -->
                   <div
-                    v-if="budgetCapacityText(plan)"
-                    class="feature-item budget-capacity"
-                    :title="t('pricingPlanCard.capacityTooltip')"
+                    v-for="(bullet, idx) in derivePlanBullets(plan)"
+                    :key="idx"
+                    class="feature-item"
+                    data-test="plan-bullet"
+                    :title="idx === 0 ? t('pricingPlanCard.capacityTooltip') : undefined"
                   >
-                    <i class="fas fa-server"></i>
-                    <span>{{ budgetCapacityText(plan) }}</span>
-                  </div>
-
-                  <!-- Session Duration -->
-                  <div v-if="plan.max_session_duration_minutes" class="feature-item">
-                    <i class="fas fa-clock"></i>
-                    <span>{{ formatSessionDuration(plan.max_session_duration_minutes) }}</span>
-                  </div>
-
-                  <!-- Storage -->
-                  <div class="feature-item">
-                    <i class="fas fa-hdd"></i>
-                    <span>{{ formatStorage(plan) }}</span>
-                  </div>
-
-                  <!-- Network Access -->
-                  <div class="feature-item">
-                    <i class="fas fa-network-wired"></i>
-                    <span>{{ plan.network_access_enabled ? t('plans.outboundNetwork') : t('plans.noNetworkAccess') }}</span>
-                  </div>
-                </div>
-
-                <!-- Plan Capabilities -->
-                <div v-if="plan.features && plan.features.length > 0" class="capabilities-section">
-                  <div v-for="feature in plan.features" :key="feature" class="capability-item">
                     <i class="fas fa-check"></i>
-                    <span>{{ formatFeatureName(feature) }}</span>
+                    <span>{{ bullet }}</span>
                   </div>
                 </div>
               </div>
@@ -193,19 +168,6 @@
             <div v-if="plan.description" class="plan-description-compact">
               {{ plan.description }}
             </div>
-
-            <!-- Planned Features (Coming Soon) -->
-            <div v-if="plan.planned_features && plan.planned_features.length > 0" class="planned-features-section">
-              <div class="planned-features-header">
-                <i class="fas fa-clock"></i>
-                <span>{{ t('plans.comingSoon') }}</span>
-              </div>
-              <ul class="planned-features-list">
-                <li v-for="(feature, index) in plan.planned_features" :key="index" class="planned-feature-item">
-                  {{ feature }}
-                </li>
-              </ul>
-            </div>
           </div>
         </div>
 
@@ -253,11 +215,18 @@
                   <i :class="plan.network_access_enabled ? 'fas fa-check table-check' : 'fas fa-times table-cross'"></i>
                 </td>
               </tr>
-              <!-- Feature Capabilities -->
-              <tr v-for="featureKey in allFeatureKeys" :key="featureKey">
-                <td class="feature-col">{{ formatFeatureName(featureKey) }}</td>
+              <!-- Session Supervision (typed field) -->
+              <tr data-test="compare-row-supervision">
+                <td class="feature-col">{{ t('plans.sessionSupervision') }}</td>
                 <td v-for="plan in filteredPlans" :key="plan.id" :class="{ 'current-plan-col': isCurrentPlan(plan) }">
-                  <i :class="plan.features && plan.features.includes(featureKey) ? 'fas fa-check table-check' : 'fas fa-times table-cross'"></i>
+                  <i :class="plan.session_supervision_enabled ? 'fas fa-check table-check' : 'fas fa-times table-cross'"></i>
+                </td>
+              </tr>
+              <!-- Command History (typed field) -->
+              <tr data-test="compare-row-history">
+                <td class="feature-col">{{ t('plans.commandHistory') }}</td>
+                <td v-for="plan in filteredPlans" :key="plan.id" :class="{ 'current-plan-col': isCurrentPlan(plan) }">
+                  <i :class="(plan.command_history_retention_days ?? 0) > 0 ? 'fas fa-check table-check' : 'fas fa-times table-cross'"></i>
                 </td>
               </tr>
               <!-- Actions -->
@@ -377,7 +346,7 @@ import { formatBudgetAsSizes, CANONICAL_SIZE_CATALOG } from '../../utils/quotaFo
 import { isAssignedSubscription } from '../../utils/subscriptionHelpers'
 import { pollUntil } from '../../utils/pollUntil'
 
-const { formatFeatureName, formatBillingInterval } = usePlanFormatters()
+const { formatBillingInterval, derivePlanBullets } = usePlanFormatters()
 
 const { t } = useTranslations({
   en: {
@@ -394,13 +363,10 @@ const { t } = useTranslations({
       confirmChange: 'Confirm change',
       month: 'month',
       year: 'year',
-      hourMax: '{hours} hour max | {hours} hours max',
       oneHourMax: '1 hour max',
       hoursMax: '{hours} hours max',
       ephemeralOnly: 'Session data resets',
       storageGb: '{gb}GB storage',
-      outboundNetwork: 'Internet access',
-      noNetworkAccess: 'Offline terminal',
       volumePricing: 'Volume Pricing Available',
       volumeDescription: 'Purchase multiple licenses and save with volume discounts. Perfect for classes and teams.',
       viewBulkPricing: 'View Bulk Pricing',
@@ -420,7 +386,8 @@ const { t } = useTranslations({
       sessionDuration: 'Session duration',
       storage: 'Storage',
       networkAccess: 'Network',
-      capabilities: 'Capabilities',
+      sessionSupervision: 'Session supervision',
+      commandHistory: 'Command history',
       managedByOrg: 'Your plan is managed by your organization',
       yourCurrentPlan: 'Your current plan',
       emailNotVerified: 'Please verify your email address before subscribing to a paid plan.',
@@ -458,8 +425,6 @@ const { t } = useTranslations({
       hoursMax: '{hours} heures max',
       ephemeralOnly: 'Données réinitialisées',
       storageGb: '{gb} Go de stockage',
-      outboundNetwork: 'Accès Internet',
-      noNetworkAccess: 'Terminal hors ligne',
       volumePricing: 'Tarification en volume disponible',
       volumeDescription: 'Achetez plusieurs licences et économisez avec des remises en volume. Idéal pour les classes et les équipes.',
       viewBulkPricing: 'Voir les tarifs en volume',
@@ -479,7 +444,8 @@ const { t } = useTranslations({
       sessionDuration: 'Durée de session',
       storage: 'Stockage',
       networkAccess: 'Réseau',
-      capabilities: 'Fonctionnalités',
+      sessionSupervision: 'Supervision des sessions',
+      commandHistory: 'Historique des commandes',
       managedByOrg: 'Votre plan est géré par votre organisation',
       yourCurrentPlan: 'Votre plan actuel',
       emailNotVerified: 'Veuillez vérifier votre adresse e-mail avant de souscrire à un plan payant.',
@@ -551,19 +517,6 @@ const filteredPlans = computed(() => {
     if (!aIsCurrent && bIsCurrent) return 1
     return 0 // Keep original order for non-current plans
   })
-})
-
-// Collect all unique feature keys across plans (for comparison table)
-const allFeatureKeys = computed(() => {
-  const keys = new Set<string>()
-  for (const plan of filteredPlans.value) {
-    if (plan.features && Array.isArray(plan.features)) {
-      for (const f of plan.features) {
-        keys.add(f)
-      }
-    }
-  }
-  return [...keys]
 })
 
 const currentPlanId = computed(() => {
@@ -1263,52 +1216,6 @@ async function confirmCheckout() {
   font-size: var(--font-size-base);
 }
 
-/* Planned Features Section */
-.planned-features-section {
-  padding: var(--spacing-md);
-  border-top: 1px solid var(--color-gray-200);
-  background: var(--color-gray-50);
-  margin-top: var(--spacing-sm);
-}
-
-.planned-features-header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-600);
-  margin-bottom: var(--spacing-sm);
-}
-
-.planned-features-header i {
-  color: var(--color-warning);
-}
-
-.planned-features-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-.planned-feature-item {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  padding-left: var(--spacing-sm);
-  line-height: 1.4;
-  font-style: italic;
-}
-
-.planned-feature-item::before {
-  content: '•';
-  margin-right: var(--spacing-xs);
-  color: var(--color-gray-500);
-}
-
-
 /* Assigned User View */
 .assigned-user-view {
   max-width: 600px;
@@ -1445,29 +1352,6 @@ async function confirmCheckout() {
   background: var(--color-primary);
   color: var(--color-white);
   border-color: var(--color-primary);
-}
-
-/* Capabilities Section */
-.capabilities-section {
-  margin-top: var(--spacing-sm);
-  padding-top: var(--spacing-sm);
-  border-top: 1px solid var(--color-border-light);
-  display: grid;
-  gap: var(--spacing-xs);
-}
-
-.capability-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.capability-item i {
-  width: 14px;
-  color: var(--color-success);
-  font-size: var(--font-size-xs);
 }
 
 /* Comparison Table */

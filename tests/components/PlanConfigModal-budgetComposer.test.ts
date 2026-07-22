@@ -82,16 +82,6 @@ vi.mock('../../src/composables/useTranslations', () => ({
   })
 }))
 
-// Mock planFeatures store — no features needed for these tests; the budget
-// composer is independent of plan-features catalog rows.
-vi.mock('../../src/stores/planFeatures', () => ({
-  usePlanFeaturesStore: () => ({
-    entities: [],
-    featuresByCategory: {},
-    ensureFeaturesLoaded: vi.fn().mockResolvedValue(undefined)
-  })
-}))
-
 import PlanConfigModal from '../../src/components/Modals/PlanConfigModal.vue'
 
 async function mountModal(plan: any = null) {

@@ -206,6 +206,22 @@
             <p class="field-hint">{{ t('planConfig.sessionSupervisionHint') }}</p>
           </div>
 
+          <div class="form-group form-group-wide">
+            <div class="checkbox-wrapper">
+              <input
+                id="plan-group-management"
+                v-model="formData.group_management_enabled"
+                data-test="plan-group-management-toggle"
+                type="checkbox"
+                class="form-checkbox"
+              />
+              <label for="plan-group-management" class="checkbox-label">
+                {{ t('planConfig.groupManagementEnabled') }}
+              </label>
+            </div>
+            <p class="field-hint">{{ t('planConfig.groupManagementHint') }}</p>
+          </div>
+
           <div class="form-group">
             <label for="plan-default-backend">{{ t('planConfig.defaultBackend') }}</label>
             <input
@@ -228,60 +244,6 @@
               rows="3"
             />
             <p class="field-hint">{{ t('planConfig.allowedBackendsHint') }}</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section 2: Plan Configuration (from catalog) -->
-      <section class="form-section">
-        <h3 class="section-title">
-          <i class="fas fa-sliders-h"></i>
-          {{ t('planConfig.configSection') }}
-        </h3>
-
-        <div v-if="Object.keys(featuresByCategory).length === 0" class="empty-features">
-          <i class="fas fa-info-circle"></i>
-          {{ t('planConfig.noFeatures') }}
-        </div>
-
-        <div v-for="(features, category) in featuresByCategory" :key="category" class="feature-category">
-          <h4 class="category-title">{{ formatCategoryName(category) }}</h4>
-          <div class="feature-list">
-            <div
-              v-for="feature in features"
-              :key="feature.id"
-              class="feature-item"
-              :class="{ 'feature-hidden': !isFeatureVisible(feature) }"
-            >
-              <template v-if="feature.value_type === 'boolean'">
-                <div class="checkbox-wrapper">
-                  <input
-                    :id="`feature-${feature.key}`"
-                    v-model="featureValues[feature.key]"
-                    type="checkbox"
-                    class="form-checkbox"
-                  />
-                  <label :for="`feature-${feature.key}`" class="checkbox-label">
-                    {{ getFeatureDisplayName(feature) }}
-                  </label>
-                </div>
-              </template>
-              <template v-else-if="feature.value_type === 'number' && isFeatureVisible(feature)">
-                <div class="number-input-group">
-                  <label :for="`feature-${feature.key}`">{{ getFeatureDisplayName(feature) }}</label>
-                  <div class="number-with-unit">
-                    <input
-                      :id="`feature-${feature.key}`"
-                      v-model.number="featureValues[feature.key]"
-                      type="number"
-                      class="form-control"
-                      min="0"
-                    />
-                    <span v-if="feature.unit" class="unit-label">{{ feature.unit }}</span>
-                  </div>
-                </div>
-              </template>
-            </div>
           </div>
         </div>
       </section>
@@ -326,21 +288,21 @@
 <script setup lang="ts">
 import { reactive, ref, watch, computed } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
-import { usePlanFeaturesStore } from '../../stores/planFeatures'
 import BaseModal from './BaseModal.vue'
 import { CANONICAL_SIZE_CATALOG, computeMaxFromRows, type SizeQuotaRow } from '../../utils/quotaFormatters'
 import { formatMcpuAsVcpu } from '../../utils/formatters'
 
-const { t, te, locale } = useTranslations({
+const { t } = useTranslations({
   en: {
     planConfig: {
       createTitle: 'Create Plan',
       editTitle: 'Edit Plan',
       identitySection: 'Plan Identity',
-      configSection: 'Plan Configuration',
-      supervisionSection: 'Supervision & backend routing',
+      supervisionSection: 'Capabilities & backend routing',
       sessionSupervisionEnabled: 'Session supervision (trainer)',
       sessionSupervisionHint: 'Gates the live class wall and take-hand for trainers.',
+      groupManagementEnabled: 'Group management',
+      groupManagementHint: 'Lets plan holders create and manage learner groups.',
       defaultBackend: 'Default backend',
       defaultBackendHint: 'Backend used when the organization has no backend configured (empty = platform default).',
       allowedBackends: 'Allowed backends',
@@ -359,16 +321,9 @@ const { t, te, locale } = useTranslations({
       isCatalog: 'Listed in catalog',
       stripeProductId: 'Stripe Product ID',
       stripePriceId: 'Stripe Price ID',
-      noFeatures: 'No features configured. Create features in the Plan Features admin page first.',
       cancel: 'Cancel',
       save: 'Save',
       create: 'Create',
-      categories: {
-        capabilities: 'Capabilities',
-        machine_sizes: 'Machine Sizes',
-        terminal_limits: 'Terminal Limits',
-        course_limits: 'Course Limits'
-      },
       sizeCapacity: {
         section: 'Size capacity',
         subtitle: 'Students can use this capacity freely — mix any way they want',
@@ -394,10 +349,11 @@ const { t, te, locale } = useTranslations({
       createTitle: 'Creer un Plan',
       editTitle: 'Modifier le Plan',
       identitySection: 'Identite du Plan',
-      configSection: 'Configuration du Plan',
-      supervisionSection: 'Supervision et routage backend',
+      supervisionSection: 'Fonctionnalités et routage backend',
       sessionSupervisionEnabled: 'Supervision des sessions (formateur)',
       sessionSupervisionHint: 'Active le mur de classe en direct et la reprise en main pour les formateurs.',
+      groupManagementEnabled: 'Gestion des groupes',
+      groupManagementHint: 'Permet aux titulaires du forfait de créer et gérer des groupes d\'apprenants.',
       defaultBackend: 'Backend par défaut',
       defaultBackendHint: "Backend utilisé quand l'organisation n'a pas de backend configuré (vide = défaut plateforme).",
       allowedBackends: 'Backends autorisés',
@@ -416,16 +372,9 @@ const { t, te, locale } = useTranslations({
       isCatalog: 'Visible dans le catalogue',
       stripeProductId: 'ID Produit Stripe',
       stripePriceId: 'ID Prix Stripe',
-      noFeatures: 'Aucune fonctionnalite configuree. Creez des fonctionnalites dans la page admin Plan Features.',
       cancel: 'Annuler',
       save: 'Enregistrer',
       create: 'Creer',
-      categories: {
-        capabilities: 'Fonctionnalites',
-        machine_sizes: 'Tailles de Machine',
-        terminal_limits: 'Limites Terminal',
-        course_limits: 'Limites de Cours'
-      },
       sizeCapacity: {
         section: 'Capacite par taille',
         subtitle: 'Les apprenants pourront utiliser cette capacite librement — la repartir comme ils veulent',
@@ -458,8 +407,6 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const planFeaturesStore = usePlanFeaturesStore()
-
 const formData = reactive({
   name: '',
   description: '',
@@ -473,10 +420,9 @@ const formData = reactive({
   max_cpu: 0,
   max_memory_mb: 0,
   session_supervision_enabled: false,
+  group_management_enabled: false,
   default_backend: ''
 })
-
-const featureValues = reactive<Record<string, any>>({})
 
 // allowed_backends is edited as newline-separated text (mirrors the
 // advanced-textarea array-field convention used elsewhere) and parsed into a
@@ -525,27 +471,6 @@ const isFormValid = computed(() => {
   return true
 })
 
-const featuresByCategory = computed(() => planFeaturesStore.featuresByCategory)
-
-function formatCategoryName(category: string): string {
-  const key = `planConfig.categories.${category}`
-  return te(key) ? t(key) : category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-}
-
-function getFeatureDisplayName(feature: any): string {
-  return locale.value === 'fr' ? feature.display_name_fr : feature.display_name_en
-}
-
-function isFeatureVisible(feature: any): boolean {
-  if (feature.key === 'data_persistence_gb') {
-    return !!featureValues['data_persistence']
-  }
-  if (feature.key === 'command_history_retention_days') {
-    return !!featureValues['command_history']
-  }
-  return true
-}
-
 function populateFromPlan(plan: any) {
   formData.name = plan.name || ''
   formData.description = plan.description || ''
@@ -561,8 +486,9 @@ function populateFromPlan(plan: any) {
   formData.max_cpu = typeof plan.max_cpu === 'number' ? plan.max_cpu : 0
   formData.max_memory_mb = typeof plan.max_memory_mb === 'number' ? plan.max_memory_mb : 0
 
-  // Supervision + backend routing (dedicated columns).
+  // Capability toggles + backend routing (dedicated columns).
   formData.session_supervision_enabled = plan.session_supervision_enabled === true
+  formData.group_management_enabled = plan.group_management_enabled === true
   formData.default_backend = plan.default_backend || ''
   allowedBackendsText.value = Array.isArray(plan.allowed_backends)
     ? plan.allowed_backends.join('\n')
@@ -584,51 +510,6 @@ function populateFromPlan(plan: any) {
     showUnlimitedHint.value = false
     showNoBreakdownHint.value = true
   }
-
-  // Clear feature values
-  Object.keys(featureValues).forEach(key => delete featureValues[key])
-
-  const features = plan.features || []
-  const allFeatures = planFeaturesStore.entities || []
-
-  // Mapping for boolean features that are persisted as dedicated columns on
-  // the plan (not via the features[] array). When such a mapping exists, we
-  // prefer the dedicated column over features[] membership so the toggle
-  // stays in sync with the actual saved value.
-  const booleanFieldMap: Record<string, string> = {
-    network_access: 'network_access_enabled',
-    data_persistence: 'data_persistence_enabled',
-    persistent_sessions_enabled: 'persistent_sessions_enabled'
-  }
-
-  // Populate boolean features from plan.features array
-  for (const f of allFeatures) {
-    if (f.value_type === 'boolean') {
-      // Prefer dedicated column when one exists; otherwise fall back to
-      // features[] membership.
-      const planField = booleanFieldMap[f.key]
-      if (planField && typeof (plan as any)[planField] === 'boolean') {
-        featureValues[f.key] = (plan as any)[planField]
-      } else {
-        featureValues[f.key] = features.includes(f.key)
-      }
-    } else if (f.value_type === 'number') {
-      // Map number features from dedicated plan fields
-      const fieldMap: Record<string, string> = {
-        max_session_duration_minutes: 'max_session_duration_minutes',
-        data_persistence_gb: 'data_persistence_gb',
-        command_history_retention_days: 'command_history_retention_days',
-        max_courses: 'max_courses',
-        max_persistent_sessions: 'max_persistent_sessions'
-      }
-      const planField = fieldMap[f.key]
-      if (planField && plan[planField] !== undefined) {
-        featureValues[f.key] = plan[planField]
-      } else {
-        featureValues[f.key] = 0
-      }
-    }
-  }
 }
 
 function resetForm() {
@@ -644,43 +525,26 @@ function resetForm() {
   formData.max_cpu = 0
   formData.max_memory_mb = 0
   formData.session_supervision_enabled = false
+  formData.group_management_enabled = false
   formData.default_backend = ''
   allowedBackendsText.value = ''
   sizeRows.splice(0, sizeRows.length, { size_key: 'l', count: 1 })
   showUnlimitedHint.value = false
   showNoBreakdownHint.value = false
-  Object.keys(featureValues).forEach(key => delete featureValues[key])
-
-  // Initialize default feature values
-  const allFeatures = planFeaturesStore.entities || []
-  for (const f of allFeatures) {
-    if (f.value_type === 'boolean') {
-      featureValues[f.key] = false
-    } else if (f.value_type === 'number') {
-      featureValues[f.key] = 0
-    }
-  }
 }
 
-// Returns the numeric value for a plan field. The form value (if present)
-// always wins -- including an intentional 0. When the form never had this
-// field (e.g. because the matching plan_features catalog row is missing or
-// has been stripped), we preserve the existing plan value rather than
-// silently overwriting it with 0.
-function numericFieldValue(key: string, planField: string): number {
-  if (key in featureValues) {
-    const v = featureValues[key]
-    return typeof v === 'number' ? v : 0
-  }
+// Dedicated capability columns that no longer have an editor in this modal
+// (the plan_features catalog section was removed) are preserved from the
+// existing plan so an edit-and-save round-trips them unchanged; new plans
+// default to 0 / false.
+function preservedNumber(planField: string): number {
   if (props.plan && typeof (props.plan as any)[planField] === 'number') {
     return (props.plan as any)[planField]
   }
   return 0
 }
 
-// Same preserve-existing-value behavior for boolean dedicated columns.
-function booleanFieldValue(key: string, planField: string): boolean {
-  if (key in featureValues) return !!featureValues[key]
+function preservedBoolean(planField: string): boolean {
   if (props.plan && typeof (props.plan as any)[planField] === 'boolean') {
     return (props.plan as any)[planField]
   }
@@ -688,16 +552,6 @@ function booleanFieldValue(key: string, planField: string): boolean {
 }
 
 function handleSave() {
-  const allFeatures = planFeaturesStore.entities || []
-  const enabledFeatures: string[] = []
-
-  // Build features array from feature values
-  for (const f of allFeatures) {
-    if (f.value_type === 'boolean' && featureValues[f.key]) {
-      enabledFeatures.push(f.key)
-    }
-  }
-
   // The size-rows composer is the single source of truth for capacity.
   // When the admin opened an existing plan and left the composer empty
   // (preserve-existing-budget case), keep the plan's current max_cpu /
@@ -714,21 +568,18 @@ function handleSave() {
     ...formData,
     max_cpu: resolvedMaxCpu,
     max_memory_mb: resolvedMaxMemoryMb,
-    features: enabledFeatures,
-    // Map number features to dedicated fields (preserve existing plan value
-    // when the form didn't include this field -- prevents silent 0 wipes).
-    max_session_duration_minutes: numericFieldValue('max_session_duration_minutes', 'max_session_duration_minutes'),
-    data_persistence_gb: numericFieldValue('data_persistence_gb', 'data_persistence_gb'),
-    command_history_retention_days: numericFieldValue('command_history_retention_days', 'command_history_retention_days'),
-    max_courses: numericFieldValue('max_courses', 'max_courses'),
-    max_persistent_sessions: numericFieldValue('max_persistent_sessions', 'max_persistent_sessions'),
-    // Map boolean terminal features to dedicated fields (same preserve semantics).
-    network_access_enabled: booleanFieldValue('network_access', 'network_access_enabled'),
-    data_persistence_enabled: booleanFieldValue('data_persistence', 'data_persistence_enabled'),
-    persistent_sessions_enabled: booleanFieldValue('persistent_sessions_enabled', 'persistent_sessions_enabled'),
-    // Supervision + backend routing (dedicated columns). default_backend and
-    // session_supervision_enabled ride along via the formData spread above;
-    // allowed_backends is parsed from the newline-separated textarea.
+    // Capability columns without an editor here — preserved from the plan.
+    max_session_duration_minutes: preservedNumber('max_session_duration_minutes'),
+    data_persistence_gb: preservedNumber('data_persistence_gb'),
+    command_history_retention_days: preservedNumber('command_history_retention_days'),
+    max_persistent_sessions: preservedNumber('max_persistent_sessions'),
+    network_access_enabled: preservedBoolean('network_access_enabled'),
+    data_persistence_enabled: preservedBoolean('data_persistence_enabled'),
+    persistent_sessions_enabled: preservedBoolean('persistent_sessions_enabled'),
+    // Supervision, group management + backend routing (dedicated columns).
+    // session_supervision_enabled, group_management_enabled and default_backend
+    // ride along via the formData spread above; allowed_backends is parsed from
+    // the newline-separated textarea.
     allowed_backends: allowedBackendsText.value
       .split('\n')
       .map(s => s.trim())
@@ -742,9 +593,8 @@ function handleSave() {
   emit('save', planData)
 }
 
-watch(() => props.visible, async (newVal) => {
+watch(() => props.visible, (newVal) => {
   if (newVal) {
-    await planFeaturesStore.ensureFeaturesLoaded()
     if (props.plan) {
       populateFromPlan(props.plan)
     } else {
@@ -831,66 +681,6 @@ watch(() => props.visible, async (newVal) => {
   color: var(--color-text-muted);
 }
 
-.feature-category {
-  margin-bottom: var(--spacing-lg);
-}
-
-.feature-category:last-child {
-  margin-bottom: 0;
-}
-
-.category-title {
-  font-size: var(--font-size-base);
-  color: var(--color-text-secondary);
-  margin: 0 0 var(--spacing-md) 0;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: var(--font-weight-semibold);
-}
-
-.feature-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.feature-item {
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-bg-secondary);
-  border-radius: var(--border-radius-md);
-}
-
-.feature-hidden {
-  display: none;
-}
-
-.number-input-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-.number-input-group label {
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-}
-
-.number-with-unit {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.number-with-unit input {
-  max-width: 150px;
-}
-
-.unit-label {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-}
-
 .stripe-info {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -900,15 +690,6 @@ watch(() => props.visible, async (newVal) => {
 .stripe-info input[disabled] {
   background: var(--color-bg-secondary);
   color: var(--color-text-muted);
-}
-
-.empty-features {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-lg);
-  color: var(--color-text-muted);
-  font-style: italic;
 }
 
 .btn {
