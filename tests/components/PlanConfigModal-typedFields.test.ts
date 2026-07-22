@@ -206,3 +206,42 @@ describe('PlanConfigModal — max_courses removed', () => {
     expect(payload).not.toHaveProperty('max_courses')
   })
 })
+
+// The plan input DTOs no longer accept `features` (it is a read-only derived
+// projection server-side). The modal must never send it back on create or edit
+// — including the edit path, where a loaded plan carrying features[] must NOT
+// be copied through the formData spread.
+describe('PlanConfigModal — features never emitted', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  it('omits features from the create payload', async () => {
+    const wrapper = await mountModal()
+    await flushPromises()
+
+    await wrapper.find('#plan-name').setValue('No Features Plan')
+    await wrapper.find('[data-test="plan-save-button"]').trigger('click')
+
+    const payload = wrapper.emitted('save')![0][0] as any
+    expect(payload).not.toHaveProperty('features')
+  })
+
+  it('does not round-trip a loaded plan\'s features[] into the edit payload', async () => {
+    const wrapper = await mountModal({
+      id: 'plan-with-features',
+      name: 'Existing',
+      max_cpu: 0,
+      max_memory_mb: 0,
+      // Read-only derived projection the DTO rejects — must be dropped on save.
+      features: ['group_management', 'network_access'],
+    })
+    await flushPromises()
+
+    await wrapper.find('[data-test="plan-save-button"]').trigger('click')
+
+    const payload = wrapper.emitted('save')![0][0] as any
+    expect(payload).not.toHaveProperty('features')
+  })
+})
