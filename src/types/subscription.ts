@@ -47,7 +47,7 @@ export interface SubscriptionPlan extends BaseEntity {
   features: string[] // Human-readable features
   planned_features?: string[] // Features coming soon
   max_concurrent_users?: number // Deprecated: never enforced server-side; no longer displayed
-  max_courses: number // -1 = unlimited
+  max_courses?: number // Deprecated: column dropped server-side (!319); optional for back-compat
   is_active: boolean
   required_role: string
 
@@ -56,7 +56,8 @@ export interface SubscriptionPlan extends BaseEntity {
   network_access_enabled: boolean
   data_persistence_enabled: boolean
   data_persistence_gb: number
-  allowed_templates: string[]
+  session_supervision_enabled?: boolean
+  group_management_enabled?: boolean
   allowed_backends: string[]
   default_backend: string
   command_history_retention_days: number // 0 = no recording, >0 = days to retain

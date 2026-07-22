@@ -102,10 +102,6 @@ const { t } = useTranslations({
           title: 'Plans',
           description: 'Manage subscription plans and pricing'
         },
-        features: {
-          title: 'Features',
-          description: 'Manage plan feature catalog'
-        },
         invoices: {
           title: 'Invoices',
           description: 'View all system invoices'
@@ -188,10 +184,6 @@ const { t } = useTranslations({
           title: 'Plans',
           description: 'Gérer les plans d\'abonnement et tarifs'
         },
-        features: {
-          title: 'Fonctionnalités',
-          description: 'Gérer le catalogue de fonctionnalités'
-        },
         invoices: {
           title: 'Factures',
           description: 'Voir toutes les factures du système'
@@ -266,12 +258,6 @@ const dashboardSections = computed(() => [
         title: t('adminDashboard.items.plans.title'),
         description: t('adminDashboard.items.plans.description'),
         icon: 'fas fa-tags'
-      },
-      {
-        route: '/admin/plan-features',
-        title: t('adminDashboard.items.features.title'),
-        description: t('adminDashboard.items.features.description'),
-        icon: 'fas fa-puzzle-piece'
       },
       {
         route: '/invoices',

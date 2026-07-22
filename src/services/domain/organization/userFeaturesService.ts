@@ -34,7 +34,9 @@ export const userFeaturesService = {
    */
   async getMaxCourses(): Promise<number> {
     const features = await this.getUserEffectiveFeatures()
-    return features.effective_features.max_courses
+    // max_courses is deprecated/optional (!319 — column dropped server-side);
+    // fall back to the -1 "unlimited" sentinel when absent.
+    return features.effective_features.max_courses ?? -1
   },
 
   /**
@@ -51,13 +53,5 @@ export const userFeaturesService = {
   async canExportCourses(): Promise<boolean> {
     const features = await this.getUserEffectiveFeatures()
     return features.effective_features.can_export_courses ?? false
-  },
-
-  /**
-   * Check if user can use API
-   */
-  async canUseAPI(): Promise<boolean> {
-    const features = await this.getUserEffectiveFeatures()
-    return features.effective_features.can_use_api ?? false
   },
 }

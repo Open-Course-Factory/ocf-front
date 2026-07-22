@@ -442,8 +442,11 @@ const formatPlanPrice = (amount?: number, currency?: string): string => {
   return formatPrice(amount, currency || 'EUR')
 }
 
-const formatLimit = (value: number): string => {
-  return value === -1 ? t('subscription.unlimited') : String(value)
+const formatLimit = (value: number | undefined): string => {
+  // max_courses is deprecated/optional (!319): treat an absent value like the
+  // -1 "unlimited" sentinel rather than rendering "undefined".
+  if (value === undefined || value === -1) return t('subscription.unlimited')
+  return String(value)
 }
 </script>
 

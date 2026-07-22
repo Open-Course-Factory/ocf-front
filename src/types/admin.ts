@@ -61,7 +61,7 @@ export interface UsageMetric extends BaseEntity {
  */
 export interface UsageLimits {
   max_session_duration_minutes: number
-  max_courses: number
+  max_courses?: number // Deprecated: column dropped server-side (!319)
   network_access_enabled: boolean
   data_persistence_enabled: boolean
   data_persistence_gb: number

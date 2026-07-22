@@ -113,7 +113,6 @@ export const usePermissionsStore = defineStore('permissions', () => {
             network_access_enabled: true,
             data_persistence_enabled: true,
             data_persistence_gb: 50,
-            allowed_templates: [],
             allowed_backends: [],
             default_backend: '',
             command_history_retention_days: 30,
@@ -297,10 +296,6 @@ export const usePermissionsStore = defineStore('permissions', () => {
     return effectiveFeatures.value?.effective_features?.max_session_duration_minutes ?? 60
   })
 
-  const canUseAPI = computed((): boolean => {
-    return hasFeature('api_access')
-  })
-
   const canExportCourses = computed((): boolean => {
     return (effectiveFeatures.value?.effective_features as any)?.can_export_courses ?? false
   })
@@ -375,7 +370,6 @@ export const usePermissionsStore = defineStore('permissions', () => {
     hasFeature,
     getMaxCourses,
     getMaxSessionDuration,
-    canUseAPI,
     canExportCourses,
 
     // Combined permission checks

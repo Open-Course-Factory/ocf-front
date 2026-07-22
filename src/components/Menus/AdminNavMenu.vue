@@ -73,7 +73,6 @@ const { t } = useTranslations({
       },
       items: {
         subscriptionPlans: 'Subscription Plans',
-        planFeatures: 'Plan Features',
         allInvoices: 'All Invoices',
         invoiceCleanup: 'Invoice Cleanup',
         organizations: 'Organizations',
@@ -107,7 +106,6 @@ const { t } = useTranslations({
       },
       items: {
         subscriptionPlans: 'Plans d\'Abonnement',
-        planFeatures: 'Fonctionnalités des Plans',
         allInvoices: 'Toutes les Factures',
         invoiceCleanup: 'Nettoyage des Factures',
         organizations: 'Organisations',
@@ -141,11 +139,6 @@ const adminCategories = computed<MenuCategory[]>(() => [
         route: '/admin/subscription-plans',
         label: t('admin.items.subscriptionPlans'),
         icon: 'fas fa-tags'
-      },
-      {
-        route: '/admin/plan-features',
-        label: t('admin.items.planFeatures'),
-        icon: 'fas fa-puzzle-piece'
       },
       {
         route: '/invoices',
