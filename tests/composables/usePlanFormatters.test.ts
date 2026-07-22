@@ -157,7 +157,7 @@ describe('usePlanFormatters — derivePlanBullets', () => {
     expect(storage!).toMatch(/5/)
   })
 
-  it('produces all six bullets for a fully-featured plan', () => {
+  it('produces all six bullets, in the exact documented order, for a fully-featured plan', () => {
     const list = bullets({
       ...XL_BUDGET,
       max_session_duration_minutes: 240,
@@ -168,11 +168,17 @@ describe('usePlanFormatters — derivePlanBullets', () => {
       session_supervision_enabled: true,
       features: ['legacy_capability_a', 'legacy_capability_b'], // must be ignored
     })
-    expect(list).toHaveLength(6)
-    expect(list[0]).toMatch(/2 L/) // budget first
-    expect(has(list, /internet|network|réseau|reseau/i)).toBe(true)
-    expect(has(list, /(GB|Go)/)).toBe(true)
-    expect(has(list, /supervis/i)).toBe(true)
+    // Pin the FULL ordered sequence — locks the interior order (duration →
+    // network → storage → history → supervision) a count+presence check misses.
+    // 8000 mCPU / 4096 MiB → "1 XL OR 2 L OR 4 M" (top-3, capacity-descending).
+    expect(list).toEqual([
+      '1 XL OR 2 L OR 4 M',
+      'Max session duration: 240 min',
+      'Internet access',
+      'Persistent storage: 50 GB',
+      'Command history: 30 days',
+      'Session supervision (trainer)',
+    ])
     // features[] strings never leak in.
     expect(has(list, /legacy_capability_a/i)).toBe(false)
     expect(has(list, /legacy_capability_b/i)).toBe(false)

@@ -212,21 +212,33 @@
               <tr>
                 <td class="feature-col">{{ t('plans.networkAccess') }}</td>
                 <td v-for="plan in filteredPlans" :key="plan.id" :class="{ 'current-plan-col': isCurrentPlan(plan) }">
-                  <i :class="plan.network_access_enabled ? 'fas fa-check table-check' : 'fas fa-times table-cross'"></i>
+                  <i
+                    role="img"
+                    :aria-label="plan.network_access_enabled ? t('common.yes') : t('common.no')"
+                    :class="plan.network_access_enabled ? 'fas fa-check table-check' : 'fas fa-times table-cross'"
+                  ></i>
                 </td>
               </tr>
               <!-- Session Supervision (typed field) -->
               <tr data-test="compare-row-supervision">
                 <td class="feature-col">{{ t('plans.sessionSupervision') }}</td>
                 <td v-for="plan in filteredPlans" :key="plan.id" :class="{ 'current-plan-col': isCurrentPlan(plan) }">
-                  <i :class="plan.session_supervision_enabled ? 'fas fa-check table-check' : 'fas fa-times table-cross'"></i>
+                  <i
+                    role="img"
+                    :aria-label="plan.session_supervision_enabled ? t('common.yes') : t('common.no')"
+                    :class="plan.session_supervision_enabled ? 'fas fa-check table-check' : 'fas fa-times table-cross'"
+                  ></i>
                 </td>
               </tr>
               <!-- Command History (typed field) -->
               <tr data-test="compare-row-history">
                 <td class="feature-col">{{ t('plans.commandHistory') }}</td>
                 <td v-for="plan in filteredPlans" :key="plan.id" :class="{ 'current-plan-col': isCurrentPlan(plan) }">
-                  <i :class="(plan.command_history_retention_days ?? 0) > 0 ? 'fas fa-check table-check' : 'fas fa-times table-cross'"></i>
+                  <i
+                    role="img"
+                    :aria-label="(plan.command_history_retention_days ?? 0) > 0 ? t('common.yes') : t('common.no')"
+                    :class="(plan.command_history_retention_days ?? 0) > 0 ? 'fas fa-check table-check' : 'fas fa-times table-cross'"
+                  ></i>
                 </td>
               </tr>
               <!-- Actions -->
@@ -406,6 +418,10 @@ const { t } = useTranslations({
       capacityTooltip: 'Your plan\'s capacity, expressed as machine sizes you can spawn at once. Pick any combination that fits.',
       unlimitedCapacity: 'Unlimited capacity',
     },
+    common: {
+      yes: 'Yes',
+      no: 'No',
+    },
   },
   fr: {
     plans: {
@@ -463,6 +479,10 @@ const { t } = useTranslations({
       or: 'OU',
       capacityTooltip: 'La capacité de votre forfait, exprimée en tailles de machines que vous pouvez lancer simultanément. Choisissez la combinaison qui vous convient.',
       unlimitedCapacity: 'Capacité illimitée',
+    },
+    common: {
+      yes: 'Oui',
+      no: 'Non',
     },
   }
 })
