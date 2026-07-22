@@ -166,7 +166,7 @@ describe('usePlanFormatters — derivePlanBullets', () => {
       data_persistence_gb: 50,
       command_history_retention_days: 30,
       session_supervision_enabled: true,
-      features: ['api_access', 'custom_themes'], // must be ignored
+      features: ['legacy_capability_a', 'legacy_capability_b'], // must be ignored
     })
     expect(list).toHaveLength(6)
     expect(list[0]).toMatch(/2 L/) // budget first
@@ -174,8 +174,8 @@ describe('usePlanFormatters — derivePlanBullets', () => {
     expect(has(list, /(GB|Go)/)).toBe(true)
     expect(has(list, /supervis/i)).toBe(true)
     // features[] strings never leak in.
-    expect(has(list, /api access/i)).toBe(false)
-    expect(has(list, /custom themes|thèmes/i)).toBe(false)
+    expect(has(list, /legacy_capability_a/i)).toBe(false)
+    expect(has(list, /legacy_capability_b/i)).toBe(false)
   })
 
   it('localizes the supervision bullet in French', () => {

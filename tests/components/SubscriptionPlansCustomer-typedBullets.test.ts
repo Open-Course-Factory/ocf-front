@@ -168,7 +168,7 @@ const TYPED_PLAN = {
   command_history_retention_days: 30,
   session_supervision_enabled: true,
   // Legacy free-text strings — MUST NOT be rendered anymore.
-  features: ['api_access', 'custom_themes'],
+  features: ['legacy_capability_a', 'legacy_capability_b'],
 }
 
 async function mountReady(plans: any[]) {
@@ -207,8 +207,8 @@ describe('SubscriptionPlansCustomer — generated bullets (grid)', () => {
   it('does NOT render raw features[] strings — only generated bullets', async () => {
     // Legacy free-text capability strings must no longer leak onto the page.
     const wrapper = await mountReady([TYPED_PLAN])
-    expect(wrapper.text()).not.toContain('API access')
-    expect(wrapper.text()).not.toContain('Custom themes')
+    expect(wrapper.text()).not.toContain('legacy_capability_a')
+    expect(wrapper.text()).not.toContain('legacy_capability_b')
   })
 
   it('drops the planned_features "Coming Soon" block even when the payload carries it', async () => {
@@ -271,8 +271,8 @@ describe('SubscriptionPlansCustomer — compare table (typed rows)', () => {
   it('no longer renders union-of-features[] rows', async () => {
     // A plan carrying a legacy features[] must not spawn a per-string table row.
     const wrapper = await mountTable([
-      { ...TYPED_PLAN, id: 'p-legacy', name: 'Legacy', features: ['api_access'] },
+      { ...TYPED_PLAN, id: 'p-legacy', name: 'Legacy', features: ['legacy_capability_a'] },
     ])
-    expect(wrapper.text()).not.toContain('API access')
+    expect(wrapper.text()).not.toContain('legacy_capability_a')
   })
 })

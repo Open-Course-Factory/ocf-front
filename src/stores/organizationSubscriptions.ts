@@ -123,7 +123,7 @@ export const useOrganizationSubscriptionsStore = defineStore('organizationSubscr
           organization_id: organizationId,
           organization_name: 'Demo Organization',
           has_active_subscription: true,
-          features: ['advanced_terminals', 'multiple_groups', 'api_access'],
+          features: ['group_management', 'multiple_groups', 'network_access', 'data_persistence'],
           usage_limits: {
             max_session_duration_minutes: 240,
             max_courses: 50,

@@ -327,7 +327,6 @@ const menuCategories = computed((): MenuCategory[] => [
     icon: 'fas fa-laptop-code',
     allowedRoles: ['administrator', 'member'],
     featureFlag: 'terminal_management',
-    planFeature: 'advanced_terminals',
     routePrefixes: ['/terminal-session', '/scenarios'],
     items: [
       {

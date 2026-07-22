@@ -270,7 +270,7 @@ describe('organizationSubscriptions store (characterization #267)', () => {
 
   describe('loadOrganizationFeatures', () => {
     it('GETs /organizations/:id/features and unwraps response.data.data', async () => {
-      const payload = { organization_id: 'org-1', has_active_subscription: true, features: ['api_access'] }
+      const payload = { organization_id: 'org-1', has_active_subscription: true, features: ['group_management'] }
       mockedAxios.get.mockResolvedValueOnce({ data: { data: payload } })
       const store = useOrganizationSubscriptionsStore()
 

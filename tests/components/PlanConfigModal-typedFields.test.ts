@@ -97,8 +97,8 @@ vi.mock('../../src/composables/useTranslations', () => ({
 }))
 
 // The plan_features catalog store has been removed entirely; the modal no
-// longer imports it, so there is nothing left to mock. The catalog checkbox
-// (#feature-api_access) can therefore never render — pinned below.
+// longer imports it, so there is nothing left to mock. No per-catalog-feature
+// checkbox (any `#feature-*` input) can therefore render — pinned below.
 
 import PlanConfigModal from '../../src/components/Modals/PlanConfigModal.vue'
 
@@ -129,8 +129,9 @@ describe('PlanConfigModal — features[] catalog removal', () => {
   it('no longer renders the plan_features catalog toggle section', async () => {
     const wrapper = await mountModal()
     await flushPromises()
-    // The catalog feature checkbox (built from planFeaturesStore) must be gone.
-    expect(wrapper.find('#feature-api_access').exists()).toBe(false)
+    // No catalog feature checkbox (built from planFeaturesStore) may remain —
+    // assert on the whole `#feature-*` family rather than any single key.
+    expect(wrapper.findAll('[id^="feature-"]').length).toBe(0)
   })
 })
 

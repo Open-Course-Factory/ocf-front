@@ -103,7 +103,7 @@ export const usePermissionsStore = defineStore('permissions', () => {
             price_amount: 0,
             currency: 'EUR',
             billing_interval: 'month',
-            features: ['advanced_terminals', 'api_access', 'multiple_groups'],
+            features: ['group_management', 'multiple_groups', 'network_access', 'data_persistence', 'command_history', 'session_supervision'],
             max_courses: 50,
             is_active: true,
             required_role: 'member',
@@ -125,7 +125,7 @@ export const usePermissionsStore = defineStore('permissions', () => {
               organization_id: 'demo-org-1',
               organization_name: 'Demo Organization',
               role: 'owner',
-              contributing_features: ['advanced_terminals', 'api_access'],
+              contributing_features: ['group_management', 'network_access'],
             }
           ],
           has_personal_subscription: false,
