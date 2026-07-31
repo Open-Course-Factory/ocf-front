@@ -50,7 +50,7 @@
         :key="org.id"
         :organization="org"
         :can-manage="canManageOrganization(org.id)"
-        :has-subscription="!!org.subscription_plan_id"
+        :has-own-plan="!!org.subscription_plan_id"
         @bulkImport="$emit('bulkImport', $event)"
         @manage="$emit('manage', $event)"
         @view="$emit('view', $event)"

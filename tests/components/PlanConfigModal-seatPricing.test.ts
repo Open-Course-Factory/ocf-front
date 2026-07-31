@@ -180,8 +180,20 @@ describe('PlanConfigModal — seat pricing', () => {
     })
     await flushPromises()
 
-    const sent = previewProspectivePricing.mock.calls.at(-1)![0]
-    const q: number[] = sent.quantities
+    // The modal recomputes behind a 300ms debounce, and flushPromises only
+    // drains microtasks — it never advances timers. So `.at(-1)` used to read
+    // whichever call happened to land first, which on a slower runner was the
+    // seed ladder (probes [1, 5, 6]) rather than the pack's. Select the call by
+    // the ladder it carries, and wait for it, instead of trusting arrival order.
+    const packCall = () =>
+      previewProspectivePricing.mock.calls
+        .map(c => c[0])
+        .reverse()
+        .find((arg: any) => arg?.tiers?.some((t: any) => t.max_quantity === 30))
+
+    await vi.waitFor(() => expect(packCall()).toBeTruthy())
+
+    const q: number[] = packCall()!.quantities
 
     // Each boundary is straddled, so every bracket is exercised where it changes.
     for (const boundary of [30, 60]) {

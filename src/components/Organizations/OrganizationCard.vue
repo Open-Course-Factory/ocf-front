@@ -38,9 +38,9 @@
         </div>
       </div>
       <div class="stat-item">
-        <i :class="getStatusIcon(hasSubscription)"></i>
+        <i :class="getStatusIcon(hasOwnPlan)"></i>
         <div class="stat-content">
-          <span class="stat-value">{{ hasSubscription ? t('organizations.subscribed') : t('organizations.free') }}</span>
+          <span class="stat-value">{{ hasOwnPlan ? t('organizations.ownPlan') : t('organizations.inheritedPlan') }}</span>
           <span class="stat-label">{{ t('organizations.subscription') }}</span>
         </div>
       </div>
@@ -89,12 +89,12 @@ import type { Organization } from '../../types'
 interface Props {
   organization: Organization
   canManage?: boolean
-  hasSubscription?: boolean
+  hasOwnPlan?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   canManage: false,
-  hasSubscription: false
+  hasOwnPlan: false
 })
 
 const { isAdmin } = useAdminViewMode()
@@ -119,9 +119,9 @@ const { t } = useTranslations({
       team: 'Team',
       members: 'Members',
       groups: 'Groups',
-      subscription: 'Subscription',
-      subscribed: 'Active',
-      free: 'Free',
+      subscription: 'Plan',
+      ownPlan: 'Own plan',
+      inheritedPlan: 'Inherited',
       import: 'Import',
       bulkImport: 'Bulk Import Users & Groups',
       manage: 'Manage',
@@ -136,9 +136,9 @@ const { t } = useTranslations({
       team: 'Équipe',
       members: 'Membres',
       groups: 'Groupes',
-      subscription: 'Abonnement',
-      subscribed: 'Actif',
-      free: 'Gratuit',
+      subscription: 'Plan',
+      ownPlan: 'Plan dédié',
+      inheritedPlan: 'Hérité',
       import: 'Importer',
       bulkImport: 'Importation groupée d\'utilisateurs et groupes',
       manage: 'Gérer',
@@ -149,8 +149,8 @@ const { t } = useTranslations({
   }
 })
 
-const getStatusIcon = (hasSubscription: boolean) => {
-  return hasSubscription ? 'fas fa-check-circle text-success' : 'fas fa-circle text-muted'
+const getStatusIcon = (hasOwnPlan: boolean) => {
+  return hasOwnPlan ? 'fas fa-check-circle text-success' : 'fas fa-circle text-muted'
 }
 </script>
 
