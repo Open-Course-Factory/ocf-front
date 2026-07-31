@@ -431,6 +431,14 @@ const menuCategories = computed((): MenuCategory[] => [
         hideForAssignedOnly: true
       },
       {
+        // The public page, reachable from inside the product so it can be looked
+        // at or shared without logging out.
+        route: '/pricing',
+        label: t('navigation.publicPricing'),
+        title: t('navigation.publicPricingTitle'),
+        icon: 'fas fa-tag'
+      },
+      {
         route: '/bulk-license-purchase',
         label: t('navigation.purchaseLicenses'),
         title: t('navigation.purchaseLicensesTitle'),

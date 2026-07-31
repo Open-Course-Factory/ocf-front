@@ -114,7 +114,7 @@ describe('usePlanFormatters — derivePlanBullets', () => {
     {
       name: 'session duration',
       plan: { ...S_BUDGET, max_session_duration_minutes: 120 },
-      present: /max|hour|heure/i,
+      present: /session|min|\bh\b/i,
     },
     {
       name: 'network access',
@@ -122,7 +122,7 @@ describe('usePlanFormatters — derivePlanBullets', () => {
       present: /internet|network|réseau|reseau/i,
     },
     {
-      name: 'persistent storage',
+      name: 'persistent machines',
       plan: { ...S_BUDGET, data_persistence_enabled: true, data_persistence_gb: 1 },
       present: /(GB|Go)/,
     },
@@ -150,7 +150,7 @@ describe('usePlanFormatters — derivePlanBullets', () => {
     })
   }
 
-  it('embeds the GB value in the persistent-storage bullet', () => {
+  it('embeds the GB value in the persistent-machine bullet', () => {
     const list = bullets({ ...S_BUDGET, data_persistence_enabled: true, data_persistence_gb: 5 })
     const storage = list.find(b => /(GB|Go)/.test(b))
     expect(storage).toBeDefined()
@@ -173,9 +173,12 @@ describe('usePlanFormatters — derivePlanBullets', () => {
     // 8000 mCPU / 4096 MiB → "1 XL OR 2 L OR 4 M" (top-3, capacity-descending).
     expect(list).toEqual([
       '1 XL OR 2 L OR 4 M',
-      'Max session duration: 240 min',
+      // 240 minutes reads as four hours: nobody thinks in minutes at this scale.
+      'Sessions up to 4 h',
       'Internet access',
-      'Persistent storage: 50 GB',
+      // What the customer buys is a machine that survives logging out; the quota
+      // is in support of that, not the headline.
+      'Persistent machines — your work is kept between sessions (50 GB)',
       'Command history: 30 days',
       'Session supervision (trainer)',
     ])

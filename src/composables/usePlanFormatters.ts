@@ -13,9 +13,13 @@ import { formatBudgetAsSizes, CANONICAL_SIZE_CATALOG } from '../utils/quotaForma
 // featureLabels pattern above.
 const bulletLabels = {
   unlimitedCapacity: { en: 'Unlimited capacity', fr: 'Capacité illimitée' },
-  sessionDuration: { en: 'Max session duration: {n} min', fr: 'Durée max de session : {n} min' },
+  sessionDurationHours: { en: 'Sessions up to {n} h', fr: 'Sessions jusqu\'à {n} h' },
+  sessionDurationMinutes: { en: 'Sessions up to {n} min', fr: 'Sessions jusqu\'à {n} min' },
   networkAccess: { en: 'Internet access', fr: 'Accès à Internet' },
-  persistentStorage: { en: 'Persistent storage: {n} GB', fr: 'Stockage persistant : {n} Go' },
+  persistentMachine: {
+    en: 'Persistent machines — your work is kept between sessions ({n} GB)',
+    fr: 'Machines persistantes — votre travail est conservé entre les sessions ({n} Go)',
+  },
   commandHistory: { en: 'Command history: {n} days', fr: 'Historique des commandes : {n} jours' },
   sessionSupervision: { en: 'Session supervision (trainer)', fr: 'Supervision des sessions (formateur)' },
 }
@@ -44,9 +48,9 @@ export function usePlanFormatters() {
    * Build the ordered customer-facing pricing bullets for a plan from its
    * TYPED columns only (never `features[]`). Order:
    *   1. capacity/budget (always) — size summary, or "Unlimited capacity" for 0/0
-   *   2. session duration    (iff max_session_duration_minutes > 0)
+   *   2. session duration    (iff max_session_duration_minutes > 0) — hours when whole
    *   3. internet access     (iff network_access_enabled)
-   *   4. persistent storage  (iff data_persistence_enabled) — embeds the GB value
+   *   4. persistent machines (iff data_persistence_enabled) — embeds the GB value
    *   5. command history      (iff command_history_retention_days > 0) — embeds days
    *   6. session supervision (iff session_supervision_enabled)
    */
@@ -57,14 +61,24 @@ export function usePlanFormatters() {
     const sizes = formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, joiner)
     bullets.push(sizes || label(bulletLabels.unlimitedCapacity))
 
-    if ((plan.max_session_duration_minutes ?? 0) > 0) {
-      bullets.push(label(bulletLabels.sessionDuration, plan.max_session_duration_minutes))
+    // Hours read better than minutes at the durations we actually sell: 480 is
+    // eight hours, and nobody thinks in minutes above about an hour. Fall back to
+    // minutes when the value does not divide evenly, rather than showing "1.5 h".
+    const durationMinutes = plan.max_session_duration_minutes ?? 0
+    if (durationMinutes > 0) {
+      if (durationMinutes >= 60 && durationMinutes % 60 === 0) {
+        bullets.push(label(bulletLabels.sessionDurationHours, durationMinutes / 60))
+      } else {
+        bullets.push(label(bulletLabels.sessionDurationMinutes, durationMinutes))
+      }
     }
     if (plan.network_access_enabled === true) {
       bullets.push(label(bulletLabels.networkAccess))
     }
     if (plan.data_persistence_enabled === true) {
-      bullets.push(label(bulletLabels.persistentStorage, plan.data_persistence_gb ?? 0))
+      // The storage is the mechanism; what the customer buys is a machine that
+      // survives logging out. Say that, with the quota in support of it.
+      bullets.push(label(bulletLabels.persistentMachine, plan.data_persistence_gb ?? 0))
     }
     if ((plan.command_history_retention_days ?? 0) > 0) {
       bullets.push(label(bulletLabels.commandHistory, plan.command_history_retention_days))

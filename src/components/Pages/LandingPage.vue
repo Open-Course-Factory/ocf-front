@@ -15,6 +15,10 @@
           <i class="fas fa-users" aria-hidden="true"></i>
           <span>{{ t('landing.nav.useCases') }}</span>
         </a>
+        <router-link :to="{ name: 'PublicOffers' }" class="nav-link" data-test="landing-pricing-link">
+          <i class="fas fa-tag" aria-hidden="true"></i>
+          <span>{{ t('landing.nav.pricing') }}</span>
+        </router-link>
         <a href="#contact" class="nav-link" @click.prevent="scrollToSection('contact')">
           <i class="fas fa-envelope" aria-hidden="true"></i>
           <span>{{ t('landing.nav.contact') }}</span>
@@ -397,6 +401,7 @@ const { t } = useTranslations({
         home: 'Home',
         features: 'Features',
         useCases: 'Use cases',
+        pricing: 'Pricing',
         contact: 'Contact'
       },
       heroTitle: 'Learn Linux, Docker, Kubernetes & more, right in your browser',
@@ -500,6 +505,7 @@ const { t } = useTranslations({
         home: 'Accueil',
         features: 'Fonctionnalités',
         useCases: 'Cas d\'usage',
+        pricing: 'Tarifs',
         contact: 'Contact'
       },
       heroTitle: 'Apprenez Linux, Docker, Kubernetes & plus, dans votre navigateur',
