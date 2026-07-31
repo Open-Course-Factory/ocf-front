@@ -89,6 +89,15 @@ const basicRoutes = [
     component: () => import('../components/Pages/ForcePasswordChange.vue'),
     meta: { requiresAuth: true }
   },
+  // Public pricing (no auth required): a prospect must be able to see the offer
+  // without creating an account. The catalogue endpoint is already scoped, so
+  // hidden seat and bespoke plans cannot surface here.
+  {
+    path: '/pricing',
+    name: 'PublicOffers',
+    component: () => import('../components/Pages/PublicOffers.vue'),
+    meta: { requiresAuth: false }
+  },
   // Legal notices (public, no auth required)
   {
     path: '/legal',
