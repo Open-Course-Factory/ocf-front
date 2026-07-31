@@ -11,10 +11,13 @@
         <section class="legal-section">
           <h2>{{ t('legal.siteInfo.title') }}</h2>
           <div class="info-block">
-            <p><strong>{{ t('legal.siteInfo.publisher') }}:</strong> Solution Libre</p>
-            <p><strong>{{ t('legal.siteInfo.website') }}:</strong> <a href="https://solution-libre.fr" target="_blank" rel="noopener noreferrer">https://solution-libre.fr</a></p>
+            <p><strong>{{ t('legal.siteInfo.publisher') }}:</strong> {{ COMPANY.name }} — {{ COMPANY.legalForm }} {{ t('legal.siteInfo.withCapital') }} {{ COMPANY.capital }}</p>
+            <p><strong>{{ t('legal.siteInfo.registeredOffice') }}:</strong> {{ COMPANY.address }}</p>
+            <p><strong>{{ t('legal.siteInfo.siret') }}:</strong> {{ COMPANY.siret }} — {{ t('legal.siteInfo.rcs') }}: {{ COMPANY.rcs }}</p>
+            <p><strong>{{ t('legal.siteInfo.vat') }}:</strong> {{ COMPANY.vatNumber }}</p>
+            <p><strong>{{ t('legal.siteInfo.website') }}:</strong> <a :href="COMPANY.website" target="_blank" rel="noopener noreferrer">{{ COMPANY.website }}</a></p>
             <p><strong>{{ t('legal.siteInfo.email') }}:</strong> <a :href="`mailto:${SUPPORT_EMAIL}`">{{ SUPPORT_EMAIL }}</a></p>
-            <p><strong>{{ t('legal.siteInfo.director') }}:</strong> Thomas Saquet</p>
+            <p><strong>{{ t('legal.siteInfo.director') }}:</strong> {{ COMPANY.publicationDirector }}</p>
           </div>
         </section>
 
@@ -23,6 +26,11 @@
           <h2>{{ t('legal.hosting.title') }}</h2>
           <div class="info-block">
             <p>{{ t('legal.hosting.description') }}</p>
+            <p>
+              <strong>{{ HOSTING_PROVIDER.name }}</strong><br>
+              {{ HOSTING_PROVIDER.address }}<br>
+              {{ HOSTING_PROVIDER.phone }}
+            </p>
           </div>
         </section>
 
@@ -110,6 +118,7 @@
 <script setup lang="ts">
 import { useTranslations } from '../../composables/useTranslations'
 import { SUPPORT_EMAIL } from '../../config/contact'
+import { COMPANY, HOSTING_PROVIDER } from '../../config/company'
 
 const { t } = useTranslations({
   en: {
@@ -121,6 +130,11 @@ const { t } = useTranslations({
       siteInfo: {
         title: 'Site Information',
         publisher: 'Publisher',
+        withCapital: 'with share capital of',
+        registeredOffice: 'Registered office',
+        siret: 'SIRET',
+        rcs: 'Trade register',
+        vat: 'EU VAT number',
         website: 'Website',
         email: 'Email',
         director: 'Publication Director'
@@ -128,7 +142,7 @@ const { t } = useTranslations({
 
       hosting: {
         title: 'Hosting',
-        description: 'This site is hosted by Solution Libre, using infrastructure provided by SCALEWAY SAS BP 438 75366 PARIS CEDEX 08 FRANCE. The platform runs on self-managed servers to ensure full control over data and security.'
+        description: 'The platform is operated by Labinux on self-managed servers, ensuring full control over data and security. Those servers run on infrastructure provided by:'
       },
 
       intellectualProperty: {
@@ -161,7 +175,7 @@ const { t } = useTranslations({
 
       liability: {
         title: 'Limitation of Liability',
-        description: 'Open Course Factory provides educational terminal access "as is" without warranty of any kind. Solution Libre cannot be held liable for damages resulting from the use of this platform, including but not limited to data loss, service interruption, or security incidents. Users are responsible for their actions within the provided terminals.'
+        description: 'Open Course Factory provides educational terminal access "as is" without warranty of any kind. Labinux cannot be held liable for damages resulting from the use of this platform, including but not limited to data loss, service interruption, or security incidents. Users are responsible for their actions within the provided terminals.'
       },
 
       applicableLaw: {
@@ -181,6 +195,11 @@ const { t } = useTranslations({
       siteInfo: {
         title: 'Informations sur le site',
         publisher: 'Éditeur',
+        withCapital: 'au capital de',
+        registeredOffice: 'Siège social',
+        siret: 'SIRET',
+        rcs: 'RCS',
+        vat: 'N° TVA intracommunautaire',
         website: 'Site web',
         email: 'Email',
         director: 'Directeur de publication'
@@ -188,7 +207,7 @@ const { t } = useTranslations({
 
       hosting: {
         title: 'Hébergement',
-        description: 'Ce site est hébergé par Solution Libre, utilisant une infrastructure fournie par SCALEWAY SAS BP 438 75366 PARIS CEDEX 08 FRANCE. La plateforme fonctionne sur des serveurs autogérés pour garantir un contrôle total sur les données et la sécurité.'
+        description: 'La plateforme est exploitée par Labinux sur des serveurs autogérés, garantissant un contrôle total sur les données et la sécurité. Ces serveurs fonctionnent sur une infrastructure fournie par :'
       },
 
       intellectualProperty: {
@@ -221,7 +240,7 @@ const { t } = useTranslations({
 
       liability: {
         title: 'Limitation de responsabilité',
-        description: 'Open Course Factory fournit un accès éducatif aux terminaux "en l\'état" sans garantie d\'aucune sorte. Solution Libre ne peut être tenu responsable des dommages résultant de l\'utilisation de cette plateforme, y compris mais sans s\'y limiter, la perte de données, l\'interruption de service ou les incidents de sécurité. Les utilisateurs sont responsables de leurs actions dans les terminaux fournis.'
+        description: 'Open Course Factory fournit un accès éducatif aux terminaux "en l\'état" sans garantie d\'aucune sorte. Labinux ne peut être tenu responsable des dommages résultant de l\'utilisation de cette plateforme, y compris mais sans s\'y limiter, la perte de données, l\'interruption de service ou les incidents de sécurité. Les utilisateurs sont responsables de leurs actions dans les terminaux fournis.'
       },
 
       applicableLaw: {
