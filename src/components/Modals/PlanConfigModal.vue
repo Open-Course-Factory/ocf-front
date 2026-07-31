@@ -344,8 +344,8 @@
                   </tbody>
                 </table>
 
-                <p v-if="firstBracketIsDead" class="ocf-preview-warning" role="status">
-                  {{ t('planConfig.seatPricing.deadBracketWarning') }}
+                <p v-if="firstDiscountAt" class="ocf-preview-note" role="status">
+                  {{ t('planConfig.seatPricing.firstDiscountAt', { n: firstDiscountAt }) }}
                 </p>
                 <p class="field-hint">{{ t('planConfig.seatPricing.previewHint') }}</p>
               </div>
@@ -525,8 +525,8 @@ const { t } = useTranslations({
         previewLoading: 'Computing…',
         previewError: 'Could not compute the preview.',
         previewEmpty: 'Add a bracket to see what it produces.',
-        deadBracketWarning:
-          'No quantity below reaches a second bracket — every customer in this range pays the first price, so the degression is unreachable.'
+        firstDiscountAt:
+          'No discount applies below {n} units — every smaller order pays the first bracket price. Check that against the order sizes you actually expect.'
       },
       sizeCapacity: {
         section: 'Size capacity',
@@ -604,8 +604,8 @@ const { t } = useTranslations({
         previewLoading: 'Calcul en cours…',
         previewError: 'Impossible de calculer l\'aperçu.',
         previewEmpty: 'Ajoutez un palier pour voir ce qu\'il produit.',
-        deadBracketWarning:
-          'Aucune quantité ci-dessous n\'atteint un deuxième palier — tous les clients de cette plage paient le premier prix, la dégression est donc inatteignable.'
+        firstDiscountAt:
+          'Aucune remise en dessous de {n} unités — toute commande plus petite paie le prix du premier palier. À confronter aux tailles de commande que vous attendez réellement.'
       },
       sizeCapacity: {
         section: 'Capacite par taille',
@@ -663,21 +663,50 @@ const formData = reactive({
 type PricingBracket = { min_quantity: number; max_quantity: number; unit_amount: number }
 const pricingTiers = reactive<PricingBracket[]>([])
 
-// The quantities the preview is computed at. Chosen to straddle a typical order
-// so a bracket that nobody reaches is visible rather than merely possible.
-const PREVIEW_QUANTITIES = [1, 5, 10, 15, 20, 30]
+// The quantities the preview is computed at, derived from the ladder's own
+// boundaries: one unit below and one unit at each edge, so every bracket is
+// exercised where it actually changes.
+//
+// A fixed list cannot do this. The monthly seat ladder is denominated in seats
+// and the day pack in learner-days, so boundaries at 5/15 and at 30/60 need
+// completely different probes — a seat-shaped list would never cross a pack
+// boundary and the preview would show one flat price for a perfectly good ladder.
+const previewQuantities = computed<number[]>(() => {
+  const points = new Set<number>([1])
+  for (const bracket of pricingTiers) {
+    if (bracket.min_quantity > 1) {
+      points.add(bracket.min_quantity - 1)
+      points.add(bracket.min_quantity)
+    }
+    if (bracket.max_quantity > 0) {
+      points.add(bracket.max_quantity)
+      points.add(bracket.max_quantity + 1)
+    }
+  }
+  return [...points].filter(n => n > 0).sort((a, b) => a - b).slice(0, 12)
+})
 
 const previewPoints = ref<Array<{ quantity: number; total: number; per_unit: number; tier_breakdown?: unknown[] }>>([])
 const previewLoading = ref(false)
 const previewFailed = ref(false)
 
-// True when no previewed quantity reaches past the first bracket: the degression
-// the admin just designed is unreachable for every customer in range. This is the
-// mistake that is invisible without the totals — a first bracket of 1-10 gives a
-// buyer of 5 OR 10 units exactly the same price.
-const firstBracketIsDead = computed(() => {
-  if (pricingTiers.length < 2 || previewPoints.value.length === 0) return false
-  return previewPoints.value.every(p => (p.tier_breakdown?.length ?? 0) <= 1)
+// The smallest order that gets any discount at all — one unit past the first
+// bracket. Null when the ladder is flat, so there is nothing to say.
+//
+// This replaces an earlier "no previewed quantity crosses a bracket" check, which
+// was unsound once the probe quantities became boundary-derived: probes taken AT
+// the boundaries always cross, so the check could never fire. Worse, the two ideas
+// pull in opposite directions — a useful preview probes where the price changes,
+// while "will real customers ever get a discount?" needs realistic order sizes,
+// and this modal cannot know what a realistic order is for an arbitrary unit.
+//
+// Stating the fact sidesteps that entirely: the admin knows their own order sizes
+// and can judge "no discount below 31" far better than a hard-coded guess could.
+const firstDiscountAt = computed<number | null>(() => {
+  if (pricingTiers.length < 2) return null
+  const first = pricingTiers[0]
+  if (!first || first.max_quantity <= 0) return null
+  return first.max_quantity + 1
 })
 
 let previewToken = 0
@@ -700,7 +729,7 @@ async function refreshPreview() {
       tiers: pricingTiers.map(t => ({ ...t })),
       flat_amount: formData.price_amount,
       currency: formData.currency,
-      quantities: PREVIEW_QUANTITIES
+      quantities: previewQuantities.value
     })
     // Ignore a response that a later edit has already superseded.
     if (token !== previewToken) return
@@ -1399,7 +1428,7 @@ watch(() => props.visible, (newVal) => {
   text-align: left;
 }
 
-.ocf-preview-warning {
+.ocf-preview-note {
   margin: 0.75rem 0 0;
   padding: 0.5rem 0.75rem;
   border-left: 3px solid var(--color-warning, var(--color-primary));

@@ -164,6 +164,35 @@ describe('PlanConfigModal — seat pricing', () => {
     expect(sent.quantities.length).toBeGreaterThan(0)
   })
 
+  it('probes the ladder at its own boundaries, whatever the unit', async () => {
+    // A day pack is denominated in learner-days, so its boundaries sit at 30/60.
+    // A fixed, seat-shaped probe list (1/5/10/15/20/30) would never cross them and
+    // the preview would show one flat price for a perfectly good ladder.
+    const wrapper = await mountModal({
+      id: 'plan-pack',
+      name: 'Siège élève — pack jours',
+      use_tiered_pricing: true,
+      pricing_tiers: [
+        { min_quantity: 1, max_quantity: 30, unit_amount: 165 },
+        { min_quantity: 31, max_quantity: 60, unit_amount: 125 },
+        { min_quantity: 61, max_quantity: 0, unit_amount: 105 },
+      ],
+    })
+    await flushPromises()
+
+    const sent = previewProspectivePricing.mock.calls.at(-1)![0]
+    const q: number[] = sent.quantities
+
+    // Each boundary is straddled, so every bracket is exercised where it changes.
+    for (const boundary of [30, 60]) {
+      expect(q, `must probe at ${boundary}`).toContain(boundary)
+      expect(q, `must probe just past ${boundary}`).toContain(boundary + 1)
+    }
+    expect(q).toContain(1)
+    expect(q.every(n => n > 0)).toBe(true)
+    expect(q).toEqual([...q].sort((a, b) => a - b))
+  })
+
   it('clears the ladder when tiering is switched off, rather than leaving it hidden on the row', async () => {
     const wrapper = await mountModal({
       id: 'plan-2',
