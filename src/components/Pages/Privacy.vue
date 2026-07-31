@@ -11,10 +11,10 @@
         <section class="legal-section">
           <h2>{{ t('privacy.dataController.title') }}</h2>
           <div class="info-block">
-            <p><strong>{{ t('privacy.dataController.publisher') }}:</strong> Solution Libre</p>
-            <p><strong>{{ t('privacy.dataController.website') }}:</strong> <a href="https://solution-libre.fr" target="_blank" rel="noopener noreferrer">https://solution-libre.fr</a></p>
+            <p><strong>{{ t('privacy.dataController.publisher') }}:</strong> {{ COMPANY.name }} — {{ COMPANY.legalForm }}, {{ COMPANY.address }}</p>
+            <p><strong>{{ t('privacy.dataController.website') }}:</strong> <a :href="COMPANY.website" target="_blank" rel="noopener noreferrer">{{ COMPANY.website }}</a></p>
             <p><strong>{{ t('privacy.dataController.email') }}:</strong> <a :href="`mailto:${SUPPORT_EMAIL}`">{{ SUPPORT_EMAIL }}</a></p>
-            <p><strong>{{ t('privacy.dataController.director') }}:</strong> Thomas Saquet</p>
+            <p><strong>{{ t('privacy.dataController.director') }}:</strong> {{ COMPANY.publicationDirector }}</p>
           </div>
         </section>
 
@@ -117,7 +117,7 @@
           <h2>{{ t('privacy.contact.title') }}</h2>
           <div class="info-block">
             <p>{{ t('privacy.contact.exerciseRights') }}: <a :href="`mailto:${SUPPORT_EMAIL}`">{{ SUPPORT_EMAIL }}</a></p>
-            <p><strong>{{ t('privacy.contact.controller') }}:</strong> Solution Libre, Thomas Saquet</p>
+            <p><strong>{{ t('privacy.contact.controller') }}:</strong> {{ COMPANY.name }}, {{ COMPANY.publicationDirector }}</p>
             <p><strong>{{ t('privacy.contact.authority') }}:</strong> CNIL — <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer">www.cnil.fr</a></p>
           </div>
         </section>
@@ -135,6 +135,7 @@
 <script setup lang="ts">
 import { useTranslations } from '../../composables/useTranslations'
 import { SUPPORT_EMAIL } from '../../config/contact'
+import { COMPANY } from '../../config/company'
 
 const { t } = useTranslations({
   en: {
