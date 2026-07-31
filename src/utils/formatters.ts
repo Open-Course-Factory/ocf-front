@@ -53,9 +53,14 @@ export function formatCurrency(
   currency: string = 'EUR',
   locale: string = 'fr-FR'
 ): string {
+  // A default parameter only fires on `undefined`, so an empty string reached
+  // Intl and threw RangeError — from inside a render function, which blanked a
+  // whole admin page over one bad row. Absent and empty mean the same thing here.
+  const code = currency?.trim() || 'EUR'
+
   return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: currency.toUpperCase(),
+    currency: code.toUpperCase(),
   }).format(amount / 100)
 }
 
