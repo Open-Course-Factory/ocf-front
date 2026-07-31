@@ -197,7 +197,16 @@
           </div>
           <p v-if="plan.description" class="plan-description">{{ plan.description }}</p>
         </div>
+
+        <p v-if="!availablePlans.length" class="ocf-no-plans">
+          {{ t('subscription.noSelfServicePlans') }}
+        </p>
       </div>
+
+      <p class="ocf-paid-plan-note" data-test="org-paid-plan-note">
+        <i class="fas fa-info-circle"></i>
+        {{ t('subscription.paidPlansNotSelfService') }}
+      </p>
 
       <!-- Quantity input -->
       <div v-if="selectedPlan" class="quantity-section">
@@ -270,6 +279,8 @@ const { t } = useTranslations({
       choosePlan: 'Choose a Plan',
       availablePlans: 'Available Plans',
       selectNewPlan: 'Select a new plan for your organization',
+      paidPlansNotSelfService: 'Paid plans are not bought here. Your organization uses the plan of whoever is working in it, so a trainer subscribes personally and their organization follows. Schools and training organizations get a tailored plan — contact us.',
+      noSelfServicePlans: 'No plan can be assigned here. Your organization already follows the plan of whoever is working in it.',
       month: 'month',
       year: 'year',
       unlimited: 'Unlimited',
@@ -311,6 +322,8 @@ const { t } = useTranslations({
       choosePlan: 'Choisir un plan',
       availablePlans: 'Plans disponibles',
       selectNewPlan: 'Sélectionnez un nouveau plan pour votre organisation',
+      paidPlansNotSelfService: "Les plans payants ne s'achètent pas ici. Votre organisation utilise le plan de la personne qui y travaille : un formateur souscrit à titre personnel et son organisation en bénéficie. Écoles et organismes de formation disposent d'un plan sur mesure — contactez-nous.",
+      noSelfServicePlans: "Aucun plan ne peut être attribué ici. Votre organisation suit déjà le plan de la personne qui y travaille.",
       month: 'mois',
       year: 'an',
       unlimited: 'Illimité',
@@ -335,8 +348,17 @@ const { t } = useTranslations({
 })
 
 const subscription = ref<OrganizationSubscription | null>(null)
+// Only free plans. ocf-core refuses a paid organization subscription outright
+// (#450): nothing creates a Stripe checkout carrying organization_id, so a paid
+// choice here used to record an `incomplete` row, charge nobody, and still show
+// the success toast below. Offering a plan we cannot sell is the whole bug.
+//
+// Paid plans reach an organization by admin assignment ("contact us"), or are
+// inherited from the owner's personal subscription.
 const availablePlans = computed(() =>
-  (plansStore.entities as SubscriptionPlan[]).filter((p: SubscriptionPlan) => p.is_active)
+  (plansStore.entities as SubscriptionPlan[]).filter(
+    (p: SubscriptionPlan) => p.is_active && p.price_amount === 0
+  )
 )
 const isLoading = ref(false)
 const error = ref('')
@@ -729,6 +751,26 @@ const formatLimit = (value: number | undefined): string => {
 .plans-list {
   display: grid;
   gap: 1rem;
+}
+
+/* ocf- prefixed: Bootstrap is loaded globally in this app. */
+.ocf-paid-plan-note {
+  margin: 1.25rem 0 0 0;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--color-primary);
+  background: var(--color-background-secondary);
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.ocf-no-plans {
+  margin: 0;
+  padding: 1.5rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text-secondary);
+  text-align: center;
 }
 
 .plan-option {
