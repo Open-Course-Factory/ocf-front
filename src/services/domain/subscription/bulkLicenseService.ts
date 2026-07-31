@@ -11,6 +11,28 @@ import type {
   BulkPurchaseInput
 } from '../../../types/entities'
 
+/** One unit of a seat product: a seat for a billing period, or one learner for one day. */
+export type SeatUnit = 'seat_month' | 'learner_day'
+
+export interface PurchasableSeatPlan {
+  id: string
+  name: string
+  description: string
+  currency: string
+  billing_interval: string
+  price_amount: number
+  use_tiered_pricing: boolean
+  pricing_tiers: Array<{ min_quantity: number; max_quantity: number; unit_amount: number }>
+  /** Always resolved by the server — never empty, so the screen has nothing to guess. */
+  seat_unit: SeatUnit
+}
+
+export interface PurchasableSeatPlansResponse {
+  can_purchase: boolean
+  reason?: string
+  plans: PurchasableSeatPlan[]
+}
+
 export interface PricingPreviewParams {
   subscriptionPlanId: string
   quantity: number
@@ -29,6 +51,21 @@ export interface UpdateQuantityInput {
  * Handles volume-based license purchases, assignments, and management
  */
 export const bulkLicenseService = {
+  /**
+   * The seat products this trainer may buy for learners.
+   *
+   * Seat plans are hidden from the catalogue (is_catalog=false, so they never
+   * reach the public pricing page), which means the ordinary plan list does not
+   * contain them. This endpoint returns exactly what a purchase would accept,
+   * plus whether the caller may buy at all — an ineligible caller gets
+   * can_purchase=false with a reason rather than a 403, because the screen has
+   * to explain itself.
+   */
+  async getPurchasableSeatPlans(): Promise<PurchasableSeatPlansResponse> {
+    const response = await axios.get('/subscription-batches/purchasable-plans')
+    return response.data
+  },
+
   /**
    * Get pricing preview for bulk purchase
    * @param params Plan ID and quantity
