@@ -9,10 +9,28 @@
         <h4>{{ t('upgradeToTeam.title') }}</h4>
         <p>{{ t('upgradeToTeam.description') }}</p>
       </div>
-      <button class="btn btn-primary upgrade-btn" @click="showConvertDialog = true">
+      <!-- #298: converting to a team is pointless without the plan that makes a
+           team useful, so the action becomes the upgrade rather than leading the
+           user into an organization that ignores their plan. The gate sells; it
+           never leaves the banner actionless. -->
+      <button
+        v-if="canRunClassrooms"
+        class="btn btn-primary upgrade-btn"
+        data-test="upgrade-to-team-convert"
+        @click="showConvertDialog = true"
+      >
         <i class="fas fa-arrow-up"></i>
         {{ t('upgradeToTeam.buttonText') }}
       </button>
+      <router-link
+        v-else
+        to="/subscription-plans"
+        class="btn btn-primary upgrade-btn"
+        data-test="upgrade-to-team-plan"
+      >
+        <i class="fas fa-arrow-up"></i>
+        {{ t('upgradeToTeam.seePlanButton') }}
+      </router-link>
     </div>
   </div>
 
@@ -76,10 +94,14 @@ import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { useTranslations } from '../../composables/useTranslations'
+import { useClassroomEntitlement } from '../../composables/useClassroomEntitlement'
 import BaseModal from '../Modals/BaseModal.vue'
 
 const orgStore = useOrganizationsStore()
 const { isPersonalOrganization, currentOrganization } = storeToRefs(orgStore)
+
+// Shared with ClassroomPlanCta so the gate is one rule, not two (#298).
+const { canRunClassrooms } = useClassroomEntitlement()
 
 const { t } = useTranslations({
   en: {
@@ -87,6 +109,7 @@ const { t } = useTranslations({
       title: 'Want to collaborate?',
       description: 'Upgrade to a team organization to invite members and manage groups.',
       buttonText: 'Upgrade to Team',
+      seePlanButton: 'See the Formateur plan',
       dialogTitle: 'Convert to Team Organization',
       dialogDescription: 'Your personal workspace will become a team organization. You can then invite members and collaborate together.',
       teamNameLabel: 'Team Name',
@@ -105,6 +128,7 @@ const { t } = useTranslations({
       title: 'Envie de collaborer ?',
       description: 'Passez à une organisation d\'équipe pour inviter des membres et gérer des groupes.',
       buttonText: 'Passer en équipe',
+      seePlanButton: 'Voir le plan Formateur',
       dialogTitle: 'Convertir en organisation d\'équipe',
       dialogDescription: 'Votre espace personnel deviendra une organisation d\'équipe. Vous pourrez ensuite inviter des membres et collaborer ensemble.',
       teamNameLabel: 'Nom de l\'équipe',

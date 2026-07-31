@@ -11,6 +11,11 @@
       </button>
     </div>
 
+    <!-- Pairs org creation with the plan that enables classrooms (#298). Sits
+         above the comparison because it answers "should I create one at all?"
+         before the page explains which type to create. -->
+    <ClassroomPlanCta v-if="!isLoading && !error" @create="$emit('create')" />
+
     <!-- Organization Types Comparison - Always show to help users understand options -->
     <OrganizationTypesComparison v-if="!isLoading && !error" />
 
@@ -61,6 +66,7 @@
 
 <script setup lang="ts">
 import { useTranslations } from '../../composables/useTranslations'
+import ClassroomPlanCta from './ClassroomPlanCta.vue'
 import OrganizationCard from './OrganizationCard.vue'
 import OrganizationTypesComparison from './OrganizationTypesComparison.vue'
 import type { Organization } from '../../types'
