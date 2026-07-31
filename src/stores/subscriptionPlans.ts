@@ -487,6 +487,55 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
         }
     }
 
+    // Price a bracket ladder that has NOT been saved, so the plan editor can show
+    // what the admin's brackets actually produce before they commit them.
+    //
+    // Deliberately a backend call rather than local arithmetic: graduated pricing
+    // is computed in exactly one place (ocf-core GraduatedCost) and every surface
+    // that displays a price reads it from there. A TypeScript reimplementation
+    // would recreate the preview-vs-invoice divergence that ocf-core#442 exists
+    // to fix.
+    const previewProspectivePricing = async (input: {
+        tiers: Array<{ min_quantity: number; max_quantity: number; unit_amount: number }>
+        flat_amount?: number
+        currency?: string
+        quantities: number[]
+    }) => {
+        return await baseAsync(
+            async () => {
+                if (isDemoMode()) {
+                    logDemoAction('Previewing demo pricing ladder')
+                    await simulateDelay(200)
+                    // Demo mode must not invent prices: an empty table is honest,
+                    // a locally-computed one would be a second implementation.
+                    return { currency: input.currency || 'eur', points: [] }
+                }
+                const response = await axios.post('/subscription-plans/pricing-preview', input)
+                return response.data
+            },
+            'subscriptionPlans.pricingPreviewError'
+        );
+    }
+
+    // Check the monthly seat ladder and the day-pack ladder against the invariants
+    // that belong to the PAIR — a working week must stay cheaper than a month, a
+    // seat must undercut the individual plan, and no bracket may be unreachable.
+    // Neither plan can validate itself, which is why this takes both.
+    const checkSeatPricingCoherence = async (input: Record<string, unknown>) => {
+        return await baseAsync(
+            async () => {
+                if (isDemoMode()) {
+                    logDemoAction('Checking demo seat pricing coherence')
+                    await simulateDelay(200)
+                    return { ok: true, points: [], violations: [] }
+                }
+                const response = await axios.post('/subscription-plans/seat-pricing-check', input)
+                return response.data
+            },
+            'subscriptionPlans.coherenceCheckError'
+        );
+    }
+
     // Auto-load plans when store is first used
     let plansLoaded = false
     const ensurePlansLoaded = async () => {
@@ -512,6 +561,8 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
         syncPlansWithStripe,
         syncAndLoadPlans,
         mirrorPlansToStripe,
-        importPlansFromStripe
+        importPlansFromStripe,
+        previewProspectivePricing,
+        checkSeatPricingCoherence
     }
 })

@@ -222,6 +222,136 @@
             <p class="field-hint">{{ t('planConfig.groupManagementHint') }}</p>
           </div>
 
+          <div class="form-group form-group-wide ocf-seat-pricing">
+            <h4 class="section-title">{{ t('planConfig.seatPricing.section') }}</h4>
+
+            <div class="checkbox-wrapper">
+              <input
+                id="plan-bulk-purchasable"
+                v-model="formData.bulk_purchasable"
+                data-test="plan-bulk-purchasable-toggle"
+                type="checkbox"
+                class="form-checkbox"
+              />
+              <label for="plan-bulk-purchasable" class="checkbox-label">
+                {{ t('planConfig.seatPricing.bulkPurchasable') }}
+              </label>
+            </div>
+            <p class="field-hint">{{ t('planConfig.seatPricing.bulkPurchasableHint') }}</p>
+
+            <div class="checkbox-wrapper ocf-tiered-toggle">
+              <input
+                id="plan-use-tiered"
+                v-model="formData.use_tiered_pricing"
+                data-test="plan-use-tiered-toggle"
+                type="checkbox"
+                class="form-checkbox"
+              />
+              <label for="plan-use-tiered" class="checkbox-label">
+                {{ t('planConfig.seatPricing.useTiered') }}
+              </label>
+            </div>
+            <p class="field-hint">{{ t('planConfig.seatPricing.useTieredHint') }}</p>
+
+            <div v-if="formData.use_tiered_pricing" class="ocf-bracket-editor">
+              <div
+                v-for="(bracket, index) in pricingTiers"
+                :key="index"
+                class="ocf-bracket-row"
+                data-test="plan-bracket-row"
+              >
+                <div class="row-field">
+                  <label :for="`bracket-from-${index}`">{{ t('planConfig.seatPricing.bracketFrom') }}</label>
+                  <input
+                    :id="`bracket-from-${index}`"
+                    v-model.number="bracket.min_quantity"
+                    type="number"
+                    min="1"
+                    class="row-count-input"
+                  />
+                </div>
+                <div class="row-field">
+                  <label :for="`bracket-to-${index}`">{{ t('planConfig.seatPricing.bracketTo') }}</label>
+                  <input
+                    :id="`bracket-to-${index}`"
+                    v-model.number="bracket.max_quantity"
+                    type="number"
+                    min="0"
+                    class="row-count-input"
+                    :title="t('planConfig.seatPricing.bracketToUnlimited')"
+                  />
+                </div>
+                <div class="row-field">
+                  <label :for="`bracket-unit-${index}`">{{ t('planConfig.seatPricing.bracketUnit') }}</label>
+                  <input
+                    :id="`bracket-unit-${index}`"
+                    v-model.number="bracket.unit_amount"
+                    type="number"
+                    min="0"
+                    class="row-count-input"
+                  />
+                </div>
+                <button
+                  type="button"
+                  class="btn-icon"
+                  :aria-label="t('planConfig.seatPricing.removeBracket')"
+                  :title="t('planConfig.seatPricing.removeBracket')"
+                  data-test="plan-bracket-remove"
+                  @click="removeBracket(index)"
+                >
+                  ×
+                </button>
+              </div>
+
+              <button
+                type="button"
+                class="btn-add-row"
+                data-test="plan-bracket-add"
+                @click="addBracket"
+              >
+                + {{ t('planConfig.seatPricing.addBracket') }}
+              </button>
+
+              <!-- Reserved region: the preview swaps between loading, empty, error
+                   and table states as the admin types, and must never push the
+                   save button around while doing so. -->
+              <div class="ocf-bracket-preview" data-test="plan-bracket-preview">
+                <h5>{{ t('planConfig.seatPricing.previewTitle') }}</h5>
+
+                <p v-if="previewLoading" class="ocf-preview-state">
+                  {{ t('planConfig.seatPricing.previewLoading') }}
+                </p>
+                <p v-else-if="previewFailed" class="ocf-preview-state ocf-preview-error">
+                  {{ t('planConfig.seatPricing.previewError') }}
+                </p>
+                <p v-else-if="previewPoints.length === 0" class="ocf-preview-state">
+                  {{ t('planConfig.seatPricing.previewEmpty') }}
+                </p>
+                <table v-else class="ocf-preview-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">{{ t('planConfig.seatPricing.previewQuantity') }}</th>
+                      <th scope="col">{{ t('planConfig.seatPricing.previewTotal') }}</th>
+                      <th scope="col">{{ t('planConfig.seatPricing.previewPerUnit') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="point in previewPoints" :key="point.quantity">
+                      <td>{{ point.quantity }}</td>
+                      <td>{{ (point.total / 100).toFixed(2) }}</td>
+                      <td>{{ point.per_unit.toFixed(2) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <p v-if="firstBracketIsDead" class="ocf-preview-warning" role="status">
+                  {{ t('planConfig.seatPricing.deadBracketWarning') }}
+                </p>
+                <p class="field-hint">{{ t('planConfig.seatPricing.previewHint') }}</p>
+              </div>
+            </div>
+          </div>
+
           <div class="form-group">
             <label for="plan-default-backend">{{ t('planConfig.defaultBackend') }}</label>
             <select
@@ -333,7 +463,10 @@ import BaseModal from './BaseModal.vue'
 import { CANONICAL_SIZE_CATALOG, computeMaxFromRows, type SizeQuotaRow } from '../../utils/quotaFormatters'
 import { formatMcpuAsVcpu } from '../../utils/formatters'
 import { terminalService } from '../../services/domain/terminal/terminalService'
+import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import type { Backend } from '../../types/terminal'
+
+const plansStore = useSubscriptionPlansStore()
 
 const { t } = useTranslations({
   en: {
@@ -370,6 +503,31 @@ const { t } = useTranslations({
       cancel: 'Cancel',
       save: 'Save',
       create: 'Create',
+      seatPricing: {
+        section: 'Seat pricing',
+        bulkPurchasable: 'Sellable as seats',
+        bulkPurchasableHint:
+          'Lets a trainer buy licences of this plan for learners. Independent of catalog visibility — a learner seat is normally hidden from the pricing page yet sellable.',
+        useTiered: 'Volume pricing (graduated brackets)',
+        useTieredHint:
+          'Brackets stack: 20 units under 1-10 @ 9.00 then 11+ @ 7.00 cost 10x9.00 + 10x7.00, not 20x7.00.',
+        bracketFrom: 'From',
+        bracketTo: 'To',
+        bracketUnit: 'Unit price (cents)',
+        bracketToUnlimited: '0 = no upper limit',
+        addBracket: 'Add bracket',
+        removeBracket: 'Remove this bracket',
+        previewTitle: 'What these brackets produce',
+        previewHint: 'Computed by the server, so this is exactly what a customer would be charged.',
+        previewQuantity: 'Quantity',
+        previewTotal: 'Total',
+        previewPerUnit: 'Per unit',
+        previewLoading: 'Computing…',
+        previewError: 'Could not compute the preview.',
+        previewEmpty: 'Add a bracket to see what it produces.',
+        deadBracketWarning:
+          'No quantity below reaches a second bracket — every customer in this range pays the first price, so the degression is unreachable.'
+      },
       sizeCapacity: {
         section: 'Size capacity',
         subtitle: 'Students can use this capacity freely — mix any way they want',
@@ -424,6 +582,31 @@ const { t } = useTranslations({
       cancel: 'Annuler',
       save: 'Enregistrer',
       create: 'Creer',
+      seatPricing: {
+        section: 'Tarification des sièges',
+        bulkPurchasable: 'Vendable en sièges',
+        bulkPurchasableHint:
+          "Permet à un formateur d'acheter des licences de ce plan pour ses apprenants. Indépendant de la visibilité au catalogue — un siège élève est normalement masqué de la page tarifs tout en restant vendable.",
+        useTiered: 'Tarification dégressive (paliers cumulés)',
+        useTieredHint:
+          'Les paliers se cumulent : 20 unités avec 1-10 à 9,00 puis 11+ à 7,00 coûtent 10x9,00 + 10x7,00, et non 20x7,00.',
+        bracketFrom: 'À partir de',
+        bracketTo: "Jusqu'à",
+        bracketUnit: 'Prix unitaire (centimes)',
+        bracketToUnlimited: '0 = sans limite haute',
+        addBracket: 'Ajouter un palier',
+        removeBracket: 'Supprimer ce palier',
+        previewTitle: 'Ce que produisent ces paliers',
+        previewHint: 'Calculé par le serveur : c\'est exactement ce qui sera facturé au client.',
+        previewQuantity: 'Quantité',
+        previewTotal: 'Total',
+        previewPerUnit: 'Prix unitaire',
+        previewLoading: 'Calcul en cours…',
+        previewError: 'Impossible de calculer l\'aperçu.',
+        previewEmpty: 'Ajoutez un palier pour voir ce qu\'il produit.',
+        deadBracketWarning:
+          'Aucune quantité ci-dessous n\'atteint un deuxième palier — tous les clients de cette plage paient le premier prix, la dégression est donc inatteignable.'
+      },
       sizeCapacity: {
         section: 'Capacite par taille',
         subtitle: 'Les apprenants pourront utiliser cette capacite librement — la repartir comme ils veulent',
@@ -470,8 +653,89 @@ const formData = reactive({
   max_memory_mb: 0,
   session_supervision_enabled: false,
   group_management_enabled: false,
+  bulk_purchasable: false,
+  use_tiered_pricing: false,
   default_backend: ''
 })
+
+// Graduated bracket ladder. Kept outside formData because it is a list the admin
+// edits row by row, like sizeRows, rather than a scalar field.
+type PricingBracket = { min_quantity: number; max_quantity: number; unit_amount: number }
+const pricingTiers = reactive<PricingBracket[]>([])
+
+// The quantities the preview is computed at. Chosen to straddle a typical order
+// so a bracket that nobody reaches is visible rather than merely possible.
+const PREVIEW_QUANTITIES = [1, 5, 10, 15, 20, 30]
+
+const previewPoints = ref<Array<{ quantity: number; total: number; per_unit: number; tier_breakdown?: unknown[] }>>([])
+const previewLoading = ref(false)
+const previewFailed = ref(false)
+
+// True when no previewed quantity reaches past the first bracket: the degression
+// the admin just designed is unreachable for every customer in range. This is the
+// mistake that is invisible without the totals — a first bracket of 1-10 gives a
+// buyer of 5 OR 10 units exactly the same price.
+const firstBracketIsDead = computed(() => {
+  if (pricingTiers.length < 2 || previewPoints.value.length === 0) return false
+  return previewPoints.value.every(p => (p.tier_breakdown?.length ?? 0) <= 1)
+})
+
+let previewToken = 0
+
+// Prices the current ladder server-side. Never computed locally: graduated
+// pricing lives in exactly one place (ocf-core GraduatedCost) and a second
+// implementation here would drift from what customers are actually charged.
+async function refreshPreview() {
+  if (!formData.use_tiered_pricing || pricingTiers.length === 0) {
+    previewPoints.value = []
+    previewFailed.value = false
+    return
+  }
+
+  const token = ++previewToken
+  previewLoading.value = true
+  previewFailed.value = false
+  try {
+    const result = await plansStore.previewProspectivePricing({
+      tiers: pricingTiers.map(t => ({ ...t })),
+      flat_amount: formData.price_amount,
+      currency: formData.currency,
+      quantities: PREVIEW_QUANTITIES
+    })
+    // Ignore a response that a later edit has already superseded.
+    if (token !== previewToken) return
+    previewPoints.value = Array.isArray(result?.points) ? result.points : []
+  } catch {
+    if (token !== previewToken) return
+    previewPoints.value = []
+    previewFailed.value = true
+  } finally {
+    if (token === previewToken) previewLoading.value = false
+  }
+}
+
+function addBracket() {
+  const last = pricingTiers[pricingTiers.length - 1]
+  const from = last && last.max_quantity > 0 ? last.max_quantity + 1 : 1
+  pricingTiers.push({ min_quantity: from, max_quantity: 0, unit_amount: formData.price_amount || 0 })
+  refreshPreview()
+}
+
+function removeBracket(index: number) {
+  pricingTiers.splice(index, 1)
+  refreshPreview()
+}
+
+// Recompute as the admin types, debounced: each keystroke in a bracket field
+// would otherwise be a request, and the answer only matters once they pause.
+let previewDebounce: ReturnType<typeof setTimeout> | undefined
+watch(
+  () => [formData.use_tiered_pricing, formData.price_amount, JSON.stringify(pricingTiers)],
+  () => {
+    if (previewDebounce) clearTimeout(previewDebounce)
+    previewDebounce = setTimeout(refreshPreview, 300)
+  }
+)
 
 // Backend routing is normally driven by a picker fed from
 // terminalService.getBackends(): a <select> for the default backend and a
@@ -582,6 +846,20 @@ function populateFromPlan(plan: any) {
   // Capability toggles + backend routing (dedicated columns).
   formData.session_supervision_enabled = plan.session_supervision_enabled === true
   formData.group_management_enabled = plan.group_management_enabled === true
+  formData.bulk_purchasable = plan.bulk_purchasable === true
+
+  // Seat pricing ladder.
+  formData.use_tiered_pricing = plan.use_tiered_pricing === true
+  pricingTiers.splice(0, pricingTiers.length)
+  if (Array.isArray(plan.pricing_tiers)) {
+    for (const tier of plan.pricing_tiers) {
+      pricingTiers.push({
+        min_quantity: Number(tier?.min_quantity) || 0,
+        max_quantity: Number(tier?.max_quantity) || 0,
+        unit_amount: Number(tier?.unit_amount) || 0
+      })
+    }
+  }
   formData.default_backend = plan.default_backend || ''
   const savedAllowed = Array.isArray(plan.allowed_backends) ? plan.allowed_backends : []
   selectedAllowedBackends.value = [...savedAllowed]
@@ -603,6 +881,8 @@ function populateFromPlan(plan: any) {
     showUnlimitedHint.value = false
     showNoBreakdownHint.value = true
   }
+
+  refreshPreview()
 }
 
 function resetForm() {
@@ -619,7 +899,12 @@ function resetForm() {
   formData.max_memory_mb = 0
   formData.session_supervision_enabled = false
   formData.group_management_enabled = false
+  formData.bulk_purchasable = false
+  formData.use_tiered_pricing = false
   formData.default_backend = ''
+  pricingTiers.splice(0, pricingTiers.length)
+  previewPoints.value = []
+  previewFailed.value = false
   selectedAllowedBackends.value = []
   allowedBackendsText.value = ''
   sizeRows.splice(0, sizeRows.length, { size_key: 'l', count: 1 })
@@ -662,6 +947,10 @@ function handleSave() {
     ...formData,
     max_cpu: resolvedMaxCpu,
     max_memory_mb: resolvedMaxMemoryMb,
+    // The ladder rides alongside use_tiered_pricing (spread above). Sent even
+    // when tiering is off, so turning it off and saving clears the brackets
+    // rather than leaving an invisible ladder on the row.
+    pricing_tiers: formData.use_tiered_pricing ? pricingTiers.map(t => ({ ...t })) : [],
     // Capability columns without an editor here — preserved from the plan.
     max_session_duration_minutes: preservedNumber('max_session_duration_minutes'),
     data_persistence_gb: preservedNumber('data_persistence_gb'),
@@ -1032,5 +1321,90 @@ watch(() => props.visible, (newVal) => {
   .size-quota-row {
     grid-template-columns: 1fr;
   }
+
+  .ocf-bracket-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Seat pricing. Classes are ocf- prefixed because Bootstrap is loaded globally
+   and unprefixed names here have collided before. */
+.ocf-seat-pricing {
+  border-top: 1px solid var(--color-border);
+  padding-top: 1rem;
+  margin-top: 0.5rem;
+}
+
+.ocf-tiered-toggle {
+  margin-top: 0.75rem;
+}
+
+.ocf-bracket-editor {
+  margin-top: 0.75rem;
+}
+
+.ocf-bracket-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 0.5rem;
+  align-items: end;
+  margin-bottom: 0.5rem;
+}
+
+/* The preview swaps between loading, empty, error and table states as the admin
+   types. A reserved minimum height keeps the save button still while it does —
+   a control that moves under the cursor is the layout-shift failure this project
+   treats as a bug, not a detail. */
+.ocf-bracket-preview {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  min-height: 15rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 6px);
+  background: var(--color-surface-alt, var(--color-background));
+}
+
+.ocf-bracket-preview h5 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+}
+
+.ocf-preview-state {
+  margin: 0.5rem 0;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.ocf-preview-error {
+  color: var(--color-danger, var(--color-text-primary));
+}
+
+.ocf-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.ocf-preview-table th,
+.ocf-preview-table td {
+  padding: 0.25rem 0.5rem;
+  text-align: right;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.ocf-preview-table th:first-child,
+.ocf-preview-table td:first-child {
+  text-align: left;
+}
+
+.ocf-preview-warning {
+  margin: 0.75rem 0 0;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--color-warning, var(--color-primary));
+  background: var(--color-surface, transparent);
+  color: var(--color-text-primary);
+  font-size: 0.85rem;
 }
 </style>
