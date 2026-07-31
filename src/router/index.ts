@@ -228,10 +228,6 @@ const basicRoutes = [
         meta: { requiresAuth: true, isSettings: true }
       },
       { path: 'subscription-plans', name: 'SubscriptionPlans', component: () => import('../components/Pages/SubscriptionPlansCustomer.vue'), meta: { requiresAuth: true } },
-      // Seat purchase is not gated on a plan feature here: the page itself asks the
-      // backend whether the caller may buy and explains when they may not, which is
-      // friendlier than a route guard that simply refuses to navigate.
-      { path: 'buy-seats', name: 'SeatPurchase', component: () => import('../components/Pages/SeatPurchase.vue'), meta: { requiresAuth: true } },
       { path: 'admin/subscription-plans', name: 'AdminSubscriptionPlans', component: () => import('../components/Pages/SubscriptionPlans.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
       { path: 'billing-addresses', name: 'BillingAddresses', component: () => import('../components/Pages/BillingAddresses.vue'), meta: { requiresAuth: true, isSettings: true, requiresEmailVerification: true } },
       { path: 'payment-methods', name: 'PaymentMethods', component: () => import('../components/Pages/PaymentMethods.vue'), meta: { requiresAuth: true, isSettings: true, requiresEmailVerification: true } },

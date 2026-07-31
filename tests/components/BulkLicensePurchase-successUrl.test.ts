@@ -29,6 +29,8 @@ const h = vi.hoisted(() => ({
   createBulkCheckoutSession: vi.fn(),
   loadBatches: vi.fn(),
   loadPlans: vi.fn(),
+  getPurchasableSeatPlans: vi.fn(),
+  getPricingPreview: vi.fn(),
   loadEntities: vi.fn(),
   // Buyer's existing batches at purchase time (mutated per test).
   batches: [] as any[],
@@ -41,6 +43,14 @@ vi.mock('vue-router', () => ({
 
 vi.mock('../../src/composables/useTranslations', () => ({
   useTranslations: () => ({ t: (k: string) => k }),
+}))
+
+vi.mock('../../src/services/domain/subscription/bulkLicenseService', () => ({
+  bulkLicenseService: {
+    getPurchasableSeatPlans: h.getPurchasableSeatPlans,
+    getPricingPreview: h.getPricingPreview,
+    createBulkCheckoutSession: vi.fn(),
+  },
 }))
 
 vi.mock('../../src/stores/subscriptionPlans', () => ({
@@ -80,11 +90,11 @@ function mountBulk() {
   })
 }
 
-// Drive a purchase: pick a plan (quantity defaults to 10) and run the handler
-// the Purchase button calls. Asserting the store args is the same boundary
-// contract the existing direct-to-Stripe behavioral tests use.
+// Drive a purchase the way the screen now works: the order is learners +
+// duration, and the cheaper quote is preselected on load, so by the time the
+// quotes have resolved there is already a plan and a quantity to buy.
 async function purchase(wrapper: any) {
-  ;(wrapper.vm as any).selectPlan('plan-tiered')
+  await flushPromises()
   await (wrapper.vm as any).handlePurchase()
   await flushPromises()
 }
@@ -96,6 +106,15 @@ describe('BulkLicensePurchase — success URL carries the pre-purchase batch cou
     h.createBulkCheckoutSession.mockReset().mockResolvedValue({ url: 'https://stripe.test/session' })
     h.loadBatches.mockReset().mockResolvedValue(undefined)
     h.loadPlans.mockReset().mockResolvedValue(undefined)
+    h.getPurchasableSeatPlans.mockReset().mockResolvedValue({
+      can_purchase: true,
+      plans: [{
+        id: 'plan-tiered', name: 'Siège élève', description: '', currency: 'eur',
+        billing_interval: 'month', price_amount: 900, use_tiered_pricing: true,
+        pricing_tiers: [], seat_unit: 'seat_month',
+      }],
+    })
+    h.getPricingPreview.mockReset().mockResolvedValue({ total_monthly_cost: 8000 })
     h.loadEntities.mockReset().mockResolvedValue(undefined)
     h.batches = []
   })

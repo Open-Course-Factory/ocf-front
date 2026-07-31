@@ -38,74 +38,95 @@
       </div>
 
       <div v-else class="purchase-content">
-        <!-- Step 1: Plan Selection -->
-        <div class="purchase-section">
-          <div class="section-header">
-            <h3>
-              <span class="step-number">1</span>
-              {{ t('bulkPurchase.selectPlan') }}
-            </h3>
+        <!-- Not allowed to buy: explain instead of showing a form that would be
+             refused. The backend answers can_purchase with a reason for this. -->
+        <div v-if="!canPurchase" class="empty-state" data-test="seat-purchase-ineligible">
+          <i class="fas fa-info-circle"></i>
+          <p>{{ t('bulkPurchase.ineligible') }}</p>
+          <p v-if="ineligibleReason" class="section-placeholder">{{ ineligibleReason }}</p>
+        </div>
+
+        <template v-else>
+          <!-- Step 1: the order, in the trainer's terms -->
+          <div class="purchase-section">
+            <div class="section-header">
+              <h3>
+                <span class="step-number">1</span>
+                {{ t('bulkPurchase.yourClass') }}
+              </h3>
+            </div>
+
+            <div class="ocf-order-form">
+              <div class="ocf-order-field">
+                <label for="bp-learners">{{ t('bulkPurchase.learnersLabel') }}</label>
+                <input
+                  id="bp-learners"
+                  v-model.number="learners"
+                  data-test="seat-purchase-learners"
+                  type="number"
+                  min="1"
+                  max="200"
+                  class="form-control"
+                />
+              </div>
+              <div class="ocf-order-field">
+                <label for="bp-duration">{{ t('bulkPurchase.durationLabel') }}</label>
+                <select
+                  id="bp-duration"
+                  v-model="duration"
+                  data-test="seat-purchase-duration"
+                  class="form-control"
+                >
+                  <option v-for="d in DAY_CHOICES" :key="d" :value="String(d)">
+                    {{ t('bulkPurchase.days', { n: d }) }}
+                  </option>
+                  <option value="month">{{ t('bulkPurchase.oneMonth') }}</option>
+                </select>
+              </div>
+            </div>
           </div>
 
-          <div class="plans-grid">
-            <div
-              v-for="plan in tieredPlans"
-              :key="plan.id"
-              :class="['plan-card', { selected: selectedPlanId === plan.id }]"
-              @click="selectPlan(plan.id)"
-            >
-              <div class="plan-header">
-                <h4 class="plan-name">{{ plan.name }}</h4>
-                <div class="plan-price">
-                  {{ formatCurrency(plan.price_amount || plan.price) }}
-                  <span class="price-unit">/{{ t('bulkPurchase.license') }}</span>
+          <!-- Step 2: what it costs. Reserved height so the quotes swapping
+               between states never moves the buy button under the cursor. -->
+          <div class="purchase-section">
+            <div class="section-header">
+              <h3>
+                <span class="step-number">2</span>
+                {{ t('bulkPurchase.whatItCosts') }}
+              </h3>
+            </div>
+
+            <div class="ocf-quotes" data-test="seat-purchase-quotes">
+              <p v-if="quoting" class="section-placeholder">{{ t('bulkPurchase.quoting') }}</p>
+              <p v-else-if="quoteFailed" class="section-placeholder">{{ t('bulkPurchase.quoteError') }}</p>
+              <p v-else-if="quotes.length === 0" class="section-placeholder">{{ t('bulkPurchase.noQuote') }}</p>
+              <div
+                v-for="(q, index) in quotes"
+                :key="q.plan.id"
+                :class="['plan-card', { selected: selectedPlanId === q.plan.id }]"
+                data-test="seat-purchase-quote"
+                @click="chooseQuote(q)"
+              >
+                <div class="plan-header">
+                  <h4 class="plan-name">{{ q.plan.name }}</h4>
+                  <div class="plan-price">{{ formatCurrency(q.total) }}</div>
+                </div>
+                <div class="plan-description">
+                  {{ t('bulkPurchase.quantityDetail', { qty: q.quantity, unit: unitLabel(q.plan.seat_unit) }) }}
+                  · {{ t('bulkPurchase.perLearner', { amount: formatCurrency(Math.round(q.total / Math.max(learners, 1))) }) }}
+                </div>
+                <div v-if="index === 0 && quotes.length > 1" class="plan-badge">
+                  <i class="fas fa-award"></i>
+                  {{ t('bulkPurchase.cheaper') }}
+                </div>
+                <div v-if="selectedPlanId === q.plan.id" class="plan-selected-badge">
+                  <i class="fas fa-check-circle"></i>
+                  {{ t('bulkPurchase.selected') }}
                 </div>
               </div>
-              <div class="plan-description">
-                {{ plan.description || t('bulkPurchase.noDescription') }}
-              </div>
-              <div v-if="plan.use_tiered_pricing" class="plan-badge">
-                <i class="fas fa-layer-group"></i>
-                {{ t('bulkPurchase.volumeDiscount') }}
-              </div>
-              <div v-if="selectedPlanId === plan.id" class="plan-selected-badge">
-                <i class="fas fa-check-circle"></i>
-                {{ t('bulkPurchase.selected') }}
-              </div>
             </div>
           </div>
-
-          <div v-if="tieredPlans.length === 0" class="empty-state">
-            <i class="fas fa-info-circle"></i>
-            <p>{{ t('bulkPurchase.noPlansAvailable') }}</p>
-          </div>
-        </div>
-
-        <!-- Step 2: Quantity and Pricing -->
-        <div class="purchase-section calculator-section" :class="{ 'section-disabled': !selectedPlanId }">
-          <div class="section-header">
-            <h3>
-              <span class="step-number">2</span>
-              {{ t('bulkPurchase.chooseQuantity') }}
-            </h3>
-          </div>
-
-          <div class="calculator-content">
-            <PricingCalculator
-              v-if="selectedPlanId"
-              :plan-id="selectedPlanId"
-              :initial-quantity="quantity"
-              :min-quantity="1"
-              :max-quantity="200"
-              :show-purchase-button="false"
-              @quantity-change="handleQuantityChange"
-            />
-            <div v-else class="section-placeholder">
-              <i class="fas fa-calculator"></i>
-              <p>{{ t('bulkPurchase.selectPlanFirst') }}</p>
-            </div>
-          </div>
-        </div>
+        </template>
 
         <!-- Step 3: Additional Options -->
         <div v-if="selectedPlanId && quantity > 0" class="purchase-section">
@@ -196,13 +217,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import {
+  bulkLicenseService,
+  type PurchasableSeatPlan,
+  type SeatUnit
+} from '../../services/domain/subscription/bulkLicenseService'
 import { useTranslations } from '../../composables/useTranslations'
-import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { useSubscriptionBatchesStore } from '../../stores/subscriptionBatches'
 import { useClassGroupsStore } from '../../stores/classGroups'
-import PricingCalculator from '../Subscription/PricingCalculator.vue'
 import { formatCurrency as formatCurrencyUtil, extractErrorMessage } from '../../utils/formatters'
 import ErrorAlert from '../UI/ErrorAlert.vue'
 
@@ -211,7 +234,22 @@ const { t } = useTranslations({
     bulkPurchase: {
       title: 'Purchase Bulk Licenses',
       subtitle: 'Buy multiple licenses with volume discounts',
-      loadingPlans: 'Loading subscription plans...',
+      loadingPlans: 'Loading seat products...',
+      ineligible: 'Your plan does not allow buying seats for learners.',
+      yourClass: 'Your class',
+      whatItCosts: 'What it costs',
+      learnersLabel: 'How many learners?',
+      durationLabel: 'For how long?',
+      days: '{n} day(s)',
+      oneMonth: 'One month',
+      quoting: 'Calculating...',
+      quoteError: 'Could not calculate the price.',
+      noQuote: 'No option applies to this combination.',
+      cheaper: 'Cheaper',
+      quantityDetail: '{qty} {unit}',
+      perLearner: '{amount} per learner',
+      seatMonths: 'seat-month(s)',
+      learnerDays: 'learner-day(s)',
       selectPlan: 'Select a Plan',
       selectPlanFirst: 'Please select a plan above to see pricing',
       chooseQuantity: 'Choose Quantity',
@@ -242,7 +280,22 @@ const { t } = useTranslations({
     bulkPurchase: {
       title: 'Acheter des Licences en Gros',
       subtitle: 'Achetez plusieurs licences avec des remises sur volume',
-      loadingPlans: 'Chargement des plans...',
+      loadingPlans: 'Chargement des produits de sièges...',
+      ineligible: "Votre plan ne permet pas d'acheter des sièges pour des apprenants.",
+      yourClass: 'Votre classe',
+      whatItCosts: 'Ce que cela coûte',
+      learnersLabel: "Combien d'apprenants ?",
+      durationLabel: 'Pour combien de temps ?',
+      days: '{n} jour(s)',
+      oneMonth: 'Un mois',
+      quoting: 'Calcul en cours...',
+      quoteError: 'Impossible de calculer le prix.',
+      noQuote: 'Aucune option ne correspond à cette combinaison.',
+      cheaper: 'Moins cher',
+      quantityDetail: '{qty} {unit}',
+      perLearner: '{amount} par apprenant',
+      seatMonths: 'siège(s)-mois',
+      learnerDays: 'journée(s)-apprenant',
       selectPlan: 'Sélectionner un Plan',
       selectPlanFirst: 'Veuillez sélectionner un plan ci-dessus pour voir les prix',
       chooseQuantity: 'Choisir la Quantité',
@@ -271,8 +324,6 @@ const { t } = useTranslations({
   }
 })
 
-const route = useRoute()
-const plansStore = useSubscriptionPlansStore()
 const batchStore = useSubscriptionBatchesStore()
 const groupsStore = useClassGroupsStore()
 
@@ -287,16 +338,92 @@ const quantity = ref(10)
 const selectedGroupId = ref('')
 const couponCode = ref('')
 
-// Computed
-const tieredPlans = computed(() => {
-  return plansStore.entities.filter((plan: any) => {
-    // Only show active plans with tiered pricing enabled
-    return plan.use_tiered_pricing && plan.is_active
-  })
-})
+// Seat products come from their OWN endpoint, not from the plan catalogue.
+// Seat plans are is_catalog=false so they never reach the public pricing page —
+// which also means plansStore.entities does not contain them for a non-admin.
+// Reading the catalogue here showed a trainer an empty page: the purchase screen
+// could not see the only products it exists to sell.
+const seatPlans = ref<PurchasableSeatPlan[]>([])
+const canPurchase = ref(true)
+const ineligibleReason = ref('')
 
-const selectedPlan = computed(() => {
-  return plansStore.entities.find((p: any) => p.id === selectedPlanId.value)
+const DAY_CHOICES = [1, 2, 3, 4, 5, 6, 7, 10]
+
+const learners = ref(10)
+const duration = ref<string>('3')
+
+type Quote = { plan: PurchasableSeatPlan; quantity: number; total: number }
+const quotes = ref<Quote[]>([])
+const quoting = ref(false)
+const quoteFailed = ref(false)
+
+const selectedPlan = computed(() => seatPlans.value.find(p => p.id === selectedPlanId.value))
+
+function unitLabel(unit: SeatUnit): string {
+  return unit === 'learner_day' ? t('bulkPurchase.learnerDays') : t('bulkPurchase.seatMonths')
+}
+
+// How many units this order represents for a given product. The whole reason
+// seat_unit exists: a day pack is priced per learner-day, so ten learners for
+// three days is thirty units, while a monthly seat is priced per seat and the
+// same order is ten. Nothing else distinguishes the two products.
+function quantityFor(plan: PurchasableSeatPlan): number | null {
+  const n = Math.max(1, Math.floor(learners.value || 0))
+  if (plan.seat_unit === 'learner_day') {
+    if (duration.value === 'month') return null // a day pack cannot express a month
+    return n * Number(duration.value)
+  }
+  return n
+}
+
+function chooseQuote(q: Quote) {
+  selectedPlanId.value = q.plan.id
+  quantity.value = q.quantity
+}
+
+let quoteToken = 0
+
+// Prices are fetched, never computed here: graduated pricing lives in exactly one
+// place server-side, and a local implementation would quote a figure the invoice
+// then contradicts.
+async function refreshQuotes() {
+  const token = ++quoteToken
+  quoting.value = true
+  quoteFailed.value = false
+  try {
+    const results: Quote[] = []
+    for (const plan of seatPlans.value) {
+      const qty = quantityFor(plan)
+      if (!qty || qty < 1) continue
+      const preview = await bulkLicenseService.getPricingPreview({
+        subscriptionPlanId: plan.id,
+        quantity: qty
+      })
+      results.push({ plan, quantity: qty, total: Number((preview as any)?.total_monthly_cost ?? 0) })
+    }
+    if (token !== quoteToken) return
+    // Cheapest first: the recommendation is a sort, not a hard-coded rule, so it
+    // stays correct when the ladders change.
+    results.sort((a, b) => a.total - b.total)
+    quotes.value = results
+    if (results.length > 0) chooseQuote(results[0])
+    else {
+      selectedPlanId.value = ''
+      quantity.value = 0
+    }
+  } catch {
+    if (token !== quoteToken) return
+    quotes.value = []
+    quoteFailed.value = true
+  } finally {
+    if (token === quoteToken) quoting.value = false
+  }
+}
+
+let quoteDebounce: ReturnType<typeof setTimeout> | undefined
+watch([learners, duration], () => {
+  if (quoteDebounce) clearTimeout(quoteDebounce)
+  quoteDebounce = setTimeout(refreshQuotes, 300)
 })
 
 const selectedGroup = computed(() => {
@@ -310,14 +437,6 @@ const groups = computed(() => {
 // Methods
 const formatCurrency = (amount: number | undefined): string => {
   return formatCurrencyUtil(amount ?? 0, 'EUR')
-}
-
-const selectPlan = (planId: string) => {
-  selectedPlanId.value = planId
-}
-
-const handleQuantityChange = (newQuantity: number) => {
-  quantity.value = newQuantity
 }
 
 const handlePurchase = async () => {
@@ -380,15 +499,17 @@ const resetForm = () => {
 onMounted(async () => {
   try {
     isLoadingPlans.value = true
-    await Promise.all([
-      plansStore.loadPlans(),
+    const [seats] = await Promise.all([
+      bulkLicenseService.getPurchasableSeatPlans(),
       groupsStore.loadEntities()
     ])
 
-    // Check for planId in query parameters
-    const planIdFromQuery = route.query.planId as string
-    if (planIdFromQuery && tieredPlans.value.some(p => p.id === planIdFromQuery)) {
-      selectedPlanId.value = planIdFromQuery
+    canPurchase.value = !!seats?.can_purchase
+    ineligibleReason.value = seats?.reason || ''
+    seatPlans.value = seats?.plans || []
+
+    if (canPurchase.value && seatPlans.value.length > 0) {
+      await refreshQuotes()
     }
   } catch (err) {
     console.error('Error loading data:', err)
@@ -810,6 +931,33 @@ onMounted(async () => {
   .btn-cancel {
     width: 100%;
     justify-content: center;
+  }
+}
+
+/* The two questions, and the quotes they produce. */
+.ocf-order-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.ocf-order-field label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+}
+
+/* Reserved height: the quotes swap between calculating, error and results as the
+   trainer edits, and the buy button must not move under the cursor. */
+.ocf-quotes {
+  min-height: 12rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .ocf-order-form {
+    grid-template-columns: 1fr;
   }
 }
 </style>
