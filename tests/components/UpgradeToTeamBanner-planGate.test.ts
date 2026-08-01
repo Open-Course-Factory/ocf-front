@@ -16,12 +16,16 @@ import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 
-const currentSubscription = { value: null as any }
+// The verdict comes from the backend now (ocf-core#453): the banner reads
+// can_run_classrooms rather than inspecting a plan field, because the answer
+// depends on the plan, the organization and the caller's role in it, and every
+// screen that worked it out locally got a different one.
+const effectiveFeatures = { value: null as any }
 
-vi.mock('../../src/stores/subscriptions', () => ({
-  useSubscriptionsStore: () => ({
-    get currentSubscription() { return currentSubscription.value },
-    getCurrentSubscription: vi.fn().mockResolvedValue(undefined),
+vi.mock('../../src/stores/permissions', () => ({
+  usePermissionsStore: () => ({
+    get effectiveFeatures() { return effectiveFeatures.value },
+    loadEffectiveFeatures: vi.fn().mockResolvedValue(undefined),
   }),
 }))
 
@@ -54,11 +58,11 @@ describe('UpgradeToTeamBanner — plan gate', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     localStorage.clear()
-    currentSubscription.value = null
+    effectiveFeatures.value = null
   })
 
   it('offers the conversion when the plan grants group management', () => {
-    currentSubscription.value = { subscription_plan: { group_management_enabled: true } }
+    effectiveFeatures.value = { can_run_classrooms: true }
 
     const wrapper = mountBanner()
 
@@ -67,7 +71,7 @@ describe('UpgradeToTeamBanner — plan gate', () => {
   })
 
   it('sends the user to the plan rather than into a team that ignores it', () => {
-    currentSubscription.value = { subscription_plan: { group_management_enabled: false } }
+    effectiveFeatures.value = { can_run_classrooms: false, classroom_denied_reason: 'plan_lacks_group_management' }
 
     const wrapper = mountBanner()
 
@@ -75,8 +79,8 @@ describe('UpgradeToTeamBanner — plan gate', () => {
     expect(wrapper.find('[data-test="upgrade-to-team-plan"]').exists()).toBe(true)
   })
 
-  it('stays actionable when the subscription has not resolved', () => {
-    currentSubscription.value = null
+  it('stays actionable when the verdict has not resolved', () => {
+    effectiveFeatures.value = null
 
     const wrapper = mountBanner()
 
