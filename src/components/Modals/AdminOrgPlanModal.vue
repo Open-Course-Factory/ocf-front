@@ -175,7 +175,10 @@ import { useOrganizationRolePlansStore } from '../../stores/organizationRolePlan
 import type { OrganizationRolePlan } from '../../stores/organizationRolePlans'
 import type { SubscriptionPlan, OrganizationSubscription } from '../../types'
 
-type OrgRole = 'owner' | 'manager' | 'member'
+// Mirrors the backend hierarchy (member < teacher < manager < owner). A school
+// maps teacher to the teaching plan and member to the student one, which is the
+// whole reason per-role overrides exist (ocf-core#460).
+type OrgRole = 'owner' | 'manager' | 'teacher' | 'member'
 
 const props = defineProps<{
   visible: boolean
@@ -227,6 +230,7 @@ const { t } = useTranslations({
       useDefaultPlan: 'Use default plan (no override)',
       roleOwner: 'Owner',
       roleManager: 'Manager',
+      roleTeacher: 'Teacher',
       roleMember: 'Member',
       overridesError: 'Failed to save role plan overrides'
     }
@@ -267,6 +271,7 @@ const { t } = useTranslations({
       useDefaultPlan: 'Utiliser le plan par défaut (aucun)',
       roleOwner: 'Propriétaire',
       roleManager: 'Gestionnaire',
+      roleTeacher: 'Formateur',
       roleMember: 'Membre',
       overridesError: 'Échec de l\'enregistrement des plans par rôle'
     }
@@ -287,15 +292,17 @@ const showAssignConfirm = ref(false)
 let autoCloseTimer: ReturnType<typeof setTimeout> | null = null
 
 // Per-role plan overrides
-const ROLES: OrgRole[] = ['owner', 'manager', 'member']
+// Listed most-privileged first, matching how the roles rank.
+const ROLES: OrgRole[] = ['owner', 'manager', 'teacher', 'member']
 // Current selection per role (plan id, or '' for "use default")
-const roleSelections = ref<Record<OrgRole, string>>({ owner: '', manager: '', member: '' })
+const roleSelections = ref<Record<OrgRole, string>>({ owner: '', manager: '', teacher: '', member: '' })
 // Initial selection per role (to compute the diff on save)
-const initialRoleSelections = ref<Record<OrgRole, string>>({ owner: '', manager: '', member: '' })
+const initialRoleSelections = ref<Record<OrgRole, string>>({ owner: '', manager: '', teacher: '', member: '' })
 // Existing override records per role (id + current plan), if any
 const existingRolePlans = ref<Record<OrgRole, OrganizationRolePlan | null>>({
   owner: null,
   manager: null,
+  teacher: null,
   member: null
 })
 
@@ -353,10 +360,10 @@ onMounted(async () => {
 
 // Load existing per-role overrides and pre-fill each row
 const loadRoleOverrides = async () => {
-  const blank: Record<OrgRole, string> = { owner: '', manager: '', member: '' }
+  const blank: Record<OrgRole, string> = { owner: '', manager: '', teacher: '', member: '' }
   roleSelections.value = { ...blank }
   initialRoleSelections.value = { ...blank }
-  existingRolePlans.value = { owner: null, manager: null, member: null }
+  existingRolePlans.value = { owner: null, manager: null, teacher: null, member: null }
 
   if (!props.organizationId) return
 
@@ -486,10 +493,10 @@ const resetForm = () => {
   saving.value = false
   showCancelConfirm.value = false
   showAssignConfirm.value = false
-  const blank: Record<OrgRole, string> = { owner: '', manager: '', member: '' }
+  const blank: Record<OrgRole, string> = { owner: '', manager: '', teacher: '', member: '' }
   roleSelections.value = { ...blank }
   initialRoleSelections.value = { ...blank }
-  existingRolePlans.value = { owner: null, manager: null, member: null }
+  existingRolePlans.value = { owner: null, manager: null, teacher: null, member: null }
 }
 
 // Pre-fill plan + role overrides when modal opens

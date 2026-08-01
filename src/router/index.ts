@@ -161,10 +161,10 @@ const basicRoutes = [
       { path: 'my-scenarios', name: 'MyScenarios', component: () => import('../components/Pages/MyScenarios.vue'), meta: { requiresAuth: true } },
       { path: 'terminal-session/:sessionId', name: 'TerminalSessionView', component: () => import('../components/Pages/TerminalSessionView.vue'), meta: { requiresAuth: true, collapseNav: true } },
       { path: 'user-terminal-keys', name: 'UserTerminalKeys', component: UserTerminalKeys, meta: { requiresAuth: true, isSettings: true } },
-      { path: 'class-groups', name: 'ClassGroups', component: ClassGroups, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresPlanFeature: 'multiple_groups' } },
-      { path: 'class-groups-hierarchy', name: 'GroupHierarchyEditor', component: GroupHierarchyEditor, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresPlanFeature: 'multiple_groups' } },
-      { path: 'class-groups/:id', name: 'GroupDetails', component: GroupDetails, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresPlanFeature: 'multiple_groups' } },
-      { path: 'group-members', name: 'GroupMembers', component: GroupMembers, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresPlanFeature: 'multiple_groups' } },
+      { path: 'class-groups', name: 'ClassGroups', component: ClassGroups, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresClassroomEntitlement: true } },
+      { path: 'class-groups-hierarchy', name: 'GroupHierarchyEditor', component: GroupHierarchyEditor, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresClassroomEntitlement: true } },
+      { path: 'class-groups/:id', name: 'GroupDetails', component: GroupDetails, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresClassroomEntitlement: true } },
+      { path: 'group-members', name: 'GroupMembers', component: GroupMembers, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresClassroomEntitlement: true } },
 
       // Organization routes
       { path: 'organizations', name: 'Organizations', component: Organizations, meta: { requiresAuth: true } },

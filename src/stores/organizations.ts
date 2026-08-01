@@ -291,9 +291,22 @@ export const useOrganizationsStore = defineStore('organizations', () => {
       try {
         const { default: router } = await import('../router')
 
-        // Check if current route requires a plan feature via route meta
+        // Does the page the user is on still work in the organization they just
+        // switched to?
+        //
+        // Classroom pages ask the backend's verdict rather than the plan's feature
+        // list. In a school every member inherits a plan granting group
+        // management, so a feature check keeps students on a page they cannot use;
+        // the verdict weighs their role too (ocf-core#460).
+        const needsClassrooms = router.currentRoute.value.meta.requiresClassroomEntitlement === true
+        const lostClassrooms = needsClassrooms &&
+          permissionsStore.effectiveFeatures?.can_run_classrooms !== true
+
+        // Retained for routes gated on a plain capability rather than a role.
         const requiredPlanFeature = router.currentRoute.value.meta.requiresPlanFeature as string | undefined
-        if (requiredPlanFeature && !permissionsStore.hasFeature(requiredPlanFeature)) {
+        const lostFeature = !!requiredPlanFeature && !permissionsStore.hasFeature(requiredPlanFeature)
+
+        if (lostClassrooms || lostFeature) {
           const { useUserSettingsStore } = await import('./userSettings')
           const settingsStore = useUserSettingsStore()
           const pages = unref(settingsStore.availablePages) as { value: string }[]
