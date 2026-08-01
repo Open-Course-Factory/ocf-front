@@ -15,12 +15,15 @@ import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
 
-const currentSubscription = { value: null as any }
+// The verdict comes from the backend now (ocf-core#453): the CTA reads
+// can_run_classrooms rather than inspecting a plan field, because the answer
+// depends on the plan, the organization and the caller's role in it.
+const effectiveFeatures = { value: null as any }
 
-vi.mock('../../src/stores/subscriptions', () => ({
-  useSubscriptionsStore: () => ({
-    get currentSubscription() { return currentSubscription.value },
-    getCurrentSubscription: vi.fn().mockResolvedValue(undefined),
+vi.mock('../../src/stores/permissions', () => ({
+  usePermissionsStore: () => ({
+    get effectiveFeatures() { return effectiveFeatures.value },
+    loadEffectiveFeatures: vi.fn().mockResolvedValue(undefined),
   }),
 }))
 
@@ -43,11 +46,11 @@ describe('ClassroomPlanCta', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    currentSubscription.value = null
+    effectiveFeatures.value = null
   })
 
   it('offers organization creation when the plan grants group management', () => {
-    currentSubscription.value = { subscription_plan: { group_management_enabled: true } }
+    effectiveFeatures.value = { can_run_classrooms: true }
 
     const wrapper = mountCta()
 
@@ -56,7 +59,7 @@ describe('ClassroomPlanCta', () => {
   })
 
   it('emits create so the page owns how an organization is actually made', async () => {
-    currentSubscription.value = { subscription_plan: { group_management_enabled: true } }
+    effectiveFeatures.value = { can_run_classrooms: true }
 
     const wrapper = mountCta()
     await wrapper.find('[data-test="classroom-cta-create"]').trigger('click')
@@ -65,7 +68,7 @@ describe('ClassroomPlanCta', () => {
   })
 
   it('points at the plan instead of disappearing when not entitled', () => {
-    currentSubscription.value = { subscription_plan: { group_management_enabled: false } }
+    effectiveFeatures.value = { can_run_classrooms: false, classroom_denied_reason: 'plan_lacks_group_management' }
 
     const wrapper = mountCta()
 
@@ -78,7 +81,7 @@ describe('ClassroomPlanCta', () => {
     // The empty-input case. Defaulting to "yes" would invite a user into an
     // organization the backend leaves without classroom features — exactly the
     // failure #298 exists to prevent.
-    currentSubscription.value = null
+    effectiveFeatures.value = null
 
     const wrapper = mountCta()
 
@@ -86,8 +89,11 @@ describe('ClassroomPlanCta', () => {
     expect(wrapper.find('[data-test="classroom-cta-create"]').exists()).toBe(false)
   })
 
-  it('treats a plan with no group-management flag as not entitled', () => {
-    currentSubscription.value = { subscription_plan: { name: 'Solo' } }
+  // A response that carries no verdict at all must read as "not entitled". Absent
+  // is not permission: inviting someone into an organization the backend will then
+  // refuse is the failure this gate exists to prevent.
+  it('treats a response without a verdict as not entitled', () => {
+    effectiveFeatures.value = { user_id: 'u-1' }
 
     const wrapper = mountCta()
 
