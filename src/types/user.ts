@@ -51,10 +51,40 @@ export interface OrganizationFeatureSource {
 /**
  * User Effective Features (aggregated from all organizations)
  */
+/**
+ * Why a user may not run classrooms. Stable codes from the backend — translate
+ * them, never display them.
+ */
+export type ClassroomDeniedReason =
+  | 'no_plan'
+  | 'plan_lacks_group_management'
+  | 'not_org_member'
+  | 'insufficient_org_role'
+  | 'personal_organization'
+
 export interface UserEffectiveFeatures {
   user_id: string
   effective_features: SubscriptionPlan // Aggregated maximum features
   source_organizations: OrganizationFeatureSource[]
   has_personal_subscription: boolean
   personal_subscription?: Subscription
+
+  /**
+   * The backend's verdict on whether this user may create class groups, convert
+   * an organization to a team, or buy learner seats.
+   *
+   * Read this. Do NOT infer it from `effective_features.features` containing
+   * "group_management": that list is a UNION across the user's organizations and
+   * answers "is this available to them somewhere", which is the gray-out
+   * question and strictly more permissive. Inferring it is what had three screens
+   * disagreeing with each other and with the backend (ocf-core#453).
+   *
+   * When asked with an organization context it also accounts for the user's role
+   * there, so a student in a school — who inherits a plan that grants classrooms —
+   * is correctly refused.
+   */
+  can_run_classrooms: boolean
+
+  /** Refusal code, absent when `can_run_classrooms`. */
+  classroom_denied_reason?: ClassroomDeniedReason
 }

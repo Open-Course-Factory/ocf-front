@@ -6,12 +6,13 @@
   find out classroom features were unavailable — or, as actually happened, buy the
   plan and watch the org ignore it.
 
-  `group_management_enabled` already encodes the rule (true only for Formateur and
-  École / OF). This surfaces it at the point of intent instead of after payment.
+  This surfaces the requirement at the point of intent instead of after payment.
 
-  The entitlement itself lives in useClassroomEntitlement, shared with
-  UpgradeToTeamBanner on the subscription dashboard — the gate is one rule, and
-  two copies of it would drift the moment a plan flag changes.
+  The entitlement itself is the BACKEND's verdict, read through
+  useClassroomEntitlement and shared with UpgradeToTeamBanner on the subscription
+  dashboard. It is not derived from a plan field here: the answer depends on the
+  plan, the organization and the caller's role in it, and every screen that tried
+  to work it out locally got a different one (ocf-core#453, #460).
 -->
 <template>
   <!-- Fixed min-height: the two states have different text lengths, and this sits

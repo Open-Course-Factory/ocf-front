@@ -129,6 +129,10 @@ export const usePermissionsStore = defineStore('permissions', () => {
             }
           ],
           has_personal_subscription: false,
+          // The demo persona is a trainer with a classroom-granting plan, so the
+          // verdict must say so. Omitting it would make demo mode deny every
+          // classroom affordance, since an absent verdict is read as "no".
+          can_run_classrooms: true,
         }
         allOrgFeatures.value = effectiveFeatures.value
         return effectiveFeatures.value
