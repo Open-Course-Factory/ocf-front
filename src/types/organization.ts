@@ -87,7 +87,6 @@ export interface OrganizationSubscription extends BaseEntity {
   current_period_start: string
   current_period_end: string
   cancel_at_period_end: boolean
-  quantity: number // Always 1 for org subscriptions
 }
 
 /**
@@ -139,7 +138,6 @@ export interface ConvertOrganizationToTeamRequest {
 export interface SubscribeOrganizationRequest {
   subscription_plan_id: string
   payment_method_id?: string
-  quantity?: number // Always 1 for org subscriptions
 }
 
 /**

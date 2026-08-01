@@ -80,21 +80,6 @@
         />
       </div>
 
-      <!-- Quantity Input -->
-      <div class="form-group">
-        <label for="quantity-input">
-          {{ t('adminOrgPlan.quantity') }}
-        </label>
-        <input
-          id="quantity-input"
-          v-model.number="quantity"
-          type="number"
-          class="form-control"
-          min="1"
-          :placeholder="t('adminOrgPlan.quantityPlaceholder')"
-        />
-      </div>
-
       <!-- Per-role plan overrides -->
       <div class="section-divider">
         <span>{{ t('adminOrgPlan.roleOverridesTitle') }}</span>
@@ -135,10 +120,6 @@
           <div class="confirm-summary-row">
             <span class="confirm-label">{{ t('adminOrgPlan.confirmPlan') }}:</span>
             <span class="confirm-value">{{ selectedPlanName }}</span>
-          </div>
-          <div v-if="quantity > 1" class="confirm-summary-row">
-            <span class="confirm-label">{{ t('adminOrgPlan.quantity') }}:</span>
-            <span class="confirm-value">{{ quantity }}</span>
           </div>
         </div>
         <div class="confirm-actions">
@@ -216,8 +197,6 @@ const { t } = useTranslations({
       currentPlan: 'Current Plan',
       selectPlan: 'Subscription Plan',
       choosePlan: '-- Select a plan --',
-      quantity: 'Quantity (seats)',
-      quantityPlaceholder: '1',
       changePlan: 'Change Plan',
       changePlanConfirm: 'Change Plan',
       assignPlan: 'Assign Plan',
@@ -258,8 +237,6 @@ const { t } = useTranslations({
       currentPlan: 'Plan actuel',
       selectPlan: 'Plan d\'abonnement',
       choosePlan: '-- Sélectionnez un plan --',
-      quantity: 'Quantité (sièges)',
-      quantityPlaceholder: '1',
       changePlan: 'Changer de plan',
       changePlanConfirm: 'Changer de plan',
       assignPlan: 'Attribuer le plan',
@@ -302,7 +279,6 @@ const rolePlansStore = useOrganizationRolePlansStore()
 
 const selectedPlanId = ref('')
 const selectedPlanName = ref('')
-const quantity = ref(1)
 const saving = ref(false)
 const error = ref('')
 const successMsg = ref('')
@@ -452,8 +428,7 @@ const handleAssign = async () => {
     // Only (re)subscribe when the default plan selection actually changed
     if (defaultPlanChanged.value) {
       await orgSubStore.subscribeOrganization(props.organizationId, {
-        subscription_plan_id: selectedPlanId.value,
-        quantity: quantity.value > 0 ? quantity.value : undefined
+        subscription_plan_id: selectedPlanId.value
       })
     }
 
@@ -506,7 +481,6 @@ const resetForm = () => {
     autoCloseTimer = null
   }
   selectedPlanId.value = ''
-  quantity.value = 1
   error.value = ''
   successMsg.value = ''
   saving.value = false

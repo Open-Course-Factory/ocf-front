@@ -81,21 +81,6 @@
         />
       </div>
 
-      <!-- Quantity Input -->
-      <div class="form-group">
-        <label for="quantity-input">
-          {{ t('assignOrgPlan.quantity') }}
-        </label>
-        <input
-          id="quantity-input"
-          v-model.number="quantity"
-          type="number"
-          class="form-control"
-          min="1"
-          :placeholder="t('assignOrgPlan.quantityPlaceholder')"
-        />
-      </div>
-
       <!-- Assign Confirmation -->
       <div v-if="showAssignConfirm" class="confirm-assign">
         <p class="confirm-text">
@@ -109,10 +94,6 @@
           <div class="confirm-summary-row">
             <span class="confirm-label">{{ t('assignOrgPlan.confirmPlan') }}:</span>
             <span class="confirm-value">{{ selectedPlanName }}</span>
-          </div>
-          <div v-if="quantity > 1" class="confirm-summary-row">
-            <span class="confirm-label">{{ t('assignOrgPlan.quantity') }}:</span>
-            <span class="confirm-value">{{ quantity }}</span>
           </div>
         </div>
         <div class="confirm-actions">
@@ -167,8 +148,6 @@ const { t } = useTranslations({
       members: 'members',
       selectPlan: 'Subscription plan',
       choosePlan: '-- Select a plan --',
-      quantity: 'Quantity (seats)',
-      quantityPlaceholder: '1',
       assign: 'Assign Plan',
       cancel: 'Cancel',
       goBack: 'Go Back',
@@ -190,8 +169,6 @@ const { t } = useTranslations({
       members: 'membres',
       selectPlan: 'Plan d\'abonnement',
       choosePlan: '-- Sélectionnez un plan --',
-      quantity: 'Quantité (sièges)',
-      quantityPlaceholder: '1',
       assign: 'Assigner le plan',
       cancel: 'Annuler',
       goBack: 'Retour',
@@ -212,7 +189,6 @@ const searchQuery = ref('')
 const selectedOrganizationId = ref('')
 const selectedPlanId = ref('')
 const selectedPlanName = ref('')
-const quantity = ref(1)
 const isSearching = ref(false)
 const isAssigning = ref(false)
 const showAssignConfirm = ref(false)
@@ -270,8 +246,7 @@ const handleAssign = async () => {
 
   try {
     await orgSubStore.subscribeOrganization(selectedOrganizationId.value, {
-      subscription_plan_id: selectedPlanId.value,
-      quantity: quantity.value > 0 ? quantity.value : undefined
+      subscription_plan_id: selectedPlanId.value
     })
     emit('assigned')
     resetForm()
@@ -295,7 +270,6 @@ const resetForm = () => {
   searchQuery.value = ''
   selectedOrganizationId.value = ''
   selectedPlanId.value = ''
-  quantity.value = 1
   error.value = ''
   isAssigning.value = false
   showAssignConfirm.value = false

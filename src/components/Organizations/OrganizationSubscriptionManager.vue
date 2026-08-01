@@ -55,13 +55,6 @@
               </span>
               <span class="info-value">{{ formatDate(subscription.current_period_end) }}</span>
             </div>
-            <div v-if="subscription.quantity" class="info-item">
-              <span class="info-label">
-                <i class="fas fa-users"></i>
-                {{ t('subscription.seats') }}:
-              </span>
-              <span class="info-value">{{ subscription.quantity }}</span>
-            </div>
           </div>
 
           <!-- Features -->
@@ -208,17 +201,6 @@
         {{ t('subscription.paidPlansNotSelfService') }}
       </p>
 
-      <!-- Quantity input -->
-      <div v-if="selectedPlan" class="quantity-section">
-        <label for="plan-quantity">{{ t('subscription.quantity') }}</label>
-        <input
-          id="plan-quantity"
-          v-model.number="planQuantity"
-          type="number"
-          class="form-control quantity-input"
-          min="1"
-        />
-      </div>
     </BaseModal>
   </div>
 </template>
@@ -296,8 +278,6 @@ const { t } = useTranslations({
       subscriptionCanceled: 'Subscription canceled successfully',
       subscriptionReactivated: 'Subscription reactivated successfully',
       planChanged: 'Plan changed successfully',
-      seats: 'Seats',
-      quantity: 'Quantity (seats)',
       confirmPlan: 'Confirm',
       cancelChoice: 'Cancel',
     }
@@ -339,8 +319,6 @@ const { t } = useTranslations({
       subscriptionCanceled: 'Abonnement annulé avec succès',
       subscriptionReactivated: 'Abonnement réactivé avec succès',
       planChanged: 'Plan modifié avec succès',
-      seats: 'Sièges',
-      quantity: 'Quantité (sièges)',
       confirmPlan: 'Confirmer',
       cancelChoice: 'Annuler',
     }
@@ -367,7 +345,6 @@ const modalError = ref('')
 const showCancelConfirm = ref(false)
 const isCanceling = ref(false)
 const selectedPlan = ref<SubscriptionPlan | null>(null)
-const planQuantity = ref(1)
 const isSubscribing = ref(false)
 
 onMounted(async () => {
@@ -430,8 +407,7 @@ const confirmPlanSelection = async () => {
   isSubscribing.value = true
   try {
     await orgSubStore.subscribeOrganization(props.organizationId, {
-      subscription_plan_id: selectedPlan.value.id,
-      quantity: planQuantity.value > 0 ? planQuantity.value : undefined
+      subscription_plan_id: selectedPlan.value.id
     })
     closeChangePlanModal()
     await loadSubscription()
@@ -446,7 +422,6 @@ const confirmPlanSelection = async () => {
 const closeChangePlanModal = () => {
   showChangePlanModal.value = false
   selectedPlan.value = null
-  planQuantity.value = 1
   modalError.value = ''
 }
 
@@ -834,30 +809,4 @@ const formatLimit = (value: number | undefined): string => {
   border: 1px solid var(--color-danger);
 }
 
-.quantity-section {
-  margin-top: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.quantity-section label {
-  font-weight: 500;
-  color: var(--color-text-primary);
-}
-
-.quantity-input {
-  max-width: 150px;
-  padding: 0.5rem 0.75rem;
-  border: 2px solid var(--color-border-medium);
-  border-radius: 6px;
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-size: 1rem;
-}
-
-.quantity-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
 </style>
