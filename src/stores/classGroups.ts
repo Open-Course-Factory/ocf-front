@@ -29,6 +29,48 @@ import { field, buildFieldList } from '../utils/fieldBuilder'
  * Generate URL-friendly slug from display name
  * Converts: "My Class 2024" → "my-class-2024"
  */
+/**
+ * Organizations that may actually hold a class, for the creation form's picker.
+ *
+ * The picker used to load every organization the API returned, so it offered
+ * personal workspaces — which the product describes as "1 member only,
+ * collaboration not available" — and organizations where the caller is a plain
+ * member, while its own placeholder told them they had to be a manager (#299).
+ *
+ * The backend refuses both now (ocf-core#452), so an unfiltered list is a list of
+ * choices that end in a 403. Two filters, matching the two gates there:
+ *
+ *   - team organizations only, because a personal one can never hold a class;
+ *   - where the caller ranks at least teacher, because that is the threshold for
+ *     running classes (ocf-core#460).
+ *
+ * Deliberately not filtered on the plan: entitlement depends on the organization
+ * chosen, so hiding on that basis would need a resolution per row. The backend
+ * remains the authority; this only removes choices that are certainly wrong.
+ */
+export async function loadOrganizationsThatCanHoldClasses(): Promise<any[]> {
+    try {
+        const response = await axios.get('/organizations')
+        const organizations = response.data?.data || response.data || []
+
+        return organizations.filter((org: any) => {
+            const isPersonal = org.organization_type === 'personal' || org.is_personal === true
+            if (isPersonal) return false
+
+            // The API omits the caller's role on some listing shapes. Absent role
+            // means "cannot tell", and dropping the organization then would hide
+            // legitimate choices — so keep it and let the backend decide.
+            const role = org.current_user_role ?? org.user_role ?? org.role
+            if (!role) return true
+
+            return role === 'owner' || role === 'manager' || role === 'teacher'
+        })
+    } catch (error) {
+        console.error('Failed to load organizations:', error)
+        return []
+    }
+}
+
 function generateSlug(displayName: string): string {
     return displayName
         .toLowerCase()
@@ -155,15 +197,7 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
             .searchableSelect()
             .visible()
             .editable()
-            .withOptionsLoader(async () => {
-                try {
-                    const response = await axios.get('/organizations')
-                    return response.data?.data || response.data || []
-                } catch (error) {
-                    console.error('Failed to load organizations:', error)
-                    return []
-                }
-            })
+            .withOptionsLoader(loadOrganizationsThatCanHoldClasses)
             .withItemValue('id')
             .withItemText('display_name')
             .placeholder(t('classGroups.organizationHelp')),

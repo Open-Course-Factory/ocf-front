@@ -1,37 +1,55 @@
 import { computed, onMounted } from 'vue'
-import { useSubscriptionsStore } from '../stores/subscriptions'
+import { usePermissionsStore } from '../stores/permissions'
+import type { ClassroomDeniedReason } from '../types/user'
 
 /**
- * Single owner of "may this user run classrooms?" (#298).
+ * Single owner of "may this user run classrooms?" (#298, #300).
  *
- * Two places invite a user toward team organizations — the organizations list
- * and the convert-to-team banner on the subscription dashboard — and neither
- * checked whether the user's plan actually grants group management. That is how
- * a trainer ends up with an organization that ignores the plan they just bought.
+ * This used to read `group_management_enabled` off the personal subscription,
+ * while `permissions.isFeatureInAnyOrg` read a union across organizations and the
+ * router guard read the same union again — three derivations, three answers. A
+ * trainer on a personal Trial who belonged to an org holding Formateur was
+ * simultaneously refused the convert-to-team CTA, shown the groups menu, and
+ * allowed to buy seats.
  *
- * The predicate lives here rather than in each component because it is one rule.
- * Written twice it drifts the moment a plan flag changes, which is the recurring
- * failure in this codebase: the same gate expressed in the UI and the backend,
- * diverging silently.
+ * The rule now has one owner and it is the backend (ocf-core#453). This composable
+ * reads that verdict; it does not reconstruct it. In particular it must NOT test
+ * the features list for "group_management": that list is a union answering
+ * "available somewhere", which is the gray-out question — a different and more
+ * permissive one.
  *
- * `group_management_enabled` is true only for Formateur and École / OF, so the
- * plan flag already encodes the rule — this just reads it in one place.
+ * The verdict is also role-aware when the backend has an organization context, so
+ * a student in a school is refused even though they inherit a plan that grants
+ * classrooms (ocf-core#460).
  */
 export function useClassroomEntitlement() {
-  const subscriptionsStore = useSubscriptionsStore()
+  const permissionsStore = usePermissionsStore()
 
-  // Absent plan means not entitled, never "assume yes". An unresolved
-  // subscription must not invite someone into an organization the backend will
+  // Absent verdict means not entitled, never "assume yes". An unresolved
+  // response must not invite someone into an organization the backend will then
   // leave without classroom features.
   const canRunClassrooms = computed(
-    () => subscriptionsStore.currentSubscription?.subscription_plan?.group_management_enabled === true
+    () => permissionsStore.effectiveFeatures?.can_run_classrooms === true
+  )
+
+  /**
+   * Why not, for screens that can say something more useful than "upgrade".
+   * Telling someone to buy their way past a role check is worse than silence.
+   */
+  const deniedReason = computed<ClassroomDeniedReason | null>(
+    () => permissionsStore.effectiveFeatures?.classroom_denied_reason ?? null
+  )
+
+  /** True when buying a better plan would actually change the answer. */
+  const deniedByPlan = computed(
+    () => deniedReason.value === 'no_plan' || deniedReason.value === 'plan_lacks_group_management'
   )
 
   onMounted(async () => {
-    if (!subscriptionsStore.currentSubscription) {
-      await subscriptionsStore.getCurrentSubscription()
+    if (!permissionsStore.effectiveFeatures) {
+      await permissionsStore.loadEffectiveFeatures()
     }
   })
 
-  return { canRunClassrooms }
+  return { canRunClassrooms, deniedReason, deniedByPlan }
 }

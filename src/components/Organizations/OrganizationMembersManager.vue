@@ -98,6 +98,7 @@
               class="role-select"
             >
               <option value="member">{{ t('members.roleMember') }}</option>
+              <option value="teacher">{{ t('members.roleTeacher') }}</option>
               <option value="manager">{{ t('members.roleManager') }}</option>
               <option v-if="props.isOwner" value="owner">{{ t('members.roleOwner') }}</option>
             </select>
@@ -231,6 +232,7 @@
         <label>{{ t('members.role') }}</label>
         <select v-model="addMemberRole" class="form-control">
           <option value="member">{{ t('members.roleMember') }}</option>
+          <option value="teacher">{{ t('members.roleTeacher') }}</option>
           <option value="manager">{{ t('members.roleManager') }}</option>
           <option v-if="props.isOwner" value="owner">{{ t('members.roleOwner') }}</option>
         </select>
@@ -295,6 +297,7 @@ const { t } = useTranslations({
       retry: 'Retry',
       joined: 'Joined',
       roleMember: 'Member',
+      roleTeacher: 'Teacher',
       roleManager: 'Manager',
       roleOwner: 'Owner',
       removeMember: 'Remove member',
@@ -331,6 +334,7 @@ const { t } = useTranslations({
       retry: 'Réessayer',
       joined: 'Rejoint',
       roleMember: 'Membre',
+      roleTeacher: 'Formateur',
       roleManager: 'Gestionnaire',
       roleOwner: 'Propriétaire',
       removeMember: 'Retirer le membre',
@@ -542,6 +546,7 @@ const getRoleLabel = (role: string): string => {
   const labels: Record<string, string> = {
     owner: t('members.roleOwner'),
     manager: t('members.roleManager'),
+    teacher: t('members.roleTeacher'),
     member: t('members.roleMember')
   }
   return labels[role] || role
@@ -746,6 +751,12 @@ const goToRolesHelp = () => {
 .role-manager {
   background: var(--color-info-light);
   color: var(--color-info);
+}
+
+/* Between manager and member, matching its rank in the hierarchy. */
+.role-teacher {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .role-member {
