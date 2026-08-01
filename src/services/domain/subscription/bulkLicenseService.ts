@@ -88,7 +88,10 @@ export const bulkLicenseService = {
    */
   async createBulkCheckoutSession(input: {
     subscription_plan_id: string
+    /** Number of LEARNERS to cover, never learners x days — the server derives the billing units. */
     quantity: number
+    /** Pack length in days, for learner-day products only. */
+    duration_days?: number
     success_url: string
     cancel_url: string
     group_id?: string

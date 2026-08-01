@@ -381,6 +381,22 @@ function chooseQuote(q: Quote) {
   quantity.value = q.quantity
 }
 
+// What the PURCHASE sends, which is not what the quote prices.
+//
+// A quote is priced in billing units — ten learners for three days is thirty
+// learner-days. The purchase must instead say who it covers and for how long, and
+// let the backend derive the billing units, because sending the product made the
+// backend create thirty month-long seats instead of ten three-day ones
+// (ocf-core#455). Only one place may do that multiplication, and it is the
+// backend's ResolvePackTerms.
+function purchaseTermsFor(plan: PurchasableSeatPlan): { learners: number; durationDays: number } {
+  const n = Math.max(1, Math.floor(learners.value || 0))
+  if (plan.seat_unit === 'learner_day' && duration.value !== 'month') {
+    return { learners: n, durationDays: Number(duration.value) }
+  }
+  return { learners: n, durationDays: 0 }
+}
+
 let quoteToken = 0
 
 // Prices are fetched, never computed here: graduated pricing lives in exactly one
@@ -465,14 +481,18 @@ const handlePurchase = async () => {
     const successUrl = `${window.location.origin}/license-management?success=true&prior=${priorBatchCount}`
     const cancelUrl = `${window.location.origin}/bulk-license-purchase`
 
-    // Create Stripe checkout session (will redirect to Stripe)
+    // Create Stripe checkout session (will redirect to Stripe).
+    //
+    // Sends learners + duration, not the pre-multiplied figure the quote used.
+    const terms = purchaseTermsFor(selectedPlan.value!)
     await batchStore.createBulkCheckoutSession(
       selectedPlanId.value,
-      quantity.value,
+      terms.learners,
       successUrl,
       cancelUrl,
       selectedGroupId.value || undefined,
-      couponCode.value || undefined
+      couponCode.value || undefined,
+      terms.durationDays || undefined
     )
 
     // The store will redirect to Stripe automatically

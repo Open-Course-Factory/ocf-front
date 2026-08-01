@@ -226,18 +226,24 @@ export const useSubscriptionBatchesStore = defineStore('subscriptionBatches', ()
   /**
    * Create checkout session for bulk purchase
    */
+  // quantity is the number of LEARNERS to cover. durationDays is the pack length
+  // for a learner-day product; the backend multiplies the two to get what Stripe
+  // charges for. Sending the product here is what made a three-day pack arrive as
+  // that many month-long seats (ocf-core#455).
   const createBulkCheckoutSession = async (
     planId: string,
     quantity: number,
     successUrl: string,
     cancelUrl: string,
     groupId?: string,
-    couponCode?: string
+    couponCode?: string,
+    durationDays?: number
   ) => {
     return await baseAsync(async () => {
       const response = await bulkLicenseService.createBulkCheckoutSession({
         subscription_plan_id: planId,
         quantity,
+        duration_days: durationDays,
         success_url: successUrl,
         cancel_url: cancelUrl,
         group_id: groupId,
