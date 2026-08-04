@@ -41,16 +41,22 @@ subscription never activates — the success page stays in its "pending" state.
 
 ```bash
 cd ocf-front
-npx playwright test payment-purchase            # headless
-npx playwright test payment-purchase --headed   # watchable, good for demos
+npx playwright test payment-purchase            # headless, fast
+npx playwright test payment-purchase --headed   # watch it live
 ```
 
-For a feature presentation, slow it down without touching the specs:
+## Demo mode (presentations)
+
+The specs carry explicit pacing points via `helpers/demo.ts` — a pause before
+each meaningful click and a longer dwell on result screens — inactive (zero
+delay) in normal and CI runs. Unlike `slowMo`, form-filling stays fast; only
+the moments worth reading slow down.
 
 ```bash
-# playwright.config.ts already records video on retry; for a live demo:
-npx playwright test payment-purchase --headed --workers=1
+DEMO=1 npx playwright test payment-purchase --headed     # 1.8s pauses
+DEMO_PACE=3000 npx playwright test payment-purchase --headed  # custom pace
 ```
 
-(Playwright's `launchOptions.slowMo` can be set temporarily in
-`playwright.config.ts` under `use` for an even more watchable run.)
+Videos are only recorded on retry by default (`video: 'on-first-retry'`); to
+record a demo run, temporarily set `video: 'on'` in `playwright.config.ts` or
+use a config override.

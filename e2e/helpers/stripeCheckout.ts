@@ -1,4 +1,5 @@
 import { type Page, expect } from '@playwright/test';
+import { demoPause } from './demo';
 
 /**
  * Drive Stripe's hosted Checkout page (checkout.stripe.com) with a test card.
@@ -20,19 +21,20 @@ export const STRIPE_TEST_CARD = {
 export async function fillStripeCheckout(page: Page, options?: { email?: string }): Promise<void> {
   await expect(page).toHaveURL(/checkout\.stripe\.com/, { timeout: 30_000 });
 
-  // The hosted page is a SPA; wait for the payment section to exist.
+  // The hosted page is a SPA. Payment methods can render either as a direct
+  // card form (#cardNumber immediately present) or as an accordion (Card /
+  // SEPA / …) where the card fields only exist after the Card method is
+  // selected — wait for whichever appears first instead of probing them in
+  // sequence, which wastes a full timeout on the layout that isn't there.
   const cardNumber = page.locator('#cardNumber');
-
-  // Payment methods can render as an accordion (Card / SEPA / …); the card
-  // fields only exist after the Card method is selected.
-  if (!(await cardNumber.isVisible({ timeout: 10_000 }).catch(() => false))) {
-    const cardAccordion = page
-      .locator('[data-testid*="card"][data-testid*="accordion"], .AccordionItem:has-text("Card")')
-      .first();
-    await cardAccordion.waitFor({ state: 'visible', timeout: 20_000 });
+  const cardAccordion = page
+    .locator('[data-testid*="card"][data-testid*="accordion"], .AccordionItem:has-text("Card")')
+    .first();
+  await expect(cardNumber.or(cardAccordion).first()).toBeVisible({ timeout: 30_000 });
+  if (!(await cardNumber.isVisible())) {
     await cardAccordion.click();
+    await cardNumber.waitFor({ state: 'visible', timeout: 15_000 });
   }
-  await cardNumber.waitFor({ state: 'visible', timeout: 15_000 });
 
   // Email: prefilled (readonly) when the backend attaches a customer; fill otherwise.
   const email = page.locator('#email');
@@ -73,6 +75,9 @@ export async function fillStripeCheckout(page: Page, options?: { email?: string 
   if (await linkCheckbox.isChecked().catch(() => false)) {
     await linkCheckbox.uncheck().catch(() => {});
   }
+
+  // Let a demo audience see the filled payment form before it is submitted.
+  await demoPause(page);
 
   // The address field opens an autocomplete overlay that can swallow the first
   // submit click — dismiss it, then submit, retrying once if the page has not

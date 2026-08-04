@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { login } from './helpers/auth';
 import { dismissVerificationBanner } from './helpers/ui';
+import { demoPause } from './helpers/demo';
 import {
   apiLogin,
   resetToFreePlan,
@@ -72,14 +73,19 @@ test.describe('Plan purchase', () => {
       .locator('.plan-card-compact')
       .filter({ has: page.locator('.plan-name-compact', { hasText: TARGET_PLAN }) });
     await expect(soloCard).toBeVisible({ timeout: 15_000 });
+    await demoPause(page, 2); // let the audience read the plan catalog
 
     await soloCard.locator('.btn-subscribe-compact').click();
 
-    // Free → paid replaces the Trial: confirm the plan change...
+    // Free → paid replaces the Trial: confirm the plan change... (the modal
+    // opens only after the click handler's async subscription checks resolve)
+    await expect(page.locator('[data-test="confirm-plan-change"]')).toBeVisible({ timeout: 15_000 });
+    await demoPause(page);
     await page.locator('[data-test="confirm-plan-change"]').click();
 
     // ...then skip the optional coupon and continue to Stripe.
-    await expect(page.locator('[data-test="coupon-input"]')).toBeVisible();
+    await expect(page.locator('[data-test="coupon-input"]')).toBeVisible({ timeout: 15_000 });
+    await demoPause(page);
     await page.locator('[data-test="coupon-confirm"]').click();
 
     // Hosted Stripe Checkout (test mode), paid with the 4242 test card.
@@ -90,10 +96,12 @@ test.describe('Plan purchase', () => {
     await expect(page).toHaveURL(/\/checkout-success/, { timeout: 60_000 });
     await expect(page.locator('.success-animation')).toBeVisible({ timeout: 60_000 });
     await expect(page.locator('.subscription-details')).toContainText(TARGET_PLAN);
+    await demoPause(page, 2); // dwell on the activated-subscription confirmation
 
     // The dashboard now reports Solo as the active subscription source.
     await page.goto('/subscription-dashboard');
     await expect(page.locator('.plan-name').first()).toHaveText(TARGET_PLAN, { timeout: 15_000 });
+    await demoPause(page, 2); // dwell on the dashboard's active-plan card
 
     // And the backend agrees — the paid subscription is active for the payer.
     const subscription = await getCurrentSubscription(payerApi);
