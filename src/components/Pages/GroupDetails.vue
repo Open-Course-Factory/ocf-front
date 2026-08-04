@@ -112,9 +112,19 @@ const groupOrganization = ref<Organization | null>(null)
 const isLoading = ref(true)
 const isMembersLoading = ref(false)
 const error = ref('')
-const activeTab = ref<'overview' | 'members' | 'scenarios' | 'live' | 'activity' | 'analytics' | 'history' | 'settings'>(
-  (route.query.tab as 'overview' | 'members' | 'scenarios' | 'live' | 'activity' | 'analytics' | 'history' | 'settings') || 'overview'
-)
+type GroupTab = 'overview' | 'members' | 'scenarios' | 'live' | 'activity' | 'analytics' | 'history' | 'settings'
+const activeTab = ref<GroupTab>((route.query.tab as GroupTab) || 'overview')
+
+// The tabs only a manager, owner or platform admin may open. Declared as data so
+// the reserved-slot rendering below is expressed once instead of per button.
+const managerTabs: { id: GroupTab; icon: string; labelKey: string }[] = [
+  { id: 'scenarios', icon: 'fas fa-clipboard-list', labelKey: 'groupDetails.tabScenarios' },
+  { id: 'live', icon: 'fas fa-eye', labelKey: 'groupDetails.tabLiveSessions' },
+  { id: 'activity', icon: 'fas fa-desktop', labelKey: 'groupDetails.tabActivity' },
+  { id: 'analytics', icon: 'fas fa-chart-bar', labelKey: 'groupDetails.tabAnalytics' },
+  { id: 'history', icon: 'fas fa-history', labelKey: 'groupDetails.tabHistory' },
+  { id: 'settings', icon: 'fas fa-cog', labelKey: 'groupDetails.tabSettings' }
+]
 
 // Ref to members manager for member count
 const membersManagerRef = ref<InstanceType<typeof GroupMembersManager> | null>(null)
@@ -141,6 +151,22 @@ const isManager = computed(() => {
 
 const canEditGroup = computed(() => {
   return isPlatformAdmin.value || isOwner.value || isManager.value
+})
+
+// Platform admins and the group owner are identified from the group payload itself;
+// a manager can only be recognised by finding themselves in the members list, which
+// arrives after the page is already on screen. Reading `canEditGroup` rather than the
+// ownership flags alone means a later reload (saving the group refetches the members)
+// keeps the answer already known, instead of greying a manager's own controls out.
+const isRoleUnresolved = computed(() => {
+  return isMembersLoading.value && !canEditGroup.value
+})
+
+// Reserve the manager-only controls rather than letting five tabs and the edit
+// button appear a moment later, under the cursor of a teacher already reaching for
+// one. They render disabled in their final position and simply become live.
+const showManagerControls = computed(() => {
+  return canEditGroup.value || isRoleUnresolved.value
 })
 
 const canDeleteGroup = computed(() => {
@@ -327,7 +353,8 @@ watch(activeTab, (newTab) => {
 
         <div class="header-actions">
           <button
-            v-if="canEditGroup"
+            v-if="showManagerControls"
+            :disabled="isRoleUnresolved"
             @click="activeTab = 'settings'"
             class="btn btn-secondary"
           >
@@ -366,7 +393,7 @@ watch(activeTab, (newTab) => {
       </div>
 
       <!-- Tabs Navigation -->
-      <div class="group-tabs">
+      <div class="group-tabs" :aria-busy="isRoleUnresolved">
         <button
           @click="activeTab = 'overview'"
           :class="['tab-button', { active: activeTab === 'overview' }]"
@@ -385,54 +412,21 @@ watch(activeTab, (newTab) => {
             <template v-else>{{ displayMemberCount }}</template>
           </span>
         </button>
-        <button
-          v-if="canEditGroup"
-          @click="activeTab = 'scenarios'"
-          :class="['tab-button', { active: activeTab === 'scenarios' }]"
-        >
-          <i class="fas fa-clipboard-list"></i>
-          {{ t('groupDetails.tabScenarios') }}
-        </button>
-        <button
-          v-if="canEditGroup"
-          @click="activeTab = 'live'"
-          :class="['tab-button', { active: activeTab === 'live' }]"
-        >
-          <i class="fas fa-eye"></i>
-          {{ t('groupDetails.tabLiveSessions') }}
-        </button>
-        <button
-          v-if="canViewHistory"
-          @click="activeTab = 'activity'"
-          :class="['tab-button', { active: activeTab === 'activity' }]"
-        >
-          <i class="fas fa-desktop"></i>
-          {{ t('groupDetails.tabActivity') }}
-        </button>
-        <button
-          v-if="canEditGroup"
-          @click="activeTab = 'analytics'"
-          :class="['tab-button', { active: activeTab === 'analytics' }]"
-        >
-          <i class="fas fa-chart-bar"></i>
-          {{ t('groupDetails.tabAnalytics') }}
-        </button>
-        <button
-          v-if="canViewHistory"
-          @click="activeTab = 'history'"
-          :class="['tab-button', { active: activeTab === 'history' }]"
-        >
-          <i class="fas fa-history"></i>
-          {{ t('groupDetails.tabHistory') }}
-        </button>
-        <button
-          v-if="canEditGroup"
-          @click="activeTab = 'settings'"
-          :class="['tab-button', { active: activeTab === 'settings' }]"
-        >
-          <i class="fas fa-cog"></i>
-          {{ t('groupDetails.tabSettings') }}
-        </button>
+        <template v-if="showManagerControls">
+          <button
+            v-for="tab in managerTabs"
+            :key="tab.id"
+            :disabled="isRoleUnresolved"
+            @click="activeTab = tab.id"
+            :class="['tab-button', {
+              active: activeTab === tab.id,
+              'tab-button-reserved': isRoleUnresolved
+            }]"
+          >
+            <i :class="tab.icon"></i>
+            {{ t(tab.labelKey) }}
+          </button>
+        </template>
       </div>
 
       <!-- Tab Content -->
@@ -670,6 +664,15 @@ watch(activeTab, (newTab) => {
 
 .tab-button:hover {
   color: var(--color-text-primary);
+}
+
+/* Slot held for a tab whose availability is still being determined: it occupies its
+   final position but must not read or behave as usable yet. */
+.tab-button-reserved,
+.tab-button-reserved:hover {
+  color: var(--color-text-muted);
+  opacity: 0.55;
+  cursor: default;
 }
 
 .tab-button.active {
