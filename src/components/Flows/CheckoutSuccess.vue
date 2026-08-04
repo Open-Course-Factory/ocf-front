@@ -64,28 +64,28 @@
         </div>
 
         <!-- Détails de l'abonnement -->
-        <div v-if="subscriptionDetails" class="subscription-details">
+        <div v-if="planDetails" class="subscription-details">
           <div class="details-card">
             <h3>{{ t('checkoutSuccess.subscriptionDetails') }}</h3>
-            
+
             <div class="detail-row">
               <span class="label">{{ t('checkoutSuccess.plan') }}:</span>
-              <span class="value">{{ subscriptionDetails.plan_name }}</span>
+              <span class="value">{{ planDetails.name }}</span>
             </div>
-            
-            <div class="detail-row" v-if="subscriptionDetails.amount">
+
+            <div class="detail-row" v-if="planDetails.amount">
               <span class="label">{{ t('checkoutSuccess.amount') }}:</span>
-              <span class="value">{{ formatPrice(subscriptionDetails.amount, subscriptionDetails.currency) }}</span>
+              <span class="value">{{ formatPrice(planDetails.amount, planDetails.currency) }}</span>
             </div>
-            
-            <div class="detail-row" v-if="subscriptionDetails.billing_interval">
+
+            <div class="detail-row" v-if="planDetails.interval">
               <span class="label">{{ t('checkoutSuccess.billingInterval') }}:</span>
-              <span class="value">{{ subscriptionDetails.billing_interval }}</span>
+              <span class="value">{{ planDetails.interval }}</span>
             </div>
-            
-            <div v-if="subscriptionDetails.current_period_end" class="billing-info">
+
+            <div v-if="planDetails.periodEnd" class="billing-info">
               <i class="fas fa-calendar text-info"></i>
-              {{ t('checkoutSuccess.nextBilling', { date: formatDate(subscriptionDetails.current_period_end) }) }}
+              {{ t('checkoutSuccess.nextBilling', { date: formatDate(planDetails.periodEnd) }) }}
             </div>
           </div>
         </div>
@@ -159,7 +159,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
@@ -229,7 +229,23 @@ useRoute()
 const subscriptionsStore = useSubscriptionsStore()
 const subscriptionPlansStore = useSubscriptionPlansStore()
 
-const subscriptionDetails = ref(null)
+const subscriptionDetails = ref<any>(null)
+
+// The /user-subscriptions/current DTO carries the plan nested under
+// subscription_plan (no flat plan_name/amount fields), so read the embedded
+// plan and keep the flat fields as fallback for older response shapes.
+const planDetails = computed(() => {
+  const sub = subscriptionDetails.value
+  if (!sub) return null
+  const plan = sub.subscription_plan || {}
+  return {
+    name: sub.plan_name || plan.name || '',
+    amount: sub.amount ?? plan.price_amount ?? null,
+    currency: sub.currency || plan.currency || 'EUR',
+    interval: sub.billing_interval || plan.billing_interval || '',
+    periodEnd: sub.current_period_end,
+  }
+})
 
 // Drives the reassuring copy the just-paid user reads: 'polling' while we wait
 // for the Stripe webhook to sync the subscription, 'activated' once it lands,
