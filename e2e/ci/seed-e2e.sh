@@ -20,8 +20,29 @@ done
 curl -sf -m 3 "$API/version"
 echo
 
-# The Stripe sync worker pushes the seeded plans to Stripe asynchronously, and
-# the checkout endpoint refuses plans without a Stripe price. Wait until at
+# The startup seed inserts the default plans with raw GORM, which bypasses the
+# entity hooks — so nothing enqueues them for Stripe. Trigger the sync
+# explicitly through the admin endpoint (creates the products/prices for every
+# plan lacking a StripePriceID).
+echo "🔁 Triggering plan → Stripe sync as admin..."
+ADMIN_TOKEN=$(curl -sf -m 10 -X POST "$API/auth/login" \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"1.supervisor@test.com","password":"test"}' | node -e "
+    let d = '';
+    process.stdin.on('data', (c) => (d += c)).on('end', () => {
+      const b = JSON.parse(d);
+      console.log(b.access_token || b.token || '');
+    });
+  ")
+if [ -z "$ADMIN_TOKEN" ]; then
+  echo "❌ Admin login failed — seeded users missing?"
+  exit 1
+fi
+curl -sf -m 120 -X POST "$API/subscription-plans/sync-stripe" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" | head -c 400
+echo
+
+# The checkout endpoint refuses plans without a Stripe price. Wait until at
 # least one active paid catalog plan carries one.
 echo "⏳ Waiting for a paid plan to receive its Stripe price..."
 READY=no
