@@ -395,13 +395,6 @@ watch(includeStopped, () => {
   fetchStats()
 })
 
-// Watch for groupId changes
-watch(() => props.groupId, () => {
-  currentOffset.value = 0
-  fetchCommands()
-  fetchStats()
-})
-
 onMounted(() => {
   fetchCommands()
   fetchStats()

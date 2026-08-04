@@ -275,10 +275,12 @@ watch(() => route.query.tab, (newTab) => {
   }
 })
 
-// Update URL when tab changes
+// Update URL when tab changes. `replace`, not `push`: a tab is a view of the same
+// page, so Back must return to wherever the teacher came from instead of walking
+// backwards through every tab they looked at.
 watch(activeTab, (newTab) => {
   if (route.query.tab !== newTab) {
-    router.push({
+    router.replace({
       path: route.path,
       query: { ...route.query, tab: newTab }
     })
@@ -434,7 +436,13 @@ watch(activeTab, (newTab) => {
       </div>
 
       <!-- Tab Content -->
-      <div class="tab-content">
+      <!--
+        Keyed by group id so every tab is torn down and rebuilt when the teacher
+        moves to another group (subgroup / parent links, browser back/forward).
+        Tab components load their data on mount only; without this key they would
+        have to each watch `groupId` to avoid showing the previous group's rows.
+      -->
+      <div class="tab-content" :key="groupId ?? ''">
         <GroupOverviewTab
           v-if="activeTab === 'overview'"
           :group="currentGroup"
