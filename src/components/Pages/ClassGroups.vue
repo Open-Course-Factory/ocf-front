@@ -23,17 +23,39 @@
 
 <script setup lang="ts">
 import { useClassGroupsStore } from '../../stores/classGroups';
+import { useOrganizationsStore } from '../../stores/organizations';
 import Entity from './Entity.vue';
 import GroupCard from '../Cards/GroupCard.vue';
 
 const entityStore = useClassGroupsStore();
+const organizationsStore = useOrganizationsStore();
+
+// Cards name the organization and the parent group, but `/class-groups` returns
+// only their IDs. Both are resolved from lists the session already holds — the
+// organization switcher in TopMenu loads the organizations, and the parent is
+// another row of the very list being rendered — so no card issues a request of
+// its own. An ID with no match stays unresolved and its line is dropped.
+function organizationName(organizationId?: string): string | undefined {
+    if (!organizationId) return undefined
+    return organizationsStore.getOrganizationById(organizationId)?.display_name
+}
+
+function parentGroupName(parentGroupId?: string): string | undefined {
+    if (!parentGroupId) return undefined
+    const parent = entityStore.entities.find((group: any) => group.id === parentGroupId)
+    return parent?.display_name || parent?.name || undefined
+}
 </script>
 
 <template>
     <div class="wrapper">
         <Entity :entity-name='"class-groups"' :entity-store=entityStore>
             <template #card="{ entity }">
-                <GroupCard :entity="entity" />
+                <GroupCard
+                    :entity="entity"
+                    :organization-name="organizationName(entity.organization_id)"
+                    :parent-group-name="parentGroupName(entity.parent_group_id)"
+                />
             </template>
         </Entity>
     </div>

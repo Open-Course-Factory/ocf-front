@@ -51,13 +51,23 @@
 
       <!-- Meta Info -->
       <div class="group-meta">
-        <div v-if="entity.organization_id" class="meta-item">
+        <div
+          v-if="organizationName"
+          class="meta-item"
+          data-test="meta-organization"
+          :title="t('classGroups.organization_id')"
+        >
           <i class="fas fa-building"></i>
-          <span>{{ t('classGroups.organization_id') }}</span>
+          <span>{{ organizationName }}</span>
         </div>
-        <div v-if="entity.parent_group_id" class="meta-item">
+        <div
+          v-if="parentGroupName"
+          class="meta-item"
+          data-test="meta-parent-group"
+          :title="t('classGroups.parent_group_id')"
+        >
           <i class="fas fa-sitemap"></i>
-          <span>{{ t('classGroups.parent_group_id') }}</span>
+          <span>{{ parentGroupName }}</span>
         </div>
         <div v-if="entity.expires_at" class="meta-item" :class="{ 'meta-warning': isExpiringSoon }">
           <i class="fas fa-clock"></i>
@@ -81,8 +91,14 @@ import { formatDateTime } from '../../utils/formatters'
 const { t } = useI18n()
 const router = useRouter()
 
+// `/class-groups` carries only the organization and parent-group IDs, so the
+// names are resolved by the page that owns the list and passed in. An absent
+// name means "not resolvable" — the card then drops the line rather than
+// showing a raw UUID.
 const props = defineProps<{
   entity: any
+  organizationName?: string
+  parentGroupName?: string
 }>()
 
 const progressPercent = computed(() => {
