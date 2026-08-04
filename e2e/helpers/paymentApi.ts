@@ -151,6 +151,88 @@ export async function resetToFreePlan(session: ApiSession): Promise<void> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Bulk seat purchases (subscription batches)
+// ---------------------------------------------------------------------------
+
+/**
+ * The seat plans the user may bulk-purchase, as the purchase page sees them.
+ * Returns an empty list when the user is not allowed to buy seats at all.
+ */
+export async function getPurchasableSeatPlans(session: ApiSession): Promise<any[]> {
+  const response = await session.api.get(`${API_BASE}/subscription-batches/purchasable-plans`, {
+    headers: authHeaders(session),
+  });
+  if (!response.ok()) {
+    throw new Error(`GET /subscription-batches/purchasable-plans failed: ${response.status()}`);
+  }
+  const body = await response.json();
+  if (!body.can_purchase) return [];
+  return body.plans || [];
+}
+
+export async function listBatches(session: ApiSession): Promise<any[]> {
+  const response = await session.api.get(`${API_BASE}/subscription-batches`, {
+    headers: authHeaders(session),
+  });
+  if (!response.ok()) {
+    throw new Error(`GET /subscription-batches failed: ${response.status()}`);
+  }
+  const body = await response.json();
+  return Array.isArray(body) ? body : body.data || body.batches || [];
+}
+
+export async function getBatchLicenses(session: ApiSession, batchId: string): Promise<any[]> {
+  const response = await session.api.get(`${API_BASE}/subscription-batches/${batchId}/licenses`, {
+    headers: authHeaders(session),
+  });
+  if (!response.ok()) {
+    throw new Error(`GET batch licenses failed: ${response.status()}`);
+  }
+  const body = await response.json();
+  return Array.isArray(body) ? body : body.data || body.licenses || [];
+}
+
+/**
+ * Revoke every assigned licence of a batch, restoring the students to their
+ * previous plans. The batch itself is deliberately KEPT: a prepaid pack's
+ * Stripe subscription is already scheduled to cancel at the pack deadline, and
+ * a surviving batch row is what moves the checkout idempotency discriminator —
+ * hard-deleting it would make the next same-day purchase replay a consumed
+ * Stripe session.
+ */
+export async function revokeAllBatchLicenses(session: ApiSession, batchId: string): Promise<void> {
+  const licenses = await getBatchLicenses(session, batchId);
+  for (const license of licenses) {
+    if (license.user_id) {
+      const response = await session.api.delete(
+        `${API_BASE}/subscription-batches/${batchId}/licenses/${license.id}/revoke`,
+        { headers: authHeaders(session) }
+      );
+      if (!response.ok()) {
+        throw new Error(
+          `Revoke licence ${license.id} failed: ${response.status()} ${await response.text()}`
+        );
+      }
+    }
+  }
+}
+
+/** Poll until the batch list contains an id absent from `knownIds`; returns it. */
+export async function waitForNewBatch(
+  session: ApiSession,
+  knownIds: Set<string>
+): Promise<string> {
+  let newId = '';
+  await waitFor(async () => {
+    const batches = await listBatches(session);
+    const fresh = batches.find((b) => !knownIds.has(b.id));
+    if (fresh) newId = fresh.id;
+    return Boolean(fresh);
+  }, 'a new subscription batch to be provisioned', 60_000, 2_000);
+  return newId;
+}
+
 async function waitFor(
   condition: () => Promise<boolean>,
   label: string,
