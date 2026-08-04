@@ -94,6 +94,22 @@ export interface ScenarioResultItem {
   completed_at?: string
 }
 
+// Aggregates for one scenario within one group, returned by
+// GET /teacher/groups/:groupId/scenarios/:scenarioId/analytics.
+// Mirror of services.ScenarioAnalytics in ocf-core — the field names differ from
+// the column labels the analytics table shows, so keep them in step with the Go
+// struct rather than with the UI.
+export interface ScenarioAnalytics {
+  total_sessions: number
+  completed_count: number
+  // Percentage, 0..100
+  completion_rate: number
+  // Absent when no completed session carries a grade
+  avg_grade?: number
+  // Absent when no session has completed yet
+  avg_completion_time_seconds?: number
+}
+
 export const teacherService = {
   // --- Group scenario assignment operations ---
 
@@ -139,8 +155,10 @@ export const teacherService = {
     return response.data?.items || []
   },
 
-  async getScenarioAnalytics(groupId: string): Promise<any> {
-    const response = await axios.get(`/teacher/groups/${groupId}/scenarios/analytics`)
+  async getScenarioAnalytics(groupId: string, scenarioId: string): Promise<ScenarioAnalytics> {
+    const response = await axios.get(
+      `/teacher/groups/${groupId}/scenarios/${scenarioId}/analytics`
+    )
     return response.data
   },
 

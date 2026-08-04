@@ -23,8 +23,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
+import { useNotification } from '../../composables/useNotification'
+import { teacherService, type ScenarioAnalytics } from '../../services/domain/scenario/teacherService'
 
 interface ScenarioAssignment {
   id: string
@@ -38,7 +39,8 @@ interface ScenarioAssignment {
   }
 }
 
-interface ScenarioAnalytics {
+/** One rendered row of the analytics table. */
+interface ScenarioAnalyticsRow {
   scenario_id: string
   scenario_title: string
   difficulty: string
@@ -70,6 +72,12 @@ const { t } = useTranslations({
       started: 'Started',
       completed: 'Completed',
       loadError: 'Failed to load analytics data',
+      loadFailedWarning: 'Missing from this table — these scenarios could not be loaded: {names}',
+      retry: 'Retry',
+      exportIncompleteTitle: 'Incomplete export',
+      exportIncompleteMessage: 'These scenarios could not be loaded and will be missing from the CSV: {names}. Export anyway?',
+      exportAnyway: 'Export anyway',
+      cancel: 'Cancel',
       difficultyBeginner: 'Beginner',
       difficultyIntermediate: 'Intermediate',
       difficultyAdvanced: 'Advanced'
@@ -90,6 +98,12 @@ const { t } = useTranslations({
       started: 'Démarrées',
       completed: 'Terminées',
       loadError: 'Échec du chargement des analyses',
+      loadFailedWarning: 'Absents de ce tableau — ces scénarios n\'ont pas pu être chargés : {names}',
+      retry: 'Réessayer',
+      exportIncompleteTitle: 'Export incomplet',
+      exportIncompleteMessage: 'Ces scénarios n\'ont pas pu être chargés et seront absents du CSV : {names}. Exporter quand même ?',
+      exportAnyway: 'Exporter quand même',
+      cancel: 'Annuler',
       difficultyBeginner: 'Débutant',
       difficultyIntermediate: 'Intermédiaire',
       difficultyAdvanced: 'Avancé'
@@ -97,8 +111,13 @@ const { t } = useTranslations({
   }
 })
 
+const { showConfirm } = useNotification()
+
 // State
-const analyticsData = ref<ScenarioAnalytics[]>([])
+const analyticsData = ref<ScenarioAnalyticsRow[]>([])
+// Titles of the assigned scenarios whose analytics call failed. They are absent
+// from analyticsData, so without this the table and the CSV would quietly under-report.
+const failedScenarios = ref<string[]>([])
 const isLoading = ref(false)
 const error = ref('')
 
@@ -117,39 +136,54 @@ const overallCompletionRate = computed(() => {
 })
 
 // Methods
+function scenarioTitle(assignment: ScenarioAssignment): string {
+  return assignment.scenario?.title || assignment.scenario_id
+}
+
+function toRow(assignment: ScenarioAssignment, analytics: ScenarioAnalytics): ScenarioAnalyticsRow {
+  return {
+    scenario_id: assignment.scenario_id,
+    scenario_title: scenarioTitle(assignment),
+    difficulty: assignment.scenario?.difficulty || '',
+    started_count: analytics.total_sessions || 0,
+    completed_count: analytics.completed_count || 0,
+    completion_rate: analytics.completion_rate || 0,
+    avg_grade: analytics.avg_grade || 0,
+    avg_time_seconds: analytics.avg_completion_time_seconds || 0
+  }
+}
+
 async function loadAnalytics() {
   isLoading.value = true
   error.value = ''
+  failedScenarios.value = []
   try {
-    // First get assignments for this group
-    const assignResponse = await axios.get('/scenario-assignments', {
-      params: { group_id: props.groupId }
-    })
-    const assignments: ScenarioAssignment[] = assignResponse.data?.data || assignResponse.data || []
+    const assignments: ScenarioAssignment[] = await teacherService.getGroupAssignments(props.groupId)
 
-    // Fetch analytics for each assigned scenario
-    const results: ScenarioAnalytics[] = []
-    for (const assignment of assignments) {
-      try {
-        const analyticsResponse = await axios.get(
-          `/teacher/groups/${props.groupId}/scenarios/${assignment.scenario_id}/analytics`
-        )
-        const data = analyticsResponse.data
-        results.push({
-          scenario_id: assignment.scenario_id,
-          scenario_title: data.scenario_title || assignment.scenario?.title || assignment.scenario_id,
-          difficulty: data.difficulty || assignment.scenario?.difficulty || '',
-          started_count: data.started_count || 0,
-          completed_count: data.completed_count || 0,
-          completion_rate: data.completion_rate || 0,
-          avg_grade: data.avg_grade || 0,
-          avg_time_seconds: data.avg_time_seconds || 0
-        })
-      } catch (err) {
-        console.error(`Failed to load analytics for scenario ${assignment.scenario_id}:`, err)
+    // One analytics call per assigned scenario, all in flight at once. A single
+    // failing scenario must not hide the others, so settle them all and report
+    // the ones that failed rather than dropping them silently (#306).
+    const outcomes = await Promise.allSettled(
+      assignments.map(assignment =>
+        teacherService.getScenarioAnalytics(props.groupId, assignment.scenario_id)
+      )
+    )
+
+    const rows: ScenarioAnalyticsRow[] = []
+    const failed: string[] = []
+
+    outcomes.forEach((outcome, index) => {
+      const assignment = assignments[index]
+      if (outcome.status === 'fulfilled') {
+        rows.push(toRow(assignment, outcome.value))
+      } else {
+        console.error(`Failed to load analytics for scenario ${assignment.scenario_id}:`, outcome.reason)
+        failed.push(scenarioTitle(assignment))
       }
-    }
-    analyticsData.value = results
+    })
+
+    analyticsData.value = rows
+    failedScenarios.value = failed
   } catch (err: any) {
     error.value = err.response?.data?.error_message || t('groupAnalytics.loadError')
   } finally {
@@ -184,7 +218,28 @@ function translateDifficulty(difficulty: string): string {
   return difficultyMap[difficulty] || difficulty
 }
 
-function exportCsv() {
+/**
+ * The CSV carries only the scenarios that loaded. When some did not, say so
+ * before writing the file and mark the filename, so an incomplete export cannot
+ * be mistaken for a full report once it leaves the browser.
+ */
+async function confirmIncompleteExport(): Promise<boolean> {
+  if (failedScenarios.value.length === 0) return true
+
+  return await showConfirm(
+    t('groupAnalytics.exportIncompleteMessage', { names: failedScenarios.value.join(', ') }),
+    t('groupAnalytics.exportIncompleteTitle'),
+    {
+      confirmButtonText: t('groupAnalytics.exportAnyway'),
+      cancelButtonText: t('groupAnalytics.cancel'),
+      type: 'warning'
+    }
+  )
+}
+
+async function exportCsv() {
+  if (!await confirmIncompleteExport()) return
+
   const escape = (s: string) => s.replace(/"/g, '""')
   const headers = [
     t('groupAnalytics.scenario'),
@@ -203,7 +258,8 @@ function exportCsv() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `analytics-group-${props.groupId}.csv`
+  const incompleteSuffix = failedScenarios.value.length > 0 ? '-incomplete' : ''
+  a.download = `analytics-group-${props.groupId}${incompleteSuffix}.csv`
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -235,69 +291,80 @@ onMounted(() => {
       <i class="fas fa-spinner fa-spin"></i>
     </div>
 
-    <div v-else-if="analyticsData.length === 0" class="empty-state">
-      <i class="fas fa-chart-bar"></i>
-      <p>{{ t('groupAnalytics.noData') }}</p>
-    </div>
-
     <template v-else>
-      <!-- Summary Cards -->
-      <div class="summary-cards" role="status">
-        <div class="summary-card">
-          <div class="summary-value">{{ totalStarted }}</div>
-          <div class="summary-label">{{ t('groupAnalytics.totalStarted') }}</div>
-        </div>
-        <div class="summary-card">
-          <div class="summary-value">{{ totalCompleted }}</div>
-          <div class="summary-label">{{ t('groupAnalytics.totalCompleted') }}</div>
-        </div>
-        <div class="summary-card">
-          <div class="summary-value">{{ overallCompletionRate }}%</div>
-          <div class="summary-label">{{ t('groupAnalytics.completionRate') }}</div>
-          <div class="summary-bar">
-            <div class="summary-bar-fill" :style="{ width: overallCompletionRate + '%' }"></div>
+      <div v-if="failedScenarios.length > 0" class="analytics-warning" role="alert">
+        <i class="fas fa-triangle-exclamation"></i>
+        <span>{{ t('groupAnalytics.loadFailedWarning', { names: failedScenarios.join(', ') }) }}</span>
+        <button @click="loadAnalytics" class="btn btn-sm btn-secondary">
+          <i class="fas fa-rotate-right"></i>
+          {{ t('groupAnalytics.retry') }}
+        </button>
+      </div>
+
+      <div v-if="analyticsData.length === 0 && failedScenarios.length === 0" class="empty-state">
+        <i class="fas fa-chart-bar"></i>
+        <p>{{ t('groupAnalytics.noData') }}</p>
+      </div>
+
+      <template v-else-if="analyticsData.length > 0">
+        <!-- Summary Cards -->
+        <div class="summary-cards" role="status">
+          <div class="summary-card">
+            <div class="summary-value">{{ totalStarted }}</div>
+            <div class="summary-label">{{ t('groupAnalytics.totalStarted') }}</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-value">{{ totalCompleted }}</div>
+            <div class="summary-label">{{ t('groupAnalytics.totalCompleted') }}</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-value">{{ overallCompletionRate }}%</div>
+            <div class="summary-label">{{ t('groupAnalytics.completionRate') }}</div>
+            <div class="summary-bar">
+              <div class="summary-bar-fill" :style="{ width: overallCompletionRate + '%' }"></div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Per-scenario table -->
-      <div class="analytics-table-container">
-        <table class="analytics-table" :aria-label="t('groupAnalytics.analyticsTitle')">
-          <thead>
-            <tr>
-              <th>{{ t('groupAnalytics.scenario') }}</th>
-              <th>{{ t('groupAnalytics.difficulty') }}</th>
-              <th>{{ t('groupAnalytics.started') }}</th>
-              <th>{{ t('groupAnalytics.completed') }}</th>
-              <th>{{ t('groupAnalytics.completionRate') }}</th>
-              <th>{{ t('groupAnalytics.avgGrade') }}</th>
-              <th>{{ t('groupAnalytics.avgTime') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in analyticsData" :key="row.scenario_id">
-              <td class="scenario-name">{{ row.scenario_title }}</td>
-              <td>
-                <span :class="['difficulty-badge', getDifficultyClass(row.difficulty)]">
-                  {{ translateDifficulty(row.difficulty) }}
-                </span>
-              </td>
-              <td>{{ row.started_count }}</td>
-              <td>{{ row.completed_count }}</td>
-              <td>
-                <div class="rate-cell">
-                  <div class="rate-bar">
-                    <div class="rate-bar-fill" :style="{ width: row.completion_rate + '%' }"></div>
+        <!-- Per-scenario table -->
+        <div class="analytics-table-container">
+          <table class="analytics-table" :aria-label="t('groupAnalytics.analyticsTitle')">
+            <thead>
+              <tr>
+                <th>{{ t('groupAnalytics.scenario') }}</th>
+                <th>{{ t('groupAnalytics.difficulty') }}</th>
+                <th>{{ t('groupAnalytics.started') }}</th>
+                <th>{{ t('groupAnalytics.completed') }}</th>
+                <th>{{ t('groupAnalytics.completionRate') }}</th>
+                <th>{{ t('groupAnalytics.avgGrade') }}</th>
+                <th>{{ t('groupAnalytics.avgTime') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in analyticsData" :key="row.scenario_id">
+                <td class="scenario-name">{{ row.scenario_title }}</td>
+                <td>
+                  <span :class="['difficulty-badge', getDifficultyClass(row.difficulty)]">
+                    {{ translateDifficulty(row.difficulty) }}
+                  </span>
+                </td>
+                <td>{{ row.started_count }}</td>
+                <td>{{ row.completed_count }}</td>
+                <td>
+                  <div class="rate-cell">
+                    <div class="rate-bar">
+                      <div class="rate-bar-fill" :style="{ width: row.completion_rate + '%' }"></div>
+                    </div>
+                    <span>{{ row.completion_rate }}%</span>
                   </div>
-                  <span>{{ row.completion_rate }}%</span>
-                </div>
-              </td>
-              <td>{{ row.avg_grade > 0 ? row.avg_grade.toFixed(1) : '-' }}</td>
-              <td>{{ formatTime(row.avg_time_seconds) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                </td>
+                <td>{{ row.avg_grade > 0 ? row.avg_grade.toFixed(1) : '-' }}</td>
+                <td>{{ formatTime(row.avg_time_seconds) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
     </template>
   </div>
 </template>
@@ -475,6 +542,26 @@ onMounted(() => {
   background-color: var(--color-danger-bg);
   color: var(--color-danger-text);
   border: 1px solid var(--color-danger-border);
+}
+
+/* Sits below the header so the export button never moves when it appears. */
+.analytics-warning {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  border: var(--border-width-thin) solid var(--color-warning);
+  font-size: var(--font-size-sm);
+}
+
+.analytics-warning span {
+  flex: 1;
+  min-width: 200px;
 }
 
 /* Responsive */
