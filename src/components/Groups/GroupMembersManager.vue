@@ -66,8 +66,8 @@ const { t } = useTranslations({
       // Actions
       addMember: 'Add Member',
       removeMember: 'Remove',
-      bulkCreateTerminals: 'Bulk Create Terminals',
-      createTerminalsForAll: 'Create Terminals for All Members',
+      startScenarioForClass: 'Start a scenario for the class',
+      startScenarioForClassHint: 'Open the Scenarios tab, where an assigned scenario can be started for every member at once',
       mainGroup: 'Main Group',
 
       // Modal
@@ -112,8 +112,8 @@ const { t } = useTranslations({
       // Actions
       addMember: 'Ajouter un membre',
       removeMember: 'Retirer',
-      bulkCreateTerminals: 'Création en Masse de Terminaux',
-      createTerminalsForAll: 'Créer des Terminaux pour Tous les Membres',
+      startScenarioForClass: 'Lancer un scénario pour la classe',
+      startScenarioForClassHint: 'Ouvre l\'onglet Scénarios, d\'où un scénario assigné peut être lancé pour tous les membres en une fois',
       mainGroup: 'Groupe Principal',
 
       // Modal
@@ -341,14 +341,21 @@ async function handleRemoveMember(member: GroupMember) {
           <i class="fas fa-key"></i>
           {{ t('groupMembers.regeneratePasswordsCount', { count: selectedCount }) }}
         </button>
+        <!--
+          Giving every member an environment happens on the Scenarios tab: a
+          scenario is assigned to the group, then bulk-started for all members.
+          This CTA only carries the teacher there — it does not start anything
+          on its own.
+        -->
         <router-link
           v-if="groupMembersComposable.canManageMembers.value && groupMembersComposable.members.value.length > 0"
-          :to="`/terminal-creation?mode=bulk&groupId=${group.id}`"
+          :to="{ name: 'GroupDetails', params: { id: group.id }, query: { tab: 'scenarios' } }"
           class="btn btn-secondary"
-          :title="t('groupMembers.createTerminalsForAll')"
+          data-test="bulk-scenario-link"
+          :title="t('groupMembers.startScenarioForClassHint')"
         >
-          <i class="fas fa-terminal"></i>
-          {{ t('groupMembers.bulkCreateTerminals') }}
+          <i class="fas fa-clipboard-list"></i>
+          {{ t('groupMembers.startScenarioForClass') }}
         </router-link>
         <button
           v-if="groupMembersComposable.canManageMembers.value"
