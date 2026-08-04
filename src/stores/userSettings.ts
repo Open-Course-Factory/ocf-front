@@ -68,6 +68,12 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
                     defaultLandingPage: "Default Landing Page",
                     defaultLandingPageHelp: "Page to show after login"
                 },
+                pages: {
+                    courses: "Courses",
+                    subscriptionDashboard: "Subscription dashboard",
+                    terminalSessions: "Terminal sessions",
+                    classGroups: "Groups"
+                },
                 localization: {
                     title: "Localization",
                     preferredLanguage: "Preferred Language",
@@ -163,6 +169,12 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
                     defaultLandingPage: "Page d'Accueil par Défaut",
                     defaultLandingPageHelp: "Page à afficher après connexion"
                 },
+                pages: {
+                    courses: "Cours",
+                    subscriptionDashboard: "Tableau de bord d'abonnement",
+                    terminalSessions: "Sessions de terminal",
+                    classGroups: "Groupes"
+                },
                 localization: {
                     title: "Localisation",
                     preferredLanguage: "Langue Préférée",
@@ -254,21 +266,20 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
     // Create async wrapper with store state
     const withAsync = createAsyncWrapper({ isLoading, error })
 
-    // Available options (with feature flags)
+    // Landing pages the user may choose from. Each feature flag mirrors the one
+    // gating the corresponding category in MainNavMenu, so the picker never
+    // offers a page the navigation has hidden.
     const allPages = [
-        { value: '/courses', label: 'Courses', featureFlag: 'course_conception' },
-        { value: '/subscription-dashboard', label: 'Subscription Dashboard' },
-        { value: '/terminal-sessions', label: 'Terminal Sessions', featureFlag: 'terminal_management' }
+        { value: '/courses', labelKey: 'userSettings.pages.courses', featureFlag: 'course_conception' },
+        { value: '/subscription-dashboard', labelKey: 'userSettings.pages.subscriptionDashboard' },
+        { value: '/terminal-sessions', labelKey: 'userSettings.pages.terminalSessions', featureFlag: 'terminal_management' },
+        { value: '/class-groups', labelKey: 'userSettings.pages.classGroups', featureFlag: 'class_groups' }
     ]
 
-    // Filter pages based on feature flags
     const availablePages = computed(() => {
-        return allPages.filter(page => {
-            // If no feature flag is required, always show the page
-            if (!page.featureFlag) return true
-            // Otherwise, check if the feature flag is enabled
-            return isEnabled(page.featureFlag)
-        })
+        return allPages
+            .filter(page => !page.featureFlag || isEnabled(page.featureFlag))
+            .map(page => ({ value: page.value, label: t(page.labelKey) }))
     })
 
     const availableLanguages = [
