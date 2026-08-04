@@ -84,6 +84,87 @@ typecheck:
     - when: always
 
 # ============================================================================
+# Payment E2E — full-stack Playwright run against a real ocf-core + Casdoor
+# stack (Docker-in-Docker) and Stripe test-mode Checkout.
+#
+# Requirements (see e2e/README-payments.md → "CI setup"):
+#   - CI variable STRIPE_TEST_SECRET_KEY (masked): Stripe sandbox sk_test_… key.
+#     The job is skipped entirely when it is absent.
+#   - CI variable token_jwt_key_test (base64 PEM): same value as in ocf-core.
+#   - ocf-core must allow this project in its CI job-token allowlist (the job
+#     clones ocf-core to build the backend stack).
+# ============================================================================
+
+e2e:payment:
+  stage: test
+  image: node:${NODE_VERSION}
+  services:
+    - docker:27-dind
+  cache:
+    - key: "${CI_COMMIT_REF_SLUG}-npm"
+      paths:
+        - node_modules/
+        - .npm/
+    - key: playwright-browsers
+      paths:
+        - .playwright-browsers/
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+    # Unique project name per job so parallel pipelines don't collide
+    COMPOSE_PROJECT: "ocf-e2e-${CI_JOB_ID}"
+    COMPOSE_FILES: "-f .e2e-core/docker-compose.test.yml -f e2e/ci/docker-compose.core.yml"
+    PLAYWRIGHT_BROWSERS_PATH: "${CI_PROJECT_DIR}/.playwright-browsers"
+    STRIPE_CLI_VERSION: "1.44.0"
+    DOCKER_CLI_VERSION: "27.3.1"
+    COMPOSE_PLUGIN_VERSION: "2.29.7"
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    # Requires the Stripe sandbox key; skip quietly where it isn't configured
+    - if: $STRIPE_TEST_SECRET_KEY == null
+      when: never
+    - when: always
+  before_script:
+    # Docker CLI + compose plugin (static binaries — the node image has neither)
+    - curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLI_VERSION}.tgz" | tar -xz --strip-components=1 -C /usr/local/bin docker/docker
+    - mkdir -p /usr/local/lib/docker/cli-plugins
+    - curl -fsSL "https://github.com/docker/compose/releases/download/v${COMPOSE_PLUGIN_VERSION}/docker-compose-linux-x86_64" -o /usr/local/lib/docker/cli-plugins/docker-compose
+    - chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+    # Stripe CLI (webhook forwarding)
+    - curl -fsSL "https://github.com/stripe/stripe-cli/releases/download/v${STRIPE_CLI_VERSION}/stripe_${STRIPE_CLI_VERSION}_linux_x86_64.tar.gz" | tar -xz -C /usr/local/bin stripe
+    # ocf-core sources: compose stack for postgres/casdoor + backend build context
+    - git clone --depth 1 "https://gitlab-ci-token:${CI_JOB_TOKEN}@usine.solution-libre.fr/open-course-factory/ocf-core.git" .e2e-core
+    - echo "$token_jwt_key_test" | base64 -d > .e2e-core/token_jwt_key.pem
+    - export CASDOOR_CLIENT_SECRET=$(node -e "console.log(require('./.e2e-core/init_data.json').applications[0].clientSecret)")
+    # The webhook signing secret must be known BEFORE ocf-core boots
+    - export STRIPE_WEBHOOK_SECRET=$(stripe listen --print-secret --api-key "$STRIPE_TEST_SECRET_KEY")
+    - docker compose -p "$COMPOSE_PROJECT" $COMPOSE_FILES up -d --build --wait --wait-timeout 300
+    - stripe listen --api-key "$STRIPE_TEST_SECRET_KEY" --forward-to http://docker:8080/api/v1/webhooks/stripe > stripe-listen.log 2>&1 &
+    - npm ci --prefer-offline
+    - npx playwright install --with-deps chromium
+    - bash e2e/ci/seed-e2e.sh http://docker:8080/api/v1 -p "$COMPOSE_PROJECT" $COMPOSE_FILES
+    # Front dev server; the browser reaches the API on the dind host ("docker")
+    - VITE_API_URL=docker:8080 VITE_PROTOCOL=http npm run dev > vite.log 2>&1 &
+    - timeout 60 bash -c 'until curl -sf http://localhost:4000 >/dev/null; do sleep 2; done'
+  script:
+    - OCF_API_URL=http://docker:8080/api/v1
+      E2E_PAYER_EMAIL=1.student@test.com
+      E2E_PAYER_PASSWORD=test
+      npx playwright test payment-purchase
+  after_script:
+    - docker compose -p "$COMPOSE_PROJECT" -f .e2e-core/docker-compose.test.yml -f e2e/ci/docker-compose.core.yml logs ocf-core-e2e > ocf-core.log 2>&1 || true
+    - docker compose -p "$COMPOSE_PROJECT" -f .e2e-core/docker-compose.test.yml -f e2e/ci/docker-compose.core.yml down -v --remove-orphans || true
+  artifacts:
+    when: on_failure
+    paths:
+      - test-results/
+      - playwright-report/
+      - stripe-listen.log
+      - vite.log
+      - ocf-core.log
+    expire_in: 1 week
+
+# ============================================================================
 # Release Component
 # ============================================================================
 

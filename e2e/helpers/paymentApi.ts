@@ -62,11 +62,12 @@ export async function getCatalogPlans(session: ApiSession): Promise<any[]> {
 }
 
 /**
- * The user's personal organization id. Subscription state is org-scoped in the
- * UI: with a team org active, /user-subscriptions/current answers for the org,
- * not the user — a personal purchase test must run in the personal context.
+ * The user's personal organization id, or null if they have none. Subscription
+ * state is org-scoped in the UI: with a team org active,
+ * /user-subscriptions/current answers for the org, not the user — a personal
+ * purchase test must run in the personal context when one exists.
  */
-export async function getPersonalOrganizationId(session: ApiSession): Promise<string> {
+export async function getPersonalOrganizationId(session: ApiSession): Promise<string | null> {
   const response = await session.api.get(`${API_BASE}/organizations`, {
     headers: authHeaders(session),
   });
@@ -76,10 +77,23 @@ export async function getPersonalOrganizationId(session: ApiSession): Promise<st
   const body = await response.json();
   const orgs = Array.isArray(body) ? body : body.data || [];
   const personal = orgs.find((o: any) => o.organization_type === 'personal');
-  if (!personal) {
-    throw new Error('No personal organization found for user');
+  return personal ? personal.id : null;
+}
+
+/**
+ * Name of the cheapest active paid catalog plan — the purchase target. Looked
+ * up instead of hardcoded so the spec works on any seeded database (dev has
+ * Solo/Formateur, a fresh CI stack seeds different defaults).
+ */
+export async function findCheapestPaidPlanName(session: ApiSession): Promise<string> {
+  const plans = await getCatalogPlans(session);
+  const paid = plans
+    .filter((p) => p.price_amount > 0 && p.is_active && p.is_catalog !== false)
+    .sort((a, b) => a.price_amount - b.price_amount);
+  if (paid.length === 0) {
+    throw new Error('No active paid catalog plan found — is the database seeded?');
   }
-  return personal.id;
+  return paid[0].name;
 }
 
 export async function cancelSubscriptionImmediately(

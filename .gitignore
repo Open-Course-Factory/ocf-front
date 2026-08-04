@@ -32,3 +32,10 @@ coverage/
 *.njsproj
 *.sln
 *.sw?
+
+# Playwright output + payment E2E working dirs (CI clone, browser cache, demo videos)
+test-results/
+playwright-report/
+.e2e-core/
+.playwright-browsers/
+test-results-video/

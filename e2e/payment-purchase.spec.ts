@@ -7,6 +7,7 @@ import {
   resetToFreePlan,
   getCurrentSubscription,
   getPersonalOrganizationId,
+  findCheapestPaidPlanName,
   type ApiSession,
 } from './helpers/paymentApi';
 import { fillStripeCheckout } from './helpers/stripeCheckout';
@@ -14,31 +15,35 @@ import { fillStripeCheckout } from './helpers/stripeCheckout';
 /**
  * Payment purchase happy path — the reference spec for the payment E2E suite.
  *
- * Scenario: a user on the free Trial plan upgrades to the paid Solo plan
- * through the real UI and the real Stripe test-mode Checkout, and lands back
- * on an activated subscription.
+ * Scenario: a user on the free Trial plan upgrades to a paid plan through the
+ * real UI and the real Stripe test-mode Checkout, and lands back on an
+ * activated subscription.
  *
  * Requirements (see e2e/README-payments.md):
- *   - ocf-core on :8080 with Stripe TEST keys, ocf-front on :4000
- *   - `stripe listen --forward-to localhost:8080/api/v1/webhooks/stripe`
- *   - seeded persona users (jp@test.ocf)
+ *   - ocf-core with Stripe TEST keys, ocf-front on :4000
+ *   - `stripe listen` forwarding webhooks to ocf-core
+ *   - a payer user on the free plan
  *
- * The payer is jp@test.ocf — a persona no other spec subscribes with, so
- * plan-gating expectations elsewhere stay untouched. Setup and teardown reset
- * jp to the free plan through the API, which makes the spec re-runnable even
- * after an aborted run.
+ * The payer defaults to jp@test.ocf (dev persona no other spec subscribes
+ * with, so plan-gating expectations elsewhere stay untouched); CI overrides it
+ * via E2E_PAYER_EMAIL/E2E_PAYER_PASSWORD to a user its fresh stack seeds. The
+ * target plan is discovered from the catalog (cheapest active paid plan), so
+ * the spec works on any seeded database. Setup and teardown reset the payer to
+ * the free plan through the API, which makes the spec re-runnable even after
+ * an aborted run.
  */
 
-const PAYER_EMAIL = 'jp@test.ocf';
-const PAYER_PASSWORD = 'OcfTest2026!';
-const TARGET_PLAN = 'Solo';
+const PAYER_EMAIL = process.env.E2E_PAYER_EMAIL || 'jp@test.ocf';
+const PAYER_PASSWORD = process.env.E2E_PAYER_PASSWORD || 'OcfTest2026!';
 
 let payerApi: ApiSession;
-let personalOrgId: string;
+let personalOrgId: string | null;
+let targetPlan: string;
 
 test.beforeAll(async () => {
   payerApi = await apiLogin(PAYER_EMAIL, PAYER_PASSWORD);
   personalOrgId = await getPersonalOrganizationId(payerApi);
+  targetPlan = await findCheapestPaidPlanName(payerApi);
 });
 
 test.beforeEach(async () => {
@@ -46,24 +51,27 @@ test.beforeEach(async () => {
 });
 
 test.afterAll(async () => {
-  // Leave jp on the free plan for whoever runs next, then release the context.
+  // Leave the payer on the free plan for whoever runs next, then release the context.
   await resetToFreePlan(payerApi).catch(() => {});
   await payerApi.api.dispose();
 });
 
 test.describe('Plan purchase', () => {
-  test('upgrades from free Trial to paid Solo through Stripe Checkout', async ({ page }) => {
+  test('upgrades from the free Trial to a paid plan through Stripe Checkout', async ({ page }) => {
     test.setTimeout(180_000); // real Stripe round-trip + webhook delivery
 
-    // Purchase must happen in the PERSONAL org context: with the team org
+    // Purchase must happen in the PERSONAL org context: with a team org
     // active (the post-login default), the plans page compares against the
     // org's subscription and never recognizes the user's own Trial. Pin the
     // context before login — the org store restores it from localStorage.
+    // (A payer without a personal org has nothing to pin.)
     await page.goto('/login');
-    await page.evaluate(
-      (orgId) => localStorage.setItem('currentOrganizationId', orgId),
-      personalOrgId
-    );
+    if (personalOrgId) {
+      await page.evaluate(
+        (orgId) => localStorage.setItem('currentOrganizationId', orgId),
+        personalOrgId
+      );
+    }
     await login(page, PAYER_EMAIL, PAYER_PASSWORD);
     await dismissVerificationBanner(page);
 
@@ -71,15 +79,15 @@ test.describe('Plan purchase', () => {
     // Subscription & Licenses → Available plans.
     await navigateViaSubscriptionMenu(page, '/subscription-plans');
 
-    // The catalog shows the current (free) plan as active and Solo as an upgrade.
-    const soloCard = page
+    // The catalog shows the current (free) plan as active and the target paid plan as an upgrade.
+    const planCard = page
       .locator('.plan-card-compact')
-      .filter({ has: page.locator('.plan-name-compact', { hasText: TARGET_PLAN }) });
-    await expect(soloCard).toBeVisible({ timeout: 15_000 });
-    await soloCard.scrollIntoViewIfNeeded(); // bring the card on screen BEFORE the click
+      .filter({ has: page.locator('.plan-name-compact', { hasText: targetPlan }) });
+    await expect(planCard).toBeVisible({ timeout: 15_000 });
+    await planCard.scrollIntoViewIfNeeded(); // bring the card on screen BEFORE the click
     await demoPause(page, 2); // let the audience read the plan catalog
 
-    await soloCard.locator('.btn-subscribe-compact').click();
+    await planCard.locator('.btn-subscribe-compact').click();
 
     // Free → paid replaces the Trial: confirm the plan change... (the modal
     // opens only after the click handler's async subscription checks resolve)
@@ -99,18 +107,18 @@ test.describe('Plan purchase', () => {
     // subscription, then swaps the spinner for the confirmation content.
     await expect(page).toHaveURL(/\/checkout-success/, { timeout: 60_000 });
     await expect(page.locator('.success-animation')).toBeVisible({ timeout: 60_000 });
-    await expect(page.locator('.subscription-details')).toContainText(TARGET_PLAN);
+    await expect(page.locator('.subscription-details')).toContainText(targetPlan);
     await demoPause(page, 2); // dwell on the activated-subscription confirmation
 
     // Follow the success page's own "View Dashboard" call-to-action — the
-    // dashboard now reports Solo as the active subscription source.
+    // dashboard now reports the paid plan as the active subscription source.
     await page.locator('.next-steps a[href="/subscription-dashboard"]').first().click();
-    await expect(page.locator('.plan-name').first()).toHaveText(TARGET_PLAN, { timeout: 15_000 });
+    await expect(page.locator('.plan-name').first()).toHaveText(targetPlan, { timeout: 15_000 });
     await demoPause(page, 2); // dwell on the dashboard's active-plan card
 
     // And the backend agrees — the paid subscription is active for the payer.
     const subscription = await getCurrentSubscription(payerApi);
-    expect(subscription?.subscription_plan?.name).toBe(TARGET_PLAN);
+    expect(subscription?.subscription_plan?.name).toBe(targetPlan);
     expect(subscription?.status).toBe('active');
   });
 });

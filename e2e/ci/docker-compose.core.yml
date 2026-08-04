@@ -1,0 +1,54 @@
+# Overlay adding the ocf-core application on top of ocf-core's own
+# docker-compose.test.yml (postgres + mysql + casdoor). Used by the e2e:payment
+# CI job:
+#
+#   docker compose -f .e2e-core/docker-compose.test.yml -f e2e/ci/docker-compose.core.yml up
+#
+# `.e2e-core/` is a shallow clone of ocf-core made by the job. Compose resolves
+# each file's relative paths against that file's own directory, so the build
+# context below points at the clone from e2e/ci/.
+services:
+  ocf-core-e2e:
+    build:
+      context: ../../.e2e-core
+      dockerfile: Dockerfile
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      casdoor-test:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE: postgres
+      POSTGRES_HOST: postgres-test
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ocf_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      CASDOOR_ENDPOINT: http://casdoor-test:8000
+      # App credentials are dev fixtures from ocf-core's init_data.json, not
+      # secrets — the job extracts the secret from the clone at runtime.
+      CASDOOR_CLIENT_ID: 66a14cd79de6e4a84e2c
+      CASDOOR_CLIENT_SECRET: ${CASDOOR_CLIENT_SECRET}
+      CASDOOR_ORGANIZATION_NAME: soli
+      CASDOOR_APPLICATION_NAME: ocf
+      # development => startup self-seeds a fresh DB: default subscription
+      # plans, test users (1.student@test.com/test, ...) and Trial auto-assign.
+      ENVIRONMENT: development
+      STRIPE_SECRET_KEY: ${STRIPE_TEST_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      FRONTEND_URL: http://localhost:4000
+      OCF_API_URL: localhost:8080
+      FIELD_ENCRYPTION_SECRET: e2e-only-not-a-secret
+      EMAIL_VERIFICATION_ENABLED: "false"
+      FEATURE_COURSES_ENABLED: "true"
+      FEATURE_LABS_ENABLED: "true"
+      FEATURE_TERMINALS_ENABLED: "true"
+    healthcheck:
+      # The runtime image has node but not curl/wget.
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8080/api/v1/version').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
