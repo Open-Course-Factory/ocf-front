@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { login } from './helpers/auth';
-import { dismissVerificationBanner } from './helpers/ui';
+import { dismissVerificationBanner, navigateViaSubscriptionMenu } from './helpers/ui';
 import { demoPause } from './helpers/demo';
 import {
   apiLogin,
@@ -65,14 +65,18 @@ test.describe('Plan purchase', () => {
       personalOrgId
     );
     await login(page, PAYER_EMAIL, PAYER_PASSWORD);
-    await page.goto('/subscription-plans');
     await dismissVerificationBanner(page);
+
+    // Reach the catalog the way a real user does: sidebar → "More" →
+    // Subscription & Licenses → Available plans.
+    await navigateViaSubscriptionMenu(page, '/subscription-plans');
 
     // The catalog shows the current (free) plan as active and Solo as an upgrade.
     const soloCard = page
       .locator('.plan-card-compact')
       .filter({ has: page.locator('.plan-name-compact', { hasText: TARGET_PLAN }) });
     await expect(soloCard).toBeVisible({ timeout: 15_000 });
+    await soloCard.scrollIntoViewIfNeeded(); // bring the card on screen BEFORE the click
     await demoPause(page, 2); // let the audience read the plan catalog
 
     await soloCard.locator('.btn-subscribe-compact').click();
@@ -98,8 +102,9 @@ test.describe('Plan purchase', () => {
     await expect(page.locator('.subscription-details')).toContainText(TARGET_PLAN);
     await demoPause(page, 2); // dwell on the activated-subscription confirmation
 
-    // The dashboard now reports Solo as the active subscription source.
-    await page.goto('/subscription-dashboard');
+    // Follow the success page's own "View Dashboard" call-to-action — the
+    // dashboard now reports Solo as the active subscription source.
+    await page.locator('.next-steps a[href="/subscription-dashboard"]').first().click();
     await expect(page.locator('.plan-name').first()).toHaveText(TARGET_PLAN, { timeout: 15_000 });
     await demoPause(page, 2); // dwell on the dashboard's active-plan card
 

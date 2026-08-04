@@ -1,4 +1,5 @@
-import { type Page } from '@playwright/test';
+import { type Page, expect } from '@playwright/test';
+import { demoPause } from './demo';
 
 /**
  * Dismiss the email-verification banner if it is showing. It overlays the top
@@ -11,4 +12,39 @@ export async function dismissVerificationBanner(page: Page): Promise<void> {
   if (await dismissBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
     await dismissBtn.click({ force: true });
   }
+}
+
+/**
+ * Navigate to a page of the sidebar's "Subscription & Licenses" category the
+ * way a real user does — specs never page.goto() inside the product, so a
+ * viewer (or a demo recording) always sees WHERE the user went.
+ *
+ * The category lives in the sidebar's bottom "More" section, collapsed by
+ * default, so the path is: "More" toggle → category header → menu item.
+ * Steps already open (e.g. after an earlier navigation) are skipped.
+ */
+export async function navigateViaSubscriptionMenu(page: Page, route: string): Promise<void> {
+  const category = page.locator('.main-menu [data-category="subscription"]');
+
+  if (!(await category.isVisible().catch(() => false))) {
+    await demoPause(page);
+    await page.locator('.menu-bottom-toggle').click();
+    await expect(category).toBeVisible();
+  }
+
+  // Element visibility is not a reliable signal for the accordion state (a
+  // collapsed list still reports its items visible while the header swallows
+  // their clicks) — the `expanded` class on the item list is.
+  const itemList = category.locator('.category-items');
+  const isExpanded = await itemList
+    .evaluate((el) => el.classList.contains('expanded'))
+    .catch(() => false);
+  if (!isExpanded) {
+    await demoPause(page);
+    await category.locator('.category-header').click();
+    await expect(itemList).toHaveClass(/expanded/);
+  }
+
+  await demoPause(page);
+  await category.locator(`a[href="${route}"]`).click();
 }
