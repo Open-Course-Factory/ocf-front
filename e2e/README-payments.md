@@ -91,8 +91,12 @@ the moments worth reading slow down.
 
 ## CI setup
 
-The `e2e:payment` job (`.gitlab-ci.yml`) builds the whole stack from scratch in
-Docker-in-Docker: it clones ocf-core, brings up postgres + casdoor + the
+The `e2e:payment` job (`.gitlab-ci.yml`) runs **automatically on main only**
+(post-merge); on MR pipelines it appears as a **manual, non-blocking** job you
+can trigger from the pipeline view when a change warrants the full-stack check.
+
+It builds the whole stack from scratch on the runner's Docker: it clones
+ocf-core, brings up postgres + casdoor + the
 ocf-core app via `docker-compose.test.yml` + `e2e/ci/docker-compose.core.yml`,
 forwards Stripe webhooks with the Stripe CLI, seeds via ocf-core's own
 development-mode startup (default plans, test users, Trial auto-assign) plus

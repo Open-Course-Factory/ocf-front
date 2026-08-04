@@ -97,7 +97,10 @@ typecheck:
 
 e2e:payment:
   stage: test
-  image: node:${NODE_VERSION}
+  # Playwright's own image: browsers + system deps preinstalled (saves ~7 min
+  # over installing them per run). Keep the tag in lockstep with the
+  # @playwright/test version in package.json.
+  image: mcr.microsoft.com/playwright:v1.59.1-noble
   # No dind service: the runner exposes the shared host Docker daemon (same as
   # ocf-core's test:auth job), so the stack runs there and this job joins the
   # compose network to reach it by service name.
@@ -106,14 +109,10 @@ e2e:payment:
       paths:
         - node_modules/
         - .npm/
-    - key: playwright-browsers
-      paths:
-        - .playwright-browsers/
   variables:
     # Unique project name per job so parallel pipelines don't collide
     COMPOSE_PROJECT: "ocf-e2e-${CI_JOB_ID}"
     COMPOSE_FILES: "-f .e2e-core/docker-compose.test.yml -f e2e/ci/docker-compose.core.yml"
-    PLAYWRIGHT_BROWSERS_PATH: "${CI_PROJECT_DIR}/.playwright-browsers"
     STRIPE_CLI_VERSION: "1.44.0"
     DOCKER_CLI_VERSION: "27.3.1"
     COMPOSE_PLUGIN_VERSION: "2.29.7"
@@ -123,7 +122,13 @@ e2e:payment:
     # Requires the Stripe sandbox key; skip quietly where it isn't configured
     - if: $STRIPE_TEST_SECRET_KEY == null
       when: never
-    - when: always
+    # Full-stack E2E is too slow for every MR round-trip: automatic on main
+    # (post-merge), on-demand (manual, non-blocking) on MR pipelines.
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: always
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: manual
+      allow_failure: true
   before_script:
     # Docker CLI + compose plugin (static binaries — the node image has neither)
     - curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLI_VERSION}.tgz" | tar -xz --strip-components=1 -C /usr/local/bin docker/docker
@@ -134,6 +139,11 @@ e2e:payment:
     - curl -fsSL "https://github.com/stripe/stripe-cli/releases/download/v${STRIPE_CLI_VERSION}/stripe_${STRIPE_CLI_VERSION}_linux_x86_64.tar.gz" | tar -xz -C /usr/local/bin stripe
     # ocf-core sources: compose stack for postgres/casdoor + backend build context
     - git clone --depth 1 "https://gitlab-ci-token:${CI_JOB_TOKEN}@usine.solution-libre.fr/open-course-factory/ocf-core.git" .e2e-core
+    # Drop .git before building: its packfiles differ on every clone, and with
+    # `COPY . .` that busts BuildKit's content cache — forcing a full Go
+    # rebuild (~6 min) even when ocf-core hasn't changed. Without it, an
+    # unchanged ocf-core rebuilds from the shared daemon's layer cache.
+    - rm -rf .e2e-core/.git
     - echo "$token_jwt_key_test" | base64 -d > .e2e-core/token_jwt_key.pem
     - export CASDOOR_CLIENT_SECRET=$(node -e "console.log(require('./.e2e-core/init_data.json').applications[0].clientSecret)")
     # The webhook signing secret must be known BEFORE ocf-core boots
@@ -144,7 +154,6 @@ e2e:payment:
     - bash e2e/ci/connect-network.sh "${COMPOSE_PROJECT}_default"
     - stripe listen --api-key "$STRIPE_TEST_SECRET_KEY" --forward-to http://ocf-core-e2e:8080/api/v1/webhooks/stripe > stripe-listen.log 2>&1 &
     - npm ci --prefer-offline
-    - npx playwright install --with-deps chromium
     - bash e2e/ci/seed-e2e.sh http://ocf-core-e2e:8080/api/v1 -p "$COMPOSE_PROJECT" $COMPOSE_FILES
     - VITE_API_URL=ocf-core-e2e:8080 VITE_PROTOCOL=http npm run dev > vite.log 2>&1 &
     - timeout 60 bash -c 'until curl -sf http://localhost:4000 >/dev/null; do sleep 2; done'
