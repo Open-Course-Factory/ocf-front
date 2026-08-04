@@ -57,9 +57,9 @@ function createTestI18n() {
   })
 }
 
-function mountTab() {
+function mountTab(groupId: string = GROUP_ID) {
   return mount(GroupLiveSessionsTab, {
-    props: { groupId: GROUP_ID, canSupervise: true },
+    props: { groupId, canSupervise: true },
     global: {
       plugins: [createTestI18n()],
       stubs: { SupervisionViewer: true }
@@ -155,20 +155,25 @@ describe('GroupLiveSessionsTab — wall drag & drop reorder', () => {
     expect(storedOrder()).toEqual(after)
   })
 
-  it('reloads the roster and the new group’s stored order when groupId changes in place', async () => {
+  // GroupDetails keys the tab container on the group id, so moving to another group
+  // remounts this tab rather than swapping the prop underneath it. What matters is
+  // that the fresh mount reads the new group's roster and its own stored order —
+  // never the previous group's.
+  it('loads the new group’s roster and stored order when remounted for another group', async () => {
     localStorage.setItem(ORDER_KEY, JSON.stringify(['s3', 's1', 's2']))
     localStorage.setItem('ocf-live-wall-order-g2', JSON.stringify(['s2', 's3', 's1']))
 
-    const wrapper = mountTab()
+    const first = mountTab()
     await flushPromises()
-    expect(tileOrder(wrapper)).toEqual(['s3', 's1', 's2'])
+    expect(tileOrder(first)).toEqual(['s3', 's1', 's2'])
     expect(getGroupLiveSessions).toHaveBeenCalledWith(GROUP_ID)
+    first.unmount()
 
-    await wrapper.setProps({ groupId: 'g2' })
+    const second = mountTab('g2')
     await flushPromises()
 
     expect(getGroupLiveSessions).toHaveBeenCalledWith('g2')
-    expect(tileOrder(wrapper)).toEqual(['s2', 's3', 's1'])
+    expect(tileOrder(second)).toEqual(['s2', 's3', 's1'])
   })
 
   it('preserves the custom order across a subsequent loadSessions returning the same set in server order', async () => {
