@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
@@ -105,7 +105,9 @@ function mountManager() {
 
 async function mountWithOneMember() {
   const wrapper = mountManager()
-  await nextTick()
+  // Let the component's own members load settle first — seeding the roster while
+  // that request is still in flight means the (empty) response overwrites it.
+  await flushPromises()
 
   // `members` is exposed as a ref; the component proxy unwraps it on access.
   wrapper.vm.members = [

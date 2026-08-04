@@ -53,6 +53,18 @@ export interface UseGroupMembersOptions {
   isOwner: Ref<boolean>
 }
 
+/**
+ * Single place that knows how to read a group's roster.
+ *
+ * Shared with read-only callers (see useGroupMemberNames) so there is only one
+ * notion of "the members of a group" in the frontend: same endpoint, same
+ * envelope unwrapping.
+ */
+export async function fetchGroupMembers(groupId: string): Promise<GroupMember[]> {
+  const response = await axios.get('/group-members', { params: { group_id: groupId } })
+  return response.data?.data || response.data || []
+}
+
 export function useGroupMembers({ groupId, currentUserId, isOwner }: UseGroupMembersOptions) {
   const { t } = useTranslations({
     en: {
@@ -128,12 +140,7 @@ export function useGroupMembers({ groupId, currentUserId, isOwner }: UseGroupMem
       { isLoading, error },
       async () => {
         // Fetch members from the main group
-        const response = await axios.get(`/group-members`, {
-          params: {
-            group_id: groupId.value
-          }
-        })
-        const mainGroupMembers = (response.data?.data || response.data || []).map((member: GroupMember) => ({
+        const mainGroupMembers = (await fetchGroupMembers(groupId.value!)).map((member: GroupMember) => ({
           ...member,
           source_group: null // Main group members don't have a source_group
         }))
@@ -147,12 +154,7 @@ export function useGroupMembers({ groupId, currentUserId, isOwner }: UseGroupMem
         // Fetch members from all subgroups
         const subgroupMembersPromises = subgroups.map(async (subgroup) => {
           try {
-            const subResponse = await axios.get(`/group-members`, {
-              params: {
-                group_id: subgroup.id
-              }
-            })
-            const subMembers = (subResponse.data?.data || subResponse.data || []).map((member: GroupMember) => ({
+            const subMembers = (await fetchGroupMembers(subgroup.id)).map((member: GroupMember) => ({
               ...member,
               source_group: {
                 id: subgroup.id,

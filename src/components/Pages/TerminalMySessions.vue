@@ -54,12 +54,14 @@
             </option>
           </select>
 
-          <!-- Bouton de synchronisation globale -->
+          <!-- Bouton de synchronisation globale.
+               The three controls below act on the caller's OWN terminals, so they
+               are inert while a class is being read: stay in place, disabled. -->
           <button
             class="btn btn-info"
             @click="syncAllSessions"
-            :disabled="isSyncing"
-            :title="t('terminalMySessions.tooltipSyncAll')"
+            :disabled="isSyncing || isGroupMode"
+            :title="isGroupMode ? t('terminalMySessions.tooltipOwnSessionsOnly') : t('terminalMySessions.tooltipSyncAll')"
           >
             <i :class="isSyncing ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'"></i>
             {{ isSyncing ? t('terminalMySessions.buttonSyncing') : t('terminalMySessions.buttonSync') }}
@@ -72,22 +74,54 @@
           <button
             class="btn btn-warning"
             @click="hideAllInactiveSessions"
-            :disabled="inactiveSessionsCount === 0"
-            :title="t('terminalMySessions.tooltipHideAll')"
+            :disabled="inactiveSessionsCount === 0 || isGroupMode"
+            :title="isGroupMode ? t('terminalMySessions.tooltipOwnSessionsOnly') : t('terminalMySessions.tooltipHideAll')"
           >
             <i class="fas fa-eye-slash"></i>
             {{ t('terminalMySessions.buttonHideAllInactive') }}
           </button>
           <!-- Toggle pour afficher/masquer les sessions cachées -->
-          <label class="toggle-hidden-label">
+          <label class="toggle-hidden-label" :title="isGroupMode ? t('terminalMySessions.tooltipOwnSessionsOnly') : ''">
             <input
               type="checkbox"
               v-model="showHiddenTerminals"
               class="toggle-hidden-checkbox"
+              :disabled="isGroupMode"
             />
             <span>{{ t('terminalMySessions.buttonShowHidden') }}</span>
           </label>
         </div>
+      </div>
+
+      <!-- A class the caller does not manage: the backend refuses the listing, so
+           say why and offer the way back rather than showing an empty page. -->
+      <div v-if="groupAccessDenied" class="group-denied" data-testid="group-access-denied">
+        <i class="fas fa-lock fa-2x"></i>
+        <h4>{{ t('terminalMySessions.groupForbiddenTitle') }}</h4>
+        <p>{{ t('terminalMySessions.groupForbiddenBody') }}</p>
+        <button class="btn btn-secondary" data-testid="back-to-my-sessions" @click="clearGroupFilter">
+          <i class="fas fa-arrow-left"></i>
+          {{ t('terminalMySessions.backToMySessions') }}
+        </button>
+      </div>
+
+      <template v-else>
+      <!-- Reading a class: name it, and say plainly that these sessions are not
+           the caller's to drive. Live control lives on the supervision wall. -->
+      <div v-if="isGroupMode" class="group-context-bar" data-testid="group-context-bar">
+        <span class="group-context-label">
+          <i class="fas fa-users"></i>
+          {{ t('terminalMySessions.viewingClass', { name: selectedGroupName }) }}
+        </span>
+        <span class="group-context-hint">{{ t('terminalMySessions.classReadOnly') }}</span>
+        <router-link
+          class="btn btn-secondary btn-sm"
+          data-testid="supervise-class"
+          :to="`/class-groups/${selectedGroupFilter}?tab=live`"
+        >
+          <i class="fas fa-eye"></i>
+          {{ t('terminalMySessions.superviseClass') }}
+        </router-link>
       </div>
 
       <!-- Message d'erreur global (utilise le nouveau composant ErrorAlert) -->
@@ -105,7 +139,7 @@
         <div v-if="activeSessions.length === 0" class="empty-active-section">
           <i class="fas fa-check-circle"></i>
           <span>{{ t('terminalMySessions.noActiveSessions') }}</span>
-          <router-link to="/terminal-creation" class="btn btn-primary btn-sm">
+          <router-link v-if="!isGroupMode" to="/terminal-creation" class="btn btn-primary btn-sm">
             <i class="fas fa-plus"></i>
             {{ t('terminalMySessions.buttonNewSession') }}
           </router-link>
@@ -149,6 +183,10 @@
 
                 <!-- Compact metadata -->
                 <div class="session-metadata">
+                  <span v-if="isGroupMode" class="metadata-item learner-badge" :title="t('terminalMySessions.sessionOwner')">
+                    <i class="fas fa-user-graduate"></i>
+                    {{ learnerName(session) }}
+                  </span>
                   <span v-if="session.instance_type" class="metadata-item" :title="t('terminalMySessions.instanceType')">
                     <i class="fas fa-microchip"></i>
                     {{ getInstanceName(session.instance_type) }}
@@ -192,8 +230,12 @@
                   {{ t('terminalMySessions.idleUntilCountdown', { duration: formatTimeRemaining(session.idle_until) }) }}
                 </span>
 
-                <!-- Action buttons -->
-                <div class="card-actions-compact">
+                <!-- Action buttons. Every one of them drives a terminal the caller
+                     owns — open, resume, stop, destroy, share, sync. None of that is
+                     the caller's to do on a learner's session, and the backend would
+                     refuse it, so in class view the card carries no controls and the
+                     context bar routes to supervision instead. -->
+                <div v-if="!isGroupMode" class="card-actions-compact">
                   <!-- Open-in-page: available for running AND stopped sessions
                        (stopped → user can review command history in the detail view).
                        Only hidden once the session reaches 'deleted' (no container, no history left to inspect). -->
@@ -351,6 +393,10 @@
 
                     <!-- Compact metadata -->
                     <div class="session-metadata">
+                      <span v-if="isGroupMode" class="metadata-item learner-badge" :title="t('terminalMySessions.sessionOwner')">
+                        <i class="fas fa-user-graduate"></i>
+                        {{ learnerName(session) }}
+                      </span>
                       <span v-if="session.instance_type" class="metadata-item" :title="t('terminalMySessions.instanceType')">
                         <i class="fas fa-microchip"></i>
                         {{ getInstanceName(session.instance_type) }}
@@ -384,8 +430,8 @@
                       {{ getStateLabel(getEffectiveSessionState(session)) }}
                     </span>
 
-                    <!-- Action buttons -->
-                    <div class="card-actions-compact">
+                    <!-- Action buttons — hidden in class view, same reason as above. -->
+                    <div v-if="!isGroupMode" class="card-actions-compact">
                       <router-link
                         class="btn-icon btn-view"
                         :to="{ name: 'TerminalSessionView', params: { sessionId: session.session_id } }"
@@ -432,7 +478,15 @@
         </div>
       </div>
 
-      <div v-else-if="!isLoading" class="empty-section">
+      <!-- An empty class is not an empty account: no CTA to create a session,
+           because the teacher's own terminal would not appear in this listing. -->
+      <div v-else-if="!isLoading && isGroupMode" class="empty-section" data-testid="empty-group">
+        <i class="fas fa-users fa-3x"></i>
+        <h4>{{ t('terminalMySessions.noGroupSessions', { name: selectedGroupName }) }}</h4>
+        <p>{{ t('terminalMySessions.noGroupSessionsDesc') }}</p>
+      </div>
+
+      <div v-else-if="!isLoading" class="empty-section" data-testid="empty-personal">
         <i class="fas fa-terminal fa-3x"></i>
         <h4>{{ t('terminalMySessions.noActiveSessions') }}</h4>
         <p>{{ t('terminalMySessions.noActiveSessionsDesc') }}</p>
@@ -441,6 +495,7 @@
           {{ t('terminalMySessions.createNewSession') }}
         </router-link>
       </div>
+      </template>
     </div>
 
     <!-- Modal pour le code iframe -->
@@ -561,6 +616,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useFormatters } from '../../composables/useFormatters'
 import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import { useClassGroupsStore } from '../../stores/classGroups'
+import { useGroupMemberNames } from '../../composables/useGroupMemberNames'
 import { extractErrorMessage } from '../../utils/formatters'
 import { getEffectiveSessionState, sessionHasNetwork, type EffectiveSessionState } from '../../utils/sessionState'
 
@@ -568,6 +624,7 @@ const { showConfirm, showError } = useNotification()
 const { formatDateTime: formatDateTimeTz } = useFormatters()
 const { isEnabled } = useFeatureFlags()
 const groupStore = useClassGroupsStore()
+const { loadRoster, nameFor } = useGroupMemberNames()
 const { t } = useTranslations({
   en: {
     terminalMySessions: {
@@ -582,7 +639,17 @@ const { t } = useTranslations({
       buttonHideAllInactive: 'Hide All Inactive',
       buttonShowHidden: 'Show Hidden',
       filterByGroup: 'Filter by group',
-      allGroups: 'All groups',
+      allGroups: 'My sessions',
+      viewingClass: 'Class: {name}',
+      classReadOnly: 'Read-only view of your learners’ sessions.',
+      superviseClass: 'Supervise live sessions',
+      backToMySessions: 'Back to my sessions',
+      sessionOwner: 'Learner',
+      tooltipOwnSessionsOnly: 'This only applies to your own sessions.',
+      groupForbiddenTitle: 'Class sessions unavailable',
+      groupForbiddenBody: 'You are not a manager of this class. Ask its owner to give you the manager role to see its learners’ sessions.',
+      noGroupSessions: 'No sessions in {name}',
+      noGroupSessionsDesc: 'No learner of this class has started a terminal yet.',
       loadingSessions: 'Loading sessions...',
       errorRetry: 'Retry',
       errorHidingActive: 'Cannot hide active terminals. Please stop the terminal first.',
@@ -695,7 +762,17 @@ const { t } = useTranslations({
       buttonHideAllInactive: 'Masquer toutes les inactives',
       buttonShowHidden: 'Afficher les masquées',
       filterByGroup: 'Filtrer par groupe',
-      allGroups: 'Tous les groupes',
+      allGroups: 'Mes sessions',
+      viewingClass: 'Classe : {name}',
+      classReadOnly: 'Vue en lecture seule des sessions de vos apprenants.',
+      superviseClass: 'Superviser en direct',
+      backToMySessions: 'Revenir à mes sessions',
+      sessionOwner: 'Apprenant',
+      tooltipOwnSessionsOnly: 'Cette action ne concerne que vos propres sessions.',
+      groupForbiddenTitle: 'Sessions de la classe indisponibles',
+      groupForbiddenBody: 'Vous n\'êtes pas gestionnaire de cette classe. Demandez à son propriétaire de vous attribuer le rôle gestionnaire pour voir les sessions de ses apprenants.',
+      noGroupSessions: 'Aucune session dans {name}',
+      noGroupSessionsDesc: 'Aucun apprenant de cette classe n\'a encore démarré de terminal.',
       loadingSessions: 'Chargement des sessions...',
       errorRetry: 'Réessayer',
       errorHidingActive: 'Impossible de masquer un terminal actif. Veuillez d\'abord l\'arrêter.',
@@ -807,6 +884,9 @@ const error = ref('')
 const showHiddenTerminals = ref(false)
 const showInactiveSessions = ref(false)
 const selectedGroupFilter = ref<string>('all')
+// Set when the backend refuses the class listing (403): the caller manages no
+// such group. Distinct from `error`, because retrying changes nothing.
+const groupAccessDenied = ref(false)
 
 // États pour les fonctionnalités iframe
 const showPreviews = ref(new Set())
@@ -876,8 +956,27 @@ const inactiveSessionsCount = computed(() => {
 // Feature flag check for group filtering
 const canFilterByGroups = computed(() => isEnabled('class_groups'))
 
+/**
+ * Class view: the listing shows a group's members' sessions instead of the
+ * caller's own. Single source of the mode — the request parameter, the learner
+ * labels and the removal of the owner-only controls all read this.
+ */
+const isGroupMode = computed(() => canFilterByGroups.value && selectedGroupFilter.value !== 'all')
+
+const selectedGroupName = computed(() => {
+  const group = groupStore.entities.find((g: any) => g.id === selectedGroupFilter.value)
+  return group?.display_name || group?.name || ''
+})
+
+function learnerName(session: any): string {
+  return nameFor(session.user_id)
+}
+
+function clearGroupFilter() {
+  selectedGroupFilter.value = 'all'
+}
+
 // Computed property to sort sessions with active ones at the top
-// Backend now handles group filtering via query parameter, so we work with allSessions directly
 const sortedSessions = computed(() => {
   return [...allSessions.value].sort((a, b) => {
     const aActive = !isTerminalInactive(a)
@@ -907,8 +1006,12 @@ watch(showHiddenTerminals, () => {
   loadSessions()
 })
 
-// Watch for group filter changes to reload sessions (backend filtering)
+// Watch for group filter changes to reload sessions (backend filtering).
+// The roster load runs alongside, not before: names are decoration, and the
+// listing must not wait on them.
 watch(selectedGroupFilter, () => {
+  groupAccessDenied.value = false
+  loadRoster(isGroupMode.value ? selectedGroupFilter.value : null)
   loadSessions()
 })
 
@@ -957,7 +1060,11 @@ onMounted(() => {
 
   // Rafraîchir les sessions toutes les 30 secondes et vérifier les expirations
   const interval = setInterval(() => {
-    checkExpiredSessions()
+    // A refused class listing stays refused until the filter changes; polling it
+    // only produces 403s. The expiry sync is self-scoped by nature, so it is
+    // skipped whenever the listing on screen is somebody else's.
+    if (groupAccessDenied.value) return
+    if (!isGroupMode.value) checkExpiredSessions()
     loadSessions()
   }, 30000)
 
@@ -989,17 +1096,27 @@ async function loadSessions() {
       params.include_hidden = true
     }
 
-    // Apply group filter if enabled and selected (backend filtering - NEW!)
-    if (canFilterByGroups.value && selectedGroupFilter.value !== 'all') {
+    // Widen the listing to a class the caller manages (ocf-core!355). Without
+    // it the route stays self-scoped.
+    if (isGroupMode.value) {
       params.group_id = selectedGroupFilter.value
     }
 
     const response = await axios.get('/terminals/user-sessions', { params })
     sessions.value = response.data || []
+    groupAccessDenied.value = false
   } catch (err: any) {
     console.error('Erreur lors du chargement des sessions:', err)
-    error.value = err.response?.data?.error_message || t('terminalMySessions.errorLoading')
     sessions.value = []
+    // 403 on the class listing means "not a manager of this group" — a standing
+    // condition, not a transient failure. It gets its own panel; the retryable
+    // alert would only invite a retry that fails identically.
+    if (isGroupMode.value && err.response?.status === 403) {
+      groupAccessDenied.value = true
+      error.value = ''
+    } else {
+      error.value = err.response?.data?.error_message || t('terminalMySessions.errorLoading')
+    }
   } finally {
     isLoading.value = false
   }
@@ -1342,8 +1459,9 @@ function getTerminalDisplayName(session: any): string {
   return `Terminal ${prefix}`
 }
 
+// Renaming PATCHes the terminal, which only its owner may do.
 function canEditName(_session: any): boolean {
-  return true
+  return !isGroupMode.value
 }
 
 function startEditingName(terminalId: string, currentName: string | undefined) {
@@ -1502,6 +1620,64 @@ async function hideAllInactiveSessions() {
   color: var(--color-text-secondary);
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-semibold);
+}
+
+/* Class view: context bar + refusal panel */
+.group-context-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-left: var(--border-width-thick) solid var(--color-primary);
+  border-radius: var(--border-radius-md);
+}
+
+.group-context-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.group-context-hint {
+  flex: 1;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.group-denied {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-2xl) var(--spacing-lg);
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.group-denied i {
+  color: var(--color-warning);
+}
+
+.group-denied h4 {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.group-denied p {
+  margin: 0;
+  max-width: 60ch;
+}
+
+/* The learner a session belongs to — only rendered in class view. */
+.learner-badge {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 
 /* Loading & Empty States */
