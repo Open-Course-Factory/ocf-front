@@ -5,12 +5,13 @@
 #   docker compose -f .e2e-core/docker-compose.test.yml -f e2e/ci/docker-compose.core.yml up
 #
 # `.e2e-core/` is a shallow clone of ocf-core made by the job. Compose resolves
-# each file's relative paths against that file's own directory, so the build
-# context below points at the clone from e2e/ci/.
+# build contexts against the PROJECT directory — the directory of the FIRST -f
+# file, i.e. the clone itself — so "." below means the ocf-core clone, exactly
+# like the casdoor build context in docker-compose.test.yml.
 services:
   ocf-core-e2e:
     build:
-      context: ../../.e2e-core
+      context: .
       dockerfile: Dockerfile
     depends_on:
       postgres-test:
