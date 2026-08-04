@@ -21,6 +21,13 @@ services:
     # No published ports: the runner shares the host Docker daemon, where host
     # ports collide across jobs. The CI job joins the compose network instead
     # and reaches this service as http://ocf-core-e2e:8080.
+    #
+    # Explicit resolvers: the compose network's embedded DNS forwards to the
+    # host's resolv.conf, which on this runner cannot serve containers —
+    # api.stripe.com lookups fail without these.
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     environment:
       DATABASE: postgres
       POSTGRES_HOST: postgres-test
