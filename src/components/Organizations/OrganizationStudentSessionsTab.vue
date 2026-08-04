@@ -162,18 +162,18 @@ const props = defineProps<Props>()
 const { t } = useTranslations({
   en: {
     sessions: {
-      title: 'Student Sessions',
+      title: 'Learner Sessions',
       sessionsCount: 'sessions',
       loading: 'Loading sessions...',
       retry: 'Retry',
       empty: 'No terminal sessions found for this organization.',
       noResults: 'No sessions match your search criteria.',
-      searchPlaceholder: 'Search by student or session name...',
+      searchPlaceholder: 'Search by learner or session name...',
       allStatuses: 'All statuses',
       statusRunning: 'Running',
       statusStopped: 'Stopped',
       statusDeleted: 'Deleted',
-      colStudent: 'Student',
+      colStudent: 'Learner',
       colName: 'Session Name',
       colStatus: 'Status',
       colInstanceType: 'Instance Type',

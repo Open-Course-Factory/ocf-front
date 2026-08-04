@@ -105,9 +105,9 @@ const { t } = useTranslations({
   en: {
     groupScenarios: {
       question: 'Question',
-      yourAnswer: 'Student answer',
+      yourAnswer: 'Learner answer',
       correctAnswer: 'Correct answer',
-      studentAnswerCorrect: 'Student answer (correct)',
+      studentAnswerCorrect: 'Learner answer (correct)',
       correctIndicator: 'Correct',
       incorrectIndicator: 'Incorrect',
       noAnswer: 'No answer',

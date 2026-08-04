@@ -453,7 +453,7 @@ const { t } = useTranslations({
       loadError: 'Échec du chargement des assignations',
       commandsError: 'Échec du chargement des commandes',
       close: 'Fermer',
-      student: 'Apprenant(e)',
+      student: 'Apprenant',
       status: 'Statut',
       grade: 'Note',
       correctAnswers: 'Réponses correctes',

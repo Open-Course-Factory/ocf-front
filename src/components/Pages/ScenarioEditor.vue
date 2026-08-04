@@ -153,7 +153,7 @@
       <p>{{ t('scenarioEditor.deleteWarning', { type: deletingNode?.data?.entityType || 'item', name: deletingNode?.data?.label || '' }) }}</p>
     </BaseModal>
 
-    <!-- Preview ("Play as student") Confirmation Modal -->
+    <!-- Preview ("Play as learner") Confirmation Modal -->
     <BaseModal
       :visible="showPreviewConfirmModal"
       :title="t('scenarioEditor.previewConfirmTitle')"
@@ -360,7 +360,7 @@ const insertPickerClientX = ref(0)
 const insertPickerClientY = ref(0)
 const pendingInsertEdge = ref<{ edgeId: string; source: string; target: string; flowX: number; flowY: number } | null>(null)
 
-// "Play as student" preview state
+// "Play as learner" preview state
 const showPreviewConfirmModal = ref(false)
 const isPreviewLoading = ref(false)
 
@@ -693,7 +693,7 @@ const handleExportKillerCoda = async () => {
   }
 }
 
-// "Play as student" — launch a trainer-side preview session in a new tab.
+// "Play as learner" — launch a trainer-side preview session in a new tab.
 // The backend POST /scenarios/:id/preview bypasses the assignment check and
 // provisions a real terminal, so the trainer experiences the scenario exactly
 // as a learner would.

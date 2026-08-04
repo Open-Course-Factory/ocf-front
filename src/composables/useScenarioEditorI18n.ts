@@ -98,7 +98,7 @@ export function useScenarioEditorI18n() {
       // Setup tab
       setupScript: 'Global Setup Script',
       setupScriptPlaceholder: '#!/bin/bash\n# This script runs once at session start, before any step...',
-      setupScriptHint: 'Runs once when a student starts the scenario, before step 1. Use for global environment provisioning.',
+      setupScriptHint: 'Runs once when a learner starts the scenario, before step 1. Use for global environment provisioning.',
       // Options tab
       instanceType: 'Machine Size',
       instanceTypeUnknown: '⚠️ {key} (unknown — will fall back at launch)',
@@ -124,10 +124,10 @@ export function useScenarioEditorI18n() {
       tabsLabel: 'Scenario editor sections',
       readOnly: 'Read only',
       readOnlyWarning: 'This scenario is read-only. Copy it to your organization to edit.',
-      // Play as student (preview)
-      playAsStudent: 'Play as student',
+      // Play as learner (preview)
+      playAsStudent: 'Play as learner',
       previewConfirmTitle: 'Preview this scenario?',
-      previewConfirmBody: 'A real terminal will be provisioned (counts against your concurrent terminal limit). Walk through the scenario as a student would, then close the session when done.',
+      previewConfirmBody: 'A real terminal will be provisioned (counts against your concurrent terminal limit). Walk through the scenario as a learner would, then close the session when done.',
       previewConfirmAction: 'Start preview',
       previewStarting: 'Starting preview...',
       previewError: 'Failed to start preview',
@@ -222,7 +222,7 @@ export function useScenarioEditorI18n() {
       // Onglet installation
       setupScript: 'Script d\'installation global',
       setupScriptPlaceholder: '#!/bin/bash\n# Ce script s\'exécute une fois au démarrage de la session, avant toute étape...',
-      setupScriptHint: 'S\'exécute une fois lorsqu\'un étudiant démarre le scénario, avant l\'étape 1. Pour le provisionnement global.',
+      setupScriptHint: 'S\'exécute une fois lorsqu\'un apprenant démarre le scénario, avant l\'étape 1. Pour le provisionnement global.',
       // Onglet options
       instanceType: 'Taille machine',
       instanceTypeUnknown: '⚠️ {key} (inconnue — repli au lancement)',
@@ -248,10 +248,10 @@ export function useScenarioEditorI18n() {
       tabsLabel: 'Sections de l\'éditeur de scénario',
       readOnly: 'Lecture seule',
       readOnlyWarning: 'Ce scénario est en lecture seule. Copiez-le dans votre organisation pour le modifier.',
-      // Jouer comme étudiant (prévisualisation)
-      playAsStudent: 'Jouer comme étudiant',
+      // Jouer comme apprenant (prévisualisation)
+      playAsStudent: 'Jouer comme apprenant',
       previewConfirmTitle: 'Prévisualiser ce scénario ?',
-      previewConfirmBody: 'Un terminal réel sera provisionné (compte dans votre limite de terminaux concurrents). Parcourez le scénario comme le ferait un étudiant, puis fermez la session une fois terminé.',
+      previewConfirmBody: 'Un terminal réel sera provisionné (compte dans votre limite de terminaux concurrents). Parcourez le scénario comme le ferait un apprenant, puis fermez la session une fois terminé.',
       previewConfirmAction: 'Démarrer la prévisualisation',
       previewStarting: 'Démarrage...',
       previewError: 'Échec du démarrage de la prévisualisation',

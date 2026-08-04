@@ -73,7 +73,7 @@ const { t } = useTranslations({
       refresh: 'Refresh',
 
       // Table headers
-      colStudent: 'Student',
+      colStudent: 'Learner',
       colCommand: 'Command',
       colTime: 'Time',
 
@@ -97,18 +97,18 @@ const { t } = useTranslations({
 
       // Stats summary cards
       statTotalCommands: 'Total Commands',
-      statActiveStudents: 'Active Students',
+      statActiveStudents: 'Active Learners',
       statTotalSessions: 'Sessions',
-      statAvgTime: 'Avg Time / Student',
+      statAvgTime: 'Avg Time / Learner',
 
       // Per-student breakdown
-      studentBreakdown: 'Per-Student Breakdown',
-      colStudentName: 'Student',
+      studentBreakdown: 'Per-Learner Breakdown',
+      colStudentName: 'Learner',
       colCommands: 'Commands',
       colSessions: 'Sessions',
       colTimeSpent: 'Time Spent',
       colLastActive: 'Last Active',
-      noStudentData: 'No student activity data available.',
+      noStudentData: 'No learner activity data available.',
 
       // Time formatting
       timeHours: '{h}h {m}m',

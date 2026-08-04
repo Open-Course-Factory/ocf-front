@@ -73,7 +73,7 @@ const { t } = useTranslations({
       csvQuestionOrder: 'Question',
       csvQuestionText: 'Question text',
       csvQuestionType: 'Question type',
-      csvStudentAnswer: 'Student answer',
+      csvStudentAnswer: 'Learner answer',
       csvCorrectAnswer: 'Correct answer',
       csvIsCorrect: 'Correct?',
       csvYes: 'Yes',

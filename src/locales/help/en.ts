@@ -289,7 +289,7 @@ export const helpEn = {
           },
           shared: {
             title: "Shared Sessions",
-            description: "Sessions you can share with colleagues or students. Useful for collaboration or teaching."
+            description: "Sessions you can share with colleagues or learners. Useful for collaboration or teaching."
           },
           temporary: {
             title: "Temporary Sessions",
@@ -1657,7 +1657,7 @@ export const helpEn = {
         organizationLevel: "Organization Level",
         organizationLevelDesc: "Manage organizations, members, billing, and subscriptions",
         groupLevel: "Group Level",
-        groupLevelDesc: "Manage groups (classrooms), courses, and student access",
+        groupLevelDesc: "Manage groups (classrooms), courses, and learner access",
         orgRolesTitle: "Organization Roles",
         orgRolesDescription: "These roles control access to organization management features:",
         permission: "Permission",
@@ -1691,7 +1691,7 @@ export const helpEn = {
         groupManagerPerm2: "Add/remove members",
         groupManagerPerm3: "View group analytics",
         groupMember: "Member",
-        groupMemberDesc: "Students or participants in the group.",
+        groupMemberDesc: "Learners or participants in the group.",
         groupMemberPerm1: "Access group content",
         groupMemberPerm2: "Participate in courses",
         groupMemberPerm3: "Use assigned resources",
@@ -1719,7 +1719,7 @@ export const helpEn = {
         noData: "No permissions data available.",
         legendTitle: "Understanding the Reference",
         legendDescription: "Each API endpoint is protected by two layers: a platform role (member or admin) that controls HTTP-level access, and a fine-grained access rule that enforces business logic.",
-        legendMember: "All authenticated users (students, teachers, trainers)",
+        legendMember: "All authenticated users (learners, teachers, trainers)",
         legendAdmin: "Platform administrators only",
         accessRulesTitle: "Access Rule Types",
         accessSelf: "Self only",

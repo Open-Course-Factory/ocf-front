@@ -48,7 +48,7 @@ const { t } = useTranslations({
   en: {
     groupActivity: {
       activeSessionsTitle: 'Active Sessions',
-      student: 'Student',
+      student: 'Learner',
       scenario: 'Scenario',
       progress: 'Progress',
       elapsedTime: 'Elapsed Time',
@@ -66,7 +66,7 @@ const { t } = useTranslations({
   fr: {
     groupActivity: {
       activeSessionsTitle: 'Sessions actives',
-      student: 'Étudiant',
+      student: 'Apprenant',
       scenario: 'Scénario',
       progress: 'Progression',
       elapsedTime: 'Temps écoulé',

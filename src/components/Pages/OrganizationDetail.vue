@@ -270,7 +270,7 @@ const { t } = useTranslations({
       overview: 'Overview',
       subscription: 'Subscription',
       scenarios: 'Scenarios',
-      studentSessions: 'Student Sessions',
+      studentSessions: 'Learner Sessions',
       settings: 'Settings',
       notFound: 'Organization not found',
     }

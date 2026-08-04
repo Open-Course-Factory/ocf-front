@@ -223,7 +223,7 @@ const { t } = useTranslations({
       youSave: 'You save',
       withBulkPricing: 'with bulk pricing',
       useCaseTitle: 'Perfect for classrooms',
-      useCaseDescription: 'Many educators use bulk licensing to provide terminals to all their students at a discounted rate.',
+      useCaseDescription: 'Many educators use bulk licensing to provide terminals to all their learners at a discounted rate.',
       learnMore: 'Learn more about bulk licensing'
     }
   },
@@ -253,7 +253,7 @@ const { t } = useTranslations({
       youSave: 'Vous économisez',
       withBulkPricing: 'avec la tarification groupée',
       useCaseTitle: 'Parfait pour les salles de classe',
-      useCaseDescription: 'De nombreux éducateurs utilisent les licences groupées pour fournir des terminaux à tous leurs étudiants à un tarif réduit.',
+      useCaseDescription: 'De nombreux éducateurs utilisent les licences groupées pour fournir des terminaux à tous leurs apprenants à un tarif réduit.',
       learnMore: 'En savoir plus sur les licences groupées'
     }
   }
