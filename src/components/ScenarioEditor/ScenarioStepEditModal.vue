@@ -605,14 +605,14 @@ const { t } = useTranslations({
       advanced: 'Advanced',
       points: 'Points',
       explanation: 'Explanation',
-      explanationPlaceholder: 'Shown to the student after they answer…',
-      explanationHint: 'Helps students learn from wrong answers.',
+      explanationPlaceholder: 'Shown to the learner after they answer…',
+      explanationHint: 'Helps learners learn from wrong answers.',
       confirmTypeChangeTitle: 'Change question type?',
       confirmTypeChangeBody: 'Switching from {from} to {to} will discard your current options. This cannot be undone.',
       confirmTypeChangeConfirm: 'Yes, change type',
       cancel: 'Cancel',
       showImmediateFeedback: 'Show feedback after submission',
-      showImmediateFeedbackHint: 'Off (default) = exam mode: students see only their score. On = learning mode: students see the correct answers and explanations.'
+      showImmediateFeedbackHint: 'Off (default) = exam mode: learners see only their score. On = learning mode: learners see the correct answers and explanations.'
     }
   },
   fr: {
@@ -693,14 +693,14 @@ const { t } = useTranslations({
       advanced: 'Avancé',
       points: 'Points',
       explanation: 'Explication',
-      explanationPlaceholder: 'Affiché à l’étudiant après sa réponse…',
-      explanationHint: 'Aide les étudiants à apprendre de leurs erreurs.',
+      explanationPlaceholder: 'Affiché à l’apprenant après sa réponse…',
+      explanationHint: 'Aide les apprenants à apprendre de leurs erreurs.',
       confirmTypeChangeTitle: 'Changer le type de question ?',
       confirmTypeChangeBody: 'Passer de {from} à {to} effacera les options actuelles. Cette action est irréversible.',
       confirmTypeChangeConfirm: 'Oui, changer le type',
       cancel: 'Annuler',
       showImmediateFeedback: 'Afficher le retour après soumission',
-      showImmediateFeedbackHint: 'Désactivé (défaut) = mode examen : les étudiants ne voient que leur score. Activé = mode apprentissage : les étudiants voient les bonnes réponses et explications.'
+      showImmediateFeedbackHint: 'Désactivé (défaut) = mode examen : les apprenants ne voient que leur score. Activé = mode apprentissage : les apprenants voient les bonnes réponses et explications.'
     }
   }
 })

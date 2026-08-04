@@ -530,13 +530,13 @@ const { t } = useTranslations({
       },
       sizeCapacity: {
         section: 'Size capacity',
-        subtitle: 'Students can use this capacity freely — mix any way they want',
+        subtitle: 'Learners can use this capacity freely — mix any way they want',
         rowSize: 'Size',
         rowCount: 'Count',
         addRow: 'Add row',
         removeRow: 'Remove',
         computedBudget: 'Computed budget',
-        computedBudgetHint: 'Total capacity students get — they split it however they want, not a fixed bundle.',
+        computedBudgetHint: 'Total capacity learners get — they split it however they want, not a fixed bundle.',
         cpuValue: '{n} vCPU',
         ramValue: '{n} GiB',
         currentlyUnlimited: 'This plan currently has unlimited capacity. Add rows to set a limit.',
@@ -586,7 +586,7 @@ const { t } = useTranslations({
         section: 'Tarification des sièges',
         bulkPurchasable: 'Vendable en sièges',
         bulkPurchasableHint:
-          "Permet à un formateur d'acheter des licences de ce plan pour ses apprenants. Indépendant de la visibilité au catalogue — un siège élève est normalement masqué de la page tarifs tout en restant vendable.",
+          "Permet à un formateur d'acheter des licences de ce plan pour ses apprenants. Indépendant de la visibilité au catalogue — un siège apprenant est normalement masqué de la page tarifs tout en restant vendable.",
         useTiered: 'Tarification dégressive (paliers cumulés)',
         useTieredHint:
           'Les paliers se cumulent : 20 unités avec 1-10 à 9,00 puis 11+ à 7,00 coûtent 10x9,00 + 10x7,00, et non 20x7,00.',

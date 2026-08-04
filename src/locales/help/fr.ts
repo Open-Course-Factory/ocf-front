@@ -289,7 +289,7 @@ export const helpFr = {
           },
           shared: {
             title: "Sessions Partagées",
-            description: "Sessions que vous pouvez partager avec des collègues ou étudiants. Utiles pour la collaboration ou l'enseignement."
+            description: "Sessions que vous pouvez partager avec des collègues ou apprenants. Utiles pour la collaboration ou l'enseignement."
           },
           temporary: {
             title: "Sessions Temporaires",
@@ -1657,7 +1657,7 @@ export const helpFr = {
         organizationLevel: "Niveau organisation",
         organizationLevelDesc: "Gérer les organisations, membres, facturation et abonnements",
         groupLevel: "Niveau groupe",
-        groupLevelDesc: "Gérer les groupes (classes), cours et accès des étudiants",
+        groupLevelDesc: "Gérer les groupes (classes), cours et accès des apprenants",
         orgRolesTitle: "Rôles d'organisation",
         orgRolesDescription: "Ces rôles contrôlent l'accès aux fonctionnalités de gestion d'organisation :",
         permission: "Permission",
@@ -1691,7 +1691,7 @@ export const helpFr = {
         groupManagerPerm2: "Ajouter/retirer des membres",
         groupManagerPerm3: "Voir les analyses du groupe",
         groupMember: "Membre",
-        groupMemberDesc: "Étudiants ou participants du groupe.",
+        groupMemberDesc: "Apprenants ou participants du groupe.",
         groupMemberPerm1: "Accéder au contenu du groupe",
         groupMemberPerm2: "Participer aux cours",
         groupMemberPerm3: "Utiliser les ressources assignées",
@@ -1719,7 +1719,7 @@ export const helpFr = {
         noData: "Aucune donnée de permissions disponible.",
         legendTitle: "Comprendre la référence",
         legendDescription: "Chaque endpoint API est protégé par deux couches : un rôle plateforme (member ou admin) qui contrôle l'accès HTTP, et une règle d'accès fine qui applique la logique métier.",
-        legendMember: "Tous les utilisateurs authentifiés (étudiants, enseignants, formateurs)",
+        legendMember: "Tous les utilisateurs authentifiés (apprenants, enseignants, formateurs)",
         legendAdmin: "Administrateurs de la plateforme uniquement",
         accessRulesTitle: "Types de règles d'accès",
         accessSelf: "Soi uniquement",

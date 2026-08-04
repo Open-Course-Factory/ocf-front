@@ -305,7 +305,7 @@
         </div>
       </section>
 
-      <!-- Monitoring Student Progress -->
+      <!-- Monitoring Learner Progress -->
       <section class="help-section">
         <h2><i class="fas fa-chart-line"></i> {{ t('help.scenarios.creation.monitoring.title') }}</h2>
         <p>{{ t('help.scenarios.creation.monitoring.description') }}</p>

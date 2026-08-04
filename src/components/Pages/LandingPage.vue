@@ -468,12 +468,12 @@ const { t } = useTranslations({
       useCases: {
         title: 'Built for learners and educators',
         students: {
-          title: 'Students',
+          title: 'Learners',
           description: 'Learn Linux, Docker, and Kubernetes without complex setup. Practice DevOps skills safely before using them in production.'
         },
         educators: {
           title: 'Educators & trainers',
-          description: 'Deliver hands-on courses with zero infrastructure setup. Students get consistent environments for Linux, Docker, GitLab, and more.'
+          description: 'Deliver hands-on courses with zero infrastructure setup. Learners get consistent environments for Linux, Docker, GitLab, and more.'
         },
         developers: {
           title: 'Developers',
@@ -572,12 +572,12 @@ const { t } = useTranslations({
       useCases: {
         title: 'Conçu pour apprenants et formateurs',
         students: {
-          title: 'Étudiants',
+          title: 'Apprenants',
           description: 'Apprenez Linux, Docker et Kubernetes sans configuration complexe. Pratiquez les compétences DevOps en toute sécurité avant de les utiliser en production.'
         },
         educators: {
           title: 'Formateurs & enseignants',
-          description: 'Délivrez des cours pratiques sans infrastructure à gérer. Les étudiants obtiennent des environnements cohérents pour Linux, Docker, GitLab et plus.'
+          description: 'Délivrez des cours pratiques sans infrastructure à gérer. Les apprenants obtiennent des environnements cohérents pour Linux, Docker, GitLab et plus.'
         },
         developers: {
           title: 'Développeurs',
