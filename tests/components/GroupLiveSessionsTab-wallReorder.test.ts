@@ -60,6 +60,8 @@ function createTestI18n() {
 function mountTab(groupId: string = GROUP_ID) {
   return mount(GroupLiveSessionsTab, {
     props: { groupId, canSupervise: true },
+    // Attached: the keyboard-reorder tests below assert on real focus.
+    attachTo: document.body,
     global: {
       plugins: [createTestI18n()],
       stubs: { SupervisionViewer: true }
@@ -189,5 +191,101 @@ describe('GroupLiveSessionsTab — wall drag & drop reorder', () => {
     await flushPromises()
 
     expect(tileOrder(wrapper)).toEqual(['s3', 's1', 's2'])
+  })
+})
+
+/**
+ * Keyboard equivalent of the drag & drop above: a trainer who cannot drag must
+ * still be able to arrange the wall. Tiles take focus and move with Ctrl + Left /
+ * Right; the persisted order is the same one drag & drop writes.
+ */
+describe('GroupLiveSessionsTab — wall keyboard reorder', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    getGroupLiveSessions.mockResolvedValue([sess('s1'), sess('s2'), sess('s3')])
+  })
+
+  it('makes every tile focusable and names its learner and position', async () => {
+    const wrapper = mountTab()
+    await flushPromises()
+
+    const tiles = wrapper.findAll('.live-sessions-tile')
+    expect(tiles.map(t => t.attributes('tabindex'))).toEqual(['0', '0', '0'])
+
+    const label = tiles[1].attributes('aria-label') || ''
+    expect(label).toContain('User s2')
+    expect(label).toContain('2')
+    expect(label).toContain('3')
+
+    wrapper.unmount()
+  })
+
+  it('moves the focused tile right with Ctrl + ArrowRight and persists the new order', async () => {
+    const wrapper = mountTab()
+    await flushPromises()
+    expect(tileOrder(wrapper)).toEqual(['s1', 's2', 's3'])
+
+    await wrapper.findAll('.live-sessions-tile')[0]
+      .trigger('keydown', { key: 'ArrowRight', ctrlKey: true })
+    await flushPromises()
+
+    expect(tileOrder(wrapper)).toEqual(['s2', 's1', 's3'])
+    expect(storedOrder()).toEqual(['s2', 's1', 's3'])
+
+    wrapper.unmount()
+  })
+
+  it('moves the focused tile left with Ctrl + ArrowLeft', async () => {
+    const wrapper = mountTab()
+    await flushPromises()
+
+    await wrapper.findAll('.live-sessions-tile')[2]
+      .trigger('keydown', { key: 'ArrowLeft', ctrlKey: true })
+    await flushPromises()
+
+    expect(tileOrder(wrapper)).toEqual(['s1', 's3', 's2'])
+
+    wrapper.unmount()
+  })
+
+  it('keeps focus on the tile it just moved', async () => {
+    const wrapper = mountTab()
+    await flushPromises()
+
+    const first = wrapper.findAll('.live-sessions-tile')[0]
+    ;(first.element as HTMLElement).focus()
+    await first.trigger('keydown', { key: 'ArrowRight', ctrlKey: true })
+    await flushPromises()
+
+    // s1 is now second; the trainer can keep nudging it without re-finding it.
+    const focused = document.activeElement as HTMLElement
+    expect(focused.getAttribute('data-session-id')).toBe('s1')
+    expect(tileOrder(wrapper)[1]).toBe('s1')
+
+    wrapper.unmount()
+  })
+
+  it('does nothing at the ends of the wall, and nothing without the Ctrl modifier', async () => {
+    const wrapper = mountTab()
+    await flushPromises()
+
+    const tiles = wrapper.findAll('.live-sessions-tile')
+    await tiles[0].trigger('keydown', { key: 'ArrowLeft', ctrlKey: true })
+    await tiles[2].trigger('keydown', { key: 'ArrowRight', ctrlKey: true })
+    await flushPromises()
+
+    expect(tileOrder(wrapper)).toEqual(['s1', 's2', 's3'])
+    // Clamped, not wrapped, and nothing was written for a move that did not happen.
+    expect(storedOrder()).toBeNull()
+
+    // A bare arrow key belongs to the page (scrolling), not to the wall.
+    await wrapper.findAll('.live-sessions-tile')[0].trigger('keydown', { key: 'ArrowRight' })
+    await flushPromises()
+
+    expect(tileOrder(wrapper)).toEqual(['s1', 's2', 's3'])
+    expect(storedOrder()).toBeNull()
+
+    wrapper.unmount()
   })
 })

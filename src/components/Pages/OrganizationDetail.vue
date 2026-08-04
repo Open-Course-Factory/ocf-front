@@ -88,72 +88,34 @@
 
       <!-- Tabs -->
       <div class="tabs-container">
-        <div class="tabs-header">
+        <div
+          ref="tablist"
+          class="tabs-header"
+          role="tablist"
+          :aria-label="t('organizations.tabsLabel')"
+          @keydown="onKeydown"
+        >
           <button
-            :class="['tab', { active: activeTab === 'overview' }]"
-            @click="changeTab('overview')"
+            v-for="tab in visibleTabs"
+            :key="tab.id"
+            v-bind="tabProps(tab.id)"
+            :class="['tab', { active: activeTab === tab.id }]"
+            @click="changeTab(tab.id)"
           >
-            <i class="fas fa-info-circle"></i>
-            {{ t('organizations.overview') }}
-          </button>
-          <button
-            :class="['tab', { active: activeTab === 'members' }]"
-            @click="changeTab('members')"
-          >
-            <i class="fas fa-users"></i>
-            {{ t('organizations.members') }}
-          </button>
-          <button
-            :class="['tab', { active: activeTab === 'groups' }]"
-            @click="changeTab('groups')"
-          >
-            <i class="fas fa-layer-group"></i>
-            {{ t('organizations.groups') }}
-          </button>
-          <button
-            v-if="canManage"
-            :class="['tab', { active: activeTab === 'scenarios' }]"
-            @click="changeTab('scenarios')"
-          >
-            <i class="fas fa-flask"></i>
-            {{ t('organizations.scenarios') }}
-            <AdminBadge v-if="isAdminGranted" icon-only />
-          </button>
-          <button
-            v-if="canManage"
-            :class="['tab', { active: activeTab === 'student-sessions' }]"
-            @click="changeTab('student-sessions')"
-          >
-            <i class="fas fa-desktop"></i>
-            {{ t('organizations.studentSessions') }}
-            <AdminBadge v-if="isAdminGranted" icon-only />
-          </button>
-          <button
-            :class="['tab', { active: activeTab === 'subscription' }]"
-            @click="changeTab('subscription')"
-          >
-            <i class="fas fa-credit-card"></i>
-            {{ t('organizations.subscription') }}
-          </button>
-          <button
-            v-if="canManage"
-            :class="['tab', { active: activeTab === 'settings' }]"
-            @click="changeTab('settings')"
-          >
-            <i class="fas fa-cog"></i>
-            {{ t('organizations.settings') }}
-            <AdminBadge v-if="isAdminGranted" icon-only />
+            <i :class="tab.icon"></i>
+            {{ t(tab.labelKey) }}
+            <AdminBadge v-if="tab.managerOnly && isAdminGranted" icon-only />
           </button>
         </div>
 
         <div class="tabs-content">
           <!-- Overview Tab -->
-          <div v-if="activeTab === 'overview'" class="tab-panel">
+          <div v-if="activeTab === 'overview'" class="tab-panel" v-bind="panelProps('overview')">
             <OrganizationOverviewTab :organization="organization" />
           </div>
 
           <!-- Members Tab -->
-          <div v-if="activeTab === 'members'" class="tab-panel">
+          <div v-if="activeTab === 'members'" class="tab-panel" v-bind="panelProps('members')">
             <OrganizationMembersManager
               :organization-id="organizationId"
               :can-manage="canManage"
@@ -163,7 +125,7 @@
           </div>
 
           <!-- Groups Tab -->
-          <div v-if="activeTab === 'groups'" class="tab-panel">
+          <div v-if="activeTab === 'groups'" class="tab-panel" v-bind="panelProps('groups')">
             <OrganizationGroupsManager
               :organization-id="organizationId"
               :can-manage="canManage"
@@ -172,7 +134,7 @@
           </div>
 
           <!-- Scenarios Tab -->
-          <div v-if="activeTab === 'scenarios' && canManage" class="tab-panel">
+          <div v-if="activeTab === 'scenarios' && canManage" class="tab-panel" v-bind="panelProps('scenarios')">
             <OrganizationScenariosTab
               :organization-id="organizationId"
               :can-manage="canManage"
@@ -180,12 +142,12 @@
           </div>
 
           <!-- Student Sessions Tab -->
-          <div v-if="activeTab === 'student-sessions' && canManage" class="tab-panel">
+          <div v-if="activeTab === 'student-sessions' && canManage" class="tab-panel" v-bind="panelProps('student-sessions')">
             <OrganizationStudentSessionsTab :organization-id="organizationId" />
           </div>
 
           <!-- Subscription Tab -->
-          <div v-if="activeTab === 'subscription'" class="tab-panel">
+          <div v-if="activeTab === 'subscription'" class="tab-panel" v-bind="panelProps('subscription')">
             <OrganizationSubscriptionManager
               :organization-id="organizationId"
               :can-manage="canManage"
@@ -193,7 +155,7 @@
           </div>
 
           <!-- Settings Tab -->
-          <div v-if="activeTab === 'settings' && canManage" class="tab-panel">
+          <div v-if="activeTab === 'settings' && canManage" class="tab-panel" v-bind="panelProps('settings')">
             <OrganizationSettingsTab
               :organization="organization"
               :organization-id="organizationId"
@@ -238,6 +200,7 @@ import { useOrganizationsStore } from '../../stores/organizations'
 import { usePermissionsStore } from '../../stores/permissions'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useTranslations } from '../../composables/useTranslations'
+import { useTabList } from '../../composables/useTabList'
 import type { Organization, UpdateOrganizationRequest } from '../../types'
 
 const route = useRoute()
@@ -250,7 +213,15 @@ const isInitialLoading = ref(true) // Initial page load
 const isRefreshing = ref(false) // Refreshing data (don't show full screen loader)
 const error = ref('')
 const organization = ref<Organization | null>(null) // Store loaded organization locally
-const activeTab = ref((route.query.tab as string) || 'overview')
+type OrganizationTab =
+  | 'overview'
+  | 'members'
+  | 'groups'
+  | 'scenarios'
+  | 'student-sessions'
+  | 'subscription'
+  | 'settings'
+const activeTab = ref<OrganizationTab>((route.query.tab as OrganizationTab) || 'overview')
 const isEditModalOpen = ref(false)
 const isSubmitting = ref(false)
 const modalError = ref('')
@@ -267,6 +238,7 @@ const { t } = useTranslations({
       bulkImport: 'Bulk Import',
       edit: 'Edit',
       back: 'Back',
+      tabsLabel: 'Organization sections',
       overview: 'Overview',
       subscription: 'Subscription',
       scenarios: 'Scenarios',
@@ -286,6 +258,7 @@ const { t } = useTranslations({
       bulkImport: 'Importation groupée',
       edit: 'Modifier',
       back: 'Retour',
+      tabsLabel: 'Sections de l\'organisation',
       overview: 'Aperçu',
       subscription: 'Abonnement',
       scenarios: 'Scénarios',
@@ -301,6 +274,22 @@ const canManage = computed(() => permissionsStore.canManageOrganization(organiza
 const isOwner = computed(() => permissionsStore.isOrganizationOwner(organizationId.value))
 const canDelete = computed(() => permissionsStore.canDeleteOrganization(organizationId.value))
 const isAdminGranted = computed(() => isAdmin.value && !isOwner.value)
+
+// The bar in DOM order. `managerOnly` both gates the tab and drives the admin
+// badge, so the two can never disagree about which tabs are privileged.
+const allTabs: { id: OrganizationTab; icon: string; labelKey: string; managerOnly: boolean }[] = [
+  { id: 'overview', icon: 'fas fa-info-circle', labelKey: 'organizations.overview', managerOnly: false },
+  { id: 'members', icon: 'fas fa-users', labelKey: 'organizations.members', managerOnly: false },
+  { id: 'groups', icon: 'fas fa-layer-group', labelKey: 'organizations.groups', managerOnly: false },
+  { id: 'scenarios', icon: 'fas fa-flask', labelKey: 'organizations.scenarios', managerOnly: true },
+  { id: 'student-sessions', icon: 'fas fa-desktop', labelKey: 'organizations.studentSessions', managerOnly: true },
+  { id: 'subscription', icon: 'fas fa-credit-card', labelKey: 'organizations.subscription', managerOnly: false },
+  { id: 'settings', icon: 'fas fa-cog', labelKey: 'organizations.settings', managerOnly: true }
+]
+
+const visibleTabs = computed(() => allTabs.filter(tab => !tab.managerOnly || canManage.value))
+
+const { tablist, tabProps, panelProps, onKeydown } = useTabList(activeTab, 'org')
 
 onMounted(async () => {
   await Promise.all([
@@ -372,7 +361,7 @@ const onOrganizationConverted = () => {
   loadOrganization(false)
 }
 
-const changeTab = (tab: string) => {
+const changeTab = (tab: OrganizationTab) => {
   activeTab.value = tab
   // Optionally update URL for bookmarking, but without navigation
   if (history.replaceState) {
@@ -540,6 +529,11 @@ const changeTab = (tab: string) => {
 .tab:hover {
   background: var(--color-bg-secondary);
   color: var(--color-text-primary);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
 }
 
 .tab.active {

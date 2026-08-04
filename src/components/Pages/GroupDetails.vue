@@ -30,6 +30,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useGroupMembers } from '../../composables/useGroupMembers'
+import { useTabList } from '../../composables/useTabList'
 import { formatDate } from '../../utils/formatters'
 import { userService, type User } from '../../services/domain/user'
 import type { ClassGroup } from '../../types'
@@ -53,6 +54,7 @@ const { t } = useTranslations({
       backToGroups: 'Back to Groups',
       groupNotFound: 'Group not found',
       loading: 'Loading group details...',
+      tabsLabel: 'Group sections',
       tabOverview: 'Overview',
       tabMembers: 'Members',
       tabScenarios: 'Scenarios',
@@ -81,6 +83,7 @@ const { t } = useTranslations({
       backToGroups: 'Retour aux groupes',
       groupNotFound: 'Groupe introuvable',
       loading: 'Chargement des détails du groupe...',
+      tabsLabel: 'Sections du groupe',
       tabOverview: 'Aperçu',
       tabMembers: 'Membres',
       tabScenarios: 'Scénarios',
@@ -115,9 +118,20 @@ const error = ref('')
 type GroupTab = 'overview' | 'members' | 'scenarios' | 'live' | 'activity' | 'analytics' | 'history' | 'settings'
 const activeTab = ref<GroupTab>((route.query.tab as GroupTab) || 'overview')
 
+interface TabDescriptor {
+  id: GroupTab
+  icon: string
+  labelKey: string
+}
+
+const baseTabs: TabDescriptor[] = [
+  { id: 'overview', icon: 'fas fa-info-circle', labelKey: 'groupDetails.tabOverview' },
+  { id: 'members', icon: 'fas fa-users', labelKey: 'groupDetails.tabMembers' }
+]
+
 // The tabs only a manager, owner or platform admin may open. Declared as data so
 // the reserved-slot rendering below is expressed once instead of per button.
-const managerTabs: { id: GroupTab; icon: string; labelKey: string }[] = [
+const managerTabs: TabDescriptor[] = [
   { id: 'scenarios', icon: 'fas fa-clipboard-list', labelKey: 'groupDetails.tabScenarios' },
   { id: 'live', icon: 'fas fa-eye', labelKey: 'groupDetails.tabLiveSessions' },
   { id: 'activity', icon: 'fas fa-desktop', labelKey: 'groupDetails.tabActivity' },
@@ -125,6 +139,8 @@ const managerTabs: { id: GroupTab; icon: string; labelKey: string }[] = [
   { id: 'history', icon: 'fas fa-history', labelKey: 'groupDetails.tabHistory' },
   { id: 'settings', icon: 'fas fa-cog', labelKey: 'groupDetails.tabSettings' }
 ]
+
+const { tablist, tabProps, panelProps, onKeydown } = useTabList(activeTab, 'group')
 
 // Ref to members manager for member count
 const membersManagerRef = ref<InstanceType<typeof GroupMembersManager> | null>(null)
@@ -168,6 +184,15 @@ const isRoleUnresolved = computed(() => {
 const showManagerControls = computed(() => {
   return canEditGroup.value || isRoleUnresolved.value
 })
+
+// The bar as the teacher sees it. One list, so the ARIA wiring below is written
+// once and the reserved placeholders are just tabs that are not usable yet.
+const visibleTabs = computed<(TabDescriptor & { disabled: boolean })[]>(() => [
+  ...baseTabs.map(tab => ({ ...tab, disabled: false })),
+  ...(showManagerControls.value
+    ? managerTabs.map(tab => ({ ...tab, disabled: isRoleUnresolved.value }))
+    : [])
+])
 
 const canDeleteGroup = computed(() => {
   return isPlatformAdmin.value || isOwner.value
@@ -393,40 +418,32 @@ watch(activeTab, (newTab) => {
       </div>
 
       <!-- Tabs Navigation -->
-      <div class="group-tabs" :aria-busy="isRoleUnresolved">
+      <div
+        ref="tablist"
+        class="group-tabs"
+        role="tablist"
+        :aria-label="t('groupDetails.tabsLabel')"
+        :aria-busy="isRoleUnresolved"
+        @keydown="onKeydown"
+      >
         <button
-          @click="activeTab = 'overview'"
-          :class="['tab-button', { active: activeTab === 'overview' }]"
+          v-for="tab in visibleTabs"
+          :key="tab.id"
+          v-bind="tabProps(tab.id, tab.disabled)"
+          :disabled="tab.disabled"
+          @click="activeTab = tab.id"
+          :class="['tab-button', {
+            active: activeTab === tab.id,
+            'tab-button-reserved': tab.disabled
+          }]"
         >
-          <i class="fas fa-info-circle"></i>
-          {{ t('groupDetails.tabOverview') }}
-        </button>
-        <button
-          @click="activeTab = 'members'"
-          :class="['tab-button', { active: activeTab === 'members' }]"
-        >
-          <i class="fas fa-users"></i>
-          {{ t('groupDetails.tabMembers') }}
-          <span class="badge">
+          <i :class="tab.icon"></i>
+          {{ t(tab.labelKey) }}
+          <span v-if="tab.id === 'members'" class="badge">
             <i v-if="isMembersLoading" class="fas fa-spinner fa-spin"></i>
             <template v-else>{{ displayMemberCount }}</template>
           </span>
         </button>
-        <template v-if="showManagerControls">
-          <button
-            v-for="tab in managerTabs"
-            :key="tab.id"
-            :disabled="isRoleUnresolved"
-            @click="activeTab = tab.id"
-            :class="['tab-button', {
-              active: activeTab === tab.id,
-              'tab-button-reserved': isRoleUnresolved
-            }]"
-          >
-            <i :class="tab.icon"></i>
-            {{ t(tab.labelKey) }}
-          </button>
-        </template>
       </div>
 
       <!-- Tab Content -->
@@ -436,7 +453,7 @@ watch(activeTab, (newTab) => {
         Tab components load their data on mount only; without this key they would
         have to each watch `groupId` to avoid showing the previous group's rows.
       -->
-      <div class="tab-content" :key="groupId ?? ''">
+      <div class="tab-content" :key="groupId ?? ''" v-bind="panelProps(activeTab)">
         <GroupOverviewTab
           v-if="activeTab === 'overview'"
           :group="currentGroup"
@@ -664,6 +681,11 @@ watch(activeTab, (newTab) => {
 
 .tab-button:hover {
   color: var(--color-text-primary);
+}
+
+.tab-button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
 }
 
 /* Slot held for a tab whose availability is still being determined: it occupies its

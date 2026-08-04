@@ -123,18 +123,36 @@ export function useWallOrder<T extends Identified>(groupId: Ref<string>, liveSes
     }
   }
 
+  // The single reordering primitive, shared by drag & drop and by the keyboard
+  // alternative. Returns whether the wall actually changed.
+  function moveTo(sessionId: string, to: number): boolean {
+    const ids = orderedSessions.value.map(s => s.session_id)
+    const from = ids.indexOf(sessionId)
+    if (from === -1 || to < 0 || to >= ids.length || to === from) return false
+    ids.splice(from, 1)
+    ids.splice(to, 0, sessionId)
+    persist(ids)
+    return true
+  }
+
+  /**
+   * Shift a tile `delta` places. Clamped rather than wrapping: pushing the first
+   * tile further left does nothing, which is what a trainer nudging tiles with the
+   * keyboard expects.
+   */
+  function moveBy(sessionId: string, delta: number): boolean {
+    const from = orderedSessions.value.findIndex(s => s.session_id === sessionId)
+    if (from === -1) return false
+    return moveTo(sessionId, from + delta)
+  }
+
   function onDrop(targetId: string, event: DragEvent) {
     const sourceId = draggingId.value || event.dataTransfer?.getData('text/plain') || ''
     draggingId.value = null
     if (!sourceId || sourceId === targetId) return
 
-    const ids = orderedSessions.value.map(s => s.session_id)
-    const from = ids.indexOf(sourceId)
-    const to = ids.indexOf(targetId)
-    if (from === -1 || to === -1) return
-    ids.splice(from, 1)
-    ids.splice(to, 0, sourceId)
-    persist(ids)
+    const to = orderedSessions.value.findIndex(s => s.session_id === targetId)
+    if (to !== -1) moveTo(sourceId, to)
   }
 
   return {
@@ -144,6 +162,8 @@ export function useWallOrder<T extends Identified>(groupId: Ref<string>, liveSes
     applyStoredOrder,
     loadStoredOrder,
     persist,
+    moveTo,
+    moveBy,
     onDragStart,
     onDrop
   }

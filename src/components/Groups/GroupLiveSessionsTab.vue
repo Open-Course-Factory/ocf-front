@@ -43,6 +43,7 @@
         <div>
           <h3 class="live-sessions-title">{{ t('liveSessions.title') }}</h3>
           <p class="live-sessions-subtitle">{{ t('liveSessions.subtitle') }}</p>
+          <p v-if="sessions.length > 1" class="live-sessions-subtitle">{{ t('liveSessions.reorderSubtitle') }}</p>
         </div>
         <button class="ocf-btn ocf-btn-secondary ocf-btn-sm" :disabled="isLoading" @click="loadSessions">
           <i :class="isLoading ? 'fas fa-spinner fa-spin' : 'fas fa-sync'"></i>
@@ -71,10 +72,14 @@
         <p>{{ t('liveSessions.empty') }}</p>
       </div>
 
-      <!-- Wall grid — tiles are draggable to arrange the wall (order persisted per group) -->
+      <!--
+        Wall grid — tiles are draggable to arrange the wall (order persisted per
+        group). Each tile is also focusable and moves with Ctrl + Left/Right, so
+        arranging the wall never requires a pointer.
+      -->
       <div v-else class="live-sessions-grid">
         <div
-          v-for="session in orderedSessions"
+          v-for="(session, index) in orderedSessions"
           :key="session.session_id"
           class="live-sessions-tile"
           :data-session-id="session.session_id"
@@ -82,8 +87,16 @@
             'live-sessions-tile-active': activeTiles.has(session.session_id),
             'live-sessions-tile-dragging': draggingId === session.session_id
           }"
-          :title="t('liveSessions.dragHint')"
+          :title="t('liveSessions.reorderHint')"
+          role="group"
+          tabindex="0"
+          :aria-label="t('liveSessions.tileLabel', {
+            name: learnerLabel(session),
+            position: index + 1,
+            total: orderedSessions.length
+          })"
           draggable="true"
+          @keydown="onTileKeydown(session.session_id, $event)"
           @dragstart="onDragStart(session.session_id, $event)"
           @dragover.prevent
           @drop.prevent="onDrop(session.session_id, $event)"
@@ -126,7 +139,9 @@ const { t } = useTranslations({
       retry: 'Retry',
       backToWall: 'Back to the wall',
       unknownLearner: 'Learner',
-      dragHint: 'Drag to rearrange the wall',
+      reorderHint: 'Drag, or press Ctrl + Left / Right, to rearrange the wall',
+      tileLabel: '{name} — tile {position} of {total}. Ctrl + Left or Right moves it.',
+      reorderSubtitle: 'Drag a tile to rearrange the wall, or focus one and press Ctrl + Left / Right.',
       loadError: 'Failed to load live sessions',
       permissionError: 'You do not have permission to supervise sessions in this group. Supervision may require a higher plan.'
     }
@@ -141,7 +156,9 @@ const { t } = useTranslations({
       retry: 'Réessayer',
       backToWall: 'Retour au mur',
       unknownLearner: 'Apprenant',
-      dragHint: 'Glisser pour réorganiser le mur',
+      reorderHint: 'Glisser, ou appuyer sur Ctrl + Gauche / Droite, pour réorganiser le mur',
+      tileLabel: '{name} — vignette {position} sur {total}. Ctrl + Gauche ou Droite la déplace.',
+      reorderSubtitle: 'Glissez une vignette pour réorganiser le mur, ou sélectionnez-en une et appuyez sur Ctrl + Gauche / Droite.',
       loadError: 'Échec du chargement des sessions en direct',
       permissionError: 'Vous n’avez pas la permission de superviser les sessions de ce groupe. La supervision peut nécessiter un forfait supérieur.'
     }
@@ -156,7 +173,7 @@ let pollInterval: ReturnType<typeof setInterval> | null = null
 
 // Per-group tile ordering (drag & drop + persisted envelope) and the transient
 // "just produced output" highlight live in dedicated composables.
-const { orderedSessions, draggingId, loadStoredOrder, onDragStart, onDrop } =
+const { orderedSessions, draggingId, loadStoredOrder, moveBy, onDragStart, onDrop } =
   useWallOrder(toRef(props, 'groupId'), sessions)
 const { activeTiles, markActivity, stop: stopActivityHighlight } = useActivityHighlight()
 
@@ -166,6 +183,17 @@ const focusedSession = computed(() =>
 
 function learnerLabel(session: LiveSession): string {
   return session.user_name || session.user_id || t('liveSessions.unknownLearner')
+}
+
+// Keyboard equivalent of dragging a tile. Ctrl-modified so a plain arrow still
+// scrolls the wall, and so it does not collide with Alt + Arrow (browser history).
+// Focus rides along with the tile: `v-for` is keyed by session, so Vue moves the
+// existing element instead of rebuilding it.
+function onTileKeydown(sessionId: string, event: KeyboardEvent) {
+  if (!event.ctrlKey && !event.metaKey) return
+  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+  event.preventDefault()
+  moveBy(sessionId, event.key === 'ArrowRight' ? 1 : -1)
 }
 
 async function loadSessions() {
@@ -272,6 +300,13 @@ onUnmounted(() => {
   border-radius: var(--border-radius-md);
   transition: box-shadow var(--transition-base), opacity var(--transition-fast);
   cursor: grab;
+}
+
+/* Tiles take focus so they can be reordered from the keyboard; the ring has to
+   be visible against the activity highlight, hence the offset. */
+.live-sessions-tile:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
 }
 
 /* Highlight a tile that just produced output (recent activity). */
