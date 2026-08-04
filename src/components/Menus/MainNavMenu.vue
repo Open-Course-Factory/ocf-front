@@ -382,12 +382,6 @@ const menuCategories = computed((): MenuCategory[] => [
         label: t('navigation.groupHierarchy'),
         title: t('navigation.groupHierarchyTitle'),
         icon: 'fas fa-sitemap'
-      },
-      {
-        route: '/group-members',
-        label: t('groupMembers.pageTitle'),
-        title: t('groupMembers.memberInfo'),
-        icon: 'fas fa-user-friends'
       }
     ]
   },
