@@ -21,6 +21,7 @@
 
 import { defineStore } from "pinia"
 import axios from "axios"
+import { ElNotification } from "element-plus"
 import { useBaseStore } from "./baseStore"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
@@ -69,6 +70,20 @@ export async function loadOrganizationsThatCanHoldClasses(): Promise<any[]> {
         console.error('Failed to load organizations:', error)
         return []
     }
+}
+
+/**
+ * Subgroup names as typed in the creation form's textarea, one per line.
+ * Blank and whitespace-only lines are dropped: a trailing newline must not
+ * turn into an unnamed group.
+ */
+function parseSubgroupNames(rawInput: unknown): string[] {
+    if (typeof rawInput !== 'string') return []
+
+    return rawInput
+        .split('\n')
+        .map((name) => name.trim())
+        .filter((name) => name.length > 0)
 }
 
 function generateSlug(displayName: string): string {
@@ -133,7 +148,10 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
                 statusExpired: "EXPIRED",
                 noneParentGroup: "None (top-level group)",
                 subgroupNames: "Subgroups (one per line)",
-                subgroupNamesHelp: "Enter subgroup names, one per line. They will be created automatically."
+                subgroupNamesHelp: "Enter subgroup names, one per line. They will be created automatically.",
+                subgroupsFailedTitle: "Subgroups",
+                subgroupsPartialFailure: "{created} of {total} subgroups created. Could not create: {names}",
+                subgroupsAllFailed: "The class was created but none of its subgroups could be: {names}"
             }
         },
         fr: {
@@ -183,7 +201,10 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
                 statusExpired: "EXPIRÉ",
                 noneParentGroup: "Aucun (groupe de niveau supérieur)",
                 subgroupNames: "Sous-groupes (un par ligne)",
-                subgroupNamesHelp: "Entrez les noms des sous-groupes, un par ligne. Ils seront créés automatiquement."
+                subgroupNamesHelp: "Entrez les noms des sous-groupes, un par ligne. Ils seront créés automatiquement.",
+                subgroupsFailedTitle: "Sous-groupes",
+                subgroupsPartialFailure: "{created} sous-groupes créés sur {total}. Création impossible pour : {names}",
+                subgroupsAllFailed: "La classe a été créée mais aucun de ses sous-groupes n'a pu l'être : {names}"
             }
         }
     })
@@ -254,33 +275,64 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
         return cleanData
     })
 
+    /**
+     * The parent class is already saved when subgroups are created, so a failed
+     * subgroup cannot be rolled back — it can only be reported. Silence here
+     * used to let the form close on plain success while TD groups were missing
+     * (#305). Notifying from the store mirrors the generations store, which
+     * reports job outcomes the same way; Entity.vue is generic and never renders
+     * `store.error`, so there is nothing else to hang this on.
+     */
+    const reportSubgroupFailures = (failedNames: string[], total: number) => {
+        if (failedNames.length === 0) return
+
+        const names = failedNames.join(', ')
+        const allFailed = failedNames.length === total
+
+        ElNotification({
+            title: t('classGroups.subgroupsFailedTitle'),
+            message: allFailed
+                ? t('classGroups.subgroupsAllFailed', { names })
+                : t('classGroups.subgroupsPartialFailure', {
+                    created: total - failedNames.length,
+                    total,
+                    names
+                }),
+            type: allFailed ? 'error' : 'warning',
+            duration: 0 // persistent: the teacher has to recreate them by hand
+        })
+    }
+
     // Hook to create subgroups after parent group is created
     base.setAfterCreateHook(async (createdGroup: any, originalData: any) => {
-        // Check if subgroup names were provided
-        if (originalData.subgroup_names && typeof originalData.subgroup_names === 'string') {
-            const subgroupNames = originalData.subgroup_names
-                .split('\n')
-                .map((name: string) => name.trim())
-                .filter((name: string) => name.length > 0)
+        const subgroupNames = parseSubgroupNames(originalData.subgroup_names)
+        if (subgroupNames.length === 0) return
 
-            // Create each subgroup
-            for (const displayName of subgroupNames) {
-                try {
-                    await base.createEntity('/class-groups', {
-                        display_name: displayName,
-                        name: generateSlug(displayName),
-                        organization_id: originalData.organization_id || createdGroup.organization_id,
-                        organizationID: originalData.organization_id || createdGroup.organization_id,
-                        parent_group_id: createdGroup.id,
-                        parentGroupID: createdGroup.id,
-                        max_members: originalData.max_members || 30,
-                        is_active: true
-                    })
-                } catch (error) {
-                    console.error(`Failed to create subgroup "${displayName}":`, error)
-                }
+        const organizationId = originalData.organization_id || createdGroup.organization_id
+        const failedNames: string[] = []
+
+        for (const displayName of subgroupNames) {
+            try {
+                // max_members is deliberately omitted: a subgroup is a TD group
+                // inside a promotion, so inheriting the parent's cap made a
+                // 200-seat class produce 200-seat TD groups. The backend owns
+                // the default (ClassGroup.MaxMembers, gorm:"default:50").
+                await base.createEntity('/class-groups', {
+                    display_name: displayName,
+                    name: generateSlug(displayName),
+                    organization_id: organizationId,
+                    organizationID: organizationId,
+                    parent_group_id: createdGroup.id,
+                    parentGroupID: createdGroup.id,
+                    is_active: true
+                })
+            } catch (error) {
+                console.error(`Failed to create subgroup "${displayName}":`, error)
+                failedNames.push(displayName)
             }
         }
+
+        reportSubgroupFailures(failedNames, subgroupNames.length)
     })
 
     // Hook to auto-generate slug from display_name before updating (if display_name changed)
