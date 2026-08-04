@@ -30,6 +30,30 @@
           <h2>{{ t(`${translationKey}.pageTitle`) }}</h2>
         </div>
         <div class="toolbar-right">
+          <!-- Recherche libre sur la page courante -->
+          <div class="search-group">
+            <label :for="`search-${entityName}`" class="search-label">
+              <i class="fas fa-search"></i>
+            </label>
+            <input
+              :id="`search-${entityName}`"
+              v-model="searchQuery"
+              type="search"
+              class="search-input"
+              :placeholder="t('entitySearch.placeholder')"
+              :aria-label="t('entitySearch.placeholder')"
+            />
+            <button
+              v-if="isSearching"
+              class="btn btn-secondary btn-clear-search"
+              :title="t('entitySearch.clear')"
+              :aria-label="t('entitySearch.clear')"
+              @click="clearSearch"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
           <!-- Filtres par entités parentes -->
           <div v-if="parentFilters.length > 0" class="filters-container">
             <div
@@ -114,6 +138,18 @@
         {{ t('pagination.filteredResults') }} {{ totalItems }} {{ t('pagination.totalItems') }}
       </div>
 
+      <!--
+        The search runs over the loaded page, so the count has to say so — read as
+        a total it would claim the collection holds only these rows.
+      -->
+      <div v-if="isSearching" class="active-filters-info search-scope-info">
+        <i class="fas fa-info-circle"></i>
+        {{ t('entitySearch.scopeNote', {
+          count: visibleEntities.length,
+          page: currentPageIndex + 1
+        }) }}
+      </div>
+
       <!-- Initial loading state -->
       <div v-if="isLoadingEntities && displayedEntities.length === 0 && !isSequentialNavigating">
         <EntityListSkeleton :count="pageSize" />
@@ -128,10 +164,10 @@
       </div>
 
       <!-- Normal entity list (hidden during sequential navigation) -->
-      <div v-else-if="displayedEntities.length > 0">
+      <div v-else-if="visibleEntities.length > 0">
         <ul>
           <li
-            v-for="entity in displayedEntities"
+            v-for="entity in visibleEntities"
             :key="entity.id"
             class="entity-item"
           >
@@ -169,6 +205,17 @@
             </div>
           </li>
         </ul>
+      </div>
+
+      <!-- Nothing on this page matches the search (the page itself is not empty) -->
+      <div v-else-if="isSearching && displayedEntities.length > 0" class="no-results">
+        <p>
+          <i class="fas fa-search"></i>
+          {{ t('entitySearch.noMatches') }}
+        </p>
+        <button class="btn btn-secondary btn-sm" @click="clearSearch">
+          {{ t('entitySearch.clear') }}
+        </button>
       </div>
 
       <!-- Cursor-based Pagination Controls -->
@@ -287,7 +334,7 @@ import EntityModal from '../Modals/EntityModal.vue';
 import EntityCard from '../Cards/EntityCard.vue';
 import EntityListSkeleton from '../Generic/EntityListSkeleton.vue';
 import EmptyState from '../Common/EmptyState.vue';
-import { useI18n } from 'vue-i18n';
+import { useTranslations } from '../../composables/useTranslations';
 import { Store } from 'pinia';
 import { getTranslationKey } from '../../utils';
 import { useRoute, useRouter } from 'vue-router';
@@ -295,8 +342,26 @@ import { useBaseStore } from '../../stores/baseStore';
 import { useNotification } from '../../composables/useNotification';
 import { useAdminViewMode } from '../../composables/useAdminViewMode';
 import { useCurrentUserStore } from '../../stores/currentUser';
+import { useEntitySearch } from '../../composables/useEntitySearch';
 
-const { t } = useI18n();
+const { t } = useTranslations({
+  en: {
+    entitySearch: {
+      placeholder: 'Search this page…',
+      clear: 'Clear search',
+      noMatches: 'Nothing on this page matches your search.',
+      scopeNote: '{count} match(es) on page {page}. The search covers the page you are on.'
+    }
+  },
+  fr: {
+    entitySearch: {
+      placeholder: 'Rechercher dans cette page…',
+      clear: 'Effacer la recherche',
+      noMatches: 'Aucun élément de cette page ne correspond à votre recherche.',
+      scopeNote: '{count} résultat(s) sur la page {page}. La recherche porte sur la page affichée.'
+    }
+  }
+});
 const route = useRoute();
 const router = useRouter();
 const { showError, showSuccess, showConfirm } = useNotification();
@@ -461,6 +526,14 @@ const displayedEntities = computed(() => {
 
   return entities;
 });
+
+// Free-text search over the loaded page. `displayedEntities` stays the page as
+// the server returned it — pagination bookkeeping below counts rows per page and
+// must not see the search — while `visibleEntities` is what the list renders.
+const { searchQuery, isSearching, results: visibleEntities, clearSearch } = useEntitySearch(
+  displayedEntities,
+  computed(() => props.entityStore.fieldList as Map<string, any> | undefined)
+);
 
 // Vérifier s'il y a des filtres actifs
 const hasActiveFilters = computed(() => {
@@ -1409,6 +1482,42 @@ ul {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
+}
+
+/* Recherche libre */
+.search-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.search-label {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.search-input {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--color-border-medium);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  min-width: 200px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus-primary);
+}
+
+.btn-clear-search {
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: var(--font-size-xs);
+}
+
+.search-scope-info {
+  background: var(--color-bg-tertiary);
 }
 
 /* Filtres - style minimal */
