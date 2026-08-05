@@ -237,8 +237,20 @@ function selectUser(user: User) {
   showUserSearchDropdown.value = false
 }
 
+// The delay lets a click on a dropdown row land before the dropdown hides.
+// The timer MUST be cancelled on the next focus: it used to survive the modal
+// closing, and reopening within 200ms let the stale timer hide the dropdown
+// of a brand-new search.
+let hideDropdownTimer: ReturnType<typeof setTimeout> | undefined
+
+function onUserSearchFocus() {
+  clearTimeout(hideDropdownTimer)
+  showUserSearchDropdown.value = true
+}
+
 function onUserSearchBlur() {
-  setTimeout(() => {
+  clearTimeout(hideDropdownTimer)
+  hideDropdownTimer = setTimeout(() => {
     showUserSearchDropdown.value = false
   }, 200)
 }
@@ -462,7 +474,7 @@ async function handleRemoveMember(member: GroupMember) {
               class="form-control"
               placeholder="Search by name or email..."
               @input="onUserSearchInput"
-              @focus="showUserSearchDropdown = true"
+              @focus="onUserSearchFocus"
               @blur="onUserSearchBlur"
               required
             />

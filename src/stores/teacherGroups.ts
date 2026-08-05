@@ -141,6 +141,20 @@ export const useTeacherGroupsStore = defineStore('teacherGroups', () => {
     await inFlight
   }
 
+  /**
+   * Declares the cached list stale without dropping it: the next
+   * `ensureLoaded` refetches whatever `maxAgeMs` it is given, while whoever is
+   * already on screen keeps rendering the old rows until the fresh ones land.
+   *
+   * Owned by the store so that every surface mutating membership invalidates
+   * the console the same way, instead of each page refreshing it by hand —
+   * without this, a teacher who just added three learners read the old
+   * member count for a full polling interval.
+   */
+  const markStale = () => {
+    loadedAt.value = null
+  }
+
   const reset = () => {
     groups.value = []
     isLoaded.value = false
@@ -162,6 +176,7 @@ export const useTeacherGroupsStore = defineStore('teacherGroups', () => {
     liveSessionCountOf,
     loadGroups,
     ensureLoaded,
+    markStale,
     reset,
   }
 })

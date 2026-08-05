@@ -21,6 +21,7 @@
 
 import { ref, computed, Ref } from 'vue'
 import axios from 'axios'
+import { useTeacherGroupsStore } from '../stores/teacherGroups'
 import { withAsync } from '../utils/asyncWrapper'
 import { useTranslations } from './useTranslations'
 
@@ -213,6 +214,11 @@ export function useGroupMembers({ groupId, currentUserId, isOwner }: UseGroupMem
 
         const response = await axios.post('/group-members', newMember)
 
+        // The classes console caches member counts; a membership change is
+        // exactly what makes that cache lie (a teacher who just added three
+        // learners read the old count for a whole polling interval).
+        useTeacherGroupsStore().markStale()
+
         // Reset form
         newMemberData.value = {
           user_id: '',
@@ -258,6 +264,7 @@ export function useGroupMembers({ groupId, currentUserId, isOwner }: UseGroupMem
       { isLoading, error },
       async () => {
         await axios.delete(`/group-members/${member.id}`)
+        useTeacherGroupsStore().markStale()
         const index = members.value.findIndex(m => m.id === member.id)
         if (index !== -1) {
           members.value.splice(index, 1)

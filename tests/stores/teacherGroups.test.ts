@@ -102,6 +102,21 @@ describe('teacherGroups store', () => {
     }
   })
 
+  it('refetches after markStale even when the cache is still young', async () => {
+    // The regression: a teacher added three learners, came back to the
+    // console within the polling interval, and read the pre-add member count.
+    mockGet.mockResolvedValue({ data: [summary({ member_count: 1 })] })
+    const store = useTeacherGroupsStore()
+    await store.ensureLoaded(30000)
+
+    mockGet.mockResolvedValue({ data: [summary({ member_count: 4 })] })
+    store.markStale()
+    await store.ensureLoaded(30000)
+
+    expect(mockGet).toHaveBeenCalledTimes(2)
+    expect(store.groups[0].member_count).toBe(4)
+  })
+
   it('reuses a load that just happened rather than repeating it', async () => {
     mockGet.mockResolvedValue({ data: [summary()] })
     const store = useTeacherGroupsStore()
