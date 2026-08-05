@@ -50,9 +50,18 @@
           data-test="assignment"
         >
           <span class="assignment-title">{{ assignment.scenario_title }}</span>
-          <span class="assignment-progress">
-            {{ assignment.completed_count }}/{{ summary.member_count }}
-            <span class="assignment-rate">{{ completionPercent(assignment) }}%</span>
+          <span
+            class="assignment-progress"
+            data-test="assignment-progress"
+            :title="t('myClasses.completionHelp')"
+          >
+            <span class="assignment-bar" aria-hidden="true">
+              <span class="assignment-bar-fill" :style="{ width: completionBarWidth(assignment) }"></span>
+            </span>
+            {{ t('myClasses.completedOfClass', {
+              completed: assignment.completed_count,
+              total: summary.member_count
+            }) }}
           </span>
           <span v-if="assignment.deadline" class="assignment-deadline" data-test="assignment-deadline">
             <i class="fas fa-hourglass-end"></i>
@@ -116,6 +125,8 @@ const { t } = useTranslations({
       stateExpired: 'Expired',
       liveCountOne: '{live} online / {total}',
       liveCountMany: '{live} online / {total}',
+      completedOfClass: '{completed}/{total} finished',
+      completionHelp: 'Learners of the class who finished this scenario',
       noAssignment: 'No scenario assigned',
       openLive: 'Open the live sessions of {name}',
       openMembers: 'Members',
@@ -129,6 +140,8 @@ const { t } = useTranslations({
       stateExpired: 'Expirée',
       liveCountOne: '{live} connecté / {total}',
       liveCountMany: '{live} connectés / {total}',
+      completedOfClass: '{completed}/{total} ont terminé',
+      completionHelp: 'Apprenants de la classe ayant terminé ce scénario',
       noAssignment: 'Aucun scénario assigné',
       openLive: 'Ouvrir les sessions en direct de {name}',
       openMembers: 'Membres',
@@ -156,11 +169,13 @@ const liveLabel = computed(() => {
   })
 })
 
-// The backend sends completion as a 0..1 fraction of the class (see
-// TeacherGroupAssignment) — unlike ScenarioAnalytics.completion_rate, which is
-// already a percentage. Scale here, once.
-function completionPercent(assignment: TeacherGroupAssignment): number {
-  return Math.round((assignment.completion_rate || 0) * 100)
+// `completion_rate` here is completed ÷ CLASS SIZE, as a 0..1 fraction — the
+// per-scenario analytics surfaces report completed ÷ started instead, on a
+// 0..100 scale. The two answer different questions, so the row prints the
+// fraction it was given ("3/12 ont terminé") rather than a bare percentage a
+// reader could take for the other one; the bar only draws that same fraction.
+function completionBarWidth(assignment: TeacherGroupAssignment): string {
+  return `${Math.round((assignment.completion_rate || 0) * 100)}%`
 }
 
 function formatDeadline(deadline: string): string {
@@ -307,13 +322,29 @@ function open(tab: 'live' | 'members' | 'scenarios') {
 }
 
 .assignment-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
   margin-left: auto;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-.assignment-rate {
-  color: var(--color-text-muted);
+.assignment-bar {
+  display: inline-block;
+  width: 64px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-bg-tertiary);
+  overflow: hidden;
+}
+
+.assignment-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--color-primary);
+  transition: width var(--transition-slow);
 }
 
 .assignment-deadline {

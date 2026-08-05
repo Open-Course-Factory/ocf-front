@@ -192,8 +192,61 @@ describe('MyClasses console', () => {
 
     const row = wrapper.find('[data-test="assignment"]')
     expect(row.text()).toContain('Hardening SSH')
-    expect(row.text()).toContain('25%')
-    expect(row.text()).toContain('3/12')
+    expect(row.text()).toContain('3/12 finished')
+  })
+
+  it('states progress as the fraction of the class, never as a bare percentage', async () => {
+    // completion_rate here is completed ÷ class size, while the per-scenario
+    // analytics report completed ÷ started. A naked "25%" on this row would be
+    // readable as either, so the row spells out the denominator.
+    const wrapper = await mountConsole([
+      classRow({ member_count: 12, assignments: [assignment({ completed_count: 3, completion_rate: 0.25 })] }),
+    ])
+
+    const progress = wrapper.find('[data-test="assignment-progress"]')
+    expect(progress.text()).toBe('3/12 finished')
+    expect(progress.text()).not.toContain('%')
+    expect(progress.attributes('title')).toBe('Learners of the class who finished this scenario')
+  })
+
+  it('spells the same fraction out in French', async () => {
+    i18n.global.locale.value = 'fr'
+    const wrapper = await mountConsole([
+      classRow({ assignments: [assignment({ completed_count: 3, completion_rate: 0.25 })] }),
+    ])
+
+    expect(wrapper.find('[data-test="assignment-progress"]').text()).toBe('3/12 ont terminé')
+  })
+
+  it('draws the completed share of the class as the bar it fills', async () => {
+    const wrapper = await mountConsole([
+      classRow({ assignments: [assignment({ completion_rate: 0.25 })] }),
+    ])
+
+    expect(wrapper.find('.assignment-bar-fill').attributes('style')).toContain('width: 25%')
+  })
+
+  it('draws an empty bar for an assignment nobody finished', async () => {
+    const wrapper = await mountConsole([
+      classRow({
+        assignments: [assignment({ completed_count: 0, completion_rate: 0, avg_grade: null })],
+      }),
+    ])
+
+    expect(wrapper.find('[data-test="assignment-progress"]').text()).toBe('0/12 finished')
+    expect(wrapper.find('.assignment-bar-fill').attributes('style')).toContain('width: 0%')
+  })
+
+  it('draws an empty bar rather than a broken one for an empty class', async () => {
+    const wrapper = await mountConsole([
+      classRow({
+        member_count: 0,
+        assignments: [assignment({ completed_count: 0, completion_rate: 0 })],
+      }),
+    ])
+
+    expect(wrapper.find('[data-test="assignment-progress"]').text()).toBe('0/0 finished')
+    expect(wrapper.find('.assignment-bar-fill').attributes('style')).toContain('width: 0%')
   })
 
   it('shows a deadline when the assignment has one', async () => {
