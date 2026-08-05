@@ -15,6 +15,7 @@
             v-for="(opt, idx) in parsedOptions"
             :key="idx"
             class="quiz-option"
+            data-testid="quiz-option"
             :class="{ 'quiz-option--checked': quizAnswers[currentQuestion.id] === String(idx) }"
           >
             <input
@@ -33,6 +34,7 @@
             v-for="(opt, idx) in parsedOptions"
             :key="idx"
             class="quiz-option"
+            data-testid="quiz-option"
             :class="{ 'quiz-option--checked': isMultiAnswerChecked(currentQuestion.id, idx) }"
           >
             <input
@@ -48,6 +50,7 @@
         <div v-else-if="currentQuestion.question_type === 'true_false'" class="quiz-options quiz-tf">
           <label
             class="quiz-option"
+            data-testid="quiz-option"
             :class="{ 'quiz-option--checked': quizAnswers[currentQuestion.id] === 'true' }"
           >
             <input
@@ -60,6 +63,7 @@
           </label>
           <label
             class="quiz-option"
+            data-testid="quiz-option"
             :class="{ 'quiz-option--checked': quizAnswers[currentQuestion.id] === 'false' }"
           >
             <input
@@ -77,6 +81,7 @@
           <input
             type="text"
             class="quiz-free-input"
+            data-testid="quiz-free-input"
             v-model="quizAnswers[currentQuestion.id]"
             :placeholder="t('scenarioPanel.freeAnswerPlaceholder')"
           />
@@ -94,6 +99,7 @@
           <button
             v-if="quizCurrentIndex < quizQuestions.length - 1"
             class="verify-btn"
+            data-testid="quiz-next"
             :disabled="!hasAnsweredCurrent"
             @click="quizCurrentIndex++"
           >
@@ -103,6 +109,7 @@
           <button
             v-else
             class="verify-btn quiz-submit"
+            data-testid="quiz-submit"
             :disabled="!allAnswered || isSubmitting"
             @click="submitQuiz"
           >
@@ -115,7 +122,7 @@
 
     <!-- Quiz results -->
     <div v-else-if="result" class="quiz-results">
-      <h4 class="quiz-results-score">
+      <h4 class="quiz-results-score" data-testid="quiz-results-score">
         {{ t('scenarioPanel.quizScore', {
           score: Math.round(result.score * 100),
           correct: result.correct_count,
@@ -128,6 +135,7 @@
           v-for="r in result.per_question_results"
           :key="r.question_id"
           class="quiz-breakdown-item"
+          data-testid="quiz-breakdown-item"
           :class="{ 'is-correct': r.correct, 'is-incorrect': !r.correct }"
         >
           <div class="qb-line">
@@ -159,6 +167,7 @@
         <button
           v-if="result.next_step !== undefined && result.next_step !== null"
           class="verify-btn"
+          data-testid="quiz-advance"
           @click="$emit('advance')"
         >
           {{ t('scenarioPanel.nextStepBtn') }}
@@ -167,6 +176,7 @@
         <button
           v-else
           class="verify-btn"
+          data-testid="quiz-finish"
           @click="$emit('finish')"
         >
           <i class="fas fa-flag-checkered"></i>
