@@ -44,7 +44,7 @@ import TerminalMySessions from '../components/Pages/TerminalMySessions.vue';
 import UserTerminalKeys from '../components/Pages/UserTerminalKeys.vue';
 import ClassGroups from '../components/Pages/ClassGroups.vue';
 import GroupMembers from '../components/Pages/GroupMembers.vue';
-import GroupDetails from '../components/Pages/GroupDetails.vue';
+import { classPageForRetiredTab, CLASS_PAGE_NAMES } from './classPages';
 import GroupHierarchyEditor from '../components/Pages/GroupHierarchyEditor.vue';
 import Organizations from '../components/Pages/Organizations.vue';
 import OrganizationDetail from '../components/Pages/OrganizationDetail.vue';
@@ -166,10 +166,33 @@ const basicRoutes = [
       // entitlement the way the group CRUD pages below do — the endpoint is
       // self-scoped and a teacher must be able to reach their classes whatever
       // organization context they happen to be in.
-      { path: 'my-classes', name: 'MyClasses', component: () => import('../components/Pages/MyClasses.vue'), meta: { requiresAuth: true, requiredPermissions: ['view_groups'] } },
+      { path: 'my-classes', name: 'MyClasses', component: () => import('../components/Pages/MyClasses.vue'), meta: { requiresAuth: true, requiredPermissions: ['view_groups'], navParent: 'my-classes' } },
       { path: 'class-groups', name: 'ClassGroups', component: ClassGroups, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresClassroomEntitlement: true } },
       { path: 'class-groups-hierarchy', name: 'GroupHierarchyEditor', component: GroupHierarchyEditor, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresClassroomEntitlement: true } },
-      { path: 'class-groups/:id', name: 'GroupDetails', component: GroupDetails, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresClassroomEntitlement: true } },
+      // The eight-tab class page became the five real pages below. This path
+      // only exists to carry the links already in the wild to their new home.
+      { path: 'class-groups/:id', redirect: to => classPageForRetiredTab(String(to.params.id), to.query) },
+      // A class is five pages sharing one banner, not one page with eight tabs.
+      // `navParent` keeps the sidebar's "Mes classes" entry lit on all of them:
+      // they are pages OF the console, not siblings of it.
+      {
+        path: 'classes/:id',
+        component: () => import('../components/Class/ClassLayout.vue'),
+        meta: {
+          requiresAuth: true,
+          requiredPermissions: ['view_groups'],
+          requiresClassroomEntitlement: true,
+          navParent: 'my-classes'
+        },
+        children: [
+          { path: '', redirect: to => ({ name: CLASS_PAGE_NAMES.live, params: { id: to.params.id } }) },
+          { path: 'live', name: CLASS_PAGE_NAMES.live, component: () => import('../components/Class/ClassLivePage.vue') },
+          { path: 'members', name: CLASS_PAGE_NAMES.members, component: () => import('../components/Class/ClassMembersPage.vue') },
+          { path: 'scenarios', name: CLASS_PAGE_NAMES.scenarios, component: () => import('../components/Class/ClassScenariosPage.vue') },
+          { path: 'analytics', name: CLASS_PAGE_NAMES.analytics, component: () => import('../components/Class/ClassAnalyticsPage.vue') },
+          { path: 'settings', name: CLASS_PAGE_NAMES.settings, component: () => import('../components/Class/ClassSettingsPage.vue') }
+        ]
+      },
       { path: 'group-members', name: 'GroupMembers', component: GroupMembers, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresClassroomEntitlement: true } },
 
       // Organization routes

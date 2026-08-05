@@ -100,6 +100,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { formatDateTime } from '../../utils/formatters'
+import { CLASS_PAGE_NAMES } from '../../router/classPages'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -152,7 +153,7 @@ function formatDate(dateString: string): string {
 
 function navigateToDetail() {
   if (props.entity.id) {
-    router.push({ name: 'GroupDetails', params: { id: props.entity.id } })
+    router.push({ name: CLASS_PAGE_NAMES.live, params: { id: props.entity.id } })
   }
 }
 </script>

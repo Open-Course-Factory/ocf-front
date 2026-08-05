@@ -520,21 +520,21 @@ describe('MyClasses console', () => {
       expect(empty.find('[data-test="assign-scenario"]').text()).toContain('Assign a scenario')
     })
 
-    it('sends that call to action to the scenarios tab of the class', async () => {
+    it('sends that call to action to the scenarios page of the class', async () => {
       const wrapper = await mountConsole([classRow({ group_id: 'group-42', assignments: [] })])
 
       await wrapper.find('[data-test="assign-scenario"]').trigger('click')
 
       expect(mockPush).toHaveBeenCalledWith({
-        name: 'GroupDetails',
+        name: 'ClassScenarios',
         params: { id: 'group-42' },
-        query: { tab: 'scenarios' },
+        query: {},
       })
     })
   })
 
   describe('row actions', () => {
-    // The live tab holds two representations since !311 — a progression table
+    // The live page holds two representations since !311 — a progression table
     // by default, the wall of tiles under `view=wall`. Everything on this row
     // that is called "the wall" has to ask for the wall explicitly, or it
     // silently lands on the table instead.
@@ -545,9 +545,9 @@ describe('MyClasses console', () => {
       await wrapper.find('[data-test="class-row"]').trigger('click')
 
       expect(mockPush).toHaveBeenCalledWith({
-        name: 'GroupDetails',
+        name: 'ClassLive',
         params: { id: 'group-42' },
-        query: { tab: 'live', view: 'wall' },
+        query: { view: 'wall' },
       })
     })
 
@@ -557,9 +557,9 @@ describe('MyClasses console', () => {
       await wrapper.find('[data-test="class-row"]').trigger('keydown.enter')
 
       expect(mockPush).toHaveBeenCalledWith({
-        name: 'GroupDetails',
+        name: 'ClassLive',
         params: { id: 'group-42' },
-        query: { tab: 'live', view: 'wall' },
+        query: { view: 'wall' },
       })
     })
 
@@ -569,9 +569,9 @@ describe('MyClasses console', () => {
       await wrapper.find('[data-test="class-row"]').trigger('keydown.space')
 
       expect(mockPush).toHaveBeenCalledWith({
-        name: 'GroupDetails',
+        name: 'ClassLive',
         params: { id: 'group-42' },
-        query: { tab: 'live', view: 'wall' },
+        query: { view: 'wall' },
       })
     })
 
@@ -581,9 +581,9 @@ describe('MyClasses console', () => {
       await wrapper.find('[data-test="open-wall"]').trigger('click')
 
       expect(mockPush).toHaveBeenCalledWith({
-        name: 'GroupDetails',
+        name: 'ClassLive',
         params: { id: 'group-42' },
-        query: { tab: 'live', view: 'wall' },
+        query: { view: 'wall' },
       })
     })
 
@@ -596,28 +596,28 @@ describe('MyClasses console', () => {
         .toBe('Open the wall of DevOps 2026')
     })
 
-    it('reaches the learners, scenarios and settings tabs without opening the wall', async () => {
+    it('reaches the learners, scenarios and settings pages without opening the wall', async () => {
       const wrapper = await mountConsole([classRow({ group_id: 'group-42' })])
 
       await wrapper.find('[data-test="open-members"]').trigger('click')
       expect(mockPush).toHaveBeenLastCalledWith({
-        name: 'GroupDetails',
+        name: 'ClassMembers',
         params: { id: 'group-42' },
-        query: { tab: 'members' },
+        query: {},
       })
 
       await wrapper.find('[data-test="open-scenarios"]').trigger('click')
       expect(mockPush).toHaveBeenLastCalledWith({
-        name: 'GroupDetails',
+        name: 'ClassScenarios',
         params: { id: 'group-42' },
-        query: { tab: 'scenarios' },
+        query: {},
       })
 
       await wrapper.find('[data-test="open-settings"]').trigger('click')
       expect(mockPush).toHaveBeenLastCalledWith({
-        name: 'GroupDetails',
+        name: 'ClassSettings',
         params: { id: 'group-42' },
-        query: { tab: 'settings' },
+        query: {},
       })
       expect(mockPush).toHaveBeenCalledTimes(3)
     })
@@ -689,9 +689,9 @@ describe('MyClasses console', () => {
 
       await row.find('[data-test="open-analytics"]').trigger('click')
       expect(mockPush).toHaveBeenCalledWith({
-        name: 'GroupDetails',
+        name: 'ClassAnalytics',
         params: { id: 'old' },
-        query: { tab: 'analytics' },
+        query: {},
       })
     })
   })

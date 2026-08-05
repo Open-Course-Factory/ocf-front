@@ -264,7 +264,7 @@ describe('TerminalMySessions — class-group filter', () => {
     expect(wrapper.find('.dropdown-container').exists()).toBe(false)
   })
 
-  it('points the teacher at the supervision wall of the selected class', async () => {
+  it('points the teacher at the live page of the selected class', async () => {
     respondWith({ sessions: [runningSession()] })
 
     const wrapper = mountPage()
@@ -273,8 +273,7 @@ describe('TerminalMySessions — class-group filter', () => {
 
     const superviseLink = wrapper.find('[data-testid="supervise-class"]')
     expect(superviseLink.exists()).toBe(true)
-    expect(superviseLink.attributes('href')).toContain('/class-groups/group-1')
-    expect(superviseLink.attributes('href')).toContain('live')
+    expect(superviseLink.attributes('href')).toContain('/classes/group-1/live')
   })
 
   it('restores the self view when the filter is cleared', async () => {

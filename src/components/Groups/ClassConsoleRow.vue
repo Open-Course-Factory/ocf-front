@@ -158,6 +158,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useTranslations } from '../../composables/useTranslations'
 import { formatDate } from '../../utils/formatters'
+import { CLASS_PAGE_NAMES, type ClassPageKey } from '../../router/classPages'
 import {
   classDisplayName,
   isInactiveClass,
@@ -334,19 +335,20 @@ function formatDeadline(deadline: string): string {
   return formatDate(deadline, locale.value === 'en' ? 'en-GB' : 'fr-FR')
 }
 
-function open(
-  tab: 'live' | 'members' | 'scenarios' | 'settings' | 'analytics',
-  view?: 'wall'
-) {
+/**
+ * The row is the door to each page of a class: its buttons are links to real
+ * pages, not to tabs of one.
+ */
+function open(page: ClassPageKey, view?: 'wall') {
   router.push({
-    name: 'GroupDetails',
+    name: CLASS_PAGE_NAMES[page],
     params: { id: props.summary.group_id },
-    query: view ? { tab, view } : { tab }
+    query: view ? { view } : {}
   })
 }
 
 /**
- * The live tab carries two representations since front !311 — a progression
+ * The live page carries two representations since front !311 — a progression
  * table by default, the wall of tiles under `view=wall`. Both ways into it from
  * this row are named "the wall" (the button says so, the whole row's label says
  * so), so both have to ask for the wall rather than land on the table.

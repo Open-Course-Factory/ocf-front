@@ -470,8 +470,8 @@ const handleViewDetails = (node: TreeNode) => {
     // Navigate to organization detail page
     router.push(`/organizations/${node.id}`)
   } else {
-    // Navigate to group detail page
-    router.push(`/class-groups/${node.id}`)
+    // Navigate to the class pages
+    router.push(`/classes/${node.id}/live`)
   }
 }
 

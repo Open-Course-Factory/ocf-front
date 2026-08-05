@@ -27,13 +27,22 @@ import { useRouter } from 'vue-router'
 import { useClassGroupsStore } from '../../stores/classGroups'
 import { useTranslations } from '../../composables/useTranslations'
 import { withAsync } from '../../utils/asyncWrapper'
-import { formatDate } from '../../utils/formatters'
+import { formatDate, formatDateTime } from '../../utils/formatters'
+import { CLASS_PAGE_NAMES } from '../../router/classPages'
 import type { ClassGroup } from '../../types'
+import type { Organization } from '../../types/organization'
+import type { User } from '../../services/domain/user'
 import BaseModal from '../Modals/BaseModal.vue'
 import EntityModal from '../Modals/EntityModal.vue'
 
+// The class's whole configuration lives here since the "Aperçu" tab was retired:
+// what the teacher can change (name, size, expiry) next to what they can only
+// read (owner, organization, parent class, dates).
 const props = defineProps<{
   group: ClassGroup
+  ownerUser: User | null
+  groupOrganization: Organization | null
+  memberCount: number
   canEditGroup: boolean
   canDeleteGroup: boolean
 }>()
@@ -60,7 +69,15 @@ const { t } = useTranslations({
       displayName: 'Display Name',
       description: 'Description',
       maxMembers: 'Maximum Members',
+      currentMembers: 'Current Members',
       expiresAt: 'Expires',
+      owner: 'Owner',
+      organization: 'Organization',
+      noOrganization: 'No organization',
+      parentGroup: 'Parent Group',
+      noParentGroup: 'None (top-level group)',
+      createdAt: 'Created',
+      updatedAt: 'Updated',
       statusActive: 'Active',
       statusInactive: 'Inactive',
       noDescription: 'No description provided',
@@ -78,7 +95,15 @@ const { t } = useTranslations({
       displayName: 'Nom d\'affichage',
       description: 'Description',
       maxMembers: 'Membres maximum',
+      currentMembers: 'Membres actuels',
       expiresAt: 'Expire',
+      owner: 'Propriétaire',
+      organization: 'Organisation',
+      noOrganization: 'Aucune organisation',
+      parentGroup: 'Groupe parent',
+      noParentGroup: 'Aucun (groupe de niveau supérieur)',
+      createdAt: 'Créé',
+      updatedAt: 'Modifié',
       statusActive: 'Actif',
       statusInactive: 'Inactif',
       noDescription: 'Aucune description fournie',
@@ -113,7 +138,9 @@ const handleDeleteGroup = async () => {
 
       await groupStore.deleteEntity('/class-groups', props.group.id)
       emit('group-deleted')
-      router.push('/class-groups')
+      // The class this page belonged to no longer exists, so there is no page of
+      // it left to be on: back to the console the teacher navigates from.
+      router.push('/my-classes')
     },
     'groupSettings.groupDeleteError'
   )
@@ -154,6 +181,10 @@ const handleDeleteGroup = async () => {
           <label>{{ t('groupSettings.maxMembers') }}</label>
           <p>{{ group.max_members }}</p>
         </div>
+        <div class="info-item">
+          <label>{{ t('groupSettings.currentMembers') }}</label>
+          <p>{{ memberCount }}</p>
+        </div>
         <div v-if="group.expires_at" class="info-item">
           <label>{{ t('groupSettings.expiresAt') }}</label>
           <p>{{ formatDate(group.expires_at) }}</p>
@@ -165,6 +196,53 @@ const handleDeleteGroup = async () => {
               {{ group.is_active ? t('groupSettings.statusActive') : t('groupSettings.statusInactive') }}
             </span>
           </p>
+        </div>
+        <div class="info-item">
+          <label>{{ t('groupSettings.owner') }}</label>
+          <p v-if="ownerUser">
+            <span class="owner-name">{{ ownerUser.display_name || ownerUser.name }}</span>
+            <span v-if="ownerUser.email" class="owner-email">({{ ownerUser.email }})</span>
+          </p>
+          <p v-else class="text-muted">{{ group.owner_user_id }}</p>
+        </div>
+        <div class="info-item">
+          <label>{{ t('groupSettings.organization') }}</label>
+          <p v-if="groupOrganization">
+            <router-link
+              :to="{ name: 'OrganizationDetail', params: { id: groupOrganization.id } }"
+              class="related-link"
+            >
+              <i class="fas fa-building"></i>
+              {{ groupOrganization.display_name || groupOrganization.name }}
+              <i class="fas fa-external-link-alt"></i>
+            </router-link>
+          </p>
+          <p v-else-if="group.organization_id" class="text-muted">{{ group.organization_id }}</p>
+          <p v-else class="text-muted">{{ t('groupSettings.noOrganization') }}</p>
+        </div>
+        <div class="info-item">
+          <label>{{ t('groupSettings.parentGroup') }}</label>
+          <p v-if="group.parentGroup || group.parent_group">
+            <router-link
+              :to="{
+                name: CLASS_PAGE_NAMES.live,
+                params: { id: group.parentGroup?.id || group.parent_group?.id }
+              }"
+              class="related-link"
+            >
+              {{ group.parentGroup?.display_name || group.parent_group?.display_name }}
+              <i class="fas fa-external-link-alt"></i>
+            </router-link>
+          </p>
+          <p v-else class="text-muted">{{ t('groupSettings.noParentGroup') }}</p>
+        </div>
+        <div class="info-item">
+          <label>{{ t('groupSettings.createdAt') }}</label>
+          <p>{{ formatDateTime(group.created_at) }}</p>
+        </div>
+        <div class="info-item">
+          <label>{{ t('groupSettings.updatedAt') }}</label>
+          <p>{{ formatDateTime(group.updated_at) }}</p>
         </div>
       </div>
     </div>
@@ -242,6 +320,40 @@ const handleDeleteGroup = async () => {
 .info-item p {
   margin: 0;
   color: var(--color-text-primary);
+}
+
+.owner-name {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.owner-email {
+  margin-left: var(--spacing-xs);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.related-link {
+  color: var(--color-primary);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  transition: var(--transition-base);
+}
+
+.related-link:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}
+
+.related-link i {
+  font-size: var(--font-size-xs);
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+  font-style: italic;
 }
 
 .status-badge {

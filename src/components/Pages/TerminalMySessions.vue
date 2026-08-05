@@ -117,7 +117,7 @@
         <router-link
           class="btn btn-secondary btn-sm"
           data-testid="supervise-class"
-          :to="`/class-groups/${selectedGroupFilter}?tab=live`"
+          :to="`/classes/${selectedGroupFilter}/live`"
         >
           <i class="fas fa-eye"></i>
           {{ t('terminalMySessions.superviseClass') }}
