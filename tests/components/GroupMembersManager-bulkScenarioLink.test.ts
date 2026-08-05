@@ -136,9 +136,8 @@ describe('GroupMembersManager — bulk environment CTA', () => {
 
     expect(cta).toBeDefined()
     expect(cta!.props('to')).toEqual({
-      name: 'GroupDetails',
+      name: 'ClassScenarios',
       params: { id: 'test-group-id' },
-      query: { tab: 'scenarios' },
     })
   })
 

@@ -26,6 +26,7 @@ import { useBaseStore } from "./baseStore"
 import { useOrganizationsStore } from "./organizations"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
+import { CLASS_PAGE_NAMES } from '../router/classPages'
 
 /**
  * Generate URL-friendly slug from display name
@@ -424,8 +425,9 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
         }
     }
 
-    // Configure detail view route
-    base.detailRouteName.value = 'GroupDetails'
+    // Configure detail view route — the class's live page since the
+    // eight-tab detail page was split into per-page routes.
+    base.detailRouteName.value = CLASS_PAGE_NAMES.live
 
     return {
         ...base,

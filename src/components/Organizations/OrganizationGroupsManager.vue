@@ -169,6 +169,7 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import AdminBadge from '../Common/AdminBadge.vue'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
+import { CLASS_PAGE_NAMES } from '../../router/classPages'
 import { useTranslations } from '../../composables/useTranslations'
 import { useFormatters } from '../../composables/useFormatters'
 import { useClientPagination } from '../../composables/useClientPagination'
@@ -298,7 +299,7 @@ const isExpired = (expiresAt?: string): boolean => {
 }
 
 const navigateToGroup = (groupId: string) => {
-  router.push({ name: 'GroupDetails', params: { id: groupId } })
+  router.push({ name: CLASS_PAGE_NAMES.live, params: { id: groupId } })
 }
 </script>
 

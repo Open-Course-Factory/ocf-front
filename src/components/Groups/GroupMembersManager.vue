@@ -26,6 +26,7 @@ import { ref, computed } from 'vue'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import { useTranslations } from '../../composables/useTranslations'
 import { useGroupMembers, type GroupMember } from '../../composables/useGroupMembers'
+import { CLASS_PAGE_NAMES } from '../../router/classPages'
 import { formatDate } from '../../utils/formatters'
 import { userService, type User } from '../../services/domain/user'
 import { bulkImportService, type UserCredential } from '../../services/domain/bulkImport'
@@ -349,7 +350,7 @@ async function handleRemoveMember(member: GroupMember) {
         -->
         <router-link
           v-if="groupMembersComposable.canManageMembers.value && groupMembersComposable.members.value.length > 0"
-          :to="{ name: 'GroupDetails', params: { id: group.id }, query: { tab: 'scenarios' } }"
+          :to="{ name: CLASS_PAGE_NAMES.scenarios, params: { id: group.id } }"
           class="btn btn-secondary"
           data-test="bulk-scenario-link"
           :title="t('groupMembers.startScenarioForClassHint')"
