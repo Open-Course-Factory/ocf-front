@@ -71,7 +71,7 @@ function assignment(overrides: Record<string, any> = {}) {
     scenario_title: 'Hardening SSH',
     started_count: 6,
     completed_count: 3,
-    completion_rate: 0.25,
+    class_completion_rate: 25,
     avg_grade: 82,
     ...overrides,
   }
@@ -187,7 +187,7 @@ describe('MyClasses console', () => {
 
   it('names the assigned scenario and how much of the class finished it', async () => {
     const wrapper = await mountConsole([
-      classRow({ assignments: [assignment({ completion_rate: 0.25 })] }),
+      classRow({ assignments: [assignment({ class_completion_rate: 25 })] }),
     ])
 
     const row = wrapper.find('[data-test="assignment"]')
@@ -196,11 +196,12 @@ describe('MyClasses console', () => {
   })
 
   it('states progress as the fraction of the class, never as a bare percentage', async () => {
-    // completion_rate here is completed ÷ class size, while the per-scenario
-    // analytics report completed ÷ started. A naked "25%" on this row would be
-    // readable as either, so the row spells out the denominator.
+    // class_completion_rate counts distinct MEMBERS over the class size, while
+    // ScenarioAnalytics.completion_rate counts completed SESSIONS over total
+    // sessions. A naked "25%" would be readable as either metric, so the row
+    // spells out the population it is talking about.
     const wrapper = await mountConsole([
-      classRow({ member_count: 12, assignments: [assignment({ completed_count: 3, completion_rate: 0.25 })] }),
+      classRow({ member_count: 12, assignments: [assignment({ completed_count: 3, class_completion_rate: 25 })] }),
     ])
 
     const progress = wrapper.find('[data-test="assignment-progress"]')
@@ -212,7 +213,7 @@ describe('MyClasses console', () => {
   it('spells the same fraction out in French', async () => {
     i18n.global.locale.value = 'fr'
     const wrapper = await mountConsole([
-      classRow({ assignments: [assignment({ completed_count: 3, completion_rate: 0.25 })] }),
+      classRow({ assignments: [assignment({ completed_count: 3, class_completion_rate: 25 })] }),
     ])
 
     expect(wrapper.find('[data-test="assignment-progress"]').text()).toBe('3/12 ont terminé')
@@ -220,16 +221,32 @@ describe('MyClasses console', () => {
 
   it('draws the completed share of the class as the bar it fills', async () => {
     const wrapper = await mountConsole([
-      classRow({ assignments: [assignment({ completion_rate: 0.25 })] }),
+      classRow({ assignments: [assignment({ class_completion_rate: 25 })] }),
     ])
 
     expect(wrapper.find('.assignment-bar-fill').attributes('style')).toContain('width: 25%')
   })
 
+  it('fills the bar completely for a class that all finished', async () => {
+    // Mirror of the backend guard (TestGetManagedGroupsOverview_ClassCompletion
+    // Rate_IsAPercentageNotAFraction): class_completion_rate is 0..100. Were it
+    // ever normalised back to a 0..1 fraction, a finished class would draw a 1%
+    // bar and this fails instead of quietly under-reporting by 100x.
+    const wrapper = await mountConsole([
+      classRow({
+        member_count: 12,
+        assignments: [assignment({ completed_count: 12, class_completion_rate: 100 })],
+      }),
+    ])
+
+    expect(wrapper.find('[data-test="assignment-progress"]').text()).toBe('12/12 finished')
+    expect(wrapper.find('.assignment-bar-fill').attributes('style')).toContain('width: 100%')
+  })
+
   it('draws an empty bar for an assignment nobody finished', async () => {
     const wrapper = await mountConsole([
       classRow({
-        assignments: [assignment({ completed_count: 0, completion_rate: 0, avg_grade: null })],
+        assignments: [assignment({ completed_count: 0, class_completion_rate: 0, avg_grade: null })],
       }),
     ])
 
@@ -241,7 +258,7 @@ describe('MyClasses console', () => {
     const wrapper = await mountConsole([
       classRow({
         member_count: 0,
-        assignments: [assignment({ completed_count: 0, completion_rate: 0 })],
+        assignments: [assignment({ completed_count: 0, class_completion_rate: 0 })],
       }),
     ])
 

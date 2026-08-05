@@ -169,13 +169,13 @@ const liveLabel = computed(() => {
   })
 })
 
-// `completion_rate` here is completed ÷ CLASS SIZE, as a 0..1 fraction — the
-// per-scenario analytics surfaces report completed ÷ started instead, on a
-// 0..100 scale. The two answer different questions, so the row prints the
+// `class_completion_rate` is distinct MEMBERS who completed over class size —
+// a different metric from ScenarioAnalytics.completion_rate, which counts
+// completed SESSIONS over total sessions. The row therefore prints the
 // fraction it was given ("3/12 ont terminé") rather than a bare percentage a
-// reader could take for the other one; the bar only draws that same fraction.
+// reader could take for the other one; the bar only draws that same share.
 function completionBarWidth(assignment: TeacherGroupAssignment): string {
-  return `${Math.round((assignment.completion_rate || 0) * 100)}%`
+  return `${Math.round(assignment.class_completion_rate || 0)}%`
 }
 
 function formatDeadline(deadline: string): string {

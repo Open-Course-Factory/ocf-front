@@ -102,7 +102,13 @@ export interface ScenarioResultItem {
 export interface ScenarioAnalytics {
   total_sessions: number
   completed_count: number
-  // Percentage, 0..100
+  // Percentage 0..100 of SESSIONS: completed sessions over total sessions, so a
+  // learner who retries counts once per attempt.
+  //
+  // Not the same metric as TeacherGroupAssignment.class_completion_rate, which
+  // counts distinct MEMBERS over the class size. Same shape, different
+  // population — they must not be unified under one name or swapped for each
+  // other. Mirrors the note on both Go declarations.
   completion_rate: number
   // Absent when no completed session carries a grade
   avg_grade?: number
@@ -121,9 +127,14 @@ export interface TeacherGroupAssignment {
   // Distinct ACTIVE members who started / completed, not session counts.
   started_count: number
   completed_count: number
-  // Fraction 0..1 of the CLASS that completed — NOT the 0..100 percentage
-  // ScenarioAnalytics.completion_rate carries. Multiply before display.
-  completion_rate: number
+  // Percentage 0..100 of the CLASS: distinct members who completed over class
+  // size, so a learner who retries still counts once.
+  //
+  // Not the same metric as ScenarioAnalytics.completion_rate, which counts
+  // completed SESSIONS over total sessions. The differing name is deliberate
+  // (ocf-core !357): same shape, different population, so they must not be
+  // unified or swapped. Mirrors the note on both Go declarations.
+  class_completion_rate: number
   // Average grade over completed sessions, on the same 0..100 scale as
   // ScenarioResultItem.grade. Null until somebody finishes.
   avg_grade?: number | null
