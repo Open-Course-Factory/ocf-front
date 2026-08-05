@@ -161,6 +161,12 @@ const basicRoutes = [
       { path: 'my-scenarios', name: 'MyScenarios', component: () => import('../components/Pages/MyScenarios.vue'), meta: { requiresAuth: true } },
       { path: 'terminal-session/:sessionId', name: 'TerminalSessionView', component: () => import('../components/Pages/TerminalSessionView.vue'), meta: { requiresAuth: true, collapseNav: true } },
       { path: 'user-terminal-keys', name: 'UserTerminalKeys', component: UserTerminalKeys, meta: { requiresAuth: true, isSettings: true } },
+      // The teaching console lists the classes the caller owns or manages
+      // across every organization, so it carries no org-scoped classroom
+      // entitlement the way the group CRUD pages below do — the endpoint is
+      // self-scoped and a teacher must be able to reach their classes whatever
+      // organization context they happen to be in.
+      { path: 'my-classes', name: 'MyClasses', component: () => import('../components/Pages/MyClasses.vue'), meta: { requiresAuth: true, requiredPermissions: ['view_groups'] } },
       { path: 'class-groups', name: 'ClassGroups', component: ClassGroups, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresClassroomEntitlement: true } },
       { path: 'class-groups-hierarchy', name: 'GroupHierarchyEditor', component: GroupHierarchyEditor, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresClassroomEntitlement: true } },
       { path: 'class-groups/:id', name: 'GroupDetails', component: GroupDetails, meta: { requiresAuth: true, requiredPermissions: ['view_groups'], requiresClassroomEntitlement: true } },

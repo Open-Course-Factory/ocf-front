@@ -110,7 +110,56 @@ export interface ScenarioAnalytics {
   avg_completion_time_seconds?: number
 }
 
+// One scenario assignment on a "Mes classes" console row, with the class's
+// progress on it. Mirror of services.TeacherGroupAssignment in ocf-core.
+export interface TeacherGroupAssignment {
+  assignment_id: string
+  scenario_id: string
+  scenario_title: string
+  start_date?: string
+  deadline?: string
+  // Distinct ACTIVE members who started / completed, not session counts.
+  started_count: number
+  completed_count: number
+  // Fraction 0..1 of the CLASS that completed — NOT the 0..100 percentage
+  // ScenarioAnalytics.completion_rate carries. Multiply before display.
+  completion_rate: number
+  // Average grade over completed sessions, on the same 0..100 scale as
+  // ScenarioResultItem.grade. Null until somebody finishes.
+  avg_grade?: number | null
+}
+
+// One class the caller owns or manages, as the console lists it. Mirror of
+// services.TeacherGroupSummary in ocf-core (GET /teacher/groups).
+//
+// Archived and expired classes are returned flagged rather than omitted, so a
+// consumer that hides them is hiding them on purpose.
+export interface TeacherGroupSummary {
+  group_id: string
+  name: string
+  display_name: string
+  organization_id?: string
+  caller_role: 'owner' | 'manager'
+  is_active: boolean
+  expires_at?: string
+  is_expired: boolean
+  member_count: number
+  live_session_count: number
+  assignments: TeacherGroupAssignment[]
+}
+
 export const teacherService = {
+  // --- Cross-class overview ---
+
+  // Every class the caller owns or manages, with its live sessions and
+  // assignment progress, in one request. The console renders this list and the
+  // group cards read their live counts from the same response — see
+  // stores/teacherGroups.ts.
+  async getManagedGroups(): Promise<TeacherGroupSummary[]> {
+    const response = await axios.get('/teacher/groups')
+    return Array.isArray(response.data) ? response.data : []
+  },
+
   // --- Group scenario assignment operations ---
 
   async getGroupAssignments(groupId: string): Promise<any[]> {

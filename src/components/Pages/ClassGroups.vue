@@ -22,13 +22,28 @@
 -->
 
 <script setup lang="ts">
+import { onMounted } from 'vue';
 import { useClassGroupsStore } from '../../stores/classGroups';
 import { useOrganizationsStore } from '../../stores/organizations';
+import { useTeacherGroupsStore } from '../../stores/teacherGroups';
 import Entity from './Entity.vue';
 import GroupCard from '../Cards/GroupCard.vue';
 
+// Refresh rate the "Mes classes" console promises for the same counts; asking
+// for data no older than that keeps the two surfaces telling the same story.
+const LIVE_COUNT_MAX_AGE_MS = 30000;
+
 const entityStore = useClassGroupsStore();
 const organizationsStore = useOrganizationsStore();
+const teacherGroupsStore = useTeacherGroupsStore();
+
+// One request for the whole page: the live counters of every class the viewer
+// teaches come from the console's cross-group endpoint, so no card fetches
+// anything. Cards for groups the viewer does not teach get `undefined` and show
+// no counter.
+onMounted(() => {
+    teacherGroupsStore.ensureLoaded(LIVE_COUNT_MAX_AGE_MS);
+});
 
 // Cards name the organization and the parent group, but `/class-groups` returns
 // only their IDs. Both are resolved from lists the session already holds — the
@@ -55,6 +70,7 @@ function parentGroupName(parentGroupId?: string): string | undefined {
                     :entity="entity"
                     :organization-name="organizationName(entity.organization_id)"
                     :parent-group-name="parentGroupName(entity.parent_group_id)"
+                    :live-session-count="teacherGroupsStore.liveSessionCountOf(entity.id)"
                 />
             </template>
         </Entity>

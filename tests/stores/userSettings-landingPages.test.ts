@@ -73,9 +73,22 @@ describe('userSettings — default landing page options', () => {
     expect(pages.map((page) => page.value)).not.toContain('/class-groups')
   })
 
+  it('offers the teaching console when the class_groups flag is on', () => {
+    const pages = landingPagesFor('en', ['class_groups'])
+
+    expect(pages.map((page) => page.value)).toContain('/my-classes')
+  })
+
+  it('withholds the teaching console when the class_groups flag is off', () => {
+    const pages = landingPagesFor('en', ['course_conception', 'terminal_management'])
+
+    expect(pages.map((page) => page.value)).not.toContain('/my-classes')
+  })
+
   it('labels every offered page in English', () => {
     const pages = landingPagesFor('en', ['class_groups', 'course_conception', 'terminal_management'])
 
+    expect(labelOf(pages, '/my-classes')).toBe('My classes')
     expect(labelOf(pages, '/class-groups')).toBe('Groups')
     expect(labelOf(pages, '/courses')).toBe('Courses')
     expect(labelOf(pages, '/terminal-sessions')).toBe('Terminal sessions')
@@ -85,6 +98,7 @@ describe('userSettings — default landing page options', () => {
   it('labels every offered page in French', () => {
     const pages = landingPagesFor('fr', ['class_groups', 'course_conception', 'terminal_management'])
 
+    expect(labelOf(pages, '/my-classes')).toBe('Mes classes')
     expect(labelOf(pages, '/class-groups')).toBe('Groupes')
     expect(labelOf(pages, '/courses')).toBe('Cours')
     expect(labelOf(pages, '/terminal-sessions')).toBe('Sessions de terminal')

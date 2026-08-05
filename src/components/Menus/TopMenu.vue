@@ -183,6 +183,7 @@ import { useOrganizationsStore } from '../../stores/organizations.ts';
 
 import { useAdminViewMode } from '../../composables/useAdminViewMode';
 import { useVersionInfo } from '../../composables/useVersionInfo';
+import { resolveLandingPage } from '../../composables/useLandingPage';
 import AlphaBadge from '../Common/AlphaBadge.vue';
 import LanguageSelector from '../UI/LanguageSelector.vue';
 
@@ -298,17 +299,9 @@ function handleDisconnect() {
 
 async function navigateToHome() {
   try {
-    // Load user settings to get default landing page
-    const settings = await settingsStore.loadSettings();
-    let landingPage = settings.default_landing_page;
-
-    // Validate the saved landing page exists in the current available pages
-    const validPages = settingsStore.availablePages.map((p: { value: string }) => p.value);
-    if (!landingPage || !validPages.includes(landingPage)) {
-      landingPage = '/terminal-sessions';
-    }
-
-    router.push(landingPage);
+    // Home is resolved in one place for the whole app — see useLandingPage.
+    await settingsStore.loadSettings();
+    router.push(await resolveLandingPage());
   } catch (error) {
     console.error('Error loading default landing page:', error);
     // Fallback to subscription dashboard

@@ -81,6 +81,7 @@ import { useUserMembershipsStore } from '../../stores/userMemberships.ts';
 import { useLocale } from '../../composables/useLocale';
 import { useTheme } from '../../composables/useTheme';
 import { useFeatureFlags } from '../../composables/useFeatureFlags';
+import { resolveLandingPage } from '../../composables/useLandingPage';
 import { useTranslations } from '../../composables/useTranslations';
 
 const { t } = useTranslations({
@@ -183,14 +184,7 @@ async function redirect() {
         setTheme(settings.theme as 'light' | 'dark' | 'auto');
       }
 
-      // Determine redirect based on user preference and available pages
-      let landingPage = settings.default_landing_page;
-
-      // Validate the saved landing page exists in the current available pages
-      const validPages = settingsStore.availablePages.map((p: { value: string }) => p.value);
-      if (!landingPage || !validPages.includes(landingPage)) {
-        landingPage = '/terminal-sessions';
-      }
+      const landingPage = await resolveLandingPage();
 
       // Check for redirect query parameter (e.g., from session expiry)
       const redirectParam = route.query.redirect as string | undefined

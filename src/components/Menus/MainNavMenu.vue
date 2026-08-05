@@ -3,6 +3,16 @@
     <nav class="menu-nav">
       <div class="menu-top">
         <ul>
+          <li v-if="showMyClasses" class="my-classes-entry">
+            <NavMenuItem
+              to="/my-classes"
+              :label="t('navigation.myClasses')"
+              icon="fas fa-chalkboard-teacher"
+              :tooltip="isMenuCollapsed ? t('navigation.myClassesTitle') : ''"
+              :disabled="myClassesDisabled"
+              @click="handleMenuItemClick"
+            />
+          </li>
           <NavCategory
             v-for="category in filteredTopCategories"
             :key="category.key"
@@ -592,6 +602,16 @@ const filteredCategories = computed(() => {
 });
 
 // Split categories into top (functional) and bottom (utility/admin) sections
+// "Mes classes" is the teacher's home, so it sits above the categories rather
+// than inside Groups — but it is the same feature. Its visibility and its
+// disabled state are READ OFF the Groups category rather than re-derived, so
+// the flag, permission and plan conditions can never drift apart.
+const groupsCategory = computed(() =>
+  filteredCategories.value.find(category => category.key === 'groups')
+)
+const showMyClasses = computed(() => groupsCategory.value !== undefined)
+const myClassesDisabled = computed(() => groupsCategory.value?.disabled === true)
+
 const bottomCategoryKeys = new Set(['subscription', 'help', 'admin'])
 
 const filteredTopCategories = computed(() =>

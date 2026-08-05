@@ -39,6 +39,19 @@
           <i class="fas fa-user-friends"></i>
           <span class="members-label">{{ t('classGroups.member_count') }}</span>
           <span class="members-count">{{ entity.member_count ?? 0 }} / {{ entity.max_members ?? '?' }}</span>
+          <!-- Always rendered, so a count arriving (or a group turning out not
+               to be ours) never reflows the card. -->
+          <span
+            class="live-slot"
+            :class="{ 'is-live': hasLiveSessions }"
+            data-test="live-slot"
+            :title="liveSessionCount !== undefined ? t('classGroups.liveSessions') : undefined"
+          >
+            <template v-if="liveSessionCount !== undefined">
+              <span class="live-dot" aria-hidden="true"></span>
+              <span data-test="live-count">{{ liveSessionCount }}</span>
+            </template>
+          </span>
         </div>
         <div v-if="entity.max_members" class="members-progress">
           <div
@@ -99,7 +112,14 @@ const props = defineProps<{
   entity: any
   organizationName?: string
   parentGroupName?: string
+  // Live terminal sessions in this group, for the classes the viewer teaches.
+  // `undefined` means "not a class of mine" — the card then shows no counter at
+  // all, which is why it is not defaulted to 0. Supplied by the caller from the
+  // teacherGroups cache; the card never fetches it.
+  liveSessionCount?: number
 }>()
+
+const hasLiveSessions = computed(() => (props.liveSessionCount ?? 0) > 0)
 
 const progressPercent = computed(() => {
   if (!props.entity.max_members || props.entity.max_members <= 0) return 0
@@ -271,6 +291,46 @@ function navigateToDetail() {
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
   font-variant-numeric: tabular-nums;
+}
+
+/* Reserved width: the slot occupies the same room empty or filled. */
+.live-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-xs);
+  min-width: 3.5ch;
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.live-slot.is-live {
+  color: var(--color-success);
+  font-weight: var(--font-weight-semibold);
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-gray-400);
+}
+
+.live-slot.is-live .live-dot {
+  background: var(--color-success);
+  animation: card-live-pulse 2s ease-in-out infinite;
+}
+
+@keyframes card-live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.35); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-slot.is-live .live-dot {
+    animation: none;
+  }
 }
 
 .members-progress {

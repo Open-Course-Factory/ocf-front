@@ -72,7 +72,8 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
                     courses: "Courses",
                     subscriptionDashboard: "Subscription dashboard",
                     terminalSessions: "Terminal sessions",
-                    classGroups: "Groups"
+                    classGroups: "Groups",
+                    myClasses: "My classes"
                 },
                 localization: {
                     title: "Localization",
@@ -173,7 +174,8 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
                     courses: "Cours",
                     subscriptionDashboard: "Tableau de bord d'abonnement",
                     terminalSessions: "Sessions de terminal",
-                    classGroups: "Groupes"
+                    classGroups: "Groupes",
+                    myClasses: "Mes classes"
                 },
                 localization: {
                     title: "Localisation",
@@ -273,7 +275,8 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
         { value: '/courses', labelKey: 'userSettings.pages.courses', featureFlag: 'course_conception' },
         { value: '/subscription-dashboard', labelKey: 'userSettings.pages.subscriptionDashboard' },
         { value: '/terminal-sessions', labelKey: 'userSettings.pages.terminalSessions', featureFlag: 'terminal_management' },
-        { value: '/class-groups', labelKey: 'userSettings.pages.classGroups', featureFlag: 'class_groups' }
+        { value: '/class-groups', labelKey: 'userSettings.pages.classGroups', featureFlag: 'class_groups' },
+        { value: '/my-classes', labelKey: 'userSettings.pages.myClasses', featureFlag: 'class_groups' }
     ]
 
     const availablePages = computed(() => {

@@ -19,5 +19,7 @@ export type {
   SessionStepQuestionDetail,
   SessionDetailResponse,
   SessionCommand,
-  SessionCommandsResponse
+  SessionCommandsResponse,
+  TeacherGroupSummary,
+  TeacherGroupAssignment
 } from './teacherService'
