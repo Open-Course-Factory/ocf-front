@@ -48,7 +48,11 @@ function summary(overrides: Record<string, any> = {}) {
     caller_role: 'owner',
     is_active: true,
     is_expired: false,
-    member_count: 12,
+    // Twelve apprenants and their teacher, who is a member of the class too:
+    // the two counts differ on purpose so a consumer reading one for the other
+    // is caught here (#480).
+    member_count: 13,
+    learner_count: 12,
     live_session_count: 3,
     assignments: [],
     ...overrides,
@@ -156,6 +160,39 @@ describe('teacherGroups store', () => {
     await store.loadGroups()
 
     expect(store.liveSessionCountOf('group-1')).toBe(0)
+  })
+
+  it('reports the apprenants of a class, not its roster', async () => {
+    // The teacher and their assistant are members too (#480); the banner that
+    // states "X/N connectés" over this number must not count them.
+    mockGet.mockResolvedValueOnce({ data: [summary({ member_count: 14, learner_count: 12 })] })
+    const store = useTeacherGroupsStore()
+
+    await store.loadGroups()
+
+    expect(store.learnerCountOf('group-1')).toBe(12)
+  })
+
+  it('falls back to the roster while the backend does not report the apprenants', async () => {
+    // Pre-!361 payloads carry no learner_count. Reading absent as zero would
+    // report every class of such a deployment as having nobody in it.
+    const { learner_count, ...beforeLearnerCount } = summary({ member_count: 12 })
+    mockGet.mockResolvedValueOnce({ data: [beforeLearnerCount] })
+    const store = useTeacherGroupsStore()
+
+    await store.loadGroups()
+
+    expect(store.learnerCountOf('group-1')).toBe(12)
+  })
+
+  it('reports a class of teaching staff as having no apprenant, not as unknown', async () => {
+    mockGet.mockResolvedValueOnce({ data: [summary({ member_count: 1, learner_count: 0 })] })
+    const store = useTeacherGroupsStore()
+
+    await store.loadGroups()
+
+    expect(store.learnerCountOf('group-1')).toBe(0)
+    expect(store.learnerCountOf('someone-elses-class')).toBeUndefined()
   })
 
   it('treats a teacher with no classes as loaded, not as an error', async () => {

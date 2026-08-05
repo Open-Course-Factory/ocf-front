@@ -177,13 +177,26 @@ const memberCount = computed(() => {
 const liveSessionCount = computed(() => teacherGroups.liveSessionCountOf(groupId.value))
 
 /**
+ * The class as the banner counts it: its APPRENANTS (issue #480), from the same
+ * console payload the live count above comes from, so numerator and denominator
+ * are computed over one population.
+ *
+ * The roster answers only for a backend that does not report the apprenants yet,
+ * and for a class the caller merely attends — where the label is hidden anyway.
+ * It counts the teaching staff, which is why it is the fallback and not the rule.
+ */
+const learnerCount = computed(() =>
+  teacherGroups.learnerCountOf(groupId.value) ?? memberCount.value
+)
+
+/**
  * "7/12 connectés", or empty while the live count is unknown — for a class the
  * caller does not teach it stays unknown, since the console endpoint only
  * answers for the classes they manage. The slot is held either way.
  */
 const connectedLabel = computed(() => {
   if (liveSessionCount.value === undefined || !group.value) return ''
-  return t('classLayout.connected', { live: liveSessionCount.value, total: memberCount.value })
+  return t('classLayout.connected', { live: liveSessionCount.value, total: learnerCount.value })
 })
 
 const connectedPlaceholder = computed(() => t('classLayout.connected', { live: 0, total: 0 }))
@@ -257,6 +270,13 @@ function applyMemberCountDelta(delta: number): void {
   // or removing a member changes ITS list, not this one. Carrying the difference
   // keeps the banner honest without refetching a roster for a number.
   memberCountDelta.value += delta
+
+  // The apprenant count is core's to compute — a delta cannot know whether the
+  // person just added is a learner or an assistant. useGroupMembers marks the
+  // console cache stale on every membership change, so asking for it again is
+  // what moves the banner's denominator; without this the class the teacher is
+  // filling right now would keep answering with the count it opened on.
+  teacherGroups.ensureLoaded(LIVE_COUNT_MAX_AGE_MS)
 }
 
 provideClassContext({

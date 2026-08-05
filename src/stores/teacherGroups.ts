@@ -21,7 +21,11 @@
 
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { teacherService, type TeacherGroupSummary } from '../services/domain/scenario/teacherService'
+import {
+  classLearnerCount,
+  teacherService,
+  type TeacherGroupSummary
+} from '../services/domain/scenario/teacherService'
 import { useOrganizationsStore } from './organizations'
 
 /**
@@ -101,6 +105,22 @@ export const useTeacherGroupsStore = defineStore('teacherGroups', () => {
   const liveSessionCountOf = (groupId: string): number | undefined =>
     liveSessionCountByGroupId.value[groupId]
 
+  /**
+   * The apprenants of one class, or `undefined` when the caller does not manage
+   * it — the same "not zero, unknown" distinction as `liveSessionCountOf` above,
+   * and for the same reason: a class page the caller only attends gets no count
+   * rather than a wrong one.
+   *
+   * It exists here so the class banner states its "X/N connectés" over the very
+   * payload the X comes from. A page counting the roster itself would put a
+   * numerator core computed over apprenants above a denominator counting the
+   * teacher — the drift issue #480 is about.
+   */
+  const learnerCountOf = (groupId: string): number | undefined => {
+    const group = groups.value.find(candidate => candidate.group_id === groupId)
+    return group ? classLearnerCount(group) : undefined
+  }
+
   const loadGroups = async (): Promise<void> => {
     isLoading.value = true
     error.value = ''
@@ -174,6 +194,7 @@ export const useTeacherGroupsStore = defineStore('teacherGroups', () => {
     managesClassInAnotherOrganization,
     liveSessionCountByGroupId,
     liveSessionCountOf,
+    learnerCountOf,
     loadGroups,
     ensureLoaded,
     markStale,

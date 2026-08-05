@@ -28,6 +28,7 @@ import { createRouter, createMemoryHistory } from 'vue-router'
 const getOne = vi.fn()
 const axiosGet = vi.fn()
 const liveSessionCountOf = vi.fn()
+const learnerCountOf = vi.fn()
 const ensureLoaded = vi.fn()
 
 vi.mock('axios', () => ({
@@ -50,7 +51,8 @@ vi.mock('../../src/stores/currentUser', () => ({
 vi.mock('../../src/stores/teacherGroups', () => ({
   useTeacherGroupsStore: () => ({
     ensureLoaded: (...args: unknown[]) => ensureLoaded(...args),
-    liveSessionCountOf: (...args: unknown[]) => liveSessionCountOf(...args)
+    liveSessionCountOf: (...args: unknown[]) => liveSessionCountOf(...args),
+    learnerCountOf: (...args: unknown[]) => learnerCountOf(...args)
   })
 }))
 
@@ -106,14 +108,17 @@ function classPayload(overrides: Record<string, unknown> = {}) {
 function pageStub(label: string) {
   return defineComponent({
     setup() {
-      const { group, canManageClass } = useClassContext()
+      const { group, canManageClass, applyMemberCountDelta } = useClassContext()
       const loadedOnMount = ref('')
       onMounted(() => {
         loadedOnMount.value = `${group.value?.display_name}/${canManageClass.value}`
       })
-      return { loadedOnMount, label }
+      return { loadedOnMount, label, applyMemberCountDelta }
     },
-    template: `<div class="page-stub" :data-page="label">{{ loadedOnMount }}</div>`
+    // The empty button stands in for the members page reporting an enrolment —
+    // what the banner's counts have to react to. It carries no text so the stub
+    // still reads as exactly what it loaded on mount.
+    template: `<div class="page-stub" :data-page="label">{{ loadedOnMount }}<button data-test="enrol" @click="applyMemberCountDelta(1)"></button></div>`
   })
 }
 
@@ -179,6 +184,7 @@ describe('the class banner — what it says about the class', () => {
     getOne.mockResolvedValue(classPayload({ owner_user_id: 'u-caller' }))
     axiosGet.mockResolvedValue({ data: [] })
     liveSessionCountOf.mockReturnValue(undefined)
+    learnerCountOf.mockReturnValue(undefined)
   })
 
   it('names the class and links back to the console', async () => {
@@ -203,8 +209,26 @@ describe('the class banner — what it says about the class', () => {
     expect(wrapper.find('.crumb-current').text()).toBe('Promo A')
   })
 
-  it('shows how many learners are connected, out of the roster', async () => {
+  it('shows how many learners are connected, out of the apprenants', async () => {
+    // Fifteen on the roster, twelve of them apprenants: the three managers are
+    // in neither figure (issue #480), so a full house reads 12/12 and not 12/15.
     liveSessionCountOf.mockReturnValue(7)
+    learnerCountOf.mockReturnValue(12)
+    axiosGet.mockResolvedValue({
+      data: Array.from({ length: 15 }, (_, i) => ({ id: `m-${i}`, user_id: `u-${i}`, role: 'member' }))
+    })
+
+    const wrapper = await mountAt(createTestRouter(), '/classes/g-1/live')
+
+    expect(wrapper.find('.banner-live').text()).toContain('7/12 connected')
+    expect(wrapper.find('.banner-live').classes()).not.toContain('is-pending')
+  })
+
+  it('counts the roster while the backend does not report the apprenants', async () => {
+    // A deployment older than core !361 reports no learner count at all. The
+    // banner then says what it always said rather than claiming an empty class.
+    liveSessionCountOf.mockReturnValue(7)
+    learnerCountOf.mockReturnValue(undefined)
     axiosGet.mockResolvedValue({
       data: Array.from({ length: 12 }, (_, i) => ({ id: `m-${i}`, user_id: `u-${i}`, role: 'member' }))
     })
@@ -212,7 +236,36 @@ describe('the class banner — what it says about the class', () => {
     const wrapper = await mountAt(createTestRouter(), '/classes/g-1/live')
 
     expect(wrapper.find('.banner-live').text()).toContain('7/12 connected')
-    expect(wrapper.find('.banner-live').classes()).not.toContain('is-pending')
+  })
+
+  it('states a class of teaching staff as having no apprenant', async () => {
+    // learner_count 0 is an answer, not a silence: a class its teacher just
+    // created has a roster of one and nobody to connect.
+    liveSessionCountOf.mockReturnValue(0)
+    learnerCountOf.mockReturnValue(0)
+    axiosGet.mockResolvedValue({
+      data: [{ id: 'm-1', user_id: 'u-caller', role: 'owner' }]
+    })
+
+    const wrapper = await mountAt(createTestRouter(), '/classes/g-1/live')
+
+    expect(wrapper.find('.banner-live').text()).toContain('0/0 connected')
+  })
+
+  it('asks the console cache again when a page enrols somebody', async () => {
+    // Only core knows whether the person just added is an apprenant or an
+    // assistant, so the banner refetches instead of adding one to a count it
+    // did not compute. Without this the denominator would stay at the value the
+    // class opened on for as long as the teacher stays on it.
+    liveSessionCountOf.mockReturnValue(0)
+    learnerCountOf.mockReturnValue(0)
+
+    const wrapper = await mountAt(createTestRouter(), '/classes/g-1/members')
+    expect(ensureLoaded).toHaveBeenCalledTimes(1)
+
+    await wrapper.find('[data-test="enrol"]').trigger('click')
+
+    expect(ensureLoaded).toHaveBeenCalledTimes(2)
   })
 
   it('reads the live count off the console cache rather than asking per class', async () => {
@@ -262,6 +315,7 @@ describe('the class banner — page links while the caller’s role loads', () =
     vi.clearAllMocks()
     getOne.mockResolvedValue(classPayload())
     liveSessionCountOf.mockReturnValue(undefined)
+    learnerCountOf.mockReturnValue(undefined)
     rosterFetches = []
     axiosGet.mockImplementation((url: string) => {
       if (url !== '/group-members') return Promise.resolve({ data: {} })
@@ -332,6 +386,7 @@ describe('the class banner — moving between pages', () => {
     getOne.mockResolvedValue(classPayload({ owner_user_id: 'u-caller' }))
     axiosGet.mockResolvedValue({ data: [] })
     liveSessionCountOf.mockReturnValue(undefined)
+    learnerCountOf.mockReturnValue(undefined)
   })
 
   it('says which page is open, and only that one', async () => {
@@ -377,6 +432,7 @@ describe('the class banner — a page the caller may not open', () => {
     vi.clearAllMocks()
     getOne.mockResolvedValue(classPayload())
     liveSessionCountOf.mockReturnValue(undefined)
+    learnerCountOf.mockReturnValue(undefined)
   })
 
   it('sends a plain member from the live page to the roster, the first page they can open', async () => {
@@ -441,6 +497,7 @@ describe('the class banner — moving to another class', () => {
     vi.clearAllMocks()
     axiosGet.mockResolvedValue({ data: [] })
     liveSessionCountOf.mockReturnValue(undefined)
+    learnerCountOf.mockReturnValue(undefined)
     getOne.mockImplementation(async (id: string) =>
       classPayload({ id, owner_user_id: 'u-caller', display_name: id === 'g-1' ? 'Promo A' : 'Promo B' })
     )
