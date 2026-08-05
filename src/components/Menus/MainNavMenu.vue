@@ -3,15 +3,19 @@
     <nav class="menu-nav">
       <div class="menu-top">
         <ul>
-          <li v-if="showMyClasses" class="my-classes-entry">
-            <NavMenuItem
+          <li v-if="showMyClasses" class="my-classes-entry" :class="{ 'my-classes-entry--disabled': myClassesDisabled }">
+            <component
+              :is="myClassesDisabled ? 'span' : 'router-link'"
               to="/my-classes"
-              :label="t('navigation.myClasses')"
-              icon="fas fa-chalkboard-teacher"
-              :tooltip="isMenuCollapsed ? t('navigation.myClassesTitle') : ''"
-              :disabled="myClassesDisabled"
-              @click="handleMenuItemClick"
-            />
+              class="category-header my-classes-header"
+              :title="myClassesDisabled ? (groupsCategory?.disabledTooltip || '') : (isMenuCollapsed ? t('navigation.myClassesTitle') : '')"
+              :aria-disabled="myClassesDisabled ? 'true' : undefined"
+              @click="!myClassesDisabled && handleMenuItemClick()"
+            >
+              <i class="fas fa-chalkboard-teacher"></i>
+              <span class="menu-text category-title">{{ t('navigation.myClasses') }}</span>
+              <i v-if="myClassesDisabled" class="fas fa-lock my-classes-lock-icon" aria-hidden="true"></i>
+            </component>
           </li>
           <NavCategory
             v-for="category in filteredTopCategories"
@@ -700,6 +704,65 @@ onMounted(async () => {
 
 .menu-bottom-toggle-icon.rotated {
   transform: rotate(180deg);
+}
+
+/* "Mes classes" — a direct link dressed exactly like a category header, so the
+   teacher's home reads as a peer of the categories below it, not a stray item.
+   Visual rules mirror NavCategory's .category-header (scoped there, so restated). */
+.my-classes-entry {
+  margin-bottom: var(--spacing-sm);
+  position: relative;
+}
+
+.my-classes-entry--disabled {
+  opacity: 0.5;
+}
+
+.my-classes-header {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-md);
+  color: var(--color-white);
+  background-color: var(--color-gray-700);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: background-color var(--transition-slow), transform var(--transition-slow);
+  user-select: none;
+  min-height: 50px;
+  box-sizing: border-box;
+  text-decoration: none;
+}
+
+.my-classes-header:hover {
+  background-color: var(--color-gray-600);
+  transform: translateX(3px);
+}
+
+.my-classes-header.router-link-active {
+  background-color: var(--color-gray-600);
+}
+
+.my-classes-header i:first-child {
+  width: 20px;
+  text-align: center;
+  margin-right: var(--spacing-md);
+  flex-shrink: 0;
+}
+
+.my-classes-lock-icon {
+  margin-left: auto;
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-400);
+  flex-shrink: 0;
+}
+
+.my-classes-entry--disabled .my-classes-header {
+  cursor: not-allowed;
+}
+
+.my-classes-entry--disabled .my-classes-header:hover {
+  transform: none;
+  background-color: var(--color-gray-700);
 }
 
 .main-menu.collapsed {
