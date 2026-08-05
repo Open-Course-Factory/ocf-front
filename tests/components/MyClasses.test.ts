@@ -350,12 +350,17 @@ describe('MyClasses console', () => {
     expect(wrapper.find('[data-test="class-org"]').exists()).toBe(false)
   })
 
-  it('offers to create a group when the teacher has no classes at all', async () => {
+  it('offers to create a class in place when the teacher has none at all', async () => {
     const wrapper = await mountConsole([])
 
     expect(wrapper.find('[data-test="empty-state"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="class-row"]').exists()).toBe(false)
-    expect(wrapper.findComponent(RouterLinkStub).props('to')).toBe('/class-groups')
+
+    // The CTA opens the creation modal right here — no detour through the
+    // /class-groups entity page (the ask behind the header's create button too).
+    expect(wrapper.find('[data-test="create-class"]').exists()).toBe(true)
+    await wrapper.find('[data-test="empty-cta"]').trigger('click')
+    expect(wrapper.findComponent({ name: 'EntityModal' }).exists()).toBe(true)
   })
 
   it('reserves the row heights with skeletons while the classes load', async () => {

@@ -16,17 +16,28 @@
         <h2>{{ t('myClasses.title') }}</h2>
         <p class="page-subtitle">{{ t('myClasses.subtitle') }}</p>
       </div>
-      <button
-        type="button"
-        class="refresh-button"
-        data-test="refresh"
-        :title="t('myClasses.refresh')"
-        :disabled="store.isLoading"
-        @click="store.loadGroups()"
-      >
-        <i class="fas fa-sync-alt" :class="{ 'fa-spin': store.isLoading }"></i>
-        <span>{{ t('myClasses.refresh') }}</span>
-      </button>
+      <div class="header-actions">
+        <button
+          type="button"
+          class="btn btn-primary create-button"
+          data-test="create-class"
+          @click="showCreateModal = true"
+        >
+          <i class="fas fa-plus"></i>
+          <span>{{ t('myClasses.createClass') }}</span>
+        </button>
+        <button
+          type="button"
+          class="refresh-button"
+          data-test="refresh"
+          :title="t('myClasses.refresh')"
+          :disabled="store.isLoading"
+          @click="store.loadGroups()"
+        >
+          <i class="fas fa-sync-alt" :class="{ 'fa-spin': store.isLoading }"></i>
+          <span>{{ t('myClasses.refresh') }}</span>
+        </button>
+      </div>
     </div>
 
     <div v-if="store.error" class="load-error" data-test="load-error">
@@ -51,9 +62,9 @@
       <div v-else-if="showEmptyState" class="empty-state" data-test="empty-state">
         <i class="fas fa-chalkboard-teacher"></i>
         <p>{{ t('myClasses.empty') }}</p>
-        <router-link to="/class-groups" class="btn btn-primary" data-test="empty-cta">
+        <button type="button" class="btn btn-primary" data-test="empty-cta" @click="showCreateModal = true">
           {{ t('myClasses.emptyCta') }}
-        </router-link>
+        </button>
       </div>
 
       <template v-else>
@@ -65,16 +76,29 @@
         />
       </template>
     </div>
+
+    <EntityModal
+      v-if="showCreateModal"
+      :visible="showCreateModal"
+      :entity="null"
+      :entity-store="classGroupsStore"
+      entity-name="class-groups"
+      :fieldList="classGroupsStore.fieldList"
+      @submit="createClass"
+      @close="showCreateModal = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useVisiblePolling } from '../../composables/useVisiblePolling'
 import { useTeacherGroupsStore } from '../../stores/teacherGroups'
 import { useOrganizationsStore } from '../../stores/organizations'
+import { useClassGroupsStore } from '../../stores/classGroups'
 import ClassConsoleRow from '../Groups/ClassConsoleRow.vue'
+import EntityModal from '../Modals/EntityModal.vue'
 import type { TeacherGroupSummary } from '../../services/domain/scenario/teacherService'
 
 const SKELETON_ROWS = 3
@@ -82,6 +106,22 @@ const REFRESH_INTERVAL_MS = 30000
 
 const store = useTeacherGroupsStore()
 const organizationsStore = useOrganizationsStore()
+const classGroupsStore = useClassGroupsStore()
+
+const showCreateModal = ref(false)
+
+// Same call Entity.vue makes on /class-groups, so the subgroup after-create
+// hook and its partial-failure reporting run identically here. The console
+// list refetches because the new class comes from a different endpoint.
+async function createClass(data: Record<string, string>) {
+  try {
+    await classGroupsStore.createEntity('/class-groups', data)
+    showCreateModal.value = false
+    await store.loadGroups()
+  } catch (error) {
+    console.error('Error while creating class', error)
+  }
+}
 
 const { t } = useTranslations({
   en: {
@@ -91,7 +131,8 @@ const { t } = useTranslations({
       refresh: 'Refresh',
       retry: 'Retry',
       empty: 'You do not manage any class yet.',
-      emptyCta: 'Create a group'
+      emptyCta: 'Create a class',
+      createClass: 'New class'
     }
   },
   fr: {
@@ -101,7 +142,8 @@ const { t } = useTranslations({
       refresh: 'Actualiser',
       retry: 'Réessayer',
       empty: 'Vous ne gérez encore aucune classe.',
-      emptyCta: 'Créer un groupe'
+      emptyCta: 'Créer une classe',
+      createClass: 'Nouvelle classe'
     }
   }
 })
@@ -165,6 +207,19 @@ useVisiblePolling(() => {
   margin: var(--spacing-xs) 0 0 0;
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.create-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .refresh-button {
