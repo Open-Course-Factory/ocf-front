@@ -157,11 +157,20 @@ export interface TeacherGroupSummary {
   member_count: number
   live_session_count: number
   /**
-   * Learners connected but idle for longer than the backend's threshold — the
-   * "stuck learner" detector. Optional because the endpoint does not serve it
-   * yet; every consumer must treat absent as "unknown", never as zero.
+   * Members whose scenario progress has been stale for longer than
+   * `idle_threshold_minutes` — the "stuck learner" detector (core !360).
+   *
+   * Idle means no scenario event (step, verify, hint, quiz) in that window, NOT
+   * an absence of keystrokes and NOT a disconnection: a learner reading a long
+   * instruction counts as idle, and one who closed the tab does not appear here
+   * at all. Any label built from it has to stay in that register.
+   *
+   * Optional, and absent means "the endpoint did not say", never zero.
    */
-  idle_session_count?: number
+  idle_member_count?: number
+
+  /** The window, in minutes, `idle_member_count` was computed over. */
+  idle_threshold_minutes?: number
   assignments: TeacherGroupAssignment[]
 }
 

@@ -216,21 +216,65 @@ describe('MyClasses console', () => {
 
     it('names the idle learners when the endpoint reports them', async () => {
       const wrapper = await mountConsole([
-        classRow({ live_session_count: 7, idle_session_count: 3 }),
+        classRow({ live_session_count: 7, idle_member_count: 3, idle_threshold_minutes: 10 }),
       ])
 
       expect(wrapper.find('[data-test="idle-count"]').text()).toBe('3 idle > 10 min')
     })
 
+    it('quotes the window the backend actually measured, not a number of its own', async () => {
+      // The threshold is core's to set (!360). Printing "> 10 min" beside a
+      // count computed over fifteen would misreport the class.
+      const wrapper = await mountConsole([
+        classRow({ live_session_count: 7, idle_member_count: 2, idle_threshold_minutes: 15 }),
+      ])
+
+      expect(wrapper.find('[data-test="idle-count"]').text()).toBe('2 idle > 15 min')
+    })
+
+    it('falls back to the default window when only the count comes back', async () => {
+      const wrapper = await mountConsole([
+        classRow({ live_session_count: 7, idle_member_count: 1 }),
+      ])
+
+      expect(wrapper.find('[data-test="idle-count"]').text()).toBe('1 idle > 10 min')
+    })
+
+    it('explains that idle means stuck in the scenario, not disconnected', async () => {
+      // The count is stale scenario progress — no step, verify, hint or quiz.
+      // A learner reading a long instruction is idle; one who closed the tab is
+      // not counted at all. The short label cannot carry that, the title can.
+      const wrapper = await mountConsole([
+        classRow({ live_session_count: 7, idle_member_count: 3, idle_threshold_minutes: 10 }),
+      ])
+
+      const help = wrapper.find('[data-test="idle-count"]').attributes('title')
+      expect(help).toContain('no scenario progress')
+      expect(help).toContain('10 min')
+    })
+
+    it('says it in French without calling them disconnected', async () => {
+      i18n.global.locale.value = 'fr'
+      const wrapper = await mountConsole([
+        classRow({ live_session_count: 7, idle_member_count: 3, idle_threshold_minutes: 10 }),
+      ])
+
+      const idle = wrapper.find('[data-test="idle-count"]')
+      expect(idle.text()).toBe('3 inactifs > 10 min')
+      expect(idle.attributes('title')).toContain('progression dans le scénario')
+      expect(idle.attributes('title')).not.toContain('déconnect')
+    })
+
     it('keeps the idle line reserved but empty while the endpoint stays silent', async () => {
-      // The field is optional until core serves it. Absent must not read as
-      // "nobody is idle", and the line it will occupy has to exist already or
-      // the row grows the day the counter appears.
+      // The field is optional. Absent must not read as "nobody is idle", and
+      // the line it will occupy has to exist already or the row grows the day
+      // the counter appears.
       const wrapper = await mountConsole([classRow({ live_session_count: 7 })])
 
       const idle = wrapper.find('[data-test="idle-count"]')
       expect(idle.exists()).toBe(true)
       expect(idle.text()).toBe('')
+      expect(idle.attributes('title')).toBe('')
     })
   })
 

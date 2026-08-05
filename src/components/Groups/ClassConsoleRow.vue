@@ -49,7 +49,7 @@
       </span>
       <!-- Always rendered, empty until the endpoint serves the counter: the
            line keeps its height so a row never grows when the number lands. -->
-      <span class="presence-idle" data-test="idle-count">{{ idleLabel }}</span>
+      <span class="presence-idle" data-test="idle-count" :title="idleHelp">{{ idleLabel }}</span>
     </div>
 
     <div class="class-work">
@@ -178,8 +178,12 @@ const DEADLINE_SOON_MS = 48 * 60 * 60 * 1000
  */
 const EXPIRY_SOON_MS = 14 * 24 * 60 * 60 * 1000
 
-/** Mirrors the backend's idle threshold, so the count reads unambiguously. */
-const IDLE_THRESHOLD_MINUTES = 10
+/**
+ * Used only when the payload reports an idle count without the window it was
+ * computed over. Mirrors core's current default rather than inventing one, so
+ * the label never quotes a number the backend did not measure against.
+ */
+const DEFAULT_IDLE_THRESHOLD_MINUTES = 10
 
 // No organization prop: every row on the console belongs to the active
 // organization, which the page and the organization switcher already name.
@@ -202,6 +206,7 @@ const { t } = useTranslations({
       liveOutOf: '/ {total} online',
       idleCountOne: '{count} idle > {minutes} min',
       idleCountMany: '{count} idle > {minutes} min',
+      idleHelp: 'Learners with no scenario progress for more than {minutes} min — they may be stuck, not away',
       completedOfClass: '{completed}/{total} finished',
       completionHelp: 'Learners of the class who finished this scenario',
       noAssignment: 'No scenario assigned',
@@ -225,6 +230,7 @@ const { t } = useTranslations({
       liveOutOf: '/ {total} connectés',
       idleCountOne: '{count} inactif > {minutes} min',
       idleCountMany: '{count} inactifs > {minutes} min',
+      idleHelp: 'Apprenants sans progression dans le scénario depuis plus de {minutes} min — ils bloquent peut-être, ils ne sont pas absents',
       completedOfClass: '{completed}/{total} ont terminé',
       completionHelp: 'Apprenants de la classe ayant terminé ce scénario',
       noAssignment: 'Aucun scénario assigné',
@@ -287,15 +293,25 @@ const expiryLabel = computed(() => {
   return t('myClasses.expiresOn', { date: formatDeadline(props.summary.expires_at) })
 })
 
+const idleThresholdMinutes = computed(() =>
+  props.summary.idle_threshold_minutes ?? DEFAULT_IDLE_THRESHOLD_MINUTES
+)
+
 // Absent is not zero: a class with nobody idle and a class the endpoint cannot
 // tell us about both stay silent here, which is why this reads the raw field
 // rather than defaulting it.
 const idleLabel = computed(() => {
-  const idle = props.summary.idle_session_count
+  const idle = props.summary.idle_member_count
   if (!idle || idle <= 0) return ''
   const key = idle === 1 ? 'myClasses.idleCountOne' : 'myClasses.idleCountMany'
-  return t(key, { count: idle, minutes: IDLE_THRESHOLD_MINUTES })
+  return t(key, { count: idle, minutes: idleThresholdMinutes.value })
 })
+
+// Idle is measured on scenario progress, not on keystrokes or connection, so
+// the short label gets a tooltip that says which. See `idle_member_count`.
+const idleHelp = computed(() =>
+  idleLabel.value ? t('myClasses.idleHelp', { minutes: idleThresholdMinutes.value }) : ''
+)
 
 /** Milliseconds from now until `date`, or null when there is no date at all. */
 function millisecondsUntil(date?: string): number | null {
