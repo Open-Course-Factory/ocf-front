@@ -61,7 +61,7 @@
 
       <div v-else-if="showEmptyState" class="empty-state" data-test="empty-state">
         <i class="fas fa-chalkboard-teacher"></i>
-        <p>{{ t('myClasses.empty') }}</p>
+        <p data-test="empty-message">{{ emptyMessage }}</p>
         <button type="button" class="btn btn-primary" data-test="empty-cta" @click="showCreateModal = true">
           {{ t('myClasses.emptyCta') }}
         </button>
@@ -69,10 +69,9 @@
 
       <template v-else>
         <ClassConsoleRow
-          v-for="summary in store.groups"
+          v-for="summary in visibleClasses"
           :key="summary.group_id"
           :summary="summary"
-          :organization-name="organizationNameFor(summary)"
         />
       </template>
     </div>
@@ -99,7 +98,6 @@ import { useOrganizationsStore } from '../../stores/organizations'
 import { useClassGroupsStore } from '../../stores/classGroups'
 import ClassConsoleRow from '../Groups/ClassConsoleRow.vue'
 import EntityModal from '../Modals/EntityModal.vue'
-import type { TeacherGroupSummary } from '../../services/domain/scenario/teacherService'
 
 const SKELETON_ROWS = 3
 const REFRESH_INTERVAL_MS = 30000
@@ -131,6 +129,7 @@ const { t } = useTranslations({
       refresh: 'Refresh',
       retry: 'Retry',
       empty: 'You do not manage any class yet.',
+      emptyInOrganization: 'You manage no class in {organization}. Your other classes are in another organization — switch organization to see them.',
       emptyCta: 'Create a class',
       createClass: 'New class'
     }
@@ -142,35 +141,41 @@ const { t } = useTranslations({
       refresh: 'Actualiser',
       retry: 'Réessayer',
       empty: 'Vous ne gérez encore aucune classe.',
+      emptyInOrganization: 'Vous ne gérez aucune classe dans {organization}. Vos autres classes sont dans une autre organisation — changez d’organisation pour les voir.',
       emptyCta: 'Créer une classe',
       createClass: 'Nouvelle classe'
     }
   }
 })
 
+// The console shows ONE organization at a time (see the teacherGroups store).
+// No row names its organization: on this page they all share the active one,
+// which the empty state and the switcher in the top bar already name.
+const visibleClasses = computed(() => store.groupsInCurrentOrganization)
+
 // Skeletons stand in only until the FIRST list arrives. A refresh over a list
 // already on screen must not replace it with placeholders.
 const isFirstLoad = computed(() => store.isLoading && store.groups.length === 0)
 
 const showEmptyState = computed(() =>
-  store.isLoaded && store.groups.length === 0 && !store.error
+  store.isLoaded && visibleClasses.value.length === 0 && !store.error
 )
 
-// Naming the organization on every row is noise for the common case of a
-// teacher whose classes all live in one place; it is essential the moment two
-// classes come from different organizations.
-const spansSeveralOrganizations = computed(() => {
-  const seen = new Set(store.groups.map(group => group.organization_id ?? ''))
-  return seen.size > 1
-})
+const currentOrganizationName = computed(() =>
+  organizationsStore.currentOrganization?.display_name || ''
+)
 
-// Resolved from the organizations the session already holds (the switcher in
-// TopMenu loads them), so no row issues a request of its own. An id with no
-// match stays unresolved and its tag is dropped.
-function organizationNameFor(summary: TeacherGroupSummary): string | undefined {
-  if (!spansSeveralOrganizations.value || !summary.organization_id) return undefined
-  return organizationsStore.getOrganizationById(summary.organization_id)?.display_name
-}
+// "You teach nothing" and "you teach, but not here" are different situations
+// and want different answers — the second one is usually one organization
+// switch away from what the teacher was looking for.
+// With no organization loaded yet there is no name to put in the sentence, and
+// "no class in ." reads as a bug — the plain message is true either way.
+const emptyMessage = computed(() => {
+  if (store.managesClassInAnotherOrganization && currentOrganizationName.value) {
+    return t('myClasses.emptyInOrganization', { organization: currentOrganizationName.value })
+  }
+  return t('myClasses.empty')
+})
 
 // Reuses the fetch the landing decision just made when arriving straight from
 // login, and refetches whenever the cache is older than the refresh promise.

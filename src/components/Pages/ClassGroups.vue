@@ -22,7 +22,7 @@
 -->
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useClassGroupsStore } from '../../stores/classGroups';
 import { useOrganizationsStore } from '../../stores/organizations';
 import { useTeacherGroupsStore } from '../../stores/teacherGroups';
@@ -45,6 +45,12 @@ onMounted(() => {
     teacherGroupsStore.ensureLoaded(LIVE_COUNT_MAX_AGE_MS);
 });
 
+// The list itself is scoped to the active organization by the store (see its
+// loadEntitiesWithCursor). Entity.vue reloads on route changes, and switching
+// organization is not one — so the scope is part of the list's identity here,
+// and a switch rebuilds it against the new one.
+const listScopeKey = computed(() => organizationsStore.currentOrganization?.id || 'no-organization');
+
 // Cards name the organization and the parent group, but `/class-groups` returns
 // only their IDs. Both are resolved from lists the session already holds — the
 // organization switcher in TopMenu loads the organizations, and the parent is
@@ -64,7 +70,7 @@ function parentGroupName(parentGroupId?: string): string | undefined {
 
 <template>
     <div class="wrapper">
-        <Entity :entity-name='"class-groups"' :entity-store=entityStore>
+        <Entity :key="listScopeKey" :entity-name='"class-groups"' :entity-store=entityStore>
             <template #card="{ entity }">
                 <GroupCard
                     :entity="entity"

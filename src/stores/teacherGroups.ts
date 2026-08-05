@@ -22,6 +22,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { teacherService, type TeacherGroupSummary } from '../services/domain/scenario/teacherService'
+import { useOrganizationsStore } from './organizations'
 
 /**
  * Read-only cache of GET /teacher/groups — every class the current user owns or
@@ -35,6 +36,12 @@ import { teacherService, type TeacherGroupSummary } from '../services/domain/sce
  * counters on the group cards, and the post-login landing decision — precisely
  * so those three never disagree about what the teacher manages, and so the
  * cards never issue a request per card.
+ *
+ * The endpoint answers across every organization; the product decision is that
+ * teacher surfaces show ONE organization at a time. So the cache stays whole
+ * and the org rule lives here, once, as a derived view — a component filtering
+ * on its own would be a second copy of that rule for the landing decision to
+ * drift from.
  */
 export const useTeacherGroupsStore = defineStore('teacherGroups', () => {
   const groups = ref<TeacherGroupSummary[]>([])
@@ -49,6 +56,30 @@ export const useTeacherGroupsStore = defineStore('teacherGroups', () => {
 
   const managesAnyClass = computed(() => groups.value.length > 0)
 
+  /**
+   * The classes of the ACTIVE organization — what every teacher surface shows.
+   *
+   * Empty while the organization context is still unknown rather than falling
+   * back to "all": showing another organization's classes for one paint is the
+   * mistake the org-scoping decision exists to prevent, and the list fills in
+   * by itself as soon as the organizations load.
+   */
+  const groupsInCurrentOrganization = computed(() => {
+    const currentOrganizationId = useOrganizationsStore().currentOrganization?.id
+    if (!currentOrganizationId) return []
+    return groups.value.filter(group => group.organization_id === currentOrganizationId)
+  })
+
+  const managesClassInCurrentOrganization = computed(() =>
+    groupsInCurrentOrganization.value.length > 0
+  )
+
+  // True when the caller teaches somewhere, just not here — the console says so
+  // rather than implying they have no classes at all.
+  const managesClassInAnotherOrganization = computed(() =>
+    managesAnyClass.value && !managesClassInCurrentOrganization.value
+  )
+
   const liveSessionCountByGroupId = computed(() => {
     const counts: Record<string, number> = {}
     for (const group of groups.value) {
@@ -61,6 +92,11 @@ export const useTeacherGroupsStore = defineStore('teacherGroups', () => {
    * Live sessions in one class, or `undefined` when the caller does not manage
    * it — which is not the same as zero, and consumers must be able to tell the
    * two apart (a card for someone else's group shows no counter at all).
+   *
+   * Deliberately keyed off the WHOLE cache rather than the org-scoped view: the
+   * lookup is by group id, so it is already as narrow as the caller's question,
+   * and scoping it twice would only make a card go blank when its own page
+   * disagreed with the org context by a paint.
    */
   const liveSessionCountOf = (groupId: string): number | undefined =>
     liveSessionCountByGroupId.value[groupId]
@@ -119,6 +155,9 @@ export const useTeacherGroupsStore = defineStore('teacherGroups', () => {
     error,
     loadedAt,
     managesAnyClass,
+    groupsInCurrentOrganization,
+    managesClassInCurrentOrganization,
+    managesClassInAnotherOrganization,
     liveSessionCountByGroupId,
     liveSessionCountOf,
     loadGroups,

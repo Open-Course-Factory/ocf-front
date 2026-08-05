@@ -37,23 +37,51 @@ vi.mock('../../src/utils/asyncWrapper', () => ({
   createAsyncWrapper: () => async (fn: () => Promise<any>) => fn(),
 }))
 
+// The organization context decides which classes count, so the test drives it
+// directly. `loadOrganizations` behaves like the real one: it is what
+// establishes `currentOrganization` when nothing has loaded it yet.
+let currentOrganization: { id: string; display_name: string } | null = null
+let organizationsToLoad: { id: string; display_name: string } | null = null
+let organizationLoadFails = false
+const loadOrganizations = vi.fn(async () => {
+  if (organizationLoadFails) throw new Error('organizations unavailable')
+  currentOrganization = organizationsToLoad
+  return []
+})
+vi.mock('../../src/stores/organizations', () => ({
+  useOrganizationsStore: () => ({
+    get currentOrganization() {
+      return currentOrganization
+    },
+    loadOrganizations,
+  }),
+}))
+
 import axios from 'axios'
 import { resolveLandingPage } from '../../src/composables/useLandingPage'
 import { useUserSettingsStore } from '../../src/stores/userSettings'
 
 const mockGet = vi.mocked(axios.get)
 
-const oneClass = [{
-  group_id: 'group-1',
-  name: 'devops',
-  display_name: 'DevOps 2026',
-  caller_role: 'owner',
-  is_active: true,
-  is_expired: false,
-  member_count: 8,
-  live_session_count: 0,
-  assignments: [],
-}]
+const ACTIVE_ORG = { id: 'org-here', display_name: 'FormaTech' }
+const OTHER_ORG = { id: 'org-elsewhere', display_name: 'ESITECH' }
+
+function classIn(organizationId: string) {
+  return {
+    group_id: `group-${organizationId}`,
+    name: 'devops',
+    display_name: 'DevOps 2026',
+    organization_id: organizationId,
+    caller_role: 'owner',
+    is_active: true,
+    is_expired: false,
+    member_count: 8,
+    live_session_count: 0,
+    assignments: [],
+  }
+}
+
+const oneClass = [classIn(ACTIVE_ORG.id)]
 
 function backend({ settings = {}, classes = [] as any[], classesFail = false }) {
   mockGet.mockImplementation(async (url: string) => {
@@ -80,6 +108,9 @@ describe('resolveLandingPage', () => {
     enabledFlags.add('class_groups')
     enabledFlags.add('terminal_management')
     enabledFlags.add('course_conception')
+    currentOrganization = ACTIVE_ORG
+    organizationsToLoad = ACTIVE_ORG
+    organizationLoadFails = false
   })
 
   it('sends a teacher who manages a class to the console', async () => {
@@ -88,6 +119,74 @@ describe('resolveLandingPage', () => {
 
   it('sends a user who manages nothing to their terminal sessions', async () => {
     expect(await landingPageFor({ classes: [] })).toBe('/terminal-sessions')
+  })
+
+  describe('organization scoping', () => {
+    it('ignores classes that live in another organization', async () => {
+      // Landing on a console scoped to an organization without classes would
+      // show the empty state — the very page this check exists to avoid.
+      const page = await landingPageFor({ classes: [classIn(OTHER_ORG.id)] })
+
+      expect(page).toBe('/terminal-sessions')
+    })
+
+    it('lands on the console when only one of the classes is in the active org', async () => {
+      const page = await landingPageFor({
+        classes: [classIn(OTHER_ORG.id), classIn(ACTIVE_ORG.id)],
+      })
+
+      expect(page).toBe('/my-classes')
+    })
+
+    it('loads the organizations when nothing has yet, straight after login', async () => {
+      currentOrganization = null
+
+      const page = await landingPageFor({ classes: oneClass })
+
+      expect(loadOrganizations).toHaveBeenCalledTimes(1)
+      expect(page).toBe('/my-classes')
+    })
+
+    it('does not reload organizations that are already there', async () => {
+      await landingPageFor({ classes: oneClass })
+
+      expect(loadOrganizations).not.toHaveBeenCalled()
+    })
+
+    it('falls back to terminal sessions when the organizations cannot be loaded', async () => {
+      currentOrganization = null
+      organizationLoadFails = true
+
+      const page = await landingPageFor({ classes: oneClass })
+
+      expect(page).toBe('/terminal-sessions')
+    })
+
+    it('does not probe the classes at all when there is no organization to scope to', async () => {
+      currentOrganization = null
+      organizationLoadFails = true
+
+      await landingPageFor({ classes: oneClass })
+
+      expect(mockGet).not.toHaveBeenCalledWith('/teacher/groups')
+    })
+
+    it('lands a teacher whose only class is in their personal organization', async () => {
+      // A solo trainer's classes sit in their personal org, which is the active
+      // one — nothing about the scoping should treat that case differently.
+      currentOrganization = { id: 'org-personal', display_name: 'Marc' }
+      const page = await landingPageFor({ classes: [classIn('org-personal')] })
+
+      expect(page).toBe('/my-classes')
+    })
+
+    it('sends a teacher whose classes carry no organization to their sessions', async () => {
+      const classWithoutOrg = { ...classIn(ACTIVE_ORG.id), organization_id: undefined }
+
+      const page = await landingPageFor({ classes: [classWithoutOrg] })
+
+      expect(page).toBe('/terminal-sessions')
+    })
   })
 
   it('honours an explicit choice over the console', async () => {

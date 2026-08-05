@@ -23,10 +23,6 @@
     <div class="class-identity">
       <h3 class="class-name">{{ summary.display_name || summary.name }}</h3>
       <div class="class-tags">
-        <span v-if="organizationName" class="class-tag class-org" data-test="class-org">
-          <i class="fas fa-building"></i>
-          {{ organizationName }}
-        </span>
         <span v-if="summary.caller_role === 'manager'" class="class-tag tag-role" data-test="role-badge">
           {{ t('myClasses.roleManager') }}
         </span>
@@ -106,12 +102,10 @@ import { useTranslations } from '../../composables/useTranslations'
 import { formatDate } from '../../utils/formatters'
 import type { TeacherGroupAssignment, TeacherGroupSummary } from '../../services/domain/scenario/teacherService'
 
+// No organization prop: every row on the console belongs to the active
+// organization, which the page and the organization switcher already name.
 const props = defineProps<{
   summary: TeacherGroupSummary
-  // Resolved by the console from the organizations the session already holds;
-  // absent when every class sits in the same organization and naming it would
-  // only add noise.
-  organizationName?: string
 }>()
 
 const router = useRouter()

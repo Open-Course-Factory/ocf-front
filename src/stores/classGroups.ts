@@ -23,6 +23,7 @@ import { defineStore } from "pinia"
 import axios from "axios"
 import { ElNotification } from "element-plus"
 import { useBaseStore } from "./baseStore"
+import { useOrganizationsStore } from "./organizations"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
 
@@ -264,6 +265,16 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
         if (data.display_name && !data.name) {
             data.name = generateSlug(data.display_name)
         }
+        // A class created without an organization would be invisible the moment
+        // it was saved, because every teacher surface is scoped to the active
+        // one. So an unanswered organization means "the one I am working in",
+        // never "none". An explicit choice is left alone.
+        if (!data.organization_id) {
+            const currentOrganizationId = useOrganizationsStore().currentOrganization?.id
+            if (currentOrganizationId) {
+                data.organization_id = currentOrganizationId
+            }
+        }
         // Handle organization_id conversion to backend camelCase
         if (data.organization_id !== undefined) {
             data.organizationID = data.organization_id
@@ -358,6 +369,35 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
         return await base.loadEntities('/class-groups')
     }
 
+    /**
+     * Scopes the list to the ACTIVE organization (product decision: teacher
+     * surfaces show one organization at a time).
+     *
+     * Done here rather than in Entity.vue because every consumer of this store
+     * asks the same scoped question, and the generic list component must not
+     * learn about organizations to serve one entity. The backend turns an
+     * unknown query parameter into an exact-match column filter, so this is a
+     * real server-side WHERE — not a page of rows filtered down to three.
+     *
+     * With no active organization yet, the call goes out unscoped rather than
+     * with `organization_id=`, which would filter on the empty string and
+     * return nothing.
+     */
+    const loadEntitiesWithCursor = async (
+        endpoint: string,
+        cursor?: string,
+        limit: number = 20,
+        filters: Record<string, string> = {},
+        demoDataProvider?: () => any[]
+    ) => {
+        const currentOrganizationId = useOrganizationsStore().currentOrganization?.id
+        const scopedFilters = currentOrganizationId
+            ? { ...filters, organization_id: currentOrganizationId }
+            : filters
+
+        return await base.loadEntitiesWithCursor(endpoint, cursor, limit, scopedFilters, demoDataProvider)
+    }
+
     // Override getOne to use correct endpoint with optional includes
     const getOne = async (groupId: string, includes?: string[]) => {
         if (!includes || includes.length === 0) {
@@ -391,6 +431,7 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
         ...base,
         fieldList,
         loadEntities,
+        loadEntitiesWithCursor,
         getOne
     }
 })

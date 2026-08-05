@@ -10,7 +10,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises, RouterLinkStub } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 
 vi.mock('axios', () => ({
   default: {
@@ -32,13 +32,18 @@ vi.mock('vue-router', () => ({
   useRoute: () => ({ query: {} }),
 }))
 
-const organizationsById: Record<string, { id: string; display_name: string }> = {
-  'org-a': { id: 'org-a', display_name: 'FormaTech' },
-  'org-b': { id: 'org-b', display_name: 'ESITECH' },
-}
+const ACTIVE_ORG = { id: 'org-a', display_name: 'FormaTech' }
+const OTHER_ORG = { id: 'org-b', display_name: 'ESITECH' }
+
+// Reactive like the real store's computed: switching organizations must
+// invalidate whatever the console derived from it, which a plain variable
+// could never do.
+const activeOrganization = ref<{ id: string; display_name: string } | null>(ACTIVE_ORG)
 vi.mock('../../src/stores/organizations', () => ({
   useOrganizationsStore: () => ({
-    getOrganizationById: (id: string) => organizationsById[id],
+    get currentOrganization() {
+      return activeOrganization.value
+    },
   }),
 }))
 
@@ -95,6 +100,7 @@ describe('MyClasses console', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     i18n.global.locale.value = 'en'
+    activeOrganization.value = ACTIVE_ORG
   })
 
   it('renders one row per class the teacher manages', async () => {
@@ -329,25 +335,81 @@ describe('MyClasses console', () => {
     expect(mockPush).toHaveBeenCalledTimes(2)
   })
 
-  it('names the organization when the classes span more than one', async () => {
-    const wrapper = await mountConsole([
-      classRow({ group_id: 'a', organization_id: 'org-a' }),
-      classRow({ group_id: 'b', organization_id: 'org-b' }),
-    ])
+  describe('organization scoping', () => {
+    it('lists only the classes of the active organization', async () => {
+      const wrapper = await mountConsole([
+        classRow({ group_id: 'a', display_name: 'Here', organization_id: ACTIVE_ORG.id }),
+        classRow({ group_id: 'b', display_name: 'Elsewhere', organization_id: OTHER_ORG.id }),
+      ])
 
-    const orgs = wrapper.findAll('[data-test="class-org"]')
-    expect(orgs).toHaveLength(2)
-    expect(orgs[0].text()).toBe('FormaTech')
-    expect(orgs[1].text()).toBe('ESITECH')
-  })
+      const rows = wrapper.findAll('[data-test="class-row"]')
+      expect(rows).toHaveLength(1)
+      expect(rows[0].text()).toContain('Here')
+      expect(wrapper.text()).not.toContain('Elsewhere')
+    })
 
-  it('leaves the organization out when every class is in the same one', async () => {
-    const wrapper = await mountConsole([
-      classRow({ group_id: 'a', organization_id: 'org-a' }),
-      classRow({ group_id: 'b', organization_id: 'org-a' }),
-    ])
+    it('re-scopes on an organization switch without asking the backend again', async () => {
+      const wrapper = await mountConsole([
+        classRow({ group_id: 'a', display_name: 'Here', organization_id: ACTIVE_ORG.id }),
+        classRow({ group_id: 'b', display_name: 'Elsewhere', organization_id: OTHER_ORG.id }),
+      ])
 
-    expect(wrapper.find('[data-test="class-org"]').exists()).toBe(false)
+      activeOrganization.value = OTHER_ORG
+      await nextTick()
+
+      const rows = wrapper.findAll('[data-test="class-row"]')
+      expect(rows).toHaveLength(1)
+      expect(rows[0].text()).toContain('Elsewhere')
+      expect(mockGet).toHaveBeenCalledTimes(1)
+    })
+
+    it('names no organization on the rows, since they all share the active one', async () => {
+      const wrapper = await mountConsole([classRow()])
+
+      expect(wrapper.find('[data-test="class-org"]').exists()).toBe(false)
+    })
+
+    it('says the teacher has classes elsewhere rather than none at all', async () => {
+      const wrapper = await mountConsole([
+        classRow({ organization_id: OTHER_ORG.id }),
+      ])
+
+      const message = wrapper.find('[data-test="empty-message"]').text()
+      expect(message).toContain('FormaTech')
+      expect(message).toContain('another organization')
+    })
+
+    it('says it in French too', async () => {
+      i18n.global.locale.value = 'fr'
+      const wrapper = await mountConsole([classRow({ organization_id: OTHER_ORG.id })])
+
+      const message = wrapper.find('[data-test="empty-message"]').text()
+      expect(message).toContain('FormaTech')
+      expect(message).toContain('autre organisation')
+    })
+
+    it('keeps the plain empty message when the teacher has no class anywhere', async () => {
+      const wrapper = await mountConsole([])
+
+      expect(wrapper.find('[data-test="empty-message"]').text())
+        .toBe('You do not manage any class yet.')
+    })
+
+    it('shows the empty state rather than another org while the context is unknown', async () => {
+      activeOrganization.value = null
+      const wrapper = await mountConsole([classRow({ organization_id: ACTIVE_ORG.id })])
+
+      expect(wrapper.find('[data-test="class-row"]').exists()).toBe(false)
+      expect(wrapper.find('[data-test="empty-state"]').exists()).toBe(true)
+    })
+
+    it('does not name a blank organization when there is no context to name', async () => {
+      activeOrganization.value = null
+      const wrapper = await mountConsole([classRow({ organization_id: ACTIVE_ORG.id })])
+
+      expect(wrapper.find('[data-test="empty-message"]').text())
+        .toBe('You do not manage any class yet.')
+    })
   })
 
   it('offers to create a class in place when the teacher has none at all', async () => {

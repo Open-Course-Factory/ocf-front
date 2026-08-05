@@ -7,6 +7,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { ref } from 'vue'
 
 vi.mock('axios', () => ({
   default: {
@@ -22,6 +23,17 @@ vi.mock('axios', () => ({
   },
 }))
 
+// Reactive like the real store's computed, so a switch genuinely invalidates
+// what was derived from it rather than the test reading a fresh value by luck.
+const activeOrganization = ref<{ id: string; display_name: string } | null>(null)
+vi.mock('../../src/stores/organizations', () => ({
+  useOrganizationsStore: () => ({
+    get currentOrganization() {
+      return activeOrganization.value
+    },
+  }),
+}))
+
 import axios from 'axios'
 import { useTeacherGroupsStore } from '../../src/stores/teacherGroups'
 
@@ -32,6 +44,7 @@ function summary(overrides: Record<string, any> = {}) {
     group_id: 'group-1',
     name: 'devops-2026',
     display_name: 'DevOps 2026',
+    organization_id: 'org-here',
     caller_role: 'owner',
     is_active: true,
     is_expired: false,
@@ -46,6 +59,7 @@ describe('teacherGroups store', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     setActivePinia(createPinia())
+    activeOrganization.value = { id: 'org-here', display_name: 'FormaTech' }
   })
 
   it('loads the managed classes from a single request', async () => {
@@ -195,6 +209,92 @@ describe('teacherGroups store', () => {
     expect(mockGet).toHaveBeenCalledTimes(2)
     expect(store.groups).toHaveLength(1)
     expect(store.error).toBe('')
+  })
+
+  describe('organization scoping', () => {
+    it('keeps only the classes of the active organization', async () => {
+      mockGet.mockResolvedValueOnce({ data: [
+        summary({ group_id: 'here', organization_id: 'org-here' }),
+        summary({ group_id: 'elsewhere', organization_id: 'org-elsewhere' }),
+      ] })
+      const store = useTeacherGroupsStore()
+
+      await store.loadGroups()
+
+      expect(store.groupsInCurrentOrganization.map(g => g.group_id)).toEqual(['here'])
+      expect(store.managesClassInCurrentOrganization).toBe(true)
+    })
+
+    it('follows an organization switch without refetching', async () => {
+      mockGet.mockResolvedValueOnce({ data: [
+        summary({ group_id: 'here', organization_id: 'org-here' }),
+        summary({ group_id: 'elsewhere', organization_id: 'org-elsewhere' }),
+      ] })
+      const store = useTeacherGroupsStore()
+      await store.loadGroups()
+      // Read BEFORE the switch, so the assertion after it proves the derived
+      // list was invalidated rather than merely computed late.
+      expect(store.groupsInCurrentOrganization.map(g => g.group_id)).toEqual(['here'])
+
+      activeOrganization.value = { id: 'org-elsewhere', display_name: 'ESITECH' }
+
+      expect(store.groupsInCurrentOrganization.map(g => g.group_id)).toEqual(['elsewhere'])
+      expect(mockGet).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports teaching elsewhere when the active organization has none', async () => {
+      mockGet.mockResolvedValueOnce({ data: [summary({ organization_id: 'org-elsewhere' })] })
+      const store = useTeacherGroupsStore()
+
+      await store.loadGroups()
+
+      expect(store.groupsInCurrentOrganization).toEqual([])
+      expect(store.managesClassInCurrentOrganization).toBe(false)
+      expect(store.managesClassInAnotherOrganization).toBe(true)
+    })
+
+    it('does not claim classes elsewhere when there are none anywhere', async () => {
+      mockGet.mockResolvedValueOnce({ data: [] })
+      const store = useTeacherGroupsStore()
+
+      await store.loadGroups()
+
+      expect(store.managesClassInCurrentOrganization).toBe(false)
+      expect(store.managesClassInAnotherOrganization).toBe(false)
+    })
+
+    it('shows nothing rather than another organization while the context is unknown', async () => {
+      activeOrganization.value = null
+      mockGet.mockResolvedValueOnce({ data: [summary({ organization_id: 'org-here' })] })
+      const store = useTeacherGroupsStore()
+
+      await store.loadGroups()
+
+      expect(store.groupsInCurrentOrganization).toEqual([])
+      expect(store.managesClassInCurrentOrganization).toBe(false)
+    })
+
+    it('treats a class with no organization as belonging to none', async () => {
+      mockGet.mockResolvedValueOnce({ data: [summary({ organization_id: undefined })] })
+      const store = useTeacherGroupsStore()
+
+      await store.loadGroups()
+
+      expect(store.groupsInCurrentOrganization).toEqual([])
+    })
+
+    it('still counts live sessions for a class outside the active organization', async () => {
+      mockGet.mockResolvedValueOnce({ data: [
+        summary({ group_id: 'elsewhere', organization_id: 'org-elsewhere', live_session_count: 5 }),
+      ] })
+      const store = useTeacherGroupsStore()
+
+      await store.loadGroups()
+
+      // The lookup is by group id and its own page decides what to show; scoping
+      // it twice would blank a card whose page disagrees by a paint.
+      expect(store.liveSessionCountOf('elsewhere')).toBe(5)
+    })
   })
 
   it('forgets everything on reset so a new session starts clean', async () => {
