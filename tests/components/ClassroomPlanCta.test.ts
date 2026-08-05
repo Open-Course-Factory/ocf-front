@@ -18,11 +18,19 @@ import { createPinia, setActivePinia } from 'pinia'
 // The verdict comes from the backend now (ocf-core#453): the CTA reads
 // can_run_classrooms rather than inspecting a plan field, because the answer
 // depends on the plan, the organization and the caller's role in it.
-const effectiveFeatures = { value: null as any }
+//
+// The ORG-LESS one, specifically. This CTA offers to create an organization, and
+// core #476 decides that on the plan alone; the org-scoped verdict answers a
+// different question and says no inside a personal organization whatever the plan
+// says (core #475) — which is where every trainer without a team organization
+// stands, including the one who just bought Formateur.
+const orgLessFeatures = { value: null as any }
 
 vi.mock('../../src/stores/permissions', () => ({
   usePermissionsStore: () => ({
-    get effectiveFeatures() { return effectiveFeatures.value },
+    get effectiveFeatures() { return null },
+    get allOrgFeatures() { return orgLessFeatures.value },
+    ensureEffectiveFeaturesLoaded: vi.fn().mockResolvedValue(undefined),
     loadEffectiveFeatures: vi.fn().mockResolvedValue(undefined),
   }),
 }))
@@ -46,11 +54,11 @@ describe('ClassroomPlanCta', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    effectiveFeatures.value = null
+    orgLessFeatures.value = null
   })
 
   it('offers organization creation when the plan grants group management', () => {
-    effectiveFeatures.value = { can_run_classrooms: true }
+    orgLessFeatures.value = { can_run_classrooms: true }
 
     const wrapper = mountCta()
 
@@ -59,7 +67,7 @@ describe('ClassroomPlanCta', () => {
   })
 
   it('emits create so the page owns how an organization is actually made', async () => {
-    effectiveFeatures.value = { can_run_classrooms: true }
+    orgLessFeatures.value = { can_run_classrooms: true }
 
     const wrapper = mountCta()
     await wrapper.find('[data-test="classroom-cta-create"]').trigger('click')
@@ -68,7 +76,7 @@ describe('ClassroomPlanCta', () => {
   })
 
   it('points at the plan instead of disappearing when not entitled', () => {
-    effectiveFeatures.value = { can_run_classrooms: false, classroom_denied_reason: 'plan_lacks_group_management' }
+    orgLessFeatures.value = { can_run_classrooms: false, classroom_denied_reason: 'plan_lacks_group_management' }
 
     const wrapper = mountCta()
 
@@ -77,26 +85,29 @@ describe('ClassroomPlanCta', () => {
     expect(wrapper.find('[data-test="classroom-cta-upgrade"]').exists()).toBe(true)
   })
 
-  it('treats an unresolved subscription as not entitled', () => {
-    // The empty-input case. Defaulting to "yes" would invite a user into an
-    // organization the backend leaves without classroom features — exactly the
-    // failure #298 exists to prevent.
-    effectiveFeatures.value = null
-
-    const wrapper = mountCta()
-
-    expect(wrapper.find('[data-test="classroom-cta-upgrade"]').exists()).toBe(true)
-    expect(wrapper.find('[data-test="classroom-cta-create"]').exists()).toBe(false)
-  })
-
   // A response that carries no verdict at all must read as "not entitled". Absent
   // is not permission: inviting someone into an organization the backend will then
   // refuse is the failure this gate exists to prevent.
   it('treats a response without a verdict as not entitled', () => {
-    effectiveFeatures.value = { user_id: 'u-1' }
+    orgLessFeatures.value = { user_id: 'u-1' }
 
     const wrapper = mountCta()
 
     expect(wrapper.find('[data-test="classroom-cta-upgrade"]').exists()).toBe(true)
+  })
+
+  it('does not sell an upgrade before any verdict has arrived', () => {
+    // This used to show the locked panel, back when no endpoint refused the
+    // creation and a wrong "yes" led somewhere with no way back. Core #476 now
+    // refuses it and the page translates the refusal, so the two mistakes are no
+    // longer symmetrical: an unresolved verdict costs an entitled teacher a
+    // priced-up panel telling them to buy Formateur again, and costs an
+    // unentitled one one click.
+    orgLessFeatures.value = null
+
+    const wrapper = mountCta()
+
+    expect(wrapper.find('[data-test="classroom-cta-create"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="classroom-cta-upgrade"]').exists()).toBe(false)
   })
 })

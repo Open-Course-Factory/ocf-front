@@ -51,6 +51,20 @@ vi.mock('../../src/stores/organizations', () => ({
   }),
 }))
 
+// The org-less classroom verdict, which decides whether the personal-context
+// state invites the teacher to create an organization or to buy the plan that
+// would let them. Null is the honest starting point: a page mounts before its
+// features come back, and the console must have an answer for that moment.
+const orgLessFeatures = { value: null as any }
+vi.mock('../../src/stores/permissions', () => ({
+  usePermissionsStore: () => ({
+    get effectiveFeatures() { return null },
+    get allOrgFeatures() { return orgLessFeatures.value },
+    ensureEffectiveFeaturesLoaded: vi.fn().mockResolvedValue(null),
+    loadEffectiveFeatures: vi.fn().mockResolvedValue(null),
+  }),
+}))
+
 import axios from 'axios'
 import i18n from '../../src/i18n'
 import MyClasses from '../../src/components/Pages/MyClasses.vue'
@@ -106,6 +120,7 @@ describe('MyClasses console', () => {
     i18n.global.locale.value = 'en'
     activeOrganization.value = ACTIVE_ORG
     isPersonalContext.value = false
+    orgLessFeatures.value = null
   })
 
   it('renders one row per class the teacher manages', async () => {
@@ -410,6 +425,96 @@ describe('MyClasses console', () => {
       const wrapper = await mountConsole([])
 
       expect(wrapper.find('[data-test="classes-elsewhere-hint"]').exists()).toBe(false)
+    })
+
+    describe('when the plan does not cover teaching', () => {
+      // Formateur is the teaching tier: Trial and Solo buy machines for one
+      // person. Sending those two to a creation form the backend refuses (core
+      // #476) wastes the click and explains nothing, so the funnel becomes the
+      // upgrade — while the plan stays personal in the wording, because a
+      // personal organization never holds classes whatever is bought.
+
+      it('offers the plan instead of a form the backend would refuse', async () => {
+        isPersonalContext.value = true
+        orgLessFeatures.value = { can_run_classrooms: false, classroom_denied_reason: 'plan_lacks_group_management' }
+        const wrapper = await mountConsole([])
+
+        expect(wrapper.find('[data-test="upgrade-plan-cta"]').exists()).toBe(true)
+        expect(wrapper.find('[data-test="create-organization-cta"]').exists()).toBe(false)
+      })
+
+      it('sends that call to action to the plans page', async () => {
+        isPersonalContext.value = true
+        orgLessFeatures.value = { can_run_classrooms: false }
+        const wrapper = await mountConsole([])
+
+        expect(wrapper.findComponent(RouterLinkStub).props('to')).toBe('/subscription-plans')
+      })
+
+      it('names the plan to buy, and still puts the classes in an organization', async () => {
+        isPersonalContext.value = true
+        orgLessFeatures.value = { can_run_classrooms: false }
+        const wrapper = await mountConsole([])
+
+        const state = wrapper.find('[data-test="personal-org-state"]')
+        expect(state.text()).toContain('Formateur')
+        expect(state.text()).toContain('organization')
+        expect(state.text()).not.toContain('personal organization')
+      })
+
+      it('says it in French too', async () => {
+        isPersonalContext.value = true
+        i18n.global.locale.value = 'fr'
+        orgLessFeatures.value = { can_run_classrooms: false }
+        const wrapper = await mountConsole([])
+
+        const state = wrapper.find('[data-test="personal-org-state"]')
+        expect(state.text()).toContain('plan Formateur')
+        expect(state.text()).toContain('organisme')
+      })
+
+      it('keeps the create call to action for a plan that does cover it', async () => {
+        isPersonalContext.value = true
+        orgLessFeatures.value = { can_run_classrooms: true }
+        const wrapper = await mountConsole([])
+
+        expect(wrapper.find('[data-test="create-organization-cta"]').exists()).toBe(true)
+        expect(wrapper.find('[data-test="upgrade-plan-cta"]').exists()).toBe(false)
+      })
+
+      it('does not sell an upgrade to someone whose plan has not loaded yet', async () => {
+        // The empty-input case, and the one that decides the default. Quoting a
+        // price to a teacher who already pays for Formateur — because their
+        // features are still in flight, or never arrived — is worse than the one
+        // extra click a refusal costs the teacher who does not.
+        isPersonalContext.value = true
+        orgLessFeatures.value = null
+        const wrapper = await mountConsole([])
+
+        expect(wrapper.find('[data-test="create-organization-cta"]').exists()).toBe(true)
+        expect(wrapper.find('[data-test="upgrade-plan-cta"]').exists()).toBe(false)
+      })
+
+      it('reads a response carrying no verdict as no', async () => {
+        isPersonalContext.value = true
+        orgLessFeatures.value = { user_id: 'u-1' }
+        const wrapper = await mountConsole([])
+
+        expect(wrapper.find('[data-test="upgrade-plan-cta"]').exists()).toBe(true)
+      })
+
+      it('builds both variants from the same slot, so nothing moves between them', async () => {
+        isPersonalContext.value = true
+        orgLessFeatures.value = { can_run_classrooms: true }
+        const ready = await mountConsole([])
+
+        orgLessFeatures.value = { can_run_classrooms: false }
+        const locked = await mountConsole([])
+
+        const shapeOf = (wrapper: any) =>
+          wrapper.findAll('[data-test="personal-org-state"] > *').map((el: any) => el.element.tagName)
+        expect(shapeOf(locked)).toEqual(shapeOf(ready))
+      })
     })
 
     it('stays out of the way in a team organization', async () => {

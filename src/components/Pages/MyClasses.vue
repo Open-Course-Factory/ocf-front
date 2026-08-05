@@ -51,15 +51,34 @@
 
     <div class="class-list">
       <!-- A personal organization is not a teaching place at all, so this page
-           is not a class list there — it is the way out. -->
+           is not a class list there — it is the way out.
+
+           Which way out depends on the plan: a trainer whose plan does not cover
+           teaching cannot be sent to a creation form the backend refuses (core
+           #476), so the funnel becomes the upgrade instead. Same slot, same
+           elements, only the words and the destination change — the two variants
+           must not move anything on the page between them. -->
       <div v-if="isPersonalContext" class="empty-state" data-test="personal-org-state">
-        <i class="fas fa-building"></i>
-        <p class="personal-org-title">{{ t('myClasses.personalOrgTitle') }}</p>
-        <p data-test="personal-org-message">{{ t('myClasses.personalOrgBody') }}</p>
+        <i :class="planBlocksTeaching ? 'fas fa-lock' : 'fas fa-building'"></i>
+        <p class="personal-org-title">
+          {{ planBlocksTeaching ? t('myClasses.upgradeTitle') : t('myClasses.personalOrgTitle') }}
+        </p>
+        <p data-test="personal-org-message">
+          {{ planBlocksTeaching ? t('myClasses.upgradeBody') : t('myClasses.personalOrgBody') }}
+        </p>
         <p v-if="store.managesAnyClass" class="personal-org-hint" data-test="classes-elsewhere-hint">
           {{ t('myClasses.classesElsewhere') }}
         </p>
         <router-link
+          v-if="planBlocksTeaching"
+          to="/subscription-plans"
+          class="btn btn-primary"
+          data-test="upgrade-plan-cta"
+        >
+          {{ t('myClasses.upgradeCta') }}
+        </router-link>
+        <router-link
+          v-else
           to="/organizations?create=1"
           class="btn btn-primary"
           data-test="create-organization-cta"
@@ -111,6 +130,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
+import { useClassroomEntitlement } from '../../composables/useClassroomEntitlement'
 import { useVisiblePolling } from '../../composables/useVisiblePolling'
 import { useTeacherGroupsStore } from '../../stores/teacherGroups'
 import { useOrganizationsStore } from '../../stores/organizations'
@@ -126,6 +146,11 @@ const organizationsStore = useOrganizationsStore()
 const classGroupsStore = useClassGroupsStore()
 
 const showCreateModal = ref(false)
+
+// The org-less verdict, because the question here is "may this person teach at
+// all" — the personal context this state belongs to answers the org-scoped one
+// with a flat no whatever the plan says (core #475).
+const { planAllowsClassrooms } = useClassroomEntitlement()
 
 // Same call Entity.vue makes on /class-groups, so the subgroup after-create
 // hook and its partial-failure reporting run identically here. The console
@@ -154,7 +179,10 @@ const { t } = useTranslations({
       personalOrgTitle: 'Teaching happens in an organization',
       personalOrgBody: 'Your personal space carries your plan, not your classes. Create an organization to open your first class in it.',
       classesElsewhere: 'Your existing classes are in another organization — switch organization to see them.',
-      createOrganizationCta: 'Create my organization'
+      createOrganizationCta: 'Create my organization',
+      upgradeTitle: 'Teaching needs the Formateur plan',
+      upgradeBody: 'Move to the Formateur plan to create your training organization and open your classes in it. Your current plan covers your own machines, not a class of learners.',
+      upgradeCta: 'See the Formateur plan'
     }
   },
   fr: {
@@ -170,7 +198,10 @@ const { t } = useTranslations({
       personalOrgTitle: 'L’enseignement se passe dans une organisation',
       personalOrgBody: 'Votre espace personnel porte votre forfait, pas vos classes. Créez une organisation pour y ouvrir votre première classe.',
       classesElsewhere: 'Vos classes existantes sont dans une autre organisation — changez d’organisation pour les voir.',
-      createOrganizationCta: 'Créer mon organisation'
+      createOrganizationCta: 'Créer mon organisation',
+      upgradeTitle: 'L’enseignement nécessite le plan Formateur',
+      upgradeBody: 'Passez au plan Formateur pour créer votre organisme et y ouvrir vos classes. Votre forfait actuel couvre vos propres machines, pas une classe d’apprenants.',
+      upgradeCta: 'Voir le plan Formateur'
     }
   }
 })
@@ -179,6 +210,12 @@ const { t } = useTranslations({
 // in core #475), so there the console offers the way to a real one instead of a
 // list and a create button the backend would refuse.
 const isPersonalContext = computed(() => organizationsStore.isPersonalOrganizationContext)
+
+// Only a verdict that actually says "no" turns the funnel into an upgrade pitch.
+// An unresolved one keeps the create-organization call to action: quoting a price
+// to a teacher who already pays for Formateur, because their features have not
+// come back yet, is worse than the extra click a refusal would cost them.
+const planBlocksTeaching = computed(() => planAllowsClassrooms.value === false)
 
 // The console shows ONE organization at a time (see the teacherGroups store).
 // No row names its organization: on this page they all share the active one,

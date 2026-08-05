@@ -17,14 +17,20 @@ import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 
 // The verdict comes from the backend now (ocf-core#453): the banner reads
-// can_run_classrooms rather than inspecting a plan field, because the answer
-// depends on the plan, the organization and the caller's role in it, and every
-// screen that worked it out locally got a different one.
-const effectiveFeatures = { value: null as any }
+// can_run_classrooms rather than inspecting a plan field, because every screen
+// that worked it out locally got a different answer.
+//
+// The ORG-LESS one, matching ConvertToTeamOrganization, which resolves the plan
+// with no org context on purpose — this banner only ever appears inside a
+// personal organization, where the org-scoped verdict is a flat no whatever the
+// plan says (core #475).
+const orgLessFeatures = { value: null as any }
 
 vi.mock('../../src/stores/permissions', () => ({
   usePermissionsStore: () => ({
-    get effectiveFeatures() { return effectiveFeatures.value },
+    get effectiveFeatures() { return null },
+    get allOrgFeatures() { return orgLessFeatures.value },
+    ensureEffectiveFeaturesLoaded: vi.fn().mockResolvedValue(undefined),
     loadEffectiveFeatures: vi.fn().mockResolvedValue(undefined),
   }),
 }))
@@ -58,11 +64,11 @@ describe('UpgradeToTeamBanner — plan gate', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     localStorage.clear()
-    effectiveFeatures.value = null
+    orgLessFeatures.value = null
   })
 
   it('offers the conversion when the plan grants group management', () => {
-    effectiveFeatures.value = { can_run_classrooms: true }
+    orgLessFeatures.value = { can_run_classrooms: true }
 
     const wrapper = mountBanner()
 
@@ -71,7 +77,7 @@ describe('UpgradeToTeamBanner — plan gate', () => {
   })
 
   it('sends the user to the plan rather than into a team that ignores it', () => {
-    effectiveFeatures.value = { can_run_classrooms: false, classroom_denied_reason: 'plan_lacks_group_management' }
+    orgLessFeatures.value = { can_run_classrooms: false, classroom_denied_reason: 'plan_lacks_group_management' }
 
     const wrapper = mountBanner()
 
@@ -80,11 +86,15 @@ describe('UpgradeToTeamBanner — plan gate', () => {
   })
 
   it('stays actionable when the verdict has not resolved', () => {
-    effectiveFeatures.value = null
+    // One action or the other, never a banner with nothing to click. Which one:
+    // an unresolved verdict keeps the conversion, because the endpoint refuses it
+    // anyway if the plan cannot carry a team, whereas quoting Formateur to
+    // someone who bought it has no such safety net.
+    orgLessFeatures.value = null
 
     const wrapper = mountBanner()
 
-    // Not entitled by default, but never a banner with no action at all.
-    expect(wrapper.find('[data-test="upgrade-to-team-plan"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="upgrade-to-team-convert"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="upgrade-to-team-plan"]').exists()).toBe(false)
   })
 })

@@ -18,19 +18,19 @@
   <!-- Fixed min-height: the two states have different text lengths, and this sits
        directly above the organization list. A reserved slot keeps the content
        below from jumping when the entitlement resolves after the plan loads. -->
-  <div class="ocf-classroom-cta" :class="{ 'ocf-classroom-cta--locked': !canRunClassrooms }">
+  <div class="ocf-classroom-cta" :class="{ 'ocf-classroom-cta--locked': planBlocksTeaching }">
     <div class="ocf-classroom-cta__body">
-      <i :class="canRunClassrooms ? 'fas fa-chalkboard-teacher' : 'fas fa-lock'"></i>
+      <i :class="planBlocksTeaching ? 'fas fa-lock' : 'fas fa-chalkboard-teacher'"></i>
       <div>
-        <h3>{{ canRunClassrooms ? t('classroomCta.readyTitle') : t('classroomCta.lockedTitle') }}</h3>
-        <p>{{ canRunClassrooms ? t('classroomCta.readyBody') : t('classroomCta.lockedBody') }}</p>
+        <h3>{{ planBlocksTeaching ? t('classroomCta.lockedTitle') : t('classroomCta.readyTitle') }}</h3>
+        <p>{{ planBlocksTeaching ? t('classroomCta.lockedBody') : t('classroomCta.readyBody') }}</p>
       </div>
     </div>
 
     <!-- The gate sells rather than hides: without the entitlement the action
          becomes the upgrade, never nothing. -->
     <button
-      v-if="canRunClassrooms"
+      v-if="!planBlocksTeaching"
       class="btn btn-primary"
       data-test="classroom-cta-create"
       @click="$emit('create')"
@@ -51,12 +51,23 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useClassroomEntitlement } from '../../composables/useClassroomEntitlement'
 
 defineEmits<{ (e: 'create'): void }>()
 
-const { canRunClassrooms } = useClassroomEntitlement()
+// The org-less, plan-only verdict — the one the create endpoint applies (core
+// #476). The org-scoped verdict answers a different question and says no inside
+// a personal organization by design (core #475), which is where a trainer with
+// no team organization yet always is: reading it here showed "you need
+// Formateur" to trainers who had just bought it.
+const { planAllowsClassrooms } = useClassroomEntitlement()
+
+// Only an actual refusal locks the panel. Unresolved keeps the create action —
+// see planAllowsClassrooms for why absence must not be sold as a refusal, and
+// Organizations.vue for what happens when the backend then says no anyway.
+const planBlocksTeaching = computed(() => planAllowsClassrooms.value === false)
 
 const { t } = useTranslations({
   en: {

@@ -168,6 +168,31 @@ export const usePermissionsStore = defineStore('permissions', () => {
   }
 
   /**
+   * Load the effective features once, and only once, when several screens on the
+   * same page each need them.
+   *
+   * `loadEffectiveFeatures` always refetches, which is what an organization switch
+   * wants and what a mounting component does not: a page and the components inside
+   * it mount in sequence, each finding the state still empty because the first
+   * request has not come back yet, and each firing its own.
+   *
+   * Deliberately "loaded", not "fresh": a caller that needs the current answer —
+   * after a backend refusal, after switching organization — calls
+   * `loadEffectiveFeatures` directly.
+   */
+  let inFlightFeatures: Promise<UserEffectiveFeatures | null> | null = null
+
+  const ensureEffectiveFeaturesLoaded = async (): Promise<UserEffectiveFeatures | null> => {
+    if (effectiveFeatures.value && allOrgFeatures.value) return effectiveFeatures.value
+    if (!inFlightFeatures) {
+      inFlightFeatures = loadEffectiveFeatures().finally(() => {
+        inFlightFeatures = null
+      })
+    }
+    return inFlightFeatures
+  }
+
+  /**
    * Check if a feature is available in any org (for gray-out logic).
    * Returns true if the feature exists in allOrgFeatures but might not be in current context.
    */
@@ -351,6 +376,7 @@ export const usePermissionsStore = defineStore('permissions', () => {
     // Actions
     loadCurrentUser,
     loadEffectiveFeatures,
+    ensureEffectiveFeaturesLoaded,
     isFeatureInAnyOrg,
     getOrgWithFeature,
 

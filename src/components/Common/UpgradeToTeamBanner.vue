@@ -14,7 +14,7 @@
            user into an organization that ignores their plan. The gate sells; it
            never leaves the banner actionless. -->
       <button
-        v-if="canRunClassrooms"
+        v-if="!planBlocksTeaching"
         class="btn btn-primary upgrade-btn"
         data-test="upgrade-to-team-convert"
         @click="showConvertDialog = true"
@@ -100,8 +100,14 @@ import BaseModal from '../Modals/BaseModal.vue'
 const orgStore = useOrganizationsStore()
 const { isPersonalOrganization, currentOrganization } = storeToRefs(orgStore)
 
-// Shared with ClassroomPlanCta so the gate is one rule, not two (#298).
-const { canRunClassrooms } = useClassroomEntitlement()
+// Shared with ClassroomPlanCta so the gate is one rule, not two (#298), and the
+// org-less half of it, because that is what ConvertToTeamOrganization checks
+// server-side. This banner only ever shows inside a personal organization, where
+// the org-scoped verdict is a flat no whatever the plan says (core #475) — so
+// reading that one offered the upgrade to Formateur holders too.
+const { planAllowsClassrooms } = useClassroomEntitlement()
+
+const planBlocksTeaching = computed(() => planAllowsClassrooms.value === false)
 
 const { t } = useTranslations({
   en: {
