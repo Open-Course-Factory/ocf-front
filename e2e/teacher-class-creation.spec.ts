@@ -8,9 +8,10 @@ import { demoPause } from './helpers/demo'
  * it with three learners, and walks its five pages.
  *
  * The point of the spec is the DISPLAYS, not the API — a class of three must be
- * counted the same everywhere it is counted (console row, banner, progression
- * table, settings), and each page must render its own not-started state rather
- * than an error or a blank.
+ * counted as three everywhere it is counted as a class (console row, live count,
+ * progression table) and as four in the one place that counts its roster against
+ * a capacity (settings), and each page must render its own not-started state
+ * rather than an error or a blank.
  *
  * Every navigation is a real click, so a headed run is a demo of the feature.
  */
@@ -30,10 +31,21 @@ const LEARNER_EMAILS = ['karim@test.ocf', 'lea@test.ocf', 'jp@test.ocf']
 /**
  * Creating a class enrols its owner as a member (core's GroupOwnerSetupHook), so
  * a brand new class holds one member and a class of three learners holds four.
- * Spelled out here because every count the spec asserts derives from it.
+ * That is the ROSTER: the capacity figure the settings page reports.
  */
 const MEMBERS_AT_CREATION = 1
 const MEMBERS_WITH_LEARNERS = MEMBERS_AT_CREATION + LEARNER_EMAILS.length
+
+/**
+ * The APPRENANTS, which is a different number and the one every learner-facing
+ * figure states (issue #480, core !361): Marc holds the owner role, so his own
+ * class starts with none and never counts him among them.
+ *
+ * The gap between the two is the point of this spec's counts — a surface reading
+ * the roster where it means the class shows 1 and 4 here instead of 0 and 3.
+ */
+const LEARNERS_AT_CREATION = 0
+const LEARNERS_WITH_LEARNERS = LEARNER_EMAILS.length
 
 /** Unique per run so a leftover class from a failed run cannot be mistaken for this one. */
 const CLASS_NAME = `E2E Docker ${Date.now()}`
@@ -164,12 +176,14 @@ test.describe('Teacher creates a class', () => {
       await expect(row).toHaveCount(1)
       await expect(row).toHaveAttribute('data-stripe', 'calm')
       await expect(row.locator('[data-test="state-badge"]')).toHaveCount(0)
-      await expect(row.locator('[data-test="member-count"]')).toHaveText(
-        `${MEMBERS_AT_CREATION} apprenant`
+      // Marc is on the roster of the class he just made, and he is not one of
+      // its apprenants: "1 apprenant" here would be naming the teacher.
+      await expect(row.locator('[data-test="learner-count"]')).toHaveText(
+        `${LEARNERS_AT_CREATION} apprenant`
       )
       await expect(row.locator('[data-test="live-number"]')).toHaveText('0')
       await expect(row.locator('[data-test="live-count"]')).toContainText(
-        `/ ${MEMBERS_AT_CREATION} connectés`
+        `/ ${LEARNERS_AT_CREATION} connectés`
       )
       await expect(row.locator('[data-test="no-assignment"]')).toContainText(
         'Aucun scénario assigné'
@@ -221,16 +235,16 @@ test.describe('Teacher creates a class', () => {
       await expect(page).toHaveURL(/\/my-classes$/)
 
       const row = classRow(page, CLASS_NAME)
-      await expect(row.locator('[data-test="member-count"]')).toHaveText(
-        `${MEMBERS_WITH_LEARNERS} apprenants`
+      await expect(row.locator('[data-test="learner-count"]')).toHaveText(
+        `${LEARNERS_WITH_LEARNERS} apprenants`
       )
       await expect(row.locator('[data-test="live-number"]')).toHaveText('0')
       await expect(row.locator('[data-test="live-count"]')).toContainText(
-        `/ ${MEMBERS_WITH_LEARNERS} connectés`
+        `/ ${LEARNERS_WITH_LEARNERS} connectés`
       )
     })
 
-    await test.step('the progression view lists everyone, nobody started', async () => {
+    await test.step('the progression view lists the apprenants, nobody started', async () => {
       await demoPause(page)
       await classRow(page, CLASS_NAME).locator('.class-name').click()
       await expect(page).toHaveURL(/\/classes\/[^/]+\/live\?view=wall$/)
@@ -239,11 +253,13 @@ test.describe('Teacher creates a class', () => {
       await page.locator('.ocf-clv-btn', { hasText: 'Progression' }).click()
       await expect(page).toHaveURL(/\/classes\/[^/]+\/live\?view=progress$/)
 
+      // Three rows, not four: the invigilation table follows the apprenants, and
+      // Marc watching his own class is not one of the people being watched.
       const rows = page.locator('.ocf-prog-table .ocf-prog-row:not(.ocf-prog-head)')
-      await expect(rows).toHaveCount(MEMBERS_WITH_LEARNERS)
-      await expect(rows.locator('.ocf-prog-dot-offline')).toHaveCount(MEMBERS_WITH_LEARNERS)
+      await expect(rows).toHaveCount(LEARNERS_WITH_LEARNERS)
+      await expect(rows.locator('.ocf-prog-dot-offline')).toHaveCount(LEARNERS_WITH_LEARNERS)
       await expect(rows.locator('.ocf-prog-position-label')).toHaveText(
-        new Array(MEMBERS_WITH_LEARNERS).fill('Aucune étape')
+        new Array(LEARNERS_WITH_LEARNERS).fill('Aucune étape')
       )
 
       // No scenario assigned: the view says so and draws no step distribution
@@ -283,6 +299,8 @@ test.describe('Teacher creates a class', () => {
       await openClassPage(page, 'Réglages')
       await expect(page).toHaveURL(/\/classes\/[^/]+\/settings$/)
       await expect(infoValue(page, "Nom d'affichage")).toHaveText(CLASS_NAME)
+      // The roster, deliberately: this figure is what fills against "Membres
+      // maximum", so it counts Marc — the one place the four is the right answer.
       await expect(infoValue(page, 'Membres actuels')).toHaveText(String(MEMBERS_WITH_LEARNERS))
       await expect(infoValue(page, 'Membres maximum')).toHaveText('20')
     })

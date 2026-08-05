@@ -146,6 +146,20 @@ describe('ClassProgressionView — classes with nothing in them', () => {
     expect(wrapper.find('.ocf-prog-table').exists()).toBe(false)
   })
 
+  it('names the missing people rather than the missing sessions', async () => {
+    // A class of teaching staff only returns no row at all since core !361:
+    // the endpoint lists apprenants, and its teacher is not one. "Nobody has
+    // started" would be a different, and false, statement — there is nobody to.
+    getGroupLiveProgress.mockResolvedValue([])
+
+    const wrapper = mountView()
+    await flushPromises()
+
+    const emptyState = wrapper.find('.ocf-clp-state').text()
+    expect(emptyState).toBe('This class has no learner yet')
+    expect(emptyState).not.toContain('session')
+  })
+
   it('still lists the members when no scenario is assigned', async () => {
     getGroupLiveProgress.mockResolvedValue([
       learner('u-1', 'Léa Simon', { assignments: [] }),
