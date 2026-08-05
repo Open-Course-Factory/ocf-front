@@ -62,6 +62,28 @@ describe('MainNavMenu — "My classes" entry', () => {
     expect(menuSource).toMatch(/classroomsNeedOrganization/)
   })
 
+  /*
+   * A class page (/classes/:id/…) is a page OF "Mes classes", not a destination
+   * beside it, so the entry has to stay lit there — otherwise the teacher
+   * browses a class with nothing selected in the sidebar.
+   *
+   * `router-link-active` alone cannot say that: the class pages are not under
+   * /my-classes. The routes declare their parent entry in their meta instead,
+   * and `tests/router/classRoutes.test.ts` pins that every class page carries it.
+   */
+  it('stays lit on every page of a class, not only on the console', () => {
+    expect(menuSource).toMatch(
+      /isInMyClassesSection\s*=\s*computed\(\(\)\s*=>\s*route\.meta\.navParent === 'my-classes'\)/,
+    )
+    expect(menuSource).toMatch(/:class="\{ 'is-section-active': isInMyClassesSection \}"/)
+  })
+
+  it('lights it the same way whether it is the console or a class page', () => {
+    expect(menuSource).toMatch(
+      /\.my-classes-header\.router-link-active,\s*\n\s*\.my-classes-header\.is-section-active \{/,
+    )
+  })
+
   it('names itself in both locales', () => {
     expect(i18nSource).toMatch(/myClasses:\s*'My classes'/)
     expect(i18nSource).toMatch(/myClasses:\s*'Mes classes'/)

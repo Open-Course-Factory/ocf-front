@@ -9,6 +9,7 @@
             <router-link
               to="/my-classes"
               class="category-header my-classes-header"
+              :class="{ 'is-section-active': isInMyClassesSection }"
               :title="isMenuCollapsed ? t('navigation.myClassesTitle') : ''"
               @click="handleMenuItemClick()"
             >
@@ -105,6 +106,7 @@ import { useSchedulesStore } from '../../stores/schedules.ts';
 import { useThemesStore } from '../../stores/themes.ts';
 import { useGenerationsStore } from '../../stores/generations.ts';
 import { ref, computed, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import { useI18n } from "vue-i18n"
 import { useTerminalsStore } from '../../stores/terminals.ts';
 import { useUserTerminalKeysStore } from '../../stores/userTerminalKeys.ts';
@@ -625,10 +627,19 @@ const filteredCategories = computed(() => {
 // than inside Groups — but it is the same feature. Its visibility and its
 // disabled state are READ OFF the Groups category rather than re-derived, so
 // the flag, permission and plan conditions can never drift apart.
+const route = useRoute()
+
 const groupsCategory = computed(() =>
   filteredCategories.value.find(category => category.key === 'groups')
 )
 const showMyClasses = computed(() => groupsCategory.value !== undefined)
+
+// A class page (/classes/:id/…) is a page OF "Mes classes", not a destination
+// beside it: the entry has to stay lit there, or the teacher browses a class
+// with nothing selected in the menu. Routes declare their parent entry in their
+// meta rather than the menu matching URL prefixes, so moving or adding a class
+// page cannot silently unlight the entry.
+const isInMyClassesSection = computed(() => route.meta.navParent === 'my-classes')
 
 const bottomCategoryKeys = new Set(['subscription', 'help', 'admin'])
 
@@ -748,7 +759,9 @@ onMounted(async () => {
   transform: translateX(3px);
 }
 
-.my-classes-header.router-link-active {
+/* Lit on the console itself, and on every page of a class reached from it. */
+.my-classes-header.router-link-active,
+.my-classes-header.is-section-active {
   background-color: var(--color-gray-600);
 }
 
