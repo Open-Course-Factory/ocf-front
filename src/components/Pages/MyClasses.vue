@@ -190,6 +190,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useClassroomEntitlement } from '../../composables/useClassroomEntitlement'
 import { useEntitySearch } from '../../composables/useEntitySearch'
 import { useVisiblePolling } from '../../composables/useVisiblePolling'
+import { useNotification } from '../../composables/useNotification'
 import { useTeacherGroupsStore } from '../../stores/teacherGroups'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { useClassGroupsStore } from '../../stores/classGroups'
@@ -210,6 +211,7 @@ const classGroupsStore = useClassGroupsStore()
 const { locale } = useI18n()
 
 const showCreateModal = ref(false)
+const { showError } = useNotification()
 
 // The org-less verdict, because the question here is "may this person teach at
 // all" — the personal context this state belongs to answers the org-scoped one
@@ -227,8 +229,16 @@ async function createClass(data: Record<string, string>) {
     await classGroupsStore.createEntity('/class-groups', data)
     showCreateModal.value = false
     await store.loadGroups()
-  } catch (error) {
-    console.error('Error while creating class', error)
+  } catch (error: any) {
+    // The modal stays open with the teacher's input intact; the failure is
+    // said out loud — a silent console.error here once hid every create
+    // failure behind an apparently frozen form.
+    showError(
+      error?.response?.data?.error?.message ||
+        error?.response?.data?.error_message ||
+        t('myClasses.createFailedBody'),
+      t('myClasses.createFailedTitle')
+    )
   }
 }
 
@@ -243,6 +253,8 @@ const { t } = useTranslations({
       emptyInOrganization: 'You manage no class in {organization}. Your other classes are in another organization — switch organization to see them.',
       emptyCta: 'Create a class',
       createClass: 'New class',
+      createFailedTitle: 'Class not created',
+      createFailedBody: 'The class could not be created. Check the form and try again.',
       searchPlaceholder: 'Search a class…',
       filterLabel: 'Filter classes',
       filterActive: 'Active',
@@ -268,6 +280,8 @@ const { t } = useTranslations({
       emptyInOrganization: 'Vous ne gérez aucune classe dans {organization}. Vos autres classes sont dans une autre organisation — changez d’organisation pour les voir.',
       emptyCta: 'Créer une classe',
       createClass: 'Nouvelle classe',
+      createFailedTitle: 'Classe non créée',
+      createFailedBody: 'La classe n\'a pas pu être créée. Vérifiez le formulaire et réessayez.',
       searchPlaceholder: 'Rechercher une classe…',
       filterLabel: 'Filtrer les classes',
       filterActive: 'Actives',

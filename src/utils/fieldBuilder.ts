@@ -265,6 +265,16 @@ export class FieldBuilder {
   }
 
   /**
+   * Initial value the creation form opens with. Only consulted when creating —
+   * edit mode always shows the entity's stored value. Without one, EntityModal
+   * falls back to its per-type zero value (checkbox: false, number: min, …).
+   */
+  withDefault(value: any): this {
+    this.config.defaultValue = value
+    return this
+  }
+
+  /**
    * Auto-format dates using the formatDate utility
    * Automatically adds date formatting for date/datetime fields
    */

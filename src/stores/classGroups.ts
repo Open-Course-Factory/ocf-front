@@ -248,7 +248,10 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
             .placeholder(t('classGroups.parentGroupHelp')),
         field('max_members', t('classGroups.max_members')).number().visible().editable().required().withMin(1),
         field('expires_at', t('classGroups.expires_at')).date().visible().editable().withDateFormat(),
-        field('is_active', t('classGroups.is_active')).checkbox().visible().editable(),
+        // A class is born active: the create form opens with the box checked
+        // (an untouched unchecked box would create a class archived at birth).
+        // Unchecking stays possible, and edit mode shows the stored value.
+        field('is_active', t('classGroups.is_active')).checkbox().visible().editable().withDefault(true),
         field('subgroup_names', t('classGroups.subgroupNames'))
             .textarea()
             .visible()
@@ -281,8 +284,20 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
             data.organizationID = data.organization_id
         }
         // Handle parent_group_id conversion to backend camelCase
-        if (data.parent_group_id !== undefined) {
+        if (data.parent_group_id !== undefined && data.parent_group_id !== null && data.parent_group_id !== '') {
             data.parentGroupID = data.parent_group_id
+        } else {
+            delete data.parent_group_id
+            delete data.parentGroupID
+        }
+        // The generic date field emits "" when untouched and a bare YYYY-MM-DD
+        // when set, but the backend decodes expires_at as RFC3339 — both shapes
+        // 500 the create (from the console modal and the entity page alike).
+        // Empty must be omitted; a picked date means "through that day".
+        if (!data.expires_at) {
+            delete data.expires_at
+        } else if (/^\d{4}-\d{2}-\d{2}$/.test(data.expires_at)) {
+            data.expires_at = new Date(`${data.expires_at}T23:59:59`).toISOString()
         }
         // Remove subgroup_names from data sent to backend (it's UI-only)
         const { subgroup_names, ...cleanData } = data

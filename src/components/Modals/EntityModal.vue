@@ -363,6 +363,10 @@ function formatFields() {
       data[key] = data[key].split('\n');
     } else if (fieldType === 'checkbox-group') {
       data[key] = JSON.stringify(data[key] || []);
+    } else if (fieldType === 'date' && !data[key]) {
+      // An untouched date input holds "" — no backend parses that as a time,
+      // so an absent optional date must leave the payload entirely.
+      delete data[key];
     }
   });
 }
@@ -376,7 +380,9 @@ function handleEvent(event) {
       delete data['id'];
     }
     emit(event, { ...data });
-    resetForm();
+    // No reset here: the request this emit starts may fail, and a teacher
+    // facing an error must find their input intact, not a blanked form.
+    // The visible-watcher resets fresh state on every open instead.
   }
 }
 
@@ -395,11 +401,12 @@ function closeModal() {
 
 watch(() => props.visible, (newVal) => {
   if (newVal) {
+    // Reset FIRST: the old order wiped the defaults prepareNeededField had
+    // just seeded, which is why creation forms always opened blank.
+    resetForm();
     prepareNeededField();
     if (props.entity) {
       populateDataFromEntity();
-    } else {
-      resetForm();
     }
   }
 });
@@ -440,8 +447,11 @@ function populateDataFromEntity() {
 function prepareNeededField() {
   props.entityStore.fieldList.forEach((value, key) => {
     if ((!props.entity && value.toBeSet) || (props.entity && value.toBeEdited)) {
-      // Initialize with appropriate default value based on type
-      if (value.type === 'checkbox') {
+      // A creation form opens on the field's declared default when it has one
+      // (edit mode overwrites this from the entity right after).
+      if (!props.entity && value.defaultValue !== undefined) {
+        data[key] = value.defaultValue;
+      } else if (value.type === 'checkbox') {
         data[key] = false;
       } else if (value.type === 'number') {
         data[key] = value.min !== undefined ? value.min : '';
