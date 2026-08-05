@@ -1,14 +1,14 @@
 /**
- * "Mes classes" — the teacher's console (issue #309).
+ * "Mes classes" — the teacher's console (issue #309), console v2 layout.
  *
- * One row per class the teacher owns or manages, answering the three questions
- * they open the app with: who is connected right now, what is assigned, and
- * where do I click to watch. Archived and expired classes stay listed, muted,
- * because a teacher who closed a class still needs to find it.
+ * One dense row per class, answering the three questions a teacher opens the
+ * app with: who is connected right now, what is assigned, and where to click.
+ * State is encoded in the left stripe before a single word is read, and the
+ * classes that are over move into a fold rather than out of reach.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { mount, flushPromises, RouterLinkStub } from '@vue/test-utils'
+import { mount, flushPromises, RouterLinkStub, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 
@@ -81,6 +81,17 @@ import MyClasses from '../../src/components/Pages/MyClasses.vue'
 
 const mockGet = vi.mocked(axios.get)
 
+const HOUR_MS = 60 * 60 * 1000
+const DAY_MS = 24 * HOUR_MS
+
+function inHours(hours: number): string {
+  return new Date(Date.now() + hours * HOUR_MS).toISOString()
+}
+
+function inDays(days: number): string {
+  return new Date(Date.now() + days * DAY_MS).toISOString()
+}
+
 function classRow(overrides: Record<string, any> = {}) {
   return {
     group_id: 'group-1',
@@ -124,6 +135,22 @@ async function mountConsole(rows: any[] | Promise<any>) {
   return wrapper
 }
 
+/** Types into the search box and waits out the shared composable's debounce. */
+async function search(wrapper: VueWrapper<any>, query: string) {
+  await wrapper.find('[data-test="class-search"]').setValue(query)
+  await new Promise(resolve => setTimeout(resolve, 400))
+  await flushPromises()
+}
+
+/** The class names rendered under `scope`, in the order they appear. */
+function rowNames(scope: { findAll: (selector: string) => any[] }): string[] {
+  return scope.findAll('[data-test="class-row"]').map(row => row.find('.class-name').text())
+}
+
+function taughtList(wrapper: VueWrapper<any>) {
+  return wrapper.find('[data-test="class-list"]')
+}
+
 describe('MyClasses console', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -139,10 +166,7 @@ describe('MyClasses console', () => {
       classRow({ group_id: 'group-2', display_name: 'Linux Basics' }),
     ])
 
-    const rows = wrapper.findAll('[data-test="class-row"]')
-    expect(rows).toHaveLength(2)
-    expect(rows[0].text()).toContain('DevOps 2026')
-    expect(rows[1].text()).toContain('Linux Basics')
+    expect(rowNames(wrapper).sort()).toEqual(['DevOps 2026', 'Linux Basics'])
   })
 
   it('asks the console endpoint once, not once per class', async () => {
@@ -152,217 +176,540 @@ describe('MyClasses console', () => {
     expect(mockGet).toHaveBeenCalledWith('/teacher/groups')
   })
 
-  it('shows how many learners are connected out of the class size', async () => {
-    const wrapper = await mountConsole([
-      classRow({ live_session_count: 3, member_count: 12 }),
-    ])
+  describe('presence', () => {
+    it('shows how many learners are connected out of the class size', async () => {
+      const wrapper = await mountConsole([
+        classRow({ live_session_count: 3, member_count: 12 }),
+      ])
 
-    expect(wrapper.find('[data-test="live-count"]').text()).toBe('3 online / 12')
-  })
+      expect(wrapper.find('[data-test="live-number"]').text()).toBe('3')
+      expect(wrapper.find('[data-test="live-count"]').text()).toContain('/ 12 online')
+    })
 
-  it('says it in French too', async () => {
-    i18n.global.locale.value = 'fr'
-    const wrapper = await mountConsole([
-      classRow({ live_session_count: 3, member_count: 12 }),
-    ])
+    it('says it in French too', async () => {
+      i18n.global.locale.value = 'fr'
+      const wrapper = await mountConsole([
+        classRow({ live_session_count: 3, member_count: 12 }),
+      ])
 
-    expect(wrapper.find('[data-test="live-count"]').text()).toBe('3 connectés / 12')
-  })
+      expect(wrapper.find('[data-test="live-number"]').text()).toBe('3')
+      expect(wrapper.find('[data-test="live-count"]').text()).toContain('/ 12 connectés')
+    })
 
-  it('marks the live counter as live only while someone is connected', async () => {
-    const wrapper = await mountConsole([
-      classRow({ group_id: 'busy', live_session_count: 2 }),
-      classRow({ group_id: 'quiet', live_session_count: 0 }),
-    ])
+    it('marks the live counter as live only while someone is connected', async () => {
+      const wrapper = await mountConsole([
+        classRow({ group_id: 'busy', display_name: 'Busy', live_session_count: 2 }),
+        classRow({ group_id: 'quiet', display_name: 'Quiet', live_session_count: 0 }),
+      ])
 
-    const counters = wrapper.findAll('[data-test="live-count"]')
-    expect(counters[0].classes()).toContain('is-live')
-    expect(counters[1].classes()).not.toContain('is-live')
-  })
+      const counters = wrapper.findAll('[data-test="live-count"]')
+      expect(counters[0].classes()).toContain('is-live')
+      expect(counters[1].classes()).not.toContain('is-live')
+    })
 
-  it('keeps the live counter present at zero so nothing moves when it fills', async () => {
-    const wrapper = await mountConsole([classRow({ live_session_count: 0 })])
+    it('keeps the live counter present at zero so nothing moves when it fills', async () => {
+      const wrapper = await mountConsole([classRow({ live_session_count: 0 })])
 
-    expect(wrapper.find('[data-test="live-count"]').exists()).toBe(true)
-    expect(wrapper.find('[data-test="live-count"]').text()).toBe('0 online / 12')
-  })
+      expect(wrapper.find('[data-test="live-number"]').text()).toBe('0')
+      expect(wrapper.find('[data-test="live-count"]').text()).toContain('/ 12 online')
+    })
 
-  it('badges a class the teacher only manages, and leaves owned classes unbadged', async () => {
-    const wrapper = await mountConsole([
-      classRow({ group_id: 'managed', caller_role: 'manager' }),
-      classRow({ group_id: 'owned', caller_role: 'owner' }),
-    ])
+    it('names the idle learners when the endpoint reports them', async () => {
+      const wrapper = await mountConsole([
+        classRow({ live_session_count: 7, idle_session_count: 3 }),
+      ])
 
-    const rows = wrapper.findAll('[data-test="class-row"]')
-    expect(rows[0].find('[data-test="role-badge"]').text()).toBe('Manager')
-    expect(rows[1].find('[data-test="role-badge"]').exists()).toBe(false)
-  })
+      expect(wrapper.find('[data-test="idle-count"]').text()).toBe('3 idle > 10 min')
+    })
 
-  it('mutes an archived class and an expired one, not an active one', async () => {
-    const wrapper = await mountConsole([
-      classRow({ group_id: 'live-class' }),
-      classRow({ group_id: 'archived', is_active: false }),
-      classRow({ group_id: 'expired', is_expired: true }),
-    ])
+    it('keeps the idle line reserved but empty while the endpoint stays silent', async () => {
+      // The field is optional until core serves it. Absent must not read as
+      // "nobody is idle", and the line it will occupy has to exist already or
+      // the row grows the day the counter appears.
+      const wrapper = await mountConsole([classRow({ live_session_count: 7 })])
 
-    const rows = wrapper.findAll('[data-test="class-row"]')
-    expect(rows[0].classes()).not.toContain('is-muted')
-    expect(rows[1].classes()).toContain('is-muted')
-    expect(rows[2].classes()).toContain('is-muted')
-  })
-
-  it('still lists archived classes rather than hiding them', async () => {
-    const wrapper = await mountConsole([
-      classRow({ group_id: 'archived', display_name: 'Last year', is_active: false }),
-    ])
-
-    expect(wrapper.findAll('[data-test="class-row"]')).toHaveLength(1)
-    expect(wrapper.text()).toContain('Last year')
-    expect(wrapper.find('[data-test="state-badge"]').text()).toBe('Archived')
-  })
-
-  it('names the assigned scenario and how much of the class finished it', async () => {
-    const wrapper = await mountConsole([
-      classRow({ assignments: [assignment({ class_completion_rate: 25 })] }),
-    ])
-
-    const row = wrapper.find('[data-test="assignment"]')
-    expect(row.text()).toContain('Hardening SSH')
-    expect(row.text()).toContain('3/12 finished')
-  })
-
-  it('states progress as the fraction of the class, never as a bare percentage', async () => {
-    // class_completion_rate counts distinct MEMBERS over the class size, while
-    // ScenarioAnalytics.completion_rate counts completed SESSIONS over total
-    // sessions. A naked "25%" would be readable as either metric, so the row
-    // spells out the population it is talking about.
-    const wrapper = await mountConsole([
-      classRow({ member_count: 12, assignments: [assignment({ completed_count: 3, class_completion_rate: 25 })] }),
-    ])
-
-    const progress = wrapper.find('[data-test="assignment-progress"]')
-    expect(progress.text()).toBe('3/12 finished')
-    expect(progress.text()).not.toContain('%')
-    expect(progress.attributes('title')).toBe('Learners of the class who finished this scenario')
-  })
-
-  it('spells the same fraction out in French', async () => {
-    i18n.global.locale.value = 'fr'
-    const wrapper = await mountConsole([
-      classRow({ assignments: [assignment({ completed_count: 3, class_completion_rate: 25 })] }),
-    ])
-
-    expect(wrapper.find('[data-test="assignment-progress"]').text()).toBe('3/12 ont terminé')
-  })
-
-  it('draws the completed share of the class as the bar it fills', async () => {
-    const wrapper = await mountConsole([
-      classRow({ assignments: [assignment({ class_completion_rate: 25 })] }),
-    ])
-
-    expect(wrapper.find('.assignment-bar-fill').attributes('style')).toContain('width: 25%')
-  })
-
-  it('fills the bar completely for a class that all finished', async () => {
-    // Mirror of the backend guard (TestGetManagedGroupsOverview_ClassCompletion
-    // Rate_IsAPercentageNotAFraction): class_completion_rate is 0..100. Were it
-    // ever normalised back to a 0..1 fraction, a finished class would draw a 1%
-    // bar and this fails instead of quietly under-reporting by 100x.
-    const wrapper = await mountConsole([
-      classRow({
-        member_count: 12,
-        assignments: [assignment({ completed_count: 12, class_completion_rate: 100 })],
-      }),
-    ])
-
-    expect(wrapper.find('[data-test="assignment-progress"]').text()).toBe('12/12 finished')
-    expect(wrapper.find('.assignment-bar-fill').attributes('style')).toContain('width: 100%')
-  })
-
-  it('draws an empty bar for an assignment nobody finished', async () => {
-    const wrapper = await mountConsole([
-      classRow({
-        assignments: [assignment({ completed_count: 0, class_completion_rate: 0, avg_grade: null })],
-      }),
-    ])
-
-    expect(wrapper.find('[data-test="assignment-progress"]').text()).toBe('0/12 finished')
-    expect(wrapper.find('.assignment-bar-fill').attributes('style')).toContain('width: 0%')
-  })
-
-  it('draws an empty bar rather than a broken one for an empty class', async () => {
-    const wrapper = await mountConsole([
-      classRow({
-        member_count: 0,
-        assignments: [assignment({ completed_count: 0, class_completion_rate: 0 })],
-      }),
-    ])
-
-    expect(wrapper.find('[data-test="assignment-progress"]').text()).toBe('0/0 finished')
-    expect(wrapper.find('.assignment-bar-fill').attributes('style')).toContain('width: 0%')
-  })
-
-  it('shows a deadline when the assignment has one', async () => {
-    const wrapper = await mountConsole([
-      classRow({ assignments: [assignment({ deadline: '2026-09-01T10:00:00Z' })] }),
-    ])
-
-    expect(wrapper.find('[data-test="assignment-deadline"]').exists()).toBe(true)
-  })
-
-  it('omits the deadline line entirely when there is none', async () => {
-    const wrapper = await mountConsole([classRow({ assignments: [assignment()] })])
-
-    expect(wrapper.find('[data-test="assignment-deadline"]').exists()).toBe(false)
-  })
-
-  it('tells the teacher when a class has nothing assigned', async () => {
-    const wrapper = await mountConsole([classRow({ assignments: [] })])
-
-    expect(wrapper.find('[data-test="no-assignment"]').text()).toBe('No scenario assigned')
-  })
-
-  it('opens the live tab of the class when its row is clicked', async () => {
-    const wrapper = await mountConsole([classRow({ group_id: 'group-42' })])
-
-    await wrapper.find('[data-test="class-row"]').trigger('click')
-
-    expect(mockPush).toHaveBeenCalledWith({
-      name: 'GroupDetails',
-      params: { id: 'group-42' },
-      query: { tab: 'live' },
+      const idle = wrapper.find('[data-test="idle-count"]')
+      expect(idle.exists()).toBe(true)
+      expect(idle.text()).toBe('')
     })
   })
 
-  it('opens the live tab from the keyboard as well', async () => {
-    const wrapper = await mountConsole([classRow({ group_id: 'group-42' })])
+  describe('status stripe', () => {
+    // The stripe carries exactly one state, so the teacher sorts the list by
+    // colour before reading a word.
 
-    await wrapper.find('[data-test="class-row"]').trigger('keydown.enter')
+    it('turns green while learners are connected', async () => {
+      const wrapper = await mountConsole([classRow({ live_session_count: 4 })])
 
-    expect(mockPush).toHaveBeenCalledWith({
-      name: 'GroupDetails',
-      params: { id: 'group-42' },
-      query: { tab: 'live' },
+      expect(wrapper.find('[data-test="class-row"]').attributes('data-stripe')).toBe('live')
+    })
+
+    it('turns amber when an assignment is due within two days', async () => {
+      const wrapper = await mountConsole([
+        classRow({ assignments: [assignment({ deadline: inHours(6) })] }),
+      ])
+
+      expect(wrapper.find('[data-test="class-row"]').attributes('data-stripe')).toBe('deadline')
+    })
+
+    it('lets the near deadline outrank live presence', async () => {
+      // Presence already has the big green number beside it; the deadline
+      // would otherwise be a small chip three columns away.
+      const wrapper = await mountConsole([
+        classRow({ live_session_count: 5, assignments: [assignment({ deadline: inHours(6) })] }),
+      ])
+
+      expect(wrapper.find('[data-test="class-row"]').attributes('data-stripe')).toBe('deadline')
+    })
+
+    it('leaves a deadline further out alone', async () => {
+      const wrapper = await mountConsole([
+        classRow({ assignments: [assignment({ deadline: inDays(9) })] }),
+      ])
+
+      expect(wrapper.find('[data-test="class-row"]').attributes('data-stripe')).toBe('calm')
+    })
+
+    it('does not raise the stripe for a deadline already past', async () => {
+      const wrapper = await mountConsole([
+        classRow({ assignments: [assignment({ deadline: inHours(-3) })] }),
+      ])
+
+      expect(wrapper.find('[data-test="class-row"]').attributes('data-stripe')).toBe('calm')
+    })
+
+    it('stays neutral for a quiet class with nothing due', async () => {
+      const wrapper = await mountConsole([classRow()])
+
+      expect(wrapper.find('[data-test="class-row"]').attributes('data-stripe')).toBe('calm')
+    })
+
+    it('marks a closed class inactive whatever else is true of it', async () => {
+      const wrapper = await mountConsole([
+        classRow({
+          is_active: false,
+          live_session_count: 3,
+          assignments: [assignment({ deadline: inHours(6) })],
+        }),
+      ])
+
+      const row = wrapper.find('[data-test="class-row"]')
+      expect(row.attributes('data-stripe')).toBe('inactive')
+      expect(row.classes()).toContain('is-muted')
     })
   })
 
-  it('reaches the members and scenarios tabs without opening the live tab', async () => {
-    const wrapper = await mountConsole([classRow({ group_id: 'group-42' })])
+  describe('identity', () => {
+    it('counts the learners of the class in the meta line', async () => {
+      const wrapper = await mountConsole([classRow({ member_count: 12 })])
 
-    await wrapper.find('[data-test="open-members"]').trigger('click')
-    expect(mockPush).toHaveBeenLastCalledWith({
-      name: 'GroupDetails',
-      params: { id: 'group-42' },
-      query: { tab: 'members' },
+      expect(wrapper.find('[data-test="member-count"]').text()).toBe('12 learners')
     })
 
-    await wrapper.find('[data-test="open-scenarios"]').trigger('click')
-    expect(mockPush).toHaveBeenLastCalledWith({
-      name: 'GroupDetails',
-      params: { id: 'group-42' },
-      query: { tab: 'scenarios' },
+    it('counts a class of one in the singular', async () => {
+      const wrapper = await mountConsole([classRow({ member_count: 1 })])
+
+      expect(wrapper.find('[data-test="member-count"]').text()).toBe('1 learner')
     })
-    expect(mockPush).toHaveBeenCalledTimes(2)
+
+    it('names an expiry the teacher can still act on', async () => {
+      const wrapper = await mountConsole([classRow({ expires_at: inDays(5) })])
+
+      expect(wrapper.find('[data-test="class-expiry"]').exists()).toBe(true)
+    })
+
+    it('keeps a distant expiry out of the meta line', async () => {
+      const wrapper = await mountConsole([classRow({ expires_at: inDays(90) })])
+
+      expect(wrapper.find('[data-test="class-expiry"]').exists()).toBe(false)
+    })
+
+    it('says nothing about expiry for a class that has no end date', async () => {
+      const wrapper = await mountConsole([classRow()])
+
+      expect(wrapper.find('[data-test="class-expiry"]').exists()).toBe(false)
+    })
+
+    it('badges a class the teacher only manages, and leaves owned classes unbadged', async () => {
+      const wrapper = await mountConsole([
+        classRow({ group_id: 'managed', display_name: 'Managed', caller_role: 'manager' }),
+        classRow({ group_id: 'owned', display_name: 'Owned', caller_role: 'owner' }),
+      ])
+
+      const rows = wrapper.findAll('[data-test="class-row"]')
+      expect(rows[0].find('[data-test="role-badge"]').text()).toBe('Manager')
+      expect(rows[1].find('[data-test="role-badge"]').exists()).toBe(false)
+    })
+  })
+
+  describe('assigned work', () => {
+    it('names the assigned scenario and how much of the class finished it', async () => {
+      const wrapper = await mountConsole([
+        classRow({ assignments: [assignment({ class_completion_rate: 25 })] }),
+      ])
+
+      const row = wrapper.find('[data-test="assignment"]')
+      expect(row.text()).toContain('Hardening SSH')
+      expect(row.text()).toContain('3/12 finished')
+    })
+
+    it('states progress as the fraction of the class, never as a bare percentage', async () => {
+      // class_completion_rate counts distinct MEMBERS over the class size, while
+      // ScenarioAnalytics.completion_rate counts completed SESSIONS over total
+      // sessions. A naked "25%" would be readable as either metric, so the row
+      // spells out the population it is talking about.
+      const wrapper = await mountConsole([
+        classRow({ member_count: 12, assignments: [assignment({ completed_count: 3, class_completion_rate: 25 })] }),
+      ])
+
+      const progress = wrapper.find('[data-test="assignment-progress"]')
+      expect(progress.text()).toBe('3/12 finished')
+      expect(progress.text()).not.toContain('%')
+      expect(progress.attributes('title')).toBe('Learners of the class who finished this scenario')
+    })
+
+    it('spells the same fraction out in French', async () => {
+      i18n.global.locale.value = 'fr'
+      const wrapper = await mountConsole([
+        classRow({ assignments: [assignment({ completed_count: 3, class_completion_rate: 25 })] }),
+      ])
+
+      expect(wrapper.find('[data-test="assignment-progress"]').text()).toBe('3/12 ont terminé')
+    })
+
+    it('draws the completed share of the class as the bar it fills', async () => {
+      const wrapper = await mountConsole([
+        classRow({ assignments: [assignment({ class_completion_rate: 25 })] }),
+      ])
+
+      expect(wrapper.find('.assignment-bar-fill').attributes('style')).toContain('width: 25%')
+    })
+
+    it('fills the bar completely for a class that all finished', async () => {
+      // Mirror of the backend guard (TestGetManagedGroupsOverview_ClassCompletion
+      // Rate_IsAPercentageNotAFraction): class_completion_rate is 0..100. Were it
+      // ever normalised back to a 0..1 fraction, a finished class would draw a 1%
+      // bar and this fails instead of quietly under-reporting by 100x.
+      const wrapper = await mountConsole([
+        classRow({
+          member_count: 12,
+          assignments: [assignment({ completed_count: 12, class_completion_rate: 100 })],
+        }),
+      ])
+
+      expect(wrapper.find('[data-test="assignment-progress"]').text()).toBe('12/12 finished')
+      expect(wrapper.find('.assignment-bar-fill').attributes('style')).toContain('width: 100%')
+    })
+
+    it('draws an empty bar for an assignment nobody finished', async () => {
+      const wrapper = await mountConsole([
+        classRow({
+          assignments: [assignment({ completed_count: 0, class_completion_rate: 0, avg_grade: null })],
+        }),
+      ])
+
+      expect(wrapper.find('[data-test="assignment-progress"]').text()).toBe('0/12 finished')
+      expect(wrapper.find('.assignment-bar-fill').attributes('style')).toContain('width: 0%')
+    })
+
+    it('draws an empty bar rather than a broken one for an empty class', async () => {
+      const wrapper = await mountConsole([
+        classRow({
+          member_count: 0,
+          assignments: [assignment({ completed_count: 0, class_completion_rate: 0 })],
+        }),
+      ])
+
+      expect(wrapper.find('[data-test="assignment-progress"]').text()).toBe('0/0 finished')
+      expect(wrapper.find('.assignment-bar-fill').attributes('style')).toContain('width: 0%')
+    })
+
+    it('shows a deadline when the assignment has one', async () => {
+      const wrapper = await mountConsole([
+        classRow({ assignments: [assignment({ deadline: inDays(20) })] }),
+      ])
+
+      expect(wrapper.find('[data-test="assignment-deadline"]').exists()).toBe(true)
+    })
+
+    it('omits the deadline chip entirely when there is none', async () => {
+      const wrapper = await mountConsole([classRow({ assignments: [assignment()] })])
+
+      expect(wrapper.find('[data-test="assignment-deadline"]').exists()).toBe(false)
+    })
+
+    it('turns an unassigned class into the action it is missing', async () => {
+      const wrapper = await mountConsole([classRow({ assignments: [] })])
+
+      const empty = wrapper.find('[data-test="no-assignment"]')
+      expect(empty.text()).toContain('No scenario assigned')
+      expect(empty.find('[data-test="assign-scenario"]').text()).toContain('Assign a scenario')
+    })
+
+    it('sends that call to action to the scenarios tab of the class', async () => {
+      const wrapper = await mountConsole([classRow({ group_id: 'group-42', assignments: [] })])
+
+      await wrapper.find('[data-test="assign-scenario"]').trigger('click')
+
+      expect(mockPush).toHaveBeenCalledWith({
+        name: 'GroupDetails',
+        params: { id: 'group-42' },
+        query: { tab: 'scenarios' },
+      })
+    })
+  })
+
+  describe('row actions', () => {
+    it('opens the live tab of the class when its row is clicked', async () => {
+      const wrapper = await mountConsole([classRow({ group_id: 'group-42' })])
+
+      await wrapper.find('[data-test="class-row"]').trigger('click')
+
+      expect(mockPush).toHaveBeenCalledWith({
+        name: 'GroupDetails',
+        params: { id: 'group-42' },
+        query: { tab: 'live' },
+      })
+    })
+
+    it('opens the live tab from the keyboard as well', async () => {
+      const wrapper = await mountConsole([classRow({ group_id: 'group-42' })])
+
+      await wrapper.find('[data-test="class-row"]').trigger('keydown.enter')
+
+      expect(mockPush).toHaveBeenCalledWith({
+        name: 'GroupDetails',
+        params: { id: 'group-42' },
+        query: { tab: 'live' },
+      })
+    })
+
+    it('offers the wall as the one filled button of the row', async () => {
+      const wrapper = await mountConsole([classRow({ group_id: 'group-42' })])
+
+      await wrapper.find('[data-test="open-wall"]').trigger('click')
+
+      expect(mockPush).toHaveBeenCalledWith({
+        name: 'GroupDetails',
+        params: { id: 'group-42' },
+        query: { tab: 'live' },
+      })
+    })
+
+    it('reaches the learners, scenarios and settings tabs without opening the live tab', async () => {
+      const wrapper = await mountConsole([classRow({ group_id: 'group-42' })])
+
+      await wrapper.find('[data-test="open-members"]').trigger('click')
+      expect(mockPush).toHaveBeenLastCalledWith({
+        name: 'GroupDetails',
+        params: { id: 'group-42' },
+        query: { tab: 'members' },
+      })
+
+      await wrapper.find('[data-test="open-scenarios"]').trigger('click')
+      expect(mockPush).toHaveBeenLastCalledWith({
+        name: 'GroupDetails',
+        params: { id: 'group-42' },
+        query: { tab: 'scenarios' },
+      })
+
+      await wrapper.find('[data-test="open-settings"]').trigger('click')
+      expect(mockPush).toHaveBeenLastCalledWith({
+        name: 'GroupDetails',
+        params: { id: 'group-42' },
+        query: { tab: 'settings' },
+      })
+      expect(mockPush).toHaveBeenCalledTimes(3)
+    })
+  })
+
+  describe('archived classes', () => {
+    it('folds them away from the classes being taught', async () => {
+      const wrapper = await mountConsole([
+        classRow({ group_id: 'now', display_name: 'This term' }),
+        classRow({ group_id: 'old', display_name: 'Last year', is_active: false }),
+      ])
+
+      const fold = wrapper.find('[data-test="archived-fold"]')
+      expect(fold.exists()).toBe(true)
+      // <details> without `open` is collapsed: reachable, never in the way.
+      expect(fold.attributes('open')).toBeUndefined()
+      expect(rowNames(taughtList(wrapper))).toEqual(['This term'])
+      expect(rowNames(fold)).toEqual(['Last year'])
+    })
+
+    it('says how many are in there without opening it', async () => {
+      const wrapper = await mountConsole([
+        classRow({ group_id: 'now' }),
+        classRow({ group_id: 'old', is_active: false }),
+        classRow({ group_id: 'gone', is_expired: true }),
+      ])
+
+      expect(wrapper.find('[data-test="archived-summary"]').text()).toBe('Archived classes (2)')
+    })
+
+    it('says it in French too', async () => {
+      i18n.global.locale.value = 'fr'
+      const wrapper = await mountConsole([classRow({ is_active: false })])
+
+      expect(wrapper.find('[data-test="archived-summary"]').text()).toBe('Classes archivées (1)')
+    })
+
+    it('still lists them rather than hiding them', async () => {
+      const wrapper = await mountConsole([
+        classRow({ group_id: 'archived', display_name: 'Last year', is_active: false }),
+      ])
+
+      const fold = wrapper.find('[data-test="archived-fold"]')
+      expect(fold.findAll('[data-test="class-row"]')).toHaveLength(1)
+      expect(fold.text()).toContain('Last year')
+      expect(fold.find('[data-test="state-badge"]').text()).toBe('Archived')
+    })
+
+    it('counts an expired class as closed, the same way the row mutes it', async () => {
+      const wrapper = await mountConsole([classRow({ group_id: 'gone', is_expired: true })])
+
+      const fold = wrapper.find('[data-test="archived-fold"]')
+      expect(fold.exists()).toBe(true)
+      expect(fold.find('[data-test="class-row"]').classes()).toContain('is-muted')
+      expect(fold.find('[data-test="state-badge"]').text()).toBe('Expired')
+    })
+
+    it('leaves the fold out when every class is still running', async () => {
+      const wrapper = await mountConsole([classRow(), classRow({ group_id: 'group-2' })])
+
+      expect(wrapper.find('[data-test="archived-fold"]').exists()).toBe(false)
+    })
+
+    it('offers analytics instead of a wall, which a finished class no longer has', async () => {
+      const wrapper = await mountConsole([classRow({ group_id: 'old', is_active: false })])
+
+      const row = wrapper.find('[data-test="class-row"]')
+      expect(row.find('[data-test="open-wall"]').exists()).toBe(false)
+
+      await row.find('[data-test="open-analytics"]').trigger('click')
+      expect(mockPush).toHaveBeenCalledWith({
+        name: 'GroupDetails',
+        params: { id: 'old' },
+        query: { tab: 'analytics' },
+      })
+    })
+  })
+
+  describe('filters', () => {
+    it('starts on the classes being taught', async () => {
+      const wrapper = await mountConsole([classRow()])
+
+      expect(wrapper.find('[data-test="filter-active"]').attributes('aria-pressed')).toBe('true')
+      expect(wrapper.find('[data-test="filter-all"]').attributes('aria-pressed')).toBe('false')
+    })
+
+    it('flattens the fold into the list when the teacher asks for all of them', async () => {
+      const wrapper = await mountConsole([
+        classRow({ group_id: 'now', display_name: 'This term' }),
+        classRow({ group_id: 'old', display_name: 'Last year', is_active: false }),
+      ])
+
+      await wrapper.find('[data-test="filter-all"]').trigger('click')
+      await nextTick()
+
+      expect(wrapper.find('[data-test="archived-fold"]').exists()).toBe(false)
+      // Closed classes sink below the ones still being taught.
+      expect(rowNames(taughtList(wrapper))).toEqual(['This term', 'Last year'])
+    })
+
+    it('goes back to hiding them in the fold', async () => {
+      const wrapper = await mountConsole([
+        classRow({ group_id: 'now', display_name: 'This term' }),
+        classRow({ group_id: 'old', display_name: 'Last year', is_active: false }),
+      ])
+
+      await wrapper.find('[data-test="filter-all"]').trigger('click')
+      await nextTick()
+      await wrapper.find('[data-test="filter-active"]').trigger('click')
+      await nextTick()
+
+      expect(wrapper.find('[data-test="archived-fold"]').exists()).toBe(true)
+      expect(rowNames(taughtList(wrapper))).toEqual(['This term'])
+    })
+
+    it('stays out of the way when there is no class to filter', async () => {
+      const wrapper = await mountConsole([])
+
+      expect(wrapper.find('[data-test="class-filters"]').exists()).toBe(false)
+    })
+  })
+
+  describe('search', () => {
+    it('narrows the list to the classes that match', async () => {
+      const wrapper = await mountConsole([
+        classRow({ group_id: 'a', display_name: 'Docker Fundamentals' }),
+        classRow({ group_id: 'b', display_name: 'Kubernetes Intro' }),
+      ])
+
+      await search(wrapper, 'docker')
+
+      expect(rowNames(taughtList(wrapper))).toEqual(['Docker Fundamentals'])
+    })
+
+    it('finds a class whose accents the teacher did not type', async () => {
+      const wrapper = await mountConsole([
+        classRow({ group_id: 'a', display_name: 'Sécurité Linux' }),
+        classRow({ group_id: 'b', display_name: 'Kubernetes Intro' }),
+      ])
+
+      await search(wrapper, 'securite')
+
+      expect(rowNames(taughtList(wrapper))).toEqual(['Sécurité Linux'])
+    })
+
+    it('reaches into the archived fold as well', async () => {
+      // Looking a class up by name must find it wherever it lives, or the fold
+      // becomes a place classes disappear into.
+      const wrapper = await mountConsole([
+        classRow({ group_id: 'now', display_name: 'Docker September' }),
+        classRow({ group_id: 'old', display_name: 'Docker June', is_active: false }),
+      ])
+
+      await search(wrapper, 'june')
+
+      expect(wrapper.find('[data-test="archived-summary"]').text()).toBe('Archived classes (1)')
+      expect(rowNames(taughtList(wrapper))).toEqual([])
+    })
+
+    it('says nothing matched rather than offering to create a class', async () => {
+      const wrapper = await mountConsole([classRow({ display_name: 'DevOps 2026' })])
+
+      await search(wrapper, 'zzz')
+
+      expect(wrapper.find('[data-test="no-search-results"]').text()).toContain('zzz')
+      expect(wrapper.find('[data-test="empty-state"]').exists()).toBe(false)
+      expect(wrapper.find('[data-test="class-row"]').exists()).toBe(false)
+    })
+
+    it('restores the whole list when the box is cleared', async () => {
+      const wrapper = await mountConsole([
+        classRow({ group_id: 'a', display_name: 'Docker Fundamentals' }),
+        classRow({ group_id: 'b', display_name: 'Kubernetes Intro' }),
+      ])
+
+      await search(wrapper, 'docker')
+      await search(wrapper, '')
+
+      expect(rowNames(taughtList(wrapper))).toHaveLength(2)
+    })
+  })
+
+  describe('ordering', () => {
+    it('puts the classes with learners connected first, then sorts by name', async () => {
+      const wrapper = await mountConsole([
+        classRow({ group_id: 'z', display_name: 'Zebra', live_session_count: 0 }),
+        classRow({ group_id: 'a', display_name: 'Alpha', live_session_count: 0 }),
+        classRow({ group_id: 'm', display_name: 'Middle', live_session_count: 2 }),
+      ])
+
+      expect(rowNames(taughtList(wrapper))).toEqual(['Middle', 'Alpha', 'Zebra'])
+    })
   })
 
   describe('personal organization', () => {
@@ -399,6 +746,14 @@ describe('MyClasses console', () => {
 
       expect(wrapper.find('[data-test="class-row"]').exists()).toBe(false)
       expect(wrapper.find('[data-test="empty-state"]').exists()).toBe(false)
+    })
+
+    it('offers neither filters nor an archived fold there', async () => {
+      isPersonalContext.value = true
+      const wrapper = await mountConsole([classRow({ is_active: false })])
+
+      expect(wrapper.find('[data-test="class-filters"]').exists()).toBe(false)
+      expect(wrapper.find('[data-test="archived-fold"]').exists()).toBe(false)
     })
 
     it('says the plan lives here, not the classes', async () => {
@@ -546,9 +901,7 @@ describe('MyClasses console', () => {
         classRow({ group_id: 'b', display_name: 'Elsewhere', organization_id: OTHER_ORG.id }),
       ])
 
-      const rows = wrapper.findAll('[data-test="class-row"]')
-      expect(rows).toHaveLength(1)
-      expect(rows[0].text()).toContain('Here')
+      expect(rowNames(wrapper)).toEqual(['Here'])
       expect(wrapper.text()).not.toContain('Elsewhere')
     })
 
@@ -561,9 +914,7 @@ describe('MyClasses console', () => {
       activeOrganization.value = OTHER_ORG
       await nextTick()
 
-      const rows = wrapper.findAll('[data-test="class-row"]')
-      expect(rows).toHaveLength(1)
-      expect(rows[0].text()).toContain('Elsewhere')
+      expect(rowNames(wrapper)).toEqual(['Elsewhere'])
       expect(mockGet).toHaveBeenCalledTimes(1)
     })
 
@@ -640,6 +991,8 @@ describe('MyClasses console', () => {
     // Same sizing rule as a real row, so nothing jumps when the data lands.
     expect(skeletons[0].classes()).toContain('class-row')
     expect(wrapper.find('[data-test="empty-state"]').exists()).toBe(false)
+    // Nothing to filter yet either — the controls arrive with the classes.
+    expect(wrapper.find('[data-test="class-filters"]').exists()).toBe(false)
   })
 
   it('surfaces a load failure with a way to retry', async () => {
@@ -672,7 +1025,7 @@ describe('MyClasses console', () => {
       await flushPromises()
 
       expect(mockGet).toHaveBeenCalledTimes(2)
-      expect(wrapper.find('[data-test="live-count"]').text()).toBe('5 online / 12')
+      expect(wrapper.find('[data-test="live-number"]').text()).toBe('5')
     } finally {
       vi.useRealTimers()
     }

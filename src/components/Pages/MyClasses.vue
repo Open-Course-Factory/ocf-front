@@ -49,7 +49,43 @@
       </button>
     </div>
 
-    <div class="class-list">
+    <div v-if="showFilters" class="class-filters" data-test="class-filters">
+      <label class="class-search">
+        <i class="fas fa-search" aria-hidden="true"></i>
+        <input
+          v-model="searchQuery"
+          type="search"
+          class="class-search-input"
+          data-test="class-search"
+          :placeholder="t('myClasses.searchPlaceholder')"
+          :aria-label="t('myClasses.searchPlaceholder')"
+        />
+      </label>
+      <div class="filter-chips" role="group" :aria-label="t('myClasses.filterLabel')">
+        <button
+          type="button"
+          class="filter-chip"
+          :class="{ 'is-active': visibilityFilter === 'active' }"
+          :aria-pressed="visibilityFilter === 'active'"
+          data-test="filter-active"
+          @click="visibilityFilter = 'active'"
+        >
+          {{ t('myClasses.filterActive') }}
+        </button>
+        <button
+          type="button"
+          class="filter-chip"
+          :class="{ 'is-active': visibilityFilter === 'all' }"
+          :aria-pressed="visibilityFilter === 'all'"
+          data-test="filter-all"
+          @click="visibilityFilter = 'all'"
+        >
+          {{ t('myClasses.filterAll') }}
+        </button>
+      </div>
+    </div>
+
+    <div class="class-list" data-test="class-list">
       <!-- A personal organization is not a teaching place at all, so this page
            is not a class list there — it is the way out.
 
@@ -105,14 +141,34 @@
         </button>
       </div>
 
+      <div v-else-if="showNoSearchResults" class="empty-state" data-test="no-search-results">
+        <i class="fas fa-search"></i>
+        <p>{{ t('myClasses.noSearchResults', { query: searchQuery }) }}</p>
+      </div>
+
       <template v-else>
         <ClassConsoleRow
-          v-for="summary in visibleClasses"
+          v-for="summary in listedClasses"
           :key="summary.group_id"
           :summary="summary"
         />
       </template>
     </div>
+
+    <!-- Closed classes stay reachable without taking a single row of attention
+         from the ones being taught today. -->
+    <details v-if="showArchivedFold" class="archived-fold" data-test="archived-fold">
+      <summary data-test="archived-summary">
+        {{ t('myClasses.archivedFold', { count: archivedClasses.length }) }}
+      </summary>
+      <div class="class-list archived-list" data-test="archived-class-list">
+        <ClassConsoleRow
+          v-for="summary in archivedClasses"
+          :key="summary.group_id"
+          :summary="summary"
+        />
+      </div>
+    </details>
 
     <EntityModal
       v-if="showCreateModal"
@@ -129,12 +185,19 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useTranslations } from '../../composables/useTranslations'
 import { useClassroomEntitlement } from '../../composables/useClassroomEntitlement'
+import { useEntitySearch } from '../../composables/useEntitySearch'
 import { useVisiblePolling } from '../../composables/useVisiblePolling'
 import { useTeacherGroupsStore } from '../../stores/teacherGroups'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { useClassGroupsStore } from '../../stores/classGroups'
+import {
+  classDisplayName,
+  isInactiveClass,
+  type TeacherGroupSummary
+} from '../../services/domain/scenario/teacherService'
 import ClassConsoleRow from '../Groups/ClassConsoleRow.vue'
 import EntityModal from '../Modals/EntityModal.vue'
 
@@ -144,6 +207,7 @@ const REFRESH_INTERVAL_MS = 30000
 const store = useTeacherGroupsStore()
 const organizationsStore = useOrganizationsStore()
 const classGroupsStore = useClassGroupsStore()
+const { locale } = useI18n()
 
 const showCreateModal = ref(false)
 
@@ -151,6 +215,9 @@ const showCreateModal = ref(false)
 // all" — the personal context this state belongs to answers the org-scoped one
 // with a flat no whatever the plan says (core #475).
 const { planAllowsClassrooms } = useClassroomEntitlement()
+
+/** "active" hides closed classes in the fold; "all" lists them inline. */
+const visibilityFilter = ref<'active' | 'all'>('active')
 
 // Same call Entity.vue makes on /class-groups, so the subgroup after-create
 // hook and its partial-failure reporting run identically here. The console
@@ -176,6 +243,12 @@ const { t } = useTranslations({
       emptyInOrganization: 'You manage no class in {organization}. Your other classes are in another organization — switch organization to see them.',
       emptyCta: 'Create a class',
       createClass: 'New class',
+      searchPlaceholder: 'Search a class…',
+      filterLabel: 'Filter classes',
+      filterActive: 'Active',
+      filterAll: 'All',
+      archivedFold: 'Archived classes ({count})',
+      noSearchResults: 'No class matches “{query}”.',
       personalOrgTitle: 'Teaching happens in an organization',
       personalOrgBody: 'Your personal space carries your plan, not your classes. Create an organization to open your first class in it.',
       classesElsewhere: 'Your existing classes are in another organization — switch organization to see them.',
@@ -195,6 +268,12 @@ const { t } = useTranslations({
       emptyInOrganization: 'Vous ne gérez aucune classe dans {organization}. Vos autres classes sont dans une autre organisation — changez d’organisation pour les voir.',
       emptyCta: 'Créer une classe',
       createClass: 'Nouvelle classe',
+      searchPlaceholder: 'Rechercher une classe…',
+      filterLabel: 'Filtrer les classes',
+      filterActive: 'Actives',
+      filterAll: 'Toutes',
+      archivedFold: 'Classes archivées ({count})',
+      noSearchResults: 'Aucune classe ne correspond à « {query} ».',
       personalOrgTitle: 'L’enseignement se passe dans une organisation',
       personalOrgBody: 'Votre espace personnel porte votre forfait, pas vos classes. Créez une organisation pour y ouvrir votre première classe.',
       classesElsewhere: 'Vos classes existantes sont dans une autre organisation — changez d’organisation pour les voir.',
@@ -226,8 +305,58 @@ const visibleClasses = computed(() => store.groupsInCurrentOrganization)
 // already on screen must not replace it with placeholders.
 const isFirstLoad = computed(() => store.isLoading && store.groups.length === 0)
 
+// The shared search box, over the classes already loaded — the console has the
+// whole organization in memory, so there is nothing to ask the backend for.
+const { searchQuery, results: matchingClasses } = useEntitySearch(
+  visibleClasses,
+  ref<Map<string, any> | undefined>(undefined)
+)
+
+/**
+ * Live classes first — the ones the teacher may need to step into right now —
+ * then alphabetically, so a class keeps its place between two refreshes.
+ */
+function byPresenceThenName(a: TeacherGroupSummary, b: TeacherGroupSummary): number {
+  const presence = Number(b.live_session_count > 0) - Number(a.live_session_count > 0)
+  if (presence !== 0) return presence
+  return classDisplayName(a).localeCompare(classDisplayName(b), locale.value)
+}
+
+// Searching spans the closed classes too, so looking one up by name finds it
+// in the fold instead of returning nothing.
+const sortedMatches = computed(() => [...matchingClasses.value].sort(byPresenceThenName))
+const openClasses = computed(() => sortedMatches.value.filter(summary => !isInactiveClass(summary)))
+const archivedClasses = computed(() => sortedMatches.value.filter(isInactiveClass))
+
+// "All" flattens the fold into the list rather than hiding it somewhere else,
+// and closed classes still sink below the ones being taught.
+const listedClasses = computed(() =>
+  visibilityFilter.value === 'all'
+    ? [...openClasses.value, ...archivedClasses.value]
+    : openClasses.value
+)
+
+const showArchivedFold = computed(() =>
+  !isPersonalContext.value &&
+  !isFirstLoad.value &&
+  visibilityFilter.value === 'active' &&
+  archivedClasses.value.length > 0
+)
+
 const showEmptyState = computed(() =>
   store.isLoaded && visibleClasses.value.length === 0 && !store.error
+)
+
+// A search that matches nothing is not an empty console: the teacher has
+// classes, just none by that name, and offering "create a class" there would
+// answer a question nobody asked.
+const showNoSearchResults = computed(() =>
+  store.isLoaded && visibleClasses.value.length > 0 && sortedMatches.value.length === 0
+)
+
+// Filtering an empty page is noise; the filters appear with the classes.
+const showFilters = computed(() =>
+  !isPersonalContext.value && !isFirstLoad.value && visibleClasses.value.length > 0
 )
 
 const currentOrganizationName = computed(() =>
@@ -340,6 +469,82 @@ useVisiblePolling(() => {
   border-radius: var(--border-radius-sm);
   color: var(--color-danger);
   cursor: pointer;
+}
+
+.class-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.class-search {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex: 1;
+  max-width: 320px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-primary);
+  border: var(--border-width-thin) solid var(--color-border-medium);
+  border-radius: var(--border-radius-md);
+  color: var(--color-text-muted);
+}
+
+.class-search:focus-within {
+  border-color: var(--color-primary);
+}
+
+.class-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.class-search-input:focus {
+  outline: none;
+}
+
+.filter-chips {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.filter-chip {
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: transparent;
+  border: var(--border-width-thin) solid var(--color-border-medium);
+  border-radius: var(--border-radius-full);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.filter-chip.is-active {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.archived-fold {
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: var(--border-width-thin) solid var(--color-border-light);
+}
+
+.archived-fold summary {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.archived-list {
+  margin-top: var(--spacing-sm);
 }
 
 /* The single source of a row's height: ClassConsoleRow reads this variable too,

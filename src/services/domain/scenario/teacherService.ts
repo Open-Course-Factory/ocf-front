@@ -156,7 +156,30 @@ export interface TeacherGroupSummary {
   is_expired: boolean
   member_count: number
   live_session_count: number
+  /**
+   * Learners connected but idle for longer than the backend's threshold — the
+   * "stuck learner" detector. Optional because the endpoint does not serve it
+   * yet; every consumer must treat absent as "unknown", never as zero.
+   */
+  idle_session_count?: number
   assignments: TeacherGroupAssignment[]
+}
+
+/**
+ * A class the teacher has closed, or whose expiry has passed.
+ *
+ * The one definition of "not a class you teach today": the console folds these
+ * away, and the row mutes and re-labels itself from the same predicate. Two
+ * copies of this rule would let the list and the row disagree about the very
+ * same class.
+ */
+export function isInactiveClass(summary: TeacherGroupSummary): boolean {
+  return !summary.is_active || summary.is_expired
+}
+
+/** What a class is called on screen, wherever it is shown. */
+export function classDisplayName(summary: TeacherGroupSummary): string {
+  return summary.display_name || summary.name
 }
 
 export const teacherService = {

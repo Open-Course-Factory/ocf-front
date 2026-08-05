@@ -5,24 +5,33 @@
  *
  * One class on the "Mes classes" console (issue #309): who is connected, what
  * is assigned, and the ways in.
+ *
+ * Four zones behind a status stripe — identity, presence, work, actions — in
+ * that reading order, because the question the teacher opens the page with is
+ * "who is working, where are they?" and everything else is configuration.
  */
 -->
 
 <template>
   <article
     class="class-row"
-    :class="{ 'is-muted': isMuted }"
+    :class="[`stripe-${stripeState}`, { 'is-muted': isInactive }]"
     data-test="class-row"
+    :data-stripe="stripeState"
     role="button"
     :tabindex="0"
-    :aria-label="t('myClasses.openLive', { name: summary.display_name || summary.name })"
+    :aria-label="t('myClasses.openLive', { name: className })"
     @click="open('live')"
     @keydown.enter="open('live')"
     @keydown.space.prevent="open('live')"
   >
+    <span class="class-stripe" data-test="class-stripe" aria-hidden="true"></span>
+
     <div class="class-identity">
-      <h3 class="class-name">{{ summary.display_name || summary.name }}</h3>
-      <div class="class-tags">
+      <h3 class="class-name">{{ className }}</h3>
+      <div class="class-meta">
+        <span data-test="member-count">{{ memberCountLabel }}</span>
+        <span v-if="expiryLabel" data-test="class-expiry">{{ expiryLabel }}</span>
         <span v-if="summary.caller_role === 'manager'" class="class-tag tag-role" data-test="role-badge">
           {{ t('myClasses.roleManager') }}
         </span>
@@ -32,12 +41,18 @@
       </div>
     </div>
 
-    <div class="class-live" :class="{ 'is-live': isLive }" data-test="live-count">
-      <span class="live-dot" aria-hidden="true"></span>
-      {{ liveLabel }}
+    <div class="class-presence" :class="{ 'is-live': isLive }" data-test="live-count">
+      <span class="presence-count">
+        <span class="live-dot" aria-hidden="true"></span>
+        <span class="presence-number" data-test="live-number">{{ summary.live_session_count }}</span>
+        <small class="presence-total">{{ t('myClasses.liveOutOf', { total: summary.member_count }) }}</small>
+      </span>
+      <!-- Always rendered, empty until the endpoint serves the counter: the
+           line keeps its height so a row never grows when the number lands. -->
+      <span class="presence-idle" data-test="idle-count">{{ idleLabel }}</span>
     </div>
 
-    <div class="class-assignments">
+    <div class="class-work">
       <template v-if="summary.assignments.length">
         <div
           v-for="assignment in summary.assignments"
@@ -45,8 +60,14 @@
           class="assignment"
           data-test="assignment"
         >
-          <span class="assignment-title">{{ assignment.scenario_title }}</span>
-          <span
+          <div class="assignment-head">
+            <span class="assignment-title">{{ assignment.scenario_title }}</span>
+            <span v-if="assignment.deadline" class="assignment-deadline" data-test="assignment-deadline">
+              <i class="fas fa-hourglass-end" aria-hidden="true"></i>
+              {{ formatDeadline(assignment.deadline) }}
+            </span>
+          </div>
+          <div
             class="assignment-progress"
             data-test="assignment-progress"
             :title="t('myClasses.completionHelp')"
@@ -58,37 +79,74 @@
               completed: assignment.completed_count,
               total: summary.member_count
             }) }}
-          </span>
-          <span v-if="assignment.deadline" class="assignment-deadline" data-test="assignment-deadline">
-            <i class="fas fa-hourglass-end"></i>
-            {{ formatDeadline(assignment.deadline) }}
-          </span>
+          </div>
         </div>
       </template>
-      <span v-else class="no-assignment" data-test="no-assignment">
-        {{ t('myClasses.noAssignment') }}
-      </span>
+      <div v-else class="no-assignment" data-test="no-assignment">
+        <span>{{ t('myClasses.noAssignment') }}</span>
+        <button
+          type="button"
+          class="assign-link"
+          data-test="assign-scenario"
+          @click.stop="open('scenarios')"
+        >
+          {{ t('myClasses.assignScenario') }}
+        </button>
+      </div>
     </div>
 
     <div class="class-actions">
+      <!-- A closed class has no wall left to watch; what is still wanted of it
+           is what the cohort achieved. -->
       <button
+        v-if="isInactive"
         type="button"
-        class="class-action"
-        data-test="open-members"
-        :title="t('myClasses.openMembers')"
-        @click.stop="open('members')"
+        class="action-analytics"
+        data-test="open-analytics"
+        @click.stop="open('analytics')"
       >
-        <i class="fas fa-user-friends"></i>
-        <span class="class-action-label">{{ summary.member_count }}</span>
+        {{ t('myClasses.openAnalytics') }}
       </button>
+      <template v-else>
+        <button
+          type="button"
+          class="action-wall"
+          data-test="open-wall"
+          @click.stop="open('live')"
+        >
+          <i class="fas fa-play" aria-hidden="true"></i>
+          <span>{{ t('myClasses.openWall') }}</span>
+        </button>
+        <button
+          type="button"
+          class="class-action"
+          data-test="open-members"
+          :title="t('myClasses.openMembers')"
+          :aria-label="t('myClasses.openMembers')"
+          @click.stop="open('members')"
+        >
+          <i class="fas fa-user-friends" aria-hidden="true"></i>
+        </button>
+        <button
+          type="button"
+          class="class-action"
+          data-test="open-scenarios"
+          :title="t('myClasses.openScenarios')"
+          :aria-label="t('myClasses.openScenarios')"
+          @click.stop="open('scenarios')"
+        >
+          <i class="fas fa-flask" aria-hidden="true"></i>
+        </button>
+      </template>
       <button
         type="button"
         class="class-action"
-        data-test="open-scenarios"
-        :title="t('myClasses.openScenarios')"
-        @click.stop="open('scenarios')"
+        data-test="open-settings"
+        :title="t('myClasses.openSettings')"
+        :aria-label="t('myClasses.openSettings')"
+        @click.stop="open('settings')"
       >
-        <i class="fas fa-flask"></i>
+        <i class="fas fa-cog" aria-hidden="true"></i>
       </button>
     </div>
   </article>
@@ -100,7 +158,28 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useTranslations } from '../../composables/useTranslations'
 import { formatDate } from '../../utils/formatters'
-import type { TeacherGroupAssignment, TeacherGroupSummary } from '../../services/domain/scenario/teacherService'
+import {
+  classDisplayName,
+  isInactiveClass,
+  type TeacherGroupAssignment,
+  type TeacherGroupSummary
+} from '../../services/domain/scenario/teacherService'
+
+/**
+ * A deadline is "near" within two days: the window in which the teacher can
+ * still act on it — squeeze in a session, send a reminder. Past that, the chip
+ * carries the date and the stripe stays quiet.
+ */
+const DEADLINE_SOON_MS = 48 * 60 * 60 * 1000
+
+/**
+ * An expiry earns a line in the meta only once it is a couple of weeks out.
+ * Every class has one; naming it year-round would turn the line into noise.
+ */
+const EXPIRY_SOON_MS = 14 * 24 * 60 * 60 * 1000
+
+/** Mirrors the backend's idle threshold, so the count reads unambiguously. */
+const IDLE_THRESHOLD_MINUTES = 10
 
 // No organization prop: every row on the console belongs to the active
 // organization, which the page and the organization switcher already name.
@@ -117,14 +196,22 @@ const { t } = useTranslations({
       roleManager: 'Manager',
       stateArchived: 'Archived',
       stateExpired: 'Expired',
-      liveCountOne: '{live} online / {total}',
-      liveCountMany: '{live} online / {total}',
+      memberCountOne: '{count} learner',
+      memberCountMany: '{count} learners',
+      expiresOn: 'expires {date}',
+      liveOutOf: '/ {total} online',
+      idleCountOne: '{count} idle > {minutes} min',
+      idleCountMany: '{count} idle > {minutes} min',
       completedOfClass: '{completed}/{total} finished',
       completionHelp: 'Learners of the class who finished this scenario',
       noAssignment: 'No scenario assigned',
+      assignScenario: 'Assign a scenario →',
       openLive: 'Open the live sessions of {name}',
-      openMembers: 'Members',
-      openScenarios: 'Scenarios'
+      openWall: 'Open the wall',
+      openAnalytics: 'Analytics',
+      openMembers: 'Learners',
+      openScenarios: 'Scenarios',
+      openSettings: 'Settings'
     }
   },
   fr: {
@@ -132,20 +219,51 @@ const { t } = useTranslations({
       roleManager: 'Gestionnaire',
       stateArchived: 'Archivée',
       stateExpired: 'Expirée',
-      liveCountOne: '{live} connecté / {total}',
-      liveCountMany: '{live} connectés / {total}',
+      memberCountOne: '{count} apprenant',
+      memberCountMany: '{count} apprenants',
+      expiresOn: 'expire le {date}',
+      liveOutOf: '/ {total} connectés',
+      idleCountOne: '{count} inactif > {minutes} min',
+      idleCountMany: '{count} inactifs > {minutes} min',
       completedOfClass: '{completed}/{total} ont terminé',
       completionHelp: 'Apprenants de la classe ayant terminé ce scénario',
       noAssignment: 'Aucun scénario assigné',
+      assignScenario: 'Assigner un scénario →',
       openLive: 'Ouvrir les sessions en direct de {name}',
-      openMembers: 'Membres',
-      openScenarios: 'Scénarios'
+      openWall: 'Ouvrir le mur',
+      openAnalytics: 'Analytiques',
+      openMembers: 'Apprenants',
+      openScenarios: 'Scénarios',
+      openSettings: 'Réglages'
     }
   }
 })
 
-const isMuted = computed(() => !props.summary.is_active || props.summary.is_expired)
+const className = computed(() => classDisplayName(props.summary))
+const isInactive = computed(() => isInactiveClass(props.summary))
 const isLive = computed(() => props.summary.live_session_count > 0)
+
+const hasDeadlineSoon = computed(() =>
+  props.summary.assignments.some(assignment => {
+    const remaining = millisecondsUntil(assignment.deadline)
+    // A deadline already past is history, not urgency; an unparseable date
+    // yields NaN and fails both comparisons, which is the answer we want.
+    return remaining !== null && remaining >= 0 && remaining <= DEADLINE_SOON_MS
+  })
+)
+
+/**
+ * The stripe is the pre-attentive sort key of the list, so it carries exactly
+ * one state. A near deadline outranks live presence because presence is spelled
+ * out right beside it — a big green number and a pulsing dot — while a deadline
+ * would otherwise be a small chip three columns away.
+ */
+const stripeState = computed<'inactive' | 'deadline' | 'live' | 'calm'>(() => {
+  if (isInactive.value) return 'inactive'
+  if (hasDeadlineSoon.value) return 'deadline'
+  if (isLive.value) return 'live'
+  return 'calm'
+})
 
 // Archived wins over expired: a class its owner closed is closed whatever its
 // expiry says.
@@ -155,13 +273,35 @@ const stateLabel = computed(() => {
   return ''
 })
 
-const liveLabel = computed(() => {
-  const key = props.summary.live_session_count === 1 ? 'myClasses.liveCountOne' : 'myClasses.liveCountMany'
-  return t(key, {
-    live: props.summary.live_session_count,
-    total: props.summary.member_count
-  })
+const memberCountLabel = computed(() => {
+  const key = props.summary.member_count === 1 ? 'myClasses.memberCountOne' : 'myClasses.memberCountMany'
+  return t(key, { count: props.summary.member_count })
 })
+
+// Only an expiry the teacher can still act on. A class already past it says so
+// in its state badge, where repeating the date would add nothing.
+const expiryLabel = computed(() => {
+  if (isInactive.value || !props.summary.expires_at) return ''
+  const remaining = millisecondsUntil(props.summary.expires_at)
+  if (remaining === null || !(remaining >= 0 && remaining <= EXPIRY_SOON_MS)) return ''
+  return t('myClasses.expiresOn', { date: formatDeadline(props.summary.expires_at) })
+})
+
+// Absent is not zero: a class with nobody idle and a class the endpoint cannot
+// tell us about both stay silent here, which is why this reads the raw field
+// rather than defaulting it.
+const idleLabel = computed(() => {
+  const idle = props.summary.idle_session_count
+  if (!idle || idle <= 0) return ''
+  const key = idle === 1 ? 'myClasses.idleCountOne' : 'myClasses.idleCountMany'
+  return t(key, { count: idle, minutes: IDLE_THRESHOLD_MINUTES })
+})
+
+/** Milliseconds from now until `date`, or null when there is no date at all. */
+function millisecondsUntil(date?: string): number | null {
+  if (!date) return null
+  return new Date(date).getTime() - Date.now()
+}
 
 // `class_completion_rate` is distinct MEMBERS who completed over class size —
 // a different metric from ScenarioAnalytics.completion_rate, which counts
@@ -176,7 +316,7 @@ function formatDeadline(deadline: string): string {
   return formatDate(deadline, locale.value === 'en' ? 'en-GB' : 'fr-FR')
 }
 
-function open(tab: 'live' | 'members' | 'scenarios') {
+function open(tab: 'live' | 'members' | 'scenarios' | 'settings' | 'analytics') {
   router.push({
     name: 'GroupDetails',
     params: { id: props.summary.group_id },
@@ -188,13 +328,13 @@ function open(tab: 'live' | 'members' | 'scenarios') {
 <style scoped>
 .class-row {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) auto minmax(0, 3fr) auto;
+  grid-template-columns: 4px minmax(0, 1.1fr) 150px minmax(0, 1.4fr) auto;
   align-items: center;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
   /* Set by the console list so a row and its loading placeholder share one
      height; the fallback keeps the component usable on its own. */
   min-height: var(--class-row-min-height, 84px);
-  padding: var(--spacing-md) var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-md) var(--spacing-md) 0;
   background: var(--color-bg-primary);
   border: var(--border-width-thin) solid var(--color-border-light);
   border-radius: var(--border-radius-lg);
@@ -210,8 +350,23 @@ function open(tab: 'live' | 'members' | 'scenarios') {
 }
 
 .class-row.is-muted {
-  opacity: 0.6;
+  opacity: 0.62;
   background: var(--color-bg-secondary);
+}
+
+/* The status stripe: one colour, one state, read before a single word. */
+.class-stripe {
+  align-self: stretch;
+  border-radius: var(--border-radius-lg) 0 0 var(--border-radius-lg);
+  background: var(--color-border-light);
+}
+
+.stripe-live .class-stripe {
+  background: var(--color-success);
+}
+
+.stripe-deadline .class-stripe {
+  background: var(--color-warning-amber);
 }
 
 .class-identity {
@@ -220,7 +375,7 @@ function open(tab: 'live' | 'members' | 'scenarios') {
 
 .class-name {
   margin: 0;
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
   overflow: hidden;
@@ -228,56 +383,80 @@ function open(tab: 'live' | 'members' | 'scenarios') {
   white-space: nowrap;
 }
 
-.class-tags {
+.class-meta {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--spacing-xs) var(--spacing-sm);
   margin-top: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
 
 .class-tag {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-xs);
+  padding: 1px var(--spacing-sm);
+  border-radius: var(--border-radius-full);
   font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.tag-role {
+  background: var(--color-purple-bg);
+  color: var(--color-purple);
+}
+
+.tag-state {
+  background: var(--color-bg-tertiary);
   color: var(--color-text-muted);
 }
 
-.tag-role,
-.tag-state {
-  padding: 2px var(--spacing-sm);
-  border-radius: var(--border-radius-sm);
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
-}
-
-.class-live {
+.class-presence {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  /* Reserved width: the label grows from "0" to "12" without moving anything. */
-  min-width: 11ch;
-  font-size: var(--font-size-sm);
+  flex-direction: column;
+  gap: 2px;
   font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
+}
+
+.presence-count {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
   white-space: nowrap;
 }
 
-.class-live.is-live {
-  color: var(--color-success);
-  font-weight: var(--font-weight-semibold);
+.presence-total {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-muted);
+}
+
+.class-presence.is-live {
+  color: var(--color-success-text);
+}
+
+/* Reserved line: empty until the endpoint reports idle learners, so the row
+   never grows the day it starts to. */
+.presence-idle {
+  min-height: 1.2em;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
 
 .live-dot {
   width: 8px;
   height: 8px;
   flex-shrink: 0;
+  align-self: center;
   border-radius: 50%;
   background: var(--color-gray-400);
 }
 
-.class-live.is-live .live-dot {
+.class-presence.is-live .live-dot {
   background: var(--color-success);
   animation: live-pulse 2s ease-in-out infinite;
 }
@@ -288,47 +467,65 @@ function open(tab: 'live' | 'members' | 'scenarios') {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .class-live.is-live .live-dot {
+  .class-presence.is-live .live-dot {
     animation: none;
   }
 }
 
-.class-assignments {
+.class-work {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
   min-width: 0;
+  font-size: var(--font-size-sm);
 }
 
-.assignment {
+.assignment-head {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+  min-width: 0;
 }
 
 .assignment-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
 }
 
-.assignment-progress {
+.assignment-deadline {
   display: inline-flex;
   align-items: center;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+  padding: 1px var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--color-warning-amber-border);
+  border-radius: var(--border-radius-full);
+  background: var(--color-warning-amber-bg);
+  color: var(--color-warning-amber);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.assignment-progress {
+  display: flex;
+  align-items: center;
   gap: var(--spacing-sm);
-  margin-left: auto;
+  margin-top: 3px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
 .assignment-bar {
-  display: inline-block;
-  width: 64px;
+  flex: 1;
+  max-width: 190px;
   height: 6px;
-  border-radius: 3px;
+  border-radius: var(--border-radius-full);
   background: var(--color-bg-tertiary);
   overflow: hidden;
 }
@@ -336,43 +533,89 @@ function open(tab: 'live' | 'members' | 'scenarios') {
 .assignment-bar-fill {
   display: block;
   height: 100%;
-  border-radius: 3px;
+  border-radius: var(--border-radius-full);
   background: var(--color-primary);
   transition: width var(--transition-slow);
 }
 
-.assignment-deadline {
-  display: inline-flex;
+/* An empty work zone is an action waiting, not a blank. */
+.no-assignment {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--spacing-xs);
-  font-size: var(--font-size-xs);
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
-  white-space: nowrap;
 }
 
-.no-assignment {
+.assign-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-primary);
   font-size: var(--font-size-sm);
-  font-style: italic;
-  color: var(--color-text-muted);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.assign-link:hover {
+  text-decoration: underline;
 }
 
 .class-actions {
   display: flex;
+  align-items: center;
   gap: var(--spacing-xs);
+}
+
+/* The one filled affordance of the row. */
+.action-wall {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  border-radius: var(--border-radius-md);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--transition-base), color var(--transition-base);
+}
+
+.action-wall:hover {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.action-analytics {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.action-analytics:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
 .class-action {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  min-width: 44px;
-  min-height: 36px;
   justify-content: center;
-  padding: 0 var(--spacing-sm);
-  background: var(--color-bg-tertiary);
-  border: var(--border-width-thin) solid var(--color-border-light);
-  border-radius: var(--border-radius-sm);
-  color: var(--color-text-secondary);
+  width: 36px;
+  min-height: 36px;
+  border: none;
+  border-radius: var(--border-radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
   cursor: pointer;
   transition: background var(--transition-base), color var(--transition-base);
 }
@@ -382,23 +625,21 @@ function open(tab: 'live' | 'members' | 'scenarios') {
   color: var(--color-primary);
 }
 
-.class-action-label {
-  font-size: var(--font-size-sm);
-  font-variant-numeric: tabular-nums;
-}
-
 @media (max-width: 900px) {
   .class-row {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 4px minmax(0, 1fr) auto;
     grid-template-areas:
-      'identity live'
-      'assignments actions';
+      'stripe identity presence'
+      'stripe work work'
+      'stripe actions actions';
+    row-gap: var(--spacing-sm);
     min-height: 0;
   }
 
+  .class-stripe { grid-area: stripe; }
   .class-identity { grid-area: identity; }
-  .class-live { grid-area: live; }
-  .class-assignments { grid-area: assignments; }
+  .class-presence { grid-area: presence; }
+  .class-work { grid-area: work; }
   .class-actions { grid-area: actions; }
 }
 </style>
