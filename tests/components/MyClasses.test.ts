@@ -92,6 +92,11 @@ function inDays(days: number): string {
   return new Date(Date.now() + days * DAY_MS).toISOString()
 }
 
+/**
+ * A class of twelve apprenants taught by one enrolled teacher, so member_count
+ * and learner_count differ by default (issue #480): a row that read the roster
+ * where it means the class would show 13 everywhere and fail here.
+ */
 function classRow(overrides: Record<string, any> = {}) {
   return {
     group_id: 'group-1',
@@ -101,7 +106,8 @@ function classRow(overrides: Record<string, any> = {}) {
     caller_role: 'owner',
     is_active: true,
     is_expired: false,
-    member_count: 12,
+    member_count: 13,
+    learner_count: 12,
     live_session_count: 0,
     assignments: [],
     ...overrides,
@@ -177,9 +183,12 @@ describe('MyClasses console', () => {
   })
 
   describe('presence', () => {
-    it('shows how many learners are connected out of the class size', async () => {
+    it('shows how many learners are connected out of the apprenants, not the roster', async () => {
+      // The teacher and their assistant are on the roster too (#480). Counting
+      // them would leave a fully present class reading "12/14 connectés" every
+      // session, which is the bug learner_count exists to end.
       const wrapper = await mountConsole([
-        classRow({ live_session_count: 3, member_count: 12 }),
+        classRow({ live_session_count: 3, member_count: 14, learner_count: 12 }),
       ])
 
       expect(wrapper.find('[data-test="live-number"]').text()).toBe('3')
@@ -189,11 +198,36 @@ describe('MyClasses console', () => {
     it('says it in French too', async () => {
       i18n.global.locale.value = 'fr'
       const wrapper = await mountConsole([
-        classRow({ live_session_count: 3, member_count: 12 }),
+        classRow({ live_session_count: 3, member_count: 14, learner_count: 12 }),
       ])
 
       expect(wrapper.find('[data-test="live-number"]').text()).toBe('3')
       expect(wrapper.find('[data-test="live-count"]').text()).toContain('/ 12 connectés')
+    })
+
+    it('counts the whole roster while the backend does not report the apprenants', async () => {
+      // A backend older than core !361 sends no learner_count. Reading absent as
+      // zero would report every class of that deployment as empty; the roster is
+      // what the console showed before the field existed.
+      const { learner_count, ...beforeLearnerCount } = classRow({
+        live_session_count: 3,
+        member_count: 14,
+      })
+
+      const wrapper = await mountConsole([beforeLearnerCount])
+
+      expect(wrapper.find('[data-test="live-count"]').text()).toContain('/ 14 online')
+    })
+
+    it('states a class of teaching staff as empty rather than falling back', async () => {
+      // learner_count 0 is an answer core !361 sends on purpose: nobody has been
+      // enrolled yet. Treating it as "not reported" would show the teacher as a
+      // learner of their own class.
+      const wrapper = await mountConsole([
+        classRow({ live_session_count: 0, member_count: 1, learner_count: 0 }),
+      ])
+
+      expect(wrapper.find('[data-test="live-count"]').text()).toContain('/ 0 online')
     })
 
     it('marks the live counter as live only while someone is connected', async () => {
@@ -374,16 +408,42 @@ describe('MyClasses console', () => {
   })
 
   describe('identity', () => {
-    it('counts the learners of the class in the meta line', async () => {
-      const wrapper = await mountConsole([classRow({ member_count: 12 })])
+    it('counts the apprenants of the class in the meta line, not its roster', async () => {
+      const wrapper = await mountConsole([classRow({ member_count: 14, learner_count: 12 })])
 
-      expect(wrapper.find('[data-test="member-count"]').text()).toBe('12 learners')
+      expect(wrapper.find('[data-test="learner-count"]').text()).toBe('12 learners')
     })
 
     it('counts a class of one in the singular', async () => {
-      const wrapper = await mountConsole([classRow({ member_count: 1 })])
+      const wrapper = await mountConsole([classRow({ member_count: 2, learner_count: 1 })])
 
-      expect(wrapper.find('[data-test="member-count"]').text()).toBe('1 learner')
+      expect(wrapper.find('[data-test="learner-count"]').text()).toBe('1 learner')
+    })
+
+    it('says a class nobody has joined yet has no learner', async () => {
+      // A class the teacher just created: they are its only member, and they are
+      // not an apprenant. "1 apprenant" there named the teacher.
+      const wrapper = await mountConsole([classRow({ member_count: 1, learner_count: 0 })])
+
+      expect(wrapper.find('[data-test="learner-count"]').text()).toBe('0 learners')
+    })
+
+    it('keeps the French count singular at zero', async () => {
+      // French writes "0 apprenant", English "0 learners" — the same number, two
+      // plural rules, so the empty case is its own message rather than the plural
+      // one with a zero in it.
+      i18n.global.locale.value = 'fr'
+      const wrapper = await mountConsole([classRow({ member_count: 1, learner_count: 0 })])
+
+      expect(wrapper.find('[data-test="learner-count"]').text()).toBe('0 apprenant')
+    })
+
+    it('counts the whole roster while the backend does not report the apprenants', async () => {
+      const { learner_count, ...beforeLearnerCount } = classRow({ member_count: 12 })
+
+      const wrapper = await mountConsole([beforeLearnerCount])
+
+      expect(wrapper.find('[data-test="learner-count"]').text()).toBe('12 learners')
     })
 
     it('names an expiry the teacher can still act on', async () => {
@@ -433,7 +493,11 @@ describe('MyClasses console', () => {
       // sessions. A naked "25%" would be readable as either metric, so the row
       // spells out the population it is talking about.
       const wrapper = await mountConsole([
-        classRow({ member_count: 12, assignments: [assignment({ completed_count: 3, class_completion_rate: 25 })] }),
+        classRow({
+          member_count: 14,
+          learner_count: 12,
+          assignments: [assignment({ completed_count: 3, class_completion_rate: 25 })],
+        }),
       ])
 
       const progress = wrapper.find('[data-test="assignment-progress"]')
@@ -466,7 +530,8 @@ describe('MyClasses console', () => {
       // bar and this fails instead of quietly under-reporting by 100x.
       const wrapper = await mountConsole([
         classRow({
-          member_count: 12,
+          member_count: 14,
+          learner_count: 12,
           assignments: [assignment({ completed_count: 12, class_completion_rate: 100 })],
         }),
       ])
@@ -486,15 +551,21 @@ describe('MyClasses console', () => {
       expect(wrapper.find('.assignment-bar-fill').attributes('style')).toContain('width: 0%')
     })
 
-    it('draws an empty bar rather than a broken one for an empty class', async () => {
+    it('draws an empty bar rather than a broken one for a class of teaching staff', async () => {
+      // Nobody to finish anything: the fraction states 0/0 and the bar stays
+      // flat. Whatever this renders, it may never divide by that denominator —
+      // "NaN%" on a bar the teacher just created is the failure mode here.
       const wrapper = await mountConsole([
         classRow({
-          member_count: 0,
+          member_count: 1,
+          learner_count: 0,
           assignments: [assignment({ completed_count: 0, class_completion_rate: 0 })],
         }),
       ])
 
-      expect(wrapper.find('[data-test="assignment-progress"]').text()).toBe('0/0 finished')
+      const progress = wrapper.find('[data-test="assignment-progress"]')
+      expect(progress.text()).toBe('0/0 finished')
+      expect(progress.text()).not.toContain('NaN')
       expect(wrapper.find('.assignment-bar-fill').attributes('style')).toContain('width: 0%')
     })
 

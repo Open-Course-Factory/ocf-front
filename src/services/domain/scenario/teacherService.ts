@@ -124,11 +124,14 @@ export interface TeacherGroupAssignment {
   scenario_title: string
   start_date?: string
   deadline?: string
-  // Distinct ACTIVE members who started / completed, not session counts.
+  // Distinct ACTIVE APPRENANTS who started / completed — not session counts and
+  // not teaching staff (ocf-core !361): a teacher walking through their own
+  // scenario is preparation, not class progress.
   started_count: number
   completed_count: number
-  // Percentage 0..100 of the CLASS: distinct members who completed over class
-  // size, so a learner who retries still counts once.
+  // Percentage 0..100 of the CLASS: distinct apprenants who completed over
+  // TeacherGroupSummary.learner_count, so a learner who retries still counts
+  // once and an enrolled teacher neither dilutes the rate nor pushes it past 100.
   //
   // Not the same metric as ScenarioAnalytics.completion_rate, which counts
   // completed SESSIONS over total sessions. The differing name is deliberate
@@ -154,11 +157,34 @@ export interface TeacherGroupSummary {
   is_active: boolean
   expires_at?: string
   is_expired: boolean
+  /**
+   * The WHOLE active roster, teaching staff included — the capacity figure, what
+   * fills against ClassGroup.max_members and what an invitation consumes.
+   *
+   * Deliberately NOT the number of apprenants: the class creator is enrolled with
+   * the owner role, so a class of 3 students taught by one teacher reports
+   * member_count 4 and `learner_count` 3. Every learner-facing figure below reads
+   * the other one. Mirrors services.TeacherGroupSummary.MemberCount.
+   */
   member_count: number
+  /**
+   * The APPRENANTS — active memberships in core's LearnerRoles (issue #480,
+   * ocf-core !361). The denominator of every learner-facing figure on the row:
+   * "X/N connectés", "3/N ont terminé", and the population `idle_member_count`
+   * and `live_session_count` are counted over.
+   *
+   * Core !361 always sends it, so 0 there is a real answer — a class of staff
+   * only. It stays optional for the backends that predate !361, where absent
+   * means "not reported"; `classLearnerCount` below is the one place that turns
+   * an absent one into the roster count, and nothing may turn it into a zero.
+   */
+  learner_count?: number
+  /** Terminal sessions of those APPRENANTS running right now (ocf-core !361). */
   live_session_count: number
   /**
-   * Members whose scenario progress has been stale for longer than
-   * `idle_threshold_minutes` — the "stuck learner" detector (core !360).
+   * APPRENANTS whose scenario progress has been stale for longer than
+   * `idle_threshold_minutes` — the "stuck learner" detector (core !360, narrowed
+   * to learners in !361).
    *
    * Idle means no scenario event (step, verify, hint, quiz) in that window, NOT
    * an absence of keystrokes and NOT a disconnection: a learner reading a long
@@ -192,6 +218,22 @@ export function isInactiveClass(summary: TeacherGroupSummary): boolean {
 /** What a class is called on screen, wherever it is shown. */
 export function classDisplayName(summary: TeacherGroupSummary): string {
   return summary.display_name || summary.name
+}
+
+/**
+ * How many APPRENANTS a class has — the denominator every learner-facing figure
+ * is stated over: how many are connected, how many finished a scenario.
+ *
+ * The single home of the pre-!361 fallback. A backend that does not report
+ * `learner_count` yet leaves the console counting the whole roster, exactly as
+ * it did before this rule existed — one class over-counted by its teachers is
+ * better than one class reported empty. An explicit 0 is an answer and stays 0:
+ * a class of teaching staff has no apprenant, and `??` is what tells the two
+ * apart. Never re-derive this from a roster's roles; core's LearnerRoles owns
+ * who is an apprenant.
+ */
+export function classLearnerCount(summary: TeacherGroupSummary): number {
+  return summary.learner_count ?? summary.member_count
 }
 
 // The three-value standing the class view renders. Mirror of the

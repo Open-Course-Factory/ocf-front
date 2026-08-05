@@ -30,7 +30,7 @@
     <div class="class-identity">
       <h3 class="class-name">{{ className }}</h3>
       <div class="class-meta">
-        <span data-test="member-count">{{ memberCountLabel }}</span>
+        <span data-test="learner-count">{{ learnerCountLabel }}</span>
         <span v-if="expiryLabel" data-test="class-expiry">{{ expiryLabel }}</span>
         <span v-if="summary.caller_role === 'manager'" class="class-tag tag-role" data-test="role-badge">
           {{ t('myClasses.roleManager') }}
@@ -45,7 +45,7 @@
       <span class="presence-count">
         <span class="live-dot" aria-hidden="true"></span>
         <span class="presence-number" data-test="live-number">{{ summary.live_session_count }}</span>
-        <small class="presence-total">{{ t('myClasses.liveOutOf', { total: summary.member_count }) }}</small>
+        <small class="presence-total">{{ t('myClasses.liveOutOf', { total: learnerCount }) }}</small>
       </span>
       <!-- Always rendered, empty until the endpoint serves the counter: the
            line keeps its height so a row never grows when the number lands. -->
@@ -77,7 +77,7 @@
             </span>
             {{ t('myClasses.completedOfClass', {
               completed: assignment.completed_count,
-              total: summary.member_count
+              total: learnerCount
             }) }}
           </div>
         </div>
@@ -161,6 +161,7 @@ import { formatDate } from '../../utils/formatters'
 import { CLASS_PAGE_NAMES, type ClassPageKey } from '../../router/classPages'
 import {
   classDisplayName,
+  classLearnerCount,
   isInactiveClass,
   type TeacherGroupAssignment,
   type TeacherGroupSummary
@@ -201,8 +202,9 @@ const { t } = useTranslations({
       roleManager: 'Manager',
       stateArchived: 'Archived',
       stateExpired: 'Expired',
-      memberCountOne: '{count} learner',
-      memberCountMany: '{count} learners',
+      learnerCountZero: '{count} learners',
+      learnerCountOne: '{count} learner',
+      learnerCountMany: '{count} learners',
       expiresOn: 'expires {date}',
       liveOutOf: '/ {total} online',
       idleCountOne: '{count} idle > {minutes} min',
@@ -225,8 +227,9 @@ const { t } = useTranslations({
       roleManager: 'Gestionnaire',
       stateArchived: 'Archivée',
       stateExpired: 'Expirée',
-      memberCountOne: '{count} apprenant',
-      memberCountMany: '{count} apprenants',
+      learnerCountZero: '{count} apprenant',
+      learnerCountOne: '{count} apprenant',
+      learnerCountMany: '{count} apprenants',
       expiresOn: 'expire le {date}',
       liveOutOf: '/ {total} connectés',
       idleCountOne: '{count} inactif > {minutes} min',
@@ -280,9 +283,22 @@ const stateLabel = computed(() => {
   return ''
 })
 
-const memberCountLabel = computed(() => {
-  const key = props.summary.member_count === 1 ? 'myClasses.memberCountOne' : 'myClasses.memberCountMany'
-  return t(key, { count: props.summary.member_count })
+/**
+ * The class as its learner-facing figures count it: apprenants only, staff
+ * excluded. Every number on the row that says "of the class" — the presence
+ * denominator, the completion fraction — is stated over this one, so they can
+ * never disagree about how big the class is.
+ */
+const learnerCount = computed(() => classLearnerCount(props.summary))
+
+// Zero is its own message rather than the plural with a 0 in it: English writes
+// "0 learners" and French "0 apprenant", and no single plural rule gives both.
+const learnerCountLabel = computed(() => {
+  const count = learnerCount.value
+  const key = count === 0
+    ? 'myClasses.learnerCountZero'
+    : count === 1 ? 'myClasses.learnerCountOne' : 'myClasses.learnerCountMany'
+  return t(key, { count })
 })
 
 // Only an expiry the teacher can still act on. A class already past it says so
@@ -322,7 +338,7 @@ function millisecondsUntil(date?: string): number | null {
   return new Date(date).getTime() - Date.now()
 }
 
-// `class_completion_rate` is distinct MEMBERS who completed over class size —
+// `class_completion_rate` is distinct APPRENANTS who completed over learner_count —
 // a different metric from ScenarioAnalytics.completion_rate, which counts
 // completed SESSIONS over total sessions. The row therefore prints the
 // fraction it was given ("3/12 ont terminé") rather than a bare percentage a
