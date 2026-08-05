@@ -18,6 +18,7 @@
       </div>
       <div class="header-actions">
         <button
+          v-if="!isPersonalContext"
           type="button"
           class="btn btn-primary create-button"
           data-test="create-class"
@@ -49,7 +50,25 @@
     </div>
 
     <div class="class-list">
-      <template v-if="isFirstLoad">
+      <!-- A personal organization is not a teaching place at all, so this page
+           is not a class list there — it is the way out. -->
+      <div v-if="isPersonalContext" class="empty-state" data-test="personal-org-state">
+        <i class="fas fa-building"></i>
+        <p class="personal-org-title">{{ t('myClasses.personalOrgTitle') }}</p>
+        <p data-test="personal-org-message">{{ t('myClasses.personalOrgBody') }}</p>
+        <p v-if="store.managesAnyClass" class="personal-org-hint" data-test="classes-elsewhere-hint">
+          {{ t('myClasses.classesElsewhere') }}
+        </p>
+        <router-link
+          to="/organizations?create=1"
+          class="btn btn-primary"
+          data-test="create-organization-cta"
+        >
+          {{ t('myClasses.createOrganizationCta') }}
+        </router-link>
+      </div>
+
+      <template v-else-if="isFirstLoad">
         <div
           v-for="placeholder in SKELETON_ROWS"
           :key="placeholder"
@@ -131,7 +150,11 @@ const { t } = useTranslations({
       empty: 'You do not manage any class yet.',
       emptyInOrganization: 'You manage no class in {organization}. Your other classes are in another organization — switch organization to see them.',
       emptyCta: 'Create a class',
-      createClass: 'New class'
+      createClass: 'New class',
+      personalOrgTitle: 'Teaching happens in an organization',
+      personalOrgBody: 'Your personal space carries your plan, not your classes. Create an organization to open your first class in it.',
+      classesElsewhere: 'Your existing classes are in another organization — switch organization to see them.',
+      createOrganizationCta: 'Create my organization'
     }
   },
   fr: {
@@ -143,10 +166,19 @@ const { t } = useTranslations({
       empty: 'Vous ne gérez encore aucune classe.',
       emptyInOrganization: 'Vous ne gérez aucune classe dans {organization}. Vos autres classes sont dans une autre organisation — changez d’organisation pour les voir.',
       emptyCta: 'Créer une classe',
-      createClass: 'Nouvelle classe'
+      createClass: 'Nouvelle classe',
+      personalOrgTitle: 'L’enseignement se passe dans une organisation',
+      personalOrgBody: 'Votre espace personnel porte votre forfait, pas vos classes. Créez une organisation pour y ouvrir votre première classe.',
+      classesElsewhere: 'Vos classes existantes sont dans une autre organisation — changez d’organisation pour les voir.',
+      createOrganizationCta: 'Créer mon organisation'
     }
   }
 })
+
+// Classes never live in a personal organization (product decision #315, enforced
+// in core #475), so there the console offers the way to a real one instead of a
+// list and a create button the backend would refuse.
+const isPersonalContext = computed(() => organizationsStore.isPersonalOrganizationContext)
 
 // The console shows ONE organization at a time (see the teacherGroups store).
 // No row names its organization: on this page they all share the active one,
@@ -318,5 +350,16 @@ useVisiblePolling(() => {
 
 .empty-state p {
   margin: 0;
+}
+
+.personal-org-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.personal-org-hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
 }
 </style>

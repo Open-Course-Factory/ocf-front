@@ -25,12 +25,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { OrganizationsList, OrganizationModal } from '../Organizations'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { usePermissionsStore } from '../../stores/permissions'
 import type { Organization, CreateOrganizationRequest, UpdateOrganizationRequest } from '../../types'
 
+const route = useRoute()
 const router = useRouter()
 const organizationsStore = useOrganizationsStore()
 const permissionsStore = usePermissionsStore()
@@ -44,6 +45,15 @@ const modalError = ref('')
 const filteredOrganizations = computed(() => organizationsStore.userOrganizations)
 
 onMounted(async () => {
+  // `?create=1` opens the form straight away, so a call to action elsewhere can
+  // land on the thing it promised rather than on a page with a button on it.
+  // The console's personal-organization state is the one that needs this: it is
+  // the only route to creating a team organization from a personal context,
+  // since the navigation hides the organizations category there.
+  if (route.query.create) {
+    openCreateModal()
+  }
+
   await Promise.all([
     loadOrganizations(),
     permissionsStore.loadCurrentUser()

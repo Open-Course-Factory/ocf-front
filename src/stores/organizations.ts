@@ -99,6 +99,28 @@ export const useOrganizationsStore = defineStore('organizations', () => {
            currentOrganization.value.member_count === 1
   })
 
+  /**
+   * Whether the active context is a personal organization, by TYPE alone.
+   *
+   * Teaching never happens in a personal organization: a plan is bought by the
+   * person, but classes live in team organizations they create (product
+   * decision, front #315; enforced backend-side in core #475, which turns
+   * `can_run_classrooms` off for personal organizations and refuses to create a
+   * class in one).
+   *
+   * Deliberately NOT `isPersonalOrganization` above, which also demands a single
+   * member: that one answers "should the organizations menu appear at all", and
+   * a personal organization whose member count is absent or unexpected would
+   * slip through it — here that would mean offering a teacher a class list and
+   * a create button the backend is about to refuse.
+   */
+  const isPersonalOrganizationContext = computed(() => {
+    const organization = currentOrganization.value
+    if (!organization) return false
+    return organization.organization_type === 'personal' ||
+           (organization as { is_personal?: boolean }).is_personal === true
+  })
+
   // Demo data provider
   const getDemoOrganizations = (): Organization[] => [
     {
@@ -351,6 +373,7 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     businessOrganizations,
     currentOrganization,
     isPersonalOrganization,
+    isPersonalOrganizationContext,
     currentOrganizationId,
 
     // Actions

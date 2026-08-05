@@ -39,10 +39,14 @@ const OTHER_ORG = { id: 'org-b', display_name: 'ESITECH' }
 // invalidate whatever the console derived from it, which a plain variable
 // could never do.
 const activeOrganization = ref<{ id: string; display_name: string } | null>(ACTIVE_ORG)
+const isPersonalContext = ref(false)
 vi.mock('../../src/stores/organizations', () => ({
   useOrganizationsStore: () => ({
     get currentOrganization() {
       return activeOrganization.value
+    },
+    get isPersonalOrganizationContext() {
+      return isPersonalContext.value
     },
   }),
 }))
@@ -101,6 +105,7 @@ describe('MyClasses console', () => {
     vi.clearAllMocks()
     i18n.global.locale.value = 'en'
     activeOrganization.value = ACTIVE_ORG
+    isPersonalContext.value = false
   })
 
   it('renders one row per class the teacher manages', async () => {
@@ -333,6 +338,98 @@ describe('MyClasses console', () => {
       query: { tab: 'scenarios' },
     })
     expect(mockPush).toHaveBeenCalledTimes(2)
+  })
+
+  describe('personal organization', () => {
+    // Teaching never happens in a personal organization: the plan is bought by
+    // the person, the classes live in a team organization they create (#315,
+    // enforced backend-side in core #475). The console's job there is to point
+    // the way out, not to offer a list and a button the backend would refuse.
+
+    it('offers to create an organization instead of listing classes', async () => {
+      isPersonalContext.value = true
+      const wrapper = await mountConsole([])
+
+      expect(wrapper.find('[data-test="personal-org-state"]').exists()).toBe(true)
+      expect(wrapper.find('[data-test="create-organization-cta"]').exists()).toBe(true)
+    })
+
+    it('sends the call to action straight to the creation form', async () => {
+      isPersonalContext.value = true
+      const wrapper = await mountConsole([])
+
+      expect(wrapper.findComponent(RouterLinkStub).props('to')).toBe('/organizations?create=1')
+    })
+
+    it('hides the create-class button, which the backend would refuse', async () => {
+      isPersonalContext.value = true
+      const wrapper = await mountConsole([])
+
+      expect(wrapper.find('[data-test="create-class"]').exists()).toBe(false)
+    })
+
+    it('lists no class, even one that came back from the endpoint', async () => {
+      isPersonalContext.value = true
+      const wrapper = await mountConsole([classRow()])
+
+      expect(wrapper.find('[data-test="class-row"]').exists()).toBe(false)
+      expect(wrapper.find('[data-test="empty-state"]').exists()).toBe(false)
+    })
+
+    it('says the plan lives here, not the classes', async () => {
+      isPersonalContext.value = true
+      const wrapper = await mountConsole([])
+
+      const message = wrapper.find('[data-test="personal-org-message"]').text()
+      expect(message).toContain('plan')
+      // Nothing may suggest a class could live in the personal space.
+      expect(wrapper.find('[data-test="personal-org-state"]').text())
+        .not.toContain('personal organization')
+    })
+
+    it('says it in French too', async () => {
+      isPersonalContext.value = true
+      i18n.global.locale.value = 'fr'
+      const wrapper = await mountConsole([])
+
+      const state = wrapper.find('[data-test="personal-org-state"]')
+      expect(state.text()).toContain('forfait')
+      expect(state.text()).toContain('Créer mon organisation')
+    })
+
+    it('still points a teacher with classes elsewhere at the switcher', async () => {
+      isPersonalContext.value = true
+      const wrapper = await mountConsole([classRow({ organization_id: OTHER_ORG.id })])
+
+      expect(wrapper.find('[data-test="classes-elsewhere-hint"]').text())
+        .toContain('another organization')
+    })
+
+    it('leaves that hint out for someone who teaches nowhere yet', async () => {
+      isPersonalContext.value = true
+      const wrapper = await mountConsole([])
+
+      expect(wrapper.find('[data-test="classes-elsewhere-hint"]').exists()).toBe(false)
+    })
+
+    it('stays out of the way in a team organization', async () => {
+      const wrapper = await mountConsole([classRow()])
+
+      expect(wrapper.find('[data-test="personal-org-state"]').exists()).toBe(false)
+      expect(wrapper.find('[data-test="create-class"]').exists()).toBe(true)
+      expect(wrapper.find('[data-test="class-row"]').exists()).toBe(true)
+    })
+
+    it('never assumes personal while the organization context is unknown', async () => {
+      // `isPersonalOrganizationContext` is false with nothing loaded, so the
+      // page must show its ordinary state rather than telling a teacher to
+      // create an organization they may well already have.
+      activeOrganization.value = null
+      const wrapper = await mountConsole([classRow()])
+
+      expect(wrapper.find('[data-test="personal-org-state"]').exists()).toBe(false)
+      expect(wrapper.find('[data-test="empty-state"]').exists()).toBe(true)
+    })
   })
 
   describe('organization scoping', () => {
