@@ -20,10 +20,10 @@
     :data-stripe="stripeState"
     role="button"
     :tabindex="0"
-    :aria-label="t('myClasses.openLive', { name: className })"
-    @click="open('live')"
-    @keydown.enter="open('live')"
-    @keydown.space.prevent="open('live')"
+    :aria-label="t('myClasses.openWallOf', { name: className })"
+    @click="openWall"
+    @keydown.enter="openWall"
+    @keydown.space.prevent="openWall"
   >
     <span class="class-stripe" data-test="class-stripe" aria-hidden="true"></span>
 
@@ -112,7 +112,7 @@
           type="button"
           class="action-wall"
           data-test="open-wall"
-          @click.stop="open('live')"
+          @click.stop="openWall"
         >
           <i class="fas fa-play" aria-hidden="true"></i>
           <span>{{ t('myClasses.openWall') }}</span>
@@ -211,7 +211,7 @@ const { t } = useTranslations({
       completionHelp: 'Learners of the class who finished this scenario',
       noAssignment: 'No scenario assigned',
       assignScenario: 'Assign a scenario →',
-      openLive: 'Open the live sessions of {name}',
+      openWallOf: 'Open the wall of {name}',
       openWall: 'Open the wall',
       openAnalytics: 'Analytics',
       openMembers: 'Learners',
@@ -235,7 +235,7 @@ const { t } = useTranslations({
       completionHelp: 'Apprenants de la classe ayant terminé ce scénario',
       noAssignment: 'Aucun scénario assigné',
       assignScenario: 'Assigner un scénario →',
-      openLive: 'Ouvrir les sessions en direct de {name}',
+      openWallOf: 'Ouvrir le mur de {name}',
       openWall: 'Ouvrir le mur',
       openAnalytics: 'Analytiques',
       openMembers: 'Apprenants',
@@ -334,12 +334,25 @@ function formatDeadline(deadline: string): string {
   return formatDate(deadline, locale.value === 'en' ? 'en-GB' : 'fr-FR')
 }
 
-function open(tab: 'live' | 'members' | 'scenarios' | 'settings' | 'analytics') {
+function open(
+  tab: 'live' | 'members' | 'scenarios' | 'settings' | 'analytics',
+  view?: 'wall'
+) {
   router.push({
     name: 'GroupDetails',
     params: { id: props.summary.group_id },
-    query: { tab }
+    query: view ? { tab, view } : { tab }
   })
+}
+
+/**
+ * The live tab carries two representations since front !311 — a progression
+ * table by default, the wall of tiles under `view=wall`. Both ways into it from
+ * this row are named "the wall" (the button says so, the whole row's label says
+ * so), so both have to ask for the wall rather than land on the table.
+ */
+function openWall() {
+  open('live', 'wall')
 }
 </script>
 

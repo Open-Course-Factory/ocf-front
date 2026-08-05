@@ -534,7 +534,12 @@ describe('MyClasses console', () => {
   })
 
   describe('row actions', () => {
-    it('opens the live tab of the class when its row is clicked', async () => {
+    // The live tab holds two representations since !311 — a progression table
+    // by default, the wall of tiles under `view=wall`. Everything on this row
+    // that is called "the wall" has to ask for the wall explicitly, or it
+    // silently lands on the table instead.
+
+    it('opens the wall of the class when its row is clicked', async () => {
       const wrapper = await mountConsole([classRow({ group_id: 'group-42' })])
 
       await wrapper.find('[data-test="class-row"]').trigger('click')
@@ -542,11 +547,11 @@ describe('MyClasses console', () => {
       expect(mockPush).toHaveBeenCalledWith({
         name: 'GroupDetails',
         params: { id: 'group-42' },
-        query: { tab: 'live' },
+        query: { tab: 'live', view: 'wall' },
       })
     })
 
-    it('opens the live tab from the keyboard as well', async () => {
+    it('opens the wall from the keyboard as well', async () => {
       const wrapper = await mountConsole([classRow({ group_id: 'group-42' })])
 
       await wrapper.find('[data-test="class-row"]').trigger('keydown.enter')
@@ -554,7 +559,19 @@ describe('MyClasses console', () => {
       expect(mockPush).toHaveBeenCalledWith({
         name: 'GroupDetails',
         params: { id: 'group-42' },
-        query: { tab: 'live' },
+        query: { tab: 'live', view: 'wall' },
+      })
+    })
+
+    it('opens the wall from the space bar too', async () => {
+      const wrapper = await mountConsole([classRow({ group_id: 'group-42' })])
+
+      await wrapper.find('[data-test="class-row"]').trigger('keydown.space')
+
+      expect(mockPush).toHaveBeenCalledWith({
+        name: 'GroupDetails',
+        params: { id: 'group-42' },
+        query: { tab: 'live', view: 'wall' },
       })
     })
 
@@ -566,11 +583,20 @@ describe('MyClasses console', () => {
       expect(mockPush).toHaveBeenCalledWith({
         name: 'GroupDetails',
         params: { id: 'group-42' },
-        query: { tab: 'live' },
+        query: { tab: 'live', view: 'wall' },
       })
     })
 
-    it('reaches the learners, scenarios and settings tabs without opening the live tab', async () => {
+    it('names the wall in the row label, since that is where the row goes', async () => {
+      const wrapper = await mountConsole([
+        classRow({ group_id: 'group-42', display_name: 'DevOps 2026' }),
+      ])
+
+      expect(wrapper.find('[data-test="class-row"]').attributes('aria-label'))
+        .toBe('Open the wall of DevOps 2026')
+    })
+
+    it('reaches the learners, scenarios and settings tabs without opening the wall', async () => {
       const wrapper = await mountConsole([classRow({ group_id: 'group-42' })])
 
       await wrapper.find('[data-test="open-members"]').trigger('click')
