@@ -55,6 +55,8 @@
           v-for="scenario in filteredScenarios"
           :key="scenario.id"
         class="scenario-card"
+        data-testid="scenario-card"
+        :data-scenario-name="scenario.name || scenario.title"
         :class="{ 'scenario-card--unavailable': !scenario.launchable && !getExistingSession(scenario), 'scenario-card--active': !!getExistingSession(scenario) }"
       >
         <div class="card-header">
@@ -91,7 +93,7 @@
         </div>
 
         <!-- Unavailability explanation -->
-        <div v-if="!scenario.launchable" class="unavailable-notice">
+        <div v-if="!scenario.launchable" class="unavailable-notice" data-testid="scenario-unavailable-notice">
           <div class="unavailable-notice-content">
             <i :class="getScenarioBlockReason(scenario) === 'plan' ? 'fas fa-lock' : getScenarioBlockReason(scenario) === 'no_distribution' ? 'fas fa-exclamation-triangle' : 'fas fa-server'" class="unavailable-notice-icon"></i>
             <div class="unavailable-notice-text">
@@ -116,6 +118,7 @@
             v-if="getExistingSession(scenario)?.terminal_session_id && getExistingSession(scenario).status === 'active'"
             :to="{ name: 'TerminalSessionView', params: { sessionId: getExistingSession(scenario).terminal_session_id } }"
             class="btn btn-primary launch-btn"
+            data-testid="scenario-resume-btn"
           >
             <i class="fas fa-play"></i>
             {{ t('launcher.resume') }}
@@ -126,6 +129,7 @@
               v-if="getExistingSession(scenario).terminal_session_id"
               :to="{ name: 'TerminalSessionView', params: { sessionId: getExistingSession(scenario).terminal_session_id } }"
               class="btn btn-secondary launch-btn"
+              data-testid="scenario-review-btn"
             >
               <i class="fas fa-eye"></i>
               {{ t('launcher.review') }}
@@ -133,6 +137,7 @@
             <button
               v-if="scenario.launchable"
               class="btn btn-primary launch-btn"
+              data-testid="scenario-relaunch-btn"
               :disabled="isLaunching"
               @click="handleLaunchScenario(scenario)"
             >
@@ -144,6 +149,7 @@
           <button
             v-else-if="scenario.launchable"
             class="btn btn-primary launch-btn"
+            data-testid="scenario-launch-btn"
             :disabled="isLaunching"
             @click="handleLaunchScenario(scenario)"
           >

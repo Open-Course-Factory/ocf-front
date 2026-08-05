@@ -14,7 +14,7 @@
     <div v-if="!showPicker" class="start-prompt">
       <i class="fas fa-flag-checkered"></i>
       <span>{{ t('scenarioStart.noActive') }}</span>
-      <button class="start-btn" @click="loadAndShowPicker" :disabled="isLoading">
+      <button class="start-btn" data-testid="scenario-start-bar-btn" @click="loadAndShowPicker" :disabled="isLoading">
         <i :class="isLoading ? 'fas fa-spinner fa-spin' : 'fas fa-play'"></i>
         {{ t('scenarioStart.start') }}
       </button>
@@ -38,6 +38,7 @@
           :key="scenario.id"
           role="listitem"
           class="scenario-item"
+          data-testid="scenario-picker-item"
           :disabled="isStarting"
           @click="startScenario(scenario)"
         >

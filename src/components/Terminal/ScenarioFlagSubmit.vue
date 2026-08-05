@@ -5,6 +5,7 @@
         :value="modelValue"
         type="text"
         class="flag-input"
+        data-testid="scenario-flag-input"
         :placeholder="t('scenarioPanel.flagPlaceholder')"
         :disabled="isSubmitting || !isActive"
         @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
@@ -12,6 +13,7 @@
       />
       <button
         class="flag-submit-btn"
+        data-testid="scenario-flag-submit"
         :disabled="!modelValue.trim() || isSubmitting || !isActive"
         @click="$emit('submit')"
       >
@@ -20,7 +22,7 @@
       </button>
     </div>
     <p class="flag-hint">{{ t('scenarioPanel.flagHint') }}</p>
-    <div v-if="result" class="flag-result" role="status" aria-live="polite" :class="{ correct: result.correct, incorrect: !result.correct }">
+    <div v-if="result" class="flag-result" data-testid="scenario-flag-result" role="status" aria-live="polite" :class="{ correct: result.correct, incorrect: !result.correct }">
       <i :class="result.correct ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
       <span>{{ result.correct ? t('scenarioPanel.flagCorrect') : t('scenarioPanel.flagIncorrect') }}</span>
     </div>

@@ -17,7 +17,7 @@
       </div>
 
       <!-- Already revealed hints (always visible, stacked) -->
-      <div v-for="hint in revealedHints" :key="hint.level" class="hint-item">
+      <div v-for="hint in revealedHints" :key="hint.level" class="hint-item" data-testid="hint-item">
         <div class="hint-level-label">{{ t('scenarioPanel.hintLevel', { level: hint.level }) }}</div>
         <div class="hint-content markdown-content" v-html="renderHintMarkdown(hint.content)"></div>
       </div>
@@ -26,6 +26,7 @@
       <button
         v-if="revealedHints.length < step.hints_total_count"
         class="hint-toggle"
+        data-testid="hint-reveal-next"
         :class="{ 'hint-nudge': hintNudgeActive }"
         :disabled="isRevealingHint"
         @click="$emit('reveal-next')"

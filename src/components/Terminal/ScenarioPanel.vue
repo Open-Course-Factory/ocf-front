@@ -44,7 +44,7 @@
       </div>
 
       <!-- Error state -->
-      <div v-else-if="loadError" class="panel-error">
+      <div v-else-if="loadError" class="panel-error" data-testid="scenario-panel-error">
         <i class="fas fa-exclamation-triangle"></i>
         <span>{{ t('scenarioPanel.error') }}</span>
         <button class="retry-btn" @click="loadCurrentStep">
@@ -54,7 +54,7 @@
       </div>
 
       <!-- Completed state -->
-      <div v-else-if="isSessionCompleted" class="panel-completed">
+      <div v-else-if="isSessionCompleted" class="panel-completed" data-testid="scenario-completed">
         <div class="completed-icon">
           <i class="fas fa-trophy"></i>
         </div>
@@ -111,6 +111,7 @@
         <div
           v-if="stepTypeMeta"
           class="step-type-chip"
+          data-testid="scenario-step-type-chip"
           :class="`step-type-chip--${stepTypeMeta.key}`"
           :style="{ '--step-type-color': stepTypeMeta.color, '--step-type-bg': stepTypeMeta.bg } as any"
         >
@@ -124,11 +125,12 @@
             <span class="progress-label">{{ stepCountLabel }}</span>
             <ScenarioElapsedTimer :started-at="sessionStartedAt" />
           </div>
-          <div class="progress-dots" role="status" :aria-label="stepCountLabel">
+          <div class="progress-dots" data-testid="scenario-progress-dots" role="status" :aria-label="stepCountLabel">
             <span
               v-for="n in totalSteps"
               :key="n"
               class="progress-dot"
+              data-testid="scenario-progress-dot"
               :class="{
                 completed: (n - 1) < currentStep.step_order,
                 active: (n - 1) === currentStep.step_order,
@@ -142,12 +144,12 @@
         </div>
 
         <!-- Review mode indicator -->
-        <div v-if="reviewingStep" class="review-banner">
+        <div v-if="reviewingStep" class="review-banner" data-testid="scenario-review-banner">
           <span class="review-label">
             <i class="fas fa-eye"></i>
             {{ t('scenarioPanel.reviewingStep', { step: reviewingStep.step_order + 1 }) }}
           </span>
-          <button class="back-to-current-btn" @click="backToCurrentStep">
+          <button class="back-to-current-btn" data-testid="scenario-back-to-current" @click="backToCurrentStep">
             <i class="fas fa-arrow-left"></i>
             {{ t('scenarioPanel.backToCurrent') }}
           </button>
@@ -158,7 +160,7 @@
           <!-- Step title -->
           <div class="step-header">
             <span class="step-label">{{ t('scenarioPanel.step') }} {{ displayedStep!.step_order + 1 }}</span>
-            <h4 class="step-title">{{ displayedStep!.title }}</h4>
+            <h4 class="step-title" data-testid="scenario-step-title">{{ displayedStep!.title }}</h4>
           </div>
 
           <!-- Step text (rendered as markdown) -->
@@ -216,6 +218,7 @@
                 </button>
                 <button
                   class="verify-btn"
+                  data-testid="scenario-info-ack"
                   :disabled="isVerifying || !isActive"
                   @click="ackInfoStep"
                 >
@@ -253,6 +256,7 @@
         <div v-if="!reviewingStep && !isReviewMode" class="session-actions">
           <button
             class="abandon-btn"
+            data-testid="scenario-abandon-btn"
             :disabled="!isActive"
             @click="handleAbandon"
           >

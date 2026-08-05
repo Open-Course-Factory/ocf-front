@@ -2,6 +2,7 @@
   <div>
     <button
       class="verify-btn"
+      data-testid="scenario-verify-btn"
       :disabled="isVerifying || !isActive"
       @click="$emit('verify')"
     >
@@ -9,7 +10,7 @@
       {{ isVerifying ? t('scenarioPanel.verifying') : t('scenarioPanel.verify') }}
     </button>
 
-    <div v-if="result" class="verify-result" role="status" aria-live="polite" :class="{ passed: result.passed, failed: !result.passed }">
+    <div v-if="result" class="verify-result" data-testid="scenario-verify-result" role="status" aria-live="polite" :class="{ passed: result.passed, failed: !result.passed }">
       <div class="verify-result-header">
         <i :class="result.passed ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
         <span>{{ result.passed ? t('scenarioPanel.passed') : t('scenarioPanel.failed') }}</span>

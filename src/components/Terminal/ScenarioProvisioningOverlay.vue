@@ -9,7 +9,7 @@
 -->
 
 <template>
-  <div class="provisioning-overlay">
+  <div class="provisioning-overlay" data-testid="scenario-provisioning-overlay">
     <div class="provisioning-content">
       <template v-if="ready">
         <div class="provisioning-icon">
@@ -43,6 +43,7 @@
         <button
           v-if="cancellable"
           class="btn btn-cancel"
+          data-testid="provisioning-cancel"
           :disabled="isCancelling"
           @click="handleCancel"
         >
@@ -60,6 +61,7 @@
         <button
           v-if="cancellable"
           class="btn btn-cancel"
+          data-testid="provisioning-cancel"
           :disabled="isCancelling"
           @click="handleCancel"
         >
