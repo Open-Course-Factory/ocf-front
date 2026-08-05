@@ -175,6 +175,60 @@ e2e:payment:
       - ocf-core.log
     expire_in: 1 week
 
+# Scenario player + launch-gating suites (Tier A: stateful HTTP mock, no
+# tt-backend/Incus — see scenario-player.spec.ts / scenario-launch.spec.ts).
+# The mock replaces every /scenario-sessions/* call, so the stack only has to
+# provide login + app shell: ocf-core + postgres + casdoor, no Stripe pieces.
+# Runs on main only (post-merge) by design — not offered on MR pipelines.
+e2e:scenarios:
+  stage: test
+  image: mcr.microsoft.com/playwright:v1.59.1-noble
+  cache:
+    - key: "${CI_COMMIT_REF_SLUG}-npm"
+      paths:
+        - node_modules/
+        - .npm/
+  variables:
+    COMPOSE_PROJECT: "ocf-e2e-scen-${CI_JOB_ID}"
+    COMPOSE_FILES: "-f .e2e-core/docker-compose.test.yml -f e2e/ci/docker-compose.core.yml"
+    DOCKER_CLI_VERSION: "27.3.1"
+    COMPOSE_PLUGIN_VERSION: "2.29.7"
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: always
+  before_script:
+    - curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLI_VERSION}.tgz" | tar -xz --strip-components=1 -C /usr/local/bin docker/docker
+    - mkdir -p /usr/local/lib/docker/cli-plugins
+    - curl -fsSL "https://github.com/docker/compose/releases/download/v${COMPOSE_PLUGIN_VERSION}/docker-compose-linux-x86_64" -o /usr/local/lib/docker/cli-plugins/docker-compose
+    - chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+    - git clone --depth 1 "https://gitlab-ci-token:${CI_JOB_TOKEN}@usine.solution-libre.fr/open-course-factory/ocf-core.git" .e2e-core
+    - rm -rf .e2e-core/.git
+    - echo "$token_jwt_key_test" | base64 -d > .e2e-core/token_jwt_key.pem
+    - export CASDOOR_CLIENT_SECRET=$(node -e "console.log(require('./.e2e-core/init_data.json').applications[0].clientSecret)")
+    - docker compose -p "$COMPOSE_PROJECT" $COMPOSE_FILES up -d --build --wait --wait-timeout 300
+    - bash e2e/ci/connect-network.sh "${COMPOSE_PROJECT}_default"
+    - npm ci --prefer-offline
+    - timeout 120 bash -c 'until curl -sf -m 3 http://ocf-core-e2e:8080/api/v1/version >/dev/null; do sleep 3; done'
+    - VITE_API_URL=ocf-core-e2e:8080 VITE_PROTOCOL=http npm run dev > vite.log 2>&1 &
+    - timeout 60 bash -c 'until curl -sf http://localhost:4000 >/dev/null; do sleep 2; done'
+  script:
+    - E2E_USER=1.student@test.com
+      E2E_PASS=test
+      npx playwright test scenario-launch scenario-player
+  after_script:
+    - docker compose -p "$COMPOSE_PROJECT" -f .e2e-core/docker-compose.test.yml -f e2e/ci/docker-compose.core.yml logs ocf-core-e2e > ocf-core.log 2>&1 || true
+    - docker compose -p "$COMPOSE_PROJECT" -f .e2e-core/docker-compose.test.yml -f e2e/ci/docker-compose.core.yml down -v --remove-orphans || true
+  artifacts:
+    when: on_failure
+    paths:
+      - test-results/
+      - playwright-report/
+      - vite.log
+      - ocf-core.log
+    expire_in: 1 week
+
 # ============================================================================
 # Release Component
 # ============================================================================
