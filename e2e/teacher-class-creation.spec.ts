@@ -61,18 +61,14 @@ async function addLearner(page: Page, email: string): Promise<void> {
   const modal = page.locator('.base-modal-container')
   await expect(modal).toBeVisible()
 
-  const search = modal.locator('.user-search-container input')
+  // Reopening the modal faster than the dropdown's 200ms hide timer used to
+  // swallow the results of the search it had just run, so the second learner
+  // was never offered. The timer is cancelled on focus now; this loop of three
+  // reopenings is what would catch it coming back.
+  await modal.locator('.user-search-container input').fill(email)
+
   const result = modal.locator('.search-dropdown .search-result').filter({ hasText: email })
-
-  // GroupMembersManager hides the dropdown 200ms after a blur and never cancels
-  // that timer, so a modal reopened faster than that swallows the results of the
-  // search it just ran. Focusing the field again is what brings them back.
-  await expect(async () => {
-    await search.click()
-    await search.fill(email)
-    await expect(result).toHaveCount(1, { timeout: 3_000 })
-  }).toPass({ timeout: 20_000 })
-
+  await expect(result).toHaveCount(1)
   await demoPause(page)
   await result.click()
 
