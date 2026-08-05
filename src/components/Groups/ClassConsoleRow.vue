@@ -297,12 +297,14 @@ const idleThresholdMinutes = computed(() =>
   props.summary.idle_threshold_minutes ?? DEFAULT_IDLE_THRESHOLD_MINUTES
 )
 
-// Absent is not zero: a class with nobody idle and a class the endpoint cannot
-// tell us about both stay silent here, which is why this reads the raw field
-// rather than defaulting it.
+// Two different silences, one appearance: a class where nobody is idle (core
+// !360 always sends the field, so that is an explicit 0) and one served by a
+// backend that does not report it yet (absent) both show nothing. `> 0` covers
+// both without pretending they are the same thing, and a negative or unparsed
+// count cannot slip through either.
 const idleLabel = computed(() => {
   const idle = props.summary.idle_member_count
-  if (!idle || idle <= 0) return ''
+  if (!(idle > 0)) return ''
   const key = idle === 1 ? 'myClasses.idleCountOne' : 'myClasses.idleCountMany'
   return t(key, { count: idle, minutes: idleThresholdMinutes.value })
 })

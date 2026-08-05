@@ -265,6 +265,36 @@ describe('MyClasses console', () => {
       expect(idle.attributes('title')).not.toContain('déconnect')
     })
 
+    it('says nothing at all when nobody is idle', async () => {
+      // Core !360 always sends the field, so 0 is an answer, not a silence —
+      // and the answer "nobody is stuck" is worth no pixels. A literal
+      // "0 idle > 10 min" beside every healthy class would be noise on the one
+      // line meant to catch the eye when something IS wrong.
+      const wrapper = await mountConsole([
+        classRow({ live_session_count: 7, idle_member_count: 0, idle_threshold_minutes: 10 }),
+      ])
+
+      expect(wrapper.find('[data-test="idle-count"]').text()).toBe('')
+    })
+
+    it('never states the idle count as a fraction of the class', async () => {
+      // idle_member_count counts distinct people and is NOT the numerator of
+      // live_session_count: a learner can hold two sessions, and the two
+      // figures are computed over different populations. "3/7 inactifs" would
+      // be arithmetic nobody performed.
+      const wrapper = await mountConsole([
+        classRow({
+          member_count: 12,
+          live_session_count: 7,
+          idle_member_count: 3,
+          idle_threshold_minutes: 10,
+        }),
+      ])
+
+      expect(wrapper.find('[data-test="idle-count"]').text()).toBe('3 idle > 10 min')
+      expect(wrapper.find('[data-test="idle-count"]').text()).not.toContain('/')
+    })
+
     it('keeps the idle line reserved but empty while the endpoint stays silent', async () => {
       // The field is optional. Absent must not read as "nobody is idle", and
       // the line it will occupy has to exist already or the row grows the day

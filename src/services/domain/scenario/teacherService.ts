@@ -165,7 +165,10 @@ export interface TeacherGroupSummary {
    * instruction counts as idle, and one who closed the tab does not appear here
    * at all. Any label built from it has to stay in that register.
    *
-   * Optional, and absent means "the endpoint did not say", never zero.
+   * Core !360 always sends it, so 0 there is a real answer — nobody is stuck.
+   * It stays optional for the backends that predate !360, where absent means
+   * "not reported" rather than zero. Both render nothing, so no caller has to
+   * tell them apart; none may turn absent INTO a zero either.
    */
   idle_member_count?: number
 
