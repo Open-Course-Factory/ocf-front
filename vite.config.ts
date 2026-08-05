@@ -34,7 +34,20 @@ export default defineConfig({
       '/api/v1': {
         target: process.env.VITE_E2E_PROXY_TARGET || 'http://localhost:8080',
         changeOrigin: true,
-        ws: true
+        ws: true,
+        // ocf-core's WebSocket upgrader (terminal console) checks the Origin
+        // header against its FRONTEND allowlist (localhost:4000 in dev);
+        // changeOrigin only rewrites Host. Rewrite Origin on the upgrade
+        // request to an allowlisted frontend origin, or the console handshake
+        // is rejected with 403 from any non-allowlisted port.
+        configure: (proxy) => {
+          proxy.on('proxyReqWs', (proxyReq) => {
+            proxyReq.setHeader(
+              'origin',
+              process.env.VITE_E2E_WS_ORIGIN || 'http://localhost:4000'
+            )
+          })
+        }
       }
     }
   },
