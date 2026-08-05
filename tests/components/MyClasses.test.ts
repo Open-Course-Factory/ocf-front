@@ -51,15 +51,25 @@ vi.mock('../../src/stores/organizations', () => ({
   }),
 }))
 
-// The org-less classroom verdict, which decides whether the personal-context
-// state invites the teacher to create an organization or to buy the plan that
-// would let them. Null is the honest starting point: a page mounts before its
-// features come back, and the console must have an answer for that moment.
-const orgLessFeatures = { value: null as any }
+// `can_create_organization` from /auth/permissions — the same verdict ocf-core
+// applies when it decides whether to accept the organization (core #476). It
+// decides whether the personal-context state invites the teacher to create one
+// or to buy the plan that would let them. Null is the honest starting point: a
+// page can mount before the payload lands, and the console needs an answer for
+// that moment too.
+const canCreateOrganization = ref<boolean | null>(null)
+vi.mock('../../src/stores/currentUser', () => ({
+  useCurrentUserStore: () => ({
+    get canCreateOrganization() { return canCreateOrganization.value },
+    ensurePermissionsLoaded: vi.fn().mockResolvedValue([]),
+    loadPermissions: vi.fn().mockResolvedValue([]),
+  }),
+}))
+
 vi.mock('../../src/stores/permissions', () => ({
   usePermissionsStore: () => ({
     get effectiveFeatures() { return null },
-    get allOrgFeatures() { return orgLessFeatures.value },
+    get allOrgFeatures() { return null },
     ensureEffectiveFeaturesLoaded: vi.fn().mockResolvedValue(null),
     loadEffectiveFeatures: vi.fn().mockResolvedValue(null),
   }),
@@ -120,7 +130,7 @@ describe('MyClasses console', () => {
     i18n.global.locale.value = 'en'
     activeOrganization.value = ACTIVE_ORG
     isPersonalContext.value = false
-    orgLessFeatures.value = null
+    canCreateOrganization.value = null
   })
 
   it('renders one row per class the teacher manages', async () => {
@@ -436,7 +446,7 @@ describe('MyClasses console', () => {
 
       it('offers the plan instead of a form the backend would refuse', async () => {
         isPersonalContext.value = true
-        orgLessFeatures.value = { can_run_classrooms: false, classroom_denied_reason: 'plan_lacks_group_management' }
+        canCreateOrganization.value = false
         const wrapper = await mountConsole([])
 
         expect(wrapper.find('[data-test="upgrade-plan-cta"]').exists()).toBe(true)
@@ -445,7 +455,7 @@ describe('MyClasses console', () => {
 
       it('sends that call to action to the plans page', async () => {
         isPersonalContext.value = true
-        orgLessFeatures.value = { can_run_classrooms: false }
+        canCreateOrganization.value = false
         const wrapper = await mountConsole([])
 
         expect(wrapper.findComponent(RouterLinkStub).props('to')).toBe('/subscription-plans')
@@ -453,7 +463,7 @@ describe('MyClasses console', () => {
 
       it('names the plan to buy, and still puts the classes in an organization', async () => {
         isPersonalContext.value = true
-        orgLessFeatures.value = { can_run_classrooms: false }
+        canCreateOrganization.value = false
         const wrapper = await mountConsole([])
 
         const state = wrapper.find('[data-test="personal-org-state"]')
@@ -465,7 +475,7 @@ describe('MyClasses console', () => {
       it('says it in French too', async () => {
         isPersonalContext.value = true
         i18n.global.locale.value = 'fr'
-        orgLessFeatures.value = { can_run_classrooms: false }
+        canCreateOrganization.value = false
         const wrapper = await mountConsole([])
 
         const state = wrapper.find('[data-test="personal-org-state"]')
@@ -475,7 +485,7 @@ describe('MyClasses console', () => {
 
       it('keeps the create call to action for a plan that does cover it', async () => {
         isPersonalContext.value = true
-        orgLessFeatures.value = { can_run_classrooms: true }
+        canCreateOrganization.value = true
         const wrapper = await mountConsole([])
 
         expect(wrapper.find('[data-test="create-organization-cta"]').exists()).toBe(true)
@@ -488,27 +498,19 @@ describe('MyClasses console', () => {
         // features are still in flight, or never arrived — is worse than the one
         // extra click a refusal costs the teacher who does not.
         isPersonalContext.value = true
-        orgLessFeatures.value = null
+        canCreateOrganization.value = null
         const wrapper = await mountConsole([])
 
         expect(wrapper.find('[data-test="create-organization-cta"]').exists()).toBe(true)
         expect(wrapper.find('[data-test="upgrade-plan-cta"]').exists()).toBe(false)
       })
 
-      it('reads a response carrying no verdict as no', async () => {
-        isPersonalContext.value = true
-        orgLessFeatures.value = { user_id: 'u-1' }
-        const wrapper = await mountConsole([])
-
-        expect(wrapper.find('[data-test="upgrade-plan-cta"]').exists()).toBe(true)
-      })
-
       it('builds both variants from the same slot, so nothing moves between them', async () => {
         isPersonalContext.value = true
-        orgLessFeatures.value = { can_run_classrooms: true }
+        canCreateOrganization.value = true
         const ready = await mountConsole([])
 
-        orgLessFeatures.value = { can_run_classrooms: false }
+        canCreateOrganization.value = false
         const locked = await mountConsole([])
 
         const shapeOf = (wrapper: any) =>

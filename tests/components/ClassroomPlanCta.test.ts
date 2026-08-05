@@ -14,22 +14,32 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
+import { ref } from 'vue'
 
 // The verdict comes from the backend now (ocf-core#453): the CTA reads
 // can_run_classrooms rather than inspecting a plan field, because the answer
 // depends on the plan, the organization and the caller's role in it.
 //
-// The ORG-LESS one, specifically. This CTA offers to create an organization, and
-// core #476 decides that on the plan alone; the org-scoped verdict answers a
-// different question and says no inside a personal organization whatever the plan
-// says (core #475) — which is where every trainer without a team organization
-// stands, including the one who just bought Formateur.
-const orgLessFeatures = { value: null as any }
+// The ORG-LESS one, specifically: `can_create_organization` from
+// /auth/permissions, which core #476 computes with the same call its create
+// endpoint applies. The org-scoped verdict answers a different question and says
+// no inside a personal organization whatever the plan says (core #475) — which is
+// where every trainer without a team organization stands, including the one who
+// just bought Formateur.
+const canCreateOrganization = ref<boolean | null>(null)
+
+vi.mock('../../src/stores/currentUser', () => ({
+  useCurrentUserStore: () => ({
+    get canCreateOrganization() { return canCreateOrganization.value },
+    ensurePermissionsLoaded: vi.fn().mockResolvedValue([]),
+    loadPermissions: vi.fn().mockResolvedValue([]),
+  }),
+}))
 
 vi.mock('../../src/stores/permissions', () => ({
   usePermissionsStore: () => ({
     get effectiveFeatures() { return null },
-    get allOrgFeatures() { return orgLessFeatures.value },
+    get allOrgFeatures() { return null },
     ensureEffectiveFeaturesLoaded: vi.fn().mockResolvedValue(undefined),
     loadEffectiveFeatures: vi.fn().mockResolvedValue(undefined),
   }),
@@ -54,11 +64,11 @@ describe('ClassroomPlanCta', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    orgLessFeatures.value = null
+    canCreateOrganization.value = null
   })
 
   it('offers organization creation when the plan grants group management', () => {
-    orgLessFeatures.value = { can_run_classrooms: true }
+    canCreateOrganization.value = true
 
     const wrapper = mountCta()
 
@@ -67,7 +77,7 @@ describe('ClassroomPlanCta', () => {
   })
 
   it('emits create so the page owns how an organization is actually made', async () => {
-    orgLessFeatures.value = { can_run_classrooms: true }
+    canCreateOrganization.value = true
 
     const wrapper = mountCta()
     await wrapper.find('[data-test="classroom-cta-create"]').trigger('click')
@@ -76,23 +86,12 @@ describe('ClassroomPlanCta', () => {
   })
 
   it('points at the plan instead of disappearing when not entitled', () => {
-    orgLessFeatures.value = { can_run_classrooms: false, classroom_denied_reason: 'plan_lacks_group_management' }
+    canCreateOrganization.value = false
 
     const wrapper = mountCta()
 
     expect(wrapper.find('[data-test="classroom-cta-create"]').exists()).toBe(false)
     // The gate sells: there is always an action, never a dead panel.
-    expect(wrapper.find('[data-test="classroom-cta-upgrade"]').exists()).toBe(true)
-  })
-
-  // A response that carries no verdict at all must read as "not entitled". Absent
-  // is not permission: inviting someone into an organization the backend will then
-  // refuse is the failure this gate exists to prevent.
-  it('treats a response without a verdict as not entitled', () => {
-    orgLessFeatures.value = { user_id: 'u-1' }
-
-    const wrapper = mountCta()
-
     expect(wrapper.find('[data-test="classroom-cta-upgrade"]').exists()).toBe(true)
   })
 
@@ -103,7 +102,7 @@ describe('ClassroomPlanCta', () => {
     // longer symmetrical: an unresolved verdict costs an entitled teacher a
     // priced-up panel telling them to buy Formateur again, and costs an
     // unentitled one one click.
-    orgLessFeatures.value = null
+    canCreateOrganization.value = null
 
     const wrapper = mountCta()
 

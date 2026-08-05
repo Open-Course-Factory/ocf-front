@@ -1,5 +1,6 @@
 import { computed, onMounted } from 'vue'
 import { usePermissionsStore } from '../stores/permissions'
+import { useCurrentUserStore } from '../stores/currentUser'
 import type { ClassroomDeniedReason } from '../types/user'
 
 /**
@@ -23,6 +24,7 @@ import type { ClassroomDeniedReason } from '../types/user'
  */
 export function useClassroomEntitlement() {
   const permissionsStore = usePermissionsStore()
+  const currentUserStore = useCurrentUserStore()
 
   /**
    * "May this user run classes in the organization currently in context?"
@@ -41,30 +43,31 @@ export function useClassroomEntitlement() {
 
   /**
    * "Does the plan this user holds allow teaching at all?" — no organization in
-   * the question. Mirrors ocf-core `CanRunClassrooms(userID, nil)`, the verdict
-   * the create-organization (core#476) and convert-to-team (core#458) gates
-   * apply, so a screen keyed on this cannot offer what the endpoint behind it
-   * refuses.
+   * the question. This is `can_create_organization` from GET /auth/permissions,
+   * which ocf-core computes with the very `CanRunClassrooms(userID, nil)` call
+   * that the create-organization gate applies (core#476, alongside
+   * `can_create_group` and convert-to-team #458), so a screen keyed on it cannot
+   * offer what the endpoint behind it refuses.
    *
    * Deliberately NOT `canRunClassrooms` above. That one is scoped to the active
    * organization and is false inside a personal one by design, so asking it
    * whether a trainer may create their FIRST organization refuses every trainer
    * who does not have one yet — including the one who just bought Formateur.
    *
+   * Deliberately NOT the org-less /users/me/features either, tempting as the name
+   * is: that aggregate reads organization subscriptions only, never the caller's
+   * personal one, and 404s for a user whose plan is personal — which is this
+   * exact trainer. It would answer "unknown" precisely where the answer matters.
+   *
    * Three states, and the third carries a product decision: null means no verdict
    * has been fetched. Reading that as "no" turns a slow request into an upgrade
    * pitch shown to someone who already paid. Callers therefore keep offering the
    * ordinary action while it is null and let the backend refuse — the refusal is
-   * handled, and re-reads this verdict on the way (see Organizations.vue).
+   * handled and explains itself (see Organizations.vue).
    */
-  const planAllowsClassrooms = computed<boolean | null>(() => {
-    // `allOrgFeatures` holds the store's org-less GET /users/me/features, whose
-    // verdict is plan-only by construction (ocf-core!358). The name describes
-    // where its feature union comes from, not the verdict carried beside it.
-    const verdict = permissionsStore.allOrgFeatures
-    if (!verdict) return null
-    return verdict.can_run_classrooms === true
-  })
+  const planAllowsClassrooms = computed<boolean | null>(
+    () => currentUserStore.canCreateOrganization
+  )
 
   /**
    * Why not, for screens that can say something more useful than "upgrade".
@@ -80,10 +83,11 @@ export function useClassroomEntitlement() {
   )
 
   onMounted(() => {
-    // A features request that fails must not take the mounting screen down with
-    // it: the verdict stays unresolved instead, and unresolved has a defined
-    // meaning on every screen that reads it.
+    // Neither request may take the mounting screen down with it: a verdict that
+    // does not arrive stays unresolved, and unresolved has a defined meaning on
+    // every screen that reads one.
     permissionsStore.ensureEffectiveFeaturesLoaded().catch(() => {})
+    currentUserStore.ensurePermissionsLoaded().catch(() => {})
   })
 
   return { canRunClassrooms, planAllowsClassrooms, deniedReason, deniedByPlan }

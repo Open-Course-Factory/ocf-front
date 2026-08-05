@@ -29,6 +29,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { OrganizationsList, OrganizationModal } from '../Organizations'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { usePermissionsStore } from '../../stores/permissions'
+import { useCurrentUserStore } from '../../stores/currentUser'
 import { useClassroomEntitlement } from '../../composables/useClassroomEntitlement'
 import { useTranslations } from '../../composables/useTranslations'
 import type { Organization, CreateOrganizationRequest, UpdateOrganizationRequest } from '../../types'
@@ -37,6 +38,7 @@ const route = useRoute()
 const router = useRouter()
 const organizationsStore = useOrganizationsStore()
 const permissionsStore = usePermissionsStore()
+const currentUserStore = useCurrentUserStore()
 
 const isModalOpen = ref(false)
 const selectedOrganization = ref<Organization | null>(null)
@@ -75,7 +77,7 @@ onMounted(async () => {
     permissionsStore.loadCurrentUser().catch(() => null),
     // Awaited rather than left to the entitlement composable's own mount, so the
     // decision below is made on a verdict rather than on its absence.
-    permissionsStore.ensureEffectiveFeaturesLoaded().catch(() => null)
+    currentUserStore.ensurePermissionsLoaded().catch(() => null)
   ])
 
   // `?create=1` opens the form straight away, so a call to action elsewhere can
@@ -142,21 +144,30 @@ const handleSubmit = async (data: CreateOrganizationRequest | UpdateOrganization
  * Why the save failed, in the user's language.
  *
  * A creation refused for want of a teaching plan (core #476) has to read as the
- * plan gate it is, not as a raw backend sentence in English. Rather than
- * pattern-matching that sentence — a contract the API does not offer — this asks
- * the endpoint that owns the rule. Authoritative even in the race this exists
- * for, where the plan changed server-side after the page decided to show the
- * form, and the refreshed verdict also flips the panel above the list to its
- * locked state, so the page stops offering what it just refused.
+ * plan gate it is, not as a raw backend sentence in English. Organizations go
+ * through the generic entity route, so the refusal arrives in the entity-error
+ * envelope with a machine-readable code beside the message; its mere presence
+ * identifies this refusal, whichever code it carries.
+ *
+ * The permissions payload is re-read on the way, because the case this handles
+ * is the plan changing server-side after the page decided to offer the form —
+ * that also flips the panel above the list to its locked state, so the page
+ * stops offering what it just refused.
  */
 async function describeSubmitFailure(err: any): Promise<string> {
-  if (!selectedOrganization.value) {
-    await permissionsStore.loadEffectiveFeatures().catch(() => null)
-    if (planAllowsClassrooms.value === false) {
-      return t('organizationsPage.classroomPlanRequired')
-    }
+  const failure = err.response?.data?.error
+
+  if (!selectedOrganization.value && failure?.details?.classroom_denied_reason) {
+    await currentUserStore.loadPermissions().catch(() => null)
+    return t('organizationsPage.classroomPlanRequired')
   }
-  return err.response?.data?.error_message || err.message || t('organizationsPage.submitFailed')
+
+  // Two envelopes reach this page: `error.message` from the entity routes,
+  // `error_message` from the hand-written organization controllers.
+  return failure?.message
+    || err.response?.data?.error_message
+    || err.message
+    || t('organizationsPage.submitFailed')
 }
 
 const navigateToOrganization = (organizationId: string) => {

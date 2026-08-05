@@ -52,6 +52,17 @@ export const useCurrentUserStore = defineStore('currentUser', {
             userEmail: "",
             userRoles: [] as string[],
             permissions: [] as string[], // User permissions from backend
+
+            /**
+             * Whether this user's PLAN lets them own a teaching organization —
+             * ocf-core's `can_create_organization`, which resolves through the
+             * same `CanRunClassrooms(userID, nil)` call that the create endpoint
+             * itself applies (core #476), so the two cannot drift.
+             *
+             * null until /auth/permissions answers. Callers must keep that apart
+             * from false: absent data is not a refusal.
+             */
+            canCreateOrganization: null as boolean | null,
             _isAuthenticated: false, // Internal reactive flag
             emailVerified: false,
             emailVerifiedAt: null as string | null,
@@ -146,6 +157,7 @@ export const useCurrentUserStore = defineStore('currentUser', {
             this.userEmail = "";
             this.userRoles = [];
             this.permissions = []; // Clear permissions
+            this.canCreateOrganization = null; // Unknown again, not refused
             this.emailVerified = false;
             this.emailVerifiedAt = null;
             this.mustChangePassword = false;
@@ -333,6 +345,13 @@ export const useCurrentUserStore = defineStore('currentUser', {
                     console.log('🔐 User roles extracted from /auth/permissions:', this.userRoles);
                 }
 
+                // Only a real boolean counts. A backend that does not send the
+                // field leaves the answer unknown, which reads as "carry on" —
+                // never as a refusal invented by the client.
+                this.canCreateOrganization = typeof response.data.can_create_organization === 'boolean'
+                    ? response.data.can_create_organization
+                    : null;
+
                 // Transform resource permissions to action permissions
                 this.permissions = this.transformResourcePermissions(response.data);
 
@@ -361,6 +380,19 @@ export const useCurrentUserStore = defineStore('currentUser', {
                 }
                 return [];
             }
+        },
+
+        /**
+         * Load the permissions payload only if it is not already here.
+         *
+         * main.ts loads it before the app mounts, so this normally resolves
+         * without a request. It exists for the screens that must decide on
+         * `canCreateOrganization` rather than on its absence, and would otherwise
+         * have nothing to await when that first load failed.
+         */
+        async ensurePermissionsLoaded() {
+            if (this.canCreateOrganization !== null) return this.permissions;
+            return this.loadPermissions();
         },
 
         startTokenExpiryCheck() {

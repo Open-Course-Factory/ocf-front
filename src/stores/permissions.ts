@@ -183,7 +183,11 @@ export const usePermissionsStore = defineStore('permissions', () => {
   let inFlightFeatures: Promise<UserEffectiveFeatures | null> | null = null
 
   const ensureEffectiveFeaturesLoaded = async (): Promise<UserEffectiveFeatures | null> => {
-    if (effectiveFeatures.value && allOrgFeatures.value) return effectiveFeatures.value
+    // Keyed on `effectiveFeatures` alone. `allOrgFeatures` comes from the
+    // org-less aggregate, which 404s for a user whose only subscription is
+    // personal — testing it here would make "loaded" unreachable for them and
+    // turn every mount into another round trip.
+    if (effectiveFeatures.value) return effectiveFeatures.value
     if (!inFlightFeatures) {
       inFlightFeatures = loadEffectiveFeatures().finally(() => {
         inFlightFeatures = null

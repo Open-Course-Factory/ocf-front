@@ -67,21 +67,30 @@ vi.mock('../../src/stores/organizations', () => ({
   }),
 }))
 
-// The org-less classroom verdict — the same one ocf-core applies when it decides
-// whether to accept the organization at all. A ref, because the refusal path
-// changes it mid-test and the page has to notice, exactly as the real store's
-// state would make it notice.
-const orgLessFeatures = ref<any>(null)
-const loadEffectiveFeatures = vi.fn()
+// `can_create_organization` from /auth/permissions — the same verdict ocf-core
+// applies when it decides whether to accept the organization at all. A ref,
+// because the refusal path changes it mid-test and the page has to notice,
+// exactly as the real store's state would make it notice.
+const canCreateOrganization = ref<boolean | null>(null)
+const loadPermissions = vi.fn()
+const ensurePermissionsLoaded = vi.fn()
+vi.mock('../../src/stores/currentUser', () => ({
+  useCurrentUserStore: () => ({
+    get canCreateOrganization() { return canCreateOrganization.value },
+    ensurePermissionsLoaded,
+    loadPermissions,
+  }),
+}))
+
 const loadCurrentUser = vi.fn()
 vi.mock('../../src/stores/permissions', () => ({
   usePermissionsStore: () => ({
     canManageOrganization: () => true,
     loadCurrentUser,
     get effectiveFeatures() { return null },
-    get allOrgFeatures() { return orgLessFeatures.value },
+    get allOrgFeatures() { return null },
     ensureEffectiveFeaturesLoaded: vi.fn().mockResolvedValue(null),
-    loadEffectiveFeatures,
+    loadEffectiveFeatures: vi.fn().mockResolvedValue(null),
   }),
 }))
 
@@ -117,6 +126,23 @@ function modalError(wrapper: any): string {
   return wrapper.find('.modal-stub').attributes('data-error') || ''
 }
 
+// The entity-management envelope ocf-core answers with on the generic route,
+// carrying the refusal code the frontend keys on.
+function entityRefusal(reason: string) {
+  return {
+    response: {
+      status: 403,
+      data: {
+        error: {
+          code: 'ENT006',
+          message: 'your subscription plan does not allow creating organizations',
+          details: { resource: 'Organization', action: 'create', classroom_denied_reason: reason },
+        },
+      },
+    },
+  }
+}
+
 async function submitNewOrganization(wrapper: any) {
   wrapper.findComponent({ name: 'OrganizationModal' })
     .vm.$emit('submit', { name: 'formatech', display_name: 'FormaTech' })
@@ -128,8 +154,9 @@ describe('Organizations page — arriving to create', () => {
     vi.clearAllMocks()
     routeQuery = {}
     i18n.global.locale.value = 'en'
-    orgLessFeatures.value = { can_run_classrooms: true }
-    loadEffectiveFeatures.mockResolvedValue(null)
+    canCreateOrganization.value = true
+    loadPermissions.mockResolvedValue([])
+    ensurePermissionsLoaded.mockResolvedValue([])
     loadCurrentUser.mockResolvedValue(undefined)
   })
 
@@ -148,7 +175,7 @@ describe('Organizations page — arriving to create', () => {
   it('does not open a form the plan cannot submit', async () => {
     // The panel above the list already explains what is missing and links to the
     // plan; a form that can only 4xx is a worse answer than that panel.
-    orgLessFeatures.value = { can_run_classrooms: false, classroom_denied_reason: 'plan_lacks_group_management' }
+    canCreateOrganization.value = false
 
     const wrapper = await mountOrganizations({ create: '1' })
 
@@ -170,7 +197,7 @@ describe('Organizations page — arriving to create', () => {
     // Refusing on missing data would strand a paying teacher on a page with no
     // route forward. The backend still gets the last word, and its refusal is
     // handled below.
-    orgLessFeatures.value = null
+    canCreateOrganization.value = null
 
     const wrapper = await mountOrganizations({ create: '1' })
 
@@ -183,35 +210,34 @@ describe('Organizations page — refused by the plan gate', () => {
     vi.clearAllMocks()
     routeQuery = {}
     i18n.global.locale.value = 'en'
-    orgLessFeatures.value = { can_run_classrooms: true }
-    loadEffectiveFeatures.mockResolvedValue(null)
+    canCreateOrganization.value = true
+    loadPermissions.mockResolvedValue([])
+    ensurePermissionsLoaded.mockResolvedValue([])
     loadCurrentUser.mockResolvedValue(undefined)
   })
 
   it('explains the refusal in the user’s language instead of echoing the API', async () => {
     // The race this exists for: the page decided to show the form while the plan
     // was still classroom-capable, and it is not by the time the form is sent.
-    createOrganization.mockRejectedValue({
-      response: { status: 403, data: { error_message: 'user plan does not allow running classes' } },
-    })
-    loadEffectiveFeatures.mockImplementation(async () => {
-      orgLessFeatures.value = { can_run_classrooms: false, classroom_denied_reason: 'plan_lacks_group_management' }
-      return null
+    createOrganization.mockRejectedValue(entityRefusal('plan_lacks_group_management'))
+    loadPermissions.mockImplementation(async () => {
+      canCreateOrganization.value = false
+      return []
     })
 
     const wrapper = await mountOrganizations({ create: '1' })
     await submitNewOrganization(wrapper)
 
     expect(modalError(wrapper)).toContain('Formateur')
-    expect(modalError(wrapper)).not.toContain('user plan does not allow running classes')
+    expect(modalError(wrapper)).not.toContain('your subscription plan does not allow creating organizations')
   })
 
   it('says it in French too', async () => {
     i18n.global.locale.value = 'fr'
-    createOrganization.mockRejectedValue({ response: { status: 403, data: {} } })
-    loadEffectiveFeatures.mockImplementation(async () => {
-      orgLessFeatures.value = { can_run_classrooms: false }
-      return null
+    createOrganization.mockRejectedValue(entityRefusal('no_plan'))
+    loadPermissions.mockImplementation(async () => {
+      canCreateOrganization.value = false
+      return []
     })
 
     const wrapper = await mountOrganizations({ create: '1' })
@@ -222,7 +248,7 @@ describe('Organizations page — refused by the plan gate', () => {
 
   it('keeps the backend’s own message when the plan was not the problem', async () => {
     createOrganization.mockRejectedValue({
-      response: { status: 400, data: { error_message: 'you already have an organization with this name' } },
+      response: { status: 400, data: { error: { code: 'ENT004', message: 'you already have an organization with this name' } } },
     })
 
     const wrapper = await mountOrganizations({ create: '1' })
