@@ -42,8 +42,24 @@ describe('MainNavMenu — "My classes" entry', () => {
 
   it('takes its visibility from the Groups category instead of re-deriving it', () => {
     expect(menuSource).toMatch(/showMyClasses\s*=\s*computed\(\(\)\s*=>\s*groupsCategory\.value/)
-    expect(menuSource).toMatch(/myClassesDisabled\s*=\s*computed\(\(\)\s*=>\s*groupsCategory\.value/)
     expect(menuSource).toMatch(/groupsCategory\s*=\s*computed\([\s\S]{0,160}category\.key === 'groups'/)
+  })
+
+  it('is never disabled — in a personal context it is the door to org creation', () => {
+    // The entry must stay a plain always-clickable router-link: the console
+    // renders the right state per context (#315), and in a personal org it is
+    // the only path to creating a team org (Organizations category is hidden).
+    expect(menuSource).not.toMatch(/myClassesDisabled/)
+    expect(menuSource).toMatch(/<router-link[\s\S]{0,80}to="\/my-classes"/)
+  })
+
+  it('grays the Groups category on the classroom verdict, not on plan features alone', () => {
+    // #475: the org-aware verdict is authoritative — a Formateur plan grants
+    // groups, but a personal org never enables them. The category must read
+    // canRunClassrooms and name the personal_organization reason.
+    expect(menuSource).toMatch(/category\.key === 'groups' && !canRunClassrooms\.value/)
+    expect(menuSource).toMatch(/personal_organization/)
+    expect(menuSource).toMatch(/classroomsNeedOrganization/)
   })
 
   it('names itself in both locales', () => {

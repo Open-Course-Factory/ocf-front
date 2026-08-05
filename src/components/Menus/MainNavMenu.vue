@@ -3,19 +3,18 @@
     <nav class="menu-nav">
       <div class="menu-top">
         <ul>
-          <li v-if="showMyClasses" class="my-classes-entry" :class="{ 'my-classes-entry--disabled': myClassesDisabled }">
-            <component
-              :is="myClassesDisabled ? 'span' : 'router-link'"
+          <!-- Never disabled: in a personal context the console IS the path to
+               creating a team org, so locking the door here would orphan it. -->
+          <li v-if="showMyClasses" class="my-classes-entry">
+            <router-link
               to="/my-classes"
               class="category-header my-classes-header"
-              :title="myClassesDisabled ? (groupsCategory?.disabledTooltip || '') : (isMenuCollapsed ? t('navigation.myClassesTitle') : '')"
-              :aria-disabled="myClassesDisabled ? 'true' : undefined"
-              @click="!myClassesDisabled && handleMenuItemClick()"
+              :title="isMenuCollapsed ? t('navigation.myClassesTitle') : ''"
+              @click="handleMenuItemClick()"
             >
               <i class="fas fa-chalkboard-teacher"></i>
               <span class="menu-text category-title">{{ t('navigation.myClasses') }}</span>
-              <i v-if="myClassesDisabled" class="fas fa-lock my-classes-lock-icon" aria-hidden="true"></i>
-            </component>
+            </router-link>
           </li>
           <NavCategory
             v-for="category in filteredTopCategories"
@@ -127,6 +126,7 @@ import { useMenuCategories } from '../../composables/useMenuCategories';
 import { useHelpRegistryStore } from '../../stores/helpRegistry';
 import { useLocale } from '../../composables/useLocale';
 import { useTranslations } from '../../composables/useTranslations';
+import { useClassroomEntitlement } from '../../composables/useClassroomEntitlement';
 import { isAssignedSubscription } from '../../utils/subscriptionHelpers';
 
 const helpStore = useHelpRegistryStore()
@@ -139,18 +139,21 @@ const { t: tNav } = useTranslations({
     nav: {
       featureAvailableInOrg: "Disponible dans {orgName} — changez d'organisation pour y accéder",
       featureNotInCurrentOrg: "Non disponible dans cette organisation — changez d'organisation pour y accéder",
+      classroomsNeedOrganization: "La gestion de classes s'applique aux organisations — créez-en une depuis Mes classes",
     }
   },
   en: {
     nav: {
       featureAvailableInOrg: 'Available in {orgName} — switch organization to access',
       featureNotInCurrentOrg: 'Not available in current organization — switch organization to access',
+      classroomsNeedOrganization: 'Classrooms live in organizations — create one from My classes',
     }
   }
 })
 
 // Permissions store for feature availability checks across orgs
 const permissionsStoreInstance = usePermissionsStore()
+const { canRunClassrooms, deniedReason: classroomDeniedReason } = useClassroomEntitlement()
 
 // Props
 const props = defineProps<{
@@ -580,6 +583,18 @@ const filteredCategories = computed(() => {
         }
       }
 
+      // The org-aware verdict is authoritative for classroom surfaces (#475):
+      // plan features say what the PLAN grants, the verdict says what THIS
+      // context enables — a personal org never does, whatever the plan holds.
+      if (category.key === 'groups' && !canRunClassrooms.value) {
+        disabled = true
+        if (classroomDeniedReason.value === 'personal_organization') {
+          disabledTooltip = tNav('nav.classroomsNeedOrganization')
+        } else if (!disabledTooltip) {
+          disabledTooltip = tNav('nav.featureNotInCurrentOrg')
+        }
+      }
+
       return {
         ...category,
         disabled,
@@ -614,7 +629,6 @@ const groupsCategory = computed(() =>
   filteredCategories.value.find(category => category.key === 'groups')
 )
 const showMyClasses = computed(() => groupsCategory.value !== undefined)
-const myClassesDisabled = computed(() => groupsCategory.value?.disabled === true)
 
 const bottomCategoryKeys = new Set(['subscription', 'help', 'admin'])
 
@@ -714,10 +728,6 @@ onMounted(async () => {
   position: relative;
 }
 
-.my-classes-entry--disabled {
-  opacity: 0.5;
-}
-
 .my-classes-header {
   display: flex;
   align-items: center;
@@ -747,22 +757,6 @@ onMounted(async () => {
   text-align: center;
   margin-right: var(--spacing-md);
   flex-shrink: 0;
-}
-
-.my-classes-lock-icon {
-  margin-left: auto;
-  font-size: var(--font-size-xs);
-  color: var(--color-gray-400);
-  flex-shrink: 0;
-}
-
-.my-classes-entry--disabled .my-classes-header {
-  cursor: not-allowed;
-}
-
-.my-classes-entry--disabled .my-classes-header:hover {
-  transform: none;
-  background-color: var(--color-gray-700);
 }
 
 .main-menu.collapsed {
