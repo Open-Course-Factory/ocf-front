@@ -61,10 +61,18 @@ async function addLearner(page: Page, email: string): Promise<void> {
   const modal = page.locator('.base-modal-container')
   await expect(modal).toBeVisible()
 
-  await modal.locator('.user-search-container input').fill(email)
-
+  const search = modal.locator('.user-search-container input')
   const result = modal.locator('.search-dropdown .search-result').filter({ hasText: email })
-  await expect(result).toHaveCount(1)
+
+  // GroupMembersManager hides the dropdown 200ms after a blur and never cancels
+  // that timer, so a modal reopened faster than that swallows the results of the
+  // search it just ran. Focusing the field again is what brings them back.
+  await expect(async () => {
+    await search.click()
+    await search.fill(email)
+    await expect(result).toHaveCount(1, { timeout: 3_000 })
+  }).toPass({ timeout: 20_000 })
+
   await demoPause(page)
   await result.click()
 
@@ -80,8 +88,12 @@ async function addLearner(page: Page, email: string): Promise<void> {
  * browser. A run must not leave classes behind for the next one to trip on.
  */
 async function deleteClassIfPresent(page: Page, name: string): Promise<void> {
-  // A failure can leave a modal overlay swallowing clicks on the sidebar.
-  await page.keyboard.press('Escape')
+  // A failure can leave a modal overlay swallowing clicks on the sidebar, and
+  // BaseModal has no Escape handler — its close button is the only way out.
+  const close = page.locator('.base-modal-close')
+  if (await close.isVisible().catch(() => false)) {
+    await close.click({ timeout: 5_000 }).catch(() => {})
+  }
   await openMyClassesFromSidebar(page)
 
   const row = classRow(page, name)
