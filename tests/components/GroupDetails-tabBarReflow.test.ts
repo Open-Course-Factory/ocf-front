@@ -118,8 +118,7 @@ async function mountGroupDetails() {
         GroupCommandHistory: true,
         GroupScenariosTab: true,
         GroupAnalyticsTab: true,
-        GroupActivityTab: true,
-        GroupLiveSessionsTab: true,
+        ClassLiveView: true,
         AdminBadge: true
       }
     }
@@ -144,12 +143,12 @@ function disabledTabLabels(wrapper: Awaited<ReturnType<typeof mountGroupDetails>
     .map(label)
 }
 
+// "Live sessions" and "Activity" merged into the single "Live class" tab (#310).
 const ALL_TABS = [
   'Overview',
   'Members',
   'Scenarios',
-  'Live sessions',
-  'Activity',
+  'Live class',
   'Analytics',
   'Command History',
   'Settings'

@@ -21,5 +21,8 @@ export type {
   SessionCommand,
   SessionCommandsResponse,
   TeacherGroupSummary,
-  TeacherGroupAssignment
+  TeacherGroupAssignment,
+  LearnerLiveProgress,
+  LearnerAssignmentProgress,
+  LearnerAssignmentStatus
 } from './teacherService'

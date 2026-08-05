@@ -13,8 +13,9 @@
  *      three tabs and then pressing Back should leave the group page, not
  *      replay the tab sequence backwards.
  *
- * GroupActivityTab is mounted for real (it only loads on mount, so it is the
- * sharpest probe for the stale-data bug); the other tabs are stubbed.
+ * The live-class tab is mounted for real (it only loads on mount, so it is the
+ * sharpest probe for the stale-data bug); the other tabs are stubbed. Its wall
+ * half stays stubbed — the progression table is what renders learner rows.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -23,7 +24,7 @@ import { createI18n } from 'vue-i18n'
 import { ref } from 'vue'
 import { createRouter, createMemoryHistory } from 'vue-router'
 
-const getGroupActivity = vi.fn()
+const getGroupLiveProgress = vi.fn()
 const getOne = vi.fn()
 
 vi.mock('axios', () => ({
@@ -37,7 +38,7 @@ vi.mock('axios', () => ({
 
 vi.mock('../../src/services/domain/scenario', () => ({
   teacherService: {
-    getGroupActivity: (...args: unknown[]) => getGroupActivity(...args)
+    getGroupLiveProgress: (...args: unknown[]) => getGroupLiveProgress(...args)
   }
 }))
 
@@ -81,16 +82,24 @@ function groupPayload(id: string, displayName: string) {
   }
 }
 
-function activitySession(userName: string, scenarioTitle: string) {
+function liveProgressRow(userName: string, scenarioTitle: string) {
   return {
     user_id: userName.toLowerCase(),
     user_name: userName,
-    scenario_id: 'sc-1',
-    scenario_title: scenarioTitle,
-    current_step: 1,
-    total_steps: 4,
-    started_at: new Date().toISOString(),
-    status: 'active'
+    connected: true,
+    idle: false,
+    assignments: [
+      {
+        assignment_id: 'a-1',
+        scenario_id: 'sc-1',
+        scenario_title: scenarioTitle,
+        status: 'in_progress',
+        current_step: 1,
+        total_steps: 4,
+        hints_used: 0,
+        started_at: new Date().toISOString()
+      }
+    ]
   }
 }
 
@@ -133,6 +142,7 @@ async function mountAt(router: ReturnType<typeof createTestRouter>, location: st
         GroupAnalyticsTab: true,
         GroupLiveSessionsTab: true,
         AdminBadge: true
+        // ClassLiveView is deliberately NOT stubbed: it is the probe.
       }
     }
   })
@@ -153,41 +163,41 @@ describe('GroupDetails — switching groups', () => {
     getOne.mockImplementation(async (id: string) =>
       groupPayload(id, id === 'g-1' ? 'Promo A' : 'Promo B')
     )
-    getGroupActivity.mockImplementation(async (id: string) =>
+    getGroupLiveProgress.mockImplementation(async (id: string) =>
       id === 'g-1'
-        ? [activitySession('Alice', 'Scenario A')]
-        : [activitySession('Bob', 'Scenario B')]
+        ? [liveProgressRow('Alice', 'Scenario A')]
+        : [liveProgressRow('Bob', 'Scenario B')]
     )
   })
 
   it('shows the new group rows in the open tab after navigating to another group', async () => {
     const router = createTestRouter()
-    const wrapper = await mountAt(router, '/class-groups/g-1?tab=activity')
+    const wrapper = await mountAt(router, '/class-groups/g-1?tab=live')
 
-    expect(wrapper.find('.sessions-table').text()).toContain('Alice')
+    expect(wrapper.find('.ocf-prog-table').text()).toContain('Alice')
 
-    await router.push('/class-groups/g-2?tab=activity')
+    await router.push('/class-groups/g-2?tab=live')
     await flushPromises()
 
     expect(wrapper.find('.group-detail-content').text()).toContain('Promo B')
-    expect(wrapper.find('.sessions-table').text()).toContain('Bob')
-    expect(wrapper.find('.sessions-table').text()).not.toContain('Alice')
+    expect(wrapper.find('.ocf-prog-table').text()).toContain('Bob')
+    expect(wrapper.find('.ocf-prog-table').text()).not.toContain('Alice')
   })
 
   it('keeps an empty group tab empty instead of showing the previous group rows', async () => {
-    getGroupActivity.mockImplementation(async (id: string) =>
-      id === 'g-1' ? [activitySession('Alice', 'Scenario A')] : []
+    getGroupLiveProgress.mockImplementation(async (id: string) =>
+      id === 'g-1' ? [liveProgressRow('Alice', 'Scenario A')] : []
     )
 
     const router = createTestRouter()
-    const wrapper = await mountAt(router, '/class-groups/g-1?tab=activity')
-    expect(wrapper.find('.sessions-table').text()).toContain('Alice')
+    const wrapper = await mountAt(router, '/class-groups/g-1?tab=live')
+    expect(wrapper.find('.ocf-prog-table').text()).toContain('Alice')
 
-    await router.push('/class-groups/g-2?tab=activity')
+    await router.push('/class-groups/g-2?tab=live')
     await flushPromises()
 
-    expect(wrapper.find('.sessions-table').exists()).toBe(false)
-    expect(wrapper.find('.empty-state').exists()).toBe(true)
+    expect(wrapper.find('.ocf-prog-table').exists()).toBe(false)
+    expect(wrapper.find('.ocf-clp-state').text()).toBeTruthy()
   })
 })
 
@@ -195,7 +205,7 @@ describe('GroupDetails — tab changes and browser history', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     getOne.mockImplementation(async (id: string) => groupPayload(id, 'Promo A'))
-    getGroupActivity.mockResolvedValue([])
+    getGroupLiveProgress.mockResolvedValue([])
   })
 
   it('leaves the group page on Back instead of replaying the visited tabs', async () => {
@@ -205,10 +215,10 @@ describe('GroupDetails — tab changes and browser history', () => {
 
     await tabButton(wrapper, 'Members').trigger('click')
     await flushPromises()
-    await tabButton(wrapper, 'Activity').trigger('click')
+    await tabButton(wrapper, 'Live class').trigger('click')
     await flushPromises()
 
-    expect(router.currentRoute.value.query.tab).toBe('activity')
+    expect(router.currentRoute.value.query.tab).toBe('live')
 
     router.back()
     await flushPromises()

@@ -36,7 +36,7 @@ import { userService, type User } from '../../services/domain/user'
 import type { ClassGroup } from '../../types'
 import type { Organization } from '../../types/organization'
 import axios from 'axios'
-import { GroupOverviewTab, GroupMembersManager, GroupSettingsTab, GroupCommandHistory, GroupScenariosTab, GroupActivityTab, GroupAnalyticsTab, GroupLiveSessionsTab } from '../Groups'
+import { GroupOverviewTab, GroupMembersManager, GroupSettingsTab, GroupCommandHistory, GroupScenariosTab, GroupAnalyticsTab, ClassLiveView } from '../Groups'
 import AdminBadge from '../Common/AdminBadge.vue'
 
 const route = useRoute()
@@ -58,8 +58,7 @@ const { t } = useTranslations({
       tabOverview: 'Overview',
       tabMembers: 'Members',
       tabScenarios: 'Scenarios',
-      tabLiveSessions: 'Live sessions',
-      tabActivity: 'Activity',
+      tabLiveClass: 'Live class',
       tabAnalytics: 'Analytics',
       tabHistory: 'Command History',
       tabSettings: 'Settings',
@@ -87,8 +86,7 @@ const { t } = useTranslations({
       tabOverview: 'Aperçu',
       tabMembers: 'Membres',
       tabScenarios: 'Scénarios',
-      tabLiveSessions: 'Sessions en direct',
-      tabActivity: 'Activité',
+      tabLiveClass: 'Classe en direct',
       tabAnalytics: 'Analyses',
       tabHistory: 'Historique des commandes',
       tabSettings: 'Paramètres',
@@ -115,8 +113,24 @@ const groupOrganization = ref<Organization | null>(null)
 const isLoading = ref(true)
 const isMembersLoading = ref(false)
 const error = ref('')
-type GroupTab = 'overview' | 'members' | 'scenarios' | 'live' | 'activity' | 'analytics' | 'history' | 'settings'
-const activeTab = ref<GroupTab>((route.query.tab as GroupTab) || 'overview')
+const GROUP_TABS = ['overview', 'members', 'scenarios', 'live', 'analytics', 'history', 'settings'] as const
+type GroupTab = typeof GROUP_TABS[number]
+
+/**
+ * "Sessions en direct" and "Activité" merged into the single live-class tab
+ * (#310), which kept the `live` key. A bookmark, a console link or a browser
+ * history entry still carrying the retired key opens the merged tab, and the
+ * URL is rewritten once so the retired key does not outlive the visit.
+ */
+const RETIRED_TAB_ALIASES: Record<string, GroupTab> = { activity: 'live' }
+
+function resolveTab(raw: unknown): GroupTab | null {
+  if (typeof raw !== 'string') return null
+  if ((GROUP_TABS as readonly string[]).includes(raw)) return raw as GroupTab
+  return RETIRED_TAB_ALIASES[raw] ?? null
+}
+
+const activeTab = ref<GroupTab>(resolveTab(route.query.tab) ?? 'overview')
 
 interface TabDescriptor {
   id: GroupTab
@@ -133,8 +147,7 @@ const baseTabs: TabDescriptor[] = [
 // the reserved-slot rendering below is expressed once instead of per button.
 const managerTabs: TabDescriptor[] = [
   { id: 'scenarios', icon: 'fas fa-clipboard-list', labelKey: 'groupDetails.tabScenarios' },
-  { id: 'live', icon: 'fas fa-eye', labelKey: 'groupDetails.tabLiveSessions' },
-  { id: 'activity', icon: 'fas fa-desktop', labelKey: 'groupDetails.tabActivity' },
+  { id: 'live', icon: 'fas fa-eye', labelKey: 'groupDetails.tabLiveClass' },
   { id: 'analytics', icon: 'fas fa-chart-bar', labelKey: 'groupDetails.tabAnalytics' },
   { id: 'history', icon: 'fas fa-history', labelKey: 'groupDetails.tabHistory' },
   { id: 'settings', icon: 'fas fa-cog', labelKey: 'groupDetails.tabSettings' }
@@ -196,10 +209,6 @@ const visibleTabs = computed<(TabDescriptor & { disabled: boolean })[]>(() => [
 
 const canDeleteGroup = computed(() => {
   return isPlatformAdmin.value || isOwner.value
-})
-
-const canViewHistory = computed(() => {
-  return canEditGroup.value
 })
 
 const groupStatus = computed(() => {
@@ -312,6 +321,13 @@ onMounted(async () => {
     return
   }
 
+  // A retired or unknown tab key was resolved at setup; rewrite it so what the
+  // teacher bookmarks from here is the tab they are actually on. The watcher
+  // below cannot do it: resolving happened before it started listening.
+  if (typeof route.query.tab === 'string' && route.query.tab !== activeTab.value) {
+    router.replace({ path: route.path, query: { ...route.query, tab: activeTab.value } })
+  }
+
   await loadGroupAndMembers()
 })
 
@@ -321,9 +337,8 @@ watch(() => route.params.id, async () => {
 
 // Sync activeTab with URL query parameter (for browser back/forward)
 watch(() => route.query.tab, (newTab) => {
-  if (newTab && typeof newTab === 'string' && ['overview', 'members', 'scenarios', 'live', 'activity', 'analytics', 'history', 'settings'].includes(newTab)) {
-    activeTab.value = newTab as 'overview' | 'members' | 'scenarios' | 'live' | 'activity' | 'analytics' | 'history' | 'settings'
-  }
+  const resolved = resolveTab(newTab)
+  if (resolved) activeTab.value = resolved
 })
 
 // Update URL when tab changes. `replace`, not `push`: a tab is a view of the same
@@ -485,16 +500,10 @@ watch(activeTab, (newTab) => {
           :organization-id="currentGroup?.organization_id"
         />
 
-        <GroupLiveSessionsTab
+        <ClassLiveView
           v-if="activeTab === 'live'"
           :group-id="groupId!"
           :can-supervise="canEditGroup"
-        />
-
-        <GroupActivityTab
-          v-if="activeTab === 'activity'"
-          :group-id="groupId!"
-          :can-view-history="canViewHistory"
         />
 
         <GroupAnalyticsTab

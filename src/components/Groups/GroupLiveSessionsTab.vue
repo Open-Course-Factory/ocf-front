@@ -126,6 +126,13 @@ import SupervisionViewer from '../Terminal/SupervisionViewer.vue'
 const props = defineProps<{
   groupId: string
   canSupervise: boolean
+  /**
+   * Open straight onto one learner's tile instead of the wall. Set by the
+   * progression table's "watch this terminal" action (ClassLiveView), which
+   * mounts this component fresh each time — hence an initial value rather than
+   * a two-way binding.
+   */
+  initialFocusSessionId?: string
 }>()
 
 const { t } = useTranslations({
@@ -168,7 +175,7 @@ const { t } = useTranslations({
 const sessions = ref<LiveSession[]>([])
 const isLoading = ref(false)
 const error = ref('')
-const focusedSessionId = ref<string | null>(null)
+const focusedSessionId = ref<string | null>(props.initialFocusSessionId ?? null)
 let pollInterval: ReturnType<typeof setInterval> | null = null
 
 // Per-group tile ordering (drag & drop + persisted envelope) and the transient

@@ -3,8 +3,8 @@
  * user meet it.
  *
  * The bar renders as plain buttons, which announce as "button, Overview" with no
- * hint that there are eight of them, which one is showing, or that arrow keys do
- * anything. This pins the WAI-ARIA tabs pattern on it:
+ * hint that there are several of them, which one is showing, or that arrow keys
+ * do anything. This pins the WAI-ARIA tabs pattern on it:
  *
  *   - the bar is a `tablist`, each button a `tab`, the content a `tabpanel`
  *     labelled by the tab that opened it;
@@ -115,8 +115,7 @@ async function mountGroupDetails() {
         GroupCommandHistory: true,
         GroupScenariosTab: true,
         GroupAnalyticsTab: true,
-        GroupActivityTab: true,
-        GroupLiveSessionsTab: true,
+        ClassLiveView: true,
         AdminBadge: true
       }
     }
@@ -165,7 +164,7 @@ describe('GroupDetails tab bar — WAI-ARIA tabs pattern', () => {
     const tablist = wrapper.find('[role="tablist"]')
     expect(tablist.exists()).toBe(true)
     expect(tablist.attributes('aria-label')).toBeTruthy()
-    expect(tabs(wrapper)).toHaveLength(8)
+    expect(tabs(wrapper)).toHaveLength(7)
   })
 
   it('marks only the shown tab as selected', async () => {
@@ -283,7 +282,7 @@ describe('GroupDetails tab bar — placeholder tabs reserved while the role load
 
     const reserved = tabs(wrapper).filter(t => t.attributes('aria-disabled') === 'true')
     expect(reserved.map(label)).toEqual([
-      'Scenarios', 'Live sessions', 'Activity', 'Analytics', 'Command History', 'Settings'
+      'Scenarios', 'Live class', 'Analytics', 'Command History', 'Settings'
     ])
 
     const all = tabs(wrapper)

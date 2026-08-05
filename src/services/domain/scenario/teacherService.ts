@@ -194,6 +194,72 @@ export function classDisplayName(summary: TeacherGroupSummary): string {
   return summary.display_name || summary.name
 }
 
+// The three-value standing the class view renders. Mirror of the
+// LearnerStatus* constants in ocf-core services/teacherLiveProgressService.go.
+export type LearnerAssignmentStatus = 'not_started' | 'in_progress' | 'completed'
+
+// Where one learner stands on one of the class's active assignments. Mirror of
+// services.LearnerAssignmentProgress in ocf-core.
+//
+// An assignment the learner never opened is returned all-zero with
+// status 'not_started' rather than omitted — "assigned, untouched" is a state
+// the class view must show, not a gap.
+export interface LearnerAssignmentProgress {
+  assignment_id: string
+  scenario_id: string
+  scenario_title: string
+  deadline?: string
+  // The attempt this row describes; absent when not started.
+  session_id?: string
+  status: LearnerAssignmentStatus
+  // The RAW scenario_sessions.status behind `status`, absent when not started.
+  // `status` collapses every non-completed attempt into 'in_progress', so an
+  // abandoned or setup_failed run is only visible here — render it as an
+  // annotation rather than folding it into the three statuses.
+  session_status?: string
+  current_step: number
+  current_step_title?: string
+  total_steps: number
+  // How long the learner has been on the step they are on now. Absent unless
+  // the attempt is in progress. Computed server-side at fetch time, so it is
+  // stale by up to one polling interval and must not be ticked locally.
+  current_step_elapsed_seconds?: number
+  hints_used: number
+  // 0..100, same scale as ScenarioResultItem.grade. Absent until graded.
+  grade?: number
+  started_at?: string
+  completed_at?: string
+}
+
+// One row of the merged class view: who the learner is, whether they are
+// present, and where they stand on each of the class's assignments. Mirror of
+// services.LearnerLiveProgress in ocf-core (GET /teacher/groups/:id/live-progress).
+//
+// Every ACTIVE member of the class gets a row, including one who has done
+// nothing — the surface invigilates exams, so a missing learner would read as
+// "nobody to worry about".
+export interface LearnerLiveProgress {
+  user_id: string
+  user_name?: string
+  user_email?: string
+  // A terminal session alive right now AND supervisable in the class's
+  // organization — the same rule the supervision wall lists tiles by.
+  connected: boolean
+  // The live session the "watch" action targets. Absent when not connected.
+  terminal_session_id?: string
+  // Most recent SCENARIO interaction (verify, hint, quiz, step completion),
+  // not keystrokes: ocf-core stores no per-command timestamp.
+  last_activity_at?: string
+  // Present, but no scenario activity for the backend's idle threshold —
+  // computed by isLearnerIdle in ocf-core so this view and the "N inactifs"
+  // badge on the classes console cannot disagree. Never re-derive it here.
+  //
+  // A learner with no live session is ABSENT (connected=false), not idle: the
+  // two states mean different things and must stay distinguishable.
+  idle: boolean
+  assignments: LearnerAssignmentProgress[]
+}
+
 export const teacherService = {
   // --- Cross-class overview ---
 
@@ -203,6 +269,15 @@ export const teacherService = {
   // stores/teacherGroups.ts.
   async getManagedGroups(): Promise<TeacherGroupSummary[]> {
     const response = await axios.get('/teacher/groups')
+    return Array.isArray(response.data) ? response.data : []
+  },
+
+  // One row per active member of the class, joining supervision presence with
+  // scenario position and assignment results — the data behind the merged
+  // "Classe en direct" view (issue #310). Always an array: an unknown class, a
+  // class with no member and a class with no assignment all list nothing.
+  async getGroupLiveProgress(groupId: string): Promise<LearnerLiveProgress[]> {
+    const response = await axios.get(`/teacher/groups/${groupId}/live-progress`)
     return Array.isArray(response.data) ? response.data : []
   },
 
@@ -237,11 +312,6 @@ export const teacherService = {
   },
 
   // --- Teacher dashboard operations ---
-
-  async getGroupActivity(groupId: string): Promise<any[]> {
-    const response = await axios.get(`/teacher/groups/${groupId}/activity`)
-    return response.data?.sessions || response.data?.data || response.data || []
-  },
 
   async getScenarioResults(groupId: string, scenarioId: string): Promise<ScenarioResultItem[]> {
     const response = await axios.get(

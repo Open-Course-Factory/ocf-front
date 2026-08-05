@@ -19,7 +19,8 @@ import axios from 'axios'
 import { teacherService } from '../../src/services/domain/scenario/teacherService'
 import type {
   SessionDetailResponse,
-  SessionCommandsResponse
+  SessionCommandsResponse,
+  LearnerLiveProgress
 } from '../../src/services/domain/scenario/teacherService'
 
 const mockedAxios = vi.mocked(axios)
@@ -178,6 +179,95 @@ describe('teacherService.getSessionDetail', () => {
 
     expect(result.steps[0].started_at).toBeUndefined()
     expect(result.steps[0].questions).toBeUndefined()
+  })
+})
+
+describe('teacherService.getGroupLiveProgress', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('GETs the live-progress endpoint of the class', async () => {
+    mockedAxios.get.mockResolvedValueOnce({ data: [] })
+
+    await teacherService.getGroupLiveProgress('group-1')
+
+    expect(mockedAxios.get).toHaveBeenCalledWith('/teacher/groups/group-1/live-progress')
+  })
+
+  it('carries presence, position and results through on one row', async () => {
+    const rows: LearnerLiveProgress[] = [
+      {
+        user_id: 'u-1',
+        user_name: 'Léa Simon',
+        user_email: 'lea@example.org',
+        connected: true,
+        terminal_session_id: 'sess-1',
+        last_activity_at: '2026-08-04T09:41:00Z',
+        idle: true,
+        assignments: [
+          {
+            assignment_id: 'a-1',
+            scenario_id: 'sc-1',
+            scenario_title: 'Docker — the basics',
+            deadline: '2026-08-04T18:00:00Z',
+            session_id: 'ss-1',
+            status: 'in_progress',
+            session_status: 'abandoned',
+            current_step: 3,
+            current_step_title: 'Containers',
+            total_steps: 6,
+            current_step_elapsed_seconds: 840,
+            hints_used: 2,
+            started_at: '2026-08-04T09:00:00Z'
+          }
+        ]
+      }
+    ]
+    mockedAxios.get.mockResolvedValueOnce({ data: rows })
+
+    const result = await teacherService.getGroupLiveProgress('group-1')
+
+    expect(result).toEqual(rows)
+    // The raw session status survives alongside the collapsed three-value one.
+    expect(result[0].assignments[0].status).toBe('in_progress')
+    expect(result[0].assignments[0].session_status).toBe('abandoned')
+  })
+
+  it('reports a learner who has done nothing rather than dropping the row', async () => {
+    const rows: LearnerLiveProgress[] = [
+      {
+        user_id: 'u-2',
+        connected: false,
+        idle: false,
+        assignments: [
+          {
+            assignment_id: 'a-1',
+            scenario_id: 'sc-1',
+            scenario_title: 'Docker — the basics',
+            status: 'not_started',
+            current_step: 0,
+            total_steps: 6,
+            hints_used: 0
+          }
+        ]
+      }
+    ]
+    mockedAxios.get.mockResolvedValueOnce({ data: rows })
+
+    const result = await teacherService.getGroupLiveProgress('group-1')
+
+    expect(result).toHaveLength(1)
+    expect(result[0].assignments[0].status).toBe('not_started')
+    expect(result[0].user_name).toBeUndefined()
+  })
+
+  it('answers with a list when the class has nothing to show', async () => {
+    mockedAxios.get.mockResolvedValueOnce({ data: null })
+
+    const result = await teacherService.getGroupLiveProgress('group-1')
+
+    expect(result).toEqual([])
   })
 })
 
