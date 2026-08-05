@@ -27,6 +27,7 @@ import { useOrganizationsStore } from "./organizations"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
 import { CLASS_PAGE_NAMES } from '../router/classPages'
+import { useTeacherGroupsStore } from './teacherGroups'
 
 /**
  * Generate URL-friendly slug from display name
@@ -444,11 +445,28 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
     // eight-tab detail page was split into per-page routes.
     base.detailRouteName.value = CLASS_PAGE_NAMES.live
 
+    /**
+     * Any mutation of a class must stale the classes console: its store caches
+     * member counts and rows behind a TTL, and a teacher returning from a
+     * class page must never read pre-mutation numbers (or a deleted class).
+     * Declared here — the one place every class-groups mutation goes through —
+     * rather than taught to each page that mutates.
+     */
+    const staleConsoleAfter = <A extends any[], R>(mutate: (...args: A) => Promise<R>) =>
+        async (...args: A): Promise<R> => {
+            const result = await mutate(...args)
+            useTeacherGroupsStore().markStale()
+            return result
+        }
+
     return {
         ...base,
         fieldList,
         loadEntities,
         loadEntitiesWithCursor,
-        getOne
+        getOne,
+        createEntity: staleConsoleAfter(base.createEntity),
+        updateEntity: staleConsoleAfter(base.updateEntity),
+        deleteEntity: staleConsoleAfter(base.deleteEntity)
     }
 })

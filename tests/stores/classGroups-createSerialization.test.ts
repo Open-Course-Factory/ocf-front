@@ -39,6 +39,7 @@ vi.mock('../../src/services/demo', () => ({
 
 import axios from 'axios'
 import { useClassGroupsStore } from '../../src/stores/classGroups'
+import { useTeacherGroupsStore } from '../../src/stores/teacherGroups'
 
 function postedPayload(): any {
   const calls = (axios.post as any).mock.calls
@@ -115,5 +116,21 @@ describe('classGroups creation payload', () => {
   it('declares the create form opens active by default', () => {
     const store = useClassGroupsStore()
     expect(store.fieldList.get('is_active')?.defaultValue).toBe(true)
+  })
+
+  it('stales the classes console after any class mutation', async () => {
+    // The console caches rows behind a TTL; deleting (or editing) a class from
+    // its own pages must make the next console visit refetch — a deleted class
+    // kept its row for a whole polling interval otherwise.
+    const store = useClassGroupsStore()
+    const consoleStore = useTeacherGroupsStore()
+    ;(axios.get as any).mockResolvedValue({ data: [] })
+    await consoleStore.ensureLoaded()
+    expect(consoleStore.loadedAt).not.toBeNull()
+
+    ;(axios.delete as any).mockResolvedValue({ data: {} })
+    await store.deleteEntity('/class-groups', 'grp-1')
+
+    expect(consoleStore.loadedAt).toBeNull()
   })
 })
