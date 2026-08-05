@@ -25,6 +25,16 @@ export default defineConfig({
           || `http://${process.env.VITE_API_URL || 'localhost:8080'}`,
         changeOrigin: true,
         ws: true
+      },
+      // General API proxy so the dev server can serve the app same-origin
+      // (VITE_API_URL pointing at the dev server itself). Unused in the
+      // default setup, where the app calls ocf-core's absolute URL directly;
+      // E2E runs on a secondary port rely on it to sidestep ocf-core's CORS
+      // allowlist. VITE_E2E_PROXY_TARGET names the real backend.
+      '/api/v1': {
+        target: process.env.VITE_E2E_PROXY_TARGET || 'http://localhost:8080',
+        changeOrigin: true,
+        ws: true
       }
     }
   },
