@@ -474,6 +474,16 @@ const error = ref('')
 const loadingMessage = ref(t('terminal.initializingTerminal'))
 const fetchedSessionInfo = ref<SessionInfo | null>(null)
 
+// A handshake rejected before the session was established is usually transient
+// (the composed session's starting→running sync, a proxy blip). Retry silently
+// a couple of times before surfacing the error panel — without this, a learner
+// whose first connect loses that race stares at a dead terminal until they
+// find the Retry button, while the scenario panel sits alive next to it.
+const AUTO_RETRY_ATTEMPTS = 2
+const AUTO_RETRY_DELAY_MS = 2_000
+let autoRetriesLeft = AUTO_RETRY_ATTEMPTS
+let autoRetryTimeout: ReturnType<typeof setTimeout> | null = null
+
 // Supervision indicator state (only meaningful when props.supervisionEnabled).
 // Driven by binary control frames routed through routeSupervisionFrame.
 const supervisionState = ref<SupervisionState>(initialSupervisionState())
@@ -729,6 +739,7 @@ async function connectToTerminal() {
       isWsOpen.value = true
       isConnecting.value = false
       showReconnectButton.value = false
+      autoRetriesLeft = AUTO_RETRY_ATTEMPTS
       runtimeEndReason.value = ''
       error.value = ''
 
@@ -806,6 +817,17 @@ async function connectToTerminal() {
         runtimeEndReason.value = 'disconnected'
         showReconnectButton.value = false
         error.value = ''
+      } else if (autoRetriesLeft > 0) {
+        // Connection failed before the session was established — retry
+        // silently first; only surface the error once retries are exhausted.
+        autoRetriesLeft--
+        error.value = ''
+        showReconnectButton.value = false
+        isConnecting.value = true
+        autoRetryTimeout = setTimeout(() => {
+          autoRetryTimeout = null
+          connectToTerminal()
+        }, AUTO_RETRY_DELAY_MS)
       } else {
         // Connection failed before session was established - offer reconnect
         error.value = event.reason
@@ -900,9 +922,10 @@ async function reconnect() {
   await connectToTerminal()
 }
 
-// Retry on error
+// Retry on error — a deliberate click re-arms the silent auto-retry budget
 async function retry() {
   error.value = ''
+  autoRetriesLeft = AUTO_RETRY_ATTEMPTS
   if (!terminal.value) {
     await initXterm()
   }
@@ -924,6 +947,10 @@ function handleSessionExpired() {
 // Cleanup
 function cleanup() {
   window.removeEventListener('resize', handleResize)
+  if (autoRetryTimeout) {
+    clearTimeout(autoRetryTimeout)
+    autoRetryTimeout = null
+  }
   if (resizeTimeout) {
     clearTimeout(resizeTimeout)
     resizeTimeout = null
