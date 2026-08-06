@@ -93,7 +93,7 @@
         <!-- Unavailability explanation -->
         <div v-if="!scenario.launchable" class="unavailable-notice">
           <div class="unavailable-notice-content">
-            <i :class="getScenarioBlockReason(scenario) === 'plan' ? 'fas fa-lock' : getScenarioBlockReason(scenario) === 'no_distribution' ? 'fas fa-exclamation-triangle' : 'fas fa-server'" class="unavailable-notice-icon"></i>
+            <i :class="getBlockReasonIcon(scenario)" class="unavailable-notice-icon"></i>
             <div class="unavailable-notice-text">
               <span class="unavailable-notice-title">{{ t('launcher.unavailableTitle') }}</span>
               <span class="unavailable-notice-detail">{{ getUnavailableReason(scenario) }}</span>
@@ -218,6 +218,8 @@ const { t } = useTranslations({
       unavailablePlanHint: 'Upgrade your plan to access larger machines.',
       unavailableOfflineHint: 'The required machines may be temporarily offline. Try again later.',
       unavailableNoDistributionHint: 'Contact your administrator to configure compatible machines.',
+      unavailableBudget: 'Your resource budget is fully used by your current sessions.',
+      unavailableBudgetHint: 'Stop a running session to free capacity, or upgrade your plan.',
       provisioning: 'Setting up your environment...',
       provisioningDetail: 'Creating terminal and preparing scenario. This may take a few minutes.',
       provisioningSetup: 'Running scenario setup scripts... This may take a few minutes.',
@@ -255,6 +257,8 @@ const { t } = useTranslations({
       unavailablePlanHint: 'Mettez à niveau votre plan pour accéder aux machines plus puissantes.',
       unavailableOfflineHint: 'Les machines requises sont peut-être temporairement hors ligne. Réessayez plus tard.',
       unavailableNoDistributionHint: 'Contactez votre administrateur pour configurer des machines compatibles.',
+      unavailableBudget: 'Votre budget de ressources est entièrement utilisé par vos sessions en cours.',
+      unavailableBudgetHint: 'Arrêtez une session en cours pour libérer de la capacité, ou mettez à niveau votre plan.',
       provisioning: 'Préparation de votre environnement...',
       provisioningDetail: 'Création du terminal et préparation du scénario. Cela peut prendre quelques minutes.',
       provisioningSetup: 'Exécution des scripts de préparation du scénario... Cela peut prendre quelques minutes.',
@@ -358,9 +362,28 @@ function getScenarioBlockReason(scenario: any): string | null {
   return scenario.block_reason || 'offline'
 }
 
+function getBlockReasonIcon(scenario: any): string {
+  switch (getScenarioBlockReason(scenario)) {
+    case 'budget_exhausted':
+      return 'fas fa-battery-quarter'
+    case 'plan':
+      return 'fas fa-lock'
+    case 'no_distribution':
+      return 'fas fa-exclamation-triangle'
+    default:
+      return 'fas fa-server'
+  }
+}
+
+// The backend emits block_reason 'no_distribution' and 'budget_exhausted'
+// (scenarioLaunchController). 'plan' and 'offline' are kept as defensive
+// fallbacks only — without a budget branch, an out-of-budget student used to
+// be told the server was down.
 function getUnavailableReason(scenario: any): string {
   const reason = getScenarioBlockReason(scenario)
   switch (reason) {
+    case 'budget_exhausted':
+      return t('launcher.unavailableBudget')
     case 'plan':
       return t('launcher.unavailablePlan')
     case 'no_distribution':
@@ -374,6 +397,10 @@ function getUnavailableReason(scenario: any): string {
 function getUnavailableHint(scenario: any): string {
   const reason = getScenarioBlockReason(scenario)
   switch (reason) {
+    case 'budget_exhausted':
+      // Org-managed subscribers can't upgrade — the stop-a-session half of
+      // the hint still applies, so keep it either way.
+      return t('launcher.unavailableBudgetHint')
     case 'plan':
       // Org-managed subscribers can't upgrade — show nothing
       if (isAssigned.value) return ''
