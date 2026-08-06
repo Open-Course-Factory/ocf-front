@@ -785,6 +785,12 @@ async function connectToTerminal() {
     }
 
     socket.value.onclose = (event) => {
+      // A close from a socket we already discarded must not touch state: it
+      // fires asynchronously AFTER cleanup()/reconnect() closed it, and the
+      // never-opened case would otherwise fall into the auto-retry branch —
+      // scheduling a reconnect on an unmounted component (zombie socket).
+      if (event.target !== socket.value) return
+
       const wasConnected = isWsOpen.value
       isWsOpen.value = false
       isConnecting.value = false
@@ -850,6 +856,7 @@ async function connectToTerminal() {
     }
 
     socket.value.onerror = (err) => {
+      if (err.target !== socket.value) return
       console.error('WebSocket error:', err)
       isWsOpen.value = false
       isConnecting.value = false
@@ -938,8 +945,12 @@ function handleSessionWarning(level: 'info' | 'warning' | 'danger') {
 }
 
 function handleSessionExpired() {
+  // Discard before closing so the async onclose sees a stale socket and
+  // cannot auto-retry a connection to an expired session.
   if (socket.value) {
-    socket.value.close()
+    const ws = socket.value
+    socket.value = null
+    ws.close()
   }
   emit('session-expired')
 }
