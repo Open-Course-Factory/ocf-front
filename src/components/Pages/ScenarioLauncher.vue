@@ -490,6 +490,13 @@ async function handleLaunchScenario(scenario: any) {
       }
       return
     }
+    // Budget rejection at launch time (structured 403, source=budget): reuse
+    // the same copy the card shows for block_reason=budget_exhausted, so the
+    // two surfaces cannot tell the user two different stories.
+    if (err.response?.status === 403 && err.response?.data?.source === 'budget') {
+      showError(`${t('launcher.unavailableBudget')} ${t('launcher.unavailableBudgetHint')}`)
+      return
+    }
     const msg = err.message === 'SETUP_FAILED' ? t('launcher.setupFailed')
       : err.message === 'SETUP_TIMEOUT' ? t('launcher.setupTimeout')
       : err.response?.data?.error_message || err.message || t('launcher.launchError')
