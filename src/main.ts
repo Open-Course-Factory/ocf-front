@@ -100,6 +100,18 @@ async function initializeApp() {
     // Dynamically register help article routes from the registry
     registerHelpRoutes(router)
 
+    // The router already started resolving the entry URL when it was
+    // installed above — BEFORE the dynamic help routes existed. A direct
+    // load of /help/* or /help-public/* therefore resolves to no-match and,
+    // with no catch-all route, renders an empty page (#171's second life).
+    // Re-resolve the entry URL once the initial navigation settles; no-op
+    // when the route matched (vue-router's documented addRoute pattern).
+    router.isReady().then(() => {
+      if (router.currentRoute.value.matched.length === 0) {
+        router.replace(router.currentRoute.value.fullPath).catch(() => {})
+      }
+    })
+
     // Step 2: Now that Pinia is registered, stores can access persisted data
     // Initialize currentUser store to ensure token is loaded from localStorage
     const userStore = useCurrentUserStore()

@@ -3,15 +3,19 @@ import { test, expect } from '@playwright/test';
 // ---------------------------------------------------------------------------
 // Help page translations — direct load (hard navigation)
 //
-// Bug #171: useHelpTranslations merges vue-i18n messages in onMounted.
-// Vue-i18n v11 no longer triggers reactivity from mergeLocaleMessage, so
-// components render raw translation keys (e.g. "help.terminals.gettingStarted.title")
-// when the page is loaded directly via URL.
+// Regression coverage for bug #171, which had two lives:
+//  1. help messages merged in onMounted — vue-i18n v11 doesn't trigger
+//     reactivity from mergeLocaleMessage, so first paint showed raw keys
+//     (fixed: main.ts preloads the messages before mount);
+//  2. the dynamic help routes are addRoute'd AFTER the router started its
+//     initial navigation, so a direct load resolved to no-match and rendered
+//     an empty page (fixed: main.ts re-resolves the entry URL on isReady).
 //
-// These tests cover the "red" state: they are expected to FAIL until the fix
-// is applied. The dev server must be running at http://localhost:4000 before
-// running these tests (`npm run dev`).
+// The browser locale is pinned to fr-FR: the app honors navigator.language
+// for first-visit locale, and Playwright's default is en-US.
 // ---------------------------------------------------------------------------
+
+test.use({ locale: 'fr-FR' });
 
 test.describe('Help page translations on direct load', () => {
   test('terminals/getting-started renders translated content, not raw keys', async ({ page }) => {
