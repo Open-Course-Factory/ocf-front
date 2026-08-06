@@ -54,27 +54,5 @@ export async function navigateViaMenuCategory(page: Page, categoryKey: string, r
 }
 
 export async function navigateViaSubscriptionMenu(page: Page, route: string): Promise<void> {
-  const category = page.locator('.main-menu [data-category="subscription"]');
-
-  if (!(await category.isVisible().catch(() => false))) {
-    await demoPause(page);
-    await page.locator('.menu-bottom-toggle').click();
-    await expect(category).toBeVisible();
-  }
-
-  // Element visibility is not a reliable signal for the accordion state (a
-  // collapsed list still reports its items visible while the header swallows
-  // their clicks) — the `expanded` class on the item list is.
-  const itemList = category.locator('.category-items');
-  const isExpanded = await itemList
-    .evaluate((el) => el.classList.contains('expanded'))
-    .catch(() => false);
-  if (!isExpanded) {
-    await demoPause(page);
-    await category.locator('.category-header').click();
-    await expect(itemList).toHaveClass(/expanded/);
-  }
-
-  await demoPause(page);
-  await category.locator(`a[href="${route}"]`).click();
+  await navigateViaMenuCategory(page, 'subscription', route);
 }
