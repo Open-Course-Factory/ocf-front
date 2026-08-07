@@ -196,7 +196,7 @@ describe('useScenarioGraph — syncOrderFromEdges', () => {
 
     const result = await g.syncOrderFromEdges()
 
-    expect(result).toEqual({ patched: 2, failed: 0, failedLabels: [] })
+    expect(result).toEqual({ patched: 2, failed: 0, failedLabels: [], appendedOffChain: 0 })
     expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st1', { order: 0 })
     expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st2', { order: 1 })
   })
@@ -215,7 +215,7 @@ describe('useScenarioGraph — syncOrderFromEdges', () => {
 
     const result = await g.syncOrderFromEdges()
 
-    expect(result).toEqual({ patched: 0, failed: 0, failedLabels: [] })
+    expect(result).toEqual({ patched: 0, failed: 0, failedLabels: [], appendedOffChain: 0 })
     expect(mockPatch).not.toHaveBeenCalled()
   })
 
@@ -263,6 +263,51 @@ describe('useScenarioGraph — syncOrderFromEdges', () => {
     expect(result.patched).toBe(2)
     expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st1', { order: 0 })
     expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st2', { order: 1 })
+  })
+})
+
+describe('useScenarioGraph — steps left off the chain', () => {
+  it('appends an unconnected step instead of leaving it on an order the chain now uses', async () => {
+    const g = makeGraph()
+    g.nodes.value = [
+      scenarioNode('scenario-1', 's1'),
+      stepNode('step-1', 'terminal', 'st1', { order: 0 }),
+      stepNode('step-2', 'flag', 'st2', { order: 1 }),
+      // Wired to nothing, and sitting on a stale order. Before this fix it was
+      // never renumbered at all, so it kept a value the chain could collide with.
+      stepNode('step-3', 'terminal', 'st3', { order: 7 })
+    ]
+    g.edges.value = [
+      edge('e1', 'scenario-1', 'step-1'),
+      edge('e2', 'step-1', 'step-2')
+    ]
+
+    const result = await g.syncOrderFromEdges()
+
+    expect(result.appendedOffChain).toBe(1)
+    // The chain keeps 0 and 1; the orphan takes the next free slot.
+    expect(mockPatch).not.toHaveBeenCalledWith('/scenario-steps/st1', expect.anything())
+    expect(mockPatch).not.toHaveBeenCalledWith('/scenario-steps/st2', expect.anything())
+    expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st3', { order: 2 })
+  })
+
+  it('produces a sequence with no duplicate orders even when steps are unconnected', async () => {
+    const g = makeGraph()
+    g.nodes.value = [
+      scenarioNode('scenario-1', 's1'),
+      stepNode('step-1', 'terminal', 'st1', { order: 3 }),
+      stepNode('step-2', 'flag', 'st2', { order: 1 }),
+      stepNode('step-3', 'terminal', 'st3', { order: 1 })
+    ]
+    // Only step-1 is on the chain; the other two share order 1 already.
+    g.edges.value = [edge('e1', 'scenario-1', 'step-1')]
+
+    await g.syncOrderFromEdges()
+
+    const orders = g.nodes.value
+      .filter((n: any) => n.id.startsWith('step-'))
+      .map((n: any) => n.data.order)
+    expect(new Set(orders).size).toBe(orders.length)
   })
 })
 
