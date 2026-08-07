@@ -47,6 +47,9 @@ export interface SyncOrderResult {
   patched: number
   failed: number
   failedLabels: string[]
+  // Children that had no edge back to a parent and were appended to the end of
+  // the chain rather than left holding an order the connected ones now use.
+  appendedOffChain: number
 }
 
 export interface UseGraphEditorConfig {
@@ -194,44 +197,72 @@ export function useGraphEditor(config: UseGraphEditorConfig) {
   // Renumber children along their visual edge chains and PATCH the backend.
   // Returns how many PATCHes succeeded and how many failed — a partial pass
   // corrupts the sequence, so the caller has to be able to say so.
+  // Follows the edge chain from `parentNode` through its children and returns
+  // them in visual order. Edges are user-drawn and nothing forbids a cycle,
+  // which would walk forever and hang the tab, so the walk stops at the first
+  // node already seen — the chain up to that point is still the right sequence.
+  function walkChildChain(parentNode: any, isChild: (t: string) => boolean): any[] {
+    const isChainEdgeFrom = (sourceId: string) => (e: any) => {
+      if (e.source !== sourceId) return false
+      const targetNode = nodes.value.find(n => n.id === e.target)
+      return !!targetNode?.data?.entityType && isChild(targetNode.data.entityType)
+    }
+
+    const firstChildEdge = edges.value.find(isChainEdgeFrom(parentNode.id))
+    if (!firstChildEdge) return []
+
+    const chain: any[] = []
+    const visited = new Set<string>()
+    let currentNodeId: string | null = firstChildEdge.target
+
+    while (currentNodeId && !visited.has(currentNodeId)) {
+      visited.add(currentNodeId)
+      const currentNode = nodes.value.find(n => n.id === currentNodeId)
+      if (!currentNode) break
+      chain.push(currentNode)
+
+      const nextEdge = edges.value.find(isChainEdgeFrom(currentNodeId))
+      currentNodeId = nextEdge ? nextEdge.target : null
+    }
+
+    return chain
+  }
+
   async function syncOrderFromEdges(): Promise<SyncOrderResult> {
     let patched = 0
+    let appendedOffChain = 0
     const failedLabels: string[] = []
 
     for (const { parentType, isChild, endpoint, orderField, orderBase } of config.orderLevels) {
       const parentNodes = nodes.value.filter(n => n.data.entityType === parentType && n.data.entityId)
 
-      for (const parentNode of parentNodes) {
-        const firstChildEdge = edges.value.find(e => {
-          if (e.source !== parentNode.id) return false
-          const targetNode = nodes.value.find(n => n.id === e.target)
-          return !!targetNode?.data?.entityType && isChild(targetNode.data.entityType)
-        })
+      const chains = parentNodes.map(parentNode => walkChildChain(parentNode, isChild))
+      const onChain = new Set(chains.flat().map(child => child.id))
 
-        if (!firstChildEdge) continue
+      // Children with no edge back to a parent were left untouched while the
+      // connected ones were renumbered onto their values — a second way to end
+      // up with duplicate orders. Adopt them onto the end of the chain, in
+      // their existing relative order, so the sequence stays unique.
+      //
+      // Only safe with a single parent at this level: with several, an
+      // unconnected child gives no way to tell whose it is, and guessing would
+      // move it under the wrong one. Course levels below the root have many
+      // parents and are therefore left as they are.
+      if (parentNodes.length === 1 && chains.length === 1) {
+        const offChain = nodes.value
+          .filter(n =>
+            n.data.entityId &&
+            !n.data.isNew &&
+            isChild(n.data.entityType) &&
+            !onChain.has(n.id)
+          )
+          .sort((a, b) => (a.data.order ?? 0) - (b.data.order ?? 0))
 
-        const orderedChildren: any[] = []
-        // Edges are user-drawn and nothing forbids a cycle, which would walk
-        // this chain forever and hang the tab. Stop at the first node already
-        // seen: the chain up to that point is still the right sequence.
-        const visited = new Set<string>()
-        let currentNodeId: string | null = firstChildEdge.target
+        chains[0].push(...offChain)
+        appendedOffChain = offChain.length
+      }
 
-        while (currentNodeId && !visited.has(currentNodeId)) {
-          visited.add(currentNodeId)
-          const currentNode = nodes.value.find(n => n.id === currentNodeId)
-          if (!currentNode) break
-          orderedChildren.push(currentNode)
-
-          const nextEdge = edges.value.find(e => {
-            if (e.source !== currentNodeId) return false
-            const targetNode = nodes.value.find(n => n.id === e.target)
-            return !!targetNode?.data?.entityType && isChild(targetNode.data.entityType)
-          })
-
-          currentNodeId = nextEdge ? nextEdge.target : null
-        }
-
+      for (const orderedChildren of chains) {
         for (let i = 0; i < orderedChildren.length; i++) {
           const child = orderedChildren[i]
           const newOrder = i + (orderBase ?? 1)
@@ -253,7 +284,7 @@ export function useGraphEditor(config: UseGraphEditorConfig) {
       }
     }
 
-    return { patched, failed: failedLabels.length, failedLabels }
+    return { patched, failed: failedLabels.length, failedLabels, appendedOffChain }
   }
 
   // Position persistence (per-entity localStorage).
