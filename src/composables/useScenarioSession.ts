@@ -273,7 +273,14 @@ export function useScenarioSession(
   // Navigate back to the previous step for review (info step "Previous" button)
   async function goToPreviousStep() {
     if (!currentStep.value) return
-    const targetOrder = currentStep.value.step_order - 1
+    // Prefer the backend-provided order list: orders are data-driven and
+    // need not be contiguous, so `order - 1` may name a step that doesn't
+    // exist. Fall back to the old arithmetic against an older backend.
+    const orders = currentStep.value.step_orders
+    const position = currentStep.value.position
+    const targetOrder = orders && position && position > 1
+      ? orders[position - 2]
+      : currentStep.value.step_order - 1
     if (targetOrder < 0) return
     await navigateToStep(targetOrder)
   }

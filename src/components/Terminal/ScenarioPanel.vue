@@ -132,13 +132,13 @@
               class="progress-dot"
               data-testid="scenario-progress-dot"
               :class="{
-                completed: (n - 1) < currentStep.step_order,
-                active: (n - 1) === currentStep.step_order,
-                locked: (n - 1) > currentStep.step_order,
-                clickable: (n - 1) <= currentStep.step_order,
-                reviewing: reviewingStep && (n - 1) === reviewingStep.step_order
+                completed: n < currentPosition,
+                active: n === currentPosition,
+                locked: n > currentPosition,
+                clickable: n <= currentPosition,
+                reviewing: reviewingStep && n === stepPosition(reviewingStep)
               }"
-              @click="(n - 1) <= currentStep.step_order ? navigateToStep(n - 1) : undefined"
+              @click="n <= currentPosition ? navigateToStep(orderForPosition(n)) : undefined"
             ></span>
           </div>
         </div>
@@ -147,7 +147,7 @@
         <div v-if="reviewingStep" class="review-banner" data-testid="scenario-review-banner">
           <span class="review-label">
             <i class="fas fa-eye"></i>
-            {{ t('scenarioPanel.reviewingStep', { step: reviewingStep.step_order + 1 }) }}
+            {{ t('scenarioPanel.reviewingStep', { step: stepPosition(reviewingStep) }) }}
           </span>
           <button class="back-to-current-btn" data-testid="scenario-back-to-current" @click="backToCurrentStep">
             <i class="fas fa-arrow-left"></i>
@@ -159,7 +159,7 @@
         <div ref="stepContentRef" class="step-content" @click="handleExecClick">
           <!-- Step title -->
           <div class="step-header">
-            <span class="step-label">{{ t('scenarioPanel.step') }} {{ displayedStep!.step_order + 1 }}</span>
+            <span class="step-label">{{ t('scenarioPanel.step') }} {{ stepPosition(displayedStep) }}</span>
             <h4 class="step-title" data-testid="scenario-step-title">{{ displayedStep!.title }}</h4>
           </div>
 
@@ -209,7 +209,7 @@
               </p>
               <div class="info-actions">
                 <button
-                  v-if="(currentStep!.step_order ?? 0) > 0"
+                  v-if="currentPosition > 1"
                   class="btn-secondary"
                   @click="goToPreviousStep"
                 >
@@ -497,12 +497,28 @@ function stopHintNudgeTimer() {
   hintNudgeActive.value = false
 }
 
+// Display position of a step (1-based). Orders are data-driven (0- or
+// 1-based by authoring path), so `step_order + 1` reads "Étape 3 / 2" on
+// 1-based scenarios — always prefer the backend-provided position and only
+// fall back to the old arithmetic against an older backend.
+function stepPosition(step: { position?: number; step_order: number } | null | undefined): number {
+  if (!step) return 0
+  return step.position || step.step_order + 1
+}
+
+// Display position of the current step; drives the counter and the dots.
+const currentPosition = computed(() => stepPosition(currentStep.value))
+
+// Maps a display position (1-based) back to the step order to navigate to.
+function orderForPosition(position: number): number {
+  const orders = currentStep.value?.step_orders
+  return orders && orders.length >= position ? orders[position - 1] : position - 1
+}
+
 // Step counter label (e.g. "Step 2 / 5" or "Étape 2 / 5")
 const stepCountLabel = computed(() => {
   if (!currentStep.value) return ''
-  const current = currentStep.value.step_order + 1
-  const total = totalSteps.value
-  return `${t('scenarioPanel.step')} ${current} / ${total}`
+  return `${t('scenarioPanel.step')} ${currentPosition.value} / ${totalSteps.value}`
 })
 
 // Scenario name for the panel header (falls back to generic title)

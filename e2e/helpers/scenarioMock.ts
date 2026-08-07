@@ -144,6 +144,10 @@ export class ScenarioMock {
     const completed = this.stepScores.has(step.order);
     return {
       step_order: step.order,
+      // Mirrors the backend contract: position is the 1-based index among
+      // ordered steps; display must never derive it from step_order.
+      position: this.steps.findIndex((s) => s.order === step.order) + 1,
+      step_orders: this.steps.map((s) => s.order),
       total_steps: this.steps.length,
       title: step.title,
       text: step.text || `Content of ${step.title}`,
