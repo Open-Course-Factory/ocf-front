@@ -32,6 +32,19 @@ export interface GraphOrderLevel {
   endpoint: string
   // Field name carrying the order value (usually 'order').
   orderField: string
+  // Value given to the first child in the chain. Courses number chapters,
+  // sections and pages from 1; scenario steps are 0-based, matching the
+  // importer (ScenarioStep.Order = i) and ScenarioSession.CurrentStep.
+  // Defaults to 1 so existing course levels keep their numbering.
+  orderBase?: number
+}
+
+// Outcome of a renumber pass. `failed` exists so callers can tell a partial
+// renumber from a clean one: a PATCH that fails mid-chain leaves duplicate or
+// missing order values, and reporting only the successes hides that.
+export interface SyncOrderResult {
+  patched: number
+  failed: number
 }
 
 export interface UseGraphEditorConfig {
@@ -172,11 +185,13 @@ export function useGraphEditor(config: UseGraphEditorConfig) {
   }
 
   // Renumber children along their visual edge chains and PATCH the backend.
-  // Returns the number of PATCHes issued.
-  async function syncOrderFromEdges(): Promise<number> {
-    let patchCount = 0
+  // Returns how many PATCHes succeeded and how many failed — a partial pass
+  // corrupts the sequence, so the caller has to be able to say so.
+  async function syncOrderFromEdges(): Promise<SyncOrderResult> {
+    let patched = 0
+    let failed = 0
 
-    for (const { parentType, isChild, endpoint, orderField } of config.orderLevels) {
+    for (const { parentType, isChild, endpoint, orderField, orderBase } of config.orderLevels) {
       const parentNodes = nodes.value.filter(n => n.data.entityType === parentType && n.data.entityId)
 
       for (const parentNode of parentNodes) {
@@ -207,7 +222,7 @@ export function useGraphEditor(config: UseGraphEditorConfig) {
 
         for (let i = 0; i < orderedChildren.length; i++) {
           const child = orderedChildren[i]
-          const newOrder = i + 1
+          const newOrder = i + (orderBase ?? 1)
           const currentOrder = child.data.order ?? child.data.number ?? 0
 
           if (child.data.entityId && !child.data.isNew && currentOrder !== newOrder) {
@@ -216,16 +231,17 @@ export function useGraphEditor(config: UseGraphEditorConfig) {
                 [orderField]: newOrder
               })
               child.data.order = newOrder
-              patchCount++
+              patched++
             } catch (err) {
               console.error(`Failed to update order for ${endpoint} ${child.data.entityId}:`, err)
+              failed++
             }
           }
         }
       }
     }
 
-    return patchCount
+    return { patched, failed }
   }
 
   // Position persistence (per-entity localStorage).
