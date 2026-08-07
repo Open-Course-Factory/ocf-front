@@ -49,7 +49,9 @@ export interface SyncOrderResult {
   failedLabels: string[]
   // Children that had no edge back to a parent and were appended to the end of
   // the chain rather than left holding an order the connected ones now use.
-  appendedOffChain: number
+  // Named, not just counted: the author has to know which ones to wire up or
+  // delete, and an unconnected node is not obvious on a busy canvas.
+  appendedOffChainLabels: string[]
 }
 
 export interface UseGraphEditorConfig {
@@ -230,7 +232,7 @@ export function useGraphEditor(config: UseGraphEditorConfig) {
 
   async function syncOrderFromEdges(): Promise<SyncOrderResult> {
     let patched = 0
-    let appendedOffChain = 0
+    let appendedOffChainLabels: string[] = []
     const failedLabels: string[] = []
 
     for (const { parentType, isChild, endpoint, orderField, orderBase } of config.orderLevels) {
@@ -259,7 +261,9 @@ export function useGraphEditor(config: UseGraphEditorConfig) {
           .sort((a, b) => (a.data.order ?? 0) - (b.data.order ?? 0))
 
         chains[0].push(...offChain)
-        appendedOffChain = offChain.length
+        appendedOffChainLabels = offChain.map(
+          child => child.data.label || child.data.title || String(child.data.entityId)
+        )
       }
 
       for (const orderedChildren of chains) {
@@ -284,7 +288,7 @@ export function useGraphEditor(config: UseGraphEditorConfig) {
       }
     }
 
-    return { patched, failed: failedLabels.length, failedLabels, appendedOffChain }
+    return { patched, failed: failedLabels.length, failedLabels, appendedOffChainLabels }
   }
 
   // Position persistence (per-entity localStorage).
