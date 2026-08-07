@@ -289,7 +289,8 @@ export async function getGroupScenarioResults(
   );
   if (!response.ok()) return [];
   const body = await response.json();
-  return Array.isArray(body) ? body : body.data || [];
+  // The endpoint answers the paginated shape { items, total, ... }.
+  return Array.isArray(body) ? body : body.items || body.data || [];
 }
 
 /** The caller's terminal record for a tt-backend session id, or null. */
