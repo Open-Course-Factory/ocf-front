@@ -175,8 +175,14 @@ describe('useScenarioGraph — handleEdgeConnect (VALID_CONNECTIONS)', () => {
   })
 })
 
+// These previously pinned 1-based numbering (first step → order 1), which was
+// the bug: scenario steps are 0-based everywhere else — the importer writes
+// Order = i, and a session seeds CurrentStep from the first step's Order — so
+// the editor renumbered every imported scenario on its first save. The
+// expectations below now encode the 0-based rule. Courses stay 1-based via the
+// orderBase default; see useGraphEditor.GraphOrderLevel.
 describe('useScenarioGraph — syncOrderFromEdges', () => {
-  it('renumbers steps along the visual chain and returns the patch count', async () => {
+  it('renumbers steps along the visual chain from 0 and reports what it patched', async () => {
     const g = makeGraph()
     g.nodes.value = [
       scenarioNode('scenario-1', 's1'),
@@ -188,28 +194,48 @@ describe('useScenarioGraph — syncOrderFromEdges', () => {
       edge('e2', 'step-1', 'step-2')
     ]
 
-    const count = await g.syncOrderFromEdges()
+    const result = await g.syncOrderFromEdges()
 
-    expect(count).toBe(2)
-    expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st1', { order: 1 })
-    expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st2', { order: 2 })
+    expect(result).toEqual({ patched: 2, failed: 0 })
+    expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st1', { order: 0 })
+    expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st2', { order: 1 })
   })
 
-  it('does not patch steps already in the correct order', async () => {
+  it('leaves a step already at order 0 alone — 0 is the first step, not a missing value', async () => {
     const g = makeGraph()
     g.nodes.value = [
       scenarioNode('scenario-1', 's1'),
-      stepNode('step-1', 'terminal', 'st1', { order: 1 }),
-      stepNode('step-2', 'flag', 'st2', { order: 2 })
+      stepNode('step-1', 'terminal', 'st1', { order: 0 }),
+      stepNode('step-2', 'flag', 'st2', { order: 1 })
     ]
     g.edges.value = [
       edge('e1', 'scenario-1', 'step-1'),
       edge('e2', 'step-1', 'step-2')
     ]
 
-    const count = await g.syncOrderFromEdges()
+    const result = await g.syncOrderFromEdges()
 
-    expect(count).toBe(0)
+    expect(result).toEqual({ patched: 0, failed: 0 })
     expect(mockPatch).not.toHaveBeenCalled()
+  })
+
+  it('counts a failed PATCH instead of reporting a clean pass', async () => {
+    const g = makeGraph()
+    g.nodes.value = [
+      scenarioNode('scenario-1', 's1'),
+      stepNode('step-1', 'terminal', 'st1', { order: 5 }),
+      stepNode('step-2', 'flag', 'st2', { order: 6 })
+    ]
+    g.edges.value = [
+      edge('e1', 'scenario-1', 'step-1'),
+      edge('e2', 'step-1', 'step-2')
+    ]
+    // The second step's renumber fails: the chain is now half-applied, which
+    // is precisely the state that leaves duplicate or missing orders behind.
+    mockPatch.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('boom'))
+
+    const result = await g.syncOrderFromEdges()
+
+    expect(result).toEqual({ patched: 1, failed: 1 })
   })
 })

@@ -1400,10 +1400,15 @@ const confirmDelete = async () => {
 const handleSave = async () => {
   saveNodePositions()
 
-  const patchCount = await syncOrderFromEdges()
+  const { patched, failed } = await syncOrderFromEdges()
 
-  if (patchCount > 0) {
-    notification.showSuccess(t('scenarioEditor.orderSynced', { count: String(patchCount) }))
+  // A half-applied renumber leaves duplicate or missing step orders, so it
+  // must never be reported as a success — the trainer has to know the
+  // sequence is inconsistent while they can still fix it.
+  if (failed > 0) {
+    notification.showError(t('scenarioEditor.orderSyncFailed', { count: String(failed) }))
+  } else if (patched > 0) {
+    notification.showSuccess(t('scenarioEditor.orderSynced', { count: String(patched) }))
   } else {
     notification.showSuccess(t('scenarioEditor.saveSuccess'))
   }
