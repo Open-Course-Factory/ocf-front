@@ -62,8 +62,10 @@ let learnerCount = 0;
 let scenarioId: string | null = null;
 let assignmentId: string | null = null;
 let grantedMemberships: string[] = [];
-/** How many learner sessions are live — the wall must show exactly that many tiles. */
+/** Sessions the bulk start reported creating. Owned by the bulk-start test alone. */
 let startedCount = 0;
+/** Class members holding a live session — the wall must show exactly that many tiles. */
+let membersAtWork = 0;
 
 test.describe.configure({ mode: 'serial' });
 
@@ -256,13 +258,18 @@ test('the live wall shows one tile per learner at work and nothing else', async 
   test.skip(!groupId, `${TRAINER_EMAIL} teaches no class with learners — seed the dev personas first`);
   test.setTimeout(600_000);
 
-  // The learners are put to work through the launch API rather than the bulk
-  // start above, which is broken: what this test is about is the wall, and it
-  // needs live sessions from wherever they legitimately come.
-  for (const who of [learner, secondLearner]) {
-    if (await launchScenarioSession(who, scenarioId!, orgId!)) startedCount += 1;
+  // Put the class to work. The launch API rather than the bulk start above,
+  // which is broken — this test is about the wall, and it needs live sessions
+  // from wherever they legitimately come. Whoever already has one (the bulk
+  // start, once it is fixed) is counted rather than launched again, and the
+  // trainer counts too: a session of his own would put him on the wall.
+  for (const who of [learner, secondLearner, trainer]) {
+    const alreadyLive = (await getMyScenarioSessions(who)).some(
+      (s: any) => s.scenario_id === scenarioId && s.status === 'active'
+    );
+    if (alreadyLive || (await launchScenarioSession(who, scenarioId!, orgId!))) membersAtWork += 1;
   }
-  test.skip(startedCount === 0, 'no learner session could be provisioned — likely host capacity');
+  test.skip(membersAtWork === 0, 'no session could be provisioned — likely host capacity');
 
   await openClassConsole(page);
   const classRow = fixtureClassRow(page);
@@ -271,15 +278,15 @@ test('the live wall shows one tile per learner at work and nothing else', async 
 
   await page.getByRole('tab', { name: /mur|wall/i }).click();
   const tiles = page.locator('.live-sessions-tile');
-  await expect(tiles).toHaveCount(startedCount, { timeout: 60_000 });
+  await expect(tiles).toHaveCount(membersAtWork, { timeout: 60_000 });
 
   const labels = await tiles.evaluateAll((els) => els.map((el) => el.getAttribute('aria-label') || ''));
-  expect(new Set(labels).size, 'one tile per person, not several for the same one').toBe(startedCount);
+  expect(new Set(labels).size, 'one tile per person, not several for the same one').toBe(membersAtWork);
 });
 
 test('teacher reset abandons the sessions the learners had in flight', async ({ page }) => {
   test.skip(!groupId, `${TRAINER_EMAIL} teaches no class with learners — seed the dev personas first`);
-  test.skip(startedCount === 0, 'no learner session was provisioned, so there is nothing to reset');
+  test.skip(membersAtWork === 0, 'no session was provisioned, so there is nothing to reset');
   test.setTimeout(180_000);
 
   await openFixtureClassScenarios(page);

@@ -30,7 +30,11 @@ import {
 // ---------------------------------------------------------------------------
 
 const AUTHOR_EMAIL = process.env.E2E_ORG_MANAGER_EMAIL || 'nadia@test.ocf';
-const LEARNER_EMAIL = process.env.E2E_USER || 'karim@test.ocf';
+// The SECOND learner, not karim: step verification is rate-limited to 10
+// requests a minute PER USER, and karim already spends that budget in the other
+// Tier B specs. Running the whole suite back to back pushed him over it and this
+// spec's info step silently refused to advance. jp is in the same class.
+const LEARNER_EMAIL = process.env.E2E_USER_2 || 'jp@test.ocf';
 const PASSWORD = process.env.E2E_PASS || 'OcfTest2026!';
 
 const RUN_STAMP = Date.now().toString(36);
@@ -63,12 +67,11 @@ async function addQuizQuestion(page: Page): Promise<void> {
   // The right answer is deliberately NOT the first option. A fresh question has
   // correct_answer = '', and the editor's `isCorrect` test is
   // `Number(correct_answer) === index`, so `Number('') === 0` renders option 1's
-  // radio as already selected. Checking it is then a no-op, no change event
-  // fires, and the question saves with no correct answer at all — worth knowing
-  // about, and worth not building this test on top of.
-  // Click the label, which is what a user aims at — the radio itself sits under
-  // the check-mark glyph and never receives the pointer.
+  // radio as already selected. Marking it is then a no-op, no change event
+  // fires, and the question saves with no correct answer at all.
   const rightAnswerRow = page.locator('.option-row').nth(1);
+  // The label, not the input: the radio sits under the check-mark glyph and
+  // never receives the pointer.
   await rightAnswerRow.locator('label.option-row__correct').click();
   await expect(rightAnswerRow.locator('input[type="radio"]')).toBeChecked();
 
