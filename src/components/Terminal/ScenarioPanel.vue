@@ -53,13 +53,18 @@
         </button>
       </div>
 
-      <!-- Next-step preparation failed (async per-step provisioning) -->
-      <div v-else-if="provisioningError" class="panel-error" data-testid="scenario-step-preparing-error">
-        <i class="fas fa-exclamation-triangle"></i>
-        <span>{{ t('scenarioPanel.preparingFailed') }}</span>
-        <button class="retry-btn" @click="loadCurrentStep">
+      <!-- Next-step preparation failed (async per-step provisioning).
+           Deliberately not styled like the generic load error above: in a
+           challenge scenario a broken-looking machine IS the exercise, so this
+           state has to read as infrastructure rather than content, or learners
+           keep hunting on a machine that cannot be solved. -->
+      <div v-else-if="provisioningError" class="panel-error panel-error--infra" data-testid="scenario-step-preparing-error">
+        <i class="fas fa-server"></i>
+        <p class="panel-error-title">{{ t('scenarioPanel.preparingFailedTitle') }}</p>
+        <p class="panel-error-body">{{ t('scenarioPanel.preparingFailedBody') }}</p>
+        <button class="retry-btn" data-testid="scenario-step-preparing-retry" @click="loadCurrentStep">
           <i class="fas fa-redo"></i>
-          {{ t('scenarioPanel.retry') }}
+          {{ t('scenarioPanel.preparingRetry') }}
         </button>
       </div>
 
@@ -365,7 +370,11 @@ const { t } = useTranslations({
       nextStep: 'Loading next step...',
       preparingNextStep: 'Preparing the next step…',
       preparingHint: 'Installing what the next step needs. This usually takes a few seconds.',
-      preparingFailed: 'The next step could not be prepared.',
+      // Scenario-neutral on purpose: this panel serves every scenario, so the
+      // copy says "step", never "level".
+      preparingFailedTitle: 'The machine could not be prepared for this step.',
+      preparingFailedBody: 'This is not a puzzle — setting up the step failed. Try again; if the error persists, report it to your trainer.',
+      preparingRetry: 'Restart preparation',
       completionSummary: 'Your Results',
       stepsCompleted: 'Steps Completed',
       totalTime: 'Time Spent',
@@ -411,7 +420,9 @@ const { t } = useTranslations({
       nextStep: 'Chargement de l\'étape suivante...',
       preparingNextStep: 'Préparation de l\'étape suivante…',
       preparingHint: 'Installation des éléments nécessaires à l\'étape suivante. Cela prend généralement quelques secondes.',
-      preparingFailed: 'L\'étape suivante n\'a pas pu être préparée.',
+      preparingFailedTitle: 'La machine n\'a pas pu être préparée pour cette étape.',
+      preparingFailedBody: 'Ce n\'est pas une énigme — l\'installation de l\'étape a échoué. Réessayez ; si l\'erreur persiste, signalez-la à votre formateur.',
+      preparingRetry: 'Relancer la préparation',
       completionSummary: 'Vos résultats',
       stepsCompleted: 'Étapes complétées',
       totalTime: 'Temps passé',

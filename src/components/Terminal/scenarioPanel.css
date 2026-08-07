@@ -308,6 +308,26 @@
   font-size: var(--font-size-lg);
 }
 
+/* Provisioning failure. Warning rather than danger, and a machine icon rather
+   than the generic alert triangle: the learner did nothing wrong and nothing
+   is lost, the environment simply did not come up. The icon carries that
+   faster than the sentence does. */
+.panel-error--infra i {
+  color: var(--color-warning);
+}
+
+/* The title has to out-rank the body, otherwise the assertion "this is not a
+   puzzle" reads as the same muted aside as everything else in the panel. */
+.panel-error-title {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.panel-error-body {
+  margin: 0;
+}
+
 .retry-btn {
   display: inline-flex;
   align-items: center;
