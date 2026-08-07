@@ -134,6 +134,64 @@
           </div>
         </div>
 
+        <!-- Effects tab: banners drawn in the learner's terminal -->
+        <div
+          v-if="activeTab === 'effects'"
+          id="panel-effects"
+          class="tab-panel"
+          role="tabpanel"
+          aria-labelledby="tab-effects"
+        >
+          <p class="ocf-effects-note">
+            <i class="fas fa-info-circle"></i>
+            {{ t('stepEdit.effectsTiming') }}
+          </p>
+
+          <div class="form-group">
+            <label for="step-intro-effect">{{ t('stepEdit.introEffect') }}</label>
+            <select id="step-intro-effect" v-model="formData.intro_effect" class="form-control">
+              <option value="">{{ t('stepEdit.effectNone') }}</option>
+              <option v-for="name in BANNER_EFFECTS" :key="name" :value="name">{{ name }}</option>
+            </select>
+            <span class="form-hint">{{ t('stepEdit.introEffectHint') }}</span>
+          </div>
+
+          <div class="form-group">
+            <label for="step-intro-text">{{ t('stepEdit.introText') }}</label>
+            <input
+              id="step-intro-text"
+              v-model="formData.intro_text"
+              type="text"
+              class="form-control"
+              :maxlength="EFFECT_TEXT_MAX"
+              :placeholder="t('stepEdit.introTextPlaceholder')"
+            />
+            <span class="form-hint">{{ formData.intro_text?.length ?? 0 }}/{{ EFFECT_TEXT_MAX }}</span>
+          </div>
+
+          <div class="form-group">
+            <label for="step-outro-effect">{{ t('stepEdit.outroEffect') }}</label>
+            <select id="step-outro-effect" v-model="formData.outro_effect" class="form-control">
+              <option value="">{{ t('stepEdit.effectNone') }}</option>
+              <option v-for="name in BANNER_EFFECTS" :key="name" :value="name">{{ name }}</option>
+            </select>
+            <span class="form-hint">{{ t('stepEdit.outroEffectHint') }}</span>
+          </div>
+
+          <div class="form-group">
+            <label for="step-outro-text">{{ t('stepEdit.outroText') }}</label>
+            <input
+              id="step-outro-text"
+              v-model="formData.outro_text"
+              type="text"
+              class="form-control"
+              :maxlength="EFFECT_TEXT_MAX"
+              :placeholder="t('stepEdit.outroTextPlaceholder')"
+            />
+            <span class="form-hint">{{ formData.outro_text?.length ?? 0 }}/{{ EFFECT_TEXT_MAX }}</span>
+          </div>
+        </div>
+
         <!-- Questions tab (only shown when resolvedStepType === 'quiz') -->
         <div
           v-if="activeTab === 'questions'"
@@ -562,6 +620,17 @@ const { t } = useTranslations({
       tabVerify: 'Verify',
       tabBackground: 'Background',
       tabForeground: 'Foreground',
+      tabEffects: 'Effects',
+      effectsTiming: 'Effects are drawn when the learner reaches the step: the intro on arrival, the outro once the step is validated. Editing a step during a running session changes nothing on screen — start a fresh run to see it.',
+      introEffect: 'Intro effect',
+      introEffectHint: 'Played in the terminal when the learner arrives on this step.',
+      outroEffect: 'Outro effect',
+      outroEffectHint: 'Played once the learner completes this step.',
+      effectNone: 'None',
+      introText: 'Intro text',
+      introTextPlaceholder: 'Level 3 — the machine is lying to you',
+      outroText: 'Outro text',
+      outroTextPlaceholder: 'Flag captured',
       tabQuestions: 'Questions',
       tabsLabel: 'Step editor sections',
       // Step type labels
@@ -650,6 +719,17 @@ const { t } = useTranslations({
       tabVerify: 'Vérification',
       tabBackground: 'Arrière-plan',
       tabForeground: 'Premier plan',
+      tabEffects: 'Effets',
+      effectsTiming: "Les effets s'affichent au passage de l'apprenant : l'intro à l'arrivée sur l'étape, l'outro une fois l'étape validée. Modifier une étape pendant une session en cours ne change rien à l'écran — lancez une nouvelle partie pour le voir.",
+      introEffect: "Effet d'intro",
+      introEffectHint: "Joué dans le terminal quand l'apprenant arrive sur cette étape.",
+      outroEffect: 'Effet de fin',
+      outroEffectHint: "Joué une fois que l'apprenant a terminé cette étape.",
+      effectNone: 'Aucun',
+      introText: "Texte d'intro",
+      introTextPlaceholder: 'Niveau 3 — la machine vous ment',
+      outroText: 'Texte de fin',
+      outroTextPlaceholder: 'Drapeau capturé',
       tabQuestions: 'Questions',
       tabsLabel: 'Sections de l’éditeur d’étape',
       // Step type labels
@@ -770,15 +850,18 @@ const allTabs = computed(() => [
   { key: 'questions', label: t('stepEdit.tabQuestions') },
   { key: 'verify', label: t('stepEdit.tabVerify') },
   { key: 'background', label: t('stepEdit.tabBackground') },
-  { key: 'foreground', label: t('stepEdit.tabForeground') }
+  { key: 'foreground', label: t('stepEdit.tabForeground') },
+  { key: 'effects', label: t('stepEdit.tabEffects') }
 ])
 
 const visibleTabs = computed(() => {
+  // Effects are offered on every step type: the banner is drawn in the
+  // terminal, which the learner is looking at whatever the step asks of them.
   const tabMap: Record<StepType, string[]> = {
-    terminal: ['content', 'hints', 'verify', 'background', 'foreground'],
-    flag: ['content', 'hints', 'background'],
-    info: ['content'],
-    quiz: ['content', 'hints', 'questions']
+    terminal: ['content', 'hints', 'verify', 'background', 'foreground', 'effects'],
+    flag: ['content', 'hints', 'background', 'effects'],
+    info: ['content', 'effects'],
+    quiz: ['content', 'hints', 'questions', 'effects']
   }
   const allowed = tabMap[resolvedStepType.value]
   return allTabs.value.filter(tab => allowed.includes(tab.key))
@@ -816,6 +899,15 @@ interface QuestionData {
   points: number
 }
 
+// Effect names accepted by ocf-banner in the container. Kept in step with the
+// tool rather than invented here: an unknown name draws nothing, and the
+// failure is silent from the trainer's side.
+const BANNER_EFFECTS = ['decrypt', 'slide', 'unstable', 'fireworks', 'burn', 'rings', 'beams', 'matrix', 'rain'] as const
+
+// Mirrors the 500-char cap on the backend DTO so a trainer hits the field
+// limit while typing instead of a 400 on save.
+const EFFECT_TEXT_MAX = 500
+
 const formData = ref<Record<string, any>>({
   title: '',
   order: 1,
@@ -828,6 +920,10 @@ const formData = ref<Record<string, any>>({
   flag_path: '',
   flag_level: 0,
   show_immediate_feedback: false,
+  intro_effect: '',
+  intro_text: '',
+  outro_effect: '',
+  outro_text: '',
   questions: [] as QuestionData[]
 })
 
@@ -914,6 +1010,10 @@ watch(() => [props.visible, props.stepData], () => {
         flag_path: props.stepData.flag_path || '',
         flag_level: props.stepData.flag_level || 0,
         show_immediate_feedback: props.stepData.show_immediate_feedback ?? false,
+        intro_effect: props.stepData.intro_effect || '',
+        intro_text: props.stepData.intro_text || '',
+        outro_effect: props.stepData.outro_effect || '',
+        outro_text: props.stepData.outro_text || '',
         questions: (props.stepData.questions || []).map((q: any) => ({
           id: q.id,
           question_text: q.question_text || '',
@@ -937,6 +1037,10 @@ watch(() => [props.visible, props.stepData], () => {
         flag_path: '',
         flag_level: 0,
         show_immediate_feedback: false,
+        intro_effect: '',
+        intro_text: '',
+        outro_effect: '',
+        outro_text: '',
         questions: []
       }
     }
@@ -1831,5 +1935,27 @@ const handleSave = () => {
 
 .btn-secondary:hover:not(:disabled) {
   background-color: var(--color-secondary-hover);
+}
+
+/* Effects tab: the timing caveat is the first thing a trainer needs, because
+   a step edited mid-session looks broken otherwise. */
+.ocf-effects-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  margin: 0 0 var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-left: 3px solid var(--color-info);
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.ocf-effects-note i {
+  margin-top: 0.15em;
+  color: var(--color-info);
+  flex-shrink: 0;
 }
 </style>
