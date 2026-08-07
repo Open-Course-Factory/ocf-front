@@ -202,10 +202,11 @@ test('bulk start gives every learner in the class a session of their own', async
   // sends the distribution PREFIX (`alp-s`) where tt-backend's POST /1.0/sessions
   // expects the NAME (`alpine-s`), so every bulk start answers
   //   404 distribution 'alp-s' not found
-  // and creates nothing, for every image in the catalog. The test below is the
-  // one that should pass once the modal sends `dist.name`; until then it would
-  // only pin the breakage.
-  test.fixme(true, "bulk start posts the distribution prefix instead of its name — tt-backend 404s");
+  // and creates nothing, for every image in the catalog. The one-line fix
+  // (`dist.name`) is on MR !320 — un-fixme this the moment that merges; the
+  // test below is written to pass against it. Until then it would only pin the
+  // breakage.
+  test.fixme(true, 'bulk start posts the distribution prefix instead of its name — fixed on !320');
   test.setTimeout(600_000);
 
   await openFixtureClassScenarios(page);
