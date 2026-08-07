@@ -1,12 +1,48 @@
 import { test, expect, type Page } from '@playwright/test';
-import { login, loginFresh } from './helpers/auth';
+import { login, getCurrentOrgName, closeUserMenu } from './helpers/auth';
+import {
+  apiLogin,
+  chipFeatures,
+  expectedPreselectedSize,
+  getDistributions,
+  getOrganizations,
+  getSessionOptions,
+  isLaunchable,
+  orgDisplayName,
+  visibleSizes,
+  type ApiSession,
+  type ApiSessionOptions,
+} from './helpers/platformApi';
+
+/**
+ * SessionComposer (the /terminal-creation picker) against the live dev stack.
+ *
+ * Expectations come from `GET /terminals/session-options` for the org context
+ * the UI actually resolved, never from a hardcoded plan roster: which sizes are
+ * plan-locked and which features exist change with every pricing campaign, and
+ * a spec that pins them fails for the wrong reason. Where a behavior needs data
+ * the environment doesn't currently have (a locked size, a second distribution),
+ * the test skips with an explanation instead of failing.
+ */
 
 const TEST_PASSWORD = 'OcfTest2026!';
 const TRAINER_EMAIL = 'marc@test.ocf';
 
+let session: ApiSession;
+
+test.beforeAll(async () => {
+  session = await apiLogin(TRAINER_EMAIL, TEST_PASSWORD);
+});
+
+test.afterAll(async () => {
+  await session.api.dispose();
+});
+
 // ---------------------------------------------------------------------------
-// Helper: dismiss the email verification banner if visible
+// Page helpers
 // ---------------------------------------------------------------------------
+
+/** The email verification banner can overlay the distribution cards. */
 async function dismissVerificationBanner(page: Page) {
   const dismissBtn = page.locator('.verification-banner .btn-dismiss');
   if (await dismissBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
@@ -15,64 +51,103 @@ async function dismissVerificationBanner(page: Page) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Helper: navigate to terminal creation page and wait for the composer
-// ---------------------------------------------------------------------------
 async function gotoTerminalCreation(page: Page) {
   await page.goto('/terminal-creation');
-  // Dismiss the email verification banner if it appears (it can overlay cards)
   await dismissVerificationBanner(page);
-  // Wait for skeleton or distribution cards to appear (whichever comes first)
-  await page.waitForSelector('.distribution-card, .skeleton-card', { timeout: 15_000 });
-  // Then wait for actual distribution cards (skeleton disappears)
-  await page.waitForSelector('.distribution-card', { timeout: 15_000 });
-  // Allow layout to settle (usage panel, capacity check, etc.)
-  await page.waitForTimeout(1_000);
+  await page.waitForSelector('.distribution-card', { timeout: 20_000 });
+  // The org context and the backend list resolve after mount, and each one
+  // makes TerminalStarter reload the distributions — which swaps the cards back
+  // to skeletons for a moment. Let that second load land before touching them.
+  await page.waitForTimeout(1_500);
+  await expect(page.locator('.skeleton-grid')).toHaveCount(0);
 }
 
-// ---------------------------------------------------------------------------
-// Helper: click a distribution card
-// Uses force:true to bypass actionability checks (layout shifts from
-// async loading of usage/capacity panels can cause "not stable" timeout)
-// ---------------------------------------------------------------------------
-async function clickDistribution(page: Page, index: number = 0) {
+/**
+ * Id of the organization the app is currently working in. Plan limits are
+ * org-scoped, so the API expectations must be fetched for this exact org —
+ * reading it from the UI keeps the spec independent of the store's
+ * default-org rule.
+ */
+async function activeOrgId(page: Page): Promise<string> {
+  const displayName = (await getCurrentOrgName(page)).trim();
+  await closeUserMenu(page);
+  const orgs = await getOrganizations(session);
+  const match = orgs.find((o) => orgDisplayName(o).trim() === displayName);
+  expect(match, `active org "${displayName}" should exist in GET /organizations`).toBeTruthy();
+  return match!.id;
+}
+
+/**
+ * Click a distribution card, wait for its size strip, and return the options
+ * the backend resolved for it.
+ */
+async function selectDistribution(
+  page: Page,
+  orgId: string,
+  index = 0
+): Promise<{ name: string; options: ApiSessionOptions }> {
   const card = page.locator('.distribution-card').nth(index);
+  const name = (await card.locator('strong').innerText()).trim();
   await card.click({ force: true });
+  await page.locator('.size-strip').waitFor({ state: 'visible', timeout: 20_000 });
+  const options = await getSessionOptions(session, name, orgId);
+  return { name, options };
+}
+
+/** Size keys as rendered on the pills, in DOM order (largest first). */
+async function renderedSizeKeys(page: Page): Promise<string[]> {
+  const texts = await page.locator('.size-pill').allInnerTexts();
+  return texts.map((t) => t.trim().split(/\s+/)[0].toUpperCase());
+}
+
+async function pillFor(page: Page, key: string) {
+  const keys = await renderedSizeKeys(page);
+  const index = keys.indexOf(key.toUpperCase());
+  expect(index, `a "${key}" size pill should be rendered (got ${keys.join(', ')})`).toBeGreaterThanOrEqual(0);
+  return page.locator('.size-pill').nth(index);
+}
+
+async function selectedSizeKey(page: Page): Promise<string> {
+  const text = await page.locator('.size-pill.selected').innerText();
+  return text.trim().split(/\s+/)[0].toUpperCase();
 }
 
 // ---------------------------------------------------------------------------
-// Helper: wait for size options to load and click the first enabled one
-// ---------------------------------------------------------------------------
-async function selectFirstEnabledSize(page: Page) {
-  await page.waitForSelector('.size-option', { timeout: 10_000 });
-  const enabledSize = page.locator('.size-option:not(.disabled)').first();
-  await enabledSize.click({ force: true });
-}
-
-// ---------------------------------------------------------------------------
-// 1. Component renders correctly after login
+// 1. Rendering
 // ---------------------------------------------------------------------------
 test.describe('Session Composer — rendering', () => {
-  test('shows distribution cards after login', async ({ page }) => {
+  test('renders one card per distribution the backend offers', async ({ page }) => {
     await login(page, TRAINER_EMAIL, TEST_PASSWORD);
     await gotoTerminalCreation(page);
 
-    const cards = await page.locator('.distribution-card').count();
-    expect(cards).toBeGreaterThan(0);
+    const expected = (await getDistributions(session)).map((d) => d.name).sort();
+
+    await expect
+      .poll(
+        async () =>
+          (await page.locator('.distribution-card strong').allInnerTexts())
+            .map((n) => n.trim())
+            .sort(),
+        { timeout: 15_000 }
+      )
+      .toEqual(expected);
   });
 
-  test('skeleton loaders appear during distribution loading', async ({ page }) => {
+  test('shows skeleton placeholders while the distributions are loading', async ({ page }) => {
     await login(page, TRAINER_EMAIL, TEST_PASSWORD);
 
-    // Navigate — try to catch the skeleton state or already-loaded state
-    await page.goto('/terminal-creation');
-    await dismissVerificationBanner(page);
-    await page.waitForSelector('.distribution-card, .skeleton-card', { timeout: 15_000 });
+    await page.route('**/terminals/distributions*', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 2_000));
+      // A request still held here when the page navigates away is already
+      // resolved by the browser — continuing it then is not an error worth
+      // failing the test on.
+      await route.continue().catch(() => undefined);
+    });
 
-    // Eventually distributions must appear
-    await page.waitForSelector('.distribution-card', { timeout: 15_000 });
-    const cards = await page.locator('.distribution-card').count();
-    expect(cards).toBeGreaterThan(0);
+    await page.goto('/terminal-creation');
+    await expect(page.locator('.skeleton-card').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.distribution-card').first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('.skeleton-card')).toHaveCount(0);
   });
 });
 
@@ -80,40 +155,42 @@ test.describe('Session Composer — rendering', () => {
 // 2. Distribution selection
 // ---------------------------------------------------------------------------
 test.describe('Session Composer — distribution selection', () => {
-  test('clicking distribution shows size options', async ({ page }) => {
+  test('clicking a distribution reveals its size pills, largest first', async ({ page }) => {
     await login(page, TRAINER_EMAIL, TEST_PASSWORD);
     await gotoTerminalCreation(page);
+    const orgId = await activeOrgId(page);
 
-    await clickDistribution(page);
+    await expect(page.locator('.size-strip')).not.toBeVisible();
 
-    // Wait for size options (may show skeleton-pill first)
-    await page.waitForSelector('.size-option, .skeleton-pill', { timeout: 10_000 });
-    await page.waitForSelector('.size-option', { timeout: 10_000 });
+    const { options } = await selectDistribution(page, orgId);
 
-    const sizes = await page.locator('.size-option').count();
-    expect(sizes).toBeGreaterThanOrEqual(1);
+    const expectedKeys = visibleSizes(options).map((s) => s.key.toUpperCase());
+    expect(await renderedSizeKeys(page)).toEqual(expectedKeys);
   });
 
-  test('selected distribution card has selected class', async ({ page }) => {
+  test('clicking a distribution preselects the largest launchable size', async ({ page }) => {
     await login(page, TRAINER_EMAIL, TEST_PASSWORD);
     await gotoTerminalCreation(page);
+    const orgId = await activeOrgId(page);
 
-    await clickDistribution(page);
+    const { name, options } = await selectDistribution(page, orgId);
+
+    const expectedSize = expectedPreselectedSize(options);
+    test.skip(!expectedSize, `no launchable size for "${name}" in this org — nothing to preselect`);
+
+    await expect(page.locator('.size-pill.selected')).toHaveCount(1);
+    expect(await selectedSizeKey(page)).toBe(expectedSize!.key.toUpperCase());
+  });
+
+  test('the clicked distribution card is the only one marked selected', async ({ page }) => {
+    await login(page, TRAINER_EMAIL, TEST_PASSWORD);
+    await gotoTerminalCreation(page);
+    const orgId = await activeOrgId(page);
+
+    const { name } = await selectDistribution(page, orgId);
 
     await expect(page.locator('.distribution-card.selected')).toHaveCount(1);
-  });
-
-  test('summary appears after distribution is selected', async ({ page }) => {
-    await login(page, TRAINER_EMAIL, TEST_PASSWORD);
-    await gotoTerminalCreation(page);
-
-    // Summary should NOT be visible before any selection
-    await expect(page.locator('.composer-summary')).not.toBeVisible();
-
-    await clickDistribution(page);
-
-    // Summary appears as soon as a distribution is selected
-    await expect(page.locator('.composer-summary')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.distribution-card.selected strong')).toHaveText(name);
   });
 });
 
@@ -121,38 +198,60 @@ test.describe('Session Composer — distribution selection', () => {
 // 3. Size selection
 // ---------------------------------------------------------------------------
 test.describe('Session Composer — size selection', () => {
-  test('selecting a size updates the summary with size info', async ({ page }) => {
+  test('selecting a size shows that size\'s specs', async ({ page }) => {
     await login(page, TRAINER_EMAIL, TEST_PASSWORD);
     await gotoTerminalCreation(page);
+    const orgId = await activeOrgId(page);
 
-    await clickDistribution(page);
-    await selectFirstEnabledSize(page);
+    const { name, options } = await selectDistribution(page, orgId);
+    const sizes = visibleSizes(options);
+    test.skip(sizes.length === 0, `"${name}" exposes no size in this org`);
 
-    // Summary should now contain size details (CPU, memory)
-    const summaryText = await page.locator('.composer-summary').innerText();
-    expect(summaryText.length).toBeGreaterThan(0);
+    const target = sizes[sizes.length - 1];
+    await (await pillFor(page, target.key)).click({ force: true });
 
-    // The summary should have at least two summary-items (distribution + size)
-    const summaryItems = await page.locator('.composer-summary .summary-item').count();
-    expect(summaryItems).toBeGreaterThanOrEqual(2);
+    expect(await selectedSizeKey(page)).toBe(target.key.toUpperCase());
+    await expect(page.locator('.size-detail')).toContainText(target.memory);
   });
 
-  test('plan-locked sizes show lock icon and reason', async ({ page }) => {
+  test('each size pill carries its remaining-capacity badge', async ({ page }) => {
     await login(page, TRAINER_EMAIL, TEST_PASSWORD);
     await gotoTerminalCreation(page);
+    const orgId = await activeOrgId(page);
 
-    await clickDistribution(page);
-    await page.waitForSelector('.size-option', { timeout: 10_000 });
+    const { options } = await selectDistribution(page, orgId);
+    const unlimited = options.quota?.scope === 'unlimited';
 
-    const disabledSizes = page.locator('.size-option.disabled');
-    const count = await disabledSizes.count();
-
-    if (count > 0) {
-      // Disabled sizes should have a lock icon and a reason text
-      await expect(disabledSizes.first().locator('.fa-lock')).toBeVisible();
-      await expect(disabledSizes.first().locator('.size-reason')).toBeVisible();
+    for (const size of visibleSizes(options)) {
+      const badge = (await pillFor(page, size.key)).locator('.pill-badge');
+      await expect(badge, `badge of the ${size.key} pill`).toHaveText(
+        unlimited ? '×∞' : `×${size.remaining_count}`
+      );
     }
-    // If no disabled sizes, the test passes (user has all sizes unlocked)
+  });
+
+  test('a plan-locked size is shown as locked, inspectable, and not launchable', async ({ page }) => {
+    await login(page, TRAINER_EMAIL, TEST_PASSWORD);
+    await gotoTerminalCreation(page);
+    const orgId = await activeOrgId(page);
+
+    const { name, options } = await selectDistribution(page, orgId);
+    const locked = visibleSizes(options).find((s) => !s.allowed);
+    test.skip(
+      !locked,
+      `every size of "${name}" is allowed by the active plan — no gating to exercise`
+    );
+
+    const pill = await pillFor(page, locked!.key);
+    await expect(pill).toHaveClass(/disabled/);
+    await expect(pill.locator('.pill-lock')).toBeVisible();
+
+    // Locked sizes stay clickable so the learner can read their specs, but the
+    // launcher must refuse them.
+    await pill.click({ force: true });
+    expect(await selectedSizeKey(page)).toBe(locked!.key.toUpperCase());
+    await expect(page.locator('[data-test="size-unavailable-hint"]')).toBeVisible();
+    await expect(page.locator('.launch-button')).toBeDisabled();
   });
 });
 
@@ -160,69 +259,58 @@ test.describe('Session Composer — size selection', () => {
 // 4. Features
 // ---------------------------------------------------------------------------
 test.describe('Session Composer — features', () => {
-  test('features section requires a size to be selected', async ({ page }) => {
+  test('feature chips list the plan features the launcher does not own', async ({ page }) => {
     await login(page, TRAINER_EMAIL, TEST_PASSWORD);
     await gotoTerminalCreation(page);
+    const orgId = await activeOrgId(page);
 
-    await clickDistribution(page);
-    await page.waitForSelector('.size-option', { timeout: 10_000 });
+    const { options } = await selectDistribution(page, orgId);
+    const expected = chipFeatures(options);
 
-    // Check if a size was auto-selected (some distributions have a default_size_key)
-    const autoSelectedSize = await page.locator('.size-option.selected').count();
-
-    if (autoSelectedSize === 0) {
-      // No auto-selected size — features list should NOT be visible yet
-      const featuresBeforeSize = await page.locator('.features-list').isVisible().catch(() => false);
-      expect(featuresBeforeSize).toBe(false);
-
-      // Select a size
-      await selectFirstEnabledSize(page);
-      await page.waitForTimeout(500);
+    if (expected.length === 0) {
+      // `persistence` and `network` are rendered by TerminalAdvancedOptions as
+      // dedicated toggles — the composer must never duplicate them as chips.
+      await expect(page.locator('.feature-strip')).not.toBeVisible();
+      return;
     }
 
-    // After a size is selected (either auto or manual), features may or may not
-    // appear depending on whether the distribution supports any features.
-    // The key assertion: the flow completes without errors and features-list
-    // visibility is consistent with the component logic.
-    const featuresVisible = await page.locator('.features-list').isVisible().catch(() => false);
-    expect(typeof featuresVisible).toBe('boolean');
+    await expect(page.locator('.feature-chip')).toHaveCount(expected.length);
+    for (const feature of expected) {
+      await expect(page.locator('.feature-chip', { hasText: feature.name })).toBeVisible();
+    }
   });
 });
 
 // ---------------------------------------------------------------------------
-// 5. Changing distribution resets selections
+// 5. Changing distribution resets the size choice
 // ---------------------------------------------------------------------------
 test.describe('Session Composer — reset on distribution change', () => {
-  test('changing distribution resets size and summary', async ({ page }) => {
+  test('changing distribution drops the manual size choice for the new default', async ({ page }) => {
     await login(page, TRAINER_EMAIL, TEST_PASSWORD);
     await gotoTerminalCreation(page);
+    const orgId = await activeOrgId(page);
 
-    const cards = page.locator('.distribution-card');
-    const cardCount = await cards.count();
+    const cardCount = await page.locator('.distribution-card').count();
+    test.skip(cardCount < 2, 'only one distribution available — nothing to switch to');
 
-    // Select first distribution and a size
-    await clickDistribution(page, 0);
-    await selectFirstEnabledSize(page);
+    const first = await selectDistribution(page, orgId, 0);
+    const firstSizes = visibleSizes(first.options);
+    const smallest = firstSizes[firstSizes.length - 1];
+    const preselected = expectedPreselectedSize(first.options);
+    test.skip(
+      !preselected || !smallest || smallest.key === preselected.key,
+      `"${first.name}" has no size other than the preselected one to pick manually`
+    );
 
-    // Verify summary is visible with content
-    await expect(page.locator('.composer-summary')).toBeVisible({ timeout: 5_000 });
+    await (await pillFor(page, smallest.key)).click({ force: true });
+    expect(await selectedSizeKey(page)).toBe(smallest.key.toUpperCase());
 
-    if (cardCount > 1) {
-      // Click a different distribution
-      await clickDistribution(page, 1);
+    const second = await selectDistribution(page, orgId, 1);
+    const secondPreselected = expectedPreselectedSize(second.options);
+    test.skip(!secondPreselected, `no launchable size for "${second.name}" in this org`);
 
-      // Size options should reload (skeleton or new sizes)
-      await page.waitForSelector('.size-option, .skeleton-pill', { timeout: 10_000 });
-
-      // The previously selected size should be gone — only 1 selected card
-      await expect(page.locator('.distribution-card.selected')).toHaveCount(1);
-
-      // The selected card should be the second one
-      const secondCardSelected = await cards.nth(1).evaluate(
-        el => el.classList.contains('selected')
-      );
-      expect(secondCardSelected).toBe(true);
-    }
+    await expect(page.locator('.distribution-card.selected strong')).toHaveText(second.name);
+    expect(await selectedSizeKey(page)).toBe(secondPreselected!.key.toUpperCase());
   });
 });
 
@@ -230,153 +318,53 @@ test.describe('Session Composer — reset on distribution change', () => {
 // 6. Launch button state
 // ---------------------------------------------------------------------------
 test.describe('Session Composer — launch button', () => {
-  test('launch button is disabled until distribution and size are selected', async ({ page }) => {
+  test('launch is disabled while no distribution is chosen', async ({ page }) => {
     await login(page, TRAINER_EMAIL, TEST_PASSWORD);
     await gotoTerminalCreation(page);
 
-    const launchBtn = page.locator('.launch-button');
-    await expect(launchBtn).toBeVisible();
-
-    // Initially disabled (no distribution, no size)
-    await expect(launchBtn).toBeDisabled();
-
-    // Select distribution
-    await clickDistribution(page);
-    await page.waitForSelector('.size-option', { timeout: 10_000 });
-
-    // Check if a size was auto-selected (some distributions have a default_size_key)
-    const autoSelectedSize = await page.locator('.size-option.selected').count();
-
-    if (autoSelectedSize === 0) {
-      // No auto-select — button should still be disabled
-      await expect(launchBtn).toBeDisabled();
-
-      // Select a size
-      await selectFirstEnabledSize(page);
-    }
-
-    // The launch button may stay disabled if user has reached terminal limits (1/1).
-    // In that case, isFormValid returns false even with distribution + size selected.
-    // We verify the button state reflects the form validity.
-    const isStillDisabled = await launchBtn.isDisabled();
-    if (isStillDisabled) {
-      // User is at terminal limit — button stays disabled, which is correct behavior.
-      // Verify usage panel shows the limit is reached (N/N pattern).
-      const usageText = await page.locator('.terminal-starter').innerText();
-      expect(usageText).toMatch(/\d+\s*\/\s*\d+/);
-    } else {
-      // User has capacity — button should be enabled
-      await expect(launchBtn).toBeEnabled({ timeout: 5_000 });
-    }
+    await expect(page.locator('.launch-button')).toBeDisabled();
   });
-});
 
-// ---------------------------------------------------------------------------
-// 7. Summary displays correct information
-// ---------------------------------------------------------------------------
-test.describe('Session Composer — summary content', () => {
-  test('summary displays distribution and size values', async ({ page }) => {
+  test('launch is enabled once a launchable size is selected', async ({ page }) => {
     await login(page, TRAINER_EMAIL, TEST_PASSWORD);
     await gotoTerminalCreation(page);
+    const orgId = await activeOrgId(page);
 
-    await clickDistribution(page);
-    await page.waitForSelector('.size-option', { timeout: 10_000 });
+    const { name, options } = await selectDistribution(page, orgId);
+    const launchable = visibleSizes(options).find((s) => isLaunchable(options, s));
+    test.skip(
+      !launchable,
+      `no launchable size for "${name}" in this org — the launcher is correctly blocked`
+    );
 
-    // Capture the first enabled size label before clicking
-    const firstEnabledSize = page.locator('.size-option:not(.disabled)').first();
-    const sizeLabel = await firstEnabledSize.locator('.size-label').innerText();
-    await firstEnabledSize.click({ force: true });
-
-    // Summary should contain distribution info
-    const summaryDistValue = await page.locator('.composer-summary .summary-item .summary-value').first().innerText();
-    expect(summaryDistValue.length).toBeGreaterThan(0);
-
-    // Summary should contain size info with the size key
-    const summarySizeValue = await page.locator('.composer-summary .summary-item .summary-value').nth(1).innerText();
-    expect(summarySizeValue.toUpperCase()).toContain(sizeLabel.toUpperCase());
+    await (await pillFor(page, launchable!.key)).click({ force: true });
+    await expect(page.locator('.launch-button')).toBeEnabled({ timeout: 10_000 });
   });
 });
 
 // ---------------------------------------------------------------------------
-// 8. Plan size restrictions
+// 7. Hostname pre-fill
 // ---------------------------------------------------------------------------
-test.describe('Session Composer — plan size restrictions', () => {
-  test('karim (Pro plan) sees XL as disabled with lock icon', async ({ page }) => {
-    // Karim has Pro plan: allows XS, S, M, L but NOT XL.
-    // Use loginFresh so the test starts in Karim's default org (FormaTech/Pro)
-    // regardless of any leftover localStorage from a previous test.
-    await loginFresh(page, 'karim@test.ocf', TEST_PASSWORD);
-    await gotoTerminalCreation(page);
-
-    // Select a distribution that has sizes
-    await clickDistribution(page);
-
-    // Wait for sizes to load
-    await page.waitForSelector('.size-option', { timeout: 10_000 });
-
-    // Find the XL size option — it should be disabled
-    const xlOption = page.locator('.size-option').filter({ hasText: /XL/i }).last();
-    await expect(xlOption).toBeVisible();
-    await expect(xlOption).toHaveClass(/disabled/);
-
-    // Should have a lock icon
-    await expect(xlOption.locator('.fa-lock')).toBeVisible();
-
-    // Should have a reason text
-    await expect(xlOption.locator('.size-reason')).toBeVisible();
-
-    // Clicking it should NOT select it
-    await xlOption.click({ force: true });
-    await expect(xlOption).not.toHaveClass(/selected/);
-  });
-
-  test('karim (Pro plan) can select M size (allowed)', async ({ page }) => {
-    // Pro-plan assertions assume FormaTech context — pin it via loginFresh.
-    await loginFresh(page, 'karim@test.ocf', TEST_PASSWORD);
-    await gotoTerminalCreation(page);
-
-    await clickDistribution(page);
-
-    await page.waitForSelector('.size-option', { timeout: 10_000 });
-
-    // M should be available and clickable
-    const mOption = page.locator('.size-option').filter({ has: page.locator('.size-label', { hasText: 'M' }) });
-    await expect(mOption).toBeVisible();
-    await expect(mOption).not.toHaveClass(/disabled/);
-
-    await mOption.click({ force: true });
-    await expect(mOption).toHaveClass(/selected/);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Hostname pre-fill regression test
-// ---------------------------------------------------------------------------
-test.describe('Session Composer -- hostname pre-fill', () => {
+test.describe('Session Composer — hostname pre-fill', () => {
   test('selecting a distribution pre-fills the hostname field', async ({ page }) => {
     await login(page, TRAINER_EMAIL, TEST_PASSWORD);
-    await page.goto('/terminal-creation');
-    await dismissVerificationBanner(page);
+    await gotoTerminalCreation(page);
+    const orgId = await activeOrgId(page);
 
-    // Wait for distributions and click one
-    await page.waitForSelector('.distribution-card', { timeout: 15_000 });
-    const firstCard = page.locator('.distribution-card').first();
-    const distName = await firstCard.locator('strong').innerText();
-    await firstCard.click({ force: true });
+    const { name } = await selectDistribution(page, orgId);
 
-    // Open Advanced Options to see hostname field
-    const advancedBtn = page.locator('button', { hasText: /Advanced Options|Options avancées/i });
-    await advancedBtn.click({ force: true });
+    await page.locator('button.collapsible-header', { hasText: /Advanced Options|Options Avanc/i })
+      .first()
+      .click({ force: true });
 
-    // Wait for the hostname input to appear
-    const hostnameInput = page.locator('#hostname').first();
-    await page.waitForTimeout(500);
-    await hostnameInput.waitFor({ state: "visible", timeout: 5_000 });
+    const hostnameInput = page.locator('input#hostname');
+    await hostnameInput.waitFor({ state: 'visible', timeout: 10_000 });
 
-    // Hostname should be pre-filled with a sanitized version of the distribution name
-    const hostnameValue = await hostnameInput.inputValue();
-    expect(hostnameValue.length).toBeGreaterThan(0);
-    // The hostname should be derived from the distribution name (lowercased, sanitized)
-    expect(hostnameValue).toBe(distName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-+|-+$/g, '').slice(0, 63));
+    const expectedHostname = name
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 63);
+    await expect(hostnameInput).toHaveValue(expectedHostname);
   });
 });
