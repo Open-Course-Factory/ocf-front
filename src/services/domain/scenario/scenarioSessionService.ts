@@ -140,6 +140,10 @@ export interface ScenarioInfo {
   difficulty?: string
   estimated_time?: string
   flags_enabled?: boolean
+  // Mirrors Scenario.CrashTraps in ocf-core, which is what EndCrashTrapRun
+  // gates permadeath on. GET /scenarios/:id always serializes it (no
+  // omitempty) and the scenario redactor leaves it in place for learners.
+  crash_traps?: boolean
 }
 
 export const scenarioSessionService = {
