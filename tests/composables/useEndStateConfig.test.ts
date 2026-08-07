@@ -130,6 +130,50 @@ describe('useEndStateConfig — disconnected (live-session reconnect)', () => {
   })
 })
 
+describe('useEndStateConfig — run_over (crash-trap permadeath)', () => {
+  it('English: the run ended and the machine is closed — not a platform failure', () => {
+    const config = getConfig('run_over' as EndStateReason, 'en')
+
+    expect(config.title).toBe('Run Over')
+    expect(config.body).toContain('part of the challenge')
+    // The whole point: it must not claim the environment survives, and must not
+    // read as something the platform got wrong.
+    expect(config.body).not.toContain('still running')
+    expect(config.body).not.toContain('temporary')
+  })
+
+  it('French: partie terminée, cela fait partie du défi', () => {
+    const config = getConfig('run_over' as EndStateReason, 'fr')
+
+    expect(config.title).toBe('Partie terminée')
+    expect(config.body).toContain('fait partie du défi')
+    expect(config.body).not.toContain('toujours actif')
+  })
+
+  it('offers NO reconnect affordance — the session is already abandoned server-side', () => {
+    const config = getConfig('run_over' as EndStateReason, 'en')
+
+    expect(config.primary.kind).toBe('route')
+    expect(config.secondary?.kind).toBe('route')
+    // An 'action' button here would be a Reconnect/End Session control; there
+    // is nothing left to reconnect to or to end.
+    expect(JSON.stringify(config)).not.toContain('reconnect')
+  })
+
+  it('points at relaunching the scenario as the primary way forward', () => {
+    const config = getConfig('run_over' as EndStateReason, 'en')
+
+    expect(config.primary).toEqual({
+      kind: 'route',
+      label: 'Relaunch the scenario',
+      route: { name: 'ScenarioLauncher' }
+    })
+    // A destroyed run is not a success, and not a platform error either.
+    expect(config.tone).not.toBe('success')
+    expect(config.tone).not.toBe('danger')
+  })
+})
+
 describe('useEndStateConfig — expired guard (regression fence)', () => {
   it('English: expired still shows the time-limit copy (unchanged)', () => {
     const config = getConfig('expired', 'en')

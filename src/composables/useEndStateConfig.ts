@@ -47,6 +47,11 @@ const endStateTranslations = {
         primary: 'Reconnect',
         secondary: 'End Session'
       },
+      run_over: {
+        title: 'Run Over',
+        body: 'A fatal mistake ended this run — that is part of the challenge, not a bug. This machine is closed and its progress is gone. Relaunch the scenario for a fresh attempt with new flags.',
+        primary: 'Relaunch the scenario'
+      },
       backToSessions: 'Back to Sessions',
       backToScenarios: 'Back to Scenarios',
       expiredScenario: 'Your terminal session has reached its time limit. You can relaunch the scenario from the scenario list.',
@@ -91,6 +96,11 @@ const endStateTranslations = {
         primary: 'Se reconnecter',
         secondary: 'Terminer la session'
       },
+      run_over: {
+        title: 'Partie terminée',
+        body: "Une erreur fatale a mis fin à cette partie — cela fait partie du défi, ce n'est pas un bug. Cette machine est fermée et sa progression est perdue. Relancez le scénario pour une nouvelle tentative avec de nouveaux flags.",
+        primary: 'Relancer le scénario'
+      },
       backToSessions: 'Retour aux sessions',
       backToScenarios: 'Retour aux scénarios',
       expiredScenario: 'Votre session terminal a atteint sa limite de temps. Vous pouvez relancer le scénario depuis la liste des scénarios.',
@@ -99,7 +109,7 @@ const endStateTranslations = {
   }
 }
 
-export type EndStateReason = 'completed' | 'abandoned' | 'expired' | 'stopped' | 'revoked' | 'setup_failed' | 'disconnected'
+export type EndStateReason = 'completed' | 'abandoned' | 'expired' | 'stopped' | 'revoked' | 'setup_failed' | 'disconnected' | 'run_over'
 
 // Action buttons trigger an in-place handler (emitted by the overlay) instead of
 // navigating. The consumer wires the concrete handler for each key.
@@ -195,6 +205,19 @@ export function useEndStateConfig() {
       // environment, End Session stops it.
       primary: { kind: 'action', label: t('endState.disconnected.primary'), actionKey: 'reconnect' },
       secondary: { kind: 'action', label: t('endState.disconnected.secondary'), actionKey: 'endSession' }
+    }),
+    // A crash-trap run that ended in permadeath. Both buttons navigate: there
+    // is deliberately no reconnect action, because ocf-core has already
+    // abandoned the scenario session and stopped the terminal — offering
+    // Reconnect would only produce a refusal. Relaunching is the intended
+    // rogue-lite loop, not a fallback, so it is the primary.
+    run_over: () => ({
+      icon: 'fas fa-skull',
+      tone: 'info',
+      title: t('endState.run_over.title'),
+      body: t('endState.run_over.body'),
+      primary: { kind: 'route', label: t('endState.run_over.primary'), route: { name: 'ScenarioLauncher' } },
+      secondary: { kind: 'route', label: t('endState.backToSessions'), route: { name: 'TerminalSessions' } }
     })
   }
 
