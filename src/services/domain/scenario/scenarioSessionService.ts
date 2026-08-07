@@ -7,6 +7,13 @@ import axios from 'axios'
 
 export interface CurrentStepResponse {
   step_order: number
+  // 1-based index among the scenario's ordered steps — the ONLY value to
+  // display as "step N of M". Orders are data-driven (0- or 1-based by
+  // authoring path); arithmetic on step_order renders "Étape 3 / 2".
+  position?: number
+  // Every step's order in display order, for mapping a display position
+  // back to the order to navigate to (progress dots, Previous button).
+  step_orders?: number[]
   total_steps: number
   title: string
   text?: string
