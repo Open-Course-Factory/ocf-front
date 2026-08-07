@@ -26,6 +26,10 @@ export interface CurrentStepResponse {
   has_flag: boolean
   hints_total_count: number
   hints_revealed: number
+  // Effect references for the in-terminal replay (see effectAssets.ts):
+  // preset name or API asset path (e.g. /project-files/<id>/content)
+  intro_effect_url?: string
+  outro_effect_url?: string
 }
 
 export interface CurrentStepQuestion {
@@ -49,6 +53,8 @@ export interface SubmitQuizResponse {
   total: number
   per_question_results: QuizQuestionResult[]
   next_step?: number
+  next_step_provisioning?: boolean
+  provisioning_timeout_seconds?: number
 }
 
 export interface RevealHintResponse {
@@ -61,12 +67,21 @@ export interface VerifyStepResponse {
   passed: boolean
   output?: string
   next_step?: number
+  // True strictly when the next step's preparation was left running in the
+  // background (session status 'provisioning') and the client must poll;
+  // synchronously-completed preparation returns false/omitted.
+  next_step_provisioning?: boolean
+  // Effective backend timeout for that preparation — the client's poll
+  // ceiling must stay strictly above it (timeout + margin).
+  provisioning_timeout_seconds?: number
 }
 
 export interface SubmitFlagResponse {
   correct: boolean
   message?: string
   next_step?: number
+  next_step_provisioning?: boolean
+  provisioning_timeout_seconds?: number
 }
 
 export interface ValidatedFlag {

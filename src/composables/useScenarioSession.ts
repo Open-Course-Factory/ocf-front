@@ -18,6 +18,7 @@ import {
   revokeScenarioImageUrls
 } from '../utils/killercodaMarkdown'
 import { scenarioSessionService } from '../services/domain/scenario'
+import { getCast } from '../services/domain/scenario/effectAssets'
 import type { CurrentStepResponse, ScenarioInfo } from '../services/domain/scenario'
 
 export interface ScenarioSessionEmit {
@@ -221,6 +222,11 @@ export function useScenarioSession(
       if (!scenarioInfo.value) {
         await loadScenarioInfo()
       }
+
+      // Warm the effect cache so intro (needed now) and outro (needed at
+      // validation) replay instantly. Fire-and-forget; getCast never throws.
+      if (step.intro_effect_url) getCast(step.intro_effect_url)
+      if (step.outro_effect_url) getCast(step.outro_effect_url)
     } catch (err: any) {
       console.error('Failed to load scenario step:', err)
       // If 404 or specific status, might mean session is completed

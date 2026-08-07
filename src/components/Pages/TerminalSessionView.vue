@@ -118,6 +118,7 @@
           @scenario-info-loaded="handleScenarioInfoLoaded"
           @collapsed="scenarioPanelCollapsed = $event"
           @flag-validated="scenarioTerminalRef?.refreshFlags()"
+          @play-effect="handlePlayEffect"
         />
       </div>
 
@@ -255,6 +256,7 @@ import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { renderKillercodaMarkdown, loadScenarioImages } from '../../utils/killercodaMarkdown'
 import { scenarioSessionService } from '../../services/domain/scenario'
+import { getCast } from '../../services/domain/scenario/effectAssets'
 import type { ScenarioInfo } from '../../services/domain/scenario'
 import { terminalService } from '../../services/domain/terminal/terminalService'
 import { useTranslations } from '../../composables/useTranslations'
@@ -513,6 +515,16 @@ watch(scenarioSessionId, (id) => {
 
 function handlePasteCommand(command: string) {
   scenarioTerminalRef.value?.pasteText(command)
+}
+
+// Step effect replay: resolve the reference (preset name or asset path) to a
+// parsed recording and hand it to the terminal. Fire-and-forget by design —
+// the panel's step flow never waits on the terminal.
+async function handlePlayEffect(effectRef: string) {
+  const cast = await getCast(effectRef)
+  if (cast) {
+    scenarioTerminalRef.value?.playEffect(cast)
+  }
 }
 
 function handleBriefingExecClick(event: MouseEvent) {
