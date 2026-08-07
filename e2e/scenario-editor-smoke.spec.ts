@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { loginFresh } from './helpers/auth';
+import { dropStepNode, fillStepModalAndSave } from './helpers/scenarioEditor';
 
 // ---------------------------------------------------------------------------
 // Smoke E2E for the scenario editor — locks in the author flow
@@ -32,63 +33,6 @@ async function dismissVerificationBanner(page: Page) {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: dispatch a synthetic HTML5 drag-and-drop sequence onto the
-// VueFlow canvas. Playwright's built-in dragTo does not reliably propagate
-// custom dataTransfer types (`application/vueflow`), so we drive the event
-// loop manually inside the page context.
-//
-// `nodeType` is one of: 'scenario' | 'terminal' | 'flag' | 'info' | 'quiz'.
-// Drop position is in CSS pixels relative to the canvas top-left corner.
-// ---------------------------------------------------------------------------
-async function dropStepNode(page: Page, nodeType: string, x: number, y: number) {
-  await page.evaluate(
-    ({ nodeType, x, y }) => {
-      // VueFlow renders a `.vue-flow` root inside our `.flow-canvas` wrapper.
-      // The `@drop` handler in FlowCanvas.vue is bound to <VueFlow>'s root,
-      // which is `.vue-flow`. Use `.vue-flow__pane` (the actual pannable
-      // surface) to be safe — events bubble up to `.vue-flow`.
-      const pane =
-        (document.querySelector('.vue-flow__pane') as HTMLElement | null) ||
-        (document.querySelector('.vue-flow') as HTMLElement | null) ||
-        (document.querySelector('.flow-canvas') as HTMLElement | null);
-      if (!pane) throw new Error('vue-flow pane element not found');
-
-      const rect = pane.getBoundingClientRect();
-      const clientX = rect.left + x;
-      const clientY = rect.top + y;
-
-      const dataTransfer = new DataTransfer();
-      dataTransfer.effectAllowed = 'copy';
-      dataTransfer.setData(
-        'application/vueflow',
-        JSON.stringify({ type: nodeType, isNewNode: true })
-      );
-
-      const dragOverEvent = new DragEvent('dragover', {
-        bubbles: true,
-        cancelable: true,
-        clientX,
-        clientY,
-        dataTransfer,
-      });
-      pane.dispatchEvent(dragOverEvent);
-
-      const dropEvent = new DragEvent('drop', {
-        bubbles: true,
-        cancelable: true,
-        clientX,
-        clientY,
-        dataTransfer,
-      });
-      pane.dispatchEvent(dropEvent);
-    },
-    { nodeType, x, y }
-  );
-  // Let Vue process the new node + open the edit modal
-  await page.waitForTimeout(800);
-}
-
-// ---------------------------------------------------------------------------
 // Helper: navigate to /scenario-editor and wait for the editor shell
 // ---------------------------------------------------------------------------
 async function gotoScenarioEditor(page: Page) {
@@ -99,27 +43,6 @@ async function gotoScenarioEditor(page: Page) {
   await page.waitForSelector('.flow-canvas', { timeout: 15_000 });
   // Allow stores (scenarios, organizations, memberships) to settle
   await page.waitForTimeout(1_500);
-}
-
-// ---------------------------------------------------------------------------
-// Helper: fill the Step edit modal title field and click Save
-// ---------------------------------------------------------------------------
-async function fillStepModalAndSave(page: Page, title: string) {
-  // Modal opens automatically when a new step is dropped
-  const titleInput = page.locator('#step-title');
-  await titleInput.waitFor({ state: 'visible', timeout: 10_000 });
-  await titleInput.fill(title);
-
-  // Save (the step modal uses a custom footer slot with btn-primary)
-  // Scope to the .step-edit-form modal to avoid matching other modals
-  const saveBtn = page
-    .locator('.base-modal-footer .btn.btn-primary')
-    .last();
-  await saveBtn.click({ force: true });
-
-  // Modal should close
-  await titleInput.waitFor({ state: 'hidden', timeout: 5_000 });
-  await page.waitForTimeout(300);
 }
 
 // ---------------------------------------------------------------------------
@@ -325,20 +248,6 @@ test.describe('Scenario editor — smoke', () => {
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Skipped: terminal-step coverage requires provisioning a real container
-  // and is out of scope for a smoke test. Tracked separately.
-  // -------------------------------------------------------------------------
-  test.skip('terminal step drop + provision flow', () => {
-    // Intentionally skipped — would require Incus + a backend ready to start
-    // a real container, which is not available in CI.
-  });
-
-  // -------------------------------------------------------------------------
-  // Skipped: "Play as student" walkthrough — depends on rendered scenario
-  // runtime + terminal session, also out of scope here.
-  // -------------------------------------------------------------------------
-  test.skip('play-as-student walkthrough', () => {
-    // Intentionally skipped — covered by a future scenario-runner spec.
-  });
+  // Provisioning a real container and running an authored scenario as a learner
+  // now live in the Tier B suite — see scenario-editor-roundtrip.spec.ts.
 });

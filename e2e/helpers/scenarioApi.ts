@@ -104,16 +104,34 @@ export async function importScenario(
   return response.json();
 }
 
+/** Delete a scenario that has no owning org in the caller's reach (group-scoped, platform). */
+export async function deleteScenarioById(session: ApiSession, scenarioId: string): Promise<void> {
+  await session.api
+    .delete(`${API_BASE}/scenarios/${scenarioId}`, { headers: authHeaders(session) })
+    .catch(() => {});
+}
+
 export async function deleteScenario(session: ApiSession, orgId: string, scenarioId: string): Promise<void> {
   await session.api
     .delete(`${API_BASE}/organizations/${orgId}/scenarios/${scenarioId}`, { headers: authHeaders(session) })
     .catch(() => {});
 }
 
-/** The launcher card for a scenario title, as the learner sees it. */
-export async function getAvailableScenario(session: ApiSession, title: string): Promise<any | null> {
+/**
+ * The launcher card for a scenario title, as the learner sees it.
+ *
+ * `orgId` matters for anything reached through a GROUP assignment: the endpoint
+ * scopes those to the org context, exactly as the launcher page does. Public
+ * scenarios come back in any context, org or personal.
+ */
+export async function getAvailableScenario(
+  session: ApiSession,
+  title: string,
+  orgId?: string
+): Promise<any | null> {
   const response = await session.api.get(`${API_BASE}/scenario-sessions/available`, {
     headers: authHeaders(session),
+    ...(orgId ? { params: { organization_id: orgId } } : {}),
   });
   if (!response.ok()) return null;
   const body = await response.json();
