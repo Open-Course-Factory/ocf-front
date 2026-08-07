@@ -25,21 +25,7 @@
         </div>
         <h3>{{ t('provisioning.title') }}</h3>
         <p class="provisioning-detail">{{ t('provisioning.detail') }}</p>
-        <div class="provisioning-steps">
-          <div
-            v-for="step in phaseSteps"
-            :key="step.key"
-            class="provisioning-step"
-            :class="{ 'step--done': step.done, 'step--active': step.active }"
-          >
-            <div class="step-icon">
-              <i v-if="step.done" class="fas fa-check-circle"></i>
-              <i v-else-if="step.active" class="fas fa-circle-notch fa-spin"></i>
-              <i v-else class="far fa-circle"></i>
-            </div>
-            <span class="step-label">{{ step.label }}</span>
-          </div>
-        </div>
+        <ProvisioningPhaseList :phase="phase" />
         <button
           v-if="cancellable"
           class="btn btn-cancel"
@@ -74,8 +60,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
+import ProvisioningPhaseList from './ProvisioningPhaseList.vue'
 
 interface Props {
   ready?: boolean
@@ -87,7 +74,7 @@ interface Emits {
   (e: 'cancel'): void
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   ready: false,
   phase: '',
   cancellable: false
@@ -108,12 +95,7 @@ const { t } = useTranslations({
       detail: 'Creating terminal and preparing scenario. This may take a few minutes.',
       ready: 'Your environment is ready!',
       cancel: 'Cancel',
-      cancelling: 'Cancelling...',
-      phases: {
-        terminal_creation: 'Creating your terminal...',
-        setup_script: 'Installing packages and configuring environment...',
-        step_setup: 'Running scenario setup scripts...'
-      }
+      cancelling: 'Cancelling...'
     }
   },
   fr: {
@@ -122,26 +104,9 @@ const { t } = useTranslations({
       detail: 'Création du terminal et préparation du scénario. Cela peut prendre quelques minutes.',
       ready: 'Votre environnement est prêt !',
       cancel: 'Annuler',
-      cancelling: 'Annulation...',
-      phases: {
-        terminal_creation: 'Création de votre terminal...',
-        setup_script: 'Installation des paquets et configuration de l\'environnement...',
-        step_setup: 'Exécution des scripts de configuration du scénario...'
-      }
+      cancelling: 'Annulation...'
     }
   }
-})
-
-const phaseOrder = ['terminal_creation', 'setup_script', 'step_setup']
-
-const phaseSteps = computed(() => {
-  const currentIndex = props.phase ? phaseOrder.indexOf(props.phase) : -1
-  return phaseOrder.map((key, index) => ({
-    key,
-    label: t(`provisioning.phases.${key}`),
-    done: currentIndex > index,
-    active: currentIndex === index
-  }))
 })
 </script>
 
@@ -198,45 +163,6 @@ const phaseSteps = computed(() => {
 
 .provisioning-content :deep(.btn i) {
   margin-right: var(--spacing-xs);
-}
-
-.provisioning-steps {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-lg);
-  text-align: left;
-}
-
-.provisioning-step {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-}
-
-.step-icon {
-  width: 1.25rem;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.step--done .step-icon {
-  color: var(--color-success);
-}
-
-.step--active .step-icon {
-  color: var(--color-primary);
-}
-
-.step--active .step-label {
-  color: var(--color-text-primary);
-  font-weight: var(--font-weight-medium);
-}
-
-.step--done .step-label {
-  color: var(--color-text-secondary);
 }
 
 .btn-cancel {
