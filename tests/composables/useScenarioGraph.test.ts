@@ -196,7 +196,7 @@ describe('useScenarioGraph — syncOrderFromEdges', () => {
 
     const result = await g.syncOrderFromEdges()
 
-    expect(result).toEqual({ patched: 2, failed: 0, failedLabels: [], appendedOffChain: 0 })
+    expect(result).toEqual({ patched: 2, failed: 0, failedLabels: [], appendedOffChainLabels: [] })
     expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st1', { order: 0 })
     expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st2', { order: 1 })
   })
@@ -215,7 +215,7 @@ describe('useScenarioGraph — syncOrderFromEdges', () => {
 
     const result = await g.syncOrderFromEdges()
 
-    expect(result).toEqual({ patched: 0, failed: 0, failedLabels: [], appendedOffChain: 0 })
+    expect(result).toEqual({ patched: 0, failed: 0, failedLabels: [], appendedOffChainLabels: [] })
     expect(mockPatch).not.toHaveBeenCalled()
   })
 
@@ -284,7 +284,9 @@ describe('useScenarioGraph — steps left off the chain', () => {
 
     const result = await g.syncOrderFromEdges()
 
-    expect(result.appendedOffChain).toBe(1)
+    // Named, not counted: an unconnected node is easy to miss on a busy canvas,
+    // so the warning has to say which step moved.
+    expect(result.appendedOffChainLabels).toEqual(['st3'])
     // The chain keeps 0 and 1; the orphan takes the next free slot.
     expect(mockPatch).not.toHaveBeenCalledWith('/scenario-steps/st1', expect.anything())
     expect(mockPatch).not.toHaveBeenCalledWith('/scenario-steps/st2', expect.anything())
