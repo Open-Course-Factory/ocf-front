@@ -274,6 +274,18 @@ export async function getGroupScenarioResults(
   return Array.isArray(body) ? body : body.data || [];
 }
 
+/** The caller's terminal record for a tt-backend session id, or null. */
+export async function getTerminalSession(session: ApiSession, sessionId?: string): Promise<any | null> {
+  if (!sessionId) return null;
+  const response = await session.api.get(`${API_BASE}/terminals/user-sessions`, {
+    headers: authHeaders(session),
+  });
+  if (!response.ok()) return null;
+  const body = await response.json();
+  const rows = Array.isArray(body) ? body : body.data || [];
+  return rows.find((t: any) => t.session_id === sessionId) || null;
+}
+
 /** Abandon the learner's scenario session and destroy its terminal (teardown). */
 export async function cleanupScenarioSession(session: ApiSession, scenarioId: string): Promise<void> {
   const mine = await getMyScenarioSessions(session);
