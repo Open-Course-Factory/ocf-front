@@ -298,13 +298,6 @@
       </div>
 
       <div class="form-group checkbox-group">
-        <label class="checkbox-label" for="scenario-gsh-enabled">
-          <input id="scenario-gsh-enabled" type="checkbox" v-model="model.gsh_enabled" />
-          {{ t('scenarioEditor.gshEnabled') }}
-        </label>
-      </div>
-
-      <div class="form-group checkbox-group">
         <label class="checkbox-label" for="scenario-is-public">
           <input id="scenario-is-public" type="checkbox" v-model="model.is_public" />
           {{ t('scenarioEditor.isPublic') }}

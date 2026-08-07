@@ -79,9 +79,16 @@ describe('scenarios store', () => {
       expect(fields.has('git_branch')).toBe(true)
       expect(fields.has('is_public')).toBe(true)
       expect(fields.has('flags_enabled')).toBe(true)
-      expect(fields.has('gsh_enabled')).toBe(true)
       expect(fields.has('crash_traps')).toBe(true)
       expect(fields.has('hostname')).toBe(true)
+    })
+
+    // The backend still persists gsh_enabled so existing archives round-trip,
+    // but nothing consumes it: the editor must not offer it.
+    it('does not expose the dropped gsh_enabled flag', () => {
+      const store = useScenariosStore()
+
+      expect(store.fieldList.has('gsh_enabled')).toBe(false)
     })
 
     it('difficulty field has select options', () => {
@@ -171,7 +178,7 @@ describe('scenarios store', () => {
     it('checkbox fields are properly configured', () => {
       const store = useScenariosStore()
 
-      const boolFields = ['is_public', 'flags_enabled', 'gsh_enabled', 'crash_traps']
+      const boolFields = ['is_public', 'flags_enabled', 'crash_traps']
       for (const fieldName of boolFields) {
         const f = store.fieldList.get(fieldName)
         expect(f).toBeDefined()
