@@ -252,6 +252,7 @@ const { t } = useTranslations({
       moveError: 'Failed to move entity',
       cascadeChildren: 'This will also delete {count} child entity(ies).',
       orderSynced: '{count} entity order(s) updated',
+      orderSyncFailed: '{count} entity order(s) could not be saved — the order may be inconsistent. Reload and save again.',
       nodeTypes: {
         course: 'Course',
         chapter: 'Chapter',
@@ -303,6 +304,7 @@ const { t } = useTranslations({
       moveError: 'Échec du déplacement de l\'entité',
       cascadeChildren: 'Cela supprimera également {count} entité(s) enfant(s).',
       orderSynced: '{count} ordre(s) d\'entité mis à jour',
+      orderSyncFailed: '{count} ordre(s) d\'entité n\'ont pas pu être enregistrés — l\'ordre est peut-être incohérent. Rechargez puis enregistrez à nouveau.',
       nodeTypes: {
         course: 'Cours',
         chapter: 'Chapitre',
@@ -1257,10 +1259,14 @@ const handleSave = async () => {
   saveNodePositions()
 
   // Sync ordering from edge chains to backend
-  const patchCount = await syncOrderFromEdges()
+  const { patched, failed } = await syncOrderFromEdges()
 
-  if (patchCount > 0) {
-    notification.showSuccess(t('courseEditor.orderSynced', { count: String(patchCount) }))
+  // A half-applied renumber leaves duplicate or missing order values, so it
+  // must never be reported as a success.
+  if (failed > 0) {
+    notification.showError(t('courseEditor.orderSyncFailed', { count: String(failed) }))
+  } else if (patched > 0) {
+    notification.showSuccess(t('courseEditor.orderSynced', { count: String(patched) }))
   } else {
     notification.showSuccess(t('courseEditor.saveSuccess'))
   }
