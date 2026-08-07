@@ -1405,7 +1405,14 @@ const confirmDelete = async () => {
 const handleSave = async () => {
   saveNodePositions()
 
-  const { patched, failed, failedLabels } = await syncOrderFromEdges()
+  const { patched, failed, failedLabels, appendedOffChain } = await syncOrderFromEdges()
+
+  // Steps left unconnected are folded onto the end of the sequence rather than
+  // keeping an order the connected ones now use. Say so: from the canvas it
+  // looks like nothing happened to them.
+  if (appendedOffChain > 0) {
+    notification.showInfo(t('scenarioEditor.offChainStepsAppended', { count: String(appendedOffChain) }))
+  }
 
   // A half-applied renumber leaves duplicate or missing step orders, so it
   // must never be reported as a success — the trainer has to know the
