@@ -120,6 +120,87 @@ export async function getMyScenarioSessions(session: ApiSession): Promise<any[]>
   return Array.isArray(body) ? body : body.data || [];
 }
 
+export interface TeacherGroup {
+  group_id: string;
+  display_name: string;
+  organization_id: string;
+  learner_count: number;
+}
+
+/**
+ * A class the caller teaches, matched on its displayed name. The dev database
+ * carries same-named classes, so `minLearners` picks the populated one — specs
+ * that bulk-start need the class that actually has learners in it.
+ */
+export async function findTeacherGroup(
+  session: ApiSession,
+  namePattern: RegExp,
+  minLearners = 0
+): Promise<TeacherGroup | null> {
+  const response = await session.api.get(`${API_BASE}/teacher/groups`, { headers: authHeaders(session) });
+  if (!response.ok()) return null;
+  const rows: TeacherGroup[] = await response.json();
+  return (
+    rows.find((g) => namePattern.test(g.display_name || '') && (g.learner_count ?? 0) >= minLearners) || null
+  );
+}
+
+/**
+ * Assign a scenario to a class. Group managers may do this themselves — the
+ * ScenarioAssignment BeforeCreate hook accepts anyone who passes
+ * CanUserManageGroup, so no admin credentials are involved.
+ */
+export async function createGroupAssignment(
+  session: ApiSession,
+  scenarioId: string,
+  groupId: string,
+  extra: { start_date?: string; deadline?: string } = {}
+): Promise<{ id: string }> {
+  const response = await session.api.post(`${API_BASE}/scenario-assignments`, {
+    headers: authHeaders(session),
+    data: { scenario_id: scenarioId, group_id: groupId, scope: 'group', is_active: true, ...extra },
+  });
+  if (!response.ok()) {
+    throw new Error(`POST /scenario-assignments failed: ${response.status()} ${await response.text()}`);
+  }
+  return response.json();
+}
+
+export async function updateAssignment(
+  session: ApiSession,
+  assignmentId: string,
+  patch: { start_date?: string; deadline?: string; is_active?: boolean }
+): Promise<void> {
+  const response = await session.api.patch(`${API_BASE}/scenario-assignments/${assignmentId}`, {
+    headers: authHeaders(session),
+    data: patch,
+  });
+  if (!response.ok()) {
+    throw new Error(`PATCH /scenario-assignments/${assignmentId} failed: ${response.status()}`);
+  }
+}
+
+export async function deleteAssignment(session: ApiSession, assignmentId: string): Promise<void> {
+  await session.api
+    .delete(`${API_BASE}/scenario-assignments/${assignmentId}`, { headers: authHeaders(session) })
+    .catch(() => {});
+}
+
+/** One row per learner who has a session on this scenario, as the teacher sees it. */
+export async function getGroupScenarioResults(
+  session: ApiSession,
+  groupId: string,
+  scenarioId: string
+): Promise<any[]> {
+  const response = await session.api.get(
+    `${API_BASE}/teacher/groups/${groupId}/scenarios/${scenarioId}/results`,
+    { headers: authHeaders(session) }
+  );
+  if (!response.ok()) return [];
+  const body = await response.json();
+  return Array.isArray(body) ? body : body.data || [];
+}
+
 /** Abandon the learner's scenario session and destroy its terminal (teardown). */
 export async function cleanupScenarioSession(session: ApiSession, scenarioId: string): Promise<void> {
   const mine = await getMyScenarioSessions(session);
