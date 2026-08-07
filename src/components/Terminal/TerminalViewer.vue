@@ -481,6 +481,11 @@ const fetchedSessionInfo = ref<SessionInfo | null>(null)
 // find the Retry button, while the scenario panel sits alive next to it.
 const AUTO_RETRY_ATTEMPTS = 2
 const AUTO_RETRY_DELAY_MS = 2_000
+
+// tt-backend maps a non-zero shell exit N to close code 4000+N, so a SIGKILLed
+// shell (128+9 = 137) arrives as 4137. That is the signal a crash-trap payload
+// produces, and the only close code that ends a run.
+const SHELL_KILLED_CLOSE_CODE = 4137
 let autoRetriesLeft = AUTO_RETRY_ATTEMPTS
 let autoRetryTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -795,8 +800,19 @@ async function connectToTerminal() {
       isWsOpen.value = false
       isConnecting.value = false
 
+      // A SIGKILLed shell ends a crash-trap run: ocf-core abandons the scenario
+      // session server-side and stops the terminal, so there is nothing left to
+      // reconnect to and the generic "environment is still running" copy would
+      // be a lie. Matched on 4137 exactly, never on the 4000-4999 band — 4001
+      // is a learner typing `exit 1`, 4143 a graceful SIGTERM teardown, and
+      // both must stay ordinary exits. ocf-core's IsShellKilledCloseCode makes
+      // the same narrow check; keep the two in step.
+      if (event.code === SHELL_KILLED_CLOSE_CODE && props.hasScenario) {
+        runtimeEndReason.value = 'run_over'
+        showReconnectButton.value = false
+        error.value = ''
       // Handle container exec errors from tt-backend (custom close codes 4000-4999)
-      if (event.code === 4127) {
+      } else if (event.code === 4127) {
         error.value = t('terminal.commandNotFound')
         showReconnectButton.value = false
       } else if (event.code === 4126) {
