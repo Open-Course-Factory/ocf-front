@@ -196,7 +196,7 @@ describe('useScenarioGraph — syncOrderFromEdges', () => {
 
     const result = await g.syncOrderFromEdges()
 
-    expect(result).toEqual({ patched: 2, failed: 0 })
+    expect(result).toEqual({ patched: 2, failed: 0, failedLabels: [] })
     expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st1', { order: 0 })
     expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st2', { order: 1 })
   })
@@ -215,7 +215,7 @@ describe('useScenarioGraph — syncOrderFromEdges', () => {
 
     const result = await g.syncOrderFromEdges()
 
-    expect(result).toEqual({ patched: 0, failed: 0 })
+    expect(result).toEqual({ patched: 0, failed: 0, failedLabels: [] })
     expect(mockPatch).not.toHaveBeenCalled()
   })
 
@@ -236,6 +236,71 @@ describe('useScenarioGraph — syncOrderFromEdges', () => {
 
     const result = await g.syncOrderFromEdges()
 
-    expect(result).toEqual({ patched: 1, failed: 1 })
+    expect(result.patched).toBe(1)
+    expect(result.failed).toBe(1)
+    // Naming the step is the point: a count alone leaves the trainer with an
+    // inconsistent sequence and no idea which one to repair.
+    expect(result.failedLabels).toEqual(['st2'])
+  })
+
+  it('stops on a cyclic edge chain instead of walking it forever', async () => {
+    const g = makeGraph()
+    g.nodes.value = [
+      scenarioNode('scenario-1', 's1'),
+      stepNode('step-1', 'terminal', 'st1', { order: 5 }),
+      stepNode('step-2', 'flag', 'st2', { order: 6 })
+    ]
+    // step-2 loops back to step-1. Nothing forbids drawing this, and without a
+    // visited-set the walk never terminates and the tab hangs.
+    g.edges.value = [
+      edge('e1', 'scenario-1', 'step-1'),
+      edge('e2', 'step-1', 'step-2'),
+      edge('e3', 'step-2', 'step-1')
+    ]
+
+    const result = await g.syncOrderFromEdges()
+
+    expect(result.patched).toBe(2)
+    expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st1', { order: 0 })
+    expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st2', { order: 1 })
+  })
+})
+
+describe('useScenarioGraph — step position is derived from chain order', () => {
+  it('ignores a saved horizontal position for steps but keeps the vertical one', () => {
+    const g = makeGraph()
+    g.nodes.value = [
+      scenarioNode('scenario-1', 's1'),
+      { ...stepNode('step-1', 'terminal', 'st1', { order: 0 }), position: { x: 100, y: 250 } }
+    ]
+    // A stale layout from before the steps were reordered.
+    localStorage.setItem(
+      'scenarioEditor_positions_s1',
+      JSON.stringify([{ id: 'step-1', entityId: 'st1', position: { x: 999, y: 400 } }])
+    )
+
+    const discardedX = g.loadNodePositions()
+
+    const step = g.nodes.value.find((n: any) => n.id === 'step-1')
+    expect(step.position.x).toBe(100)
+    expect(step.position.y).toBe(400)
+    // Reported so the editor can tell the user, rather than the canvas
+    // appearing to rearrange itself.
+    expect(discardedX).toBe(1)
+  })
+
+  it('restores both axes for a non-step node', () => {
+    const g = makeGraph()
+    g.nodes.value = [{ ...scenarioNode('scenario-1', 's1'), position: { x: 0, y: 0 } }]
+    localStorage.setItem(
+      'scenarioEditor_positions_s1',
+      JSON.stringify([{ id: 'scenario-1', entityId: 's1', position: { x: 42, y: 77 } }])
+    )
+
+    const discardedX = g.loadNodePositions()
+
+    const scenario = g.nodes.value.find((n: any) => n.id === 'scenario-1')
+    expect(scenario.position).toEqual({ x: 42, y: 77 })
+    expect(discardedX).toBe(0)
   })
 })
