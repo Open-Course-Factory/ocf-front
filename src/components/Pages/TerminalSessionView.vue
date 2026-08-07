@@ -91,6 +91,7 @@
             :has-scenario="terminalHadScenario"
             :scenario-session-id="scenarioSessionId"
             :scenario-flags-enabled="scenarioBriefing?.flags_enabled ?? false"
+            :scenario-crash-traps="scenarioBriefing?.crash_traps ?? false"
             :show-stop-button="isPersistent"
             :is-stopping="isStopping"
             :show-destroy-button="true"
