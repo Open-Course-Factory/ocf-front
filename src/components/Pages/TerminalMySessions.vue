@@ -224,10 +224,10 @@
                 <span
                   v-if="getEffectiveSessionState(session) === 'stopped' && session.idle_until"
                   class="idle-countdown"
-                  :title="t('terminalMySessions.idleUntilCountdown', { duration: formatTimeRemaining(session.idle_until) })"
+                  :title="idleCountdownLabel(session.idle_until)"
                 >
                   <i class="fas fa-hourglass-half"></i>
-                  {{ t('terminalMySessions.idleUntilCountdown', { duration: formatTimeRemaining(session.idle_until) }) }}
+                  {{ idleCountdownLabel(session.idle_until) }}
                 </span>
 
                 <!-- Action buttons. Every one of them drives a terminal the caller
@@ -698,6 +698,7 @@ const { t } = useTranslations({
       stateStopped: 'Stopped',
       stateDeleted: 'Deleted',
       idleUntilCountdown: 'Auto-deletes in {duration}',
+      idleUntilOverdue: 'Deletion imminent',
       durationDays: '{n}d {h}h',
       durationHours: '{h}h {m}min',
       durationMinutes: '{m}min',
@@ -821,6 +822,7 @@ const { t } = useTranslations({
       stateStopped: 'Arrêté',
       stateDeleted: 'Supprimé',
       idleUntilCountdown: 'Suppression automatique dans {duration}',
+      idleUntilOverdue: 'Suppression imminente',
       durationDays: '{n}j {h}h',
       durationHours: '{h}h {m}min',
       durationMinutes: '{m}min',
@@ -1251,6 +1253,21 @@ function getStateLabel(state: EffectiveSessionState): string {
  * Format the time remaining until idle_until as a short, human-readable duration.
  * Reads `countdownTick` so the displayed value refreshes when the tick advances.
  */
+// idleCountdownLabel renders the full auto-delete label for a stopped
+// session. An overdue deadline (cleanup pending or sync lag) gets its own
+// copy: wrapping a clamped "less than a minute" forever reads as a frozen
+// promise the system never keeps.
+function idleCountdownLabel(idleUntil: string): string {
+  // Read the tick so this string re-evaluates each minute.
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  countdownTick.value
+  const target = new Date(idleUntil).getTime()
+  if (!Number.isNaN(target) && target - Date.now() <= 0) {
+    return t('terminalMySessions.idleUntilOverdue')
+  }
+  return t('terminalMySessions.idleUntilCountdown', { duration: formatTimeRemaining(idleUntil) })
+}
+
 function formatTimeRemaining(idleUntil: string): string {
   // Read the tick so this string re-evaluates each minute.
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
