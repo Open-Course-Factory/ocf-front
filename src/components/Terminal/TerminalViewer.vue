@@ -1348,5 +1348,12 @@ defineExpose({
 .terminal-viewer :deep(.xterm-viewport),
 .terminal-wrapper :deep(.xterm-viewport) {
   overflow-y: auto;
+  /* Reserve the scrollbar gutter permanently. The alternate screen buffer has
+     no scrollback, so with `auto` alone the scrollbar disappears on entry and
+     returns on exit — each time changing the viewport width, firing the
+     ResizeObserver and refitting the terminal to a different column count.
+     Anything using the alternate buffer hits this, vim and less included.
+     Reserving the gutter keeps the geometry stable. */
+  scrollbar-gutter: stable;
 }
 </style>
