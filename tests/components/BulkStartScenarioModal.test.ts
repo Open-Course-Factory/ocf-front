@@ -93,13 +93,16 @@ describe('BulkStartScenarioModal', () => {
     expect(texts.some(t => t.includes('Debian') && t.includes('12 Bookworm'))).toBe(true)
   })
 
-  it('emits update:selectedDistribution when the select changes', async () => {
+  it('emits the distribution NAME when the select changes', async () => {
+    // tt-backend's session creation is keyed on the distribution NAME; the
+    // modal used to emit the prefix, which made every bulk start with a
+    // terminal fail with "distribution not found".
     const wrapper = mountModal({ selectedDistribution: '' })
-    await wrapper.find('select').setValue('debian')
+    await wrapper.find('select').setValue('Debian')
 
     const emitted = wrapper.emitted('update:selectedDistribution')
     expect(emitted).toBeTruthy()
-    expect(emitted!.at(-1)).toEqual(['debian'])
+    expect(emitted!.at(-1)).toEqual(['Debian'])
   })
 
   it('shows the loading indicator (and no select) while loadingDistributions is true', () => {
