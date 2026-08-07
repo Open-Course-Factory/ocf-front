@@ -109,7 +109,6 @@ export function useScenarioEditorI18n() {
       flagsEnabled: 'Enable CTF flags',
       crashTraps: 'Enable crash traps (challenge mode)',
       crashTrapsHint: 'All flags deployed at start. Container crash resets progress.',
-      gshEnabled: 'Enable GSH command',
       isPublic: 'Public (available to all users)',
       // Export
       exportJSON: 'Export as JSON',
@@ -233,7 +232,6 @@ export function useScenarioEditorI18n() {
       flagsEnabled: 'Activer les drapeaux CTF',
       crashTraps: 'Activer les pièges de crash (mode challenge)',
       crashTrapsHint: 'Tous les drapeaux déployés au démarrage. Un crash du conteneur réinitialise la progression.',
-      gshEnabled: 'Activer la commande GSH',
       isPublic: 'Public (disponible pour tous les utilisateurs)',
       // Export
       exportJSON: 'Exporter en JSON',

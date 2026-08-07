@@ -630,7 +630,6 @@ const handleCreateNew = () => {
     source_type: 'builtin',
     flags_enabled: false,
     crash_traps: false,
-    gsh_enabled: false,
     is_public: false,
     _scopeKey: pickDefaultScopeKey(),
     isNew: true
@@ -944,7 +943,6 @@ const openEditModal = async (node: any) => {
       source_type: node.data.source_type || '',
       flags_enabled: node.data.flags_enabled || false,
       crash_traps: node.data.crash_traps || false,
-      gsh_enabled: node.data.gsh_enabled || false,
       is_public: node.data.is_public || false,
       organization_id: node.data.organization_id || null,
       isNew: node.data.isNew || false
@@ -1011,7 +1009,6 @@ const handleSaveScenario = async () => {
       source_type: editingScenario.value.source_type,
       flags_enabled: editingScenario.value.flags_enabled,
       crash_traps: editingScenario.value.crash_traps,
-      gsh_enabled: editingScenario.value.gsh_enabled,
       is_public: editingScenario.value.is_public
     }
 
@@ -1079,7 +1076,6 @@ const handleSaveScenario = async () => {
           source_type: editingScenario.value.source_type,
           flags_enabled: editingScenario.value.flags_enabled,
           crash_traps: editingScenario.value.crash_traps,
-          gsh_enabled: editingScenario.value.gsh_enabled,
           is_public: editingScenario.value.is_public,
           isNew: false
         }
