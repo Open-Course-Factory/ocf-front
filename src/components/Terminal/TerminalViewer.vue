@@ -95,8 +95,12 @@
       </Button>
     </template>
 
-    <div class="terminal-wrapper">
+    <div class="terminal-wrapper" @click="handleTerminalAreaClick">
       <div ref="terminalRef" class="terminal-container" :class="{ 'terminal-full-height': fullHeight }"></div>
+      <div v-if="isEffectPlaying" class="ocf-effect-skip-hint" data-testid="tte-skip-hint">
+        <i class="fas fa-forward"></i>
+        <span>{{ t('terminal.effectSkipHint') }}</span>
+      </div>
       <TerminalEndStateOverlay v-if="activeEndState" :reason="(effectiveEndReason as EndStateReason)" :config="activeEndState" @action="handleEndStateAction" />
       <div v-else-if="error" class="terminal-error">
         <i class="fas fa-exclamation-triangle fa-2x"></i>
@@ -204,7 +208,7 @@
     </div>
 
     <!-- Terminal container -->
-    <div class="terminal-wrapper">
+    <div class="terminal-wrapper" @click="handleTerminalAreaClick">
       <!-- With a header the chip lives in it; without one it overlays the terminal
            so the learner indicator survives without shifting the layout. -->
       <SupervisionChip
@@ -215,6 +219,10 @@
         :controlled="supervisionChip.controlled"
       />
       <div class="terminal-container" ref="terminalRef"></div>
+      <div v-if="isEffectPlaying" class="ocf-effect-skip-hint" data-testid="tte-skip-hint">
+        <i class="fas fa-forward"></i>
+        <span>{{ t('terminal.effectSkipHint') }}</span>
+      </div>
       <TerminalEndStateOverlay v-if="activeEndState" :reason="(effectiveEndReason as EndStateReason)" :config="activeEndState" @action="handleEndStateAction" />
       <div v-else-if="error" class="terminal-error">
         <i class="fas fa-exclamation-triangle fa-2x"></i>
@@ -261,6 +269,8 @@ import {
   initialSupervisionState,
   type SupervisionState
 } from '../../services/domain/terminal/supervisionProtocol'
+import { createReplayer, type ReplayOutcome } from '../../composables/useTteReplay'
+import type { ParsedCast } from '../../utils/asciicast'
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
 import RecordingIndicator from './RecordingIndicator.vue'
@@ -388,6 +398,7 @@ const { t } = useTranslations({
       networkOff: 'Internet access: off',
       supervisionWatched: 'A trainer is watching this session',
       supervisionControlled: 'A trainer has taken control of this session',
+      effectSkipHint: 'Press any key to skip',
     }
   },
   fr: {
@@ -431,6 +442,7 @@ const { t } = useTranslations({
       recordingTooltip: 'Les commandes sont enregistrées',
       supervisionWatched: 'Un formateur observe cette session',
       supervisionControlled: 'Un formateur a pris le contrôle de cette session',
+      effectSkipHint: 'Appuyez sur une touche pour passer',
     }
   }
 })
@@ -501,6 +513,63 @@ const supervisionChip = computed(() => {
 // Disposable for the learner's outgoing-keystroke listener in supervised mode
 // (re-created on each (re)connect; disposed to avoid double-sending on reconnect).
 let supervisedDataDisposable: { dispose: () => void } | null = null
+
+// ---- Scenario step effect replay (display-only, alternate screen buffer) ----
+// PTY output arriving while a replay owns the screen is held back here and
+// flushed synchronously the moment the shell view is restored — otherwise it
+// would paint into the alternate buffer and vanish with it.
+let pendingPtyOutput: string[] = []
+
+function flushPendingPtyOutput() {
+  if (pendingPtyOutput.length === 0) return
+  const queued = pendingPtyOutput
+  pendingPtyOutput = []
+  for (const text of queued) {
+    terminal.value?.write(text)
+  }
+}
+
+const effectReplayer = createReplayer(() => terminal.value, { onFinish: flushPendingPtyOutput })
+const isEffectPlaying = effectReplayer.isPlaying
+
+// Effect replay is only meaningful over the supervised socket path (the one
+// scenario sessions always use), where this component owns onmessage and can
+// queue PTY output. Whether the WebSocket ever opened does not matter: with
+// no live shell underneath there is simply nothing to protect.
+async function playEffect(cast: ParsedCast): Promise<ReplayOutcome> {
+  await waitForConnectionSettled()
+  return effectReplayer.play(cast)
+}
+
+function cancelEffect() {
+  effectReplayer.skip()
+}
+
+// Resolves once the console connection attempt has settled (open, closed or
+// errored) so a step-0 intro fired while the socket is still connecting does
+// not race terminal.reset() in onopen. Bounded: never blocks an effect for
+// more than a few seconds on a wedged connection.
+const connectionSettled = ref(false)
+function waitForConnectionSettled(timeoutMs = 8_000): Promise<void> {
+  if (connectionSettled.value) return Promise.resolve()
+  return new Promise((resolve) => {
+    const startedAt = Date.now()
+    const poll = setInterval(() => {
+      if (connectionSettled.value || Date.now() - startedAt > timeoutMs) {
+        clearInterval(poll)
+        resolve()
+      }
+    }, 100)
+  })
+}
+
+// Click anywhere on the terminal while an effect plays = skip (keystrokes
+// already skip via the supervised onData handler).
+function handleTerminalAreaClick() {
+  if (isEffectPlaying.value) {
+    effectReplayer.skip()
+  }
+}
 
 // xterm.js modules (lazy loaded)
 let Terminal: any = null
@@ -638,6 +707,9 @@ let resizeTimeout: ReturnType<typeof setTimeout> | null = null
 
 function fitTerminal() {
   if (fitAddon && terminal.value) {
+    // A resize would re-wrap the fixed-canvas effect frames into garbage —
+    // restore the shell view first, then let the fit proceed.
+    cancelEffect()
     fitAddon.fit()
   }
 }
@@ -674,7 +746,15 @@ function attachSupervisedSocket() {
   socket.value.onmessage = createSupervisionMessageHandler({
     getState: () => supervisionState.value,
     setState: (state) => { supervisionState.value = state },
-    onTerminal: (text) => { terminal.value?.write(text) }
+    onTerminal: (text) => {
+      // Hold shell output back while an effect replay owns the screen; it is
+      // flushed synchronously when the replay ends (onFinish hook).
+      if (isEffectPlaying.value) {
+        pendingPtyOutput.push(text)
+      } else {
+        terminal.value?.write(text)
+      }
+    }
   })
 
   // Forward the learner's keystrokes to the shell as TEXT frames. Re-created on
@@ -684,6 +764,12 @@ function attachSupervisedSocket() {
     supervisedDataDisposable = null
   }
   supervisedDataDisposable = terminal.value.onData((data: string) => {
+    // Any keystroke during an effect replay skips it — and is swallowed, so
+    // an impatient keypress cannot inject characters into the shell prompt.
+    if (isEffectPlaying.value) {
+      effectReplayer.skip()
+      return
+    }
     if (socket.value && socket.value.readyState === WebSocket.OPEN) {
       socket.value.send(data)
     }
@@ -706,6 +792,7 @@ async function connectToTerminal() {
     if (errKey) {
       error.value = t(`terminal.${errKey}`)
       isConnecting.value = false
+      connectionSettled.value = true
       return
     }
 
@@ -742,7 +829,11 @@ async function connectToTerminal() {
       autoRetriesLeft = AUTO_RETRY_ATTEMPTS
       runtimeEndReason.value = ''
       error.value = ''
+      connectionSettled.value = true
 
+      // reset() below would leave a running effect replay stranded in the
+      // alternate buffer — restore the shell view first
+      cancelEffect()
       // Clear old terminal content before attaching new session
       terminal.value.reset()
 
@@ -794,6 +885,13 @@ async function connectToTerminal() {
       const wasConnected = isWsOpen.value
       isWsOpen.value = false
       isConnecting.value = false
+      connectionSettled.value = true
+      // A live shell just vanished under the replay; restore the real view so
+      // the disconnect state is visible. A connection that never opened has
+      // nothing underneath — let the effect finish.
+      if (wasConnected) {
+        cancelEffect()
+      }
 
       // Handle container exec errors from tt-backend (custom close codes 4000-4999)
       if (event.code === 4127) {
@@ -860,6 +958,7 @@ async function connectToTerminal() {
       console.error('WebSocket error:', err)
       isWsOpen.value = false
       isConnecting.value = false
+      connectionSettled.value = true
       showReconnectButton.value = true
       error.value = t('terminal.websocketError')
     }
@@ -867,6 +966,7 @@ async function connectToTerminal() {
   } catch (err: any) {
     console.error('Error connecting:', err)
     isConnecting.value = false
+    connectionSettled.value = true
     error.value = t('terminal.connectionFailed', { message: err.message })
     if (props.useSettingsCard) {
       showErrorNotification(
@@ -955,8 +1055,14 @@ function handleSessionExpired() {
   emit('session-expired')
 }
 
+// A trainer taking control must see the learner's real shell, not a replay.
+watch(() => supervisionState.value.controlled, (controlled) => {
+  if (controlled) cancelEffect()
+})
+
 // Cleanup
 function cleanup() {
+  cancelEffect()
   window.removeEventListener('resize', handleResize)
   if (autoRetryTimeout) {
     clearTimeout(autoRetryTimeout)
@@ -1050,7 +1156,9 @@ defineExpose({
   reconnect,
   isConnected: () => isConnected.value,
   getSessionId: () => displaySessionId.value,
-  pasteText: (text: string) => { terminal.value?.paste(text); terminal.value?.focus() }
+  pasteText: (text: string) => { terminal.value?.paste(text); terminal.value?.focus() },
+  playEffect,
+  cancelEffect
 })
 </script>
 
@@ -1273,6 +1381,28 @@ defineExpose({
 
 /* The learner-facing supervision indicator now lives in the title bar as a chip
    (see SupervisionChip.vue) so it never shifts the terminal's layout box. */
+
+/* Skip hint shown while a step effect replays in the terminal. Absolute
+   overlay inside .terminal-wrapper (position: relative) — never joins the
+   layout flow. pointer-events: none lets the click fall through to the
+   wrapper, whose handler skips the replay. */
+.ocf-effect-skip-hint {
+  position: absolute;
+  right: var(--spacing-md);
+  bottom: var(--spacing-md);
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-full, 999px);
+  background-color: var(--color-bg-secondary);
+  border: var(--border-width-thin) solid var(--color-border-medium);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  opacity: 0.85;
+  pointer-events: none;
+}
 
 /* Internet-access indicator in the status bar. Globe = on (success),
    crossed = off (muted). Sits alongside the recording / countdown badges. */

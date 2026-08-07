@@ -60,6 +60,8 @@ import { ref } from 'vue'
 import TerminalViewer from './TerminalViewer.vue'
 import CommandHistory from './CommandHistory.vue'
 import ValidatedFlags from './ValidatedFlags.vue'
+import type { ParsedCast } from '../../utils/asciicast'
+import type { ReplayOutcome } from '../../composables/useTteReplay'
 
 interface SessionInfo {
   session_id: string
@@ -128,10 +130,21 @@ function refreshFlags() {
   validatedFlagsRef.value?.refresh()
 }
 
+// Step effect replay passthrough (ScenarioPanel → TerminalSessionView → here)
+async function playEffect(cast: ParsedCast): Promise<ReplayOutcome> {
+  return (await terminalRef.value?.playEffect(cast)) ?? 'unsupported'
+}
+
+function cancelEffect() {
+  terminalRef.value?.cancelEffect()
+}
+
 defineExpose({
   terminalRef,
   pasteText,
-  refreshFlags
+  refreshFlags,
+  playEffect,
+  cancelEffect
 })
 </script>
 
