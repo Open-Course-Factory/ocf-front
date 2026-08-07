@@ -72,6 +72,11 @@ export function useScenarioGraph(options: UseScenarioGraphOptions) {
       (VALID_CONNECTIONS[sourceType]?.includes(newType) ?? false) &&
       (VALID_CONNECTIONS[newType]?.includes(targetType) ?? false),
     insertSecondEdgeSourceHandle: 'right-source',
+    // A step row is a sequence, so a step's horizontal position is derived from
+    // its place in the chain, never persisted. Letting a saved x win is what
+    // made a successful reorder look like it had not happened: the order
+    // changed in the database and the canvas snapped back. y stays freeform.
+    derivesXFromOrder: (node: any) => isStepType(node?.data?.entityType),
     // Only a scenario → existing-step connection carries a foreign key to patch.
     syncConnection: async (sourceNode, targetNode) => {
       if (targetNode.data.entityId && !targetNode.data.isNew && sourceNode.data.entityType === 'scenario') {

@@ -39,12 +39,14 @@ export interface GraphOrderLevel {
   orderBase?: number
 }
 
-// Outcome of a renumber pass. `failed` exists so callers can tell a partial
-// renumber from a clean one: a PATCH that fails mid-chain leaves duplicate or
-// missing order values, and reporting only the successes hides that.
+// Outcome of a renumber pass. A PATCH that fails mid-chain leaves duplicate or
+// missing order values, so callers need more than a success count: `failedLabels`
+// names the children that kept their old position, which is what someone needs
+// in order to repair the sequence by hand.
 export interface SyncOrderResult {
   patched: number
   failed: number
+  failedLabels: string[]
 }
 
 export interface UseGraphEditorConfig {
@@ -67,6 +69,11 @@ export interface UseGraphEditorConfig {
   onInvalidConnection?: (sourceType: string, targetType: string) => void
   // Hook fired when a node can't be auto-rewired on delete (multiple edges).
   onMultiEdgeRewireBlocked?: () => void
+  // True for nodes whose horizontal position is DERIVED from their order in the
+  // chain rather than chosen by the user. Their saved x is ignored on load, so
+  // the canvas can never contradict the stored sequence — which is what made a
+  // successful reorder appear not to have happened. y stays freeform.
+  derivesXFromOrder?: (node: any) => boolean
 }
 
 export function useGraphEditor(config: UseGraphEditorConfig) {
@@ -189,7 +196,7 @@ export function useGraphEditor(config: UseGraphEditorConfig) {
   // corrupts the sequence, so the caller has to be able to say so.
   async function syncOrderFromEdges(): Promise<SyncOrderResult> {
     let patched = 0
-    let failed = 0
+    const failedLabels: string[] = []
 
     for (const { parentType, isChild, endpoint, orderField, orderBase } of config.orderLevels) {
       const parentNodes = nodes.value.filter(n => n.data.entityType === parentType && n.data.entityId)
@@ -204,9 +211,14 @@ export function useGraphEditor(config: UseGraphEditorConfig) {
         if (!firstChildEdge) continue
 
         const orderedChildren: any[] = []
+        // Edges are user-drawn and nothing forbids a cycle, which would walk
+        // this chain forever and hang the tab. Stop at the first node already
+        // seen: the chain up to that point is still the right sequence.
+        const visited = new Set<string>()
         let currentNodeId: string | null = firstChildEdge.target
 
-        while (currentNodeId) {
+        while (currentNodeId && !visited.has(currentNodeId)) {
+          visited.add(currentNodeId)
           const currentNode = nodes.value.find(n => n.id === currentNodeId)
           if (!currentNode) break
           orderedChildren.push(currentNode)
@@ -234,14 +246,14 @@ export function useGraphEditor(config: UseGraphEditorConfig) {
               patched++
             } catch (err) {
               console.error(`Failed to update order for ${endpoint} ${child.data.entityId}:`, err)
-              failed++
+              failedLabels.push(child.data.label || child.data.title || String(child.data.entityId))
             }
           }
         }
       }
     }
 
-    return { patched, failed }
+    return { patched, failed: failedLabels.length, failedLabels }
   }
 
   // Position persistence (per-entity localStorage).
@@ -263,26 +275,40 @@ export function useGraphEditor(config: UseGraphEditorConfig) {
     localStorage.setItem(storageKey, JSON.stringify(nodePositions))
   }
 
-  function loadNodePositions() {
+  // Restores saved positions onto the current nodes. Returns how many nodes had
+  // a saved x deliberately ignored because their position is derived from chain
+  // order, so the caller can tell the user their arrangement was not applied
+  // rather than leaving them to notice the canvas moved on its own.
+  function loadNodePositions(): number {
+    let discardedX = 0
+
     const storageKey = positionsKey()
-    if (!storageKey) return
+    if (!storageKey) return discardedX
 
     const saved = localStorage.getItem(storageKey)
-    if (!saved) return
+    if (!saved) return discardedX
 
     try {
       const savedPositions = JSON.parse(saved)
       const positionMap = new Map(savedPositions.map((p: any) => [p.id, p.position]))
 
       nodes.value.forEach(node => {
-        const savedPosition = positionMap.get(node.id)
-        if (savedPosition) {
+        const savedPosition = positionMap.get(node.id) as { x: number; y: number } | undefined
+        if (!savedPosition) return
+
+        if (config.derivesXFromOrder?.(node)) {
+          // Keep the x the layout just computed from the chain; take only y.
+          if (savedPosition.x !== node.position.x) discardedX++
+          node.position = { x: node.position.x, y: savedPosition.y }
+        } else {
           node.position = savedPosition
         }
       })
     } catch (err) {
       console.error('Failed to load node positions:', err)
     }
+
+    return discardedX
   }
 
   function clearNodePositions(entityId: string) {
