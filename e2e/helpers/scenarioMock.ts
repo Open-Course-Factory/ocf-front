@@ -42,6 +42,11 @@ export interface MockStep {
   hints?: string[];
   questions?: MockQuestion[];
   show_immediate_feedback?: boolean;
+  /** When set, validating this step leaves the NEXT step provisioning
+   *  asynchronously: the success response carries next_step_provisioning and
+   *  the session stays 'provisioning' for that many info polls. */
+  provisionNextPolls?: number;
+  provisionTimeoutSeconds?: number;
 }
 
 export interface MockScenarioOptions {
@@ -83,6 +88,9 @@ export class ScenarioMock {
   private flagAttempts = new Map<number, number>();
   private validatedFlags: { step_order: number; flag: string; submitted_at: string }[] = [];
   private provisioningPollsLeft = 0;
+  /** True while a per-step (post-validation) provisioning wait is running —
+   *  distinguishes the reported phase from the session-start sequence. */
+  private stepProvisioning = false;
 
   constructor(steps: MockStep[], options: MockScenarioOptions = {}) {
     this.steps = [...steps].sort((a, b) => a.order - b.order);
@@ -178,7 +186,10 @@ export class ScenarioMock {
       completed_at: this.sessionStatus === 'completed' ? new Date().toISOString() : undefined,
       terminal_session_id: MOCK_TERMINAL_ID,
       grade: this.sessionStatus === 'completed' ? this.grade : undefined,
-      provisioning_phase: this.sessionStatus === 'provisioning' ? 'setup_script' : '',
+      provisioning_phase:
+        this.sessionStatus === 'provisioning'
+          ? this.stepProvisioning ? 'step_setup' : 'setup_script'
+          : '',
     };
   }
 
@@ -245,6 +256,7 @@ export class ScenarioMock {
     await page.route(`**/api/v1/scenario-sessions/${MOCK_SESSION_ID}`, (route) => {
       if (this.sessionStatus === 'provisioning' && this.provisioningPollsLeft-- <= 0) {
         this.sessionStatus = this.scenario.launch === 'provision-then-failed' ? 'setup_failed' : 'active';
+        this.stepProvisioning = false;
       }
       return route.fulfill(json(this.sessionInfo()));
     });
@@ -275,6 +287,22 @@ export class ScenarioMock {
         );
       }
       const next = this.advance(step.order, 1);
+      // Async per-step provisioning: the next step's preparation was left
+      // running — the client must poll session info until 'active'.
+      if (next !== undefined && step.provisionNextPolls !== undefined) {
+        this.sessionStatus = 'provisioning';
+        this.stepProvisioning = true;
+        this.provisioningPollsLeft = step.provisionNextPolls;
+        return route.fulfill(
+          json({
+            passed: true,
+            output: 'ok',
+            next_step: next,
+            next_step_provisioning: true,
+            provisioning_timeout_seconds: step.provisionTimeoutSeconds ?? 30,
+          })
+        );
+      }
       return route.fulfill(json({ passed: true, output: 'ok', next_step: next }));
     });
 

@@ -704,6 +704,29 @@
   color: var(--color-success);
 }
 
+/* Step transition — async next-step provisioning phase. Rendered inside the
+   same full-panel .panel-transitioning block as the other phases, so it can
+   never shift the layout around it. */
+.transition-provisioning {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  text-align: center;
+}
+
+.transition-provisioning-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.transition-provisioning-hint {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
 /* Step transition — loading phase */
 .panel-transitioning {
   display: flex;
