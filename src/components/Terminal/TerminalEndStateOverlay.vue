@@ -95,6 +95,9 @@ const emit = defineEmits<{
 .end-state--setup_failed .end-state-icon { color: var(--color-danger); }
 .end-state--revoked .end-state-icon { color: var(--color-warning); }
 .end-state--disconnected .end-state-icon { color: var(--color-warning); }
+/* Warning, not danger: the run ending is the challenge working as designed,
+   so this must not read like a platform failure. */
+.end-state--run_over .end-state-icon { color: var(--color-warning); }
 
 .end-state-title {
   margin: 0 0 var(--spacing-sm);
