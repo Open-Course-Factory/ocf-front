@@ -309,6 +309,13 @@ interface Props {
   endReason?: 'completed' | 'abandoned' | 'expired' | 'stopped' | 'revoked' | 'setup_failed' | ''
   // Whether this terminal was part of a scenario (affects navigation in end-state)
   hasScenario?: boolean
+  // Whether the running scenario arms crash traps. This mirrors
+  // Scenario.CrashTraps, the same field ocf-core's EndCrashTrapRun gates on —
+  // deliberately the same predicate rather than a lookalike, because a
+  // SIGKILLed shell only ends a run for a crash-trap scenario. Anywhere else
+  // (an ordinary terminal, or a scenario without traps) a killed shell is just
+  // a killed shell and the session stays alive.
+  scenarioCrashTraps?: boolean
   // Supervision-aware console: when true, the console connection carries control
   // frames (a trainer may watch or take control of this learner's terminal). The
   // socket is wired through the shared supervision message handler instead of the
@@ -344,6 +351,7 @@ const props = withDefaults(defineProps<Props>(), {
   fullHeight: true,
   endReason: '',
   hasScenario: false,
+  scenarioCrashTraps: false,
   supervisionEnabled: false
 })
 
@@ -807,7 +815,12 @@ async function connectToTerminal() {
       // is a learner typing `exit 1`, 4143 a graceful SIGTERM teardown, and
       // both must stay ordinary exits. ocf-core's IsShellKilledCloseCode makes
       // the same narrow check; keep the two in step.
-      if (event.code === SHELL_KILLED_CLOSE_CODE && props.hasScenario) {
+      //
+      // Gated on the scenario's own crash_traps, the same field EndCrashTrapRun
+      // decides on server-side. The browser receives 4137 for ANY killed shell,
+      // so a looser gate would announce a run over while the session is still
+      // very much alive.
+      if (event.code === SHELL_KILLED_CLOSE_CODE && props.scenarioCrashTraps) {
         runtimeEndReason.value = 'run_over'
         showReconnectButton.value = false
         error.value = ''

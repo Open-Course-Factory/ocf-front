@@ -14,7 +14,11 @@
  *     match to the 4000-4999 band would end a run every time someone exits
  *     their own shell. ocf-core's IsShellKilledCloseCode makes the same narrow
  *     check.
- *   - A plain terminal (no scenario) must not get scenario copy, even on 4137.
+ *   - Only a crash-trap scenario ends. The browser receives 4137 for ANY
+ *     SIGKILLed shell, but ocf-core only abandons the session when the
+ *     scenario sets crash_traps, so the viewer gates on the same field. A
+ *     scenario without traps — and a plain terminal — must keep the ordinary
+ *     error, or the UI announces a run over while the session is still alive.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -199,8 +203,8 @@ describe('TerminalViewer — SIGKILLed shell (close code 4137)', () => {
     vi.stubGlobal('ResizeObserver', FakeResizeObserver)
   })
 
-  it('shows the run-over end state for a scenario terminal', async () => {
-    const wrapper = await closeSocketWith(4137, { hasScenario: true })
+  it('shows the run-over end state for a crash-trap scenario', async () => {
+    const wrapper = await closeSocketWith(4137, { hasScenario: true, scenarioCrashTraps: true })
 
     const endState = wrapper.find('.end-state')
     expect(endState.exists()).toBe(true)
@@ -209,14 +213,14 @@ describe('TerminalViewer — SIGKILLed shell (close code 4137)', () => {
   })
 
   it('offers relaunching rather than reconnecting — there is nothing left to reconnect to', async () => {
-    const wrapper = await closeSocketWith(4137, { hasScenario: true })
+    const wrapper = await closeSocketWith(4137, { hasScenario: true, scenarioCrashTraps: true })
 
     expect(wrapper.find('.end-state').text()).toContain('Relaunch the scenario')
     expect(wrapper.html()).not.toContain('Reconnect')
   })
 
   it('does NOT end the run on 4001 — that is the learner typing `exit 1`', async () => {
-    const wrapper = await closeSocketWith(4001, { hasScenario: true })
+    const wrapper = await closeSocketWith(4001, { hasScenario: true, scenarioCrashTraps: true })
 
     // 4001 stays an ordinary shell exit: it falls through to the generic exec
     // error, so no end-state overlay is rendered at all — and certainly not
@@ -225,13 +229,20 @@ describe('TerminalViewer — SIGKILLed shell (close code 4137)', () => {
     expect(wrapper.html()).not.toContain('Relaunch the scenario')
   })
 
+  it('does NOT end the run for a scenario without crash traps', async () => {
+    // The learner's shell was killed — an OOM kill, a trainer, anything — but
+    // ocf-core only abandons crash-trap sessions, so this run is still alive
+    // and saying otherwise would be a lie about recoverable state.
+    const wrapper = await closeSocketWith(4137, { hasScenario: true, scenarioCrashTraps: false })
+
+    expect(wrapper.find('.end-state').exists()).toBe(false)
+    expect(wrapper.html()).not.toContain('Relaunch the scenario')
+  })
+
   it('does NOT show scenario copy on a plain terminal, even on 4137', async () => {
     const wrapper = await closeSocketWith(4137, { hasScenario: false })
 
-    const endState = wrapper.find('.end-state')
-    if (endState.exists()) {
-      expect(endState.attributes('data-reason')).not.toBe('run_over')
-    }
+    expect(wrapper.find('.end-state').exists()).toBe(false)
     expect(wrapper.html()).not.toContain('Relaunch the scenario')
   })
 })

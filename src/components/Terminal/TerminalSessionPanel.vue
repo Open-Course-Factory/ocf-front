@@ -17,6 +17,7 @@
       :is-recording="isRecording"
       :end-reason="endReason"
       :has-scenario="hasScenario"
+      :scenario-crash-traps="scenarioCrashTraps"
       supervision-enabled
       use-settings-card
       :title="sessionInfo?.name || ('Terminal ' + (sessionInfo?.session_id?.substring(0, 8) || ''))"
@@ -87,6 +88,9 @@ interface Props {
   showHistory?: boolean
   scenarioSessionId?: string
   scenarioFlagsEnabled?: boolean
+  // Whether the running scenario arms crash traps. Passed through to the
+  // viewer, which needs it to tell a fatal trap from an ordinary shell exit.
+  scenarioCrashTraps?: boolean
   endReason?: 'completed' | 'abandoned' | 'expired' | 'stopped' | 'revoked' | 'setup_failed' | ''
   hasScenario?: boolean
 }
@@ -101,6 +105,7 @@ withDefaults(defineProps<Props>(), {
   showHistory: true,
   scenarioSessionId: undefined,
   scenarioFlagsEnabled: false,
+  scenarioCrashTraps: false,
   endReason: '',
   hasScenario: false
 })
