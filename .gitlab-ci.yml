@@ -216,7 +216,7 @@ e2e:scenarios:
   script:
     - E2E_USER=1.student@test.com
       E2E_PASS=test
-      npx playwright test scenario-launch scenario-player
+      npx playwright test scenario-launch scenario-player scenario-effects
   after_script:
     - docker compose -p "$COMPOSE_PROJECT" -f .e2e-core/docker-compose.test.yml -f e2e/ci/docker-compose.core.yml logs ocf-core-e2e > ocf-core.log 2>&1 || true
     - docker compose -p "$COMPOSE_PROJECT" -f .e2e-core/docker-compose.test.yml -f e2e/ci/docker-compose.core.yml down -v --remove-orphans || true
