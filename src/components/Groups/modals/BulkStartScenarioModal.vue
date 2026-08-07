@@ -34,7 +34,7 @@
         <option
           v-for="dist in distributions"
           :key="dist.prefix"
-          :value="dist.prefix"
+          :value="dist.name"
         >
           {{ dist.name }} — {{ dist.description }}
         </option>
