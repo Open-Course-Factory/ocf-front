@@ -21,15 +21,25 @@ function authHeaders(session: ApiSession) {
   return { Authorization: `Bearer ${session.token}` };
 }
 
-/** First team org the user owns (marc → marc-corp). */
-export async function findOwnedTeamOrgId(session: ApiSession): Promise<string | null> {
+/**
+ * First team org the user owns (marc → marc-corp), with the name the org
+ * switcher shows — specs that have to put the UI in that org context need the
+ * label, not just the id.
+ */
+export async function findOwnedTeamOrg(
+  session: ApiSession
+): Promise<{ id: string; displayName: string } | null> {
   const response = await session.api.get(`${API_BASE}/organizations`, { headers: authHeaders(session) });
   if (!response.ok()) throw new Error(`GET /organizations failed: ${response.status()}`);
   const body = await response.json();
   const orgs = Array.isArray(body) ? body : body.data || [];
   const me = orgs.find((o: any) => o.organization_type === 'personal')?.owner_user_id;
   const owned = orgs.find((o: any) => o.organization_type !== 'personal' && o.owner_user_id === me);
-  return owned ? owned.id : null;
+  return owned ? { id: owned.id, displayName: owned.display_name || owned.name } : null;
+}
+
+export async function findOwnedTeamOrgId(session: ApiSession): Promise<string | null> {
+  return (await findOwnedTeamOrg(session))?.id ?? null;
 }
 
 export interface SeedQuestion {
@@ -120,6 +130,49 @@ export async function getMyScenarioSessions(session: ApiSession): Promise<any[]>
   return Array.isArray(body) ? body : body.data || [];
 }
 
+export async function getUserId(session: ApiSession): Promise<string> {
+  const response = await session.api.get(`${API_BASE}/users/me`, { headers: authHeaders(session) });
+  if (!response.ok()) throw new Error(`GET /users/me failed: ${response.status()}`);
+  const body = await response.json();
+  return body.id || body.user_id;
+}
+
+/**
+ * Make a user a member of an org if they are not one already, and say whether
+ * the membership was created — the caller removes only what it added.
+ *
+ * Needed because adding someone to a CLASS does not make them a member of the
+ * org that class belongs to, while bulk start resolves each member's plan
+ * against the SCENARIO's org and fails outright for a non-member.
+ */
+export async function ensureOrgMembership(
+  session: ApiSession,
+  orgId: string,
+  userId: string
+): Promise<string | null> {
+  const existing = await session.api.get(`${API_BASE}/organizations/${orgId}/members`, {
+    headers: authHeaders(session),
+  });
+  if (existing.ok()) {
+    const members = await existing.json();
+    if ((Array.isArray(members) ? members : []).some((m: any) => m.user_id === userId)) return null;
+  }
+  const response = await session.api.post(`${API_BASE}/organization-members`, {
+    headers: authHeaders(session),
+    data: { organization_id: orgId, user_id: userId, role: 'member' },
+  });
+  if (!response.ok()) {
+    throw new Error(`POST /organization-members failed: ${response.status()} ${await response.text()}`);
+  }
+  return (await response.json()).id;
+}
+
+export async function removeOrgMembership(session: ApiSession, membershipId: string): Promise<void> {
+  await session.api
+    .delete(`${API_BASE}/organization-members/${membershipId}`, { headers: authHeaders(session) })
+    .catch(() => {});
+}
+
 export interface TeacherGroup {
   group_id: string;
   display_name: string;
@@ -184,6 +237,26 @@ export async function deleteAssignment(session: ApiSession, assignmentId: string
   await session.api
     .delete(`${API_BASE}/scenario-assignments/${assignmentId}`, { headers: authHeaders(session) })
     .catch(() => {});
+}
+
+/**
+ * Launch a scenario for the calling user and provision its container — the same
+ * endpoint the launcher page posts to. Setup only: specs that are ABOUT the
+ * launch drive it through the UI. Returns null when the backend refuses (a
+ * busy host answers 503), so callers can skip rather than fail.
+ */
+export async function launchScenarioSession(
+  session: ApiSession,
+  scenarioId: string,
+  orgId?: string
+): Promise<{ scenario_session_id: string; terminal_session_id: string } | null> {
+  const response = await session.api.post(`${API_BASE}/scenario-sessions/launch`, {
+    headers: authHeaders(session),
+    data: { scenario_id: scenarioId, ...(orgId ? { organization_id: orgId } : {}) },
+    timeout: 240_000,
+  });
+  if (!response.ok()) return null;
+  return response.json();
 }
 
 /** One row per learner who has a session on this scenario, as the teacher sees it. */

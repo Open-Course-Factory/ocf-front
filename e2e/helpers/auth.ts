@@ -9,7 +9,12 @@ import { type Page, expect } from '@playwright/test';
  *   3. Submit (triggers window.location.href = landingPage -> full page reload)
  *   4. Wait for the authenticated app shell to appear (TopMenu user-info button)
  */
-export async function login(page: Page, email: string, password: string): Promise<void> {
+export async function login(
+  page: Page,
+  email: string,
+  password: string,
+  options: { rememberMe?: boolean } = {}
+): Promise<void> {
   await page.goto('/login', { waitUntil: 'networkidle' });
 
   // Wait for the login form to be rendered
@@ -19,6 +24,13 @@ export async function login(page: Page, email: string, password: string): Promis
   // Fill credentials
   await emailInput.fill(email);
   await page.locator('#password').fill(password);
+
+  // Without "remember me" the token lives in sessionStorage, which a tab opened
+  // by window.open(..., 'noopener') does not inherit. Tests that follow the app
+  // into a second tab must tick it, exactly as a user would.
+  if (options.rememberMe) {
+    await page.getByTestId('login-remember-me').check();
+  }
 
   // Small delay for Vue reactivity to process v-model bindings
   await page.waitForTimeout(300);
