@@ -653,8 +653,20 @@ onBeforeUnmount(() => {
   border-radius: var(--border-radius-sm);
 }
 
+/* A reserved slot, not a cap.
+ *
+ * `max-height` let the list grow a row at a time until it reached the limit,
+ * and this panel sits directly under the terminal in a flex column where the
+ * terminal is the only flexible child. Every row the history gained was a row
+ * the console lost: the learner watched their terminal shrink as they typed,
+ * for the first dozen commands of every session.
+ *
+ * A fixed height keeps the slot the same size whether it holds nothing, the
+ * loading state, the no-match state or a full scrollback, so nothing the
+ * learner types can move the console. Collapsing the panel still resizes it,
+ * because that is the learner asking. */
 .command-list {
-  max-height: 300px;
+  height: 300px;
   overflow-y: auto;
   padding: var(--spacing-sm);
 }
@@ -828,7 +840,7 @@ onBeforeUnmount(() => {
   }
 
   .command-list {
-    max-height: 200px;
+    height: 200px;
   }
 }
 </style>
