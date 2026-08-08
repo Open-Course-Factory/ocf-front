@@ -175,8 +175,14 @@ describe('useScenarioGraph — handleEdgeConnect (VALID_CONNECTIONS)', () => {
   })
 })
 
+// These previously pinned 1-based numbering (first step → order 1), which was
+// the bug: scenario steps are 0-based everywhere else — the importer writes
+// Order = i, and a session seeds CurrentStep from the first step's Order — so
+// the editor renumbered every imported scenario on its first save. The
+// expectations below now encode the 0-based rule. Courses stay 1-based via the
+// orderBase default; see useGraphEditor.GraphOrderLevel.
 describe('useScenarioGraph — syncOrderFromEdges', () => {
-  it('renumbers steps along the visual chain and returns the patch count', async () => {
+  it('renumbers steps along the visual chain from 0 and reports what it patched', async () => {
     const g = makeGraph()
     g.nodes.value = [
       scenarioNode('scenario-1', 's1'),
@@ -188,28 +194,160 @@ describe('useScenarioGraph — syncOrderFromEdges', () => {
       edge('e2', 'step-1', 'step-2')
     ]
 
-    const count = await g.syncOrderFromEdges()
+    const result = await g.syncOrderFromEdges()
 
-    expect(count).toBe(2)
-    expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st1', { order: 1 })
-    expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st2', { order: 2 })
+    expect(result).toEqual({ patched: 2, failed: 0, failedLabels: [], appendedOffChainLabels: [] })
+    expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st1', { order: 0 })
+    expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st2', { order: 1 })
   })
 
-  it('does not patch steps already in the correct order', async () => {
+  it('leaves a step already at order 0 alone — 0 is the first step, not a missing value', async () => {
     const g = makeGraph()
     g.nodes.value = [
       scenarioNode('scenario-1', 's1'),
-      stepNode('step-1', 'terminal', 'st1', { order: 1 }),
-      stepNode('step-2', 'flag', 'st2', { order: 2 })
+      stepNode('step-1', 'terminal', 'st1', { order: 0 }),
+      stepNode('step-2', 'flag', 'st2', { order: 1 })
     ]
     g.edges.value = [
       edge('e1', 'scenario-1', 'step-1'),
       edge('e2', 'step-1', 'step-2')
     ]
 
-    const count = await g.syncOrderFromEdges()
+    const result = await g.syncOrderFromEdges()
 
-    expect(count).toBe(0)
+    expect(result).toEqual({ patched: 0, failed: 0, failedLabels: [], appendedOffChainLabels: [] })
     expect(mockPatch).not.toHaveBeenCalled()
+  })
+
+  it('counts a failed PATCH instead of reporting a clean pass', async () => {
+    const g = makeGraph()
+    g.nodes.value = [
+      scenarioNode('scenario-1', 's1'),
+      stepNode('step-1', 'terminal', 'st1', { order: 5 }),
+      stepNode('step-2', 'flag', 'st2', { order: 6 })
+    ]
+    g.edges.value = [
+      edge('e1', 'scenario-1', 'step-1'),
+      edge('e2', 'step-1', 'step-2')
+    ]
+    // The second step's renumber fails: the chain is now half-applied, which
+    // is precisely the state that leaves duplicate or missing orders behind.
+    mockPatch.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('boom'))
+
+    const result = await g.syncOrderFromEdges()
+
+    expect(result.patched).toBe(1)
+    expect(result.failed).toBe(1)
+    // Naming the step is the point: a count alone leaves the trainer with an
+    // inconsistent sequence and no idea which one to repair.
+    expect(result.failedLabels).toEqual(['st2'])
+  })
+
+  it('stops on a cyclic edge chain instead of walking it forever', async () => {
+    const g = makeGraph()
+    g.nodes.value = [
+      scenarioNode('scenario-1', 's1'),
+      stepNode('step-1', 'terminal', 'st1', { order: 5 }),
+      stepNode('step-2', 'flag', 'st2', { order: 6 })
+    ]
+    // step-2 loops back to step-1. Nothing forbids drawing this, and without a
+    // visited-set the walk never terminates and the tab hangs.
+    g.edges.value = [
+      edge('e1', 'scenario-1', 'step-1'),
+      edge('e2', 'step-1', 'step-2'),
+      edge('e3', 'step-2', 'step-1')
+    ]
+
+    const result = await g.syncOrderFromEdges()
+
+    expect(result.patched).toBe(2)
+    expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st1', { order: 0 })
+    expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st2', { order: 1 })
+  })
+})
+
+describe('useScenarioGraph — steps left off the chain', () => {
+  it('appends an unconnected step instead of leaving it on an order the chain now uses', async () => {
+    const g = makeGraph()
+    g.nodes.value = [
+      scenarioNode('scenario-1', 's1'),
+      stepNode('step-1', 'terminal', 'st1', { order: 0 }),
+      stepNode('step-2', 'flag', 'st2', { order: 1 }),
+      // Wired to nothing, and sitting on a stale order. Before this fix it was
+      // never renumbered at all, so it kept a value the chain could collide with.
+      stepNode('step-3', 'terminal', 'st3', { order: 7 })
+    ]
+    g.edges.value = [
+      edge('e1', 'scenario-1', 'step-1'),
+      edge('e2', 'step-1', 'step-2')
+    ]
+
+    const result = await g.syncOrderFromEdges()
+
+    // Named, not counted: an unconnected node is easy to miss on a busy canvas,
+    // so the warning has to say which step moved.
+    expect(result.appendedOffChainLabels).toEqual(['st3'])
+    // The chain keeps 0 and 1; the orphan takes the next free slot.
+    expect(mockPatch).not.toHaveBeenCalledWith('/scenario-steps/st1', expect.anything())
+    expect(mockPatch).not.toHaveBeenCalledWith('/scenario-steps/st2', expect.anything())
+    expect(mockPatch).toHaveBeenCalledWith('/scenario-steps/st3', { order: 2 })
+  })
+
+  it('produces a sequence with no duplicate orders even when steps are unconnected', async () => {
+    const g = makeGraph()
+    g.nodes.value = [
+      scenarioNode('scenario-1', 's1'),
+      stepNode('step-1', 'terminal', 'st1', { order: 3 }),
+      stepNode('step-2', 'flag', 'st2', { order: 1 }),
+      stepNode('step-3', 'terminal', 'st3', { order: 1 })
+    ]
+    // Only step-1 is on the chain; the other two share order 1 already.
+    g.edges.value = [edge('e1', 'scenario-1', 'step-1')]
+
+    await g.syncOrderFromEdges()
+
+    const orders = g.nodes.value
+      .filter((n: any) => n.id.startsWith('step-'))
+      .map((n: any) => n.data.order)
+    expect(new Set(orders).size).toBe(orders.length)
+  })
+})
+
+describe('useScenarioGraph — step position is derived from chain order', () => {
+  it('ignores a saved horizontal position for steps but keeps the vertical one', () => {
+    const g = makeGraph()
+    g.nodes.value = [
+      scenarioNode('scenario-1', 's1'),
+      { ...stepNode('step-1', 'terminal', 'st1', { order: 0 }), position: { x: 100, y: 250 } }
+    ]
+    // A stale layout from before the steps were reordered.
+    localStorage.setItem(
+      'scenarioEditor_positions_s1',
+      JSON.stringify([{ id: 'step-1', entityId: 'st1', position: { x: 999, y: 400 } }])
+    )
+
+    const discardedX = g.loadNodePositions()
+
+    const step = g.nodes.value.find((n: any) => n.id === 'step-1')
+    expect(step.position.x).toBe(100)
+    expect(step.position.y).toBe(400)
+    // Reported so the editor can tell the user, rather than the canvas
+    // appearing to rearrange itself.
+    expect(discardedX).toBe(1)
+  })
+
+  it('restores both axes for a non-step node', () => {
+    const g = makeGraph()
+    g.nodes.value = [{ ...scenarioNode('scenario-1', 's1'), position: { x: 0, y: 0 } }]
+    localStorage.setItem(
+      'scenarioEditor_positions_s1',
+      JSON.stringify([{ id: 'scenario-1', entityId: 's1', position: { x: 42, y: 77 } }])
+    )
+
+    const discardedX = g.loadNodePositions()
+
+    const scenario = g.nodes.value.find((n: any) => n.id === 'scenario-1')
+    expect(scenario.position).toEqual({ x: 42, y: 77 })
+    expect(discardedX).toBe(0)
   })
 })

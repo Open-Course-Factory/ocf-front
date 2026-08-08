@@ -595,9 +595,14 @@ const handleScenarioSelect = async () => {
     currentScenario.value = scenario
     convertScenarioToNodes(scenario)
 
-    // Load saved positions
+    // Load saved positions. A step's x comes from its place in the chain, so a
+    // previously-saved x is ignored — say so rather than letting the canvas
+    // appear to rearrange itself.
     setTimeout(() => {
-      loadNodePositions()
+      const discardedX = loadNodePositions()
+      if (discardedX > 0) {
+        notification.showInfo(t('scenarioEditor.stepLayoutFollowsOrder'))
+      }
     }, 0)
   } catch (err) {
     console.error('Error loading scenario:', err)
@@ -1340,10 +1345,26 @@ const confirmDelete = async () => {
 const handleSave = async () => {
   saveNodePositions()
 
-  const patchCount = await syncOrderFromEdges()
+  const { patched, failed, failedLabels, appendedOffChainLabels } = await syncOrderFromEdges()
 
-  if (patchCount > 0) {
-    notification.showSuccess(t('scenarioEditor.orderSynced', { count: String(patchCount) }))
+  // Steps left unconnected are folded onto the end of the sequence rather than
+  // keeping an order the connected ones now use. Say so: from the canvas it
+  // looks like nothing happened to them.
+  if (appendedOffChainLabels.length > 0) {
+    notification.showWarning(
+      t('scenarioEditor.offChainStepsAppended', { steps: appendedOffChainLabels.join(', ') })
+    )
+  }
+
+  // A half-applied renumber leaves duplicate or missing step orders, so it
+  // must never be reported as a success — the trainer has to know the
+  // sequence is inconsistent while they can still fix it.
+  if (failed > 0) {
+    notification.showError(
+      t('scenarioEditor.orderSyncFailed', { steps: failedLabels.join(', ') })
+    )
+  } else if (patched > 0) {
+    notification.showSuccess(t('scenarioEditor.orderSynced', { count: String(patched) }))
   } else {
     notification.showSuccess(t('scenarioEditor.saveSuccess'))
   }

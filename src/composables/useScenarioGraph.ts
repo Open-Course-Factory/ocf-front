@@ -72,6 +72,11 @@ export function useScenarioGraph(options: UseScenarioGraphOptions) {
       (VALID_CONNECTIONS[sourceType]?.includes(newType) ?? false) &&
       (VALID_CONNECTIONS[newType]?.includes(targetType) ?? false),
     insertSecondEdgeSourceHandle: 'right-source',
+    // A step row is a sequence, so a step's horizontal position is derived from
+    // its place in the chain, never persisted. Letting a saved x win is what
+    // made a successful reorder look like it had not happened: the order
+    // changed in the database and the canvas snapped back. y stays freeform.
+    derivesXFromOrder: (node: any) => isStepType(node?.data?.entityType),
     // Only a scenario → existing-step connection carries a foreign key to patch.
     syncConnection: async (sourceNode, targetNode) => {
       if (targetNode.data.entityId && !targetNode.data.isNew && sourceNode.data.entityType === 'scenario') {
@@ -87,7 +92,10 @@ export function useScenarioGraph(options: UseScenarioGraphOptions) {
       return false
     },
     orderLevels: [
-      { parentType: 'scenario', isChild: isStepType, endpoint: '/scenario-steps', orderField: 'order' }
+      // Steps are 0-based: the importer writes Order = i and a session seeds
+      // CurrentStep from the first step's Order. Renumbering from 1 rewrote
+      // every imported scenario on its first save in the editor.
+      { parentType: 'scenario', isChild: isStepType, endpoint: '/scenario-steps', orderField: 'order', orderBase: 0 }
     ],
     onInvalidConnection: options.onInvalidConnection,
     onMultiEdgeRewireBlocked: options.onMultiEdgeRewireBlocked
@@ -149,7 +157,6 @@ export function useScenarioGraph(options: UseScenarioGraphOptions) {
           entityId: step.id,
           entityType: nodeType,
           step_type: nodeType,
-          order: step.order || stepIdx + 1,
           text_content: step.text_content,
           hint_content: step.hint_content,
           hint_file_id: step.hint_file_id,
@@ -163,6 +170,10 @@ export function useScenarioGraph(options: UseScenarioGraphOptions) {
           show_immediate_feedback: step.show_immediate_feedback ?? false,
           isNew: false,
           ...step,
+          // After the spread, so the stored value wins. `??` not `||`: order 0
+          // is the legitimate first step, and treating it as missing is what
+          // made the editor renumber every imported scenario.
+          order: step.order ?? stepIdx,
           // Deserialize `options` JSON-string → array (overrides the spread above)
           questions: Array.isArray(step.questions) ? step.questions.map(deserializeQuestion) : []
         }
