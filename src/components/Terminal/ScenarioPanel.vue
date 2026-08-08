@@ -53,6 +53,16 @@
         </button>
       </div>
 
+      <!-- Next-step preparation failed (async per-step provisioning) -->
+      <div v-else-if="provisioningError" class="panel-error" data-testid="scenario-step-preparing-error">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>{{ t('scenarioPanel.preparingFailed') }}</span>
+        <button class="retry-btn" @click="loadCurrentStep">
+          <i class="fas fa-redo"></i>
+          {{ t('scenarioPanel.retry') }}
+        </button>
+      </div>
+
       <!-- Completed state -->
       <div v-else-if="isSessionCompleted" class="panel-completed" data-testid="scenario-completed">
         <div class="completed-icon">
@@ -91,7 +101,16 @@
             <span class="validated-text">{{ t('scenarioPanel.stepValidated') }}</span>
           </div>
         </template>
-        <!-- Phase 2: Loading next step -->
+        <!-- Phase 2 (async next step): preparing the environment -->
+        <template v-else-if="transitionPhase === 'provisioning'">
+          <div class="transition-provisioning" data-testid="scenario-step-preparing">
+            <i class="fas fa-check-circle validated-icon"></i>
+            <span class="transition-provisioning-title">{{ t('scenarioPanel.preparingNextStep') }}</span>
+            <p class="transition-provisioning-hint">{{ t('scenarioPanel.preparingHint') }}</p>
+            <ProvisioningPhaseList :phase="stepProvisioningPhase" :phases="['step_setup']" />
+          </div>
+        </template>
+        <!-- Phase 3: Loading next step -->
         <template v-else>
           <div class="transition-animation">
             <div class="transition-progress">
@@ -286,6 +305,7 @@ import ScenarioVerifyResult from './ScenarioVerifyResult.vue'
 import ScenarioFlagSubmit from './ScenarioFlagSubmit.vue'
 import ScenarioQuizPanel from './ScenarioQuizPanel.vue'
 import ScenarioHintPanel from './ScenarioHintPanel.vue'
+import ProvisioningPhaseList from './ProvisioningPhaseList.vue'
 import type {
   VerifyStepResponse,
   SubmitFlagResponse,
@@ -343,6 +363,9 @@ const { t } = useTranslations({
       viewMyScenarios: 'View my scenarios',
       stepValidated: 'Step validated!',
       nextStep: 'Loading next step...',
+      preparingNextStep: 'Preparing the next step…',
+      preparingHint: 'Installing what the next step needs. This usually takes a few seconds.',
+      preparingFailed: 'The next step could not be prepared.',
       completionSummary: 'Your Results',
       stepsCompleted: 'Steps Completed',
       totalTime: 'Time Spent',
@@ -386,6 +409,9 @@ const { t } = useTranslations({
       viewMyScenarios: 'Voir mes scénarios',
       stepValidated: 'Étape validée !',
       nextStep: 'Chargement de l\'étape suivante...',
+      preparingNextStep: 'Préparation de l\'étape suivante…',
+      preparingHint: 'Installation des éléments nécessaires à l\'étape suivante. Cela prend généralement quelques secondes.',
+      preparingFailed: 'L\'étape suivante n\'a pas pu être préparée.',
       completionSummary: 'Vos résultats',
       stepsCompleted: 'Étapes complétées',
       totalTime: 'Temps passé',
@@ -460,7 +486,79 @@ const flagResult = ref<SubmitFlagResponse | null>(null)
 
 // Step transition state
 const isTransitioning = ref(false)
-const transitionPhase = ref<'validated' | 'loading' | null>(null)
+const transitionPhase = ref<'validated' | 'provisioning' | 'loading' | null>(null)
+
+// ---- Per-step provisioning (async next-step preparation) ----
+const STEP_PROVISION_POLL_MS = 2_000
+// Poll ceiling when the backend doesn't state its timeout. Invariant: this
+// must stay STRICTLY ABOVE whatever the backend allows a step script
+// (currently 30 s), so the backend reaches setup_failed — an honest error —
+// before the panel gives up on its own.
+const STEP_PROVISION_FALLBACK_CEILING_MS = 120_000
+// Margin added on top of a backend-stated timeout for the same reason.
+const STEP_PROVISION_MARGIN_MS = 30_000
+
+const stepProvisioningPhase = ref('')
+const provisioningError = ref(false)
+let stepProvisioningTimer: ReturnType<typeof setInterval> | null = null
+
+function stopStepProvisioningPoll() {
+  if (stepProvisioningTimer) {
+    clearInterval(stepProvisioningTimer)
+    stepProvisioningTimer = null
+  }
+}
+
+function startStepProvisioningPoll(timeoutSeconds?: number) {
+  transitionPhase.value = 'provisioning'
+  stepProvisioningPhase.value = 'step_setup'
+  const ceiling = timeoutSeconds
+    ? timeoutSeconds * 1000 + STEP_PROVISION_MARGIN_MS
+    : STEP_PROVISION_FALLBACK_CEILING_MS
+  const deadline = Date.now() + ceiling
+  stopStepProvisioningPoll()
+  stepProvisioningTimer = setInterval(async () => {
+    let status: string | null = null
+    try {
+      const info = await scenarioSessionService.getSessionInfo(props.scenarioSessionId)
+      status = info?.status ?? null
+      if (info?.provisioning_phase) {
+        stepProvisioningPhase.value = info.provisioning_phase
+      }
+    } catch {
+      // Transient poll failure — the deadline below bounds retries
+    }
+    if (status === 'active') {
+      stopStepProvisioningPoll()
+      transitionPhase.value = 'loading'
+      loadCurrentStep()
+    } else if (status === 'setup_failed' || Date.now() > deadline) {
+      stopStepProvisioningPoll()
+      isTransitioning.value = false
+      transitionPhase.value = null
+      provisioningError.value = true
+    }
+  }, STEP_PROVISION_POLL_MS)
+}
+
+// Shared success path for verify / flag / quiz: show the full-panel check,
+// then either load the next step directly or enter the provisioning wait when
+// the backend left it running async.
+function advanceAfterSuccess(
+  result: { next_step_provisioning?: boolean; provisioning_timeout_seconds?: number },
+  validatedMs = 2000
+) {
+  isTransitioning.value = true
+  transitionPhase.value = 'validated'
+  setTimeout(() => {
+    if (result.next_step_provisioning) {
+      startStepProvisioningPoll(result.provisioning_timeout_seconds)
+    } else {
+      transitionPhase.value = 'loading'
+      loadCurrentStep()
+    }
+  }, validatedMs)
+}
 
 // Quiz state (submit orchestration; answer state lives in ScenarioQuizPanel)
 const isSubmittingQuiz = ref(false)
@@ -650,6 +748,8 @@ async function loadCurrentStep() {
   quizSubmitError.value = ''
   hintNudgeDismissed.value = false
   stopHintNudgeTimer()
+  stopStepProvisioningPoll()
+  provisioningError.value = false
 
   // The composable owns the step DATA load + DOM refresh and returns the step.
   const step = await session.loadStepData({ skipSpinner: isTransitioning.value })
@@ -701,13 +801,7 @@ async function handleVerify() {
 
     if (result.passed) {
       if (result.next_step) {
-        // Show full-panel "Step validated!" then load next step
-        isTransitioning.value = true
-        transitionPhase.value = 'validated'
-        setTimeout(() => {
-          transitionPhase.value = 'loading'
-          loadCurrentStep()
-        }, 2000)
+        advanceAfterSuccess(result)
       } else {
         // No next step means scenario is completed
         isSessionCompleted.value = true
@@ -749,13 +843,7 @@ async function handleSubmitFlag() {
     if (result.correct) {
       emit('flag-validated')
       if (result.next_step !== undefined && result.next_step !== null) {
-        // Show full-panel "Step validated!" then load next step
-        isTransitioning.value = true
-        transitionPhase.value = 'validated'
-        setTimeout(() => {
-          transitionPhase.value = 'loading'
-          loadCurrentStep()
-        }, 2000)
+        advanceAfterSuccess(result)
       } else {
         // Last step completed — show completion screen
         isSessionCompleted.value = true
@@ -823,12 +911,7 @@ async function handleSubmitQuiz(payload: Record<string, string>) {
     }
 
     if (result.next_step !== undefined && result.next_step !== null) {
-      isTransitioning.value = true
-      transitionPhase.value = 'validated'
-      setTimeout(() => {
-        transitionPhase.value = 'loading'
-        loadCurrentStep()
-      }, 2000)
+      advanceAfterSuccess(result)
     } else {
       // Last step submitted in exam mode — show completion after a brief
       // pause so the student can read their score.
@@ -859,12 +942,7 @@ function onQuizRetry() {
 // Learning-mode quiz: student manually advances after reading the breakdown.
 function advanceFromQuiz() {
   if (!quizResult.value) return
-  isTransitioning.value = true
-  transitionPhase.value = 'validated'
-  setTimeout(() => {
-    transitionPhase.value = 'loading'
-    loadCurrentStep()
-  }, 600)
+  advanceAfterSuccess(quizResult.value, 600)
 }
 
 function finishFromQuiz() {
@@ -887,6 +965,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   stopHintNudgeTimer()
+  stopStepProvisioningPoll()
 })
 
 defineExpose({
