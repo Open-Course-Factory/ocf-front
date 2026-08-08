@@ -70,6 +70,18 @@ export interface UseGraphEditorConfig {
   syncConnection?: (sourceNode: any, targetNode: any) => Promise<boolean>
   // Parent → child levels walked by syncOrderFromEdges.
   orderLevels: GraphOrderLevel[]
+  // Refuses a connection the type rules allow but the graph shape does not —
+  // a second outgoing edge, or one that closes a loop. Returns a reason key to
+  // reject with, or null to accept. Checked before any FK is written.
+  rejectConnection?: (payload: {
+    sourceNode: any
+    targetNode: any
+    nodes: any[]
+    edges: any[]
+  }) => 'branch' | 'cycle' | null
+  // Hook fired when a topology rejection removes the edge, so the caller can
+  // explain why rather than leaving the link to vanish silently.
+  onRejectedConnection?: (reason: 'branch' | 'cycle') => void
   // Hook fired when an invalid edge is dropped (after the edge is removed).
   onInvalidConnection?: (sourceType: string, targetType: string) => void
   // Hook fired when a node can't be auto-rewired on delete (multiple edges).
@@ -187,6 +199,22 @@ export function useGraphEditor(config: UseGraphEditorConfig) {
     if (!config.isValidConnection(sourceType, targetType)) {
       removeEdge()
       config.onInvalidConnection?.(sourceType, targetType)
+      return
+    }
+
+    // Shape rules, checked before the FK write: the renumber follows one
+    // outgoing edge per node, so a branch would be silently truncated and a
+    // cycle silently cut short. Refusing at draw time beats accepting an edge
+    // that means nothing.
+    const rejection = config.rejectConnection?.({
+      sourceNode,
+      targetNode,
+      nodes: nodes.value,
+      edges: edges.value
+    })
+    if (rejection) {
+      removeEdge()
+      config.onRejectedConnection?.(rejection)
       return
     }
 

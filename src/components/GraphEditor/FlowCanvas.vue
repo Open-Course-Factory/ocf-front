@@ -85,6 +85,7 @@ const emit = defineEmits<{
   (e: 'nodes-change', changes: any[]): void
   (e: 'edges-change', changes: any[]): void
   (e: 'update:nodes', nodes: any[]): void
+  (e: 'update:edges', edges: any[]): void
   (e: 'node-click', event: any): void
   (e: 'pane-click', event: any): void
   (e: 'node-added', node: any): void
@@ -430,6 +431,16 @@ const handleNodesChange = (changes: any[]) => {
 
 const handleEdgesChange = (changes: any[]) => {
   emit('edges-change', changes)
+
+  // Vue Flow applies add/remove to its own copy of the edges. Without pushing
+  // that back, the parent's edges — the chain syncOrderFromEdges walks — never
+  // learn an edge was deleted, so removing a link was visual only: the order
+  // was still computed from the old chain and the edge reappeared on reload.
+  if (changes.some(c => c.type === 'remove' || c.type === 'add')) {
+    Promise.resolve().then(() => {
+      emit('update:edges', edgesData.value)
+    })
+  }
 }
 
 // Node action handlers (forwarded from node components via customNodeTypes)
