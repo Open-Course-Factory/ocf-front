@@ -60,6 +60,9 @@ interface UseScenarioGraphOptions {
   // Hook called when a node cannot be auto-rewired on delete because it has
   // multiple incoming/outgoing edges (unexpected in the linear chain model).
   onMultiEdgeRewireBlocked?: () => void
+  // Hook called when a drawn edge is refused for shape: 'branch' (the source
+  // already leads somewhere) or 'cycle' (it would close a loop).
+  onRejectedConnection?: (reason: 'branch' | 'cycle') => void
 }
 
 export function useScenarioGraph(options: UseScenarioGraphOptions) {
@@ -72,6 +75,32 @@ export function useScenarioGraph(options: UseScenarioGraphOptions) {
       (VALID_CONNECTIONS[sourceType]?.includes(newType) ?? false) &&
       (VALID_CONNECTIONS[newType]?.includes(targetType) ?? false),
     insertSecondEdgeSourceHandle: 'right-source',
+    // The step chain is linear. syncOrderFromEdges follows a single outgoing
+    // edge per node, so a branch is truncated and a cycle cut short — both
+    // silently. Refuse them while the trainer is drawing instead.
+    rejectConnection: ({ sourceNode, targetNode, nodes: currentNodes, edges: currentEdges }) => {
+      const typeOf = (id: string) =>
+        currentNodes.find(n => n.id === id)?.data?.entityType ?? ''
+
+      const alreadyLeaves = currentEdges.some(e =>
+        e.source === sourceNode.id &&
+        e.target !== targetNode.id &&
+        isStepType(typeOf(e.target))
+      )
+      if (alreadyLeaves) return 'branch'
+
+      // Walking forward from the target must not arrive back at the source.
+      const seen = new Set<string>([targetNode.id])
+      let cursor: string | null = targetNode.id
+      while (cursor) {
+        if (cursor === sourceNode.id) return 'cycle'
+        const next: any = currentEdges.find(e => e.source === cursor)
+        cursor = next && !seen.has(next.target) ? next.target : null
+        if (cursor) seen.add(cursor)
+      }
+
+      return null
+    },
     // A step row is a sequence, so a step's horizontal position is derived from
     // its place in the chain, never persisted. Letting a saved x win is what
     // made a successful reorder look like it had not happened: the order
@@ -98,6 +127,7 @@ export function useScenarioGraph(options: UseScenarioGraphOptions) {
       { parentType: 'scenario', isChild: isStepType, endpoint: '/scenario-steps', orderField: 'order', orderBase: 0 }
     ],
     onInvalidConnection: options.onInvalidConnection,
+    onRejectedConnection: options.onRejectedConnection,
     onMultiEdgeRewireBlocked: options.onMultiEdgeRewireBlocked
   })
 

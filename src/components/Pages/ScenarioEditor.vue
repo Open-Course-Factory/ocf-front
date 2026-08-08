@@ -50,6 +50,7 @@
         @nodes-change="handleNodesChange"
         @edges-change="handleEdgesChange"
         @update:nodes="nodes = $event"
+        @update:edges="edges = $event"
         @node-click="handleNodeClick"
         @pane-click="handlePaneClick"
         @node-added="handleNodeAdded"
@@ -322,6 +323,13 @@ const {
   selectedScenarioId,
   onInvalidConnection: (sourceType, targetType) => {
     notification.showWarning(t('scenarioEditor.invalidConnection', { source: sourceType, target: targetType }))
+  },
+  onRejectedConnection: (reason) => {
+    notification.showWarning(
+      reason === 'branch'
+        ? t('scenarioEditor.connectionWouldBranch')
+        : t('scenarioEditor.connectionWouldLoop')
+    )
   },
   onMultiEdgeRewireBlocked: () => {
     notification.showWarning(t('scenarioEditor.multiEdgeWarning'))
@@ -784,9 +792,10 @@ const handleNodesChange = (changes: any[]) => {
   }
 }
 
-const handleEdgesChange = (_changes: any[]) => {
-  // Track edge changes
-}
+// Vue Flow pushes the surviving edges up via update:edges; the change list
+// itself is only useful for telling a deletion from a drag, which the canvas
+// already does.
+const handleEdgesChange = (_changes: any[]) => {}
 
 const handleNodeClick = (_event: any) => {
   // Node click handling
