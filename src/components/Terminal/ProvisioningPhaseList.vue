@@ -63,12 +63,19 @@ const { t } = useTranslations({
 })
 
 const phaseSteps = computed(() => {
-  const currentIndex = props.phase ? props.phases.indexOf(props.phase) : -1
-  return props.phases.map((key, index) => ({
+  // A phase the caller does not list — a backend phase this list was not scoped
+  // to, or one added later — used to leave indexOf at -1, which rendered every
+  // row idle: no tick, no spinner, a checklist that looked stalled while the
+  // work was in fact running. Fall back to the first row being active, so the
+  // list always shows motion while it is on screen.
+  const index = props.phases.indexOf(props.phase)
+  const currentIndex = index === -1 ? 0 : index
+
+  return props.phases.map((key, i) => ({
     key,
     label: t(`provisioningPhases.${key}`),
-    done: currentIndex > index,
-    active: currentIndex === index
+    done: currentIndex > i,
+    active: currentIndex === i
   }))
 })
 </script>
