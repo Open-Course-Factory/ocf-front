@@ -909,3 +909,56 @@
     padding-right: var(--spacing-xs);
   }
 }
+/* Reset-this-step: the way out of a step the learner has made unwinnable.
+   Deliberately quiet — it is an escape hatch, not an action to invite. */
+.step-reset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+}
+
+.step-reset-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  /* Sized for the longest label so arming the button does not resize it and
+     shove the instructions below. */
+  min-width: 15rem;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  background: none;
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.step-reset-btn:hover:not(:disabled) {
+  color: var(--color-text-primary);
+  border-color: var(--color-border-medium);
+  background-color: var(--color-surface-hover);
+}
+
+.step-reset-btn.armed {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.step-reset-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* A reserved line, not a conditional one: the warning and the error share it,
+   and it holds its height when empty so nothing below moves. */
+.step-reset-note {
+  margin: 0;
+  min-height: 1.2em;
+  font-size: var(--font-size-xs);
+  line-height: 1.2;
+  color: var(--color-text-muted);
+}
