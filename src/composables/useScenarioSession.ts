@@ -12,6 +12,7 @@
 
 import { ref, computed, onBeforeUnmount, nextTick } from 'vue'
 import { useTranslations } from './useTranslations'
+import { useScrollFade } from './useScrollFade'
 import {
   renderKillercodaMarkdown,
   loadScenarioImages,
@@ -61,6 +62,11 @@ export function useScenarioSession(
 
   // Ref for step content container (for copy-to-clipboard injection)
   const stepContentRef = ref<HTMLElement | null>(null)
+
+  // A level's instructions routinely run past the bottom of the panel, and the
+  // panel scrolls inside itself, so nothing else tells the learner to keep
+  // reading. Same affordance, same code as the briefing card above the console.
+  const { hasOverflow: stepHasOverflow, check: checkStepFade } = useScrollFade(stepContentRef)
 
   // ---- Computeds ----
   // The displayed step: either the review step or the current step
@@ -192,6 +198,9 @@ export function useScenarioSession(
       const stepDir = `step${stepOrder + 1}`
       loadScenarioImages(stepContentRef.value, scenarioInfo.value.id, stepDir)
     }
+    // The new step is a different length than the one it replaced, and swapping
+    // text for text resizes nothing the fade observes.
+    checkStepFade()
   }
 
   // Fetch the current step's DATA. Returns the fetched step (or null on error).
@@ -300,6 +309,8 @@ export function useScenarioSession(
     reviewingStep,
     isLoadingReview,
     stepContentRef,
+    stepHasOverflow,
+    checkStepFade,
     // computeds
     displayedStep,
     renderedDisplayedStepText,

@@ -188,7 +188,13 @@
         </div>
 
         <!-- Step content area -->
-        <div ref="stepContentRef" class="step-content" @click="handleExecClick">
+        <div
+          ref="stepContentRef"
+          class="step-content ocf-scroll-fade"
+          :class="{ 'has-overflow': stepHasOverflow }"
+          @click="handleExecClick"
+          @scroll="checkStepFade"
+        >
           <!-- Step title -->
           <div class="step-header">
             <span class="step-label">{{ t('scenarioPanel.step') }} {{ stepPosition(displayedStep) }}</span>
@@ -218,6 +224,7 @@
               :result="flagResult"
               @submit="handleSubmitFlag"
             />
+
           </template>
 
           <!-- Step text (rendered as markdown) -->
@@ -482,6 +489,8 @@ const {
   sessionStartedAt,
   reviewingStep,
   stepContentRef,
+  stepHasOverflow,
+  checkStepFade,
   displayedStep,
   renderedDisplayedStepText,
   resolvedStepType,
