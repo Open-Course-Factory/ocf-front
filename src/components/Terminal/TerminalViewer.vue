@@ -636,9 +636,34 @@ async function initializeTerminal() {
 // Resize handling
 let resizeTimeout: ReturnType<typeof setTimeout> | null = null
 
+// Re-entrancy guard. A fit resizes the very element the observer watches, so
+// an unguarded observer answers its own callback.
+let isFitting = false
+
+// Refit only when the character grid would genuinely change, and never in
+// response to our own resize.
+//
+// Without the guards the console shrinks while the learner works, which is
+// what they actually see: output fills the viewport, xterm's scrollbar
+// appears, the usable width drops by the scrollbar's width, fit() recomputes
+// one column fewer, that reflow moves the content again, and the observer
+// fires once more. The grid walks a column smaller every time history grows.
+// The size must only ever follow something the user did — resizing the window,
+// opening a panel — never the arrival of output.
 function fitTerminal() {
-  if (fitAddon && terminal.value) {
+  if (!fitAddon || !terminal.value || isFitting) return
+
+  const proposed = fitAddon.proposeDimensions()
+  if (!proposed || !proposed.cols || !proposed.rows) return
+  if (proposed.cols === terminal.value.cols && proposed.rows === terminal.value.rows) return
+
+  isFitting = true
+  try {
     fitAddon.fit()
+  } finally {
+    // Released a frame later so the guard is still up when the observer
+    // delivers the callback our own fit just generated.
+    requestAnimationFrame(() => { isFitting = false })
   }
 }
 
@@ -649,11 +674,9 @@ function handleResize() {
 
 function setupResizeObserver() {
   if (terminalRef.value && window.ResizeObserver) {
-    resizeObserver = new ResizeObserver(() => {
-      if (fitAddon && terminal.value) {
-        fitAddon.fit()
-      }
-    })
+    // Debounced through handleResize like the window listener: a container
+    // animating to its final size would otherwise fit on every frame.
+    resizeObserver = new ResizeObserver(handleResize)
     resizeObserver.observe(terminalRef.value)
   }
   window.addEventListener('resize', handleResize)
