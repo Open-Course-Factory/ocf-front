@@ -225,6 +225,29 @@
               @submit="handleSubmitFlag"
             />
 
+            <!-- The way out of a step the learner has made unwinnable: coins
+                 deleted instead of moved, a timed mission missed, a file
+                 mangled. Only the environment is rebuilt — earlier steps stand.
+                 Quiz and info steps have no world to rebuild, so no button. -->
+            <div
+              v-if="resolvedStepType === 'terminal' || resolvedStepType === 'flag'"
+              class="step-reset"
+            >
+              <button
+                class="step-reset-btn"
+                :class="{ armed: resetArmed }"
+                :disabled="!isActive || isResetting"
+                data-testid="scenario-reset-step"
+                :title="t('scenarioPanel.resetStepTitle')"
+                @click="handleResetStep"
+              >
+                <i :class="isResetting ? 'fas fa-spinner fa-spin' : 'fas fa-rotate-left'"></i>
+                <span>{{ isResetting ? t('scenarioPanel.resetting') : resetArmed ? t('scenarioPanel.resetConfirm') : t('scenarioPanel.resetStep') }}</span>
+              </button>
+              <!-- Reserved slot: the message must not push the controls around
+                   when it appears. -->
+              <p class="step-reset-note">{{ resetError || (resetArmed ? t('scenarioPanel.resetWarning') : '') }}</p>
+            </div>
           </template>
 
           <!-- Step text (rendered as markdown) -->
@@ -402,6 +425,12 @@ const { t } = useTranslations({
       completionSummary: 'Your Results',
       stepsCompleted: 'Steps Completed',
       totalTime: 'Time Spent',
+      resetStep: 'Reset this step',
+      resetConfirm: 'Reset — are you sure?',
+      resetting: 'Rebuilding...',
+      resetWarning: 'This rebuilds this step only. Earlier steps are kept.',
+      resetFailed: 'Could not rebuild this step. Try again in a moment.',
+      resetStepTitle: 'Rebuild this step if you have made it impossible to finish',
       reviewingStep: 'Reviewing step {step}',
       backToCurrent: 'Back to current step',
       sessionCompleted: 'Scenario Completed',
@@ -451,6 +480,12 @@ const { t } = useTranslations({
       completionSummary: 'Vos résultats',
       stepsCompleted: 'Étapes complétées',
       totalTime: 'Temps passé',
+      resetStep: 'Réinitialiser cette étape',
+      resetConfirm: 'Réinitialiser — c\'est sûr ?',
+      resetting: 'Reconstruction...',
+      resetWarning: 'Seule cette étape est reconstruite. Les précédentes sont conservées.',
+      resetFailed: 'Reconstruction impossible. Réessayez dans un instant.',
+      resetStepTitle: 'Reconstruire cette étape si vous l\'avez rendue impossible à terminer',
       reviewingStep: 'Révision de l\'étape {step}',
       backToCurrent: 'Retour à l\'étape en cours',
       sessionCompleted: 'Scénario terminé',
@@ -515,6 +550,7 @@ const hintAutoShown = ref(false)
 
 // Verify state
 const isVerifying = ref(false)
+const resetError = ref('')
 const verifyResult = ref<VerifyStepResponse | null>(null)
 
 // Flag state
@@ -877,6 +913,45 @@ async function loadCurrentStep() {
     if (resolvedStepType.value === 'terminal' && hasProgressiveHints.value && revealedHints.value.length === 0) {
       startHintNudgeTimer()
     }
+  }
+}
+
+// Resetting destroys whatever the learner built in this step, so the button
+// arms first and acts on the second click. A modal for something this small
+// would be heavier than the mistake it prevents.
+const isResetting = ref(false)
+const resetArmed = ref(false)
+let resetDisarmTimer: ReturnType<typeof setTimeout> | null = null
+
+function disarmReset() {
+  resetArmed.value = false
+  if (resetDisarmTimer) {
+    clearTimeout(resetDisarmTimer)
+    resetDisarmTimer = null
+  }
+}
+
+async function handleResetStep() {
+  if (isResetting.value || !props.isActive) return
+
+  if (!resetArmed.value) {
+    resetArmed.value = true
+    resetDisarmTimer = setTimeout(disarmReset, 5000)
+    return
+  }
+  disarmReset()
+
+  isResetting.value = true
+  try {
+    await scenarioSessionService.reprovisionStep(props.scenarioSessionId)
+    // loadCurrentStep already clears every transient bit of interaction state,
+    // so a stale "Not quite right" cannot outlive the world it judged.
+    await loadCurrentStep()
+  } catch (err) {
+    resetError.value = t('scenarioPanel.resetFailed')
+    console.error('Failed to reset step:', err)
+  } finally {
+    isResetting.value = false
   }
 }
 
