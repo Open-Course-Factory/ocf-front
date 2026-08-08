@@ -562,11 +562,17 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* A flex column so the list below can be told to fill whatever height the host
+   gives this panel. Inert where the host is a plain block. */
 .command-history {
   background-color: var(--color-bg-primary);
   border: var(--border-width-thin) solid var(--color-border-light);
   border-radius: var(--border-radius-md);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .command-history-header {
@@ -653,13 +659,22 @@ onBeforeUnmount(() => {
   border-radius: var(--border-radius-sm);
 }
 
-/*
- * A fixed height, not a max-height: every poll that brings new commands would
- * otherwise grow this list — and with it the whole page, since the panel sits
- * below the terminal in normal flow. Scrolling happens inside the box instead.
- */
+/* A slot sized by the window, never by the content.
+ *
+ * `max-height` used to let the list grow a row at a time until it reached the
+ * limit, and every row it gained was a row the console lost: the learner
+ * watched their terminal shrink as they typed, for the first dozen commands of
+ * every session.
+ *
+ * `flex: 1 1 300px` reads in both places this panel lives. Where the host
+ * bounds its height — under the console — the list fills it and scrolls.
+ * Where it does not, on the ended-session page, there is no free space to take
+ * and the list settles at its 300px basis. Neither case lets the scrollback
+ * decide. Collapsing the panel still resizes it, because that is the learner
+ * asking. */
 .command-list {
-  height: 300px;
+  flex: 1 1 300px;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--spacing-sm);
 }
