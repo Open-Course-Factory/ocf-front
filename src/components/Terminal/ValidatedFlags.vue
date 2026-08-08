@@ -31,7 +31,7 @@
         <p>{{ t('flags.empty') }}</p>
       </div>
       <div v-for="flag in [...flags].reverse()" :key="flag.step_order" class="flag-entry">
-        <span class="flag-level">{{ flag.step_order }}</span>
+        <span class="flag-level" :title="t('flags.levelTitle')">{{ flagLevel(flag) }}</span>
         <code class="flag-value">{{ flag.flag }}</code>
         <button
           class="copy-btn"
@@ -65,6 +65,7 @@ const { t } = useTranslations({
       title: 'Found Flags',
       empty: 'No flags found yet. Submit a flag to see it here.',
       level: 'Level',
+      levelTitle: 'Level this flag was captured on',
       copied: 'Copied!',
       copyFlag: 'Copy flag',
       showFlags: 'Show flags',
@@ -76,6 +77,7 @@ const { t } = useTranslations({
       title: 'Flags trouvés',
       empty: 'Aucun flag trouvé. Soumettez un flag pour le voir ici.',
       level: 'Niveau',
+      levelTitle: 'Niveau où ce flag a été trouvé',
       copied: 'Copié !',
       copyFlag: 'Copier le flag',
       showFlags: 'Afficher les flags',
@@ -100,6 +102,16 @@ if (savedCollapsed !== null) {
 function toggleCollapse() {
   isCollapsed.value = !isCollapsed.value
   localStorage.setItem(COLLAPSED_KEY, String(isCollapsed.value))
+}
+
+// The level this flag was captured on, matching the number the learner sees in
+// the step header. Orders are data-driven — 0-based from a KillerCoda import,
+// 1-based from the editor — so the backend-computed position is the only
+// reliable answer; showing the raw order numbered the first level 0. The
+// arithmetic is the same fallback ScenarioPanel.stepPosition() uses, for an
+// older backend that does not send position yet.
+function flagLevel(flag: ValidatedFlag): number {
+  return flag.position || flag.step_order + 1
 }
 
 async function fetchFlags() {
@@ -212,7 +224,14 @@ defineExpose({ refresh })
   color: var(--color-primary);
 }
 
+/* Reserved slot, same height and same reason as CommandHistory's list: this
+ * panel is the terminal's sibling in a flex column where the terminal is the
+ * only flexible child, so an unbounded list here means the console loses a row
+ * every time the learner captures a flag. Matching heights also keeps the two
+ * panels aligned when they sit side by side. */
 .flags-list {
+  height: 300px;
+  overflow-y: auto;
   padding: var(--spacing-sm);
 }
 

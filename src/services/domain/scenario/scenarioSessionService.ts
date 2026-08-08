@@ -98,6 +98,13 @@ export interface ReprovisionStepResponse {
 
 export interface ValidatedFlag {
   step_order: number
+  /**
+   * 1-based level this flag was captured on. Optional only so the UI keeps
+   * working against a backend that predates it — prefer this over arithmetic
+   * on step_order, which is 0-based for imported scenarios and 1-based for
+   * authored ones.
+   */
+  position?: number
   flag: string
   submitted_at: string
 }
