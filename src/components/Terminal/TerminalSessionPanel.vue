@@ -17,7 +17,6 @@
       :is-recording="isRecording"
       :end-reason="endReason"
       :has-scenario="hasScenario"
-      :scenario-crash-traps="scenarioCrashTraps"
       supervision-enabled
       use-settings-card
       :title="sessionInfo?.name || ('Terminal ' + (sessionInfo?.session_id?.substring(0, 8) || ''))"
@@ -88,9 +87,6 @@ interface Props {
   showHistory?: boolean
   scenarioSessionId?: string
   scenarioFlagsEnabled?: boolean
-  // Whether the running scenario arms crash traps. Passed through to the
-  // viewer, which needs it to tell a fatal trap from an ordinary shell exit.
-  scenarioCrashTraps?: boolean
   endReason?: 'completed' | 'abandoned' | 'expired' | 'stopped' | 'revoked' | 'setup_failed' | ''
   hasScenario?: boolean
 }
@@ -105,7 +101,6 @@ withDefaults(defineProps<Props>(), {
   showHistory: true,
   scenarioSessionId: undefined,
   scenarioFlagsEnabled: false,
-  scenarioCrashTraps: false,
   endReason: '',
   hasScenario: false
 })
@@ -163,22 +158,21 @@ defineExpose({
   min-height: 0;
 }
 
-/* The console stays put while everything under it scrolls.
+/* The console never moves.
  *
- * This panel lives in a scrolling column, and the history and flags panels sit
- * below it. Scrolling down to read them used to carry the terminal off the top
- * of the screen, so the learner lost sight of the thing they are working in.
- * Sticky keeps it anchored to the top of that column; it is a no-op when the
- * column is short enough not to scroll. */
+ * It is a plain flex child of a column whose height is fixed by the viewport,
+ * so it holds one position and one size for the whole session — no scrolling
+ * happens above it or around it, and nothing the learner types can shift it.
+ * `min-height` is the floor: on a screen too short to satisfy everyone, the
+ * panels below give way rather than the console.
+ *
+ * `flex-basis: 0` is what makes the free space land here rather than being
+ * split with the panels below. */
 .terminal-session-panel :deep(.card) {
-  flex: 1;
-  min-height: 0;
+  flex: 1 1 0;
+  min-height: 200px;
   display: flex;
   flex-direction: column;
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background-color: var(--color-bg-primary);
 }
 
 .terminal-session-panel :deep(.card-body) {
@@ -189,24 +183,37 @@ defineExpose({
   flex-direction: column;
 }
 
+/* History and flags are reference material, so they yield to the console rather
+ * than compete with it: a quarter of the column at most, and the console takes
+ * everything else. Uncapped, their natural ~340px left a 200px console on a
+ * 1440x700 screen — measured.
+ *
+ * They are laid out as flex boxes rather than plain blocks so each panel gets
+ * this height and scrolls its own list inside it. The overflow here is only a
+ * valve for a column too short even for that. */
 .sub-panels {
   margin-top: var(--spacing-md);
-  flex-shrink: 0;
-}
-
-.sub-panels.has-flags {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 25%;
   display: flex;
   gap: var(--spacing-md);
+  overflow-y: auto;
 }
 
-.sub-panels.has-flags > .command-history-panel {
-  flex: 3;
+.sub-panels > .command-history-panel,
+.sub-panels > .validated-flags-panel {
+  display: flex;
   min-width: 0;
+  min-height: 0;
+}
+
+.sub-panels > .command-history-panel {
+  flex: 3;
 }
 
 .sub-panels.has-flags > .validated-flags-panel {
   flex: 1;
-  min-width: 0;
 }
 
 @media (max-width: 768px) {

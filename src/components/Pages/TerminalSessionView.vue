@@ -6,7 +6,7 @@
 -->
 
 <template>
-  <div class="terminal-session-view">
+  <div class="terminal-session-view" :class="{ 'console-pinned': showsConsole }">
     <!-- Loading state -->
     <div v-if="isLoading" class="loading-section">
       <i class="fas fa-spinner fa-spin"></i>
@@ -67,7 +67,10 @@
             <i class="fas fa-book-open"></i>
             <span>{{ t('sessionView.scenarioBriefing') }}</span>
           </div>
-          <button class="briefing-toggle" @click="toggleBriefing" :aria-expanded="showBriefing">
+          <!-- `.stop` or the click toggles twice: once here, once again on the
+               header it bubbles into — leaving the chevron the one part of the
+               bar that appears to do nothing. -->
+          <button class="briefing-toggle" @click.stop="toggleBriefing" :aria-expanded="showBriefing">
             <i :class="showBriefing ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
           </button>
         </div>
@@ -91,7 +94,6 @@
             :has-scenario="terminalHadScenario"
             :scenario-session-id="scenarioSessionId"
             :scenario-flags-enabled="scenarioBriefing?.flags_enabled ?? false"
-            :scenario-crash-traps="scenarioBriefing?.crash_traps ?? false"
             :show-stop-button="isPersistent"
             :is-stopping="isStopping"
             :show-destroy-button="true"
@@ -123,7 +125,7 @@
       </div>
 
       <!-- Terminal only (active session without scenario) -->
-      <div v-else-if="isSessionActive" style="position: relative;">
+      <div v-else-if="isSessionActive" class="terminal-standalone-area">
         <TerminalSessionPanel
           ref="standaloneTerminalRef"
           :session-info="sessionInfo"
@@ -425,7 +427,7 @@ function checkBriefingScroll() {
 
 watch(showBriefing, (visible) => {
   if (visible) {
-    nextTick(() => checkBriefingScroll())
+    nextTick(() => checkBriefingFade())
   }
 })
 
@@ -588,6 +590,12 @@ const isSessionActive = computed(() => {
   // may run for a bit before the next fetch — keep this as a belt-and-suspenders.)
   return timeRemaining.value > 0
 })
+
+// True while a console is on screen — the scenario layout or the standalone
+// terminal. It is what switches the page from "document that scrolls" to
+// "workspace that doesn't", so the console keeps one position for the whole
+// session. Every other state (loading, error, ended) still scrolls normally.
+const showsConsole = computed(() => !!scenarioSessionId.value || isSessionActive.value)
 
 // Determine the end-of-session reason using priority resolution
 const terminalEndReason = computed<'completed' | 'abandoned' | 'expired' | 'stopped' | 'revoked' | 'setup_failed' | ''>(() => {
@@ -1488,27 +1496,69 @@ onBeforeUnmount(() => {
 }
 
 
-/* The terminal column is pinned to the viewport while the instructions scroll.
+/* While a console is on screen the page itself stops scrolling.
  *
- * The scenario panel is routinely taller than the screen — a RogueLite level
- * carries objectives, hints and a deadly-trap warning — so reading it scrolls
- * the PAGE, and the page carries this whole column off the top with it. Making
- * the terminal card inside here sticky cannot help: this element owns an
- * overflow, so sticky inside it resolves against this box rather than the
- * viewport, and the box itself is what is moving.
+ * A RogueLite level carries objectives, hints and a deadly-trap warning, so the
+ * scenario panel is routinely taller than the screen. Left unbounded it grows,
+ * the PAGE becomes the thing that scrolls, and reading the instructions carries
+ * the console off the top — the learner loses sight of what they are working in.
  *
- * Sticky on the column is what actually holds the console still. Its own
- * overflow-y keeps the history and flags panels scrolling within it. */
+ * The panel already owns an internal scroller (`.step-content`); it just never
+ * ran, because nothing gave the panel a definite height to overflow. Bounding
+ * this view to its scroll container supplies that height, so each column
+ * scrolls inside itself and the console keeps the exact box it was given for
+ * the whole session.
+ *
+ * `.content-area` in Layout.vue is a flex item with its own overflow, so its
+ * height is resolved by flex layout — which is what makes `height: 100%`
+ * definite here. */
+.terminal-session-view.console-pinned {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.console-pinned > .session-view-nav,
+.console-pinned > .recording-info-notice {
+  flex-shrink: 0;
+}
+
+/* The briefing is read once and collapses away; the console is worked in for
+   the whole session. 50vh is a fair share of a page that scrolls, and far too
+   much of one that doesn't — it left a 221px console on a 1600x900 screen.
+   Capped here, the briefing scrolls internally instead of taking the room.
+   30% is the point where it holds enough lines to read without the console
+   dropping below ~350px at 1600x900; the console never moves either way, so
+   this number is only a share of the space, never the pinning rule.
+   A percentage rather than vh: it is measured against the page area, which
+   already excludes the top bar. */
+.console-pinned > .scenario-briefing {
+  max-height: 30%;
+}
+
+/* The console region takes whatever is left. `.terminal-session-layout` already
+   declares the same pair below — it was inert until this view became a flex
+   column. */
+.terminal-standalone-area {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* No scrolling happens here in practice: TerminalSessionPanel sizes the console
+   and the panels below it to exactly this box. The overflow is a valve for the
+   one case it cannot absorb — a viewport too short even for the console's
+   minimum height — where scrolling beats clipping. */
 .terminal-main-area {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 60px);
   overflow-y: auto;
-  position: sticky;
-  top: 0;
-  align-self: flex-start;
 }
 
 /* Scenario briefing card */
