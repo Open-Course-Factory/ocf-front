@@ -127,7 +127,10 @@ export const useScenarioStepsStore = defineStore('scenario-steps', () => {
         field('hint_file_id', t('scenarioSteps.hintFileId')).type('multi-select').visible().creatable().updatable(),
         field('verify_script_id', t('scenarioSteps.verifyScriptId')).type('multi-select').visible().creatable().updatable(),
         field('background_script_id', t('scenarioSteps.backgroundScriptId')).type('multi-select').visible().creatable().updatable(),
-        field('foreground_script_id', t('scenarioSteps.foregroundScriptId')).type('multi-select').visible().creatable().updatable(),
+        // Hidden like foreground_script below: ocf-core stores and re-exports a
+        // step's foreground script but runs it nowhere, so offering a file
+        // picker for it would wire up something that never executes.
+        field('foreground_script_id', t('scenarioSteps.foregroundScriptId')).type('multi-select').hidden(),
         field('text_content', t('scenarioSteps.textContent')).textarea().hidden(),
         field('hint_content', t('scenarioSteps.hintContent')).textarea().hidden(),
         field('verify_script', t('scenarioSteps.verifyScript')).textarea().hidden(),

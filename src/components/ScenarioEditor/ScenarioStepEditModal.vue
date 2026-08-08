@@ -114,26 +114,6 @@
           </div>
         </div>
 
-        <!-- Foreground Script tab -->
-        <div
-          v-if="activeTab === 'foreground'"
-          id="panel-foreground"
-          class="tab-panel"
-          role="tabpanel"
-          aria-labelledby="tab-foreground"
-        >
-          <div class="form-group">
-            <label for="step-foreground-script">{{ t('stepEdit.foregroundScript') }}</label>
-            <textarea
-              id="step-foreground-script"
-              v-model="formData.foreground_script"
-              class="form-control textarea-full script-textarea"
-              rows="14"
-              :placeholder="t('stepEdit.foregroundScriptPlaceholder')"
-            ></textarea>
-          </div>
-        </div>
-
         <!-- Effects tab: banners drawn in the learner's terminal -->
         <div
           v-if="activeTab === 'effects'"
@@ -607,8 +587,6 @@ const { t } = useTranslations({
       verifyScriptPlaceholder: '#!/bin/bash\n# Script to verify step completion...',
       backgroundScript: 'Background Script',
       backgroundScriptPlaceholder: '#!/bin/bash\n# Script to run in the background...',
-      foregroundScript: 'Foreground Script',
-      foregroundScriptPlaceholder: '#!/bin/bash\n# Script to run in the foreground...',
       hasFlag: 'Has Flag',
       flagPath: 'Flag Path',
       flagPathPlaceholder: '/tmp/flag.txt',
@@ -619,7 +597,6 @@ const { t } = useTranslations({
       tabHints: 'Hints',
       tabVerify: 'Verify',
       tabBackground: 'Background',
-      tabForeground: 'Foreground',
       tabEffects: 'Effects',
       effectsTiming: 'Effects are drawn when the learner reaches the step: the intro on arrival, the outro once the step is validated. Editing a step during a running session changes nothing on screen — start a fresh run to see it.',
       introEffect: 'Intro effect',
@@ -706,8 +683,6 @@ const { t } = useTranslations({
       verifyScriptPlaceholder: '#!/bin/bash\n# Script pour vérifier la complétion de l’étape...',
       backgroundScript: 'Script d’arrière-plan',
       backgroundScriptPlaceholder: '#!/bin/bash\n# Script à exécuter en arrière-plan...',
-      foregroundScript: 'Script de premier plan',
-      foregroundScriptPlaceholder: '#!/bin/bash\n# Script à exécuter en premier plan...',
       hasFlag: 'A un drapeau',
       flagPath: 'Chemin du drapeau',
       flagPathPlaceholder: '/tmp/flag.txt',
@@ -718,7 +693,6 @@ const { t } = useTranslations({
       tabHints: 'Indices',
       tabVerify: 'Vérification',
       tabBackground: 'Arrière-plan',
-      tabForeground: 'Premier plan',
       tabEffects: 'Effets',
       effectsTiming: "Les effets s'affichent au passage de l'apprenant : l'intro à l'arrivée sur l'étape, l'outro une fois l'étape validée. Modifier une étape pendant une session en cours ne change rien à l'écran — lancez une nouvelle partie pour le voir.",
       introEffect: "Effet d'intro",
@@ -850,7 +824,6 @@ const allTabs = computed(() => [
   { key: 'questions', label: t('stepEdit.tabQuestions') },
   { key: 'verify', label: t('stepEdit.tabVerify') },
   { key: 'background', label: t('stepEdit.tabBackground') },
-  { key: 'foreground', label: t('stepEdit.tabForeground') },
   { key: 'effects', label: t('stepEdit.tabEffects') }
 ])
 
@@ -858,7 +831,7 @@ const visibleTabs = computed(() => {
   // Effects are offered on every step type: the banner is drawn in the
   // terminal, which the learner is looking at whatever the step asks of them.
   const tabMap: Record<StepType, string[]> = {
-    terminal: ['content', 'hints', 'verify', 'background', 'foreground', 'effects'],
+    terminal: ['content', 'hints', 'verify', 'background', 'effects'],
     flag: ['content', 'hints', 'background', 'effects'],
     info: ['content', 'effects'],
     quiz: ['content', 'hints', 'questions', 'effects']
@@ -915,6 +888,12 @@ const formData = ref<Record<string, any>>({
   hint_content: '',
   verify_script: '',
   background_script: '',
+  // No tab writes this one: ocf-core stores, exports and re-imports
+  // foreground_script but executes it nowhere, so offering a text area for it
+  // would promise a script that never runs. It stays in the form state so a
+  // value that came back from the read is written back unchanged — dropping
+  // the key here would make the editor a one-way door for archives that
+  // carry one.
   foreground_script: '',
   has_flag: false,
   flag_path: '',
