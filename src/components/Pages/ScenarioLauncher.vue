@@ -77,17 +77,28 @@
             <i class="fas fa-linux os-badge-icon"></i>
             {{ scenario.os_type }}
           </span>
+          <span v-if="scenario.resolved_distribution" class="os-badge" :title="t('launcher.imageTitle')">
+            <i class="fas fa-compact-disc os-badge-icon" aria-hidden="true"></i>
+            {{ scenario.resolved_distribution }}
+          </span>
           <span
-            v-if="scenario.instance_type"
-            :class="['os-badge', { 'os-badge--warning': !isInstanceTypeValid(scenario.instance_type) }]"
-            :title="!isInstanceTypeValid(scenario.instance_type)
-              ? t('launcher.unknownSizeWarning', { key: scenario.instance_type })
-              : ''"
+            v-if="scenario.resolved_size"
+            :class="['os-badge', { 'os-badge--warning': isSizeSubstituted(scenario) }]"
+            :title="isSizeSubstituted(scenario)
+              ? t('launcher.sizeSubstituted', { declared: scenario.instance_type, resolved: scenario.resolved_size })
+              : t('launcher.sizeTitle')"
           >
             <i
-              :class="!isInstanceTypeValid(scenario.instance_type) ? 'fas fa-exclamation-triangle os-badge-icon' : 'fas fa-microchip os-badge-icon'"
+              :class="isSizeSubstituted(scenario) ? 'fas fa-exclamation-triangle os-badge-icon' : 'fas fa-microchip os-badge-icon'"
               aria-hidden="true"
             ></i>
+            {{ scenario.resolved_size }}
+          </span>
+          <!-- Degraded mode: the backend could not resolve a launch (or predates
+               resolved_*). Show what the scenario asked for, with no verdict on
+               it — the unavailability notice below carries the explanation. -->
+          <span v-else-if="scenario.instance_type" class="os-badge">
+            <i class="fas fa-microchip os-badge-icon" aria-hidden="true"></i>
             {{ scenario.instance_type }}
           </span>
         </div>
@@ -187,8 +198,6 @@ import { useNotification } from '../../composables/useNotification'
 import { useDunningRejection } from '../../composables/useDunningRejection'
 import AdminBadge from '../Common/AdminBadge.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
-import { terminalService } from '../../services/domain/terminal/terminalService'
-import type { Size } from '../../types/terminal'
 import { isAssignedSubscription } from '../../utils/subscriptionHelpers'
 
 const router = useRouter()
@@ -237,7 +246,9 @@ const { t } = useTranslations({
       difficultyAdvanced: 'Advanced',
       searchPlaceholder: 'Search scenarios...',
       noMatchingScenarios: 'No matching scenarios',
-      unknownSizeWarning: 'Size "{key}" is not in the catalog — will fall back to a default at launch'
+      imageTitle: 'Image this scenario will run on',
+      sizeTitle: 'Machine size this scenario will run at',
+      sizeSubstituted: 'This scenario asks for size "{declared}", which is not a machine size the platform offers. It will start at size "{resolved}".'
     }
   },
   fr: {
@@ -276,20 +287,25 @@ const { t } = useTranslations({
       difficultyAdvanced: 'Avancé',
       searchPlaceholder: 'Rechercher des scénarios...',
       noMatchingScenarios: 'Aucun scénario trouvé',
-      unknownSizeWarning: 'Taille « {key} » absente du catalogue — repli sur une taille par défaut au lancement'
+      imageTitle: 'Image sur laquelle ce scénario va démarrer',
+      sizeTitle: 'Taille de machine sur laquelle ce scénario va démarrer',
+      sizeSubstituted: 'Ce scénario demande la taille « {declared} », qui n\'est pas une taille de machine proposée par la plateforme. Il démarrera en taille « {resolved} ».'
     }
   }
 })
 
 const scenarios = ref<any[]>([])
 const mySessions = ref<any[]>([])
-const sizes = ref<Size[]>([])
 
-// Returns true when the size is in the catalog (case-insensitive) OR when the
-// catalog could not be loaded (degraded mode — assume valid to avoid false positives).
-function isInstanceTypeValid(key: string): boolean {
-  if (!sizes.value.length) return true
-  return sizes.value.some(s => s.key.toUpperCase() === key.toUpperCase())
+// True when the scenario's declared size is not the one it will run at, which
+// happens when the declared value is not a machine size at all. Both values
+// come from the backend, which owns the fallback rule — the comparison here is
+// only about how to label the badge.
+function isSizeSubstituted(scenario: any): boolean {
+  const declared = scenario.instance_type
+  const resolved = scenario.resolved_size
+  if (!declared || !resolved) return false
+  return declared.toUpperCase() !== resolved.toUpperCase()
 }
 const isLoading = ref(false)
 const error = ref('')
@@ -541,14 +557,6 @@ async function handleCancelProvisioning() {
 
 onMounted(() => {
   loadScenarios()
-  // Best-effort: if the sizes endpoint isn't deployed yet (404/403), badge
-  // simply assumes every size is valid (degraded mode — no false warnings).
-  terminalService.getSizes()
-    .then(list => { sizes.value = list })
-    .catch(err => {
-      console.warn('[ScenarioLauncher] failed to load sizes catalog, badge warnings disabled', err)
-      sizes.value = []
-    })
 })
 
 // Re-fetch scenarios when org context changes (different plan = different availability)

@@ -1488,6 +1488,17 @@ onBeforeUnmount(() => {
 }
 
 
+/* The terminal column is pinned to the viewport while the instructions scroll.
+ *
+ * The scenario panel is routinely taller than the screen — a RogueLite level
+ * carries objectives, hints and a deadly-trap warning — so reading it scrolls
+ * the PAGE, and the page carries this whole column off the top with it. Making
+ * the terminal card inside here sticky cannot help: this element owns an
+ * overflow, so sticky inside it resolves against this box rather than the
+ * viewport, and the box itself is what is moving.
+ *
+ * Sticky on the column is what actually holds the console still. Its own
+ * overflow-y keeps the history and flags panels scrolling within it. */
 .terminal-main-area {
   flex: 1;
   min-width: 0;
@@ -1495,6 +1506,9 @@ onBeforeUnmount(() => {
   flex-direction: column;
   height: calc(100vh - 60px);
   overflow-y: auto;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
 }
 
 /* Scenario briefing card */
