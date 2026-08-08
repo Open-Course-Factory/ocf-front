@@ -309,6 +309,13 @@ interface Props {
   endReason?: 'completed' | 'abandoned' | 'expired' | 'stopped' | 'revoked' | 'setup_failed' | ''
   // Whether this terminal was part of a scenario (affects navigation in end-state)
   hasScenario?: boolean
+  // Whether the running scenario arms crash traps. This mirrors
+  // Scenario.CrashTraps, the same field ocf-core's EndCrashTrapRun gates on —
+  // deliberately the same predicate rather than a lookalike, because a
+  // SIGKILLed shell only ends a run for a crash-trap scenario. Anywhere else
+  // (an ordinary terminal, or a scenario without traps) a killed shell is just
+  // a killed shell and the session stays alive.
+  scenarioCrashTraps?: boolean
   // Supervision-aware console: when true, the console connection carries control
   // frames (a trainer may watch or take control of this learner's terminal). The
   // socket is wired through the shared supervision message handler instead of the
@@ -344,6 +351,7 @@ const props = withDefaults(defineProps<Props>(), {
   fullHeight: true,
   endReason: '',
   hasScenario: false,
+  scenarioCrashTraps: false,
   supervisionEnabled: false
 })
 
@@ -481,6 +489,11 @@ const fetchedSessionInfo = ref<SessionInfo | null>(null)
 // find the Retry button, while the scenario panel sits alive next to it.
 const AUTO_RETRY_ATTEMPTS = 2
 const AUTO_RETRY_DELAY_MS = 2_000
+
+// tt-backend maps a non-zero shell exit N to close code 4000+N, so a SIGKILLed
+// shell (128+9 = 137) arrives as 4137. That is the signal a crash-trap payload
+// produces, and the only close code that ends a run.
+const SHELL_KILLED_CLOSE_CODE = 4137
 let autoRetriesLeft = AUTO_RETRY_ATTEMPTS
 let autoRetryTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -795,8 +808,24 @@ async function connectToTerminal() {
       isWsOpen.value = false
       isConnecting.value = false
 
+      // A SIGKILLed shell ends a crash-trap run: ocf-core abandons the scenario
+      // session server-side and stops the terminal, so there is nothing left to
+      // reconnect to and the generic "environment is still running" copy would
+      // be a lie. Matched on 4137 exactly, never on the 4000-4999 band — 4001
+      // is a learner typing `exit 1`, 4143 a graceful SIGTERM teardown, and
+      // both must stay ordinary exits. ocf-core's IsShellKilledCloseCode makes
+      // the same narrow check; keep the two in step.
+      //
+      // Gated on the scenario's own crash_traps, the same field EndCrashTrapRun
+      // decides on server-side. The browser receives 4137 for ANY killed shell,
+      // so a looser gate would announce a run over while the session is still
+      // very much alive.
+      if (event.code === SHELL_KILLED_CLOSE_CODE && props.scenarioCrashTraps) {
+        runtimeEndReason.value = 'run_over'
+        showReconnectButton.value = false
+        error.value = ''
       // Handle container exec errors from tt-backend (custom close codes 4000-4999)
-      if (event.code === 4127) {
+      } else if (event.code === 4127) {
         error.value = t('terminal.commandNotFound')
         showReconnectButton.value = false
       } else if (event.code === 4126) {
