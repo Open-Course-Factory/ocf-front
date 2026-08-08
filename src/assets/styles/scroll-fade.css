@@ -1,0 +1,18 @@
+/*
+ * Open Course Factory - Front
+ * Copyright (C) 2023-2026 Solution Libre
+ *
+ * The bottom-edge fade that says "there is more text below".
+ *
+ * A mask rather than an overlay element: it needs no extra markup, and it fades
+ * whatever is actually behind it, so it works on any surface and in both
+ * themes without naming a colour.
+ *
+ * `useScrollFade` owns the `has-overflow` toggle. Adding the class alone does
+ * nothing.
+ */
+
+.ocf-scroll-fade.has-overflow {
+  mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent 100%);
+}
