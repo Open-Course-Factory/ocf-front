@@ -163,6 +163,31 @@
             <h4 class="step-title" data-testid="scenario-step-title">{{ displayedStep!.title }}</h4>
           </div>
 
+          <!-- Verify / flag controls sit ABOVE the instructions on purpose.
+               A RogueLite level is a long read, and with the control at the
+               bottom the learner had to scroll the whole text away every time
+               they wanted to submit a flag they had just found in the
+               terminal. Quiz and info steps keep theirs below, because there
+               the control IS the content and reading comes first. -->
+          <template v-if="!reviewingStep && !isReviewMode">
+            <ScenarioVerifyResult
+              v-if="resolvedStepType === 'terminal'"
+              :is-active="isActive"
+              :is-verifying="isVerifying"
+              :result="verifyResult"
+              @verify="handleVerify"
+            />
+
+            <ScenarioFlagSubmit
+              v-else-if="resolvedStepType === 'flag'"
+              v-model="flagValue"
+              :is-active="isActive"
+              :is-submitting="isSubmittingFlag"
+              :result="flagResult"
+              @submit="handleSubmitFlag"
+            />
+          </template>
+
           <!-- Step text (rendered as markdown) -->
           <div v-if="displayedStep!.text" class="step-text markdown-content" v-html="renderedDisplayedStepText"></div>
 
@@ -178,31 +203,14 @@
             @toggle-hint="showHint = !showHint"
           />
 
-          <!-- Action area (hidden when reviewing previous steps or in review mode) -->
+          <!-- Action area for the step types whose control belongs after the
+               text (hidden when reviewing previous steps or in review mode).
+               Terminal and flag controls are rendered above, next to the step
+               header. -->
           <template v-if="!reviewingStep && !isReviewMode">
 
-            <!-- Terminal step -->
-            <template v-if="resolvedStepType === 'terminal'">
-              <ScenarioVerifyResult
-                :is-active="isActive"
-                :is-verifying="isVerifying"
-                :result="verifyResult"
-                @verify="handleVerify"
-              />
-            </template>
-
-            <!-- Flag step -->
-            <ScenarioFlagSubmit
-              v-else-if="resolvedStepType === 'flag'"
-              v-model="flagValue"
-              :is-active="isActive"
-              :is-submitting="isSubmittingFlag"
-              :result="flagResult"
-              @submit="handleSubmitFlag"
-            />
-
             <!-- Info step -->
-            <div v-else-if="resolvedStepType === 'info'" class="info-step">
+            <div v-if="resolvedStepType === 'info'" class="info-step">
               <p class="info-subtitle">
                 <i class="fas fa-book-open"></i>
                 {{ t('scenarioPanel.infoSubtitle') }}
