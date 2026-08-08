@@ -297,6 +297,9 @@ export function useGraphEditor(config: UseGraphEditorConfig) {
     return `${config.storagePrefix}_positions_${config.selectedId.value}`
   }
 
+  // A node whose x comes from its place in the chain has no x worth storing —
+  // the layout recomputes it on every load. Persisting one anyway meant every
+  // save wrote a value the next load had to throw away.
   function saveNodePositions() {
     const storageKey = positionsKey()
     if (!storageKey) return
@@ -304,46 +307,42 @@ export function useGraphEditor(config: UseGraphEditorConfig) {
     const nodePositions = nodes.value.map(node => ({
       id: node.id,
       entityId: node.data.entityId,
-      position: node.position
+      position: config.derivesXFromOrder?.(node)
+        ? { y: node.position.y }
+        : node.position
     }))
 
     localStorage.setItem(storageKey, JSON.stringify(nodePositions))
   }
 
-  // Restores saved positions onto the current nodes. Returns how many nodes had
-  // a saved x deliberately ignored because their position is derived from chain
-  // order, so the caller can tell the user their arrangement was not applied
-  // rather than leaving them to notice the canvas moved on its own.
-  function loadNodePositions(): number {
-    let discardedX = 0
-
+  // Restores saved positions onto the current nodes. For an order-derived node
+  // only y is restored; x stays whatever the chain layout just computed. Entries
+  // saved before that rule carry an x, which is read and ignored — no migration
+  // needed, and no reason to tell anyone.
+  function loadNodePositions() {
     const storageKey = positionsKey()
-    if (!storageKey) return discardedX
+    if (!storageKey) return
 
     const saved = localStorage.getItem(storageKey)
-    if (!saved) return discardedX
+    if (!saved) return
 
     try {
       const savedPositions = JSON.parse(saved)
       const positionMap = new Map(savedPositions.map((p: any) => [p.id, p.position]))
 
       nodes.value.forEach(node => {
-        const savedPosition = positionMap.get(node.id) as { x: number; y: number } | undefined
+        const savedPosition = positionMap.get(node.id) as { x?: number; y: number } | undefined
         if (!savedPosition) return
 
         if (config.derivesXFromOrder?.(node)) {
-          // Keep the x the layout just computed from the chain; take only y.
-          if (savedPosition.x !== node.position.x) discardedX++
           node.position = { x: node.position.x, y: savedPosition.y }
         } else {
-          node.position = savedPosition
+          node.position = savedPosition as { x: number; y: number }
         }
       })
     } catch (err) {
       console.error('Failed to load node positions:', err)
     }
-
-    return discardedX
   }
 
   function clearNodePositions(entityId: string) {

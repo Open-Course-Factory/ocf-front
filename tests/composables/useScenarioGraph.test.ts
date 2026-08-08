@@ -314,26 +314,24 @@ describe('useScenarioGraph — steps left off the chain', () => {
 })
 
 describe('useScenarioGraph — step position is derived from chain order', () => {
-  it('ignores a saved horizontal position for steps but keeps the vertical one', () => {
+  it('keeps the chain x for a step and restores only its saved y', () => {
     const g = makeGraph()
     g.nodes.value = [
       scenarioNode('scenario-1', 's1'),
       { ...stepNode('step-1', 'terminal', 'st1', { order: 0 }), position: { x: 100, y: 250 } }
     ]
-    // A stale layout from before the steps were reordered.
+    // An entry written before steps stopped persisting x. It still carries one;
+    // it is read and ignored, so no migration is needed.
     localStorage.setItem(
       'scenarioEditor_positions_s1',
       JSON.stringify([{ id: 'step-1', entityId: 'st1', position: { x: 999, y: 400 } }])
     )
 
-    const discardedX = g.loadNodePositions()
+    g.loadNodePositions()
 
     const step = g.nodes.value.find((n: any) => n.id === 'step-1')
     expect(step.position.x).toBe(100)
     expect(step.position.y).toBe(400)
-    // Reported so the editor can tell the user, rather than the canvas
-    // appearing to rearrange itself.
-    expect(discardedX).toBe(1)
   })
 
   it('restores both axes for a non-step node', () => {
@@ -344,10 +342,27 @@ describe('useScenarioGraph — step position is derived from chain order', () =>
       JSON.stringify([{ id: 'scenario-1', entityId: 's1', position: { x: 42, y: 77 } }])
     )
 
-    const discardedX = g.loadNodePositions()
+    g.loadNodePositions()
 
     const scenario = g.nodes.value.find((n: any) => n.id === 'scenario-1')
     expect(scenario.position).toEqual({ x: 42, y: 77 })
-    expect(discardedX).toBe(0)
+  })
+
+  // The saved payload is the other half of the rule: a step's x is recomputed
+  // on every load, so writing one only guarantees the next load discards it.
+  it('does not persist a horizontal position for a step', () => {
+    const g = makeGraph()
+    g.nodes.value = [
+      { ...scenarioNode('scenario-1', 's1'), position: { x: 10, y: 20 } },
+      { ...stepNode('step-1', 'terminal', 'st1', { order: 0 }), position: { x: 100, y: 250 } }
+    ]
+
+    g.saveNodePositions()
+
+    const saved = JSON.parse(localStorage.getItem('scenarioEditor_positions_s1') as string)
+    const step = saved.find((p: any) => p.id === 'step-1')
+    const scenario = saved.find((p: any) => p.id === 'scenario-1')
+    expect(step.position).toEqual({ y: 250 })
+    expect(scenario.position).toEqual({ x: 10, y: 20 })
   })
 })

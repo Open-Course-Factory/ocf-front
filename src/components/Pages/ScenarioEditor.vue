@@ -614,15 +614,8 @@ const handleScenarioSelect = async () => {
     currentScenario.value = scenario
     convertScenarioToNodes(scenario)
 
-    // Load saved positions. A step's x comes from its place in the chain, so a
-    // previously-saved x is ignored — say so rather than letting the canvas
-    // appear to rearrange itself.
-    setTimeout(() => {
-      const discardedX = loadNodePositions()
-      if (discardedX > 0) {
-        notification.showInfo(t('scenarioEditor.stepLayoutFollowsOrder'))
-      }
-    }, 0)
+    // Deferred a tick so the nodes are laid out before their saved y is applied.
+    setTimeout(loadNodePositions, 0)
   } catch (err) {
     console.error('Error loading scenario:', err)
     notification.showError(t('scenarioEditor.loadError'))
