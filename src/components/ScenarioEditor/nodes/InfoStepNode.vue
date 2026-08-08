@@ -14,7 +14,7 @@
   >
     <template #header>
       <div class="node-title">{{ data.label || 'New Info Step' }}</div>
-      <div v-if="data.order" class="node-subtitle">Step {{ data.order }}</div>
+      <div v-if="data.order !== undefined && data.order !== null" class="node-subtitle">Step {{ data.order + 1 }}</div>
     </template>
 
     <template #metadata>
