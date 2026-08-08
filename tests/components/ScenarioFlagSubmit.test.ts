@@ -171,6 +171,8 @@ describe('ScenarioFlagSubmit', () => {
     expect(panel.classes()).toContain('incorrect')
     expect(panel.classes()).not.toContain('correct')
     expect(panel.find('i.fas.fa-times-circle').exists()).toBe(true)
-    expect(panel.text()).toContain('Incorrect flag. Try again.')
+    // A scenario can set its own answer now, so the box takes words as well as
+    // generated tokens — the copy no longer calls everything a flag.
+    expect(panel.text()).toContain('Not the right answer. Try again.')
   })
 })

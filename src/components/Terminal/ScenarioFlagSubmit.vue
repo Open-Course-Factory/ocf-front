@@ -50,22 +50,25 @@ defineEmits<{
 const { t } = useTranslations({
   en: {
     scenarioPanel: {
-      flagPlaceholder: 'Enter flag...',
+      flagPlaceholder: 'Your answer...',
       submitFlag: 'Submit Flag',
       submitting: 'Submitting...',
-      flagHint: "Flags look like FLAG{'{'} abc123...{'}'}. Find it in the terminal to submit.",
+      // Not every answer is a token: a scenario can set its own, and some steps
+      // ask for a word the learner works out rather than one they copy. The
+      // step's own instructions say which — this must not contradict them.
+      flagHint: 'Submit the answer this step asks for.',
       flagCorrect: 'Correct!',
-      flagIncorrect: 'Incorrect flag. Try again.'
+      flagIncorrect: 'Not the right answer. Try again.'
     }
   },
   fr: {
     scenarioPanel: {
-      flagPlaceholder: 'Entrez le flag...',
+      flagPlaceholder: 'Votre réponse...',
       submitFlag: 'Soumettre le flag',
       submitting: 'Envoi...',
-      flagHint: "Les flags sont au format FLAG{'{'} abc123...{'}'}. Trouvez-le dans le terminal pour le soumettre.",
+      flagHint: "Soumettez la réponse demandée par cette étape.",
       flagCorrect: 'Correct !',
-      flagIncorrect: 'Flag incorrect. Réessayez.'
+      flagIncorrect: 'Mauvaise réponse. Réessayez.'
     }
   }
 })
