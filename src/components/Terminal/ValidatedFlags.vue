@@ -170,11 +170,17 @@ defineExpose({ refresh })
 </script>
 
 <style scoped>
+/* A flex column so the list below can fill whatever height the host gives this
+   panel. Inert where the host is a plain block. */
 .validated-flags {
   background-color: var(--color-bg-primary);
   border: var(--border-width-thin) solid var(--color-border-light);
   border-radius: var(--border-radius-md);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .validated-flags-header {
@@ -224,13 +230,13 @@ defineExpose({ refresh })
   color: var(--color-primary);
 }
 
-/* Reserved slot, same height and same reason as CommandHistory's list: this
- * panel is the terminal's sibling in a flex column where the terminal is the
- * only flexible child, so an unbounded list here means the console loses a row
- * every time the learner captures a flag. Matching heights also keeps the two
- * panels aligned when they sit side by side. */
+/* Sized by the window, same rule and same basis as CommandHistory's list: an
+ * unbounded list here would mean the console loses a row every time the learner
+ * captures a flag. The shared basis also keeps the two panels aligned when they
+ * sit side by side. */
 .flags-list {
-  height: 300px;
+  flex: 1 1 300px;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--spacing-sm);
 }
