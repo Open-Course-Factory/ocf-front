@@ -19,6 +19,7 @@
       :default-edge-options="defaultEdgeOptions"
       :nodes-focusable="true"
       :edges-focusable="true"
+      :delete-key-code="DELETE_KEY_CODES"
       @drop="handleDrop"
       @dragover="handleDragOver"
       @dragleave="handleDragLeave"
@@ -53,15 +54,25 @@ import { useTranslations } from '../../composables/useTranslations'
 const { t } = useTranslations({
   en: {
     flowCanvas: {
-      ariaLabel: 'Scenario graph editor canvas'
+      ariaLabel: 'Scenario graph editor canvas',
+      insertOnEdge: 'Insert a step here',
+      removeEdge: 'Remove this link'
     }
   },
   fr: {
     flowCanvas: {
-      ariaLabel: 'Canevas de l\'éditeur de scénario'
+      ariaLabel: 'Canevas de l\'éditeur de scénario',
+      insertOnEdge: 'Insérer une étape ici',
+      removeEdge: 'Supprimer ce lien'
     }
   }
 })
+
+// The edge badges are instantiated by Vue Flow, not by us, so their labels
+// arrive by injection. Provided here rather than by each editor page: nothing
+// was providing them at all, so both fell back to a hardcoded English string.
+provide('insertableEdgeAriaLabel', t('flowCanvas.insertOnEdge'))
+provide('removableEdgeAriaLabel', t('flowCanvas.removeEdge'))
 
 interface Props {
   nodes: any[]
@@ -125,6 +136,12 @@ const canvasRef = ref<HTMLElement | null>(null)
 
 // Vue Flow utilities (need access to screenToFlowCoordinate)
 const { screenToFlowCoordinate } = useVueFlow()
+
+// Vue Flow's default deleteKeyCode is Backspace alone, which is why Del on a
+// selected link appeared to do nothing at all. Both are bound now, but the
+// badges on the edge itself stay the discoverable path — a keyboard shortcut
+// nobody is told about is not an affordance.
+const DELETE_KEY_CODES = ['Delete', 'Backspace']
 
 // Register the custom insertable edge type so all edges get a hover-+ badge.
 // `markRaw` so Vue does not try to make the component reactive.
@@ -512,12 +529,27 @@ const onInsertOnEdgeRequest = (event: Event) => {
   emit('edge-insert-request', detail)
 }
 
+// Removing an edge from the canvas's own copy is enough: handleEdgesChange
+// mirrors add/remove back to the parent, which is what makes the removal
+// survive a reload rather than being visual only.
+const onRemoveEdgeRequest = (event: Event) => {
+  const detail = (event as CustomEvent).detail as { edgeId: string }
+  if (!detail) return
+  // Same cross-canvas guard as the insert path.
+  if (!edgesData.value.some(e => e.id === detail.edgeId)) return
+
+  edgesData.value = edgesData.value.filter(e => e.id !== detail.edgeId)
+  emit('update:edges', edgesData.value)
+}
+
 onMounted(() => {
   window.addEventListener('graph-editor:insert-on-edge', onInsertOnEdgeRequest)
+  window.addEventListener('graph-editor:remove-edge', onRemoveEdgeRequest)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('graph-editor:insert-on-edge', onInsertOnEdgeRequest)
+  window.removeEventListener('graph-editor:remove-edge', onRemoveEdgeRequest)
 })
 
 // Expose handlers so custom node types can call them via provide/inject or events
