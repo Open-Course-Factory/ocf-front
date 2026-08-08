@@ -266,6 +266,69 @@ describe('useScenarioGraph — syncOrderFromEdges', () => {
   })
 })
 
+describe('useScenarioGraph — the chain stays linear when drawing links', () => {
+  it('refuses a second outgoing link and says why', async () => {
+    const onRejectedConnection = vi.fn()
+    const g = makeGraph({ selectedScenarioId: ref<string | null>('s1'), onRejectedConnection })
+    g.nodes.value = [
+      scenarioNode('scenario-1', 's1'),
+      stepNode('step-1', 'terminal', 'st1', { order: 0 }),
+      stepNode('step-2', 'flag', 'st2', { order: 1 }),
+      stepNode('step-3', 'terminal', 'st3', { order: 2 })
+    ]
+    // step-1 already leads to step-2; drawing step-1 → step-3 would branch,
+    // and the renumber would silently follow only one of them.
+    g.edges.value = [
+      edge('e1', 'step-1', 'step-2'),
+      edge('e2', 'step-1', 'step-3')
+    ]
+
+    await g.handleEdgeConnect({ source: 'step-1', target: 'step-3' })
+
+    expect(onRejectedConnection).toHaveBeenCalledWith('branch')
+    expect(g.edges.value.find(e => e.id === 'e2')).toBeUndefined()
+    // Refused before any write.
+    expect(mockPatch).not.toHaveBeenCalled()
+  })
+
+  it('refuses a link that would close a loop and says why', async () => {
+    const onRejectedConnection = vi.fn()
+    const g = makeGraph({ selectedScenarioId: ref<string | null>('s1'), onRejectedConnection })
+    g.nodes.value = [
+      scenarioNode('scenario-1', 's1'),
+      stepNode('step-1', 'terminal', 'st1', { order: 0 }),
+      stepNode('step-2', 'flag', 'st2', { order: 1 })
+    ]
+    // step-1 → step-2 exists; step-2 → step-1 would loop the scenario.
+    g.edges.value = [
+      edge('e1', 'step-1', 'step-2'),
+      edge('e2', 'step-2', 'step-1')
+    ]
+
+    await g.handleEdgeConnect({ source: 'step-2', target: 'step-1' })
+
+    expect(onRejectedConnection).toHaveBeenCalledWith('cycle')
+    expect(g.edges.value.find(e => e.id === 'e2')).toBeUndefined()
+    expect(mockPatch).not.toHaveBeenCalled()
+  })
+
+  it('still accepts a link that simply extends the chain', async () => {
+    const onRejectedConnection = vi.fn()
+    const g = makeGraph({ selectedScenarioId: ref<string | null>('s1'), onRejectedConnection })
+    g.nodes.value = [
+      scenarioNode('scenario-1', 's1'),
+      stepNode('step-1', 'terminal', 'st1', { order: 0 }),
+      stepNode('step-2', 'flag', 'st2', { order: 1 })
+    ]
+    g.edges.value = [edge('e1', 'step-1', 'step-2')]
+
+    await g.handleEdgeConnect({ source: 'step-1', target: 'step-2' })
+
+    expect(onRejectedConnection).not.toHaveBeenCalled()
+    expect(g.edges.value.find(e => e.id === 'e1')).toBeDefined()
+  })
+})
+
 describe('useScenarioGraph — steps left off the chain', () => {
   it('appends an unconnected step instead of leaving it on an order the chain now uses', async () => {
     const g = makeGraph()
