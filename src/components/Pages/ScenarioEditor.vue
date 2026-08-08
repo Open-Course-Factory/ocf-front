@@ -234,6 +234,7 @@ import { useResizablePanel } from '../../composables/useResizablePanel'
 import NodeLibraryPanel from '../GraphEditor/NodeLibraryPanel.vue'
 import type { NodeTypeDefinition } from '../GraphEditor/NodeLibraryPanel.vue'
 import FlowCanvas from '../GraphEditor/FlowCanvas.vue'
+import { receivedScriptFields, withoutUnseenScripts } from '../../utils/scenarioStepPayload'
 import InsertNodePicker from '../GraphEditor/InsertNodePicker.vue'
 import ScenarioStepListPanel from '../ScenarioEditor/ScenarioStepListPanel.vue'
 import ScenarioNode from '../ScenarioEditor/nodes/ScenarioNode.vue'
@@ -980,7 +981,7 @@ const openEditModal = async (node: any) => {
     editingStepIsNew.value = node.data.isNew || false
 
     // Lazy load full step data (scripts are hidden by json:"-" on the model,
-    // so the include=steps response doesn't contain them)
+    // so the include=steps response doesn't contain them).
     if (node.data.entityId && !node.data.isNew && !node.data._scriptsLoaded) {
       try {
         const response = await axios.get(`/scenario-steps/${node.data.entityId}`)
@@ -1000,6 +1001,10 @@ const openEditModal = async (node: any) => {
         node.data.intro_text = fullStep.intro_text || ''
         node.data.outro_effect = fullStep.outro_effect || ''
         node.data.outro_text = fullStep.outro_text || ''
+        // Remember which redactable fields the read actually delivered. The
+        // save path needs this to avoid sending "" for a field it never
+        // received — see REDACTABLE_STEP_FIELDS.
+        node.data._receivedFields = receivedScriptFields(fullStep)
         node.data.questions = Array.isArray(fullStep.questions)
           ? fullStep.questions.map(deserializeQuestion)
           : (Array.isArray(node.data.questions) ? node.data.questions : [])
@@ -1214,7 +1219,10 @@ const handleSaveStep = async (formData: any) => {
     // The /scenario-steps endpoint has no Questions field — extract them
     // and persist via the dedicated /scenario-step-questions endpoint instead.
     const { questions: newQuestions, ...stepFields } = formData
-    const stepData: Record<string, any> = { ...stepFields }
+    const stepData: Record<string, any> = withoutUnseenScripts(
+      { ...stepFields },
+      editingStep.value?._receivedFields ?? []
+    )
 
     // Include step_type from the editing step's data
     if (editingStep.value?.step_type) {
