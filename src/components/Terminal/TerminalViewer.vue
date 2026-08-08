@@ -666,9 +666,14 @@ let isFitting = false
 function fitTerminal() {
   if (!fitAddon || !terminal.value || isFitting) return
 
-  const proposed = fitAddon.proposeDimensions()
-  if (!proposed || !proposed.cols || !proposed.rows) return
-  if (proposed.cols === terminal.value.cols && proposed.rows === terminal.value.rows) return
+  // Skipping a fit that would change nothing is an optimisation, not the
+  // contract: an addon without proposeDimensions still has to be able to fit,
+  // or the console never sizes itself and never connects.
+  if (typeof fitAddon.proposeDimensions === 'function') {
+    const proposed = fitAddon.proposeDimensions()
+    if (!proposed || !proposed.cols || !proposed.rows) return
+    if (proposed.cols === terminal.value.cols && proposed.rows === terminal.value.rows) return
+  }
 
   isFitting = true
   try {
