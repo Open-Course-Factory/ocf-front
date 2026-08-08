@@ -992,6 +992,14 @@ const openEditModal = async (node: any) => {
         node.data.text_content = fullStep.text_content || node.data.text_content || ''
         node.data.hint_content = fullStep.hint_content || node.data.hint_content || ''
         node.data.show_immediate_feedback = fullStep.show_immediate_feedback ?? node.data.show_immediate_feedback ?? false
+        // Banner configuration. These are not part of the include=steps payload
+        // either, so without merging them here the Effects tab reopens empty on
+        // a step that has them saved — the value round-trips to the database and
+        // then appears lost.
+        node.data.intro_effect = fullStep.intro_effect || ''
+        node.data.intro_text = fullStep.intro_text || ''
+        node.data.outro_effect = fullStep.outro_effect || ''
+        node.data.outro_text = fullStep.outro_text || ''
         node.data.questions = Array.isArray(fullStep.questions)
           ? fullStep.questions.map(deserializeQuestion)
           : (Array.isArray(node.data.questions) ? node.data.questions : [])
