@@ -163,11 +163,22 @@ defineExpose({
   min-height: 0;
 }
 
+/* The console stays put while everything under it scrolls.
+ *
+ * This panel lives in a scrolling column, and the history and flags panels sit
+ * below it. Scrolling down to read them used to carry the terminal off the top
+ * of the screen, so the learner lost sight of the thing they are working in.
+ * Sticky keeps it anchored to the top of that column; it is a no-op when the
+ * column is short enough not to scroll. */
 .terminal-session-panel :deep(.card) {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: var(--color-bg-primary);
 }
 
 .terminal-session-panel :deep(.card-body) {
