@@ -74,7 +74,7 @@
             <i :class="showBriefing ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
           </button>
         </div>
-        <div v-if="showBriefing" ref="briefingContentRef" class="briefing-content markdown-content" :class="{ 'has-overflow': briefingHasOverflow }" v-html="renderedBriefingText" @click="handleBriefingExecClick" @scroll="checkBriefingScroll"></div>
+        <div v-if="showBriefing" ref="briefingContentRef" class="briefing-content markdown-content ocf-scroll-fade" :class="{ 'has-overflow': briefingHasOverflow }" v-html="renderedBriefingText" @click="handleBriefingExecClick" @scroll="checkBriefingFade"></div>
         <div v-if="showBriefing" class="briefing-footer">
           <button class="briefing-collapse-btn" @click="toggleBriefing">
             <i class="fas fa-chevron-up"></i> {{ t('sessionView.collapseBriefing') }}
@@ -262,6 +262,7 @@ import type { ScenarioInfo } from '../../services/domain/scenario'
 import { terminalService } from '../../services/domain/terminal/terminalService'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
+import { useScrollFade } from '../../composables/useScrollFade'
 import { useEndStateConfig, type EndStateReason } from '../../composables/useEndStateConfig'
 import { useLimitReachedMessage } from '../../composables/useLimitReachedMessage'
 import { useDunningRejection } from '../../composables/useDunningRejection'
@@ -416,18 +417,11 @@ const sessionId = route.params.sessionId as string
 const scenarioBriefing = ref<ScenarioInfo | null>(null)
 const showBriefing = ref(true)
 const briefingContentRef = ref<HTMLElement | null>(null)
-const briefingHasOverflow = ref(false)
-
-function checkBriefingScroll() {
-  const el = briefingContentRef.value
-  if (!el) return
-  // Hide the fade when scrolled near the bottom (within 10px)
-  briefingHasOverflow.value = el.scrollHeight - el.scrollTop - el.clientHeight > 10
-}
+const { hasOverflow: briefingHasOverflow, check: checkBriefingFade } = useScrollFade(briefingContentRef)
 
 watch(showBriefing, (visible) => {
   if (visible) {
-    nextTick(() => checkBriefingScroll())
+    nextTick(() => checkBriefingFade())
   }
 })
 
@@ -454,7 +448,7 @@ const renderedBriefingText = computed(() => {
 
 watch(renderedBriefingText, () => {
   nextTick(() => {
-    checkBriefingScroll()
+    checkBriefingFade()
     // Load scenario images in briefing text
     if (briefingContentRef.value && scenarioBriefing.value?.id) {
       loadScenarioImages(briefingContentRef.value, scenarioBriefing.value.id)
@@ -1632,11 +1626,6 @@ onBeforeUnmount(() => {
   flex: 1;
   min-height: 0;
   position: relative;
-}
-
-.briefing-content.has-overflow {
-  mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent 100%);
 }
 
 .briefing-footer {
