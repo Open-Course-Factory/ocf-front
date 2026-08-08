@@ -47,6 +47,8 @@ export interface MockStep {
    *  the session stays 'provisioning' for that many info polls. */
   provisionNextPolls?: number;
   provisionTimeoutSeconds?: number;
+  /** When true, that wait ends in setup_failed instead of active. */
+  provisionNextFails?: boolean;
 }
 
 export interface MockScenarioOptions {
@@ -91,6 +93,14 @@ export class ScenarioMock {
   /** True while a per-step (post-validation) provisioning wait is running —
    *  distinguishes the reported phase from the session-start sequence. */
   private stepProvisioning = false;
+  /** When true, a per-step provisioning wait ends in setup_failed rather than
+   *  active — the state the retry button exists for. */
+  private stepProvisioningFails = false;
+  /** How the reprovision-step endpoint should answer. */
+  reprovisionOutcome: 'ok' | 'fail' = 'ok';
+  /** Counts reprovision-step calls, so a spec can assert the retry button
+   *  actually re-ran the setup rather than merely reloading the step. */
+  reprovisionCalls = 0;
 
   constructor(steps: MockStep[], options: MockScenarioOptions = {}) {
     this.steps = [...steps].sort((a, b) => a.order - b.order);
@@ -255,10 +265,27 @@ export class ScenarioMock {
 
     await page.route(`**/api/v1/scenario-sessions/${MOCK_SESSION_ID}`, (route) => {
       if (this.sessionStatus === 'provisioning' && this.provisioningPollsLeft-- <= 0) {
-        this.sessionStatus = this.scenario.launch === 'provision-then-failed' ? 'setup_failed' : 'active';
+        const failed =
+          this.scenario.launch === 'provision-then-failed' ||
+          (this.stepProvisioning && this.stepProvisioningFails);
+        this.sessionStatus = failed ? 'setup_failed' : 'active';
         this.stepProvisioning = false;
       }
       return route.fulfill(json(this.sessionInfo()));
+    });
+
+    // The recovery path for a failed step setup. The first call answers
+    // whatever `reprovisionOutcome` says, so a spec can drive both a retry that
+    // works and one that does not.
+    await page.route(`**/api/v1/scenario-sessions/${MOCK_SESSION_ID}/reprovision-step`, (route) => {
+      this.reprovisionCalls += 1;
+      if (this.reprovisionOutcome === 'fail') {
+        return route.fulfill(json({ error_message: 'step provisioning failed' }, 400));
+      }
+      this.sessionStatus = 'active';
+      this.stepProvisioning = false;
+      this.provisioningPollsLeft = 0;
+      return route.fulfill(json({ step_order: this.currentStep, status: 'active' }));
     });
 
     await page.route(`**/api/v1/scenario-sessions/${MOCK_SESSION_ID}/current-step`, (route) => {
@@ -292,6 +319,7 @@ export class ScenarioMock {
       if (next !== undefined && step.provisionNextPolls !== undefined) {
         this.sessionStatus = 'provisioning';
         this.stepProvisioning = true;
+        this.stepProvisioningFails = step.provisionNextFails === true;
         this.provisioningPollsLeft = step.provisionNextPolls;
         return route.fulfill(
           json({

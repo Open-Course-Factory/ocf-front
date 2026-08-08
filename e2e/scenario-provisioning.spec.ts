@@ -79,4 +79,44 @@ test.describe('Scenario per-step provisioning', () => {
     });
     expect(mock.sessionStatus).toBe('active');
   });
+
+  // The retry has to re-run the setup that failed. Reloading the step would
+  // re-fetch the description of a level whose environment was never built,
+  // leaving the learner on an unsolvable machine with no way out — which in a
+  // challenge scenario reads as part of the puzzle.
+  test('a failed preparation offers a retry that re-runs the setup', async ({ page }) => {
+    test.setTimeout(120_000);
+    const steps: MockStep[] = [
+      {
+        order: 1,
+        title: 'Validate me',
+        type: 'terminal',
+        provisionNextPolls: 1,
+        provisionNextFails: true,
+        provisionTimeoutSeconds: 30,
+      },
+      { order: 2, title: 'Heavy step', type: 'info' },
+    ];
+    const mock = new ScenarioMock(steps);
+    await mock.install(page);
+    await login(page, E2E_USER, E2E_PASS);
+    await launchIntoPlayer(page, mock);
+
+    await page.getByTestId('scenario-verify-btn').click();
+
+    // The wait ends in failure rather than in the next step.
+    const failure = page.getByTestId('scenario-step-preparing-error');
+    await expect(failure).toBeVisible({ timeout: 30_000 });
+    expect(mock.reprovisionCalls).toBe(0);
+
+    await page.getByTestId('scenario-step-preparing-retry').click();
+
+    // The retry hit reprovision-step, not just current-step, and the learner
+    // lands on a step whose environment now exists.
+    await expect(page.getByTestId('scenario-step-title')).toHaveText('Heavy step', {
+      timeout: 30_000,
+    });
+    expect(mock.reprovisionCalls).toBe(1);
+    expect(mock.sessionStatus).toBe('active');
+  });
 });
