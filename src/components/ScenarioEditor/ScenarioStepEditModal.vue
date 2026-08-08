@@ -910,7 +910,7 @@ const EFFECT_TEXT_MAX = 500
 
 const formData = ref<Record<string, any>>({
   title: '',
-  order: 1,
+  order: 0,
   text_content: '',
   hint_content: '',
   verify_script: '',
@@ -1000,7 +1000,10 @@ watch(() => [props.visible, props.stepData], () => {
     if (props.stepData) {
       formData.value = {
         title: props.stepData.title || '',
-        order: props.stepData.order || 1,
+        // `??`, not `||`: scenario steps are 0-based, and `0 || 1` silently
+        // rewrites the first step's order to 1 on every edit — which lands two
+        // steps on the same order and leaves none on 0.
+        order: props.stepData.order ?? 0,
         text_content: props.stepData.text_content || '',
         hint_content: props.stepData.hint_content || '',
         verify_script: props.stepData.verify_script || '',
@@ -1027,7 +1030,7 @@ watch(() => [props.visible, props.stepData], () => {
     } else {
       formData.value = {
         title: '',
-        order: 1,
+        order: 0,
         text_content: '',
         hint_content: '',
         verify_script: '',
