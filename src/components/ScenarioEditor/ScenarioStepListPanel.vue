@@ -44,7 +44,7 @@
               draggable="true"
               @dragstart="handleStepDragStart($event, step, scenario)"
             >
-              <span class="step-order">{{ step.order || '?' }}</span>
+              <span class="step-order">{{ step.order === undefined || step.order === null ? '?' : step.order + 1 }}</span>
               <span class="step-title">{{ step.title }}</span>
               <div class="step-badges">
                 <span v-if="step.verify_script || step.verify_script_id" class="step-badge badge-verify" :title="t('stepList.verify')" :aria-label="t('stepList.verify')"><span aria-hidden="true">✓</span></span>
