@@ -240,6 +240,14 @@ async function completeCouponStep(wrapper: any, coupon?: string) {
     const input = wrapper.find('[data-test="coupon-input"]')
     if (input.exists()) await input.setValue(coupon)
   }
+  // A buyer cannot reach Stripe without asking for immediate performance and
+  // acknowledging the loss of the withdrawal right; this walks that step the way
+  // a real purchase does.
+  const waiver = wrapper.find('[data-test="withdrawal-waiver"]')
+  if (waiver.exists()) {
+    await waiver.setValue(true)
+    await wrapper.vm.$nextTick()
+  }
   const confirm = wrapper.find('[data-test="coupon-confirm"]')
   if (confirm.exists()) {
     await confirm.trigger('click')

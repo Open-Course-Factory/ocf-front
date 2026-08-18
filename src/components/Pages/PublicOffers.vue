@@ -69,7 +69,12 @@
       </article>
     </div>
 
-    <p class="ocf-offers-foot">{{ t('publicOffers.footnote') }}</p>
+    <p class="ocf-offers-foot">
+      {{ t('publicOffers.footnote') }}
+      <!-- The terms have to be readable BEFORE the purchase, not only in the
+           signup modal — this page is where a buyer decides. -->
+      <router-link to="/terms" data-test="offers-terms-link">{{ t('publicOffers.termsLink') }}</router-link>
+    </p>
   </div>
 </template>
 
@@ -92,6 +97,7 @@ const { t } = useTranslations({
       perYear: '/year',
       start: 'Get started',
       seatsNote: 'Learner seats are bought separately, by the day or by the month.',
+      termsLink: 'Terms of service',
       orgTitle: 'Schools & training organisations',
       orgPrice: 'Let’s talk',
       orgDesc: 'Tailored to your programmes, your cohorts and your compliance requirements.',
@@ -113,6 +119,7 @@ const { t } = useTranslations({
       perYear: '/an',
       start: 'Commencer',
       seatsNote: "Les sièges apprenants s'achètent séparément, à la journée ou au mois.",
+      termsLink: 'Conditions générales',
       orgTitle: 'Écoles & organismes de formation',
       orgPrice: 'Parlons-en',
       orgDesc: 'Adapté à vos programmes, vos promotions et vos exigences de conformité.',

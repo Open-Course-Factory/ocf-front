@@ -213,6 +213,7 @@ import { ref, computed, reactive, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import TermsOfServiceModal from '../../components/Modals/TermsOfServiceModal.vue';
+import { TOS_VERSION } from '../../config/company';
 import { useTranslations } from '../../composables/useTranslations';
 import { extractErrorMessage } from '../../utils/formatters';
 
@@ -424,7 +425,7 @@ const handleSubmit = async () => {
       userName: formData.userName,
       displayName: formData.displayName,
       tosAcceptedAt: tosAcceptedAt,
-      tosVersion: '2025-10-11' // Version identifier for the ToS
+      tosVersion: TOS_VERSION
     };
 
     // Utilisation de la requête simplifiée

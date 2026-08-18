@@ -105,6 +105,14 @@ const basicRoutes = [
     component: () => import('../components/Pages/Legal.vue'),
     meta: { requiresAuth: false }
   },
+  // Terms of service (public, no auth required): a buyer has to be able to read
+  // them BEFORE paying, not only in the signup modal.
+  {
+    path: '/terms',
+    name: 'Terms',
+    component: () => import('../components/Pages/Terms.vue'),
+    meta: { requiresAuth: false }
+  },
   // Privacy policy (public, no auth required)
   {
     path: '/privacy',
