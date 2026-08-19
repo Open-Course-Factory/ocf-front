@@ -97,6 +97,13 @@ test.describe('Plan purchase', () => {
 
     // ...then skip the optional coupon and continue to Stripe.
     await expect(page.locator('[data-test="coupon-input"]')).toBeVisible({ timeout: 15_000 });
+
+    // Selling a digital service that starts immediately means the buyer has to
+    // ask for that start and acknowledge losing the 14-day withdrawal right
+    // (art. L221-25 / L221-28 13°). The confirm button stays disabled until they
+    // do, so a spec that skips the box waits out its whole timeout on a control
+    // that was never going to become clickable.
+    await page.locator('[data-test="withdrawal-waiver"]').check();
     await demoPause(page);
     await page.locator('[data-test="coupon-confirm"]').click();
 
