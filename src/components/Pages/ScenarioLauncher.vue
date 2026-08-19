@@ -57,7 +57,7 @@
         class="scenario-card"
         data-testid="scenario-card"
         :data-scenario-name="scenario.name || scenario.title"
-        :class="{ 'scenario-card--unavailable': !scenario.launchable && !getExistingSession(scenario), 'scenario-card--active': !!getExistingSession(scenario) }"
+        :class="{ 'scenario-card--unavailable': isBlocked(scenario) && !getExistingSession(scenario), 'scenario-card--active': !!getExistingSession(scenario) }"
       >
         <div class="card-header">
           <div class="card-title-row">
@@ -79,7 +79,7 @@
           </span>
           <span
             v-if="scenario.resolved_distribution"
-            :class="['os-badge', { 'os-badge--muted': !scenario.launchable }]"
+            :class="['os-badge', { 'os-badge--muted': isBlocked(scenario) }]"
             :title="t('launcher.imageTitle')"
           >
             <i class="fas fa-compact-disc os-badge-icon" aria-hidden="true"></i>
@@ -87,7 +87,7 @@
           </span>
           <span
             v-if="scenario.resolved_size"
-            :class="['os-badge', { 'os-badge--warning': isSizeSubstituted(scenario), 'os-badge--muted': !scenario.launchable }]"
+            :class="['os-badge', { 'os-badge--warning': isSizeSubstituted(scenario), 'os-badge--muted': isBlocked(scenario) }]"
             :title="isSizeSubstituted(scenario)
               ? t('launcher.sizeSubstituted', { declared: scenario.instance_type, resolved: scenario.resolved_size })
               : t('launcher.sizeTitle')"
@@ -101,14 +101,14 @@
           <!-- Degraded mode: the backend could not resolve a launch (or predates
                resolved_*). Show what the scenario asked for, with no verdict on
                it — the unavailability notice below carries the explanation. -->
-          <span v-else-if="scenario.instance_type" :class="['os-badge', { 'os-badge--muted': !scenario.launchable }]">
+          <span v-else-if="scenario.instance_type" :class="['os-badge', { 'os-badge--muted': isBlocked(scenario) }]">
             <i class="fas fa-microchip os-badge-icon" aria-hidden="true"></i>
             {{ scenario.instance_type }}
           </span>
         </div>
 
         <!-- Unavailability explanation -->
-        <div v-if="!scenario.launchable" class="unavailable-notice" data-testid="scenario-unavailable-notice">
+        <div v-if="isBlocked(scenario)" class="unavailable-notice" data-testid="scenario-unavailable-notice">
           <div class="unavailable-notice-content">
             <i :class="getBlockReasonIcon(scenario)" class="unavailable-notice-icon"></i>
             <div class="unavailable-notice-text">
@@ -227,6 +227,7 @@ const { t } = useTranslations({
       relaunch: 'Relaunch',
       unavailable: 'Unavailable',
       sessionActive: 'Scenario in progress',
+      alreadyRunning: 'You are already running this scenario. Resume it from its card.',
       sessionCompleted: 'Scenario completed',
       sessionAbandoned: 'Scenario abandoned',
       sessionExists: 'Scenario already started',
@@ -268,6 +269,7 @@ const { t } = useTranslations({
       relaunch: 'Relancer',
       unavailable: 'Indisponible',
       sessionActive: 'Scénario en cours',
+      alreadyRunning: 'Vous avez déjà un scénario en cours. Reprenez-le depuis sa carte.',
       sessionCompleted: 'Scénario terminé',
       sessionAbandoned: 'Scénario abandonné',
       sessionExists: 'Scénario déjà lancé',
@@ -364,7 +366,28 @@ const existingSessionByScenario = computed(() => {
 })
 
 function getExistingSession(scenario: any): any | null {
+  // The availability response reports the live run using the same rule the
+  // launch path applies, in the same request that produced this card. Prefer it
+  // over the separately fetched session list, which is a second read of the
+  // same fact and can predate the page: a stale list is how a card came to
+  // offer Launch for a scenario the learner was already running, and the launch
+  // then failed.
+  if (scenario.block_reason === 'session_exists' && scenario.active_session_id) {
+    return {
+      id: scenario.active_session_id,
+      scenario_id: scenario.id,
+      terminal_session_id: scenario.active_terminal_session_id,
+      status: 'active'
+    }
+  }
   return existingSessionByScenario.value.get(scenario.id) || null
+}
+
+// A scenario the learner is already running is not unavailable — it is waiting
+// for them. Only the reasons that genuinely stop a run should dim the card,
+// mute its badges, or raise the unavailability notice.
+function isBlocked(scenario: any): boolean {
+  return !scenario.launchable && scenario.block_reason !== 'session_exists'
 }
 
 function getExistingSessionLabel(scenario: any): string {
@@ -521,6 +544,14 @@ async function handleLaunchScenario(scenario: any) {
     // two surfaces cannot tell the user two different stories.
     if (err.response?.status === 403 && err.response?.data?.source === 'budget') {
       showError(`${t('launcher.unavailableBudget')} ${t('launcher.unavailableBudgetHint')}`)
+      return
+    }
+    // 409: the learner already has a run of this scenario. That is not a
+    // failure to report — the card simply predates the run. Reload so it turns
+    // into Resume, and say so.
+    if (err.response?.status === 409 && err.response?.data?.reason === 'session_exists') {
+      showError(t('launcher.alreadyRunning'))
+      await loadScenarios()
       return
     }
     const msg = err.message === 'SETUP_FAILED' ? t('launcher.setupFailed')
