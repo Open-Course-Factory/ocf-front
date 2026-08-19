@@ -183,7 +183,14 @@
       <section>
         <h3>{{ t('tos.contact.title') }}</h3>
         <p>{{ t('tos.contact.content') }}</p>
+        <!-- A distance contract has to identify the trader in the document the
+             buyer actually accepts (art. L221-5). The mentions légales carry the
+             same identity, but nobody accepts those. Read from COMPANY so the
+             two cannot drift. -->
         <p class="contact-info">
+          <strong>{{ company.name }}</strong>, {{ company.legalForm }} {{ t('tos.contact.capital') }} {{ company.capital }}<br />
+          {{ company.address }}<br />
+          {{ t('tos.contact.siret') }} {{ company.siret }} — {{ t('tos.contact.rcs') }} {{ company.rcs }} — {{ t('tos.contact.vat') }} {{ company.vatNumber }}<br />
           {{ contactEmail }}
         </p>
       </section>
@@ -194,7 +201,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useTranslations } from '../../composables/useTranslations';
-import { CONSUMER_MEDIATOR, TOS_VERSION } from '../../config/company';
+import { COMPANY, CONSUMER_MEDIATOR, TOS_VERSION } from '../../config/company';
 import { SUPPORT_EMAIL } from '../../config/contact';
 
 const { t, locale } = useTranslations({
@@ -419,7 +426,11 @@ const { t, locale } = useTranslations({
 
       contact: {
         title: '20. Contact Information',
-        content: 'For questions about these Terms of Service, to exercise your GDPR rights, or to report violations, please contact us at:'
+        content: 'These Terms are entered into with the provider identified below. For questions about them, to exercise your GDPR rights, or to report violations, contact us at:',
+        capital: 'with share capital of',
+        siret: 'SIRET',
+        rcs: 'RCS',
+        vat: 'VAT no.'
       }
     }
   },
@@ -646,7 +657,11 @@ const { t, locale } = useTranslations({
 
       contact: {
         title: '20. Informations de Contact',
-        content: 'Pour toute question concernant ces Conditions Générales d\'Utilisation, pour exercer vos droits RGPD ou pour signaler des violations, veuillez nous contacter à :'
+        content: 'Les présentes conditions sont conclues avec le prestataire identifié ci-dessous. Pour toute question les concernant, pour exercer vos droits RGPD ou pour signaler des violations, contactez-nous à :',
+        capital: 'au capital de',
+        siret: 'SIRET',
+        rcs: 'RCS',
+        vat: 'TVA'
       }
     }
   }
@@ -664,6 +679,7 @@ const lastUpdateDate = computed(() => {
 });
 
 const contactEmail = SUPPORT_EMAIL;
+const company = COMPANY;
 
 const mediator = CONSUMER_MEDIATOR;
 const mediatorContact = computed(() =>

@@ -44,7 +44,7 @@ export const HOSTING_PROVIDER = {
  * sorts, and a stored acceptance can be compared against it to find users who
  * agreed to an older text.
  */
-export const TOS_VERSION = '2026-08-18'
+export const TOS_VERSION = '2026-08-19'
 
 /**
  * The consumer mediator, mandatory for B2C sales in France (art. L612-1
