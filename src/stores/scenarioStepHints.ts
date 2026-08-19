@@ -24,6 +24,10 @@ import { computed } from 'vue'
 import { useBaseStore } from "./baseStore"
 import { useScenariosStore } from "./scenarios"
 import { useScenarioStepsStore } from "./scenarioSteps"
+// Note: scenario_id is a cascade-only filter (hidden, not creatable) —
+// it narrows the step dropdown but is NOT sent as an API query param.
+// Do NOT add includeParams.parents here — ScenarioStepHint has no
+// relationship to scenarios at the DB level.
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
 
