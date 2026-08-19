@@ -77,13 +77,17 @@
             <i class="fas fa-linux os-badge-icon"></i>
             {{ scenario.os_type }}
           </span>
-          <span v-if="scenario.resolved_distribution" class="os-badge" :title="t('launcher.imageTitle')">
+          <span
+            v-if="scenario.resolved_distribution"
+            :class="['os-badge', { 'os-badge--muted': !scenario.launchable }]"
+            :title="t('launcher.imageTitle')"
+          >
             <i class="fas fa-compact-disc os-badge-icon" aria-hidden="true"></i>
             {{ scenario.resolved_distribution }}
           </span>
           <span
             v-if="scenario.resolved_size"
-            :class="['os-badge', { 'os-badge--warning': isSizeSubstituted(scenario) }]"
+            :class="['os-badge', { 'os-badge--warning': isSizeSubstituted(scenario), 'os-badge--muted': !scenario.launchable }]"
             :title="isSizeSubstituted(scenario)
               ? t('launcher.sizeSubstituted', { declared: scenario.instance_type, resolved: scenario.resolved_size })
               : t('launcher.sizeTitle')"
@@ -97,7 +101,7 @@
           <!-- Degraded mode: the backend could not resolve a launch (or predates
                resolved_*). Show what the scenario asked for, with no verdict on
                it — the unavailability notice below carries the explanation. -->
-          <span v-else-if="scenario.instance_type" class="os-badge">
+          <span v-else-if="scenario.instance_type" :class="['os-badge', { 'os-badge--muted': !scenario.launchable }]">
             <i class="fas fa-microchip os-badge-icon" aria-hidden="true"></i>
             {{ scenario.instance_type }}
           </span>
@@ -730,6 +734,11 @@ watch(currentOrgId, () => {
   flex-wrap: wrap;
 }
 
+/* A badge states what the scenario will run on. That is a fact, not a verdict,
+   so it carries no status colour: painting it success-green made an unaffordable
+   size read as available, contradicting the unavailability notice on the same
+   card. Colour here is reserved for the two cases that genuinely deviate —
+   a substituted size (warning) and a scenario the reader cannot launch (muted). */
 .os-badge {
   display: inline-flex;
   align-items: center;
@@ -738,19 +747,19 @@ watch(currentOrgId, () => {
   border-radius: var(--border-radius-full);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
-  background: var(--color-success-bg);
-  color: var(--color-success-text);
-  border: 1px solid var(--color-success-border);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-medium);
 }
 
 .os-badge-icon {
   font-size: 9px;
 }
 
-.os-badge--missing {
-  background: var(--color-danger-bg);
-  color: var(--color-danger-text);
-  border-color: var(--color-danger-border);
+/* Applied when the backend says the scenario is not launchable, so the badge
+   agrees with the notice below it instead of competing with it. */
+.os-badge--muted {
+  opacity: 0.6;
 }
 
 .os-badge--warning {
