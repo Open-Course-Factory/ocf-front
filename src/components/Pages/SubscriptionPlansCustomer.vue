@@ -288,10 +288,28 @@
             @keyup.enter="confirmCheckout"
           />
         </div>
+
+        <!-- The withdrawal waiver. A digital service that starts immediately can
+             only keep the money if the buyer expressly asked for that start AND
+             acknowledged losing the 14-day right (art. L221-25 / L221-28 13°).
+             The terms say so; this is where the buyer actually says it. -->
+        <div class="withdrawal-consent">
+          <input
+            id="withdrawalWaiver"
+            v-model="withdrawalWaived"
+            type="checkbox"
+            data-test="withdrawal-waiver"
+          />
+          <label for="withdrawalWaiver">
+            {{ t('plans.checkout.withdrawalWaiver') }}
+            <router-link to="/terms" target="_blank">{{ t('plans.checkout.termsLink') }}</router-link>
+          </label>
+        </div>
+
         <template #footer>
           <button
             class="btn-compact btn-subscribe-compact"
-            :disabled="isSubscribing"
+            :disabled="isSubscribing || !withdrawalWaived"
             data-test="coupon-confirm"
             @click="confirmCheckout"
           >
@@ -410,6 +428,8 @@ const { t } = useTranslations({
         couponPlaceholder: 'Enter coupon code',
         subscribeTo: 'Subscribe to {plan}',
         cancel: 'Cancel',
+        withdrawalWaiver: 'I ask for the service to start immediately and accept that I lose my 14-day right of withdrawal once it has been fully performed.',
+        termsLink: 'Read the terms',
       },
     },
     pricingPlanCard: {
@@ -472,6 +492,8 @@ const { t } = useTranslations({
         couponPlaceholder: 'Entrez votre code promo',
         subscribeTo: 'S\'abonner à {plan}',
         cancel: 'Annuler',
+        withdrawalWaiver: 'Je demande que le service commence immédiatement et j\'accepte de perdre mon droit de rétractation de 14 jours une fois celui-ci pleinement exécuté.',
+        termsLink: 'Lire les conditions',
       },
     },
     pricingPlanCard: {
@@ -503,6 +525,9 @@ const viewMode = ref<'grid' | 'table'>('grid')
 // single in-app modal first; the plan + replace flag chosen at click time are
 // stashed here until the user confirms (or cancels) in that modal.
 const couponCode = ref('')
+// Reset per purchase: consent to start immediately is given for THIS contract,
+// so it must never carry over from a previous, abandoned checkout.
+const withdrawalWaived = ref(false)
 const showCouponModal = ref(false)
 const pendingPlan = ref<any>(null)
 const pendingAllowReplace = ref(false)
@@ -893,11 +918,13 @@ function openCouponModal(plan: any, allowReplace: boolean) {
   pendingPlan.value = plan
   pendingAllowReplace.value = allowReplace
   couponCode.value = ''
+  withdrawalWaived.value = false
   showCouponModal.value = true
 }
 
 function cancelCheckout() {
   showCouponModal.value = false
+  withdrawalWaived.value = false
   pendingPlan.value = null
 }
 
@@ -907,6 +934,8 @@ function cancelCheckout() {
 async function confirmCheckout() {
   const plan = pendingPlan.value
   if (!plan) return
+  // Guards the Enter-key path too, which does not go through the disabled button.
+  if (!withdrawalWaived.value) return
 
   isSubscribing.value = true
   try {

@@ -102,6 +102,15 @@
       </section>
 
       <section>
+        <h3>{{ t('tos.withdrawal.title') }}</h3>
+        <p>{{ t('tos.withdrawal.right') }}</p>
+        <p>{{ t('tos.withdrawal.immediateStart') }}</p>
+        <p>{{ t('tos.withdrawal.howTo') }}</p>
+        <p>{{ t('tos.withdrawal.refund') }}</p>
+        <p><strong>{{ t('tos.withdrawal.professionalTitle') }}</strong> {{ t('tos.withdrawal.professional') }}</p>
+      </section>
+
+      <section>
         <h3>{{ t('tos.intellectualProperty.title') }}</h3>
         <p>{{ t('tos.intellectualProperty.ownership') }}</p>
         <p>{{ t('tos.intellectualProperty.license') }}</p>
@@ -150,7 +159,9 @@
       <section>
         <h3>{{ t('tos.disputeResolution.title') }}</h3>
         <p>{{ t('tos.disputeResolution.negotiation') }}</p>
-        <p>{{ t('tos.disputeResolution.mediation') }}</p>
+        <p v-if="mediator.name">{{ t('tos.disputeResolution.consumerMediation') }}</p>
+        <p v-if="mediator.name" class="contact-info">{{ mediatorContact }}</p>
+        <p v-else>{{ t('tos.disputeResolution.mediation') }}</p>
       </section>
 
       <section>
@@ -183,6 +194,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useTranslations } from '../../composables/useTranslations';
+import { CONSUMER_MEDIATOR, TOS_VERSION } from '../../config/company';
+import { SUPPORT_EMAIL } from '../../config/contact';
 
 const { t, locale } = useTranslations({
   en: {
@@ -291,7 +304,7 @@ const { t, locale } = useTranslations({
         intro: 'If you subscribe to a paid plan:',
         billing: {
           title: 'Billing:',
-          content: 'You will be charged according to your selected subscription plan. All fees are in the currency specified at checkout and are non-refundable except as required by law.'
+          content: 'You will be charged according to your selected subscription plan. All fees are in the currency specified at checkout. Fees already due are not refunded on cancellation, without prejudice to your right of withdrawal and to any other right the law gives you.'
         },
         renewal: {
           title: 'Automatic Renewal:',
@@ -303,7 +316,7 @@ const { t, locale } = useTranslations({
         },
         refunds: {
           title: 'Refunds:',
-          content: 'Refunds are issued at our sole discretion. Partial refunds for unused time are generally not provided. Chargebacks may result in immediate account termination.'
+          content: 'Outside the right of withdrawal described below and any refund the law requires, refunds are granted at our discretion, and we do not normally refund unused time on a period already started. Initiating a chargeback rather than contacting us may lead to the suspension of your account.'
         },
         priceChanges: {
           title: 'Price Changes:',
@@ -315,8 +328,18 @@ const { t, locale } = useTranslations({
         }
       },
 
+      withdrawal: {
+        title: '9. Right of Withdrawal',
+        right: 'If you are a consumer resident in the European Union, you have fourteen (14) days from the conclusion of the contract to withdraw from a subscription, without giving any reason and without penalty.',
+        immediateStart: 'Because the service is supplied digitally and immediately, you are asked at checkout to expressly request that it start during the withdrawal period, and to acknowledge that once the service has been fully performed you lose the right to withdraw. Where it has only been partly performed, you owe an amount proportionate to what was supplied before you withdrew.',
+        howTo: 'To withdraw, tell us in an unambiguous statement — an email to the address in the contact section is enough. No particular form is required.',
+        refund: 'We refund the sums due within fourteen (14) days of being informed, using the same payment method you used, at no cost to you.',
+        professionalTitle: 'Business customers:',
+        professional: 'The right of withdrawal is a consumer protection and does not apply to purchases made for professional purposes.'
+      },
+
       intellectualProperty: {
-        title: '9. Intellectual Property Rights',
+        title: '10. Intellectual Property Rights',
         ownership: 'All content, software, trademarks, logos, and intellectual property on this platform are owned by us or our licensors. All rights are reserved.',
         license: 'We grant you a limited, non-exclusive, non-transferable, revocable license to access and use the service for its intended purpose only. You may not copy, modify, distribute, sell, or lease any part of our services.',
         userContent: 'You retain ownership of content you create or upload ("User Content"). By uploading User Content, you grant us a worldwide, non-exclusive, royalty-free license to use, store, and display it solely for providing the service.',
@@ -324,57 +347,58 @@ const { t, locale } = useTranslations({
       },
 
       thirdPartyServices: {
-        title: '10. Third-Party Services and Links',
+        title: '11. Third-Party Services and Links',
         content: 'Our service may integrate with or link to third-party services (e.g., payment processors, authentication providers). We are not responsible for the content, privacy practices, or terms of third-party services. Your use of third-party services is governed by their respective terms and policies.'
       },
 
       termination: {
-        title: '11. Account Termination and Suspension',
+        title: '12. Account Termination and Suspension',
         byUs: 'We may suspend or terminate your account immediately, without prior notice, if you violate these Terms, engage in prohibited activities, fail to pay fees, or if required by law. Termination does not relieve you of any obligations incurred prior to termination.',
         byYou: 'You may terminate your account at any time through your account settings. Upon termination, you must cease all use of the service.',
         effects: 'Upon termination by either party: (a) your access will be immediately revoked, (b) your data may be deleted after a grace period, (c) no refunds will be issued for prepaid fees, and (d) all licenses granted to you will immediately terminate.'
       },
 
       warranties: {
-        title: '12. Disclaimer of Warranties',
+        title: '13. Disclaimer of Warranties',
         disclaimer: 'THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, OR NON-INFRINGEMENT.',
         availability: 'We do not warrant that the service will be uninterrupted, secure, or error-free, or that defects will be corrected. You use the service at your own risk.'
       },
 
       liability: {
-        title: '13. Limitation of Liability',
+        title: '14. Limitation of Liability',
         limitation: 'TO THE MAXIMUM EXTENT PERMITTED BY LAW, WE SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, DATA, USE, OR GOODWILL, ARISING FROM YOUR USE OF OR INABILITY TO USE THE SERVICE.',
         exclusions: 'Our total liability for all claims related to the service shall not exceed the amount you paid us in the 12 months preceding the claim, or €100, whichever is greater.',
         indemnification: 'You agree to indemnify, defend, and hold us harmless from any claims, damages, losses, liabilities, and expenses (including legal fees) arising from your use of the service, violation of these Terms, or infringement of any rights of others.'
       },
 
       dataBackup: {
-        title: '14. Data Backup and Loss',
+        title: '15. Data Backup and Loss',
         responsibility: 'You are solely responsible for backing up any data, files, or content you create or store on our service. We strongly recommend maintaining regular backups.',
         noGuarantee: 'While we implement backup procedures, we do not guarantee data recovery in case of data loss, corruption, deletion, or service interruption. We are not liable for any data loss.'
       },
 
       modifications: {
-        title: '15. Modifications to Terms',
+        title: '16. Modifications to Terms',
         right: 'We reserve the right to modify, update, or replace these Terms of Service at any time at our sole discretion.',
         notification: 'We will notify you of significant changes via email or by posting a notice on our website at least 30 days before the effective date.',
         acceptance: 'Continued use of the service after changes become effective constitutes your acceptance of the modified Terms. If you do not agree to the changes, you must stop using the service and may terminate your account.'
       },
 
       disputeResolution: {
-        title: '16. Dispute Resolution',
+        title: '17. Dispute Resolution',
         negotiation: 'In the event of any dispute arising from these Terms, you agree to first attempt to resolve the issue through good-faith negotiation with us.',
-        mediation: 'If negotiation fails, disputes may be submitted to mediation before pursuing litigation, unless prohibited by applicable law.'
+        mediation: 'If negotiation fails, disputes may be submitted to mediation before pursuing litigation, unless prohibited by applicable law.',
+        consumerMediation: 'If you are a consumer and our reply does not satisfy you, you may refer the dispute free of charge to the consumer mediator below, within one year of your written complaint. You may also use the European Online Dispute Resolution platform.'
       },
 
       governingLaw: {
-        title: '17. Governing Law and Jurisdiction',
-        jurisdiction: 'These Terms are governed by and construed in accordance with the laws of the European Union and the applicable national laws of [Your Country], without regard to conflict of law principles.',
-        venue: 'Any legal action or proceeding arising from these Terms shall be brought exclusively in the courts of [Your City/Country]. You consent to the personal jurisdiction of such courts.'
+        title: '18. Governing Law and Jurisdiction',
+        jurisdiction: 'These Terms are governed by French law, together with the directly applicable law of the European Union. If you are a consumer resident in another EU member state, you also keep the protection of the mandatory provisions of your country of residence.',
+        venue: 'For business customers, any dispute arising from these Terms shall be brought before the courts of Toulouse, France. If you are a consumer, you may bring proceedings before the court of the place where you were domiciled when the contract was concluded or where the harmful event occurred, and we may only sue you before the courts of your place of residence.'
       },
 
       miscellaneous: {
-        title: '18. Miscellaneous Provisions',
+        title: '19. Miscellaneous Provisions',
         severability: {
           title: 'Severability:',
           content: 'If any provision of these Terms is found to be invalid or unenforceable, the remaining provisions shall remain in full force and effect.'
@@ -394,7 +418,7 @@ const { t, locale } = useTranslations({
       },
 
       contact: {
-        title: '19. Contact Information',
+        title: '20. Contact Information',
         content: 'For questions about these Terms of Service, to exercise your GDPR rights, or to report violations, please contact us at:'
       }
     }
@@ -531,8 +555,18 @@ const { t, locale } = useTranslations({
         }
       },
 
+      withdrawal: {
+        title: '9. Droit de Rétractation',
+        right: 'Si vous êtes un consommateur résidant dans l\'Union Européenne, vous disposez de quatorze (14) jours à compter de la conclusion du contrat pour vous rétracter d\'un abonnement, sans avoir à motiver votre décision et sans pénalité.',
+        immediateStart: 'Le service étant fourni sous forme numérique et de manière immédiate, il vous est demandé lors du paiement de demander expressément que son exécution commence pendant le délai de rétractation, et de reconnaître que vous perdez ce droit une fois le service pleinement exécuté. S\'il n\'a été que partiellement exécuté, vous restez redevable d\'un montant proportionnel à ce qui vous a été fourni avant votre rétractation.',
+        howTo: 'Pour vous rétracter, il suffit de nous adresser une déclaration dénuée d\'ambiguïté — un courriel à l\'adresse figurant dans la section Contact suffit. Aucune forme particulière n\'est exigée.',
+        refund: 'Nous vous remboursons les sommes dues dans les quatorze (14) jours suivant la réception de votre décision, par le même moyen de paiement que celui utilisé, sans frais pour vous.',
+        professionalTitle: 'Clients professionnels :',
+        professional: 'Le droit de rétractation est une protection du consommateur : il ne s\'applique pas aux achats effectués à des fins professionnelles.'
+      },
+
       intellectualProperty: {
-        title: '9. Droits de Propriété Intellectuelle',
+        title: '10. Droits de Propriété Intellectuelle',
         ownership: 'Tout le contenu, les logiciels, les marques, les logos et la propriété intellectuelle de cette plateforme nous appartiennent ou appartiennent à nos concédants de licence. Tous les droits sont réservés.',
         license: 'Nous vous accordons une licence limitée, non exclusive, non transférable et révocable pour accéder et utiliser le service uniquement aux fins prévues. Vous ne pouvez pas copier, modifier, distribuer, vendre ou louer toute partie de nos services.',
         userContent: 'Vous conservez la propriété du contenu que vous créez ou téléchargez ("Contenu Utilisateur"). En téléchargeant du Contenu Utilisateur, vous nous accordez une licence mondiale, non exclusive et gratuite pour l\'utiliser, le stocker et l\'afficher uniquement dans le but de fournir le service.',
@@ -540,57 +574,58 @@ const { t, locale } = useTranslations({
       },
 
       thirdPartyServices: {
-        title: '10. Services et Liens Tiers',
+        title: '11. Services et Liens Tiers',
         content: 'Notre service peut s\'intégrer ou renvoyer vers des services tiers (par ex., processeurs de paiement, fournisseurs d\'authentification). Nous ne sommes pas responsables du contenu, des pratiques de confidentialité ou des conditions des services tiers. Votre utilisation des services tiers est régie par leurs conditions et politiques respectives.'
       },
 
       termination: {
-        title: '11. Résiliation et Suspension du Compte',
+        title: '12. Résiliation et Suspension du Compte',
         byUs: 'Nous pouvons suspendre ou résilier votre compte immédiatement, sans préavis, si vous violez ces Conditions, participez à des activités interdites, ne payez pas les frais ou si requis par la loi. La résiliation ne vous dégage pas des obligations contractées avant la résiliation.',
         byYou: 'Vous pouvez résilier votre compte à tout moment via les paramètres de votre compte. Lors de la résiliation, vous devez cesser toute utilisation du service.',
         effects: 'Lors de la résiliation par l\'une ou l\'autre partie : (a) votre accès sera immédiatement révoqué, (b) vos données peuvent être supprimées après un délai de grâce, (c) aucun remboursement ne sera émis pour les frais prépayés, et (d) toutes les licences qui vous ont été accordées prendront fin immédiatement.'
       },
 
       warranties: {
-        title: '12. Exclusion de Garanties',
+        title: '13. Exclusion de Garanties',
         disclaimer: 'LE SERVICE EST FOURNI "TEL QUEL" ET "SELON DISPONIBILITÉ" SANS GARANTIE D\'AUCUNE SORTE, EXPRESSE OU IMPLICITE, Y COMPRIS MAIS SANS S\'Y LIMITER LES GARANTIES DE QUALITÉ MARCHANDE, D\'ADÉQUATION À UN USAGE PARTICULIER, DE TITRE OU DE NON-CONTREFAÇON.',
         availability: 'Nous ne garantissons pas que le service sera ininterrompu, sécurisé ou sans erreur, ou que les défauts seront corrigés. Vous utilisez le service à vos propres risques.'
       },
 
       liability: {
-        title: '13. Limitation de Responsabilité',
+        title: '14. Limitation de Responsabilité',
         limitation: 'DANS LA MESURE MAXIMALE AUTORISÉE PAR LA LOI, NOUS NE SERONS PAS RESPONSABLES DES DOMMAGES INDIRECTS, ACCESSOIRES, SPÉCIAUX, CONSÉCUTIFS OU PUNITIFS, Y COMPRIS MAIS SANS S\'Y LIMITER LA PERTE DE PROFITS, DE DONNÉES, D\'UTILISATION OU DE GOODWILL, DÉCOULANT DE VOTRE UTILISATION OU DE VOTRE INCAPACITÉ À UTILISER LE SERVICE.',
         exclusions: 'Notre responsabilité totale pour toutes les réclamations liées au service ne dépassera pas le montant que vous nous avez payé au cours des 12 mois précédant la réclamation, ou 100 €, selon le montant le plus élevé.',
         indemnification: 'Vous acceptez d\'indemniser, de défendre et de nous dégager de toute responsabilité pour toutes réclamations, dommages, pertes, responsabilités et dépenses (y compris les frais juridiques) découlant de votre utilisation du service, de la violation de ces Conditions ou de la violation des droits d\'autrui.'
       },
 
       dataBackup: {
-        title: '14. Sauvegarde et Perte de Données',
+        title: '15. Sauvegarde et Perte de Données',
         responsibility: 'Vous êtes seul responsable de la sauvegarde de toutes les données, fichiers ou contenus que vous créez ou stockez sur notre service. Nous recommandons fortement de maintenir des sauvegardes régulières.',
         noGuarantee: 'Bien que nous mettions en œuvre des procédures de sauvegarde, nous ne garantissons pas la récupération des données en cas de perte, corruption, suppression ou interruption de service. Nous ne sommes pas responsables de toute perte de données.'
       },
 
       modifications: {
-        title: '15. Modifications des Conditions',
+        title: '16. Modifications des Conditions',
         right: 'Nous nous réservons le droit de modifier, mettre à jour ou remplacer ces Conditions Générales d\'Utilisation à tout moment à notre seule discrétion.',
         notification: 'Nous vous informerons des modifications importantes par email ou en publiant un avis sur notre site web au moins 30 jours avant la date d\'entrée en vigueur.',
         acceptance: 'L\'utilisation continue du service après l\'entrée en vigueur des modifications constitue votre acceptation des Conditions modifiées. Si vous n\'acceptez pas les modifications, vous devez cesser d\'utiliser le service et pouvez résilier votre compte.'
       },
 
       disputeResolution: {
-        title: '16. Résolution des Litiges',
+        title: '17. Résolution des Litiges',
         negotiation: 'En cas de litige découlant de ces Conditions, vous acceptez de tenter d\'abord de résoudre le problème par une négociation de bonne foi avec nous.',
-        mediation: 'Si la négociation échoue, les litiges peuvent être soumis à la médiation avant de poursuivre un litige, sauf interdiction par la loi applicable.'
+        mediation: 'Si la négociation échoue, les litiges peuvent être soumis à la médiation avant toute action judiciaire, sauf interdiction par la loi applicable.',
+        consumerMediation: 'Si vous êtes un consommateur et que notre réponse ne vous satisfait pas, vous pouvez saisir gratuitement le médiateur de la consommation ci-dessous, dans un délai d\'un an à compter de votre réclamation écrite. Vous pouvez également recourir à la plateforme européenne de règlement en ligne des litiges.'
       },
 
       governingLaw: {
-        title: '17. Droit Applicable et Juridiction',
-        jurisdiction: 'Ces Conditions sont régies et interprétées conformément aux lois de l\'Union Européenne et aux lois nationales applicables de [Votre Pays], sans égard aux principes de conflit de lois.',
-        venue: 'Toute action ou procédure judiciaire découlant de ces Conditions sera portée exclusivement devant les tribunaux de [Votre Ville/Pays]. Vous consentez à la juridiction personnelle de ces tribunaux.'
+        title: '18. Droit Applicable et Juridiction',
+        jurisdiction: 'Les présentes Conditions sont régies par le droit français, ainsi que par le droit de l\'Union Européenne directement applicable. Si vous êtes un consommateur résidant dans un autre État membre de l\'Union, vous conservez le bénéfice des dispositions impératives de votre pays de résidence.',
+        venue: 'Pour les clients professionnels, tout litige né des présentes Conditions sera porté devant les tribunaux de Toulouse. Si vous êtes un consommateur, vous pouvez saisir la juridiction du lieu où vous demeuriez lors de la conclusion du contrat ou du lieu de survenance du fait dommageable, et nous ne pouvons vous assigner que devant la juridiction de votre lieu de résidence.'
       },
 
       miscellaneous: {
-        title: '18. Dispositions Diverses',
+        title: '19. Dispositions Diverses',
         severability: {
           title: 'Divisibilité :',
           content: 'Si une disposition de ces Conditions est jugée invalide ou inapplicable, les dispositions restantes resteront pleinement en vigueur.'
@@ -610,16 +645,17 @@ const { t, locale } = useTranslations({
       },
 
       contact: {
-        title: '19. Informations de Contact',
+        title: '20. Informations de Contact',
         content: 'Pour toute question concernant ces Conditions Générales d\'Utilisation, pour exercer vos droits RGPD ou pour signaler des violations, veuillez nous contacter à :'
       }
     }
   }
 })
 
-// Configuration - update these values for your organization
+// The displayed date IS the accepted version: two literals meant the page could
+// advertise one date while signups were stamped with another.
 const lastUpdateDate = computed(() => {
-  const date = new Date('2025-10-11');
+  const date = new Date(TOS_VERSION);
   return date.toLocaleDateString(locale.value, {
     year: 'numeric',
     month: 'long',
@@ -627,7 +663,12 @@ const lastUpdateDate = computed(() => {
   });
 });
 
-const contactEmail = 'legal@your-organization.com';
+const contactEmail = SUPPORT_EMAIL;
+
+const mediator = CONSUMER_MEDIATOR;
+const mediatorContact = computed(() =>
+  [mediator.name, mediator.address, mediator.website].filter(Boolean).join(' — ')
+);
 </script>
 
 <style scoped>
