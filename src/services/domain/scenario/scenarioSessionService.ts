@@ -80,6 +80,14 @@ export interface SubmitFlagResponse {
   provisioning_timeout_seconds?: number
 }
 
+export interface ReprovisionStepResponse {
+  step_order: number
+  // Session status immediately after the call: 'provisioning' when the setup
+  // was left running and the client must poll until it clears, 'active' when
+  // it already finished inline.
+  status: string
+}
+
 export interface ValidatedFlag {
   step_order: number
   /**
@@ -245,6 +253,23 @@ export const scenarioSessionService = {
 
   async revealHint(sessionId: string, stepOrder: number, level: number): Promise<RevealHintResponse> {
     const response = await axios.post(`/scenario-sessions/${sessionId}/steps/${stepOrder}/hints/${level}/reveal`)
+    return response.data
+  },
+
+  /**
+   * Re-runs the current step's setup in the learner's existing container.
+   *
+   * This is the recovery path for a step whose preparation failed: the advance
+   * itself is never rolled back, so re-running the setup is the only way back
+   * into a playable state — reloading the step would just re-fetch the
+   * description of a level that was never built.
+   *
+   * `force` exports FORCE=1 into the script so it redoes work its idempotency
+   * markers would otherwise skip. The body is optional on the backend; omitting
+   * it means "retry, without forcing".
+   */
+  async reprovisionStep(sessionId: string, force = false): Promise<ReprovisionStepResponse> {
+    const response = await axios.post(`/scenario-sessions/${sessionId}/reprovision-step`, { force })
     return response.data
   }
 }

@@ -57,14 +57,22 @@
            Deliberately not styled like the generic load error above: in a
            challenge scenario a broken-looking machine IS the exercise, so this
            state has to read as infrastructure rather than content, or learners
-           keep hunting on a machine that cannot be solved. -->
+           keep hunting on a machine that cannot be solved.
+
+           The retry re-runs the setup that failed; reloading the step would only
+           re-fetch the description of a level whose environment was never built. -->
       <div v-else-if="provisioningError" class="panel-error panel-error--infra" data-testid="scenario-step-preparing-error">
         <i class="fas fa-server"></i>
         <p class="panel-error-title">{{ t('scenarioPanel.preparingFailedTitle') }}</p>
         <p class="panel-error-body">{{ t('scenarioPanel.preparingFailedBody') }}</p>
-        <button class="retry-btn" data-testid="scenario-step-preparing-retry" @click="loadCurrentStep">
-          <i class="fas fa-redo"></i>
-          {{ t('scenarioPanel.preparingRetry') }}
+        <button
+          class="retry-btn"
+          data-testid="scenario-step-preparing-retry"
+          :disabled="isRetryingProvisioning"
+          @click="retryStepProvisioning"
+        >
+          <i class="fas" :class="isRetryingProvisioning ? 'fa-circle-notch fa-spin' : 'fa-redo'"></i>
+          {{ isRetryingProvisioning ? t('scenarioPanel.preparingRetrying') : t('scenarioPanel.preparingRetry') }}
         </button>
       </div>
 
@@ -100,14 +108,14 @@
       <!-- Step transition (full panel) -->
       <div v-else-if="isTransitioning" class="panel-transitioning">
         <!-- Phase 1: Step validated -->
-        <template v-if="transitionPhase === 'validated'">
+        <template v-if="transitionState === 'validated'">
           <div class="transition-validated">
             <i class="fas fa-check-circle validated-icon"></i>
             <span class="validated-text">{{ t('scenarioPanel.stepValidated') }}</span>
           </div>
         </template>
         <!-- Phase 2 (async next step): preparing the environment -->
-        <template v-else-if="transitionPhase === 'provisioning'">
+        <template v-else-if="transitionState === 'provisioning'">
           <div class="transition-provisioning" data-testid="scenario-step-preparing">
             <i class="fas fa-check-circle validated-icon"></i>
             <span class="transition-provisioning-title">{{ t('scenarioPanel.preparingNextStep') }}</span>
@@ -413,6 +421,7 @@ const { t } = useTranslations({
       preparingFailedTitle: 'The machine could not be prepared for this step.',
       preparingFailedBody: 'This is not a puzzle — setting up the step failed. Try again; if the error persists, report it to your trainer.',
       preparingRetry: 'Restart preparation',
+      preparingRetrying: 'Preparing…',
       completionSummary: 'Your Results',
       stepsCompleted: 'Steps Completed',
       totalTime: 'Time Spent',
@@ -467,6 +476,7 @@ const { t } = useTranslations({
       preparingFailedTitle: 'La machine n\'a pas pu être préparée pour cette étape.',
       preparingFailedBody: 'Ce n\'est pas une énigme — l\'installation de l\'étape a échoué. Réessayez ; si l\'erreur persiste, signalez-la à votre formateur.',
       preparingRetry: 'Relancer la préparation',
+      preparingRetrying: 'Préparation…',
       completionSummary: 'Vos résultats',
       stepsCompleted: 'Étapes complétées',
       totalTime: 'Temps passé',
@@ -548,33 +558,54 @@ const flagValue = ref('')
 const isSubmittingFlag = ref(false)
 const flagResult = ref<SubmitFlagResponse | null>(null)
 
-// Step transition state
-const isTransitioning = ref(false)
-const transitionPhase = ref<'validated' | 'provisioning' | 'loading' | null>(null)
+// ---- Step transition ----
+//
+// One variable, not three. The advance moves through a small sequence — the
+// validated check, then either an environment wait or straight to the next
+// step — and 'failed' is one of its outcomes rather than a separate flag. Three
+// booleans to describe one position meant every transition had to write all of
+// them, and the failure path in particular had to remember to clear two.
+type TransitionState = 'idle' | 'validated' | 'provisioning' | 'loading' | 'failed'
+const transitionState = ref<TransitionState>('idle')
+
+// The full-panel transition covers everything except the terminal states.
+const isTransitioning = computed(
+  () => transitionState.value !== 'idle' && transitionState.value !== 'failed'
+)
+const provisioningError = computed(() => transitionState.value === 'failed')
 
 // ---- Per-step provisioning (async next-step preparation) ----
 const STEP_PROVISION_POLL_MS = 2_000
-// Poll ceiling when the backend doesn't state its timeout. Invariant: this
-// must stay STRICTLY ABOVE whatever the backend allows a step script
-// (currently 30 s), so the backend reaches setup_failed — an honest error —
-// before the panel gives up on its own.
+// Poll ceiling when the backend states no timeout of its own. It must sit above
+// whatever the backend allows a step script, so that the backend reaches
+// setup_failed — an honest error — before the panel gives up on its own.
+//
+// It is a floor for that rule, not a statement of it: a step can declare
+// background_timeout_seconds freely, so no constant here can be guaranteed
+// above it. When the backend states its timeout we use that plus a margin,
+// which is the case that actually holds the invariant; this value only covers
+// a response that carried none.
 const STEP_PROVISION_FALLBACK_CEILING_MS = 120_000
 // Margin added on top of a backend-stated timeout for the same reason.
 const STEP_PROVISION_MARGIN_MS = 30_000
 
 const stepProvisioningPhase = ref('')
-const provisioningError = ref(false)
 let stepProvisioningTimer: ReturnType<typeof setInterval> | null = null
+let validatedHoldTimer: ReturnType<typeof setTimeout> | null = null
 
 function stopStepProvisioningPoll() {
   if (stepProvisioningTimer) {
     clearInterval(stepProvisioningTimer)
     stepProvisioningTimer = null
   }
+  if (validatedHoldTimer) {
+    clearTimeout(validatedHoldTimer)
+    validatedHoldTimer = null
+  }
 }
 
 function startStepProvisioningPoll(timeoutSeconds?: number) {
-  transitionPhase.value = 'provisioning'
+  transitionState.value = 'provisioning'
   stepProvisioningPhase.value = 'step_setup'
   const ceiling = timeoutSeconds
     ? timeoutSeconds * 1000 + STEP_PROVISION_MARGIN_MS
@@ -594,13 +625,11 @@ function startStepProvisioningPoll(timeoutSeconds?: number) {
     }
     if (status === 'active') {
       stopStepProvisioningPoll()
-      transitionPhase.value = 'loading'
+      transitionState.value = 'loading'
       loadCurrentStep()
     } else if (status === 'setup_failed' || Date.now() > deadline) {
       stopStepProvisioningPoll()
-      isTransitioning.value = false
-      transitionPhase.value = null
-      provisioningError.value = true
+      transitionState.value = 'failed'
     }
   }, STEP_PROVISION_POLL_MS)
 }
@@ -608,20 +637,54 @@ function startStepProvisioningPoll(timeoutSeconds?: number) {
 // Shared success path for verify / flag / quiz: show the full-panel check,
 // then either load the next step directly or enter the provisioning wait when
 // the backend left it running async.
+//
+// The hold is tracked so it can be cancelled. Untracked, leaving the scenario
+// during those two seconds still fired the callback afterwards and started a
+// polling interval on a torn-down component, which nothing was then left to
+// stop.
 function advanceAfterSuccess(
   result: { next_step_provisioning?: boolean; provisioning_timeout_seconds?: number },
   validatedMs = 2000
 ) {
-  isTransitioning.value = true
-  transitionPhase.value = 'validated'
-  setTimeout(() => {
+  stopStepProvisioningPoll()
+  transitionState.value = 'validated'
+  validatedHoldTimer = setTimeout(() => {
+    validatedHoldTimer = null
     if (result.next_step_provisioning) {
       startStepProvisioningPoll(result.provisioning_timeout_seconds)
     } else {
-      transitionPhase.value = 'loading'
+      transitionState.value = 'loading'
       loadCurrentStep()
     }
   }, validatedMs)
+}
+
+// The retry offered on a provisioning failure. Reloading the step was never a
+// retry: it re-fetched the description of a step whose environment was never
+// built, so the learner landed on an unsolvable level with no way out.
+// reprovision-step re-runs the setup that failed, which is the only thing that
+// can put the session back into a playable state.
+const isRetryingProvisioning = ref(false)
+
+async function retryStepProvisioning() {
+  if (isRetryingProvisioning.value) return
+  isRetryingProvisioning.value = true
+  try {
+    const result = await scenarioSessionService.reprovisionStep(props.scenarioSessionId)
+    // The backend decides whether the retry runs inline or in the background;
+    // 'provisioning' means poll again, anything else means it is already done.
+    if (result.status === 'provisioning') {
+      startStepProvisioningPoll()
+    } else {
+      transitionState.value = 'loading'
+      await loadCurrentStep()
+    }
+  } catch (err) {
+    console.error('Failed to reprovision step:', err)
+    transitionState.value = 'failed'
+  } finally {
+    isRetryingProvisioning.value = false
+  }
 }
 
 // Quiz state (submit orchestration; answer state lives in ScenarioQuizPanel)
@@ -813,12 +876,10 @@ async function loadCurrentStep() {
   hintNudgeDismissed.value = false
   stopHintNudgeTimer()
   stopStepProvisioningPoll()
-  provisioningError.value = false
 
   // The composable owns the step DATA load + DOM refresh and returns the step.
   const step = await session.loadStepData({ skipSpinner: isTransitioning.value })
-  isTransitioning.value = false
-  transitionPhase.value = null
+  transitionState.value = 'idle'
 
   if (step) {
     // Load already-revealed progressive hints
