@@ -105,7 +105,7 @@ const { t } = useTranslations({
       orgBullet2: 'Administratively assigned licences',
       orgBullet3: 'Invoicing on quotation',
       orgCta: 'Contact us',
-      footnote: 'Prices exclude VAT. Terminals run on our infrastructure — nothing to install.'
+      footnote: 'Prices include VAT. Terminals run on our infrastructure — nothing to install.'
     }
   },
   fr: {
@@ -127,7 +127,7 @@ const { t } = useTranslations({
       orgBullet2: 'Licences attribuées administrativement',
       orgBullet3: 'Facturation sur devis',
       orgCta: 'Nous contacter',
-      footnote: "Prix hors taxes. Les terminaux tournent sur notre infrastructure — rien à installer."
+      footnote: "Prix TTC. Les terminaux tournent sur notre infrastructure — rien à installer."
     }
   }
 })
