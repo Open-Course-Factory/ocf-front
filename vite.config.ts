@@ -53,6 +53,8 @@ export default defineConfig({
   },
   test: {
     environment: 'happy-dom',
+    // Unmounts every wrapper after its test — see tests/setup.ts for why.
+    setupFiles: ['tests/setup.ts'],
     include: ['tests/**/*.test.ts'],
     // Emit a JUnit XML report so GitLab CI can parse it via
     // `artifacts.reports.junit` and surface results in the pipeline Test tab.
