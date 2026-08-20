@@ -653,8 +653,13 @@ onBeforeUnmount(() => {
   border-radius: var(--border-radius-sm);
 }
 
+/*
+ * A fixed height, not a max-height: every poll that brings new commands would
+ * otherwise grow this list — and with it the whole page, since the panel sits
+ * below the terminal in normal flow. Scrolling happens inside the box instead.
+ */
 .command-list {
-  max-height: 300px;
+  height: 300px;
   overflow-y: auto;
   padding: var(--spacing-sm);
 }
@@ -828,7 +833,7 @@ onBeforeUnmount(() => {
   }
 
   .command-list {
-    max-height: 200px;
+    height: 200px;
   }
 }
 </style>
