@@ -545,8 +545,6 @@ const showHint = ref(false)
 const revealedHints = ref<Array<{ level: number; content: string }>>([])
 const isRevealingHint = ref(false)
 
-// Track whether we already auto-expanded the hint for the current step
-const hintAutoShown = ref(false)
 
 // Verify state
 const isVerifying = ref(false)
@@ -881,7 +879,6 @@ async function loadCurrentStep() {
   flagResult.value = null
   flagValue.value = ''
   showHint.value = false
-  hintAutoShown.value = false
   revealedHints.value = []
   reviewingStep.value = null
   quizResult.value = null
@@ -965,16 +962,10 @@ async function handleVerify() {
     const result = await scenarioSessionService.verifyStep(props.scenarioSessionId)
     verifyResult.value = result
 
-    // Auto-reveal first hint on first failure
-    if (!result.passed && !hintAutoShown.value) {
-      if (hasProgressiveHints.value && revealedHints.value.length === 0) {
-        handleRevealNextHint()
-        hintAutoShown.value = true
-      } else if (currentStep.value?.hint) {
-        showHint.value = true
-        hintAutoShown.value = true
-      }
-    }
+    // A failed check does not open a hint. Revealing one is the learner's
+    // decision: it is recorded server-side, so spending it for them both
+    // takes the choice away and scores them as having asked. The hint button
+    // still pulses after 90s of no progress — a nudge, not a reveal.
 
     if (result.passed) {
       if (result.next_step) {
@@ -1005,17 +996,6 @@ async function handleSubmitFlag() {
   try {
     const result = await scenarioSessionService.submitFlag(props.scenarioSessionId, flagValue.value.trim())
     flagResult.value = result
-
-    // Auto-reveal first hint on first failure
-    if (!result.correct && !hintAutoShown.value) {
-      if (hasProgressiveHints.value && revealedHints.value.length === 0) {
-        handleRevealNextHint()
-        hintAutoShown.value = true
-      } else if (currentStep.value?.hint) {
-        showHint.value = true
-        hintAutoShown.value = true
-      }
-    }
 
     if (result.correct) {
       emit('flag-validated')

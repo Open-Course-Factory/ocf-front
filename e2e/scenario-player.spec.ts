@@ -172,6 +172,38 @@ test.describe('Scenario player (mocked backend)', () => {
     });
   });
 
+  // A failed check used to open the first hint by itself. Revealing a hint is
+  // recorded server-side, so doing it for the learner both takes the decision
+  // away and scores them as having asked for help they never asked for.
+  test('a failed check does not reveal a hint; only the learner does', async ({ page }) => {
+    test.setTimeout(120_000);
+    const mock = new ScenarioMock([
+      {
+        order: 1,
+        title: 'Create the marker file',
+        type: 'terminal',
+        hints: ['Look in /tmp.', 'Use the touch command.'],
+        verifyOutcomes: [false, true],
+      },
+      { order: 2, title: 'Done', type: 'info' },
+    ]);
+    await mock.install(page);
+    await login(page, E2E_USER, E2E_PASS);
+    await launchIntoPlayer(page, mock);
+
+    await page.getByTestId('scenario-verify-btn').click();
+
+    // The check reports failure...
+    await expect(page.getByTestId('scenario-verify-result')).toBeVisible({ timeout: 15_000 });
+    // ...and nothing opened on its own.
+    await expect(page.getByTestId('hint-item')).toHaveCount(0);
+
+    // The learner asks, and only then does a hint appear.
+    await page.getByTestId('hint-reveal-next').click();
+    await expect(page.getByTestId('hint-item')).toHaveCount(1);
+    await expect(page.getByTestId('hint-item').first()).toContainText('Look in /tmp.');
+  });
+
   test('completed session opens in review mode from the launcher', async ({ page }) => {
     const mock = new ScenarioMock(standardSteps(), { startCompleted: true });
     await mock.install(page);

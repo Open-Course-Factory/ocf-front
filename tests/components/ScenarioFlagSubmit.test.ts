@@ -86,10 +86,27 @@ describe('ScenarioFlagSubmit', () => {
     const btn = wrapper.find('button.flag-submit-btn')
     expect(btn.exists()).toBe(true)
     expect(btn.find('i.fas.fa-paper-plane').exists()).toBe(true)
-    expect(btn.text()).toContain('Submit Flag')
+    expect(btn.text()).toContain('Submit')
 
     // The hint line is present.
     expect(wrapper.find('p.flag-hint').exists()).toBe(true)
+  })
+
+  // This box serves both a token copied from the terminal and a word the
+  // learner works out — the calendar mission asks for a weekday. Nothing it
+  // renders may claim one shape, or it contradicts the step's own instructions
+  // directly above it.
+  it('never calls the answer a flag, in either language', () => {
+    for (const lang of ['en', 'fr']) {
+      localStorage.setItem('locale', lang)
+      const wrapper = mountFlag({ modelValue: 'Tuesday' })
+
+      const btn = wrapper.find('button.flag-submit-btn')
+      expect(btn.text().toLowerCase()).not.toContain('flag')
+      expect(wrapper.find('p.flag-hint').text().toLowerCase()).not.toContain('flag')
+      expect(wrapper.find('input.flag-input').attributes('placeholder')?.toLowerCase())
+        .not.toContain('flag')
+    }
   })
 
   it('disables the submit button when modelValue is empty or whitespace', async () => {

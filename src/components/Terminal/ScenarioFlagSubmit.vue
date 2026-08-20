@@ -51,7 +51,10 @@ const { t } = useTranslations({
   en: {
     scenarioPanel: {
       flagPlaceholder: 'Your answer...',
-      submitFlag: 'Submit Flag',
+      // "Flag" is the platform's word, not the learner's. The calendar mission
+      // asks for a weekday; a challenge step asks for a token found in the
+      // terminal. The button serves both, so it names neither.
+      submitFlag: 'Submit',
       submitting: 'Submitting...',
       // Not every answer is a token: a scenario can set its own, and some steps
       // ask for a word the learner works out rather than one they copy. The
@@ -64,7 +67,7 @@ const { t } = useTranslations({
   fr: {
     scenarioPanel: {
       flagPlaceholder: 'Votre réponse...',
-      submitFlag: 'Soumettre le flag',
+      submitFlag: 'Soumettre',
       submitting: 'Envoi...',
       flagHint: "Soumettez la réponse demandée par cette étape.",
       flagCorrect: 'Correct !',
@@ -100,7 +103,9 @@ const { t } = useTranslations({
   border: var(--border-width-thin) solid var(--color-border-medium);
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-sm);
-  font-family: var(--font-family-monospace);
+  /* Deliberately not monospace: the typeface is a hint about the answer's
+     shape, and a token face on a step that wants "Tuesday" is a misleading
+     one. The step's own instructions say what to type. */
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
   transition: border-color var(--transition-fast);
