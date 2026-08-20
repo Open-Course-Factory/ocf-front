@@ -578,14 +578,27 @@ function startStepProvisioningPoll(timeoutSeconds?: number) {
 // polling interval on a torn-down component, which nothing was then left to
 // stop.
 function advanceAfterSuccess(
-  result: { next_step_provisioning?: boolean; provisioning_timeout_seconds?: number },
+  result: {
+    next_step_provisioning?: boolean
+    provisioning_timeout_seconds?: number
+    next_step_provisioning_failed?: boolean
+  },
   validatedMs = 2000
 ) {
   stopStepProvisioningPoll()
   transitionState.value = 'validated'
   validatedHoldTimer = setTimeout(() => {
     validatedHoldTimer = null
-    if (result.next_step_provisioning) {
+    // The two flags are the backend's two failure shapes and never both true:
+    // preparation left running reports next_step_provisioning and fails later
+    // through the poll, while preparation that ran inline and failed reports
+    // next_step_provisioning_failed on this very response and leaves the
+    // session 'active'. That second case has nothing to poll, so reading the
+    // flag here is the only way it can ever surface — without it the learner
+    // lands on a step whose environment was never built and nothing says so.
+    if (result.next_step_provisioning_failed) {
+      transitionState.value = 'failed'
+    } else if (result.next_step_provisioning) {
       startStepProvisioningPoll(result.provisioning_timeout_seconds)
     } else {
       transitionState.value = 'loading'

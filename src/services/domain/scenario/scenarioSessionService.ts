@@ -51,6 +51,7 @@ export interface SubmitQuizResponse {
   next_step?: number
   next_step_provisioning?: boolean
   provisioning_timeout_seconds?: number
+  next_step_provisioning_failed?: boolean
 }
 
 export interface RevealHintResponse {
@@ -70,6 +71,12 @@ export interface VerifyStepResponse {
   // Effective backend timeout for that preparation — the client's poll
   // ceiling must stay strictly above it (timeout + margin).
   provisioning_timeout_seconds?: number
+  // True when the next step's preparation ran inline and failed. The advance
+  // itself still stands — the backend never rolls it back — so the session
+  // stays 'active' and no poll will ever reveal this: it is readable only
+  // here. The client must offer the reprovision retry instead of loading a
+  // step whose environment was never built.
+  next_step_provisioning_failed?: boolean
 }
 
 export interface SubmitFlagResponse {
@@ -78,6 +85,7 @@ export interface SubmitFlagResponse {
   next_step?: number
   next_step_provisioning?: boolean
   provisioning_timeout_seconds?: number
+  next_step_provisioning_failed?: boolean
 }
 
 export interface ReprovisionStepResponse {
