@@ -2608,6 +2608,32 @@ export const helpEn = {
           }
         },
 
+        archiving: {
+          title: "Retiring a scenario",
+          description: "When a scenario is no longer worth running — superseded by a new edition, or simply out of date — archive it rather than deleting it. Deleting removes its assignments and leaves past results without the scenario they were earned on; archiving keeps every session, grade and flag intact.",
+          effect: {
+            title: "What archiving changes",
+            offered: "The scenario disappears from the learner catalogue and from the assignment picker.",
+            assign: "It can no longer be assigned to a group or an organization, nor started for a whole class.",
+            launch: "It can no longer be launched, previewed, or resumed on a new terminal.",
+            keeps: "Existing assignments stay in place, and every past session keeps its grade, its step progress and its scenario name in the class results."
+          },
+          running: {
+            title: "Sessions already running",
+            description: "A learner working through the scenario at the moment you archive it is left alone and finishes normally. Archiving stops new runs; it never interrupts one in progress."
+          },
+          where: {
+            title: "Where to do it",
+            library: "Organization scenarios: the scenario library tab, next to the export actions.",
+            editor: "Your own scenarios: the scenario editor, in the ⋯ menu beside Reset.",
+            restore: "Archived scenarios stay in those lists behind a \"show archived\" toggle, and Restore puts one back in service at any time."
+          },
+          newEdition: {
+            title: "Publishing a new edition",
+            description: "Duplicate the scenario, edit the copy, then archive the original. Learners get the new edition while the results earned on the old one keep pointing at it."
+          }
+        },
+
         bestPractices: {
           title: "Best Practices",
           description: "Follow these guidelines to create effective and engaging scenarios.",

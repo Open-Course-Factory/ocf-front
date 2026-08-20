@@ -331,6 +331,50 @@
         </div>
       </section>
 
+      <!-- Retiring a scenario -->
+      <section class="help-section">
+        <h2><i class="fas fa-box-archive"></i> {{ t('help.scenarios.creation.archiving.title') }}</h2>
+        <p>{{ t('help.scenarios.creation.archiving.description') }}</p>
+
+        <div class="step-card">
+          <div class="step-number"><i class="fas fa-eye-slash"></i></div>
+          <div class="step-content">
+            <h4>{{ t('help.scenarios.creation.archiving.effect.title') }}</h4>
+            <ul>
+              <li>{{ t('help.scenarios.creation.archiving.effect.offered') }}</li>
+              <li>{{ t('help.scenarios.creation.archiving.effect.assign') }}</li>
+              <li>{{ t('help.scenarios.creation.archiving.effect.launch') }}</li>
+              <li>{{ t('help.scenarios.creation.archiving.effect.keeps') }}</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number"><i class="fas fa-hourglass-half"></i></div>
+          <div class="step-content">
+            <h4>{{ t('help.scenarios.creation.archiving.running.title') }}</h4>
+            <p>{{ t('help.scenarios.creation.archiving.running.description') }}</p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number"><i class="fas fa-location-dot"></i></div>
+          <div class="step-content">
+            <h4>{{ t('help.scenarios.creation.archiving.where.title') }}</h4>
+            <ul>
+              <li>{{ t('help.scenarios.creation.archiving.where.library') }}</li>
+              <li>{{ t('help.scenarios.creation.archiving.where.editor') }}</li>
+              <li>{{ t('help.scenarios.creation.archiving.where.restore') }}</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <h4><i class="fas fa-lightbulb"></i> {{ t('help.scenarios.creation.archiving.newEdition.title') }}</h4>
+          <p>{{ t('help.scenarios.creation.archiving.newEdition.description') }}</p>
+        </div>
+      </section>
+
       <!-- Best Practices -->
       <section class="help-section">
         <h2><i class="fas fa-star"></i> {{ t('help.scenarios.creation.bestPractices.title') }}</h2>

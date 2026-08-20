@@ -117,6 +117,33 @@ export async function deleteScenario(session: ApiSession, orgId: string, scenari
     .catch(() => {});
 }
 
+/** An organization's display name, as the trainer sees it on the org card. */
+export async function organizationDisplayName(session: ApiSession, orgId: string): Promise<string> {
+  const res = await session.api.get(`${API_BASE}/organizations/${orgId}`, { headers: authHeaders(session) });
+  if (!res.ok()) return '';
+  const org = await res.json();
+  return org.display_name || org.name || '';
+}
+
+/**
+ * Retire a scenario without deleting it. The row survives, so past results keep
+ * naming it; it simply stops being offered, assignable and launchable.
+ */
+export async function archiveScenario(session: ApiSession, scenarioId: string): Promise<void> {
+  const res = await session.api.post(`${API_BASE}/scenarios/${scenarioId}/archive`, {
+    headers: authHeaders(session),
+  });
+  if (!res.ok()) throw new Error(`archive ${scenarioId} failed: ${res.status()} ${await res.text()}`);
+}
+
+/** Put an archived scenario back in service. */
+export async function unarchiveScenario(session: ApiSession, scenarioId: string): Promise<void> {
+  const res = await session.api.post(`${API_BASE}/scenarios/${scenarioId}/unarchive`, {
+    headers: authHeaders(session),
+  });
+  if (!res.ok()) throw new Error(`unarchive ${scenarioId} failed: ${res.status()} ${await res.text()}`);
+}
+
 /**
  * The launcher card for a scenario title, as the learner sees it.
  *

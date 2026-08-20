@@ -2608,6 +2608,32 @@ export const helpFr = {
           }
         },
 
+        archiving: {
+          title: "Retirer un scénario",
+          description: "Lorsqu'un scénario n'a plus lieu d'être joué — remplacé par une nouvelle édition, ou simplement obsolète — archivez-le plutôt que de le supprimer. La suppression retire ses affectations et prive les résultats passés du scénario sur lequel ils ont été obtenus ; l'archivage conserve chaque session, note et flag.",
+          effect: {
+            title: "Ce que l'archivage change",
+            offered: "Le scénario disparaît du catalogue des apprenants et du sélecteur d'affectation.",
+            assign: "Il ne peut plus être affecté à un groupe ou une organisation, ni lancé pour toute une classe.",
+            launch: "Il ne peut plus être lancé, prévisualisé, ni repris sur un nouveau terminal.",
+            keeps: "Les affectations existantes sont conservées, et chaque session passée garde sa note, sa progression et le nom du scénario dans les résultats de classe."
+          },
+          running: {
+            title: "Les sessions en cours",
+            description: "Un apprenant en train de suivre le scénario au moment où vous l'archivez n'est pas interrompu et va jusqu'au bout. L'archivage empêche les nouveaux lancements ; il n'interrompt jamais une session en cours."
+          },
+          where: {
+            title: "Où le faire",
+            library: "Scénarios d'organisation : l'onglet bibliothèque de scénarios, à côté des actions d'export.",
+            editor: "Vos propres scénarios : l'éditeur de scénarios, dans le menu ⋯ à côté de Réinitialiser.",
+            restore: "Les scénarios archivés restent visibles dans ces listes via l'option « Afficher les scénarios archivés », et Restaurer les remet en service à tout moment."
+          },
+          newEdition: {
+            title: "Publier une nouvelle édition",
+            description: "Dupliquez le scénario, modifiez la copie, puis archivez l'original. Les apprenants obtiennent la nouvelle édition tandis que les résultats obtenus sur l'ancienne continuent de la référencer."
+          }
+        },
+
         bestPractices: {
           title: "Bonnes pratiques",
           description: "Suivez ces recommandations pour créer des scénarios efficaces et engageants.",
