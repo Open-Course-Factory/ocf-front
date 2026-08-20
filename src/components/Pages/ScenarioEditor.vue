@@ -20,6 +20,8 @@
       @export-json="handleExportJSON"
       @export-killercoda="handleExportKillerCoda"
       @copy-to-org="openCopyModal"
+      @archive="openArchiveModal"
+      @unarchive="handleUnarchive"
       @preview="openPreviewConfirm"
       @reset="handleReset"
       @save="handleSave"
@@ -153,6 +155,21 @@
       <p>{{ t('scenarioEditor.deleteWarning', { type: deletingNode?.data?.entityType || 'item', name: deletingNode?.data?.label || '' }) }}</p>
     </BaseModal>
 
+    <!-- Archive Confirmation Modal -->
+    <BaseModal
+      :visible="showArchiveModal"
+      :title="t('scenarioEditor.confirmArchiveTitle')"
+      size="small"
+      :show-default-footer="true"
+      :confirm-text="t('scenarioEditor.archive')"
+      :cancel-text="t('scenarioEditor.cancel')"
+      confirm-icon="fas fa-box-archive"
+      @close="showArchiveModal = false"
+      @confirm="handleArchive"
+    >
+      <p>{{ t('scenarioEditor.archiveWarning', { name: currentScenario?.title || currentScenario?.name || '' }) }}</p>
+    </BaseModal>
+
     <!-- Preview ("Play as learner") Confirmation Modal -->
     <BaseModal
       :visible="showPreviewConfirmModal"
@@ -208,6 +225,7 @@ import { useClassGroupsStore } from '../../stores/classGroups'
 import { useUserMembershipsStore } from '../../stores/userMemberships'
 import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
+import { teacherService } from '../../services/domain/scenario'
 import { useScenarioEditorAccess } from '../../composables/useScenarioEditorAccess'
 import { useNotification } from '../../composables/useNotification'
 import { useScenarioGraph, STEP_NODE_TYPES } from '../../composables/useScenarioGraph'
@@ -351,6 +369,7 @@ const stepSaveError = ref('')
 
 // Copy to org state
 const showCopyModal = ref(false)
+const showArchiveModal = ref(false)
 const copyTargetOrgId = ref<string | null>(null)
 const isCopying = ref(false)
 
@@ -1289,6 +1308,47 @@ const handleCopyToOrg = async () => {
     )
   } finally {
     isCopying.value = false
+  }
+}
+
+// Archive handlers. Archiving is confirmed because it retires the scenario for
+// every learner and class at once; restoring is not, since it only puts it back.
+const openArchiveModal = () => {
+  showArchiveModal.value = true
+}
+
+const reloadAfterArchiveChange = async () => {
+  await scenariosStore.loadEntities('/scenarios?include=steps')
+  if (currentScenario.value?.id) {
+    const refreshed = scenariosStore.entities.find((s: any) => s.id === currentScenario.value.id)
+    if (refreshed) currentScenario.value = refreshed
+  }
+}
+
+const handleArchive = async () => {
+  if (!currentScenario.value?.id) return
+  try {
+    await teacherService.archiveScenario(currentScenario.value.id)
+    notification.showSuccess(t('scenarioEditor.archiveSuccess'))
+    showArchiveModal.value = false
+    await reloadAfterArchiveChange()
+  } catch (err: any) {
+    notification.showError(
+      err.response?.data?.error_message || t('scenarioEditor.archiveError')
+    )
+  }
+}
+
+const handleUnarchive = async () => {
+  if (!currentScenario.value?.id) return
+  try {
+    await teacherService.unarchiveScenario(currentScenario.value.id)
+    notification.showSuccess(t('scenarioEditor.unarchiveSuccess'))
+    await reloadAfterArchiveChange()
+  } catch (err: any) {
+    notification.showError(
+      err.response?.data?.error_message || t('scenarioEditor.unarchiveError')
+    )
   }
 }
 
