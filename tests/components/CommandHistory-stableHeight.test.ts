@@ -6,8 +6,12 @@
  * that appended a command made the page taller — the screen shifting under the
  * user while they type, on a history refresh.
  *
- * A fixed height reserves the slot: new entries scroll inside the box and
- * nothing outside it moves.
+ * What the list must never do is take its height from its contents. Two
+ * declarations prevent that and both are accepted here: a fixed `height`, or a
+ * flex basis in px paired with `min-height: 0` — a flex item without the latter
+ * is still pushed open by its content, which is the very failure this guards.
+ * The panel needs the flex form where its host bounds the column, so pinning
+ * the mechanism rather than the rule would fail a fix that honours it.
  *
  * This is a source assertion because jsdom performs no layout — heights there
  * are always zero, so a mounted component cannot show the difference. The
@@ -29,14 +33,21 @@ function ruleBody(selector: string): string {
   return match?.[1] ?? ''
 }
 
+/** True when the rule's height comes from the layout rather than the content. */
+function reservesItsSlot(body: string): boolean {
+  if (/(^|[^-])height:\s*\d+px/.test(body)) return true
+  return /flex:\s*[^;]*\b\d+px/.test(body) && /min-height:\s*0/.test(body)
+}
+
 describe('CommandHistory — the list holds a stable height', () => {
-  it('sizes the list with height, never max-height', () => {
+  it('sizes the list from the layout, never from its contents', () => {
     const body = ruleBody('.command-list')
 
     expect(body, 'expected a .command-list rule to exist').not.toBe('')
-    expect(body, 'a fixed height keeps appended commands from growing the page').toMatch(
-      /(^|[^-])height:\s*\d+px/,
-    )
+    expect(
+      reservesItsSlot(body),
+      'a reserved slot keeps appended commands from growing the page',
+    ).toBe(true)
     expect(body, 'max-height lets the list grow with its contents').not.toMatch(/max-height/)
   })
 
@@ -49,7 +60,7 @@ describe('CommandHistory — the list holds a stable height', () => {
     const body = narrow.match(/\.command-list\s*\{([^}]*)\}/)?.[1] ?? ''
 
     expect(body, 'expected the narrow-screen override to exist').not.toBe('')
-    expect(body).toMatch(/(^|[^-])height:\s*\d+px/)
+    expect(reservesItsSlot(body)).toBe(true)
     expect(body, 'the override must not reintroduce content-driven growth').not.toMatch(/max-height/)
   })
 })
