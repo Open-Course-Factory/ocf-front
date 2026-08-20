@@ -60,6 +60,12 @@
       </span>
     </div>
 
+    <!-- Archived indicator: an archived scenario is still fully editable,
+         it is simply no longer offered, assignable or launchable. -->
+    <span v-if="currentScenario?.archived_at" class="archived-badge">
+      <i class="fas fa-box-archive"></i> {{ t('scenarioEditor.archived') }}
+    </span>
+
     <!-- Read-only indicator -->
     <span v-if="currentScenario && !canEditScenario" class="readonly-badge">
       <i class="fas fa-lock"></i> {{ t('scenarioEditor.readOnly') }}
@@ -104,6 +110,22 @@
               <span>{{ t('scenarioEditor.copyToOrg') }}</span>
             </button>
             <div v-if="canEditScenario" class="dropdown-divider"></div>
+            <button
+              v-if="canEditScenario && !currentScenario?.archived_at"
+              class="dropdown-item"
+              @click="emit('archive'); showActionsMenu = false"
+            >
+              <i class="fas fa-box-archive" aria-hidden="true"></i>
+              <span>{{ t('scenarioEditor.archive') }}</span>
+            </button>
+            <button
+              v-if="canEditScenario && currentScenario?.archived_at"
+              class="dropdown-item"
+              @click="emit('unarchive'); showActionsMenu = false"
+            >
+              <i class="fas fa-rotate-left" aria-hidden="true"></i>
+              <span>{{ t('scenarioEditor.unarchive') }}</span>
+            </button>
             <button v-if="canEditScenario" class="dropdown-item" @click="emit('reset'); showActionsMenu = false">
               <i class="fas fa-undo" aria-hidden="true"></i>
               <span>{{ t('scenarioEditor.reset') }}</span>
@@ -168,6 +190,8 @@ const emit = defineEmits<{
   (e: 'export-json'): void
   (e: 'export-killercoda'): void
   (e: 'copy-to-org'): void
+  (e: 'archive'): void
+  (e: 'unarchive'): void
   (e: 'preview'): void
   (e: 'reset'): void
   (e: 'save'): void
@@ -285,6 +309,21 @@ const { t } = useScenarioEditorI18n()
   color: var(--color-text-secondary);
   opacity: 0.6;
   white-space: nowrap;
+}
+
+.archived-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-surface-variant);
+  border: 1px solid var(--color-border-medium);
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .readonly-badge {
