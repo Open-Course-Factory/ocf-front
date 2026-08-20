@@ -40,6 +40,7 @@ interface OrgScenario {
   instance_type?: string
   estimated_time?: number
   created_at?: string
+  archived_at?: string | null
 }
 
 const props = defineProps<{
@@ -75,7 +76,18 @@ const { t } = useTranslations({
       difficultyBeginner: 'Beginner',
       difficultyIntermediate: 'Intermediate',
       difficultyAdvanced: 'Advanced',
-      minutes: 'min'
+      minutes: 'min',
+      archive: 'Archive',
+      unarchive: 'Restore',
+      archived: 'Archived',
+      showArchived: 'Show archived scenarios',
+      confirmArchiveTitle: 'Archive Scenario',
+      confirmArchive: 'Archive this scenario? It will no longer be offered to learners, assignable or launchable. Past results keep it in their history, and sessions running right now will finish.',
+      archiveSuccess: 'Scenario archived',
+      archiveError: 'Failed to archive scenario',
+      noVisibleScenarios: 'No scenario matches the current filters.',
+      unarchiveSuccess: 'Scenario restored',
+      unarchiveError: 'Failed to restore scenario'
     }
   },
   fr: {
@@ -103,7 +115,18 @@ const { t } = useTranslations({
       difficultyBeginner: 'Débutant',
       difficultyIntermediate: 'Intermédiaire',
       difficultyAdvanced: 'Avancé',
-      minutes: 'min'
+      minutes: 'min',
+      archive: 'Archiver',
+      unarchive: 'Restaurer',
+      archived: 'Archivé',
+      showArchived: 'Afficher les scénarios archivés',
+      confirmArchiveTitle: 'Archiver le scénario',
+      confirmArchive: 'Archiver ce scénario ? Il ne sera plus proposé aux apprenants, ni affectable, ni lançable. Les résultats passés le conservent dans leur historique, et les sessions en cours iront à leur terme.',
+      archiveSuccess: 'Scénario archivé',
+      archiveError: 'Échec de l\'archivage du scénario',
+      noVisibleScenarios: 'Aucun scénario ne correspond aux filtres actuels.',
+      unarchiveSuccess: 'Scénario restauré',
+      unarchiveError: 'Échec de la restauration du scénario'
     }
   }
 })
@@ -116,18 +139,23 @@ const isLoading = ref(false)
 const searchQuery = ref('')
 const showDeleteModal = ref(false)
 const scenarioToDelete = ref<OrgScenario | null>(null)
+const showArchived = ref(false)
+const showArchiveModal = ref(false)
+const scenarioToArchive = ref<OrgScenario | null>(null)
 
 // Import modal state
 const showUploadModal = ref(false)
 const showJSONImportModal = ref(false)
 
-// Filtered scenarios
+// Archived scenarios stay in the library — the org still owns them and their
+// results — but out of the way until asked for.
 const filteredScenarios = computed(() => {
-  if (!searchQuery.value.trim()) return scenarios.value
-  const q = searchQuery.value.toLowerCase()
-  return scenarios.value.filter(
-    s => s.title.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)
-  )
+  const q = searchQuery.value.trim().toLowerCase()
+  return scenarios.value.filter(s => {
+    if (s.archived_at && !showArchived.value) return false
+    if (!q) return true
+    return s.title.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)
+  })
 })
 
 // Load scenarios
@@ -158,6 +186,35 @@ async function confirmDelete() {
     await loadScenarios()
   } catch (err: any) {
     notifyError(err.response?.data?.error_message || t('orgScenarios.deleteError'))
+  }
+}
+
+// Archive / restore
+function handleArchive(scenario: OrgScenario) {
+  scenarioToArchive.value = scenario
+  showArchiveModal.value = true
+}
+
+async function confirmArchive() {
+  if (!scenarioToArchive.value) return
+  try {
+    await teacherService.archiveScenario(scenarioToArchive.value.id)
+    showArchiveModal.value = false
+    scenarioToArchive.value = null
+    notifySuccess(t('orgScenarios.archiveSuccess'))
+    await loadScenarios()
+  } catch (err: any) {
+    notifyError(err.response?.data?.error_message || t('orgScenarios.archiveError'))
+  }
+}
+
+async function handleUnarchive(scenario: OrgScenario) {
+  try {
+    await teacherService.unarchiveScenario(scenario.id)
+    notifySuccess(t('orgScenarios.unarchiveSuccess'))
+    await loadScenarios()
+  } catch (err: any) {
+    notifyError(err.response?.data?.error_message || t('orgScenarios.unarchiveError'))
   }
 }
 
@@ -268,6 +325,10 @@ onMounted(() => {
           :placeholder="t('orgScenarios.searchPlaceholder')"
         />
       </div>
+      <label class="ocf-archived-toggle">
+        <input v-model="showArchived" type="checkbox" />
+        {{ t('orgScenarios.showArchived') }}
+      </label>
     </div>
 
     <!-- Loading -->
@@ -281,16 +342,27 @@ onMounted(() => {
       <p>{{ t('orgScenarios.noScenarios') }}</p>
     </div>
 
+    <!-- Everything hidden by the search or the archived toggle -->
+    <div v-else-if="filteredScenarios.length === 0" class="empty-state">
+      <i class="fas fa-filter"></i>
+      <p>{{ t('orgScenarios.noVisibleScenarios') }}</p>
+    </div>
+
     <!-- Scenario Cards -->
     <div v-else class="scenarios-list">
       <div
         v-for="scenario in filteredScenarios"
         :key="scenario.id"
         class="scenario-card"
+        :class="{ 'ocf-scenario-archived': !!scenario.archived_at }"
       >
         <div class="scenario-info">
           <div class="scenario-title">
             {{ scenario.title || scenario.name }}
+            <span v-if="scenario.archived_at" class="ocf-archived-badge">
+              <i class="fas fa-box-archive"></i>
+              {{ t('orgScenarios.archived') }}
+            </span>
           </div>
           <div class="scenario-meta">
             <span
@@ -331,6 +403,24 @@ onMounted(() => {
             {{ t('orgScenarios.exportKillercoda') }}
           </button>
           <button
+            v-if="!scenario.archived_at"
+            @click="handleArchive(scenario)"
+            class="btn btn-sm btn-outline"
+            :title="t('orgScenarios.archive')"
+          >
+            <i class="fas fa-box-archive"></i>
+            {{ t('orgScenarios.archive') }}
+          </button>
+          <button
+            v-else
+            @click="handleUnarchive(scenario)"
+            class="btn btn-sm btn-outline"
+            :title="t('orgScenarios.unarchive')"
+          >
+            <i class="fas fa-rotate-left"></i>
+            {{ t('orgScenarios.unarchive') }}
+          </button>
+          <button
             @click="handleDelete(scenario)"
             class="btn btn-sm btn-danger"
           >
@@ -353,6 +443,20 @@ onMounted(() => {
       @close="showDeleteModal = false"
     >
       <p>{{ t('orgScenarios.confirmDelete') }}</p>
+    </BaseModal>
+
+    <!-- Archive Confirmation Modal -->
+    <BaseModal
+      :visible="showArchiveModal"
+      :title="t('orgScenarios.confirmArchiveTitle')"
+      size="small"
+      :show-default-footer="true"
+      :confirm-text="t('orgScenarios.archive')"
+      :cancel-text="t('orgScenarios.cancel')"
+      @confirm="confirmArchive"
+      @close="showArchiveModal = false"
+    >
+      <p>{{ t('orgScenarios.confirmArchive') }}</p>
     </BaseModal>
 
     <!-- KillerCoda Upload Modal -->
@@ -398,7 +502,44 @@ onMounted(() => {
 }
 
 .search-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
   margin-bottom: var(--spacing-lg);
+}
+
+.search-bar .search-input-wrapper {
+  flex: 1;
+}
+
+.ocf-archived-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin: 0;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.ocf-archived-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-left: var(--spacing-sm);
+  padding: 0 var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  background: var(--color-surface-variant);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+}
+
+.ocf-scenario-archived .scenario-title,
+.ocf-scenario-archived .scenario-meta {
+  opacity: 0.65;
 }
 
 .search-input-wrapper {
