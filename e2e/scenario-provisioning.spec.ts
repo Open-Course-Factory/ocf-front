@@ -119,4 +119,39 @@ test.describe('Scenario per-step provisioning', () => {
     expect(mock.reprovisionCalls).toBe(1);
     expect(mock.sessionStatus).toBe('active');
   });
+
+  // The other failure shape, and the one with no safety net: preparation that
+  // ran inline and failed leaves the session 'active', so no poll will ever
+  // report it. Only next_step_provisioning_failed on the advance response says
+  // so, and a client that ignores it walks the learner onto a step whose
+  // environment was never built — silently.
+  test('a preparation that failed inline surfaces the same retry', async ({ page }) => {
+    test.setTimeout(120_000);
+    const steps: MockStep[] = [
+      { order: 1, title: 'Validate me', type: 'terminal', provisionNextFailsInline: true },
+      { order: 2, title: 'Heavy step', type: 'info' },
+    ];
+    const mock = new ScenarioMock(steps);
+    await mock.install(page);
+    await login(page, E2E_USER, E2E_PASS);
+    await launchIntoPlayer(page, mock);
+
+    await page.getByTestId('scenario-verify-btn').click();
+
+    // No wait to sit through — the failure is known the moment the advance
+    // answers — and the step must not load behind it.
+    const failure = page.getByTestId('scenario-step-preparing-error');
+    await expect(failure).toBeVisible({ timeout: 20_000 });
+    // The failure replaces the step, it does not sit beside it: a visible step
+    // title here would mean the learner had been walked onto the broken level.
+    await expect(page.getByTestId('scenario-step-title')).toBeHidden();
+    expect(mock.sessionStatus).toBe('active');
+
+    await page.getByTestId('scenario-step-preparing-retry').click();
+
+    await expect(page.getByTestId('scenario-step-title')).toHaveText('Heavy step', {
+      timeout: 30_000,
+    });
+    expect(mock.reprovisionCalls).toBe(1);
+  });
 });

@@ -49,6 +49,10 @@ export interface MockStep {
   provisionTimeoutSeconds?: number;
   /** When true, that wait ends in setup_failed instead of active. */
   provisionNextFails?: boolean;
+  /** When true, the next step's preparation runs inline and fails: the verify
+   *  response carries next_step_provisioning_failed and the session stays
+   *  'active', so there is nothing for the client to poll. */
+  provisionNextFailsInline?: boolean;
 }
 
 export interface MockScenarioOptions {
@@ -328,6 +332,18 @@ export class ScenarioMock {
             next_step: next,
             next_step_provisioning: true,
             provisioning_timeout_seconds: step.provisionTimeoutSeconds ?? 30,
+          })
+        );
+      }
+      // Synchronous per-step provisioning that failed: the advance stands and
+      // the session stays active, so the response itself is the only signal.
+      if (next !== undefined && step.provisionNextFailsInline) {
+        return route.fulfill(
+          json({
+            passed: true,
+            output: 'ok',
+            next_step: next,
+            next_step_provisioning_failed: true,
           })
         );
       }
