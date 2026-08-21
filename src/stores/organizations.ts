@@ -210,7 +210,23 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     if (!data.name) throw new Error(t('organizations.nameRequired'))
     if (!data.display_name) throw new Error(t('organizations.displayNameRequired'))
 
-    return await base.createEntity(apiEndpoint, data)
+    const created = await base.createEntity(apiEndpoint, data)
+
+    // Creating an organization enrols the creator as its owner, and every
+    // "may I manage this?" answer is read off `organization_memberships` in the
+    // user snapshot — which was taken at login and does not know about the
+    // membership that was just created. Without this refresh the owner is shown
+    // their own new organization with no Import and no Manage button, only
+    // "View", until something else happens to refetch the snapshot.
+    //
+    // It belongs here rather than in the page: the membership is a consequence
+    // of creating the organization, not of the screen that asked for one.
+    await usePermissionsStore().loadCurrentUser().catch(() => {
+      // A stale snapshot is a degraded menu, not a failed creation — the
+      // organization exists either way, and the next load will pick it up.
+    })
+
+    return created
   }
 
   // Update organization
