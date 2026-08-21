@@ -26,6 +26,9 @@ import {
   adminSession,
   deleteUsersByEmail,
   deleteOrganization,
+  deleteClassGroup,
+  purgeVerificationTokens,
+  reportLeaks,
   findOrgGroupByName,
   verifyEmailViaToken,
   FRESH_PASSWORD,
@@ -108,6 +111,7 @@ let targetPlan: any | null = null;
 let seatPlan: any | null = null;
 let trainerOrgId: string | null = null;
 let scenarioId: string | null = null;
+let classGroupId: string | null = null;
 let knownBatchIds = new Set<string>();
 
 test.beforeAll(async () => {
@@ -119,8 +123,13 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-  // Order matters: the scenario belongs to the org, the org belongs to the
-  // trainer, and deleting the trainer first would orphan both.
+  // Order matters, and it is not the obvious one: the class must go before the
+  // organization, because deleting an organization does NOT take its classes
+  // with it. The learners' sessions go first of all, while their accounts still
+  // exist to authenticate the call, and the accounts go last.
+  const leaks: string[] = [];
+  const emails = [trainer.email, ...learners.map((l) => l.email)];
+
   if (trainerApi) {
     for (const learner of learners) {
       await apiLogin(learner.email, FRESH_PASSWORD)
@@ -130,17 +139,31 @@ test.afterAll(async () => {
         })
         .catch(() => {});
     }
+
+    if (classGroupId && !(await deleteClassGroup(trainerApi, classGroupId))) {
+      leaks.push(`class group ${CLASS_DISPLAY_NAME} (${classGroupId})`);
+    }
     if (scenarioId && trainerOrgId) {
       await deleteScenario(trainerApi, trainerOrgId, scenarioId).catch(() => {});
     }
-    if (trainerOrgId) await deleteOrganization(trainerApi, trainerOrgId);
+    if (trainerOrgId && !(await deleteOrganization(trainerApi, trainerOrgId))) {
+      leaks.push(`organization ${ORG_NAME} (${trainerOrgId})`);
+    }
     await trainerApi.api.dispose();
   }
 
   if (admin) {
-    await deleteUsersByEmail(admin, [trainer.email, ...learners.map((l) => l.email)]);
+    const deleted = await deleteUsersByEmail(admin, emails);
+    for (const email of emails.filter((e) => !deleted.includes(e))) {
+      leaks.push(`account ${email}`);
+    }
     await admin.api.dispose();
+  } else {
+    leaks.push(`accounts ${emails.join(', ')} (no admin session to delete them)`);
   }
+
+  purgeVerificationTokens(emails);
+  reportLeaks(leaks);
 });
 
 /** The class row on the teacher console, whichever else is listed. */
@@ -425,6 +448,7 @@ test.describe('Trainer full journey', () => {
       // where a class can exist while nobody is in it.
       const group = await findOrgGroupByName(trainerApi!, trainerOrgId!, CLASS_DISPLAY_NAME);
       expect(group, 'the class must exist in the organization').toBeTruthy();
+      classGroupId = group!.id;
 
       // And every learner must be able to sign in with the password the CSV
       // gave them — force_reset was declined, so there is no reset to walk.

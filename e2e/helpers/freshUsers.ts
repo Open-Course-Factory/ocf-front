@@ -222,13 +222,78 @@ export async function deleteUsersByEmail(
   return deleted;
 }
 
-/** Delete an organization created by the run, best-effort. */
-export async function deleteOrganization(session: ApiSession, orgId: string): Promise<void> {
-  await session.api
+/**
+ * Delete an organization created by the run. Reports whether it went, rather
+ * than swallowing the answer — see `reportLeaks`.
+ */
+export async function deleteOrganization(session: ApiSession, orgId: string): Promise<boolean> {
+  const res = await session.api
     .delete(`${API_BASE}/organizations/${orgId}`, {
       headers: { Authorization: `Bearer ${session.token}` },
     })
-    .catch(() => {});
+    .catch(() => null);
+  return !!res?.ok();
+}
+
+/**
+ * Delete a class group created by the run.
+ *
+ * Deleting the organization does NOT take its classes with it — the org row is
+ * soft-deleted and its class_groups stay live — so a run that only deleted the
+ * org left its class behind every time. This is the same endpoint the class
+ * settings page's delete button calls.
+ */
+export async function deleteClassGroup(session: ApiSession, groupId: string): Promise<boolean> {
+  const res = await session.api
+    .delete(`${API_BASE}/class-groups/${groupId}`, {
+      headers: { Authorization: `Bearer ${session.token}` },
+    })
+    .catch(() => null);
+  return !!res?.ok();
+}
+
+/**
+ * Drop the verification-token rows registration wrote for these addresses.
+ *
+ * They are keyed to users that no longer exist by the time teardown runs, and
+ * there is no endpoint that removes them — the product expects them to age out.
+ * A spec that registers an account per run would otherwise leave one behind
+ * every time.
+ */
+export function purgeVerificationTokens(emails: string[]): void {
+  const safe = emails.filter((e) => /^[a-z0-9._-]+@[a-z0-9.-]+$/i.test(e));
+  if (safe.length === 0) return;
+
+  const list = safe.map((e) => `'${e}'`).join(',');
+  try {
+    execFileSync(
+      'docker',
+      [
+        'exec', PG_CONTAINER, 'psql', '-U', PG_USER, '-d', PG_DATABASE, '-q', '-c',
+        `DELETE FROM email_verification_tokens WHERE email IN (${list});`,
+      ],
+      { encoding: 'utf-8' }
+    );
+  } catch {
+    // Teardown must not fail the run; reportLeaks says what survived.
+  }
+}
+
+/**
+ * Say plainly what the run failed to clean up.
+ *
+ * Teardown is best-effort by necessity — it also runs after a mid-test failure,
+ * when half of what it wants to delete was never created. That is exactly why
+ * it must not be silent: every leak this spec has had was a delete whose
+ * rejection went into a `.catch(() => {})` and was never seen again.
+ */
+export function reportLeaks(leaks: string[]): void {
+  if (leaks.length === 0) return;
+  console.warn(
+    `\n[trainer-full-journey] teardown left these behind — delete them by hand:\n  - ${leaks.join(
+      '\n  - '
+    )}\n`
+  );
 }
 
 /** The class groups an org holds — used to find the imported class by name. */
