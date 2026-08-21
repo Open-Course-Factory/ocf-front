@@ -390,11 +390,11 @@ test.describe('Trainer full journey', () => {
       // but "View".
       await ensureOrgContext(page, ORG_DISPLAY_NAME);
 
-      // The class comes first, and it is created HERE rather than by the
-      // import: a class the import creates has no owner membership row, so its
-      // own trainer fails every GroupRole gate on it (see buildLearnersCsv).
-      // Creating it in the console runs the owner hook; the import then only
-      // has to fill it.
+      // The class comes first and is created HERE rather than by the import,
+      // which is the order a trainer works in: the class exists, then the
+      // roster arrives. It is also what kept this spec working while a
+      // class created by the import was unmanageable by its own owner — see
+      // buildLearnersCsv for that story and where it is now guarded.
       await openMyClassesFromSidebar(page);
       await demoPause(page);
       await page.locator('[data-test="create-class"]').click();

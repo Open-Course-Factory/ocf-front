@@ -158,12 +158,15 @@ export async function verifyEmailViaToken(email: string): Promise<void> {
  * Only the users file: the class itself is created in the console and named as
  * the import's target group, which is what puts these three in it.
  *
- * That is not merely a shortcut — a class created BY the import cannot be
- * managed by the trainer who imported it. importService.processGroup writes the
- * ClassGroup with a raw db.Create, so the hook that enrols the owner never
- * fires, and `CheckGroupRole` reads group_members alone: with no owner row the
- * trainer fails every GroupRole gate on their own class, starting with the list
- * of scenarios they could assign to it.
+ * That is the order a trainer works in — the class exists, then the roster
+ * arrives — and it is also the order that stays safe on an older backend. A
+ * class created BY the import used to be unmanageable by the trainer who
+ * imported it: processGroup wrote the ClassGroup with a raw db.Create, the hook
+ * that enrols the owner never fired, and `CheckGroupRole` reads group_members
+ * alone, so its own owner failed every GroupRole gate on it. Fixed in ocf-core
+ * by routing every membership through GroupService.EnrolMember; the groups.csv
+ * path is covered there by tests/groups/enrolMemberAuthorization_test.go rather
+ * than here, because this spec is about the journey, not that regression.
  *
  * `force_reset` is deliberately "false". The import sets force_password_reset
  * only when the row asks for it, so an explicit password plus a declined reset
