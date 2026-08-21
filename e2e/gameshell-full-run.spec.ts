@@ -51,6 +51,19 @@ test.use({ video: 'on' });
 // the old fixed sleeps, so nothing here can wait longer than before.
 const POLL_MS = 120;
 
+// Reading an element that is ABOUT TO DETACH costs the full action timeout.
+// Playwright auto-waits inside innerText/getAttribute, so when the panel swaps
+// the step body out mid-call the read does not fail — it retries for
+// actionTimeout (15s) and only then throws, and a `.catch()` around it turns
+// that into a silent 15-second pause that looks like the product being slow.
+// Every step paid it once: measured click-to-advance was 15.0s, exactly the
+// timeout, on every step regardless of what the step did.
+//
+// So every read inside a poll loop gets its own short budget. Failing fast is
+// the point: the loop simply looks again 250ms later, and a detached element
+// is expected here rather than exceptional.
+const READ_MS = 1_000;
+
 // The shell is idle again when its prompt is back at the end of the buffer.
 // PS1 is `[GameShell] \$ ` and gains the path above it once the prompt
 // treasure is awarded (step4), so only the tail is stable — and `\$` renders
@@ -139,9 +152,16 @@ async function readMarker(page: Page, cmd: string, timeoutMs = 15_000): Promise<
 // nothing when there is headroom and waits exactly long enough when there
 // isn't — and it keeps pacing correct if the rest of the suite gets faster.
 const RATE_WINDOW_MS = 60_000;
-// One below the server's 10, so a request we did not account for cannot be the
-// one that trips it. A 429 is expensive to recover from; a spare slot is not.
-const RATE_MAX = 9;
+// One below the server's ceiling, so a request we did not account for cannot be
+// the one that trips it. A 429 is expensive to recover from; a spare slot is not.
+//
+// ocf-core lets a NON-PRODUCTION deployment raise its ceiling with
+// SCENARIO_RATE_LIMIT_PER_MINUTE, and there is no way for us to read what it
+// chose — so GS_RATE_MAX tells this side the same number. Set them together or
+// raising the server's limit changes nothing: the suite would go on throttling
+// itself to the default and the window would never fill.
+const SERVER_RATE_MAX = Number(process.env.GS_RATE_MAX ?? 10);
+const RATE_MAX = Math.max(1, SERVER_RATE_MAX - 1);
 const RATE_SAFETY_MS = 400;
 const checkTimes: number[] = [];
 
@@ -222,7 +242,7 @@ async function expectVerifyPasses(page: Page, currentTitle: string): Promise<voi
     let deadline = Date.now() + 30_000;
     while (Date.now() < deadline) {
       if (await page.getByTestId('scenario-completed').isVisible().catch(() => false)) return;
-      const now = (await title.innerText().catch(() => currentTitle)).trim();
+      const now = (await title.innerText({ timeout: READ_MS }).catch(() => currentTitle)).trim();
       if (now !== currentTitle) return;
 
       // The check passed and the next step is being built: the title only
@@ -238,7 +258,7 @@ async function expectVerifyPasses(page: Page, currentTitle: string): Promise<voi
 
       // A refusal is an answer: report what the check said instead of waiting
       // out the clock on a step that will never advance.
-      const cls = (await result.getAttribute('class').catch(() => null)) || '';
+      const cls = (await result.getAttribute('class', { timeout: READ_MS }).catch(() => null)) || '';
       if (cls.includes('failed')) {
         const said = (await result.innerText().catch(() => '')).trim();
         if (isRateLimited(said)) break; // wait out the window, then press again
@@ -282,9 +302,9 @@ async function verifyOutcome(page: Page, timeoutMs = 30_000): Promise<Outcome> {
     if (await page.getByTestId('scenario-completed').isVisible().catch(() => false)) return 'passed';
     // A short timeout here, not the default: during the transition the title
     // is gone, and blocking on it would hide the refusal case behind it.
-    const now = (await title.innerText({ timeout: 1_000 }).catch(() => '')).trim();
+    const now = (await title.innerText({ timeout: READ_MS }).catch(() => '')).trim();
     if (now && now !== before) return 'passed';
-    const cls = (await result.getAttribute('class').catch(() => null)) || '';
+    const cls = (await result.getAttribute('class', { timeout: READ_MS }).catch(() => null)) || '';
     if (cls.includes('failed')) return 'failed';
     await page.waitForTimeout(250);
   }
@@ -605,7 +625,7 @@ test.describe('GameShell — the whole adventure, in a real container', () => {
               if (await page.getByTestId('scenario-completed').isVisible().catch(() => false)) {
                 return 'completed';
               }
-              return (await title.innerText().catch(() => titleNow)).trim();
+              return (await title.innerText({ timeout: READ_MS }).catch(() => titleNow)).trim();
             },
             { timeout: 300_000, intervals: [250] }
           )
