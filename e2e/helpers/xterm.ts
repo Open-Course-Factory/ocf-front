@@ -10,7 +10,21 @@ import { type Page, expect } from '@playwright/test';
 export async function typeInTerminal(page: Page, command: string): Promise<void> {
   const term = page.locator('.xterm').first();
   await expect(term).toBeVisible({ timeout: 30_000 });
-  await term.click();
+
+  // xterm.js reads keystrokes through a hidden textarea, and that is what has
+  // to hold focus. Clicking the container alone is not enough after the panel
+  // re-renders — a step advance moves focus away and the keystrokes then go
+  // nowhere at all, silently: no error, no echo, nothing in the shell.
+  const helper = page.locator('.xterm-helper-textarea').first();
+  if (await helper.count()) {
+    await helper.focus();
+  } else {
+    await term.click();
+  }
+  // Let focus settle before the first character, which is otherwise the one
+  // that gets dropped (`cho` for `echo`).
+  await page.waitForTimeout(250);
+
   // A small per-key delay keeps the attach-addon websocket from coalescing
   // keystrokes into frames the remote shell echoes out of order.
   await page.keyboard.type(command, { delay: 25 });
@@ -36,8 +50,21 @@ export async function readTerminalText(page: Page): Promise<string> {
 export async function waitForLiveTerminal(page: Page, timeoutMs = 60_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   const retryBtn = page.locator('.terminal-error-actions .btn-primary');
-  const probe = `echo ready-${Date.now().toString(36)}`;
-  const marker = probe.slice(5);
+
+  // The probe must be one the SHELL has to compute. A marker that appears in
+  // the text we type is satisfied by the terminal echoing our own keystrokes —
+  // and it does echo them before anything is executing, so the old
+  // `echo ready-x` / look-for-`ready-x` probe reported a live terminal on a
+  // console that was still attaching. Every later step then failed for reasons
+  // that had nothing to do with what it was testing.
+  //
+  // The operands are random so a marker left in the scrollback by an earlier
+  // probe cannot satisfy a later one.
+  const a = 1_000 + Math.floor(Math.random() * 8_000);
+  const b = 1_000 + Math.floor(Math.random() * 8_000);
+  const probe = `echo MARK$((${a}+${b}))END`;
+  const marker = `MARK${a + b}END`;
+
   while (Date.now() < deadline) {
     if (await retryBtn.isVisible().catch(() => false)) {
       await retryBtn.click();
@@ -46,13 +73,15 @@ export async function waitForLiveTerminal(page: Page, timeoutMs = 60_000): Promi
     }
     if (await page.locator('.xterm').first().isVisible().catch(() => false)) {
       await typeInTerminal(page, probe);
-      await page.waitForTimeout(1_500);
+      await page.waitForTimeout(2_000);
       if ((await readTerminalText(page)).includes(marker)) return;
     } else {
       await page.waitForTimeout(1_000);
     }
   }
-  throw new Error('terminal never became interactive');
+  throw new Error(
+    'terminal never executed a command (it may be attached but not accepting input)'
+  );
 }
 
 /**

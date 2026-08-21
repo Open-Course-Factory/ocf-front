@@ -9,6 +9,11 @@ export default defineConfig({
   reporter: 'html',
   timeout: 60_000,
   use: {
+    // Without this, a click on an element something else is covering retries
+    // FOREVER — Playwright's default action timeout is 0. A transient overlay
+    // then reads as a frozen test that only the test timeout ends, which hides
+    // the real fault behind tens of minutes of silence.
+    actionTimeout: 15_000,
     baseURL: process.env.E2E_BASE_URL || 'http://localhost:4000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',

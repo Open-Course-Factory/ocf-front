@@ -230,6 +230,73 @@ e2e:scenarios:
     expire_in: 1 week
 
 # ============================================================================
+# GameShell full run — the whole 36-step scenario played through the screen in
+# a REAL container. Manual only: it boots an actual Incus instance, spends real
+# plan budget on the account it logs in as, and takes ~15 minutes.
+#
+# This suite cannot build its own world the way e2e:scenarios does. That one
+# replaces every /scenario-sessions/* call with a mock, so ocf-core + postgres +
+# casdoor is enough for it. This one exists to prove the opposite: that Verify
+# refuses before the work and accepts after, against a shell that really ran the
+# command. That needs tt-backend and an Incus host, and the runner has neither.
+#
+# So it drives an already-deployed environment. Set as CI variables:
+#   GAMESHELL_E2E_URL   base URL of the ocf-front to drive
+#   GAMESHELL_E2E_USER  a learner account there, with scenario budget to spare
+#   GAMESHELL_E2E_PASS  that account's password (masked)
+# With no URL configured the job does not appear at all, the same way
+# e2e:payment hides itself without a Stripe key.
+#
+# The scenario has to be seeded in the target environment first, and seeding is
+# manual (challenges/seed-scenario.sh). A stale seed fails at the step whose
+# content changed, which reads as a product bug and is not one.
+# ============================================================================
+e2e:gameshell:
+  stage: test
+  image: mcr.microsoft.com/playwright:v1.59.1-noble
+  cache:
+    - key: "${CI_COMMIT_REF_SLUG}-npm"
+      paths:
+        - node_modules/
+        - .npm/
+  variables:
+    # The spec's own progress trail, written line by line. Playwright buffers
+    # its stdout, so on a run that hangs this file is the only thing that says
+    # which step it hung on — keep it next to the video.
+    GS_TRAIL: "$CI_PROJECT_DIR/gs-trail.log"
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $GAMESHELL_E2E_URL == null
+      when: never
+    - when: manual
+      allow_failure: true
+  # Observed run is ~15 min; this leaves room for a slower remote environment
+  # without letting a wedged run sit on the runner for the spec's own 75-minute
+  # safety net.
+  timeout: 45 minutes
+  before_script:
+    - npm ci --prefer-offline
+  script:
+    # --retries=0 deliberately overrides the config's CI default of 2. A retry
+    # here is not free: it launches another container and spends another slice
+    # of the account's budget, and two silent retries can exhaust the plan and
+    # turn every later run into "no scenario available".
+    - E2E_BASE_URL="$GAMESHELL_E2E_URL"
+      E2E_USER="$GAMESHELL_E2E_USER"
+      E2E_PASS="$GAMESHELL_E2E_PASS"
+      npx playwright test gameshell-full-run --retries=0
+  artifacts:
+    # always, not on_failure: the video of a passing run is the deliverable —
+    # it is how we show the scenario is playable end to end.
+    when: always
+    paths:
+      - test-results/
+      - playwright-report/
+      - gs-trail.log
+    expire_in: 1 day
+
+# ============================================================================
 # Release Component
 # ============================================================================
 
