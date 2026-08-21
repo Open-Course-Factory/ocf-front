@@ -46,6 +46,17 @@ const BOOK = `${CAVE}/Book_of_potions`;
 
 test.use({ video: 'on' });
 
+// How often the polls below look again. Every wait in this file is "until a
+// condition holds, capped", never "sleep this long and hope" — the caps are
+// the old fixed sleeps, so nothing here can wait longer than before.
+const POLL_MS = 120;
+
+// The shell is idle again when its prompt is back at the end of the buffer.
+// PS1 is `[GameShell] \$ ` and gains the path above it once the prompt
+// treasure is awarded (step4), so only the tail is stable — and `\$` renders
+// as `#` because the container runs as root.
+const PROMPT_BACK = /\[GameShell\]\s*[#$]\s*$/;
+
 /**
  * Type a command and confirm the shell actually received it.
  *
@@ -68,12 +79,27 @@ async function sh(page: Page, cmd: string, settleMs = 900): Promise<void> {
     // retyped, and `mv`/`rm` do not survive being run twice.
     const before = await readTerminalText(page);
     await typeInTerminal(page, cmd);
-    await page.waitForTimeout(settleMs);
-    const after = await readTerminalText(page);
-    if (after.includes(tail) || after !== before) return;
+
+    // Two things must be true before the check may run: the keystrokes
+    // arrived, and the command has FINISHED. A fixed sleep guesses at the
+    // second and has to guess high, on every command, for the slowest one.
+    // The prompt coming back states it exactly, and usually states it far
+    // sooner. The budget is unchanged, so a prompt this cannot recognise
+    // degrades to precisely the old behaviour rather than to a flaky one.
+    const deadline = Date.now() + settleMs;
+    let after = before;
+    let arrived = false;
+    for (;;) {
+      after = await readTerminalText(page);
+      arrived = after.includes(tail) || after !== before;
+      if (arrived && PROMPT_BACK.test(after.trimEnd())) return;
+      if (Date.now() >= deadline) break;
+      await page.waitForTimeout(POLL_MS);
+    }
+    if (arrived) return;
     // eslint-disable-next-line no-console
     console.log(`    keystrokes did not arrive (attempt ${attempt}), retyping: ${cmd.slice(0, 40)}`);
-    await page.waitForTimeout(1_000);
+    await page.waitForTimeout(600);
   }
   throw new Error(`the terminal never received: ${cmd}`);
 }
@@ -96,23 +122,37 @@ async function readMarker(page: Page, cmd: string, timeoutMs = 15_000): Promise<
     const text = await readTerminalText(page);
     const hits = [...text.matchAll(/@@([^@\s]+)@@/g)];
     if (hits.length) return hits[hits.length - 1][1];
-    await page.waitForTimeout(750);
+    await page.waitForTimeout(250);
   }
   throw new Error(`no @@marker@@ in terminal after: ${cmd}`);
 }
 
-// The scenario routes are rate limited to 10 requests per minute per user
-// (PerUserRateLimit). A test that presses Verify freely blows through that in
-// seconds, and a 429 comes back rendered as a FAILED check — so the limiter
-// looks exactly like the scenario refusing, and every retry digs deeper. Every
-// press goes through this gate instead.
-const MIN_MS_BETWEEN_CHECKS = 7_000;
-let lastCheckAt = 0;
+// The scenario routes are rate limited per user, and a 429 comes back rendered
+// as a FAILED check — so the limiter looks exactly like the scenario refusing,
+// and every retry digs deeper. Every rate-limited press goes through this gate.
+//
+// ocf-core's PerUserRateLimit is a SLIDING WINDOW: at most RATE_MAX requests in
+// any 60 seconds, counted across verify, submit-flag, submit-quiz and
+// reprovision-step together. A flat minimum delay between presses pays the
+// worst case on every press; the window only bites when it is genuinely full,
+// which on a run whose steps do real work is almost never. Modelling it costs
+// nothing when there is headroom and waits exactly long enough when there
+// isn't — and it keeps pacing correct if the rest of the suite gets faster.
+const RATE_WINDOW_MS = 60_000;
+// One below the server's 10, so a request we did not account for cannot be the
+// one that trips it. A 429 is expensive to recover from; a spare slot is not.
+const RATE_MAX = 9;
+const RATE_SAFETY_MS = 400;
+const checkTimes: number[] = [];
 
 async function paceCheck(page: Page): Promise<void> {
-  const wait = MIN_MS_BETWEEN_CHECKS - (Date.now() - lastCheckAt);
-  if (wait > 0) await page.waitForTimeout(wait);
-  lastCheckAt = Date.now();
+  for (;;) {
+    const now = Date.now();
+    while (checkTimes.length && now - checkTimes[0] >= RATE_WINDOW_MS) checkTimes.shift();
+    if (checkTimes.length < RATE_MAX) break;
+    await page.waitForTimeout(RATE_WINDOW_MS - (now - checkTimes[0]) + RATE_SAFETY_MS);
+  }
+  checkTimes.push(Date.now());
 }
 
 /** True when a failed result is the limiter talking, not the scenario. */
@@ -192,7 +232,7 @@ async function expectVerifyPasses(page: Page, currentTitle: string): Promise<voi
       if (await page.getByTestId('scenario-step-preparing').isVisible().catch(() => false)) {
         trail('    next step is provisioning, holding');
         deadline = Date.now() + 300_000;
-        await page.waitForTimeout(2_000);
+        await page.waitForTimeout(500);
         continue;
       }
 
@@ -204,7 +244,7 @@ async function expectVerifyPasses(page: Page, currentTitle: string): Promise<voi
         if (isRateLimited(said)) break; // wait out the window, then press again
         throw new Error(`the check refused "${currentTitle}": ${said}`);
       }
-      await page.waitForTimeout(1_000);
+      await page.waitForTimeout(250);
     }
     // eslint-disable-next-line no-console
     console.log(`    no advance after press ${attempt} on "${currentTitle}", pressing again`);
@@ -212,15 +252,43 @@ async function expectVerifyPasses(page: Page, currentTitle: string): Promise<voi
   throw new Error(`"${currentTitle}" never advanced after five Verify presses`);
 }
 
-/** Press Verify and report which way it went, without asserting. */
-async function verifyOutcome(page: Page): Promise<Outcome> {
+/**
+ * Press Verify and report which way it went, without asserting.
+ *
+ * Success is read the way it is everywhere else in this file — by the step
+ * ADVANCING — and for the same reason: the panel swaps the step body out the
+ * moment a check passes, taking the result element with it. Deciding from that
+ * element made a pass indistinguishable from an element that was never there,
+ * so a run whose work landed in time waited out a 60s visibility timeout on its
+ * own success and then failed. Only the refusal is read from the element,
+ * which is the case where it stays on screen.
+ *
+ * It also goes through paceCheck: this press spends a limiter slot like any
+ * other, and one taken without being recorded is one the next press is not
+ * expecting to be missing.
+ */
+async function verifyOutcome(page: Page, timeoutMs = 30_000): Promise<Outcome> {
   const result = page.getByTestId('scenario-verify-result');
   const button = page.getByTestId('scenario-verify-btn');
+  const title = page.getByTestId('scenario-step-title');
+  const before = (await title.innerText().catch(() => '')).trim();
+
+  await paceCheck(page);
   await expect(button).toBeEnabled({ timeout: 120_000 });
   await button.click();
-  await expect(result).toBeVisible({ timeout: 60_000 });
-  const cls = (await result.getAttribute('class')) || '';
-  return cls.includes('passed') ? 'passed' : 'failed';
+
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await page.getByTestId('scenario-completed').isVisible().catch(() => false)) return 'passed';
+    // A short timeout here, not the default: during the transition the title
+    // is gone, and blocking on it would hide the refusal case behind it.
+    const now = (await title.innerText({ timeout: 1_000 }).catch(() => '')).trim();
+    if (now && now !== before) return 'passed';
+    const cls = (await result.getAttribute('class').catch(() => null)) || '';
+    if (cls.includes('failed')) return 'failed';
+    await page.waitForTimeout(250);
+  }
+  return 'failed';
 }
 
 interface Step {
@@ -511,6 +579,10 @@ test.describe('GameShell — the whole adventure, in a real container', () => {
 
         if (step.wrongAnswer) {
           await input.fill(step.wrongAnswer);
+          // submit-flag is behind the SAME per-user limiter as verify, so it
+          // has to go through the same gate — pressing it freely was spending
+          // slots the next Verify then had to wait for.
+          await paceCheck(page);
           await submit.click();
           await expect(outcome, 'a wrong answer must be refused').toHaveClass(/incorrect/, {
             timeout: 60_000,
@@ -520,6 +592,7 @@ test.describe('GameShell — the whole adventure, in a real container', () => {
         const value = await step.answer(page);
         trail(`    answer worked out from the world: ${value}`);
         await input.fill(value);
+        await paceCheck(page);
         await submit.click();
 
         // Acceptance is proven by the adventure moving on. The result element
@@ -534,7 +607,7 @@ test.describe('GameShell — the whole adventure, in a real container', () => {
               }
               return (await title.innerText().catch(() => titleNow)).trim();
             },
-            { timeout: 300_000, intervals: [1_000] }
+            { timeout: 300_000, intervals: [250] }
           )
           .not.toBe(titleNow);
         continue;

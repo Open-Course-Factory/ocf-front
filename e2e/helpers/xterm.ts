@@ -22,8 +22,12 @@ export async function typeInTerminal(page: Page, command: string): Promise<void>
     await term.click();
   }
   // Let focus settle before the first character, which is otherwise the one
-  // that gets dropped (`cho` for `echo`).
-  await page.waitForTimeout(250);
+  // that gets dropped (`cho` for `echo`). Confirmed by waiting for the element
+  // to actually hold focus rather than by guessing at how long that takes.
+  await page
+    .waitForFunction(() => document.activeElement?.classList.contains('xterm-helper-textarea'), null, { timeout: 2_000 })
+    .catch(() => {});
+  await page.waitForTimeout(60);
 
   // A small per-key delay keeps the attach-addon websocket from coalescing
   // keystrokes into frames the remote shell echoes out of order.
@@ -73,10 +77,17 @@ export async function waitForLiveTerminal(page: Page, timeoutMs = 60_000): Promi
     }
     if (await page.locator('.xterm').first().isVisible().catch(() => false)) {
       await typeInTerminal(page, probe);
-      await page.waitForTimeout(2_000);
-      if ((await readTerminalText(page)).includes(marker)) return;
+      // Poll for the answer instead of sleeping for it: the probe usually lands
+      // long before the old fixed wait was up, and this is on the critical path
+      // of every session start.
+      const settle = Date.now() + 2_000;
+      for (;;) {
+        if ((await readTerminalText(page)).includes(marker)) return;
+        if (Date.now() >= settle) break;
+        await page.waitForTimeout(150);
+      }
     } else {
-      await page.waitForTimeout(1_000);
+      await page.waitForTimeout(300);
     }
   }
   throw new Error(
