@@ -208,6 +208,30 @@ onMounted(async () => {
   const token = route.query.token as string
 
   if (!token) {
+    // We get here two ways: the user opened /verify-email directly, or the
+    // router guard sent them here on a stale `emailVerified === false`.
+    // In the second case their token is already spent, and asking the backend
+    // to resend one for a verified address is silently ignored — so offering
+    // the token form first would be a dead end. Ask the backend what it
+    // actually thinks before deciding which screen to show.
+    if (userStore.isAuthenticated) {
+      try {
+        const status = await userStore.refreshVerificationStatus()
+        if (status.verified) {
+          // A `redirect` means the guard bounced them here; they never asked
+          // for this page, so send them on rather than making them click.
+          if (route.query.redirect) {
+            redirectAfterVerification()
+            return
+          }
+          state.value = 'alreadyVerified'
+          return
+        }
+      } catch (statusError) {
+        console.warn('Could not confirm verification status:', statusError)
+      }
+    }
+
     state.value = 'noToken'
     return
   }
@@ -387,6 +411,8 @@ const handleResendSuccess = () => {
 .btn-primary {
   display: inline-flex;
   align-items: center;
+  /* The manual-entry form stretches this button, so centre its own content. */
+  justify-content: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-md) var(--spacing-xl);
   background: var(--color-primary);
@@ -428,7 +454,8 @@ const handleResendSuccess = () => {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
-  margin-top: var(--spacing-xl);
+  /* .state-message already carries a var(--spacing-xl) bottom margin. */
+  margin-top: var(--spacing-sm);
   text-align: left;
 }
 

@@ -601,7 +601,25 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // Check email verification for payment-related routes
+  // Check email verification for payment-related routes.
+  //
+  // `emailVerified` is a snapshot taken by loadUserData() at login or boot, so
+  // it goes stale the moment the user verifies anywhere else — in a second tab,
+  // or before signing in. A stale `false` used to be terminal: the guard sent
+  // the user to VerifyEmail, whose token was already spent, and a resend for an
+  // already-verified address is silently dropped by the backend, so nothing in
+  // the SPA ever re-read the flag. The only escape was a full page reload.
+  //
+  // So ask the backend before blocking. That costs one request, and only on the
+  // path that was about to deny access.
+  if (to.meta.requiresEmailVerification && !currentUserStore.emailVerified) {
+    try {
+      await currentUserStore.refreshVerificationStatus();
+    } catch (err: any) {
+      console.warn('📧 Could not confirm verification status, keeping the cached value:', err?.message || err);
+    }
+  }
+
   if (to.meta.requiresEmailVerification && !currentUserStore.emailVerified) {
     console.warn(`📧 Access denied to ${to.path}: Email not verified`);
     next({
