@@ -89,14 +89,15 @@ test.describe('Plan purchase', () => {
 
     await planCard.locator('.btn-subscribe-compact').click();
 
-    // Free → paid replaces the Trial: confirm the plan change... (the modal
-    // opens only after the click handler's async subscription checks resolve)
-    await expect(page.locator('[data-test="confirm-plan-change"]')).toBeVisible({ timeout: 15_000 });
-    await demoPause(page);
-    await page.locator('[data-test="confirm-plan-change"]').click();
-
-    // ...then skip the optional coupon and continue to Stripe.
+    // Free → paid goes straight to the checkout step, which states the price
+    // and that the free plan is being replaced. (The modal opens only after
+    // the click handler's async subscription checks resolve.)
     await expect(page.locator('[data-test="coupon-input"]')).toBeVisible({ timeout: 15_000 });
+
+    // The price the buyer is committing to is on this screen, not only on
+    // Stripe's — that is the whole point of the step.
+    await expect(page.locator('[data-test="checkout-amount"]')).toBeVisible();
+    await demoPause(page);
 
     // Selling a digital service that starts immediately means the buyer has to
     // ask for that start and acknowledge losing the 14-day withdrawal right

@@ -276,8 +276,26 @@
         title-icon="fas fa-credit-card"
         @close="cancelCheckout"
       >
+        <!-- What is actually being bought. This used to live only on Stripe's
+             page, two screens further on. -->
+        <div v-if="pendingPlan" class="checkout-amount" data-test="checkout-amount">
+          <span class="checkout-amount-value">
+            {{ formatPrice(pendingPlan.price_amount, pendingPlan.currency) }}
+          </span>
+          <span class="checkout-amount-period">
+            / {{ formatBillingInterval(pendingPlan.billing_interval) }}
+          </span>
+          <span class="checkout-amount-note">{{ t('plans.checkout.vatIncluded') }}</span>
+        </div>
+        <p v-if="pendingAllowReplace" class="checkout-replaces">
+          {{ t('plans.checkout.replacesFreePlan') }}
+        </p>
+
         <div class="coupon-form">
-          <label for="couponCode">{{ t('plans.checkout.couponCode') }}</label>
+          <label for="couponCode">
+            {{ t('plans.checkout.couponCode') }}
+            <span class="coupon-optional">({{ t('plans.checkout.couponOptional') }})</span>
+          </label>
           <input
             id="couponCode"
             v-model="couponCode"
@@ -333,7 +351,7 @@
       >
         <div class="plan-change-confirm">
           <p>{{ t('subscriptions.changePlanWarning') }}</p>
-          <p v-if="planChangeShowProration" class="plan-change-proration">
+          <p class="plan-change-proration">
             {{ t('subscriptions.prorationAlwaysInvoiceDesc') }}
           </p>
         </div>
@@ -430,6 +448,9 @@ const { t } = useTranslations({
         cancel: 'Cancel',
         withdrawalWaiver: 'I ask for the service to start immediately and accept that I lose my 14-day right of withdrawal once it has been fully performed.',
         termsLink: 'Read the terms',
+        vatIncluded: 'VAT included',
+        replacesFreePlan: 'This replaces your current free plan.',
+        couponOptional: 'optional',
       },
     },
     pricingPlanCard: {
@@ -494,6 +515,9 @@ const { t } = useTranslations({
         cancel: 'Annuler',
         withdrawalWaiver: 'Je demande que le service commence immédiatement et j\'accepte de perdre mon droit de rétractation de 14 jours une fois celui-ci pleinement exécuté.',
         termsLink: 'Lire les conditions',
+        vatIncluded: 'Prix TTC',
+        replacesFreePlan: 'Cela remplace votre plan gratuit actuel.',
+        couponOptional: 'facultatif',
       },
     },
     pricingPlanCard: {
@@ -532,12 +556,11 @@ const showCouponModal = ref(false)
 const pendingPlan = ref<any>(null)
 const pendingAllowReplace = ref(false)
 
-// Declarative plan-change confirmation modal. It replaces the imperative
-// showConfirm dialog on the free→paid and paid→paid branches; selectPlan awaits
-// the promise returned by confirmPlanChange() and resumes when the user clicks
-// confirm or cancel in the modal.
+// Declarative confirmation for the paid→paid switch, the one case where the
+// user is billed a proration immediately and Stripe never shows them a page.
+// selectPlan awaits the promise and resumes on confirm or cancel.
+// (Free→paid needs no such step: its checkout modal states the price itself.)
 const showPlanChangeModal = ref(false)
-const planChangeShowProration = ref(false)
 let planChangeResolve: ((confirmed: boolean) => void) | null = null
 
 // Paid plans require a verified email — the backend rejects checkout otherwise,
@@ -760,13 +783,9 @@ async function selectPlan(plan: any) {
           return
         }
 
-        const confirmed = await confirmPlanChange({ proration: false })
-
-        if (!confirmed) {
-          isSubscribing.value = false
-          return
-        }
-
+        // No separate "are you sure?" step here: the checkout modal below names
+        // the plan, shows the price and says the free plan is being replaced,
+        // so a content-free confirmation ahead of it only adds a click.
         // Replace the existing free subscription (allowReplace=true) on checkout.
         openCouponModal(plan, true)
         return
@@ -774,7 +793,7 @@ async function selectPlan(plan: any) {
 
       // For paid-to-paid upgrades/downgrades: confirm the immediate proration
       // charge in the declarative modal before calling the upgrade endpoint.
-      const confirmed = await confirmPlanChange({ proration: true })
+      const confirmed = await confirmPlanChange()
 
       if (!confirmed) {
         isSubscribing.value = false
@@ -893,11 +912,9 @@ async function switchToFreePlan(plan: any) {
   }
 }
 
-// Open the declarative plan-change confirmation modal and resolve once the user
-// confirms or cancels. `proration` toggles the immediate-billing copy shown on
-// the paid→paid path.
-function confirmPlanChange(opts: { proration: boolean }): Promise<boolean> {
-  planChangeShowProration.value = opts.proration
+// Open the plan-change confirmation modal and resolve once the user confirms
+// or cancels.
+function confirmPlanChange(): Promise<boolean> {
   showPlanChangeModal.value = true
   return new Promise<boolean>(resolve => {
     planChangeResolve = resolve
@@ -1344,6 +1361,72 @@ async function confirmCheckout() {
 .coupon-form label {
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
+}
+
+.checkout-amount {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+}
+
+.checkout-amount-value {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.checkout-amount-period {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+}
+
+.checkout-amount-note {
+  margin-left: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.checkout-replaces {
+  margin: 0 0 var(--spacing-md) 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.coupon-optional {
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-muted);
+}
+
+/* Checkbox and its label on one line, with the wrapped text aligned to the
+   text rather than running back under the box. */
+.withdrawal-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.withdrawal-consent input[type='checkbox'] {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  /* Optically centre the box on the first line of the label. */
+  margin-top: 0.15em;
+  cursor: pointer;
+}
+
+.withdrawal-consent label {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.withdrawal-consent label a {
+  color: var(--color-primary);
 }
 
 .coupon-input {

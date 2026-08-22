@@ -425,7 +425,7 @@ describe('SubscriptionPlansCustomer — plan-change confirmations use a modal, n
     expect(upgradePlan).toHaveBeenCalledWith('plan-pro', 'always_invoice')
   })
 
-  it('confirms a free→paid upgrade in a modal, not the imperative dialog', async () => {
+  it('takes a free→paid upgrade straight to the checkout modal, with no imperative dialog', async () => {
     // Active FREE plan; target a paid plan (Solo).
     subState.current = freeSubscription()
     subState.hasActive = true
@@ -438,16 +438,27 @@ describe('SubscriptionPlansCustomer — plan-change confirmations use a modal, n
     await flushPromises()
     await wrapper.vm.$nextTick()
 
-    // RED today: the free→paid branch awaits the imperative showConfirm dialog
-    // (then opens the coupon modal directly).
+    // The original point of this test (#263): no imperative window dialog on
+    // this path, ever.
     expect(
       showConfirm,
-      'the free→paid confirmation must be a declarative modal, not showConfirm',
+      'the free→paid path must not use the imperative showConfirm dialog',
     ).not.toHaveBeenCalled()
 
+    // It used to reach a declarative "are you sure?" modal that named neither
+    // the plan nor the price. The checkout modal says both, so the buyer now
+    // lands on it directly.
     expect(
       wrapper.find('[data-test="confirm-plan-change"]').exists(),
-      'a declarative plan-change confirmation modal should render before checkout',
+      'no content-free confirmation ahead of checkout',
+    ).toBe(false)
+    expect(
+      wrapper.find('[data-test="coupon-input"]').exists(),
+      'the checkout step opens directly',
+    ).toBe(true)
+    expect(
+      wrapper.find('[data-test="checkout-amount"]').exists(),
+      'and it states the price',
     ).toBe(true)
   })
 })

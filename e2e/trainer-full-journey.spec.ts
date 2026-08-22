@@ -302,13 +302,13 @@ test.describe('Trainer full journey', () => {
       await demoPause(page, 2); // let the audience read the offer
       await planCard.locator('.btn-subscribe-compact').click();
 
-      // Free → paid replaces the trial plan, so the change is confirmed first.
-      // The modal opens only once the handler's subscription checks resolve.
-      await expect(page.locator('[data-test="confirm-plan-change"]')).toBeVisible({
+      // Free → paid goes straight to the checkout step, which names the price
+      // and says the trial plan is being replaced. The modal opens only once
+      // the handler's subscription checks resolve.
+      await expect(page.locator('[data-test="checkout-amount"]')).toBeVisible({
         timeout: 20_000,
       });
       await demoPause(page);
-      await page.locator('[data-test="confirm-plan-change"]').click();
 
       // Then the coupon step, whose confirm button stays disabled until the
       // buyer waives the 14-day withdrawal right (art. L221-25 / L221-28 13°) —

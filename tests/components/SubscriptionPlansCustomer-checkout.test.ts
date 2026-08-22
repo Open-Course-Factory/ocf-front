@@ -260,9 +260,10 @@ async function flushPromises() {
   await new Promise(resolve => setTimeout(resolve, 0))
 }
 
-// Confirm the declarative plan-change modal (free→paid and paid→paid now route
-// through it before proceeding — see issue #263). Replaces the auto-confirmed
-// showConfirm mock that used to advance these flows.
+// Confirm the declarative plan-change modal. Only the paid→paid path routes
+// through it now: it is the one case billed immediately without Stripe ever
+// showing the buyer a page. Free→paid goes straight to the checkout step,
+// which states the price itself.
 async function confirmPlanChange(wrapper: any) {
   const confirm = wrapper.find('[data-test="confirm-plan-change"]')
   expect(confirm.exists(), 'plan-change confirmation modal should render').toBe(true)
@@ -346,7 +347,18 @@ describe('SubscriptionPlansCustomer — direct-to-Stripe checkout', () => {
     await wrapper.vm.$nextTick()
 
     await clickSubscribe(wrapper, 'Solo')
-    await confirmPlanChange(wrapper)
+
+    // Straight to checkout: the separate "are you sure?" step is gone, and the
+    // checkout modal carries the price it used to be asked about blind.
+    expect(
+      wrapper.find('[data-test="confirm-plan-change"]').exists(),
+      'free→paid should not ask for a content-free confirmation first'
+    ).toBe(false)
+    expect(
+      wrapper.find('[data-test="checkout-amount"]').text(),
+      'the buyer sees what they are about to pay'
+    ).toContain('12')
+
     await completeCouponStep(wrapper, '')
 
     expect(createCheckoutSession).toHaveBeenCalledTimes(1)
@@ -540,7 +552,9 @@ describe('SubscriptionPlansCustomer — direct-to-Stripe checkout', () => {
       const label = wrapper.find('label[for="couponCode"]')
       expect(label.exists(), 'coupon label should render').toBe(true)
       expect(label.text()).not.toContain('plans.checkout.')
-      expect(label.text()).toBe('Coupon Code')
+      // The label carries an "(optional)" qualifier, also resolved.
+      expect(label.text()).toContain('Coupon Code')
+      expect(label.text()).toContain('optional')
     })
 
     it('renders the resolved coupon placeholder, not the raw plans.checkout.couponPlaceholder key', async () => {
