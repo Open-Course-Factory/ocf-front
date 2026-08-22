@@ -9,6 +9,11 @@
   /* Primary Colors */
   --color-primary: #007bff;
   --color-primary-hover: #0056b3;
+  /* Alias of -hover: components written against a "dark" step expect the same
+     shade. Kept as a real value so both names stay greppable. */
+  --color-primary-dark: #0056b3;
+  /* Channel triplet for rgba() focus rings, which cannot take a hex var. */
+  --color-primary-rgb: 0, 123, 255;
   --color-primary-light: rgba(0, 123, 255, 0.1);
   --color-primary-shadow: rgba(0, 123, 255, 0.2);
 
@@ -95,6 +100,8 @@
   --color-border-light: #e0e0e0;
   --color-border-medium: #ddd;
   --color-border-dark: #6c757d;
+  /* The border a form control gets when nothing else is specified. */
+  --color-border-default: #ddd;
 
   /* === SPACING === */
   --spacing-xs: 4px;
@@ -103,6 +110,7 @@
   --spacing-lg: 24px;
   --spacing-xl: 32px;
   --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
 
   /* === TYPOGRAPHY === */
 
@@ -206,6 +214,53 @@
   --card-border-radius: var(--border-radius-lg);
   --card-shadow: var(--shadow-sm);
 
+  /* === COMPATIBILITY ALIASES ===
+   * Two naming conventions grew side by side in this codebase: the canonical
+   * `--color-bg-*` / `--color-border-light|medium|dark` used here, and a
+   * shorter `--color-background*` / `--color-border` used by components
+   * written later. An undefined var() with no fallback makes the whole
+   * declaration invalid, so those components silently rendered with no border
+   * and no background — 254 such references across the app.
+   *
+   * These map the second spelling onto the first. They are var() references,
+   * not literals, so the dark and compact overrides below reach them for free.
+   * Prefer the canonical names in new code; this block is here so the old
+   * spelling stops failing silently. */
+  --color-border: var(--color-border-medium);
+
+  --color-background: var(--color-bg-primary);
+  --color-background-primary: var(--color-bg-primary);
+  --color-background-secondary: var(--color-bg-secondary);
+  --color-background-tertiary: var(--color-bg-tertiary);
+  --color-background-elevated: var(--color-surface);
+  --color-background-disabled: var(--color-bg-tertiary);
+  --color-bg-quaternary: var(--color-gray-200);
+
+  --color-text-tertiary: var(--color-text-muted);
+
+  --color-danger-light: rgba(220, 53, 69, 0.1);
+  --color-info-light: rgba(23, 162, 184, 0.1);
+  --color-warning-light: rgba(255, 193, 7, 0.15);
+  --color-success-dark: var(--color-success-hover);
+  --color-info-dark: var(--color-info-hover);
+  --color-warning-dark: var(--color-warning-hover);
+  --color-success-rgb: 40, 167, 69;
+  --color-info-rgb: 23, 162, 184;
+
+  --color-primary-alpha: var(--color-primary-light);
+  --color-primary-alpha-20: var(--color-primary-shadow);
+  --color-primary-border: var(--color-primary);
+
+  --color-gray-light: var(--color-gray-200);
+  --color-shadow: rgba(0, 0, 0, 0.15);
+  --shadow-focus: var(--shadow-focus-primary);
+
+  --spacing-2xs: 2px;
+  --spacing-xxl: var(--spacing-2xl);
+  --spacing-4xl: 80px;
+
+  --font-size-2xs: 0.6875rem; /* 11px */
+
   /* Panel headers (terminal, scenario, command history) */
   --panel-header-min-height: 44px;
 }
@@ -235,6 +290,7 @@
   --color-border-light: #404040;
   --color-border-medium: #505050;
   --color-border-dark: #606060;
+  --color-border-default: #505050;
 
   --color-gray-50: #2d2d2d;
   --color-gray-100: #3a3a3a;
@@ -277,6 +333,12 @@
   --color-purple-bg: #2a2a4a;
   --color-purple-border: #4a4a7a;
 
+  --color-danger-light: rgba(255, 179, 179, 0.15);
+  --color-info-light: rgba(125, 211, 255, 0.15);
+  --color-warning-light: rgba(255, 224, 102, 0.15);
+
+  --color-shadow: rgba(0, 0, 0, 0.5);
+
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
@@ -291,6 +353,7 @@
   --spacing-lg: 18px;
   --spacing-xl: 24px;
   --spacing-2xl: 36px;
+  --spacing-3xl: 48px;
 
   --card-padding: 20px;
   --card-header-padding: 14px 20px;
