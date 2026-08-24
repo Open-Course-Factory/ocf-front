@@ -293,13 +293,19 @@ const sortedDistributions = computed(() =>
 )
 
 // Computed
-// `persistence` and `network` are both surfaced as dedicated toggles in the
-// launcher (a radio each), not as feature chips. Filter them out here so we
-// don't render the same concept twice. The filter is a defensive no-op once
-// the backend stops emitting these as features.
+// Features the learner has no business choosing when starting a terminal:
+//  - `persistence` and `network` are surfaced as dedicated launcher toggles
+//    (a radio each), so a chip would render the same concept twice;
+//  - `effects` is the terminal-effects capability the scenario engine drives.
+//    It is always_available and nothing about a plain session depends on the
+//    learner's opinion of it, so offering it as an option is just noise.
+// This filter is display-only: the auto-enable pass below reads
+// `allowed_features`, so what reaches the backend is unchanged.
+const HIDDEN_FEATURE_KEYS = ['persistence', 'network', 'effects']
+
 const availableFeatures = computed<SessionOptionFeature[]>(
   () => (sessionOptions.value?.allowed_features ?? []).filter(
-    f => f.key !== 'persistence' && f.key !== 'network'
+    f => !HIDDEN_FEATURE_KEYS.includes(f.key)
   )
 )
 
@@ -385,13 +391,54 @@ const hasLockedItems = computed(() => {
 })
 
 // Methods
+// Order the defaulting walk prefers when nothing is remembered. Debian is the
+// teaching baseline, and it is the smallest-footprint general-purpose image of
+// the three, so it is the one most plans can actually run. Anything not named
+// here is still eligible — it just comes after, in display order.
+const DEFAULT_DISTRIBUTION_PREFERENCE = ['Debian', 'Ubuntu', 'Alpine']
+
+function defaultDistributionCandidates(): Distribution[] {
+  const byPreference = (d: Distribution) => {
+    const rank = DEFAULT_DISTRIBUTION_PREFERENCE.indexOf(d.name)
+    return rank === -1 ? DEFAULT_DISTRIBUTION_PREFERENCE.length : rank
+  }
+  return [...sortedDistributions.value].sort((a, b) => byPreference(a) - byPreference(b))
+}
+
+// Land the user on something they can actually start.
+//
+// Nothing used to be selected until they clicked, and the obvious click was
+// not always a valid one: on the free plan only XS is allowed, while Ubuntu
+// needs S at minimum. Picking it led to a screen with every size locked and no
+// hint that another image would have worked.
+//
+// Whether a distribution is launchable is only knowable from its session
+// options, so walk the candidates and keep the first that yields a launchable
+// size. In practice the first candidate answers, and the loop costs one call.
+async function selectDefaultDistribution() {
+  for (const dist of defaultDistributionCandidates()) {
+    await selectDistribution(dist)
+    if (selectedSize.value) return
+  }
+  // Nothing is launchable under this plan. Leave the last attempt showing so
+  // the locked sizes and the "unlock more power" CTA explain why.
+}
+
 async function loadDistributions() {
   loadingDistributions.value = true
   try {
     distributions.value = await terminalService.getDistributions(props.backendId)
+    if (distributions.value.length === 0) return
     // Auto-restore last used config if available
-    if (lastConfig.value && distributions.value.length > 0) {
+    if (lastConfig.value) {
       await restoreLastConfig()
+    }
+    // Nothing restored, or what was restored cannot run under the plan in
+    // force now — a remembered Ubuntu still shows up on an account that has
+    // since dropped to the free plan, where only XS is allowed. Either way,
+    // fall through to a distribution that can actually start.
+    if (!selectedDistribution.value || !selectedSize.value) {
+      await selectDefaultDistribution()
     }
   } catch (e) {
     console.error('Failed to load distributions:', e)
