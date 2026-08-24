@@ -72,6 +72,7 @@ const { t } = useTranslations({
         debug: 'Debug & Monitoring'
       },
       items: {
+        platformSettings: 'Platform Settings',
         subscriptionPlans: 'Subscription Plans',
         allInvoices: 'All Invoices',
         invoiceCleanup: 'Invoice Cleanup',
@@ -105,6 +106,7 @@ const { t } = useTranslations({
         debug: 'Débogage & Surveillance'
       },
       items: {
+        platformSettings: 'Paramètres de la plateforme',
         subscriptionPlans: 'Plans d\'Abonnement',
         allInvoices: 'Toutes les Factures',
         invoiceCleanup: 'Nettoyage des Factures',
@@ -186,6 +188,11 @@ const adminCategories = computed<MenuCategory[]>(() => [
         route: '/admin/feedback-settings',
         label: t('admin.items.feedbackSettings'),
         icon: 'fas fa-comment-dots'
+      },
+      {
+        route: '/admin/platform-settings',
+        label: t('admin.items.platformSettings'),
+        icon: 'fas fa-sliders-h'
       }
     ]
   },

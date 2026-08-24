@@ -266,6 +266,7 @@ const basicRoutes = [
       },
       { path: 'subscription-plans', name: 'SubscriptionPlans', component: () => import('../components/Pages/SubscriptionPlansCustomer.vue'), meta: { requiresAuth: true } },
       { path: 'admin/subscription-plans', name: 'AdminSubscriptionPlans', component: () => import('../components/Pages/SubscriptionPlans.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
+      { path: 'admin/platform-settings', name: 'AdminPlatformSettings', component: () => import('../components/Pages/Admin/PlatformSettings.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
       { path: 'billing-addresses', name: 'BillingAddresses', component: () => import('../components/Pages/BillingAddresses.vue'), meta: { requiresAuth: true, isSettings: true, requiresEmailVerification: true } },
       { path: 'payment-methods', name: 'PaymentMethods', component: () => import('../components/Pages/PaymentMethods.vue'), meta: { requiresAuth: true, isSettings: true, requiresEmailVerification: true } },
       { path: 'invoices', name: 'Invoices', component: () => import('../components/Pages/Invoices.vue'), meta: { requiresAuth: true } },
