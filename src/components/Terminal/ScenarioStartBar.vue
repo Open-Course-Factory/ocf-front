@@ -10,12 +10,15 @@
 -->
 
 <template>
-  <div class="scenario-start-bar">
+  <!-- Rendered only once we know something is on offer. The component itself
+       stays mounted either way: the parent holds a ref to it and calls
+       abortProvisioning() through it, so it must not be v-if'd away up there. -->
+  <div v-if="hasCompatibleScenarios" class="scenario-start-bar" data-testid="scenario-start-bar">
     <div v-if="!showPicker" class="start-prompt">
       <i class="fas fa-flag-checkered"></i>
       <span>{{ t('scenarioStart.noActive') }}</span>
-      <button class="start-btn" data-testid="scenario-start-bar-btn" @click="loadAndShowPicker" :disabled="isLoading">
-        <i :class="isLoading ? 'fas fa-spinner fa-spin' : 'fas fa-play'"></i>
+      <button class="start-btn" data-testid="scenario-start-bar-btn" @click="showPicker = true">
+        <i class="fas fa-play"></i>
         {{ t('scenarioStart.start') }}
       </button>
     </div>
@@ -28,11 +31,7 @@
         </button>
       </div>
 
-      <div v-if="compatibleScenarios.length === 0" class="no-scenarios">
-        {{ t('scenarioStart.none') }}
-      </div>
-
-      <div v-else class="scenario-list" role="list">
+      <div class="scenario-list" role="list">
         <button
           v-for="scenario in compatibleScenarios"
           :key="scenario.id"
@@ -60,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { scenarioSessionService, pollProvisioningStatus } from '../../services/domain/scenario'
 import { terminalService } from '../../services/domain/terminal'
 import { useTranslations } from '../../composables/useTranslations'
@@ -102,11 +101,9 @@ const { t } = useTranslations({
       noActive: 'No scenario active on this terminal',
       start: 'Start a Scenario',
       choose: 'Choose a scenario',
-      none: 'No compatible scenarios available for this machine.',
       startError: 'Failed to start scenario.',
       setupFailed: 'Environment setup failed. Please try again.',
       provisioning: 'Setting up environment... This may take a few minutes.',
-      loadError: 'Failed to load scenarios.',
       closePicker: 'Close'
     }
   },
@@ -115,11 +112,9 @@ const { t } = useTranslations({
       noActive: 'Aucun scénario actif sur ce terminal',
       start: 'Démarrer un scénario',
       choose: 'Choisir un scénario',
-      none: 'Aucun scénario compatible disponible pour cette machine.',
       startError: 'Échec du démarrage du scénario.',
       setupFailed: 'La préparation de l\'environnement a échoué. Veuillez réessayer.',
       provisioning: 'Préparation de l\'environnement... Cela peut prendre quelques minutes.',
-      loadError: 'Échec du chargement des scénarios.',
       closePicker: 'Fermer'
     }
   }
@@ -154,7 +149,6 @@ function isScenarioCompatible(scenario: any): boolean {
 
 const showPicker = ref(false)
 const scenarios = ref<any[]>([])
-const isLoading = ref(false)
 const isStarting = ref(false)
 
 const compatibleScenarios = computed(() => {
@@ -165,6 +159,9 @@ const compatibleScenarios = computed(() => {
     return isScenarioCompatible(s)
   })
 })
+
+// Whether this terminal has anything worth offering. Gates the whole bar.
+const hasCompatibleScenarios = computed(() => compatibleScenarios.value.length > 0)
 
 async function resolveTerminalOsType() {
   if (!props.terminalInstanceType || terminalOsType.value) return
@@ -179,8 +176,14 @@ async function resolveTerminalOsType() {
   }
 }
 
-async function loadAndShowPicker() {
-  isLoading.value = true
+// Load once, on mount, because whether this bar should exist at all is a
+// question about the data: a terminal with no compatible scenario has nothing
+// to offer, and an empty picker behind a button is worse than no button.
+//
+// Costs one list request per terminal view. That is the price of knowing before
+// rendering; the previous lazy load could only answer after the user had
+// already clicked and been disappointed.
+async function loadScenarios() {
   try {
     // Load scenarios and resolve terminal's OS type in parallel
     const [scenarioData] = await Promise.all([
@@ -188,18 +191,16 @@ async function loadAndShowPicker() {
       resolveTerminalOsType()
     ])
     scenarios.value = scenarioData
-    showPicker.value = true
   } catch (err: any) {
-    console.error('Failed to load scenarios:', err)
-    showError(
-      err.response?.data?.error_message ||
-      err.response?.data?.message ||
-      t('scenarioStart.loadError')
-    )
-  } finally {
-    isLoading.value = false
+    // Stay hidden and say nothing. The user never asked for scenarios, so a
+    // toast on every terminal open during a backend hiccup would be noise —
+    // and offering a picker we could not verify is worse than offering none.
+    console.warn('Could not load scenarios for the start bar:', err)
+    scenarios.value = []
   }
 }
+
+onMounted(loadScenarios)
 
 async function startScenario(scenario: any) {
   isStarting.value = true
@@ -324,13 +325,6 @@ async function startScenario(scenario: any) {
 .close-btn:hover {
   background-color: var(--color-surface-hover);
   color: var(--color-text-primary);
-}
-
-.no-scenarios {
-  padding: var(--spacing-sm);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  text-align: center;
 }
 
 .scenario-list {
