@@ -22,12 +22,12 @@
     :title="title"
     size="large"
     :show-default-footer="true"
-    :confirm-text="t('scenarioEditor.saveEntity')"
+    :confirm-text="isTranslating ? t('scenarioEditor.saveTranslation') : t('scenarioEditor.saveEntity')"
     :cancel-text="t('scenarioEditor.cancel')"
     :is-loading="isSaving"
     :error-message="errorMessage"
     @close="emit('close')"
-    @confirm="emit('save')"
+    @confirm="isTranslating ? handleSaveTranslation() : emit('save')"
   >
     <!-- Tabs -->
     <TabStrip
@@ -37,6 +37,28 @@
       class="modal-tabs-spacing"
     />
 
+    <!-- Which language the scenario's own text is being edited in. The same
+         choice as the header, repeated beside the content it governs. -->
+    <div v-if="offeredLocales.length > 1" class="ocf-scn-locale" data-testid="scenario-edit-locale-switch">
+      <span class="ocf-scn-locale-label">
+        <i class="fas fa-language" aria-hidden="true"></i>
+        {{ t('scenarioEditor.editingIn') }}
+      </span>
+      <button
+        v-for="code in offeredLocales"
+        :key="code"
+        type="button"
+        class="ocf-scn-locale-btn"
+        :class="{ active: (locale || defaultLocale) === code }"
+        :aria-pressed="(locale || defaultLocale) === code"
+        :data-testid="`scenario-edit-locale-${code}`"
+        @click="requestLocale(code)"
+      >
+        {{ languageName(code) }}
+        <span v-if="code === defaultLocale" class="ocf-scn-locale-origin">{{ t('scenarioEditor.originalTag') }}</span>
+      </button>
+    </div>
+
     <!-- General tab -->
     <div
       v-show="activeTab === 'general'"
@@ -45,7 +67,7 @@
       aria-labelledby="tab-general"
       class="modal-form"
     >
-      <div class="form-group">
+      <div v-if="!isTranslating" class="form-group">
         <label for="scenario-name">{{ t('scenarioEditor.scenarioName') }}</label>
         <input
           id="scenario-name"
@@ -56,7 +78,16 @@
         />
       </div>
 
-      <div class="form-group">
+        <TranslationPane
+            v-if="isTranslating"
+            field-id="scenario-title-translation"
+            :label="t('scenarioEditor.scenarioTitle')"
+            :source="model.title || ''"
+            v-model="translationData.title"
+            :source-locale-label="defaultLocaleLabel"
+            :target-locale-label="localeLabel"
+          />
+      <div v-if="!isTranslating" class="form-group">
         <label for="scenario-title">{{ t('scenarioEditor.scenarioTitle') }}</label>
         <input
           id="scenario-title"
@@ -67,7 +98,7 @@
         />
       </div>
 
-      <div class="form-row">
+      <div v-if="!isTranslating" class="form-row">
         <div class="form-group">
           <label for="scenario-difficulty">{{ t('scenarioEditor.difficulty') }}</label>
           <select id="scenario-difficulty" v-model="model.difficulty" class="form-control">
@@ -91,7 +122,18 @@
         </div>
       </div>
 
-      <div class="form-group">
+        <TranslationPane
+            v-if="isTranslating"
+            field-id="scenario-description-translation"
+            :label="t('scenarioEditor.description')"
+            :source="model.description || ''"
+            v-model="translationData.description"
+            :source-locale-label="defaultLocaleLabel"
+            :target-locale-label="localeLabel"
+            multiline
+            :rows="3"
+          />
+      <div v-if="!isTranslating" class="form-group">
         <label for="scenario-description">{{ t('scenarioEditor.description') }}</label>
         <textarea
           id="scenario-description"
@@ -143,7 +185,18 @@
       aria-labelledby="tab-content"
       class="modal-form"
     >
-      <div class="form-group">
+        <TranslationPane
+            v-if="isTranslating"
+            field-id="scenario-intro-text-translation"
+            :label="t('scenarioEditor.introText')"
+            :source="model.intro_text || ''"
+            v-model="translationData.intro_text"
+            :source-locale-label="defaultLocaleLabel"
+            :target-locale-label="localeLabel"
+            multiline
+            :rows="6"
+          />
+      <div v-if="!isTranslating" class="form-group">
         <label for="scenario-intro-text">{{ t('scenarioEditor.introText') }}</label>
         <textarea
           id="scenario-intro-text"
@@ -155,7 +208,18 @@
         <span class="form-hint">{{ t('scenarioEditor.markdownSupported') }}</span>
       </div>
 
-      <div class="form-group">
+        <TranslationPane
+            v-if="isTranslating"
+            field-id="scenario-finish-text-translation"
+            :label="t('scenarioEditor.finishText')"
+            :source="model.finish_text || ''"
+            v-model="translationData.finish_text"
+            :source-locale-label="defaultLocaleLabel"
+            :target-locale-label="localeLabel"
+            multiline
+            :rows="6"
+          />
+      <div v-if="!isTranslating" class="form-group">
         <label for="scenario-finish-text">{{ t('scenarioEditor.finishText') }}</label>
         <textarea
           id="scenario-finish-text"
@@ -167,7 +231,18 @@
         <span class="form-hint">{{ t('scenarioEditor.markdownSupported') }}</span>
       </div>
 
-      <div class="form-group">
+        <TranslationPane
+            v-if="isTranslating"
+            field-id="scenario-objectives-translation"
+            :label="t('scenarioEditor.objectives')"
+            :source="model.objectives || ''"
+            v-model="translationData.objectives"
+            :source-locale-label="defaultLocaleLabel"
+            :target-locale-label="localeLabel"
+            multiline
+            :rows="3"
+          />
+      <div v-if="!isTranslating" class="form-group">
         <label for="scenario-objectives">{{ t('scenarioEditor.objectives') }}</label>
         <textarea
           id="scenario-objectives"
@@ -178,7 +253,18 @@
         ></textarea>
       </div>
 
-      <div class="form-group">
+        <TranslationPane
+            v-if="isTranslating"
+            field-id="scenario-prerequisites-translation"
+            :label="t('scenarioEditor.prerequisites')"
+            :source="model.prerequisites || ''"
+            v-model="translationData.prerequisites"
+            :source-locale-label="defaultLocaleLabel"
+            :target-locale-label="localeLabel"
+            multiline
+            :rows="3"
+          />
+      <div v-if="!isTranslating" class="form-group">
         <label for="scenario-prerequisites">{{ t('scenarioEditor.prerequisites') }}</label>
         <textarea
           id="scenario-prerequisites"
@@ -190,9 +276,21 @@
       </div>
     </div>
 
+    <!-- A scenario's scripts, size, visibility and languages are configuration:
+         they mean the same thing whatever language a learner reads it in, so a
+         translation has nothing to say about them. Said out loud rather than
+         shown as fields that would not save. -->
+    <div v-if="isTranslating && (activeTab === 'setup' || activeTab === 'options')" class="ocf-scn-shared" data-testid="scenario-edit-shared-notice">
+      <i class="fas fa-lock"></i>
+      <div>
+        <strong>{{ t('scenarioEditor.sharedTitle') }}</strong>
+        <p>{{ t('scenarioEditor.sharedBody') }}</p>
+      </div>
+    </div>
+
     <!-- Setup tab -->
     <div
-      v-show="activeTab === 'setup'"
+      v-show="activeTab === 'setup' && !isTranslating"
       id="panel-setup"
       role="tabpanel"
       aria-labelledby="tab-setup"
@@ -213,7 +311,7 @@
 
     <!-- Options tab -->
     <div
-      v-show="activeTab === 'options'"
+      v-show="activeTab === 'options' && !isTranslating"
       id="panel-options"
       role="tabpanel"
       aria-labelledby="tab-options"
@@ -343,12 +441,27 @@
       </div>
     </div>
   </BaseModal>
+
+  <!-- Switching language rebuilds the form from the other language's text. -->
+  <BaseModal
+    :visible="!!pendingLocaleChange"
+    :title="t('scenarioEditor.confirmLocaleChangeTitle')"
+    size="small"
+    :show-default-footer="true"
+    :confirm-text="t('scenarioEditor.confirmLocaleChangeConfirm')"
+    :cancel-text="t('scenarioEditor.cancel')"
+    @close="pendingLocaleChange = null"
+    @confirm="commitLocaleChange"
+  >
+    <p>{{ t('scenarioEditor.confirmLocaleChangeBody') }}</p>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import TabStrip from '../Common/TabStrip.vue'
+import TranslationPane from './TranslationPane.vue'
 import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
 import type { Size } from '../../types/terminal'
 import { formatMcpuAsVcpu, effectiveCpuMcpu } from '../../utils/formatters'
@@ -360,6 +473,13 @@ interface ScopeOption {
 
 interface Props {
   visible: boolean
+  /** The language being edited; equal to defaultLocale means authoring. */
+  locale?: string
+  defaultLocale?: string
+  /** The existing translation of this scenario's own text, when written. */
+  translation?: any
+  localeLabel?: string
+  defaultLocaleLabel?: string
   // The working scenario object — mutated in place. The parent owns its lifecycle.
   editingScenario: Record<string, any>
   title: string
@@ -383,13 +503,74 @@ const props = withDefaults(defineProps<Props>(), {
   isSaving: false,
   errorMessage: '',
   sizes: () => [],
-  ariaLabel: undefined
+  ariaLabel: undefined,
+  locale: '',
+  defaultLocale: '',
+  translation: undefined,
+  localeLabel: '',
+  defaultLocaleLabel: ''
 })
 
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'save'): void
+  (e: 'save-translation', fields: Record<string, string>): void
+  (e: 'update:locale', locale: string): void
 }>()
+
+/**
+ * Whether this modal is translating the scenario's own text rather than
+ * editing the scenario.
+ *
+ * Only prose is translated. A scenario's name, size, hostname, scripts and
+ * visibility are configuration: they mean the same thing in every language, and
+ * offering them per translation would invite two copies of one setting.
+ */
+const isTranslating = computed(() => !!props.locale && props.locale !== props.defaultLocale)
+
+const translationData = ref<Record<string, string>>({
+  title: '',
+  description: '',
+  objectives: '',
+  prerequisites: '',
+  intro_text: '',
+  finish_text: ''
+})
+
+const TRANSLATED_FIELDS = ['title', 'description', 'objectives', 'prerequisites', 'intro_text', 'finish_text'] as const
+
+watch(() => [props.visible, props.translation, props.locale], () => {
+  const existing = props.translation || {}
+  translationData.value = Object.fromEntries(
+    TRANSLATED_FIELDS.map(field => [field, existing[field] || ''])
+  ) as Record<string, string>
+}, { immediate: true })
+
+const translationIsDirty = computed(() => {
+  if (!isTranslating.value) return false
+  const loaded = props.translation || {}
+  return TRANSLATED_FIELDS.some(f => (translationData.value[f] || '') !== (loaded[f] || ''))
+})
+
+const pendingLocaleChange = ref<string | null>(null)
+
+function requestLocale(locale: string) {
+  if (locale === (props.locale || props.defaultLocale)) return
+  if (translationIsDirty.value) {
+    pendingLocaleChange.value = locale
+    return
+  }
+  emit('update:locale', locale)
+}
+
+function commitLocaleChange() {
+  if (pendingLocaleChange.value) emit('update:locale', pendingLocaleChange.value)
+  pendingLocaleChange.value = null
+}
+
+function handleSaveTranslation() {
+  emit('save-translation', { ...translationData.value })
+}
 
 const { t } = useScenarioEditorI18n()
 
@@ -487,6 +668,61 @@ watch(() => props.visible, (vis) => {
 </script>
 
 <style scoped>
+.ocf-scn-locale {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.ocf-scn-locale-label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.ocf-scn-locale-btn {
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.ocf-scn-locale-btn.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.ocf-scn-locale-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.ocf-scn-locale-origin {
+  opacity: 0.7;
+  font-size: 0.75rem;
+  margin-left: 0.25rem;
+}
+
+.ocf-scn-shared {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-warning);
+  border-radius: 4px;
+  background: var(--color-background-secondary);
+}
+
+.ocf-scn-shared i { color: var(--color-warning); margin-top: 0.15rem; }
+.ocf-scn-shared strong { color: var(--color-text-primary); }
+.ocf-scn-shared p { margin: 0.25rem 0 0; font-size: 0.9rem; color: var(--color-text-secondary); }
+
 .ocf-languages {
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--color-border);
