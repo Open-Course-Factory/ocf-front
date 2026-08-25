@@ -35,3 +35,17 @@ describe('the platform settings admin page', () => {
     expect(router.resolve('/admin/platform-settings').meta.isSettings).toBeFalsy()
   })
 })
+
+describe('the distribution catalogue admin page', () => {
+  it('resolves at the URL the admin menu links to', () => {
+    expect(router.resolve('/admin/distribution-catalog').name).toBe('AdminDistributionCatalog')
+  })
+
+  it('is behind the admin guard', () => {
+    // It decides what every user is offered, and it is the only screen that can
+    // give a withheld environment its visibility back.
+    const resolved = router.resolve('/admin/distribution-catalog')
+    expect(resolved.meta.requiresAuth).toBe(true)
+    expect(resolved.meta.requiresAdmin).toBe(true)
+  })
+})

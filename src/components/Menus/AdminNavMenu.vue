@@ -72,6 +72,7 @@ const { t } = useTranslations({
         debug: 'Debug & Monitoring'
       },
       items: {
+        distributionCatalog: 'Terminal Distributions',
         platformSettings: 'Platform Settings',
         subscriptionPlans: 'Subscription Plans',
         allInvoices: 'All Invoices',
@@ -106,6 +107,7 @@ const { t } = useTranslations({
         debug: 'Débogage & Surveillance'
       },
       items: {
+        distributionCatalog: 'Distributions des terminaux',
         platformSettings: 'Paramètres de la plateforme',
         subscriptionPlans: 'Plans d\'Abonnement',
         allInvoices: 'Toutes les Factures',
@@ -188,6 +190,11 @@ const adminCategories = computed<MenuCategory[]>(() => [
         route: '/admin/feedback-settings',
         label: t('admin.items.feedbackSettings'),
         icon: 'fas fa-comment-dots'
+      },
+      {
+        route: '/admin/distribution-catalog',
+        label: t('admin.items.distributionCatalog'),
+        icon: 'fas fa-layer-group'
       },
       {
         route: '/admin/platform-settings',
