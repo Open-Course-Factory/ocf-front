@@ -98,6 +98,10 @@ export function useScenarioEditorI18n() {
       tabContent: 'Content',
       tabSetup: 'Setup',
       tabOptions: 'Options',
+      languages: 'Languages',
+      languagesHint: 'Offering a scenario in more than one language turns on the translation editor. The world is built in the language a learner picks and cannot be rebuilt afterwards.',
+      defaultLocale: 'Written in',
+      defaultLocaleHint: 'The language the scenario\'s own text is written in. Every other language is translated from it.',
       // Content tab
       introText: 'Introduction Text',
       introTextPlaceholder: 'Markdown text shown before the first step...',
@@ -234,6 +238,10 @@ export function useScenarioEditorI18n() {
       tabContent: 'Contenu',
       tabSetup: 'Installation',
       tabOptions: 'Options',
+      languages: 'Langues',
+      languagesHint: "Proposer un scénario dans plusieurs langues active l'éditeur de traduction. Le monde est construit dans la langue choisie par l'apprenant et ne peut plus être reconstruit ensuite.",
+      defaultLocale: 'Rédigé en',
+      defaultLocaleHint: "La langue dans laquelle le texte du scénario est écrit. Toutes les autres en sont traduites.",
       // Onglet contenu
       introText: 'Texte d\'introduction',
       introTextPlaceholder: 'Texte markdown affiché avant la première étape...',

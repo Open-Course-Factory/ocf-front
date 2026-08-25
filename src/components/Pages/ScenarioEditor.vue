@@ -1145,7 +1145,12 @@ const handleSaveScenario = async () => {
       source_type: editingScenario.value.source_type,
       flags_enabled: editingScenario.value.flags_enabled,
       crash_traps: editingScenario.value.crash_traps,
-      is_public: editingScenario.value.is_public
+      is_public: editingScenario.value.is_public,
+      // The save sends an explicit field list rather than the whole object, so
+      // a field added to the modal and not added here is edited, looks saved,
+      // and is silently dropped.
+      default_locale: editingScenario.value.default_locale || '',
+      locales: editingScenario.value.locales || ''
     }
 
     if (editingScenario.value.isNew) {
@@ -1189,6 +1194,19 @@ const handleSaveScenario = async () => {
     } else {
       const entityId = editingScenario.value.entityId
       await scenariosStore.updateEntity('/scenarios', entityId, entityData)
+
+      // The canvas node and currentScenario are separate copies of the same
+      // scenario. Only the node was refreshed here, so anything reading
+      // currentScenario — the language selector, the coverage badges — kept
+      // showing the state from before the save until the scenario was
+      // reselected.
+      if (currentScenario.value?.id === entityId) {
+        currentScenario.value = { ...currentScenario.value, ...entityData }
+        if (!editingLocale.value || !scenarioLocales.value.includes(editingLocale.value)) {
+          editingLocale.value = scenarioDefaultLocale.value
+        }
+        await loadTranslationCoverage()
+      }
 
       // Update node in canvas
       const nodeIndex = nodes.value.findIndex(n => n.id === editingScenario.value.nodeId)

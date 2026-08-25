@@ -217,6 +217,42 @@
       aria-labelledby="tab-options"
       class="modal-form"
     >
+      <!-- Which languages this scenario is offered in. Declaring one is what
+           turns on the translation editor; a scenario that names only its own
+           language behaves exactly as it always has. -->
+      <div class="form-group ocf-languages">
+        <label>{{ t('scenarioEditor.languages') }}</label>
+        <p class="ocf-languages-hint">{{ t('scenarioEditor.languagesHint') }}</p>
+        <div class="ocf-language-options">
+          <label v-for="code in SUPPORTED_LOCALES" :key="code" class="ocf-language-option">
+            <input
+              type="checkbox"
+              :value="code"
+              :checked="offeredLocales.includes(code)"
+              :data-testid="`scenario-locale-${code}`"
+              @change="toggleLocale(code, ($event.target as HTMLInputElement).checked)"
+            />
+            <span>{{ languageName(code) }}</span>
+          </label>
+        </div>
+
+        <div v-if="offeredLocales.length > 1" class="ocf-default-locale">
+          <label for="scenario-default-locale">{{ t('scenarioEditor.defaultLocale') }}</label>
+          <select
+            id="scenario-default-locale"
+            class="form-control"
+            data-testid="scenario-default-locale"
+            :value="model.default_locale || offeredLocales[0]"
+            @change="model.default_locale = ($event.target as HTMLSelectElement).value"
+          >
+            <option v-for="code in offeredLocales" :key="code" :value="code">
+              {{ languageName(code) }}
+            </option>
+          </select>
+          <p class="ocf-languages-hint">{{ t('scenarioEditor.defaultLocaleHint') }}</p>
+        </div>
+      </div>
+
       <div class="form-row">
         <div class="form-group">
           <label for="scenario-instance-type">{{ t('scenarioEditor.instanceType') }}</label>
@@ -360,6 +396,55 @@ const { t } = useScenarioEditorI18n()
 // Using a computed that returns the prop keeps the template terse.
 const model = computed(() => props.editingScenario)
 
+/**
+ * Languages the platform itself speaks. A scenario cannot be offered in one the
+ * product cannot render its own interface in, so this is the honest bound.
+ */
+const SUPPORTED_LOCALES = ['en', 'fr']
+
+/** The stored JSON array, as a list. Anything unparseable reads as none. */
+const offeredLocales = computed<string[]>(() => {
+  const raw = model.value.locales
+  if (!raw) return []
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+})
+
+function languageName(locale: string): string {
+  try {
+    const name = new Intl.DisplayNames([locale], { type: 'language' }).of(locale) || locale
+    return name.charAt(0).toLocaleUpperCase(locale) + name.slice(1)
+  } catch {
+    return locale
+  }
+}
+
+/**
+ * Add or remove a language.
+ *
+ * Removing the default one moves the default rather than leaving it pointing at
+ * a language no longer offered — a scenario whose own text claims to be in a
+ * language it does not list would make every other language read as stale
+ * against nothing.
+ */
+function toggleLocale(code: string, checked: boolean) {
+  const next = checked
+    ? SUPPORTED_LOCALES.filter(c => offeredLocales.value.includes(c) || c === code)
+    : offeredLocales.value.filter(c => c !== code)
+
+  model.value.locales = next.length ? JSON.stringify(next) : ''
+
+  if (!next.length) {
+    model.value.default_locale = ''
+  } else if (!next.includes(model.value.default_locale)) {
+    model.value.default_locale = next[0]
+  }
+}
+
 // Bridges v-model with the size <select>: if the stored instance_type matches a
 // catalog key case-insensitively, surface the catalog's canonical key so the
 // corresponding <option> gets selected. Writing back stores the picked key.
@@ -400,6 +485,37 @@ watch(() => props.visible, (vis) => {
 </script>
 
 <style scoped>
+.ocf-languages {
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 1rem;
+}
+
+.ocf-languages-hint {
+  margin: 0.2rem 0 0.6rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.ocf-language-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.ocf-language-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 400;
+  color: var(--color-text-primary);
+}
+
+.ocf-default-locale {
+  margin-top: 0.9rem;
+  max-width: 18rem;
+}
+
 .modal-tabs-spacing {
   margin-bottom: 1rem;
 }
