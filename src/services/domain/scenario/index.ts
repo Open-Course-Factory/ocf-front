@@ -26,3 +26,10 @@ export type {
   LearnerAssignmentProgress,
   LearnerAssignmentStatus
 } from './teacherService'
+export { scenarioTranslationService } from './scenarioTranslationService'
+export type {
+  LocaleCoverage,
+  StepTranslationState,
+  StepTranslation,
+  StepTranslationFields
+} from './scenarioTranslationService'

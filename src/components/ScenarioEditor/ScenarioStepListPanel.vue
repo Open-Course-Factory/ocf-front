@@ -50,6 +50,20 @@
                 <span v-if="step.verify_script || step.verify_script_id" class="step-badge badge-verify" :title="t('stepList.verify')" :aria-label="t('stepList.verify')"><span aria-hidden="true">✓</span></span>
                 <span v-if="step.has_flag" class="step-badge badge-flag" :title="t('stepList.flag')" :aria-label="t('stepList.flag')"><span aria-hidden="true">🚩</span></span>
                 <span v-if="step.hint_content || step.hint_file_id" class="step-badge badge-hint" :title="t('stepList.hint')" :aria-label="t('stepList.hint')"><span aria-hidden="true">💡</span></span>
+                <!-- Translation state, only while a translation is being
+                     edited. Colour is doubled by a letter: a badge that only
+                     differs by hue says nothing to a reader who cannot tell
+                     these two hues apart. -->
+                <span
+                  v-if="translationState(step.id)"
+                  class="step-badge ocf-badge-translation"
+                  :class="`ocf-translation-${translationState(step.id)}`"
+                  :title="t(`stepList.translation_${translationState(step.id)}`)"
+                  :aria-label="t(`stepList.translation_${translationState(step.id)}`)"
+                  data-testid="step-translation-badge"
+                >
+                  <span aria-hidden="true">{{ translationBadgeLetter(step.id) }}</span>
+                </span>
               </div>
             </div>
             <div v-if="getOrderedSteps(scenario).length === 0" class="no-steps">
@@ -75,6 +89,9 @@ const { t } = useTranslations({
       loading: 'Loading scenarios...',
       noScenarios: 'No scenarios available',
       noSteps: 'No steps in this scenario',
+      translation_translated: 'Translated and up to date',
+      translation_stale: 'The original changed after this was translated',
+      translation_missing: 'Not translated yet',
       refresh: 'Refresh',
       verify: 'Has verify script',
       flag: 'Has flag',
@@ -87,6 +104,9 @@ const { t } = useTranslations({
       loading: 'Chargement des scénarios...',
       noScenarios: 'Aucun scénario disponible',
       noSteps: 'Aucune étape dans ce scénario',
+      translation_translated: 'Traduit et à jour',
+      translation_stale: "L'original a changé depuis cette traduction",
+      translation_missing: 'Pas encore traduit',
       refresh: 'Actualiser',
       verify: 'Script de vérification',
       flag: 'A un drapeau',
@@ -99,9 +119,36 @@ const difficultyLabel = useDifficultyLabel()
 
 interface Props {
   scenarios?: any[]
+  /**
+   * Per-step translation state for the language being edited, as the backend
+   * reported it. Absent while authoring the original, which is when there is
+   * nothing to be behind on.
+   */
+  translationStates?: Record<string, 'translated' | 'stale' | 'missing'>
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  translationStates: () => ({})
+})
+
+/**
+ * How a step stands in the language being edited.
+ *
+ * Never computed here: staleness is decided from the source hash, and a second
+ * implementation of that rule in the editor would drift from the one the
+ * launcher uses to decide whether a language may be offered at all.
+ */
+function translationState(stepId: string): string {
+  return props.translationStates[stepId] || ''
+}
+
+/** One letter per state, so the badge does not rely on colour alone. */
+function translationBadgeLetter(stepId: string): string {
+  const state = translationState(stepId)
+  if (state === 'translated') return '✓'
+  if (state === 'stale') return '!'
+  return '·'
+}
 
 const scenariosStore = useScenariosStore()
 const isLoading = ref(false)
@@ -153,6 +200,25 @@ defineExpose({ refreshScenarios })
 </script>
 
 <style scoped>
+.ocf-badge-translation {
+  font-weight: 700;
+}
+
+.ocf-translation-translated {
+  background: var(--color-success-light);
+  color: var(--color-success);
+}
+
+.ocf-translation-stale {
+  background: var(--color-warning-light);
+  color: var(--color-warning);
+}
+
+.ocf-translation-missing {
+  background: var(--color-background-secondary);
+  color: var(--color-text-muted);
+}
+
 .scenario-step-list-panel {
   display: flex;
   flex-direction: column;
