@@ -49,6 +49,24 @@ export type StepTranslationFields = Pick<
   'title' | 'text_content' | 'hint_content' | 'intro_text' | 'outro_text'
 >
 
+export interface ScenarioTranslation {
+  id?: string
+  scenario_id: string
+  locale: string
+  title?: string
+  description?: string
+  objectives?: string
+  prerequisites?: string
+  intro_text?: string
+  finish_text?: string
+}
+
+/** The scenario fields a translator writes. Everything else is configuration. */
+export type ScenarioTranslationFields = Pick<
+  ScenarioTranslation,
+  'title' | 'description' | 'objectives' | 'prerequisites' | 'intro_text' | 'finish_text'
+>
+
 export const scenarioTranslationService = {
   async getCoverage(scenarioId: string): Promise<LocaleCoverage[]> {
     const response = await axios.get(`/scenarios/${scenarioId}/translation-coverage`)
@@ -84,6 +102,33 @@ export const scenarioTranslationService = {
     }
     const response = await axios.post('/scenario-step-translations', {
       step_id: stepId,
+      locale,
+      ...fields
+    })
+    return response.data
+  },
+
+  /** A scenario's own text in one language, or null if untouched. */
+  async getScenarioTranslation(scenarioId: string, locale: string): Promise<ScenarioTranslation | null> {
+    const response = await axios.get('/scenario-translations', {
+      params: { scenario_id: scenarioId, locale }
+    })
+    const rows = Array.isArray(response.data) ? response.data : response.data?.data
+    return rows?.[0] ?? null
+  },
+
+  async saveScenarioTranslation(
+    scenarioId: string,
+    locale: string,
+    fields: ScenarioTranslationFields,
+    existingId?: string
+  ): Promise<ScenarioTranslation> {
+    if (existingId) {
+      const response = await axios.patch(`/scenario-translations/${existingId}`, fields)
+      return response.data
+    }
+    const response = await axios.post('/scenario-translations', {
+      scenario_id: scenarioId,
       locale,
       ...fields
     })

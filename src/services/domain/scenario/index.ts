@@ -31,5 +31,7 @@ export type {
   LocaleCoverage,
   StepTranslationState,
   StepTranslation,
-  StepTranslationFields
+  StepTranslationFields,
+  ScenarioTranslation,
+  ScenarioTranslationFields
 } from './scenarioTranslationService'

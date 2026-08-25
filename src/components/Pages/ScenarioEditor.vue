@@ -132,8 +132,15 @@
       :current-scenario-org-label="currentScenarioOrgLabel"
       :sizes="sizes"
       :aria-label="t('scenarioEditor.tabsLabel')"
+      :locale="editingLocale"
+      :default-locale="scenarioDefaultLocale"
+      :translation="editingScenarioTranslation"
+      :locale-label="localeLabel(editingLocale)"
+      :default-locale-label="localeLabel(scenarioDefaultLocale)"
       @close="closeScenarioEditModal"
       @save="handleSaveScenario"
+      @save-translation="handleSaveScenarioTranslation"
+      @update:locale="handleScenarioEditingLocaleChange"
     />
 
     <!-- Edit Step Modal -->
@@ -262,7 +269,7 @@ import ScenarioStepEditModal from '../ScenarioEditor/ScenarioStepEditModal.vue'
 import ScenarioEditModal from '../ScenarioEditor/ScenarioEditModal.vue'
 import ScenarioEditorHeader from '../ScenarioEditor/ScenarioEditorHeader.vue'
 import { scenarioTranslationService } from '../../services/domain/scenario'
-import type { LocaleCoverage, StepTranslation } from '../../services/domain/scenario'
+import type { LocaleCoverage, StepTranslation, ScenarioTranslation } from '../../services/domain/scenario'
 import BaseModal from '../Modals/BaseModal.vue'
 import axios from 'axios'
 import { terminalService } from '../../services/domain/terminal/terminalService'
@@ -385,6 +392,7 @@ const showScenarioEditModal = ref(false)
 const editingLocale = ref('')
 const translationCoverage = ref<LocaleCoverage[]>([])
 const editingStepTranslation = ref<StepTranslation | null>(null)
+const editingScenarioTranslation = ref<ScenarioTranslation | null>(null)
 
 const scenarioLocales = computed<string[]>(() => {
   const raw = currentScenario.value?.locales
@@ -740,6 +748,8 @@ const handleCreateNew = () => {
     flags_enabled: false,
     crash_traps: false,
     is_public: false,
+    default_locale: '',
+    locales: '',
     _scopeKey: pickDefaultScopeKey(),
     isNew: true
   }
@@ -1054,9 +1064,23 @@ const openEditModal = async (node: any) => {
       flags_enabled: node.data.flags_enabled || false,
       crash_traps: node.data.crash_traps || false,
       is_public: node.data.is_public || false,
+      default_locale: node.data.default_locale || '',
+      locales: node.data.locales || '',
       organization_id: node.data.organization_id || null,
       isNew: node.data.isNew || false
     }
+    editingScenarioTranslation.value = null
+    if (isTranslating.value && node.data.entityId) {
+      try {
+        editingScenarioTranslation.value = await scenarioTranslationService.getScenarioTranslation(
+          node.data.entityId,
+          editingLocale.value
+        )
+      } catch (err) {
+        console.error('Failed to load scenario translation:', err)
+      }
+    }
+
     showScenarioEditModal.value = true
     modalError.value = ''
   } else if (STEP_NODE_TYPES.includes(node.data.entityType)) {
@@ -1233,6 +1257,8 @@ const handleSaveScenario = async () => {
           flags_enabled: editingScenario.value.flags_enabled,
           crash_traps: editingScenario.value.crash_traps,
           is_public: editingScenario.value.is_public,
+          default_locale: editingScenario.value.default_locale || '',
+          locales: editingScenario.value.locales || '',
           isNew: false
         }
         nodes.value = [...nodes.value]
@@ -1326,6 +1352,55 @@ const syncStepQuestions = async (
   })
   if (failures.length > 0) {
     throw new Error(failures.join(' • '))
+  }
+}
+
+/** Switch language while the scenario modal is open, fetching before swapping. */
+const handleScenarioEditingLocaleChange = async (locale: string) => {
+  const scenarioId = editingScenario.value?.entityId
+  let next: ScenarioTranslation | null = null
+
+  if (scenarioId && locale && locale !== scenarioDefaultLocale.value) {
+    try {
+      next = await scenarioTranslationService.getScenarioTranslation(scenarioId, locale)
+    } catch (err) {
+      console.error('Failed to load scenario translation:', err)
+    }
+  }
+
+  editingScenarioTranslation.value = next
+  editingLocale.value = locale
+}
+
+/**
+ * Save the scenario's own text in one language.
+ *
+ * Separate from handleSaveScenario for the same reason the step path is: that
+ * one sends an explicit list of configuration fields, and a translation has
+ * nothing to say about any of them.
+ */
+const handleSaveScenarioTranslation = async (fields: Record<string, string>) => {
+  const scenarioId = editingScenario.value?.entityId
+  if (!scenarioId || !editingLocale.value) return
+
+  isSaving.value = true
+  modalError.value = ''
+  try {
+    editingScenarioTranslation.value = await scenarioTranslationService.saveScenarioTranslation(
+      scenarioId,
+      editingLocale.value,
+      fields,
+      editingScenarioTranslation.value?.id
+    )
+    closeScenarioEditModal()
+  } catch (err: any) {
+    modalError.value =
+      err.response?.data?.error?.details?.original ||
+      err.response?.data?.error_message ||
+      err.response?.data?.message ||
+      t('scenarioEditor.saveError')
+  } finally {
+    isSaving.value = false
   }
 }
 
