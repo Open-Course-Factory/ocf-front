@@ -299,8 +299,10 @@ const sortedDistributions = computed(() =>
 //  - `effects` is the terminal-effects capability the scenario engine drives.
 //    It is always_available and nothing about a plain session depends on the
 //    learner's opinion of it, so offering it as an option is just noise.
-// This filter is display-only: the auto-enable pass below reads
-// `allowed_features`, so what reaches the backend is unchanged.
+// These three are also the features a plain session must never opt into on
+// its own: two have dedicated controls, and `effects` costs a package install
+// inside the container. The auto-enable pass below reads the same list, so
+// what is hidden and what is auto-enabled can no longer drift apart.
 const HIDDEN_FEATURE_KEYS = ['persistence', 'network', 'effects']
 
 const availableFeatures = computed<SessionOptionFeature[]>(
@@ -482,15 +484,16 @@ async function selectDistribution(dist: Distribution) {
       const largestAllowed = pickLargestSelectableSize(sessionOptions.value.allowed_sizes, isLaunchable)
       if (largestAllowed) selectedSize.value = largestAllowed
     }
-    // Auto-enable all allowed features by default. We deliberately skip
-    // `persistence` and `network` because those concepts are owned by the
-    // launcher's dedicated toggles — auto-enabling them here would fight those
-    // controls. `network` in particular is opt-in (off by default), so it must
-    // never be auto-enabled.
+    // Auto-enable the allowed features the learner is actually offered, which
+    // is exactly the ones this composer renders as chips. HIDDEN_FEATURE_KEYS
+    // is the single owner of that distinction: `persistence` and `network` are
+    // driven by the launcher's dedicated toggles, and `effects` is the scenario
+    // engine's capability — a plain terminal that silently switched it on paid
+    // an apt-get inside the container for a banner it never asked for.
     if (sessionOptions.value) {
       const defaults: Record<string, boolean> = {}
       for (const f of sessionOptions.value.allowed_features) {
-        if (f.allowed && f.key !== 'persistence' && f.key !== 'network') {
+        if (f.allowed && !HIDDEN_FEATURE_KEYS.includes(f.key)) {
           defaults[f.key] = true
         }
       }
@@ -577,9 +580,16 @@ async function restoreLastConfig() {
     )
     if (size) selectedSize.value = size
   }
-  // Restore features
+  // Restore features, minus the ones a session must never carry on its own.
+  // A config remembered before those became hidden can still hold them, and a
+  // stored `effects: true` would keep charging every start an in-container
+  // package install for a banner nobody asked for.
   if (lastConfig.value?.features) {
-    enabledFeatures.value = { ...lastConfig.value.features }
+    const restored: Record<string, boolean> = {}
+    for (const [key, enabled] of Object.entries(lastConfig.value.features)) {
+      if (!HIDDEN_FEATURE_KEYS.includes(key)) restored[key] = enabled
+    }
+    enabledFeatures.value = restored
   }
 }
 
