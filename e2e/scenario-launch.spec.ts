@@ -28,7 +28,7 @@ test.describe('Scenario launch gating (mocked backend)', () => {
     await mock.install(page);
     await login(page, E2E_USER, E2E_PASS);
     await dismissVerificationBanner(page);
-    await navigateViaMenuCategory(page, 'terminals', '/scenarios');
+    await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
 
     const card = page.getByTestId('scenario-card');
     await expect(card).toBeVisible({ timeout: 15_000 });
@@ -44,7 +44,7 @@ test.describe('Scenario launch gating (mocked backend)', () => {
     await mock.install(page);
     await login(page, E2E_USER, E2E_PASS);
     await dismissVerificationBanner(page);
-    await navigateViaMenuCategory(page, 'terminals', '/scenarios');
+    await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
 
     await expect(page.getByTestId('scenario-card')).toBeVisible({ timeout: 15_000 });
     const notice = page.getByTestId('scenario-unavailable-notice');
@@ -64,7 +64,7 @@ test.describe('Scenario launch gating (mocked backend)', () => {
     await mock.install(page);
     await login(page, E2E_USER, E2E_PASS);
     await dismissVerificationBanner(page);
-    await navigateViaMenuCategory(page, 'terminals', '/scenarios');
+    await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
 
     await page.getByTestId('scenario-launch-btn').click();
     await expect(page.getByTestId('scenario-provisioning-overlay')).toBeVisible({ timeout: 10_000 });
@@ -86,7 +86,7 @@ test.describe('Scenario launch gating (mocked backend)', () => {
     await mock.install(page);
     await login(page, E2E_USER, E2E_PASS);
     await dismissVerificationBanner(page);
-    await navigateViaMenuCategory(page, 'terminals', '/scenarios');
+    await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
 
     await page.getByTestId('scenario-launch-btn').click();
     await expect(page.getByTestId('scenario-provisioning-overlay')).toBeVisible({ timeout: 10_000 });

@@ -136,7 +136,7 @@ test('the learner works through the whole scenario in the real container', async
 
   await login(page, LEARNER_EMAIL, PASSWORD);
   await dismissVerificationBanner(page);
-  await navigateViaMenuCategory(page, 'terminals', '/scenarios');
+  await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
 
   const card = page.getByTestId('scenario-card').filter({ hasText: FIXTURE_TITLE });
   await expect(card).toBeVisible({ timeout: 15_000 });

@@ -57,8 +57,8 @@ function scenarioCard(page: Page, title: string) {
  * product, and a reload would not show WHERE the user went.
  */
 async function revisitLauncher(page: Page): Promise<void> {
-  await navigateViaMenuCategory(page, 'terminals', '/my-scenarios');
-  await navigateViaMenuCategory(page, 'terminals', '/scenarios');
+  await navigateViaMenuCategory(page, 'scenarios', '/my-scenarios');
+  await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
 }
 
 test.beforeAll(async () => {
@@ -106,7 +106,7 @@ test('archiving takes a scenario out of the learner catalogue, restoring puts it
 
   await loginFresh(page, LEARNER_EMAIL, PASSWORD);
   await dismissVerificationBanner(page);
-  await navigateViaMenuCategory(page, 'terminals', '/scenarios');
+  await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
 
   await expect(
     scenarioCard(page, CATALOGUE_TITLE),

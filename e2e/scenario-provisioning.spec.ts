@@ -21,7 +21,7 @@ const E2E_PASS = process.env.E2E_PASS || 'OcfTest2026!';
 
 async function launchIntoPlayer(page: Page, mock: ScenarioMock) {
   await dismissVerificationBanner(page);
-  await navigateViaMenuCategory(page, 'terminals', '/scenarios');
+  await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
   await expect(page.getByTestId('scenario-card')).toBeVisible({ timeout: 15_000 });
   await page.getByTestId('scenario-launch-btn').click();
   await expect(page).toHaveURL(/\/terminal-session\//, { timeout: 30_000 });

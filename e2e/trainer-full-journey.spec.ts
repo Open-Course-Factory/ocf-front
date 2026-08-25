@@ -199,7 +199,7 @@ async function attachCsv(page: Page, index: number, name: string, content: strin
  * on without this learner.
  */
 async function launchScenario(page: Page, title: string): Promise<boolean> {
-  await navigateViaMenuCategory(page, 'terminals', '/scenarios');
+  await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
 
   const card = page.getByTestId('scenario-card').filter({ hasText: title });
   await expect(card, 'the assigned scenario must reach the learner').toBeVisible({

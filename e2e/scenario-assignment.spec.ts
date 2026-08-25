@@ -64,8 +64,8 @@ function scenarioCard(page: Page, title: string) {
  * product, and a reload would not show WHERE the user went.
  */
 async function revisitLauncher(page: Page): Promise<void> {
-  await navigateViaMenuCategory(page, 'terminals', '/my-scenarios');
-  await navigateViaMenuCategory(page, 'terminals', '/scenarios');
+  await navigateViaMenuCategory(page, 'scenarios', '/my-scenarios');
+  await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
 }
 
 test.beforeAll(async () => {
@@ -118,7 +118,7 @@ test('the assignment window decides whether a non-public scenario reaches the le
 
   await loginFresh(page, LEARNER_EMAIL, PASSWORD);
   await dismissVerificationBanner(page);
-  await navigateViaMenuCategory(page, 'terminals', '/scenarios');
+  await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
 
   await expect(
     scenarioCard(page, GATED_TITLE),
@@ -156,7 +156,7 @@ test('a learner with a live session is offered Resume instead of a second Launch
 
   await login(page, LEARNER_EMAIL, PASSWORD);
   await dismissVerificationBanner(page);
-  await navigateViaMenuCategory(page, 'terminals', '/scenarios');
+  await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
 
   const card = scenarioCard(page, RESUMABLE_TITLE);
   await expect(card).toBeVisible({ timeout: 15_000 });

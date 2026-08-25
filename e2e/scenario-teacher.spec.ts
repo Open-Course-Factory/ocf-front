@@ -154,7 +154,7 @@ test('the trainer rehearsal opens a session the class results do not count', asy
   // is what lets this test reach the behaviour it is actually about.
   await login(page, TRAINER_EMAIL, PASSWORD, { rememberMe: true });
   await dismissVerificationBanner(page);
-  await navigateViaMenuCategory(page, 'terminals', '/scenario-editor');
+  await navigateViaMenuCategory(page, 'scenarios', '/scenario-editor');
 
   const selector = page.locator('.scenario-select');
   await expect(selector).toBeVisible({ timeout: 20_000 });

@@ -47,7 +47,7 @@ let launchable = false;
  * that is capacity, not a product defect, so callers skip.
  */
 async function launchFromLauncher(page: Page, title: string): Promise<boolean> {
-  await navigateViaMenuCategory(page, 'terminals', '/scenarios');
+  await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
   const card = page.getByTestId('scenario-card').filter({ hasText: title });
   await expect(card).toBeVisible({ timeout: 15_000 });
   await card.getByTestId('scenario-launch-btn').click();
@@ -166,7 +166,7 @@ test('abandoning a run shows up as abandoned in the learner history', async ({ p
   await page.getByTestId('scenario-abandon-btn').click();
   await page.locator('.el-message-box__btns .el-button--primary').click();
 
-  await navigateViaMenuCategory(page, 'terminals', '/my-scenarios');
+  await navigateViaMenuCategory(page, 'scenarios', '/my-scenarios');
   const historyEntry = page.locator('.scenario-group').filter({ hasText: ABANDON_TITLE });
   await expect(historyEntry).toBeVisible({ timeout: 30_000 });
   await expect(historyEntry.locator('.status-badge.abandoned')).toBeVisible();

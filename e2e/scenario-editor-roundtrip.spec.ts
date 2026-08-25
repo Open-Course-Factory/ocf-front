@@ -101,7 +101,7 @@ test('an author draws a scenario onto the canvas and hands it to their class', a
 
   await loginFresh(page, AUTHOR_EMAIL, PASSWORD);
   await dismissVerificationBanner(page);
-  await navigateViaMenuCategory(page, 'terminals', '/scenario-editor');
+  await navigateViaMenuCategory(page, 'scenarios', '/scenario-editor');
   await page.waitForSelector('.flow-canvas', { timeout: 20_000 });
 
   await page.locator('.btn-icon.btn-create').click();
@@ -158,7 +158,7 @@ test('the learner plays the authored scenario through to completion', async ({ p
 
   await login(page, LEARNER_EMAIL, PASSWORD);
   await dismissVerificationBanner(page);
-  await navigateViaMenuCategory(page, 'terminals', '/scenarios');
+  await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
 
   const card = page.getByTestId('scenario-card').filter({ hasText: SCENARIO_TITLE });
   await expect(card).toBeVisible({ timeout: 15_000 });

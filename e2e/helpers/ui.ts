@@ -49,8 +49,25 @@ export async function navigateViaMenuCategory(page: Page, categoryKey: string, r
     await expect(itemList).toHaveClass(/expanded/);
   }
 
+  // Fail fast and say why. Clicking a link that is not in this category waits
+  // out the whole actionTimeout (15s) and then reports a bare "locator.click:
+  // Timeout" naming neither the route nor the category — which is how a menu
+  // reorganisation turned into 24 silent 15s stalls, tripled by CI retries,
+  // instead of one obvious error.
+  const link = category.locator(`a[href="${route}"]`);
+  if ((await link.count()) === 0) {
+    const available = await category.locator('a[href]').evaluateAll(
+      (nodes) => nodes.map((n) => n.getAttribute('href'))
+    );
+    throw new Error(
+      `menu category "${categoryKey}" has no link to ${route}. ` +
+      `It offers: ${available.join(', ') || '(nothing)'}. ` +
+      `Has the item moved to another category?`
+    );
+  }
+
   await demoPause(page);
-  await category.locator(`a[href="${route}"]`).click();
+  await link.click();
 }
 
 export async function navigateViaSubscriptionMenu(page: Page, route: string): Promise<void> {

@@ -19,7 +19,7 @@ const E2E_PASS = process.env.E2E_PASS || 'OcfTest2026!';
 
 async function openLauncher(page: Page) {
   await dismissVerificationBanner(page);
-  await navigateViaMenuCategory(page, 'terminals', '/scenarios');
+  await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
   await expect(page.getByTestId('scenario-card')).toBeVisible({ timeout: 15_000 });
 }
 

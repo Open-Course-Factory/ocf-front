@@ -537,7 +537,7 @@ test.describe('GameShell — the whole adventure, in a real container', () => {
     // at a deleted plan, so no effective plan resolves and the launch 403s.
     await loginFresh(page, LEARNER, PASSWORD);
     await dismissVerificationBanner(page);
-    await navigateViaMenuCategory(page, 'terminals', '/scenarios');
+    await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
 
     const card = page
       .getByTestId('scenario-card')

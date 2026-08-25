@@ -114,7 +114,7 @@ test('learner launches, follows and completes a real scenario', async ({ page })
 
   await login(page, LEARNER_EMAIL, PASSWORD);
   await dismissVerificationBanner(page);
-  await navigateViaMenuCategory(page, 'terminals', '/scenarios');
+  await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
 
   // Find our fixture card and launch it
   const card = page.getByTestId('scenario-card').filter({ hasText: FIXTURE_TITLE });
@@ -185,6 +185,6 @@ test('learner launches, follows and completes a real scenario', async ({ page })
     .toEqual({ status: 'completed', grade: 100 });
 
   // Aftermath — history: the run shows up on /my-scenarios via real navigation
-  await navigateViaMenuCategory(page, 'terminals', '/my-scenarios');
+  await navigateViaMenuCategory(page, 'scenarios', '/my-scenarios');
   await expect(page.locator('body')).toContainText(FIXTURE_TITLE, { timeout: 15_000 });
 });
