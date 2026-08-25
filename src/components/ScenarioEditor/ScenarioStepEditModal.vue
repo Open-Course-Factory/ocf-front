@@ -23,6 +23,18 @@
 
       <!-- Tab content -->
       <div class="tab-content">
+        <!-- Scripts are one logic shared by every language: what they check is
+             the same in French as in English, and the world names they use come
+             from the scenario's lexicon rather than from prose. Translating one
+             would fork it. Said out loud with the fields removed, because a
+             merely disabled textarea reads as a bug to work around. -->
+        <div v-if="isTranslating && isSharedTab" class="ocf-shared-notice" data-testid="step-edit-shared-notice">
+          <i class="fas fa-lock"></i>
+          <div>
+            <strong>{{ t('stepEdit.sharedTitle') }}</strong>
+            <p>{{ t('stepEdit.sharedBody') }}</p>
+          </div>
+        </div>
         <!-- Content tab -->
         <div
           v-if="activeTab === 'content'"
@@ -31,27 +43,51 @@
           role="tabpanel"
           aria-labelledby="tab-content"
         >
-          <div class="form-group">
-            <label for="step-title">{{ t('stepEdit.title') }}</label>
-            <input
-              id="step-title"
-              v-model="formData.title"
-              type="text"
-              class="form-control"
-              :placeholder="t('stepEdit.titlePlaceholder')"
+          <template v-if="isTranslating">
+            <TranslationPane
+              field-id="step-title-translation"
+              :label="t('stepEdit.title')"
+              :source="stepData?.title || ''"
+              v-model="translationData.title"
+              :source-locale-label="defaultLocaleLabel"
+              :target-locale-label="localeLabel"
+              :stale="stepState === 'stale'"
             />
-          </div>
+            <TranslationPane
+              field-id="step-text-translation"
+              :label="t('stepEdit.textContent')"
+              :source="stepData?.text_content || ''"
+              v-model="translationData.text_content"
+              :source-locale-label="defaultLocaleLabel"
+              :target-locale-label="localeLabel"
+              multiline
+              :rows="10"
+            />
+          </template>
 
-          <div class="form-group">
-            <label for="step-text-content">{{ t('stepEdit.textContent') }}</label>
-            <textarea
-              id="step-text-content"
-              v-model="formData.text_content"
-              class="form-control textarea-full"
-              rows="10"
-              :placeholder="t('stepEdit.textContentPlaceholder')"
-            ></textarea>
-          </div>
+          <template v-else>
+            <div class="form-group">
+              <label for="step-title">{{ t('stepEdit.title') }}</label>
+              <input
+                id="step-title"
+                v-model="formData.title"
+                type="text"
+                class="form-control"
+                :placeholder="t('stepEdit.titlePlaceholder')"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="step-text-content">{{ t('stepEdit.textContent') }}</label>
+              <textarea
+                id="step-text-content"
+                v-model="formData.text_content"
+                class="form-control textarea-full"
+                rows="10"
+                :placeholder="t('stepEdit.textContentPlaceholder')"
+              ></textarea>
+            </div>
+          </template>
         </div>
 
         <!-- Hints tab -->
@@ -62,7 +98,18 @@
           role="tabpanel"
           aria-labelledby="tab-hints"
         >
-          <div class="form-group">
+          <TranslationPane
+            v-if="isTranslating"
+            field-id="step-hint-translation"
+            :label="t('stepEdit.hintContent')"
+            :source="stepData?.hint_content || ''"
+            v-model="translationData.hint_content"
+            :source-locale-label="defaultLocaleLabel"
+            :target-locale-label="localeLabel"
+            multiline
+            :rows="14"
+          />
+          <div v-else class="form-group">
             <label for="step-hint-content">{{ t('stepEdit.hintContent') }}</label>
             <textarea
               id="step-hint-content"
@@ -82,7 +129,7 @@
           role="tabpanel"
           aria-labelledby="tab-verify"
         >
-          <div class="form-group">
+          <div v-if="!isTranslating" class="form-group">
             <label for="step-verify-script">{{ t('stepEdit.verifyScript') }}</label>
             <textarea
               id="step-verify-script"
@@ -102,7 +149,7 @@
           role="tabpanel"
           aria-labelledby="tab-background"
         >
-          <div class="form-group">
+          <div v-if="!isTranslating" class="form-group">
             <label for="step-background-script">{{ t('stepEdit.backgroundScript') }}</label>
             <textarea
               id="step-background-script"
@@ -122,7 +169,7 @@
           role="tabpanel"
           aria-labelledby="tab-foreground"
         >
-          <div class="form-group">
+          <div v-if="!isTranslating" class="form-group">
             <label for="step-foreground-script">{{ t('stepEdit.foregroundScript') }}</label>
             <textarea
               id="step-foreground-script"
@@ -554,8 +601,12 @@
       <button class="btn btn-secondary" @click="emit('close')">
         {{ t('stepEdit.cancel') }}
       </button>
-      <button class="btn btn-primary" @click="handleSave">
-        {{ t('stepEdit.save') }}
+      <button
+        class="btn btn-primary"
+        data-testid="step-edit-save"
+        @click="isTranslating ? handleSaveTranslation() : handleSave()"
+      >
+        {{ isTranslating ? t('stepEdit.saveTranslation') : t('stepEdit.save') }}
       </button>
     </template>
   </BaseModal>
@@ -579,6 +630,7 @@
 import { ref, watch, computed } from 'vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import TabStrip from '../Common/TabStrip.vue'
+import TranslationPane from './TranslationPane.vue'
 import { useTranslations } from '../../composables/useTranslations'
 
 const STEP_TYPES = ['terminal', 'flag', 'info', 'quiz'] as const
@@ -632,6 +684,9 @@ const { t } = useTranslations({
       outroText: 'Outro text',
       outroTextPlaceholder: 'Flag captured',
       tabQuestions: 'Questions',
+      saveTranslation: 'Save translation',
+      sharedTitle: 'Shared by every language',
+      sharedBody: 'Scripts check the same thing in every language, and the world names they use come from the scenario lexicon. They are edited on the original, not per translation.',
       tabsLabel: 'Step editor sections',
       // Step type labels
       typeTerminal: 'Terminal',
@@ -731,6 +786,9 @@ const { t } = useTranslations({
       outroText: 'Texte de fin',
       outroTextPlaceholder: 'Drapeau capturé',
       tabQuestions: 'Questions',
+      saveTranslation: 'Enregistrer la traduction',
+      sharedTitle: 'Partagé par toutes les langues',
+      sharedBody: "Les scripts vérifient la même chose dans toutes les langues, et les noms du monde qu'ils utilisent viennent du lexique du scénario. Ils se modifient sur l'original, pas par traduction.",
       tabsLabel: 'Sections de l’éditeur d’étape',
       // Step type labels
       typeTerminal: 'Terminal',
@@ -791,21 +849,72 @@ interface Props {
   isNew?: boolean
   isSaving?: boolean
   errorMessage?: string
+  /**
+   * The language being edited. Empty, or equal to defaultLocale, means the
+   * editor is authoring the scenario itself and behaves exactly as before.
+   */
+  locale?: string
+  defaultLocale?: string
+  /** The existing translation for `locale`, when one has been written. */
+  translation?: any
+  /** This step's standing in `locale`, as the backend reported it. */
+  stepState?: string
+  localeLabel?: string
+  defaultLocaleLabel?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   stepData: undefined,
   isNew: false,
   isSaving: false,
-  errorMessage: ''
+  errorMessage: '',
+  locale: '',
+  defaultLocale: '',
+  translation: undefined,
+  stepState: '',
+  localeLabel: '',
+  defaultLocaleLabel: ''
 })
 
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'save', data: any): void
+  (e: 'save-translation', data: any): void
 }>()
 
+/**
+ * Whether this modal is translating rather than authoring.
+ *
+ * Translating is a different job from writing the scenario, and the two write
+ * to different places: authoring edits the step, translating edits that step's
+ * text in one language. Keeping them apart is what lets the authoring path stay
+ * exactly as it was.
+ */
+const isTranslating = computed(
+  () => !!props.locale && props.locale !== props.defaultLocale
+)
+
+/** The fields a translator writes. Scripts are absent on purpose. */
+const translationData = ref<Record<string, string>>({
+  title: '',
+  text_content: '',
+  hint_content: '',
+  intro_text: '',
+  outro_text: ''
+})
+
 const activeTab = ref('content')
+
+/**
+ * Tabs whose content belongs to every language at once.
+ *
+ * Scripts are shared logic and questions have no translated form yet, so a
+ * translator must not be shown a field there — an editable box is a promise
+ * that editing it will change something.
+ */
+const isSharedTab = computed(
+  () => ['verify', 'background', 'foreground', 'questions'].includes(activeTab.value)
+)
 
 const resolvedStepType = computed((): StepType => {
   const st = props.stepData?.step_type || props.stepData?.entityType
@@ -987,8 +1096,16 @@ const deserializeCorrectAnswer = (q: any): StoredCorrectAnswer => {
 }
 
 // Reset form when step data changes or modal opens
-watch(() => [props.visible, props.stepData], () => {
+watch(() => [props.visible, props.stepData, props.translation, props.locale], () => {
   if (props.visible) {
+    const existing = props.translation || {}
+    translationData.value = {
+      title: existing.title || '',
+      text_content: existing.text_content || '',
+      hint_content: existing.hint_content || '',
+      intro_text: existing.intro_text || '',
+      outro_text: existing.outro_text || ''
+    }
     // Reset to first available tab
     const firstTab = visibleTabs.value[0]
     activeTab.value = firstTab?.key || 'content'
@@ -1201,9 +1318,47 @@ const handleSave = () => {
   }
   emit('save', cleaned)
 }
+
+/**
+ * Save the translation only.
+ *
+ * A blank field is sent as a blank: clearing a translation is how a translator
+ * says "not done after all", and the reader then falls back to the original
+ * rather than showing an empty step.
+ */
+const handleSaveTranslation = () => {
+  emit('save-translation', { ...translationData.value })
+}
 </script>
 
 <style scoped>
+.ocf-shared-notice {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-warning);
+  border-radius: 4px;
+  background: var(--color-background-secondary);
+  margin-bottom: 1rem;
+}
+
+.ocf-shared-notice i {
+  color: var(--color-warning);
+  margin-top: 0.15rem;
+}
+
+.ocf-shared-notice strong {
+  color: var(--color-text-primary);
+}
+
+.ocf-shared-notice p {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
 .step-edit-form {
   display: flex;
   flex-direction: column;

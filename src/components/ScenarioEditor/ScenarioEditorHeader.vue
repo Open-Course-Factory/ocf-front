@@ -58,6 +58,23 @@
       <span class="debug-info" v-if="nodeCount > 0">
         {{ nodeCount }}n / {{ edgeCount }}e
       </span>
+
+      <!-- Which language is being edited. Only for a scenario that has more
+           than one: a single-language scenario has nothing to choose between,
+           and a select with one entry would suggest otherwise. -->
+      <label v-if="locales.length > 1" class="ocf-editing-locale">
+        <i class="fas fa-language" aria-hidden="true"></i>
+        <select
+          class="ocf-editing-locale-select"
+          data-testid="editor-locale-select"
+          :value="editingLocale || defaultLocale"
+          @change="emit('update:editingLocale', ($event.target as HTMLSelectElement).value)"
+        >
+          <option v-for="code in locales" :key="code" :value="code">
+            {{ languageName(code) }}{{ localeProgress(code) }}
+          </option>
+        </select>
+      </label>
     </div>
 
     <!-- Archived indicator: an archived scenario is still fully editable,
@@ -178,12 +195,48 @@ interface Props {
   edgeCount: number
   canPreview: boolean
   isPreviewLoading: boolean
+  /** Languages this scenario is offered in, the default first. */
+  locales?: string[]
+  defaultLocale?: string
+  /** The language being edited; equal to defaultLocale means authoring. */
+  editingLocale?: string
+  /** Coverage per locale, used to say how much is left rather than only which. */
+  coverage?: Array<{ locale: string; translated: number; total_steps: number; stale: number }>
 }
 
-defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  locales: () => [],
+  defaultLocale: '',
+  editingLocale: '',
+  coverage: () => []
+})
+
+/** A language's name in its own language, capitalised for use as a label. */
+function languageName(locale: string): string {
+  let name = locale
+  try {
+    name = new Intl.DisplayNames([locale], { type: 'language' }).of(locale) || locale
+  } catch {
+    return locale
+  }
+  return name.charAt(0).toLocaleUpperCase(locale) + name.slice(1)
+}
+
+/**
+ * How far along a language is, as "12/36".
+ *
+ * Shown beside the name because "French" alone says nothing about whether
+ * choosing it means writing three steps or thirty.
+ */
+function localeProgress(locale: string): string {
+  const found = props.coverage.find(c => c.locale === locale)
+  if (!found || locale === props.defaultLocale) return ''
+  return ` (${found.translated - found.stale}/${found.total_steps})`
+}
 
 const emit = defineEmits<{
   (e: 'update:selectedScenarioId', id: string | null): void
+  (e: 'update:editingLocale', locale: string): void
   (e: 'select-change'): void
   (e: 'create-new'): void
   (e: 'import'): void
@@ -234,6 +287,27 @@ const { t } = useScenarioEditorI18n()
 </script>
 
 <style scoped>
+.ocf-editing-locale {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-text-secondary);
+}
+
+.ocf-editing-locale-select {
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-size: 0.85rem;
+}
+
+.ocf-editing-locale-select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
 .editor-header {
   display: flex;
   align-items: center;

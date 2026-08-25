@@ -14,6 +14,11 @@
       :edge-count="edges.length"
       :can-preview="canPreviewScenario"
       :is-preview-loading="isPreviewLoading"
+      :locales="scenarioLocales"
+      :default-locale="scenarioDefaultLocale"
+      :editing-locale="editingLocale"
+      :coverage="translationCoverage"
+      @update:editing-locale="editingLocale = $event"
       @select-change="handleScenarioSelect"
       @create-new="handleCreateNew"
       @import="handleImport"
@@ -106,6 +111,7 @@
           ></div>
           <ScenarioStepListPanel
             :scenarios="allScenarios"
+            :translation-states="translationStates"
           />
         </template>
       </div>
@@ -137,8 +143,15 @@
       :is-new="editingStepIsNew"
       :is-saving="isSavingStep"
       :error-message="stepSaveError"
+      :locale="editingLocale"
+      :default-locale="scenarioDefaultLocale"
+      :translation="editingStepTranslation"
+      :step-state="translationStates[editingStep?.entityId] || ''"
+      :locale-label="localeLabel(editingLocale)"
+      :default-locale-label="localeLabel(scenarioDefaultLocale)"
       @close="closeStepEditModal"
       @save="handleSaveStep"
+      @save-translation="handleSaveStepTranslation"
     />
 
     <!-- Delete Confirmation Modal -->
@@ -246,6 +259,8 @@ import QuizStepNode from '../ScenarioEditor/nodes/QuizStepNode.vue'
 import ScenarioStepEditModal from '../ScenarioEditor/ScenarioStepEditModal.vue'
 import ScenarioEditModal from '../ScenarioEditor/ScenarioEditModal.vue'
 import ScenarioEditorHeader from '../ScenarioEditor/ScenarioEditorHeader.vue'
+import { scenarioTranslationService } from '../../services/domain/scenario'
+import type { LocaleCoverage, StepTranslation } from '../../services/domain/scenario'
 import BaseModal from '../Modals/BaseModal.vue'
 import axios from 'axios'
 import { terminalService } from '../../services/domain/terminal/terminalService'
@@ -362,6 +377,67 @@ const isRightPanelCollapsed = ref(true)
 
 // Modal state
 const showScenarioEditModal = ref(false)
+// Which language the editor is working in. Equal to the scenario's default —
+// or empty — means authoring the original, which is the behaviour that existed
+// before translations and must stay untouched.
+const editingLocale = ref('')
+const translationCoverage = ref<LocaleCoverage[]>([])
+const editingStepTranslation = ref<StepTranslation | null>(null)
+
+const scenarioLocales = computed<string[]>(() => {
+  const raw = currentScenario.value?.locales
+  if (!raw) return []
+  try {
+    return typeof raw === 'string' ? JSON.parse(raw) : raw
+  } catch {
+    return []
+  }
+})
+
+const scenarioDefaultLocale = computed<string>(() => currentScenario.value?.default_locale || '')
+
+const isTranslating = computed(
+  () => !!editingLocale.value && editingLocale.value !== scenarioDefaultLocale.value
+)
+
+/** Per-step state for the language being edited, keyed by step id. */
+const translationStates = computed<Record<string, 'translated' | 'stale' | 'missing'>>(() => {
+  if (!isTranslating.value) return {}
+  const found = translationCoverage.value.find(c => c.locale === editingLocale.value)
+  if (!found) return {}
+  return Object.fromEntries(found.steps.map(s => [s.step_id, s.state]))
+})
+
+function localeLabel(locale: string): string {
+  if (!locale) return ''
+  try {
+    const name = new Intl.DisplayNames([locale], { type: 'language' }).of(locale) || locale
+    return name.charAt(0).toLocaleUpperCase(locale) + name.slice(1)
+  } catch {
+    return locale
+  }
+}
+
+/**
+ * Refresh how much of each language is done.
+ *
+ * Re-read after every translation save, because saving is also what marks a
+ * step caught up: the badge that said "behind" a moment ago has to stop saying
+ * it without a page reload.
+ */
+const loadTranslationCoverage = async () => {
+  if (!currentScenario.value?.id || scenarioLocales.value.length < 2) {
+    translationCoverage.value = []
+    return
+  }
+  try {
+    translationCoverage.value = await scenarioTranslationService.getCoverage(currentScenario.value.id)
+  } catch (err) {
+    console.error('Failed to load translation coverage:', err)
+    translationCoverage.value = []
+  }
+}
+
 const showStepEditModal = ref(false)
 const showDeleteModal = ref(false)
 const editingScenario = ref<any>({})
@@ -621,6 +697,11 @@ const handleScenarioSelect = async () => {
     }
 
     currentScenario.value = scenario
+    // A language chosen for one scenario means nothing for the next: reset to
+    // the new scenario's own default rather than carrying a locale across that
+    // the new one may not even offer.
+    editingLocale.value = scenario.default_locale || ''
+    await loadTranslationCoverage()
     convertScenarioToNodes(scenario)
 
     // Deferred a tick so the nodes are laid out before their saved y is applied.
@@ -1016,6 +1097,22 @@ const openEditModal = async (node: any) => {
     }
 
     editingStep.value = node.data
+
+    // In translation mode the modal shows the original beside the translation,
+    // so the translation has to be in hand before it opens — arriving late
+    // would blank a field the translator had already started typing into.
+    editingStepTranslation.value = null
+    if (isTranslating.value && node.data.entityId) {
+      try {
+        editingStepTranslation.value = await scenarioTranslationService.getStepTranslation(
+          node.data.entityId,
+          editingLocale.value
+        )
+      } catch (err) {
+        console.error('Failed to load step translation:', err)
+      }
+    }
+
     showStepEditModal.value = true
   }
 }
@@ -1209,6 +1306,42 @@ const syncStepQuestions = async (
   })
   if (failures.length > 0) {
     throw new Error(failures.join(' • '))
+  }
+}
+
+/**
+ * Save a step's translation.
+ *
+ * Deliberately not routed through handleSaveStep: authoring and translating
+ * write to different places, and threading a mode through the step save path —
+ * which already juggles scripts, questions and never-seen fields — would put
+ * the risk of blanking real content next to a feature that only adds text.
+ */
+const handleSaveStepTranslation = async (fields: Record<string, string>) => {
+  const stepId = editingStep.value?.entityId
+  if (!stepId || !editingLocale.value) return
+
+  isSavingStep.value = true
+  stepSaveError.value = ''
+  try {
+    editingStepTranslation.value = await scenarioTranslationService.saveStepTranslation(
+      stepId,
+      editingLocale.value,
+      fields,
+      editingStepTranslation.value?.id
+    )
+    // Saving is also what marks the step caught up with its source, so the
+    // badges have to be re-read rather than assumed.
+    await loadTranslationCoverage()
+    closeStepEditModal()
+  } catch (err: any) {
+    stepSaveError.value =
+      err.response?.data?.error?.details?.original ||
+      err.response?.data?.error_message ||
+      err.response?.data?.message ||
+      t('scenarioEditor.saveError')
+  } finally {
+    isSavingStep.value = false
   }
 }
 
