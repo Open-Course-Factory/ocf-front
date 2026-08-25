@@ -22,7 +22,7 @@
 -->
 
 <template>
-  <span class="alpha-badge" :class="sizeClass">{{ t('alpha') }}</span>
+  <span class="beta-badge" :class="sizeClass">{{ t('beta') }}</span>
 </template>
 
 <script setup lang="ts">
@@ -30,8 +30,8 @@ import { computed } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 
 const { t } = useTranslations({
-  en: { alpha: 'Alpha' },
-  fr: { alpha: 'Alpha' }
+  en: { beta: 'Beta' },
+  fr: { beta: 'Beta' }
 })
 
 interface Props {
@@ -42,11 +42,11 @@ const props = withDefaults(defineProps<Props>(), {
   size: 'medium'
 })
 
-const sizeClass = computed(() => `alpha-badge-${props.size}`)
+const sizeClass = computed(() => `beta-badge-${props.size}`)
 </script>
 
 <style scoped>
-.alpha-badge {
+.beta-badge {
   display: inline-block;
   background: var(--color-warning-bg);
   color: var(--color-warning);
@@ -57,18 +57,18 @@ const sizeClass = computed(() => `alpha-badge-${props.size}`)
   letter-spacing: 0.5px;
 }
 
-.alpha-badge-small {
+.beta-badge-small {
   padding: 2px 6px;
   font-size: 9px;
   border-radius: 8px;
 }
 
-.alpha-badge-medium {
+.beta-badge-medium {
   padding: 3px 8px;
   font-size: var(--font-size-xs);
 }
 
-.alpha-badge-large {
+.beta-badge-large {
   padding: 2px 10px;
   font-size: 0.75rem;
   border-radius: 12px;

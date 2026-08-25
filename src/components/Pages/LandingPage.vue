@@ -245,7 +245,7 @@
           <div class="footer-left">
             <p>&copy; 2023-2026 Solution Libre. {{ t('landing.footer.rights') }}</p>
             <div class="version-info">
-              <AlphaBadge size="large" />
+              <BetaBadge size="large" />
               <span class="version-divider">•</span>
               <span class="version-item">Frontend: v{{ versions.frontend }}</span>
               <span class="version-divider">•</span>
@@ -268,7 +268,7 @@ import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { SUPPORT_EMAIL } from '../../config/contact'
 import { useVersionInfo } from '../../composables/useVersionInfo'
-import AlphaBadge from '../Common/AlphaBadge.vue'
+import BetaBadge from '../Common/BetaBadge.vue'
 import LanguageSelector from '../UI/LanguageSelector.vue'
 
 // State for floating nav visibility

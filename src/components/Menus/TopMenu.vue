@@ -31,7 +31,7 @@
         <a href="#" @click.prevent="navigateToHome">
           <i class="fas fa-book"></i>
           <span>OCF</span>
-          <AlphaBadge size="medium" />
+          <BetaBadge size="medium" />
         </a>
       </h1>
     </div>
@@ -145,7 +145,7 @@
           <div class="dropdown-section">
             <div class="dropdown-section-title">
               {{ t('topMenu.about') }}
-              <AlphaBadge size="small" />
+              <BetaBadge size="small" />
             </div>
             <div class="version-details">
               <div class="version-row">
@@ -184,7 +184,7 @@ import { useOrganizationsStore } from '../../stores/organizations.ts';
 import { useAdminViewMode } from '../../composables/useAdminViewMode';
 import { useVersionInfo } from '../../composables/useVersionInfo';
 import { resolveLandingPage } from '../../composables/useLandingPage';
-import AlphaBadge from '../Common/AlphaBadge.vue';
+import BetaBadge from '../Common/BetaBadge.vue';
 import LanguageSelector from '../UI/LanguageSelector.vue';
 
 const { t } = useTranslations({
@@ -403,7 +403,7 @@ onUnmounted(() => {
   font-size: var(--font-size-lg);
 }
 
-.app-title .alpha-badge {
+.app-title .beta-badge {
   margin-left: var(--spacing-sm);
 }
 
