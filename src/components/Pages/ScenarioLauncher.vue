@@ -128,6 +128,34 @@
         </div>
 
         <div class="card-actions">
+          <!-- A scenario offered in more than one language lets the learner pick
+               before starting. The world is built in that language and cannot be
+               rebuilt afterwards, so this is a decision rather than a
+               preference — which is why it sits next to the button that commits
+               to it, and disappears once a run is under way.
+
+               Above the branch chain rather than inside it: the choice belongs
+               to the card, and threading it through each branch would put the
+               same select in three places. -->
+          <label
+            v-if="showsLanguageChoice(scenario)"
+            class="ocf-language-choice"
+            :title="t('launcher.languageHint')"
+          >
+            <span class="ocf-language-label">{{ t('launcher.language') }}</span>
+            <select
+              class="ocf-language-select"
+              data-testid="scenario-language-select"
+              :value="localeFor(scenario)"
+              :disabled="isLaunching"
+              @change="selectedLocales[scenario.id] = ($event.target as HTMLSelectElement).value"
+            >
+              <option v-for="code in scenario.available_locales" :key="code" :value="code">
+                {{ languageName(code) }}
+              </option>
+            </select>
+          </label>
+
           <!-- Active session: resume -->
           <router-link
             v-if="getExistingSession(scenario)?.terminal_session_id && getExistingSession(scenario).status === 'active'"
@@ -203,6 +231,7 @@ import { useDunningRejection } from '../../composables/useDunningRejection'
 import AdminBadge from '../Common/AdminBadge.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
 import { isAssignedSubscription } from '../../utils/subscriptionHelpers'
+import { getSavedLocale } from '../../services/core/storage'
 
 const router = useRouter()
 const { showError, showConfirm } = useNotification()
@@ -226,6 +255,8 @@ const { t } = useTranslations({
       review: 'Review',
       relaunch: 'Relaunch',
       unavailable: 'Unavailable',
+      language: 'Language',
+      languageHint: 'The scenario runs in this language. It cannot be changed once started.',
       sessionActive: 'Scenario in progress',
       alreadyRunning: 'You are already running this scenario. Resume it from its card.',
       sessionCompleted: 'Scenario completed',
@@ -268,6 +299,8 @@ const { t } = useTranslations({
       review: 'Revoir',
       relaunch: 'Relancer',
       unavailable: 'Indisponible',
+      language: 'Langue',
+      languageHint: 'Le scénario se déroule dans cette langue. Elle ne peut plus être changée une fois lancé.',
       sessionActive: 'Scénario en cours',
       alreadyRunning: 'Vous avez déjà un scénario en cours. Reprenez-le depuis sa carte.',
       sessionCompleted: 'Scénario terminé',
@@ -313,6 +346,64 @@ function isSizeSubstituted(scenario: any): boolean {
   if (!declared || !resolved) return false
   return declared.toUpperCase() !== resolved.toUpperCase()
 }
+const uiLocale = getSavedLocale()
+
+// Which language each card is set to launch in. Keyed by scenario so switching
+// one card never moves another.
+const selectedLocales = ref<Record<string, string>>({})
+
+/**
+ * The language a card will launch in.
+ *
+ * Defaults to the interface language when the scenario offers it, because a
+ * learner reading the app in French almost certainly wants the French world.
+ * Otherwise it takes the first language the backend offered, which is the
+ * scenario's own.
+ *
+ * The list itself is never computed here: the backend decides which languages
+ * are complete enough to launch, and re-deciding that in a client is how one
+ * rule comes to be written twice.
+ */
+function localeFor(scenario: any): string {
+  const offered: string[] = scenario.available_locales || []
+  if (!offered.length) return ''
+  const chosen = selectedLocales.value[scenario.id]
+  if (chosen && offered.includes(chosen)) return chosen
+  return offered.includes(uiLocale) ? uiLocale : offered[0]
+}
+
+/**
+ * Whether this card should offer a language choice.
+ *
+ * Only when more than one is on offer, and only while a launch is still
+ * ahead: a session already running was built in one language and cannot be
+ * rebuilt, so showing a picker over it would offer something that cannot
+ * happen.
+ */
+function showsLanguageChoice(scenario: any): boolean {
+  if (!scenario.launchable) return false
+  if ((scenario.available_locales || []).length < 2) return false
+  const session = getExistingSession(scenario)
+  return !(session?.terminal_session_id && session.status === 'active')
+}
+
+/**
+ * A language's name in its own language — "Français", not "French".
+ *
+ * Capitalised on the way out: French does not capitalise its language names, so
+ * Intl returns "français", which reads as a mistake sitting under a "Language"
+ * label beside "English". The list is a set of labels here, not running prose.
+ */
+function languageName(locale: string): string {
+  let name = locale
+  try {
+    name = new Intl.DisplayNames([locale], { type: 'language' }).of(locale) || locale
+  } catch {
+    return locale
+  }
+  return name.charAt(0).toLocaleUpperCase(locale) + name.slice(1)
+}
+
 const isLoading = ref(false)
 const error = ref('')
 const isLaunching = ref(false)
@@ -501,7 +592,8 @@ async function handleLaunchScenario(scenario: any) {
 
   try {
     const result = await scenarioSessionService.launchScenario(scenario.id, {
-      organization_id: currentOrgId.value || undefined
+      organization_id: currentOrgId.value || undefined,
+      locale: localeFor(scenario) || undefined
     })
     provisioningSessionId.value = result.scenario_session_id
     provisioningPhase.value = result.provisioning_phase || ''
@@ -900,6 +992,40 @@ watch(currentOrgId, () => {
   gap: var(--spacing-xs);
   width: 100%;
   justify-content: center;
+}
+
+.ocf-language-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.ocf-language-label {
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.ocf-language-select {
+  flex: 1;
+  min-width: 0;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-size: 0.85rem;
+}
+
+.ocf-language-select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.ocf-language-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .launch-btn-disabled {
