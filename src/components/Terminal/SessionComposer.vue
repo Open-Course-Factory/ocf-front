@@ -398,9 +398,14 @@ const hasLockedItems = computed(() => {
 const DEFAULT_DISTRIBUTION_PREFERENCE = ['Debian', 'Ubuntu', 'Alpine']
 
 function defaultDistributionCandidates(): Distribution[] {
+  // Case-insensitively: the names come from the backend catalogue, where the
+  // same image is `Debian` on one deployment and `debian` on another. A
+  // case-sensitive match does not fail loudly, it just stops preferring
+  // anything and quietly falls back to display order.
+  const ranked = DEFAULT_DISTRIBUTION_PREFERENCE.map(name => name.toLowerCase())
   const byPreference = (d: Distribution) => {
-    const rank = DEFAULT_DISTRIBUTION_PREFERENCE.indexOf(d.name)
-    return rank === -1 ? DEFAULT_DISTRIBUTION_PREFERENCE.length : rank
+    const rank = ranked.indexOf((d.name ?? '').toLowerCase())
+    return rank === -1 ? ranked.length : rank
   }
   return [...sortedDistributions.value].sort((a, b) => byPreference(a) - byPreference(b))
 }
@@ -433,11 +438,16 @@ async function loadDistributions() {
     if (lastConfig.value) {
       await restoreLastConfig()
     }
-    // Nothing restored, or what was restored cannot run under the plan in
-    // force now — a remembered Ubuntu still shows up on an account that has
-    // since dropped to the free plan, where only XS is allowed. Either way,
-    // fall through to a distribution that can actually start.
-    if (!selectedDistribution.value || !selectedSize.value) {
+    // Nothing restored, or what was restored cannot start under the plan in
+    // force now — a remembered Ubuntu still shows up on an account on the free
+    // plan, where the budget buys one XS and Ubuntu's floor is S.
+    //
+    // The test is launchability, not merely that something is selected: the
+    // backend reports a plan limit as `allowed: true` with `remaining_count: 0`,
+    // so a selected size can be perfectly `allowed` and still impossible to
+    // start. Checking only for a selection left the user parked on an
+    // environment whose every size was out of budget.
+    if (!selectedDistribution.value || !selectedSize.value || !isLaunchable(selectedSize.value)) {
       await selectDefaultDistribution()
     }
   } catch (e) {
@@ -557,10 +567,13 @@ async function restoreLastConfig() {
     return
   }
   await selectDistribution(dist)
-  // Restore size if still allowed
+  // Restore the size only if it can still be started. `allowed` alone is not
+  // that question — every size above the distribution's floor carries
+  // `allowed: true`, and the budget appears as `remaining_count`. Matching on
+  // `allowed` restored sizes the plan could not afford.
   if (sessionOptions.value && lastConfig.value) {
     const size = sessionOptions.value.allowed_sizes.find(
-      s => s.key === lastConfig.value!.size && s.allowed
+      s => s.key === lastConfig.value!.size && isLaunchable(s)
     )
     if (size) selectedSize.value = size
   }
