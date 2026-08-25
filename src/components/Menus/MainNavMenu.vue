@@ -209,6 +209,7 @@ const { canAccessScenarioEditor } = useScenarioEditorAccess();
 
 // Create reactive computed values for each flag we need to check
 const courseConceptionEnabled = createReactiveFlag('course_conception')
+const scenariosEnabled = createReactiveFlag('scenarios')
 const scenarioConceptionEnabled = createReactiveFlag('scenario_conception')
 const themeCustomizationEnabled = createReactiveFlag('theme_customization')
 const archiveGenerationsEnabled = createReactiveFlag('archive_generations')
@@ -225,6 +226,8 @@ const isFeatureEnabled = (flagName: string): boolean => {
   switch (flagName) {
     case 'course_conception':
       return courseConceptionEnabled.value
+    case 'scenarios':
+      return scenariosEnabled.value
     case 'scenario_conception':
       return scenarioConceptionEnabled.value
     case 'theme_customization':
@@ -346,7 +349,7 @@ const menuCategories = computed((): MenuCategory[] => [
     icon: 'fas fa-laptop-code',
     allowedRoles: ['administrator', 'member'],
     featureFlag: 'terminal_management',
-    routePrefixes: ['/terminal-session', '/scenarios'],
+    routePrefixes: ['/terminal-session'],
     items: [
       {
         route: '/terminal-creation',
@@ -359,12 +362,21 @@ const menuCategories = computed((): MenuCategory[] => [
         label: t('navigation.mySessions'),
         title: t('navigation.manageAllTerminalSessions'),
         icon: 'fas fa-terminal'
-      },
+      }
+    ]
+  },
+  {
+    key: 'scenarios',
+    label: t('navigation.scenarios'),
+    icon: 'fas fa-flask',
+    allowedRoles: ['administrator', 'member'],
+    featureFlag: 'scenarios',
+    items: [
       {
         route: '/scenarios',
         label: t('navigation.scenarios'),
         title: t('navigation.scenariosTitle'),
-        icon: 'fas fa-flask'
+        icon: 'fas fa-list'
       },
       {
         route: '/my-scenarios',
