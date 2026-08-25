@@ -14,6 +14,47 @@
         <span class="step-type-label">{{ stepTypeLabel }}</span>
       </div>
 
+      <!-- Which language this step is being edited in.
+           The header has the same choice, but the two are far apart: setting a
+           mode in one place and seeing it take effect in another is how the
+           translation view came to look like it did not exist. Repeating it
+           here, beside the content it governs, is what makes it findable. -->
+      <div v-if="locales.length > 1" class="ocf-step-locale" data-testid="step-edit-locale-switch">
+        <span class="ocf-step-locale-label">
+          <i class="fas fa-language" aria-hidden="true"></i>
+          {{ t('stepEdit.editingIn') }}
+        </span>
+        <button
+          v-for="code in locales"
+          :key="code"
+          type="button"
+          class="ocf-step-locale-btn"
+          :class="{ active: (locale || defaultLocale) === code }"
+          :aria-pressed="(locale || defaultLocale) === code"
+          :data-testid="`step-edit-locale-${code}`"
+          @click="requestLocale(code)"
+        >
+          {{ languageName(code) }}
+          <span v-if="code === defaultLocale" class="ocf-step-locale-origin">{{ t('stepEdit.originalTag') }}</span>
+        </button>
+      </div>
+
+      <!-- Authoring a scenario that is also offered elsewhere: say so, rather
+           than leaving the translation view to be discovered. -->
+      <p v-if="!isTranslating && otherLocales.length" class="ocf-translate-hint">
+        {{ t('stepEdit.alsoOfferedIn') }}
+        <button
+          v-for="code in otherLocales"
+          :key="code"
+          type="button"
+          class="ocf-translate-link"
+          :data-testid="`step-edit-translate-${code}`"
+          @click="requestLocale(code)"
+        >
+          {{ languageName(code) }}
+        </button>
+      </p>
+
       <!-- Tabs -->
       <TabStrip
         v-model="activeTab"
@@ -624,6 +665,21 @@
   >
     <p>{{ t('quizEdit.confirmTypeChangeBody', { from: pendingTypeFromLabel, to: pendingTypeToLabel }) }}</p>
   </BaseModal>
+
+  <!-- Switching language rebuilds the form from the other language's text, so
+       anything typed and not saved would go with it. -->
+  <BaseModal
+    :visible="!!pendingLocaleChange"
+    :title="t('stepEdit.confirmLocaleChangeTitle')"
+    size="small"
+    :show-default-footer="true"
+    :confirm-text="t('stepEdit.confirmLocaleChangeConfirm')"
+    :cancel-text="t('stepEdit.cancel')"
+    @close="pendingLocaleChange = null"
+    @confirm="commitLocaleChange"
+  >
+    <p>{{ t('stepEdit.confirmLocaleChangeBody') }}</p>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
@@ -685,6 +741,12 @@ const { t } = useTranslations({
       outroTextPlaceholder: 'Flag captured',
       tabQuestions: 'Questions',
       saveTranslation: 'Save translation',
+      editingIn: 'Editing in',
+      originalTag: 'original',
+      alsoOfferedIn: 'This scenario is also offered in',
+      confirmLocaleChangeTitle: 'Switch language?',
+      confirmLocaleChangeBody: 'This translation has changes that have not been saved. Switching language will discard them.',
+      confirmLocaleChangeConfirm: 'Discard and switch',
       sharedTitle: 'Shared by every language',
       sharedBody: 'Scripts check the same thing in every language, and the world names they use come from the scenario lexicon. They are edited on the original, not per translation.',
       tabsLabel: 'Step editor sections',
@@ -787,6 +849,12 @@ const { t } = useTranslations({
       outroTextPlaceholder: 'Drapeau capturé',
       tabQuestions: 'Questions',
       saveTranslation: 'Enregistrer la traduction',
+      editingIn: 'Édition en',
+      originalTag: 'original',
+      alsoOfferedIn: 'Ce scénario est aussi proposé en',
+      confirmLocaleChangeTitle: 'Changer de langue ?',
+      confirmLocaleChangeBody: "Cette traduction contient des modifications non enregistrées. Changer de langue les abandonnera.",
+      confirmLocaleChangeConfirm: 'Abandonner et changer',
       sharedTitle: 'Partagé par toutes les langues',
       sharedBody: "Les scripts vérifient la même chose dans toutes les langues, et les noms du monde qu'ils utilisent viennent du lexique du scénario. Ils se modifient sur l'original, pas par traduction.",
       tabsLabel: 'Sections de l’éditeur d’étape',
@@ -861,6 +929,8 @@ interface Props {
   stepState?: string
   localeLabel?: string
   defaultLocaleLabel?: string
+  /** Every language this scenario is offered in, the default included. */
+  locales?: string[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -873,13 +943,15 @@ const props = withDefaults(defineProps<Props>(), {
   translation: undefined,
   stepState: '',
   localeLabel: '',
-  defaultLocaleLabel: ''
+  defaultLocaleLabel: '',
+  locales: () => []
 })
 
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'save', data: any): void
   (e: 'save-translation', data: any): void
+  (e: 'update:locale', locale: string): void
 }>()
 
 /**
@@ -893,6 +965,48 @@ const emit = defineEmits<{
 const isTranslating = computed(
   () => !!props.locale && props.locale !== props.defaultLocale
 )
+
+/**
+ * Whether the translation on screen has been changed since it was loaded.
+ *
+ * Switching language rebuilds the form from the new language's translation, so
+ * unsaved work would vanish without this. Losing typing to a dropdown is the
+ * kind of thing people stop trusting an editor over.
+ */
+const translationIsDirty = computed(() => {
+  if (!isTranslating.value) return false
+  const loaded = props.translation || {}
+  return (['title', 'text_content', 'hint_content', 'intro_text', 'outro_text'] as const)
+    .some(field => (translationData.value[field] || '') !== (loaded[field] || ''))
+})
+
+const pendingLocaleChange = ref<string | null>(null)
+
+function requestLocale(locale: string) {
+  if (locale === props.locale) return
+  if (translationIsDirty.value) {
+    pendingLocaleChange.value = locale
+    return
+  }
+  emit('update:locale', locale)
+}
+
+function commitLocaleChange() {
+  if (pendingLocaleChange.value) emit('update:locale', pendingLocaleChange.value)
+  pendingLocaleChange.value = null
+}
+
+function languageName(locale: string): string {
+  try {
+    const name = new Intl.DisplayNames([locale], { type: 'language' }).of(locale) || locale
+    return name.charAt(0).toLocaleUpperCase(locale) + name.slice(1)
+  } catch {
+    return locale
+  }
+}
+
+/** The languages this step could be translated into, default excluded. */
+const otherLocales = computed(() => props.locales.filter(l => l !== props.defaultLocale))
 
 /** The fields a translator writes. Scripts are absent on purpose. */
 const translationData = ref<Record<string, string>>({
@@ -1332,6 +1446,62 @@ const handleSaveTranslation = () => {
 </script>
 
 <style scoped>
+.ocf-step-locale {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0.25rem;
+}
+
+.ocf-step-locale-label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.ocf-step-locale-btn {
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.ocf-step-locale-btn.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.ocf-step-locale-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.ocf-step-locale-origin {
+  opacity: 0.7;
+  font-size: 0.75rem;
+  margin-left: 0.25rem;
+}
+
+.ocf-translate-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.ocf-translate-link {
+  background: none;
+  border: none;
+  padding: 0 0.2rem;
+  color: var(--color-primary);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
 .ocf-shared-notice {
   display: flex;
   gap: 0.75rem;

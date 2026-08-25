@@ -149,9 +149,11 @@
       :step-state="translationStates[editingStep?.entityId] || ''"
       :locale-label="localeLabel(editingLocale)"
       :default-locale-label="localeLabel(scenarioDefaultLocale)"
+      :locales="scenarioLocales"
       @close="closeStepEditModal"
       @save="handleSaveStep"
       @save-translation="handleSaveStepTranslation"
+      @update:locale="handleEditingLocaleChange"
     />
 
     <!-- Delete Confirmation Modal -->
@@ -1325,6 +1327,29 @@ const syncStepQuestions = async (
   if (failures.length > 0) {
     throw new Error(failures.join(' • '))
   }
+}
+
+/**
+ * Switch the language being edited while a step modal is open.
+ *
+ * The new language's text is fetched before either value changes, so the modal
+ * never shows the previous language's content under the new language's label —
+ * a flicker that reads as "my translation went into the wrong language".
+ */
+const handleEditingLocaleChange = async (locale: string) => {
+  const stepId = editingStep.value?.entityId
+  let next: StepTranslation | null = null
+
+  if (stepId && locale && locale !== scenarioDefaultLocale.value) {
+    try {
+      next = await scenarioTranslationService.getStepTranslation(stepId, locale)
+    } catch (err) {
+      console.error('Failed to load step translation:', err)
+    }
+  }
+
+  editingStepTranslation.value = next
+  editingLocale.value = locale
 }
 
 /**
