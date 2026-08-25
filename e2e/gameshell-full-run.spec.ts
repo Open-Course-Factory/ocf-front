@@ -2,7 +2,10 @@ import { test, expect, type Page } from '@playwright/test';
 import { loginFresh } from './helpers/auth';
 import { dismissVerificationBanner, navigateViaMenuCategory } from './helpers/ui';
 import { typeInTerminal, readTerminalText, waitForLiveTerminal } from './helpers/xterm';
-import { appendFileSync } from 'fs';
+import { appendFileSync, existsSync } from 'fs';
+import { execFileSync } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Playwright buffers stdout until the test ends, so a hang shows nothing at
 // all. This trail is written straight to disk on every phase change.
@@ -39,10 +42,49 @@ const SCENARIO = /GameShell Basics/i;
 const FROM = Number(process.env.GS_FROM ?? 0);
 const TO = Number(process.env.GS_TO ?? 999);
 
-const CHEST = '/World/Forest/Hut/Chest';
-const CAVE = '/World/Mountain/Cave';
-const STALL = '/World/Castle/Courtyard/Stall';
-const BOOK = `${CAVE}/Book_of_potions`;
+// The world's names come from the scenario's own lexicon rather than copies
+// kept here. challenges/tools/lexicon.py already composes every path, so asking
+// it is what stops this file becoming a third place where the castle is named,
+// after the scripts and the prose — and it is what lets the same run play the
+// French world by changing nothing but GS_LOCALE.
+const LOCALE = process.env.GS_LOCALE || 'en';
+// This suite runs as an ES module, so there is no __dirname to resolve against.
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const CHALLENGES = process.env.GS_CHALLENGES || path.resolve(HERE, '..', '..', 'challenges');
+
+function loadLexicon(): Record<string, string> | null {
+  const tool = path.join(CHALLENGES, 'tools', 'lexicon.py');
+  if (!existsSync(tool)) return null;
+  try {
+    const out = execFileSync(
+      'python3',
+      [tool, '--scenario', path.join(CHALLENGES, 'gameshell-basics'), 'values', '--locale', LOCALE],
+      { encoding: 'utf8' }
+    );
+    return JSON.parse(out) as Record<string, string>;
+  } catch {
+    return null;
+  }
+}
+
+const LEXICON = loadLexicon();
+
+/**
+ * What this locale calls a place.
+ *
+ * A missing key returns a marker rather than throwing, because this runs while
+ * the module loads: throwing here would stop Playwright collecting the file at
+ * all, and a run that cannot even list its tests says far less than one that
+ * skips with a reason.
+ */
+function w(key: string): string {
+  return LEXICON?.[key] ?? `<missing ${key}>`;
+}
+
+const CHEST = w('P_CHEST');
+const CAVE = w('P_CAVE');
+const STALL = w('P_STALL');
+const BOOK = w('P_BOOK_OF_POTIONS');
 
 test.use({ video: 'on' });
 
@@ -330,39 +372,39 @@ const STEPS: Step[] = [
 
   {
     title: 'Climb the Tower',
-    solve: (p) => sh(p, 'cd /World/Castle/Main_tower/First_floor/Second_floor/Top_of_the_tower'),
+    solve: (p) => sh(p, `cd ${w('P_TOP_OF_THE_TOWER')}`),
   },
-  { title: 'Down to the Cellar', solve: (p) => sh(p, 'cd /World/Castle/Cellar') },
+  { title: 'Down to the Cellar', solve: (p) => sh(p, `cd ${w('P_CELLAR')}`) },
   // The check reads the LAST command: it wants the short road home, not `cd ..`.
   { title: 'Return to the World', solve: (p) => sh(p, 'cd ~') },
   {
     title: 'Build a Chest',
     solve: async (p) => {
-      await sh(p, 'mkdir /World/Forest/Hut');
+      await sh(p, `mkdir ${w('P_HUT')}`);
       await sh(p, `mkdir ${CHEST}`);
     },
   },
-  { title: 'Remove the Spiders', solve: (p) => sh(p, 'rm /World/Castle/Cellar/spider_*') },
-  { title: 'Move Coins to the Chest', solve: (p) => sh(p, `mv /World/Garden/coin_* ${CHEST}/`) },
-  { title: 'Move Hidden Coins', solve: (p) => sh(p, `mv /World/Garden/.coin_* ${CHEST}/`) },
-  { title: 'Clear Spiders with Wildcards', solve: (p) => sh(p, 'rm /World/Castle/Cellar/spider_*') },
-  { title: 'Clear Hidden Spiders', solve: (p) => sh(p, 'rm /World/Castle/Cellar/.spider_*') },
+  { title: 'Remove the Spiders', solve: (p) => sh(p, `rm ${w('P_SPIDER')}*`) },
+  { title: 'Move Coins to the Chest', solve: (p) => sh(p, `mv ${w('P_COIN')}* ${CHEST}/`) },
+  { title: 'Move Hidden Coins', solve: (p) => sh(p, `mv ${w('P_GARDEN')}/.coin_* ${CHEST}/`) },
+  { title: 'Clear Spiders with Wildcards', solve: (p) => sh(p, `rm ${w('P_SPIDER')}*`) },
+  { title: 'Clear Hidden Spiders', solve: (p) => sh(p, `rm ${w('P_CELLAR')}/.spider_*`) },
   {
     title: 'Copy the Standard',
     solve: (p) =>
-      sh(p, 'cp /World/Castle/Courtyard/royal_standard.txt /World/Castle/Great_hall/'),
+      sh(p, `cp ${w('P_COURTYARD_ROYAL_STANDARD_TXT')} ${w('P_GREAT_HALL')}/`),
   },
   {
     title: 'Copy Tapestries with Wildcards',
-    solve: (p) => sh(p, 'cp /World/Castle/Kitchen/tapestry_* /World/Castle/Great_hall/'),
+    solve: (p) => sh(p, `cp ${w('P_KITCHEN_TAPESTRY')}* ${w('P_GREAT_HALL')}/`),
   },
   {
     // The names are random and meaningless by design, so the only way through
     // is to sort by time — which is exactly what the mission teaches.
     title: 'Copy Recent Paintings',
     solve: async (p) => {
-      await sh(p, 'cd /World/Castle/Main_tower');
-      await sh(p, 'cp $(ls -t painting_* | head -2) /World/Castle/Great_hall/', 1_500);
+      await sh(p, `cd ${w('P_MAIN_TOWER')}`);
+      await sh(p, `cp $(ls -t painting_* | head -2) ${w('P_GREAT_HALL')}/`, 1_500);
     },
   },
   {
@@ -375,7 +417,7 @@ const STEPS: Step[] = [
       // console drops the odd character, and a dropped quote leaves bash
       // waiting at a continuation prompt: the command never runs, nothing is
       // printed, and the step looks broken when only the typing was.
-      const listed = await readRaw(p, 'ls /World/Castle/Observatory');
+      const listed = await readRaw(p, `ls ${w('P_OBSERVATORY')}`);
       const date = listed.match(/prophecy_(\d{4}-\d{2}-\d{2})/)?.[1];
       if (!date) throw new Error(`no prophecy date in: ${listed.slice(-200)}`);
       return await readMarker(p, `echo @@$(date -d ${date} +%A)@@`);
@@ -401,7 +443,7 @@ const STEPS: Step[] = [
     title: 'Spider Queen',
     custom: async (p) => {
       const enterAndClear = async () => {
-        await sh(p, 'cd "$(find /World/Castle/Cellar -maxdepth 1 -type d -name \'.Lair_of_the_spider_queen*\')"', 1_200);
+        await sh(p, `cd "$(find ${w('P_CELLAR')} -maxdepth 1 -type d -name '.${w('W_LAIR')}*')"`, 1_200);
         await sh(p, 'rm -f *spider_queen*', 800);
       };
 
@@ -422,12 +464,12 @@ const STEPS: Step[] = [
   {
     title: 'Find the Copper Coin',
     solve: (p) =>
-      sh(p, `find /World/Forest/Maze -name copper_coin -exec mv {} ${CHEST}/ \\;`, 2_000),
+      sh(p, `find ${w('P_MAZE')} -name copper_coin -exec mv {} ${CHEST}/ \\;`, 2_000),
   },
   {
     title: 'Find the Silver Coin',
     solve: (p) =>
-      sh(p, `find /World/Forest/Grand_maze -name silver_coin -exec mv {} ${CHEST}/ \\;`, 2_000),
+      sh(p, `find ${w('P_GRAND_MAZE')} -name silver_coin -exec mv {} ${CHEST}/ \\;`, 2_000),
   },
   {
     // Four coins with colliding names — moving them one by one under distinct
@@ -436,7 +478,7 @@ const STEPS: Step[] = [
     solve: (p) =>
       sh(
         p,
-        `i=0; for f in $(find /World/Castle /World/Garden -iname "*gold_coin*"); do i=$((i+1)); mv "$f" ${CHEST}/gold_coin_$i; done`,
+        `i=0; for f in $(find ${w('P_CASTLE')} ${w('P_GARDEN')} -iname "*gold_coin*"); do i=$((i+1)); mv "$f" ${CHEST}/gold_coin_$i; done`,
         2_500
       ),
   },
@@ -465,11 +507,11 @@ const STEPS: Step[] = [
 
   {
     title: 'Find the Ruby',
-    solve: (p) => sh(p, `mv /World/Castle/Throne_room/behind_curtain/ruby ${CHEST}/`),
+    solve: (p) => sh(p, `mv ${w('P_RUBY')} ${CHEST}/`),
   },
   {
     title: 'Find the Diamond',
-    solve: (p) => sh(p, `mv /World/Garden/Shed/secret_box/diamond ${CHEST}/`),
+    solve: (p) => sh(p, `mv ${w('P_DIAMOND')} ${CHEST}/`),
   },
 
   // --- The merchant's stall: also judged on the last command ---------------
@@ -504,8 +546,8 @@ const STEPS: Step[] = [
   {
     title: "King's Quarters",
     solve: async (p) => {
-      await sh(p, 'chmod +x /World/Castle/Kings_quarters');
-      await sh(p, 'touch /World/Castle/Kings_quarters/marker.txt');
+      await sh(p, `chmod +x ${w('P_KINGS_QUARTERS')}`);
+      await sh(p, `touch ${w('P_MARKER_TXT')}`);
     },
   },
   {
@@ -514,7 +556,7 @@ const STEPS: Step[] = [
   },
   {
     title: 'Steal the Crown',
-    solve: (p) => sh(p, `mv /World/Castle/Treasury/royal_crown ${CHEST}/`),
+    solve: (p) => sh(p, `mv ${w('P_TREASURY_ROYAL_CROWN')} ${CHEST}/`),
   },
   {
     // The word is drawn per session, so decode it rather than knowing it.
@@ -522,7 +564,7 @@ const STEPS: Step[] = [
     solve: (p) =>
       sh(
         p,
-        `tr 'A-Za-z' 'N-ZA-Mn-za-m' < /World/Castle/Great_hall/scroll.txt | sed -n 's/.*secret word is: *\\([A-Za-z][A-Za-z]*\\).*/\\1/p' > ${CHEST}/answer.txt`,
+        `tr 'A-Za-z' 'N-ZA-Mn-za-m' < ${w('P_SCROLL_TXT')} | sed -n 's/.*secret word is: *\\([A-Za-z][A-Za-z]*\\).*/\\1/p' > ${CHEST}/answer.txt`,
         1_500
       ),
   },
@@ -532,6 +574,12 @@ const STEPS: Step[] = [
 test.describe('GameShell — the whole adventure, in a real container', () => {
   test('every step: Verify refuses before the work, accepts after', async ({ page }) => {
     test.setTimeout(75 * 60 * 1000);
+
+    test.skip(
+      LEXICON === null,
+      `no lexicon at ${CHALLENGES} — clone challenges beside ocf-front, or set GS_CHALLENGES`
+    );
+    trail(`locale: ${LOCALE}`);
 
     // Personal context, deliberately: the shared test org's subscription points
     // at a deleted plan, so no effective plan resolves and the launch 403s.
