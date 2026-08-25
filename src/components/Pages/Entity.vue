@@ -105,9 +105,11 @@
             {{ isExporting ? t('exporting') : t('exportData') }}
           </button>
 
-          <!-- Import button -->
+          <!-- Import button — a bulk create, so it follows the same rule -->
           <button
+            v-if="canCreate"
             class="btn btn-secondary"
+            data-test="entity-import"
             @click="triggerImportFileInput"
             :disabled="isImporting"
             :title="isImporting ? t('importing') : t('importData')"
@@ -123,7 +125,7 @@
             @change="handleImportFile"
           />
 
-          <button class="btn btn-primary" @click="openModal(null)">
+          <button v-if="canCreate" class="btn btn-primary" data-test="entity-add" @click="openModal(null)">
             <i class="fas fa-plus"></i> {{ t('add') }}
           </button>
         </div>
@@ -195,7 +197,9 @@
                 {{ t('edit') }}
               </button>
               <button
+                v-if="canDelete"
                 class="btn btn-danger"
+                data-test="entity-delete"
                 :disabled="shouldPreventLastObjectDeletion && props.entityStore.entities.length <= 1"
                 @click="deleteEntity(entity.id)"
               >
@@ -329,7 +333,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onBeforeMount, computed, reactive, watch, nextTick } from 'vue';
+import { ref, onBeforeMount, computed, reactive, watch, nextTick, unref } from 'vue';
 import EntityModal from '../Modals/EntityModal.vue';
 import EntityCard from '../Cards/EntityCard.vue';
 import EntityListSkeleton from '../Generic/EntityListSkeleton.vue';
@@ -554,6 +558,22 @@ const totalPages = computed(() => {
 const shouldPreventLastObjectDeletion = computed(() => {
   return (props.entityStore as any).preventLastObjectDeletion?.value || false;
 });
+
+// Some entities are owned by code rather than by the person looking at them —
+// platform settings are registered at startup, so creating one nothing reads
+// does nothing, and deleting one is undone on the next boot after having
+// silently changed behaviour in the meantime. Such a store withdraws the
+// action. Absent means allowed, so every other page is untouched.
+//
+// Read through unref: Pinia unwraps a setup store's refs on the instance, so
+// this is a plain boolean here, while a store passed in un-unwrapped still
+// works. Absent means allowed.
+const storeFlag = (name: string) => {
+  const value = unref((props.entityStore as any)[name]);
+  return value !== false;
+};
+const canCreate = computed(() => storeFlag('allowCreation'));
+const canDelete = computed(() => storeFlag('allowDeletion'));
 
 // Check if entity has a detail view configured (generic)
 const isClickableEntity = computed(() => {

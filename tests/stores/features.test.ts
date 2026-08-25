@@ -93,4 +93,16 @@ describe('features store — the platform settings admin surface', () => {
       expect(shown, `${column} should be listed`).toContain(column)
     }
   })
+
+  it('withdraws create and delete, which are meaningless or harmful here', () => {
+    // Settings are registered by modules at startup, so creating a row nothing
+    // reads does nothing. Deleting one is worse: IsFeatureEnabled treats a
+    // missing row as ENABLED, so removing a disabled setting turns the thing
+    // back on, and the next boot re-seeds it at its code default. Production
+    // has disabled settings today, so this is a live hazard, not a theoretical
+    // one.
+    const store: any = useFeaturesStore()
+    expect(store.allowCreation).toBe(false)
+    expect(store.allowDeletion).toBe(false)
+  })
 })

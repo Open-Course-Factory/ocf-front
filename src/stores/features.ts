@@ -70,6 +70,15 @@ export const useFeaturesStore = defineStore('features', () => {
         }
     })
 
+    // Settings are registered by each module at startup, so neither action is
+    // meaningful here — and one of them is dangerous. Creating a row nothing
+    // reads does nothing. Deleting one is worse than it looks: IsFeatureEnabled
+    // treats a missing row as ENABLED, so removing a disabled setting turns the
+    // thing back on, and the next boot re-seeds it at its code default, making
+    // the flip permanent. Production has disabled settings today.
+    base.allowCreation.value = false
+    base.allowDeletion.value = false
+
     const fieldList = computed(() => buildFieldList([
         field('id').hidden().readonly(),
         field('key', t('features.key')).input().visible().readonly(),

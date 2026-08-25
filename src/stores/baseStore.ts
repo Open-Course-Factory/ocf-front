@@ -166,6 +166,12 @@ export const useBaseStore = () => {
 
     // Prevent deletion of last object (configurable per store)
     const preventLastObjectDeletion = ref(false)
+    // Rows some entities own entirely in code: a store can withdraw the
+    // create and delete actions rather than offer operations that either do
+    // nothing or quietly change behaviour. Default true keeps every existing
+    // page exactly as it was.
+    const allowCreation = ref(true)
+    const allowDeletion = ref(true)
 
     function getEntities() {
         return entities
@@ -587,6 +593,8 @@ export const useBaseStore = () => {
 
         // Configuration options
         preventLastObjectDeletion,
+        allowCreation,
+        allowDeletion,
         includeParams,
         detailRouteName,
 
