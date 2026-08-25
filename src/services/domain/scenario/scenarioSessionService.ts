@@ -172,7 +172,7 @@ export const scenarioSessionService = {
     return response.data?.data || response.data || []
   },
 
-  async launchScenario(scenarioId: string, options?: { backend?: string; organization_id?: string }): Promise<{
+  async launchScenario(scenarioId: string, options?: { backend?: string; organization_id?: string; locale?: string }): Promise<{
     terminal_session_id: string
     scenario_session_id: string
     status: string
