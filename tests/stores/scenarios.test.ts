@@ -71,7 +71,7 @@ describe('scenarios store', () => {
       expect(fields.has('title')).toBe(true)
       expect(fields.has('description')).toBe(true)
       expect(fields.has('difficulty')).toBe(true)
-      expect(fields.has('estimated_time')).toBe(true)
+      expect(fields.has('estimated_time_minutes')).toBe(true)
       expect(fields.has('os_type')).toBe(true)
       expect(fields.has('instance_type')).toBe(true)
       expect(fields.has('source_type')).toBe(true)
