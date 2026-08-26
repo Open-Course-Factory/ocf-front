@@ -748,7 +748,7 @@ const { t } = useTranslations({
       confirmLocaleChangeBody: 'This translation has changes that have not been saved. Switching language will discard them.',
       confirmLocaleChangeConfirm: 'Discard and switch',
       sharedTitle: 'Shared by every language',
-      sharedBody: 'Scripts check the same thing in every language, and the world names they use come from the scenario lexicon. They are edited on the original, not per translation.',
+      sharedBody: 'Scripts check the same thing in every language, because they name objects from the scenario\'s Vocabulary rather than rooms. Translate those names in the scenario\'s Vocabulary tab; the script itself is edited on the original.',
       tabsLabel: 'Step editor sections',
       // Step type labels
       typeTerminal: 'Terminal',
@@ -856,7 +856,7 @@ const { t } = useTranslations({
       confirmLocaleChangeBody: "Cette traduction contient des modifications non enregistrées. Changer de langue les abandonnera.",
       confirmLocaleChangeConfirm: 'Abandonner et changer',
       sharedTitle: 'Partagé par toutes les langues',
-      sharedBody: "Les scripts vérifient la même chose dans toutes les langues, et les noms du monde qu'ils utilisent viennent du lexique du scénario. Ils se modifient sur l'original, pas par traduction.",
+      sharedBody: "Les scripts vérifient la même chose dans toutes les langues, car ils nomment les objets depuis le Vocabulaire du scénario plutôt que des pièces. Traduisez ces noms dans l'onglet Vocabulaire ; le script lui-même se modifie sur l'original.",
       tabsLabel: 'Sections de l’éditeur d’étape',
       // Step type labels
       typeTerminal: 'Terminal',
