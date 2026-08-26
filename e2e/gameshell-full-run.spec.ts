@@ -698,13 +698,18 @@ test.describe('GameShell — the whole adventure, in a real container', () => {
     // it: the world is built at launch, and a run that only changed what it
     // expected would compare French titles against an English scenario and
     // blame the translation.
-    if (LOCALE !== DEFAULT_LOCALE) {
-      const picker = card.getByTestId('scenario-language-select');
-      const offered = (await picker.count()) > 0;
-      test.skip(
-        !offered,
-        `GS_LOCALE=${LOCALE} needs a build whose launcher offers a language, and this one does not`
-      );
+    // Always say which language, never assume one. The picker opens on the
+    // language the app itself is being read in, which is not the scenario's
+    // default — so a run that only spoke up for a non-default locale played
+    // whatever the UI happened to be set to, and an English run against a
+    // French UI silently checked English titles against a French world.
+    const picker = card.getByTestId('scenario-language-select');
+    const offered = (await picker.count()) > 0;
+    test.skip(
+      !offered && LOCALE !== DEFAULT_LOCALE,
+      `GS_LOCALE=${LOCALE} needs a build whose launcher offers a language, and this one does not`
+    );
+    if (offered) {
       await picker.selectOption(LOCALE);
       trail(`chose ${LOCALE} on the card`);
     }
