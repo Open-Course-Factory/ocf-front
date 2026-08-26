@@ -288,6 +288,25 @@
       </div>
     </div>
 
+    <!-- Vocabulary tab: the objects this world is built from. Saved on its own,
+         because it is its own document server-side and the scenario's Save
+         sends a fixed list of configuration fields. -->
+    <div
+      v-if="activeTab === 'vocabulary' && !isTranslating"
+      id="panel-vocabulary"
+      role="tabpanel"
+      aria-labelledby="tab-vocabulary"
+      class="modal-form"
+    >
+      <LexiconEditor
+        v-if="model.entityId"
+        :scenario-id="model.entityId"
+        :locales="offeredLocales.length ? offeredLocales : [defaultLocale || 'en']"
+        :default-locale="defaultLocale || 'en'"
+      />
+      <p v-else class="ocf-scn-locale-label">{{ t('scenarioEditor.vocabularyAfterSave') }}</p>
+    </div>
+
     <!-- Setup tab -->
     <div
       v-show="activeTab === 'setup' && !isTranslating"
@@ -462,6 +481,7 @@ import { ref, computed, watch } from 'vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import TabStrip from '../Common/TabStrip.vue'
 import TranslationPane from './TranslationPane.vue'
+import LexiconEditor from './LexiconEditor.vue'
 import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
 import type { Size } from '../../types/terminal'
 import { formatMcpuAsVcpu, effectiveCpuMcpu } from '../../utils/formatters'
@@ -650,7 +670,8 @@ const allTabs = computed(() => [
   { key: 'general', label: t('scenarioEditor.tabGeneral') },
   { key: 'content', label: t('scenarioEditor.tabContent') },
   { key: 'setup', label: t('scenarioEditor.tabSetup') },
-  { key: 'options', label: t('scenarioEditor.tabOptions') }
+  { key: 'options', label: t('scenarioEditor.tabOptions') },
+  { key: 'vocabulary', label: t('scenarioEditor.tabVocabulary') }
 ])
 // At create time, only show General + Content — the Setup/Options tabs are
 // hidden until first save to reduce friction (Marc: "I have to fill 12 fields
