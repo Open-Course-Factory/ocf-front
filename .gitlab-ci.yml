@@ -250,8 +250,17 @@ e2e:scenarios:
 # The scenario has to be seeded in the target environment first, and seeding is
 # manual (challenges/seed-scenario.sh). A stale seed fails at the step whose
 # content changed, which reads as a product bug and is not one.
+#
+# One job per language. The world itself is translated — a French learner walks
+# /Monde/Chateau/Cave — so a run proves only the language it played, and the
+# English run cannot speak for the French one.
+#
+# Both need the challenges repo: the spec reads the world's vocabulary and the
+# step titles from it, and without them it skips itself. A skipped job is green,
+# which is the one outcome that must not be reachable by accident — hence the
+# preflight below, which fails the job loudly instead.
 # ============================================================================
-e2e:gameshell:
+.e2e:gameshell:
   stage: test
   image: mcr.microsoft.com/playwright:v1.59.1-noble
   cache:
@@ -264,6 +273,9 @@ e2e:gameshell:
     # its stdout, so on a run that hangs this file is the only thing that says
     # which step it hung on — keep it next to the video.
     GS_TRAIL: "$CI_PROJECT_DIR/gs-trail.log"
+    # The world's vocabulary and the step titles live with the content, not
+    # with the front, so the spec is pointed at a checkout of it.
+    GS_CHALLENGES: "$CI_PROJECT_DIR/.e2e-challenges"
   rules:
     - if: $CI_COMMIT_TAG
       when: never
@@ -277,6 +289,14 @@ e2e:gameshell:
   timeout: 45 minutes
   before_script:
     - npm ci --prefer-offline
+    # The scenario's own words: names, paths and the sentences a check prints.
+    - git clone --depth 1 "https://gitlab-ci-token:${CI_JOB_TOKEN}@usine.solution-libre.fr/open-course-factory/ocf-challenges.git" .e2e-challenges
+    # Preflight. The spec skips itself when it cannot read the vocabulary, and a
+    # skipped job passes — so ask the same question here, where the answer is
+    # allowed to fail the pipeline.
+    - python3 --version
+    - python3 .e2e-challenges/tools/lexicon.py --scenario .e2e-challenges/gameshell-basics check
+    - python3 .e2e-challenges/tools/lexicon.py --scenario .e2e-challenges/gameshell-basics values --locale "$GS_LOCALE" > /dev/null
   script:
     # --retries=0 deliberately overrides the config's CI default of 2. A retry
     # here is not free: it launches another container and spends another slice
@@ -295,6 +315,19 @@ e2e:gameshell:
       - playwright-report/
       - gs-trail.log
     expire_in: 1 day
+
+e2e:gameshell:
+  extends: .e2e:gameshell
+  variables:
+    GS_LOCALE: "en"
+
+# The same 36 steps against a French world, driven by the same untouched verify
+# scripts. It is the only thing that proves the translation reaches a learner
+# rather than only the catalogue.
+e2e:gameshell:fr:
+  extends: .e2e:gameshell
+  variables:
+    GS_LOCALE: "fr"
 
 # ============================================================================
 # Release Component
