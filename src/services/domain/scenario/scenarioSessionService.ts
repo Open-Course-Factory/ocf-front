@@ -145,7 +145,7 @@ export interface ScenarioInfo {
   intro_text?: string
   finish_text?: string
   difficulty?: string
-  estimated_time?: string
+  estimated_time_minutes?: number
   flags_enabled?: boolean
   // Mirrors Scenario.CrashTraps in ocf-core, which is what EndCrashTrapRun
   // gates permadeath on. GET /scenarios/:id always serializes it (no

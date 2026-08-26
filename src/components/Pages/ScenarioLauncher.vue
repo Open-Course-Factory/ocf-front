@@ -70,8 +70,8 @@
         </div>
         <p v-if="cardDescription(scenario)" class="card-description">{{ cardDescription(scenario) }}</p>
         <div class="card-meta">
-          <span v-if="scenario.estimated_time" class="meta-item">
-            <i class="fas fa-clock"></i> {{ scenario.estimated_time }}
+          <span v-if="formatMinutes(scenario.estimated_time_minutes, uiLocale)" class="meta-item">
+            <i class="fas fa-clock"></i> {{ formatMinutes(scenario.estimated_time_minutes, uiLocale) }}
           </span>
           <span v-if="scenario.os_type" class="os-badge">
             <i class="fas fa-linux os-badge-icon"></i>
@@ -232,6 +232,7 @@ import AdminBadge from '../Common/AdminBadge.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
 import { isAssignedSubscription } from '../../utils/subscriptionHelpers'
 import { getSavedLocale } from '../../services/core/storage'
+import { formatMinutes } from '../../utils/formatters'
 
 const router = useRouter()
 const { showError, showConfirm } = useNotification()

@@ -323,3 +323,35 @@ export function extractErrorMessage(
     fallback
   )
 }
+
+/**
+ * Format a duration in minutes for a reader.
+ *
+ * The estimate is stored as a number precisely so that the words around it can
+ * be chosen here, once, in the reader's language — it used to be stored as the
+ * English sentence "90 minutes", which a French learner then read in English.
+ *
+ * Hours appear only once there is at least one: "45 min", not "0 h 45".
+ *
+ * @param minutes - whole minutes; 0 or absent means no estimate was given
+ * @param locale - 'fr' or 'en'
+ * @returns the duration, or an empty string when there is nothing to say
+ *
+ * @example
+ * formatMinutes(90, 'fr')  // "1 h 30"
+ * formatMinutes(90, 'en')  // "1h 30min"
+ * formatMinutes(45, 'fr')  // "45 min"
+ * formatMinutes(0, 'fr')   // ""
+ */
+export function formatMinutes(minutes: number | null | undefined, locale: string = 'fr'): string {
+  if (!minutes || !Number.isFinite(minutes) || minutes <= 0) return ''
+
+  const whole = Math.round(minutes)
+  const hours = Math.floor(whole / 60)
+  const rest = whole % 60
+  const french = locale.startsWith('fr')
+
+  if (!hours) return french ? `${rest} min` : `${rest}min`
+  if (!rest) return french ? `${hours} h` : `${hours}h`
+  return french ? `${hours} h ${rest}` : `${hours}h ${rest}min`
+}
