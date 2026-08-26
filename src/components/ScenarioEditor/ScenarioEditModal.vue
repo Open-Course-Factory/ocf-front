@@ -78,13 +78,15 @@
         </div>
 
         <div class="form-group">
-          <label for="scenario-estimated-time">{{ t('scenarioEditor.estimatedTime') }}</label>
+          <label for="scenario-estimated-time">{{ t('scenarioEditor.estimatedTimeMinutes') }}</label>
           <input
             id="scenario-estimated-time"
-            v-model="model.estimated_time"
-            type="text"
+            v-model.number="model.estimated_time_minutes"
+            type="number"
+            min="0"
+            step="5"
             class="form-control"
-            placeholder="30m"
+            placeholder="30"
           />
         </div>
       </div>

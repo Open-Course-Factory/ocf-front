@@ -27,8 +27,8 @@
         <span class="meta-item" v-if="data.steps">
           <span aria-hidden="true">📋</span> {{ data.steps?.length || 0 }} steps
         </span>
-        <span class="meta-item" v-if="data.estimated_time">
-          <span aria-hidden="true">⏱️</span> {{ data.estimated_time }}
+        <span class="meta-item" v-if="formatMinutes(data.estimated_time_minutes, locale)">
+          <span aria-hidden="true">⏱️</span> {{ formatMinutes(data.estimated_time_minutes, locale) }}
         </span>
         <span class="meta-item" v-if="data.flags_enabled">
           <span aria-hidden="true">🚩</span> flags
@@ -41,8 +41,13 @@
 <script setup lang="ts">
 import BaseNode from '../../GraphEditor/nodes/BaseNode.vue'
 import { useDifficultyLabel } from '../../../composables/useDifficultyLabel'
+import { useTranslations } from '../../../composables/useTranslations'
+import { formatMinutes } from '../../../utils/formatters'
 
 const difficultyLabel = useDifficultyLabel()
+// The node shows no text of its own, only the estimate — which needs to know
+// which language to word itself in.
+const { locale } = useTranslations({ en: {}, fr: {} })
 
 interface Props {
   data: {
@@ -50,7 +55,7 @@ interface Props {
     isNew?: boolean
     entityId?: string
     difficulty?: string
-    estimated_time?: string
+    estimated_time_minutes?: number
     steps?: any[]
     flags_enabled?: boolean
     [key: string]: any

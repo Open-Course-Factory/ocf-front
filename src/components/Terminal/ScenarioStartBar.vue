@@ -49,8 +49,8 @@
             </div>
             <p v-if="scenario.description" class="scenario-description">{{ scenario.description }}</p>
           </div>
-          <span v-if="scenario.estimated_time" class="scenario-time">
-            <i class="fas fa-clock"></i> {{ scenario.estimated_time }}
+          <span v-if="formatMinutes(scenario.estimated_time_minutes, locale)" class="scenario-time">
+            <i class="fas fa-clock"></i> {{ formatMinutes(scenario.estimated_time_minutes, locale) }}
           </span>
         </button>
       </div>
@@ -66,6 +66,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useDifficultyLabel } from '../../composables/useDifficultyLabel'
 import { useNotification } from '../../composables/useNotification'
 import AdminBadge from '../Common/AdminBadge.vue'
+import { formatMinutes } from '../../utils/formatters'
 
 interface Props {
   terminalSessionId: string
@@ -95,7 +96,7 @@ defineExpose({ abortProvisioning })
 
 const { showError } = useNotification()
 
-const { t } = useTranslations({
+const { t, locale } = useTranslations({
   en: {
     scenarioStart: {
       noActive: 'No scenario active on this terminal',

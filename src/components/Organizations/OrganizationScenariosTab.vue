@@ -31,6 +31,7 @@ import BaseModal from '../Modals/BaseModal.vue'
 import ScenarioUploadModal from '../Modals/ScenarioUploadModal.vue'
 import ScenarioJSONImportModal from '../Modals/ScenarioJSONImportModal.vue'
 import AdminBadge from '../Common/AdminBadge.vue'
+import { formatMinutes } from '../../utils/formatters'
 
 interface OrgScenario {
   id: string
@@ -38,7 +39,7 @@ interface OrgScenario {
   title: string
   difficulty: string
   instance_type?: string
-  estimated_time?: number
+  estimated_time_minutes?: number
   created_at?: string
   archived_at?: string | null
 }
@@ -50,7 +51,7 @@ const props = defineProps<{
 
 const { isAdmin } = useAdminViewMode()
 
-const { t } = useTranslations({
+const { t, locale } = useTranslations({
   en: {
     orgScenarios: {
       title: 'Scenario Library',
@@ -375,9 +376,9 @@ onMounted(() => {
               <i class="fas fa-server"></i>
               {{ scenario.instance_type }}
             </span>
-            <span v-if="scenario.estimated_time" class="meta-item">
+            <span v-if="formatMinutes(scenario.estimated_time_minutes, locale)" class="meta-item">
               <i class="fas fa-clock"></i>
-              {{ scenario.estimated_time }} {{ t('orgScenarios.minutes') }}
+              {{ formatMinutes(scenario.estimated_time_minutes, locale) }}
             </span>
             <span v-if="scenario.created_at" class="meta-item">
               <i class="fas fa-calendar"></i>

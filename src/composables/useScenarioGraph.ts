@@ -150,7 +150,7 @@ export function useScenarioGraph(options: UseScenarioGraphOptions) {
         entityId: scenario.id,
         entityType: 'scenario',
         difficulty: scenario.difficulty,
-        estimated_time: scenario.estimated_time,
+        estimated_time_minutes: scenario.estimated_time_minutes,
         flags_enabled: scenario.flags_enabled,
         steps: steps,
         isNew: false,
