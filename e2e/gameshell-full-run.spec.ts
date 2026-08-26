@@ -57,13 +57,13 @@ const LOCALE = process.env.GS_LOCALE || 'en';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CHALLENGES = process.env.GS_CHALLENGES || path.resolve(HERE, '..', '..', 'challenges');
 
-function loadLexicon(): Record<string, string> | null {
+function loadLexicon(locale: string): Record<string, string> | null {
   const tool = path.join(CHALLENGES, 'tools', 'lexicon.py');
   if (!existsSync(tool)) return null;
   try {
     const out = execFileSync(
       'python3',
-      [tool, '--scenario', path.join(CHALLENGES, 'gameshell-basics'), 'values', '--locale', LOCALE],
+      [tool, '--scenario', path.join(CHALLENGES, 'gameshell-basics'), 'values', '--locale', locale],
       { encoding: 'utf8' }
     );
     return JSON.parse(out) as Record<string, string>;
@@ -72,7 +72,7 @@ function loadLexicon(): Record<string, string> | null {
   }
 }
 
-const LEXICON = loadLexicon();
+const LEXICON = loadLexicon(LOCALE);
 
 /**
  * What each step is called, in the language being played.
@@ -111,6 +111,32 @@ function loadDefaultLocale(): string {
 }
 
 const DEFAULT_LOCALE = loadDefaultLocale();
+
+/**
+ * The sentences a check would print if it had not been translated.
+ *
+ * Every step passing proves the world was translated; it does not prove the
+ * refusals were, because a refusal is what a learner reads on the way to
+ * passing and no assertion ever looks at it. That is exactly how the scripts
+ * came to answer a French world in English for as long as they did. So: any
+ * default-locale wording that this locale words differently must not appear in
+ * a refusal, and each one that does names the message that was missed.
+ */
+function foreignMessages(): string[] {
+  if (LOCALE === DEFAULT_LOCALE) return [];
+  const here = loadLexicon(LOCALE);
+  const source = loadLexicon(DEFAULT_LOCALE);
+  if (!here || !source) return [];
+  return Object.keys(source)
+    .filter((name) => name.startsWith('M_') && source[name] !== here[name])
+    // A format string is not what reaches the screen — printf has already
+    // filled the placeholders in by then, so match on the part around them.
+    .flatMap((name) => source[name].split('%s'))
+    .map((fragment) => fragment.trim())
+    .filter((fragment) => fragment.length > 12);
+}
+
+const FOREIGN_MESSAGES = foreignMessages();
 
 /**
  * What this locale calls a place.
@@ -284,7 +310,15 @@ async function expectVerifyFails(page: Page): Promise<void> {
     await expect(result).toHaveClass(/failed/, { timeout: 60_000 });
 
     const said = (await result.innerText().catch(() => '')).trim();
-    if (!isRateLimited(said)) return;
+    if (!isRateLimited(said)) {
+      const untranslated = FOREIGN_MESSAGES.find((fragment) => said.includes(fragment));
+      if (untranslated) {
+        throw new Error(
+          `the check refused in ${DEFAULT_LOCALE} while playing ${LOCALE}: "${untranslated}"`
+        );
+      }
+      return;
+    }
     // eslint-disable-next-line no-console
     console.log('    the limiter answered, not the check — waiting for the window');
     await page.waitForTimeout(20_000);
