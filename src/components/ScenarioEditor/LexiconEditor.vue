@@ -35,7 +35,12 @@
                 <!-- A parent is chosen, never typed: an entry pointing at a
                      room that does not exist cannot be stored, so offering the
                      mistake would only produce a rejected save. -->
-                <select v-model="entry.parent_key" class="form-control" :data-testid="`lexicon-parent-${index}`">
+                <select
+                  v-model="entry.parent_key"
+                  class="form-control"
+                  :disabled="!sitsInTheWorld(entry.kind)"
+                  :data-testid="`lexicon-parent-${index}`"
+                >
                   <option value="">{{ t('lexicon.noParent') }}</option>
                   <option
                     v-for="candidate in parentChoices(entry)"
@@ -49,6 +54,7 @@
                   <option value="place">{{ t('lexicon.kindPlace') }}</option>
                   <option value="token">{{ t('lexicon.kindToken') }}</option>
                   <option value="stem">{{ t('lexicon.kindStem') }}</option>
+                  <option value="message">{{ t('lexicon.kindMessage') }}</option>
                 </select>
               </td>
               <td v-for="code in locales" :key="code">
@@ -170,6 +176,16 @@ function parentChoices(entry: LexiconEntry): string[] {
   return entries.value.map(e => e.key).filter(key => key && key !== entry.key)
 }
 
+/**
+ * Only a place stands somewhere. A stem is a fragment of other names, a text
+ * is found inside a file, and a message is read by a person — none of them has
+ * a path, so the server stores no parent for them. Offering the choice anyway
+ * would let a trainer set something that is silently dropped on save.
+ */
+function sitsInTheWorld(kind: string): boolean {
+  return kind === 'place'
+}
+
 function addEntry() {
   entries.value.push({
     key: '',
@@ -245,6 +261,7 @@ const { t } = useTranslations({
       kindPlace: 'Place (a directory or file)',
       kindToken: 'Text (found inside a file)',
       kindStem: 'Stem (part of other names)',
+      kindMessage: 'Message (what a check says when it refuses)',
       add: 'Add an object',
       remove: 'Remove',
       save: 'Save vocabulary',
@@ -270,6 +287,7 @@ const { t } = useTranslations({
       kindPlace: 'Lieu (dossier ou fichier)',
       kindToken: 'Texte (trouvé dans un fichier)',
       kindStem: 'Radical (morceau d’autres noms)',
+      kindMessage: 'Message (ce que dit une vérification qui refuse)',
       add: 'Ajouter un objet',
       remove: 'Supprimer',
       save: 'Enregistrer le vocabulaire',
