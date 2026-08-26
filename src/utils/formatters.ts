@@ -333,6 +333,11 @@ export function extractErrorMessage(
  *
  * Hours appear only once there is at least one: "45 min", not "0 h 45".
  *
+ * Not formatDuration, which takes seconds and words itself the same way in
+ * every language — it renders elapsed time in a table, where "1h 30m" is a
+ * measurement. This renders an estimate a learner reads in a sentence, which
+ * is why it needs to know their language.
+ *
  * @param minutes - whole minutes; 0 or absent means no estimate was given
  * @param locale - 'fr' or 'en'
  * @returns the duration, or an empty string when there is nothing to say
