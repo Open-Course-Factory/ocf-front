@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { loginFresh } from './helpers/auth';
 import { dismissVerificationBanner, navigateViaMenuCategory } from './helpers/ui';
 import { typeInTerminal, readTerminalText, waitForLiveTerminal } from './helpers/xterm';
-import { appendFileSync, existsSync } from 'fs';
+import { appendFileSync, existsSync, readFileSync } from 'fs';
 import { execFileSync } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -37,7 +37,12 @@ function trail(msg: string): void {
 
 const LEARNER = process.env.E2E_USER || 'karim@test.ocf';
 const PASSWORD = process.env.E2E_PASS || 'OcfTest2026!';
-const SCENARIO = /GameShell Basics/i;
+// The card's title comes from the scenario itself, which is translated
+// separately from its steps — so a run can be told what to look for rather than
+// this having to guess.
+const SCENARIO = process.env.GS_SCENARIO
+  ? new RegExp(process.env.GS_SCENARIO, 'i')
+  : /GameShell Basics/i;
 
 const FROM = Number(process.env.GS_FROM ?? 0);
 const TO = Number(process.env.GS_TO ?? 999);
@@ -68,6 +73,44 @@ function loadLexicon(): Record<string, string> | null {
 }
 
 const LEXICON = loadLexicon();
+
+/**
+ * What each step is called, in the language being played.
+ *
+ * Read from the scenario's own index.json rather than kept here, for the same
+ * reason the paths are: a title written twice is a title that can disagree with
+ * itself, and the copy in a test is the one nobody updates. Falls back to the
+ * default title for any step a language has not named yet, which is what the
+ * product does too.
+ */
+function loadTitles(locale: string): string[] {
+  const index = path.join(CHALLENGES, 'gameshell-basics', 'index.json');
+  if (!existsSync(index)) return [];
+  try {
+    const parsed = JSON.parse(readFileSync(index, 'utf8'));
+    return (parsed?.details?.steps ?? []).map(
+      (step: any) => step?.titles?.[locale] || step?.title || ''
+    );
+  } catch {
+    return [];
+  }
+}
+
+const TITLES = loadTitles(LOCALE);
+
+/** The language the scenario is written in; anything else has to be chosen. */
+function loadDefaultLocale(): string {
+  const index = path.join(CHALLENGES, 'gameshell-basics', 'index.json');
+  if (!existsSync(index)) return 'en';
+  try {
+    const lexicon = path.join(CHALLENGES, 'gameshell-basics', 'world', 'lexicon.json');
+    return JSON.parse(readFileSync(lexicon, 'utf8'))?.default_locale || 'en';
+  } catch {
+    return 'en';
+  }
+}
+
+const DEFAULT_LOCALE = loadDefaultLocale();
 
 /**
  * What this locale calls a place.
@@ -617,6 +660,21 @@ test.describe('GameShell — the whole adventure, in a real container', () => {
       'GameShell is not launchable here (no tt-backend/Incus, or a run is already open)'
     );
 
+    // Playing in another language means choosing it here, not merely expecting
+    // it: the world is built at launch, and a run that only changed what it
+    // expected would compare French titles against an English scenario and
+    // blame the translation.
+    if (LOCALE !== DEFAULT_LOCALE) {
+      const picker = card.getByTestId('scenario-language-select');
+      const offered = (await picker.count()) > 0;
+      test.skip(
+        !offered,
+        `GS_LOCALE=${LOCALE} needs a build whose launcher offers a language, and this one does not`
+      );
+      await picker.selectOption(LOCALE);
+      trail(`chose ${LOCALE} on the card`);
+    }
+
     trail('clicking launch');
     await start.click();
 
@@ -634,7 +692,10 @@ test.describe('GameShell — the whole adventure, in a real container', () => {
       if (index < FROM || index > TO) continue;
 
       const title = page.getByTestId('scenario-step-title');
-      await expect(title, `step ${index} should be "${step.title}"`).toContainText(step.title, {
+      // The title this language gives the step, falling back to the English
+      // label in the table below when a locale has not named it.
+      const expectedTitle = TITLES[index] || step.title;
+      await expect(title, `step ${index} should be "${expectedTitle}"`).toContainText(expectedTitle, {
         timeout: 180_000,
       });
       trail(`STEP ${index}: ${(await title.innerText()).trim()}`);
