@@ -429,9 +429,9 @@ const STEPS: Step[] = [
   },
   { title: 'Remove the Spiders', solve: (p) => sh(p, `rm ${w('P_SPIDER')}*`) },
   { title: 'Move Coins to the Chest', solve: (p) => sh(p, `mv ${w('P_COIN')}* ${CHEST}/`) },
-  { title: 'Move Hidden Coins', solve: (p) => sh(p, `mv ${w('P_GARDEN')}/.coin_* ${CHEST}/`) },
+  { title: 'Move Hidden Coins', solve: (p) => sh(p, `mv ${w('P_GARDEN')}/.${w('W_COIN')}* ${CHEST}/`) },
   { title: 'Clear Spiders with Wildcards', solve: (p) => sh(p, `rm ${w('P_SPIDER')}*`) },
-  { title: 'Clear Hidden Spiders', solve: (p) => sh(p, `rm ${w('P_CELLAR')}/.spider_*`) },
+  { title: 'Clear Hidden Spiders', solve: (p) => sh(p, `rm ${w('P_CELLAR')}/.${w('W_SPIDER')}*`) },
   {
     title: 'Copy the Standard',
     solve: (p) =>
@@ -447,7 +447,7 @@ const STEPS: Step[] = [
     title: 'Copy Recent Paintings',
     solve: async (p) => {
       await sh(p, `cd ${w('P_MAIN_TOWER')}`);
-      await sh(p, `cp $(ls -t painting_* | head -2) ${w('P_GREAT_HALL')}/`, 1_500);
+      await sh(p, `cp $(ls -t ${w('W_PAINTING')}* | head -2) ${w('P_GREAT_HALL')}/`, 1_500);
     },
   },
   {
@@ -461,14 +461,14 @@ const STEPS: Step[] = [
       // waiting at a continuation prompt: the command never runs, nothing is
       // printed, and the step looks broken when only the typing was.
       const listed = await readRaw(p, `ls ${w('P_OBSERVATORY')}`);
-      const date = listed.match(/prophecy_(\d{4}-\d{2}-\d{2})/)?.[1];
+      const date = listed.match(new RegExp(`${w('W_PROPHECY')}(\\d{4}-\\d{2}-\\d{2})`))?.[1];
       if (!date) throw new Error(`no prophecy date in: ${listed.slice(-200)}`);
       return await readMarker(p, `echo @@$(date -d ${date} +%A)@@`);
     },
   },
   {
     title: 'Write in Your Journal',
-    solve: (p) => sh(p, `echo "Day one: I built a chest." > ${CHEST}/journal.txt`),
+    solve: (p) => sh(p, `echo "Day one: I built a chest." > ${CHEST}/${w('W_JOURNAL_TXT')}`),
   },
   {
     // Two things make this one its own flow.
@@ -487,7 +487,7 @@ const STEPS: Step[] = [
     custom: async (p) => {
       const enterAndClear = async () => {
         await sh(p, `cd "$(find ${w('P_CELLAR')} -maxdepth 1 -type d -name '.${w('W_LAIR')}*')"`, 1_200);
-        await sh(p, 'rm -f *spider_queen*', 800);
+        await sh(p, `rm -f *${w('W_SPIDER_QUEEN')}*`, 800);
       };
 
       // Negative proof first: standing outside the lair, the check must refuse.
@@ -507,12 +507,12 @@ const STEPS: Step[] = [
   {
     title: 'Find the Copper Coin',
     solve: (p) =>
-      sh(p, `find ${w('P_MAZE')} -name copper_coin -exec mv {} ${CHEST}/ \\;`, 2_000),
+      sh(p, `find ${w('P_MAZE')} -name ${w('W_COPPER_COIN')} -exec mv {} ${CHEST}/ \\;`, 2_000),
   },
   {
     title: 'Find the Silver Coin',
     solve: (p) =>
-      sh(p, `find ${w('P_GRAND_MAZE')} -name silver_coin -exec mv {} ${CHEST}/ \\;`, 2_000),
+      sh(p, `find ${w('P_GRAND_MAZE')} -name ${w('W_SILVER_COIN')} -exec mv {} ${CHEST}/ \\;`, 2_000),
   },
   {
     // Four coins with colliding names — moving them one by one under distinct
@@ -521,7 +521,7 @@ const STEPS: Step[] = [
     solve: (p) =>
       sh(
         p,
-        `i=0; for f in $(find ${w('P_CASTLE')} ${w('P_GARDEN')} -iname "*gold_coin*"); do i=$((i+1)); mv "$f" ${CHEST}/gold_coin_$i; done`,
+        `i=0; for f in $(find ${w('P_CASTLE')} ${w('P_GARDEN')} -iname "*${w('W_GOLD_COIN')}*"); do i=$((i+1)); mv "$f" ${CHEST}/${w('W_GOLD_COIN')}_$i; done`,
         2_500
       ),
   },
@@ -531,21 +531,21 @@ const STEPS: Step[] = [
     title: "Hermit's Tea",
     solve: async (p) => {
       await sh(p, `cd ${CAVE}`);
-      await sh(p, 'head -n 6 Book_of_potions/page_02', 1_200);
+      await sh(p, `head -n 6 ${w('W_BOOK_OF_POTIONS')}/${w('W_PAGE')}02`, 1_200);
     },
   },
-  { title: 'Supper at the Cave', solve: (p) => sh(p, 'tail -n 6 Book_of_potions/page_01', 1_200) },
+  { title: 'Supper at the Cave', solve: (p) => sh(p, `tail -n 6 ${w('W_BOOK_OF_POTIONS')}/${w('W_PAGE')}01`, 1_200) },
   {
     title: 'Philtre of Borrowed Faces',
-    solve: (p) => sh(p, 'cat Book_of_potions/page_04a Book_of_potions/page_04b', 1_500),
+    solve: (p) => sh(p, `cat ${w('W_BOOK_OF_POTIONS')}/${w('W_PAGE')}04a ${w('W_BOOK_OF_POTIONS')}/${w('W_PAGE')}04b`, 1_500),
   },
   {
     title: 'Elixir of Youth',
-    solve: (p) => sh(p, 'cat Book_of_potions/page_05 | tail -n 6', 1_200),
+    solve: (p) => sh(p, `cat ${w('W_BOOK_OF_POTIONS')}/${w('W_PAGE')}05 | tail -n 6`, 1_200),
   },
   {
     title: 'Glass of Nothing At All',
-    solve: (p) => sh(p, 'head -n 60 Book_of_potions/bound_edition | tail -n 6', 1_200),
+    solve: (p) => sh(p, `head -n 60 ${w('W_BOOK_OF_POTIONS')}/${w('W_BOUND_EDITION')} | tail -n 6`, 1_200),
   },
 
   {
@@ -562,10 +562,10 @@ const STEPS: Step[] = [
     title: "King's Debt",
     solve: async (p) => {
       await sh(p, `cd ${STALL}`);
-      await sh(p, 'grep King ledger | grep -v PAID', 1_200);
+      await sh(p, `grep King ${w('W_LEDGER')} | grep -v PAID`, 1_200);
     },
   },
-  { title: 'Taking Stock', solve: (p) => sh(p, 'grep crowns ledger | grep -v PAID | wc -l', 1_200) },
+  { title: 'Taking Stock', solve: (p) => sh(p, `grep crowns ${w('W_LEDGER')} | grep -v PAID | wc -l`, 1_200) },
 
   {
     title: 'Kill the Spell',
@@ -583,7 +583,7 @@ const STEPS: Step[] = [
     title: 'Create an Inventory',
     solve: async (p) => {
       await sh(p, `cd ${CHEST}`);
-      await sh(p, 'ls > inventory.txt', 1_200);
+      await sh(p, `ls > ${w('W_INVENTORY_TXT')}`, 1_200);
     },
   },
   {
@@ -595,7 +595,7 @@ const STEPS: Step[] = [
   },
   {
     title: 'Read the Secret Note',
-    solve: (p) => sh(p, `echo EXCALIBUR > ${CHEST}/answer.txt`),
+    solve: (p) => sh(p, `echo EXCALIBUR > ${CHEST}/${w('W_ANSWER_TXT')}`),
   },
   {
     title: 'Steal the Crown',
@@ -607,7 +607,7 @@ const STEPS: Step[] = [
     solve: (p) =>
       sh(
         p,
-        `tr 'A-Za-z' 'N-ZA-Mn-za-m' < ${w('P_SCROLL_TXT')} | sed -n 's/.*secret word is: *\\([A-Za-z][A-Za-z]*\\).*/\\1/p' > ${CHEST}/answer.txt`,
+        `tr 'A-Za-z' 'N-ZA-Mn-za-m' < ${w('P_SCROLL_TXT')} | sed -n 's/.*secret word is: *\\([A-Za-z][A-Za-z]*\\).*/\\1/p' > ${CHEST}/${w('W_ANSWER_TXT')}`,
         1_500
       ),
   },
