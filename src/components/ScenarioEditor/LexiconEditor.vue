@@ -94,6 +94,17 @@
         <i class="fas fa-circle-exclamation" aria-hidden="true"></i> {{ saveError }}
       </p>
 
+      <!-- Scripts still naming a room. Kept apart from the vocabulary's own
+           gaps: this is not something to name in another language, it is a
+           script to change. -->
+      <div v-if="scriptLiterals.length" class="ocf-lexicon-problems" data-testid="lexicon-script-literals">
+        <strong>{{ t('lexicon.scriptsTitle', { count: scriptLiterals.length }) }}</strong>
+        <p class="ocf-lexicon-intro">{{ t('lexicon.scriptsBody') }}</p>
+        <ul>
+          <li v-for="(literal, i) in scriptLiterals" :key="i">{{ literal }}</li>
+        </ul>
+      </div>
+
       <div v-if="problems.length" class="ocf-lexicon-problems" data-testid="lexicon-problems">
         <strong>{{ t('lexicon.problems', { count: problems.length }) }}</strong>
         <ul>
@@ -134,6 +145,7 @@ interface LexiconEntry {
 
 const entries = ref<LexiconEntry[]>([])
 const problems = ref<string[]>([])
+const scriptLiterals = ref<string[]>([])
 const isLoading = ref(false)
 const isSaving = ref(false)
 const saveError = ref('')
@@ -184,6 +196,7 @@ async function load() {
       ) as Record<string, string>
     }))
     problems.value = response.data?.problems || []
+    scriptLiterals.value = response.data?.script_literals || []
   } catch (err: any) {
     saveError.value = err.response?.data?.error_message || t('lexicon.loadError')
   } finally {
@@ -204,6 +217,7 @@ async function save() {
       }))
     })
     problems.value = response.data?.problems || []
+    scriptLiterals.value = response.data?.script_literals || []
   } catch (err: any) {
     // A refusal names the entry at fault, so it is shown as sent rather than
     // replaced with a generic failure.
@@ -240,7 +254,9 @@ const { t } = useTranslations({
       loading: 'Loading the vocabulary…',
       empty: 'No objects yet. Add one, or import a scenario that has them.',
       problems: 'Saved. {count} thing(s) left to do:',
-      clean: 'Saved. Every object is named in every language.'
+      clean: 'Saved. Every object is named in every language.',
+      scriptsTitle: '{count} script(s) still name a room directly:',
+      scriptsBody: 'These work in the language they were written in, and send a learner reading another one somewhere their machine does not have. Replace the name with the vocabulary reference beside it.'
     }
   },
   fr: {
@@ -263,7 +279,9 @@ const { t } = useTranslations({
       loading: 'Chargement du vocabulaire…',
       empty: 'Aucun objet pour le moment. Ajoutez-en un, ou importez un scénario qui en contient.',
       problems: 'Enregistré. {count} chose(s) à finir :',
-      clean: 'Enregistré. Chaque objet est nommé dans toutes les langues.'
+      clean: 'Enregistré. Chaque objet est nommé dans toutes les langues.',
+      scriptsTitle: '{count} script(s) nomment encore une pièce directement :',
+      scriptsBody: "Ils fonctionnent dans la langue où ils ont été écrits, et envoient un apprenant qui en lit une autre là où sa machine n'a rien. Remplacez le nom par la référence du vocabulaire indiquée à côté."
     }
   }
 })
