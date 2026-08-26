@@ -72,7 +72,7 @@
                   :title="t('lexicon.remove')"
                   :aria-label="t('lexicon.remove')"
                   :data-testid="`lexicon-remove-${index}`"
-                  @click="entries.splice(index, 1)"
+                  @click="removeEntry(entry)"
                 >
                   <i class="fas fa-trash" aria-hidden="true"></i>
                 </button>
@@ -89,8 +89,8 @@
         <button type="button" class="btn btn-secondary" data-testid="lexicon-add" @click="addEntry">
           <i class="fas fa-plus" aria-hidden="true"></i> {{ t('lexicon.add') }}
         </button>
-        <button type="button" class="btn btn-primary" :disabled="isSaving" data-testid="lexicon-save" @click="save">
-          {{ isSaving ? t('lexicon.saving') : t('lexicon.save') }}
+        <button type="button" class="btn btn-primary" :disabled="isSaving" data-testid="lexicon-save" @click="lexicon.save()">
+          {{ lexicon.isSaving.value ? t('lexicon.saving') : t('lexicon.save') }}
         </button>
       </div>
 
@@ -125,9 +125,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import axios from 'axios'
+import { computed, onMounted } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
+import type { ScenarioLexicon, LexiconEntry } from '../../composables/useScenarioLexicon'
 
 /**
  * The vocabulary a scenario's world is built from.
@@ -137,24 +137,23 @@ import { useTranslations } from '../../composables/useTranslations'
  * has rooms inside rooms that are not there yet.
  */
 const props = defineProps<{
-  scenarioId: string
+  lexicon: ScenarioLexicon
   locales: string[]
   defaultLocale: string
 }>()
 
-interface LexiconEntry {
-  key: string
-  parent_key: string
-  kind: string
-  names: Record<string, string>
-}
+const { problems, scriptLiterals, isLoading, isSaving, saveError } = props.lexicon
 
-const entries = ref<LexiconEntry[]>([])
-const problems = ref<string[]>([])
-const scriptLiterals = ref<string[]>([])
-const isLoading = ref(false)
-const isSaving = ref(false)
-const saveError = ref('')
+/**
+ * Everything except the messages.
+ *
+ * A message is in this document too, and is saved with it, but it is prose and
+ * belongs on its own screen — a hundred sentences in name-sized boxes, mixed in
+ * among the rooms, is a table nobody finds anything in.
+ */
+const entries = computed(() =>
+  props.lexicon.entries.value.filter(entry => entry.kind !== 'message')
+)
 
 function languageName(locale: string): string {
   try {
@@ -187,7 +186,7 @@ function sitsInTheWorld(kind: string): boolean {
 }
 
 function addEntry() {
-  entries.value.push({
+  props.lexicon.entries.value.push({
     key: '',
     parent_key: entries.value.length ? entries.value[0].key : '',
     kind: 'place',
@@ -195,59 +194,20 @@ function addEntry() {
   })
 }
 
-async function load() {
-  if (!props.scenarioId) return
-  isLoading.value = true
-  saveError.value = ''
-  try {
-    const response = await axios.get(`/scenarios/${props.scenarioId}/lexicon`)
-    entries.value = (response.data?.entries || []).map((e: any) => ({
-      key: e.key,
-      parent_key: e.parent_key || '',
-      kind: e.kind || 'place',
-      // Every declared language gets a box, including ones this entry has no
-      // name in yet — an absent column is indistinguishable from a filled one.
-      names: Object.fromEntries(
-        props.locales.map(code => [code, e.names?.[code] || ''])
-      ) as Record<string, string>
-    }))
-    problems.value = response.data?.problems || []
-    scriptLiterals.value = response.data?.script_literals || []
-  } catch (err: any) {
-    saveError.value = err.response?.data?.error_message || t('lexicon.loadError')
-  } finally {
-    isLoading.value = false
-  }
+/**
+ * Remove by identity, never by the row's position.
+ *
+ * The rows shown here are a filtered view — the messages are not among them —
+ * so the row's index is not the entry's index in the document, and splicing by
+ * it deletes something else.
+ */
+function removeEntry(entry: LexiconEntry) {
+  const all = props.lexicon.entries.value
+  const at = all.indexOf(entry)
+  if (at !== -1) all.splice(at, 1)
 }
 
-async function save() {
-  isSaving.value = true
-  saveError.value = ''
-  try {
-    const response = await axios.put(`/scenarios/${props.scenarioId}/lexicon`, {
-      entries: entries.value.map(e => ({
-        key: e.key,
-        parent_key: e.parent_key,
-        kind: e.kind,
-        names: e.names
-      }))
-    })
-    problems.value = response.data?.problems || []
-    scriptLiterals.value = response.data?.script_literals || []
-  } catch (err: any) {
-    // A refusal names the entry at fault, so it is shown as sent rather than
-    // replaced with a generic failure.
-    saveError.value =
-      err.response?.data?.error_message ||
-      err.response?.data?.message ||
-      t('lexicon.saveError')
-  } finally {
-    isSaving.value = false
-  }
-}
-
-onMounted(load)
-watch(() => props.scenarioId, load)
+onMounted(() => props.lexicon.ensureLoaded())
 
 const { t } = useTranslations({
   en: {

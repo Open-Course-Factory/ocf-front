@@ -299,9 +299,29 @@
       class="modal-form"
     >
       <LexiconEditor
-        v-if="model.entityId"
-        :scenario-id="model.entityId"
-        :locales="offeredLocales.length ? offeredLocales : [defaultLocale || 'en']"
+        v-if="model.entityId && lexicon"
+        :lexicon="lexicon"
+        :locales="lexiconLocales"
+        :default-locale="defaultLocale || 'en'"
+      />
+      <p v-else class="ocf-scn-locale-label">{{ t('scenarioEditor.vocabularyAfterSave') }}</p>
+    </div>
+
+    <!-- Messages tab: the sentences a check prints when it refuses. The same
+         document as the vocabulary, and saved with it — a different editing
+         job, because these are prose somebody reads rather than a word typed
+         into a shell. -->
+    <div
+      v-if="activeTab === 'messages' && !isTranslating"
+      id="panel-messages"
+      role="tabpanel"
+      aria-labelledby="tab-messages"
+      class="modal-form"
+    >
+      <MessageEditor
+        v-if="model.entityId && lexicon"
+        :lexicon="lexicon"
+        :locales="lexiconLocales"
         :default-locale="defaultLocale || 'en'"
       />
       <p v-else class="ocf-scn-locale-label">{{ t('scenarioEditor.vocabularyAfterSave') }}</p>
@@ -477,11 +497,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, shallowRef, computed, watch } from 'vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import TabStrip from '../Common/TabStrip.vue'
 import TranslationPane from './TranslationPane.vue'
 import LexiconEditor from './LexiconEditor.vue'
+import MessageEditor from './MessageEditor.vue'
+import { useScenarioLexicon, type ScenarioLexicon } from '../../composables/useScenarioLexicon'
 import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
 import type { Size } from '../../types/terminal'
 import { formatMcpuAsVcpu, effectiveCpuMcpu } from '../../utils/formatters'
@@ -617,6 +639,31 @@ const offeredLocales = computed<string[]>(() => {
   }
 })
 
+/** The languages the vocabulary has a box for; the scenario's own if it offers none. */
+const lexiconLocales = computed<string[]>(() =>
+  offeredLocales.value.length ? offeredLocales.value : [props.defaultLocale || 'en']
+)
+
+/**
+ * One lexicon for the whole modal.
+ *
+ * The Vocabulary and Messages tabs are two views of a single document, and a
+ * save sends all of it. Held here rather than in either tab so that the one
+ * saved second cannot undo what the other has not saved yet.
+ */
+// shallowRef, not ref: a deep ref unwraps the refs inside the lexicon, and the
+// two tabs would then be handed plain values that never update.
+const lexicon = shallowRef<ScenarioLexicon | null>(null)
+watch(
+  () => model.value.entityId,
+  entityId => {
+    lexicon.value = entityId
+      ? useScenarioLexicon(entityId, () => lexiconLocales.value, () => t('scenarioEditor.lexiconSaveError'))
+      : null
+  },
+  { immediate: true }
+)
+
 function languageName(locale: string): string {
   try {
     const name = new Intl.DisplayNames([locale], { type: 'language' }).of(locale) || locale
@@ -671,7 +718,8 @@ const allTabs = computed(() => [
   { key: 'content', label: t('scenarioEditor.tabContent') },
   { key: 'setup', label: t('scenarioEditor.tabSetup') },
   { key: 'options', label: t('scenarioEditor.tabOptions') },
-  { key: 'vocabulary', label: t('scenarioEditor.tabVocabulary') }
+  { key: 'vocabulary', label: t('scenarioEditor.tabVocabulary') },
+  { key: 'messages', label: t('scenarioEditor.tabMessages') }
 ])
 // At create time, only show General + Content — the Setup/Options tabs are
 // hidden until first save to reduce friction (Marc: "I have to fill 12 fields
