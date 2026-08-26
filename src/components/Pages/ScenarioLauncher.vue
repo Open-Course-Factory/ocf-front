@@ -61,14 +61,14 @@
       >
         <div class="card-header">
           <div class="card-title-row">
-            <h3 class="card-title">{{ scenario.title }}</h3>
+            <h3 class="card-title">{{ cardTitle(scenario) }}</h3>
             <AdminBadge v-if="scenario.admin_only" icon-only />
           </div>
           <span v-if="scenario.difficulty" class="difficulty-badge" :class="'difficulty-' + scenario.difficulty">
             {{ translateDifficulty(scenario.difficulty) }}
           </span>
         </div>
-        <p v-if="scenario.description" class="card-description">{{ scenario.description }}</p>
+        <p v-if="cardDescription(scenario)" class="card-description">{{ cardDescription(scenario) }}</p>
         <div class="card-meta">
           <span v-if="scenario.estimated_time" class="meta-item">
             <i class="fas fa-clock"></i> {{ scenario.estimated_time }}
@@ -385,6 +385,29 @@ function showsLanguageChoice(scenario: any): boolean {
   if ((scenario.available_locales || []).length < 2) return false
   const session = getExistingSession(scenario)
   return !(session?.terminal_session_id && session.status === 'active')
+}
+
+/**
+ * The card's words in the language the picker is set to.
+ *
+ * A learner changing that dropdown is choosing what they are about to read, so
+ * the card has to show it — a French title above an English description would
+ * make the choice look like it had not taken.
+ *
+ * The text for every offered language arrives with the card, so switching
+ * costs nothing and never blanks while waiting on the server.
+ */
+function cardText(scenario: any): { title?: string; description?: string } {
+  const text = scenario.localised_text || {}
+  return text[localeFor(scenario)] || {}
+}
+
+function cardTitle(scenario: any): string {
+  return cardText(scenario).title || scenario.title
+}
+
+function cardDescription(scenario: any): string {
+  return cardText(scenario).description || scenario.description || ''
 }
 
 /**
