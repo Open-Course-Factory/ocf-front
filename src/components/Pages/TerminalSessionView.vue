@@ -1142,14 +1142,14 @@ onBeforeUnmount(() => {
 }
 
 /* Its own band between the app bar and the content, with the controls centred
-   in it — flush against the app bar they read as part of it. Symmetric, and a
-   touch tighter than the old bottom margin alone, so centring costs no height. */
+   in it — flush against the app bar they read as part of it. The padding is the
+   whole band: a bottom margin on top of it put half again as much space under
+   the controls as over them, which is what made the row look bottom-heavy. */
 .session-view-nav {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
   padding: var(--spacing-sm) 0;
-  margin-bottom: var(--spacing-sm);
 }
 
 .back-link {
