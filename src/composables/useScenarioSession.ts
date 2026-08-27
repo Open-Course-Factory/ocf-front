@@ -105,7 +105,12 @@ export function useScenarioSession(
         sessionStartedAt.value = session.started_at
       }
       if (session?.scenario_id) {
-        scenarioInfo.value = await scenarioSessionService.getScenario(session.scenario_id)
+        const scenario = await scenarioSessionService.getScenario(session.scenario_id)
+        // The scenario endpoint answers in the language the scenario was
+        // written in; only the session knows which one is being played. The
+        // steps have always arrived resolved, and the briefing did not — so a
+        // French run opened with an English welcome.
+        scenarioInfo.value = scenario ? { ...scenario, ...(session.scenario_text ?? {}) } : scenario
         if (scenarioInfo.value) {
           emit.scenarioInfoLoaded(scenarioInfo.value)
         }

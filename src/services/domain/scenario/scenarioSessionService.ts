@@ -120,6 +120,19 @@ export interface ScenarioSessionInfo {
   terminal_session_id?: string
   grade?: number
   provisioning_phase?: string
+  /**
+   * The scenario's prose in the language this session is being played in.
+   *
+   * Sent with the session because the session is what knows the locale — the
+   * scenario endpoint answers in the language the scenario was written in, and
+   * a client asking it has no way to tell the difference.
+   */
+  scenario_text?: {
+    title?: string
+    description?: string
+    intro_text?: string
+    finish_text?: string
+  }
 }
 
 export interface MyScenarioSession {

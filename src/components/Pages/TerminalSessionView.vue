@@ -74,7 +74,7 @@
             <i :class="showBriefing ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
           </button>
         </div>
-        <div v-if="showBriefing" ref="briefingContentRef" class="briefing-content markdown-content ocf-scroll-fade" :class="{ 'has-overflow': briefingHasOverflow }" v-html="renderedBriefingText" @click="handleBriefingExecClick" @scroll="checkBriefingFade"></div>
+        <div v-if="showBriefing" ref="briefingContentRef" data-testid="scenario-briefing" class="briefing-content markdown-content ocf-scroll-fade" :class="{ 'has-overflow': briefingHasOverflow }" v-html="renderedBriefingText" @click="handleBriefingExecClick" @scroll="checkBriefingFade"></div>
         <div v-if="showBriefing" class="briefing-footer">
           <button class="briefing-collapse-btn" @click="toggleBriefing">
             <i class="fas fa-chevron-up"></i> {{ t('sessionView.collapseBriefing') }}

@@ -688,6 +688,10 @@ test.describe('GameShell — the whole adventure, in a real container', () => {
     await waitForLiveTerminal(page, 300_000);
     trail('shell is executing');
 
+    // Before the first step: the briefing is the one thing on screen that the
+    // steps cannot vouch for.
+    await expectBriefingInTheChosenLanguage(page);
+
     for (const [index, step] of STEPS.entries()) {
       if (index < FROM || index > TO) continue;
 
