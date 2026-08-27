@@ -254,7 +254,7 @@
              for the whole step, and the instructions start at the top. -->
         <div
           v-if="!reviewingStep && !isReviewMode && (resolvedStepType === 'terminal' || resolvedStepType === 'flag')"
-          class="session-actions"
+          class="step-actions-bar"
         >
           <div class="step-actions-row">
             <ScenarioVerifyResult

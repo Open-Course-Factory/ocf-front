@@ -251,8 +251,11 @@
 }
 
 /* Fixed step controls. Capped so a long verify output scrolls inside the
-   footer rather than eating the instructions above it. */
-.session-actions {
+   footer rather than eating the instructions above it.
+   Not `.session-actions`: that name is taken by a global rule in
+   cards-common.css which makes it `display: flex`, and the row inside then
+   shrank to its content instead of spanning the panel. */
+.step-actions-bar {
   padding: var(--spacing-md);
   border-top: var(--border-width-thin) solid var(--color-border-light);
   flex-shrink: 0;
