@@ -984,6 +984,10 @@ async function confirmCheckout() {
 
 <style scoped>
 .subscription-plans-page {
+  /* Direct child of a flex .wrapper: without an explicit width the page sizes
+     itself to its content, so the plans grid never gets the full 1200px and
+     wraps to two cards per row on wide screens. */
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
   padding: var(--spacing-lg);
