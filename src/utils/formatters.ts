@@ -38,6 +38,19 @@ export const COMMON_TIMEZONES = [
 ]
 
 /**
+ * The IANA timezone the viewer's own machine is set to.
+ * Used whenever no explicit preference was saved, so dates read as local time
+ * instead of UTC. Engines that report nothing fall back to UTC.
+ */
+export function getBrowserTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+  } catch (e) {
+    return 'UTC'
+  }
+}
+
+/**
  * Format a monetary amount from cents to a currency string
  * @param amount - Amount in cents (e.g., 1999 for $19.99)
  * @param currency - Currency code (default: 'EUR')

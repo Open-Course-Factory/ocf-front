@@ -79,6 +79,7 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
                     title: "Localization",
                     preferredLanguage: "Preferred Language",
                     timezone: "Timezone",
+                    timezoneAuto: "Automatic ({zone})",
                     timezonePlaceholder: "UTC"
                 },
                 ui: {
@@ -181,6 +182,7 @@ export const useUserSettingsStore = defineStore('UserSettings', () => {
                     title: "Localisation",
                     preferredLanguage: "Langue Préférée",
                     timezone: "Fuseau Horaire",
+                    timezoneAuto: "Automatique ({zone})",
                     timezonePlaceholder: "UTC"
                 },
                 ui: {

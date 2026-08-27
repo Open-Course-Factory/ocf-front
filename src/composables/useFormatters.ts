@@ -15,14 +15,15 @@ import {
   formatPercentage,
   formatDuration,
   truncate,
+  getBrowserTimezone,
 } from '../utils/formatters'
 
 export function useFormatters() {
   const { locale } = useI18n()
   const settingsStore = useUserSettingsStore()
 
-  // Get user's timezone preference, default to UTC
-  const userTimezone = computed(() => settingsStore.settings.timezone || 'UTC')
+  // No saved preference means "show me my own clock", not UTC.
+  const userTimezone = computed(() => settingsStore.settings.timezone || getBrowserTimezone())
 
   // Get user's locale from i18n
   const userLocale = computed(() => locale.value || 'fr-FR')

@@ -195,10 +195,6 @@
                     <i class="fas fa-memory"></i>
                     {{ session.machine_size.toUpperCase() }}
                   </span>
-                  <span v-if="session.backend" class="metadata-item" :title="t('terminalMySessions.backend')">
-                    <i class="fas fa-server"></i>
-                    {{ session.backend }}
-                  </span>
                   <span
                     class="metadata-item network-badge"
                     :class="sessionHasNetwork(session) ? 'network-on' : 'network-off'"
@@ -404,10 +400,6 @@
                       <span v-if="session.machine_size" class="metadata-item size-badge" :title="t('terminalMySessions.machineSizeLabel')">
                         <i class="fas fa-memory"></i>
                         {{ session.machine_size.toUpperCase() }}
-                      </span>
-                      <span v-if="session.backend" class="metadata-item" :title="t('terminalMySessions.backend')">
-                        <i class="fas fa-server"></i>
-                        {{ session.backend }}
                       </span>
                       <span
                         class="metadata-item network-badge"
@@ -665,7 +657,6 @@ const { t } = useTranslations({
       machineSizeLabel: 'Size',
       networkOn: 'Internet access: on',
       networkOff: 'Internet access: off',
-      backend: 'Backend',
       lastSynchronization: 'Last synchronization',
       previousStatus: 'Previous status',
       currentStatus: 'Current status',
@@ -789,7 +780,6 @@ const { t } = useTranslations({
       machineSizeLabel: 'Taille',
       networkOn: 'Accès internet : activé',
       networkOff: 'Accès internet : désactivé',
-      backend: 'Serveur',
       lastSynchronization: 'Dernière synchronisation',
       previousStatus: 'Statut précédent',
       currentStatus: 'Statut actuel',
