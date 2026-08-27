@@ -27,12 +27,22 @@
 
     <!-- Session content -->
     <template v-else-if="sessionInfo">
-      <!-- Back link -->
+      <!-- Back link, and — at the far right — the way out of a running
+           scenario. Leaving is leaving: both live on the same row. -->
       <div class="session-view-nav">
         <router-link :to="{ name: 'TerminalSessions' }" class="back-link">
           <i class="fas fa-arrow-left"></i>
           {{ t('sessionView.backToSessions') }}
         </router-link>
+        <button
+          v-if="scenarioPanelRef?.canAbandon"
+          class="nav-abandon-btn"
+          data-testid="scenario-abandon-btn"
+          @click="scenarioPanelRef?.abandon()"
+        >
+          <i class="fas fa-sign-out-alt"></i>
+          {{ t('sessionView.abandonScenario') }}
+        </button>
       </div>
 
       <!-- Recording info notice -->
@@ -284,6 +294,7 @@ const { t } = useTranslations({
     sessionView: {
       loading: 'Loading session...',
       backToSessions: 'Back to My Sessions',
+      abandonScenario: 'Abandon Scenario',
       errorLoading: 'Unable to load session information.',
       errorNotFound: 'Session not found.',
       sessionExpired: 'Your terminal session has expired.',
@@ -332,6 +343,7 @@ const { t } = useTranslations({
     sessionView: {
       loading: 'Chargement de la session...',
       backToSessions: 'Retour aux sessions',
+      abandonScenario: 'Abandonner le scénario',
       errorLoading: 'Impossible de charger les informations de la session.',
       errorNotFound: 'Session introuvable.',
       sessionExpired: 'Votre session terminal a expiré.',
@@ -1136,6 +1148,34 @@ onBeforeUnmount(() => {
 .back-link:hover {
   color: var(--color-primary-hover);
   text-decoration: underline;
+}
+
+/* Pushed to the far end of the nav row, away from the back link: the two
+   are both exits, and only one of them ends the attempt. */
+.nav-abandon-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: transparent;
+  color: var(--color-danger);
+  border: var(--border-width-thin) solid var(--color-danger);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.nav-abandon-btn:hover {
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger-hover);
+}
+
+.nav-abandon-btn:focus-visible {
+  outline: 2px solid var(--color-danger);
+  outline-offset: 2px;
 }
 
 .btn {

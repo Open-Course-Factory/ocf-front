@@ -2276,7 +2276,7 @@ export const helpFr = {
           description: "Le panneau de scénario est votre guide tout au long de l'exercice. Voici ce que vous y trouverez.",
           progress: {
             title: "Progression des étapes",
-            description: "Des points de progression en haut du panneau montrent votre avancement. Les étapes terminées apparaissent en vert, l'étape en cours pulse en bleu, et les étapes à venir sont grises."
+            description: "Des points de progression, en bas du panneau, montrent votre avancement. Les étapes terminées apparaissent en vert, l'étape en cours pulse en bleu, et les étapes à venir sont grises."
           },
           content: {
             title: "Contenu de l'étape",
@@ -2369,7 +2369,7 @@ export const helpFr = {
           description: "Si vous devez arrêter de travailler sur un scénario avant de l'avoir terminé, vous pouvez abandonner votre tentative en cours.",
           click: {
             title: "Cliquer sur Abandonner",
-            description: "Faites défiler jusqu'en bas du panneau de scénario et cliquez sur le bouton <strong>\"Abandonner le scénario\"</strong>."
+            description: "En haut de la page de session, à droite du lien <strong>\"Retour aux sessions\"</strong>, cliquez sur le bouton <strong>\"Abandonner le scénario\"</strong>."
           },
           confirm: {
             title: "Confirmer l'abandon",

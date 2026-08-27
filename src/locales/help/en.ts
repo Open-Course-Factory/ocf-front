@@ -2276,7 +2276,7 @@ export const helpEn = {
           description: "The scenario panel is your guide throughout the exercise. Here is what you will find in it.",
           progress: {
             title: "Step Progress",
-            description: "Progress dots at the top of the panel show your advancement. Completed steps appear green, the current step pulses blue, and upcoming steps are gray."
+            description: "Progress dots at the bottom of the panel show your advancement. Completed steps appear green, the current step pulses blue, and upcoming steps are gray."
           },
           content: {
             title: "Step Content",
@@ -2369,7 +2369,7 @@ export const helpEn = {
           description: "If you need to stop working on a scenario before completing it, you can abandon your current attempt.",
           click: {
             title: "Click Abandon",
-            description: "Scroll to the bottom of the scenario panel and click the <strong>\"Abandon Scenario\"</strong> button."
+            description: "At the top of the session page, to the right of the <strong>\"Back to My Sessions\"</strong> link, click the <strong>\"Abandon Scenario\"</strong> button."
           },
           confirm: {
             title: "Confirm Abandonment",

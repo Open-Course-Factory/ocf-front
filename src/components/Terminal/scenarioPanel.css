@@ -103,13 +103,14 @@
   color: var(--color-danger);
 }
 
-/* Progress bar wrapper */
+/* Progress bar wrapper — the last row of the panel, so it is separated from
+   what sits above it, not from what follows. */
 .progress-bar {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
   padding: var(--spacing-md);
-  border-bottom: var(--border-width-thin) solid var(--color-border-light);
+  border-top: var(--border-width-thin) solid var(--color-border-light);
   flex-shrink: 0;
 }
 
@@ -249,38 +250,29 @@
   color: var(--color-text-secondary);
 }
 
-/* Session actions */
+/* Fixed step controls. Capped so a long verify output scrolls inside the
+   footer rather than eating the instructions above it. */
 .session-actions {
   padding: var(--spacing-md);
   border-top: var(--border-width-thin) solid var(--color-border-light);
   flex-shrink: 0;
+  max-height: 40vh;
+  overflow-y: auto;
 }
 
-.abandon-btn {
+/* Verify (or flag submit) and reset side by side, wrapping to one column when
+   the learner drags the panel narrow. Top-aligned: the verify result grows
+   under its own button and must not drag the reset button down with it. */
+.step-actions-row {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: var(--spacing-sm);
-  width: 100%;
-  padding: var(--spacing-xs) var(--spacing-md);
-  background: transparent;
-  color: var(--color-danger);
-  border: var(--border-width-thin) solid var(--color-danger);
-  border-radius: var(--border-radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: all var(--transition-fast);
 }
 
-.abandon-btn:hover:not(:disabled) {
-  background: var(--color-danger-bg);
-  border-color: var(--color-danger-hover);
-}
-
-.abandon-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.step-actions-row > * {
+  flex: 1 1 12rem;
+  min-width: 0;
 }
 
 /* Loading, error, empty, completed states */
@@ -474,11 +466,6 @@
 
 .view-results-link:hover {
   opacity: 0.9;
-}
-
-.abandon-btn:focus-visible {
-  outline: 2px solid var(--color-danger);
-  outline-offset: 2px;
 }
 
 .intro-toggle:focus-visible {
@@ -915,18 +902,16 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
-  margin-bottom: var(--spacing-md);
 }
 
 .step-reset-btn {
-  align-self: flex-start;
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  /* Sized for the longest label so arming the button does not resize it and
-     shove the instructions below. */
-  min-width: 15rem;
+  padding: var(--spacing-sm) var(--spacing-md);
+  /* Full width of its column, so arming the button — which lengthens the
+     label — never resizes it and never moves its neighbour. */
+  width: 100%;
   justify-content: center;
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);

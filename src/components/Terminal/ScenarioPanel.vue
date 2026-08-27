@@ -151,30 +151,6 @@
           <span>{{ stepTypeMeta.label }}</span>
         </div>
 
-        <!-- Progress indicator -->
-        <div class="progress-bar">
-          <div class="progress-bar-top">
-            <span class="progress-label">{{ stepCountLabel }}</span>
-            <ScenarioElapsedTimer :started-at="sessionStartedAt" />
-          </div>
-          <div class="progress-dots" data-testid="scenario-progress-dots" role="status" :aria-label="stepCountLabel">
-            <span
-              v-for="n in totalSteps"
-              :key="n"
-              class="progress-dot"
-              data-testid="scenario-progress-dot"
-              :class="{
-                completed: n < currentPosition,
-                active: n === currentPosition,
-                locked: n > currentPosition,
-                clickable: n <= currentPosition,
-                reviewing: reviewingStep && n === stepPosition(reviewingStep)
-              }"
-              @click="n <= currentPosition ? navigateToStep(orderForPosition(n)) : undefined"
-            ></span>
-          </div>
-        </div>
-
         <!-- Review mode indicator -->
         <div v-if="reviewingStep" class="review-banner" data-testid="scenario-review-banner">
           <span class="review-label">
@@ -201,55 +177,6 @@
             <h4 class="step-title" data-testid="scenario-step-title">{{ displayedStep!.title }}</h4>
           </div>
 
-          <!-- Verify / flag controls sit ABOVE the instructions on purpose.
-               A RogueLite level is a long read, and with the control at the
-               bottom the learner had to scroll the whole text away every time
-               they wanted to submit a flag they had just found in the
-               terminal. Quiz and info steps keep theirs below, because there
-               the control IS the content and reading comes first. -->
-          <template v-if="!reviewingStep && !isReviewMode">
-            <ScenarioVerifyResult
-              v-if="resolvedStepType === 'terminal'"
-              :is-active="isActive"
-              :is-verifying="isVerifying"
-              :result="verifyResult"
-              @verify="handleVerify"
-            />
-
-            <ScenarioFlagSubmit
-              v-else-if="resolvedStepType === 'flag'"
-              v-model="flagValue"
-              :is-active="isActive"
-              :is-submitting="isSubmittingFlag"
-              :result="flagResult"
-              @submit="handleSubmitFlag"
-            />
-
-            <!-- The way out of a step the learner has made unwinnable: coins
-                 deleted instead of moved, a timed mission missed, a file
-                 mangled. Only the environment is rebuilt — earlier steps stand.
-                 Quiz and info steps have no world to rebuild, so no button. -->
-            <div
-              v-if="resolvedStepType === 'terminal' || resolvedStepType === 'flag'"
-              class="step-reset"
-            >
-              <button
-                class="step-reset-btn"
-                :class="{ armed: resetArmed }"
-                :disabled="!isActive || isResetting"
-                data-testid="scenario-reset-step"
-                :title="t('scenarioPanel.resetStepTitle')"
-                @click="handleResetStep"
-              >
-                <i :class="isResetting ? 'fas fa-spinner fa-spin' : 'fas fa-rotate-left'"></i>
-                <span>{{ isResetting ? t('scenarioPanel.resetting') : resetArmed ? t('scenarioPanel.resetConfirm') : t('scenarioPanel.resetStep') }}</span>
-              </button>
-              <!-- Reserved slot: the message must not push the controls around
-                   when it appears. -->
-              <p class="step-reset-note">{{ resetError || (resetArmed ? t('scenarioPanel.resetWarning') : '') }}</p>
-            </div>
-          </template>
-
           <!-- Step text (rendered as markdown) -->
           <div v-if="displayedStep!.text" class="step-text markdown-content" v-html="renderedDisplayedStepText"></div>
 
@@ -267,8 +194,7 @@
 
           <!-- Action area for the step types whose control belongs after the
                text (hidden when reviewing previous steps or in review mode).
-               Terminal and flag controls are rendered above, next to the step
-               header. -->
+               Terminal and flag controls live in the fixed footer instead. -->
           <template v-if="!reviewingStep && !isReviewMode">
 
             <!-- Info step -->
@@ -322,17 +248,78 @@
           </template>
         </div>
 
-        <!-- Session actions (hidden when reviewing previous steps or in review mode) -->
-        <div v-if="!reviewingStep && !isReviewMode" class="session-actions">
-          <button
-            class="abandon-btn"
-            data-testid="scenario-abandon-btn"
-            :disabled="!isActive"
-            @click="handleAbandon"
-          >
-            <i class="fas fa-sign-out-alt"></i>
-            {{ t('scenarioPanel.abandon') }}
-          </button>
+        <!-- Fixed step controls. They are not instructions, and keeping them in
+             the scroll area pushed the step text down the panel and made the
+             learner scroll past them to read. Out here they hold one position
+             for the whole step, and the instructions start at the top. -->
+        <div
+          v-if="!reviewingStep && !isReviewMode && (resolvedStepType === 'terminal' || resolvedStepType === 'flag')"
+          class="session-actions"
+        >
+          <div class="step-actions-row">
+            <ScenarioVerifyResult
+              v-if="resolvedStepType === 'terminal'"
+              :is-active="isActive"
+              :is-verifying="isVerifying"
+              :result="verifyResult"
+              @verify="handleVerify"
+            />
+
+            <ScenarioFlagSubmit
+              v-else-if="resolvedStepType === 'flag'"
+              v-model="flagValue"
+              :is-active="isActive"
+              :is-submitting="isSubmittingFlag"
+              :result="flagResult"
+              @submit="handleSubmitFlag"
+            />
+
+            <!-- The way out of a step the learner has made unwinnable: coins
+                 deleted instead of moved, a timed mission missed, a file
+                 mangled. Only the environment is rebuilt — earlier steps stand.
+                 Quiz and info steps have no world to rebuild, so no button. -->
+            <div class="step-reset">
+              <button
+                class="step-reset-btn"
+                :class="{ armed: resetArmed }"
+                :disabled="!isActive || isResetting"
+                data-testid="scenario-reset-step"
+                :title="t('scenarioPanel.resetStepTitle')"
+                @click="handleResetStep"
+              >
+                <i :class="isResetting ? 'fas fa-spinner fa-spin' : 'fas fa-rotate-left'"></i>
+                <span>{{ isResetting ? t('scenarioPanel.resetting') : resetArmed ? t('scenarioPanel.resetConfirm') : t('scenarioPanel.resetStep') }}</span>
+              </button>
+              <!-- Reserved slot: the message must not push the controls around
+                   when it appears. -->
+              <p class="step-reset-note">{{ resetError || (resetArmed ? t('scenarioPanel.resetWarning') : '') }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress sits at the foot of the panel: it is a status line, not a
+             heading, and it costs the instructions nothing there. -->
+        <div class="progress-bar">
+          <div class="progress-bar-top">
+            <span class="progress-label">{{ stepCountLabel }}</span>
+            <ScenarioElapsedTimer :started-at="sessionStartedAt" />
+          </div>
+          <div class="progress-dots" data-testid="scenario-progress-dots" role="status" :aria-label="stepCountLabel">
+            <span
+              v-for="n in totalSteps"
+              :key="n"
+              class="progress-dot"
+              data-testid="scenario-progress-dot"
+              :class="{
+                completed: n < currentPosition,
+                active: n === currentPosition,
+                locked: n > currentPosition,
+                clickable: n <= currentPosition,
+                reviewing: reviewingStep && n === stepPosition(reviewingStep)
+              }"
+              @click="n <= currentPosition ? navigateToStep(orderForPosition(n)) : undefined"
+            ></span>
+          </div>
         </div>
       </template>
 
@@ -397,7 +384,6 @@ const { t } = useTranslations({
       step: 'Step',
       verifying: 'Verifying...',
       failed: 'Not quite right. Check the output and try again.',
-      abandon: 'Abandon Scenario',
       abandonConfirm: 'This session will be marked as abandoned. You can start a new attempt later.',
       abandonTitle: 'Abandon Scenario',
       confirmButtonText: 'Yes, abandon',
@@ -454,7 +440,6 @@ const { t } = useTranslations({
       step: 'Étape',
       verifying: 'Vérification...',
       failed: 'Pas tout à fait. Vérifiez la sortie et réessayez.',
-      abandon: 'Abandonner le scénario',
       abandonConfirm: 'Cette session sera marquée comme abandonnée. Vous pourrez recommencer une nouvelle tentative plus tard.',
       abandonTitle: 'Abandonner le scénario',
       confirmButtonText: 'Oui, abandonner',
@@ -1018,6 +1003,13 @@ async function handleSubmitFlag() {
   }
 }
 
+// Single owner of "can this scenario still be abandoned". The button itself
+// lives in the page's nav row; the rule and the API call stay here, with the
+// session state they describe.
+const canAbandon = computed(() =>
+  props.isActive && !isReviewMode.value && !isSessionCompleted.value
+)
+
 async function handleAbandon() {
   if (!props.isActive) return
 
@@ -1127,7 +1119,11 @@ onBeforeUnmount(() => {
 
 defineExpose({
   toggleCollapse,
-  isCollapsed
+  isCollapsed,
+  // The abandon button lives in the page's nav row now; the confirm flow and
+  // the API call stay here, with the session state they belong to.
+  abandon: handleAbandon,
+  canAbandon
 })
 </script>
 
