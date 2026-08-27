@@ -1141,11 +1141,15 @@ onBeforeUnmount(() => {
   gap: var(--spacing-md);
 }
 
+/* Its own band between the app bar and the content, with the controls centred
+   in it — flush against the app bar they read as part of it. Symmetric, and a
+   touch tighter than the old bottom margin alone, so centring costs no height. */
 .session-view-nav {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-sm) 0;
+  margin-bottom: var(--spacing-sm);
 }
 
 .back-link {
@@ -1198,10 +1202,9 @@ onBeforeUnmount(() => {
   outline-offset: 2px;
 }
 
-/* Both exits sit at the same end, and only one of them ends the attempt.
-   `margin-left: auto` on both is deliberate: whichever one comes first in the
-   row does the pushing, so the group stays right-aligned when the briefing
-   button is absent. */
+/* An auto margin on each of the two buttons: flexbox splits the free space
+   between them, so the briefing toggle lands mid-row and the abandon button at
+   the far end — and either one still sits right when the other is absent. */
 .nav-abandon-btn {
   margin-left: auto;
   display: inline-flex;
