@@ -1,38 +1,23 @@
-/*
- * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * Copyright (c) - All Rights Reserved.
- *
- * See the LICENSE file for more information.
- */
-
 import { ElMessage, ElMessageBox, ElNotification } from 'element-plus'
+import i18n from '../i18n'
 
 /**
  * Composable for showing user notifications and modals using Element Plus
  * Replaces browser alerts with proper UI components from the design system
+ *
+ * Translated through the global i18n instance rather than useTranslations(),
+ * because these helpers are also called outside of a component setup context.
  */
 export function useNotification() {
+
+  const t = (key: string) => i18n.global.t(`notification.${key}`)
 
   /**
    * Show a success message notification
    */
-  const showSuccess = (message: string, title = 'Success') => {
+  const showSuccess = (message: string, title?: string) => {
     ElNotification({
-      title,
+      title: title ?? t('successTitle'),
       message,
       type: 'success',
       duration: 3000,
@@ -42,9 +27,9 @@ export function useNotification() {
   /**
    * Show an error message notification
    */
-  const showError = (message: string, title = 'Error') => {
+  const showError = (message: string, title?: string) => {
     ElNotification({
-      title,
+      title: title ?? t('errorTitle'),
       message,
       type: 'error',
       duration: 4000,
@@ -54,9 +39,9 @@ export function useNotification() {
   /**
    * Show a warning message notification
    */
-  const showWarning = (message: string, title = 'Warning') => {
+  const showWarning = (message: string, title?: string) => {
     ElNotification({
-      title,
+      title: title ?? t('warningTitle'),
       message,
       type: 'warning',
       duration: 3500,
@@ -66,9 +51,9 @@ export function useNotification() {
   /**
    * Show an info message notification
    */
-  const showInfo = (message: string, title = 'Info') => {
+  const showInfo = (message: string, title?: string) => {
     ElNotification({
-      title,
+      title: title ?? t('infoTitle'),
       message,
       type: 'info',
       duration: 3000,
@@ -89,15 +74,14 @@ export function useNotification() {
   /**
    * Show an alert modal (replaces window.alert)
    */
-  const showAlert = async (message: string, title = 'Alert', type: 'info' | 'warning' | 'error' | 'success' = 'info') => {
+  const showAlert = async (message: string, title?: string, type: 'info' | 'warning' | 'error' | 'success' = 'info') => {
     try {
-      await ElMessageBox.alert(message, title, {
-        confirmButtonText: 'OK',
+      await ElMessageBox.alert(message, title ?? t('alertTitle'), {
+        confirmButtonText: t('ok'),
         type,
         center: true,
       })
     } catch (error) {
-      // User closed the dialog
     }
   }
 
@@ -106,7 +90,7 @@ export function useNotification() {
    */
   const showConfirm = async (
     message: string,
-    title = 'Confirm',
+    title?: string,
     options: {
       confirmButtonText?: string
       cancelButtonText?: string
@@ -114,15 +98,14 @@ export function useNotification() {
     } = {}
   ): Promise<boolean> => {
     try {
-      await ElMessageBox.confirm(message, title, {
-        confirmButtonText: options.confirmButtonText || 'Confirm',
-        cancelButtonText: options.cancelButtonText || 'Cancel',
+      await ElMessageBox.confirm(message, title ?? t('confirmTitle'), {
+        confirmButtonText: options.confirmButtonText || t('confirm'),
+        cancelButtonText: options.cancelButtonText || t('cancel'),
         type: options.type || 'warning',
         center: true,
       })
       return true
     } catch (error) {
-      // User cancelled
       return false
     }
   }
@@ -132,7 +115,7 @@ export function useNotification() {
    */
   const showPrompt = async (
     message: string,
-    title = 'Input',
+    title?: string,
     options: {
       inputPlaceholder?: string
       inputPattern?: RegExp
@@ -140,9 +123,9 @@ export function useNotification() {
     } = {}
   ): Promise<string | null> => {
     try {
-      const result = await ElMessageBox.prompt(message, title, {
-        confirmButtonText: 'OK',
-        cancelButtonText: 'Cancel',
+      const result = await ElMessageBox.prompt(message, title ?? t('promptTitle'), {
+        confirmButtonText: t('ok'),
+        cancelButtonText: t('cancel'),
         inputPlaceholder: options.inputPlaceholder,
         inputPattern: options.inputPattern,
         inputErrorMessage: options.inputErrorMessage,
@@ -150,7 +133,6 @@ export function useNotification() {
       })
       return (result as { value: string }).value
     } catch (error) {
-      // User cancelled
       return null
     }
   }

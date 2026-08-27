@@ -17,14 +17,13 @@ export function useTheme() {
    * Apply theme to the document
    */
   function applyTheme(theme: Theme) {
-    if (theme === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark')
-    } else if (theme === 'light') {
-      document.documentElement.setAttribute('data-theme', 'light')
-    } else { // auto
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light')
-    }
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    const resolved = theme === 'auto' ? (prefersDark ? 'dark' : 'light') : theme
+
+    document.documentElement.setAttribute('data-theme', resolved)
+    // Element Plus reads its own dark palette from a `dark` class on <html>,
+    // so overlays it renders (message boxes, notifications) follow the theme too.
+    document.documentElement.classList.toggle('dark', resolved === 'dark')
   }
 
   /**
