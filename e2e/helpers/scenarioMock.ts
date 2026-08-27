@@ -267,7 +267,12 @@ export class ScenarioMock {
       return route.fulfill(json(this.sessionInfo()));
     });
 
-    await page.route(`**/api/v1/scenario-sessions/${MOCK_SESSION_ID}`, (route) => {
+    // Both spellings. The client asks /info — the endpoint that answers with the
+    // session's own view, carrying the scenario text resolved for its locale and
+    // the provisioning timeout. The bare URL is the generic entity route, kept
+    // so a stray caller is still answered here rather than reaching a backend
+    // that is not running.
+    await page.route(`**/api/v1/scenario-sessions/${MOCK_SESSION_ID}{,/info}`, (route) => {
       if (this.sessionStatus === 'provisioning' && this.provisioningPollsLeft-- <= 0) {
         const failed =
           this.scenario.launch === 'provision-then-failed' ||
