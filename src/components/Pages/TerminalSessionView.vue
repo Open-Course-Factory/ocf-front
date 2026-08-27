@@ -27,13 +27,24 @@
 
     <!-- Session content -->
     <template v-else-if="sessionInfo">
-      <!-- Back link, and — at the far right — the way out of a running
-           scenario. Leaving is leaving: both live on the same row. -->
+      <!-- Back link, and at the far right the page-level controls: the
+           briefing toggle and the way out of a running scenario. -->
       <div class="session-view-nav">
         <router-link :to="{ name: 'TerminalSessions' }" class="back-link">
           <i class="fas fa-arrow-left"></i>
           {{ t('sessionView.backToSessions') }}
         </router-link>
+        <button
+          v-if="scenarioBriefing && scenarioBriefingText"
+          class="nav-briefing-btn"
+          :class="{ active: showBriefing }"
+          data-testid="briefing-toggle"
+          :aria-expanded="showBriefing"
+          @click="toggleBriefing"
+        >
+          <i class="fas fa-book-open"></i>
+          {{ t('sessionView.scenarioBriefing') }}
+        </button>
         <button
           v-if="scenarioPanelRef?.canAbandon"
           class="nav-abandon-btn"
@@ -70,8 +81,11 @@
         @provisioning-session-id="handleProvisioningSessionId"
       />
 
-      <!-- Scenario briefing card (full width, dismissible) -->
-      <div v-if="scenarioBriefing && scenarioBriefingText" class="scenario-briefing" :class="{ collapsed: !showBriefing }">
+      <!-- Scenario briefing card (full width, dismissible). Closed, it is gone
+           from the layout rather than collapsed to a header bar — that bar cost
+           ~56px of a page whose whole job is to show a console. The way back in
+           is the Briefing toggle in the nav row, which is on screen either way. -->
+      <div v-if="scenarioBriefing && scenarioBriefingText && showBriefing" class="scenario-briefing">
         <div class="briefing-header" @click="toggleBriefing" style="cursor: pointer;">
           <div class="briefing-title">
             <i class="fas fa-book-open"></i>
@@ -80,12 +94,12 @@
           <!-- `.stop` or the click toggles twice: once here, once again on the
                header it bubbles into — leaving the chevron the one part of the
                bar that appears to do nothing. -->
-          <button class="briefing-toggle" @click.stop="toggleBriefing" :aria-expanded="showBriefing">
-            <i :class="showBriefing ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
+          <button class="briefing-toggle" @click.stop="toggleBriefing" :aria-expanded="true">
+            <i class="fas fa-chevron-up"></i>
           </button>
         </div>
-        <div v-if="showBriefing" ref="briefingContentRef" data-testid="scenario-briefing" class="briefing-content markdown-content ocf-scroll-fade" :class="{ 'has-overflow': briefingHasOverflow }" v-html="renderedBriefingText" @click="handleBriefingExecClick" @scroll="checkBriefingFade"></div>
-        <div v-if="showBriefing" class="briefing-footer">
+        <div ref="briefingContentRef" data-testid="scenario-briefing" class="briefing-content markdown-content ocf-scroll-fade" :class="{ 'has-overflow': briefingHasOverflow }" v-html="renderedBriefingText" @click="handleBriefingExecClick" @scroll="checkBriefingFade"></div>
+        <div class="briefing-footer">
           <button class="briefing-collapse-btn" @click="toggleBriefing">
             <i class="fas fa-chevron-up"></i> {{ t('sessionView.collapseBriefing') }}
           </button>
@@ -319,7 +333,7 @@ const { t } = useTranslations({
       scenarioReady: 'Your environment is ready!',
       scenarioLaunch: 'Start!',
       scenarioLaunching: 'Starting...',
-      collapseBriefing: 'Collapse briefing',
+      collapseBriefing: 'Close briefing',
       collapseScenario: 'Collapse instructions',
       expandScenario: 'Expand instructions',
       recordingNotice: 'Your terminal commands are recorded for security and learning purposes.',
@@ -368,7 +382,7 @@ const { t } = useTranslations({
       scenarioReady: 'Votre environnement est prêt !',
       scenarioLaunch: 'Démarrer !',
       scenarioLaunching: 'Démarrage...',
-      collapseBriefing: 'Réduire le briefing',
+      collapseBriefing: 'Fermer le briefing',
       collapseScenario: 'Réduire les instructions',
       expandScenario: 'Afficher les instructions',
       recordingNotice: 'Vos commandes terminal sont enregistrées à des fins de sécurité et d\'apprentissage.',
@@ -1150,8 +1164,44 @@ onBeforeUnmount(() => {
   text-decoration: underline;
 }
 
-/* Pushed to the far end of the nav row, away from the back link: the two
-   are both exits, and only one of them ends the attempt. */
+/* The page-level controls group at the far end of the nav row, away from the
+   back link. */
+.nav-briefing-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.nav-briefing-btn:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-border-medium);
+  background: var(--color-surface-hover);
+}
+
+.nav-briefing-btn.active {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.nav-briefing-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Both exits sit at the same end, and only one of them ends the attempt.
+   `margin-left: auto` on both is deliberate: whichever one comes first in the
+   row does the pushing, so the group stays right-aligned when the briefing
+   button is absent. */
 .nav-abandon-btn {
   margin-left: auto;
   display: inline-flex;
@@ -1616,10 +1666,6 @@ onBeforeUnmount(() => {
   padding: var(--spacing-sm) var(--spacing-md);
   border-bottom: var(--border-width-thin) solid var(--color-border-light);
   flex-shrink: 0;
-}
-
-.scenario-briefing.collapsed .briefing-header {
-  border-bottom: none;
 }
 
 .briefing-title {
