@@ -43,7 +43,6 @@
         <div v-if="!canPurchase" class="empty-state" data-test="seat-purchase-ineligible">
           <i class="fas fa-info-circle"></i>
           <p>{{ t('bulkPurchase.ineligible') }}</p>
-          <p v-if="ineligibleReason" class="section-placeholder">{{ ineligibleReason }}</p>
         </div>
 
         <template v-else>
@@ -345,7 +344,6 @@ const couponCode = ref('')
 // could not see the only products it exists to sell.
 const seatPlans = ref<PurchasableSeatPlan[]>([])
 const canPurchase = ref(true)
-const ineligibleReason = ref('')
 
 const DAY_CHOICES = [1, 2, 3, 4, 5, 6, 7, 10]
 
@@ -525,7 +523,6 @@ onMounted(async () => {
     ])
 
     canPurchase.value = !!seats?.can_purchase
-    ineligibleReason.value = seats?.reason || ''
     seatPlans.value = seats?.plans || []
 
     if (canPurchase.value && seatPlans.value.length > 0) {
