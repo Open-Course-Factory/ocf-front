@@ -260,18 +260,20 @@
   overflow-y: auto;
 }
 
-/* Verify (or flag submit) and reset side by side, wrapping to one column when
-   the learner drags the panel narrow. Top-aligned: the verify result grows
-   under its own button and must not drag the reset button down with it. */
+/* Verify (or flag submit) and reset stay side by side at every panel width —
+   the panel goes down to 250px and a basis wide enough to look right there
+   would wrap the pair into a column everywhere else. They share the row
+   evenly instead, and the labels wrap inside their own button.
+   Top-aligned: the verify result grows under its own button and must not drag
+   the reset button down with it. */
 .step-actions-row {
   display: flex;
-  flex-wrap: wrap;
   align-items: flex-start;
   gap: var(--spacing-sm);
 }
 
 .step-actions-row > * {
-  flex: 1 1 12rem;
+  flex: 1 1 0;
   min-width: 0;
 }
 
@@ -908,6 +910,8 @@
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
+  text-align: center;
+  overflow-wrap: anywhere;
   padding: var(--spacing-sm) var(--spacing-md);
   /* Full width of its column, so arming the button — which lengthens the
      label — never resizes it and never moves its neighbour. */
