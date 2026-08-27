@@ -122,7 +122,7 @@
         <!-- Existing session notice -->
         <div v-if="getExistingSession(scenario)" class="existing-session-notice">
           <div class="existing-session-content">
-            <i :class="getExistingSession(scenario).status === 'active' ? 'fas fa-play-circle' : 'fas fa-check-circle'" class="existing-session-icon"></i>
+            <i :class="canResume(scenario) ? 'fas fa-play-circle' : 'fas fa-check-circle'" class="existing-session-icon"></i>
             <span class="existing-session-text">{{ getExistingSessionLabel(scenario) }}</span>
           </div>
         </div>
@@ -156,9 +156,9 @@
             </select>
           </label>
 
-          <!-- Active session: resume -->
+          <!-- Live run: resume -->
           <router-link
-            v-if="getExistingSession(scenario)?.terminal_session_id && getExistingSession(scenario).status === 'active'"
+            v-if="canResume(scenario) && getExistingSession(scenario)?.terminal_session_id"
             :to="{ name: 'TerminalSessionView', params: { sessionId: getExistingSession(scenario).terminal_session_id } }"
             class="btn btn-primary launch-btn"
             data-testid="scenario-resume-btn"
@@ -166,7 +166,10 @@
             <i class="fas fa-play"></i>
             {{ t('launcher.resume') }}
           </router-link>
-          <!-- Completed/abandoned session: review + relaunch -->
+          <!-- A past run: review it, and start another. The relaunch button is
+               disabled rather than removed when something blocks it — a button
+               that disappears leaves the card with no way forward and moves
+               everything below it. -->
           <div v-else-if="getExistingSession(scenario)" class="card-actions-row">
             <router-link
               v-if="getExistingSession(scenario).terminal_session_id"
@@ -178,10 +181,10 @@
               {{ t('launcher.review') }}
             </router-link>
             <button
-              v-if="scenario.launchable"
               class="btn btn-primary launch-btn"
               data-testid="scenario-relaunch-btn"
-              :disabled="isLaunching"
+              :disabled="isLaunching || !scenario.launchable"
+              :title="scenario.launchable ? '' : getUnavailableReason(scenario)"
               @click="handleLaunchScenario(scenario)"
             >
               <i :class="isLaunching && launchingScenarioId === scenario.id ? 'fas fa-spinner fa-spin' : 'fas fa-redo'"></i>
@@ -262,6 +265,7 @@ const { t } = useTranslations({
       alreadyRunning: 'You are already running this scenario. Resume it from its card.',
       sessionCompleted: 'Scenario completed',
       sessionAbandoned: 'Scenario abandoned',
+      sessionEnded: 'Previous run ended',
       sessionExists: 'Scenario already started',
       unavailableTitle: 'Scenario unavailable',
       unavailableNoDistribution: 'No compatible machine available for this scenario.',
@@ -272,6 +276,8 @@ const { t } = useTranslations({
       unavailableNoDistributionHint: 'Contact your administrator to configure compatible machines.',
       unavailableBudget: 'Your resource budget is fully used by your current sessions.',
       unavailableBudgetHint: 'Stop a running session to free capacity, or upgrade your plan.',
+      unavailableSize: 'This scenario needs a machine larger than your plan allows.',
+      unavailableSizeHint: 'Upgrade your plan to run it — stopping a session will not free enough capacity.',
       provisioning: 'Setting up your environment...',
       provisioningDetail: 'Creating terminal and preparing scenario. This may take a few minutes.',
       provisioningSetup: 'Running scenario setup scripts... This may take a few minutes.',
@@ -306,6 +312,7 @@ const { t } = useTranslations({
       alreadyRunning: 'Vous avez déjà un scénario en cours. Reprenez-le depuis sa carte.',
       sessionCompleted: 'Scénario terminé',
       sessionAbandoned: 'Scénario abandonné',
+      sessionEnded: 'Session précédente terminée',
       sessionExists: 'Scénario déjà lancé',
       unavailableTitle: 'Scénario indisponible',
       unavailableNoDistribution: 'Aucune machine compatible disponible pour ce scénario.',
@@ -316,6 +323,8 @@ const { t } = useTranslations({
       unavailableNoDistributionHint: 'Contactez votre administrateur pour configurer des machines compatibles.',
       unavailableBudget: 'Votre budget de ressources est entièrement utilisé par vos sessions en cours.',
       unavailableBudgetHint: 'Arrêtez une session en cours pour libérer de la capacité, ou mettez à niveau votre plan.',
+      unavailableSize: 'Ce scénario demande une machine plus grande que ce que permet votre offre.',
+      unavailableSizeHint: 'Passez à une offre supérieure pour le lancer — arrêter une session ne libérera pas assez de capacité.',
       provisioning: 'Préparation de votre environnement...',
       provisioningDetail: 'Création du terminal et préparation du scénario. Cela peut prendre quelques minutes.',
       provisioningSetup: 'Exécution des scripts de préparation du scénario... Cela peut prendre quelques minutes.',
@@ -492,10 +501,20 @@ function getExistingSession(scenario: any): any | null {
       id: scenario.active_session_id,
       scenario_id: scenario.id,
       terminal_session_id: scenario.active_terminal_session_id,
-      status: 'active'
+      status: 'active',
+      resumable: true
     }
   }
   return existingSessionByScenario.value.get(scenario.id) || null
+}
+
+// Whether the learner can return to a past run — the backend's verdict, never
+// re-derived from `status`. A session stays "active" in the database until
+// something notices its terminal is gone, so reading the status here offered a
+// Resume button into a container deleted the day before, and hid every way to
+// start the scenario again.
+function canResume(scenario: any): boolean {
+  return getExistingSession(scenario)?.resumable === true
 }
 
 // A scenario the learner is already running is not unavailable — it is waiting
@@ -508,6 +527,10 @@ function isBlocked(scenario: any): boolean {
 function getExistingSessionLabel(scenario: any): string {
   const session = getExistingSession(scenario)
   if (!session) return ''
+  // A run that cannot be resumed is a past run, whatever the row still says.
+  if (!session.resumable && (session.status === 'active' || session.status === 'provisioning')) {
+    return t('launcher.sessionEnded')
+  }
   switch (session.status) {
     case 'active':
     case 'provisioning':
@@ -530,6 +553,8 @@ function getBlockReasonIcon(scenario: any): string {
   switch (getScenarioBlockReason(scenario)) {
     case 'budget_exhausted':
       return 'fas fa-battery-quarter'
+    case 'size_over_plan':
+      return 'fas fa-lock'
     case 'plan':
       return 'fas fa-lock'
     case 'no_distribution':
@@ -539,15 +564,22 @@ function getBlockReasonIcon(scenario: any): string {
   }
 }
 
-// The backend emits block_reason 'no_distribution' and 'budget_exhausted'
-// (scenarioLaunchController). 'plan' and 'offline' are kept as defensive
-// fallbacks only — without a budget branch, an out-of-budget student used to
-// be told the server was down.
+// The backend emits block_reason 'no_distribution', 'budget_exhausted' and
+// 'size_over_plan' (scenarioLaunchController). 'plan' and 'offline' are kept as
+// defensive fallbacks only — without a budget branch, an out-of-budget student
+// used to be told the server was down.
+//
+// 'size_over_plan' exists because the budget message is a lie for it: a machine
+// bigger than the plan can ever host does not become available by stopping
+// something, and a learner running nothing was told their budget was "fully
+// used by your current sessions".
 function getUnavailableReason(scenario: any): string {
   const reason = getScenarioBlockReason(scenario)
   switch (reason) {
     case 'budget_exhausted':
       return t('launcher.unavailableBudget')
+    case 'size_over_plan':
+      return t('launcher.unavailableSize')
     case 'plan':
       return t('launcher.unavailablePlan')
     case 'no_distribution':
@@ -565,6 +597,10 @@ function getUnavailableHint(scenario: any): string {
       // Org-managed subscribers can't upgrade — the stop-a-session half of
       // the hint still applies, so keep it either way.
       return t('launcher.unavailableBudgetHint')
+    case 'size_over_plan':
+      // Stopping a session cannot help here, so the hint must not suggest it.
+      if (isAssigned.value) return ''
+      return t('launcher.unavailableSizeHint')
     case 'plan':
       // Org-managed subscribers can't upgrade — show nothing
       if (isAssigned.value) return ''

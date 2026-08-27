@@ -148,6 +148,10 @@ export interface MyScenarioSession {
   completed_at?: string
   terminal_session_id?: string
   provisioning_phase?: string
+  // Whether the learner can still return to this run. The backend decides:
+  // `status` stays 'active' until something notices the terminal is gone, so
+  // deriving it here offered a Resume button into a dead container.
+  resumable?: boolean
 }
 
 export interface ScenarioInfo {
