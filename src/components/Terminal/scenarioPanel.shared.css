@@ -8,6 +8,30 @@
  * panel subtree and never leaks app-wide.
  */
 
+/* Step controls row: verify (or flag submit) and reset, each filling its half
+   of the footer. Unscoped on purpose — two of the three columns are child
+   component roots, and the row must not depend on scope-id inheritance to lay
+   them out. */
+.scenario-panel .step-actions-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+}
+
+.scenario-panel .step-action-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.scenario-panel .step-action-col > .verify-btn,
+.scenario-panel .step-action-col > .step-reset-btn,
+.scenario-panel .step-action-col > .flag-input-row {
+  width: 100%;
+}
+
 .scenario-panel .verify-btn {
   display: flex;
   align-items: center;

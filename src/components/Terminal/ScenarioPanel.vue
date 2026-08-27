@@ -259,6 +259,7 @@
           <div class="step-actions-row">
             <ScenarioVerifyResult
               v-if="resolvedStepType === 'terminal'"
+              class="step-action-col"
               :is-active="isActive"
               :is-verifying="isVerifying"
               :result="verifyResult"
@@ -267,6 +268,7 @@
 
             <ScenarioFlagSubmit
               v-else-if="resolvedStepType === 'flag'"
+              class="step-action-col"
               v-model="flagValue"
               :is-active="isActive"
               :is-submitting="isSubmittingFlag"
@@ -278,7 +280,7 @@
                  deleted instead of moved, a timed mission missed, a file
                  mangled. Only the environment is rebuilt — earlier steps stand.
                  Quiz and info steps have no world to rebuild, so no button. -->
-            <div class="step-reset">
+            <div class="step-reset step-action-col">
               <button
                 class="step-reset-btn"
                 :class="{ armed: resetArmed }"

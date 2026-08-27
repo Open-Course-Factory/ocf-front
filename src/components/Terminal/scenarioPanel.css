@@ -260,34 +260,6 @@
   overflow-y: auto;
 }
 
-/* Verify (or flag submit) and reset stay side by side at every panel width —
-   the panel goes down to 250px and a basis wide enough to look right there
-   would wrap the pair into a column everywhere else. They share the row
-   evenly instead, and the labels wrap inside their own button.
-   Top-aligned: the verify result grows under its own button and must not drag
-   the reset button down with it. */
-.step-actions-row {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-sm);
-}
-
-/* Equal halves, and each control fills its half edge to edge — a button that
-   sits narrower than its column reads as disabled next to one that doesn't. */
-.step-actions-row > * {
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-.step-actions-row > * > .verify-btn,
-.step-actions-row > * > .step-reset-btn,
-.step-actions-row > * > .flag-input-row {
-  width: 100%;
-}
-
 /* Loading, error, empty, completed states */
 .panel-loading,
 .panel-error,
@@ -911,12 +883,6 @@
 }
 /* Reset-this-step: the way out of a step the learner has made unwinnable.
    Deliberately quiet — it is an escape hatch, not an action to invite. */
-.step-reset {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
 .step-reset-btn {
   display: inline-flex;
   align-items: center;
