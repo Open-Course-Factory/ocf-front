@@ -1,5 +1,20 @@
 <template>
   <div class="ocf-offers">
+    <!-- This page renders without the application shell, so someone who reached
+         it from inside the product has no menu to leave by. Shown only when the
+         router actually has an entry to return to: on a fresh tab or a direct
+         hit, "back" would take a prospect off the site. -->
+    <button
+      v-if="canGoBack"
+      type="button"
+      class="ocf-offers-back"
+      data-test="offers-back"
+      @click="goBack"
+    >
+      <i class="fas fa-arrow-left"></i>
+      {{ t('publicOffers.back') }}
+    </button>
+
     <header class="ocf-offers-head">
       <h1>{{ t('publicOffers.title') }}</h1>
       <p>{{ t('publicOffers.subtitle') }}</p>
@@ -80,6 +95,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
 import { usePlanFormatters } from '../../composables/usePlanFormatters'
@@ -96,6 +112,7 @@ const { t } = useTranslations({
       perMonth: '/month',
       perYear: '/year',
       start: 'Get started',
+      back: 'Back',
       seatsNote: 'Learner seats are bought separately, by the day or by the month.',
       termsLink: 'Terms of service',
       orgTitle: 'Schools & training organisations',
@@ -118,6 +135,7 @@ const { t } = useTranslations({
       perMonth: '/mois',
       perYear: '/an',
       start: 'Commencer',
+      back: 'Retour',
       seatsNote: "Les sièges apprenants s'achètent séparément, à la journée ou au mois.",
       termsLink: 'Conditions générales',
       orgTitle: 'Écoles & organismes de formation',
@@ -133,6 +151,16 @@ const { t } = useTranslations({
 })
 
 const { derivePlanBullets } = usePlanFormatters()
+
+const router = useRouter()
+// vue-router records the entry it navigated from in the history state. It is
+// null on a fresh tab or a direct hit, and going back there would leave the
+// site rather than return to the application.
+const canGoBack = !!window.history.state?.back
+
+function goBack() {
+  router.back()
+}
 
 // The typed capability fields are carried through so derivePlanBullets can read
 // them — the bullets are generated from what is actually enforced, never from
@@ -188,6 +216,25 @@ onMounted(async () => {
   max-width: 72rem;
   margin: 0 auto;
   padding: 2rem 1.5rem 3rem;
+  color: var(--color-text-primary);
+}
+
+.ocf-offers-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.9rem;
+  border: var(--border-width-thin) solid var(--color-border-default);
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.ocf-offers-back:hover {
+  background: var(--color-surface-hover);
   color: var(--color-text-primary);
 }
 
