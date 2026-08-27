@@ -7,7 +7,24 @@
 
 <template>
   <li class="nav-menu-item-wrapper">
+    <!-- A newTab entry leaves the application shell behind (a public page has no
+         menu to come back through), so it opens beside it instead of replacing
+         it, and says so with the external-link icon. -->
+    <a
+      v-if="newTab && !disabled"
+      :href="to"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="nav-menu-item"
+      :title="tooltip"
+      @click="$emit('click')"
+    >
+      <i :class="icon"></i>
+      <span class="menu-text">{{ label }}</span>
+      <i class="fas fa-up-right-from-square nav-menu-item-external"></i>
+    </a>
     <component
+      v-else
       :is="disabled ? 'span' : 'router-link'"
       :to="disabled ? undefined : to"
       class="nav-menu-item"
@@ -28,6 +45,7 @@ defineProps<{
   icon: string
   tooltip?: string
   disabled?: boolean
+  newTab?: boolean
 }>()
 
 defineEmits<{
@@ -72,6 +90,15 @@ defineEmits<{
   margin-right: var(--spacing-md);
   font-size: var(--font-size-sm);
   flex-shrink: 0;
+}
+
+/* Matches the specificity of `.nav-menu-item i` above, which would otherwise
+   give this trailing icon the leading icon's spacing. */
+.nav-menu-item i.nav-menu-item-external {
+  width: auto;
+  margin-right: 0;
+  font-size: var(--font-size-xs);
+  opacity: 0.6;
 }
 
 .nav-menu-item .menu-text {
