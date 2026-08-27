@@ -245,7 +245,12 @@ export const scenarioSessionService = {
   },
 
   async getSessionInfo(sessionId: string): Promise<ScenarioSessionInfo> {
-    const response = await axios.get(`/scenario-sessions/${sessionId}`)
+    // The /info endpoint, not the entity route this used to call. The entity
+    // route answers with the stored row: no scenario_text, so the briefing came
+    // back in the language the scenario was written in, and no
+    // provisioning_timeout_seconds, which exists for the very pollers that call
+    // this after a reload.
+    const response = await axios.get(`/scenario-sessions/${sessionId}/info`)
     return response.data
   },
 
