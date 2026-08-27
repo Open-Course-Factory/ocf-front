@@ -533,3 +533,14 @@
   --overlay-bg: rgba(0, 0, 0, 0.7);
   --shadow-modal: 0 20px 40px rgba(0, 0, 0, 0.5);
 }
+
+/* === BOOTSTRAP INTEROP ===
+   Bootstrap is loaded globally, and its utilities resolve their own variables:
+   .text-muted is `color: var(--bs-secondary-color) !important`, which no
+   component rule can override. Its default is light-mode only, so muted text
+   stayed near-black on dark backgrounds. Point Bootstrap's variables at our
+   tokens instead — one source of truth for the color, and it follows the theme
+   without any !important. */
+:root {
+  --bs-secondary-color: var(--color-text-muted);
+}
