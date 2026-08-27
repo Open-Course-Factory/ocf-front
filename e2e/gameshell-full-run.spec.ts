@@ -139,6 +139,60 @@ function foreignMessages(): string[] {
 const FOREIGN_MESSAGES = foreignMessages();
 
 /**
+ * Sentences the default locale's briefing opens with, where this locale words
+ * it differently.
+ *
+ * Read from the scenario's own intro files rather than hardcoded, so the check
+ * follows the content instead of going stale beside it.
+ */
+function foreignIntro(): string[] {
+  if (LOCALE === DEFAULT_LOCALE) return [];
+  const read = (locale: string): string => {
+    const name = locale === DEFAULT_LOCALE ? 'intro.md' : `intro.${locale}.md`;
+    const file = path.join(CHALLENGES, 'gameshell-basics', name);
+    return existsSync(file) ? readFileSync(file, 'utf8') : '';
+  };
+  const source = read(DEFAULT_LOCALE);
+  const here = read(LOCALE);
+  if (!source || !here) return [];
+  return source
+    .split(/\n+/)
+    .map((line) => line.replace(/[#*_`>-]/g, '').trim())
+    .filter((line) => line.length > 25 && !here.includes(line));
+}
+
+const FOREIGN_INTRO = foreignIntro();
+
+/**
+ * The briefing must open in the language being played.
+ *
+ * Every other assertion here reads a step, and the steps were resolved for the
+ * session's locale from the start. The briefing was read straight off the
+ * scenario, so a run could pass all 36 steps in French having opened with an
+ * English welcome — and nothing looked at it.
+ */
+async function expectBriefingInTheChosenLanguage(page: Page): Promise<void> {
+  if (!FOREIGN_INTRO.length) return;
+
+  const briefing = page.getByTestId('scenario-briefing');
+  if (!(await briefing.isVisible().catch(() => false))) {
+    trail('no briefing on screen — nothing to check');
+    return;
+  }
+
+  const said = (await briefing.innerText().catch(() => '')).trim();
+  if (!said) return;
+
+  const foreign = FOREIGN_INTRO.find((fragment) => said.includes(fragment));
+  if (foreign) {
+    throw new Error(
+      `the briefing opened in ${DEFAULT_LOCALE} while playing ${LOCALE}: "${foreign}"`
+    );
+  }
+  trail('briefing reads in the chosen language');
+}
+
+/**
  * What this locale calls a place.
  *
  * A missing key returns a marker rather than throwing, because this runs while

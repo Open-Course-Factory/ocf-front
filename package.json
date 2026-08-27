@@ -8,6 +8,7 @@
     "build": "vue-tsc && vite build",
     "preview": "vite preview --port 4000 --host",
     "test": "vitest run",
+    "typecheck:e2e": "tsc --noEmit --target ES2020 --module ESNext --moduleResolution bundler --skipLibCheck --types node e2e/*.spec.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "precommit": "bash scripts/pre-commit-checks.sh"
