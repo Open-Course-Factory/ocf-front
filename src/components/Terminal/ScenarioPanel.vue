@@ -30,7 +30,7 @@
                the tooltip. The scenario's own name is already above the
                terminal, so repeating it here said nothing twice. -->
           <span
-            v-if="displayedStep && stepTypeMeta"
+            v-if="panelState === 'step' && stepTypeMeta"
             class="step-type-chip"
             data-testid="scenario-step-type-chip"
             :class="`step-type-chip--${stepTypeMeta.key}`"
@@ -41,7 +41,13 @@
             <span class="ocf-sr-only">{{ stepTypeMeta.label }}</span>
           </span>
           <i v-else class="fas fa-flag-checkered"></i>
-          <span class="panel-title-text" data-testid="scenario-step-title" :title="panelTitle">{{ panelTitle }}</span>
+          <span
+            v-if="panelState === 'step'"
+            class="panel-title-text"
+            data-testid="scenario-step-title"
+            :title="displayedStep!.title"
+          >{{ displayedStep!.title }}</span>
+          <span v-else class="panel-title-text" :title="scenarioName">{{ scenarioName || t('scenarioPanel.title') }}</span>
         </h3>
       </div>
 
@@ -52,13 +58,13 @@
       </div>
 
       <!-- Loading state -->
-      <div v-if="isLoading" class="panel-loading">
+      <div v-if="panelState === 'loading'" class="panel-loading">
         <i class="fas fa-spinner fa-spin"></i>
         <span>{{ t('scenarioPanel.loading') }}</span>
       </div>
 
       <!-- Error state -->
-      <div v-else-if="loadError" class="panel-error" data-testid="scenario-panel-error">
+      <div v-else-if="panelState === 'load-error'" class="panel-error" data-testid="scenario-panel-error">
         <i class="fas fa-exclamation-triangle"></i>
         <span>{{ t('scenarioPanel.error') }}</span>
         <button class="retry-btn" @click="loadCurrentStep">
@@ -75,7 +81,7 @@
            The retry re-runs the setup that failed — reloading the step would
            only re-fetch the description of a level whose environment was never
            built. -->
-      <div v-else-if="provisioningError" class="panel-error panel-error--infra" data-testid="scenario-step-preparing-error">
+      <div v-else-if="panelState === 'provisioning-error'" class="panel-error panel-error--infra" data-testid="scenario-step-preparing-error">
         <i class="fas fa-server"></i>
         <p class="panel-error-title">{{ t('scenarioPanel.preparingFailedTitle') }}</p>
         <p class="panel-error-body">{{ t('scenarioPanel.preparingFailedBody') }}</p>
@@ -91,7 +97,7 @@
       </div>
 
       <!-- Completed state -->
-      <div v-else-if="isSessionCompleted" class="panel-completed" data-testid="scenario-completed">
+      <div v-else-if="panelState === 'completed'" class="panel-completed" data-testid="scenario-completed">
         <div class="completed-icon">
           <i class="fas fa-trophy"></i>
         </div>
@@ -120,7 +126,7 @@
       </div>
 
       <!-- Step transition (full panel) -->
-      <div v-else-if="isTransitioning" class="panel-transitioning">
+      <div v-else-if="panelState === 'transitioning'" class="panel-transitioning">
         <!-- Phase 1: Step validated -->
         <template v-if="transitionState === 'validated'">
           <div class="transition-validated">
@@ -152,7 +158,7 @@
       </div>
 
       <!-- Active step content -->
-      <template v-else-if="currentStep">
+      <template v-else-if="panelState === 'step'">
         <!-- Review mode indicator -->
         <div v-if="reviewingStep" class="review-banner" data-testid="scenario-review-banner">
           <span class="review-label">
@@ -765,11 +771,21 @@ interface StepTypeMeta {
   bg: string
 }
 
-// What the panel calls itself: the step being read, falling back to the
-// scenario while there is no step to name (loading, completed, empty).
-const panelTitle = computed(() =>
-  displayedStep.value?.title || scenarioName.value || t('scenarioPanel.title')
-)
+// Which of the panel's mutually exclusive views is on screen, in priority
+// order. One expression, because the header has to agree with it: a step title
+// in the header while a preparation failure is showing would tell the learner
+// they are on a level they never reached.
+type PanelState = 'loading' | 'load-error' | 'provisioning-error' | 'completed' | 'transitioning' | 'step' | 'empty'
+
+const panelState = computed<PanelState>(() => {
+  if (isLoading.value) return 'loading'
+  if (loadError.value) return 'load-error'
+  if (provisioningError.value) return 'provisioning-error'
+  if (isSessionCompleted.value) return 'completed'
+  if (isTransitioning.value) return 'transitioning'
+  if (currentStep.value) return 'step'
+  return 'empty'
+})
 
 const stepTypeMeta = computed<StepTypeMeta | null>(() => {
   if (!displayedStep.value) return null
