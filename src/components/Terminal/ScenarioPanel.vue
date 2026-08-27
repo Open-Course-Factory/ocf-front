@@ -26,8 +26,22 @@
       <!-- Panel header -->
       <div class="panel-header">
         <h3 class="panel-title">
-          <i class="fas fa-flag-checkered"></i>
-          {{ scenarioName || t('scenarioPanel.title') }}
+          <!-- The type of the step the learner is on, as an icon; the name is
+               the tooltip. The scenario's own name is already above the
+               terminal, so repeating it here said nothing twice. -->
+          <span
+            v-if="displayedStep && stepTypeMeta"
+            class="step-type-chip"
+            data-testid="scenario-step-type-chip"
+            :class="`step-type-chip--${stepTypeMeta.key}`"
+            :style="{ '--step-type-color': stepTypeMeta.color, '--step-type-bg': stepTypeMeta.bg } as any"
+            :title="stepTypeMeta.label"
+          >
+            <i :class="stepTypeMeta.icon"></i>
+            <span class="ocf-sr-only">{{ stepTypeMeta.label }}</span>
+          </span>
+          <i v-else class="fas fa-flag-checkered"></i>
+          <span class="panel-title-text" data-testid="scenario-step-title" :title="panelTitle">{{ panelTitle }}</span>
         </h3>
       </div>
 
@@ -139,18 +153,6 @@
 
       <!-- Active step content -->
       <template v-else-if="currentStep">
-        <!-- Step type indicator -->
-        <div
-          v-if="stepTypeMeta"
-          class="step-type-chip"
-          data-testid="scenario-step-type-chip"
-          :class="`step-type-chip--${stepTypeMeta.key}`"
-          :style="{ '--step-type-color': stepTypeMeta.color, '--step-type-bg': stepTypeMeta.bg } as any"
-        >
-          <i :class="stepTypeMeta.icon"></i>
-          <span>{{ stepTypeMeta.label }}</span>
-        </div>
-
         <!-- Review mode indicator -->
         <div v-if="reviewingStep" class="review-banner" data-testid="scenario-review-banner">
           <span class="review-label">
@@ -171,12 +173,6 @@
           @click="handleExecClick"
           @scroll="checkStepFade"
         >
-          <!-- Step title -->
-          <div class="step-header">
-            <span class="step-label">{{ t('scenarioPanel.step') }} {{ stepPosition(displayedStep) }}</span>
-            <h4 class="step-title" data-testid="scenario-step-title">{{ displayedStep!.title }}</h4>
-          </div>
-
           <!-- Step text (rendered as markdown) -->
           <div v-if="displayedStep!.text" class="step-text markdown-content" v-html="renderedDisplayedStepText"></div>
 
@@ -768,6 +764,12 @@ interface StepTypeMeta {
   color: string
   bg: string
 }
+
+// What the panel calls itself: the step being read, falling back to the
+// scenario while there is no step to name (loading, completed, empty).
+const panelTitle = computed(() =>
+  displayedStep.value?.title || scenarioName.value || t('scenarioPanel.title')
+)
 
 const stepTypeMeta = computed<StepTypeMeta | null>(() => {
   if (!displayedStep.value) return null

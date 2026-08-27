@@ -15,6 +15,7 @@ import { useTranslations } from './useTranslations'
 import { useScrollFade } from './useScrollFade'
 import {
   renderKillercodaMarkdown,
+  stripRepeatedTitleHeading,
   loadScenarioImages,
   revokeScenarioImageUrls
 } from '../utils/killercodaMarkdown'
@@ -72,10 +73,12 @@ export function useScenarioSession(
   // The displayed step: either the review step or the current step
   const displayedStep = computed(() => reviewingStep.value || currentStep.value)
 
-  // Rendered markdown for the displayed step
+  // Rendered markdown for the displayed step, minus the title the panel header
+  // already shows.
   const renderedDisplayedStepText = computed(() => {
-    if (!displayedStep.value?.text) return ''
-    return renderKillercodaMarkdown(displayedStep.value.text)
+    const step = displayedStep.value
+    if (!step?.text) return ''
+    return renderKillercodaMarkdown(stripRepeatedTitleHeading(step.text, step.title))
   })
 
   const hasProgressiveHints = computed(() => {

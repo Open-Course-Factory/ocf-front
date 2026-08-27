@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { preprocessKillercodaMarkdown, processExecSyntax } from '../../src/utils/killercodaMarkdown'
+import {
+  preprocessKillercodaMarkdown,
+  processExecSyntax,
+  stripRepeatedTitleHeading,
+} from '../../src/utils/killercodaMarkdown'
 
 describe('preprocessKillercodaMarkdown', () => {
   it.each([
@@ -213,5 +217,39 @@ describe('full pipeline (preprocess + marked + processExecSyntax)', () => {
     expect(result).not.toContain('copy-block')
     expect(result).toContain('tofu plan')
     expect(result).toContain('Next paragraph.')
+  })
+})
+
+describe('stripRepeatedTitleHeading', () => {
+  it('drops a leading heading that repeats the step title', () => {
+    const text = '# Climb the West Tower\n\nThe castle has a tall main tower.\n'
+    expect(stripRepeatedTitleHeading(text, 'Climb the West Tower')).toBe(
+      'The castle has a tall main tower.\n'
+    )
+  })
+
+  it('matches past case, trailing punctuation and surrounding markup', () => {
+    const text = '## **Grimper la tour** ##\n\nMontez tout en haut.\n'
+    expect(stripRepeatedTitleHeading(text, 'grimper la tour :')).toBe('Montez tout en haut.\n')
+  })
+
+  it('keeps a first heading that says something else', () => {
+    const text = '# Before you start\n\nThe castle has a tall main tower.\n'
+    expect(stripRepeatedTitleHeading(text, 'Climb the West Tower')).toBe(text)
+  })
+
+  it('keeps a matching heading that is not the first thing in the text', () => {
+    const text = 'Read this first.\n\n# Climb the West Tower\n'
+    expect(stripRepeatedTitleHeading(text, 'Climb the West Tower')).toBe(text)
+  })
+
+  it('leaves the text alone when there is no title to compare', () => {
+    const text = '# Climb the West Tower\n\nGo up.\n'
+    expect(stripRepeatedTitleHeading(text, '')).toBe(text)
+    expect(stripRepeatedTitleHeading(text, null)).toBe(text)
+  })
+
+  it('returns empty text unchanged', () => {
+    expect(stripRepeatedTitleHeading('', 'Anything')).toBe('')
   })
 })

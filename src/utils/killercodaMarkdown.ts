@@ -39,6 +39,36 @@ export function processExecSyntax(html: string): string {
 /**
  * Full pipeline: preprocess KillerCoda markdown → parse with marked → process markers → sanitize.
  */
+/**
+ * Drop a leading markdown heading that only repeats the step's own title.
+ *
+ * KillerCoda-style content conventionally opens each step with its title, and
+ * the panel renders that title itself — so both showed, one under the other.
+ * Only an exact match is removed: a first heading that says something new is
+ * part of the instructions and stays. Comparison ignores case, surrounding
+ * markup and trailing punctuation, because the two are authored separately.
+ */
+export function stripRepeatedTitleHeading(markdown: string, title?: string | null): string {
+  if (!markdown || !title) return markdown
+
+  const heading = markdown.match(/^\s*#{1,6}[ \t]+(.+?)[ \t]*#*[ \t]*(?:\r?\n|$)/)
+  if (!heading) return markdown
+
+  // Trailing punctuation is stripped before the final trim: French titles are
+  // routinely written "Grimper la tour :", with a space in front of the colon.
+  const normalise = (text: string) =>
+    text
+      .replace(/[#*_`]/g, '')
+      .replace(/\s+/g, ' ')
+      .toLowerCase()
+      .replace(/[.:!?]+\s*$/, '')
+      .trim()
+
+  if (normalise(heading[1]) !== normalise(title)) return markdown
+
+  return markdown.slice(heading[0].length).replace(/^\s*\r?\n/, '')
+}
+
 export function renderKillercodaMarkdown(markdown: string): string {
   const preprocessed = preprocessKillercodaMarkdown(markdown)
   const html = marked.parse(preprocessed) as string
