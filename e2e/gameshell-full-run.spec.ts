@@ -650,10 +650,14 @@ const STEPS: Step[] = [
     title: "King's Debt",
     solve: async (p) => {
       await sh(p, `cd ${STALL}`);
-      await sh(p, `grep King ${w('W_LEDGER')} | grep -v PAID`, 1_200);
+      await sh(p, `grep ${w('T_KING')} ${w('W_LEDGER')} | grep -v ${w('T_PAID')}`, 1_200);
     },
   },
-  { title: 'Taking Stock', solve: (p) => sh(p, `grep crowns ${w('W_LEDGER')} | grep -v PAID | wc -l`, 1_200) },
+  {
+    title: 'Taking Stock',
+    solve: (p) =>
+      sh(p, `grep ${w('T_CROWNS')} ${w('W_LEDGER')} | grep -v ${w('T_PAID')} | wc -l`, 1_200),
+  },
 
   {
     title: 'Kill the Spell',
