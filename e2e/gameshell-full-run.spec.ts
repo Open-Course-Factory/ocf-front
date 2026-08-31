@@ -204,6 +204,12 @@ function w(key: string): string {
   return LEXICON?.[key] ?? `<missing ${key}>`;
 }
 
+/** The days of the week in the language being played, as `date +%u` numbers them. */
+const WEEKDAYS = [
+  'T_DAY_MONDAY', 'T_DAY_TUESDAY', 'T_DAY_WEDNESDAY', 'T_DAY_THURSDAY',
+  'T_DAY_FRIDAY', 'T_DAY_SATURDAY', 'T_DAY_SUNDAY',
+].map(w);
+
 const CHEST = w('P_CHEST');
 const CAVE = w('P_CAVE');
 const STALL = w('P_STALL');
@@ -551,7 +557,12 @@ const STEPS: Step[] = [
       const listed = await readRaw(p, `ls ${w('P_OBSERVATORY')}`);
       const date = listed.match(new RegExp(`${w('W_PROPHECY')}(\\d{4}-\\d{2}-\\d{2})`))?.[1];
       if (!date) throw new Error(`no prophecy date in: ${listed.slice(-200)}`);
-      return await readMarker(p, `echo @@$(date -d ${date} +%A)@@`);
+      // `date +%A` speaks the container's locale, which is C, so it would
+      // answer in English whatever language the run is playing. `%u` is a
+      // number — 1 for Monday — and the name comes from the lexicon, exactly
+      // as the step's own background script names it.
+      const weekday = Number(await readMarker(p, `echo @@$(date -d ${date} +%u)@@`));
+      return WEEKDAYS[weekday - 1];
     },
   },
   {
