@@ -294,6 +294,30 @@ async function sh(page: Page, cmd: string, settleMs = 900): Promise<void> {
  * survive the line wrapping that would mangle a long one.
  */
 /** Run a command and return what the terminal shows afterwards. */
+/**
+ * Run a command that must be refused, and prove it was.
+ *
+ * The three permission missions promise "Permission denied" in their own text,
+ * and for as long as the console ran as root the terminal never printed it:
+ * root holds CAP_DAC_OVERRIDE, so it read the sealed note and walked into the
+ * sealed room. Every one of those steps passed anyway — one of them without the
+ * learner running `chmod` at all — because nothing here ever looked at the door
+ * before opening it.
+ *
+ * The console's locale is C.UTF-8 whatever language the scenario is played in,
+ * so the kernel's refusal reaches the screen in English in every run.
+ */
+async function expectRefused(page: Page, cmd: string): Promise<void> {
+  const said = await readRaw(page, cmd);
+  if (!/permission denied/i.test(said)) {
+    throw new Error(
+      `expected "${cmd}" to be refused, but nothing was denied — ` +
+        `is the console running as root? tail: ${said.slice(-200)}`
+    );
+  }
+  trail('  refused, as it should be');
+}
+
 async function readRaw(page: Page, cmd: string): Promise<string> {
   await sh(page, cmd, 1_500);
   return readTerminalText(page);
@@ -692,17 +716,37 @@ const STEPS: Step[] = [
   {
     title: "King's Quarters",
     solve: async (p) => {
+      await expectRefused(p, `cd ${w('P_KINGS_QUARTERS')}`);
       await sh(p, `chmod +x ${w('P_KINGS_QUARTERS')}`);
       await sh(p, `touch ${w('P_MARKER_TXT')}`);
     },
   },
   {
     title: 'Read the Secret Note',
-    solve: (p) => sh(p, `echo EXCALIBUR > ${CHEST}/${w('W_ANSWER_TXT')}`),
+    solve: async (p) => {
+      await expectRefused(p, `cat ${w('P_SECRET_NOTE_TXT')}`);
+      await sh(p, `chmod +r ${w('P_SECRET_NOTE_TXT')}`);
+      // The step used to write the password without ever opening the note —
+      // which passed, and proved nothing about `chmod`. Read it first, and say
+      // so if the read still comes back empty.
+      const note = await readRaw(p, `cat ${w('P_SECRET_NOTE_TXT')}`);
+      if (!/EXCALIBUR/.test(note)) {
+        throw new Error(`the note stayed shut after chmod +r; tail: ${note.slice(-200)}`);
+      }
+      await sh(p, `echo EXCALIBUR > ${CHEST}/${w('W_ANSWER_TXT')}`);
+    },
   },
   {
     title: 'Steal the Crown',
-    solve: (p) => sh(p, `mv ${w('P_TREASURY_ROYAL_CROWN')} ${CHEST}/`),
+    solve: async (p) => {
+      // Two locks, and the mission is both of them: a treasury that cannot be
+      // entered and a crown that cannot be read.
+      await expectRefused(p, `ls ${w('P_TREASURY')}`);
+      await sh(p, `chmod +x ${w('P_TREASURY')}`);
+      await expectRefused(p, `cat ${w('P_TREASURY_ROYAL_CROWN')}`);
+      await sh(p, `chmod +r ${w('P_TREASURY_ROYAL_CROWN')}`);
+      await sh(p, `mv ${w('P_TREASURY_ROYAL_CROWN')} ${CHEST}/`);
+    },
   },
   {
     // The word is drawn per session, so decode it rather than knowing it.
