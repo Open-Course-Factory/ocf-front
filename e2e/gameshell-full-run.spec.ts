@@ -215,6 +215,26 @@ const CAVE = w('P_CAVE');
 const STALL = w('P_STALL');
 const BOOK = w('P_BOOK_OF_POTIONS');
 
+/**
+ * Wait until something has actually been conjured into the cellar.
+ *
+ * The imp's spells are only worth silencing if they are filling the room, and a
+ * mission whose scenery never appears passes just as happily as one that works.
+ */
+async function expectConjuring(page: Page, kind: string): Promise<void> {
+  const deadline = Date.now() + 30_000;
+  for (;;) {
+    if ((await readRaw(page, `ls ${w('P_CELLAR')}`)).includes(kind)) {
+      trail(`  the cellar is filling with ${kind}`);
+      return;
+    }
+    if (Date.now() >= deadline) {
+      throw new Error(`nothing was conjured into the cellar — no ${kind} appeared`);
+    }
+    await page.waitForTimeout(2_000);
+  }
+}
+
 test.use({ video: 'on' });
 
 // How often the polls below look again. Every wait in this file is "until a
@@ -737,6 +757,19 @@ const STEPS: Step[] = [
       // Plain kill is trapped — the mission is that it does nothing.
       await sh(p, 'kill $(pgrep -f "protected_[s]pell" | head -1)', 1_500);
       await sh(p, 'kill -9 $(pgrep -f "protected_[s]pell" | head -1)', 2_000);
+    },
+  },
+  {
+    // Six spells, one name, two masters: the only thing that tells them apart
+    // is whose children they are. The run answers that the way the mission
+    // teaches it — by the tree — rather than by any name in the process table.
+    title: 'The Imp and the Fairy',
+    solve: async (p) => {
+      await expectConjuring(p, w('W_COAL'));
+      await sh(p, 'kill $(pgrep -P $(pgrep -f "mischievous_[i]mp"))', 2_000);
+      // Sweep AFTER the silencing, or more falls while you work — which is the
+      // trap the mission's own text warns about.
+      await sh(p, `rm -f ${w('P_CELLAR')}/*_${w('W_COAL')}`, 1_500);
     },
   },
   {
