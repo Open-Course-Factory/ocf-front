@@ -19,7 +19,6 @@
           type="text"
           :class="['form-control', { 'is-invalid': nameError }]"
           :placeholder="t('organizations.namePlaceholder')"
-          :disabled="isEditMode"
           required
           @input="validateName"
         />
@@ -37,10 +36,12 @@
           id="org-display-name"
           v-model="formData.display_name"
           type="text"
-          class="form-control"
+          :class="['form-control', { 'is-invalid': displayNameError }]"
           :placeholder="t('organizations.displayNamePlaceholder')"
           required
+          @input="validateDisplayName"
         />
+        <small v-if="displayNameError" class="field-error">{{ displayNameError }}</small>
       </div>
 
       <!-- Description -->
@@ -161,6 +162,7 @@ const { t } = useTranslations({
       saving: 'Saving...',
       nameInvalid: 'Only lowercase letters, numbers and hyphens allowed',
       nameRequired: 'Organization name is required',
+      displayNameRequired: 'Display name is required',
     }
   },
   fr: {
@@ -183,6 +185,7 @@ const { t } = useTranslations({
       saving: 'Enregistrement...',
       nameInvalid: 'Seuls les lettres minuscules, chiffres et tirets sont autorisés',
       nameRequired: 'Le nom de l\'organisation est requis',
+      displayNameRequired: 'Le nom d\'affichage est requis',
     }
   }
 })
@@ -196,28 +199,6 @@ const formData = ref<CreateOrganizationRequest>({
   max_groups: 10,
   max_members: 50,
 })
-
-// Watch for organization changes
-watch(() => props.organization, (org) => {
-  if (org) {
-    formData.value = {
-      name: org.name,
-      display_name: org.display_name,
-      description: org.description || '',
-      max_groups: org.max_groups,
-      max_members: org.max_members,
-    }
-  } else {
-    // Reset form
-    formData.value = {
-      name: '',
-      display_name: '',
-      description: '',
-      max_groups: 10,
-      max_members: 50,
-    }
-  }
-}, { immediate: true })
 
 const NAME_PATTERN = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/
 const nameError = ref('')
@@ -233,10 +214,45 @@ const validateName = () => {
   }
 }
 
+const displayNameError = ref('')
+
+const validateDisplayName = () => {
+  displayNameError.value = formData.value.display_name.trim()
+    ? ''
+    : t('organizations.displayNameRequired')
+}
+
+// Watch for organization changes
+watch(() => props.organization, (org) => {
+  if (org) {
+    formData.value = {
+      name: org.name,
+      display_name: org.display_name,
+      description: org.description || '',
+      max_groups: org.max_groups,
+      max_members: org.max_members,
+    }
+    validateName()
+    validateDisplayName()
+  } else {
+    // Reset form
+    formData.value = {
+      name: '',
+      display_name: '',
+      description: '',
+      max_groups: 10,
+      max_members: 50,
+    }
+    nameError.value = ''
+    displayNameError.value = ''
+  }
+}, { immediate: true })
+
 const isFormValid = computed(() => {
   return formData.value.name.trim() !== ''
     && formData.value.display_name.trim() !== ''
     && !nameError.value
+    && !displayNameError.value
 })
 
 const handleClose = () => {
@@ -251,6 +267,7 @@ const handleSubmit = () => {
   if (isEditMode.value) {
     // For edit mode, only send updatable fields
     const updateData: UpdateOrganizationRequest = {
+      name: formData.value.name,
       display_name: formData.value.display_name,
       description: formData.value.description,
       max_groups: formData.value.max_groups,

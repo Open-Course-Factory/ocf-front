@@ -118,6 +118,10 @@ export interface CreateOrganizationRequest {
  * Update Organization Request
  */
 export interface UpdateOrganizationRequest {
+  // The slug is editable after creation: ocf-core's EditOrganizationInput has
+  // always accepted it, and `organizations.name` is indexed, not unique, so a
+  // rename cannot collide. Omitting it here is what made the field read-only.
+  name?: string
   display_name?: string
   description?: string
   max_groups?: number
