@@ -23,11 +23,17 @@
 
 <!--
   Learner-facing supervision indicator: a compact chip shown to the STUDENT while a
-  trainer is watching (info) or has taken control (danger). It is centered in the
-  terminal title bar (absolutely, via .supervision-center-anchor in TerminalViewer)
-  so appearing/disappearing never shifts the terminal or the header controls. When
-  there is no title bar to host it, the parent renders it as an `overlay` chip over
-  the terminal.
+  trainer is watching (info) or is typing in the terminal alongside them (danger).
+
+  Typing is shared, never exclusive: the hub refuses to demote the learner's own
+  attachment, so their keystrokes keep flowing while the trainer's do too. The copy
+  therefore says "typing in your terminal", never "taken control" — a promise the
+  mechanic does not keep.
+
+  It is centered in the terminal title bar (absolutely, via
+  .supervision-center-anchor in TerminalViewer) so appearing/disappearing never
+  shifts the terminal or the header controls. When there is no title bar to host
+  it, the parent renders it as an `overlay` chip over the terminal.
 
   Distinct from the trainer-side `.supervision-chip` in SupervisionViewer.vue: that
   one badges the observer/control status on a supervisor's tile. Both are scoped, so

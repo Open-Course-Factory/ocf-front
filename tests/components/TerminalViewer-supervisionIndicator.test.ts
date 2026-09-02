@@ -107,7 +107,7 @@ vi.mock('@xterm/addon-attach', () => ({ AttachAddon: class { dispose() {} } }))
 import TerminalViewer from '../../src/components/Terminal/TerminalViewer.vue'
 
 const WATCHED_TEXT = 'A trainer is watching this session'
-const CONTROLLED_TEXT = 'A trainer has taken control of this session'
+const CONTROLLED_TEXT = 'A trainer is typing in your terminal'
 
 function createTestI18n() {
   return createI18n({

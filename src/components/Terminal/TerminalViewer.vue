@@ -317,7 +317,7 @@ interface Props {
   // a killed shell and the session stays alive.
   scenarioCrashTraps?: boolean
   // Supervision-aware console: when true, the console connection carries control
-  // frames (a trainer may watch or take control of this learner's terminal). The
+  // frames (a trainer may watch, or type alongside the learner in, this terminal). The
   // socket is wired through the shared supervision message handler instead of the
   // plain AttachAddon so control metadata never leaks into the shell, and a banner is
   // shown while watched/controlled. Default false keeps the normal console path
@@ -395,7 +395,7 @@ const { t } = useTranslations({
       networkOn: 'Internet access: on',
       networkOff: 'Internet access: off',
       supervisionWatched: 'A trainer is watching this session',
-      supervisionControlled: 'A trainer has taken control of this session',
+      supervisionControlled: 'A trainer is typing in your terminal',
     }
   },
   fr: {
@@ -438,7 +438,7 @@ const { t } = useTranslations({
       recording: 'REC',
       recordingTooltip: 'Les commandes sont enregistrées',
       supervisionWatched: 'Un formateur observe cette session',
-      supervisionControlled: 'Un formateur a pris le contrôle de cette session',
+      supervisionControlled: 'Un formateur écrit dans votre terminal',
     }
   }
 })

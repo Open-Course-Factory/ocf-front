@@ -138,8 +138,8 @@ const emit = defineEmits<{
 const { t } = useTranslations({
   en: {
     supervisionViewer: {
-      takeHand: 'Take hand',
-      releaseHand: 'Release',
+      takeHand: 'Type in the terminal',
+      releaseHand: 'Stop typing',
       connecting: 'Connecting to session…',
       controlled: 'You are in control',
       controlledTooltip: 'You currently control this session',
@@ -154,8 +154,8 @@ const { t } = useTranslations({
   },
   fr: {
     supervisionViewer: {
-      takeHand: 'Prendre la main',
-      releaseHand: 'Rendre la main',
+      takeHand: 'Écrire dans le terminal',
+      releaseHand: 'Arrêter d’écrire',
       connecting: 'Connexion à la session…',
       controlled: 'Vous avez le contrôle',
       controlledTooltip: 'Vous contrôlez actuellement cette session',

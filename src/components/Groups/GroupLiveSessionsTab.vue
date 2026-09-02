@@ -139,7 +139,7 @@ const { t } = useTranslations({
   en: {
     liveSessions: {
       title: 'Live sessions',
-      subtitle: 'Watch your learners’ terminals in real time. Click a tile to focus and, if needed, take the hand.',
+      subtitle: 'Watch your learners’ terminals in real time. Click a tile to focus and, if needed, type in it alongside the learner.',
       loading: 'Loading live sessions…',
       empty: 'No active sessions',
       refresh: 'Refresh',
@@ -156,7 +156,7 @@ const { t } = useTranslations({
   fr: {
     liveSessions: {
       title: 'Sessions en direct',
-      subtitle: 'Observez les terminaux de vos apprenants en temps réel. Cliquez sur une vignette pour l’agrandir et, si besoin, prendre la main.',
+      subtitle: 'Observez les terminaux de vos apprenants en temps réel. Cliquez sur une vignette pour l’agrandir et, si besoin, y écrire aux côtés de l’apprenant.',
       loading: 'Chargement des sessions en direct…',
       empty: 'Aucune session active',
       refresh: 'Actualiser',
