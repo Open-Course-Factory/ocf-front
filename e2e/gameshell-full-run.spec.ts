@@ -318,6 +318,32 @@ async function expectRefused(page: Page, cmd: string): Promise<void> {
   trail('  refused, as it should be');
 }
 
+/**
+ * Wait for a curse to make a nuisance of itself.
+ *
+ * The spell's whole job is to be seen: upstream GameShell runs it as a job of
+ * the learner's own shell so it prints into the terminal they are looking at.
+ * Ours was a systemd service for a while, which survived — and sowed the chaos
+ * the mission text promises into the journal, where nobody was reading. Every
+ * step still passed, because "did they kill it" never asked whether there had
+ * been anything to kill.
+ */
+async function expectHaunted(page: Page, glyph: string): Promise<void> {
+  const deadline = Date.now() + 20_000;
+  for (;;) {
+    if ((await readTerminalText(page)).includes(glyph)) {
+      trail(`  the spell is making itself felt: ${glyph}`);
+      return;
+    }
+    if (Date.now() >= deadline) {
+      throw new Error(
+        `the spell never printed ${glyph} to the terminal — it is running where nobody can see it`
+      );
+    }
+    await page.waitForTimeout(POLL_MS);
+  }
+}
+
 async function readRaw(page: Page, cmd: string): Promise<string> {
   await sh(page, cmd, 1_500);
   return readTerminalText(page);
@@ -696,14 +722,21 @@ const STEPS: Step[] = [
 
   {
     title: 'Kill the Spell',
-    solve: (p) => sh(p, 'kill $(pgrep -f /usr/local/bin/evil_spell | head -1)', 2_000),
+    solve: async (p) => {
+      await expectHaunted(p, '*#@*');
+      // `evil_[s]pell`: the bracket keeps the pattern from matching the very
+      // command line that carries it, which is the trick the mission's own
+      // check uses too.
+      await sh(p, 'kill $(pgrep -f "evil_[s]pell" | head -1)', 2_000);
+    },
   },
   {
     title: 'Kill the Protected Spell',
     solve: async (p) => {
+      await expectHaunted(p, '@%@%@');
       // Plain kill is trapped — the mission is that it does nothing.
-      await sh(p, 'kill $(pgrep -f /usr/local/bin/protected_spell | head -1)', 1_500);
-      await sh(p, 'kill -9 $(pgrep -f /usr/local/bin/protected_spell | head -1)', 2_000);
+      await sh(p, 'kill $(pgrep -f "protected_[s]pell" | head -1)', 1_500);
+      await sh(p, 'kill -9 $(pgrep -f "protected_[s]pell" | head -1)', 2_000);
     },
   },
   {
