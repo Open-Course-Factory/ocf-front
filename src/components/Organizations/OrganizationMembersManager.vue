@@ -9,7 +9,7 @@
         </h3>
         <div class="header-meta">
           <p class="member-count">
-            {{ members.length }} / {{ maxMembers }} {{ t('members.members') }}
+            {{ activeMembers.length }} / {{ maxMembers }} {{ t('members.members') }}
           </p>
           <button class="help-link" @click="goToRolesHelp">
             <i class="fas fa-question-circle"></i>
@@ -21,7 +21,7 @@
         v-if="canManage"
         class="btn btn-primary"
         @click="openAddMemberModal"
-        :disabled="members.length >= maxMembers"
+        :disabled="activeMembers.length >= maxMembers"
       >
         <i class="fas fa-user-plus"></i>
         {{ t('members.addMember') }}
@@ -89,7 +89,49 @@
           </div>
         </div>
 
-        <div class="member-actions">
+        <!-- Reserved column: every row has it, so a badge never pushes the
+             actions sideways when a member changes state. -->
+        <div class="ocf-member-state" data-test="member-state">
+          <span
+            class="ocf-state-badge"
+            :class="isOffboarded(member) ? 'ocf-state-badge--offboarded' : 'ocf-state-badge--active'"
+          >
+            {{ isOffboarded(member) ? t('members.stateOffboarded') : t('members.stateActive') }}
+          </span>
+          <span class="ocf-state-detail">
+            <template v-if="isOffboarded(member)">
+              <template v-if="member.erasure_blocked_reason">{{ member.erasure_blocked_reason }}</template>
+              <template v-else-if="member.scheduled_erasure_at">
+                {{ t('members.erasureOn', { date: formatDate(member.scheduled_erasure_at) }) }}
+              </template>
+            </template>
+          </span>
+        </div>
+
+        <div v-if="isOffboarded(member)" class="member-actions">
+          <button
+            v-if="canManage"
+            class="btn btn-secondary btn-sm"
+            data-test="reinstate-member"
+            :disabled="isBusy(member)"
+            @click="reinstateMember(member)"
+          >
+            <i class="fas fa-user-check"></i>
+            {{ t('members.reinstate') }}
+          </button>
+          <button
+            v-if="props.isOwner && !member.erasure_blocked_reason"
+            class="btn btn-danger btn-sm"
+            data-test="erase-member"
+            :disabled="isBusy(member)"
+            @click="confirmEraseMember(member)"
+          >
+            <i class="fas fa-user-slash"></i>
+            {{ t('members.eraseNow') }}
+          </button>
+        </div>
+
+        <div v-else class="member-actions">
           <div class="member-role">
             <select
               v-if="canManageRole(member)"
@@ -181,6 +223,26 @@
       </p>
     </BaseModal>
 
+    <!-- Erase Now Confirmation Modal -->
+    <BaseModal
+      :visible="showEraseConfirm"
+      :title="t('members.eraseNow')"
+      title-icon="fas fa-user-slash"
+      size="small"
+      showDefaultFooter
+      :confirmText="t('members.confirmEraseBtn')"
+      confirmIcon="fas fa-user-slash"
+      :cancelText="t('members.cancel')"
+      :isLoading="isErasing"
+      :loadingText="t('members.erasing')"
+      data-test="erase-confirm"
+      @close="closeEraseConfirm"
+      @confirm="eraseMember"
+    >
+      <p>{{ t('members.confirmErase', { name: memberToErase?.user?.display_name || memberToErase?.user?.email || '' }) }}</p>
+      <p class="member-to-remove"><strong>{{ t('members.confirmEraseIrreversible') }}</strong></p>
+    </BaseModal>
+
     <!-- Add Member Modal -->
     <BaseModal
       :visible="showAddMemberModal"
@@ -267,6 +329,7 @@ import { useFormatters } from '../../composables/useFormatters'
 import { useClientPagination } from '../../composables/useClientPagination'
 import { useToast } from '../../composables/useToast'
 import { userService, type User } from '../../services/domain/user'
+import { organizationService } from '../../services/domain/organization'
 import type { OrganizationMember } from '../../types'
 
 interface Props {
@@ -323,6 +386,19 @@ const { t } = useTranslations({
       previous: 'Previous',
       next: 'Next',
       noResults: 'No members match your search',
+      stateActive: 'Active',
+      stateOffboarded: 'Offboarded',
+      erasureOn: 'Erasure {date}',
+      reinstate: 'Reinstate',
+      reinstated: 'Member reinstated',
+      reinstateError: 'The member could not be reinstated',
+      eraseNow: 'Erase now',
+      confirmEraseBtn: 'Erase the account',
+      confirmErase: 'This permanently deletes the account of {name} and all their data on the platform, instead of waiting for the scheduled date.',
+      confirmEraseIrreversible: 'This cannot be undone.',
+      erasing: 'Erasing account...',
+      erased: 'Account erased',
+      eraseError: 'The account could not be erased',
     }
   },
   fr: {
@@ -360,6 +436,19 @@ const { t } = useTranslations({
       previous: 'Précédent',
       next: 'Suivant',
       noResults: 'Aucun membre ne correspond à votre recherche',
+      stateActive: 'Actif',
+      stateOffboarded: 'Désinscrit',
+      erasureOn: 'Effacement {date}',
+      reinstate: 'Réintégrer',
+      reinstated: 'Membre réintégré',
+      reinstateError: 'Le membre n\'a pas pu être réintégré',
+      eraseNow: 'Effacer maintenant',
+      confirmEraseBtn: 'Effacer le compte',
+      confirmErase: 'Ceci supprime définitivement le compte de {name} et toutes ses données sur la plateforme, sans attendre la date prévue.',
+      confirmEraseIrreversible: 'Cette action ne peut pas être annulée.',
+      erasing: 'Effacement du compte...',
+      erased: 'Compte effacé',
+      eraseError: 'Le compte n\'a pas pu être effacé',
     }
   }
 })
@@ -397,6 +486,16 @@ const showUserSearchDropdown = ref(false)
 const showRemoveConfirm = ref(false)
 const memberToRemove = ref<OrganizationMember | null>(null)
 const isRemoving = ref(false)
+const showEraseConfirm = ref(false)
+const memberToErase = ref<OrganizationMember | null>(null)
+const isErasing = ref(false)
+const busyMemberIds = ref<Set<string>>(new Set())
+
+// Three backend states (ocf-core#492): active, offboarded (left_at set), and
+// removed — which the list never returns. So one field tells the two apart.
+const isOffboarded = (member: OrganizationMember) => !!member.left_at
+const activeMembers = computed(() => members.value.filter(m => !isOffboarded(m)))
+const isBusy = (member: OrganizationMember) => busyMemberIds.value.has(member.id)
 
 onMounted(() => {
   loadMembers()
@@ -409,7 +508,8 @@ const loadMembers = async () => {
     const response = await axios.get(`/organizations/${props.organizationId}/members`, {
       params: { include: 'User' }
     })
-    members.value = response.data
+    const rows: OrganizationMember[] = response.data
+    members.value = [...rows.filter(m => !isOffboarded(m)), ...rows.filter(isOffboarded)]
   } catch (err: any) {
     error.value = err.response?.data?.error_message || err.message || 'Failed to load members'
   } finally {
@@ -539,6 +639,62 @@ const removeMember = async () => {
     closeRemoveConfirm()
   } finally {
     isRemoving.value = false
+  }
+}
+
+const backendReason = (err: any, fallbackKey: string) =>
+  err.response?.data?.error_message || err.message || t(fallbackKey)
+
+const withMemberBusy = async (member: OrganizationMember, run: () => Promise<void>) => {
+  busyMemberIds.value = new Set(busyMemberIds.value).add(member.id)
+  try {
+    await run()
+  } finally {
+    const next = new Set(busyMemberIds.value)
+    next.delete(member.id)
+    busyMemberIds.value = next
+  }
+}
+
+const reinstateMember = async (member: OrganizationMember) => {
+  await withMemberBusy(member, async () => {
+    try {
+      await organizationService.reinstateMember(props.organizationId, member.user_id)
+      await loadMembers()
+      toast.success(t('members.reinstated'))
+    } catch (err: any) {
+      toast.error(backendReason(err, 'members.reinstateError'))
+    }
+  })
+}
+
+const confirmEraseMember = (member: OrganizationMember) => {
+  memberToErase.value = member
+  showEraseConfirm.value = true
+}
+
+const closeEraseConfirm = () => {
+  if (isErasing.value) return
+  showEraseConfirm.value = false
+  memberToErase.value = null
+}
+
+const eraseMember = async () => {
+  if (!memberToErase.value) return
+
+  isErasing.value = true
+  try {
+    await organizationService.eraseMember(props.organizationId, memberToErase.value.user_id)
+    toast.success(t('members.erased'))
+    await loadMembers()
+  } catch (err: any) {
+    // A 409 names what still holds the account (active elsewhere, owns
+    // organizations or groups): the reason is the whole message.
+    toast.error(backendReason(err, 'members.eraseError'))
+  } finally {
+    isErasing.value = false
+    showEraseConfirm.value = false
+    memberToErase.value = null
   }
 }
 
@@ -724,6 +880,40 @@ const goToRolesHelp = () => {
   display: flex;
   align-items: center;
   gap: 1rem;
+}
+
+.ocf-member-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  min-width: 12rem;
+  margin-right: 1rem;
+}
+
+.ocf-state-badge {
+  padding: 0.25rem 0.625rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.ocf-state-badge--active {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.ocf-state-badge--offboarded {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+}
+
+/* Always present, so the badge sits at the same height on every row. */
+.ocf-state-detail {
+  min-height: 1rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--color-text-tertiary);
 }
 
 .role-select {
