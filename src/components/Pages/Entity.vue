@@ -91,6 +91,16 @@
             </button>
           </div>
 
+          <!-- Archived rows are hidden by the backend unless asked for -->
+          <label v-if="isArchivable" class="ocf-archived-toggle">
+            <input
+              v-model="showArchived"
+              type="checkbox"
+              data-test="entity-show-archived"
+            />
+            {{ t('archiving.showArchived') }}
+          </label>
+
           <!-- Extra toolbar buttons from parent -->
           <slot name="toolbar-extra"></slot>
 
@@ -179,6 +189,19 @@
             <div class="actions">
               <!-- Slot pour les actions spécifiques -->
               <slot name="actions" :entity="entity"></slot>
+              <!-- One button whose label follows the row, so the column never reflows -->
+              <button
+                v-if="isArchivable"
+                class="btn btn-secondary"
+                data-test="entity-archive-toggle"
+                :disabled="archivingId === entity.id"
+                :title="entity.archived_at ? t('archiving.restore') : t('archiving.archive')"
+                @click="toggleArchived(entity)"
+              >
+                <i :class="archivingId === entity.id ? 'fas fa-spinner fa-spin'
+                  : entity.archived_at ? 'fas fa-rotate-left' : 'fas fa-box-archive'"></i>
+                {{ entity.archived_at ? t('archiving.restore') : t('archiving.archive') }}
+              </button>
               <!-- View Details button for clickable entities -->
               <button
                 v-if="isClickableEntity"
@@ -574,6 +597,36 @@ const storeFlag = (name: string) => {
 };
 const canCreate = computed(() => storeFlag('allowCreation'));
 const canDelete = computed(() => storeFlag('allowDeletion'));
+
+// Archiving (see baseStore.archivable). Absent means not archivable.
+const isArchivable = computed(() => unref((props.entityStore as any).archivable) === true);
+const showArchived = computed({
+  get: () => unref((props.entityStore as any).includeArchived) === true,
+  set: (value: boolean) => {
+    (props.entityStore as any).includeArchived = value;
+    resetPagination();
+    loadEntities();
+  }
+});
+const archivingId = ref<string | null>(null);
+
+async function toggleArchived(entity: any) {
+  const restoring = !!entity.archived_at;
+  archivingId.value = entity.id;
+  try {
+    if (restoring) {
+      await props.entityStore.unarchiveEntity(`/${props.entityName}`, entity.id);
+      showSuccess(t('archiving.restoreSuccess'));
+    } else {
+      await props.entityStore.archiveEntity(`/${props.entityName}`, entity.id);
+      showSuccess(t('archiving.archiveSuccess'));
+    }
+  } catch (err: any) {
+    showError(err.response?.data?.error_message || t('archiving.archiveError'));
+  } finally {
+    archivingId.value = null;
+  }
+}
 
 // Check if entity has a detail view configured (generic)
 const isClickableEntity = computed(() => {
@@ -1453,6 +1506,16 @@ ul {
 
 .actions .btn i {
   margin-right: var(--spacing-xs);
+}
+
+.ocf-archived-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
 }
 
 @keyframes fadeIn {

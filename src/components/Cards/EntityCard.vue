@@ -32,13 +32,23 @@
         <h3 class="entity-title">{{ displayName || props.entity.name }}</h3>
         <p class="entity-subtitle" v-if="displaySubtitle">{{ displaySubtitle }}</p>
       </div>
-      <div class="entity-badges" v-if="statusBadges.length > 0">
+      <div class="entity-badges" v-if="statusBadges.length > 0 || isArchivable">
         <span
           v-for="badge in statusBadges"
           :key="badge.key"
           :class="['status-badge', badge.type]"
         >
           <i :class="badge.icon"></i> {{ badge.label }}
+        </span>
+        <!-- Reserved slot: the badge keeps its width while the row is in
+             service, so archiving never moves the header. -->
+        <span
+          v-if="isArchivable"
+          :class="['status-badge', 'muted', 'ocf-archived-badge', { 'ocf-archived-badge--placeholder': !props.entity.archived_at }]"
+          :aria-hidden="props.entity.archived_at ? 'false' : 'true'"
+          data-test="entity-archived-badge"
+        >
+          <i class="fas fa-box-archive"></i> {{ t('archiving.archived') }}
         </span>
       </div>
     </div>
@@ -132,7 +142,7 @@
 import { Store } from 'pinia';
 import { getTranslationKey } from '../../utils';
 import { formatDateTime, formatCurrency, formatStorageSize, formatDuration, formatNumber } from '../../utils/formatters';
-import { computed, reactive } from 'vue';
+import { computed, reactive, unref } from 'vue';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n<{ message: Record<string, string> }>();
 
@@ -154,6 +164,8 @@ const emit = defineEmits<{
 
 // Track loading state for each subentity type
 const loadingSubentities = reactive<Record<string, boolean>>({});
+
+const isArchivable = computed(() => unref((props.entityStore as any)?.archivable) === true);
 
 // Computed properties for card header
 const displayName = computed(() => {
@@ -725,6 +737,10 @@ function isCountField(key: string): boolean {
 
 .status-badge i {
   font-size: var(--font-size-xs);
+}
+
+.ocf-archived-badge--placeholder {
+  visibility: hidden;
 }
 
 /* === CARD BODY === */
