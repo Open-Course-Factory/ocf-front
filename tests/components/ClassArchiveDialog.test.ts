@@ -19,7 +19,8 @@ vi.mock('../../src/services/domain/group', () => ({
 }))
 
 vi.mock('../../src/services/domain/organization', () => ({
-  organizationService: { offboardMembers: (...args: any[]) => offboardMembers(...args) }
+  organizationService: { offboardMembers: (...args: any[]) => offboardMembers(...args) },
+  PLATFORM_DEFAULT_RETENTION_DAYS: 365
 }))
 
 vi.mock('../../src/stores/classGroups', () => ({
@@ -34,10 +35,12 @@ const alice = { user_id: 'u-alice', email: 'alice@x.io', display_name: 'Alice', 
 const bob = { user_id: 'u-bob', email: 'bob@x.io', display_name: 'Bob', role: 'member', other_active_classes_in_org: 2, org_member_state: 'active' }
 const carla = { user_id: 'u-carla', email: 'carla@x.io', display_name: 'Carla', role: 'member', other_active_classes_in_org: 0, org_member_state: 'offboarded' }
 const dan = { user_id: 'u-dan', email: 'dan@x.io', display_name: 'Dan', role: 'member', other_active_classes_in_org: 0, org_member_state: 'active' }
+const eve = { user_id: 'u-eve', email: 'eve@x.io', display_name: 'Eve', role: 'member', other_active_classes_in_org: 0, org_member_state: 'removed' }
+const finn = { user_id: 'u-finn', email: 'finn@x.io', display_name: 'Finn', role: 'member', other_active_classes_in_org: 0, org_member_state: 'none' }
 
-function preview(overrides: Record<string, any> = {}) {
+function preview(members = [bob, alice, carla, dan]) {
   // Deliberately out of order: the dialog has to sort, not the backend.
-  return { retention_days: 365, members: [bob, alice, carla, dan], ...overrides }
+  return { members }
 }
 
 function createTestI18n(locale = 'en') {
@@ -51,9 +54,9 @@ function createTestI18n(locale = 'en') {
   })
 }
 
-async function mountDialog(locale = 'en') {
+async function mountDialog(locale = 'en', retentionDays: number | null = 90) {
   const wrapper = mount(ClassArchiveDialog, {
-    props: { visible: true, group },
+    props: { visible: true, group, retentionDays },
     global: {
       plugins: [createTestI18n(locale)],
       stubs: {
@@ -109,6 +112,19 @@ describe('ClassArchiveDialog', () => {
     expect(carlaRow.find('[data-test="member-left"]').exists()).toBe(false)
   })
 
+  // Offboarding is an organization action: a member without an active
+  // organization membership has nothing to offboard from.
+  it('offers no switch to a removed member nor to one with no organization membership', async () => {
+    getArchivePreview.mockResolvedValue(preview([eve, finn]))
+    const wrapper = await mountDialog()
+    const rows = wrapper.findAll('[data-test="archive-member"]')
+
+    expect(rows[0].find('[data-test="member-reason"]').text()).toBe('Already removed from the organization')
+    expect(rows[1].find('[data-test="member-reason"]').text()).toBe('Not a member of the organization')
+    expect(wrapper.findAll('[data-test="member-left"]')).toHaveLength(0)
+    expect(wrapper.find('[data-test="mark-all-left"]').exists()).toBe(false)
+  })
+
   it('starts every eligible member as continuing', async () => {
     const wrapper = await mountDialog()
     const switches = wrapper.findAll('[data-test="member-left"]')
@@ -132,20 +148,19 @@ describe('ClassArchiveDialog', () => {
   it('states the organization retention delay', async () => {
     const wrapper = await mountDialog()
     expect(wrapper.find('[data-test="retention-sentence"]').text())
-      .toBe('Members marked as left lose access today; their accounts are erased after 365 days, the retention delay of the organization.')
+      .toBe('Members marked as left lose access today; their accounts are erased after 90 days, the retention delay of the organization.')
   })
 
-  it('falls back to the platform default when the preview carries no delay', async () => {
-    getArchivePreview.mockResolvedValue(preview({ retention_days: undefined }))
-    const wrapper = await mountDialog()
+  it('names the platform default when the organization set none', async () => {
+    const wrapper = await mountDialog('en', null)
     expect(wrapper.find('[data-test="retention-sentence"]').text())
-      .toBe('Members marked as left lose access today; their accounts are erased after the platform default retention delay.')
+      .toBe('Members marked as left lose access today; their accounts are erased after 365 days, the platform default retention delay.')
   })
 
   it('says it in French', async () => {
     const wrapper = await mountDialog('fr')
     expect(wrapper.find('[data-test="retention-sentence"]').text())
-      .toBe('Les membres marqués comme partis perdent l’accès aujourd’hui ; leurs comptes sont effacés après 365 jours, le délai de conservation de l’organisation.')
+      .toBe('Les membres marqués comme partis perdent l’accès aujourd’hui ; leurs comptes sont effacés après 90 jours, le délai de conservation de l’organisation.')
   })
 
   it('archives the class, then offboards exactly the members marked as left', async () => {

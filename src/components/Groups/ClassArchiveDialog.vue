@@ -13,13 +13,15 @@ import { computed, ref, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useClassGroupsStore } from '../../stores/classGroups'
 import { classArchiveService } from '../../services/domain/group'
-import { organizationService } from '../../services/domain/organization'
+import { organizationService, PLATFORM_DEFAULT_RETENTION_DAYS } from '../../services/domain/organization'
 import type { ClassArchivePreview, ClassArchivePreviewMember, ClassGroup } from '../../types'
 import BaseModal from '../Modals/BaseModal.vue'
 
 const props = defineProps<{
   visible: boolean
   group: Pick<ClassGroup, 'id' | 'organization_id' | 'display_name'>
+  /** The organization's retention_days; null means the platform default. */
+  retentionDays: number | null
 }>()
 
 const emit = defineEmits<{
@@ -44,11 +46,14 @@ const { t } = useTranslations({
       reasonOtherClasses: 'In {count} other open classes of the organization',
       reasonOtherClass: 'In 1 other open class of the organization',
       reasonOffboarded: 'Already offboarded',
+      reasonRemoved: 'Already removed from the organization',
+      reasonNoMembership: 'Not a member of the organization',
+      reasonUnknown: 'Cannot be offboarded from here',
       leftCountZero: 'No member will be offboarded',
       leftCountOne: '1 member will be offboarded',
       leftCountMany: '{count} members will be offboarded',
       retentionWithDays: 'Members marked as left lose access today; their accounts are erased after {days} days, the retention delay of the organization.',
-      retentionDefault: 'Members marked as left lose access today; their accounts are erased after the platform default retention delay.',
+      retentionDefault: 'Members marked as left lose access today; their accounts are erased after {days} days, the platform default retention delay.',
       confirm: 'Archive the class',
       cancel: 'Cancel',
       archiving: 'Archiving...',
@@ -71,11 +76,14 @@ const { t } = useTranslations({
       reasonOtherClasses: 'Dans {count} autres classes ouvertes de l’organisation',
       reasonOtherClass: 'Dans 1 autre classe ouverte de l’organisation',
       reasonOffboarded: 'Déjà parti',
+      reasonRemoved: 'Déjà retiré de l’organisation',
+      reasonNoMembership: 'Pas membre de l’organisation',
+      reasonUnknown: 'Ne peut pas être désinscrit d’ici',
       leftCountZero: 'Aucun membre ne sera désinscrit',
       leftCountOne: '1 membre sera désinscrit',
       leftCountMany: '{count} membres seront désinscrits',
       retentionWithDays: 'Les membres marqués comme partis perdent l’accès aujourd’hui ; leurs comptes sont effacés après {days} jours, le délai de conservation de l’organisation.',
-      retentionDefault: 'Les membres marqués comme partis perdent l’accès aujourd’hui ; leurs comptes sont effacés après le délai de conservation par défaut de la plateforme.',
+      retentionDefault: 'Les membres marqués comme partis perdent l’accès aujourd’hui ; leurs comptes sont effacés après {days} jours, le délai de conservation par défaut de la plateforme.',
       confirm: 'Archiver la classe',
       cancel: 'Annuler',
       archiving: 'Archivage...',
@@ -98,11 +106,11 @@ const isArchivedHere = ref(false)
 const backendReason = (err: any, fallbackKey: string) =>
   err?.response?.data?.error_message || err?.message || t(fallbackKey)
 
-// Mirrors the backend rule (ocf-core#492): offboarding is only offered to a
-// member the organization would otherwise lose track of — active, and in no
+// Mirrors the backend rule (ocf-core#492): offboarding is an organization
+// action, so it is only offered to an ACTIVE organization member who is in no
 // other open class. The backend re-checks; this only removes wrong choices.
 const isEligible = (member: ClassArchivePreviewMember) =>
-  member.other_active_classes_in_org === 0 && member.org_member_state !== 'offboarded'
+  member.other_active_classes_in_org === 0 && member.org_member_state === 'active'
 
 const members = computed(() => {
   const all = preview.value?.members ?? []
@@ -111,8 +119,16 @@ const members = computed(() => {
 
 const eligibleMembers = computed(() => members.value.filter(isEligible))
 
+const MEMBERSHIP_REASON_KEYS: Record<string, string> = {
+  offboarded: 'classArchive.reasonOffboarded',
+  removed: 'classArchive.reasonRemoved',
+  none: 'classArchive.reasonNoMembership'
+}
+
 const reasonFor = (member: ClassArchivePreviewMember): string => {
-  if (member.org_member_state === 'offboarded') return t('classArchive.reasonOffboarded')
+  if (member.org_member_state !== 'active') {
+    return t(MEMBERSHIP_REASON_KEYS[member.org_member_state] ?? 'classArchive.reasonUnknown')
+  }
   return member.other_active_classes_in_org === 1
     ? t('classArchive.reasonOtherClass')
     : t('classArchive.reasonOtherClasses', { count: member.other_active_classes_in_org })
@@ -126,12 +142,11 @@ const leftCountLabel = computed(() => {
   return t(key, { count })
 })
 
-const retentionSentence = computed(() => {
-  const days = preview.value?.retention_days
-  return days == null
-    ? t('classArchive.retentionDefault')
-    : t('classArchive.retentionWithDays', { days })
-})
+const retentionSentence = computed(() =>
+  props.retentionDays == null
+    ? t('classArchive.retentionDefault', { days: PLATFORM_DEFAULT_RETENTION_DAYS })
+    : t('classArchive.retentionWithDays', { days: props.retentionDays })
+)
 
 const hasLeft = (member: ClassArchivePreviewMember) => leftUserIds.value.has(member.user_id)
 

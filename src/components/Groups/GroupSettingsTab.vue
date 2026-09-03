@@ -319,6 +319,7 @@ const handleDeleteGroup = async () => {
     <ClassArchiveDialog
       :visible="showArchiveDialog"
       :group="group"
+      :retention-days="groupOrganization?.retention_days ?? null"
       @archived="emit('group-updated')"
       @close="showArchiveDialog = false"
     />

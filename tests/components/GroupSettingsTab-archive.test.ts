@@ -72,7 +72,7 @@ function mountTab(group: Record<string, any> = openClass) {
         ClassArchiveDialog: {
           name: 'ClassArchiveDialog',
           template: '<div class="archive-dialog-stub" :data-visible="visible" />',
-          props: ['visible', 'group'],
+          props: ['visible', 'group', 'retentionDays'],
           emits: ['archived', 'close']
         }
       }
@@ -102,6 +102,14 @@ describe('GroupSettingsTab archive verb', () => {
 
     expect(wrapper.find('.archive-dialog-stub').attributes('data-visible')).toBe('true')
     expect(wrapper.findComponent({ name: 'ClassArchiveDialog' }).props('group')).toEqual(openClass)
+  })
+
+  it('hands the dialog the organization retention delay, null when the organization set none', async () => {
+    const withDelay = mountTab()
+    await withDelay.setProps({ groupOrganization: { id: 'org-1', retention_days: 30 } })
+    expect(withDelay.findComponent({ name: 'ClassArchiveDialog' }).props('retentionDays')).toBe(30)
+
+    expect(mountTab().findComponent({ name: 'ClassArchiveDialog' }).props('retentionDays')).toBeNull()
   })
 
   it('asks the page to reload once the dialog archived the class', async () => {
