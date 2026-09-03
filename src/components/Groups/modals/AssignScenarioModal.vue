@@ -29,6 +29,11 @@
             {{ s.title }} ({{ translateDifficulty(s.difficulty) }})
           </option>
         </optgroup>
+        <optgroup v-if="publicScenarios.length > 0" :label="t('groupScenarios.publicScenarios')">
+          <option v-for="s in publicScenarios" :key="s.id" :value="s.id">
+            {{ s.title }} ({{ translateDifficulty(s.difficulty) }})
+          </option>
+        </optgroup>
       </select>
     </div>
     <div class="form-group">
@@ -74,6 +79,7 @@ const { t } = useTranslations({
       searchScenarios: 'Search scenarios...',
       orgLibrary: 'Organization Library',
       groupScenarios: 'Group Scenarios',
+      publicScenarios: 'Public scenarios',
       startDate: 'Start Date',
       deadline: 'Deadline',
       confirm: 'Assign',
@@ -90,6 +96,7 @@ const { t } = useTranslations({
       searchScenarios: 'Rechercher des scénarios...',
       orgLibrary: 'Bibliothèque de l\'organisation',
       groupScenarios: 'Scénarios du groupe',
+      publicScenarios: 'Scénarios publics',
       startDate: 'Date de début',
       deadline: 'Date limite',
       confirm: 'Assigner',
@@ -125,6 +132,9 @@ const filtered = computed(() => {
 
 const orgScenarios = computed(() => filtered.value.filter(s => s.source === 'org'))
 const groupOnlyScenarios = computed(() => filtered.value.filter(s => s.source === 'group'))
+// `source` is assigned once per scenario by GET /groups/{id}/scenarios (org > group > public),
+// so the three sections are disjoint without any de-duplication here.
+const publicScenarios = computed(() => filtered.value.filter(s => s.source === 'public'))
 
 function onConfirm() {
   emit('assign', {

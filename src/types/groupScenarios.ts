@@ -29,7 +29,7 @@ export interface Scenario {
   name: string
   title: string
   difficulty: string
-  source: 'org' | 'group'
+  source: 'org' | 'group' | 'public'
 }
 
 export interface NoKeyUser {

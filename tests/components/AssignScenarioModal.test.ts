@@ -14,6 +14,10 @@
  *   - groupOnlyScenarios = filtered.filter(s => s.source === 'group')
  *   - <optgroup orgLibrary> rendered when orgScenarios.length > 0
  *   - <optgroup groupScenarios> rendered when groupOnlyScenarios.length > 0
+ *   - publicScenarios = filtered.filter(s => s.source === 'public'); a third
+ *     <optgroup publicScenarios> rendered when non-empty. The backend assigns
+ *     `source` once per scenario (org > group > public), so the sections are
+ *     disjoint by contract.
  *   - behavior-frozen: confirm has NO disabled guard (the parent's modal never
  *     had one). A select-gated disable is deferred to Branch 2.
  *   - on open (visible false→true) the form resets.
@@ -45,6 +49,18 @@ const scenarios = [
   { id: 'org-2', name: 'k8s-intro', title: 'Kubernetes Intro', difficulty: 'advanced', source: 'org' },
   { id: 'grp-1', name: 'local-lab', title: 'Local Lab', difficulty: 'intermediate', source: 'group' },
 ]
+
+// Public catalogue items the backend tags `source: "public"` — never org-owned
+// nor already assigned, so they never overlap the two sections above.
+const publicScenarios = [
+  { id: 'pub-1', name: 'docker-swarm', title: 'Docker Swarm', difficulty: 'intermediate', source: 'public' },
+  { id: 'pub-2', name: 'bash-101', title: 'Bash 101', difficulty: 'beginner', source: 'public' },
+]
+
+function optgroupOptionTitles(wrapper: ReturnType<typeof mountModal>, label: string): string[] {
+  const group = wrapper.findAll('select optgroup').find(g => g.attributes('label') === label)
+  return group ? group.findAll('option').map(o => o.text()) : []
+}
 
 function mountModal(props: Record<string, unknown> = {}) {
   return mount(AssignScenarioModal, {
@@ -136,5 +152,53 @@ describe('AssignScenarioModal', () => {
     // Dates cleared.
     const resetDates = wrapper.findAll('input[type="date"]')
     expect((resetDates[0].element as HTMLInputElement).value).toBe('')
+  })
+
+  describe('public scenarios section', () => {
+    it('lists public scenarios in their own optgroup, apart from the existing sections', () => {
+      const wrapper = mountModal({ scenarios: [...scenarios, ...publicScenarios] })
+
+      const labels = wrapper.findAll('select optgroup').map(g => g.attributes('label'))
+      expect(labels).toEqual([
+        'Organization Library',
+        'Group Scenarios',
+        'Public scenarios',
+      ])
+
+      const publicTitles = optgroupOptionTitles(wrapper, 'Public scenarios')
+      expect(publicTitles.some(t => t.includes('Docker Swarm'))).toBe(true)
+      expect(publicTitles.some(t => t.includes('Bash 101'))).toBe(true)
+      expect(publicTitles.some(t => t.includes('Docker Basics'))).toBe(false)
+
+      const orgTitles = optgroupOptionTitles(wrapper, 'Organization Library')
+      expect(orgTitles.some(t => t.includes('Docker Swarm'))).toBe(false)
+    })
+
+    it('keeps the existing sections unchanged when no public scenario is listed', () => {
+      const wrapper = mountModal()
+      const labels = wrapper.findAll('select optgroup').map(g => g.attributes('label'))
+      expect(labels).toEqual(['Organization Library', 'Group Scenarios'])
+    })
+
+    it('filters the public section with the same search box', async () => {
+      const wrapper = mountModal({ scenarios: [...scenarios, ...publicScenarios] })
+      await wrapper.find('input[type="text"]').setValue('docker')
+
+      const publicTitles = optgroupOptionTitles(wrapper, 'Public scenarios')
+      expect(publicTitles.some(t => t.includes('Docker Swarm'))).toBe(true)
+      expect(publicTitles.some(t => t.includes('Bash 101'))).toBe(false)
+
+      const orgTitles = optgroupOptionTitles(wrapper, 'Organization Library')
+      expect(orgTitles.some(t => t.includes('Docker Basics'))).toBe(true)
+      expect(orgTitles.some(t => t.includes('Kubernetes Intro'))).toBe(false)
+    })
+
+    it('emits assign with a public scenario id when one is selected', async () => {
+      const wrapper = mountModal({ scenarios: [...scenarios, ...publicScenarios] })
+      await wrapper.find('select').setValue('pub-2')
+      await wrapper.find('.base-modal-footer .btn-primary').trigger('click')
+
+      expect(wrapper.emitted('assign')![0][0]).toMatchObject({ scenarioId: 'pub-2' })
+    })
   })
 })
