@@ -26,6 +26,11 @@ export interface Organization extends BaseEntity {
   metadata?: Record<string, any>
   allowed_backends?: string[] | null
   default_backend?: string
+  /**
+   * Days between a member's offboarding and their erasure. Null means the
+   * platform default; only the owner may change it (ocf-core#492).
+   */
+  retention_days?: number | null
 
   // Counts (if preloaded)
   group_count?: number
@@ -46,6 +51,12 @@ export interface OrganizationMembership extends BaseEntity {
   invited_by?: string
   joined_at: string
   is_active: boolean
+  /** Set once the member is offboarded; the member is then inactive. */
+  left_at?: string | null
+  /** When the platform erases the offboarded member's account. */
+  scheduled_erasure_at?: string | null
+  /** Why erasure cannot happen yet; empty when the member is erasable. */
+  erasure_blocked_reason?: string
 }
 
 /**
@@ -127,6 +138,8 @@ export interface UpdateOrganizationRequest {
   max_groups?: number
   max_members?: number
   metadata?: Record<string, any>
+  /** Owner-only on the backend; null restores the platform default. */
+  retention_days?: number | null
 }
 
 /**

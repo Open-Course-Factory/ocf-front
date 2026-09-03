@@ -49,6 +49,48 @@
       </button>
     </div>
 
+    <!-- Retention: readable by every manager, editable by the owner. The
+         backend refuses a manager's PATCH; the disabled field mirrors it. -->
+    <div class="ocf-retention-section">
+      <h4>
+        <i class="fas fa-hourglass-half"></i>
+        {{ t('settings.retentionTitle') }}
+      </h4>
+      <p>{{ t('settings.retentionDescription') }}</p>
+      <div class="ocf-retention-row">
+        <label for="retention-days" class="form-label">{{ t('settings.retentionLabel') }}</label>
+        <input
+          id="retention-days"
+          v-model="retentionInput"
+          type="number"
+          min="1"
+          step="1"
+          class="form-input ocf-retention-input"
+          data-test="retention-days"
+          :placeholder="t('settings.retentionPlaceholder', { days: PLATFORM_DEFAULT_RETENTION_DAYS })"
+          :disabled="!isOwner || isSavingRetention"
+        />
+        <button
+          v-if="isOwner"
+          class="btn btn-primary"
+          data-test="retention-save"
+          :disabled="!isRetentionValid || !isRetentionChanged || isSavingRetention"
+          @click="saveRetention"
+        >
+          <i :class="isSavingRetention ? 'fas fa-spinner fa-spin' : 'fas fa-save'"></i>
+          {{ t('settings.retentionSave') }}
+        </button>
+      </div>
+      <p v-if="!isOwner" class="permission-notice" data-test="retention-owner-only">
+        <i class="fas fa-info-circle"></i>
+        {{ t('settings.retentionOwnerOnly') }}
+      </p>
+      <p v-else class="form-help-text">
+        <i class="fas fa-info-circle"></i>
+        {{ t('settings.retentionHelp') }}
+      </p>
+    </div>
+
     <div class="danger-zone">
       <h4>{{ t('settings.dangerZone') }}</h4>
       <p>{{ t('settings.deleteWarning') }}</p>
@@ -144,13 +186,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import BaseModal from '../Modals/BaseModal.vue'
 import AdminBadge from '../Common/AdminBadge.vue'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useTranslations } from '../../composables/useTranslations'
+import { useToast } from '../../composables/useToast'
+
+/**
+ * What the backend applies when the organization sets no delay
+ * (OCF_DEFAULT_RETENTION_DAYS, ocf-core#492). Shown as a placeholder only;
+ * the backend never reads it from here.
+ */
+const PLATFORM_DEFAULT_RETENTION_DAYS = 365
 import type { Organization } from '../../types'
 
 const props = defineProps<{
@@ -163,10 +213,12 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'deleted'): void
   (e: 'converted'): void
+  (e: 'updated'): void
 }>()
 
 const router = useRouter()
 const organizationsStore = useOrganizationsStore()
+const toast = useToast()
 const { isAdmin } = useAdminViewMode()
 const isAdminGranted = computed(() => isAdmin.value && !props.isOwner)
 
@@ -183,6 +235,33 @@ const isDeleting = ref(false)
 const isConvertFormValid = computed(() => {
   return newOrgName.value.trim().length >= 3
 })
+
+// v-model on a number input hands back "" once cleared and a number
+// otherwise; "" is "use the platform default", null on the wire, and must
+// stay distinguishable from 0.
+const retentionInput = ref<string | number>('')
+const isSavingRetention = ref(false)
+
+const storedRetentionAsText = (org: Organization | undefined) =>
+  org?.retention_days == null ? '' : String(org.retention_days)
+
+watch(() => props.organization, (org) => {
+  retentionInput.value = storedRetentionAsText(org)
+}, { immediate: true })
+
+const retentionText = computed(() => String(retentionInput.value).trim())
+
+const retentionValue = computed<number | null>(() =>
+  retentionText.value === '' ? null : Number(retentionText.value)
+)
+
+const isRetentionValid = computed(() =>
+  retentionValue.value === null || (Number.isInteger(retentionValue.value) && retentionValue.value >= 1)
+)
+
+const isRetentionChanged = computed(() =>
+  retentionText.value !== storedRetentionAsText(props.organization)
+)
 
 const { t } = useTranslations({
   en: {
@@ -215,6 +294,15 @@ const { t } = useTranslations({
       deleteOwnerOnly: 'Only organization owners can delete the organization.',
       confirmDeleteBtn: 'Delete permanently',
       deleting: 'Deleting organization...',
+      retentionTitle: 'Data retention',
+      retentionDescription: 'When a member is offboarded, their account is kept for this many days, then erased.',
+      retentionLabel: 'Retention delay (days)',
+      retentionPlaceholder: 'Platform default ({days} days)',
+      retentionSave: 'Save',
+      retentionHelp: 'Leave empty to use the platform default. You are the data controller: set the delay your retention policy states.',
+      retentionOwnerOnly: 'Only organization owners can change the retention delay.',
+      retentionSaved: 'Retention delay saved',
+      retentionError: 'The retention delay could not be saved',
     }
   },
   fr: {
@@ -247,9 +335,33 @@ const { t } = useTranslations({
       deleteOwnerOnly: 'Seuls les propriétaires de l\'organisation peuvent la supprimer.',
       confirmDeleteBtn: 'Supprimer définitivement',
       deleting: 'Suppression de l\'organisation...',
+      retentionTitle: 'Conservation des données',
+      retentionDescription: 'Quand un membre est désinscrit, son compte est conservé pendant ce nombre de jours, puis effacé.',
+      retentionLabel: 'Délai de conservation (jours)',
+      retentionPlaceholder: 'Valeur par défaut de la plateforme ({days} jours)',
+      retentionSave: 'Enregistrer',
+      retentionHelp: 'Laissez vide pour utiliser la valeur par défaut de la plateforme. Vous êtes responsable du traitement : indiquez le délai prévu par votre politique de conservation.',
+      retentionOwnerOnly: 'Seuls les propriétaires de l\'organisation peuvent modifier le délai de conservation.',
+      retentionSaved: 'Délai de conservation enregistré',
+      retentionError: 'Le délai de conservation n\'a pas pu être enregistré',
     }
   }
 })
+
+const saveRetention = async () => {
+  if (!isRetentionValid.value || !isRetentionChanged.value) return
+
+  isSavingRetention.value = true
+  try {
+    await organizationsStore.updateRetentionDays(props.organizationId, retentionValue.value)
+    toast.success(t('settings.retentionSaved'))
+    emit('updated')
+  } catch (err: any) {
+    toast.error(err.response?.data?.error_message || err.message || t('settings.retentionError'))
+  } finally {
+    isSavingRetention.value = false
+  }
+}
 
 const goToRolesHelp = () => {
   router.push({ name: 'Help_account_roles-and-permissions' })
@@ -462,6 +574,50 @@ const deleteOrganization = async () => {
 
 .btn-danger:hover {
   background: var(--color-danger-dark);
+}
+
+.ocf-retention-section {
+  padding: 1.5rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  margin-bottom: 2rem;
+}
+
+.ocf-retention-section h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ocf-retention-section h4 i {
+  color: var(--color-primary);
+}
+
+.ocf-retention-section > p {
+  margin: 0 0 1rem 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.ocf-retention-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.ocf-retention-row .form-label {
+  margin: 0;
+}
+
+.ocf-retention-input {
+  width: 8rem;
 }
 
 .danger-zone {
