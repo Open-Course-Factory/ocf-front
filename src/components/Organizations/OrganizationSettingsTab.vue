@@ -194,13 +194,7 @@ import { useOrganizationsStore } from '../../stores/organizations'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useTranslations } from '../../composables/useTranslations'
 import { useToast } from '../../composables/useToast'
-
-/**
- * What the backend applies when the organization sets no delay
- * (OCF_DEFAULT_RETENTION_DAYS, ocf-core#492). Shown as a placeholder only;
- * the backend never reads it from here.
- */
-const PLATFORM_DEFAULT_RETENTION_DAYS = 365
+import { PLATFORM_DEFAULT_RETENTION_DAYS } from '../../services/domain/organization'
 import type { Organization } from '../../types'
 
 const props = defineProps<{

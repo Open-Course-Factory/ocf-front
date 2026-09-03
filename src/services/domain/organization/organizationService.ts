@@ -15,6 +15,13 @@ import type {
 const BASE_URL = '/organizations'
 
 /**
+ * What the backend applies when an organization sets no retention delay
+ * (OCF_DEFAULT_RETENTION_DAYS, ocf-core#492). Display only — the backend
+ * never reads it from here.
+ */
+export const PLATFORM_DEFAULT_RETENTION_DAYS = 365
+
+/**
  * Organization Service
  * Handles organization management operations
  */

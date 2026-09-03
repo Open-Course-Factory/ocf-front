@@ -85,11 +85,15 @@ export interface ClassArchivePreviewMember {
   role: string
   /** Other classes of the organization, not archived, this member belongs to. */
   other_active_classes_in_org: number
-  org_member_state: 'active' | 'offboarded' | string
+  /**
+   * The organization membership behind this class member: `active`, `removed`
+   * (row inactive), `none` (no row — a class without organization), and
+   * `offboarded` once ocf-core#492 lands. Anything else is treated as
+   * "cannot be offboarded from here".
+   */
+  org_member_state: 'active' | 'removed' | 'none' | 'offboarded' | string
 }
 
 export interface ClassArchivePreview {
-  /** Effective retention delay; absent until the backend reports it. */
-  retention_days?: number
   members: ClassArchivePreviewMember[]
 }
