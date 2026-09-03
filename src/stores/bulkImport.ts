@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { bulkImportService, type ImportResponse } from '../services/domain/bulkImport'
+import { importResponseFromError } from '../services/domain/bulkImportErrors'
 import { useStoreTranslations } from '../composables/useTranslations'
 
 type ImportStep = 'upload' | 'validating' | 'validation-results' | 'importing' | 'success' | 'error'
@@ -120,20 +121,19 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
       )
 
       validationResults.value = result
+      step.value = 'validation-results'
 
       if (result.errors.length > 0) {
-        step.value = 'error'
         error.value = t('bulkImport.validateError')
         return false
-      } else {
-        step.value = 'validation-results'
-        return true
       }
-    } catch (err: any) {
-      error.value = err.response?.data?.error_message ||
-                    err.response?.data?.message ||
-                    t('bulkImport.validateError')
-      step.value = 'error'
+      return true
+    } catch (err: unknown) {
+      // A 400 carries the backend's per-row errors in the same shape as a
+      // successful dry run; they are shown on the validation step, verbatim.
+      validationResults.value = importResponseFromError(err, t('bulkImport.validateError'))
+      error.value = t('bulkImport.validateError')
+      step.value = 'validation-results'
       return false
     } finally {
       isValidating.value = false
@@ -183,37 +183,9 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
         step.value = 'success'
         return true
       }
-    } catch (err: any) {
-
-      error.value = err.response?.data?.error_message ||
-                    err.response?.data?.message ||
-                    t('bulkImport.importError')
-
-      // Create a minimal error result for display
-      importResults.value = {
-        success: false,
-        dry_run: false,
-        summary: {
-          users_created: 0,
-          users_updated: 0,
-          users_skipped: 0,
-          groups_created: 0,
-          groups_updated: 0,
-          groups_skipped: 0,
-          memberships_created: 0,
-          memberships_skipped: 0,
-          total_processed: 0,
-          processing_time: '0s'
-        },
-        errors: [{
-          row: 0,
-          file: 'system',
-          message: error.value,
-          code: 'NETWORK_ERROR'
-        }],
-        warnings: []
-      }
-
+    } catch (err: unknown) {
+      importResults.value = importResponseFromError(err, t('bulkImport.importError'))
+      error.value = t('bulkImport.importError')
       step.value = 'error'
       return false
     } finally {
