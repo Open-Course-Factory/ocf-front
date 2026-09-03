@@ -154,8 +154,12 @@ export interface TeacherGroupSummary {
   display_name: string
   organization_id?: string
   caller_role: 'owner' | 'manager'
+  /** Set once the class is archived — the one flag `isInactiveClass` reads. */
+  archived_at?: string | null
+  /** Derived from archived_at on the backend; transitional, never branch on it. */
   is_active: boolean
   expires_at?: string
+  /** Expiry passed but not archived yet: a hint, the hourly cron archives it. */
   is_expired: boolean
   /**
    * The WHOLE active roster, teaching staff included — the capacity figure, what
@@ -204,15 +208,17 @@ export interface TeacherGroupSummary {
 }
 
 /**
- * A class the teacher has closed, or whose expiry has passed.
+ * A class that has been archived — by its teacher, or by the hourly cron once
+ * its expiry passed (ocf-core#491).
  *
  * The one definition of "not a class you teach today": the console folds these
  * away, and the row mutes and re-labels itself from the same predicate. Two
  * copies of this rule would let the list and the row disagree about the very
- * same class.
+ * same class. It deliberately ignores `is_expired`: an expired class is an
+ * archive PENDING, still open until the backend stamps it.
  */
-export function isInactiveClass(summary: TeacherGroupSummary): boolean {
-  return !summary.is_active || summary.is_expired
+export function isInactiveClass(summary: Pick<TeacherGroupSummary, 'archived_at'>): boolean {
+  return !!summary.archived_at
 }
 
 /** What a class is called on screen, wherever it is shown. */

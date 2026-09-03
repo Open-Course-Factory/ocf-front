@@ -276,9 +276,10 @@ const stripeState = computed<'inactive' | 'deadline' | 'live' | 'calm'>(() => {
 })
 
 // Archived wins over expired: a class its owner closed is closed whatever its
-// expiry says.
+// expiry says. Expired alone is a hint — the class stays open until the
+// backend archives it (within the hour).
 const stateLabel = computed(() => {
-  if (!props.summary.is_active) return t('myClasses.stateArchived')
+  if (isInactive.value) return t('myClasses.stateArchived')
   if (props.summary.is_expired) return t('myClasses.stateExpired')
   return ''
 })

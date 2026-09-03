@@ -113,9 +113,13 @@ describe('classGroups creation payload', () => {
     expect(sent).not.toHaveProperty('parentGroupID')
   })
 
-  it('declares the create form opens active by default', () => {
+  it('archives through the framework action, never through the form', () => {
+    // is_active is derived from archived_at on the backend (ocf-core#491): a
+    // checkbox for it would be a second, silently ignored, way to close a class.
     const store = useClassGroupsStore()
-    expect(store.fieldList.get('is_active')?.defaultValue).toBe(true)
+    expect(store.archivable).toBe(true)
+    expect(store.fieldList.get('is_active')).toBeUndefined()
+    expect(store.fieldList.get('archived_at')?.toBeEdited).toBe(false)
   })
 
   it('stales the classes console after any class mutation', async () => {
@@ -131,6 +135,19 @@ describe('classGroups creation payload', () => {
     ;(axios.delete as any).mockResolvedValue({ data: {} })
     await store.deleteEntity('/class-groups', 'grp-1')
 
+    expect(consoleStore.loadedAt).toBeNull()
+  })
+
+  it('stales the classes console after archiving a class', async () => {
+    const store = useClassGroupsStore()
+    const consoleStore = useTeacherGroupsStore()
+    ;(axios.get as any).mockResolvedValue({ data: [] })
+    await consoleStore.ensureLoaded()
+
+    ;(axios.post as any).mockResolvedValue({ data: { id: 'grp-1', archived_at: '2026-06-30T00:00:00Z' } })
+    await store.archiveEntity('/class-groups', 'grp-1')
+
+    expect(axios.post).toHaveBeenCalledWith('/class-groups/grp-1/archive')
     expect(consoleStore.loadedAt).toBeNull()
   })
 })
