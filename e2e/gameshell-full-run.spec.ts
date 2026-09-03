@@ -235,6 +235,23 @@ async function expectConjuring(page: Page, kind: string): Promise<void> {
   }
 }
 
+/**
+ * Prove the shortcut is a trap, not a route.
+ *
+ * These two missions teach searching inside files, and for a long time the
+ * answer was reachable by searching names instead — the stone was a file called
+ * after itself, so one `find -iname` produced it and the lesson became
+ * optional. Now every file carrying the name is a fake, and this is what says
+ * so: searching by name must find copies and never the stone.
+ */
+async function expectOnlyDecoysNamed(page: Page, stone: string): Promise<void> {
+  const found = await readRaw(page, `find ~ -iname "*${stone}*"`);
+  if (found.includes(w('P_VELVET_PARCEL')) || found.includes(w('P_LEAD_CASKET'))) {
+    throw new Error(`searching for "${stone}" by name found the stone itself — the shortcut is back`);
+  }
+  trail(`  searching by name finds only copies of ${stone}`);
+}
+
 test.use({ video: 'on' });
 
 // How often the polls below look again. Every wait in this file is "until a
@@ -684,13 +701,14 @@ const STEPS: Step[] = [
       sh(p, `find ${w('P_GRAND_MAZE')} -name ${w('W_SILVER_COIN')} -exec mv {} ${CHEST}/ \\;`, 2_000),
   },
   {
-    // Four coins with colliding names — moving them one by one under distinct
-    // names is what stops `mv` refusing to overwrite what it just created.
+    // The coins each carry their own name now, so this is the plain move a
+    // learner makes — no renaming dance to stop `mv` overwriting itself.
+    // The wildcards are the mission: an exact name matches none of them.
     title: 'Find the Gold Coins',
     solve: (p) =>
       sh(
         p,
-        `i=0; for f in $(find ${w('P_CASTLE')} ${w('P_GARDEN')} -iname "*${w('W_GOLD_COIN')}*"); do i=$((i+1)); mv "$f" ${CHEST}/${w('W_GOLD_COIN')}_$i; done`,
+        `for f in $(find ~ -iname "*${w('W_GOLD_COIN')}*"); do mv "$f" ${CHEST}/; done`,
         2_500
       ),
   },
@@ -718,12 +736,28 @@ const STEPS: Step[] = [
   },
 
   {
+    // The stone is not named after itself, and everything that IS carries the
+    // name is glass. So the run does what the mission teaches — reads the note
+    // — and first proves the shortcut answers wrongly, because that is the
+    // whole design and it would rot silently if nobody checked it.
     title: 'Find the Ruby',
-    solve: (p) => sh(p, `mv ${w('P_RUBY')} ${CHEST}/`),
+    solve: async (p) => {
+      await expectOnlyDecoysNamed(p, w('W_RUBY'));
+      await sh(p, `grep -rl "${w('W_RUBY')}" ${w('P_CASTLE')}/`, 1_500);
+      await sh(p, `mv ${w('P_VELVET_PARCEL')} ${CHEST}/`);
+    },
   },
   {
     title: 'Find the Diamond',
-    solve: (p) => sh(p, `mv ${w('P_DIAMOND')} ${CHEST}/`),
+    solve: async (p) => {
+      await expectOnlyDecoysNamed(p, w('W_DIAMOND'));
+      await sh(
+        p,
+        `find ~ -name "${w('W_SCROLL')}*.txt" | xargs grep -l "${w('W_DIAMOND')}"`,
+        1_500
+      );
+      await sh(p, `mv ${w('P_LEAD_CASKET')} ${CHEST}/`);
+    },
   },
 
   // --- The merchant's stall: also judged on the last command ---------------
@@ -766,6 +800,17 @@ const STEPS: Step[] = [
     title: 'The Imp and the Fairy',
     solve: async (p) => {
       await expectConjuring(p, w('W_COAL'));
+      // The tree the mission teaches, rooted where it has to be: a bare
+      // `pstree` walks from init, and the learner's shell hangs off the Incus
+      // exec with no parent inside the container, so it shows them none of
+      // their own processes at all.
+      const tree = await readRaw(p, 'pstree -p $$');
+      if (!tree.includes('mischievous_imp') || !tree.includes('nice_fairy')) {
+        throw new Error(
+          `pstree -p $$ did not show the conjurers — the mission's own command answers nothing. tail: ${tree.slice(-200)}`
+        );
+      }
+      trail('  the tree shows both conjurers and their spells');
       await sh(p, 'kill $(pgrep -P $(pgrep -f "mischievous_[i]mp"))', 2_000);
       // Sweep AFTER the silencing, or more falls while you work — which is the
       // trap the mission's own text warns about.
