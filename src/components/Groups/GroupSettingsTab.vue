@@ -22,10 +22,11 @@
 -->
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useClassGroupsStore } from '../../stores/classGroups'
 import { useTranslations } from '../../composables/useTranslations'
+import { useToast } from '../../composables/useToast'
 import { withAsync } from '../../utils/asyncWrapper'
 import { formatDate, formatDateTime } from '../../utils/formatters'
 import { CLASS_PAGE_NAMES } from '../../router/classPages'
@@ -34,6 +35,7 @@ import type { Organization } from '../../types/organization'
 import type { User } from '../../services/domain/user'
 import BaseModal from '../Modals/BaseModal.vue'
 import EntityModal from '../Modals/EntityModal.vue'
+import ClassArchiveDialog from './ClassArchiveDialog.vue'
 
 // The class's whole configuration lives here since the "Aperçu" tab was retired:
 // what the teacher can change (name, size, expiry) next to what they can only
@@ -54,9 +56,13 @@ const emit = defineEmits<{
 
 const router = useRouter()
 const groupStore = useClassGroupsStore()
+const toast = useToast()
 
 const showEditGroupModal = ref(false)
 const showDeleteConfirm = ref(false)
+const showArchiveDialog = ref(false)
+const isRestoring = ref(false)
+const isArchived = computed(() => !!props.group.archived_at)
 const isLoading = ref(false)
 const error = ref('')
 
@@ -78,8 +84,14 @@ const { t } = useTranslations({
       noParentGroup: 'None (top-level group)',
       createdAt: 'Created',
       updatedAt: 'Updated',
+      status: 'Status',
       statusActive: 'Active',
-      statusInactive: 'Inactive',
+      statusArchived: 'Archived',
+      archivedAt: 'Archived on',
+      archiveGroup: 'Archive class',
+      restoreGroup: 'Restore class',
+      restoring: 'Restoring...',
+      restoreError: 'The class could not be restored',
       noDescription: 'No description provided',
       cannotManageNotAdmin: 'You do not have permission to manage members',
       deleteConfirmTitle: 'Delete Group?',
@@ -104,8 +116,14 @@ const { t } = useTranslations({
       noParentGroup: 'Aucun (groupe de niveau supérieur)',
       createdAt: 'Créé',
       updatedAt: 'Modifié',
-      statusActive: 'Actif',
-      statusInactive: 'Inactif',
+      status: 'Statut',
+      statusActive: 'Active',
+      statusArchived: 'Archivée',
+      archivedAt: 'Archivée le',
+      archiveGroup: 'Archiver la classe',
+      restoreGroup: 'Restaurer la classe',
+      restoring: 'Restauration...',
+      restoreError: 'La classe n’a pas pu être restaurée',
       noDescription: 'Aucune description fournie',
       cannotManageNotAdmin: 'Vous n\'avez pas la permission de gérer les membres',
       deleteConfirmTitle: 'Supprimer le groupe ?',
@@ -128,6 +146,18 @@ const handleEditGroup = async (data: any) => {
     },
     'groupSettings.groupUpdateError'
   )
+}
+
+const handleRestoreGroup = async () => {
+  isRestoring.value = true
+  try {
+    await groupStore.unarchiveEntity('/class-groups', props.group.id)
+    emit('group-updated')
+  } catch (err: any) {
+    toast.error(err.response?.data?.error_message || t('groupSettings.restoreError'))
+  } finally {
+    isRestoring.value = false
+  }
 }
 
 const handleDeleteGroup = async () => {
@@ -156,6 +186,27 @@ const handleDeleteGroup = async () => {
           <button @click="showEditGroupModal = true" class="btn btn-primary">
             <i class="fas fa-edit"></i>
             {{ t('groupSettings.editGroup') }}
+          </button>
+          <!-- One slot, two verbs: the button is always there, only its verb
+               follows the class state, so nothing around it moves. -->
+          <button
+            v-if="isArchived"
+            class="btn btn-secondary"
+            data-test="restore-class"
+            :disabled="isRestoring"
+            @click="handleRestoreGroup"
+          >
+            <i :class="isRestoring ? 'fas fa-spinner fa-spin' : 'fas fa-rotate-left'"></i>
+            {{ isRestoring ? t('groupSettings.restoring') : t('groupSettings.restoreGroup') }}
+          </button>
+          <button
+            v-else
+            class="btn btn-secondary"
+            data-test="archive-class"
+            @click="showArchiveDialog = true"
+          >
+            <i class="fas fa-box-archive"></i>
+            {{ t('groupSettings.archiveGroup') }}
           </button>
           <button
             v-if="canDeleteGroup"
@@ -190,12 +241,16 @@ const handleDeleteGroup = async () => {
           <p>{{ formatDate(group.expires_at) }}</p>
         </div>
         <div class="info-item">
-          <label>{{ t('groupSettings.statusActive') }}</label>
+          <label>{{ t('groupSettings.status') }}</label>
           <p>
-            <span :class="['status-badge', `badge-${group.is_active ? 'success' : 'danger'}`]">
-              {{ group.is_active ? t('groupSettings.statusActive') : t('groupSettings.statusInactive') }}
+            <span :class="['status-badge', `badge-${isArchived ? 'muted' : 'success'}`]" data-test="class-status">
+              {{ isArchived ? t('groupSettings.statusArchived') : t('groupSettings.statusActive') }}
             </span>
           </p>
+        </div>
+        <div v-if="group.archived_at" class="info-item">
+          <label>{{ t('groupSettings.archivedAt') }}</label>
+          <p>{{ formatDateTime(group.archived_at) }}</p>
         </div>
         <div class="info-item">
           <label>{{ t('groupSettings.owner') }}</label>
@@ -259,6 +314,13 @@ const handleDeleteGroup = async () => {
       entity-name="class-groups"
       @modify="handleEditGroup"
       @close="showEditGroupModal = false"
+    />
+
+    <ClassArchiveDialog
+      :visible="showArchiveDialog"
+      :group="group"
+      @archived="emit('group-updated')"
+      @close="showArchiveDialog = false"
     />
 
     <!-- Delete Confirmation Modal -->
@@ -368,9 +430,9 @@ const handleDeleteGroup = async () => {
   color: var(--color-success-text);
 }
 
-.badge-danger {
-  background-color: var(--color-danger-bg);
-  color: var(--color-danger-text);
+.badge-muted {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
 }
 
 .permission-denied {

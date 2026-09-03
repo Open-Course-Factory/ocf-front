@@ -1,5 +1,6 @@
 export { default as GroupMembersManager } from './GroupMembersManager.vue'
 export { default as GroupSettingsTab } from './GroupSettingsTab.vue'
+export { default as ClassArchiveDialog } from './ClassArchiveDialog.vue'
 export { default as GroupSubgroupsSection } from './GroupSubgroupsSection.vue'
 export { default as GroupCommandHistory } from './GroupCommandHistory.vue'
 export { default as GroupScenariosTab } from './GroupScenariosTab.vue'

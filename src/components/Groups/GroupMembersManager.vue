@@ -66,6 +66,7 @@ const { t } = useTranslations({
 
       // Actions
       addMember: 'Add Member',
+      addMemberArchived: 'This class is archived: it takes no new member. Restore it from its settings first.',
       removeMember: 'Remove',
       startScenarioForClass: 'Start a scenario for the class',
       startScenarioForClassHint: 'Open the Scenarios tab, where an assigned scenario can be started for every member at once',
@@ -112,6 +113,7 @@ const { t } = useTranslations({
 
       // Actions
       addMember: 'Ajouter un membre',
+      addMemberArchived: 'Cette classe est archivée : elle n’accepte plus de membre. Restaurez-la depuis ses réglages.',
       removeMember: 'Retirer',
       startScenarioForClass: 'Lancer un scénario pour la classe',
       startScenarioForClassHint: 'Ouvre l\'onglet Scénarios, d\'où un scénario assigné peut être lancé pour tous les membres en une fois',
@@ -370,14 +372,25 @@ async function handleRemoveMember(member: GroupMember) {
           <i class="fas fa-clipboard-list"></i>
           {{ t('groupMembers.startScenarioForClass') }}
         </router-link>
-        <button
+        <!-- An archived class takes no new member (ocf-core#491): the button
+             stays where it is, disabled, and the wrapper carries the tooltip
+             a disabled control cannot. -->
+        <span
           v-if="groupMembersComposable.canManageMembers.value"
-          @click="showAddMemberModal = true"
-          class="btn btn-primary"
+          class="add-member-slot"
+          :title="group.archived_at ? t('groupMembers.addMemberArchived') : undefined"
+          data-test="add-member-slot"
         >
-          <i class="fas fa-plus"></i>
-          {{ t('groupMembers.addMember') }}
-        </button>
+          <button
+            @click="showAddMemberModal = true"
+            class="btn btn-primary"
+            :disabled="!!group.archived_at"
+            data-test="add-member"
+          >
+            <i class="fas fa-plus"></i>
+            {{ t('groupMembers.addMember') }}
+          </button>
+        </span>
         <AdminBadge v-if="isPlatformAdmin && !isOwner" icon-only />
       </div>
     </div>

@@ -96,4 +96,27 @@ export const organizationService = {
   async removeMember(organizationId: string, userId: string): Promise<void> {
     await axios.delete(`${BASE_URL}/${organizationId}/members/${userId}`)
   },
+
+  /**
+   * Offboard members (ocf-core#492): access ends now, the accounts are erased
+   * after the organization's retention delay. Manager or owner. Errors carry
+   * the backend's reason (an owner cannot be offboarded, 409) and propagate.
+   */
+  async offboardMembers(organizationId: string, userIds: string[]): Promise<void> {
+    await axios.post(`${BASE_URL}/${organizationId}/members/offboard`, { user_ids: userIds })
+  },
+
+  /** Reverses an offboarding: the member is active again, erasure cancelled. */
+  async reinstateMember(organizationId: string, userId: string): Promise<void> {
+    await axios.post(`${BASE_URL}/${organizationId}/members/${userId}/reinstate`)
+  },
+
+  /**
+   * Erases an offboarded member's account now instead of at the scheduled
+   * date. Owner only; a 409 names why it cannot happen (still active elsewhere,
+   * owns organizations or groups).
+   */
+  async eraseMember(organizationId: string, userId: string): Promise<void> {
+    await axios.post(`${BASE_URL}/${organizationId}/members/${userId}/erase`)
+  },
 }
