@@ -94,10 +94,10 @@
 
         <div class="group-actions">
           <span
-            v-if="!group.is_active"
+            v-if="group.archived_at"
             class="status-badge inactive"
           >
-            {{ t('groups.inactive') }}
+            {{ t('groups.archived') }}
           </span>
           <span
             v-else-if="isExpired(group.expires_at)"
@@ -205,7 +205,7 @@ const { t } = useTranslations({
       noGroups: 'No groups yet',
       noGroupsDesc: 'Groups can be created via bulk import',
       active: 'Active',
-      inactive: 'Inactive',
+      archived: 'Archived',
       full: 'Full',
       viewGroup: 'View details',
       searchPlaceholder: 'Search groups...',
@@ -230,7 +230,7 @@ const { t } = useTranslations({
       noGroups: 'Aucun groupe',
       noGroupsDesc: 'Les groupes peuvent être créés via l\'importation groupée',
       active: 'Actif',
-      inactive: 'Inactif',
+      archived: 'Archivée',
       full: 'Complet',
       viewGroup: 'Voir les détails',
       searchPlaceholder: 'Rechercher des groupes...',

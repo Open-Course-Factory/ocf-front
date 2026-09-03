@@ -81,6 +81,8 @@ export interface OrganizationGroup extends BaseEntity {
   member_count: number
   expires_at?: string
   external_id?: string
+  /** Set when archived — the one flag to read; is_active is derived from it. */
+  archived_at?: string | null
   is_active: boolean
   metadata?: Record<string, any>
 }
