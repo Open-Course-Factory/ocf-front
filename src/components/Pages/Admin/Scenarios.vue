@@ -18,7 +18,6 @@ const showJSONImportModal = ref(false)
 const { showError: notifyError, showSuccess: notifySuccess } = useNotification()
 const isDuplicating = ref<string | null>(null)
 const isPreviewing = ref<string | null>(null)
-const isArchiving = ref<string | null>(null)
 
 const { t } = useTranslations({
   en: {
@@ -33,13 +32,7 @@ const { t } = useTranslations({
       duplicateSuccess: 'Scenario duplicated',
       duplicateError: 'Failed to duplicate scenario',
       test: 'Test',
-      testError: 'Failed to start preview session',
-      archive: 'Archive',
-      unarchive: 'Restore',
-      archiveSuccess: 'Scenario archived',
-      archiveError: 'Failed to archive scenario',
-      unarchiveSuccess: 'Scenario restored',
-      unarchiveError: 'Failed to restore scenario'
+      testError: 'Failed to start preview session'
     }
   },
   fr: {
@@ -54,13 +47,7 @@ const { t } = useTranslations({
       duplicateSuccess: 'Scénario dupliqué',
       duplicateError: 'Échec de la duplication du scénario',
       test: 'Tester',
-      testError: 'Échec du lancement de la session de test',
-      archive: 'Archiver',
-      unarchive: 'Restaurer',
-      archiveSuccess: 'Scénario archivé',
-      archiveError: 'Échec de l\'archivage du scénario',
-      unarchiveSuccess: 'Scénario restauré',
-      unarchiveError: 'Échec de la restauration du scénario'
+      testError: 'Échec du lancement de la session de test'
     }
   }
 })
@@ -73,27 +60,6 @@ function handleUploaded() {
 function handleJSONImported() {
   showJSONImportModal.value = false
   entityStore.loadEntities('scenarios')
-}
-
-// Archiving retires a scenario without touching the results earned on it.
-async function toggleArchive(entity: any) {
-  isArchiving.value = entity.id
-  const wasArchived = !!entity.archived_at
-  try {
-    if (wasArchived) {
-      await teacherService.unarchiveScenario(entity.id)
-      notifySuccess(t('scenarios.unarchiveSuccess'))
-    } else {
-      await teacherService.archiveScenario(entity.id)
-      notifySuccess(t('scenarios.archiveSuccess'))
-    }
-    entityStore.loadEntities('scenarios')
-  } catch (err: any) {
-    notifyError(err.response?.data?.error_message ||
-      t(wasArchived ? 'scenarios.unarchiveError' : 'scenarios.archiveError'))
-  } finally {
-    isArchiving.value = null
-  }
 }
 
 function downloadJSON(data: any, filename: string) {
@@ -193,15 +159,6 @@ async function duplicateScenario(entity: any) {
       >
         <i :class="isDuplicating === entity.id ? 'fas fa-spinner fa-spin' : 'fas fa-copy'"></i>
         {{ t('scenarios.duplicate') }}
-      </button>
-      <button
-        class="btn btn-secondary"
-        :disabled="isArchiving === entity.id"
-        @click="toggleArchive(entity)"
-      >
-        <i :class="isArchiving === entity.id ? 'fas fa-spinner fa-spin'
-          : entity.archived_at ? 'fas fa-rotate-left' : 'fas fa-box-archive'"></i>
-        {{ entity.archived_at ? t('scenarios.unarchive') : t('scenarios.archive') }}
       </button>
       <button class="btn btn-secondary" @click="exportJSON(entity)">
         <i class="fas fa-file-download"></i>

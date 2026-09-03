@@ -248,7 +248,6 @@ import { useClassGroupsStore } from '../../stores/classGroups'
 import { useUserMembershipsStore } from '../../stores/userMemberships'
 import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
-import { teacherService } from '../../services/domain/scenario'
 import { useScenarioEditorAccess } from '../../composables/useScenarioEditorAccess'
 import { useNotification } from '../../composables/useNotification'
 import { useScenarioGraph, STEP_NODE_TYPES } from '../../composables/useScenarioGraph'
@@ -1598,7 +1597,7 @@ const reloadAfterArchiveChange = async () => {
 const handleArchive = async () => {
   if (!currentScenario.value?.id) return
   try {
-    await teacherService.archiveScenario(currentScenario.value.id)
+    await scenariosStore.archiveEntity('/scenarios', currentScenario.value.id)
     notification.showSuccess(t('scenarioEditor.archiveSuccess'))
     showArchiveModal.value = false
     await reloadAfterArchiveChange()
@@ -1612,7 +1611,7 @@ const handleArchive = async () => {
 const handleUnarchive = async () => {
   if (!currentScenario.value?.id) return
   try {
-    await teacherService.unarchiveScenario(currentScenario.value.id)
+    await scenariosStore.unarchiveEntity('/scenarios', currentScenario.value.id)
     notification.showSuccess(t('scenarioEditor.unarchiveSuccess'))
     await reloadAfterArchiveChange()
   } catch (err: any) {

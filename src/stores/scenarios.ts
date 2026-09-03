@@ -159,6 +159,9 @@ export const useScenariosStore = defineStore('scenarios', () => {
         }
     })
 
+    // Scenarios archive through the framework routes (ocf-core#489).
+    base.archivable.value = true
+
     const projectFilesStore = useProjectFilesStore()
     base.parentEntitiesStores = new Map<string, any>([
         ["setup_script_id", projectFilesStore],
