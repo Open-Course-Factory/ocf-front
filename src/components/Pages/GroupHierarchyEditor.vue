@@ -75,6 +75,16 @@
             <span class="btn-text">{{ t('hierarchyEditor.collapseAll') }}</span>
           </button>
         </div>
+
+        <!-- The groups route returns archived rows too; the view hides them itself -->
+        <label class="ocf-archived-toggle">
+          <input
+            v-model="showArchived"
+            type="checkbox"
+            data-test="hierarchy-show-archived"
+          />
+          {{ t('hierarchyEditor.showArchived') }}
+        </label>
       </div>
     </div>
 
@@ -150,6 +160,15 @@
             <span v-else-if="(entity as Organization).group_count" class="group-count-badge">
               <i class="fas fa-layer-group"></i>
               {{ (entity as Organization).group_count }}
+            </span>
+          </template>
+
+          <!-- Badge Slot: reserved width so toggling archived rows shifts nothing -->
+          <template #badge="{ entity }">
+            <span class="archived-slot">
+              <span v-if="!isOrganization(entity) && isArchived(entity as OrganizationGroup)" class="archived-badge">
+                {{ t('hierarchyEditor.archived') }}
+              </span>
             </span>
           </template>
 
@@ -234,6 +253,8 @@ const { t } = useTranslations({
       noOrganizations: 'No organizations available.',
       noResults: 'No results match "{query}"',
       viewDetails: 'View Details',
+      showArchived: 'Show archived',
+      archived: 'Archived',
       deleteGroup: 'Delete',
       delete: 'Delete',
       cancel: 'Cancel',
@@ -266,6 +287,8 @@ const { t } = useTranslations({
       noOrganizations: 'Aucune organisation disponible.',
       noResults: 'Aucun résultat pour "{query}"',
       viewDetails: 'Voir les Détails',
+      showArchived: 'Afficher les archivées',
+      archived: 'Archivée',
       deleteGroup: 'Supprimer',
       delete: 'Supprimer',
       cancel: 'Annuler',
@@ -295,6 +318,7 @@ const isDeleting = ref(false)
 const deletingGroup = ref<OrganizationGroup | null>(null)
 const organizationGroups = ref<Map<string, OrganizationGroup[]>>(new Map())
 const searchQuery = ref('')
+const showArchived = ref(false)
 
 // Tree expansion
 const treeExpand = useTreeExpand([], 0) // Auto-expand first level
@@ -336,8 +360,7 @@ const organizations = computed(() => {
       }
 
       // Check if any groups in this organization match
-      const groups = organizationGroups.value.get(org.id) || []
-      return groups.some(group =>
+      return visibleGroupsOf(org.id).some(group =>
         group.display_name?.toLowerCase().includes(query) ||
         group.name?.toLowerCase().includes(query)
       )
@@ -349,8 +372,8 @@ const organizations = computed(() => {
 
 const allGroups = computed(() => {
   const groups: OrganizationGroup[] = []
-  organizationGroups.value.forEach(orgGroups => {
-    groups.push(...orgGroups)
+  organizationGroups.value.forEach((_, organizationId) => {
+    groups.push(...visibleGroupsOf(organizationId))
   })
   return groups
 })
@@ -358,6 +381,17 @@ const allGroups = computed(() => {
 // Helper to check if a node is an Organization
 const isOrganization = (node: TreeNode): node is Organization => {
   return 'is_personal' in node
+}
+
+// Same rule as the backend's class archiving (ocf-core#491): archived_at set = archived.
+const isArchived = (group: OrganizationGroup): boolean => !!group.archived_at
+
+// Groups the tree may show. Filtering at the source means an archived parent
+// takes its whole subtree with it: a child of a hidden node is never reached,
+// and is not re-parented under the nearest visible ancestor on purpose.
+const visibleGroupsOf = (organizationId: string): OrganizationGroup[] => {
+  const groups = organizationGroups.value.get(organizationId) || []
+  return showArchived.value ? groups : groups.filter(g => !isArchived(g))
 }
 
 // Check if a group matches the search query
@@ -387,21 +421,19 @@ const getChildren = (node: TreeNode): TreeNode[] => {
 
   if (isOrganization(node)) {
     // For organizations, return root groups (groups with no parent)
-    const groups = organizationGroups.value.get(node.id) || []
-    children = groups.filter(g => !g.parent_group_id)
     organizationId = node.id
+    children = visibleGroupsOf(organizationId).filter(g => !g.parent_group_id)
   } else {
     // For groups, return subgroups
     organizationId = (node as OrganizationGroup).organization_id
-    const groups = organizationGroups.value.get(organizationId) || []
-    children = groups.filter(g => g.parent_group_id === node.id)
+    children = visibleGroupsOf(organizationId).filter(g => g.parent_group_id === node.id)
   }
 
   // Apply search filter if query exists (for both org and group children)
   if (searchQuery.value) {
-    const allGroups = organizationGroups.value.get(organizationId) || []
+    const candidates = visibleGroupsOf(organizationId)
     children = children.filter(child =>
-      groupOrDescendantsMatch(child as OrganizationGroup, searchQuery.value, allGroups)
+      groupOrDescendantsMatch(child as OrganizationGroup, searchQuery.value, candidates)
     )
   }
 
@@ -668,7 +700,18 @@ watch(shouldFilterAsStandardUser, () => {
 
 .toolbar-options {
   display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.ocf-archived-toggle {
+  display: inline-flex;
+  align-items: center;
   gap: var(--spacing-xs);
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
 }
 
 /* Expand/Collapse Button Group */
@@ -800,6 +843,23 @@ watch(shouldFilterAsStandardUser, () => {
   background: var(--color-success-bg);
   color: var(--color-success);
   margin-left: var(--spacing-xs);
+}
+
+/* Reserved slot: the same width whether or not the badge is shown */
+.archived-slot {
+  display: inline-flex;
+  justify-content: center;
+  width: 5rem;
+  flex-shrink: 0;
+}
+
+.archived-badge {
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-tertiary);
 }
 
 .member-count.total:hover {
