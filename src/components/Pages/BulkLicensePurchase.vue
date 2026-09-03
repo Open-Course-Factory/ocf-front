@@ -445,7 +445,7 @@ const selectedGroup = computed(() => {
 })
 
 const groups = computed(() => {
-  return groupsStore.entities.filter((g: any) => g.is_active && !g.is_expired)
+  return groupsStore.entities.filter((g: any) => !g.archived_at && !g.is_expired)
 })
 
 // Methods

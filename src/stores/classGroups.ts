@@ -118,6 +118,7 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
                 max_members: "Maximum members",
                 member_count: "Current members",
                 expires_at: "Expiration date",
+                archived_at: "Archived on",
                 is_active: "Active",
                 is_full: "Full",
                 is_expired: "Expired",
@@ -147,6 +148,7 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
                 expiresAtHelp: "Optional expiration date for the group",
                 statusActive: "Active",
                 statusInactive: "Inactive",
+                statusArchived: "Archived",
                 statusFull: "FULL",
                 statusExpired: "EXPIRED",
                 liveSessions: "Learners connected right now",
@@ -172,6 +174,7 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
                 max_members: "Membres maximum",
                 member_count: "Membres actuels",
                 expires_at: "Date d'expiration",
+                archived_at: "Archivé le",
                 is_active: "Actif",
                 is_full: "Complet",
                 is_expired: "Expiré",
@@ -201,6 +204,7 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
                 expiresAtHelp: "Date d'expiration optionnelle pour le groupe",
                 statusActive: "Actif",
                 statusInactive: "Inactif",
+                statusArchived: "Archivée",
                 statusFull: "COMPLET",
                 statusExpired: "EXPIRÉ",
                 liveSessions: "Apprenants connectés en ce moment",
@@ -252,7 +256,8 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
         // A class is born active: the create form opens with the box checked
         // (an untouched unchecked box would create a class archived at birth).
         // Unchecking stays possible, and edit mode shows the stored value.
-        field('is_active', t('classGroups.is_active')).checkbox().visible().editable().withDefault(true),
+        // Archiving goes through the framework action, never through the form.
+        field('archived_at', t('classGroups.archived_at')).input().visible().readonly().withDateTimeFormat(),
         field('subgroup_names', t('classGroups.subgroupNames'))
             .textarea()
             .visible()
@@ -353,8 +358,7 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
                     organization_id: organizationId,
                     organizationID: organizationId,
                     parent_group_id: createdGroup.id,
-                    parentGroupID: createdGroup.id,
-                    is_active: true
+                    parentGroupID: createdGroup.id
                 })
             } catch (error) {
                 console.error(`Failed to create subgroup "${displayName}":`, error)
@@ -444,6 +448,8 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
     // Configure detail view route — the class's live page since the
     // eight-tab detail page was split into per-page routes.
     base.detailRouteName.value = CLASS_PAGE_NAMES.live
+    // Classes archive through the framework routes (ocf-core#491).
+    base.archivable.value = true
 
     /**
      * Any mutation of a class must stale the classes console: its store caches
@@ -467,6 +473,8 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
         getOne,
         createEntity: staleConsoleAfter(base.createEntity),
         updateEntity: staleConsoleAfter(base.updateEntity),
-        deleteEntity: staleConsoleAfter(base.deleteEntity)
+        deleteEntity: staleConsoleAfter(base.deleteEntity),
+        archiveEntity: staleConsoleAfter(base.archiveEntity),
+        unarchiveEntity: staleConsoleAfter(base.unarchiveEntity)
     }
 })

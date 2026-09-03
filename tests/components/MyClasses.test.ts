@@ -395,7 +395,7 @@ describe('MyClasses console', () => {
     it('marks a closed class inactive whatever else is true of it', async () => {
       const wrapper = await mountConsole([
         classRow({
-          is_active: false,
+          archived_at: '2026-06-30T00:00:00Z',
           live_session_count: 3,
           assignments: [assignment({ deadline: inHours(6) })],
         }),
@@ -698,7 +698,7 @@ describe('MyClasses console', () => {
     it('folds them away from the classes being taught', async () => {
       const wrapper = await mountConsole([
         classRow({ group_id: 'now', display_name: 'This term' }),
-        classRow({ group_id: 'old', display_name: 'Last year', is_active: false }),
+        classRow({ group_id: 'old', display_name: 'Last year', archived_at: '2026-06-30T00:00:00Z' }),
       ])
 
       const fold = wrapper.find('[data-test="archived-fold"]')
@@ -712,38 +712,41 @@ describe('MyClasses console', () => {
     it('says how many are in there without opening it', async () => {
       const wrapper = await mountConsole([
         classRow({ group_id: 'now' }),
-        classRow({ group_id: 'old', is_active: false }),
-        classRow({ group_id: 'gone', is_expired: true }),
+        classRow({ group_id: 'old', archived_at: '2026-06-30T00:00:00Z' }),
+        classRow({ group_id: 'older', archived_at: '2025-06-30T00:00:00Z' }),
       ])
 
       expect(wrapper.find('[data-test="archived-summary"]').text()).toBe('Archived classes (2)')
     })
 
+    // Expiry is an "archive pending" hint: the hourly cron stamps archived_at
+    // and only that moves the class into the fold.
+    it('keeps an expired but unarchived class among the classes being taught', async () => {
+      const wrapper = await mountConsole([
+        classRow({ group_id: 'gone', display_name: 'Ends today', is_expired: true }),
+      ])
+
+      expect(wrapper.find('[data-test="archived-fold"]').exists()).toBe(false)
+      expect(rowNames(taughtList(wrapper))).toEqual(['Ends today'])
+      expect(taughtList(wrapper).find('[data-test="state-badge"]').text()).toBe('Expired')
+    })
+
     it('says it in French too', async () => {
       i18n.global.locale.value = 'fr'
-      const wrapper = await mountConsole([classRow({ is_active: false })])
+      const wrapper = await mountConsole([classRow({ archived_at: '2026-06-30T00:00:00Z' })])
 
       expect(wrapper.find('[data-test="archived-summary"]').text()).toBe('Classes archivées (1)')
     })
 
     it('still lists them rather than hiding them', async () => {
       const wrapper = await mountConsole([
-        classRow({ group_id: 'archived', display_name: 'Last year', is_active: false }),
+        classRow({ group_id: 'archived', display_name: 'Last year', archived_at: '2026-06-30T00:00:00Z' }),
       ])
 
       const fold = wrapper.find('[data-test="archived-fold"]')
       expect(fold.findAll('[data-test="class-row"]')).toHaveLength(1)
       expect(fold.text()).toContain('Last year')
       expect(fold.find('[data-test="state-badge"]').text()).toBe('Archived')
-    })
-
-    it('counts an expired class as closed, the same way the row mutes it', async () => {
-      const wrapper = await mountConsole([classRow({ group_id: 'gone', is_expired: true })])
-
-      const fold = wrapper.find('[data-test="archived-fold"]')
-      expect(fold.exists()).toBe(true)
-      expect(fold.find('[data-test="class-row"]').classes()).toContain('is-muted')
-      expect(fold.find('[data-test="state-badge"]').text()).toBe('Expired')
     })
 
     it('leaves the fold out when every class is still running', async () => {
@@ -753,7 +756,7 @@ describe('MyClasses console', () => {
     })
 
     it('offers analytics instead of a wall, which a finished class no longer has', async () => {
-      const wrapper = await mountConsole([classRow({ group_id: 'old', is_active: false })])
+      const wrapper = await mountConsole([classRow({ group_id: 'old', archived_at: '2026-06-30T00:00:00Z' })])
 
       const row = wrapper.find('[data-test="class-row"]')
       expect(row.find('[data-test="open-wall"]').exists()).toBe(false)
@@ -778,7 +781,7 @@ describe('MyClasses console', () => {
     it('flattens the fold into the list when the teacher asks for all of them', async () => {
       const wrapper = await mountConsole([
         classRow({ group_id: 'now', display_name: 'This term' }),
-        classRow({ group_id: 'old', display_name: 'Last year', is_active: false }),
+        classRow({ group_id: 'old', display_name: 'Last year', archived_at: '2026-06-30T00:00:00Z' }),
       ])
 
       await wrapper.find('[data-test="filter-all"]').trigger('click')
@@ -792,7 +795,7 @@ describe('MyClasses console', () => {
     it('goes back to hiding them in the fold', async () => {
       const wrapper = await mountConsole([
         classRow({ group_id: 'now', display_name: 'This term' }),
-        classRow({ group_id: 'old', display_name: 'Last year', is_active: false }),
+        classRow({ group_id: 'old', display_name: 'Last year', archived_at: '2026-06-30T00:00:00Z' }),
       ])
 
       await wrapper.find('[data-test="filter-all"]').trigger('click')
@@ -839,7 +842,7 @@ describe('MyClasses console', () => {
       // becomes a place classes disappear into.
       const wrapper = await mountConsole([
         classRow({ group_id: 'now', display_name: 'Docker September' }),
-        classRow({ group_id: 'old', display_name: 'Docker June', is_active: false }),
+        classRow({ group_id: 'old', display_name: 'Docker June', archived_at: '2026-06-30T00:00:00Z' }),
       ])
 
       await search(wrapper, 'june')
@@ -921,7 +924,7 @@ describe('MyClasses console', () => {
 
     it('offers neither filters nor an archived fold there', async () => {
       isPersonalContext.value = true
-      const wrapper = await mountConsole([classRow({ is_active: false })])
+      const wrapper = await mountConsole([classRow({ archived_at: '2026-06-30T00:00:00Z' })])
 
       expect(wrapper.find('[data-test="class-filters"]').exists()).toBe(false)
       expect(wrapper.find('[data-test="archived-fold"]').exists()).toBe(false)

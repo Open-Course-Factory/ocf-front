@@ -19,7 +19,15 @@ export interface ClassGroup extends BaseEntity {
   member_count: number
   expires_at?: string
   casdoor_group_name?: string
+  /**
+   * Set when the class is archived (ocf-core#491). The ONE flag the front reads
+   * for "archived"; `is_active` is derived from it on the backend and kept only
+   * until every consumer has switched.
+   */
+  archived_at?: string | null
+  /** Derived from archived_at on the backend — transitional, do not branch on it. */
   is_active: boolean
+  /** Expiry passed: an "archive pending" hint — the hourly cron archives it. */
   is_expired?: boolean
   is_full?: boolean
   metadata?: Record<string, any>
@@ -64,4 +72,24 @@ export interface GroupSummary extends BaseEntity {
   display_name: string
   description?: string
   member_count?: number
+}
+
+/**
+ * One member of a class about to be archived, as GET
+ * /class-groups/:id/archive-preview describes them (ocf-core#491).
+ */
+export interface ClassArchivePreviewMember {
+  user_id: string
+  email: string
+  display_name: string
+  role: string
+  /** Other classes of the organization, not archived, this member belongs to. */
+  other_active_classes_in_org: number
+  org_member_state: 'active' | 'offboarded' | string
+}
+
+export interface ClassArchivePreview {
+  /** Effective retention delay; absent until the backend reports it. */
+  retention_days?: number
+  members: ClassArchivePreviewMember[]
 }

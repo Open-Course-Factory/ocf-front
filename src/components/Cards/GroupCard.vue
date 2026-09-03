@@ -12,9 +12,9 @@
         </p>
       </div>
       <div class="group-badges">
-        <span v-if="!entity.is_active" class="badge badge-inactive">
-          <i class="fas fa-times-circle"></i>
-          {{ t('classGroups.statusInactive') }}
+        <span v-if="entity.archived_at" class="badge badge-inactive">
+          <i class="fas fa-box-archive"></i>
+          {{ t('classGroups.statusArchived') }}
         </span>
         <span v-if="entity.is_expired" class="badge badge-expired">
           <i class="fas fa-exclamation-triangle"></i>
@@ -24,7 +24,7 @@
           <i class="fas fa-users"></i>
           {{ t('classGroups.statusFull') }}
         </span>
-        <span v-if="entity.is_active && !entity.is_expired && !entity.is_full" class="badge badge-active">
+        <span v-if="!entity.archived_at && !entity.is_expired && !entity.is_full" class="badge badge-active">
           <i class="fas fa-check-circle"></i>
           {{ t('classGroups.statusActive') }}
         </span>
