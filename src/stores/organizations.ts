@@ -234,6 +234,16 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     return await base.updateEntity(apiEndpoint, id, data)
   }
 
+  /**
+   * Retention delay before an offboarded member is erased (ocf-core#492).
+   * Sent alone: the backend accepts it from the owner only, so it must never
+   * ride along with a manager's ordinary edit. Null restores the platform
+   * default.
+   */
+  const updateRetentionDays = async (id: string, days: number | null) => {
+    return await base.updateEntity(apiEndpoint, id, { retention_days: days })
+  }
+
   // Delete organization
   const deleteOrganization = async (id: string) => {
     return await base.deleteEntity(apiEndpoint, id)
@@ -401,6 +411,7 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     getOrganizationById,
     isOwner,
     convertToTeamOrganization,
+    updateRetentionDays,
     getOrganizationBackendConfig,
     updateOrganizationBackendConfig,
     setCurrentOrganization,

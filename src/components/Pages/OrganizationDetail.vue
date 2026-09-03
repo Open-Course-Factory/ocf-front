@@ -163,6 +163,7 @@
               :can-delete="canDelete"
               @deleted="onOrganizationDeleted"
               @converted="onOrganizationConverted"
+              @updated="loadOrganization(false)"
             />
           </div>
         </div>
