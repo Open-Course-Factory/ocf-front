@@ -23,6 +23,15 @@ export const useBaseStore = () => {
                 chapter: 'Chapter',
                 section: 'Section',
             },
+            archiving: {
+                archive: 'Archive',
+                restore: 'Restore',
+                archived: 'Archived',
+                showArchived: 'Show archived',
+                archiveSuccess: 'Archived',
+                restoreSuccess: 'Restored',
+                archiveError: 'The archive operation failed',
+            },
             pagination: {
                 showing: 'Showing',
                 of: 'of',
@@ -94,6 +103,15 @@ export const useBaseStore = () => {
                 course: 'Cours',
                 chapter: 'Chapitre',
                 section: 'Section',
+            },
+            archiving: {
+                archive: 'Archiver',
+                restore: 'Restaurer',
+                archived: 'Archivé',
+                showArchived: 'Afficher les archivés',
+                archiveSuccess: 'Archivé',
+                restoreSuccess: 'Restauré',
+                archiveError: 'L\'opération d\'archivage a échoué',
             },
             pagination: {
                 showing: 'Affichage',
@@ -172,6 +190,20 @@ export const useBaseStore = () => {
     // page exactly as it was.
     const allowCreation = ref(true)
     const allowDeletion = ref(true)
+    // Archiving is a framework capability an entity opts into on the backend
+    // (POST /{entities}/{id}/archive|unarchive, archived rows hidden from the
+    // list unless include_archived=true). A store sets archivable when its
+    // entity does; Entity.vue then shows the toggle, row action and badge.
+    const archivable = ref(false)
+    const includeArchived = ref(false)
+
+    // The generic list handler treats every unknown query parameter as a
+    // column filter, so the parameter is only ever sent when it is asked for.
+    const appendArchiveScope = (params: URLSearchParams) => {
+        if (includeArchived.value) {
+            params.append('include_archived', 'true')
+        }
+    }
 
     function getEntities() {
         return entities
@@ -293,7 +325,10 @@ export const useBaseStore = () => {
                 data = demoDataProvider()
             } else {
                 logDemoAction(`Loading real data from ${endpoint}`)
-                const response = config ? await axios.get(endpoint, config) : await axios.get(endpoint)
+                const requestConfig = includeArchived.value
+                    ? { ...config, params: { ...config?.params, include_archived: 'true' } }
+                    : config
+                const response = requestConfig ? await axios.get(endpoint, requestConfig) : await axios.get(endpoint)
                 // Handle both direct array responses and paginated responses
                 data = response.data?.data || response.data || []
             }
@@ -379,6 +414,7 @@ export const useBaseStore = () => {
                         params.append(key, value)
                     }
                 })
+                appendArchiveScope(params)
 
                 const fullUrl = `${endpoint}?${params}`
                 console.log(`[BaseStore LIST] Loading: ${fullUrl}`)
@@ -439,6 +475,7 @@ export const useBaseStore = () => {
                     params.append(key, String(value))
                 }
             })
+            appendArchiveScope(params)
 
             const response = await axios.get(`${endpoint}?${params}`)
             const data = response.data?.data || response.data || []
@@ -555,6 +592,37 @@ export const useBaseStore = () => {
         }, 'errors.deleteEntity')
     }
 
+    // The backend answers with the entity DTO (archived_at set, or absent once
+    // cleared); the row is replaced in place so badges and actions follow
+    // without a reload. Errors propagate: a 403/409 carries the reason to show.
+    const setArchived = async (endpoint: string, entityId: string, archived: boolean) => {
+        const action = archived ? 'archive' : 'unarchive'
+        return withAsync(async () => {
+            let response: any
+
+            if (isDemoMode()) {
+                logDemoAction(`${action} demo entity ${entityId} at ${endpoint}`)
+                await simulateDelay(600)
+                const row = { ...(entities.find((e: any) => e.id === entityId) || { id: entityId }) }
+                delete row.archived_at
+                if (archived) row.archived_at = new Date().toISOString()
+                response = { data: row }
+            } else {
+                response = await axios.post(`${endpoint}/${entityId}/${action}`)
+            }
+
+            const index = entities.findIndex((e: any) => e.id === entityId)
+            if (index !== -1) {
+                entities[index] = response.data
+            }
+
+            return response.data
+        }, 'archiving.archiveError')
+    }
+
+    const archiveEntity = (endpoint: string, entityId: string) => setArchived(endpoint, entityId, true)
+    const unarchiveEntity = (endpoint: string, entityId: string) => setArchived(endpoint, entityId, false)
+
     const getOne = async (endpoint: string, entityId: string, demoDataProvider?: () => any[]) => {
         return withAsync(async () => {
             let data: any
@@ -595,6 +663,8 @@ export const useBaseStore = () => {
         preventLastObjectDeletion,
         allowCreation,
         allowDeletion,
+        archivable,
+        includeArchived,
         includeParams,
         detailRouteName,
 
@@ -622,6 +692,8 @@ export const useBaseStore = () => {
         createEntity,
         updateEntity,
         deleteEntity,
+        archiveEntity,
+        unarchiveEntity,
         getOne
     }
 }
