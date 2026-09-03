@@ -28,6 +28,7 @@ import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
 import { CLASS_PAGE_NAMES } from '../router/classPages'
 import { useTeacherGroupsStore } from './teacherGroups'
+import { usePermissionsStore } from './permissions'
 
 /**
  * Generate URL-friendly slug from display name
@@ -465,15 +466,25 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
             return result
         }
 
+    // Creating a class makes its creator a group owner, and deleting the last
+    // one unmakes them; `view_groups` in the navigation follows that membership
+    // and is only re-read through this refresh.
+    const entitlementsAfter = <A extends any[], R>(mutate: (...args: A) => Promise<R>) =>
+        async (...args: A): Promise<R> => {
+            const result = await mutate(...args)
+            await usePermissionsStore().refreshEntitlements()
+            return result
+        }
+
     return {
         ...base,
         fieldList,
         loadEntities,
         loadEntitiesWithCursor,
         getOne,
-        createEntity: staleConsoleAfter(base.createEntity),
+        createEntity: entitlementsAfter(staleConsoleAfter(base.createEntity)),
         updateEntity: staleConsoleAfter(base.updateEntity),
-        deleteEntity: staleConsoleAfter(base.deleteEntity),
+        deleteEntity: entitlementsAfter(staleConsoleAfter(base.deleteEntity)),
         archiveEntity: staleConsoleAfter(base.archiveEntity),
         unarchiveEntity: staleConsoleAfter(base.unarchiveEntity)
     }

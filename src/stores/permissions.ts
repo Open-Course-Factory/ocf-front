@@ -197,6 +197,35 @@ export const usePermissionsStore = defineStore('permissions', () => {
   }
 
   /**
+   * The one way to re-ask the backend what this user may do now.
+   *
+   * The navigation decides whether the groups tab is live from three snapshots:
+   * `view_groups` in the current-user store (GET /auth/permissions), and
+   * `can_run_classrooms` plus the `group_management` plan feature in
+   * `effectiveFeatures` (GET /users/me/features). Both are taken at boot and
+   * only ever retaken on an organization switch, so an action that changes the
+   * answer without one — creating or converting an organization, buying or
+   * being assigned a plan, being promoted, creating the first class — left the
+   * tab grayed until the user switched organization away and back.
+   *
+   * Every such completion path calls this. It never rejects: a stale menu is a
+   * degraded screen, not a failed action, and the action it follows has already
+   * succeeded. Each request is settled on its own so one failing cannot keep the
+   * other answer stale too.
+   */
+  const refreshEntitlements = async (): Promise<void> => {
+    const outcomes = await Promise.allSettled([
+      loadEffectiveFeatures(),
+      useCurrentUserStore().loadPermissions(),
+    ])
+    for (const outcome of outcomes) {
+      if (outcome.status === 'rejected') {
+        console.warn('Failed to refresh entitlements:', outcome.reason)
+      }
+    }
+  }
+
+  /**
    * Check if a feature is available in any org (for gray-out logic).
    * Returns true if the feature exists in allOrgFeatures but might not be in current context.
    */
@@ -381,6 +410,7 @@ export const usePermissionsStore = defineStore('permissions', () => {
     loadCurrentUser,
     loadEffectiveFeatures,
     ensureEffectiveFeaturesLoaded,
+    refreshEntitlements,
     isFeatureInAnyOrg,
     getOrgWithFeature,
 

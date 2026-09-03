@@ -39,6 +39,12 @@ vi.mock('../../src/stores/subscriptions', () => ({
   }),
 }))
 
+vi.mock('../../src/stores/permissions', () => ({
+  usePermissionsStore: () => ({
+    refreshEntitlements: vi.fn().mockResolvedValue(undefined)
+  })
+}))
+
 vi.mock('../../src/stores/subscriptionPlans', () => ({
   useSubscriptionPlansStore: () => ({ formatPrice: h.formatPrice }),
 }))

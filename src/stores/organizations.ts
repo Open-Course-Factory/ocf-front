@@ -221,10 +221,14 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     //
     // It belongs here rather than in the page: the membership is a consequence
     // of creating the organization, not of the screen that asked for one.
-    await usePermissionsStore().loadCurrentUser().catch(() => {
+    const permissionsStore = usePermissionsStore()
+    await permissionsStore.loadCurrentUser().catch(() => {
       // A stale snapshot is a degraded menu, not a failed creation — the
       // organization exists either way, and the next load will pick it up.
     })
+    // Same reasoning for the entitlements the navigation reads: the new owner
+    // may now see the groups tab, and nothing else is going to re-ask.
+    await permissionsStore.refreshEntitlements()
 
     return created
   }
@@ -278,6 +282,8 @@ export const useOrganizationsStore = defineStore('organizations', () => {
 
         // Refresh organizations list to get updated data
         await loadOrganizations()
+        // A team organization may hold classes where the personal one could not.
+        await usePermissionsStore().refreshEntitlements()
 
         return response.data
       },
@@ -326,9 +332,7 @@ export const useOrganizationsStore = defineStore('organizations', () => {
       subscriptionsStore.getCurrentSubscription().catch((err: any) => {
         console.warn('Failed to refresh subscription on org switch:', err)
       }),
-      permissionsStore.loadEffectiveFeatures().catch((err: any) => {
-        console.warn('Failed to refresh features on org switch:', err)
-      }),
+      permissionsStore.refreshEntitlements(),
       subscriptionsStore.getUsageMetrics().catch((err: any) => {
         console.warn('Failed to refresh usage metrics on org switch:', err)
       }),

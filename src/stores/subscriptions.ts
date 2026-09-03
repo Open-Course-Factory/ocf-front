@@ -432,6 +432,12 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
             // Always refresh usage metrics — even on timeout, the new limits may
             // have been applied server-side and the UI should reflect them.
             await getUsageMetrics()
+            // The new plan may grant what the old one refused (classrooms, the
+            // groups tab); the navigation only re-asks through this call.
+            // Imported lazily: the permissions store reaches the current-user
+            // store and the router, which this store must not load eagerly.
+            const { usePermissionsStore } = await import('./permissions')
+            await usePermissionsStore().refreshEntitlements()
 
             return result
         }, 'subscriptions.upgradeError', {

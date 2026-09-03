@@ -97,6 +97,11 @@ export const useOrganizationSubscriptionsStore = defineStore('organizationSubscr
       }
 
       const response = await axios.post(`/organizations/${organizationId}/subscribe`, data)
+      // Assigning a plan to an organization changes what its members may do in
+      // it; if the caller is one of them the navigation must learn it now.
+      // Imported lazily for the same reason as in the subscriptions store.
+      const { usePermissionsStore } = await import('./permissions')
+      await usePermissionsStore().refreshEntitlements()
       return response.data.data || response.data
     }, 'organizationSubscriptions.subscribeError')
   }

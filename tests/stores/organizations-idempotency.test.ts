@@ -50,7 +50,7 @@ vi.mock('../../src/utils/asyncWrapper', () => ({
 
 // Track calls to dependent stores
 const mockGetCurrentSubscription = vi.fn().mockResolvedValue({})
-const mockLoadEffectiveFeatures = vi.fn().mockResolvedValue({})
+const mockRefreshEntitlements = vi.fn().mockResolvedValue({})
 
 vi.mock('../../src/stores/subscriptions', () => ({
   useSubscriptionsStore: () => ({
@@ -63,7 +63,7 @@ vi.mock('../../src/stores/subscriptions', () => ({
 const mockHasFeature = vi.fn().mockReturnValue(true)
 vi.mock('../../src/stores/permissions', () => ({
   usePermissionsStore: () => ({
-    loadEffectiveFeatures: mockLoadEffectiveFeatures,
+    refreshEntitlements: mockRefreshEntitlements,
     hasFeature: mockHasFeature,
     currentUser: { id: 'user-1', organization_memberships: [] }
   })
@@ -154,17 +154,17 @@ describe('organizations store — idempotency', () => {
       // First call — should trigger refresh
       store.setCurrentOrganization('org-1')
       expect(mockGetCurrentSubscription).toHaveBeenCalledTimes(1)
-      expect(mockLoadEffectiveFeatures).toHaveBeenCalledTimes(1)
+      expect(mockRefreshEntitlements).toHaveBeenCalledTimes(1)
 
       vi.clearAllMocks()
 
       // Second call with SAME org — should NOT trigger refresh
       // BUG: setCurrentOrganization does not check if the org is already selected.
-      // It unconditionally fires getCurrentSubscription() and loadEffectiveFeatures()
+      // It unconditionally fires getCurrentSubscription() and refreshEntitlements()
       // even when the org ID hasn't changed.
       store.setCurrentOrganization('org-1')
       expect(mockGetCurrentSubscription).not.toHaveBeenCalled()
-      expect(mockLoadEffectiveFeatures).not.toHaveBeenCalled()
+      expect(mockRefreshEntitlements).not.toHaveBeenCalled()
     })
 
     it('should trigger subscription refresh when selecting a DIFFERENT org', () => {
@@ -208,7 +208,7 @@ describe('organizations store — idempotency', () => {
       // Different org — SHOULD trigger refresh
       store.setCurrentOrganization('org-2')
       expect(mockGetCurrentSubscription).toHaveBeenCalledTimes(1)
-      expect(mockLoadEffectiveFeatures).toHaveBeenCalledTimes(1)
+      expect(mockRefreshEntitlements).toHaveBeenCalledTimes(1)
     })
   })
 })

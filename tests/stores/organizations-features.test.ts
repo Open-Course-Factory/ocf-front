@@ -51,6 +51,7 @@ vi.mock('../../src/utils/asyncWrapper', () => ({
 // Track calls to dependent stores
 const mockGetCurrentSubscription = vi.fn().mockResolvedValue({})
 const mockLoadEffectiveFeatures = vi.fn().mockResolvedValue({})
+const mockRefreshEntitlements = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('../../src/stores/subscriptions', () => ({
   useSubscriptionsStore: () => ({
@@ -63,6 +64,7 @@ vi.mock('../../src/stores/subscriptions', () => ({
 const mockHasFeature = vi.fn().mockReturnValue(true)
 vi.mock('../../src/stores/permissions', () => ({
   usePermissionsStore: () => ({
+    refreshEntitlements: mockRefreshEntitlements,
     loadEffectiveFeatures: mockLoadEffectiveFeatures,
     hasFeature: mockHasFeature,
     currentUser: { id: 'user-1', organization_memberships: [] }
@@ -197,10 +199,7 @@ describe('organizations store — features', () => {
       consoleSpy.mockRestore()
     })
 
-    it('should handle errors from loadEffectiveFeatures gracefully', async () => {
-      const featureError = new Error('Feature service unavailable')
-      mockLoadEffectiveFeatures.mockRejectedValueOnce(featureError)
-
+    it('refreshes entitlements through the single owner, never the feature loader alone', async () => {
       const store = useOrganizationsStore()
       store.entities.push({
         id: 'org-1',
@@ -217,17 +216,13 @@ describe('organizations store — features', () => {
         updated_at: new Date().toISOString()
       } as any)
 
-      // setCurrentOrganization catches errors gracefully (console.warn, no crash)
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       await store.setCurrentOrganization('org-1')
 
-      expect(mockLoadEffectiveFeatures).toHaveBeenCalled()
-      // Error is logged, not thrown — org switch completes without crashing
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to refresh features'),
-        expect.any(Error)
-      )
-      consoleSpy.mockRestore()
+      // refreshEntitlements reloads /users/me/features AND /auth/permissions and
+      // never rejects (see permissions-refreshEntitlements.test.ts). Calling the
+      // feature loader directly here would leave `view_groups` stale again.
+      expect(mockRefreshEntitlements).toHaveBeenCalledTimes(1)
+      expect(mockLoadEffectiveFeatures).not.toHaveBeenCalled()
     })
   })
 })

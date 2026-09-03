@@ -163,6 +163,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
+import { usePermissionsStore } from '../../stores/permissions'
 import { useTranslations } from '../../composables/useTranslations'
 import { SUPPORT_EMAIL } from '../../config/contact'
 
@@ -268,6 +269,9 @@ async function pollForSubscription() {
       if (subscriptionsStore.currentSubscription) {
         subscriptionDetails.value = subscriptionsStore.currentSubscription
         status.value = 'activated'
+        // The page booted before the webhook landed, so the navigation still
+        // holds the pre-purchase answer; the plan just paid for may unlock it.
+        await usePermissionsStore().refreshEntitlements()
         return
       }
 

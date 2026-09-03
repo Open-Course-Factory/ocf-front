@@ -328,6 +328,8 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useFormatters } from '../../composables/useFormatters'
 import { useClientPagination } from '../../composables/useClientPagination'
 import { useToast } from '../../composables/useToast'
+import { useCurrentUserStore } from '../../stores/currentUser'
+import { usePermissionsStore } from '../../stores/permissions'
 import { userService, type User } from '../../services/domain/user'
 import { organizationService } from '../../services/domain/organization'
 import type { OrganizationMember } from '../../types'
@@ -608,6 +610,11 @@ const updateMemberRole = async (member: OrganizationMember) => {
       role: member.role
     })
     toast.success(t('members.roleUpdated'))
+    // An owner changing their own role changes what they may do here — the
+    // groups tab included — and the navigation does not re-ask on its own.
+    if (member.user_id === useCurrentUserStore().userId) {
+      await usePermissionsStore().refreshEntitlements()
+    }
   } catch (err: any) {
     error.value = err.response?.data?.error_message || err.message || 'Failed to update member role'
     await loadMembers()

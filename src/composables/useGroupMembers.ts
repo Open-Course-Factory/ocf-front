@@ -22,6 +22,7 @@
 import { ref, computed, Ref } from 'vue'
 import axios from 'axios'
 import { useTeacherGroupsStore } from '../stores/teacherGroups'
+import { usePermissionsStore } from '../stores/permissions'
 import { withAsync } from '../utils/asyncWrapper'
 import { useTranslations } from './useTranslations'
 
@@ -241,6 +242,11 @@ export function useGroupMembers({ groupId, currentUserId, isOwner }: UseGroupMem
         await axios.patch(`/group-members/${member.id}`, {
           role: member.role
         })
+        // Same reasoning as the organization members manager: a role the
+        // caller gave themselves changes their own entitlements.
+        if (member.user_id === currentUserId.value) {
+          await usePermissionsStore().refreshEntitlements()
+        }
         return member
       },
       'groupMembers.updateError'

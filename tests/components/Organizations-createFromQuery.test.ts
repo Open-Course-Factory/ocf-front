@@ -85,6 +85,7 @@ vi.mock('../../src/stores/currentUser', () => ({
 const loadCurrentUser = vi.fn()
 vi.mock('../../src/stores/permissions', () => ({
   usePermissionsStore: () => ({
+    refreshEntitlements: vi.fn().mockResolvedValue(undefined),
     canManageOrganization: () => true,
     loadCurrentUser,
     get effectiveFeatures() { return null },

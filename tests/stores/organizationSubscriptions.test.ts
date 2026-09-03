@@ -31,6 +31,12 @@ import { ref } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 
 // Mocks MUST be defined BEFORE imports.
+vi.mock('../../src/stores/permissions', () => ({
+  usePermissionsStore: () => ({
+    refreshEntitlements: vi.fn().mockResolvedValue(undefined)
+  })
+}))
+
 vi.mock('axios', () => ({
   default: {
     get: vi.fn(),

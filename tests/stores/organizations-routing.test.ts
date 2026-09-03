@@ -63,6 +63,7 @@ vi.mock('../../src/stores/subscriptions', () => ({
 const mockHasFeature = vi.fn().mockReturnValue(true)
 vi.mock('../../src/stores/permissions', () => ({
   usePermissionsStore: () => ({
+    refreshEntitlements: vi.fn().mockResolvedValue(undefined),
     loadEffectiveFeatures: mockLoadEffectiveFeatures,
     hasFeature: mockHasFeature,
     currentUser: { id: 'user-1', organization_memberships: [] }
