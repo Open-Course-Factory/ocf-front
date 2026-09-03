@@ -19,12 +19,19 @@ const unarchiveScenarioMock = vi.fn()
 vi.mock('../../src/services/domain/scenario', () => ({
   teacherService: {
     orgListScenarios: (...args: unknown[]) => orgListScenariosMock(...args),
-    archiveScenario: (...args: unknown[]) => archiveScenarioMock(...args),
-    unarchiveScenario: (...args: unknown[]) => unarchiveScenarioMock(...args),
     orgDeleteScenario: vi.fn(),
     orgExportScenarioJSON: vi.fn(),
     orgExportScenarioArchive: vi.fn()
   }
+}))
+
+// Archiving goes through the generic store action (framework routes), not a
+// scenario-specific service call.
+vi.mock('../../src/stores/scenarios', () => ({
+  useScenariosStore: () => ({
+    archiveEntity: (...args: unknown[]) => archiveScenarioMock(...args),
+    unarchiveEntity: (...args: unknown[]) => unarchiveScenarioMock(...args)
+  })
 }))
 
 vi.mock('../../src/composables/useAdminViewMode', () => ({
@@ -104,7 +111,7 @@ describe('OrganizationScenariosTab — archived scenarios', () => {
     expect(wrapper.find('.ocf-archived-toggle').exists()).toBe(true)
   })
 
-  it('archives through the service and reloads the library', async () => {
+  it('archives through the store action and reloads the library', async () => {
     const wrapper = await mountTab()
 
     const archiveButton = wrapper.findAll('.scenario-actions button')
@@ -122,7 +129,7 @@ describe('OrganizationScenariosTab — archived scenarios', () => {
     await openModal!.vm.$emit('confirm')
     await flushPromises()
 
-    expect(archiveScenarioMock).toHaveBeenCalledWith('sc-active')
+    expect(archiveScenarioMock).toHaveBeenCalledWith('/scenarios', 'sc-active')
     expect(orgListScenariosMock).toHaveBeenCalledTimes(2)
   })
 
@@ -136,6 +143,6 @@ describe('OrganizationScenariosTab — archived scenarios', () => {
     await restoreButton!.trigger('click')
     await flushPromises()
 
-    expect(unarchiveScenarioMock).toHaveBeenCalledWith('sc-archived')
+    expect(unarchiveScenarioMock).toHaveBeenCalledWith('/scenarios', 'sc-archived')
   })
 })

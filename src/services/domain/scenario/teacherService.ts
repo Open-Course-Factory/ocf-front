@@ -547,18 +547,6 @@ export const teacherService = {
     await axios.delete(`/organizations/${orgId}/scenarios/${scenarioId}`)
   },
 
-  // --- Archiving (platform route, works for org and personal scenarios alike) ---
-
-  async archiveScenario(scenarioId: string): Promise<any> {
-    const response = await axios.post(`/scenarios/${scenarioId}/archive`)
-    return response.data
-  },
-
-  async unarchiveScenario(scenarioId: string): Promise<any> {
-    const response = await axios.post(`/scenarios/${scenarioId}/unarchive`)
-    return response.data
-  },
-
   // Combined listing for group assign modal
   async listGroupAvailableScenarios(groupId: string): Promise<any[]> {
     const response = await axios.get(`/groups/${groupId}/scenarios`)

@@ -27,6 +27,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { teacherService } from '../../services/domain/scenario'
+import { useScenariosStore } from '../../stores/scenarios'
 import BaseModal from '../Modals/BaseModal.vue'
 import ScenarioUploadModal from '../Modals/ScenarioUploadModal.vue'
 import ScenarioJSONImportModal from '../Modals/ScenarioJSONImportModal.vue'
@@ -133,6 +134,7 @@ const { t, locale } = useTranslations({
 })
 
 const { showError: notifyError, showSuccess: notifySuccess } = useNotification()
+const scenariosStore = useScenariosStore()
 
 // State
 const scenarios = ref<OrgScenario[]>([])
@@ -199,7 +201,7 @@ function handleArchive(scenario: OrgScenario) {
 async function confirmArchive() {
   if (!scenarioToArchive.value) return
   try {
-    await teacherService.archiveScenario(scenarioToArchive.value.id)
+    await scenariosStore.archiveEntity('/scenarios', scenarioToArchive.value.id)
     showArchiveModal.value = false
     scenarioToArchive.value = null
     notifySuccess(t('orgScenarios.archiveSuccess'))
@@ -211,7 +213,7 @@ async function confirmArchive() {
 
 async function handleUnarchive(scenario: OrgScenario) {
   try {
-    await teacherService.unarchiveScenario(scenario.id)
+    await scenariosStore.unarchiveEntity('/scenarios', scenario.id)
     notifySuccess(t('orgScenarios.unarchiveSuccess'))
     await loadScenarios()
   } catch (err: any) {
