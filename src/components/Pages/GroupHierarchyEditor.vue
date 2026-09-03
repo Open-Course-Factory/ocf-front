@@ -181,38 +181,11 @@
             >
               <i class="fas fa-eye"></i>
             </button>
-            <button
-              v-if="!isOrganization(entity)"
-              @click="handleDeleteGroup(entity as OrganizationGroup)"
-              class="tree-action-button delete"
-              :title="t('hierarchyEditor.deleteGroup')"
-            >
-              <i class="fas fa-trash"></i>
-            </button>
           </template>
         </TreeNode>
       </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
-    <BaseModal
-      :visible="showDeleteConfirm"
-      :title="t('hierarchyEditor.deleteConfirmTitle')"
-      title-icon="fas fa-exclamation-triangle"
-      size="small"
-      :show-default-footer="true"
-      :confirm-text="isDeleting ? t('hierarchyEditor.deleting') : t('hierarchyEditor.delete')"
-      confirm-icon="fas fa-trash"
-      :cancel-text="t('hierarchyEditor.cancel')"
-      cancel-icon="fas fa-ban"
-      confirm-variant="danger"
-      :loading="isDeleting"
-      @close="showDeleteConfirm = false"
-      @confirm="confirmDelete"
-    >
-      <p>{{ t('hierarchyEditor.deleteConfirmMessage', { name: deletingGroup?.display_name }) }}</p>
-      <p class="warning-text">{{ t('hierarchyEditor.deleteWarning') }}</p>
-    </BaseModal>
   </div>
 </template>
 
@@ -228,7 +201,6 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useTreeExpand } from '../../composables/useTreeExpand'
 import { useToast } from '../../composables/useToast'
 import TreeNode from '../Common/TreeNode.vue'
-import BaseModal from '../Modals/BaseModal.vue'
 import type { Organization, OrganizationGroup } from '../../types'
 
 const router = useRouter()
@@ -255,19 +227,10 @@ const { t } = useTranslations({
       viewDetails: 'View Details',
       showArchived: 'Show archived',
       archived: 'Archived',
-      deleteGroup: 'Delete',
-      delete: 'Delete',
-      cancel: 'Cancel',
-      deleteConfirmTitle: 'Delete Group?',
-      deleteConfirmMessage: 'Are you sure you want to delete "{name}"?',
-      deleteWarning: 'This action cannot be undone. All subgroups and members will be removed.',
-      deleteSuccess: 'Group deleted successfully',
       moveSuccess: 'Group moved successfully',
-      errorDelete: 'Failed to delete group',
       errorMove: 'Failed to move group',
       cannotMoveOrg: 'Organizations cannot be moved',
       errorLoadGroups: 'Failed to load groups',
-      deleting: 'Deleting...',
       directMembersTooltip: 'Direct members of this group',
       totalMembersTooltip: 'Total members including all subgroups'
     }
@@ -289,19 +252,10 @@ const { t } = useTranslations({
       viewDetails: 'Voir les Détails',
       showArchived: 'Afficher les archivées',
       archived: 'Archivée',
-      deleteGroup: 'Supprimer',
-      delete: 'Supprimer',
-      cancel: 'Annuler',
-      deleteConfirmTitle: 'Supprimer le Groupe ?',
-      deleteConfirmMessage: 'Voulez-vous vraiment supprimer "{name}" ?',
-      deleteWarning: 'Cette action est irréversible. Tous les sous-groupes et membres seront retirés.',
-      deleteSuccess: 'Groupe supprimé avec succès',
       moveSuccess: 'Groupe déplacé avec succès',
-      errorDelete: 'Échec de la suppression du groupe',
       errorMove: 'Échec du déplacement du groupe',
       cannotMoveOrg: 'Les organisations ne peuvent pas être déplacées',
       errorLoadGroups: 'Échec du chargement des groupes',
-      deleting: 'Suppression...',
       directMembersTooltip: 'Membres directs de ce groupe',
       totalMembersTooltip: 'Total des membres incluant tous les sous-groupes'
     }
@@ -313,9 +267,6 @@ type TreeNode = Organization | OrganizationGroup
 
 // State
 const isLoading = ref(false)
-const showDeleteConfirm = ref(false)
-const isDeleting = ref(false)
-const deletingGroup = ref<OrganizationGroup | null>(null)
 const organizationGroups = ref<Map<string, OrganizationGroup[]>>(new Map())
 const searchQuery = ref('')
 const showArchived = ref(false)
@@ -504,29 +455,6 @@ const handleViewDetails = (node: TreeNode) => {
   } else {
     // Navigate to the class pages
     router.push(`/classes/${node.id}/live`)
-  }
-}
-
-const handleDeleteGroup = (group: OrganizationGroup) => {
-  deletingGroup.value = group
-  showDeleteConfirm.value = true
-}
-
-const confirmDelete = async () => {
-  if (!deletingGroup.value) return
-
-  isDeleting.value = true
-  try {
-    const orgId = deletingGroup.value.organization_id
-    await axios.delete(`/organizations/${orgId}/groups/${deletingGroup.value.id}`)
-    await loadOrganizationGroups(orgId)
-    toast.success(t('hierarchyEditor.deleteSuccess'))
-    showDeleteConfirm.value = false
-    deletingGroup.value = null
-  } catch (err) {
-    toast.error(t('hierarchyEditor.errorDelete'))
-  } finally {
-    isDeleting.value = false
   }
 }
 
@@ -867,14 +795,6 @@ watch(shouldFilterAsStandardUser, () => {
   color: var(--color-surface);
 }
 
-.tree-action-button.delete {
-  color: var(--color-danger);
-}
-
-.tree-action-button.delete:hover {
-  background: var(--color-danger-bg);
-}
-
 /* Empty States */
 .tree-loading,
 .tree-empty {
@@ -901,12 +821,6 @@ watch(shouldFilterAsStandardUser, () => {
 .empty-text {
   color: var(--color-text-secondary);
   margin: 0 0 var(--spacing-lg) 0;
-}
-
-.warning-text {
-  color: var(--color-warning);
-  font-weight: var(--font-weight-medium);
-  margin-top: var(--spacing-md);
 }
 
 /* Responsive */

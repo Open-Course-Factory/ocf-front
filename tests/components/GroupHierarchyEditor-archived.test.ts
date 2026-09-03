@@ -3,6 +3,9 @@
  * (ocf-core#491). It loads groups through `GET /organizations/:id/groups`,
  * a custom route that returns archived rows too, so hiding them is the
  * component's job: off by default, revealed by a "Show archived" toggle.
+ *
+ * The view is about structure only, so it carries no delete action; deleting
+ * stays on the class settings page.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises, RouterLinkStub } from '@vue/test-utils'
@@ -99,5 +102,14 @@ describe('GroupHierarchyEditor archived groups', () => {
     const badges = wrapper.findAll('.archived-badge')
     expect(badges).toHaveLength(1)
     expect(badges[0].text()).toBe('Archived')
+  })
+
+  it('renders no delete action', async () => {
+    const wrapper = await mountEditor([OPEN])
+
+    // The group row is rendered, so the absence below is not vacuous.
+    expect(wrapper.text()).toContain('DevOps 2026')
+    expect(wrapper.find('.tree-action-button.delete').exists()).toBe(false)
+    expect(wrapper.find('.fa-trash').exists()).toBe(false)
   })
 })
