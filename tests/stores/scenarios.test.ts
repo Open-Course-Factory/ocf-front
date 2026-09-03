@@ -43,6 +43,7 @@ vi.mock('../../src/stores/projectFiles', () => ({
   }))
 }))
 
+import axios from 'axios'
 import { useScenariosStore } from '../../src/stores/scenarios'
 
 describe('scenarios store', () => {
@@ -206,6 +207,24 @@ describe('scenarios store', () => {
 
       expect(store.entities).toBeDefined()
       expect(Array.isArray(store.entities)).toBe(true)
+    })
+  })
+
+  describe('loadEntitiesIncludingArchived', () => {
+    // The editor's picker is where Restore lives, so archived scenarios must
+    // keep appearing there once the backend hides them by default
+    // (ocf-core#489) — without pre-ticking the admin list's own toggle.
+    it('asks for archived rows for that one load and leaves the toggle as it was', async () => {
+      const store = useScenariosStore()
+      ;(axios.get as any).mockResolvedValue({ data: { data: [], nextCursor: null, hasMore: false } })
+      expect(store.includeArchived).toBe(false)
+
+      await store.loadEntitiesIncludingArchived('/scenarios?include=steps')
+
+      const [url, config] = (axios.get as any).mock.calls[0]
+      expect(url).toBe('/scenarios?include=steps')
+      expect(config.params).toEqual({ include_archived: 'true' })
+      expect(store.includeArchived).toBe(false)
     })
   })
 })

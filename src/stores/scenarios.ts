@@ -243,5 +243,21 @@ export const useScenariosStore = defineStore('scenarios', () => {
         field('updated_at', t('scenarios.updatedAt')).input().visible().readonly()
     ]))
 
-    return { ...base, fieldList }
+    /**
+     * The editor's scenario picker must keep offering archived scenarios —
+     * that is where Restore lives — while the admin list decides for itself
+     * through its own toggle. The flag is scoped to this one load so the
+     * list's toggle state is left exactly as it was.
+     */
+    const loadEntitiesIncludingArchived = async (endpoint: string) => {
+        const previous = base.includeArchived.value
+        base.includeArchived.value = true
+        try {
+            return await base.loadEntities(endpoint)
+        } finally {
+            base.includeArchived.value = previous
+        }
+    }
+
+    return { ...base, fieldList, loadEntitiesIncludingArchived }
 })
