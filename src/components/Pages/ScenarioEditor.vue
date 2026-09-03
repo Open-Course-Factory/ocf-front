@@ -650,7 +650,7 @@ onMounted(async () => {
   // Memberships and groups are required to render the create-scope picker;
   // organizations are required to resolve org names. All three are independent.
   await Promise.all([
-    scenariosStore.loadEntities('/scenarios?include=steps'),
+    scenariosStore.loadEntitiesIncludingArchived('/scenarios?include=steps'),
     organizationsStore.loadOrganizations().catch(() => null),
     classGroupsStore.loadEntities().catch(() => null),
     membershipsStore.ensureLoaded().catch(() => null),
@@ -1211,7 +1211,7 @@ const handleSaveScenario = async () => {
         if (newId) {
           selectedScenarioId.value = newId
           // Reload
-          await scenariosStore.loadEntities('/scenarios?include=steps')
+          await scenariosStore.loadEntitiesIncludingArchived('/scenarios?include=steps')
           await handleScenarioSelect()
           router.replace({ query: { scenarioId: newId } })
         }
@@ -1527,7 +1527,7 @@ const handleSaveStep = async (formData: any) => {
     if (selectedScenarioId.value) {
       await Promise.all([
         handleScenarioSelect(),
-        scenariosStore.loadEntities('/scenarios?include=steps')
+        scenariosStore.loadEntitiesIncludingArchived('/scenarios?include=steps')
       ])
     }
 
@@ -1566,7 +1566,7 @@ const handleCopyToOrg = async () => {
     await axios.post(`/organizations/${copyTargetOrgId.value}/scenarios/${currentScenario.value.id}/duplicate`)
     notification.showSuccess(t('scenarioEditor.copySuccess'))
     // Reload scenarios to show the new duplicate
-    await scenariosStore.loadEntities('/scenarios?include=steps')
+    await scenariosStore.loadEntitiesIncludingArchived('/scenarios?include=steps')
     closeCopyModal()
   } catch (err: any) {
     console.error('Copy to org failed:', err)
@@ -1587,7 +1587,7 @@ const openArchiveModal = () => {
 }
 
 const reloadAfterArchiveChange = async () => {
-  await scenariosStore.loadEntities('/scenarios?include=steps')
+  await scenariosStore.loadEntitiesIncludingArchived('/scenarios?include=steps')
   if (currentScenario.value?.id) {
     const refreshed = scenariosStore.entities.find((s: any) => s.id === currentScenario.value.id)
     if (refreshed) currentScenario.value = refreshed
