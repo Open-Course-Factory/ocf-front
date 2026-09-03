@@ -18,6 +18,7 @@
       <div v-else-if="previewData" class="preview-content">
         <div class="preview-info">
           <p>{{ t('csvPreview.showingRows', { count: previewData.rows.length, total: totalRows }) }}</p>
+          <CsvDelimiterHint :delimiter="previewData.delimiter" />
         </div>
 
         <div class="table-wrapper">
@@ -56,7 +57,9 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import BaseModal from '../Modals/BaseModal.vue'
+import CsvDelimiterHint from './CsvDelimiterHint.vue'
 import { useTranslations } from '../../composables/useTranslations'
+import { parseCsvText, type CsvDelimiter } from '../../utils/csvDelimiter'
 
 const translations = {
   en: {
@@ -94,6 +97,7 @@ defineEmits<{
 }>()
 
 interface PreviewData {
+  delimiter: CsvDelimiter
   headers: string[]
   rows: string[][]
 }
@@ -111,44 +115,17 @@ async function parseCSV(file: File) {
   previewData.value = null
 
   try {
-    const text = await file.text()
-    const lines = text.split('\n').filter(line => line.trim())
+    const parsed = parseCsvText(await file.text())
 
-    if (lines.length === 0) {
+    if (parsed.headers.length === 0) {
       throw new Error('Empty CSV file')
     }
 
-    // Parse CSV (simple implementation - doesn't handle quoted commas)
-    const parseCSVLine = (line: string): string[] => {
-      const result: string[] = []
-      let current = ''
-      let inQuotes = false
-
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i]
-
-        if (char === '"') {
-          inQuotes = !inQuotes
-        } else if (char === ',' && !inQuotes) {
-          result.push(current.trim())
-          current = ''
-        } else {
-          current += char
-        }
-      }
-
-      result.push(current.trim())
-      return result
-    }
-
-    const headers = parseCSVLine(lines[0])
-    const dataLines = lines.slice(1, Math.min(lines.length, MAX_PREVIEW_ROWS + 1))
-    const rows = dataLines.map(line => parseCSVLine(line))
-
-    totalRows.value = lines.length - 1 // Exclude header
+    totalRows.value = parsed.rows.length
     previewData.value = {
-      headers,
-      rows
+      delimiter: parsed.delimiter,
+      headers: parsed.headers,
+      rows: parsed.rows.slice(0, MAX_PREVIEW_ROWS)
     }
   } catch (err) {
     console.error('Failed to parse CSV:', err)

@@ -35,6 +35,7 @@
             <div class="file-stats" v-if="rowCount !== null">
               {{ rowCount }} {{ t('fileUpload.rowsFound') }}
             </div>
+            <CsvDelimiterHint :delimiter="delimiter" />
           </div>
           <button
             type="button"
@@ -67,6 +68,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
+import { parseCsvText, type CsvDelimiter } from '../../utils/csvDelimiter'
+import CsvDelimiterHint from './CsvDelimiterHint.vue'
 
 const translations = {
   en: {
@@ -112,6 +115,7 @@ const fileInput = ref<HTMLInputElement>()
 const isDragging = ref(false)
 const errorMessage = ref<string | null>(null)
 const rowCount = ref<number | null>(null)
+const delimiter = ref<CsvDelimiter | null>(null)
 
 function triggerFileSelect() {
   fileInput.value?.click()
@@ -158,12 +162,10 @@ function validateAndSetFile(file: File) {
   }
 
   emit('update:modelValue', file)
-  parseCSVRowCount(file)
 }
 
 function clearFile() {
   emit('update:modelValue', null)
-  rowCount.value = null
   errorMessage.value = null
 
   if (fileInput.value) {
@@ -171,24 +173,24 @@ function clearFile() {
   }
 }
 
-async function parseCSVRowCount(file: File) {
+async function describeFile(file: File) {
   try {
-    const text = await file.text()
-    const lines = text.split('\n').filter(line => line.trim())
-    // Subtract 1 for header row
-    rowCount.value = Math.max(0, lines.length - 1)
+    const parsed = parseCsvText(await file.text())
+    rowCount.value = parsed.rows.length
+    delimiter.value = parsed.delimiter
   } catch (err) {
     console.error('Failed to parse CSV:', err)
     rowCount.value = null
+    delimiter.value = null
   }
 }
 
-// Re-parse row count if file changes externally
 watch(() => props.modelValue, (newFile) => {
   if (newFile) {
-    parseCSVRowCount(newFile)
+    describeFile(newFile)
   } else {
     rowCount.value = null
+    delimiter.value = null
   }
 }, { immediate: true })
 </script>
