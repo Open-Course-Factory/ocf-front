@@ -310,7 +310,7 @@ function impersonateButtonTitle(userId: string): string {
 
 const confirmTitle = computed(() => {
   const name = targetUser.value?.display_name || targetUser.value?.username || ''
-  return t('adminUsers.modal.title').replace('{name}', name)
+  return t('adminUsers.modal.title', { name })
 })
 
 // Modal actions

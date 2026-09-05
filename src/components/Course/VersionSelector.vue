@@ -164,8 +164,7 @@ function handleVersionChange() {
 async function handleDelete() {
   if (!currentVersion.value) return
 
-  const confirmMessage = t('courses.confirmDeleteVersion')
-    .replace('{version}', currentVersion.value.version)
+  const confirmMessage = t('courses.confirmDeleteVersion', { version: currentVersion.value.version })
 
   if (!confirm(confirmMessage)) return
 

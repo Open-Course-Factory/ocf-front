@@ -450,7 +450,7 @@ export const useCurrentUserStore = defineStore('currentUser', {
                 // Warning: less than 5 minutes
                 else if (timeLeft <= 5 * 60 * 1000 && warningToastId === null && urgentToastId === null) {
                     warningToastId = toast.show(
-                        t('session.expiryWarning').replace('{minutes}', String(minutesLeft)),
+                        t('session.expiryWarning', { minutes: minutesLeft }),
                         'warning',
                         0,
                         {
@@ -464,7 +464,7 @@ export const useCurrentUserStore = defineStore('currentUser', {
                 }
                 // Update warning message with remaining minutes
                 else if (warningToastId !== null && timeLeft > 60 * 1000) {
-                    toast.update(warningToastId, t('session.expiryWarning').replace('{minutes}', String(minutesLeft)))
+                    toast.update(warningToastId, t('session.expiryWarning', { minutes: minutesLeft }))
                 }
             }
 
