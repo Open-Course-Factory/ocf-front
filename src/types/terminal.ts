@@ -114,21 +114,23 @@ export interface SessionOptionSize {
  * Session quota block returned by session-options.
  * Tracks aggregate CPU + memory consumption against plan limits.
  *
- * Unlimited budget is signalled by `max_cpu === 0` / `max_memory_mb === 0` on the
- * relevant axis (the server still emits a `remaining_*` MaxInt32 sentinel so the
- * UI can render "unlimited" capacity without re-interpreting `max_*`).
+ * Every plan carries a positive CPU and memory budget — ocf-core refuses to
+ * create one without. A zero here therefore means the figure is not known,
+ * never that the plan is uncapped.
  */
 export interface SessionQuota {
-  /** 0 = unlimited */
   max_cpu: number
-  /** 0 = unlimited */
   max_memory_mb: number
   used_cpu: number
   used_memory_mb: number
   remaining_cpu: number
   remaining_memory_mb: number
-  /** `unlimited` = unconstrained plan; ignore per-size remaining counts. */
-  scope: 'user' | 'organization' | 'unlimited'
+  /**
+   * `unknown` = no budget could be computed (the quota service was unreachable,
+   * or no plan resolved). The numeric fields are meaningless and the per-size
+   * remaining counts must NOT be read as "exhausted".
+   */
+  scope: 'user' | 'organization' | 'unknown'
 }
 
 /**

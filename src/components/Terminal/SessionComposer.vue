@@ -63,12 +63,12 @@
             <i class="fas fa-server budget-summary-icon"></i>
             {{ remainingResourcesLabel }}
           </p>
-          <!-- Unlimited plans carry no per-size budget — show an uncapped affordance. -->
-          <p v-if="isUnlimited" class="budget-summary">
-            <i class="fas fa-infinity budget-summary-icon"></i>
-            {{ t('sessionComposer.budgetUnlimited') }}
+          <!-- Budget summary line — hidden when budget exhausted (handled by empty string),
+               and when no budget could be computed at all. -->
+          <p v-if="budgetUnknown" class="budget-summary">
+            <i class="fas fa-circle-question budget-summary-icon"></i>
+            {{ t('sessionComposer.budgetUnknown') }}
           </p>
-          <!-- Budget summary line — hidden when budget exhausted (handled by empty string). -->
           <p v-else-if="budgetSummary" class="budget-summary">
             <i class="fas fa-bolt budget-summary-icon"></i>
             {{ t('sessionComposer.youCanSpawn', { summary: budgetSummary }) }}
@@ -95,13 +95,10 @@
             >
               {{ size.key.toUpperCase() }}
               <i v-if="size.key === selectedDistribution?.default_size_key" class="fas fa-star pill-recommended" :title="t('sessionComposer.recommended')"></i>
+              <!-- No badge when the budget is unknown: "×0" would read as
+                   exhausted, which is precisely what it does not mean. -->
               <span
-                v-if="isUnlimited"
-                class="pill-badge"
-                :title="t('sessionComposer.remainingUnlimited')"
-              >×∞</span>
-              <span
-                v-else
+                v-if="!budgetUnknown"
                 class="pill-badge"
                 :class="{ 'pill-badge-zero': size.remaining_count === 0 }"
                 :title="t('sessionComposer.remainingBadge', { n: size.remaining_count })"
@@ -210,12 +207,9 @@ const { t } = useTranslations({
       unlockMore: 'Unlock more power',
       youCanSpawn: 'You can spawn {summary}',
       remainingResources: 'You have {cpu} and {mem} of RAM remaining',
-      unlimitedCpu: 'unlimited CPU',
-      unlimitedMem: 'unlimited RAM',
       or: 'OR',
       remainingBadge: '{n} remaining',
-      remainingUnlimited: 'Unlimited',
-      budgetUnlimited: 'Unlimited capacity — spawn any size.',
+      budgetUnknown: 'Remaining capacity unavailable right now — you can still start a session.',
       reasonPlanRestriction: 'Restricted by your plan',
       reasonBudgetExhausted: 'No capacity left for this size right now — pick a smaller size or stop a session',
       budgetAllExhausted: 'No capacity left — stop a session to free up resources.',
@@ -250,12 +244,9 @@ const { t } = useTranslations({
       unlockMore: 'D\u00e9bloquer plus de puissance',
       youCanSpawn: 'Vous pouvez lancer {summary}',
       remainingResources: 'Il vous reste {cpu} et {mem} de RAM',
-      unlimitedCpu: 'CPU illimité',
-      unlimitedMem: 'RAM illimitée',
       or: 'OU',
       remainingBadge: '{n} restant(s)',
-      remainingUnlimited: 'Illimité',
-      budgetUnlimited: 'Capacité illimitée — lancez n\'importe quelle taille.',
+      budgetUnknown: 'Capacit\u00e9 restante indisponible pour le moment \u2014 vous pouvez tout de m\u00eame lancer une session.',
       reasonPlanRestriction: 'Restreint par votre forfait',
       reasonBudgetExhausted: 'Plus de capacit\u00e9 pour cette taille \u2014 choisissez une taille plus petite ou arr\u00eatez une session',
       budgetAllExhausted: 'Plus de capacit\u00e9 disponible \u2014 arr\u00eatez une session pour lib\u00e9rer des ressources.',
@@ -319,16 +310,20 @@ const networkAllowed = computed<boolean>(
   () => (sessionOptions.value?.allowed_features ?? []).some(f => f.key === 'network' && f.allowed)
 )
 
-// Unlimited plans: the backend signals this with `quota.scope === 'unlimited'`
-// and marks every size `allowed: true` with `remaining_count: 0`. That 0 means
-// "uncapped, ignore the count" — NOT "exhausted". Consume the backend flag
-// directly (SSOT) instead of inferring from max_cpu.
-const isUnlimited = computed(() => sessionOptions.value?.quota?.scope === 'unlimited')
+// The backend sends `quota.scope === 'unknown'` when it could not compute a
+// budget at all — the quota service was unreachable, or no plan resolved. The
+// per-size counts are then meaningless zeros, NOT "exhausted". Consume the
+// backend flag directly (SSOT) rather than inferring from max_cpu.
+//
+// Being optimistic here is deliberate and safe: the start request is enforced
+// server-side regardless, so a transient read failure must not freeze the
+// launcher for everyone.
+const budgetUnknown = computed(() => sessionOptions.value?.quota?.scope === 'unknown')
 
-// A size is exhausted only in budget mode (scope user/organization). Under an
-// unlimited plan, remaining_count === 0 is meaningless and must not lock pills.
+// A size is exhausted only when the budget is actually known. An uncomputed 0
+// must not lock the pill.
 function isExhausted(size: SessionOptionSize): boolean {
-  return !isUnlimited.value && size.remaining_count === 0
+  return !budgetUnknown.value && size.remaining_count === 0
 }
 
 // A size can actually be launched only when the plan allows it AND it isn't
@@ -373,15 +368,10 @@ const budgetSummary = computed(() => {
 const remainingResourcesLabel = computed(() => {
   const quota = sessionOptions.value?.quota
   if (!quota) return ''
-  // Unlimited plans surface the uncapped affordance via the budget-summary line
-  // instead — avoid a redundant "unlimited CPU and unlimited RAM" duplicate.
-  if (isUnlimited.value) return ''
-  const cpuPart = quota.max_cpu === 0
-    ? t('sessionComposer.unlimitedCpu')
-    : `${formatMcpuAsVcpu(quota.remaining_cpu)} vCPU`
-  const memPart = quota.max_memory_mb === 0
-    ? t('sessionComposer.unlimitedMem')
-    : formatMemoryMb(quota.remaining_memory_mb)
+  // Nothing to state when the budget could not be computed.
+  if (budgetUnknown.value) return ''
+  const cpuPart = `${formatMcpuAsVcpu(quota.remaining_cpu)} vCPU`
+  const memPart = formatMemoryMb(quota.remaining_memory_mb)
   return t('sessionComposer.remainingResources', { cpu: cpuPart, mem: memPart })
 })
 
@@ -470,7 +460,7 @@ async function selectDistribution(dist: Distribution) {
   try {
     sessionOptions.value = await terminalService.getSessionOptions(dist.name, props.backendId, props.organizationId)
     // Auto-select only a *launchable* size (plan-allowed AND not exhausted).
-    // Under an unlimited plan remaining_count is always 0 but the size is still
+    // When the budget is unknown remaining_count is 0 but the size is still
     // launchable, so `isLaunchable` (which honors quota.scope) is the gate.
     if (dist.default_size_key && sessionOptions.value) {
       const defaultSize = sessionOptions.value.allowed_sizes.find(

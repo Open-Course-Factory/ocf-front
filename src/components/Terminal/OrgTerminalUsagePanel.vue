@@ -105,7 +105,7 @@
                   <span class="bar-label">CPU</span>
                   <div class="bar-track">
                     <div
-                      v-if="!cpuUnlimited"
+                      v-if="!cpuUnknown"
                       class="bar-fill"
                       :class="memberCpuColorClass(user)"
                       data-testid="user-cpu-bar-fill"
@@ -113,7 +113,7 @@
                     ></div>
                   </div>
                   <span class="bar-meta" data-testid="user-active-cpu">
-                    <template v-if="cpuUnlimited">{{ formatMcpuAsVcpu(user.active_cpu) }} vCPU</template>
+                    <template v-if="cpuUnknown">{{ formatMcpuAsVcpu(user.active_cpu) }} vCPU</template>
                     <template v-else>{{ formatMcpuAsVcpu(user.active_cpu) }} / {{ maxCpuLabel }} vCPU</template>
                   </span>
                 </div>
@@ -123,7 +123,7 @@
                   <span class="bar-label">RAM</span>
                   <div class="bar-track">
                     <div
-                      v-if="!memUnlimited"
+                      v-if="!memUnknown"
                       class="bar-fill"
                       :class="memberMemColorClass(user)"
                       data-testid="user-mem-bar-fill"
@@ -131,7 +131,7 @@
                     ></div>
                   </div>
                   <span class="bar-meta" data-testid="user-active-memory">
-                    <template v-if="memUnlimited">{{ formatMemoryMb(user.active_memory_mb) }}</template>
+                    <template v-if="memUnknown">{{ formatMemoryMb(user.active_memory_mb) }}</template>
                     <template v-else>{{ formatMemoryMb(user.active_memory_mb) }} / {{ maxMemoryLabel }}</template>
                   </span>
                 </div>
@@ -228,14 +228,17 @@ const canManage = computed(() => {
 // an informational total in the header badge.
 const totalOccupyingSlots = computed<number>(() => usageData.value?.occupying_slots ?? 0)
 
-// Per-member plan caps (0 = unlimited on that axis, server convention).
+// Per-member plan caps. Every plan carries a positive budget, so a zero here
+// means the figure is missing rather than uncapped — the bars have nothing to
+// draw against and the panel falls back to the same uncapped rendering it used
+// for unlimited plans.
 const maxCpu = computed(() => usageData.value?.quota?.max_cpu ?? 0)
 const maxMemoryMb = computed(() => usageData.value?.quota?.max_memory_mb ?? 0)
 
-const cpuUnlimited = computed(() => maxCpu.value <= 0)
-const memUnlimited = computed(() => maxMemoryMb.value <= 0)
+const cpuUnknown = computed(() => maxCpu.value <= 0)
+const memUnknown = computed(() => maxMemoryMb.value <= 0)
 const isUnlimited = computed(() => {
-  return usageData.value?.quota?.scope === 'unlimited' || (cpuUnlimited.value && memUnlimited.value)
+  return usageData.value?.quota?.scope === 'unknown' || (cpuUnknown.value && memUnknown.value)
 })
 
 const maxCpuLabel = computed(() => formatMcpuAsVcpu(maxCpu.value))

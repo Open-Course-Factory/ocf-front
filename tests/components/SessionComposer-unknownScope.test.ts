@@ -1,18 +1,24 @@
 /**
- * Tests for unlimited-scope rendering of SessionComposer.
+ * Tests for unknown-scope rendering of SessionComposer.
  *
- * On an unlimited plan, ocf-core's GET /terminals/session-options returns every
- * size with `allowed: true` and `remaining_count: 0`, plus a top-level
- * `quota.scope: "unlimited"` meaning "ignore the per-size counts — the user is
- * unconstrained". The composer must therefore keep those size pills SELECTABLE
- * (not disabled, not marked exhausted) when scope is unlimited.
+ * When ocf-core cannot compute a budget — the quota service is unreachable, or
+ * no plan resolved — GET /terminals/session-options returns every size with
+ * `remaining_count: 0` and a top-level `quota.scope: "unknown"` meaning "these
+ * counts are not real". The composer must keep those size pills SELECTABLE
+ * (not disabled, not marked exhausted).
+ *
+ * Being optimistic is deliberate: the start request is enforced server-side by
+ * EnforceBudgetTx regardless, so a transient read failure must not freeze the
+ * launcher for everyone.
  *
  * Regression guard for the contract mismatch where the composer treated
  * `remaining_count === 0` as "exhausted" without consulting `quota.scope`,
- * greying out every size on an unlimited plan and blocking launch.
+ * greying out every size and blocking launch. That guard is unchanged; the
+ * scope value it keys off was renamed from "unlimited" when plans lost the
+ * ability to be uncapped at all.
  *
  * Covers:
- *   - unlimited scope + remaining_count 0  => pill SELECTABLE (not disabled).
+ *   - unknown scope + remaining_count 0  => pill SELECTABLE (not disabled).
  *   - budget scope (user) + remaining_count 0 => pill DISABLED (preserved).
  *   - `allowed: false` => pill LOCKED regardless of scope.
  */
@@ -84,7 +90,7 @@ function pillForKey(wrapper: ReturnType<typeof mountComposer>, key: string) {
   return wrapper.findAll('.size-pill').find(p => p.text().trim().startsWith(key.toUpperCase()))!
 }
 
-describe('SessionComposer — unlimited scope', () => {
+describe('SessionComposer — unknown scope', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
@@ -96,7 +102,7 @@ describe('SessionComposer — unlimited scope', () => {
     }))
   })
 
-  it('keeps allowed size pills selectable when scope is unlimited even with remaining_count 0', async () => {
+  it('keeps allowed size pills selectable when scope is unknown even with remaining_count 0', async () => {
     mockGetSessionOptions.mockResolvedValue({
       distribution: ubuntu,
       // Unlimited plan: backend marks everything allowed but reports 0 remaining.
@@ -112,7 +118,7 @@ describe('SessionComposer — unlimited scope', () => {
         max_cpu: 0, max_memory_mb: 0,
         used_cpu: 0, used_memory_mb: 0,
         remaining_cpu: 2147483647, remaining_memory_mb: 2147483647,
-        scope: 'unlimited'
+        scope: 'unknown'
       }
     })
 
@@ -131,7 +137,7 @@ describe('SessionComposer — unlimited scope', () => {
     }
   })
 
-  it('lets the user pick an unlimited-scope size that reports remaining_count 0', async () => {
+  it('lets the user pick an unknown-scope size that reports remaining_count 0', async () => {
     mockGetSessionOptions.mockResolvedValue({
       distribution: ubuntu,
       allowed_sizes: [
@@ -143,7 +149,7 @@ describe('SessionComposer — unlimited scope', () => {
         max_cpu: 0, max_memory_mb: 0,
         used_cpu: 0, used_memory_mb: 0,
         remaining_cpu: 2147483647, remaining_memory_mb: 2147483647,
-        scope: 'unlimited'
+        scope: 'unknown'
       }
     })
 
@@ -194,7 +200,7 @@ describe('SessionComposer — unlimited scope', () => {
     expect(pillForKey(wrapper, 'xs').attributes('aria-disabled')).toBe('false')
   })
 
-  it('keeps an unallowed size locked regardless of scope (unlimited)', async () => {
+  it('keeps an unallowed size locked regardless of scope (unknown)', async () => {
     mockGetSessionOptions.mockResolvedValue({
       distribution: ubuntu,
       allowed_sizes: [
@@ -206,7 +212,7 @@ describe('SessionComposer — unlimited scope', () => {
         max_cpu: 0, max_memory_mb: 0,
         used_cpu: 0, used_memory_mb: 0,
         remaining_cpu: 2147483647, remaining_memory_mb: 2147483647,
-        scope: 'unlimited'
+        scope: 'unknown'
       }
     })
 
