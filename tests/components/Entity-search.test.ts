@@ -130,7 +130,18 @@ async function search(wrapper: ReturnType<typeof mountEntity>, text: string) {
 describe('Entity.vue — toolbar free-text search', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.useFakeTimers()
+    // `performance` must be faked alongside Date, and the clock pinned.
+    //
+    // vitest does not fake `performance` by default, so vue-i18n's message
+    // compiler compared a faked Date against a real performance.now() and
+    // derived a negative timestamp. Every t() call then threw inside the
+    // compiler, and useTranslations' wrapT caught it and returned the key —
+    // so assertions on rendered text saw "entitySearch.scopeNote" rather than
+    // a sentence, and the failure looked like a missing translation.
+    vi.useFakeTimers({
+      now: new Date('2026-01-01T00:00:00Z'),
+      toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'],
+    })
     setActivePinia(createPinia())
     ;(axios.get as any).mockResolvedValue(cursorPage(THEMES))
   })
