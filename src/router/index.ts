@@ -395,6 +395,12 @@ const basicRoutes = [
         meta: { requiresAuth: true, requiresAdmin: true }
       },
       {
+        path: 'admin/plan-health',
+        name: 'AdminPlanHealth',
+        component: () => import('../components/Pages/Admin/PlanHealth.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
         path: 'admin/scenario-health',
         name: 'AdminScenarioHealth',
         component: () => import('../components/Pages/Admin/ScenarioHealth.vue'),

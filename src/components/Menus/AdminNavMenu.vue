@@ -86,6 +86,7 @@ const { t } = useTranslations({
         bulkImport: 'Bulk Import',
         emailTemplates: 'Email Templates',
         scenarios: 'Scenarios',
+        planHealth: 'Plan Health',
         scenarioHealth: 'Scenario Health',
         scenarioSteps: 'Scenario Steps',
         scenarioStepHints: 'Scenario Step Hints',
@@ -122,6 +123,7 @@ const { t } = useTranslations({
         bulkImport: 'Importation Groupée',
         emailTemplates: 'Modèles d\'Email',
         scenarios: 'Scénarios',
+        planHealth: 'Santé des forfaits',
         scenarioHealth: 'Santé des scénarios',
         scenarioSteps: 'Étapes de Scénario',
         scenarioStepHints: 'Indices des Étapes',
@@ -145,6 +147,11 @@ const adminCategories = computed<MenuCategory[]>(() => [
         route: '/admin/subscription-plans',
         label: t('admin.items.subscriptionPlans'),
         icon: 'fas fa-tags'
+      },
+      {
+        route: '/admin/plan-health',
+        label: t('admin.items.planHealth'),
+        icon: 'fas fa-heart-pulse'
       },
       {
         route: '/invoices',
