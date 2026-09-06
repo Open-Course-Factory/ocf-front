@@ -66,6 +66,7 @@ export const bulkImportService = {
       dryRun?: boolean
       updateExisting?: boolean
       targetGroup?: string
+      verifyEmails?: boolean
     } = {}
   ): Promise<ImportResponse> {
     const formData = new FormData()
@@ -81,6 +82,9 @@ export const bulkImportService = {
 
     formData.append('dry_run', String(options.dryRun ?? false))
     formData.append('update_existing', String(options.updateExisting ?? false))
+    // Always sent: the backend treats an absent field as "verified", so an
+    // omitted "false" would verify addresses the teacher chose not to vouch for.
+    formData.append('verify_emails', String(options.verifyEmails ?? true))
 
     if (options.targetGroup) {
       formData.append('target_group', options.targetGroup)
@@ -114,14 +118,16 @@ export const bulkImportService = {
     usersFile: File,
     groupsFile?: File,
     membershipsFile?: File,
-    targetGroup?: string
+    targetGroup?: string,
+    verifyEmails?: boolean
   ): Promise<ImportResponse> {
     return this.importData(organizationId, usersFile, {
       groupsFile,
       membershipsFile,
       dryRun: true,
       updateExisting: false,
-      targetGroup
+      targetGroup,
+      verifyEmails
     })
   },
 

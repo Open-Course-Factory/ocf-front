@@ -47,6 +47,7 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
   const dryRun = ref(true)
   const updateExisting = ref(false)
   const targetGroupId = ref<string>('')
+  const verifyEmails = ref(true)
   const nameSplitPlan = ref<NameSplitPlan>(emptyNameSplitPlan())
 
   const step = ref<ImportStep>('upload')
@@ -105,6 +106,10 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
     targetGroupId.value = groupId
   }
 
+  function setVerifyEmails(value: boolean) {
+    verifyEmails.value = value
+  }
+
   function setNameSplitPlan(plan: NameSplitPlan) {
     nameSplitPlan.value = plan
   }
@@ -125,7 +130,8 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
         await prepareUsersFile(usersFile.value, nameSplitPlan.value),
         groupsFile.value || undefined,
         membershipsFile.value || undefined,
-        targetGroupId.value || undefined
+        targetGroupId.value || undefined,
+        verifyEmails.value
       )
 
       validationResults.value = result
@@ -167,7 +173,8 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
           membershipsFile: membershipsFile.value || undefined,
           dryRun: false,
           updateExisting: updateExisting.value,
-          targetGroup: targetGroupId.value || undefined
+          targetGroup: targetGroupId.value || undefined,
+          verifyEmails: verifyEmails.value
         }
       )
 
@@ -208,6 +215,7 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
     dryRun.value = true
     updateExisting.value = false
     targetGroupId.value = ''
+    verifyEmails.value = true
     nameSplitPlan.value = emptyNameSplitPlan()
     step.value = 'upload'
     isValidating.value = false
@@ -230,6 +238,7 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
     dryRun,
     updateExisting,
     targetGroupId,
+    verifyEmails,
     nameSplitPlan,
     step,
     isValidating,
@@ -252,6 +261,7 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
     setDryRun,
     setUpdateExisting,
     setTargetGroup,
+    setVerifyEmails,
     setNameSplitPlan,
     validateImport,
     performImport,

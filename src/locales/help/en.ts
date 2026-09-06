@@ -2212,6 +2212,10 @@ export const helpEn = {
           title: "Update Existing Users",
           description: "Enable the \"Update existing users if found\" toggle to update the profile information of users who already exist on the platform (matched by email address). When disabled, existing users are skipped during import."
         },
+        verifyEmails: {
+          title: "Verified Email Addresses",
+          description: "The \"Mark imported email addresses as verified\" option, on by default, lets imported accounts skip the email confirmation step because the organization vouches for them; untick it to let each learner confirm their own address first."
+        },
         validationPreview: {
           title: "Validation Preview",
           description: "Before executing the import, a preview step displays the validation results for every row in your CSV. You can review warnings, errors, and pending actions so you know exactly what will happen before confirming."

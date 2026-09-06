@@ -50,6 +50,18 @@
         </div>
 
         <div class="option-item">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              data-option="verify-emails"
+              v-model="importStore.verifyEmails"
+            />
+            <span>{{ t('bulkImport.verifyEmailsLabel') }}</span>
+          </label>
+          <p class="option-hint">{{ t('bulkImport.verifyEmailsHint') }}</p>
+        </div>
+
+        <div class="option-item">
           <label class="select-label" for="targetGroup">
             {{ t('bulkImport.targetGroupLabel') }}
           </label>
@@ -166,6 +178,8 @@ const translations = {
       membershipsFileLabel: '📄 Memberships CSV (Optional)',
       updateExistingLabel: 'Update existing users if found',
       updateExistingHint: 'When enabled, existing users will be updated instead of skipped',
+      verifyEmailsLabel: 'Mark imported email addresses as verified',
+      verifyEmailsHint: 'Imported accounts skip the email confirmation step: the organization vouches for them. Untick to let each learner confirm their address first.',
       targetGroupLabel: 'Target group (optional)',
       targetGroupNone: '— No target group —',
       targetGroupHint: 'All imported users will be added as members to this group',
@@ -194,6 +208,8 @@ const translations = {
       membershipsFileLabel: '📄 CSV des adhésions (Optionnel)',
       updateExistingLabel: 'Mettre à jour les utilisateurs existants si trouvés',
       updateExistingHint: 'Lorsque activé, les utilisateurs existants seront mis à jour au lieu d\'être ignorés',
+      verifyEmailsLabel: 'Marquer les adresses e-mail importées comme vérifiées',
+      verifyEmailsHint: 'Les comptes importés passent l\'étape de confirmation d\'e-mail : l\'organisation se porte garante. Décochez pour que chaque apprenant confirme d\'abord son adresse.',
       targetGroupLabel: 'Groupe cible (optionnel)',
       targetGroupNone: '— Pas de groupe cible —',
       targetGroupHint: 'Tous les utilisateurs importés seront ajoutés comme membres de ce groupe',

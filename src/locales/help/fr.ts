@@ -2212,6 +2212,10 @@ export const helpFr = {
           title: "Mise à jour des utilisateurs existants",
           description: "Activez l'option « Mettre à jour les utilisateurs existants si trouvés » pour actualiser les informations de profil des utilisateurs déjà présents sur la plateforme (correspondance par adresse e-mail). Lorsque cette option est désactivée, les utilisateurs existants sont ignorés pendant l'importation."
         },
+        verifyEmails: {
+          title: "Adresses e-mail vérifiées",
+          description: "L'option « Marquer les adresses e-mail importées comme vérifiées », activée par défaut, dispense les comptes importés de l'étape de confirmation d'e-mail car l'organisation se porte garante ; décochez-la pour que chaque apprenant confirme d'abord sa propre adresse."
+        },
         validationPreview: {
           title: "Aperçu de la validation",
           description: "Avant d'exécuter l'importation, une étape de prévisualisation affiche les résultats de validation pour chaque ligne de votre CSV. Vous pouvez examiner les avertissements, erreurs et actions en attente pour savoir exactement ce qui va se passer avant de confirmer."

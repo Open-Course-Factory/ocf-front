@@ -267,6 +267,11 @@
       </section>
 
       <section class="help-section">
+        <h2><i class="fas fa-envelope-open-text"></i> {{ t('help.bulkImport.overview.verifyEmails.title') }}</h2>
+        <p>{{ t('help.bulkImport.overview.verifyEmails.description') }}</p>
+      </section>
+
+      <section class="help-section">
         <h2><i class="fas fa-clipboard-check"></i> {{ t('help.bulkImport.overview.validationPreview.title') }}</h2>
         <p>{{ t('help.bulkImport.overview.validationPreview.description') }}</p>
       </section>
