@@ -120,7 +120,9 @@ test.describe('Plan purchase', () => {
 
     // Follow the success page's own dashboard link — the dashboard now reports
     // the paid plan as the active subscription source.
-    await page.locator('a[href="/subscription-dashboard"]').first().click();
+    // Scoped to the page: the sidebar carries the same href, hidden, and
+    // matches first otherwise.
+    await page.locator('.ocf-checkout-links a[href="/subscription-dashboard"]').click();
     await expect(page.locator('.plan-name').first()).toHaveText(targetPlan, { timeout: 15_000 });
     await demoPause(page, 2); // dwell on the dashboard's active-plan card
 
