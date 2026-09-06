@@ -22,6 +22,7 @@
 import { defineStore } from "pinia"
 import { tokenService, authService } from "../services/auth"
 import router from "../router/index"
+import { clearPersistedStores } from "../piniaPluginPersist"
 import axios from "axios"
 import { useToast } from "../composables/useToast"
 import { useStoreTranslations } from "../composables/useTranslations"
@@ -141,6 +142,8 @@ export const useCurrentUserStore = defineStore('currentUser', {
         async logout() {
             console.log('🔐 logout() called');
             this.$reset();
+            // Nothing saved under this account may greet the next one on this browser.
+            clearPersistedStores();
             console.log('🔐 After $reset, isAuthenticated:', this.isAuthenticated);
             // Use nextTick to ensure reactivity has updated before navigation
             await new Promise(resolve => setTimeout(resolve, 0));

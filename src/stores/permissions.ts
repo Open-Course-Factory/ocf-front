@@ -6,6 +6,10 @@ import { useCurrentUserStore } from './currentUser'
 import { isDemoMode, logDemoAction } from '../services/demo'
 import type { User, UserEffectiveFeatures } from '../types'
 
+// Never persisted: everything here is what the backend decides for the
+// signed-in user and is reloaded at boot. A restored `can_run_classrooms`
+// opened the Groups pages to a Découverte owner on a browser another account
+// had used.
 export const usePermissionsStore = defineStore('permissions', () => {
   const currentUser = ref<User | null>(null)
   const effectiveFeatures = ref<UserEffectiveFeatures | null>(null)
@@ -479,4 +483,4 @@ export const usePermissionsStore = defineStore('permissions', () => {
     // Translations
     t,
   }
-})
+}, { persist: false })

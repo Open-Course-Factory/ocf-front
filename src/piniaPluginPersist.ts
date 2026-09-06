@@ -21,16 +21,48 @@
 
 import { PiniaPlugin } from 'pinia'
 
+declare module 'pinia' {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  export interface DefineStoreOptionsBase<S, Store> {
+    /**
+     * `false` keeps the store out of localStorage. Default is to persist.
+     *
+     * Persist preferences; never persist what the backend decides for the
+     * signed-in user. A restored decision reads as "already loaded" and is
+     * never asked again, and localStorage outlives the session, so the
+     * snapshot may belong to whoever signed in last on this browser.
+     */
+    persist?: boolean
+  }
+}
+
+const STORAGE_PREFIX = 'pinia_state_'
+
 export const piniaPluginPersist: PiniaPlugin = (context) => {
+    if (context.options.persist === false) {
+        return
+    }
     const store = context.store
 
-    const persistedState = localStorage.getItem(`pinia_state_${store.$id}`)
+    const persistedState = localStorage.getItem(`${STORAGE_PREFIX}${store.$id}`)
 
     if (persistedState) {
         store.$patch(JSON.parse(persistedState))
     }
 
     store.$subscribe(() => {
-        localStorage.setItem(`pinia_state_${store.$id}`, JSON.stringify(store.$state))
+        localStorage.setItem(`${STORAGE_PREFIX}${store.$id}`, JSON.stringify(store.$state))
     })
+}
+
+/**
+ * Forget every persisted store. Called on logout so nothing saved under one
+ * account is restored for the next one signing in on the same browser.
+ */
+export function clearPersistedStores(): void {
+    for (const key of Object.keys(localStorage)) {
+        if (key.startsWith(STORAGE_PREFIX)) {
+            localStorage.removeItem(key)
+        }
+    }
 }
