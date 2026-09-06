@@ -85,6 +85,8 @@
           </div>
         </div>
 
+        <p>{{ t('help.bulkImport.overview.csvFormat.nameSplit') }}</p>
+
         <div class="csv-example">
           <h4><i class="fas fa-code"></i> CSV</h4>
           <pre><code>{{ t('help.bulkImport.overview.csvFormat.example') }}</code></pre>

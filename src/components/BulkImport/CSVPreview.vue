@@ -21,6 +21,13 @@
           <CsvDelimiterHint :delimiter="previewData.delimiter" />
         </div>
 
+        <NameSplitEditor
+          v-if="nameSplit && nameRows.length > 0"
+          :rows="nameRows"
+          :plan="nameSplit"
+          @update:plan="$emit('update:nameSplit', $event)"
+        />
+
         <div class="table-wrapper">
           <table class="preview-table">
             <thead>
@@ -55,11 +62,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import CsvDelimiterHint from './CsvDelimiterHint.vue'
+import NameSplitEditor from './NameSplitEditor.vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { parseCsvText, type CsvDelimiter } from '../../utils/csvDelimiter'
+import { rowsNeedingSplit, type NameSplitPlan } from '../../utils/csvNameSplit'
 
 const translations = {
   en: {
@@ -88,12 +97,15 @@ interface Props {
   visible: boolean
   file: File | null
   title: string
+  /** Given for the users file only: enables the name split editor. */
+  nameSplit?: NameSplitPlan
 }
 
 const props = defineProps<Props>()
 
 defineEmits<{
   'close': []
+  'update:nameSplit': [plan: NameSplitPlan]
 }>()
 
 interface PreviewData {
@@ -106,8 +118,13 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const previewData = ref<PreviewData | null>(null)
 const totalRows = ref(0)
+const allRows = ref<string[][]>([])
 
 const MAX_PREVIEW_ROWS = 10
+
+const nameRows = computed(() =>
+  previewData.value ? rowsNeedingSplit(previewData.value.headers, allRows.value) : []
+)
 
 async function parseCSV(file: File) {
   loading.value = true
@@ -122,6 +139,7 @@ async function parseCSV(file: File) {
     }
 
     totalRows.value = parsed.rows.length
+    allRows.value = parsed.rows
     previewData.value = {
       delimiter: parsed.delimiter,
       headers: parsed.headers,

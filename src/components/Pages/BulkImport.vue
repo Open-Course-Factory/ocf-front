@@ -77,6 +77,7 @@
           <li>{{ t('bulkImport.tip1') }}</li>
           <li>{{ t('bulkImport.tip2') }}</li>
           <li>{{ t('bulkImport.tip3') }}</li>
+          <li>{{ t('bulkImport.tip4') }}</li>
         </ul>
       </div>
 
@@ -134,6 +135,8 @@
       :visible="previewModal.visible"
       :file="previewModal.file"
       :title="previewModal.title"
+      :name-split="previewModal.type === 'users' ? importStore.nameSplitPlan : undefined"
+      @update:name-split="importStore.setNameSplitPlan"
       @close="closePreview"
     />
   </div>
@@ -168,6 +171,7 @@ const translations = {
       targetGroupHint: 'All imported users will be added as members to this group',
       tipsTitle: 'Tips',
       tip1: 'Only email + name columns are required. Password and role are optional (auto-generated if missing)',
+      tip4: 'A single name column is split into first and last name; open the users file preview to choose the cut for each row',
       tip2: 'Use the target group dropdown to automatically assign all imported users to a group',
       tip3: 'Download credentials after import — auto-generated passwords cannot be retrieved later',
       downloadExamples: 'Download Examples',
@@ -195,6 +199,7 @@ const translations = {
       targetGroupHint: 'Tous les utilisateurs importés seront ajoutés comme membres de ce groupe',
       tipsTitle: 'Conseils',
       tip1: 'Seules les colonnes email + nom sont requises. Le mot de passe et le rôle sont optionnels (générés automatiquement si absents)',
+      tip4: 'Une colonne nom unique est découpée en prénom et nom ; ouvrez l\'aperçu du fichier des utilisateurs pour choisir la coupure de chaque ligne',
       tip2: 'Utilisez le menu déroulant du groupe cible pour assigner automatiquement tous les utilisateurs importés à un groupe',
       tip3: 'Téléchargez les identifiants après l\'importation — les mots de passe générés automatiquement ne pourront pas être récupérés plus tard',
       downloadExamples: 'Télécharger des exemples',
@@ -226,7 +231,8 @@ const organizationGroups = ref<Array<{ id: string; name: string; display_name: s
 const previewModal = ref({
   visible: false,
   file: null as File | null,
-  title: ''
+  title: '',
+  type: null as 'users' | 'groups' | 'memberships' | null
 })
 
 onMounted(async () => {
@@ -272,7 +278,8 @@ function showPreview(type: 'users' | 'groups' | 'memberships') {
     previewModal.value = {
       visible: true,
       file,
-      title
+      title,
+      type
     }
   }
 }

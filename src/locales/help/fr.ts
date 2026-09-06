@@ -2125,6 +2125,7 @@ export const helpFr = {
           optionalFields: "Champs optionnels : rôle, groupe, téléphone",
           encoding: "Encodage du fichier : UTF-8 recommandé",
           delimiter: "Délimiteur : virgule (,) ou point-virgule (;)",
+          nameSplit: "Une colonne nom unique est découpée en first_name et last_name avant l'envoi. Ouvrez l'aperçu du fichier des utilisateurs pour choisir l'ordre par défaut (nom d'abord, comme DUPONT Marie, ou prénom d'abord) et, pour chaque ligne, cliquez entre deux mots pour déplacer la coupure ou inverser les deux parties ; un nom d'un seul mot devient le nom de famille.",
           example: "email,prenom,nom,role\njean{'@'}exemple.com,Jean,Dupont,member\nmarie{'@'}exemple.com,Marie,Martin,manager"
         },
         wizard: {

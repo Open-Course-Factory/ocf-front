@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { bulkImportService, type ImportResponse } from '../services/domain/bulkImport'
 import { importResponseFromError } from '../services/domain/bulkImportErrors'
 import { useStoreTranslations } from '../composables/useTranslations'
+import { emptyNameSplitPlan, prepareUsersFile, type NameSplitPlan } from '../utils/csvNameSplit'
 
 type ImportStep = 'upload' | 'validating' | 'validation-results' | 'importing' | 'success' | 'error'
 
@@ -46,6 +47,7 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
   const dryRun = ref(true)
   const updateExisting = ref(false)
   const targetGroupId = ref<string>('')
+  const nameSplitPlan = ref<NameSplitPlan>(emptyNameSplitPlan())
 
   const step = ref<ImportStep>('upload')
   const isValidating = ref(false)
@@ -70,6 +72,8 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
   // Actions
   function setUsersFile(file: File | null) {
     usersFile.value = file
+    // Row overrides index the rows of the file they were made on.
+    nameSplitPlan.value = { ...nameSplitPlan.value, overrides: {} }
     if (file) {
       delete uploadErrors.value.users
     }
@@ -101,6 +105,10 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
     targetGroupId.value = groupId
   }
 
+  function setNameSplitPlan(plan: NameSplitPlan) {
+    nameSplitPlan.value = plan
+  }
+
   async function validateImport(organizationId: string): Promise<boolean> {
     if (!usersFile.value) {
       error.value = t('bulkImport.uploadError')
@@ -114,7 +122,7 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
     try {
       const result = await bulkImportService.validateImport(
         organizationId,
-        usersFile.value,
+        await prepareUsersFile(usersFile.value, nameSplitPlan.value),
         groupsFile.value || undefined,
         membershipsFile.value || undefined,
         targetGroupId.value || undefined
@@ -153,7 +161,7 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
     try {
       const result = await bulkImportService.importData(
         organizationId,
-        usersFile.value,
+        await prepareUsersFile(usersFile.value, nameSplitPlan.value),
         {
           groupsFile: groupsFile.value || undefined,
           membershipsFile: membershipsFile.value || undefined,
@@ -200,6 +208,7 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
     dryRun.value = true
     updateExisting.value = false
     targetGroupId.value = ''
+    nameSplitPlan.value = emptyNameSplitPlan()
     step.value = 'upload'
     isValidating.value = false
     isImporting.value = false
@@ -221,6 +230,7 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
     dryRun,
     updateExisting,
     targetGroupId,
+    nameSplitPlan,
     step,
     isValidating,
     isImporting,
@@ -242,6 +252,7 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
     setDryRun,
     setUpdateExisting,
     setTargetGroup,
+    setNameSplitPlan,
     validateImport,
     performImport,
     reset,

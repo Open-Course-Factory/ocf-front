@@ -2125,6 +2125,7 @@ export const helpEn = {
           optionalFields: "Optional fields: role, group, phone",
           encoding: "File encoding: UTF-8 recommended",
           delimiter: "Delimiter: comma (,) or semicolon (;)",
+          nameSplit: "A single name column is split into first_name and last_name before upload. Open the preview of the users file to choose the default order (last name first, as in DUPONT Marie, or first name first) and, for any row, click between two words to move the cut or swap the two sides; a name with a single word becomes the last name.",
           example: "email,first_name,last_name,role\njohn{'@'}example.com,John,Doe,member\njane{'@'}example.com,Jane,Smith,manager"
         },
         wizard: {
