@@ -14,11 +14,12 @@
  * The page shows nothing when there is nothing wrong. A report that lists its
  * own good news is one people stop reading, and then stop believing.
  */
-import { ref, onMounted, computed } from 'vue'
+import { computed } from 'vue'
 import axios from 'axios'
 import { useTranslations } from '../../../composables/useTranslations'
 import { formatMcpuAsVcpu } from '../../../utils/formatters'
 import { formatMemoryMb } from '../../../utils/quotaFormatters'
+import HealthReport, { type HealthReportLabels } from '../../Admin/HealthReport.vue'
 
 // Mirrors the severity values in ocf-core src/payment/services/planHealth.go.
 type Severity = 'blocking' | 'warning' | 'advisory'
@@ -39,10 +40,6 @@ interface PlanHealth {
   max_memory_mb: number
   findings: Finding[]
 }
-
-const report = ref<PlanHealth[]>([])
-const loading = ref(true)
-const error = ref('')
 
 const { t } = useTranslations({
   en: {
@@ -95,31 +92,19 @@ const { t } = useTranslations({
   }
 })
 
-// Advisories are deliberately excluded: they are not faults, and counting them
-// beside the blocking ones would overstate how much is wrong.
-const blockingCount = computed(() =>
-  report.value.reduce(
-    (total, plan) => total + plan.findings.filter((f) => f.severity === 'blocking').length,
-    0
-  )
-)
-
-const warningCount = computed(() =>
-  report.value.reduce(
-    (total, plan) => total + plan.findings.filter((f) => f.severity === 'warning').length,
-    0
-  )
-)
-
-const severityLabels: Record<Severity, string> = {
-  blocking: 'planHealth.blocking',
-  warning: 'planHealth.warning',
-  advisory: 'planHealth.advisory'
-}
-
-function severityLabel(severity: Severity): string {
-  return t(severityLabels[severity])
-}
+const labels = computed<HealthReportLabels>(() => ({
+  title: t('planHealth.title'),
+  subtitle: t('planHealth.subtitle'),
+  refresh: t('planHealth.refresh'),
+  allWell: t('planHealth.allWell'),
+  allWellHint: t('planHealth.allWellHint'),
+  loadError: t('planHealth.loadError'),
+  severity: {
+    blocking: t('planHealth.blocking'),
+    warning: t('planHealth.warning'),
+    advisory: t('planHealth.advisory')
+  }
+}))
 
 /**
  * The sentence for a finding, with the numbers the server filled in.
@@ -140,248 +125,41 @@ function budgetLabel(plan: PlanHealth): string {
   return `${formatMcpuAsVcpu(plan.max_cpu)} vCPU · ${formatMemoryMb(plan.max_memory_mb)}`
 }
 
-async function load() {
-  loading.value = true
-  error.value = ''
-  try {
-    const response = await axios.get('/subscription-plans/health')
-    report.value = response.data || []
-  } catch (e: any) {
-    error.value = e?.response?.data?.error_message || t('planHealth.loadError')
-  } finally {
-    loading.value = false
-  }
+async function load(): Promise<PlanHealth[]> {
+  const response = await axios.get('/subscription-plans/health')
+  return response.data || []
 }
-
-onMounted(load)
 </script>
 
 <template>
-  <div class="ocf-planhealth">
-    <header class="ocf-planhealth-header">
-      <div>
-        <h1>{{ t('planHealth.title') }}</h1>
-        <p class="ocf-planhealth-subtitle">{{ t('planHealth.subtitle') }}</p>
-      </div>
-      <button class="btn btn-outline-secondary" :disabled="loading" @click="load">
-        <i class="fas fa-rotate" /> {{ t('planHealth.refresh') }}
-      </button>
-    </header>
-
-    <div v-if="error" class="alert alert-danger">{{ error }}</div>
-
-    <div v-else-if="loading" class="ocf-planhealth-loading">
-      <i class="fas fa-circle-notch fa-spin" />
-    </div>
-
-    <div v-else-if="report.length === 0" class="ocf-planhealth-clear">
-      <i class="fas fa-circle-check" />
-      <p class="ocf-planhealth-clear-title">{{ t('planHealth.allWell') }}</p>
-      <p class="ocf-planhealth-clear-hint">{{ t('planHealth.allWellHint') }}</p>
-    </div>
-
-    <template v-else>
-      <p class="ocf-planhealth-count">
-        <span class="ocf-planhealth-badge ocf-planhealth-badge-blocking">{{ blockingCount }}</span>
-        {{ t('planHealth.blocking') }}
-        <template v-if="warningCount > 0">
-          &nbsp;·&nbsp;
-          <span class="ocf-planhealth-badge ocf-planhealth-badge-warning">{{ warningCount }}</span>
-          {{ t('planHealth.warning') }}
-        </template>
-      </p>
-
-      <article v-for="plan in report" :key="plan.plan_id" class="ocf-planhealth-card">
-        <header class="ocf-planhealth-card-header">
-          <h2>{{ plan.name }}</h2>
-          <span v-if="plan.is_deleted" class="ocf-planhealth-tag ocf-planhealth-tag-deleted">
-            {{ t('planHealth.deleted') }}
-          </span>
-          <span v-else-if="!plan.is_active" class="ocf-planhealth-tag">{{ t('planHealth.inactive') }}</span>
-          <span v-if="plan.is_catalog" class="ocf-planhealth-tag">{{ t('planHealth.catalogue') }}</span>
-        </header>
-
-        <p class="ocf-planhealth-budget">
-          {{ t('planHealth.budget') }}: {{ budgetLabel(plan) }}
-        </p>
-
-        <ul class="ocf-planhealth-findings">
-          <li v-for="(finding, index) in plan.findings" :key="index" class="ocf-planhealth-finding">
-            <span
-              class="ocf-planhealth-severity"
-              :class="`ocf-planhealth-severity-${finding.severity}`"
-            >{{ severityLabel(finding.severity) }}</span>
-            <span class="ocf-planhealth-sentence">{{ sentence(finding) }}</span>
-          </li>
-        </ul>
-      </article>
+  <HealthReport
+    :labels="labels"
+    :load="load"
+    :item-key="(plan: PlanHealth) => plan.plan_id"
+    count-warnings
+  >
+    <template #card-header="{ item: plan }">
+      <h2>{{ plan.name }}</h2>
+      <span v-if="plan.is_deleted" class="ocf-health-tag ocf-planhealth-tag-deleted">
+        {{ t('planHealth.deleted') }}
+      </span>
+      <span v-else-if="!plan.is_active" class="ocf-health-tag">{{ t('planHealth.inactive') }}</span>
+      <span v-if="plan.is_catalog" class="ocf-health-tag">{{ t('planHealth.catalogue') }}</span>
     </template>
-  </div>
+
+    <template #card-meta="{ item: plan }">
+      <p class="ocf-health-meta">
+        {{ t('planHealth.budget') }}: {{ budgetLabel(plan) }}
+      </p>
+    </template>
+
+    <template #finding="{ finding }">{{ sentence(finding) }}</template>
+  </HealthReport>
 </template>
 
 <style scoped>
-/* `ocf-` on every class: Bootstrap is loaded globally here and a bare .card or
-   .badge would take its styling from it. */
-.ocf-planhealth {
-  padding: 1.5rem;
-  max-width: 60rem;
-}
-
-.ocf-planhealth-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.ocf-planhealth-header h1 {
-  font-size: 1.5rem;
-  margin: 0 0 0.35rem;
-  color: var(--color-text);
-}
-
-.ocf-planhealth-subtitle {
-  margin: 0;
-  max-width: 46rem;
-  color: var(--color-text-secondary);
-}
-
-.ocf-planhealth-loading {
-  padding: 3rem;
-  text-align: center;
-  color: var(--color-text-secondary);
-}
-
-.ocf-planhealth-clear {
-  padding: 3rem 1.5rem;
-  text-align: center;
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  background: var(--color-background-soft);
-}
-
-.ocf-planhealth-clear i {
-  font-size: 2rem;
-  color: var(--color-success);
-}
-
-.ocf-planhealth-clear-title {
-  margin: 0.75rem 0 0.25rem;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.ocf-planhealth-clear-hint {
-  margin: 0;
-  color: var(--color-text-secondary);
-}
-
-.ocf-planhealth-count {
-  margin-bottom: 1rem;
-  color: var(--color-text-secondary);
-}
-
-.ocf-planhealth-badge {
-  display: inline-block;
-  min-width: 1.6rem;
-  padding: 0.1rem 0.45rem;
-  border-radius: 1rem;
-  text-align: center;
-  font-weight: 600;
-  color: var(--color-background);
-}
-
-.ocf-planhealth-badge-blocking {
-  background: var(--color-danger);
-}
-
-.ocf-planhealth-badge-warning {
-  background: var(--color-warning);
-}
-
-.ocf-planhealth-card {
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  padding: 1rem 1.25rem;
-  margin-bottom: 1rem;
-  background: var(--color-background-soft);
-}
-
-.ocf-planhealth-card-header {
-  display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.ocf-planhealth-card-header h2 {
-  font-size: 1.05rem;
-  margin: 0;
-  color: var(--color-text);
-}
-
-.ocf-planhealth-tag {
-  font-size: 0.75rem;
-  padding: 0.1rem 0.5rem;
-  border-radius: 0.25rem;
-  border: 1px solid var(--color-border);
-  color: var(--color-text-secondary);
-}
-
 .ocf-planhealth-tag-deleted {
   border-color: var(--color-danger);
   color: var(--color-danger);
-}
-
-.ocf-planhealth-budget {
-  margin: 0.4rem 0 0.75rem;
-  font-size: 0.85rem;
-  color: var(--color-text-secondary);
-}
-
-.ocf-planhealth-findings {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.ocf-planhealth-finding {
-  display: flex;
-  gap: 0.65rem;
-  align-items: baseline;
-  padding: 0.4rem 0;
-  border-top: 1px solid var(--color-border);
-}
-
-.ocf-planhealth-severity {
-  flex: 0 0 auto;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 0.1rem 0.4rem;
-  border-radius: 0.25rem;
-  white-space: nowrap;
-}
-
-.ocf-planhealth-severity-blocking {
-  background: var(--color-danger);
-  color: var(--color-background);
-}
-
-.ocf-planhealth-severity-warning {
-  background: var(--color-warning);
-  color: var(--color-background);
-}
-
-/* An advisory is not a fault. It reads as information, not as an alarm. */
-.ocf-planhealth-severity-advisory {
-  background: var(--color-background);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-secondary);
-}
-
-.ocf-planhealth-sentence {
-  color: var(--color-text);
 }
 </style>

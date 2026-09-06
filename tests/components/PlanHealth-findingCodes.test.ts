@@ -90,7 +90,7 @@ describe('PlanHealth — finding code coverage', () => {
   for (const locale of ['en', 'fr'] as const) {
     it(`renders a real sentence for every backend code in ${locale}`, async () => {
       const wrapper = await mountWith(BACKEND_FINDING_CODES, locale)
-      const sentences = wrapper.findAll('.ocf-planhealth-sentence').map((n) => n.text())
+      const sentences = wrapper.findAll('.ocf-health-sentence').map((n) => n.text())
 
       expect(sentences).toHaveLength(BACKEND_FINDING_CODES.length)
       for (const [index, entry] of BACKEND_FINDING_CODES.entries()) {
@@ -105,7 +105,7 @@ describe('PlanHealth — finding code coverage', () => {
 
     it(`substitutes the server-supplied detail in ${locale}`, async () => {
       const wrapper = await mountWith(BACKEND_FINDING_CODES, locale)
-      const sentences = wrapper.findAll('.ocf-planhealth-sentence').map((n) => n.text())
+      const sentences = wrapper.findAll('.ocf-health-sentence').map((n) => n.text())
 
       expect(sentences).toHaveLength(BACKEND_FINDING_CODES.length)
       for (const [index, entry] of BACKEND_FINDING_CODES.entries()) {
@@ -127,15 +127,15 @@ describe('PlanHealth — finding code coverage', () => {
     })
     await flushPromises()
 
-    expect(wrapper.findAll('.ocf-planhealth-card')).toHaveLength(0)
-    expect(wrapper.find('.ocf-planhealth-clear').exists()).toBe(true)
+    expect(wrapper.findAll('.ocf-health-card')).toHaveLength(0)
+    expect(wrapper.find('.ocf-health-clear').exists()).toBe(true)
   })
 
   // An advisory is not a fault. Counting it beside the blocking ones would
   // overstate how much is wrong on a page an operator opens to triage.
   it('counts blocking findings without the advisory', async () => {
     const wrapper = await mountWith(BACKEND_FINDING_CODES, 'en')
-    const count = wrapper.find('.ocf-planhealth-badge-blocking').text()
+    const count = wrapper.find('.ocf-health-badge-blocking').text()
 
     expect(count).toBe('3')
   })

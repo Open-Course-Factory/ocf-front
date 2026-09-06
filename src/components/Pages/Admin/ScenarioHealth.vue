@@ -11,9 +11,10 @@
  * The page shows nothing when there is nothing wrong. A report that lists its
  * own good news is one people stop reading, and then stop believing.
  */
-import { ref, onMounted, computed } from 'vue'
+import { computed } from 'vue'
 import axios from 'axios'
 import { useTranslations } from '../../../composables/useTranslations'
+import HealthReport, { type HealthReportLabels } from '../../Admin/HealthReport.vue'
 
 interface Finding {
   code: string
@@ -31,10 +32,6 @@ interface ScenarioHealth {
   offered_locales?: string[]
   findings: Finding[]
 }
-
-const report = ref<ScenarioHealth[]>([])
-const loading = ref(true)
-const error = ref('')
 
 const { t } = useTranslations({
   en: {
@@ -85,12 +82,15 @@ const { t } = useTranslations({
   }
 })
 
-const blockingCount = computed(() =>
-  report.value.reduce(
-    (total, scenario) => total + scenario.findings.filter((f) => f.severity === 'blocking').length,
-    0
-  )
-)
+const labels = computed<HealthReportLabels>(() => ({
+  title: t('health.title'),
+  subtitle: t('health.subtitle'),
+  refresh: t('health.refresh'),
+  allWell: t('health.allWell'),
+  allWellHint: t('health.allWellHint'),
+  loadError: t('health.loadError'),
+  severity: { blocking: t('health.blocking'), warning: t('health.warning') }
+}))
 
 /**
  * The sentence for a finding, with the numbers the server filled in.
@@ -105,224 +105,29 @@ function sentence(finding: Finding): string {
   })
 }
 
-async function load() {
-  loading.value = true
-  error.value = ''
-  try {
-    const response = await axios.get('/scenarios/health')
-    report.value = response.data || []
-  } catch (e: any) {
-    error.value = e?.response?.data?.error_message || t('health.loadError')
-  } finally {
-    loading.value = false
-  }
+async function load(): Promise<ScenarioHealth[]> {
+  const response = await axios.get('/scenarios/health')
+  return response.data || []
 }
-
-onMounted(load)
 </script>
 
 <template>
-  <div class="ocf-health">
-    <header class="ocf-health-header">
-      <div>
-        <h1>{{ t('health.title') }}</h1>
-        <p class="ocf-health-subtitle">{{ t('health.subtitle') }}</p>
-      </div>
-      <button class="btn btn-outline-secondary" :disabled="loading" @click="load">
-        <i class="fas fa-rotate" /> {{ t('health.refresh') }}
-      </button>
-    </header>
-
-    <div v-if="error" class="alert alert-danger">{{ error }}</div>
-
-    <div v-else-if="loading" class="ocf-health-loading">
-      <i class="fas fa-circle-notch fa-spin" />
-    </div>
-
-    <div v-else-if="report.length === 0" class="ocf-health-clear">
-      <i class="fas fa-circle-check" />
-      <p class="ocf-health-clear-title">{{ t('health.allWell') }}</p>
-      <p class="ocf-health-clear-hint">{{ t('health.allWellHint') }}</p>
-    </div>
-
-    <template v-else>
-      <p class="ocf-health-count">
-        <span class="ocf-health-badge ocf-health-badge-blocking">{{ blockingCount }}</span>
-        {{ t('health.blocking') }}
-      </p>
-
-      <article v-for="scenario in report" :key="scenario.scenario_id" class="ocf-health-card">
-        <header class="ocf-health-card-header">
-          <h2>{{ scenario.title || scenario.name }}</h2>
-          <span v-if="scenario.is_public" class="ocf-health-tag">{{ t('health.public') }}</span>
-        </header>
-
-        <p v-if="scenario.declared_locales?.length" class="ocf-health-locales">
-          {{ t('health.declared') }}: {{ scenario.declared_locales.join(', ') }}
-          <template v-if="scenario.offered_locales?.length">
-            &nbsp;·&nbsp; {{ t('health.offered') }}: {{ scenario.offered_locales.join(', ') }}
-          </template>
-        </p>
-
-        <ul class="ocf-health-findings">
-          <li v-for="(finding, index) in scenario.findings" :key="index" class="ocf-health-finding">
-            <span
-              class="ocf-health-severity"
-              :class="`ocf-health-severity-${finding.severity}`"
-            >{{ finding.severity === 'blocking' ? t('health.blocking') : t('health.warning') }}</span>
-            <span class="ocf-health-sentence">{{ sentence(finding) }}</span>
-          </li>
-        </ul>
-      </article>
+  <HealthReport :labels="labels" :load="load" :item-key="(scenario: ScenarioHealth) => scenario.scenario_id">
+    <template #card-header="{ item: scenario }">
+      <h2>{{ scenario.title || scenario.name }}</h2>
+      <span v-if="scenario.is_public" class="ocf-health-tag">{{ t('health.public') }}</span>
     </template>
-  </div>
+
+    <template #card-meta="{ item: scenario }">
+      <p v-if="scenario.declared_locales?.length" class="ocf-health-meta">
+        {{ t('health.declared') }}: {{ scenario.declared_locales.join(', ') }}
+        <template v-if="scenario.offered_locales?.length">
+          &nbsp;·&nbsp; {{ t('health.offered') }}: {{ scenario.offered_locales.join(', ') }}
+        </template>
+      </p>
+    </template>
+
+    <template #finding="{ finding }">{{ sentence(finding) }}</template>
+  </HealthReport>
 </template>
 
-<style scoped>
-/* `ocf-` on every class: Bootstrap is loaded globally here and a bare .card or
-   .badge would take its styling from it. */
-.ocf-health {
-  padding: 1.5rem;
-  max-width: 60rem;
-}
-
-.ocf-health-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.ocf-health-header h1 {
-  font-size: 1.5rem;
-  margin: 0 0 0.35rem;
-  color: var(--color-text);
-}
-
-.ocf-health-subtitle {
-  margin: 0;
-  max-width: 46rem;
-  color: var(--color-text-secondary);
-}
-
-.ocf-health-loading {
-  padding: 3rem;
-  text-align: center;
-  color: var(--color-text-secondary);
-}
-
-.ocf-health-clear {
-  padding: 3rem 1.5rem;
-  text-align: center;
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  background: var(--color-background-soft);
-}
-
-.ocf-health-clear i {
-  font-size: 2rem;
-  color: var(--color-success);
-}
-
-.ocf-health-clear-title {
-  margin: 0.75rem 0 0.25rem;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.ocf-health-clear-hint {
-  margin: 0;
-  color: var(--color-text-secondary);
-}
-
-.ocf-health-count {
-  margin-bottom: 1rem;
-  color: var(--color-text-secondary);
-}
-
-.ocf-health-badge {
-  display: inline-block;
-  min-width: 1.6rem;
-  padding: 0.1rem 0.45rem;
-  border-radius: 1rem;
-  text-align: center;
-  font-weight: 600;
-  color: var(--color-background);
-}
-
-.ocf-health-badge-blocking {
-  background: var(--color-danger);
-}
-
-.ocf-health-card {
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  padding: 1rem 1.25rem;
-  margin-bottom: 1rem;
-  background: var(--color-background-soft);
-}
-
-.ocf-health-card-header {
-  display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-}
-
-.ocf-health-card-header h2 {
-  font-size: 1.05rem;
-  margin: 0;
-  color: var(--color-text);
-}
-
-.ocf-health-tag {
-  font-size: 0.75rem;
-  padding: 0.1rem 0.5rem;
-  border-radius: 0.25rem;
-  border: 1px solid var(--color-border);
-  color: var(--color-text-secondary);
-}
-
-.ocf-health-locales {
-  margin: 0.4rem 0 0.75rem;
-  font-size: 0.85rem;
-  color: var(--color-text-secondary);
-}
-
-.ocf-health-findings {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.ocf-health-finding {
-  display: flex;
-  gap: 0.65rem;
-  align-items: baseline;
-  padding: 0.4rem 0;
-  border-top: 1px solid var(--color-border);
-}
-
-.ocf-health-severity {
-  flex: 0 0 auto;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 0.1rem 0.4rem;
-  border-radius: 0.25rem;
-}
-
-.ocf-health-severity-blocking {
-  background: var(--color-danger);
-  color: var(--color-background);
-}
-
-.ocf-health-severity-warning {
-  background: var(--color-warning);
-  color: var(--color-background);
-}
-
-.ocf-health-sentence {
-  color: var(--color-text);
-}
-</style>
