@@ -55,6 +55,21 @@ export default defineConfig({
     environment: 'happy-dom',
     // Unmounts every wrapper after its test — see tests/setup.ts for why.
     setupFiles: ['tests/setup.ts'],
+    // Spread into every vi.useFakeTimers() call. vitest does not fake
+    // `performance` by default, so vue-i18n's message compiler compared a
+    // faked Date against a real performance.now(), derived a negative
+    // timestamp and threw inside every t() — useTranslations' wrapT then
+    // returned the key, which looked like a missing translation. The list is
+    // vitest's own default (everything but nextTick and queueMicrotask) plus
+    // `performance`, so no test loses a timer it relied on.
+    fakeTimers: {
+      toFake: [
+        'setTimeout', 'clearTimeout', 'setImmediate', 'clearImmediate',
+        'setInterval', 'clearInterval', 'Date', 'performance', 'hrtime',
+        'requestAnimationFrame', 'cancelAnimationFrame',
+        'requestIdleCallback', 'cancelIdleCallback',
+      ],
+    },
     include: ['tests/**/*.test.ts'],
     // Emit a JUnit XML report so GitLab CI can parse it via
     // `artifacts.reports.junit` and surface results in the pipeline Test tab.

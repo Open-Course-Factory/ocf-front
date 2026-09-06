@@ -130,7 +130,9 @@ async function search(wrapper: ReturnType<typeof mountEntity>, text: string) {
 describe('Entity.vue — toolbar free-text search', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.useFakeTimers()
+    // The clock is pinned; `performance` is faked alongside Date by the
+    // suite-wide `test.fakeTimers` in vite.config.ts — see the note there.
+    vi.useFakeTimers({ now: new Date('2026-01-01T00:00:00Z') })
     setActivePinia(createPinia())
     ;(axios.get as any).mockResolvedValue(cursorPage(THEMES))
   })
