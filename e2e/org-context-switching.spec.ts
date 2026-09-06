@@ -224,7 +224,8 @@ test.describe('Usage limits update on org switch', () => {
     await page.goto('/terminal-creation');
     const uncappedLimits = await readUsageLimits(page);
 
-    // An uncapped budget has no bar to fill — it reads as "unlimited" instead.
+    // With no budget to report there is no bar to fill — the panel says the
+    // capacity is unavailable instead.
     expect(uncappedLimits).not.toEqual(cappedLimits);
     await expect(page.locator('[data-test="cpu-bar-fill"]')).toHaveCount(0);
   });

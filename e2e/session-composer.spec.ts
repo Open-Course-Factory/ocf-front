@@ -220,13 +220,16 @@ test.describe('Session Composer — size selection', () => {
     const orgId = await activeOrgId(page);
 
     const { options } = await selectDistribution(page, orgId);
-    const unlimited = options.quota?.scope === 'unlimited';
+    // No badge at all when the budget is unknown: "×0" would read as exhausted.
+    const budgetUnknown = options.quota?.scope === 'unknown';
 
     for (const size of visibleSizes(options)) {
       const badge = (await pillFor(page, size.key)).locator('.pill-badge');
-      await expect(badge, `badge of the ${size.key} pill`).toHaveText(
-        unlimited ? '×∞' : `×${size.remaining_count}`
-      );
+      if (budgetUnknown) {
+        await expect(badge, `badge of the ${size.key} pill`).toHaveCount(0);
+      } else {
+        await expect(badge, `badge of the ${size.key} pill`).toHaveText(`×${size.remaining_count}`);
+      }
     }
   });
 

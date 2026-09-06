@@ -174,12 +174,13 @@ export function visibleSizes(options: ApiSessionOptions): ApiSizeOption[] {
 }
 
 /**
- * A size can be launched when the plan allows it and budget remains. Under an
- * unlimited plan `remaining_count` is always 0 and carries no meaning.
+ * A size can be launched when the plan allows it and budget remains. When no
+ * budget could be computed (`scope === 'unknown'`) `remaining_count` is 0 and
+ * carries no meaning: the composer stays optimistic, the server enforces.
  */
 export function isLaunchable(options: ApiSessionOptions, size: ApiSizeOption): boolean {
-  const unlimited = options.quota?.scope === 'unlimited';
-  return size.allowed && (unlimited || size.remaining_count > 0);
+  const budgetUnknown = options.quota?.scope === 'unknown';
+  return size.allowed && (budgetUnknown || size.remaining_count > 0);
 }
 
 /** The size the composer is expected to preselect: the largest launchable one. */
