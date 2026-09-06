@@ -32,7 +32,10 @@ vi.mock('../../src/stores/permissions', () => ({
     loadCurrentUser: vi.fn().mockResolvedValue(undefined),
     canManageOrganization: (id: string) => canManageOrganization(id),
     isOrganizationOwner: (id: string) => isOrganizationOwner(id),
-    canDeleteOrganization: (id: string) => canDeleteOrganization(id)
+    canDeleteOrganization: (id: string) => canDeleteOrganization(id),
+    // The fixture is a manager of a team organization whose plan grants
+    // classrooms, so the Groups tab is in the bar for this test to traverse.
+    classroomVerdictFor: vi.fn().mockResolvedValue(true)
   })
 }))
 

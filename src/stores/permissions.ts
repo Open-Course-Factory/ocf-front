@@ -85,6 +85,38 @@ export const usePermissionsStore = defineStore('permissions', () => {
     }
   }
 
+  /**
+   * The one request that answers "what does this user get, and may they run
+   * classes, in this organization?" — GET /users/me/features scoped to it, or
+   * unscoped for the aggregate. Every reader of the verdict goes through here so
+   * the sidebar and an organization's own page cannot ask two different questions.
+   */
+  const fetchEffectiveFeatures = async (orgId?: string | null): Promise<UserEffectiveFeatures> => {
+    const url = orgId
+      ? `/users/me/features?organization_id=${orgId}`
+      : '/users/me/features'
+    const response = await axios.get(url)
+    return response.data.data || response.data
+  }
+
+  /**
+   * "May this user run classes in THAT organization?" — for a screen showing an
+   * organization other than the one in context, which the organization page does.
+   *
+   * Reads the backend's verdict only; it neither reconstructs it from the
+   * features list nor touches `effectiveFeatures`, which describes the current
+   * context and drives the sidebar. A verdict that cannot be fetched is a
+   * refusal: absent must never read as yes.
+   */
+  const classroomVerdictFor = async (orgId: string): Promise<boolean> => {
+    try {
+      const features = await fetchEffectiveFeatures(orgId)
+      return features?.can_run_classrooms === true
+    } catch {
+      return false
+    }
+  }
+
   // Load effective features for current org context + all orgs (for gray-out logic)
   const loadEffectiveFeatures = async () => {
     isLoading.value = true
@@ -144,11 +176,7 @@ export const usePermissionsStore = defineStore('permissions', () => {
       const orgId = orgStore.currentOrganizationId
 
       // Current context features (scoped to current org)
-      const url = orgId
-        ? `/users/me/features?organization_id=${orgId}`
-        : '/users/me/features'
-      const response = await axios.get(url)
-      effectiveFeatures.value = response.data.data || response.data
+      effectiveFeatures.value = await fetchEffectiveFeatures(orgId)
 
       // All features across all orgs (for gray-out logic)
       try {
@@ -410,6 +438,7 @@ export const usePermissionsStore = defineStore('permissions', () => {
     loadCurrentUser,
     loadEffectiveFeatures,
     ensureEffectiveFeaturesLoaded,
+    classroomVerdictFor,
     refreshEntitlements,
     isFeatureInAnyOrg,
     getOrgWithFeature,

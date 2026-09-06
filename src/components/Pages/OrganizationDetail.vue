@@ -125,7 +125,7 @@
           </div>
 
           <!-- Groups Tab -->
-          <div v-if="activeTab === 'groups'" class="tab-panel" v-bind="panelProps('groups')">
+          <div v-if="activeTab === 'groups' && canRunClassroomsHere" class="tab-panel" v-bind="panelProps('groups')">
             <OrganizationGroupsManager
               :organization-id="organizationId"
               :can-manage="canManage"
@@ -184,7 +184,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   OrganizationModal,
@@ -276,26 +276,48 @@ const isOwner = computed(() => permissionsStore.isOrganizationOwner(organization
 const canDelete = computed(() => permissionsStore.canDeleteOrganization(organizationId.value))
 const isAdminGranted = computed(() => isAdmin.value && !isOwner.value)
 
+// "May this user run classes in THIS organization?" — the backend's verdict for
+// the organization on screen, which is not necessarily the one in context. The
+// sidebar reads the same verdict for the context organization
+// (useClassroomEntitlement); the Groups tab must not open a door the sidebar
+// locks. False until the backend has answered: absent is not yes.
+const canRunClassroomsHere = ref(false)
+
 // The bar in DOM order. `managerOnly` both gates the tab and drives the admin
-// badge, so the two can never disagree about which tabs are privileged.
-const allTabs: { id: OrganizationTab; icon: string; labelKey: string; managerOnly: boolean }[] = [
+// badge, so the two can never disagree about which tabs are privileged;
+// `needsClassrooms` gates on the verdict above the same way.
+const allTabs: { id: OrganizationTab; icon: string; labelKey: string; managerOnly: boolean; needsClassrooms?: boolean }[] = [
   { id: 'overview', icon: 'fas fa-info-circle', labelKey: 'organizations.overview', managerOnly: false },
   { id: 'members', icon: 'fas fa-users', labelKey: 'organizations.members', managerOnly: false },
-  { id: 'groups', icon: 'fas fa-layer-group', labelKey: 'organizations.groups', managerOnly: false },
+  { id: 'groups', icon: 'fas fa-layer-group', labelKey: 'organizations.groups', managerOnly: false, needsClassrooms: true },
   { id: 'scenarios', icon: 'fas fa-flask', labelKey: 'organizations.scenarios', managerOnly: true },
   { id: 'student-sessions', icon: 'fas fa-desktop', labelKey: 'organizations.studentSessions', managerOnly: true },
   { id: 'subscription', icon: 'fas fa-credit-card', labelKey: 'organizations.subscription', managerOnly: false },
   { id: 'settings', icon: 'fas fa-cog', labelKey: 'organizations.settings', managerOnly: true }
 ]
 
-const visibleTabs = computed(() => allTabs.filter(tab => !tab.managerOnly || canManage.value))
+const visibleTabs = computed(() => allTabs.filter(tab =>
+  (!tab.managerOnly || canManage.value) && (!tab.needsClassrooms || canRunClassroomsHere.value)
+))
+
+// A URL may name a tab this user does not get (a bookmark, a link from a
+// colleague who does). Fall back to the overview rather than showing a selected
+// tab that is not in the bar.
+watch(visibleTabs, tabs => {
+  if (!tabs.some(tab => tab.id === activeTab.value)) {
+    activeTab.value = 'overview'
+  }
+}, { immediate: true })
 
 const { tablist, tabProps, panelProps, onKeydown } = useTabList(activeTab, 'org')
 
 onMounted(async () => {
   await Promise.all([
     loadOrganization(true), // Initial load
-    permissionsStore.loadCurrentUser()
+    permissionsStore.loadCurrentUser(),
+    permissionsStore.classroomVerdictFor(organizationId.value)
+      .then(allowed => { canRunClassroomsHere.value = allowed })
+      .catch(() => { canRunClassroomsHere.value = false })
   ])
 })
 
