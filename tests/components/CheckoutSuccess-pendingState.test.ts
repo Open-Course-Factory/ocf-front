@@ -64,6 +64,17 @@ vi.mock('../../src/stores/subscriptionPlans', () => ({
   useSubscriptionPlansStore: () => ({ formatPrice: h.formatPrice }),
 }))
 
+vi.mock('../../src/stores/permissions', () => ({
+  usePermissionsStore: () => ({ refreshEntitlements: vi.fn(async () => {}) }),
+}))
+vi.mock('../../src/composables/useClassroomEntitlement', () => ({
+  useClassroomEntitlement: () => ({
+    planAllowsClassrooms: { value: null },
+    canRunClassrooms: { value: false },
+    deniedReason: { value: null },
+    deniedByPlan: { value: false },
+  }),
+}))
 import CheckoutSuccess from '../../src/components/Flows/CheckoutSuccess.vue'
 
 function mountSuccess() {

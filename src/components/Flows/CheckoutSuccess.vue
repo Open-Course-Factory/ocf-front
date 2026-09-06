@@ -1,36 +1,42 @@
-<!-- 
+<!--
 /*
  * Open Course Factory - Front
  * Copyright (C) 2023-2026 Solution Libre
- */ 
+ *
+ * Return page from Stripe Checkout. An ordinary page of the application, not a
+ * splash screen: the buyer is signed in and the next thing they do happens in
+ * the app around this page.
+ */
 -->
 
 <template>
-  <div class="checkout-success">
-    <div class="success-container">
+  <div class="ocf-checkout-success-page">
+    <div class="ocf-checkout-success-column">
       <!-- Payment received, webhook still syncing the subscription: reassure the
            user their money landed instead of claiming an unverified activation. -->
-      <div v-if="status === 'polling'" class="success-content pending-content">
-        <div class="pending-spinner">
+      <template v-if="status === 'polling'">
+        <div class="page-header">
+          <div>
+            <h2>{{ t('checkoutSuccess.pendingTitle') }}</h2>
+            <p class="page-subtitle">{{ t('checkoutSuccess.pendingActivating') }}</p>
+          </div>
+        </div>
+        <div class="ocf-checkout-status ocf-checkout-status--pending" data-test="pending-state">
           <i class="fas fa-spinner fa-spin"></i>
+          <span>{{ t('checkoutSuccess.pendingActivating') }}</span>
         </div>
-        <div class="success-message">
-          <h1>{{ t('checkoutSuccess.pendingTitle') }}</h1>
-          <p class="lead">{{ t('checkoutSuccess.pendingActivating') }}</p>
-        </div>
-      </div>
+      </template>
 
       <!-- Poll budget drained without the webhook landing: still not an error —
            the payment is in, activation just trails. Offer a manual re-check. -->
-      <div v-else-if="status === 'pending'" class="success-content pending-content">
-        <div class="pending-icon">
-          <i class="fas fa-clock"></i>
+      <template v-else-if="status === 'pending'">
+        <div class="page-header">
+          <div>
+            <h2>{{ t('checkoutSuccess.pendingTitle') }}</h2>
+            <p class="page-subtitle">{{ t('checkoutSuccess.pendingMessage') }}</p>
+          </div>
         </div>
-        <div class="success-message">
-          <h1>{{ t('checkoutSuccess.pendingTitle') }}</h1>
-          <p class="lead">{{ t('checkoutSuccess.pendingMessage') }}</p>
-        </div>
-        <div class="pending-actions">
+        <div class="ocf-checkout-actions">
           <!-- Manual re-poll instead of an unbounded background poll: the budget
                already expired, so let the user decide when to re-check. -->
           <button class="btn btn-outline-primary" @click="pollForSubscription">
@@ -42,118 +48,79 @@
             {{ t('checkoutSuccess.goToDashboard') }}
           </router-link>
         </div>
-      </div>
+      </template>
 
-      <!-- Activation confirmed: the welcome + subscription details are only
-           shown once the subscription has actually landed. -->
-      <div v-else class="success-content">
-        <!-- Animation de succès -->
-        <div class="success-animation">
-          <div class="checkmark">
-            <div class="checkmark-circle">
-              <div class="checkmark-stem"></div>
-              <div class="checkmark-kick"></div>
-            </div>
+      <!-- Activation confirmed: the details and the next step are only shown
+           once the subscription has actually landed. -->
+      <template v-else>
+        <div class="page-header">
+          <div>
+            <h2>{{ t('checkoutSuccess.title') }}</h2>
+            <p class="page-subtitle">{{ t('checkoutSuccess.subtitle') }}</p>
           </div>
         </div>
 
-        <!-- Message principal -->
-        <div class="success-message">
-          <h1>{{ t('checkoutSuccess.title') }}</h1>
-          <p class="lead">{{ t('checkoutSuccess.subtitle') }}</p>
+        <div class="ocf-checkout-status ocf-checkout-status--ok" data-test="activated-state">
+          <i class="fas fa-check-circle"></i>
+          <span>{{ t('checkoutSuccess.activated') }}</span>
         </div>
 
-        <!-- Détails de l'abonnement -->
-        <div v-if="planDetails" class="subscription-details">
-          <div class="details-card">
-            <h3>{{ t('checkoutSuccess.subscriptionDetails') }}</h3>
-
-            <div class="detail-row">
-              <span class="label">{{ t('checkoutSuccess.plan') }}:</span>
-              <span class="value">{{ planDetails.name }}</span>
+        <!-- What was bought -->
+        <section v-if="planDetails" class="ocf-checkout-card" data-test="subscription-details">
+          <h3>{{ t('checkoutSuccess.subscriptionDetails') }}</h3>
+          <dl class="ocf-checkout-details">
+            <div class="ocf-checkout-detail">
+              <dt>{{ t('checkoutSuccess.plan') }}</dt>
+              <dd>{{ planDetails.name }}</dd>
             </div>
-
-            <div class="detail-row" v-if="planDetails.amount">
-              <span class="label">{{ t('checkoutSuccess.amount') }}:</span>
-              <span class="value">{{ formatPrice(planDetails.amount, planDetails.currency) }}</span>
+            <div v-if="planDetails.amount" class="ocf-checkout-detail">
+              <dt>{{ t('checkoutSuccess.amount') }}</dt>
+              <dd>{{ formatPrice(planDetails.amount, planDetails.currency) }}</dd>
             </div>
-
-            <div class="detail-row" v-if="planDetails.interval">
-              <span class="label">{{ t('checkoutSuccess.billingInterval') }}:</span>
-              <span class="value">{{ planDetails.interval }}</span>
+            <div v-if="planDetails.interval" class="ocf-checkout-detail">
+              <dt>{{ t('checkoutSuccess.billingInterval') }}</dt>
+              <dd>{{ planDetails.interval }}</dd>
             </div>
-
-            <div v-if="planDetails.periodEnd" class="billing-info">
-              <i class="fas fa-calendar text-info"></i>
-              {{ t('checkoutSuccess.nextBilling', { date: formatDate(planDetails.periodEnd) }) }}
+            <div v-if="planDetails.periodEnd" class="ocf-checkout-detail">
+              <dt>{{ t('checkoutSuccess.nextBillingLabel') }}</dt>
+              <dd>{{ formatDate(planDetails.periodEnd) }}</dd>
             </div>
+          </dl>
+        </section>
+
+        <!-- The one next step. It follows the plan just bought: a plan that
+             allows teaching leads to the organization the classes will live
+             in; any other plan leads to a terminal. Nothing here points at a
+             section the buyer cannot use. -->
+        <section class="ocf-checkout-card ocf-checkout-next" data-test="next-step">
+          <div class="ocf-checkout-next-icon">
+            <i :class="nextStep.icon"></i>
           </div>
-        </div>
-        
-        <!-- Étapes suivantes -->
-        <div class="next-steps">
-          <h3>{{ t('checkoutSuccess.nextSteps') }}</h3>
-          <div class="steps-grid">
-            <div class="step-card">
-              <div class="step-icon">
-                <i class="fas fa-tachometer-alt"></i>
-              </div>
-              <div class="step-content">
-                <h4>{{ t('checkoutSuccess.step1Title') }}</h4>
-                <p>{{ t('checkoutSuccess.step1Description') }}</p>
-                <router-link to="/subscription-dashboard" class="btn btn-outline-primary">
-                  {{ t('checkoutSuccess.viewDashboard') }}
-                </router-link>
-              </div>
-            </div>
-            
-            <div class="step-card">
-              <div class="step-icon">
-                <i class="fas fa-book"></i>
-              </div>
-              <div class="step-content">
-                <h4>{{ t('checkoutSuccess.step2Title') }}</h4>
-                <p>{{ t('checkoutSuccess.step2Description') }}</p>
-                <router-link to="/courses" class="btn btn-outline-primary">
-                  {{ t('checkoutSuccess.startCreating') }}
-                </router-link>
-              </div>
-            </div>
-            
-            <div class="step-card">
-              <div class="step-icon">
-                <i class="fas fa-question-circle"></i>
-              </div>
-              <div class="step-content">
-                <h4>{{ t('checkoutSuccess.step3Title') }}</h4>
-                <p>{{ t('checkoutSuccess.step3Description') }}</p>
-                <a :href="`mailto:${SUPPORT_EMAIL}`" class="btn btn-outline-secondary">
-                  {{ t('checkoutSuccess.contactSupport') }}
-                </a>
-              </div>
-            </div>
+          <div class="ocf-checkout-next-body">
+            <h3>{{ t(nextStep.titleKey) }}</h3>
+            <p>{{ t(nextStep.bodyKey) }}</p>
+            <router-link :to="nextStep.to" class="btn btn-primary" data-test="primary-next-step">
+              {{ t(nextStep.ctaKey) }}
+            </router-link>
           </div>
-        </div>
-        
-        <!-- Actions principales -->
-        <div class="main-actions">
-          <router-link to="/subscription-dashboard" class="btn btn-primary btn-lg">
+        </section>
+
+        <!-- Invoice and dashboard, one click away in every case -->
+        <div class="ocf-checkout-links">
+          <router-link to="/invoices" class="ocf-checkout-link" data-test="invoice-link">
+            <i class="fas fa-file-invoice"></i>
+            <span>{{ t('checkoutSuccess.viewInvoice') }}</span>
+          </router-link>
+          <router-link to="/subscription-dashboard" class="ocf-checkout-link">
             <i class="fas fa-tachometer-alt"></i>
-            {{ t('checkoutSuccess.goToDashboard') }}
+            <span>{{ t('checkoutSuccess.goToDashboard') }}</span>
           </router-link>
-          
-          <router-link to="/courses" class="btn btn-success btn-lg">
-            <i class="fas fa-plus"></i>
-            {{ t('checkoutSuccess.createFirstCourse') }}
-          </router-link>
+          <a :href="`mailto:${SUPPORT_EMAIL}`" class="ocf-checkout-link">
+            <i class="fas fa-question-circle"></i>
+            <span>{{ t('checkoutSuccess.contactSupport') }}</span>
+          </a>
         </div>
-        
-        <!-- Email de confirmation -->
-        <div class="email-notice">
-          <i class="fas fa-envelope"></i>
-          {{ t('checkoutSuccess.emailConfirmation') }}
-        </div>
-      </div>
+      </template>
     </div>
   </div>
 </template>
@@ -164,64 +131,59 @@ import { useRoute } from 'vue-router'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
 import { usePermissionsStore } from '../../stores/permissions'
+import { useClassroomEntitlement } from '../../composables/useClassroomEntitlement'
 import { useTranslations } from '../../composables/useTranslations'
 import { SUPPORT_EMAIL } from '../../config/contact'
 
 const { t } = useTranslations({
   en: {
     checkoutSuccess: {
-      title: 'Welcome to Open Course Factory!',
-      subtitle: 'Your subscription has been activated successfully.',
+      title: 'Payment confirmed',
+      subtitle: 'Your subscription is active. Here is what you bought and where to go next.',
+      activated: 'Subscription activated',
       pendingTitle: 'Payment received',
       pendingActivating: 'Activating your subscription…',
       pendingMessage: 'Your payment was received successfully. Activating your subscription may take a few moments. It will appear in your dashboard as soon as it is ready.',
       refresh: 'Refresh',
-      subscriptionDetails: 'Subscription Details',
+      subscriptionDetails: 'Your subscription',
       plan: 'Plan',
       amount: 'Amount',
-      billingInterval: 'Billing Cycle',
-      nextBilling: 'Next billing on {date}',
-      nextSteps: 'What\'s Next?',
-      step1Title: 'Explore Your Dashboard',
-      step1Description: 'View your subscription details, usage, and recent invoices.',
-      step2Title: 'Create Your First Course',
-      step2Description: 'Start building interactive courses with integrated labs.',
-      step3Title: 'Need Help?',
-      step3Description: 'Our support team is here to help you get started.',
-      viewDashboard: 'View Dashboard',
-      startCreating: 'Start Creating',
-      contactSupport: 'Contact Support',
-      goToDashboard: 'Go to Dashboard',
-      createFirstCourse: 'Create First Course',
-      emailConfirmation: 'A confirmation email has been sent to your inbox.'
+      billingInterval: 'Billing cycle',
+      nextBillingLabel: 'Next billing',
+      organizationTitle: 'Create your organization',
+      organizationBody: 'Your classes, learners and seats live in an organization. Create yours to open your first class.',
+      organizationCta: 'Create the organization',
+      terminalTitle: 'Start your first terminal',
+      terminalBody: 'Your plan is ready. Pick a distribution and a size and start working in a real Linux environment.',
+      terminalCta: 'Start a terminal',
+      viewInvoice: 'View the invoice',
+      goToDashboard: 'Subscription dashboard',
+      contactSupport: 'Contact support'
     }
   },
   fr: {
     checkoutSuccess: {
-      title: 'Bienvenue dans Open Course Factory !',
-      subtitle: 'Votre abonnement a été activé avec succès.',
+      title: 'Paiement confirmé',
+      subtitle: 'Votre abonnement est actif. Voici ce que vous avez acheté et la suite.',
+      activated: 'Abonnement activé',
       pendingTitle: 'Paiement reçu',
       pendingActivating: 'Activation de votre abonnement en cours…',
       pendingMessage: 'Votre paiement a bien été reçu. L\'activation de votre abonnement peut prendre quelques instants. Il apparaîtra dans votre tableau de bord dès qu\'il sera prêt.',
       refresh: 'Actualiser',
-      subscriptionDetails: 'Détails de l\'Abonnement',
-      plan: 'Plan',
+      subscriptionDetails: 'Votre abonnement',
+      plan: 'Forfait',
       amount: 'Montant',
-      billingInterval: 'Cycle de Facturation',
-      nextBilling: 'Prochaine facturation le {date}',
-      nextSteps: 'Et Maintenant ?',
-      step1Title: 'Explorez Votre Tableau de Bord',
-      step1Description: 'Consultez vos détails d\'abonnement, utilisation et factures récentes.',
-      step2Title: 'Créez Votre Premier Cours',
-      step2Description: 'Commencez à créer des cours interactifs avec des labs intégrés.',
-      step3Title: 'Besoin d\'Aide ?',
-      step3Description: 'Notre équipe support est là pour vous aider à démarrer.',
-      viewDashboard: 'Voir le Tableau de Bord',
-      startCreating: 'Commencer à Créer',
-      contactSupport: 'Contacter le Support',
-      goToDashboard: 'Aller au Tableau de Bord',
-      createFirstCourse: 'Créer le Premier Cours',
-      emailConfirmation: 'Un email de confirmation a été envoyé dans votre boîte mail.'
+      billingInterval: 'Cycle de facturation',
+      nextBillingLabel: 'Prochaine facturation',
+      organizationTitle: 'Créez votre organisation',
+      organizationBody: 'Vos classes, vos apprenants et vos sièges vivent dans une organisation. Créez la vôtre pour ouvrir votre première classe.',
+      organizationCta: 'Créer l\'organisation',
+      terminalTitle: 'Lancez votre premier terminal',
+      terminalBody: 'Votre forfait est prêt. Choisissez une distribution et une taille, et travaillez dans un vrai environnement Linux.',
+      terminalCta: 'Lancer un terminal',
+      viewInvoice: 'Voir la facture',
+      goToDashboard: 'Tableau de bord de l\'abonnement',
+      contactSupport: 'Contacter le support'
     }
   }
 })
@@ -229,6 +191,7 @@ const { t } = useTranslations({
 useRoute()
 const subscriptionsStore = useSubscriptionsStore()
 const subscriptionPlansStore = useSubscriptionPlansStore()
+const { planAllowsClassrooms } = useClassroomEntitlement()
 
 const subscriptionDetails = ref<any>(null)
 
@@ -247,6 +210,27 @@ const planDetails = computed(() => {
     periodEnd: sub.current_period_end,
   }
 })
+
+// The next step reads the backend's verdict on the plan just bought (the same
+// `can_create_organization` the organization-creation gate applies, refreshed
+// after activation), never the plan's feature list. Only an explicit "yes"
+// sends the buyer to create an organization; an unresolved verdict offers the
+// terminal, which every plan covers.
+const nextStep = computed(() => planAllowsClassrooms.value === true
+  ? {
+      icon: 'fas fa-building',
+      titleKey: 'checkoutSuccess.organizationTitle',
+      bodyKey: 'checkoutSuccess.organizationBody',
+      ctaKey: 'checkoutSuccess.organizationCta',
+      to: '/organizations?create=1',
+    }
+  : {
+      icon: 'fas fa-terminal',
+      titleKey: 'checkoutSuccess.terminalTitle',
+      bodyKey: 'checkoutSuccess.terminalBody',
+      ctaKey: 'checkoutSuccess.terminalCta',
+      to: '/terminal-creation',
+    })
 
 // Drives the reassuring copy the just-paid user reads: 'polling' while we wait
 // for the Stripe webhook to sync the subscription, 'activated' once it lands,
@@ -269,8 +253,9 @@ async function pollForSubscription() {
       if (subscriptionsStore.currentSubscription) {
         subscriptionDetails.value = subscriptionsStore.currentSubscription
         status.value = 'activated'
-        // The page booted before the webhook landed, so the navigation still
-        // holds the pre-purchase answer; the plan just paid for may unlock it.
+        // The page booted before the webhook landed, so the navigation and the
+        // verdict the next step reads still hold the pre-purchase answer; the
+        // plan just paid for may unlock them.
         await usePermissionsStore().refreshEntitlements()
         return
       }
@@ -306,336 +291,125 @@ function formatDate(dateString: string) {
 </script>
 
 <style scoped>
-.checkout-success {
-  min-height: 100vh;
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
+.ocf-checkout-success-page {
+  padding: var(--spacing-lg);
 }
 
-.success-container {
-  max-width: 800px;
-  width: 100%;
-}
-
-.success-content {
-  background: var(--color-surface);
-  border-radius: 20px;
-  padding: 40px;
-  text-align: center;
-  box-shadow: var(--shadow-modal);
-}
-
-/* États d'attente (paiement reçu, activation en cours / différée) */
-.pending-content {
+.ocf-checkout-success-column {
+  max-width: 760px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 20px;
+  gap: var(--spacing-lg);
 }
 
-.pending-spinner {
-  font-size: 3rem;
-  color: var(--color-primary);
-}
-
-.pending-icon {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background-color: var(--color-info-bg);
-  color: var(--color-info-text);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.5rem;
-}
-
-.pending-actions {
-  display: flex;
-  gap: 20px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-/* Animation de checkmark */
-.success-animation {
-  margin: 0 auto 30px auto;
-}
-
-.checkmark {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto;
-  position: relative;
-}
-
-.checkmark-circle {
-  width: 80px;
-  height: 80px;
-  position: relative;
-  display: inline-block;
-  vertical-align: top;
-  border: 4px solid var(--color-success);
-  border-radius: 50%;
-  animation: checkmark-scale 0.3s ease-in-out 0.9s both;
-}
-
-.checkmark-stem {
-  position: absolute;
-  width: 5px;
-  height: 18px;
-  background-color: var(--color-success);
-  left: 32px;
-  top: 28px;
-  transform: rotate(45deg);
-  animation: checkmark-stem 0.3s ease-in-out 1.2s both;
-}
-
-.checkmark-kick {
-  position: absolute;
-  width: 12px;
-  height: 5px;
-  background-color: var(--color-success);
-  left: 25px;
-  top: 35px;
-  transform: rotate(-45deg);
-  animation: checkmark-kick 0.3s ease-in-out 1.5s both;
-}
-
-@keyframes checkmark-scale {
-  0% { transform: scale(0); }
-  100% { transform: scale(1); }
-}
-
-@keyframes checkmark-stem {
-  0% { height: 0; }
-  100% { height: 18px; }
-}
-
-@keyframes checkmark-kick {
-  0% { width: 0; }
-  100% { width: 12px; }
-}
-
-/* Messages */
-.success-message {
-  margin-bottom: 40px;
-}
-
-.success-message h1 {
+.page-header h2 {
+  margin: 0 0 var(--spacing-xs);
   color: var(--color-text-primary);
-  margin: 0 0 15px 0;
-  font-size: 2.5rem;
-  font-weight: 300;
 }
 
-.success-message .lead {
-  font-size: 1.3rem;
+.page-subtitle {
+  margin: 0;
   color: var(--color-text-muted);
+}
+
+.ocf-checkout-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md, 8px);
+  font-weight: 500;
+  align-self: flex-start;
+}
+
+.ocf-checkout-status--ok {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.ocf-checkout-status--pending {
+  background: var(--color-info-bg);
+  color: var(--color-info-text);
+}
+
+.ocf-checkout-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--spacing-lg);
+}
+
+.ocf-checkout-card h3 {
+  margin: 0 0 var(--spacing-md);
+  font-size: 1.1rem;
+  color: var(--color-text-primary);
+}
+
+.ocf-checkout-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--spacing-md);
   margin: 0;
 }
 
-/* Détails de l'abonnement */
-.subscription-details {
-  margin-bottom: 40px;
+.ocf-checkout-detail dt {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--spacing-xs);
 }
 
-.details-card {
-  background: var(--color-gray-50);
-  border-radius: 12px;
-  padding: 25px;
-  margin: 0 auto;
-  max-width: 400px;
-}
-
-.details-card h3 {
-  margin: 0 0 20px 0;
+.ocf-checkout-detail dd {
+  margin: 0;
+  font-weight: 600;
   color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.ocf-checkout-next {
+  display: flex;
+  gap: var(--spacing-lg);
+  align-items: flex-start;
+}
+
+.ocf-checkout-next-icon {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-light, var(--color-info-bg));
+  color: var(--color-primary);
   font-size: 1.3rem;
 }
 
-.detail-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  padding: 8px 0;
-}
-
-.detail-row .label {
-  font-weight: 600;
+.ocf-checkout-next-body p {
   color: var(--color-text-muted);
+  margin: 0 0 var(--spacing-md);
 }
 
-.detail-row .value {
-  color: var(--color-text-primary);
-  font-weight: 500;
-}
-
-.billing-info {
-  margin-top: 20px;
-  padding: 15px;
-  border-radius: 8px;
+.ocf-checkout-actions {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 500;
-  background-color: var(--color-info-bg);
-  color: var(--color-info-text);
-}
-
-/* Étapes suivantes */
-.next-steps {
-  margin-bottom: 40px;
-}
-
-.next-steps h3 {
-  margin: 0 0 25px 0;
-  color: var(--color-text-primary);
-  font-size: 1.5rem;
-}
-
-.steps-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin: 25px 0;
-}
-
-.step-card {
-  background: var(--color-gray-50);
-  border-radius: 12px;
-  padding: 20px;
-  text-align: center;
-  transition: transform 0.3s ease;
-}
-
-.step-card:hover {
-  transform: translateY(-5px);
-}
-
-.step-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 15px auto;
-  color: var(--color-white);
-  font-size: 1.5rem;
-}
-
-.step-content h4 {
-  margin: 0 0 10px 0;
-  color: var(--color-text-primary);
-  font-size: 1.1rem;
-}
-
-.step-content p {
-  margin: 0 0 15px 0;
-  color: var(--color-text-muted);
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
-/* Actions principales */
-.main-actions {
-  display: flex;
-  gap: 20px;
-  justify-content: center;
-  margin-bottom: 30px;
+  gap: var(--spacing-sm);
   flex-wrap: wrap;
 }
 
-.email-notice {
+.ocf-checkout-links {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  color: var(--color-text-muted);
-  font-size: 0.9rem;
-  margin-top: 20px;
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
 }
 
-/* Buttons */
-.btn {
+.ocf-checkout-link {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  border: 2px solid transparent;
-  border-radius: 8px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.btn-lg {
-  padding: 15px 25px;
-  font-size: 16px;
-}
-
-.btn-primary {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-white);
-}
-
-.btn-success {
-  background-color: var(--color-success);
-  border-color: var(--color-success);
-  color: var(--color-white);
-}
-
-.btn-outline-primary {
-  background-color: transparent;
-  border-color: var(--color-primary);
+  gap: var(--spacing-xs);
   color: var(--color-primary);
+  text-decoration: none;
 }
 
-.btn-outline-secondary {
-  background-color: transparent;
-  border-color: var(--color-gray-600);
-  color: var(--color-gray-600);
-}
-
-.btn:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-card);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .success-content {
-    padding: 30px 20px;
-  }
-  
-  .success-message h1 {
-    font-size: 2rem;
-  }
-  
-  .success-message .lead {
-    font-size: 1.1rem;
-  }
-  
-  .main-actions {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .main-actions .btn {
-    width: 100%;
-    max-width: 300px;
-  }
-  
-  .steps-grid {
-    grid-template-columns: 1fr;
-  }
+.ocf-checkout-link:hover {
+  text-decoration: underline;
 }
 </style>
