@@ -10,8 +10,9 @@
  * This repo already carries one instance of that bug on another page, which is
  * why the contract is pinned here rather than left to review.
  *
- * The list below is the backend's, from src/payment/services/planHealth.go. A
- * code added there without a translation here fails this test.
+ * The list below is hand-copied from the backend: the `const` block starting
+ * at `PlanHealthZeroBudget` in ocf-core `src/payment/services/planHealth.go`.
+ * A code added there without a translation here fails this test.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -104,15 +105,17 @@ describe('PlanHealth — finding code coverage', () => {
 
     it(`substitutes the server-supplied detail in ${locale}`, async () => {
       const wrapper = await mountWith(BACKEND_FINDING_CODES, locale)
-      const rendered = wrapper.text()
+      const sentences = wrapper.findAll('.ocf-planhealth-sentence').map((n) => n.text())
 
-      for (const entry of BACKEND_FINDING_CODES) {
+      expect(sentences).toHaveLength(BACKEND_FINDING_CODES.length)
+      for (const [index, entry] of BACKEND_FINDING_CODES.entries()) {
+        const rendered = sentences[index]
         expect(
           rendered.includes(entry.detail),
           `${entry.code} dropped its detail — the numbers the server alone knows are lost`
         ).toBe(true)
+        expect(rendered).not.toContain('{detail}')
       }
-      expect(rendered).not.toContain('{detail}')
     })
   }
 
