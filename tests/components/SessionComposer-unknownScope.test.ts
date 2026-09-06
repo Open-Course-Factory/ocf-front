@@ -117,7 +117,7 @@ describe('SessionComposer — unknown scope', () => {
       quota: {
         max_cpu: 0, max_memory_mb: 0,
         used_cpu: 0, used_memory_mb: 0,
-        remaining_cpu: 2147483647, remaining_memory_mb: 2147483647,
+        remaining_cpu: 0, remaining_memory_mb: 0,
         scope: 'unknown'
       }
     })
@@ -148,7 +148,7 @@ describe('SessionComposer — unknown scope', () => {
       quota: {
         max_cpu: 0, max_memory_mb: 0,
         used_cpu: 0, used_memory_mb: 0,
-        remaining_cpu: 2147483647, remaining_memory_mb: 2147483647,
+        remaining_cpu: 0, remaining_memory_mb: 0,
         scope: 'unknown'
       }
     })
@@ -211,7 +211,7 @@ describe('SessionComposer — unknown scope', () => {
       quota: {
         max_cpu: 0, max_memory_mb: 0,
         used_cpu: 0, used_memory_mb: 0,
-        remaining_cpu: 2147483647, remaining_memory_mb: 2147483647,
+        remaining_cpu: 0, remaining_memory_mb: 0,
         scope: 'unknown'
       }
     })

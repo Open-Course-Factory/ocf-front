@@ -68,8 +68,8 @@
         <!-- Per-member limit subheader (the plan budget applies to EACH member) -->
         <div class="per-member-limit" data-testid="per-member-limit">
           <i class="fas fa-user-shield"></i>
-          <span v-if="isUnlimited">
-            {{ t('orgTerminalUsage.perMemberUnlimited', { plan: usageData.plan_name }) }}
+          <span v-if="budgetUnknown">
+            {{ t('orgTerminalUsage.budgetUnknown', { plan: usageData.plan_name }) }}
           </span>
           <span v-else>
             {{ t('orgTerminalUsage.perMemberLimit', { plan: usageData.plan_name, cpu: maxCpuLabel, mem: maxMemoryLabel }) }}
@@ -105,7 +105,7 @@
                   <span class="bar-label">CPU</span>
                   <div class="bar-track">
                     <div
-                      v-if="!cpuUnknown"
+                      v-if="!budgetUnknown"
                       class="bar-fill"
                       :class="memberCpuColorClass(user)"
                       data-testid="user-cpu-bar-fill"
@@ -113,7 +113,7 @@
                     ></div>
                   </div>
                   <span class="bar-meta" data-testid="user-active-cpu">
-                    <template v-if="cpuUnknown">{{ formatMcpuAsVcpu(user.active_cpu) }} vCPU</template>
+                    <template v-if="budgetUnknown">{{ formatMcpuAsVcpu(user.active_cpu) }} vCPU</template>
                     <template v-else>{{ formatMcpuAsVcpu(user.active_cpu) }} / {{ maxCpuLabel }} vCPU</template>
                   </span>
                 </div>
@@ -123,7 +123,7 @@
                   <span class="bar-label">RAM</span>
                   <div class="bar-track">
                     <div
-                      v-if="!memUnknown"
+                      v-if="!budgetUnknown"
                       class="bar-fill"
                       :class="memberMemColorClass(user)"
                       data-testid="user-mem-bar-fill"
@@ -131,7 +131,7 @@
                     ></div>
                   </div>
                   <span class="bar-meta" data-testid="user-active-memory">
-                    <template v-if="memUnknown">{{ formatMemoryMb(user.active_memory_mb) }}</template>
+                    <template v-if="budgetUnknown">{{ formatMemoryMb(user.active_memory_mb) }}</template>
                     <template v-else>{{ formatMemoryMb(user.active_memory_mb) }} / {{ maxMemoryLabel }}</template>
                   </span>
                 </div>
@@ -188,7 +188,7 @@ const { t } = useTranslations({
       fetchError: 'Could not load terminal usage data.',
       autoRefreshInfo: 'Auto-refreshes every {seconds} seconds.',
       perMemberLimit: 'Plan {plan} — per-member limit: {cpu} vCPU · {mem}',
-      perMemberUnlimited: 'Plan {plan} — unlimited per member (capped by the org\'s backend capacity)',
+      budgetUnknown: 'Plan {plan} — per-member capacity unavailable right now; members can still start sessions.',
     }
   },
   fr: {
@@ -202,7 +202,7 @@ const { t } = useTranslations({
       fetchError: 'Impossible de charger les données d\'utilisation des terminaux.',
       autoRefreshInfo: 'Actualisation automatique toutes les {seconds} secondes.',
       perMemberLimit: 'Forfait {plan} — limite par membre : {cpu} vCPU · {mem}',
-      perMemberUnlimited: 'Forfait {plan} — illimité par membre (limité par la capacité du backend de l\'organisation)',
+      budgetUnknown: 'Forfait {plan} — capacité par membre indisponible pour le moment ; les membres peuvent tout de même lancer des sessions.',
     }
   }
 })
@@ -228,18 +228,13 @@ const canManage = computed(() => {
 // an informational total in the header badge.
 const totalOccupyingSlots = computed<number>(() => usageData.value?.occupying_slots ?? 0)
 
-// Per-member plan caps. Every plan carries a positive budget, so a zero here
-// means the figure is missing rather than uncapped — the bars have nothing to
-// draw against and the panel falls back to the same uncapped rendering it used
-// for unlimited plans.
+// Per-member plan caps. Every plan carries a positive budget; the backend
+// reports scope 'unknown' (with a zeroed envelope) when it could not compute
+// one, and that scope alone decides whether the bars have a cap to draw
+// against — the same rule SessionComposer applies.
 const maxCpu = computed(() => usageData.value?.quota?.max_cpu ?? 0)
 const maxMemoryMb = computed(() => usageData.value?.quota?.max_memory_mb ?? 0)
-
-const cpuUnknown = computed(() => maxCpu.value <= 0)
-const memUnknown = computed(() => maxMemoryMb.value <= 0)
-const isUnlimited = computed(() => {
-  return usageData.value?.quota?.scope === 'unknown' || (cpuUnknown.value && memUnknown.value)
-})
+const budgetUnknown = computed(() => usageData.value?.quota?.scope === 'unknown')
 
 const maxCpuLabel = computed(() => formatMcpuAsVcpu(maxCpu.value))
 const maxMemoryLabel = computed(() => formatMemoryMb(maxMemoryMb.value))
@@ -250,7 +245,8 @@ function colorClassForPct(pct: number): string {
   return 'color-success'
 }
 
-// A member's usage as a percentage of their own per-member cap.
+// A member's usage as a percentage of their own per-member cap. The `<= 0`
+// guards only protect against division by zero; scope decides visibility.
 function memberCpuPct(user: OrgTerminalUsageUser): number {
   if (maxCpu.value <= 0) return 0
   return Math.min(100, Math.round((user.active_cpu / maxCpu.value) * 100))

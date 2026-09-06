@@ -229,17 +229,18 @@ export interface ActiveSession {
  * Response from GET /terminals/my-usage[?organization_id=<id>].
  *
  * The CPU/RAM envelope reflects either the user's personal plan or the org
- * plan when an organization context is passed. `max_cpu === 0` /
- * `max_memory_mb === 0` signals an unlimited axis (mirrors SessionQuota).
+ * plan when an organization context is passed. Every plan carries a positive
+ * budget; when the backend cannot compute one it zeroes the whole envelope
+ * (mirrors SessionQuota with scope 'unknown').
  */
 export interface MyTerminalUsageResponse {
   plan_name: string
   plan_source: 'personal' | 'organization'
   /** Org name when source = organization, otherwise empty string */
   plan_source_name: string
-  /** 0 = unlimited */
+  /** Per-plan CPU budget in mCPU; 0 only when no budget could be computed */
   max_cpu: number
-  /** 0 = unlimited */
+  /** Per-plan RAM budget in MiB; 0 only when no budget could be computed */
   max_memory_mb: number
   max_session_duration_minutes: number
   used_cpu: number

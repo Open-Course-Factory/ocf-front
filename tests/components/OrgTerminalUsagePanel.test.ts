@@ -3,7 +3,7 @@
  *
  * Org plans apply their CPU/RAM budget PER MEMBER, not as a pooled org-wide
  * quota. The panel therefore renders:
- *   - a per-member-limit subheader (or an "unlimited per member" line), and
+ *   - a per-member-limit subheader (or a "capacity unavailable" line when the scope is unknown), and
  *   - one row per active user, each showing that user's CPU/RAM usage against
  *     the per-member cap plus their occupying-slot count.
  *
@@ -103,18 +103,19 @@ const CAPPED_USAGE: OrgTerminalUsage = {
   ]
 }
 
-// Unlimited per-member plan: max_cpu / max_memory_mb both 0 (server convention).
-const UNLIMITED_USAGE: OrgTerminalUsage = {
+// No budget could be computed: the backend reports scope 'unknown' and zeroes
+// the whole envelope.
+const UNKNOWN_BUDGET_USAGE: OrgTerminalUsage = {
   ...CAPPED_USAGE,
   plan_name: 'Enterprise',
   quota: {
     max_cpu: 0,
     max_memory_mb: 0,
-    used_cpu: 3000,
-    used_memory_mb: 6144,
+    used_cpu: 0,
+    used_memory_mb: 0,
     remaining_cpu: 0,
     remaining_memory_mb: 0,
-    scope: 'unlimited'
+    scope: 'unknown'
   }
 }
 
@@ -139,13 +140,16 @@ describe('OrgTerminalUsagePanel', () => {
       expect(text.toLowerCase()).not.toContain('unlimited')
     })
 
-    it('shows the "unlimited per member" copy when the plan cap is 0', async () => {
-      getOrgTerminalUsageMock.mockResolvedValue(UNLIMITED_USAGE)
+    it('shows the "capacity unavailable" copy when the budget scope is unknown', async () => {
+      getOrgTerminalUsageMock.mockResolvedValue(UNKNOWN_BUDGET_USAGE)
       const wrapper = await mountExpanded()
 
       const subheader = wrapper.find('[data-testid="per-member-limit"]')
       expect(subheader.exists()).toBe(true)
-      expect(subheader.text().toLowerCase()).toContain('unlimited')
+      const text = subheader.text().toLowerCase()
+      expect(text).toContain('capacity unavailable')
+      expect(text).toContain('can still start')
+      expect(text).not.toContain('unlimited')
 
       // No per-member cap bars are rendered when there is no cap to fill.
       expect(wrapper.find('[data-testid="user-cpu-bar-fill"]').exists()).toBe(false)

@@ -63,12 +63,12 @@
             <i class="fas fa-server budget-summary-icon"></i>
             {{ remainingResourcesLabel }}
           </p>
-          <!-- Budget summary line — hidden when budget exhausted (handled by empty string),
-               and when no budget could be computed at all. -->
+          <!-- No budget could be computed: say so instead of a misleading count. -->
           <p v-if="budgetUnknown" class="budget-summary">
             <i class="fas fa-circle-question budget-summary-icon"></i>
             {{ t('sessionComposer.budgetUnknown') }}
           </p>
+          <!-- Budget summary line — hidden when budget exhausted (handled by empty string). -->
           <p v-else-if="budgetSummary" class="budget-summary">
             <i class="fas fa-bolt budget-summary-icon"></i>
             {{ t('sessionComposer.youCanSpawn', { summary: budgetSummary }) }}
