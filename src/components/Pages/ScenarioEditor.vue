@@ -615,9 +615,9 @@ const scopeHint = computed(() => {
   if (!scope) return ''
   if (scope.kind === 'platform') return t('scenarioEditor.scopeHintPlatform')
   if (scope.kind === 'org') {
-    return t('scenarioEditor.scopeHintOrg').replace('{name}', scope.name)
+    return t('scenarioEditor.scopeHintOrg', { name: scope.name })
   }
-  return t('scenarioEditor.scopeHintGroup').replace('{name}', scope.name)
+  return t('scenarioEditor.scopeHintGroup', { name: scope.name })
 })
 
 const currentScenarioOrgLabel = computed<string | null>(() => {

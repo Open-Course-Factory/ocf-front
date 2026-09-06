@@ -752,8 +752,7 @@ async function selectPlan(plan: any) {
 
         // If user wants to upgrade from assigned subscription with a personal one
         if (!isDowngrade) {
-          const message = t('subscriptionPlans.upgradeFromAssignedConfirm')
-            .replace('{newPlan}', plan.name)
+          const message = t('subscriptionPlans.upgradeFromAssignedConfirm', { newPlan: plan.name })
 
           const confirmed = await showConfirm(
             message,

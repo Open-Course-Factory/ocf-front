@@ -99,10 +99,10 @@ const blockingCount = computed(() =>
  * language; the server sends a stable code and the parts it alone can know.
  */
 function sentence(finding: Finding): string {
-  const template = t(`health.codes.${finding.code}`)
-  return template
-    .replace('{locale}', finding.locale || '')
-    .replace('{detail}', finding.detail || '')
+  return t(`health.codes.${finding.code}`, {
+    locale: finding.locale || '',
+    detail: finding.detail || '',
+  })
 }
 
 async function load() {
