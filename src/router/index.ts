@@ -21,6 +21,7 @@
 
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import { useCurrentUserStore } from '../stores/currentUser';
+import { classroomRefusalRedirect } from './classroomGuard';
 import { featureFlagService } from '../services/features';
 import { useSettingsNavigation } from '../composables/useSettingsNavigation';
 import { getCurrentActorRoles } from '../composables/useFeatureFlags';
@@ -597,6 +598,18 @@ router.beforeEach(async (to, from, next) => {
     }
 
     console.log('✅ Permission check passed for', to.path);
+  }
+
+  // Classroom pages follow the backend's verdict for the current context, like
+  // the sidebar entry that leads to them. A URL is not a way around a locked tab.
+  if (to.meta.requiresClassroomEntitlement === true) {
+    const { usePermissionsStore } = await import('../stores/permissions');
+    const features = await usePermissionsStore().ensureEffectiveFeaturesLoaded().catch(() => null);
+    const redirect = classroomRefusalRedirect(features);
+    if (redirect) {
+      next(redirect);
+      return;
+    }
   }
 
   // Scenario editor manager check (#213) — gates routes that declare
