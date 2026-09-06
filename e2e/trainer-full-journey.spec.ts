@@ -321,8 +321,8 @@ test.describe('Trainer full journey', () => {
       await fillStripeCheckout(page, { email: trainer.email });
 
       await expect(page).toHaveURL(/\/checkout-success/, { timeout: 90_000 });
-      await expect(page.locator('.success-animation')).toBeVisible({ timeout: 90_000 });
-      await expect(page.locator('.subscription-details')).toContainText(targetPlan.name);
+      await expect(page.locator('[data-test="activated-state"]')).toBeVisible({ timeout: 90_000 });
+      await expect(page.locator('[data-test="subscription-details"]')).toContainText(targetPlan.name);
 
       // The webhook is what activates the subscription; without the forwarder
       // running, this is where the run stops. Poll the API rather than the

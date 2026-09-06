@@ -114,13 +114,13 @@ test.describe('Plan purchase', () => {
     // Back on our side: the success page polls until the webhook activates the
     // subscription, then swaps the spinner for the confirmation content.
     await expect(page).toHaveURL(/\/checkout-success/, { timeout: 60_000 });
-    await expect(page.locator('.success-animation')).toBeVisible({ timeout: 60_000 });
-    await expect(page.locator('.subscription-details')).toContainText(targetPlan);
+    await expect(page.locator('[data-test="activated-state"]')).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator('[data-test="subscription-details"]')).toContainText(targetPlan);
     await demoPause(page, 2); // dwell on the activated-subscription confirmation
 
-    // Follow the success page's own "View Dashboard" call-to-action — the
-    // dashboard now reports the paid plan as the active subscription source.
-    await page.locator('.next-steps a[href="/subscription-dashboard"]').first().click();
+    // Follow the success page's own dashboard link — the dashboard now reports
+    // the paid plan as the active subscription source.
+    await page.locator('a[href="/subscription-dashboard"]').first().click();
     await expect(page.locator('.plan-name').first()).toHaveText(targetPlan, { timeout: 15_000 });
     await demoPause(page, 2); // dwell on the dashboard's active-plan card
 
