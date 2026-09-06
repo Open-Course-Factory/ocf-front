@@ -17,10 +17,15 @@
 import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { useTranslations } from '../../../composables/useTranslations'
+import { formatMcpuAsVcpu } from '../../../utils/formatters'
+import { formatMemoryMb } from '../../../utils/quotaFormatters'
+
+// Mirrors the severity values in ocf-core src/payment/services/planHealth.go.
+type Severity = 'blocking' | 'warning' | 'advisory'
 
 interface Finding {
   code: string
-  severity: string
+  severity: Severity
   detail?: string
 }
 
@@ -106,14 +111,14 @@ const warningCount = computed(() =>
   )
 )
 
-const severityLabels: Record<string, string> = {
+const severityLabels: Record<Severity, string> = {
   blocking: 'planHealth.blocking',
   warning: 'planHealth.warning',
   advisory: 'planHealth.advisory'
 }
 
-function severityLabel(severity: string): string {
-  return t(severityLabels[severity] ?? 'planHealth.warning')
+function severityLabel(severity: Severity): string {
+  return t(severityLabels[severity])
 }
 
 /**
@@ -132,8 +137,7 @@ function sentence(finding: Finding): string {
 
 /** mCPU is the storage unit; vCPU is what an operator thinks in. */
 function budgetLabel(plan: PlanHealth): string {
-  const vcpu = plan.max_cpu / 1000
-  return `${vcpu} vCPU · ${plan.max_memory_mb} MB`
+  return `${formatMcpuAsVcpu(plan.max_cpu)} vCPU · ${formatMemoryMb(plan.max_memory_mb)}`
 }
 
 async function load() {
