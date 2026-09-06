@@ -112,7 +112,6 @@ function mountView() {
       stubs: {
         TerminalSessionPanel: true,
         ScenarioPanel: true,
-        ScenarioStartBar: true,
         ScenarioProvisioningOverlay: true,
         CommandHistory: true,
         BaseModal: true,

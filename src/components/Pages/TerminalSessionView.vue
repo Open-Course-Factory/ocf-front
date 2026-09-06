@@ -68,18 +68,6 @@
         </button>
       </div>
 
-      <!-- Scenario start bar (when no scenario active) -->
-      <ScenarioStartBar
-        ref="scenarioStartBarRef"
-        v-show="isSessionActive && !scenarioSessionId && !scenarioLoading && !terminalHadScenario"
-        :terminal-session-id="sessionId"
-        :terminal-instance-type="sessionInfo?.instance_type"
-        :terminal-machine-size="sessionInfo?.machine_size"
-        @scenario-started="handleScenarioStarted"
-        @scenario-loading="handleScenarioLoading"
-        @provisioning-phase="handleProvisioningPhase"
-        @provisioning-session-id="handleProvisioningSessionId"
-      />
 
       <!-- Scenario briefing card (full width, dismissible). Closed, it is gone
            from the layout rather than collapsed to a header bar — that bar cost
@@ -158,7 +146,6 @@
           :is-recording="isRecording"
           :end-reason="terminalEndReason"
           :has-scenario="terminalHadScenario"
-          :show-history="!scenarioLoading"
           :show-stop-button="isPersistent"
           :is-stopping="isStopping"
           :show-destroy-button="true"
@@ -267,13 +254,6 @@
       </template>
     </BaseModal>
 
-    <!-- Full-screen provisioning overlay (shared with ScenarioLauncher) -->
-    <ScenarioProvisioningOverlay
-      v-if="scenarioLoading"
-      :phase="provisioningPhase"
-      :cancellable="!!provisioningScenarioSessionId"
-      @cancel="handleCancelProvisioning"
-    />
   </div>
 </template>
 
@@ -293,8 +273,6 @@ import { useLimitReachedMessage } from '../../composables/useLimitReachedMessage
 import { useDunningRejection } from '../../composables/useDunningRejection'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
 import ScenarioPanel from '../Terminal/ScenarioPanel.vue'
-import ScenarioStartBar from '../Terminal/ScenarioStartBar.vue'
-import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
 import CommandHistory from '../Terminal/CommandHistory.vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import { getEffectiveSessionState } from '../../utils/sessionState'
@@ -328,11 +306,7 @@ const { t } = useTranslations({
       expiresIn1min: 'Your session expires in less than 1 minute!',
       expiryWarningTitle: 'Session Expiring',
       scenarioBriefing: 'Scenario Briefing',
-      scenarioLoading: 'Preparing your environment...',
-      scenarioLoadingDetail: 'Setting up the challenge. This may take a moment.',
       scenarioReady: 'Your environment is ready!',
-      scenarioLaunch: 'Start!',
-      scenarioLaunching: 'Starting...',
       collapseBriefing: 'Close briefing',
       collapseScenario: 'Collapse instructions',
       expandScenario: 'Expand instructions',
@@ -377,11 +351,7 @@ const { t } = useTranslations({
       expiresIn1min: 'Votre session expire dans moins d\'une minute !',
       expiryWarningTitle: 'Expiration de la session',
       scenarioBriefing: 'Briefing du scénario',
-      scenarioLoading: 'Préparation de votre environnement...',
-      scenarioLoadingDetail: 'Configuration du challenge en cours. Cela peut prendre un moment.',
       scenarioReady: 'Votre environnement est prêt !',
-      scenarioLaunch: 'Démarrer !',
-      scenarioLaunching: 'Démarrage...',
       collapseBriefing: 'Fermer le briefing',
       collapseScenario: 'Réduire les instructions',
       expandScenario: 'Afficher les instructions',
@@ -493,40 +463,7 @@ const scenarioSessionStatus = ref<string | null>(null)
 const scenarioTerminalRef = ref<InstanceType<typeof TerminalSessionPanel> | null>(null)
 const standaloneTerminalRef = ref<InstanceType<typeof TerminalSessionPanel> | null>(null)
 const scenarioPanelRef = ref<InstanceType<typeof ScenarioPanel> | null>(null)
-const scenarioStartBarRef = ref<InstanceType<typeof ScenarioStartBar> | null>(null)
-const scenarioLoading = ref(false)
-const provisioningPhase = ref('')
-const provisioningScenarioSessionId = ref('')
 const terminalHadScenario = ref(false)
-
-function handleProvisioningPhase(phase: string) {
-  provisioningPhase.value = phase
-}
-
-function handleProvisioningSessionId(sessionId: string) {
-  provisioningScenarioSessionId.value = sessionId
-}
-
-async function handleCancelProvisioning() {
-  const sessionId = provisioningScenarioSessionId.value
-
-  // Abort the polling in ScenarioStartBar
-  scenarioStartBarRef.value?.abortProvisioning()
-
-  // Reset UI state
-  scenarioLoading.value = false
-  provisioningPhase.value = ''
-  provisioningScenarioSessionId.value = ''
-
-  // Abandon the session on the backend
-  if (sessionId) {
-    try {
-      await scenarioSessionService.abandonSession(sessionId)
-    } catch {
-      // Best-effort — session may already be cleaned up
-    }
-  }
-}
 
 // Restore briefing dismissed state from localStorage when scenario session is known
 watch(scenarioSessionId, (id) => {
@@ -568,8 +505,7 @@ function startScenarioSync() {
   if (scenarioSessionId.value || scenarioSyncInterval) return
 
   scenarioSyncInterval = setInterval(async () => {
-    // Don't auto-set scenarioSessionId while scenario is loading — let handleScenarioStarted control it
-    if (scenarioSessionId.value || !isSessionActive.value || scenarioLoading.value) {
+    if (scenarioSessionId.value || !isSessionActive.value) {
       if (scenarioSessionId.value || !isSessionActive.value) stopScenarioSync()
       return
     }
@@ -805,7 +741,7 @@ async function loadSession() {
     }
 
     // Auto-detect linked scenario session (unless already set via query parameter or loading)
-    if (!scenarioSessionId.value && !scenarioLoading.value) {
+    if (!scenarioSessionId.value) {
       try {
         const scenarioSession = await scenarioSessionService.getSessionByTerminal(sessionId)
         if (scenarioSession) {
@@ -1007,19 +943,6 @@ function handleSessionExpired() {
     timerInterval = null
   }
   showWarning(t('sessionView.sessionExpiredNotice'), t('sessionView.sessionExpiredTitle'))
-}
-
-function handleScenarioLoading(loading: boolean) {
-  scenarioLoading.value = loading
-  if (loading) stopScenarioSync()
-}
-
-function handleScenarioStarted(newScenarioSessionId: string) {
-  scenarioSessionId.value = newScenarioSessionId
-  terminalHadScenario.value = true
-  provisioningScenarioSessionId.value = ''
-  stopScenarioSync()
-  scenarioLoading.value = false
 }
 
 function handleScenarioCompleted() {
