@@ -22,6 +22,13 @@ export interface UpdateTerminalRequest {
 // Backend already caches for 60s; this just deduplicates within the SPA lifetime.
 let sizesCache: Promise<Size[]> | null = null
 
+/**
+ * How long the browser waits for a session to start. Creating the container
+ * happens inside the request, and a backend that has never run a distribution
+ * downloads its image first. 30 s, the axios default, lost that race.
+ */
+export const START_SESSION_TIMEOUT_MS = 120_000
+
 export const terminalService = {
   async stopSession(sessionId: string) {
     const response = await axios.post(`/terminals/${sessionId}/stop`)
@@ -88,7 +95,11 @@ export const terminalService = {
   },
 
   async startComposedSession(data: StartComposedSessionData) {
-    const response = await axios.post('/terminals/start-composed-session', data)
+    // Longer than the 30 s default: the backend creates the container before
+    // answering, and the first session of a distribution on a backend pulls the
+    // image first (38 s seen in production). The session was fine; the browser
+    // had given up. Same allowance as scenario launches.
+    const response = await axios.post('/terminals/start-composed-session', data, { timeout: START_SESSION_TIMEOUT_MS })
     return response.data
   },
 
