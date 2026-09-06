@@ -230,10 +230,13 @@ export interface ActiveSession {
  *
  * The CPU/RAM envelope reflects either the user's personal plan or the org
  * plan when an organization context is passed. Every plan carries a positive
- * budget; when the backend cannot compute one it zeroes the whole envelope
- * (mirrors SessionQuota with scope 'unknown').
+ * budget; when the backend cannot resolve one it leaves `plan_name` empty and
+ * zeroes the whole envelope. There is no `quota.scope` on this endpoint, so an
+ * empty `plan_name` is the "no budget could be computed" signal (the
+ * SessionQuota equivalent of scope 'unknown').
  */
 export interface MyTerminalUsageResponse {
+  /** Empty when no plan resolved — the envelope below is then meaningless */
   plan_name: string
   plan_source: 'personal' | 'organization'
   /** Org name when source = organization, otherwise empty string */

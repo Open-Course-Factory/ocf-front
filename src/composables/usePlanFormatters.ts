@@ -12,7 +12,7 @@ import { formatBudgetAsSizes, CANONICAL_SIZE_CATALOG } from '../utils/quotaForma
 // callers get the copy without registering global i18n messages — mirrors the
 // featureLabels pattern above.
 const bulletLabels = {
-  unlimitedCapacity: { en: 'Unlimited capacity', fr: 'Capacité illimitée' },
+  noSizeFits: { en: 'No machine size fits this capacity', fr: 'Aucune taille de machine ne tient dans cette capacité' },
   sessionDurationHours: { en: 'Sessions up to {n} h', fr: 'Sessions jusqu\'à {n} h' },
   sessionDurationMinutes: { en: 'Sessions up to {n} min', fr: 'Sessions jusqu\'à {n} min' },
   networkAccess: { en: 'Internet access', fr: 'Accès à Internet' },
@@ -47,7 +47,7 @@ export function usePlanFormatters() {
   /**
    * Build the ordered customer-facing pricing bullets for a plan from its
    * TYPED columns only (never `features[]`). Order:
-   *   1. capacity/budget (always) — size summary, or "Unlimited capacity" for 0/0
+   *   1. capacity/budget (always) — size summary, or "no size fits" when nothing fits
    *   2. session duration    (iff max_session_duration_minutes > 0) — hours when whole
    *   3. internet access     (iff network_access_enabled)
    *   4. persistent machines (iff data_persistence_enabled) — embeds the GB value
@@ -59,7 +59,7 @@ export function usePlanFormatters() {
 
     const joiner = locale.value === 'fr' ? 'OU' : 'OR'
     const sizes = formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, joiner)
-    bullets.push(sizes || label(bulletLabels.unlimitedCapacity))
+    bullets.push(sizes || label(bulletLabels.noSizeFits))
 
     // Hours read better than minutes at the durations we actually sell: 480 is
     // eight hours, and nobody thinks in minutes above about an hour. Fall back to

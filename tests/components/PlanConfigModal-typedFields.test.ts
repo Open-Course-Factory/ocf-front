@@ -151,8 +151,8 @@ describe('PlanConfigModal — dedicated group_management toggle', () => {
     const wrapper = await mountModal({
       id: 'plan-1',
       name: 'Team',
-      max_cpu: 0,
-      max_memory_mb: 0,
+      max_cpu: 1000,
+      max_memory_mb: 512,
       features: [],
       group_management_enabled: true,
     })
@@ -232,8 +232,8 @@ describe('PlanConfigModal — features never emitted', () => {
     const wrapper = await mountModal({
       id: 'plan-with-features',
       name: 'Existing',
-      max_cpu: 0,
-      max_memory_mb: 0,
+      max_cpu: 1000,
+      max_memory_mb: 512,
       // Read-only derived projection the DTO rejects — must be dropped on save.
       features: ['group_management', 'network_access'],
     })

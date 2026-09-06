@@ -209,7 +209,7 @@ const { t } = useTranslations({
       budgetCapacity: 'Includes up to {summary} simultaneous sessions',
       or: 'OR',
       capacityTooltip: 'Your plan\'s capacity, expressed as machine sizes you can spawn at once. Pick any combination that fits.',
-      unlimitedCapacity: 'Unlimited capacity',
+      noSizeFits: 'No machine size fits this capacity',
     },
     subscriptionPlans: {
       manageSubscription: 'Manage Subscription',
@@ -248,7 +248,7 @@ const { t } = useTranslations({
       budgetCapacity: 'Comprend jusqu\'à {summary} sessions simultanées',
       or: 'OU',
       capacityTooltip: 'La capacité de votre forfait, exprimée en tailles de machines que vous pouvez lancer simultanément. Choisissez la combinaison qui vous convient.',
-      unlimitedCapacity: 'Capacité illimitée',
+      noSizeFits: 'Aucune taille de machine ne tient dans cette capacité',
     },
     subscriptionPlans: {
       manageSubscription: 'Gérer l\'abonnement',
@@ -268,13 +268,8 @@ const { t } = useTranslations({
 const budgetCapacityText = computed(() => {
   const plan = props.primarySubscription?.subscription_plan
   if (!plan) return ''
-  const maxCpu = plan.max_cpu ?? 0
-  const maxMemoryMb = plan.max_memory_mb ?? 0
-  if (maxCpu === 0 && maxMemoryMb === 0) {
-    return t('pricingPlanCard.unlimitedCapacity')
-  }
   const summary = formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, t('pricingPlanCard.or'))
-  if (!summary) return ''
+  if (!summary) return t('pricingPlanCard.noSizeFits')
   return t('pricingPlanCard.budgetCapacity', { summary })
 })
 

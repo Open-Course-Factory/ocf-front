@@ -119,8 +119,8 @@ describe('PlanConfigModal — supervision & backend routing', () => {
     const wrapper = await mountModal({
       id: 'plan-1',
       name: 'Supervised',
-      max_cpu: 0,
-      max_memory_mb: 0,
+      max_cpu: 1000,
+      max_memory_mb: 512,
       features: [],
       session_supervision_enabled: true,
       default_backend: 'incus-a',

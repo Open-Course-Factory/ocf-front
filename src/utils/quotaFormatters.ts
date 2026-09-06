@@ -281,9 +281,9 @@ export interface SizeQuotaRow {
  *
  * Rows with `count <= 0` or an unknown `size_key` are silently ignored.
  *
- * Empty input returns `{ max_cpu: 0, max_memory_mb: 0 }` — callers may decide
- * to treat that as "no rows yet, save disabled" or as "unlimited" depending
- * on the surrounding UI context.
+ * Empty input returns `{ max_cpu: 0, max_memory_mb: 0 }` — a zero budget,
+ * which the backend refuses to save; callers treat it as "no rows yet, save
+ * disabled".
  */
 export function computeMaxFromRows(
   rows: SizeQuotaRow[],
@@ -312,8 +312,9 @@ export function computeMaxFromRows(
  * sizes in descending capacity order, formatted as "N SIZE" and joined by
  * the localized joiner.
  *
- * Returns the empty string when both `max_cpu` and `max_memory_mb` are 0
- * (unlimited budget — caller renders "Unlimited capacity" instead).
+ * Returns the empty string when no catalog size fits the budget — including a
+ * zero budget. Callers render that as "no size fits this budget"; a zero
+ * budget is never "unlimited" (the backend refuses to save one).
  *
  * @param plan - the subscription plan (only the budget fields are read)
  * @param catalog - canonical size catalog (use {@link CANONICAL_SIZE_CATALOG})
@@ -326,7 +327,6 @@ export function formatBudgetAsSizes(
 ): string {
   const maxCpu = plan.max_cpu ?? 0
   const maxMemoryMb = plan.max_memory_mb ?? 0
-  if (maxCpu === 0 && maxMemoryMb === 0) return ''
 
   type Entry = { key: string; count: number }
   const entries: Entry[] = []
@@ -336,10 +336,10 @@ export function formatBudgetAsSizes(
   for (const key of CAPACITY_ORDER) {
     const size = catalog[key as keyof CanonicalSizeCatalog]
     if (!size) continue
-    const byCpu = maxCpu === 0 ? Infinity : Math.floor(maxCpu / size.cpu)
-    const byMem = maxMemoryMb === 0 ? Infinity : Math.floor(maxMemoryMb / size.memory_mb)
+    const byCpu = Math.floor(maxCpu / size.cpu)
+    const byMem = Math.floor(maxMemoryMb / size.memory_mb)
     const count = Math.min(byCpu, byMem)
-    if (count >= 1 && Number.isFinite(count)) {
+    if (count >= 1) {
       entries.push({ key: key.toUpperCase(), count })
     }
   }
@@ -354,17 +354,19 @@ export function formatBudgetAsSizes(
 
 /**
  * Discriminated result of {@link summarizeRemainingBudget}. `sizes` is only
- * populated for `kind === 'sizes'`; it is `''` for the other two states.
+ * populated for `kind === 'sizes'`; it is `''` when exhausted.
  */
 export interface RemainingBudgetSummary {
-  kind: 'unlimited' | 'exhausted' | 'sizes'
+  kind: 'exhausted' | 'sizes'
   sizes: string
 }
 
 /**
- * Live usage envelope: the plan's caps plus what is currently consumed. A cap
- * of 0 means "uncapped on this axis" (server convention). Both units mirror the
- * catalog — `*_cpu` in mCPU, `*_memory_mb` in MiB.
+ * Live usage envelope: the plan's caps plus what is currently consumed. Both
+ * units mirror the catalog — `*_cpu` in mCPU, `*_memory_mb` in MiB. Whether a
+ * budget exists at all is not encoded here: the caller reads the response's
+ * own signal (`quota.scope === 'unknown'`, or an unresolved plan) before
+ * asking for a summary.
  */
 interface BudgetUsageLike {
   max_cpu?: number
@@ -379,14 +381,9 @@ interface BudgetUsageLike {
  * same size-count language as the plan cards. Delegates the size-fitting to
  * {@link formatBudgetAsSizes} — no parallel implementation.
  *
- * The tricky part is that `0` on an axis is overloaded: it means "unlimited"
- * when it is the plan's CAP (max), but "used up" when it is the REMAINING
- * budget of a capped axis. Feeding a used-up capped plan straight into
- * `formatBudgetAsSizes` (which reads max 0 as unlimited) would print an
- * infinite-capacity line for an exhausted plan — hence this discriminated
- * return instead of a bare string:
- *   - `unlimited` — both axes uncapped (plan has no cap at all)
- *   - `exhausted` — a capped axis has ≤ 0 remaining, or the remaining budget is
+ * The discriminated return keeps "nothing fits" explicit instead of leaving
+ * the caller to guess what an empty string means:
+ *   - `exhausted` — an axis has ≤ 0 remaining, or the remaining budget is
  *     positive but below the smallest catalog size (formatBudgetAsSizes → '')
  *   - `sizes`     — otherwise, the remaining budget rendered as "N L OR M …"
  *
@@ -399,17 +396,10 @@ export function summarizeRemainingBudget(
   catalog: CanonicalSizeCatalog,
   joiner: string
 ): RemainingBudgetSummary {
-  const cpuCapped = (usage.max_cpu ?? 0) > 0
-  const memCapped = (usage.max_memory_mb ?? 0) > 0
+  const remainingCpu = (usage.max_cpu ?? 0) - (usage.used_cpu ?? 0)
+  const remainingMemoryMb = (usage.max_memory_mb ?? 0) - (usage.used_memory_mb ?? 0)
 
-  if (!cpuCapped && !memCapped) return { kind: 'unlimited', sizes: '' }
-
-  // Uncapped axis contributes 0 → formatBudgetAsSizes reads that as Infinity, so
-  // the capped axis binds the count.
-  const remainingCpu = cpuCapped ? (usage.max_cpu ?? 0) - (usage.used_cpu ?? 0) : 0
-  const remainingMemoryMb = memCapped ? (usage.max_memory_mb ?? 0) - (usage.used_memory_mb ?? 0) : 0
-
-  if ((cpuCapped && remainingCpu <= 0) || (memCapped && remainingMemoryMb <= 0)) {
+  if (remainingCpu <= 0 || remainingMemoryMb <= 0) {
     return { kind: 'exhausted', sizes: '' }
   }
 

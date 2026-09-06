@@ -173,9 +173,9 @@ export function formatStorageSize(bytes: number, decimals: number = 2): string {
  *   - drop the trailing `.0` for whole numbers (`"1"`, not `"1.0"`)
  *   - keep up to 3 decimals so values like 250 mCPU render as `"0.25"`
  *
- * Returns `"0"` for 0, NaN, or non-finite input. Callers that want an
- * "unlimited" sentinel must handle the 0 case themselves (the backend uses
- * 0 = unlimited at the plan level; this helper has no opinion on semantics).
+ * Returns `"0"` for 0, NaN, or non-finite input. This helper has no opinion
+ * on semantics: a plan budget is always positive (the backend refuses 0), and
+ * whether a budget exists at all is signalled separately by `quota.scope`.
  *
  * @example
  * formatMcpuAsVcpu(500)   // "0.5"

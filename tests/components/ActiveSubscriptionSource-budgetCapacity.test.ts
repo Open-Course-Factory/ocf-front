@@ -12,8 +12,8 @@
  *        summary like "Includes up to 1 XL OR 2 L OR 4 M simultaneous
  *        sessions".
  *      - The OR joiner is localized for the active locale ("OU" in French).
- *      - For plans with max_cpu === 0 AND max_memory_mb === 0 (unlimited),
- *        the panel renders the "Unlimited capacity" string.
+ *      - For plans whose budget fits no catalog size, the panel renders the
+ *        "no size fits" string — never "unlimited".
  *
  * 2. Money-flow action gating (the reason this refactor is risky):
  *      - A personal ACTIVE subscription shows Manage + Cancel controls.
@@ -128,7 +128,9 @@ describe('ActiveSubscriptionSource — budget capacity rendering', () => {
     expect(wrapper.text()).toContain('1 XL OU 2 L OU 4 M')
   })
 
-  it('renders the unlimited-capacity string when both max_cpu and max_memory_mb are 0', () => {
+  it('renders the no-size-fits string when the budget is below the smallest size', () => {
+    // 400 mCPU / 200 MiB: positive, but XS needs 500 / 256. This used to say
+    // "Unlimited capacity" to a customer who could launch nothing.
     const wrapper = mountSource({
       id: 'sub-1',
       status: 'active',
@@ -136,13 +138,14 @@ describe('ActiveSubscriptionSource — budget capacity rendering', () => {
       subscription_plan_id: 'plan-1',
       subscription_plan: {
         id: 'plan-1',
-        name: 'Enterprise',
-        max_cpu: 0,
-        max_memory_mb: 0,
+        name: 'Tiny',
+        max_cpu: 400,
+        max_memory_mb: 200,
       },
     })
 
-    expect(wrapper.text()).toContain('Unlimited capacity')
+    expect(wrapper.text()).toContain('No machine size fits this capacity')
+    expect(wrapper.text()).not.toContain('Unlimited')
   })
 })
 

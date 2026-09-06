@@ -122,6 +122,9 @@ describe('PlanConfigModal — seat pricing', () => {
     const wrapper = await mountModal({
       id: 'plan-1',
       name: 'Siège élève',
+      // Any positive budget: a plan with none cannot be saved any more.
+      max_cpu: 1000,
+      max_memory_mb: 512,
       bulk_purchasable: true,
       use_tiered_pricing: true,
       pricing_tiers: [
@@ -209,6 +212,8 @@ describe('PlanConfigModal — seat pricing', () => {
     const wrapper = await mountModal({
       id: 'plan-2',
       name: 'Siège élève',
+      max_cpu: 1000,
+      max_memory_mb: 512,
       use_tiered_pricing: true,
       pricing_tiers: [{ min_quantity: 1, max_quantity: 0, unit_amount: 900 }],
     })

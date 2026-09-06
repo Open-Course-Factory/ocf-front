@@ -142,7 +142,7 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             assignToUser: 'Assign to User',
             capacityLabel: 'Capacity',
             capacityOr: 'OR',
-            capacityUnlimited: 'Unlimited capacity'
+            noSizeFits: 'No machine size fits this capacity'
         }
         },
         fr: {
@@ -251,7 +251,7 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             assignToUser: 'Attribuer à un utilisateur',
             capacityLabel: 'Capacité',
             capacityOr: 'OU',
-            capacityUnlimited: 'Capacité illimitée'
+            noSizeFits: 'Aucune taille de machine ne tient dans cette capacité'
         }
         }
     })
@@ -270,16 +270,12 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
         field('max_courses', t('subscriptionPlans.max_courses')).input().visible().creatable().updatable(),
         field('max_cpu', t('subscriptionPlans.max_cpu')).input().visible().readonly()
             .withDisplayFormatter((value: any) => {
-                const n = Number(value)
-                if (!Number.isFinite(n) || n === 0) return t('subscriptionPlans.capacityUnlimited')
                 // Backend stores CPU as integer millicores; users read in vCPU.
-                return `${formatMcpuAsVcpu(n)} vCPU`
+                return `${formatMcpuAsVcpu(Number(value))} vCPU`
             }),
         field('max_memory_mb', t('subscriptionPlans.max_memory_mb')).input().visible().readonly()
             .withDisplayFormatter((value: any) => {
-                const n = Number(value)
-                if (!Number.isFinite(n) || n === 0) return t('subscriptionPlans.capacityUnlimited')
-                return formatMemoryMb(n)
+                return formatMemoryMb(Number(value))
             }),
         field('required_role', t('subscriptionPlans.required_role')).input().visible().creatable().updatable(),
         field('max_session_duration_minutes', t('subscriptionPlans.max_session_duration_minutes')).input().visible().creatable().updatable(),

@@ -195,11 +195,17 @@ describe('formatBudgetAsSizes', () => {
     expect(formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, 'OR')).toBe('1 M OR 2 S OR 4 XS')
   })
 
-  it('returns empty string when both max_cpu and max_memory_mb are 0 (unlimited budget)', () => {
-    // Unlimited budget is signalled by 0 on both axes — callers render
-    // "Unlimited capacity" instead. The function must not return Infinity
-    // counts or some nonsensical "∞ XL" string.
+  it('returns empty string for a zero budget — nothing fits, never "unlimited"', () => {
+    // A zero budget is a budget nothing fits in (the backend refuses to save
+    // one). It must not be read as uncapped and turned into Infinity counts.
     const plan = { max_cpu: 0, max_memory_mb: 0 }
+    expect(formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, 'OR')).toBe('')
+  })
+
+  it('sizes a single zero axis by that axis, not by the other one', () => {
+    // Before, a 0 on one axis meant "uncapped" and the other axis bound the
+    // count. Now 0 mCPU fits nothing regardless of RAM.
+    const plan = { max_cpu: 0, max_memory_mb: 99999 }
     expect(formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, 'OR')).toBe('')
   })
 
@@ -231,13 +237,10 @@ describe('summarizeRemainingBudget', () => {
   // The usage panel needs "how much can I still launch" as a size-count line,
   // derived from the REMAINING budget (max − used). It must reuse the same
   // size-count math as the plan cards (formatBudgetAsSizes) so the two never
-  // drift — but it also has to tell apart two states that formatBudgetAsSizes
-  // collapses onto the same 0-budget input:
-  //   - "unlimited"  → the plan has no cap on that axis (server sends max = 0)
-  //   - "exhausted"  → the plan HAS a cap and it is fully consumed (remaining 0)
-  // Rendering "≈ 0 ×" (or, worse, "unlimited") for a used-up capped plan would
-  // be nonsense, so the helper returns a discriminated { kind, sizes } instead
-  // of a bare string.
+  // drift. Rendering "≈ 0 ×" for a used-up plan would be nonsense, so the
+  // helper returns a discriminated { kind, sizes } instead of a bare string.
+  // Whether a budget exists at all is NOT this helper's question: the caller
+  // reads the response's own signal (quota.scope / unresolved plan) first.
 
   it('returns the remaining capacity as a size-count string for a partly-used capped plan', () => {
     // max 8000 mCPU / 4096 MiB, half consumed → remaining 4000 / 2048.
@@ -258,20 +261,21 @@ describe('summarizeRemainingBudget', () => {
     expect(result.sizes).toBe('1 L OR 2 M OR 4 S')
   })
 
-  it('reports "unlimited" when both axes are uncapped (max = 0)', () => {
+  it('reports "exhausted" for a zero budget — there is no "unlimited" kind', () => {
+    // A zeroed envelope is what the backend sends when no plan resolved; the
+    // caller must key on that signal BEFORE calling this. Fed a zero budget,
+    // the helper has nothing to size and says so.
     const result = summarizeRemainingBudget(
       { max_cpu: 0, max_memory_mb: 0, used_cpu: 0, used_memory_mb: 0 },
       CANONICAL_SIZE_CATALOG,
       'OR'
     )
-    expect(result.kind).toBe('unlimited')
+    expect(result.kind).toBe('exhausted')
     expect(result.sizes).toBe('')
+    expect((result as { kind: string }).kind).not.toBe('unlimited')
   })
 
-  it('reports "exhausted" (NOT "unlimited") when a capped plan is fully consumed', () => {
-    // THE bug this guards: remaining CPU is 0 here, but the plan is capped
-    // (max 8000 ≠ 0). Feeding 0 straight into formatBudgetAsSizes would read
-    // as "unlimited" and print an infinite-capacity line for a used-up plan.
+  it('reports "exhausted" when a plan is fully consumed', () => {
     const result = summarizeRemainingBudget(
       { max_cpu: 8000, max_memory_mb: 4096, used_cpu: 8000, used_memory_mb: 4096 },
       CANONICAL_SIZE_CATALOG,
@@ -303,29 +307,27 @@ describe('summarizeRemainingBudget', () => {
     expect(result.sizes).toBe('')
   })
 
-  it('treats a single uncapped axis as unlimited on that axis and sizes by the capped one', () => {
-    // CPU uncapped (max 0), RAM capped at 4096 with 2048 used → remaining RAM
-    // 2048 binds the count. Must NOT be mistaken for exhausted just because
-    // the CPU axis reads 0.
+  it('reports "exhausted" for an untouched plan whose whole budget is below the smallest size', () => {
+    // The affords_no_size fault the plan health report flags: a positive
+    // budget (400 mCPU / 200 MiB) that no catalog size fits in, with nothing
+    // used yet. Both helpers must agree that nothing can be launched.
+    const usage = { max_cpu: 400, max_memory_mb: 200, used_cpu: 0, used_memory_mb: 0 }
+    expect(formatBudgetAsSizes(usage, CANONICAL_SIZE_CATALOG, 'OR')).toBe('')
+    const result = summarizeRemainingBudget(usage, CANONICAL_SIZE_CATALOG, 'OR')
+    expect(result.kind).toBe('exhausted')
+    expect(result.sizes).toBe('')
+  })
+
+  it('reports "exhausted" when one axis is zero, whatever the other axis holds', () => {
+    // 0 mCPU used to mean "uncapped CPU, size by RAM". A zero axis is now a
+    // budget nothing fits in.
     const result = summarizeRemainingBudget(
       { max_cpu: 0, max_memory_mb: 4096, used_cpu: 0, used_memory_mb: 2048 },
       CANONICAL_SIZE_CATALOG,
       'OR'
     )
-    expect(result.kind).toBe('sizes')
-    expect(result.sizes).toBe('1 L OR 2 M OR 4 S')
-  })
-
-  it('reports "exhausted" when the capped axis is used up even if the other axis is uncapped', () => {
-    // CPU uncapped, RAM capped and fully consumed → exhausted. This pins the
-    // disambiguation: a 0 on an UNCAPPED axis means unlimited, a 0 remaining on
-    // a CAPPED axis means used-up.
-    const result = summarizeRemainingBudget(
-      { max_cpu: 0, max_memory_mb: 4096, used_cpu: 0, used_memory_mb: 4096 },
-      CANONICAL_SIZE_CATALOG,
-      'OR'
-    )
     expect(result.kind).toBe('exhausted')
+    expect(result.sizes).toBe('')
   })
 
   it('uses the provided localized joiner for the sizes string', () => {

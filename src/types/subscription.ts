@@ -46,11 +46,12 @@ export interface SubscriptionPlan extends BaseEntity {
   command_history_retention_days: number // 0 = no recording, >0 = days to retain
 
   // Budget-mode limits — aggregate CPU + memory envelope shared across active terminals.
-  // 0 on both axes signals "unlimited budget"; customer-facing copy renders that as
-  // "Unlimited capacity" while the size-count summary stays empty.
-  /** Aggregate CPU budget across active terminals (0 = unlimited) */
+  // Both axes are always positive: the backend refuses a plan with a 0 budget, so
+  // there is no "unlimited" plan. A budget too small for any catalog size renders as
+  // "no size fits" and is flagged by the plan health report.
+  /** Aggregate CPU budget in mCPU across active terminals (always > 0) */
   max_cpu: number
-  /** Aggregate memory budget in MiB across active terminals (0 = unlimited) */
+  /** Aggregate memory budget in MiB across active terminals (always > 0) */
   max_memory_mb: number
 
   // Tiered pricing (for bulk purchases)

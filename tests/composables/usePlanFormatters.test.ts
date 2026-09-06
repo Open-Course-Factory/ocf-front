@@ -11,9 +11,9 @@
  * `string[]`, an ordered list of localized display bullets derived ONLY from
  * typed fields. Contract:
  *
- *   1. Capacity/budget — ALWAYS present (first bullet). Non-zero budget reuses
- *      formatBudgetAsSizes ("N SIZE OR ..."); a 0/0 budget renders the
- *      localized "Unlimited capacity" line.
+ *   1. Capacity/budget — ALWAYS present (first bullet). Reuses
+ *      formatBudgetAsSizes ("N SIZE OR ..."); a budget no catalog size fits
+ *      in renders the localized "no size fits" line, never "unlimited".
  *   2. Session duration — present iff plan.max_session_duration_minutes > 0.
  *   3. Network access — present iff plan.network_access_enabled === true.
  *   4. Persistent storage — present iff plan.data_persistence_enabled === true;
@@ -91,10 +91,13 @@ describe('usePlanFormatters — derivePlanBullets', () => {
     expect(list[0]).toMatch(/1 S/)
   })
 
-  it('renders the unlimited-capacity line as the sole bullet for a 0/0 budget plan', () => {
+  it('renders the no-size-fits line as the sole bullet for a budget below the smallest size', () => {
+    // The affords_no_size fault: 400 mCPU / 200 MiB is positive but XS needs
+    // 500 / 256. This used to print "Unlimited capacity" — the opposite of the
+    // truth.
     const list = bullets({
-      max_cpu: 0,
-      max_memory_mb: 0,
+      max_cpu: 400,
+      max_memory_mb: 200,
       max_session_duration_minutes: 0,
       network_access_enabled: false,
       data_persistence_enabled: false,
@@ -102,7 +105,14 @@ describe('usePlanFormatters — derivePlanBullets', () => {
       session_supervision_enabled: false,
     })
     expect(list).toHaveLength(1)
-    expect(list[0]).toMatch(/unlimited/i)
+    expect(list[0]).toMatch(/no machine size fits/i)
+    expect(list[0]).not.toMatch(/unlimited/i)
+  })
+
+  it('never renders an unlimited line for a 0/0 budget', () => {
+    const list = bullets({ max_cpu: 0, max_memory_mb: 0 })
+    expect(list).toHaveLength(1)
+    expect(list[0]).toMatch(/no machine size fits/i)
   })
 
   // Table-driven: each capability flag independently adds exactly its bullet.
@@ -192,8 +202,9 @@ describe('usePlanFormatters — derivePlanBullets', () => {
     expect(has(list, /supervis/i)).toBe(true)
   })
 
-  it('localizes the unlimited-capacity line in French', () => {
-    const list = bullets({ max_cpu: 0, max_memory_mb: 0 }, 'fr')
-    expect(has(list, /illimit/i)).toBe(true)
+  it('localizes the no-size-fits line in French', () => {
+    const list = bullets({ max_cpu: 400, max_memory_mb: 200 }, 'fr')
+    expect(has(list, /aucune taille/i)).toBe(true)
+    expect(has(list, /illimit/i)).toBe(false)
   })
 })

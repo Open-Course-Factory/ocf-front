@@ -233,11 +233,12 @@ const orgSubStore = useOrganizationSubscriptionsStore()
 const plansStore = useSubscriptionPlansStore()
 
 // Customer-facing capacity label: render the plan's CPU/RAM budget as a
-// size-count summary (e.g. "3 L OR 6 M OR 12 S"). 0/0 budget = unlimited.
+// size-count summary (e.g. "3 L OR 6 M OR 12 S"). An empty summary means the
+// budget is too small for any catalog size (the plan health report flags it).
 function capacityLabel(plan: SubscriptionPlan | undefined | null): string {
   if (!plan) return '—'
   const summary = formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, t('subscription.or'))
-  return summary || t('subscription.unlimited')
+  return summary || t('subscription.noSizeFits')
 }
 
 const { t } = useTranslations({
@@ -266,6 +267,7 @@ const { t } = useTranslations({
       month: 'month',
       year: 'year',
       unlimited: 'Unlimited',
+      noSizeFits: 'No machine size fits this capacity',
       statusActive: 'Active',
       statusTrialing: 'Trial',
       statusPastDue: 'Past Due',
@@ -307,6 +309,7 @@ const { t } = useTranslations({
       month: 'mois',
       year: 'an',
       unlimited: 'Illimité',
+      noSizeFits: 'Aucune taille de machine ne tient dans cette capacité',
       statusActive: 'Actif',
       statusTrialing: 'Essai',
       statusPastDue: 'En retard',

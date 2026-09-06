@@ -176,18 +176,11 @@ const hasActiveSubscription = computed(() => subscriptionsStore.hasActiveSubscri
 // Helper to render a plan's capacity in the same size-count language the
 // pricing page uses. Closes the visibility gap reported in the first user
 // test: admins had to open each plan in edit mode to see the budget.
-// Returns:
-//   - "1 XL OR 2 L OR 4 M" for a non-empty budget
-//   - "Unlimited capacity" when both max_cpu and max_memory_mb are 0
-//   - null when the plan has no budget fields populated (row is hidden)
-const getCapacitySummary = (plan: any): string | null => {
-    const maxCpu = plan.max_cpu ?? 0
-    const maxMemoryMb = plan.max_memory_mb ?? 0
-    if (maxCpu === 0 && maxMemoryMb === 0) {
-        return t('subscriptionPlans.capacityUnlimited')
-    }
+// Returns "1 XL OR 2 L OR 4 M" for a budget that fits at least one size, and
+// "no size fits" otherwise — so a misconfigured plan is visible in the list.
+const getCapacitySummary = (plan: any): string => {
     const summary = formatBudgetAsSizes(plan, CANONICAL_SIZE_CATALOG, t('subscriptionPlans.capacityOr'))
-    return summary || null
+    return summary || t('subscriptionPlans.noSizeFits')
 }
 
 // Helper to determine plan relationship
@@ -583,11 +576,7 @@ const confirmImport = async () => {
                     <!-- Actions spécifiques pour les plans d'abonnement -->
                     <div class="plan-actions">
                         <div class="plan-info">
-                            <div
-                                v-if="getCapacitySummary(entity)"
-                                class="plan-capacity"
-                                data-test="plan-capacity"
-                            >
+                            <div class="plan-capacity" data-test="plan-capacity">
                                 <i class="fas fa-microchip"></i>
                                 <span class="plan-capacity-label">{{ t('subscriptionPlans.capacityLabel') }}:</span>
                                 <span class="plan-capacity-value">{{ getCapacitySummary(entity) }}</span>

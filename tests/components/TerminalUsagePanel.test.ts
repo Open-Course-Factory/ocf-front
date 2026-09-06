@@ -137,7 +137,9 @@ describe('TerminalUsagePanel — live usage view', () => {
     expect(memStyle).toMatch(/width:\s*50%/)
   })
 
-  it('renders Illimité (unlimited) when max_cpu === 0', async () => {
+  it('never says "unlimited" — a zero axis on a resolved plan is a zero budget', async () => {
+    // Plans cannot be saved with a 0 budget any more; should one still reach
+    // the panel it is a budget nothing fits in, not an uncapped axis.
     mockGetMyUsage.mockResolvedValue(makeUsage({
       max_cpu: 0,
       max_memory_mb: 4096,
@@ -148,10 +150,35 @@ describe('TerminalUsagePanel — live usage view', () => {
     await wrapper.find('.collapsible-header').trigger('click')
     await flushPromises()
 
-    // The CPU axis is unlimited — the bar fill must be absent (or the
-    // unlimited label must render).
     const text = wrapper.text()
-    expect(text).toContain('Illimité')
+    expect(text).not.toMatch(/illimit/i)
+    expect(text).toContain('0 vCPU')
+    expect(wrapper.find('[data-test="cpu-bar-fill"]').exists()).toBe(true)
+  })
+
+  it('says capacity is unavailable when no plan resolved (empty plan_name, zeroed envelope)', async () => {
+    // /terminals/my-usage carries no quota.scope: ocf-core signals "no budget
+    // could be computed" by leaving plan_name empty and zeroing the envelope.
+    // That must read as "unavailable", never as "unlimited" nor "exhausted".
+    mockGetMyUsage.mockResolvedValue(makeUsage({
+      plan_name: '',
+      max_cpu: 0,
+      max_memory_mb: 0,
+      used_cpu: 0,
+      used_memory_mb: 0,
+    }))
+    const wrapper = mountPanel({}, 'en')
+    await flushPromises()
+    await wrapper.find('.collapsible-header').trigger('click')
+    await flushPromises()
+
+    const text = wrapper.text()
+    expect(text).toContain('capacity unavailable')
+    expect(text).not.toMatch(/unlimited/i)
+    expect(text.toLowerCase()).not.toContain('stop a session')
+    // No cap to draw → no bar fills, mirroring OrgTerminalUsagePanel.
+    expect(wrapper.find('[data-test="cpu-bar-fill"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="mem-bar-fill"]').exists()).toBe(false)
   })
 
   it('renders one row per active session, including paused entries', async () => {
@@ -339,16 +366,17 @@ describe('TerminalUsagePanel — remaining capacity as sizes', () => {
     expect(text).toContain(expectedSizes)
   })
 
-  it('says unlimited (not "≈ 0") when the plan has no cap', async () => {
+  it('says capacity is unavailable (not "≈ 0", not "illimitée") when no plan resolved', async () => {
     const wrapper = await mountExpanded(
-      { max_cpu: 0, max_memory_mb: 0, used_cpu: 0, used_memory_mb: 0 },
+      { plan_name: '', max_cpu: 0, max_memory_mb: 0, used_cpu: 0, used_memory_mb: 0 },
       'fr'
     )
     const line = wrapper.find('[data-testid="remaining-capacity"]')
     expect(line.exists()).toBe(true)
     const text = line.text()
-    expect(text).toMatch(/illimit/i)
-    expect(text).not.toContain('≈ 0')
+    expect(text).toContain('indisponible')
+    expect(text).not.toMatch(/illimit/i)
+    expect(text).not.toContain('≈')
   })
 
   it('renders an actionable message (not "≈ 0 ×") when the budget is fully consumed', async () => {

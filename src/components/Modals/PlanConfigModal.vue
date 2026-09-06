@@ -83,16 +83,7 @@
           <p class="composer-subtitle">{{ t('planConfig.sizeCapacity.subtitle') }}</p>
 
           <div
-            v-if="showUnlimitedHint"
-            data-test="size-quota-unlimited-hint"
-            class="composer-hint"
-          >
-            <i class="fas fa-info-circle"></i>
-            {{ t('planConfig.sizeCapacity.currentlyUnlimited') }}
-          </div>
-
-          <div
-            v-else-if="showNoBreakdownHint"
+            v-if="showNoBreakdownHint"
             data-test="size-quota-no-breakdown-hint"
             class="composer-hint"
           >
@@ -156,12 +147,12 @@
             </button>
 
             <div
-              v-if="sizeRows.length === 0 && !showUnlimitedHint && !showNoBreakdownHint"
+              v-if="!budgetIsPositive"
               data-test="size-quota-validation"
               class="validation-message validation-block"
             >
               <i class="fas fa-exclamation-triangle"></i>
-              {{ t('planConfig.validation.atLeastOneRow') }}
+              {{ t('planConfig.validation.budgetPositive') }}
             </div>
 
             <div v-if="sizeRows.length > 0" data-test="size-quota-preview" class="computed-preview">
@@ -539,11 +530,10 @@ const { t } = useTranslations({
         computedBudgetHint: 'Total capacity learners get — they split it however they want, not a fixed bundle.',
         cpuValue: '{n} vCPU',
         ramValue: '{n} GiB',
-        currentlyUnlimited: 'This plan currently has unlimited capacity. Add rows to set a limit.',
         noBreakdownHint: "This plan's current capacity is {cpu} vCPU / {ram} MiB (no size breakdown stored). Add rows to redefine the capacity."
       },
       validation: {
-        atLeastOneRow: 'At least one size row is required',
+        budgetPositive: 'CPU and RAM capacity must both be greater than zero — add at least one size row',
         countPositive: 'Count must be at least 1'
       }
     }
@@ -618,11 +608,10 @@ const { t } = useTranslations({
         computedBudgetHint: 'Capacite totale dont disposent les apprenants — ils la repartissent librement, ce n est pas un assortiment fige.',
         cpuValue: '{n} vCPU',
         ramValue: '{n} Gio',
-        currentlyUnlimited: 'Ce forfait a actuellement une capacite illimitee. Ajoutez des lignes pour definir une limite.',
         noBreakdownHint: "La capacite actuelle de ce forfait est {cpu} vCPU / {ram} MiB (pas de repartition en tailles enregistree). Ajoutez des lignes pour redefinir la capacite."
       },
       validation: {
-        atLeastOneRow: 'Au moins une ligne est requise',
+        budgetPositive: 'La capacite CPU et RAM doit etre superieure a zero — ajoutez au moins une ligne de taille',
         countPositive: "Le nombre doit etre d'au moins 1"
       }
     }
@@ -819,14 +808,28 @@ async function loadBackends() {
 const sizeRows = reactive<SizeQuotaRow[]>([{ size_key: 'l', count: 1 }])
 const sizeCatalogKeys = Object.keys(CANONICAL_SIZE_CATALOG)
 
-// Hints shown when populating an existing plan that has a raw budget but
+// Hint shown when populating an existing plan that has a raw budget but
 // no size-row breakdown to reconstruct (the backend stores only the sum).
 // The admin can keep the existing budget by leaving the composer empty,
 // or redefine it by adding rows.
-const showUnlimitedHint = ref(false)
 const showNoBreakdownHint = ref(false)
 
 const computedBudget = computed(() => computeMaxFromRows(sizeRows))
+
+// The budget that will be saved: the composer rows when the admin filled any,
+// otherwise the plan's existing raw budget (preserve-existing case).
+const resolvedBudget = computed(() =>
+  sizeRows.length > 0
+    ? computedBudget.value
+    : { max_cpu: formData.max_cpu, max_memory_mb: formData.max_memory_mb }
+)
+
+// Mirrors ocf-core's SubscriptionPlan.MissingBudgetAxes (enforced by
+// subscriptionPlanValidationHook): a plan needs max_cpu > 0 AND
+// max_memory_mb > 0. Same rule on both sides — change them together.
+const budgetIsPositive = computed(
+  () => resolvedBudget.value.max_cpu > 0 && resolvedBudget.value.max_memory_mb > 0
+)
 const ramGiB = computed(() => {
   const mb = computedBudget.value.max_memory_mb
   if (mb === 0) return 0
@@ -843,18 +846,10 @@ function removeRow(index: number) {
 }
 
 const isFormValid = computed(() => {
-  // When a hint is showing (existing plan with a raw budget but no row
-  // breakdown), an empty composer is valid — the admin is keeping the
-  // existing budget unchanged. Otherwise we require at least one well-formed
-  // row.
-  if (showUnlimitedHint.value || showNoBreakdownHint.value) {
-    if (sizeRows.length === 0) return true
-    if (sizeRows.some(r => !r.size_key || r.count < 1)) return false
-    return true
-  }
-  if (sizeRows.length === 0) return false
+  // Every row must be well-formed, and whatever budget results — the rows, or
+  // the untouched existing budget — must be positive on both axes.
   if (sizeRows.some(r => !r.size_key || r.count < 1)) return false
-  return true
+  return budgetIsPositive.value
 })
 
 function populateFromPlan(plan: any) {
@@ -898,18 +893,11 @@ function populateFromPlan(plan: any) {
   // because the backend stores only the computed max — so when populating
   // an existing plan we show an empty composer plus a hint describing the
   // current capacity. Admins can add rows to redefine the capacity, or
-  // leave the composer empty to keep the existing budget unchanged.
+  // leave the composer empty to keep the existing budget unchanged. A plan
+  // whose stored budget is not positive (pre-validation data) gets no hint:
+  // the validation message asks for rows and save stays disabled.
   sizeRows.splice(0, sizeRows.length)
-  if (formData.max_cpu === 0 && formData.max_memory_mb === 0) {
-    // Plan is unlimited — show the hint, no default row so the admin sees
-    // explicitly that adding rows will introduce a limit.
-    showUnlimitedHint.value = true
-    showNoBreakdownHint.value = false
-  } else {
-    // Plan has a raw budget with no row breakdown stored.
-    showUnlimitedHint.value = false
-    showNoBreakdownHint.value = true
-  }
+  showNoBreakdownHint.value = budgetIsPositive.value
 
   refreshPreview()
 }
@@ -937,7 +925,6 @@ function resetForm() {
   selectedAllowedBackends.value = []
   allowedBackendsText.value = ''
   sizeRows.splice(0, sizeRows.length, { size_key: 'l', count: 1 })
-  showUnlimitedHint.value = false
   showNoBreakdownHint.value = false
 }
 
@@ -960,22 +947,16 @@ function preservedBoolean(planField: string): boolean {
 }
 
 function handleSave() {
+  if (!isFormValid.value) return
+
   // The size-rows composer is the single source of truth for capacity.
   // When the admin opened an existing plan and left the composer empty
   // (preserve-existing-budget case), keep the plan's current max_cpu /
   // max_memory_mb so unchanged plans round-trip safely.
-  let resolvedMaxCpu = formData.max_cpu
-  let resolvedMaxMemoryMb = formData.max_memory_mb
-  if (sizeRows.length > 0) {
-    const budget = computeMaxFromRows(sizeRows)
-    resolvedMaxCpu = budget.max_cpu
-    resolvedMaxMemoryMb = budget.max_memory_mb
-  }
-
   const planData: any = {
     ...formData,
-    max_cpu: resolvedMaxCpu,
-    max_memory_mb: resolvedMaxMemoryMb,
+    max_cpu: resolvedBudget.value.max_cpu,
+    max_memory_mb: resolvedBudget.value.max_memory_mb,
     // The ladder rides alongside use_tiered_pricing (spread above). Sent even
     // when tiering is off, so turning it off and saving clears the brackets
     // rather than leaving an invisible ladder on the row.

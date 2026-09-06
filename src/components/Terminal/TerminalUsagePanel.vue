@@ -62,7 +62,7 @@
         <!-- Remaining capacity in size-count language (primary line) -->
         <div
           class="info-line remaining-capacity"
-          :class="{ 'is-exhausted': remainingCapacity.kind === 'exhausted' }"
+          :class="{ 'is-exhausted': !budgetUnknown && remainingCapacity.kind === 'exhausted' }"
           data-testid="remaining-capacity"
         >
           <span class="info-label">
@@ -70,8 +70,8 @@
             {{ t('terminals.remainingCapacity') }}:
           </span>
           <span class="info-value">
-            <template v-if="remainingCapacity.kind === 'unlimited'">
-              {{ t('terminals.remainingUnlimited') }}
+            <template v-if="budgetUnknown">
+              {{ t('terminals.budgetUnknown') }}
             </template>
             <template v-else-if="remainingCapacity.kind === 'exhausted'">
               {{ t('terminals.remainingExhausted') }}
@@ -86,14 +86,14 @@
             <span class="bar-label">CPU</span>
             <div class="bar-track">
               <div
-                v-if="!cpuUnlimited"
+                v-if="!budgetUnknown"
                 class="bar-fill"
                 data-test="cpu-bar-fill"
                 :style="{ width: `${cpuUsedPct}%` }"
               ></div>
             </div>
             <span class="bar-meta">
-              <template v-if="cpuUnlimited">{{ t('terminals.unlimited') }}</template>
+              <template v-if="budgetUnknown">{{ formatMcpuAsVcpu(usage.used_cpu) }} vCPU</template>
               <template v-else>{{ formatMcpuAsVcpu(usage.used_cpu) }} / {{ formatMcpuAsVcpu(usage.max_cpu) }} vCPU</template>
             </span>
           </div>
@@ -101,14 +101,14 @@
             <span class="bar-label">RAM</span>
             <div class="bar-track">
               <div
-                v-if="!memUnlimited"
+                v-if="!budgetUnknown"
                 class="bar-fill"
                 data-test="mem-bar-fill"
                 :style="{ width: `${memUsedPct}%` }"
               ></div>
             </div>
             <span class="bar-meta">
-              <template v-if="memUnlimited">{{ t('terminals.unlimited') }}</template>
+              <template v-if="budgetUnknown">{{ formatMemoryMb(usage.used_memory_mb) }}</template>
               <template v-else>{{ formatMemoryMb(usage.used_memory_mb) }} / {{ formatMemoryMb(usage.max_memory_mb) }}</template>
             </span>
           </div>
@@ -202,7 +202,7 @@ const { t } = useTranslations({
       sourceOrganization: 'provided by {orgName}',
       fetchError: 'Could not load usage data.',
       remainingCapacity: 'Remaining capacity',
-      remainingUnlimited: 'unlimited',
+      budgetUnknown: 'capacity unavailable right now — you can still start sessions',
       remainingExhausted: 'No capacity left — stop a session to start another',
       or: 'OR',
       budget: {
@@ -229,7 +229,7 @@ const { t } = useTranslations({
       sourceOrganization: 'fourni par {orgName}',
       fetchError: 'Impossible de charger les données d\'utilisation.',
       remainingCapacity: 'Capacité restante',
-      remainingUnlimited: 'illimitée',
+      budgetUnknown: 'capacité indisponible pour le moment — vous pouvez tout de même lancer des sessions',
       remainingExhausted: 'Plus de capacité — arrêtez une session pour en lancer une autre',
       or: 'OU',
       budget: {
@@ -313,8 +313,14 @@ const planSourceLabel = computed(() => {
   return t('terminals.sourcePersonal')
 })
 
-const cpuUnlimited = computed(() => (usage.value?.max_cpu ?? 0) === 0)
-const memUnlimited = computed(() => (usage.value?.max_memory_mb ?? 0) === 0)
+// /terminals/my-usage carries no `quota.scope`. When ocf-core cannot resolve a
+// plan it leaves `plan_name` empty and zeroes the envelope (see
+// terminalTrainerService.GetUserTerminalUsage); an empty plan name is therefore
+// the response's only "no budget could be computed" signal. Mirrors
+// OrgTerminalUsagePanel's `quota.scope === 'unknown'` — scope decides whether
+// the bars have a cap to draw, the numeric guards below only avoid division by
+// zero.
+const budgetUnknown = computed(() => !!usage.value && !usage.value.plan_name)
 
 const cpuUsedPct = computed<number>(() => {
   const u = usage.value
@@ -330,10 +336,8 @@ const memUsedPct = computed<number>(() => {
 
 const capacityLabel = computed(() => {
   const u = usage.value
-  if (!u) return '—'
-  const cpuPart = u.max_cpu === 0 ? t('terminals.unlimited') : `${formatMcpuAsVcpu(u.max_cpu)} vCPU`
-  const memPart = u.max_memory_mb === 0 ? t('terminals.unlimited') : formatMemoryMb(u.max_memory_mb)
-  return `${cpuPart}, ${memPart}`
+  if (!u || budgetUnknown.value) return '—'
+  return `${formatMcpuAsVcpu(u.max_cpu)} vCPU, ${formatMemoryMb(u.max_memory_mb)}`
 })
 
 // Primary "how much can I still launch" line, in the customer's size-count

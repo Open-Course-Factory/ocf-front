@@ -212,19 +212,42 @@ describe('PlanConfigModal — size-quota composer (budget mode)', () => {
     expect(wrapper.find('[data-test="size-quota-preview"]').exists()).toBe(true)
   })
 
-  it('shows the unlimited hint when editing a plan with max_cpu=0 and max_memory_mb=0', async () => {
+  it('refuses to save a plan whose stored budget is zero until rows make it positive', async () => {
+    // ocf-core refuses max_cpu or max_memory_mb <= 0 (SubscriptionPlan.
+    // MissingBudgetAxes). The modal mirrors that rule: a legacy 0/0 plan opens
+    // with no hint, a clear validation message, and a disabled save button.
     const wrapper = await mountModal({
-      id: 'plan-unlim',
-      name: 'Unlimited',
+      id: 'plan-zero',
+      name: 'Legacy',
       max_cpu: 0,
       max_memory_mb: 0,
       features: []
     })
     await flushPromises()
 
-    expect(wrapper.find('[data-test="size-quota-unlimited-hint"]').exists()).toBe(true)
-    // No default row — empty composer makes "add rows to limit it" obvious.
-    expect(wrapper.findAll('[data-test="size-quota-row"]').length).toBe(0)
+    expect(wrapper.find('[data-test="size-quota-unlimited-hint"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="size-quota-no-breakdown-hint"]').exists()).toBe(false)
+    expect(wrapper.text()).not.toMatch(/unlimited/i)
+
+    const validation = wrapper.find('[data-test="size-quota-validation"]')
+    expect(validation.exists()).toBe(true)
+    expect(validation.text()).toContain('greater than zero')
+    expect(wrapper.find('[data-test="plan-save-button"]').attributes('disabled')).toBeDefined()
+
+    // Clicking save while invalid emits nothing.
+    await wrapper.find('[data-test="plan-save-button"]').trigger('click')
+    expect(wrapper.emitted('save')).toBeFalsy()
+
+    // Adding one row makes the budget positive and re-enables save.
+    await wrapper.find('[data-test="size-quota-add-row"]').trigger('click')
+    await nextTick()
+    expect(wrapper.find('[data-test="size-quota-validation"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="plan-save-button"]').attributes('disabled')).toBeUndefined()
+
+    await wrapper.find('[data-test="plan-save-button"]').trigger('click')
+    const payload = wrapper.emitted('save')![0][0] as any
+    expect(payload.max_cpu).toBeGreaterThan(0)
+    expect(payload.max_memory_mb).toBeGreaterThan(0)
   })
 
   it('preserves the existing raw budget when the admin saves without adding any row', async () => {

@@ -6,8 +6,8 @@
  *   - For plans with a non-zero budget, the row renders a size-count summary
  *     like "1 XL OR 2 L OR 4 M" so the capacity is visible without opening
  *     the modal.
- *   - For plans with max_cpu === 0 AND max_memory_mb === 0 (unlimited),
- *     the row renders the "Unlimited capacity" string.
+ *   - For plans whose budget fits no catalog size (a 0/0 budget included),
+ *     the row renders the "no size fits" string — never "unlimited".
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -82,7 +82,7 @@ const messages = {
     subscriptionPlans: {
       capacityLabel: 'Capacity',
       capacityOr: 'OR',
-      capacityUnlimited: 'Unlimited capacity',
+      noSizeFits: 'No machine size fits this capacity',
       concurrentTerminals: 'concurrent terminals',
       maxCourses: 'courses max',
       users: 'users',
@@ -118,7 +118,7 @@ const messages = {
     subscriptionPlans: {
       capacityLabel: 'Capacité',
       capacityOr: 'OU',
-      capacityUnlimited: 'Capacité illimitée',
+      noSizeFits: 'Aucune taille de machine ne tient dans cette capacité',
       concurrentTerminals: 'terminaux simultanés',
     },
     ui: { availablePlans: 'Plans disponibles' },
@@ -203,31 +203,33 @@ describe('SubscriptionPlans (admin list) — Capacity row', () => {
     expect(capacity.text()).toContain('OR')
   })
 
-  it('renders the unlimited string when both max_cpu and max_memory_mb are 0', () => {
+  it('renders the no-size-fits string for a positive budget below the smallest size', () => {
+    // The affords_no_size fault the plan health report flags as blocking:
+    // 400 mCPU / 200 MiB, XS needs 500 / 256. Must never read "Unlimited".
     const wrapper = mountWithPlans([
       {
         id: 'plan-2',
-        name: 'Enterprise',
+        name: 'Tiny',
         price_amount: 0,
         currency: 'eur',
         billing_interval: 'month',
         is_active: true,
         is_catalog: false,
-        max_cpu: 0,
-        max_memory_mb: 0,
+        max_cpu: 400,
+        max_memory_mb: 200,
       },
     ])
 
     const capacity = wrapper.find('[data-test="plan-capacity"]')
     expect(capacity.exists()).toBe(true)
-    expect(capacity.text()).toContain('Unlimited capacity')
+    expect(capacity.text()).toContain('No machine size fits this capacity')
+    expect(capacity.text()).not.toContain('Unlimited')
   })
 
-  it('renders an empty capacity cell when both budget fields are unset on a plan with no budget at all', () => {
-    // After the budget-only refactor, a plan with no budget fields renders
-    // "Unlimited capacity" (the catalog allows 0/0 to mean unlimited). This
-    // test pins the row-still-renders behavior — admins can spot the
-    // misconfiguration in the list rather than having to open each plan.
+  it('still renders the capacity row when both budget fields are unset', () => {
+    // A plan with no budget fields is a misconfiguration; the row must still
+    // render (as "no size fits") so admins can spot it in the list rather
+    // than having to open each plan.
     const wrapper = mountWithPlans([
       {
         id: 'plan-4',
@@ -242,7 +244,7 @@ describe('SubscriptionPlans (admin list) — Capacity row', () => {
 
     const capacity = wrapper.find('[data-test="plan-capacity"]')
     expect(capacity.exists()).toBe(true)
-    expect(capacity.text()).toContain('Unlimited capacity')
+    expect(capacity.text()).toContain('No machine size fits this capacity')
   })
 
   it('renders one capacity row per plan when the list contains multiple plans', () => {
@@ -259,15 +261,15 @@ describe('SubscriptionPlans (admin list) — Capacity row', () => {
         max_memory_mb: 2048,
       },
       {
-        id: 'unlimited-plan',
-        name: 'Unlimited',
+        id: 'tiny-plan',
+        name: 'Tiny',
         price_amount: 500,
         currency: 'eur',
         billing_interval: 'month',
         is_active: true,
         is_catalog: true,
-        max_cpu: 0,
-        max_memory_mb: 0,
+        max_cpu: 400,
+        max_memory_mb: 200,
       },
     ])
 
@@ -275,7 +277,7 @@ describe('SubscriptionPlans (admin list) — Capacity row', () => {
     expect(capacities.length).toBe(2)
     // First row is the bounded budget plan: 4000 mCPU / 2048 MB = 1 L max.
     expect(capacities[0].text()).toContain('1 L')
-    // Second row is the unlimited plan.
-    expect(capacities[1].text()).toContain('Unlimited capacity')
+    // Second row is the plan nothing fits in.
+    expect(capacities[1].text()).toContain('No machine size fits this capacity')
   })
 })

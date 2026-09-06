@@ -86,20 +86,18 @@ describe('subscriptionPlans store', () => {
       expect(field!.displayValue!(16384)).toBe('16 GiB')
     })
 
-    it('shows unlimited capacity for max_cpu = 0', () => {
+    it('renders a zero max_cpu as a plain zero, never as "unlimited"', () => {
       const store = useSubscriptionPlansStore()
       const field = store.fieldList.get('max_cpu')
 
-      // The i18n mock returns the key itself; the production string is
-      // "Unlimited capacity" / "Capacité illimitée".
-      expect(field!.displayValue!(0)).toBe('subscriptionPlans.capacityUnlimited')
+      expect(field!.displayValue!(0)).toBe('0 vCPU')
     })
 
-    it('shows unlimited capacity for max_memory_mb = 0', () => {
+    it('renders a zero max_memory_mb as a plain zero, never as "unlimited"', () => {
       const store = useSubscriptionPlansStore()
       const field = store.fieldList.get('max_memory_mb')
 
-      expect(field!.displayValue!(0)).toBe('subscriptionPlans.capacityUnlimited')
+      expect(field!.displayValue!(0)).toBe('0 MiB')
     })
 
     it('uses translated labels for created_at and updated_at (no raw key fallback)', () => {

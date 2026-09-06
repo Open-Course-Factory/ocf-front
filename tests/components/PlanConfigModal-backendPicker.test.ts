@@ -164,8 +164,8 @@ describe('PlanConfigModal — backend picker', () => {
     const wrapper = await mountModal({
       id: 'plan-1',
       name: 'Routed',
-      max_cpu: 0,
-      max_memory_mb: 0,
+      max_cpu: 1000,
+      max_memory_mb: 512,
       default_backend: '',
       allowed_backends: ['incus-lab']
     })
@@ -184,8 +184,8 @@ describe('PlanConfigModal — backend picker', () => {
     const wrapper = await mountModal({
       id: 'plan-1',
       name: 'Routed',
-      max_cpu: 0,
-      max_memory_mb: 0,
+      max_cpu: 1000,
+      max_memory_mb: 512,
       default_backend: '',
       allowed_backends: ['incus-lab']
     })
@@ -205,8 +205,8 @@ describe('PlanConfigModal — backend picker', () => {
     const wrapper = await mountModal({
       id: 'plan-1',
       name: 'Routed',
-      max_cpu: 0,
-      max_memory_mb: 0,
+      max_cpu: 1000,
+      max_memory_mb: 512,
       default_backend: '',
       allowed_backends: ['incus-lab']
     })
@@ -258,8 +258,8 @@ describe('PlanConfigModal — backend picker', () => {
     const wrapper = await mountModal({
       id: 'plan-1',
       name: 'Routed',
-      max_cpu: 0,
-      max_memory_mb: 0,
+      max_cpu: 1000,
+      max_memory_mb: 512,
       default_backend: '',
       allowed_backends: ['incus-gone']
     })
@@ -279,8 +279,8 @@ describe('PlanConfigModal — backend picker', () => {
     const wrapper = await mountModal({
       id: 'plan-1',
       name: 'Routed',
-      max_cpu: 0,
-      max_memory_mb: 0,
+      max_cpu: 1000,
+      max_memory_mb: 512,
       default_backend: 'incus-gone',
       allowed_backends: []
     })
