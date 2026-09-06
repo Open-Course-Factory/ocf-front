@@ -202,7 +202,7 @@
                   >
                     <i :class="sessionHasNetwork(session) ? 'fas fa-globe' : 'fas fa-ban'"></i>
                   </span>
-                  <span v-if="session.expires_at" class="metadata-item" :title="t('terminalMySessions.expiresAt')">
+                  <span v-if="showsExpiry(session)" class="metadata-item" :data-test="`session-expiry-${session.session_id}`" :title="expiryTooltip(session)">
                     <i class="fas fa-clock"></i>
                     {{ formatDate(session.expires_at) }}
                   </span>
@@ -408,7 +408,7 @@
                       >
                         <i :class="sessionHasNetwork(session) ? 'fas fa-globe' : 'fas fa-ban'"></i>
                       </span>
-                      <span v-if="session.expires_at" class="metadata-item" :title="t('terminalMySessions.expiresAt')">
+                      <span v-if="showsExpiry(session)" class="metadata-item" :data-test="`session-expiry-${session.session_id}`" :title="expiryTooltip(session)">
                         <i class="fas fa-clock"></i>
                         {{ formatDate(session.expires_at) }}
                       </span>
@@ -610,7 +610,7 @@ import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import { useClassGroupsStore } from '../../stores/classGroups'
 import { useGroupMemberNames } from '../../composables/useGroupMemberNames'
 import { extractErrorMessage } from '../../utils/formatters'
-import { getEffectiveSessionState, sessionHasNetwork, type EffectiveSessionState } from '../../utils/sessionState'
+import { getEffectiveSessionState, sessionHasNetwork, type EffectiveSessionState, type SessionLifecycleFields } from '../../utils/sessionState'
 
 const { showConfirm, showError } = useNotification()
 const { formatDateTime: formatDateTimeTz } = useFormatters()
@@ -652,6 +652,7 @@ const { t } = useTranslations({
       sessionId: 'Session ID',
       createdAt: 'Created on',
       expiresAt: 'Expires on',
+      autoStopsAt: 'Auto-stops on',
       userId: 'User',
       instanceType: 'Instance type',
       machineSizeLabel: 'Size',
@@ -775,6 +776,7 @@ const { t } = useTranslations({
       sessionId: 'Session ID',
       createdAt: 'Créée le',
       expiresAt: 'Expire le',
+      autoStopsAt: 'Arrêt automatique le',
       userId: 'Utilisateur',
       instanceType: 'Type d\'instance',
       machineSizeLabel: 'Taille',
@@ -1221,6 +1223,19 @@ function transitioningLabel(session: any): string | null {
  * - stopped -> amber/warning
  * - deleted -> muted/gray
  */
+// The clock date only means something while the machine is up: at that time
+// an ephemeral session is destroyed, a persistent one is put to sleep. Once
+// stopped or deleted the date is history and would read as a future event.
+function showsExpiry(session: SessionLifecycleFields): boolean {
+  return !!session.expires_at && getEffectiveSessionState(session) === 'running'
+}
+
+function expiryTooltip(session: { persistence_mode?: string }): string {
+  return session.persistence_mode === 'persistent'
+    ? t('terminalMySessions.autoStopsAt')
+    : t('terminalMySessions.expiresAt')
+}
+
 function getStateBadgeClass(state: EffectiveSessionState): string {
   switch (state) {
     case 'running': return 'text-success'
