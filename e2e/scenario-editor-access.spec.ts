@@ -10,19 +10,22 @@ import { dismissVerificationBanner } from './helpers/ui';
 // exactly the direct-navigation case the guard exists for. Nothing here
 // navigates inside the product by URL.
 
-const PASSWORD = process.env.E2E_PASS || 'OcfTest2026!';
-// A learner: member of a class, manager of nothing.
-const LEARNER_EMAIL = process.env.E2E_USER || 'karim@test.ocf';
+// A user who owns and manages nothing, not even a personal organization: the
+// seeded student. The class learners (karim, jp) do NOT qualify, because each
+// owns their personal organization and the access rule counts any owner role.
+const LEARNER_EMAIL = process.env.E2E_STUDENT_EMAIL || '1.student@test.com';
+const LEARNER_PASSWORD = process.env.E2E_STUDENT_PASSWORD || 'test';
 // An organization manager: the scenario editor is theirs to use.
-const ORG_MANAGER_EMAIL = process.env.E2E_MANAGER || 'nadia@test.ocf';
+const ORG_MANAGER_EMAIL = process.env.E2E_ORG_MANAGER_EMAIL || 'nadia@test.ocf';
+const ORG_MANAGER_PASSWORD = process.env.E2E_PASS || 'OcfTest2026!';
 
 const EDITOR_ROUTE = '/scenario-editor';
 
 /** Sign in and let the login page send the browser straight to `target`. */
-async function loginRedirectingTo(page: Page, email: string, target: string) {
+async function loginRedirectingTo(page: Page, email: string, password: string, target: string) {
   await page.goto(`/login?redirect=${encodeURIComponent(target)}`, { waitUntil: 'networkidle' });
   await page.locator('#email').fill(email);
-  await page.locator('#password').fill(PASSWORD);
+  await page.locator('#password').fill(password);
   await page.waitForTimeout(300);
   await page.locator('button[type="submit"]').click({ force: true });
   await page.waitForSelector('.user-info', { state: 'visible', timeout: 30_000 });
@@ -46,7 +49,7 @@ async function editorMenuLinks(page: Page) {
 
 test.describe('Scenario editor access', () => {
   test('a learner deep-linking to the editor is sent to their sessions and sees no menu entry', async ({ page }) => {
-    await loginRedirectingTo(page, LEARNER_EMAIL, EDITOR_ROUTE);
+    await loginRedirectingTo(page, LEARNER_EMAIL, LEARNER_PASSWORD, EDITOR_ROUTE);
 
     await expect(page).toHaveURL(/\/terminal-sessions\?error=insufficient_permissions/, { timeout: 20_000 });
     await expect(page.locator('.node-library-panel')).toHaveCount(0);
@@ -55,7 +58,7 @@ test.describe('Scenario editor access', () => {
   });
 
   test('an organization manager reaches the editor and finds it in the menu', async ({ page }) => {
-    await loginRedirectingTo(page, ORG_MANAGER_EMAIL, EDITOR_ROUTE);
+    await loginRedirectingTo(page, ORG_MANAGER_EMAIL, ORG_MANAGER_PASSWORD, EDITOR_ROUTE);
 
     await expect(page).toHaveURL(/\/scenario-editor$/, { timeout: 20_000 });
     await expect(page.locator('.node-library-panel')).toBeVisible({ timeout: 15_000 });
