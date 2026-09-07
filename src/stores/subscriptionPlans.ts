@@ -388,8 +388,12 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
                 if (isDemoMode()) {
                     logDemoAction('Syncing demo subscription plans with Stripe')
                     await simulateDelay(2000)
-                    // In demo mode, just refresh the local plans
-                    return await loadPlans()
+                    // Nothing to push to Stripe in demo mode: report the demo
+                    // plans as updated, in the same shape the real endpoint yields.
+                    const plans = await loadPlans()
+                    return adaptStripeSyncResult({
+                        updated: asArray(plans).map((plan: any) => `${plan.name} (${plan.id})`)
+                    })
                 } else {
                     const response = await axios.post('/subscription-plans/sync-stripe')
                     return adaptStripeSyncResult(response.data)
