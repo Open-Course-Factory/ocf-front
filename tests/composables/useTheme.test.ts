@@ -57,6 +57,33 @@ describe('useTheme', () => {
   })
 
   describe('applyTheme', () => {
+    // Three design systems read the theme from <html>: our tokens via
+    // data-theme, Element Plus via the `dark` class, Bootstrap via
+    // data-bs-theme. They must agree (#327).
+    it('tells Bootstrap and Element Plus the resolved theme too', () => {
+      const { applyTheme } = useTheme()
+      applyTheme('dark')
+      expect(document.documentElement.getAttribute('data-bs-theme')).toBe('dark')
+      expect(document.documentElement.classList.contains('dark')).toBe(true)
+
+      applyTheme('light')
+      expect(document.documentElement.getAttribute('data-bs-theme')).toBe('light')
+      expect(document.documentElement.classList.contains('dark')).toBe(false)
+    })
+
+    it('resolves auto for Bootstrap the same way as for data-theme', () => {
+      vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
+        matches: query === '(prefers-color-scheme: dark)',
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })))
+
+      const { applyTheme } = useTheme()
+      applyTheme('auto')
+      expect(document.documentElement.getAttribute('data-bs-theme')).toBe('dark')
+    })
+
     it('sets data-theme to dark for dark theme', () => {
       const { applyTheme } = useTheme()
       applyTheme('dark')
