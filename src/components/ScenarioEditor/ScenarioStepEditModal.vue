@@ -2007,10 +2007,18 @@ const handleSaveTranslation = () => {
   padding: 0.2rem;
 }
 
+/* The input is invisible but stays the hit target: it covers the whole
+   label so a click on the check-mark, by a person or by a browser
+   automation targeting the input, lands on the control itself. */
 .option-row__correct input {
   position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
   opacity: 0;
-  pointer-events: none;
+  cursor: pointer;
+  z-index: 1;
 }
 
 .option-row__correct-mark {

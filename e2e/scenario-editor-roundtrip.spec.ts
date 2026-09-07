@@ -70,9 +70,7 @@ async function addQuizQuestion(page: Page): Promise<void> {
   // radio as already selected. Marking it is then a no-op, no change event
   // fires, and the question saves with no correct answer at all.
   const rightAnswerRow = page.locator('.option-row').nth(1);
-  // The label, not the input: the radio sits under the check-mark glyph and
-  // never receives the pointer.
-  await rightAnswerRow.locator('label.option-row__correct').click();
+  await rightAnswerRow.locator('input[type="radio"]').click();
   await expect(rightAnswerRow.locator('input[type="radio"]')).toBeChecked();
 
   await saveStepModal(page);
