@@ -88,21 +88,19 @@ describe('FeatureFlagService', () => {
    * the cache is cold, only ONE network request should fire. Without
    * deduplication, app startup would issue N parallel /features requests.
    *
-   * NOTE on the actual implementation: the production code does NOT
-   * await-and-share the in-flight promise — concurrent callers return
-   * `undefined` early via the `isFetching` guard. The OBSERVABLE contract
-   * we test is therefore (a) only one network call fires, and (b) once the
-   * inflight call resolves, the flag state reflects the backend response
-   * for whichever caller eventually reads it.
+   * Concurrent callers share the in-flight promise (see the next test for
+   * what they observe on resume). The contract here is (a) only one network
+   * call fires, and (b) once it resolves, the flag state reflects the
+   * backend response.
    *
-   * GUT-CHECK: If the `if (this.isFetching) return` guard at line ~295 is
-   * removed, all 5 calls fire axios.get and the call-count assertion fails.
+   * GUT-CHECK: If the `fetchInFlight` guard is removed, all 5 calls fire
+   * axios.get and the call-count assertion fails.
    */
   it('deduplicates concurrent fetches while one is in flight', async () => {
     const service = resetSingleton()
 
     // Hold the network response with a deferred promise so all 5 callers
-    // observe `isFetching=true` before the first call resolves.
+    // find a fetch already in flight before the first call resolves.
     let resolveAxios!: (value: unknown) => void
     const inflight = new Promise(resolve => { resolveAxios = resolve })
     mockedAxios.get.mockReturnValue(inflight as any)
@@ -125,6 +123,31 @@ describe('FeatureFlagService', () => {
 
     // After the in-flight call resolves, the flag state reflects the response.
     expect(service.getAllFlags().course_conception.enabled).toBe(true)
+  })
+
+  /**
+   * BEHAVIOR PROTECTED: a caller that awaits fetchFromBackend() while another
+   * fetch is in flight must not resume before the data has landed. The old
+   * guard returned undefined immediately, so a route guard awaiting the
+   * flags could read the cold default state (#189).
+   */
+  it('makes every concurrent caller wait for the shared in-flight fetch', async () => {
+    const service = resetSingleton()
+
+    let resolveAxios!: (value: unknown) => void
+    mockedAxios.get.mockReturnValue(new Promise(resolve => { resolveAxios = resolve }) as any)
+
+    const first = service.fetchFromBackend()
+    // The second caller reads the flag the moment its own await returns.
+    const secondSees = service.fetchFromBackend().then(
+      () => service.getAllFlags().course_conception.enabled
+    )
+
+    resolveAxios(backendEnablesCourseConception())
+    await first
+
+    expect(await secondSees).toBe(true)
+    expect(mockedAxios.get).toHaveBeenCalledTimes(1)
   })
 
   /**
