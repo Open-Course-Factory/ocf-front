@@ -403,7 +403,6 @@ const menuCategories = computed((): MenuCategory[] => [
     icon: 'fas fa-users',
     allowedRoles: ['administrator', 'member'],
     featureFlag: 'class_groups',
-    planFeature: 'multiple_groups',
     items: [
       {
         route: '/class-groups',
@@ -544,16 +543,10 @@ const filteredCategories = computed(() => {
       if (category.key === 'organizations' && isPersonalOrganizationContext.value) {
         return false
       }
-      // Custom visibility logic for groups menu
-      if (category.key === 'groups') {
-        // Even if groups is not shown by permission, check if available in another org for gray-out
-        if (!shouldShowGroupsMenu.value) {
-          if (category.planFeature && permissionsStoreInstance.isFeatureInAnyOrg(category.planFeature)) {
-            // Available in another org — show grayed out (handled in map step below)
-            return true
-          }
-          return false
-        }
+      // The groups entry exists only for those the backend lets see groups;
+      // whether it is live is the classroom verdict's call, below (#319).
+      if (category.key === 'groups' && !shouldShowGroupsMenu.value) {
+        return false
       }
       // Check role access - user must have at least ONE of the allowed roles
       if (!hasAnyAllowedRole(category.allowedRoles)) {
@@ -584,19 +577,6 @@ const filteredCategories = computed(() => {
         if (!inCurrentOrg && inAnyOrg) {
           disabled = true
           const orgName = permissionsStoreInstance.getOrgWithFeature(category.planFeature)
-          disabledTooltip = orgName
-            ? tNav('nav.featureAvailableInOrg', { orgName })
-            : tNav('nav.featureNotInCurrentOrg')
-        }
-      }
-
-      // For groups, also check the shouldShowGroupsMenu permission
-      if (category.key === 'groups' && !shouldShowGroupsMenu.value) {
-        disabled = true
-        if (!disabledTooltip) {
-          const orgName = category.planFeature
-            ? permissionsStoreInstance.getOrgWithFeature(category.planFeature)
-            : null
           disabledTooltip = orgName
             ? tNav('nav.featureAvailableInOrg', { orgName })
             : tNav('nav.featureNotInCurrentOrg')
