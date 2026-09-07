@@ -322,11 +322,17 @@ export class FeatureFlagService {
         if (backendFeatures.length > 0) {
           console.log(`🏴 Backend returned ${backendFeatures.length} features`)
 
-          // First pass: reset all flags that will be updated from backend
+          // First pass: reset all flags that will be updated from backend,
+          // registering any the defaults never declared. The defaults only
+          // cover the gap before this response; they are not a whitelist.
           const flagsToUpdate = new Set<string>()
           backendFeatures.forEach((feature: any) => {
             const backendKey = feature.key || feature.name
             const flagKey = this.mapBackendFeatureToFlagKey(backendKey)
+            if (!this.flags[flagKey]) {
+              this.flags[flagKey] = { enabled: false, type: 'ops', description: feature.description || '' }
+              console.log(`🏴 Auto-discovered feature flag "${flagKey}" from backend`)
+            }
             flagsToUpdate.add(flagKey)
           })
 
