@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, unref } from 'vue'
+import { computed, ref } from 'vue'
 import { useBaseStore } from './baseStore'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
@@ -7,6 +7,7 @@ import { usePermissionsStore } from './permissions'
 import axios from 'axios'
 import { isDemoMode } from '../services/demo'
 import { useSubscriptionsStore } from './subscriptions'
+import { classroomRefusalRedirect } from '../router/classroomGuard'
 import type { Organization, CreateOrganizationRequest, UpdateOrganizationRequest, ConvertOrganizationToTeamRequest } from '../types'
 
 interface OrganizationBackendConfig {
@@ -338,37 +339,16 @@ export const useOrganizationsStore = defineStore('organizations', () => {
       }),
     ]
 
-    // After all refreshes, redirect if current page requires a feature no longer available
+    // After all refreshes, leave the page if the organization just switched to
+    // refuses it. Same rule and same destination as the router guard that
+    // protects the page on direct navigation and reload (#320): the backend's
+    // classroom verdict for the new context, read through classroomRefusalRedirect.
     return Promise.all(refreshPromises).then(async () => {
       try {
         const { default: router } = await import('../router')
-
-        // Does the page the user is on still work in the organization they just
-        // switched to?
-        //
-        // Classroom pages ask the backend's verdict rather than the plan's feature
-        // list. In a school every member inherits a plan granting group
-        // management, so a feature check keeps students on a page they cannot use;
-        // the verdict weighs their role too (ocf-core#460).
-        const needsClassrooms = router.currentRoute.value.meta.requiresClassroomEntitlement === true
-        const lostClassrooms = needsClassrooms &&
-          permissionsStore.effectiveFeatures?.can_run_classrooms !== true
-
-        // Retained for routes gated on a plain capability rather than a role.
-        const requiredPlanFeature = router.currentRoute.value.meta.requiresPlanFeature as string | undefined
-        const lostFeature = !!requiredPlanFeature && !permissionsStore.hasFeature(requiredPlanFeature)
-
-        if (lostClassrooms || lostFeature) {
-          const { useUserSettingsStore } = await import('./userSettings')
-          const settingsStore = useUserSettingsStore()
-          const pages = unref(settingsStore.availablePages) as { value: string }[]
-          const validPages = pages.map((p: { value: string }) => p.value)
-          const savedPage = settingsStore.settings.default_landing_page
-          const defaultPage = (savedPage && validPages.includes(savedPage))
-            ? savedPage
-            : (validPages.includes('/terminal-sessions') ? '/terminal-sessions' : validPages[0] || '/terminal-sessions')
-          router.push(defaultPage)
-        }
+        if (router.currentRoute.value.meta.requiresClassroomEntitlement !== true) return
+        const redirect = classroomRefusalRedirect(permissionsStore.effectiveFeatures)
+        if (redirect) router.push(redirect)
       } catch {
         // Router not available (e.g., during test) — skip redirect
       }

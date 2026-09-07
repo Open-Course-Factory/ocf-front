@@ -553,11 +553,9 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // Plan feature check (requiresPlanFeature) is NOT done here.
-  // It is handled by the organizations store on org switch (setCurrentOrganization)
-  // which has the correct org context. The nav menu also hides/grays out
-  // items based on plan features reactively. Checking here caused timing bugs
-  // because effective features aren't loaded until after org context is set.
+  // Entitlement gating is the classroom verdict below (requiresClassroomEntitlement),
+  // enforced here on navigation and reload, and again by the organizations store
+  // on an in-app switch, through the same classroomRefusalRedirect (#320).
 
   // Check permissions (if route requires specific permissions)
   const requiredPermissions = to.meta.requiredPermissions as string[] | undefined;
