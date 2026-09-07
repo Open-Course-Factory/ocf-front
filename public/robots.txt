@@ -1,0 +1,13 @@
+# Public pages are crawlable; everything behind login is not.
+User-agent: *
+Allow: /$
+Allow: /pricing
+Allow: /terms
+Allow: /privacy
+Allow: /legal
+Allow: /login
+Allow: /help-public
+Allow: /assets/
+Disallow: /
+
+Sitemap: https://ocf.labinux.com/sitemap.xml
