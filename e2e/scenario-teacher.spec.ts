@@ -31,9 +31,9 @@ import {
 //
 // Where the preview button actually lives: NOT on /classes/:id/scenarios (that
 // page only lists assignments) but in the scenario editor header — "Play as
-// learner", which POSTs /scenarios/:id/preview and opens the player in a new
-// tab. The preview session carries IsPreview, which is why it must not surface
-// in the class results.
+// learner", which POSTs /scenarios/:id/preview and opens the player in the
+// same tab, with a way back to the editor. The preview session carries
+// IsPreview, which is why it must not surface in the class results.
 //
 // Fixture precondition, and a product gap behind it: bulk start resolves each
 // member's plan against the SCENARIO's organization, but adding someone to a
@@ -141,18 +141,13 @@ test.afterAll(async () => {
   await secondLearner?.api.dispose();
 });
 
-test('the trainer rehearsal opens a session the class results do not count', async ({
-  page,
-  context,
-}) => {
+test('the trainer rehearsal opens a session the class results do not count', async ({ page }) => {
   test.skip(!groupId, `${TRAINER_EMAIL} teaches no class with learners — seed the dev personas first`);
   test.setTimeout(360_000);
 
-  // Remember me, because the preview opens its own tab: without it the token
-  // sits in sessionStorage and the new tab shows the LOGIN page instead of the
-  // player. That is a live product defect, reported separately — the flag here
-  // is what lets this test reach the behaviour it is actually about.
-  await login(page, TRAINER_EMAIL, PASSWORD, { rememberMe: true });
+  // No "remember me": the token stays in sessionStorage, which is exactly the
+  // case a new tab used to lose (#322). The preview must survive it.
+  await login(page, TRAINER_EMAIL, PASSWORD);
   await dismissVerificationBanner(page);
   await navigateViaMenuCategory(page, 'scenarios', '/scenario-editor');
 
@@ -168,20 +163,25 @@ test('the trainer rehearsal opens a session the class results do not count', asy
   await previewBtn.click();
   await page.locator('.base-modal-footer .btn.btn-primary').first().click();
 
-  // The preview deliberately opens in its own tab so the author keeps the
-  // canvas. A host with no room refuses the launch instead — skip, don't fail.
-  const previewTab = await Promise.race([
-    context.waitForEvent('page', { timeout: 240_000 }),
+  // The player replaces the editor in this tab. A host with no room refuses
+  // the launch instead — skip, don't fail.
+  const stepTitle = page.getByTestId('scenario-step-title');
+  const refused = await Promise.race([
+    stepTitle.waitFor({ state: 'visible', timeout: 240_000 }).then(() => false),
     page
       .locator('.el-notification')
       .waitFor({ state: 'visible', timeout: 240_000 })
-      .then(() => null),
+      .then(() => true),
   ]);
-  if (!previewTab) {
+  if (refused) {
     test.skip(true, 'preview refused by the backend (likely host capacity)');
   }
-  await previewTab!.waitForLoadState();
-  await expect(previewTab!.getByTestId('scenario-step-title')).toBeVisible({ timeout: 120_000 });
+  await expect(page).toHaveURL(/returnTo=/);
+  await expect(stepTitle).toBeVisible({ timeout: 120_000 });
+
+  // The way back leads to the editor, on the scenario just previewed.
+  await page.locator('.session-view-nav .back-link').click();
+  await expect(page).toHaveURL(new RegExp(`/scenario-editor\\?scenarioId=${scenarioId}`));
 
   const trainerSessions = await getMyScenarioSessions(trainer);
   expect(
