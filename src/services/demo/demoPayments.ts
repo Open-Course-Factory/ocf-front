@@ -91,36 +91,6 @@ export class DemoPaymentService {
   }
 
   /**
-   * Mock usage limit checking
-   */
-  async checkUsageLimit(
-    metricType: string,
-    requestedAmount: number = 1
-  ): Promise<{ allowed: boolean; current_usage: number; limit: number; remaining: number }> {
-    logDemoAction('Checking demo usage limit', { metricType, requestedAmount })
-
-    await simulateDelay(500)
-
-    // Mock different scenarios based on metric type
-    const mockLimits = {
-      courses_created: { current: 3, limit: 25 },
-      concurrent_users: { current: 7, limit: 10 },
-      storage_used: { current: 1500, limit: 5000 }
-    }
-
-    const usage = mockLimits[metricType] || { current: 0, limit: 100 }
-    const newUsage = usage.current + requestedAmount
-    const allowed = newUsage <= usage.limit
-
-    return {
-      allowed,
-      current_usage: usage.current,
-      limit: usage.limit,
-      remaining: Math.max(0, usage.limit - usage.current)
-    }
-  }
-
-  /**
    * Mock coupon validation (if backend implements it)
    */
   async validateCoupon(
@@ -215,7 +185,6 @@ export class DemoPaymentService {
       '/user-subscriptions/checkout',
       '/user-subscriptions/portal',
       '/user-subscriptions/usage',
-      '/user-subscriptions/usage/check',
       '/invoices/user',
       '/payment-methods/user'
     ]
@@ -233,9 +202,6 @@ export const createDemoCheckoutSession = (planId: string, successUrl: string, ca
 
 export const createDemoPortalSession = (returnUrl: string) =>
   demoPayments.createPortalSession(returnUrl)
-
-export const checkDemoUsageLimit = (metricType: string, requestedAmount?: number) =>
-  demoPayments.checkUsageLimit(metricType, requestedAmount)
 
 export const validateDemoCoupon = (couponCode: string, planId: string) =>
   demoPayments.validateCoupon(couponCode, planId)
