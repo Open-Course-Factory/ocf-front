@@ -71,6 +71,9 @@ export default defineConfig({
       ],
     },
     include: ['tests/**/*.test.ts'],
+    // The CI runner host is shared with several dind stacks; a mocked-axios
+    // test that takes 5 ms locally has timed out at vitest's 5 s default there.
+    testTimeout: 15_000,
     // Emit a JUnit XML report so GitLab CI can parse it via
     // `artifacts.reports.junit` and surface results in the pipeline Test tab.
     // The default reporter is kept for human-readable console output.
