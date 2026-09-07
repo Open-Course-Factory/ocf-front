@@ -1,33 +1,19 @@
 /**
- * Tests for BulkStartScenarioModal — the bulk-start distribution-picker
- * BaseModal extracted from GroupScenariosTab.vue (commit c3 of #244).
+ * BulkStartScenarioModal confirms a bulk start for a whole class.
  *
- * Presentational: the parent keeps confirmBulkStart + the bulkStartScenario
- * service call + result population. The modal renders the distribution picker
- * and re-emits update:selectedDistribution / confirm / close. Behavior FROZEN.
- *
- * Source markup (parent lines 1851–1889):
- *   - BaseModal :visible, title t('groupScenarios.selectDistribution'),
- *     size="medium", default footer, confirm-text t('groupScenarios.bulkStart'),
- *     cancel-text t('groupScenarios.cancel').
- *   - `.instance-type-description` blurb.
- *   - BackendSelector (only when backends exist) — STUBBED here.
- *   - `.loading-state` with a spinner when loadingDistributions; ELSE a
- *     `.form-group` with `<select>` (option per distribution, text
- *     "name — description"). NOTE: the select is not disabled during loading —
- *     the whole form-group is swapped out via v-if/v-else.
- *
- * i18n note: empty test messages → assert on BaseModal structure, the
- * distribution data (real), and emits — not on translated chrome.
+ * It no longer asks for a distribution: ocf-core resolves the image from the
+ * scenario's own declaration (!415) and ignored whatever the picker sent. The
+ * only choice left to the teacher is which backend to build on, and that is
+ * shown only when the organization has backends.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach } from 'vitest'
 
 import BulkStartScenarioModal from '../../src/components/Groups/modals/BulkStartScenarioModal.vue'
+import { useTerminalBackendsStore } from '../../src/stores/terminalBackends'
 
 function createTestI18n() {
   return createI18n({
@@ -40,11 +26,6 @@ function createTestI18n() {
   })
 }
 
-const distributions = [
-  { prefix: 'ubuntu', name: 'Ubuntu', description: '22.04 LTS', is_global: true },
-  { prefix: 'debian', name: 'Debian', description: '12 Bookworm', is_global: true },
-]
-
 const assignment = {
   id: 'a1',
   scenario_id: 's1',
@@ -55,18 +36,10 @@ const assignment = {
 
 function mountModal(props: Record<string, unknown> = {}) {
   return mount(BulkStartScenarioModal, {
-    props: {
-      visible: true,
-      assignment,
-      distributions,
-      selectedDistribution: '',
-      loadingDistributions: false,
-      ...props,
-    },
+    props: { visible: true, assignment, ...props },
     global: {
       plugins: [createTestI18n()],
-      // Stub BackendSelector so the modal mounts standalone.
-      stubs: { BackendSelector: true },
+      stubs: { BackendSelector: { template: '<div class="backend-selector-stub" />' } },
     },
   })
 }
@@ -77,55 +50,35 @@ describe('BulkStartScenarioModal', () => {
   })
 
   it('renders no overlay when visible is false', () => {
-    const wrapper = mountModal({ visible: false })
-    expect(wrapper.find('.base-modal-overlay').exists()).toBe(false)
+    expect(mountModal({ visible: false }).find('.base-modal-overlay').exists()).toBe(false)
   })
 
-  it('renders one option per distribution when not loading', () => {
-    const wrapper = mountModal({ loadingDistributions: false })
+  it('asks for no distribution', () => {
+    const wrapper = mountModal()
     expect(wrapper.find('.base-modal-overlay').exists()).toBe(true)
-
-    // The disabled placeholder option plus one option per distribution.
-    const realOptions = wrapper.findAll('select option').filter(o => o.attributes('value') !== '')
-    expect(realOptions.length).toBe(2)
-    const texts = realOptions.map(o => o.text())
-    expect(texts.some(t => t.includes('Ubuntu') && t.includes('22.04 LTS'))).toBe(true)
-    expect(texts.some(t => t.includes('Debian') && t.includes('12 Bookworm'))).toBe(true)
-  })
-
-  it('emits the distribution NAME when the select changes', async () => {
-    // tt-backend's session creation is keyed on the distribution NAME; the
-    // modal used to emit the prefix, which made every bulk start with a
-    // terminal fail with "distribution not found".
-    const wrapper = mountModal({ selectedDistribution: '' })
-    await wrapper.find('select').setValue('Debian')
-
-    const emitted = wrapper.emitted('update:selectedDistribution')
-    expect(emitted).toBeTruthy()
-    expect(emitted!.at(-1)).toEqual(['Debian'])
-  })
-
-  it('shows the loading indicator (and no select) while loadingDistributions is true', () => {
-    const wrapper = mountModal({ loadingDistributions: true })
-    expect(wrapper.find('.loading-state').exists()).toBe(true)
-    expect(wrapper.find('.loading-state .fa-spinner').exists()).toBe(true)
-    // The distribution select is swapped out during loading (v-if/v-else).
     expect(wrapper.find('select').exists()).toBe(false)
+  })
+
+  it('offers the backend choice only when the organization has backends', async () => {
+    const without = mountModal()
+    expect(without.find('.backend-selector-stub').exists()).toBe(false)
+
+    useTerminalBackendsStore().backends = [{ id: 'b1', name: 'Backend A' } as any]
+    const withBackends = mountModal()
+    expect(withBackends.find('.backend-selector-stub').exists()).toBe(true)
   })
 
   it('emits confirm when the confirm button is clicked', async () => {
     const wrapper = mountModal()
     await wrapper.find('.base-modal-footer .btn-primary').trigger('click')
-    expect(wrapper.emitted('confirm')).toBeTruthy()
-    expect(wrapper.emitted('confirm')!.length).toBe(1)
+    expect(wrapper.emitted('confirm')).toHaveLength(1)
     expect(wrapper.emitted('close')).toBeFalsy()
   })
 
   it('emits close when the cancel button is clicked', async () => {
     const wrapper = mountModal()
     await wrapper.find('.base-modal-footer .btn-secondary').trigger('click')
-    expect(wrapper.emitted('close')).toBeTruthy()
-    expect(wrapper.emitted('close')!.length).toBe(1)
+    expect(wrapper.emitted('close')).toHaveLength(1)
     expect(wrapper.emitted('confirm')).toBeFalsy()
   })
 })

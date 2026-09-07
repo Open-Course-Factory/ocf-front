@@ -198,9 +198,9 @@ test('the trainer rehearsal opens a session the class results do not count', asy
 });
 
 test('bulk start gives every learner in the class a session of their own', async ({ page }) => {
-  // Regression coverage for the bulk-start distribution bug (!320): the modal
-  // used to send the distribution PREFIX where tt-backend expects the NAME,
-  // so every bulk start with a terminal failed with "distribution not found".
+  // Regression coverage for the bulk-start distribution bugs: the modal used
+  // to send the distribution PREFIX where tt-backend expects the NAME (!320),
+  // then to ask for a distribution ocf-core ignores (#337).
   test.setTimeout(600_000);
 
   await openFixtureClassScenarios(page);
@@ -210,21 +210,10 @@ test('bulk start gives every learner in the class a session of their own', async
   await assignmentCard.locator('.dropdown-trigger').click();
   await assignmentCard.locator('[data-test="action-bulk-start"]').click();
 
-  // The fixture is an apk scenario, so the teacher picks an Alpine image —
-  // specifically the XS one: learners on Trial (0.5 CPU / 256 MiB) can never
-  // fit an S container, and their per-member budget rejection would read as
-  // a bulk-start failure. Any /alpine/ match would grab alpine-s first.
-  const distributionSelect = page.locator('.base-modal-container select.form-control');
-  await expect(distributionSelect).toBeVisible({ timeout: 20_000 });
-  const alpineValue = await distributionSelect
-    .locator('option')
-    .evaluateAll(
-      (options) =>
-        (options as HTMLOptionElement[]).find((o) => /alpine.*xs/i.test(o.textContent || ''))?.value ??
-        (options as HTMLOptionElement[]).find((o) => /alpine/i.test(o.textContent || ''))?.value ?? ''
-    );
-  expect(alpineValue, 'the backend must offer an Alpine image').not.toBe('');
-  await distributionSelect.selectOption(alpineValue);
+  // The distribution is the scenario's own (compatible_instance_types), so
+  // the modal is a plain confirmation: nothing to pick.
+  await expect(page.locator('.base-modal-container')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('.base-modal-container select')).toHaveCount(0);
   await page.locator('.base-modal-footer .btn.btn-primary').first().click();
 
   // Provisioning one container per member — the result modal is the teacher's

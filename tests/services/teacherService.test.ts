@@ -345,3 +345,31 @@ describe('teacherService.getSessionDetailsBulk', () => {
     expect(result).toEqual([])
   })
 })
+
+describe('teacherService.bulkStartScenario', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  // ocf-core resolves the distribution from the scenario itself and ignores
+  // any instance_type the client sends; only the backend is the teacher's call.
+  it('POSTs only the chosen backend, never a distribution', async () => {
+    mockedAxios.post.mockResolvedValueOnce({ data: { created: 3 } })
+
+    await teacherService.bulkStartScenario('group-1', 'scenario-1', { backend: 'backend-a' })
+
+    expect(mockedAxios.post).toHaveBeenCalledWith(
+      '/teacher/groups/group-1/scenarios/scenario-1/bulk-start',
+      { backend: 'backend-a' },
+      expect.objectContaining({ timeout: expect.any(Number) })
+    )
+  })
+
+  it('POSTs an empty body when no backend is chosen', async () => {
+    mockedAxios.post.mockResolvedValueOnce({ data: { created: 3 } })
+
+    await teacherService.bulkStartScenario('group-1', 'scenario-1', {})
+
+    expect(mockedAxios.post.mock.calls[0][1]).toEqual({})
+  })
+})
