@@ -1003,15 +1003,6 @@ const goToRolesHelp = () => {
   background: var(--color-bg-quaternary);
 }
 
-.btn-danger {
-  background: var(--color-danger);
-  color: white;
-}
-
-.btn-danger:hover {
-  background: var(--color-danger-dark);
-}
-
 .form-group {
   margin-bottom: 1.5rem;
 }

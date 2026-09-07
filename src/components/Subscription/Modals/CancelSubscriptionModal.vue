@@ -112,12 +112,6 @@ function handleConfirm() {
   cursor: not-allowed;
 }
 
-.btn-danger {
-  background-color: var(--color-danger);
-  border-color: var(--color-danger);
-  color: var(--color-white);
-}
-
 .btn-secondary {
   background-color: var(--color-secondary);
   border-color: var(--color-secondary);

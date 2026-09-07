@@ -284,17 +284,6 @@ async function handleDeleteAccount() {
   cursor: not-allowed;
 }
 
-.btn-danger {
-  background-color: var(--color-danger);
-  border-color: var(--color-danger);
-  color: var(--color-white);
-}
-
-.btn-danger:hover:not(:disabled) {
-  background-color: var(--color-danger-hover);
-  border-color: var(--color-danger-hover);
-}
-
 .btn-secondary {
   background-color: var(--color-secondary);
   border-color: var(--color-secondary);
