@@ -26,6 +26,7 @@ import { clearPersistedStores } from "../piniaPluginPersist"
 import axios from "axios"
 import { useToast } from "../composables/useToast"
 import { useStoreTranslations } from "../composables/useTranslations"
+import { useUserMembershipsStore } from "./userMemberships"
 
 const { t } = useStoreTranslations({
     en: {
@@ -362,6 +363,13 @@ export const useCurrentUserStore = defineStore('currentUser', {
                 console.log('✅ Permissions count:', this.permissions.length);
                 console.log('✅ User roles:', this.userRoles);
                 console.log('✅ Has view_groups permission:', this.permissions.includes('view_groups'));
+
+                // Eager-load memberships so the scenario-editor gate (#213) and
+                // any other surface reading /me/memberships gets a stable
+                // answer on first paint. Fire-and-forget: the store keeps
+                // empty arrays on failure, so the UI hides scoped actions
+                // instead of flickering.
+                useUserMembershipsStore().ensureLoaded().catch(() => null);
 
                 return this.permissions;
             } catch (error: any) {
