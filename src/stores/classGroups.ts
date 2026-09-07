@@ -23,7 +23,7 @@ import { defineStore } from "pinia"
 import axios from "axios"
 import { ElNotification } from "element-plus"
 import { useBaseStore } from "./baseStore"
-import { useOrganizationsStore } from "./organizations"
+import { useOrganizationsStore, isPersonalOrganizationRecord } from "./organizations"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
 import { CLASS_PAGE_NAMES } from '../router/classPages'
@@ -59,8 +59,7 @@ export async function loadOrganizationsThatCanHoldClasses(): Promise<any[]> {
         const organizations = response.data?.data || response.data || []
 
         return organizations.filter((org: any) => {
-            const isPersonal = org.organization_type === 'personal' || org.is_personal === true
-            if (isPersonal) return false
+            if (isPersonalOrganizationRecord(org)) return false
 
             // The API omits the caller's role on some listing shapes. Absent role
             // means "cannot tell", and dropping the organization then would hide

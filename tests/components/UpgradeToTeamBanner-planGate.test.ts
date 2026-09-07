@@ -46,7 +46,7 @@ vi.mock('../../src/stores/permissions', () => ({
 
 vi.mock('../../src/stores/organizations', () => ({
   useOrganizationsStore: () => ({
-    isPersonalOrganization: ref(true),
+    isPersonalOrganizationContext: ref(true),
     currentOrganization: ref({ id: 'org-1', name: 'personal' }),
     convertToTeamOrganization: vi.fn(),
     t: (k: string) => k,

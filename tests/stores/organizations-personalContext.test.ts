@@ -3,12 +3,11 @@
  * enforced backend-side in core #475, which turns `can_run_classrooms` off for
  * personal organizations and refuses to create a class in one).
  *
- * The front needs that verdict by ORGANISATION TYPE alone. The store already
- * had `isPersonalOrganization`, but it additionally demands a single member and
- * answers a different question — whether to show the organizations menu at all.
- * A personal organization whose member count is absent or unexpected slips
- * through it, which here would mean offering a teacher a class list and a
- * create button the backend is about to refuse.
+ * The front needs that verdict by ORGANISATION TYPE alone, and by one rule:
+ * three shapes of "is personal" used to coexist, one of them demanding a
+ * single member, and they disagreed on a personal organization whose member
+ * count was absent or unexpected (#316). isPersonalOrganizationRecord is the
+ * rule; the context computed and every other reader delegate to it.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -32,7 +31,7 @@ vi.mock('../../src/utils/asyncWrapper', () => ({
   createAsyncWrapper: () => async (fn: () => Promise<any>) => fn(),
 }))
 
-import { useOrganizationsStore } from '../../src/stores/organizations'
+import { useOrganizationsStore, isPersonalOrganizationRecord } from '../../src/stores/organizations'
 
 function storeShowing(organizations: any[], currentId?: string) {
   setActivePinia(createPinia())
@@ -76,12 +75,17 @@ describe('organizations — personal context', () => {
   })
 
   it('flags a personal organization whatever its member count says', () => {
-    // The member-count clause on `isPersonalOrganization` makes it disagree
-    // here; the classroom rule is about the type, so this must not follow it.
+    // A member-count clause once made a second predicate disagree here; the
+    // rule is about the type, whatever the count says.
     const store = storeShowing([{ ...personalOrg, member_count: 3 }], personalOrg.id)
 
     expect(store.isPersonalOrganizationContext).toBe(true)
-    expect(store.isPersonalOrganization).toBe(false)
+  })
+
+  it('exposes no member-count variant of the rule any more', () => {
+    const store = storeShowing([personalOrg], personalOrg.id)
+
+    expect('isPersonalOrganization' in store).toBe(false)
   })
 
   it('accepts the is_personal flag when the type is not spelled out', () => {
@@ -97,5 +101,22 @@ describe('organizations — personal context', () => {
     const store = storeShowing([])
 
     expect(store.isPersonalOrganizationContext).toBe(false)
+  })
+})
+
+describe('isPersonalOrganizationRecord — the one rule', () => {
+  it('reads the type', () => {
+    expect(isPersonalOrganizationRecord({ organization_type: 'personal', member_count: 3 } as any)).toBe(true)
+    expect(isPersonalOrganizationRecord({ organization_type: 'team', member_count: 1 } as any)).toBe(false)
+  })
+
+  it('accepts the is_personal flag when the type is not spelled out', () => {
+    expect(isPersonalOrganizationRecord({ is_personal: true })).toBe(true)
+  })
+
+  it('claims nothing about a missing organization', () => {
+    expect(isPersonalOrganizationRecord(null)).toBe(false)
+    expect(isPersonalOrganizationRecord(undefined)).toBe(false)
+    expect(isPersonalOrganizationRecord({})).toBe(false)
   })
 })
