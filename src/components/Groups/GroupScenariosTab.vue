@@ -40,7 +40,6 @@ import BulkStartScenarioModal from './modals/BulkStartScenarioModal.vue'
 import AssignmentResultsView from './AssignmentResultsView.vue'
 import SessionDetailModal from './SessionDetailModal.vue'
 import AssignmentCard from './AssignmentCard.vue'
-import { useDistributionPicker } from '../../composables/useDistributionPicker'
 import { useAssignmentResults } from '../../composables/useAssignmentResults'
 import type { ScenarioAssignment, Scenario, NoKeyUser, AssignmentResultError, ScenarioResultItem, AssignmentProgress } from '../../types/groupScenarios'
 
@@ -135,9 +134,6 @@ const { t } = useTranslations({
 
 const { showError: notifyError } = useNotification()
 const backendsStore = useTerminalBackendsStore()
-
-// Distribution picker (list + selection + loader; reloads on backend change)
-const { distributions, selectedDistribution, loadingDistributions, loadDistributions } = useDistributionPicker()
 
 // ScenarioResultItem, SessionStepDetail and SessionDetailResponse are imported
 
@@ -237,22 +233,19 @@ async function handleAssign(payload: { scenarioId: string; startDate: string; de
   }
 }
 
-// Open bulk start modal with distribution selection
+// Open the bulk start confirmation; the backend choice is the only input
 async function handleBulkStart(assignment: ScenarioAssignment) {
   assignmentToBulkStart.value = assignment
-  selectedDistribution.value = ''
   if (props.organizationId) {
     await backendsStore.fetchBackends(props.organizationId)
   } else {
     await backendsStore.fetchBackends()
   }
-  await loadDistributions()
   showBulkStartModal.value = true
 }
 
-// Confirm bulk start with selected distribution
 async function confirmBulkStart() {
-  if (!assignmentToBulkStart.value || !selectedDistribution.value) return
+  if (!assignmentToBulkStart.value) return
   const assignment = assignmentToBulkStart.value
   showBulkStartModal.value = false
   bulkStartingId.value = assignment.id
@@ -260,10 +253,7 @@ async function confirmBulkStart() {
     const data = await teacherService.bulkStartScenario(
       props.groupId,
       assignment.scenario_id,
-      {
-        distribution: selectedDistribution.value,
-        ...(backendsStore.selectedBackendId && { backend: backendsStore.selectedBackendId })
-      }
+      backendsStore.selectedBackendId ? { backend: backendsStore.selectedBackendId } : {}
     )
     const started = data?.created || data?.started || 0
     const skipped = data?.skipped || 0
@@ -534,13 +524,10 @@ onMounted(() => {
       @close="showAssignModal = false"
     />
 
-    <!-- Bulk Start Distribution Modal -->
+    <!-- Bulk Start Modal -->
     <BulkStartScenarioModal
       :visible="showBulkStartModal"
       :assignment="assignmentToBulkStart"
-      :distributions="distributions"
-      v-model:selected-distribution="selectedDistribution"
-      :loading-distributions="loadingDistributions"
       @confirm="confirmBulkStart"
       @close="showBulkStartModal = false"
     />

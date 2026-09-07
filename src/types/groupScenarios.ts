@@ -43,13 +43,6 @@ export interface AssignmentResultError {
   error?: string
 }
 
-export interface Distribution {
-  prefix: string
-  name: string
-  description: string
-  os_type?: string
-  is_global: boolean
-}
 
 export interface AssignmentProgress {
   scenario_id: string
