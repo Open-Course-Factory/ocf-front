@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { mount, VueWrapper } from '@vue/test-utils'
+import { mount, VueWrapper, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref, nextTick } from 'vue'
@@ -318,6 +318,33 @@ describe('GroupMembersManager', () => {
 
       const searchInput = wrapper.find('input.search-input')
       expect(searchInput.exists()).toBe(true)
+    })
+  })
+
+  describe('add member user search', () => {
+    // The dropdown used to render only while a search was running or had
+    // results, so the "no user found" branch inside it could never show: a
+    // teacher searching a mistyped email got silence.
+    async function searchFor(query: string) {
+      const wrapper = mountComponent()
+      await nextTick()
+      const input = wrapper.findAll('.base-modal-stub')[0].find('.user-search-container input')
+      await input.trigger('focus')
+      await input.setValue(query)
+      await input.trigger('input')
+      await flushPromises()
+      return wrapper
+    }
+
+    it('tells the teacher when a completed search matched nobody', async () => {
+      const wrapper = await searchFor('nobody@example.com')
+      expect(wrapper.find('.search-empty').exists()).toBe(true)
+      expect(wrapper.find('.search-empty').text()).toBe('No user found')
+    })
+
+    it('stays silent while the query is too short to search', async () => {
+      const wrapper = await searchFor('a')
+      expect(wrapper.find('.search-dropdown').exists()).toBe(false)
     })
   })
 })
