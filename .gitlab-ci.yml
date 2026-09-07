@@ -19,6 +19,15 @@ workflow:
 default:
   tags:
     - ocf-core
+  # A newer pipeline on the same ref cancels this one (auto-cancel redundant
+  # pipelines is on for the project), so a burst of merges to main queues only
+  # the latest e2e run instead of one full stack per merge.
+  interruptible: true
+  # Docker Hub pulls fail under load (TLS handshake or token timeouts); retry once.
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
 
 # ============================================================================
 # Variables
@@ -97,6 +106,9 @@ typecheck:
 
 e2e:payment:
   stage: test
+  # Both e2e jobs build a full ocf-core stack on the shared host Docker daemon;
+  # one stack at a time per project, or they starve the runner host together.
+  resource_group: e2e-stack
   # Playwright's own image: browsers + system deps preinstalled (saves ~7 min
   # over installing them per run). Keep the tag in lockstep with the
   # @playwright/test version in package.json.
@@ -182,6 +194,9 @@ e2e:payment:
 # Runs on main only (post-merge) by design — not offered on MR pipelines.
 e2e:scenarios:
   stage: test
+  # Both e2e jobs build a full ocf-core stack on the shared host Docker daemon;
+  # one stack at a time per project, or they starve the runner host together.
+  resource_group: e2e-stack
   image: mcr.microsoft.com/playwright:v1.59.1-noble
   cache:
     - key: "${CI_COMMIT_REF_SLUG}-npm"
