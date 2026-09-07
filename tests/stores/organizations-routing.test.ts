@@ -60,17 +60,18 @@ vi.mock('../../src/stores/subscriptions', () => ({
   })
 }))
 
-const mockHasFeature = vi.fn().mockReturnValue(true)
+// The verdict the store reads after the switch. Set per test; `null` means no
+// verdict arrived at all.
+const effectiveFeatures = { value: null as null | { can_run_classrooms: boolean } }
 vi.mock('../../src/stores/permissions', () => ({
   usePermissionsStore: () => ({
     refreshEntitlements: vi.fn().mockResolvedValue(undefined),
     loadEffectiveFeatures: mockLoadEffectiveFeatures,
-    hasFeature: mockHasFeature,
+    get effectiveFeatures() { return effectiveFeatures.value },
     currentUser: { id: 'user-1', organization_memberships: [] }
   })
 }))
 
-// Mock router (dynamically imported by setCurrentOrganization for redirect logic)
 const mockCurrentRoute = ref<{ path: string; meta: Record<string, any> }>({ path: '/', meta: {} })
 const mockRouterPush = vi.fn()
 vi.mock('../../src/router', () => ({
@@ -78,20 +79,6 @@ vi.mock('../../src/router', () => ({
     currentRoute: mockCurrentRoute,
     push: mockRouterPush
   }
-}))
-
-// Mock userSettings store (dynamically imported for default page redirect)
-const mockSettings = { default_landing_page: '/terminal-sessions' }
-const mockAvailablePages = ref([
-  { value: '/terminal-sessions', label: 'Terminal Sessions' },
-  { value: '/courses', label: 'Courses' },
-  { value: '/subscription-dashboard', label: 'Subscription Dashboard' }
-])
-vi.mock('../../src/stores/userSettings', () => ({
-  useUserSettingsStore: () => ({
-    settings: mockSettings,
-    availablePages: mockAvailablePages
-  })
 }))
 
 vi.mock('../../src/utils/formatters', () => ({
@@ -113,26 +100,23 @@ vi.mock('../../src/composables/useStatusFormatters', () => ({
 
 import { useOrganizationsStore } from '../../src/stores/organizations'
 
+/**
+ * Leaving a classroom page on an organization switch follows the same rule and
+ * the same destination as the router guard that protects the page on direct
+ * navigation and reload: the backend's verdict for the new context, read
+ * through classroomRefusalRedirect (#320). Plan-feature meta is no longer a
+ * rule of its own.
+ */
 describe('organizations store — routing', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     localStorage.clear()
-    // Reset router mock state
     mockCurrentRoute.value = { path: '/', meta: {} }
     mockRouterPush.mockReset()
-    // Reset permissions mock
-    mockHasFeature.mockReturnValue(true)
-    // Reset settings mock
-    mockSettings.default_landing_page = '/terminal-sessions'
-    mockAvailablePages.value = [
-      { value: '/terminal-sessions', label: 'Terminal Sessions' },
-      { value: '/courses', label: 'Courses' },
-      { value: '/subscription-dashboard', label: 'Subscription Dashboard' }
-    ]
+    effectiveFeatures.value = null
   })
 
-  // Helper to create an org entity for tests
   const createOrgEntity = (id: string = 'org-1') => ({
     id,
     name: `test-org-${id}`,
@@ -148,143 +132,45 @@ describe('organizations store — routing', () => {
     updated_at: new Date().toISOString()
   } as any)
 
-  describe('setCurrentOrganization — Bug: hardcoded routePlanFeatureMap instead of route meta', () => {
-    it('should read requiresPlanFeature from current route meta and redirect when feature is unavailable', async () => {
-      const store = useOrganizationsStore()
-      store.entities.push(createOrgEntity('org-1'))
+  async function switchTo(orgId: string) {
+    const store = useOrganizationsStore()
+    store.entities.push(createOrgEntity(orgId))
+    await store.setCurrentOrganization(orgId)
+  }
 
-      // Simulate being on a route that has requiresPlanFeature in its meta
-      // This is NOT in the hardcoded routePlanFeatureMap — but it IS in the route meta
-      mockCurrentRoute.value = {
-        path: '/group-members',
-        meta: { requiresPlanFeature: 'multiple_groups' }
-      }
+  it('sends the user to the console when the new organization refuses the classroom page', async () => {
+    mockCurrentRoute.value = { path: '/class-groups', meta: { requiresClassroomEntitlement: true } }
+    effectiveFeatures.value = { can_run_classrooms: false }
 
-      // The feature is NOT available in the new org
-      mockHasFeature.mockReturnValue(false)
+    await switchTo('org-1')
 
-      await store.setCurrentOrganization('org-1')
-
-      // BUG: The current code uses a hardcoded routePlanFeatureMap which checks
-      // path prefixes. '/group-members' is NOT in that map even though the route
-      // has requiresPlanFeature: 'multiple_groups' in its meta.
-      // The test expects the code to read from route meta instead.
-      expect(mockRouterPush).toHaveBeenCalled()
-    })
-
-    it('should NOT redirect when current route has no requiresPlanFeature in meta', async () => {
-      const store = useOrganizationsStore()
-      store.entities.push(createOrgEntity('org-1'))
-
-      // Simulate being on a route with NO requiresPlanFeature
-      mockCurrentRoute.value = {
-        path: '/courses',
-        meta: {}
-      }
-
-      mockHasFeature.mockReturnValue(false)
-
-      await store.setCurrentOrganization('org-1')
-
-      // No requiresPlanFeature in meta → should NOT redirect
-      expect(mockRouterPush).not.toHaveBeenCalled()
-    })
-
-    it('should NOT redirect when the required plan feature IS available', async () => {
-      const store = useOrganizationsStore()
-      store.entities.push(createOrgEntity('org-1'))
-
-      // Route requires a feature, but the feature IS available
-      mockCurrentRoute.value = {
-        path: '/class-groups',
-        meta: { requiresPlanFeature: 'multiple_groups' }
-      }
-
-      mockHasFeature.mockReturnValue(true)
-
-      await store.setCurrentOrganization('org-1')
-
-      // Feature is available → no redirect needed
-      expect(mockRouterPush).not.toHaveBeenCalled()
-    })
+    expect(mockRouterPush).toHaveBeenCalledWith({ name: 'MyClasses' })
   })
 
-  describe('setCurrentOrganization — Bug: default_landing_page used without validation', () => {
-    it('should validate default_landing_page against availablePages before redirecting', async () => {
-      const store = useOrganizationsStore()
-      store.entities.push(createOrgEntity('org-1'))
+  it('stays on the classroom page when the new organization allows it', async () => {
+    mockCurrentRoute.value = { path: '/class-groups', meta: { requiresClassroomEntitlement: true } }
+    effectiveFeatures.value = { can_run_classrooms: true }
 
-      // Simulate being on a route that requires a plan feature the new org lacks
-      mockCurrentRoute.value = {
-        path: '/class-groups',
-        meta: { requiresPlanFeature: 'multiple_groups' }
-      }
-      mockHasFeature.mockReturnValue(false)
+    await switchTo('org-1')
 
-      // Settings has a default_landing_page that is NOT in availablePages
-      mockSettings.default_landing_page = '/dashboard'
-      mockAvailablePages.value = [
-        { value: '/terminal-sessions', label: 'Terminal Sessions' },
-        { value: '/courses', label: 'Courses' }
-      ]
+    expect(mockRouterPush).not.toHaveBeenCalled()
+  })
 
-      await store.setCurrentOrganization('org-1')
+  it('stays put when no verdict arrived, leaving the refusal to the backend', async () => {
+    mockCurrentRoute.value = { path: '/class-groups', meta: { requiresClassroomEntitlement: true } }
+    effectiveFeatures.value = null
 
-      // BUG: Current code does:
-      //   settingsStore.settings.default_landing_page || '/terminal-sessions'
-      // This would redirect to '/dashboard' which doesn't exist.
-      // Correct behavior: validate against availablePages and fall back to
-      // '/terminal-sessions' (or first available page) if not found.
-      expect(mockRouterPush).toHaveBeenCalledWith('/terminal-sessions')
-    })
+    await switchTo('org-1')
 
-    it('should use default_landing_page when it IS in availablePages', async () => {
-      const store = useOrganizationsStore()
-      store.entities.push(createOrgEntity('org-1'))
+    expect(mockRouterPush).not.toHaveBeenCalled()
+  })
 
-      // Simulate needing a redirect
-      mockCurrentRoute.value = {
-        path: '/class-groups',
-        meta: { requiresPlanFeature: 'multiple_groups' }
-      }
-      mockHasFeature.mockReturnValue(false)
+  it('never redirects from a page that is not a classroom page', async () => {
+    mockCurrentRoute.value = { path: '/courses', meta: {} }
+    effectiveFeatures.value = { can_run_classrooms: false }
 
-      // Settings has a valid default_landing_page
-      mockSettings.default_landing_page = '/courses'
-      mockAvailablePages.value = [
-        { value: '/terminal-sessions', label: 'Terminal Sessions' },
-        { value: '/courses', label: 'Courses' }
-      ]
+    await switchTo('org-1')
 
-      await store.setCurrentOrganization('org-1')
-
-      // '/courses' IS in availablePages, so redirect should use it
-      expect(mockRouterPush).toHaveBeenCalledWith('/courses')
-    })
-
-    it('should fall back to first available page when default_landing_page is empty and /terminal-sessions is not available', async () => {
-      const store = useOrganizationsStore()
-      store.entities.push(createOrgEntity('org-1'))
-
-      // Simulate needing a redirect
-      mockCurrentRoute.value = {
-        path: '/class-groups',
-        meta: { requiresPlanFeature: 'multiple_groups' }
-      }
-      mockHasFeature.mockReturnValue(false)
-
-      // No default set, and /terminal-sessions is not in available pages
-      mockSettings.default_landing_page = ''
-      mockAvailablePages.value = [
-        { value: '/courses', label: 'Courses' },
-        { value: '/subscription-dashboard', label: 'Subscription Dashboard' }
-      ]
-
-      await store.setCurrentOrganization('org-1')
-
-      // BUG: Current code falls back to '/terminal-sessions' which isn't available.
-      // Correct behavior: use first available page ('/courses')
-      expect(mockRouterPush).toHaveBeenCalledWith('/courses')
-    })
+    expect(mockRouterPush).not.toHaveBeenCalled()
   })
 })

@@ -29,10 +29,9 @@ import { useCurrentUserStore } from '../../src/stores/currentUser'
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
- * Runs the guard logic extracted from the router's `beforeEach` callback.
- * Reproduces the relevant sections WITHOUT the plan feature check (which was
- * removed from the guard — it's now handled only by the org switch handler
- * and the nav menu reactively).
+ * Runs the guard logic extracted from the router's `beforeEach` callback,
+ * up to and including the permission check. Entitlement gating is the
+ * classroom verdict (see classroomGuard.test.ts), not route plan-feature meta.
  */
 async function runGuard(
   to: { path: string; name: string; matched: any[]; meta: Record<string, any> },
@@ -72,9 +71,6 @@ async function runGuard(
 
   await featureFlagService.waitForInitialization()
 
-  // Plan feature check is NOT in the router guard.
-  // It is handled by the organizations store on org switch.
-
   // Permission check
   const requiredPermissions = to.meta.requiredPermissions as string[] | undefined
   if (requiredPermissions && requiredPermissions.length > 0) {
@@ -101,32 +97,12 @@ function makeGroupRoute() {
     matched: [{ meta: { requiresAuth: true } }],
     meta: {
       requiresAuth: true,
-      requiresPlanFeature: 'multiple_groups',
       requiredPermissions: ['view_groups']
     }
   }
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
-
-describe('Router guard – plan feature check is NOT in the guard', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('allows navigation to group routes regardless of plan features (check is elsewhere)', async () => {
-    // The router guard does not check requiresPlanFeature at all.
-    // Plan feature gating is handled by the org switch handler and nav menu.
-    const result = await runGuard(makeGroupRoute())
-    expect(result).toBeUndefined()
-  })
-
-  it('allows navigation even when user has no subscription (plan check is not here)', async () => {
-    // Even without any plan features loaded, the router guard should not block
-    const result = await runGuard(makeGroupRoute())
-    expect(result).toBeUndefined()
-  })
-})
 
 describe('Router guard – permission check', () => {
   beforeEach(() => {
