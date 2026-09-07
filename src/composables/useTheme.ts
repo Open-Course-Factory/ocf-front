@@ -24,6 +24,9 @@ export function useTheme() {
     // Element Plus reads its own dark palette from a `dark` class on <html>,
     // so overlays it renders (message boxes, notifications) follow the theme too.
     document.documentElement.classList.toggle('dark', resolved === 'dark')
+    // Bootstrap 5.3 reads its palette from `data-bs-theme`; without it every
+    // Bootstrap-styled element kept light-mode colours in dark mode (#327).
+    document.documentElement.setAttribute('data-bs-theme', resolved)
   }
 
   /**
