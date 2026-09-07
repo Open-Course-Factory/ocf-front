@@ -81,7 +81,7 @@ export class FeatureFlagService {
   private readonly STORAGE_KEY = 'ocf_feature_flags'
   private readonly CACHE_TTL = 5 * 60 * 1000 // 5 minutes
   private lastFetch: number = 0
-  private isFetching: boolean = false
+  private fetchInFlight: Promise<void> | null = null
   private initPromise: Promise<void> | null = null
   private isInitialized: boolean = false
 
@@ -297,14 +297,19 @@ export class FeatureFlagService {
       return
     }
 
-    // Prevent concurrent fetches
-    if (this.isFetching) {
+    // One request at a time: later callers await the same fetch, so none
+    // of them resumes before the flags have landed.
+    if (!this.fetchInFlight) {
+      this.fetchInFlight = this.loadFromBackend(now).finally(() => {
+        this.fetchInFlight = null
+      })
+    } else {
       console.log('🏴 Feature flags fetch already in progress')
-      return
     }
+    return this.fetchInFlight
+  }
 
-    this.isFetching = true
-
+  private async loadFromBackend(now: number): Promise<void> {
     try {
       const response = await axios.get('/features')
 
@@ -397,8 +402,6 @@ export class FeatureFlagService {
         url: error.config?.url
       })
       // Fallback to cached/local values - don't throw
-    } finally {
-      this.isFetching = false
     }
   }
 
