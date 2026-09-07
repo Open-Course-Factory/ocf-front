@@ -478,13 +478,9 @@
                     <span aria-hidden="true">+</span>
                     {{ t('quizEdit.addOption') }}
                   </button>
-                  <p v-if="question.options.length < 2" class="field-error" role="alert">
+                  <p v-if="questionError(question)" class="field-error" role="alert">
                     <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-                    {{ t('quizEdit.errorMinOptions') }}
-                  </p>
-                  <p v-else-if="!hasAnyCorrect(question)" class="field-error" role="alert">
-                    <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-                    {{ t('quizEdit.errorNoCorrect') }}
+                    {{ t(`quizEdit.${questionError(question)}`) }}
                   </p>
                 </fieldset>
 
@@ -645,6 +641,7 @@
       <button
         class="btn btn-primary"
         data-testid="step-edit-save"
+        :disabled="!isTranslating && hasInvalidQuestion"
         @click="isTranslating ? handleSaveTranslation() : handleSave()"
       >
         {{ isTranslating ? t('stepEdit.saveTranslation') : t('stepEdit.save') }}
@@ -1334,7 +1331,8 @@ const toggleCollapse = (idx: number) => {
 }
 
 const isCorrect = (q: QuestionData, oIdx: number): boolean => {
-  if (q.question_type === 'multiple_choice') return Number(q.correct_answer) === oIdx
+  // Number('') is 0: an unanswered question must not read as "option 1".
+  if (q.question_type === 'multiple_choice') return hasAnyCorrect(q) && Number(q.correct_answer) === oIdx
   if (q.question_type === 'multi_answer') {
     const arr = Array.isArray(q.correct_answer) ? q.correct_answer : []
     return arr.includes(oIdx)
@@ -1351,6 +1349,19 @@ const hasAnyCorrect = (q: QuestionData): boolean => {
   }
   return true
 }
+
+// The one rule for a choice question being saveable: the template shows it
+// as an inline error and the save button is gated on the same verdict.
+const questionError = (q: QuestionData): 'errorMinOptions' | 'errorNoCorrect' | null => {
+  if (q.question_type !== 'multiple_choice' && q.question_type !== 'multi_answer') return null
+  if (q.options.length < 2) return 'errorMinOptions'
+  if (!hasAnyCorrect(q)) return 'errorNoCorrect'
+  return null
+}
+
+const hasInvalidQuestion = computed(() =>
+  (formData.value.questions as QuestionData[]).some((q) => questionError(q) !== null)
+)
 
 const setCorrectSingle = (qIdx: number, oIdx: number) => {
   formData.value.questions[qIdx].correct_answer = oIdx
@@ -2254,6 +2265,11 @@ const handleSaveTranslation = () => {
 
 .btn-primary:hover:not(:disabled) {
   background-color: var(--color-primary-hover);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-secondary {
