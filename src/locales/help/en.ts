@@ -798,10 +798,6 @@ export const helpEn = {
           status: {
             title: "Status",
             description: "Indicates whether your key is active or inactive. An active key (shown with a green badge) allows terminal access. An inactive key (shown with a red badge) must be regenerated."
-          },
-          maxSessions: {
-            title: "Max Sessions",
-            description: "The maximum number of simultaneous terminal sessions your key supports. This may be unlimited depending on your subscription plan."
           }
         },
         security: {

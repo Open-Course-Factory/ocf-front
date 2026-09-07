@@ -798,10 +798,6 @@ export const helpFr = {
           status: {
             title: "Statut",
             description: "Indique si votre clé est active ou inactive. Une clé active (badge vert) permet l'accès au terminal. Une clé inactive (badge rouge) doit être régénérée."
-          },
-          maxSessions: {
-            title: "Sessions maximum",
-            description: "Le nombre maximum de sessions de terminal simultanées que votre clé prend en charge. Ce nombre peut être illimité selon votre plan d'abonnement."
           }
         },
         security: {

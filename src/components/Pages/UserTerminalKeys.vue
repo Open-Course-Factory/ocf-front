@@ -44,7 +44,6 @@ const { t } = useTranslations({
       labelStatus: 'Status:',
       statusActive: 'Active',
       statusInactive: 'Inactive',
-      labelMaxSessions: 'Max sessions:',
       labelCreatedAt: 'Created at:',
       noKeyTitle: 'No terminal key found',
       noKeyDescription: 'Click "Regenerate key" to create one.',
@@ -69,7 +68,6 @@ const { t } = useTranslations({
       labelStatus: 'Statut :',
       statusActive: 'Active',
       statusInactive: 'Inactive',
-      labelMaxSessions: 'Sessions max :',
       labelCreatedAt: 'Créée le :',
       noKeyTitle: 'Aucune clé terminal trouvée',
       noKeyDescription: 'Cliquez sur "Régénérer la clé" pour en créer une.',
@@ -174,10 +172,6 @@ function formatDate(dateString: string) {
               <span :class="['badge', currentKey.is_active ? 'active' : 'inactive']">
                 {{ currentKey.is_active ? t('terminalKeys.statusActive') : t('terminalKeys.statusInactive') }}
               </span>
-            </div>
-            <div class="detail-item">
-              <label>{{ t('terminalKeys.labelMaxSessions') }}</label>
-              <span>{{ currentKey.max_sessions === -1 ? '∞' : currentKey.max_sessions }}</span>
             </div>
             <div class="detail-item">
               <label>{{ t('terminalKeys.labelCreatedAt') }}</label>

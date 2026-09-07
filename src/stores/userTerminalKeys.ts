@@ -42,7 +42,6 @@ export const useUserTerminalKeysStore = defineStore('userTerminalKeys', () => {
                 pageTitle: 'Terminal Access Keys',
                 key_name: 'Key Name',
                 is_active: 'Active',
-                max_sessions: 'Max Sessions',
                 regenerate: 'Regenerate Key',
                 noKeyFound: 'No terminal key found',
                 keyRegenerated: 'Terminal key regenerated successfully',
@@ -58,7 +57,6 @@ export const useUserTerminalKeysStore = defineStore('userTerminalKeys', () => {
                 pageTitle: 'Clés d\'accès Terminal',
                 key_name: 'Nom de la clé',
                 is_active: 'Active',
-                max_sessions: 'Nombre max de sessions',
                 regenerate: 'Régénérer la clé',
                 noKeyFound: 'Aucune clé terminal trouvée',
                 keyRegenerated: 'Clé terminal régénérée avec succès',
@@ -75,7 +73,6 @@ export const useUserTerminalKeysStore = defineStore('userTerminalKeys', () => {
         field('id', 'ID').input().visible().readonly(),
         field('key_name', t('userTerminalKeys.key_name')).input().visible().readonly(),
         field('is_active', t('userTerminalKeys.is_active')).input().visible().readonly(),
-        field('max_sessions', t('userTerminalKeys.max_sessions')).input().visible().readonly(),
         field('created_at', 'Created at').input().visible().readonly(),
     ])
 

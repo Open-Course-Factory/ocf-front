@@ -104,11 +104,6 @@
             <h4>{{ t('help.terminals.sshKeys.details.status.title') }}</h4>
             <p>{{ t('help.terminals.sshKeys.details.status.description') }}</p>
           </div>
-          <div class="detail-card">
-            <i class="fas fa-layer-group"></i>
-            <h4>{{ t('help.terminals.sshKeys.details.maxSessions.title') }}</h4>
-            <p>{{ t('help.terminals.sshKeys.details.maxSessions.description') }}</p>
-          </div>
         </div>
       </section>
 
