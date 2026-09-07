@@ -15,6 +15,19 @@ interface OrganizationBackendConfig {
   default_backend: string
 }
 
+/**
+ * The one answer to "is this a personal organization": by TYPE (or the
+ * `is_personal` flag some listing shapes carry instead), never by member
+ * count. Three shapes of this rule used to coexist and disagree (#316);
+ * every reader, in this store or elsewhere, goes through here.
+ */
+export function isPersonalOrganizationRecord(
+  organization: { organization_type?: string; is_personal?: boolean } | null | undefined
+): boolean {
+  if (!organization) return false
+  return organization.organization_type === 'personal' || organization.is_personal === true
+}
+
 export const useOrganizationsStore = defineStore('organizations', () => {
   const base = useBaseStore()
 
@@ -94,12 +107,6 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     return userOrganizations.value[0] || null
   })
 
-  const isPersonalOrganization = computed(() => {
-    if (!currentOrganization.value) return false
-    return currentOrganization.value.organization_type === 'personal' &&
-           currentOrganization.value.member_count === 1
-  })
-
   /**
    * Whether the active context is a personal organization, by TYPE alone.
    *
@@ -107,20 +114,12 @@ export const useOrganizationsStore = defineStore('organizations', () => {
    * person, but classes live in team organizations they create (product
    * decision, front #315; enforced backend-side in core #475, which turns
    * `can_run_classrooms` off for personal organizations and refuses to create a
-   * class in one).
-   *
-   * Deliberately NOT `isPersonalOrganization` above, which also demands a single
-   * member: that one answers "should the organizations menu appear at all", and
-   * a personal organization whose member count is absent or unexpected would
-   * slip through it — here that would mean offering a teacher a class list and
-   * a create button the backend is about to refuse.
+   * class in one). A member-count clause once made a second predicate disagree
+   * with this one; the navigation and the upgrade banner read this one too.
    */
-  const isPersonalOrganizationContext = computed(() => {
-    const organization = currentOrganization.value
-    if (!organization) return false
-    return organization.organization_type === 'personal' ||
-           (organization as { is_personal?: boolean }).is_personal === true
-  })
+  const isPersonalOrganizationContext = computed(() =>
+    isPersonalOrganizationRecord(currentOrganization.value)
+  )
 
   // Demo data provider
   const getDemoOrganizations = (): Organization[] => [
@@ -382,7 +381,6 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     personalOrganization,
     businessOrganizations,
     currentOrganization,
-    isPersonalOrganization,
     isPersonalOrganizationContext,
     currentOrganizationId,
 

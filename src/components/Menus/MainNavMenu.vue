@@ -182,7 +182,7 @@ useSubscriptionBatchesStore();
 
 // Get organizations store and check if current org is personal
 const organizationsStore = useOrganizationsStore();
-const { isPersonalOrganization } = storeToRefs(organizationsStore);
+const { isPersonalOrganizationContext } = storeToRefs(organizationsStore);
 
 // Check if user has only assigned subscriptions (no personal/self-paid)
 const subscriptionsStore = useSubscriptionsStore();
@@ -541,7 +541,7 @@ const filteredCategories = computed(() => {
   return menuCategories.value
     .filter(category => {
       // Hide organizations menu for personal organizations
-      if (category.key === 'organizations' && isPersonalOrganization.value) {
+      if (category.key === 'organizations' && isPersonalOrganizationContext.value) {
         return false
       }
       // Custom visibility logic for groups menu

@@ -98,7 +98,7 @@ import { useClassroomEntitlement } from '../../composables/useClassroomEntitleme
 import BaseModal from '../Modals/BaseModal.vue'
 
 const orgStore = useOrganizationsStore()
-const { isPersonalOrganization, currentOrganization } = storeToRefs(orgStore)
+const { isPersonalOrganizationContext, currentOrganization } = storeToRefs(orgStore)
 
 // Shared with ClassroomPlanCta so the gate is one rule, not two (#298), and the
 // org-less half of it, because that is what ConvertToTeamOrganization checks
@@ -157,7 +157,7 @@ onMounted(() => {
   isDismissed.value = localStorage.getItem(DISMISS_KEY) === 'true'
 })
 
-const shouldShowBanner = computed(() => isPersonalOrganization.value && !isDismissed.value)
+const shouldShowBanner = computed(() => isPersonalOrganizationContext.value && !isDismissed.value)
 
 const dismissBanner = () => {
   isDismissed.value = true
