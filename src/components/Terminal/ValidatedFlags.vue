@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Validated flags panel for scenario sessions.
  * Displays flags the student has already found, with copy-to-clipboard support.

@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Phase checklist shown while a scenario environment (or its next step) is
  * being prepared. Extracted from ScenarioProvisioningOverlay so the in-panel

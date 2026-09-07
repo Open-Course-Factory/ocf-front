@@ -1,6 +1,6 @@
 <!-- 
 Copyright (C) 2019-2024 Jake Coffman (jake@jakecoffman.com)
-Copyright (C) 2024 Solution Libre (contact@solution-libre.fr)
+Copyright (C) 2024 Labinux (contact@solution-libre.fr)
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

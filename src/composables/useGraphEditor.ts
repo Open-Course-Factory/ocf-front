@@ -1,6 +1,6 @@
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Shared graph-editor logic for the node/edge canvas used by both the scenario
  * editor and the course editor. Owns the nodes/edges refs and the topology

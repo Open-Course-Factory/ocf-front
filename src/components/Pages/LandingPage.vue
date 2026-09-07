@@ -243,7 +243,7 @@
 
         <div class="footer-bottom">
           <div class="footer-left">
-            <p>&copy; 2023-2026 Solution Libre. {{ t('landing.footer.rights') }}</p>
+            <p>&copy; 2023-2026 {{ COMPANY.name }}. {{ t('landing.footer.rights') }}</p>
             <div class="version-info">
               <BetaBadge size="large" />
               <span class="version-divider">•</span>
@@ -270,6 +270,7 @@ import { SUPPORT_EMAIL } from '../../config/contact'
 import { useVersionInfo } from '../../composables/useVersionInfo'
 import BetaBadge from '../Common/BetaBadge.vue'
 import LanguageSelector from '../UI/LanguageSelector.vue'
+import { COMPANY } from '../../config/company'
 
 // State for floating nav visibility
 const showNav = ref(false)

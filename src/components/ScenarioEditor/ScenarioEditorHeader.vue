@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Header bar of the Scenario Editor page. Shows the scenario picker, current
  * org/platform context, the read-only badge, and the action buttons (import,

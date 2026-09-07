@@ -1,6 +1,6 @@
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Pure CSV string builders for the group scenario result/command exports,
  * extracted from GroupScenariosTab.vue (commit c4 of #244).

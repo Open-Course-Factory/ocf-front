@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * End-of-session overlay displayed on top of the terminal.
  * Shows the appropriate icon, message, and navigation actions based on the session end reason.

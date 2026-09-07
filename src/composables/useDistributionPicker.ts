@@ -1,6 +1,6 @@
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Distribution-picker state + loader for the bulk-start flow, extracted from
  * GroupScenariosTab.vue (commit c3 of #244). Owns the distribution list, the

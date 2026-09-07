@@ -1,6 +1,6 @@
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Scenario-editor graph logic — a thin preset over the shared useGraphEditor
  * (topology, edge-connect/insert, order sync, position persistence). This file

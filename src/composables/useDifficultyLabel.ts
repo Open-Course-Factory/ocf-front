@@ -1,6 +1,6 @@
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Composable that returns a translator for scenario difficulty levels
  * (beginner / intermediate / advanced). Falls back to the raw value when
