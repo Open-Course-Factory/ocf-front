@@ -152,4 +152,30 @@ describe('FeatureFlagService', () => {
 
     expect(mockedAxios.get).toHaveBeenCalledTimes(2)
   })
+
+  /**
+   * BEHAVIOR PROTECTED: a flag the backend knows and the frontend defaults do
+   * not is registered on the fly (#102). The defaults only cover the gap
+   * before the first response; they are not a whitelist. Without this, a new
+   * backend flag was silently dropped and every gate on it read false.
+   */
+  it('registers a backend flag the defaults never declared', async () => {
+    const service = resetSingleton()
+    mockedAxios.get.mockResolvedValue({
+      data: {
+        data: [
+          { id: 'feat-9', key: 'brand_new_thing', name: 'brand_new_thing', module: 'labs', enabled: true, description: 'from backend' }
+        ]
+      }
+    } as any)
+
+    await service.fetchFromBackend(true)
+
+    expect(service.isEnabled('brand_new_thing')).toBe(true)
+    expect(service.getAllFlags().brand_new_thing).toMatchObject({
+      id: 'feat-9',
+      module: 'labs',
+      description: 'from backend'
+    })
+  })
 })
