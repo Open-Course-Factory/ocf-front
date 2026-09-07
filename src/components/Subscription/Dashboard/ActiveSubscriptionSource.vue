@@ -61,7 +61,7 @@
           </div>
           <div v-if="primarySubscription.subscription_plan?.max_session_duration_minutes" class="feature-item">
             <i class="fas fa-clock"></i>
-            <span>{{ formatDuration(primarySubscription.subscription_plan.max_session_duration_minutes) }}</span>
+            <span>{{ formatSessionLimit(primarySubscription.subscription_plan.max_session_duration_minutes) }}</span>
           </div>
           <div v-if="primarySubscription.subscription_plan?.data_persistence_gb" class="feature-item">
             <i class="fas fa-database"></i>
@@ -161,6 +161,7 @@
 import { computed } from 'vue'
 import { useTranslations } from '../../../composables/useTranslations'
 import { formatBudgetAsSizes, CANONICAL_SIZE_CATALOG } from '../../../utils/quotaFormatters'
+import { formatMinutes } from '../../../utils/formatters'
 import { isAssignedSubscription } from '../../../utils/subscriptionHelpers'
 
 interface Props {
@@ -184,7 +185,7 @@ const emit = defineEmits<{
   reactivate: []
 }>()
 
-const { t } = useTranslations({
+const { t, locale } = useTranslations({
   en: {
     subscriptions: {
       activeSubscriptionTitle: 'Your Active Subscription',
@@ -298,12 +299,8 @@ function getSourceText(): string {
   return t(`subscriptions.source${type.charAt(0).toUpperCase() + type.slice(1)}`)
 }
 
-function formatDuration(minutes: number): string {
-  if (minutes >= 60) {
-    const hours = Math.floor(minutes / 60)
-    return `${hours}h ${t('subscriptions.sessionDuration')}`
-  }
-  return `${minutes}min ${t('subscriptions.sessionDuration')}`
+function formatSessionLimit(minutes: number): string {
+  return `${formatMinutes(minutes, locale.value)} ${t('subscriptions.sessionDuration')}`
 }
 
 // --- Subscription state (drives status notices + action gating) ---
