@@ -75,6 +75,8 @@ const { t } = useTranslations({
       // Modal
       addMemberTitle: 'Add Member to {groupName}',
       selectUser: 'User ID or Email',
+      searching: 'Searching...',
+      noUserFound: 'No user found',
       selectRole: 'Select Role',
       cancel: 'Cancel',
 
@@ -122,6 +124,8 @@ const { t } = useTranslations({
       // Modal
       addMemberTitle: 'Ajouter un membre à {groupName}',
       selectUser: 'ID utilisateur ou Email',
+      searching: 'Recherche...',
+      noUserFound: 'Aucun utilisateur trouvé',
       selectRole: 'Sélectionner un rôle',
       cancel: 'Annuler',
 
@@ -213,10 +217,14 @@ const handleAddMember = async () => {
   }
 }
 
+// Searches start at two characters; below that there is nothing to report.
+const USER_SEARCH_MIN_LENGTH = 2
+const isUserSearchActive = computed(() => userSearchQuery.value.trim().length >= USER_SEARCH_MIN_LENGTH)
+
 async function onUserSearchInput() {
   const query = userSearchQuery.value.trim()
 
-  if (query.length < 2) {
+  if (query.length < USER_SEARCH_MIN_LENGTH) {
     userSearchResults.value = []
     return
   }
@@ -491,13 +499,13 @@ async function handleRemoveMember(member: GroupMember) {
               @blur="onUserSearchBlur"
               required
             />
-            <div v-if="showUserSearchDropdown && (userSearchResults.length > 0 || isSearchingUsers)" class="search-dropdown">
+            <div v-if="showUserSearchDropdown && isUserSearchActive" class="search-dropdown">
               <div v-if="isSearchingUsers" class="search-loading">
                 <i class="fas fa-spinner fa-spin"></i>
-                Searching...
+                {{ t('groupMembers.searching') }}
               </div>
-              <div v-else-if="userSearchResults.length === 0 && userSearchQuery.trim()" class="search-empty">
-                No user found
+              <div v-else-if="userSearchResults.length === 0" class="search-empty">
+                {{ t('groupMembers.noUserFound') }}
               </div>
               <div
                 v-for="user in userSearchResults"
