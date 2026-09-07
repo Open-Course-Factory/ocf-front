@@ -281,6 +281,7 @@ const syncWithStripe = async () => {
         syncResult.value = result
         showSyncResult.value = true
         autoHideResult(result)
+        showSuccess(syncResultTitle.value)
     } catch (error: any) {
         console.error('Error syncing plans with Stripe:', error)
         syncResult.value = {
@@ -288,6 +289,7 @@ const syncWithStripe = async () => {
             error: error.response?.data?.error_message || error.message
         }
         showSyncResult.value = true
+        showError(syncResult.value.error)
     } finally {
         isSyncing.value = false
     }
@@ -314,6 +316,7 @@ const startMirror = async () => {
             error: error.response?.data?.error_message || error.message
         }
         showSyncResult.value = true
+        showError(syncResult.value.error)
     } finally {
         isSyncing.value = false
     }
@@ -340,6 +343,7 @@ const confirmMirror = async () => {
         syncResult.value = result
         showSyncResult.value = true
         autoHideResult(result)
+        showSuccess(syncResultTitle.value)
     } catch (error: any) {
         console.error('Error mirroring plans to Stripe:', error)
         syncResult.value = {
@@ -347,6 +351,7 @@ const confirmMirror = async () => {
             error: error.response?.data?.error_message || error.message
         }
         showSyncResult.value = true
+        showError(syncResult.value.error)
     } finally {
         isSyncing.value = false
         mirrorPreview.value = null
@@ -377,6 +382,7 @@ const confirmImport = async () => {
         syncResult.value = result
         showSyncResult.value = true
         autoHideResult(result)
+        showSuccess(syncResultTitle.value)
     } catch (error: any) {
         console.error('Error importing plans from Stripe:', error)
         syncResult.value = {
@@ -384,6 +390,7 @@ const confirmImport = async () => {
             error: error.response?.data?.error_message || error.message
         }
         showSyncResult.value = true
+        showError(syncResult.value.error)
     } finally {
         isSyncing.value = false
     }
@@ -440,7 +447,10 @@ const confirmImport = async () => {
                 </small>
 
                 <!-- Sync Results -->
-                <div v-if="showSyncResult && syncResult" class="sync-results">
+                <!-- Announced (toast + live region) as well as shown: an admin who
+                     scrolled away, or a screen reader, would otherwise miss the
+                     outcome of an operation that just wrote to Stripe. -->
+                <div v-if="showSyncResult && syncResult" class="sync-results" role="status" aria-live="polite">
                     <div v-if="syncResult.success" class="alert alert-success">
                         <div class="result-header">
                             <i class="fas fa-check-circle"></i>

@@ -561,15 +561,6 @@ const deleteOrganization = async () => {
   font-weight: 600;
 }
 
-.btn-danger {
-  background: var(--color-danger);
-  color: white;
-}
-
-.btn-danger:hover {
-  background: var(--color-danger-dark);
-}
-
 .ocf-retention-section {
   padding: 1.5rem;
   border: 1.5px solid var(--color-border);

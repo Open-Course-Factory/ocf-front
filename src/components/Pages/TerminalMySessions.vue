@@ -2219,12 +2219,6 @@ async function hideAllInactiveSessions() {
   color: var(--color-gray-900);
 }
 
-.btn-danger {
-  background-color: var(--color-danger);
-  border-color: var(--color-danger);
-  color: var(--color-white);
-}
-
 .btn-success {
   background-color: var(--color-success);
   border-color: var(--color-success);
