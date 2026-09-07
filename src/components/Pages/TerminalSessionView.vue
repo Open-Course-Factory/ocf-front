@@ -18,9 +18,9 @@
       <i class="fas fa-exclamation-triangle"></i>
       <p>{{ error }}</p>
       <div class="error-actions">
-        <router-link :to="{ name: 'TerminalSessions' }" class="btn btn-secondary">
+        <router-link :to="backTarget" class="btn btn-secondary">
           <i class="fas fa-arrow-left"></i>
-          {{ t('sessionView.backToSessions') }}
+          {{ backLabel }}
         </router-link>
       </div>
     </div>
@@ -30,9 +30,9 @@
       <!-- Back link, and at the far right the page-level controls: the
            briefing toggle and the way out of a running scenario. -->
       <div class="session-view-nav">
-        <router-link :to="{ name: 'TerminalSessions' }" class="back-link">
+        <router-link :to="backTarget" class="back-link">
           <i class="fas fa-arrow-left"></i>
-          {{ t('sessionView.backToSessions') }}
+          {{ backLabel }}
         </router-link>
         <button
           v-if="scenarioBriefing && scenarioBriefingText"
@@ -279,6 +279,16 @@ import { getEffectiveSessionState } from '../../utils/sessionState'
 
 const route = useRoute()
 const router = useRouter()
+
+// Where "back" leads. A caller that navigated here in the same tab (the
+// scenario editor's preview) names its own page in `returnTo`; only an
+// in-app path is honoured, so the query can never send anyone off-site.
+const returnTo = computed(() => {
+  const raw = route.query.returnTo
+  return typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//') ? raw : null
+})
+const backTarget = computed(() => returnTo.value ?? { name: 'TerminalSessions' })
+const backLabel = computed(() => t(returnTo.value ? 'sessionView.back' : 'sessionView.backToSessions'))
 const { showSuccess, showWarning, showError: showErrorNotification, showInfo, showConfirm } = useNotification()
 
 const { t } = useTranslations({
@@ -286,6 +296,7 @@ const { t } = useTranslations({
     sessionView: {
       loading: 'Loading session...',
       backToSessions: 'Back to My Sessions',
+      back: 'Back',
       abandonScenario: 'Abandon Scenario',
       errorLoading: 'Unable to load session information.',
       errorNotFound: 'Session not found.',
@@ -331,6 +342,7 @@ const { t } = useTranslations({
     sessionView: {
       loading: 'Chargement de la session...',
       backToSessions: 'Retour aux sessions',
+      back: 'Retour',
       abandonScenario: 'Abandonner le scénario',
       errorLoading: 'Impossible de charger les informations de la session.',
       errorNotFound: 'Session introuvable.',
@@ -687,7 +699,7 @@ async function deleteSession() {
   try {
     await terminalService.deleteSession(sessionInfo.value.session_id)
     showDeleteConfirm.value = false
-    router.push({ name: 'TerminalSessions' })
+    router.push(backTarget.value)
   } catch (err: any) {
     console.error('Error deleting session:', err)
     showErrorNotification(

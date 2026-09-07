@@ -832,13 +832,19 @@ const handleConfirmPreview = async () => {
     const result = await scenarioSessionService.previewScenario(selectedScenarioId.value, {
       organization_id: orgId
     })
-    // Open the player in a new tab — same route the launcher uses to view a session.
-    const previewRoute = router.resolve({
-      name: 'TerminalSessionView',
-      params: { sessionId: result.terminal_session_id }
-    })
-    window.open(previewRoute.href, '_blank', 'noopener')
+    // Same tab, same route the launcher uses: a noopener tab would not
+    // inherit a sessionStorage JWT and would land on the login screen. The
+    // session view's back link brings the trainer back to this scenario.
+    const returnTo = router.resolve({
+      name: 'ScenarioEditor',
+      query: { scenarioId: selectedScenarioId.value }
+    }).fullPath
     showPreviewConfirmModal.value = false
+    await router.push({
+      name: 'TerminalSessionView',
+      params: { sessionId: result.terminal_session_id },
+      query: { returnTo }
+    })
   } catch (err: any) {
     const msg = err?.response?.data?.error_message
       || err?.response?.data?.message
