@@ -25,7 +25,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
-import { waitUntil } from '../helpers/waitUntil'
 
 vi.mock('axios', () => ({
   default: {
@@ -178,9 +177,7 @@ async function closeSocketWith(code: number, props: Record<string, unknown> = {}
   // The connect path awaits several dynamic imports and a ResizeObserver
   // callback, so the socket appears well after the first flush, and later
   // still on a loaded runner: wait on the socket, not on a number of ticks.
-  await waitUntil(() => FakeWebSocket.instances.length > 0, {
-    label: 'the viewer opening its websocket'
-  })
+  await vi.waitFor(() => expect(FakeWebSocket.instances.length).toBeGreaterThan(0), { timeout: 5000 })
 
   const socket = FakeWebSocket.instances[FakeWebSocket.instances.length - 1]
 

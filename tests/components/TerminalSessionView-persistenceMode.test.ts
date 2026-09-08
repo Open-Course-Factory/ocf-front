@@ -128,7 +128,6 @@ function mountView() {
       stubs: {
         TerminalSessionPanel: TerminalSessionPanelStub,
         ScenarioPanel: true,
-        ScenarioProvisioningOverlay: true,
         CommandHistory: true,
         BaseModal: true,
         'router-link': {

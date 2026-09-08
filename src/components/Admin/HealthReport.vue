@@ -10,6 +10,7 @@
  * own good news is one people stop reading, and then stop believing.
  */
 import { ref, onMounted, computed, type Ref } from 'vue'
+import { extractErrorMessage } from '../../utils/formatters'
 
 export interface HealthFinding {
   code: string
@@ -78,7 +79,7 @@ async function refresh() {
   try {
     report.value = (await props.load()) || []
   } catch (e: any) {
-    error.value = e?.response?.data?.error_message || props.labels.loadError
+    error.value = extractErrorMessage(e, props.labels.loadError)
   } finally {
     loading.value = false
   }

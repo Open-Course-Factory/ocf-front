@@ -7,7 +7,7 @@
  * classes that are over move into a fold rather than out of reach.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises, RouterLinkStub, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
@@ -128,12 +128,6 @@ function assignment(overrides: Record<string, any> = {}) {
   }
 }
 
-// Every console mounted through the helper, unmounted after each test. A
-// console keeps a real 30 s refresh interval alive for as long as it is
-// mounted; consoles left over from earlier tests kept polling, and under CI
-// load their ticks landed inside a later test's call count (#325).
-const mountedConsoles: VueWrapper<any>[] = []
-
 async function mountConsole(rows: any[] | Promise<any>) {
   setActivePinia(createPinia())
   if (rows instanceof Promise) {
@@ -144,7 +138,6 @@ async function mountConsole(rows: any[] | Promise<any>) {
   const wrapper = mount(MyClasses, {
     global: { plugins: [i18n], stubs: { 'router-link': RouterLinkStub } },
   })
-  mountedConsoles.push(wrapper)
   await flushPromises()
   return wrapper
 }
@@ -166,10 +159,6 @@ function taughtList(wrapper: VueWrapper<any>) {
 }
 
 describe('MyClasses console', () => {
-  afterEach(() => {
-    mountedConsoles.splice(0).forEach(wrapper => wrapper.unmount())
-  })
-
   beforeEach(() => {
     vi.clearAllMocks()
     i18n.global.locale.value = 'en'

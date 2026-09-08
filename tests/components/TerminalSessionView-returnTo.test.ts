@@ -72,7 +72,7 @@ async function mountWithQuery(query: Record<string, string>) {
     global: {
       plugins: [createI18n({ legacy: false, locale: 'en', fallbackLocale: 'en', messages: { en: {}, fr: {} }, missingWarn: false, fallbackWarn: false })],
       stubs: {
-        TerminalSessionPanel: true, ScenarioPanel: true, ScenarioProvisioningOverlay: true,
+        TerminalSessionPanel: true, ScenarioPanel: true,
         CommandHistory: true, BaseModal: true,
         'router-link': RouterLinkStub
       }
