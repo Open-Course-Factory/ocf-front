@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { ref } from 'vue'
+import { createApp, ref } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
+import { piniaPluginPersist } from '../../src/piniaPluginPersist'
 
 /**
  * `classroomVerdictFor(orgId)` is the one way a screen asks "may this user run
@@ -91,7 +92,6 @@ vi.mock('../../src/stores/currentUser', () => ({
 
 import axios from 'axios'
 import { usePermissionsStore } from '../../src/stores/permissions'
-import { useOrganizationsStore } from '../../src/stores/organizations'
 
 const mockedGet = vi.mocked(axios.get)
 const mockedPost = vi.mocked(axios.post)
@@ -144,5 +144,28 @@ describe('permissions store — classroomVerdictFor', () => {
     await store.classroomVerdictFor('org-x')
 
     expect(store.effectiveFeatures).toBeNull()
+  })
+})
+
+// The store must never come back from localStorage: a restored snapshot reads as
+// "already loaded", so the backend is never asked again, and on a shared browser
+// the snapshot belongs to whoever signed in last — a Découverte owner inherited a
+// Formateur verdict and found the Groups pages open.
+describe('permissions store — never restored from localStorage', () => {
+  it('ignores a persisted snapshot and asks the backend', async () => {
+    localStorage.setItem('pinia_state_permissions', JSON.stringify({ effectiveFeatures: verdictAnswer(true) }))
+    const pinia = createPinia()
+    pinia.use(piniaPluginPersist)
+    createApp({}).use(pinia) // plugins only run once pinia is installed
+    setActivePinia(pinia)
+    mockedGet.mockResolvedValue({ data: verdictAnswer(false) })
+
+    const store = usePermissionsStore()
+    expect(store.effectiveFeatures).toBeNull()
+
+    const features = await store.ensureEffectiveFeaturesLoaded()
+    expect(mockedGet).toHaveBeenCalled()
+    expect(features?.can_run_classrooms).toBe(false)
+    localStorage.clear()
   })
 })

@@ -19,6 +19,7 @@ const loadOrganization = vi.fn()
 const canManageOrganization = vi.fn()
 const isOrganizationOwner = vi.fn()
 const canDeleteOrganization = vi.fn()
+const classroomVerdictFor = vi.fn()
 
 vi.mock('../../src/stores/organizations', () => ({
   useOrganizationsStore: () => ({
@@ -33,9 +34,7 @@ vi.mock('../../src/stores/permissions', () => ({
     canManageOrganization: (id: string) => canManageOrganization(id),
     isOrganizationOwner: (id: string) => isOrganizationOwner(id),
     canDeleteOrganization: (id: string) => canDeleteOrganization(id),
-    // The fixture is a manager of a team organization whose plan grants
-    // classrooms, so the Groups tab is in the bar for this test to traverse.
-    classroomVerdictFor: vi.fn().mockResolvedValue(true)
+    classroomVerdictFor: (id: string) => classroomVerdictFor(id)
   })
 }))
 
@@ -72,7 +71,7 @@ function createTestI18n() {
   })
 }
 
-async function mountOrganizationDetail() {
+async function mountOrganizationDetail(path = '/organizations/org-1') {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -81,7 +80,7 @@ async function mountOrganizationDetail() {
       { path: '/organizations/:id/import', name: 'BulkImport', component: { template: '<div />' } }
     ]
   })
-  await router.push('/organizations/org-1')
+  await router.push(path)
   await router.isReady()
 
   const wrapper = mount(OrganizationDetail, {
@@ -136,6 +135,9 @@ describe('OrganizationDetail tab bar — WAI-ARIA tabs pattern', () => {
   let wrapper: VueWrapper | null = null
 
   beforeEach(() => {
+    // A manager of a team organization whose plan grants classrooms: the
+    // Groups tab is in the bar for these tests to traverse.
+    classroomVerdictFor.mockResolvedValue(true)
     vi.clearAllMocks()
     loadOrganization.mockResolvedValue(organizationPayload())
     canManageOrganization.mockReturnValue(true)
@@ -210,5 +212,53 @@ describe('OrganizationDetail tab bar — WAI-ARIA tabs pattern', () => {
     ;(all[all.length - 1].element as HTMLElement).focus()
     await all[all.length - 1].trigger('keydown', { key: 'ArrowRight' })
     expect(focusedKey(wrapper)).toBe('overview')
+  })
+})
+
+// The Groups tab follows the backend's verdict on "may this user run classes IN
+// THIS organization?" — the same verdict the sidebar reads. It used to be shown
+// to every member of every organization, whatever the plan. Absent verdict means
+// not entitled, never "assume yes".
+describe('OrganizationDetail — the Groups tab follows the classroom verdict', () => {
+  const tabKeys = (wrapper: VueWrapper) =>
+    tabs(wrapper).map(t => (t.attributes('id') || '').replace(/^org-tab-/, ''))
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    loadOrganization.mockResolvedValue(organizationPayload())
+    canManageOrganization.mockReturnValue(true)
+    isOrganizationOwner.mockReturnValue(true)
+    canDeleteOrganization.mockReturnValue(true)
+  })
+
+  it('asks the verdict for the organization being shown, not the one in context', async () => {
+    classroomVerdictFor.mockResolvedValue(false)
+    await mountOrganizationDetail()
+    expect(classroomVerdictFor).toHaveBeenCalledWith('org-1')
+  })
+
+  it('hides the Groups tab when the backend refuses classrooms in this organization', async () => {
+    classroomVerdictFor.mockResolvedValue(false)
+    const wrapper = await mountOrganizationDetail()
+    expect(tabKeys(wrapper)).not.toContain('groups')
+    expect(wrapper.find('#org-panel-groups').exists()).toBe(false)
+  })
+
+  it('shows the Groups tab when the backend allows classrooms in this organization', async () => {
+    classroomVerdictFor.mockResolvedValue(true)
+    expect(tabKeys(await mountOrganizationDetail())).toContain('groups')
+  })
+
+  it('lands on the overview when the URL names the Groups tab but the verdict refuses it', async () => {
+    classroomVerdictFor.mockResolvedValue(false)
+    const wrapper = await mountOrganizationDetail('/organizations/org-1?tab=groups')
+    const selected = tabs(wrapper).find(t => t.attributes('aria-selected') === 'true')
+    expect(selected?.attributes('id')).toBe('org-tab-overview')
+    expect(wrapper.find('#org-panel-groups').exists()).toBe(false)
+  })
+
+  it('treats a verdict that never arrives as a refusal', async () => {
+    classroomVerdictFor.mockRejectedValue(new Error('network'))
+    expect(tabKeys(await mountOrganizationDetail())).not.toContain('groups')
   })
 })

@@ -396,3 +396,26 @@ describe('TerminalMySessions — 3-button action bar', () => {
     })
   })
 })
+
+// The clock date on a row means two things: an ephemeral session is destroyed
+// at that time ("Expires on"), a persistent one is only put to sleep
+// ("Auto-stops on"). A stopped session shows no date — the moment has passed.
+describe('TerminalMySessions — expiry date wording', () => {
+  const FUTURE = new Date(Date.now() + 3_600_000).toISOString()
+  const PAST = new Date(Date.now() - 3_600_000).toISOString()
+
+  it.each([
+    ['ephemeral', 'Expires on'],
+    ['persistent', 'Auto-stops on'],
+  ] as const)('%s running session', async (persistence_mode, title) => {
+    const wrapper = mountPage([{ id: 'a', session_id: 's-1', state: 'running', persistence_mode, expires_at: FUTURE }])
+    await flushPromises()
+    expect(wrapper.find('[data-test="session-expiry-s-1"]').attributes('title')).toBe(title)
+  })
+
+  it('stopped persistent session: no stale date', async () => {
+    const wrapper = mountPage([{ id: 'c', session_id: 's-stop', state: 'stopped', persistence_mode: 'persistent', expires_at: PAST }])
+    await flushPromises()
+    expect(wrapper.find('[data-test="session-expiry-s-stop"]').exists()).toBe(false)
+  })
+})

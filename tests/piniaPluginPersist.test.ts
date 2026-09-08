@@ -51,7 +51,6 @@ describe('piniaPluginPersist', () => {
 
     verdicts.allowed = true
     await nextTick()
-    expect(JSON.parse(localStorage.getItem('pinia_state_verdicts') || '{}').allowed).toBe(true)
     // ...still the stale value someone else left: the plugin never wrote it.
     expect(localStorage.getItem('pinia_state_verdicts')).toBe(JSON.stringify({ allowed: true }))
   })

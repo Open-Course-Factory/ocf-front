@@ -281,3 +281,18 @@ describe('ActiveSubscriptionSource — money-flow action gating', () => {
     expect(text).not.toContain('Reactivate Subscription')
   })
 })
+
+describe('ActiveSubscriptionSource — session duration limit', () => {
+  // A plan capped at 90 minutes must read "1h 30min", never "1h": the
+  // component used to keep a private formatter that dropped the remainder.
+  it('keeps the minutes below the hour', () => {
+    const wrapper = mountSource({
+      id: 'sub-1',
+      status: 'active',
+      subscription_type: 'personal',
+      subscription_plan_id: 'plan-1',
+      subscription_plan: { id: 'plan-1', name: 'Solo', max_session_duration_minutes: 90 },
+    })
+    expect(wrapper.text()).toContain('1h 30min session duration')
+  })
+})
