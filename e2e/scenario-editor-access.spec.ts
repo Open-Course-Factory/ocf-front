@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { login } from './helpers/auth';
 import { dismissVerificationBanner } from './helpers/ui';
 
 // Real-browser coverage for the `requiresScenarioManager` router guard (#215):
@@ -21,17 +22,6 @@ const ORG_MANAGER_PASSWORD = process.env.E2E_PASS || 'OcfTest2026!';
 
 const EDITOR_ROUTE = '/scenario-editor';
 
-/** Sign in and let the login page send the browser straight to `target`. */
-async function loginRedirectingTo(page: Page, email: string, password: string, target: string) {
-  await page.goto(`/login?redirect=${encodeURIComponent(target)}`, { waitUntil: 'networkidle' });
-  await page.locator('#email').fill(email);
-  await page.locator('#password').fill(password);
-  await page.waitForTimeout(300);
-  await page.locator('button[type="submit"]').click({ force: true });
-  await page.waitForSelector('.user-info', { state: 'visible', timeout: 30_000 });
-  await dismissVerificationBanner(page);
-}
-
 /** The scenario-editor links offered by the sidebar's scenarios category, expanded. */
 async function editorMenuLinks(page: Page) {
   const category = page.locator('.main-menu [data-category="scenarios"]');
@@ -49,7 +39,8 @@ async function editorMenuLinks(page: Page) {
 
 test.describe('Scenario editor access', () => {
   test('a learner deep-linking to the editor is sent to their sessions and sees no menu entry', async ({ page }) => {
-    await loginRedirectingTo(page, LEARNER_EMAIL, LEARNER_PASSWORD, EDITOR_ROUTE);
+    await login(page, LEARNER_EMAIL, LEARNER_PASSWORD, { redirect: EDITOR_ROUTE });
+    await dismissVerificationBanner(page);
 
     await expect(page).toHaveURL(/\/terminal-sessions\?error=insufficient_permissions/, { timeout: 20_000 });
     await expect(page.locator('.node-library-panel')).toHaveCount(0);
@@ -58,7 +49,8 @@ test.describe('Scenario editor access', () => {
   });
 
   test('an organization manager reaches the editor and finds it in the menu', async ({ page }) => {
-    await loginRedirectingTo(page, ORG_MANAGER_EMAIL, ORG_MANAGER_PASSWORD, EDITOR_ROUTE);
+    await login(page, ORG_MANAGER_EMAIL, ORG_MANAGER_PASSWORD, { redirect: EDITOR_ROUTE });
+    await dismissVerificationBanner(page);
 
     await expect(page).toHaveURL(/\/scenario-editor$/, { timeout: 20_000 });
     await expect(page.locator('.node-library-panel')).toBeVisible({ timeout: 15_000 });

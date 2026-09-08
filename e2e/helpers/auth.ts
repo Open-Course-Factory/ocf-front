@@ -13,9 +13,10 @@ export async function login(
   page: Page,
   email: string,
   password: string,
-  options: { rememberMe?: boolean } = {}
+  options: { rememberMe?: boolean; redirect?: string } = {}
 ): Promise<void> {
-  await page.goto('/login', { waitUntil: 'networkidle' });
+  const query = options.redirect ? `?redirect=${encodeURIComponent(options.redirect)}` : '';
+  await page.goto(`/login${query}`, { waitUntil: 'networkidle' });
 
   // Wait for the login form to be rendered
   const emailInput = page.locator('#email');
