@@ -10,6 +10,7 @@
  * own good news is one people stop reading, and then stop believing.
  */
 import { ref, onMounted, computed, type Ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { extractErrorMessage } from '../../utils/formatters'
 
 export interface HealthFinding {
@@ -21,31 +22,15 @@ export interface HealthReportItem {
   findings: HealthFinding[]
 }
 
-export interface HealthReportLabels {
-  title: string
-  subtitle: string
-  refresh: string
-  allWell: string
-  allWellHint: string
-  loadError: string
-  /** Label per severity value; a severity with no label falls back to `warning`. */
-  severity: { blocking: string; warning: string } & Record<string, string>
-}
+const props = defineProps<{
+  /** The page's message namespace: title, subtitle, refresh, allWell, allWellHint, loadError, one label per severity. */
+  i18nPrefix: string
+  load: () => Promise<T[]>
+  itemKey: (item: T) => string
+}>()
 
-const props = withDefaults(
-  defineProps<{
-    labels: HealthReportLabels
-    load: () => Promise<T[]>
-    itemKey: (item: T) => string
-    /**
-     * Whether to count warnings beside the blocking findings. Advisories are
-     * never counted: they are not faults, and counting them would overstate
-     * how much is wrong on a page an operator opens to triage.
-     */
-    countWarnings?: boolean
-  }>(),
-  { countWarnings: false }
-)
+const { t, te } = useI18n()
+const label = (key: string) => t(`${props.i18nPrefix}.${key}`)
 
 defineSlots<{
   'card-header'(props: { item: T }): unknown
@@ -69,8 +54,9 @@ function countSeverity(severity: string): number {
 const blockingCount = computed(() => countSeverity('blocking'))
 const warningCount = computed(() => countSeverity('warning'))
 
+/** A severity with no label of its own reads as a warning. */
 function severityLabel(severity: string): string {
-  return props.labels.severity[severity] ?? props.labels.severity.warning
+  return label(te(`${props.i18nPrefix}.${severity}`) ? severity : 'warning')
 }
 
 async function refresh() {
@@ -79,7 +65,7 @@ async function refresh() {
   try {
     report.value = (await props.load()) || []
   } catch (e: any) {
-    error.value = extractErrorMessage(e, props.labels.loadError)
+    error.value = extractErrorMessage(e, label('loadError'))
   } finally {
     loading.value = false
   }
@@ -92,11 +78,11 @@ onMounted(refresh)
   <div class="ocf-health">
     <header class="ocf-health-header">
       <div>
-        <h1>{{ labels.title }}</h1>
-        <p class="ocf-health-subtitle">{{ labels.subtitle }}</p>
+        <h1>{{ label('title') }}</h1>
+        <p class="ocf-health-subtitle">{{ label('subtitle') }}</p>
       </div>
       <button class="btn btn-outline-secondary" :disabled="loading" @click="refresh">
-        <i class="fas fa-rotate" /> {{ labels.refresh }}
+        <i class="fas fa-rotate" /> {{ label('refresh') }}
       </button>
     </header>
 
@@ -108,26 +94,21 @@ onMounted(refresh)
 
     <div v-else-if="report.length === 0" class="ocf-health-clear">
       <i class="fas fa-circle-check" />
-      <p class="ocf-health-clear-title">{{ labels.allWell }}</p>
-      <p class="ocf-health-clear-hint">{{ labels.allWellHint }}</p>
+      <p class="ocf-health-clear-title">{{ label('allWell') }}</p>
+      <p class="ocf-health-clear-hint">{{ label('allWellHint') }}</p>
     </div>
 
     <template v-else>
-      <!-- Two count lines rather than one with an optional tail: a conditional
-           tail leaves a whitespace text node after the blocking label, and the
-           pages' rendered text is pinned byte for byte. -->
-      <p v-if="countWarnings" class="ocf-health-count">
+      <!-- Advisories are never counted: they are not faults, and counting them
+           would overstate how much is wrong on a page an operator opens to triage. -->
+      <p class="ocf-health-count">
         <span class="ocf-health-badge ocf-health-badge-blocking">{{ blockingCount }}</span>
-        {{ labels.severity.blocking }}
+        {{ label('blocking') }}
         <template v-if="warningCount > 0">
           &nbsp;·&nbsp;
           <span class="ocf-health-badge ocf-health-badge-warning">{{ warningCount }}</span>
-          {{ labels.severity.warning }}
+          {{ label('warning') }}
         </template>
-      </p>
-      <p v-else class="ocf-health-count">
-        <span class="ocf-health-badge ocf-health-badge-blocking">{{ blockingCount }}</span>
-        {{ labels.severity.blocking }}
       </p>
 
       <article v-for="item in report" :key="itemKey(item)" class="ocf-health-card">

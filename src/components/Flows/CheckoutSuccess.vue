@@ -97,10 +97,10 @@
             <i :class="nextStep.icon"></i>
           </div>
           <div class="ocf-checkout-next-body">
-            <h3>{{ t(nextStep.titleKey) }}</h3>
-            <p>{{ t(nextStep.bodyKey) }}</p>
+            <h3>{{ t(`checkoutSuccess.${nextStep.key}Title`) }}</h3>
+            <p>{{ t(`checkoutSuccess.${nextStep.key}Body`) }}</p>
             <router-link :to="nextStep.to" class="btn btn-primary" data-test="primary-next-step">
-              {{ t(nextStep.ctaKey) }}
+              {{ t(`checkoutSuccess.${nextStep.key}Cta`) }}
             </router-link>
           </div>
         </section>
@@ -217,20 +217,8 @@ const planDetails = computed(() => {
 // sends the buyer to create an organization; an unresolved verdict offers the
 // terminal, which every plan covers.
 const nextStep = computed(() => planAllowsClassrooms.value === true
-  ? {
-      icon: 'fas fa-building',
-      titleKey: 'checkoutSuccess.organizationTitle',
-      bodyKey: 'checkoutSuccess.organizationBody',
-      ctaKey: 'checkoutSuccess.organizationCta',
-      to: '/organizations?create=1',
-    }
-  : {
-      icon: 'fas fa-terminal',
-      titleKey: 'checkoutSuccess.terminalTitle',
-      bodyKey: 'checkoutSuccess.terminalBody',
-      ctaKey: 'checkoutSuccess.terminalCta',
-      to: '/terminal-creation',
-    })
+  ? { key: 'organization', icon: 'fas fa-building', to: '/organizations?create=1' }
+  : { key: 'terminal', icon: 'fas fa-terminal', to: '/terminal-creation' })
 
 // Drives the reassuring copy the just-paid user reads: 'polling' while we wait
 // for the Stripe webhook to sync the subscription, 'activated' once it lands,
@@ -317,7 +305,7 @@ function formatDate(dateString: string) {
   align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--border-radius-md);
   font-weight: 500;
   align-self: flex-start;
 }
@@ -335,7 +323,7 @@ function formatDate(dateString: string) {
 .ocf-checkout-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--border-radius-md);
   padding: var(--spacing-lg);
 }
 
@@ -379,7 +367,7 @@ function formatDate(dateString: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-primary-light, var(--color-info-bg));
+  background: var(--color-primary-light);
   color: var(--color-primary);
   font-size: 1.3rem;
 }

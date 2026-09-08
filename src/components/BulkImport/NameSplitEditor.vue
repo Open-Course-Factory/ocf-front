@@ -4,7 +4,7 @@
       <h4 class="ocf-name-split-title">{{ t('nameSplit.title') }}</h4>
       <label class="ocf-name-split-order">
         <span>{{ t('nameSplit.orderLabel') }}</span>
-        <select class="ocf-name-split-order-select" :value="plan.order" @change="onOrderChange">
+        <select class="form-select form-select-sm ocf-name-split-order-select" :value="plan.order" @change="onOrderChange">
           <option value="last_first">{{ t('nameSplit.lastFirst') }}</option>
           <option value="first_last">{{ t('nameSplit.firstLast') }}</option>
         </select>
@@ -29,7 +29,7 @@
               :class="{ 'is-active': position === split.cut }"
               :aria-label="t('nameSplit.cutHere')"
               :aria-pressed="position === split.cut"
-              @click="setCut(row.index, position, split)"
+              @click="override(row.index, position, split.order)"
             ></button>
             <span class="ocf-name-split-word" :class="sideClass(position, split)">{{ word }}</span>
           </template>
@@ -49,7 +49,7 @@
         <div class="ocf-name-split-actions">
           <button
             type="button"
-            class="ocf-name-split-action ocf-name-split-swap"
+            class="btn btn-sm btn-outline-secondary ocf-name-split-swap"
             :disabled="split.words.length < 2"
             @click="swapSides(row.index, split)"
           >
@@ -57,7 +57,7 @@
           </button>
           <button
             type="button"
-            class="ocf-name-split-action ocf-name-split-reset"
+            class="btn btn-sm btn-outline-secondary ocf-name-split-reset"
             :disabled="!split.adjusted"
             @click="resetRow(row.index)"
           >
@@ -142,10 +142,6 @@ function override(rowIndex: number, cut: number, order: NameOrder) {
   emit('update:plan', { ...props.plan, overrides: { ...props.plan.overrides, [rowIndex]: { cut, order } } })
 }
 
-function setCut(rowIndex: number, cut: number, split: RowSplit) {
-  override(rowIndex, cut, split.order)
-}
-
 function swapSides(rowIndex: number, split: RowSplit) {
   override(rowIndex, split.cut, split.order === 'last_first' ? 'first_last' : 'last_first')
 }
@@ -190,14 +186,6 @@ function resetRow(rowIndex: number) {
   color: var(--color-text-primary);
 }
 
-.ocf-name-split-order-select {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: 1px solid var(--color-border-medium);
-  border-radius: var(--border-radius-md);
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-}
 
 .ocf-name-split-hint {
   margin: 0;
@@ -325,23 +313,6 @@ function resetRow(rowIndex: number) {
   gap: var(--spacing-xs);
 }
 
-.ocf-name-split-action {
-  padding: 2px var(--spacing-sm);
-  border: 1px solid var(--color-border-medium);
-  border-radius: var(--border-radius-md);
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-}
 
-.ocf-name-split-action:hover:not(:disabled) {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
 
-.ocf-name-split-action:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
 </style>

@@ -60,9 +60,5 @@ export const piniaPluginPersist: PiniaPlugin = (context) => {
  * account is restored for the next one signing in on the same browser.
  */
 export function clearPersistedStores(): void {
-    for (const key of Object.keys(localStorage)) {
-        if (key.startsWith(STORAGE_PREFIX)) {
-            localStorage.removeItem(key)
-        }
-    }
+    Object.keys(localStorage).filter(key => key.startsWith(STORAGE_PREFIX)).forEach(key => localStorage.removeItem(key))
 }

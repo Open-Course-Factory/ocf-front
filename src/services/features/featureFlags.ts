@@ -299,13 +299,7 @@ export class FeatureFlagService {
 
     // One request at a time: later callers await the same fetch, so none
     // of them resumes before the flags have landed.
-    if (!this.fetchInFlight) {
-      this.fetchInFlight = this.loadFromBackend(now).finally(() => {
-        this.fetchInFlight = null
-      })
-    } else {
-      console.log('🏴 Feature flags fetch already in progress')
-    }
+    this.fetchInFlight ??= this.loadFromBackend(now).finally(() => { this.fetchInFlight = null })
     return this.fetchInFlight
   }
 

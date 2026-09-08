@@ -67,7 +67,7 @@ describe('bulkImport store — verify imported emails option', () => {
   })
 
   it('sends the unticked choice on the dry run', async () => {
-    store.setVerifyEmails(false)
+    store.verifyEmails = false
 
     await store.validateImport('org-1')
 
@@ -75,7 +75,7 @@ describe('bulkImport store — verify imported emails option', () => {
   })
 
   it('sends the same choice on the import', async () => {
-    store.setVerifyEmails(false)
+    store.verifyEmails = false
 
     await store.performImport('org-1')
 
@@ -84,7 +84,7 @@ describe('bulkImport store — verify imported emails option', () => {
   })
 
   it('goes back to verified on reset', () => {
-    store.setVerifyEmails(false)
+    store.verifyEmails = false
 
     store.reset()
 

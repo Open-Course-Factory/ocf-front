@@ -2013,8 +2013,6 @@ const handleSaveTranslation = () => {
 .option-row__correct input {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
   margin: 0;
   opacity: 0;
   cursor: pointer;
@@ -2275,10 +2273,6 @@ const handleSaveTranslation = () => {
   background-color: var(--color-primary-hover);
 }
 
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
 
 .btn-secondary {
   background-color: var(--color-secondary);

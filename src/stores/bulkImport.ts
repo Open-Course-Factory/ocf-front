@@ -106,10 +106,6 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
     targetGroupId.value = groupId
   }
 
-  function setVerifyEmails(value: boolean) {
-    verifyEmails.value = value
-  }
-
   function setNameSplitPlan(plan: NameSplitPlan) {
     nameSplitPlan.value = plan
   }
@@ -261,7 +257,6 @@ export const useBulkImportStore = defineStore('bulkImport', () => {
     setDryRun,
     setUpdateExisting,
     setTargetGroup,
-    setVerifyEmails,
     setNameSplitPlan,
     validateImport,
     performImport,

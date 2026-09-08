@@ -16,7 +16,7 @@ vi.mock('axios', () => ({
 }))
 
 import axios from 'axios'
-import { terminalService, START_SESSION_TIMEOUT_MS } from '../../src/services/domain/terminal/terminalService'
+import { terminalService } from '../../src/services/domain/terminal/terminalService'
 
 describe('terminalService.startComposedSession', () => {
   beforeEach(() => {
@@ -27,7 +27,6 @@ describe('terminalService.startComposedSession', () => {
     await terminalService.startComposedSession({ distribution: 'Debian', size: 'xl' } as any)
 
     const [, , config] = vi.mocked(axios.post).mock.calls[0]
-    expect(config?.timeout).toBe(START_SESSION_TIMEOUT_MS)
-    expect(START_SESSION_TIMEOUT_MS).toBeGreaterThanOrEqual(120_000)
+    expect(config?.timeout).toBe(120_000)
   })
 })

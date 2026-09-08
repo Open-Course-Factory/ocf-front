@@ -112,14 +112,8 @@ export const usePermissionsStore = defineStore('permissions', () => {
    * context and drives the sidebar. A verdict that cannot be fetched is a
    * refusal: absent must never read as yes.
    */
-  const classroomVerdictFor = async (orgId: string): Promise<boolean> => {
-    try {
-      const features = await fetchEffectiveFeatures(orgId)
-      return features?.can_run_classrooms === true
-    } catch {
-      return false
-    }
-  }
+  const classroomVerdictFor = (orgId: string): Promise<boolean> =>
+    fetchEffectiveFeatures(orgId).then(features => features?.can_run_classrooms === true, () => false)
 
   // Load effective features for current org context + all orgs (for gray-out logic)
   const loadEffectiveFeatures = async () => {

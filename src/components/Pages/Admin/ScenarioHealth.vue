@@ -11,10 +11,9 @@
  * The page shows nothing when there is nothing wrong. A report that lists its
  * own good news is one people stop reading, and then stop believing.
  */
-import { computed } from 'vue'
 import axios from 'axios'
 import { useTranslations } from '../../../composables/useTranslations'
-import HealthReport, { type HealthReportLabels } from '../../Admin/HealthReport.vue'
+import HealthReport from '../../Admin/HealthReport.vue'
 
 interface Finding {
   code: string
@@ -82,16 +81,6 @@ const { t } = useTranslations({
   }
 })
 
-const labels = computed<HealthReportLabels>(() => ({
-  title: t('health.title'),
-  subtitle: t('health.subtitle'),
-  refresh: t('health.refresh'),
-  allWell: t('health.allWell'),
-  allWellHint: t('health.allWellHint'),
-  loadError: t('health.loadError'),
-  severity: { blocking: t('health.blocking'), warning: t('health.warning') }
-}))
-
 /**
  * The sentence for a finding, with the numbers the server filled in.
  *
@@ -112,7 +101,7 @@ async function load(): Promise<ScenarioHealth[]> {
 </script>
 
 <template>
-  <HealthReport :labels="labels" :load="load" :item-key="(scenario: ScenarioHealth) => scenario.scenario_id">
+  <HealthReport i18n-prefix="health" :load="load" :item-key="(scenario: ScenarioHealth) => scenario.scenario_id">
     <template #card-header="{ item: scenario }">
       <h2>{{ scenario.title || scenario.name }}</h2>
       <span v-if="scenario.is_public" class="ocf-health-tag">{{ t('health.public') }}</span>

@@ -15,8 +15,6 @@ import { detectCsvDelimiter, splitCsvLine, type CsvDelimiter } from './csvDelimi
 
 export type NameOrder = 'last_first' | 'first_last'
 
-export const DEFAULT_NAME_ORDER: NameOrder = 'last_first'
-
 export interface RowSplitOverride {
   /** Number of words on the left of the cut. */
   cut: number
@@ -41,12 +39,6 @@ export interface RowSplit extends SplitName {
   adjusted: boolean
 }
 
-export interface NameColumns {
-  name: number
-  firstName: number
-  lastName: number
-}
-
 export interface NameRow {
   index: number
   name: string
@@ -57,7 +49,7 @@ const FIRST_NAME_HEADERS = ['first_name', 'prénom', 'prenom']
 const LAST_NAME_HEADERS = ['last_name', 'nom de famille']
 
 export function emptyNameSplitPlan(): NameSplitPlan {
-  return { order: DEFAULT_NAME_ORDER, overrides: {} }
+  return { order: 'last_first', overrides: {} }
 }
 
 function normalizeHeader(header: string): string {
@@ -68,7 +60,7 @@ function findColumn(headers: string[], candidates: string[]): number {
   return headers.findIndex(h => candidates.includes(normalizeHeader(h)))
 }
 
-export function findNameColumns(headers: string[]): NameColumns {
+export function findNameColumns(headers: string[]) {
   return {
     name: findColumn(headers, NAME_HEADERS),
     firstName: findColumn(headers, FIRST_NAME_HEADERS),

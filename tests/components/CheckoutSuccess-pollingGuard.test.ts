@@ -53,12 +53,7 @@ vi.mock('../../src/stores/permissions', () => ({
   usePermissionsStore: () => ({ refreshEntitlements: vi.fn(async () => {}) }),
 }))
 vi.mock('../../src/composables/useClassroomEntitlement', () => ({
-  useClassroomEntitlement: () => ({
-    planAllowsClassrooms: { value: null },
-    canRunClassrooms: { value: false },
-    deniedReason: { value: null },
-    deniedByPlan: { value: false },
-  }),
+  useClassroomEntitlement: () => ({ planAllowsClassrooms: { value: null } }),
 }))
 import CheckoutSuccess from '../../src/components/Flows/CheckoutSuccess.vue'
 

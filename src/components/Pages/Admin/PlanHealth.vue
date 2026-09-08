@@ -14,12 +14,11 @@
  * The page shows nothing when there is nothing wrong. A report that lists its
  * own good news is one people stop reading, and then stop believing.
  */
-import { computed } from 'vue'
 import axios from 'axios'
 import { useTranslations } from '../../../composables/useTranslations'
 import { formatMcpuAsVcpu } from '../../../utils/formatters'
 import { formatMemoryMb } from '../../../utils/quotaFormatters'
-import HealthReport, { type HealthReportLabels } from '../../Admin/HealthReport.vue'
+import HealthReport from '../../Admin/HealthReport.vue'
 
 // Mirrors the severity values in ocf-core src/payment/services/planHealth.go.
 type Severity = 'blocking' | 'warning' | 'advisory'
@@ -92,20 +91,6 @@ const { t } = useTranslations({
   }
 })
 
-const labels = computed<HealthReportLabels>(() => ({
-  title: t('planHealth.title'),
-  subtitle: t('planHealth.subtitle'),
-  refresh: t('planHealth.refresh'),
-  allWell: t('planHealth.allWell'),
-  allWellHint: t('planHealth.allWellHint'),
-  loadError: t('planHealth.loadError'),
-  severity: {
-    blocking: t('planHealth.blocking'),
-    warning: t('planHealth.warning'),
-    advisory: t('planHealth.advisory')
-  }
-}))
-
 /**
  * The sentence for a finding, with the numbers the server filled in.
  *
@@ -133,10 +118,9 @@ async function load(): Promise<PlanHealth[]> {
 
 <template>
   <HealthReport
-    :labels="labels"
+    i18n-prefix="planHealth"
     :load="load"
     :item-key="(plan: PlanHealth) => plan.plan_id"
-    count-warnings
   >
     <template #card-header="{ item: plan }">
       <h2>{{ plan.name }}</h2>
