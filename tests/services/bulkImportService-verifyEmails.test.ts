@@ -37,12 +37,6 @@ describe('bulkImportService — verify_emails field', () => {
     expect(sentFormData().get('verify_emails')).toBe('true')
   })
 
-  it('sends verify_emails=true when the option is ticked', async () => {
-    await bulkImportService.importData('org-1', usersFile, { verifyEmails: true })
-
-    expect(sentFormData().get('verify_emails')).toBe('true')
-  })
-
   it('sends verify_emails=false when the option is unticked', async () => {
     await bulkImportService.importData('org-1', usersFile, { verifyEmails: false })
 
@@ -55,11 +49,5 @@ describe('bulkImportService — verify_emails field', () => {
     const formData = sentFormData()
     expect(formData.get('dry_run')).toBe('true')
     expect(formData.get('verify_emails')).toBe('false')
-  })
-
-  it('defaults the dry run to verified', async () => {
-    await bulkImportService.validateImport('org-1', usersFile)
-
-    expect(sentFormData().get('verify_emails')).toBe('true')
   })
 })

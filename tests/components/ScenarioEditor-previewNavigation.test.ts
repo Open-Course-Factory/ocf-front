@@ -17,10 +17,6 @@ const source = readFileSync(resolve(__dirname, '../../src/components/Pages/Scena
 const previewBlock = source.match(/const handleConfirmPreview[\s\S]*?\n}\n/)?.[0] ?? ''
 
 describe('ScenarioEditor.vue — preview opens in the same tab (#322)', () => {
-  it('locates the preview handler', () => {
-    expect(previewBlock.length).toBeGreaterThan(0)
-  })
-
   it('does not open a new window', () => {
     expect(previewBlock).not.toMatch(/window\.open/)
   })

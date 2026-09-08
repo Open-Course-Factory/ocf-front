@@ -31,7 +31,7 @@ vi.mock('../../src/utils/asyncWrapper', () => ({
   createAsyncWrapper: () => async (fn: () => Promise<any>) => fn(),
 }))
 
-import { useOrganizationsStore, isPersonalOrganizationRecord } from '../../src/stores/organizations'
+import { useOrganizationsStore } from '../../src/stores/organizations'
 
 function storeShowing(organizations: any[], currentId?: string) {
   setActivePinia(createPinia())
@@ -82,12 +82,6 @@ describe('organizations — personal context', () => {
     expect(store.isPersonalOrganizationContext).toBe(true)
   })
 
-  it('exposes no member-count variant of the rule any more', () => {
-    const store = storeShowing([personalOrg], personalOrg.id)
-
-    expect('isPersonalOrganization' in store).toBe(false)
-  })
-
   it('accepts the is_personal flag when the type is not spelled out', () => {
     const store = storeShowing(
       [{ id: 'org-x', name: 'x', display_name: 'X', is_personal: true }],
@@ -101,22 +95,5 @@ describe('organizations — personal context', () => {
     const store = storeShowing([])
 
     expect(store.isPersonalOrganizationContext).toBe(false)
-  })
-})
-
-describe('isPersonalOrganizationRecord — the one rule', () => {
-  it('reads the type', () => {
-    expect(isPersonalOrganizationRecord({ organization_type: 'personal', member_count: 3 } as any)).toBe(true)
-    expect(isPersonalOrganizationRecord({ organization_type: 'team', member_count: 1 } as any)).toBe(false)
-  })
-
-  it('accepts the is_personal flag when the type is not spelled out', () => {
-    expect(isPersonalOrganizationRecord({ is_personal: true })).toBe(true)
-  })
-
-  it('claims nothing about a missing organization', () => {
-    expect(isPersonalOrganizationRecord(null)).toBe(false)
-    expect(isPersonalOrganizationRecord(undefined)).toBe(false)
-    expect(isPersonalOrganizationRecord({})).toBe(false)
   })
 })

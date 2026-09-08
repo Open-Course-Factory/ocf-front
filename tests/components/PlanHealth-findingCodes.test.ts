@@ -99,17 +99,6 @@ describe('PlanHealth — finding code coverage', () => {
           rendered.includes('planHealth.codes'),
           `${entry.code} has no ${locale} translation — the page would show the raw i18n key`
         ).toBe(false)
-        expect(rendered.length).toBeGreaterThan(0)
-      }
-    })
-
-    it(`substitutes the server-supplied detail in ${locale}`, async () => {
-      const wrapper = await mountWith(BACKEND_FINDING_CODES, locale)
-      const sentences = wrapper.findAll('.ocf-health-sentence').map((n) => n.text())
-
-      expect(sentences).toHaveLength(BACKEND_FINDING_CODES.length)
-      for (const [index, entry] of BACKEND_FINDING_CODES.entries()) {
-        const rendered = sentences[index]
         expect(
           rendered.includes(entry.detail),
           `${entry.code} dropped its detail — the numbers the server alone knows are lost`

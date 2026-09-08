@@ -22,7 +22,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { readFileSync, readdirSync, statSync } from 'fs'
+import { readFileSync, readdirSync } from 'fs'
 import { join, relative } from 'path'
 
 const SRC = join(__dirname, '../../src')
@@ -53,16 +53,7 @@ function isPlaceholderReplace(line: string): boolean {
 }
 
 function sourceFiles(dir: string): string[] {
-  const out: string[] = []
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry)
-    if (statSync(full).isDirectory()) {
-      out.push(...sourceFiles(full))
-    } else if (/\.(ts|vue)$/.test(entry)) {
-      out.push(full)
-    }
-  }
-  return out
+  return readdirSync(dir, { recursive: true, encoding: 'utf8' }).filter(f => /\.(ts|vue)$/.test(f)).map(f => join(dir, f))
 }
 
 describe('i18n placeholders are interpolated by vue-i18n', () => {
