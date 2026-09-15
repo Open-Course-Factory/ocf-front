@@ -34,8 +34,14 @@
       @session-expired="$emit('session-expired')"
     />
 
-    <!-- Sub-panels: Command History + Validated Flags side by side -->
-    <div class="sub-panels" :class="{ 'has-flags': scenarioSessionId && scenarioFlagsEnabled }">
+    <!-- Sub-panels: Command History + Validated Flags + Exposed Ports side by side -->
+    <div
+      class="sub-panels"
+      :class="{
+        'has-flags': scenarioSessionId && scenarioFlagsEnabled,
+        'has-exposed-ports': showExposedPorts
+      }"
+    >
       <div v-if="showHistory" class="command-history-panel">
         <CommandHistory
           :session-id="sessionInfo?.session_id"
@@ -52,6 +58,13 @@
           :is-active="isActive"
         />
       </div>
+
+      <div v-if="showExposedPorts" class="exposed-ports-panel">
+        <ExposedPorts
+          :session-id="sessionInfo?.session_id"
+          :is-active="isActive"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -61,6 +74,7 @@ import { ref } from 'vue'
 import TerminalViewer from './TerminalViewer.vue'
 import CommandHistory from './CommandHistory.vue'
 import ValidatedFlags from './ValidatedFlags.vue'
+import ExposedPorts from './ExposedPorts.vue'
 
 interface SessionInfo {
   session_id: string
@@ -86,6 +100,10 @@ interface Props {
   showDestroyButton?: boolean
   isDestroying?: boolean
   showHistory?: boolean
+  // Opt-in "expose a session port publicly" panel (see ExposedPorts.vue).
+  // Defaults on — the backend feature itself is gated by operator config +
+  // plan, so there's nothing risky about showing the affordance by default.
+  showExposedPorts?: boolean
   scenarioSessionId?: string
   scenarioFlagsEnabled?: boolean
   // Whether the running scenario arms crash traps. Passed through to the
@@ -103,6 +121,7 @@ withDefaults(defineProps<Props>(), {
   showDestroyButton: false,
   isDestroying: false,
   showHistory: true,
+  showExposedPorts: true,
   scenarioSessionId: undefined,
   scenarioFlagsEnabled: false,
   scenarioCrashTraps: false,
@@ -207,7 +226,8 @@ defineExpose({
 }
 
 .sub-panels > .command-history-panel,
-.sub-panels > .validated-flags-panel {
+.sub-panels > .validated-flags-panel,
+.sub-panels > .exposed-ports-panel {
   display: flex;
   min-width: 0;
   min-height: 0;
@@ -221,8 +241,18 @@ defineExpose({
   flex: 1;
 }
 
+.sub-panels.has-exposed-ports > .exposed-ports-panel {
+  flex: 1;
+  /* The global FeedbackButton (Layout.vue) is fixed at bottom:24/right:24,
+   * ~44px tall — this is the one sub-panel column that ends up under it
+   * (rightmost + bottom of the page). Reserve that corner rather than
+   * touching FeedbackButton itself, which must stay where it is. */
+  margin-bottom: 72px;
+}
+
 @media (max-width: 768px) {
-  .sub-panels.has-flags {
+  .sub-panels.has-flags,
+  .sub-panels.has-exposed-ports {
     flex-direction: column;
   }
 }

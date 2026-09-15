@@ -268,3 +268,20 @@ export interface StartComposedSessionData {
   packages?: string[]
   persistence_mode?: 'ephemeral' | 'persistent'
 }
+
+/**
+ * A published port from inside a running terminal session — see
+ * POST/GET /terminals/:id/exposed-ports and DELETE .../exposed-ports/:id.
+ * Opt-in backend feature: the request can fail with 403 (plan does not
+ * allow port exposure) or 404 (operator has not configured the feature at
+ * all — EXPOSE_DOMAIN/TRAEFIK_PROVIDER_SECRET unset).
+ */
+export interface ExposedPort {
+  id: string
+  port: number
+  slug: string
+  /** Public URL, already fully formed (scheme + slug + domain) */
+  url: string
+  created_at: string
+  expires_at: string
+}

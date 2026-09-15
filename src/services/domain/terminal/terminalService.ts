@@ -11,7 +11,8 @@ import type {
   StartComposedSessionData,
   OrgTerminalUsage,
   Size,
-  MyTerminalUsageResponse
+  MyTerminalUsageResponse,
+  ExposedPort
 } from '../../../types/terminal'
 
 export interface UpdateTerminalRequest {
@@ -117,5 +118,19 @@ export const terminalService = {
       params: { distribution, size }
     })
     return response.data
+  },
+
+  async getExposedPorts(sessionId: string): Promise<ExposedPort[]> {
+    const response = await axios.get(`/terminals/${sessionId}/exposed-ports`)
+    return response.data
+  },
+
+  async exposePort(sessionId: string, port: number): Promise<ExposedPort> {
+    const response = await axios.post(`/terminals/${sessionId}/exposed-ports`, { port })
+    return response.data
+  },
+
+  async deleteExposedPort(sessionId: string, exposedPortId: string): Promise<void> {
+    await axios.delete(`/terminals/${sessionId}/exposed-ports/${exposedPortId}`)
   }
 }
