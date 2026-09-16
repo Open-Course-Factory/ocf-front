@@ -21,15 +21,15 @@
  */
 
  Expose a port from inside the running terminal session to a public URL
- (opt-in backend feature — see ocf-core's exposedPortService). No plan/
- operator-config gating here: the button is always shown while the session
- is active, and a 403 (plan disabled) or 404 (feature not configured on the
- operator side) simply surfaces as an error toast, same as any other
- terminal action in this app.
+ (opt-in backend feature — see ocf-core's exposedPortService). The backend
+ owns the rule: the list endpoint runs the same plan/scenario gate as create,
+ so a 403 (plan or scenario disallows) or 404 (feature not configured by the
+ operator) on load hides the whole panel instead of showing a form that can
+ only fail. The parent decides whether to mount it at all.
 -->
 
 <template>
-  <div class="exposed-ports">
+  <div v-if="available" class="exposed-ports">
     <div class="exposed-ports-header">
       <i class="fas fa-network-wired"></i>
       <span>{{ t('exposedPorts.title') }}</span>
@@ -142,6 +142,8 @@ const { t } = useTranslations({
 const { showSuccess, showError: showErrorNotification } = useNotification()
 
 const exposedPorts = ref<ExposedPort[]>([])
+// False once the list answered 403/404: the feature is not for this session.
+const available = ref(true)
 const isLoading = ref(false)
 const isCreating = ref(false)
 const deletingId = ref<string | null>(null)
@@ -152,9 +154,15 @@ async function fetchExposedPorts() {
   isLoading.value = true
   try {
     exposedPorts.value = await terminalService.getExposedPorts(props.sessionId)
-  } catch {
-    // Silent: an empty/failed list on load isn't worth a toast — the user
-    // will see it when they try to forward a port instead.
+    available.value = true
+  } catch (err: any) {
+    const status = err?.response?.status
+    if (status === 403 || status === 404) {
+      available.value = false
+      return
+    }
+    // Any other failure: keep the panel, the user sees the error when they
+    // try to forward a port.
   } finally {
     isLoading.value = false
   }

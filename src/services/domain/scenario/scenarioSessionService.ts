@@ -168,6 +168,9 @@ export interface ScenarioInfo {
   // gates permadeath on. GET /scenarios/:id always serializes it (no
   // omitempty) and the scenario redactor leaves it in place for learners.
   crash_traps?: boolean
+  // Mirrors Scenario.PortExposureAllowed: whether the exposed-ports panel is
+  // mounted for this run. Serialized without omitempty like crash_traps.
+  port_exposure_allowed?: boolean
 }
 
 export const scenarioSessionService = {

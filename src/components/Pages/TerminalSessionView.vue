@@ -107,6 +107,7 @@
             :scenario-session-id="scenarioSessionId"
             :scenario-flags-enabled="scenarioBriefing?.flags_enabled ?? false"
             :scenario-crash-traps="scenarioBriefing?.crash_traps ?? false"
+            :show-exposed-ports="scenarioBriefing?.port_exposure_allowed ?? false"
             :show-stop-button="isPersistent"
             :is-stopping="isStopping"
             :show-destroy-button="true"
@@ -141,6 +142,7 @@
       <div v-else-if="isSessionActive" class="terminal-standalone-area">
         <TerminalSessionPanel
           ref="standaloneTerminalRef"
+          :show-exposed-ports="true"
           :session-info="sessionInfo"
           :is-active="isSessionActive"
           :is-recording="isRecording"

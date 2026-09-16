@@ -101,8 +101,8 @@ interface Props {
   isDestroying?: boolean
   showHistory?: boolean
   // Opt-in "expose a session port publicly" panel (see ExposedPorts.vue).
-  // Defaults on — the backend feature itself is gated by operator config +
-  // plan, so there's nothing risky about showing the affordance by default.
+  // Off by default: the parent turns it on for plain terminals, and for
+  // scenario runs only when the scenario allows exposure.
   showExposedPorts?: boolean
   scenarioSessionId?: string
   scenarioFlagsEnabled?: boolean
@@ -121,7 +121,7 @@ withDefaults(defineProps<Props>(), {
   showDestroyButton: false,
   isDestroying: false,
   showHistory: true,
-  showExposedPorts: true,
+  showExposedPorts: false,
   scenarioSessionId: undefined,
   scenarioFlagsEnabled: false,
   scenarioCrashTraps: false,
@@ -243,11 +243,6 @@ defineExpose({
 
 .sub-panels.has-exposed-ports > .exposed-ports-panel {
   flex: 1;
-  /* The global FeedbackButton (Layout.vue) is fixed at bottom:24/right:24,
-   * ~44px tall — this is the one sub-panel column that ends up under it
-   * (rightmost + bottom of the page). Reserve that corner rather than
-   * touching FeedbackButton itself, which must stay where it is. */
-  margin-bottom: 72px;
 }
 
 @media (max-width: 768px) {
