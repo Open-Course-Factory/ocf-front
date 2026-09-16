@@ -62,6 +62,13 @@
         <i :class="hasNetwork ? 'fas fa-globe' : 'fas fa-ban'"></i>
       </span>
 
+      <ExposedPortsChip
+        v-if="exposedPortsEnabled"
+        :session-id="sessionInfo?.session_id"
+        :is-active="isConnected"
+        :has-network="hasNetwork"
+        />
+
       <RecordingIndicator :isRecording="isRecording" />
 
       <SessionCountdown
@@ -156,6 +163,12 @@
         >
           <i :class="hasNetwork ? 'fas fa-globe' : 'fas fa-ban'"></i>
         </span>
+        <ExposedPortsChip
+          v-if="exposedPortsEnabled"
+          :session-id="sessionInfo?.session_id"
+          :is-active="isConnected"
+          :has-network="hasNetwork"
+          />
         <RecordingIndicator :isRecording="isRecording" />
         <SessionCountdown
           v-if="sessionInfo?.expires_at"
@@ -267,6 +280,7 @@ import RecordingIndicator from './RecordingIndicator.vue'
 import SessionCountdown from './SessionCountdown.vue'
 import TerminalEndStateOverlay from './TerminalEndStateOverlay.vue'
 import SupervisionChip from './SupervisionChip.vue'
+import ExposedPortsChip from './ExposedPortsChip.vue'
 
 interface SessionInfo {
   session_id: string
@@ -323,6 +337,10 @@ interface Props {
   // shown while watched/controlled. Default false keeps the normal console path
   // byte-for-byte unchanged.
   supervisionEnabled?: boolean
+  // Public port exposure chip in the header. The parent decides where it
+  // belongs (plain terminals, scenarios that allow it); the chip itself hides
+  // when the backend says the feature is not for this session.
+  exposedPortsEnabled?: boolean
 }
 
 const emit = defineEmits<{
@@ -352,7 +370,8 @@ const props = withDefaults(defineProps<Props>(), {
   endReason: '',
   hasScenario: false,
   scenarioCrashTraps: false,
-  supervisionEnabled: false
+  supervisionEnabled: false,
+  exposedPortsEnabled: false
 })
 
 // Translations

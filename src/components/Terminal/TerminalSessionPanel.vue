@@ -19,6 +19,7 @@
       :has-scenario="hasScenario"
       :scenario-crash-traps="scenarioCrashTraps"
       supervision-enabled
+      :exposed-ports-enabled="showExposedPorts"
       use-settings-card
       :title="sessionInfo?.name || ('Terminal ' + (sessionInfo?.session_id?.substring(0, 8) || ''))"
       icon="fas fa-terminal"
@@ -34,14 +35,8 @@
       @session-expired="$emit('session-expired')"
     />
 
-    <!-- Sub-panels: Command History + Validated Flags + Exposed Ports side by side -->
-    <div
-      class="sub-panels"
-      :class="{
-        'has-flags': scenarioSessionId && scenarioFlagsEnabled,
-        'has-exposed-ports': showExposedPorts
-      }"
-    >
+    <!-- Sub-panels: Command History + Validated Flags side by side -->
+    <div class="sub-panels" :class="{ 'has-flags': scenarioSessionId && scenarioFlagsEnabled }">
       <div v-if="showHistory" class="command-history-panel">
         <CommandHistory
           :session-id="sessionInfo?.session_id"
@@ -58,13 +53,6 @@
           :is-active="isActive"
         />
       </div>
-
-      <div v-if="showExposedPorts" class="exposed-ports-panel">
-        <ExposedPorts
-          :session-id="sessionInfo?.session_id"
-          :is-active="isActive"
-        />
-      </div>
     </div>
   </div>
 </template>
@@ -74,7 +62,6 @@ import { ref } from 'vue'
 import TerminalViewer from './TerminalViewer.vue'
 import CommandHistory from './CommandHistory.vue'
 import ValidatedFlags from './ValidatedFlags.vue'
-import ExposedPorts from './ExposedPorts.vue'
 
 interface SessionInfo {
   session_id: string
@@ -100,9 +87,9 @@ interface Props {
   showDestroyButton?: boolean
   isDestroying?: boolean
   showHistory?: boolean
-  // Opt-in "expose a session port publicly" panel (see ExposedPorts.vue).
-  // Off by default: the parent turns it on for plain terminals, and for
-  // scenario runs only when the scenario allows exposure.
+  // Opt-in "expose a session port publicly" chip in the terminal header
+  // (ExposedPortsChip.vue). Off by default: the parent turns it on for plain
+  // terminals, and for scenario runs only when the scenario allows exposure.
   showExposedPorts?: boolean
   scenarioSessionId?: string
   scenarioFlagsEnabled?: boolean
@@ -226,8 +213,7 @@ defineExpose({
 }
 
 .sub-panels > .command-history-panel,
-.sub-panels > .validated-flags-panel,
-.sub-panels > .exposed-ports-panel {
+.sub-panels > .validated-flags-panel {
   display: flex;
   min-width: 0;
   min-height: 0;
@@ -241,13 +227,9 @@ defineExpose({
   flex: 1;
 }
 
-.sub-panels.has-exposed-ports > .exposed-ports-panel {
-  flex: 1;
-}
 
 @media (max-width: 768px) {
-  .sub-panels.has-flags,
-  .sub-panels.has-exposed-ports {
+  .sub-panels.has-flags {
     flex-direction: column;
   }
 }

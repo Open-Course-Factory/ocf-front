@@ -99,10 +99,10 @@ test('learner exposes a port, reaches it publicly, then stops exposing it', asyn
   await dismissVerificationBanner(page);
   sessionId = await startPlainSession(page);
 
-  const panel = page.locator('.exposed-ports');
+  const chip = page.getByTestId('exposed-ports-chip');
   test.skip(
-    !(await panel.isVisible().catch(() => false)),
-    `no exposed-ports panel: ${LEARNER_EMAIL}'s plan lacks port_exposure_enabled or the operator config is absent`
+    !(await chip.isVisible().catch(() => false)),
+    `no exposed-ports chip: ${LEARNER_EMAIL}'s plan lacks port_exposure_enabled or the operator config is absent`
   );
 
   // A server the image can run: python3 on ubuntu, a perl one-liner on debian
@@ -115,6 +115,9 @@ test('learner exposes a port, reaches it publicly, then stops exposing it', asyn
     `mkdir -p /tmp/www && echo ocf-expose-ok > /tmp/www/index.html && cd /tmp/www && ((python3 -m http.server 8000 --bind 0.0.0.0 || ${perlServer} || (apk add --no-cache busybox-extras && busybox-extras httpd -f -p 8000)) >/tmp/srv.log 2>&1 &)`
   );
 
+  await chip.click();
+  const panel = page.getByTestId('exposed-ports-popover');
+  await expect(panel).toBeVisible();
   await panel.locator('.port-input').fill('8000');
   await panel.locator('button[type="submit"]').click();
   const entry = panel.locator('.exposed-port-entry').filter({ hasText: '8000' });
@@ -136,11 +139,13 @@ test('learner exposes a port, reaches it publicly, then stops exposing it', asyn
   const body = await (await request.get(url!)).text();
   expect(body).toContain('ocf-expose-ok');
 
+  await expect(chip.locator('.ports-chip-count')).toHaveText('1');
   await entry.locator('.stop-btn').click();
   await expect(entry).toHaveCount(0, { timeout: 15_000 });
+  await expect(chip.locator('.ports-chip-count')).toHaveCount(0);
 });
 
-test('a learner whose plan lacks the feature sees no exposed-ports panel', async ({ page }) => {
+test('a learner whose plan lacks the feature sees no exposed-ports chip', async ({ page }) => {
   test.skip(!EXPOSE_DOMAIN, 'set E2E_EXPOSE_DOMAIN to run against a Traefik-backed stack');
   test.skip(!process.env.E2E_NO_EXPOSURE_USER, 'set E2E_NO_EXPOSURE_USER to a learner on a plan without port_exposure_enabled');
   test.setTimeout(360_000);
@@ -150,9 +155,9 @@ test('a learner whose plan lacks the feature sees no exposed-ports panel', async
   const learnerWithout = await apiLogin(process.env.E2E_NO_EXPOSURE_USER!, PASSWORD);
   const id = await startPlainSession(page);
   try {
-    // The panel mounts, asks the list, gets a 403 and renders nothing.
+    // The chip mounts, asks the list, gets a 403 and renders nothing.
     await page.waitForTimeout(3_000);
-    await expect(page.locator('.exposed-ports')).toHaveCount(0);
+    await expect(page.getByTestId('exposed-ports-chip')).toHaveCount(0);
   } finally {
     await learnerWithout.api
       .delete(`${API_BASE}/terminals/${id}`, { headers: { Authorization: `Bearer ${learnerWithout.token}` } })
