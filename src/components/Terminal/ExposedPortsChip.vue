@@ -25,8 +25,8 @@
  popover to publish one more or stop one.
 
  The backend owns the rule: the list endpoint runs the same plan/scenario gate
- as create, so a 403 (plan or scenario disallows) or 404 (feature not
- configured by the operator) on load hides the chip entirely. A session
+ as create, so a 403 (platform flag, plan or scenario disallows) or 404
+ (feature not configured by the operator) on load keeps the chip hidden. A session
  without the network feature has no address to route to, so the chip stays
  visible but disabled with the reason — the same predicate as the globe next
  to it (sessionHasNetwork), not a second one.
@@ -191,8 +191,10 @@ const { showSuccess, showError: showErrorNotification } = useNotification()
 const rootRef = ref<HTMLElement | null>(null)
 const open = ref(false)
 const exposedPorts = ref<ExposedPort[]>([])
-// False once the list answered 403/404: the feature is not for this session.
-const available = ref(true)
+// True only once the list answered: the backend is the one owner of the
+// feature-flag / plan / scenario verdict, and rendering before its answer
+// would flash a chip that then disappears.
+const available = ref(false)
 const isLoading = ref(false)
 const isCreating = ref(false)
 const deletingId = ref<string | null>(null)
