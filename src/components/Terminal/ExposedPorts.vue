@@ -65,11 +65,10 @@
         <i class="fas fa-network-wired"></i>
         <p>{{ t('exposedPorts.empty') }}</p>
       </div>
+      <!-- Stop button first: this panel is the bottom-right column of the
+           session view, and the global feedback button floats over that
+           corner. A control on the left edge is never under it. -->
       <div v-for="ep in exposedPorts" :key="ep.id" class="exposed-port-entry">
-        <span class="exposed-port-number">{{ ep.port }}</span>
-        <a :href="ep.url" target="_blank" rel="noopener noreferrer" class="exposed-port-url">
-          {{ ep.url }}
-        </a>
         <button
           class="stop-btn"
           :disabled="deletingId === ep.id"
@@ -79,6 +78,10 @@
         >
           <i :class="deletingId === ep.id ? 'fas fa-spinner fa-spin' : 'fas fa-trash'"></i>
         </button>
+        <span class="exposed-port-number">{{ ep.port }}</span>
+        <a :href="ep.url" target="_blank" rel="noopener noreferrer" class="exposed-port-url">
+          {{ ep.url }}
+        </a>
       </div>
     </div>
   </div>
