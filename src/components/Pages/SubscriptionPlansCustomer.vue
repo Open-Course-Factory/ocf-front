@@ -230,6 +230,18 @@
                   ></i>
                 </td>
               </tr>
+
+              <!-- Public port exposure (typed field) -->
+              <tr data-test="compare-row-port-exposure">
+                <td class="feature-col">{{ t('plans.portExposure') }}</td>
+                <td v-for="plan in filteredPlans" :key="plan.id" :class="{ 'current-plan-col': isCurrentPlan(plan) }">
+                  <i
+                    role="img"
+                    :aria-label="plan.port_exposure_enabled ? t('common.yes') : t('common.no')"
+                    :class="plan.port_exposure_enabled ? 'fas fa-check table-check' : 'fas fa-times table-cross'"
+                  ></i>
+                </td>
+              </tr>
               <!-- Command History (typed field) -->
               <tr data-test="compare-row-history">
                 <td class="feature-col">{{ t('plans.commandHistory') }}</td>
@@ -435,6 +447,7 @@ const { t } = useTranslations({
       storage: 'Storage',
       networkAccess: 'Network',
       sessionSupervision: 'Session supervision',
+      portExposure: 'Public port exposure',
       commandHistory: 'Command history',
       managedByOrg: 'Your plan is managed by your organization',
       yourCurrentPlan: 'Your current plan',
@@ -502,6 +515,7 @@ const { t } = useTranslations({
       storage: 'Stockage',
       networkAccess: 'Réseau',
       sessionSupervision: 'Supervision des sessions',
+      portExposure: 'Exposition publique de ports',
       commandHistory: 'Historique des commandes',
       managedByOrg: 'Votre plan est géré par votre organisation',
       yourCurrentPlan: 'Votre plan actuel',

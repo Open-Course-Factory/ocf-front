@@ -473,6 +473,14 @@
       </div>
 
       <div class="form-group checkbox-group">
+        <label class="checkbox-label" for="scenario-port-exposure">
+          <input id="scenario-port-exposure" type="checkbox" v-model="model.port_exposure_allowed" />
+          {{ t('scenarioEditor.portExposureAllowed') }}
+        </label>
+        <span class="form-hint">{{ t('scenarioEditor.portExposureAllowedHint') }}</span>
+      </div>
+
+      <div class="form-group checkbox-group">
         <label class="checkbox-label" for="scenario-is-public">
           <input id="scenario-is-public" type="checkbox" v-model="model.is_public" />
           {{ t('scenarioEditor.isPublic') }}

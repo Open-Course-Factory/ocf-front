@@ -22,6 +22,7 @@ const bulletLabels = {
   },
   commandHistory: { en: 'Command history: {n} days', fr: 'Historique des commandes : {n} jours' },
   sessionSupervision: { en: 'Session supervision (trainer)', fr: 'Supervision des sessions (formateur)' },
+  portExposure: { en: 'Publish a port of your session at a public URL', fr: 'Publication d’un port de votre session sur une URL publique' },
 }
 
 /** Typed plan fields read by {@link derivePlanBullets}. */
@@ -34,6 +35,7 @@ interface PlanBulletFields {
   data_persistence_gb?: number
   command_history_retention_days?: number
   session_supervision_enabled?: boolean
+  port_exposure_enabled?: boolean
 }
 
 export function usePlanFormatters() {
@@ -53,6 +55,7 @@ export function usePlanFormatters() {
    *   4. persistent machines (iff data_persistence_enabled) — embeds the GB value
    *   5. command history      (iff command_history_retention_days > 0) — embeds days
    *   6. session supervision (iff session_supervision_enabled)
+   *   7. public port exposure (iff port_exposure_enabled)
    */
   function derivePlanBullets(plan: PlanBulletFields): string[] {
     const bullets: string[] = []
@@ -85,6 +88,9 @@ export function usePlanFormatters() {
     }
     if (plan.session_supervision_enabled === true) {
       bullets.push(label(bulletLabels.sessionSupervision))
+    }
+    if (plan.port_exposure_enabled === true) {
+      bullets.push(label(bulletLabels.portExposure))
     }
 
     return bullets

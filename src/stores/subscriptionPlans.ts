@@ -117,6 +117,7 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             data_persistence_enabled: 'Data Persistence',
             data_persistence_gb: 'Storage Size (GB)',
             session_supervision_enabled: 'Session Supervision',
+            port_exposure_enabled: 'Public Port Exposure',
             allowed_backends: 'Allowed Backends',
             default_backend: 'Default Backend',
             syncError: 'Error syncing subscription plans',
@@ -226,6 +227,7 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
             data_persistence_enabled: 'Persistance des Données',
             data_persistence_gb: 'Taille de Stockage (GB)',
             session_supervision_enabled: 'Supervision des Sessions',
+            port_exposure_enabled: 'Exposition Publique de Ports',
             allowed_backends: 'Backends Autorisés',
             default_backend: 'Backend par Défaut',
             syncError: 'Erreur lors de la synchronisation des plans',
@@ -283,6 +285,7 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
         field('data_persistence_enabled', t('subscriptionPlans.data_persistence_enabled')).input().visible().creatable().updatable(),
         field('data_persistence_gb', t('subscriptionPlans.data_persistence_gb')).input().visible().creatable().updatable(),
         field('session_supervision_enabled', t('subscriptionPlans.session_supervision_enabled')).input().visible().readonly(),
+        field('port_exposure_enabled', t('subscriptionPlans.port_exposure_enabled')).input().visible().readonly(),
         // Backend routing is edited in PlanConfigModal (dedicated columns); the
         // table only displays these read-only.
         field('allowed_backends', t('subscriptionPlans.allowed_backends')).type('advanced-textarea').visible().readonly(),

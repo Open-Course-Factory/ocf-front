@@ -200,6 +200,22 @@
           <div class="form-group form-group-wide">
             <div class="checkbox-wrapper">
               <input
+                id="plan-port-exposure"
+                v-model="formData.port_exposure_enabled"
+                data-test="plan-port-exposure-toggle"
+                type="checkbox"
+                class="form-checkbox"
+              />
+              <label for="plan-port-exposure" class="checkbox-label">
+                {{ t('planConfig.portExposureEnabled') }}
+              </label>
+            </div>
+            <p class="field-hint">{{ t('planConfig.portExposureHint') }}</p>
+          </div>
+
+          <div class="form-group form-group-wide">
+            <div class="checkbox-wrapper">
+              <input
                 id="plan-group-management"
                 v-model="formData.group_management_enabled"
                 data-test="plan-group-management-toggle"
@@ -468,6 +484,8 @@ const { t } = useTranslations({
       supervisionSection: 'Capabilities & backend routing',
       sessionSupervisionEnabled: 'Session supervision (trainer)',
       sessionSupervisionHint: 'Gates the live class wall and take-hand for trainers.',
+      portExposureEnabled: 'Public port exposure',
+      portExposureHint: 'Lets learners publish a port of their session at a public URL.',
       groupManagementEnabled: 'Group management',
       groupManagementHint: 'Lets plan holders create and manage learner groups.',
       defaultBackend: 'Default backend',
@@ -546,6 +564,8 @@ const { t } = useTranslations({
       supervisionSection: 'Fonctionnalités et routage backend',
       sessionSupervisionEnabled: 'Supervision des sessions (formateur)',
       sessionSupervisionHint: 'Active le mur de classe en direct et la reprise en main pour les formateurs.',
+      portExposureEnabled: 'Exposition publique de ports',
+      portExposureHint: 'Permet aux apprenants de publier un port de leur session sur une URL publique.',
       groupManagementEnabled: 'Gestion des groupes',
       groupManagementHint: 'Permet aux titulaires du forfait de créer et gérer des groupes d\'apprenants.',
       defaultBackend: 'Backend par défaut',
@@ -641,6 +661,7 @@ const formData = reactive({
   max_cpu: 0,
   max_memory_mb: 0,
   session_supervision_enabled: false,
+  port_exposure_enabled: false,
   group_management_enabled: false,
   bulk_purchasable: false,
   use_tiered_pricing: false,
@@ -870,6 +891,7 @@ function populateFromPlan(plan: any) {
   // Capability toggles + backend routing (dedicated columns).
   formData.session_supervision_enabled = plan.session_supervision_enabled === true
   formData.group_management_enabled = plan.group_management_enabled === true
+  formData.port_exposure_enabled = plan.port_exposure_enabled === true
   formData.bulk_purchasable = plan.bulk_purchasable === true
 
   // Seat pricing ladder.
@@ -915,6 +937,7 @@ function resetForm() {
   formData.max_cpu = 0
   formData.max_memory_mb = 0
   formData.session_supervision_enabled = false
+  formData.port_exposure_enabled = false
   formData.group_management_enabled = false
   formData.bulk_purchasable = false
   formData.use_tiered_pricing = false
