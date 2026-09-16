@@ -31,7 +31,8 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-  if (sessionId) {
+  // E2E_KEEP_SESSION=1 leaves the session up for a post-mortem.
+  if (sessionId && !process.env.E2E_KEEP_SESSION) {
     await learner.api
       .delete(`${API_BASE}/terminals/${sessionId}`, { headers: { Authorization: `Bearer ${learner.token}` } })
       .catch(() => {});
@@ -46,12 +47,34 @@ async function startPlainSession(page: Page): Promise<string> {
   await page.waitForTimeout(1_500);
   await expect(page.locator('.skeleton-grid')).toHaveCount(0);
 
-  await page.locator('.distribution-card').first().click({ force: true });
-  await page.locator('.size-strip').waitFor({ state: 'visible', timeout: 20_000 });
+  // Not every distribution supports the network feature (alpine-xs does not),
+  // and the ocf-base profile is NIC-less: only a session started with network
+  // has an address a public route can reach. Walk the cards until one offers it.
+  // Plain distributions first: a scenario image such as Gameshell runs its
+  // own shell, and the liveness probe needs a real one. Debian/Ubuntu before
+  // Alpine: they ship an interpreter the test server can run on.
+  const cards = page.locator('.distribution-card');
+  const names = (await cards.locator('strong').allInnerTexts()).map((n) => n.trim().toLowerCase());
+  const order = names
+    .map((name, i) => ({ i, rank: /debian|ubuntu/.test(name) ? 0 : /alpine/.test(name) ? 1 : 2 }))
+    .sort((x, y) => x.rank - y.rank)
+    .map((x) => x.i);
   const launch = page.locator('.launch-button');
-  if (!(await launch.isEnabled())) {
-    await page.locator('.size-pill').first().click({ force: true });
+  const networkOn = page.getByTestId('network-on');
+  let networkAllowed = false;
+  for (const i of order) {
+    if (networkAllowed) break;
+    await cards.nth(i).click({ force: true });
+    await page.locator('.size-strip').waitFor({ state: 'visible', timeout: 20_000 });
+    if (!(await launch.isEnabled())) {
+      await page.locator('.size-pill').first().click({ force: true });
+    }
+    const advanced = page.locator('button.collapsible-header', { hasText: /Advanced Options|Options Avanc/i });
+    if (!(await networkOn.isVisible().catch(() => false))) await advanced.click();
+    networkAllowed = await expect(networkOn).toBeEnabled({ timeout: 5_000 }).then(() => true).catch(() => false);
   }
+  test.skip(!networkAllowed, `no distribution offers the network feature to ${LEARNER_EMAIL}, which exposure needs`);
+  await networkOn.check({ force: true });
   await expect(launch).toBeEnabled({ timeout: 10_000 });
   await launch.click();
 
@@ -82,7 +105,15 @@ test('learner exposes a port, reaches it publicly, then stops exposing it', asyn
     `no exposed-ports panel: ${LEARNER_EMAIL}'s plan lacks port_exposure_enabled or the operator config is absent`
   );
 
-  await typeInTerminal(page, 'python3 -m http.server 8000 --bind 0.0.0.0 &');
+  // A server the image can run: python3 on ubuntu, a perl one-liner on debian
+  // (its base image ships neither python3 nor nc); alpine's busybox lacks the
+  // httpd applet, so it installs busybox-extras — the session has network.
+  const perlServer =
+    "perl -MIO::Socket::INET -e '$s=IO::Socket::INET->new(LocalPort=>8000,Listen=>5,ReuseAddr=>1);while($c=$s->accept){<$c>;print $c qq(HTTP/1.0 200 OK\\r\\nContent-Type: text/plain\\r\\n\\r\\nocf-expose-ok\\n);close $c}'";
+  await typeInTerminal(
+    page,
+    `mkdir -p /tmp/www && echo ocf-expose-ok > /tmp/www/index.html && cd /tmp/www && ((python3 -m http.server 8000 --bind 0.0.0.0 || ${perlServer} || (apk add --no-cache busybox-extras && busybox-extras httpd -f -p 8000)) >/tmp/srv.log 2>&1 &)`
+  );
 
   await panel.locator('.port-input').fill('8000');
   await panel.locator('button[type="submit"]').click();
@@ -92,8 +123,7 @@ test('learner exposes a port, reaches it publicly, then stops exposing it', asyn
   const url = await entry.locator('.exposed-port-url').getAttribute('href');
   expect(url, 'the entry carries the public URL').toMatch(new RegExp(`^https?://[a-z0-9]+\\.${EXPOSE_DOMAIN.replace(/\./g, '\\.')}$`));
 
-  // Traefik polls every 5 s; the directory listing is what http.server
-  // serves at /.
+  // Traefik polls every 5 s.
   await expect
     .poll(
       async () => {
@@ -104,7 +134,7 @@ test('learner exposes a port, reaches it publicly, then stops exposing it', asyn
     )
     .toBe(200);
   const body = await (await request.get(url!)).text();
-  expect(body).toContain('Directory listing');
+  expect(body).toContain('ocf-expose-ok');
 
   await entry.locator('.stop-btn').click();
   await expect(entry).toHaveCount(0, { timeout: 15_000 });
