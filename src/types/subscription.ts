@@ -41,6 +41,8 @@ export interface SubscriptionPlan extends BaseEntity {
   data_persistence_gb: number
   session_supervision_enabled?: boolean
   port_exposure_enabled?: boolean
+  /** Lifetime of one exposed URL in minutes (default 60) */
+  port_exposure_ttl_minutes?: number
   group_management_enabled?: boolean
   allowed_backends: string[]
   default_backend: string

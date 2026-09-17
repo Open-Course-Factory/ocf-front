@@ -22,7 +22,7 @@ const bulletLabels = {
   },
   commandHistory: { en: 'Command history: {n} days', fr: 'Historique des commandes : {n} jours' },
   sessionSupervision: { en: 'Session supervision (trainer)', fr: 'Supervision des sessions (formateur)' },
-  portExposure: { en: 'Publish a port of your session at a public URL', fr: 'Publication d’un port de votre session sur une URL publique' },
+  portExposure: { en: 'Publish a port of your session at a public URL ({n} min per URL)', fr: 'Publication d’un port de votre session sur une URL publique ({n} min par URL)' },
 }
 
 /** Typed plan fields read by {@link derivePlanBullets}. */
@@ -36,6 +36,7 @@ interface PlanBulletFields {
   command_history_retention_days?: number
   session_supervision_enabled?: boolean
   port_exposure_enabled?: boolean
+  port_exposure_ttl_minutes?: number
 }
 
 export function usePlanFormatters() {
@@ -90,7 +91,7 @@ export function usePlanFormatters() {
       bullets.push(label(bulletLabels.sessionSupervision))
     }
     if (plan.port_exposure_enabled === true) {
-      bullets.push(label(bulletLabels.portExposure))
+      bullets.push(label(bulletLabels.portExposure, plan.port_exposure_ttl_minutes || 60))
     }
 
     return bullets

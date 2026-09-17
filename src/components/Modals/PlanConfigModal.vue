@@ -211,6 +211,16 @@
               </label>
             </div>
             <p class="field-hint">{{ t('planConfig.portExposureHint') }}</p>
+            <label for="plan-port-exposure-ttl" class="field-hint">{{ t('planConfig.portExposureTtl') }}</label>
+            <input
+              id="plan-port-exposure-ttl"
+              v-model.number="formData.port_exposure_ttl_minutes"
+              data-test="plan-port-exposure-ttl"
+              type="number"
+              class="form-control"
+              min="1"
+              :disabled="!formData.port_exposure_enabled"
+            />
           </div>
 
           <div class="form-group form-group-wide">
@@ -486,6 +496,7 @@ const { t } = useTranslations({
       sessionSupervisionHint: 'Gates the live class wall and take-hand for trainers.',
       portExposureEnabled: 'Public port exposure',
       portExposureHint: 'Lets learners publish a port of their session at a public URL.',
+      portExposureTtl: 'Lifetime of an exposed URL (minutes) — to check one’s own work, not to share links',
       groupManagementEnabled: 'Group management',
       groupManagementHint: 'Lets plan holders create and manage learner groups.',
       defaultBackend: 'Default backend',
@@ -566,6 +577,7 @@ const { t } = useTranslations({
       sessionSupervisionHint: 'Active le mur de classe en direct et la reprise en main pour les formateurs.',
       portExposureEnabled: 'Exposition publique de ports',
       portExposureHint: 'Permet aux apprenants de publier un port de leur session sur une URL publique.',
+      portExposureTtl: 'Durée de vie d’une URL exposée (minutes) — pour vérifier son travail, pas pour partager des liens',
       groupManagementEnabled: 'Gestion des groupes',
       groupManagementHint: 'Permet aux titulaires du forfait de créer et gérer des groupes d\'apprenants.',
       defaultBackend: 'Backend par défaut',
@@ -662,6 +674,7 @@ const formData = reactive({
   max_memory_mb: 0,
   session_supervision_enabled: false,
   port_exposure_enabled: false,
+  port_exposure_ttl_minutes: 60,
   group_management_enabled: false,
   bulk_purchasable: false,
   use_tiered_pricing: false,
@@ -892,6 +905,7 @@ function populateFromPlan(plan: any) {
   formData.session_supervision_enabled = plan.session_supervision_enabled === true
   formData.group_management_enabled = plan.group_management_enabled === true
   formData.port_exposure_enabled = plan.port_exposure_enabled === true
+  formData.port_exposure_ttl_minutes = plan.port_exposure_ttl_minutes || 60
   formData.bulk_purchasable = plan.bulk_purchasable === true
 
   // Seat pricing ladder.
@@ -938,6 +952,7 @@ function resetForm() {
   formData.max_memory_mb = 0
   formData.session_supervision_enabled = false
   formData.port_exposure_enabled = false
+  formData.port_exposure_ttl_minutes = 60
   formData.group_management_enabled = false
   formData.bulk_purchasable = false
   formData.use_tiered_pricing = false
