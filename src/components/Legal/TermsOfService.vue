@@ -51,6 +51,15 @@
           <li>{{ t('tos.machineUsage.isolation') }}</li>
         </ul>
         <p><strong>{{ t('tos.machineUsage.warningTitle') }}</strong> {{ t('tos.machineUsage.warningContent') }}</p>
+
+        <h4>{{ t('tos.exposedPorts.title') }}</h4>
+        <p>{{ t('tos.exposedPorts.intro') }}</p>
+        <ul>
+          <li>{{ t('tos.exposedPorts.responsibility') }}</li>
+          <li>{{ t('tos.exposedPorts.temporary') }}</li>
+          <li>{{ t('tos.exposedPorts.logging') }}</li>
+        </ul>
+        <p>{{ t('tos.exposedPorts.report', { email: abuseEmail }) }}</p>
       </section>
 
       <section>
@@ -201,7 +210,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useTranslations } from '../../composables/useTranslations';
-import { COMPANY, CONSUMER_MEDIATOR, TOS_VERSION } from '../../config/company';
+import { ABUSE_EMAIL, COMPANY, CONSUMER_MEDIATOR, TOS_VERSION } from '../../config/company';
 import { SUPPORT_EMAIL } from '../../config/contact';
 
 const { t, locale } = useTranslations({
@@ -248,6 +257,14 @@ const { t, locale } = useTranslations({
         abuse: 'Any abuse of this service (including but not limited to: resource hogging, unauthorized access attempts, malicious activity) may lead to immediate account suspension, permanent ban, legal action, or other applicable measures',
         resources: 'Resource usage (CPU, memory, disk, network) is monitored and may be limited based on your subscription tier',
         isolation: 'While we implement security measures, you acknowledge that shared infrastructure carries inherent risks'
+      },
+      exposedPorts: {
+        title: '5.1 Publishing a session port (public URL)',
+        intro: 'Some plans let you make a service running in your terminal session reachable at a temporary public address of the form https://<id>.expose.labinux.com. This exists to look at the result of your own work during the training; it is not a hosting service.',
+        responsibility: 'You are solely responsible for the content made reachable this way and for its use. Publishing unlawful or deceptive content (in particular any page imitating a third-party service or Labinux), content infringing third-party rights, or using the address to distribute files unrelated to the training is prohibited',
+        temporary: 'Every address is temporary: it stops working when the delay set by your plan expires (a few hours at most), when the session ends, or when we withdraw it. Labinux may withdraw an address at any time without notice and suspend the feature in case of abuse; no availability is guaranteed',
+        logging: 'Visitor requests (IP address, page requested, time, browser) are logged for security and complaint handling and kept 30 days; publishing and withdrawing an address are recorded in your account\'s audit log',
+        report: 'To report content published this way: {email}.'
       },
 
       dataProtection: {
@@ -480,6 +497,14 @@ const { t, locale } = useTranslations({
         warningTitle: 'Avertissement Important :',
         warningContent: 'Toute activité malveillante, tentative de piratage ou violation de sécurité sera signalée aux autorités compétentes et pourra faire l\'objet de poursuites judiciaires.'
       },
+      exposedPorts: {
+        title: '5.1 Publication d\'un port de session (URL publique)',
+        intro: 'Certaines offres permettent de rendre accessible, à une adresse publique temporaire de la forme https://<identifiant>.expose.labinux.com, un service exécuté dans votre session de terminal. Cette fonction sert à consulter le résultat de votre propre travail pendant la formation ; elle ne constitue pas un service d\'hébergement.',
+        responsibility: 'Vous êtes seul responsable du contenu ainsi rendu accessible et de son usage. Il est interdit d\'y publier des contenus illicites ou trompeurs (notamment toute page imitant un service tiers ou Labinux), portant atteinte aux droits de tiers, ou d\'utiliser l\'adresse pour diffuser des fichiers sans rapport avec la formation',
+        temporary: 'Chaque adresse est temporaire : elle cesse de fonctionner à l\'expiration du délai fixé par votre offre (quelques heures au plus), à la fin de la session, ou lorsque nous la retirons. Labinux peut retirer une adresse à tout moment, sans préavis, et suspendre la fonction en cas d\'abus ; aucune disponibilité n\'est garantie',
+        logging: 'Les requêtes des visiteurs (adresse IP, page demandée, date, navigateur) sont journalisées à des fins de sécurité et de traitement des signalements et conservées 30 jours ; la publication et le retrait d\'une adresse sont consignés dans le journal d\'audit de votre compte',
+        report: 'Pour signaler un contenu publié de cette façon : {email}.'
+      },
 
       dataProtection: {
         title: '6. Protection des Données et Confidentialité (Conformité RGPD)',
@@ -679,6 +704,7 @@ const lastUpdateDate = computed(() => {
 });
 
 const contactEmail = SUPPORT_EMAIL;
+const abuseEmail = ABUSE_EMAIL;
 const company = COMPANY;
 
 const mediator = CONSUMER_MEDIATOR;
@@ -718,6 +744,11 @@ const mediatorContact = computed(() =>
 
 .terms-content section {
   margin-bottom: 32px;
+}
+
+.terms-content h4 {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 1rem;
 }
 
 .terms-content h3 {
