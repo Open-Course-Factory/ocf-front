@@ -92,6 +92,9 @@
           <a :href="ep.url" target="_blank" rel="noopener noreferrer" class="exposed-port-url" :title="ep.url">
             {{ ep.url }}
           </a>
+          <span class="exposed-port-expiry" :title="t('exposedPorts.expiresAt', { time: expiryClock(ep) })">
+            <i class="fas fa-hourglass-half"></i> {{ remaining(ep) }}
+          </span>
           <button
             type="button"
             class="entry-btn"
@@ -143,7 +146,8 @@ const { t } = useTranslations({
       chip: 'Ports',
       chipTitle: 'Publish a port of this session at a public URL',
       title: 'Exposed ports',
-      hint: 'A public URL to a port of this session — it dies with the session.',
+      hint: 'A public URL to a port of this session, to look at your work — it dies after a short while or with the session.',
+      expiresAt: 'Expires at {time}',
       needsNetwork: 'Start a session with internet access to expose a port.',
       portPlaceholder: 'Port (e.g. 8000)',
       forward: 'Expose',
@@ -166,7 +170,8 @@ const { t } = useTranslations({
       chip: 'Ports',
       chipTitle: 'Publier un port de cette session sur une URL publique',
       title: 'Ports exposés',
-      hint: 'Une URL publique vers un port de cette session — elle disparaît avec la session.',
+      hint: 'Une URL publique vers un port de cette session, pour voir votre travail — elle meurt au bout d’un moment ou avec la session.',
+      expiresAt: 'Expire à {time}',
       needsNetwork: 'Démarrez une session avec accès internet pour exposer un port.',
       portPlaceholder: 'Port (ex : 8000)',
       forward: 'Exposer',
@@ -200,6 +205,24 @@ const isCreating = ref(false)
 const deletingId = ref<string | null>(null)
 const copiedId = ref<string | null>(null)
 const portInput = ref<number | null>(null)
+// Ticks once a minute so the remaining time counts down and an expired
+// entry drops off without a reload (the backend stops listing it too).
+const now = ref(Date.now())
+let clock: ReturnType<typeof setInterval> | undefined
+
+function remaining(ep: ExposedPort): string {
+  const minutes = Math.max(0, Math.round((new Date(ep.expires_at).getTime() - now.value) / 60000))
+  return minutes >= 60 ? `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')}` : `${minutes} min`
+}
+
+function expiryClock(ep: ExposedPort): string {
+  return new Date(ep.expires_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+function dropExpired() {
+  now.value = Date.now()
+  exposedPorts.value = exposedPorts.value.filter(ep => new Date(ep.expires_at).getTime() > now.value)
+}
 
 function toggle() {
   open.value = !open.value
@@ -286,10 +309,12 @@ watch(
 onMounted(() => {
   document.addEventListener('click', onDocClick)
   if (props.sessionId && props.isActive) fetchExposedPorts()
+  clock = setInterval(dropExpired, 60000)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', onDocClick)
+  if (clock) clearInterval(clock)
 })
 </script>
 
@@ -418,6 +443,13 @@ onUnmounted(() => {
   flex-shrink: 0;
   font-family: var(--font-family-mono, monospace);
   font-weight: var(--font-weight-semibold);
+}
+
+.exposed-port-expiry {
+  flex: none;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 
 .exposed-port-url {
