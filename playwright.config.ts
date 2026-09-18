@@ -23,6 +23,15 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      testIgnore: /docs-screenshots/,
+    },
+    // Documentation screenshots — not a test, so never part of the default run.
+    // `npm run docs:screenshots` (needs the local stack + the Lycée Iris fixture).
+    {
+      name: 'docs',
+      testMatch: /docs-screenshots/,
+      retries: 0,
+      use: { ...devices['Desktop Chrome'], screenshot: 'off', trace: 'off', video: 'off' },
     },
   ],
 });
