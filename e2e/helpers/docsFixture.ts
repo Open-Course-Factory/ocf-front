@@ -176,12 +176,12 @@ async function ensureAssignments(trainer: ApiSession, groupId: string): Promise<
  * A host that refuses the launch (capacity, no Incus) leaves the id undefined
  * and the screens that need it are skipped, not failed.
  */
-async function ensureLearnerSessions(orgId: string): Promise<string | undefined> {
-  let firstTerminal: string | undefined;
+async function ensureLearnerSessions(orgId: string): Promise<string[]> {
+  const terminals: string[] = [];
   for (const learner of LEARNERS.slice(0, LIVE_LEARNERS)) {
     const session = await apiLogin(learner.email, DOCS_PASSWORD);
     const scenario = rows(await getJson(session, '/scenarios')).find((s) => s.name === LIVE_SCENARIO);
-    if (!scenario) return undefined;
+    if (!scenario) return terminals;
     const open = (await getMyScenarioSessions(session)).find(
       (s) => s.scenario_id === scenario.id && OPEN_STATUSES.has(s.status)
     );
@@ -189,11 +189,11 @@ async function ensureLearnerSessions(orgId: string): Promise<string | undefined>
     await session.api.dispose();
     if (!terminalId) {
       console.warn(`docs fixture: no live session for ${learner.email} — live screens will be skipped`);
-      return firstTerminal;
+      return terminals;
     }
-    firstTerminal ??= terminalId;
+    terminals.push(terminalId);
   }
-  return firstTerminal;
+  return terminals;
 }
 
 const LIVE_SCENARIO = 'gameshell-basics-unix-shell-adventure';
@@ -236,6 +236,8 @@ export interface DocsFixture {
   classId: string;
   /** Terminal session of the first learner, when the host could provision one. */
   learnerTerminalId?: string;
+  /** One per live learner, in LEARNERS order — the first two get warmed up by the spec. */
+  learnerTerminalIds: string[];
   /** The trainer's own plain terminal, same caveat. */
   trainerTerminalId?: string;
 }
@@ -254,7 +256,7 @@ export async function ensureDocsFixture(): Promise<DocsFixture> {
   const orgId = await ensureOrg(admin, trainer, planId(ORG_PLAN));
   const classId = await ensureClass(trainer, orgId);
   await ensureAssignments(trainer, classId);
-  const learnerTerminalId = await ensureLearnerSessions(orgId);
+  const learnerTerminalIds = await ensureLearnerSessions(orgId);
   const trainerTerminalId = await ensureTrainerTerminal(trainer, orgId);
-  return { orgId, classId, learnerTerminalId, trainerTerminalId };
+  return { orgId, classId, learnerTerminalId: learnerTerminalIds[0], learnerTerminalIds, trainerTerminalId };
 }

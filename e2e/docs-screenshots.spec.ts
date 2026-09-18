@@ -124,7 +124,7 @@ const SCREENS: Screen[] = [
   { name: 'scenarios-catalogue', path: '/scenarios', as: 'trainer', fullPage: true },
   { name: 'my-scenarios', path: '/my-scenarios', as: 'trainer' },
   { name: 'my-classes', path: '/my-classes', as: 'trainer' },
-  { name: 'class-live', path: (f) => `/classes/${f.classId}/live`, as: 'trainer' },
+  { name: 'class-live', path: (f) => `/classes/${f.classId}/live`, as: 'trainer', fullPage: true },
   { name: 'class-wall', path: (f) => `/classes/${f.classId}/live?view=wall`, as: 'trainer', settle: 4_000, fullPage: true },
   { name: 'class-members', path: (f) => `/classes/${f.classId}/members`, as: 'trainer' },
   { name: 'class-scenarios', path: (f) => `/classes/${f.classId}/scenarios`, as: 'trainer' },
@@ -294,6 +294,68 @@ let fixture: DocsFixture;
 
 test.beforeAll(async () => {
   fixture = await ensureDocsFixture();
+});
+
+/**
+ * A class where nobody has typed anything is not a class. Two learners work
+ * through the first GameShell steps the way a learner does — in the player,
+ * typing in the real terminal, pressing Verify, opening a hint — so the live
+ * view has positions and hint counts, and the wall has output in its tiles.
+ * Idempotent: a learner already past step 0 is left alone.
+ */
+test('warm up two learners', async ({ browser }) => {
+  test.setTimeout(240_000);
+  for (const [index, learner] of LEARNERS.slice(0, 2).entries()) {
+    const terminalId = fixture.learnerTerminalIds[index];
+    if (!terminalId) continue;
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page = await context.newPage();
+    await login(page, learner.email, DOCS_PASSWORD);
+    await page.goto(`/terminal-session/${terminalId}`, { waitUntil: 'networkidle', timeout: 30_000 });
+    await acknowledgeRecordingNotice(page);
+    const stepTitle = () => page.getByTestId('scenario-step-title').innerText().catch(() => '');
+    await waitForLiveTerminal(page, 60_000).catch(() => {});
+    if (/Adventure Begins/.test(await stepTitle())) {
+      await typeInTerminal(page, 'ls');
+      await typeInTerminal(page, 'pwd');
+      await page.waitForTimeout(1_500); // let the shell finish and record its position before the check runs
+      await page.getByTestId('scenario-verify-btn').click();
+      await page.waitForTimeout(4_000);
+    }
+    if (/Climb the Tower/.test(await stepTitle())) {
+      await typeInTerminal(page, 'ls');
+      if (index === 1) {
+        await page.getByTestId('hint-reveal-next').first().click({ timeout: 5_000 }).catch(() => {});
+      }
+      // The world is generated in the session's language. Short commands only:
+      // a long line gets its keystrokes reordered on the way to the shell.
+      await typeInTerminal(page, 'cd ~/Castle/Main_tower/*/*/* 2>/dev/null || cd ~/Chateau/*/*/*/*');
+      await typeInTerminal(page, 'pwd');
+      await page.waitForTimeout(1_500); // let the shell finish and record its position before the check runs
+      await page.getByTestId('scenario-verify-btn').click();
+      await page.waitForTimeout(4_000);
+    }
+    if (/Cellar|Cave/.test(await stepTitle())) {
+      await typeInTerminal(page, 'cd ~/Castle/Cellar 2>/dev/null || cd ~/Chateau/Cave');
+      await typeInTerminal(page, 'ls');
+      await page.waitForTimeout(1_500); // let the shell finish and record its position before the check runs
+      await page.getByTestId('scenario-verify-btn').click();
+      await page.waitForTimeout(4_000);
+    }
+    // The first learner goes one step further, so the class is not on a single line.
+    if (index === 0 && /Return to the World|Retour/.test(await stepTitle())) {
+      await typeInTerminal(page, 'cd ~');
+      await page.waitForTimeout(1_500); // let the shell finish and record its position before the check runs
+      await page.getByTestId('scenario-verify-btn').click();
+      await page.waitForTimeout(4_000);
+    }
+    // Leave the screen the way a learner would: a clean prompt with a look around.
+    await typeInTerminal(page, 'clear');
+    await typeInTerminal(page, 'ls');
+    await typeInTerminal(page, 'pwd');
+    await page.waitForTimeout(800);
+    await context.close();
+  }
 });
 
 for (const locale of LOCALES) {
