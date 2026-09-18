@@ -68,6 +68,7 @@
       <section class="help-section">
         <h2><i class="fas fa-th-large"></i> {{ t('helpClasses.live.wall.title') }}</h2>
         <p>{{ t('helpClasses.live.wall.p1') }}</p>
+        <HelpScreenshot name="class-wall" :caption="t('helpClasses.live.wall.wallCaption')" />
         <ul>
           <li>{{ t('helpClasses.live.wall.tiles') }}</li>
           <li>{{ t('helpClasses.live.wall.focus') }}</li>
@@ -161,7 +162,7 @@ const { t } = useTranslations({
         progress: {
           title: 'The progress table',
           p1: 'The default view. One row per learner on the watched scenario — pick it in "Watched scenario" when several are assigned:',
-          caption: 'The Live page in progress view: 2 of 4 connected, the distribution per step, and one row per learner with their position.',
+          caption: 'The Live page in progress view: who is connected, the distribution per step, and one row per learner with their position.',
           header: '<strong>"x/y connected"</strong>, and for the watched scenario "ends in …" or "deadline passed" when it has a deadline.',
           chart: '<strong>The distribution per step</strong> — a bar per step of the scenario, from "Not started" to "Finished", with the number of learners on each. One glance tells you where the class is.',
           presence: '<strong>Presence</strong> — a green dot for a learner connected to a terminal right now, a red circle otherwise.',
@@ -185,6 +186,7 @@ const { t } = useTranslations({
           tiles: 'One tile per learner with an open terminal, named after them.',
           focus: 'Click a tile to focus it: the terminal fills the page and the typing controls appear. "Back to the wall" returns to the tiles.',
           reorder: 'Drag a tile, or focus one and press Ctrl + Left / Right, to arrange the wall like the room.',
+          wallCaption: 'The wall: one tile per learner with a live terminal.',
           remembered: 'The representation you left a class on is remembered for that class; the URL keeps it too (?view=wall), so a link to the wall opens on the wall.'
         },
         hand: {
@@ -226,7 +228,7 @@ const { t } = useTranslations({
         progress: {
           title: 'Le tableau de progression',
           p1: 'La vue par défaut. Une ligne par apprenant sur le scénario suivi — choisissez-le dans « Scénario suivi » quand plusieurs sont assignés :',
-          caption: 'La page En direct en vue Progression : 2 connectés sur 4, la répartition par étape, et une ligne par apprenant avec sa position.',
+          caption: 'La page En direct en vue Progression : qui est connecté, la répartition par étape, et une ligne par apprenant avec sa position.',
           header: '<strong>« x/y connectés »</strong>, et pour le scénario suivi « fin dans … » ou « échéance dépassée » s\'il a une date limite.',
           chart: '<strong>La répartition par étape</strong> — une barre par étape du scénario, de « Non commencé » à « Fini », avec le nombre d\'apprenants sur chacune. Un coup d\'œil suffit pour savoir où en est la classe.',
           presence: '<strong>Présence</strong> — un point vert pour un apprenant connecté à un terminal en ce moment, un cercle rouge sinon.',
@@ -250,6 +252,7 @@ const { t } = useTranslations({
           tiles: 'Une tuile par apprenant qui a un terminal ouvert, à son nom.',
           focus: 'Cliquez sur une tuile pour l\'agrandir : le terminal remplit la page et les commandes d\'écriture apparaissent. « Retour au mur » revient aux tuiles.',
           reorder: 'Glissez une tuile, ou sélectionnez-la et appuyez sur Ctrl + Gauche / Droite, pour disposer le mur comme la salle.',
+          wallCaption: 'Le mur : une tuile par apprenant qui a un terminal en cours.',
           remembered: 'La représentation sur laquelle vous quittez une classe est retenue pour cette classe ; l\'URL la garde aussi (?view=wall), donc un lien vers le mur s\'ouvre sur le mur.'
         },
         hand: {

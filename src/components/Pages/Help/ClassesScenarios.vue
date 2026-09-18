@@ -154,7 +154,7 @@ const { t } = useTranslations({
         assign: {
           title: 'Assigning a scenario',
           p1: 'The Scenarios page lists what is assigned; the "Assign a scenario" button adds one.',
-          caption: 'Two scenarios assigned to the class: difficulty, dates, active state, how many learners finished, and the results button.',
+          caption: 'The scenarios assigned to a class: difficulty, dates, active state, how many learners finished, and the results button.',
           step1: {
             title: 'Pick the scenario',
             description: 'The list has three sections: the <strong>organization library</strong> (scenarios created in your organization), the <strong>group scenarios</strong> (imported directly into this class) and the <strong>public scenarios</strong> of the platform. A search box filters by title.'
@@ -189,7 +189,7 @@ const { t } = useTranslations({
         learner: {
           title: 'What the learner sees',
           p1: 'On their side, the learner opens Scenarios in the menu. Assigned scenarios sit in their catalogue among the public ones:',
-          caption: 'A learner\'s scenario catalogue: two scenarios to launch, one already started with a "Resume" button.',
+          caption: 'A learner\'s scenario catalogue: scenarios to launch, and one already started with a "Resume" button.',
           window: 'An assigned scenario is visible from its start date to its deadline. Outside that window it leaves the catalogue.',
           context: 'The learner has to be working in the class\'s organization: a scenario assigned in "Lycée Iris" is not listed while they are in their personal space.',
           resume: '"Launch" builds the environment; "Resume" reopens a session already started. A scenario started for the class by the trainer is already in "Resume" state.'
@@ -214,7 +214,7 @@ const { t } = useTranslations({
         assign: {
           title: 'Assigner un scénario',
           p1: 'La page Scénarios liste ce qui est assigné ; le bouton « Assigner un scénario » en ajoute un.',
-          caption: 'Deux scénarios assignés à la classe : difficulté, dates, état actif, nombre d\'apprenants qui ont terminé, et le bouton des résultats.',
+          caption: 'Les scénarios assignés à une classe : difficulté, dates, état actif, nombre d\'apprenants qui ont terminé, et le bouton des résultats.',
           step1: {
             title: 'Choisissez le scénario',
             description: 'La liste a trois sections : la <strong>bibliothèque de l\'organisation</strong> (scénarios créés dans votre organisation), les <strong>scénarios du groupe</strong> (importés directement dans cette classe) et les <strong>scénarios publics</strong> de la plateforme. Un champ de recherche filtre par titre.'
@@ -249,7 +249,7 @@ const { t } = useTranslations({
         learner: {
           title: 'Ce que voit l\'apprenant',
           p1: 'De son côté, l\'apprenant ouvre Scénarios dans le menu. Les scénarios assignés figurent dans son catalogue parmi les scénarios publics :',
-          caption: 'Le catalogue de scénarios d\'un apprenant : deux scénarios à lancer, un déjà commencé avec un bouton « Reprendre ».',
+          caption: 'Le catalogue de scénarios d\'un apprenant : des scénarios à lancer, et un déjà commencé avec un bouton « Reprendre ».',
           window: 'Un scénario assigné est visible de sa date de début à sa date limite. Hors de cette fenêtre, il quitte le catalogue.',
           context: 'L\'apprenant doit travailler dans l\'organisation de la classe : un scénario assigné dans « Lycée Iris » n\'est pas listé tant qu\'il est dans son espace personnel.',
           resume: '« Lancer » construit l\'environnement ; « Reprendre » rouvre une session déjà commencée. Un scénario lancé pour la classe par le formateur est déjà en état « Reprendre ».'

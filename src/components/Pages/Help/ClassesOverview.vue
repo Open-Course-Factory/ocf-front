@@ -176,7 +176,7 @@ const { t } = useTranslations({
         console: {
           title: 'The "My classes" console',
           p1: 'Everything you teach, one row per class, refreshed every 30 seconds while the page is open:',
-          caption: 'The "My classes" console: one class, four learners all connected, two assigned scenarios and their completion.',
+          caption: 'The "My classes" console: one row per class — learners connected, assigned scenarios and their completion, and the buttons to step in.',
           row1: '<strong>Who is there</strong> — how many learners are connected right now out of the class total, and how many have made no progress for a while (they may be stuck rather than away).',
           row2: '<strong>What is assigned</strong> — one line per assigned scenario with how many learners have finished it.',
           row3: '<strong>Where to step in</strong> — "Open the wall" opens the live terminals of the class; the icons next to it jump to Learners, Scenarios and Settings.',
@@ -242,7 +242,7 @@ const { t } = useTranslations({
         console: {
           title: 'La console « Mes classes »',
           p1: 'Tout ce que vous enseignez, une ligne par classe, actualisée toutes les 30 secondes tant que la page est ouverte :',
-          caption: 'La console « Mes classes » : une classe, quatre apprenants tous connectés, deux scénarios assignés et leur avancement.',
+          caption: 'La console « Mes classes » : une ligne par classe — apprenants connectés, scénarios assignés et leur avancement, et les boutons pour intervenir.',
           row1: '<strong>Qui est là</strong> — combien d\'apprenants sont connectés en ce moment sur le total de la classe, et combien n\'ont pas progressé depuis un moment (ils bloquent peut-être, plutôt qu\'ils ne sont partis).',
           row2: '<strong>Ce qui est assigné</strong> — une ligne par scénario assigné, avec le nombre d\'apprenants qui l\'ont terminé.',
           row3: '<strong>Où intervenir</strong> — « Ouvrir le mur » ouvre les terminaux en direct de la classe ; les icônes à côté mènent aux pages Apprenants, Scénarios et Réglages.',

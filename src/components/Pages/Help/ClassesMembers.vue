@@ -191,7 +191,7 @@ const { t } = useTranslations({
         page: {
           title: 'The Learners page',
           p1: 'The roster of the class, owner first, then every member with their role. Only the owner and the managers see the action buttons.',
-          caption: 'The Learners page of a class: the owner, four learners, a role selector and a remove button on each.',
+          caption: 'The Learners page of a class: the owner first, then each learner with a role selector and a remove button.',
           card: '<strong>Each card</strong> shows the name, email, role badge, the group the member comes from ("Main group" or a sub-group) and the date they joined.',
           role: '<strong>The role selector</strong> changes a member to manager (or back). Only the owner can hand over the owner role.',
           remove: '<strong>Remove</strong> takes the learner out of the class. Their account and their organization membership are untouched.',
@@ -268,7 +268,7 @@ const { t } = useTranslations({
         page: {
           title: 'La page Apprenants',
           p1: 'L\'effectif de la classe : le propriétaire d\'abord, puis chaque membre avec son rôle. Seuls le propriétaire et les gestionnaires voient les boutons d\'action.',
-          caption: 'La page Apprenants d\'une classe : le propriétaire, quatre apprenants, un sélecteur de rôle et un bouton de retrait sur chacun.',
+          caption: 'La page Apprenants d\'une classe : le propriétaire d\'abord, puis chaque apprenant avec un sélecteur de rôle et un bouton de retrait.',
           card: '<strong>Chaque carte</strong> montre le nom, l\'e-mail, le badge de rôle, le groupe d\'origine (« Groupe principal » ou un sous-groupe) et la date d\'arrivée.',
           role: '<strong>Le sélecteur de rôle</strong> passe un membre gestionnaire (ou l\'inverse). Seul le propriétaire peut céder le rôle de propriétaire.',
           remove: '<strong>Retirer</strong> sort l\'apprenant de la classe. Son compte et son appartenance à l\'organisation ne changent pas.',

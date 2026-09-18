@@ -1066,7 +1066,7 @@ export const helpEn = {
         page: {
           title: "The organization page",
           description: "\"Manage\" on a card opens the organization on seven tabs:",
-          caption: "An organization's page: five members, one group, and the tabs from Overview to Settings.",
+          caption: "An organization's page: its members and groups in the header, and the tabs from Overview to Settings.",
           overview: "<strong>Overview</strong> — identity (name, display name, type, status) and the limits: maximum and current groups and members.",
           members: "<strong>Members</strong> — who is in the organization and with which role (below).",
           groups: "<strong>Groups</strong> — the classes of the organization.",

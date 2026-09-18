@@ -1066,7 +1066,7 @@ export const helpFr = {
         page: {
           title: "La page d'une organisation",
           description: "« Gérer » sur une carte ouvre l'organisation sur sept onglets :",
-          caption: "La page d'une organisation : cinq membres, un groupe, et les onglets d'Aperçu à Paramètres.",
+          caption: "La page d'une organisation : ses membres et ses groupes dans l'en-tête, et les onglets d'Aperçu à Paramètres.",
           overview: "<strong>Aperçu</strong> — l'identité (nom, nom d'affichage, type, statut) et les limites : groupes et membres maximum et actuels.",
           members: "<strong>Membres</strong> — qui est dans l'organisation et avec quel rôle (ci-dessous).",
           groups: "<strong>Groupes</strong> — les classes de l'organisation.",
