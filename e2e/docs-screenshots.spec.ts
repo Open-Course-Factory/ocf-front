@@ -128,7 +128,20 @@ const SCREENS: Screen[] = [
   { name: 'class-wall', path: (f) => `/classes/${f.classId}/live?view=wall`, as: 'trainer', settle: 4_000, fullPage: true },
   { name: 'class-members', path: (f) => `/classes/${f.classId}/members`, as: 'trainer' },
   { name: 'class-scenarios', path: (f) => `/classes/${f.classId}/scenarios`, as: 'trainer' },
-  { name: 'class-analytics', path: (f) => `/classes/${f.classId}/analytics`, as: 'trainer' },
+  {
+    name: 'class-analytics',
+    path: (f) => `/classes/${f.classId}/analytics`,
+    as: 'trainer',
+    settle: 2_500,
+    // The per-scenario analytics calls occasionally fail on a busy dev stack; the page offers a retry.
+    prepare: async (page) => {
+      const retry = page.getByRole('button', { name: /réessayer|retry/i });
+      if (await retry.isVisible().catch(() => false)) {
+        await retry.click();
+        await page.waitForTimeout(2_500);
+      }
+    },
+  },
   { name: 'class-settings', path: (f) => `/classes/${f.classId}/settings`, as: 'trainer' },
   { name: 'organizations', path: '/organizations', as: 'trainer' },
   { name: 'organization-detail', path: (f) => `/organizations/${f.orgId}`, as: 'trainer', fullPage: true },
