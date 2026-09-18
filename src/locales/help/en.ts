@@ -1419,7 +1419,7 @@ export const helpEn = {
         groupMember: "Member",
         groupMemberDesc: "A learner.",
         groupMemberPerm1: "Launch the scenarios assigned to the class",
-        groupMemberPerm2: "Use the license assigned through the class",
+        groupMemberPerm2: "Use the organisation plan or the license assigned to them",
         groupMemberPerm3: "See their own progress",
         platformAdminTitle: "Platform administrator",
         platformAdminNoticeTitle: "Reserved for the operator",

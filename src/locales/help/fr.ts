@@ -1419,7 +1419,7 @@ export const helpFr = {
         groupMember: "Membre",
         groupMemberDesc: "Un apprenant.",
         groupMemberPerm1: "Lancer les scénarios assignés à la classe",
-        groupMemberPerm2: "Utiliser la licence attribuée par la classe",
+        groupMemberPerm2: "Utiliser le plan de l'organisation ou la licence qui lui est attribuée",
         groupMemberPerm3: "Voir sa propre progression",
         platformAdminTitle: "Administrateur de la plateforme",
         platformAdminNoticeTitle: "Réservé à l'opérateur",
