@@ -59,6 +59,16 @@ const SCREENS: Screen[] = [
   { name: 'terminal-sessions', path: '/terminal-sessions', as: 'trainer' },
   { name: 'terminal-creation', path: '/terminal-creation', as: 'trainer', fullPage: true },
   {
+    name: 'terminal-advanced-options',
+    path: '/terminal-creation',
+    as: 'trainer',
+    fullPage: true,
+    prepare: async (page) => {
+      await page.locator('.collapsible-header', { hasText: /options avanc|advanced options/i }).click();
+      await expandUsagePanel(page);
+    },
+  },
+  {
     // The session was started with the network feature, so the chip is unlocked;
     // exposing a port here is exactly what a learner does to show a web app.
     name: 'terminal-exposed-port',
@@ -98,6 +108,19 @@ const SCREENS: Screen[] = [
       await page.waitForTimeout(800);
     },
   },
+  {
+    name: 'scenario-editor',
+    path: '/scenario-editor',
+    as: 'trainer',
+    prepare: async (page) => {
+      const select = page.locator('.scenario-select');
+      await select.waitFor({ state: 'visible', timeout: 10_000 });
+      // The fixture's GameShell — the class assignment is what lets her manage it.
+      const value = await select.locator('option', { hasText: /gameshell/i }).first().getAttribute('value');
+      if (value) await select.selectOption(value);
+      await page.waitForTimeout(2_500);
+    },
+  },
   { name: 'scenarios-catalogue', path: '/scenarios', as: 'trainer', fullPage: true },
   { name: 'my-scenarios', path: '/my-scenarios', as: 'trainer' },
   { name: 'my-classes', path: '/my-classes', as: 'trainer' },
@@ -109,12 +132,33 @@ const SCREENS: Screen[] = [
   { name: 'class-settings', path: (f) => `/classes/${f.classId}/settings`, as: 'trainer' },
   { name: 'organizations', path: '/organizations', as: 'trainer' },
   { name: 'organization-detail', path: (f) => `/organizations/${f.orgId}`, as: 'trainer', fullPage: true },
+  { name: 'organization-members', path: (f) => `/organizations/${f.orgId}?tab=members`, as: 'trainer', fullPage: true },
+  {
+    // The manager-only tabs are not URL-addressable before the membership has loaded; click it like a user.
+    name: 'organization-scenarios',
+    path: (f) => `/organizations/${f.orgId}`,
+    as: 'trainer',
+    prepare: async (page) => {
+      await page.locator('.tabs-header .tab', { hasText: /sc[ée]narios/i }).click();
+      await page.waitForTimeout(1_500);
+    },
+  },
+  { name: 'organization-subscription', path: (f) => `/organizations/${f.orgId}?tab=subscription`, as: 'trainer', fullPage: true },
   { name: 'organization-import', path: (f) => `/organizations/${f.orgId}/import`, as: 'trainer', fullPage: true },
   { name: 'subscription-dashboard', path: '/subscription-dashboard', as: 'trainer', fullPage: true },
+  {
+    name: 'subscription-usage-panel',
+    path: '/subscription-dashboard',
+    as: 'trainer',
+    fullPage: true,
+    prepare: (page) => expandUsagePanel(page),
+  },
   { name: 'subscription-plans', path: '/subscription-plans', as: 'trainer', fullPage: true },
   { name: 'invoices', path: '/invoices', as: 'trainer' },
   { name: 'settings-ssh-keys', path: '/settings/ssh-keys', as: 'trainer' },
   { name: 'settings-ui', path: '/settings/ui', as: 'trainer' },
+  { name: 'settings-security', path: '/settings/security', as: 'trainer', fullPage: true },
+  { name: 'settings-notifications', path: '/settings/notifications', as: 'trainer' },
   { name: 'settings-localization', path: '/settings/localization', as: 'trainer' },
   { name: 'help', path: '/help', as: 'trainer', fullPage: true },
 
@@ -169,12 +213,39 @@ async function setPreferences(email: string, password: string, locale: Locale): 
   await session.api.dispose();
 }
 
+/** "My usage" is collapsed on some pages and open on others; end up open either way. */
+async function expandUsagePanel(page: Page): Promise<void> {
+  const limits = page.locator('[data-testid="usage-limits"]');
+  if (!(await limits.isVisible().catch(() => false))) {
+    await page.locator('[data-testid="terminal-usage-panel"] .collapsible-header').click();
+  }
+  await limits.waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {});
+  await page.waitForTimeout(800);
+}
+
 /**
- * The app scrolls inside <body> (html is 100% high), which a full-page capture
- * clips to one viewport. Let the document grow for the shot, then scroll
- * through it once so the sections that reveal on scroll are revealed.
+ * Nothing here scrolls the document: the public pages scroll inside <body>,
+ * the app shell inside its content pane. A full-page capture would clip both
+ * to one viewport. Let every scroll container grow for the shot, then scroll
+ * through the page once so the sections that reveal on scroll are revealed.
  */
 async function prepareFullPage(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const grow = (el: HTMLElement) => {
+      el.style.setProperty('overflow', 'visible', 'important');
+      el.style.setProperty('height', 'auto', 'important');
+      el.style.setProperty('max-height', 'none', 'important');
+    };
+    document.querySelectorAll<HTMLElement>('*').forEach((el) => {
+      if (el.scrollTop > 0) el.scrollTop = 0;
+      const { overflowY } = getComputedStyle(el);
+      const isPane = el.clientHeight >= window.innerHeight / 2; // a content pane, not a card with its own scrollbar
+      if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight && isPane) {
+        // The pane and every ancestor that pins it to the viewport height.
+        for (let node: HTMLElement | null = el; node && node !== document.body; node = node.parentElement) grow(node);
+      }
+    });
+  });
   await page.addStyleTag({ content: 'html, body { height: auto !important; overflow: visible !important; }' });
   await page.evaluate(async () => {
     const step = window.innerHeight / 2;
@@ -195,9 +266,9 @@ async function acknowledgeRecordingNotice(page: Page): Promise<void> {
   await page.locator('.recording-notice-dismiss').first().click({ timeout: 3_000 }).catch(() => {});
 }
 
-// One filter for both: `SHOT=class-live npm run docs:screenshots` retakes one screen.
-const only = process.env.SHOT;
-const selected = only ? SCREENS.filter((s) => s.name === only) : SCREENS;
+// `SHOT=class-live,class-wall npm run docs:screenshots` retakes only those screens.
+const only = process.env.SHOT?.split(',').filter(Boolean);
+const selected = only?.length ? SCREENS.filter((s) => only.includes(s.name)) : SCREENS;
 
 const byPersona = new Map<Persona, Screen[]>();
 for (const screen of selected) {
