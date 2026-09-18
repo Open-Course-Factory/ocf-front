@@ -25,12 +25,12 @@ export function registerOrganizationsHelp(store: ReturnType<typeof useHelpRegist
   store.registerSection({
     id: 'organizations',
     title: {
-      en: 'Organizations & Groups',
-      fr: 'Organisations & Groupes'
+      en: 'Organizations',
+      fr: 'Organisations'
     },
     description: {
-      en: 'Manage organizations, groups, bulk imports and licenses',
-      fr: 'Gérez les organisations, les groupes, les importations en masse et les licences'
+      en: 'Personal and team organizations, members and roles, plans, bulk import and learner seats',
+      fr: 'Organisations personnelles et d\'équipe, membres et rôles, forfaits, importation groupée et sièges apprenant'
     },
     icon: 'fas fa-building',
     items: [
@@ -38,12 +38,12 @@ export function registerOrganizationsHelp(store: ReturnType<typeof useHelpRegist
         route: 'organizations/overview',
         component: () => import('../components/Pages/Help/AccountOrganizations.vue'),
         title: {
-          en: 'Organizations Overview',
-          fr: 'Vue d\'ensemble des Organisations'
+          en: 'Organizations',
+          fr: 'Organisations'
         },
         description: {
-          en: 'Organizations are the top-level structure for managing teams, licenses, and content. Learn how to create and configure organizations effectively.',
-          fr: 'Les organisations sont la structure de base pour gérer les équipes, les licences et le contenu. Apprenez à créer et configurer efficacement vos organisations.'
+          en: 'Personal versus team organization, switching between them, who can create one, the members and their roles, and which plan an organization runs under.',
+          fr: 'Organisation personnelle ou d\'équipe, passer de l\'une à l\'autre, qui peut en créer une, les membres et leurs rôles, et sous quel forfait une organisation fonctionne.'
         },
         icon: 'fas fa-building'
       },
@@ -51,12 +51,12 @@ export function registerOrganizationsHelp(store: ReturnType<typeof useHelpRegist
         route: 'groups/management',
         component: () => import('../components/Pages/Help/GroupManagement.vue'),
         title: {
-          en: 'Group Management',
-          fr: 'Gestion des Groupes'
+          en: 'Groups and hierarchy',
+          fr: 'Groupes et hiérarchie'
         },
         description: {
-          en: 'Groups allow you to organize members within an organization into classes, teams, or departments. Learn how to create, configure, and manage groups effectively.',
-          fr: 'Les groupes permettent d\'organiser les membres au sein d\'une organisation en classes, équipes ou départements. Apprenez à créer, configurer et gérer efficacement vos groupes.'
+          en: 'A class is a group. The organization-wide Groups page, the hierarchy tree, and sub-groups — teaching itself lives in the Classes section.',
+          fr: 'Une classe est un groupe. La page Groupes à l\'échelle de l\'organisation, l\'arbre de hiérarchie et les sous-groupes — l\'enseignement lui-même est dans la section Classes.'
         },
         icon: 'fas fa-users'
       },
@@ -64,12 +64,12 @@ export function registerOrganizationsHelp(store: ReturnType<typeof useHelpRegist
         route: 'organizations/bulk-import',
         component: () => import('../components/Pages/Help/BulkImport.vue'),
         title: {
-          en: 'Bulk Import',
-          fr: 'Import en Masse'
+          en: 'Bulk import',
+          fr: 'Importation groupée'
         },
         description: {
-          en: 'Import multiple users into your organization at once using CSV files. This guide walks you through the import process, CSV format requirements, and best practices.',
-          fr: 'Importez plusieurs utilisateurs dans votre organisation en une seule fois à l\'aide de fichiers CSV. Ce guide vous accompagne dans le processus d\'importation, les exigences de format CSV et les bonnes pratiques.'
+          en: 'Create the accounts, classes and memberships of a whole cohort from three CSV files: formats, options, dry run, credentials.',
+          fr: 'Créez les comptes, les classes et les adhésions d\'une cohorte entière à partir de trois fichiers CSV : formats, options, simulation, identifiants.'
         },
         icon: 'fas fa-file-import'
       },
@@ -77,12 +77,12 @@ export function registerOrganizationsHelp(store: ReturnType<typeof useHelpRegist
         route: 'licenses/bulk-purchase',
         component: () => import('../components/Pages/Help/BulkLicenses.vue'),
         title: {
-          en: 'Bulk Licenses',
-          fr: 'Licences en Volume'
+          en: 'Bulk licenses',
+          fr: 'Licences en volume'
         },
         description: {
-          en: 'Purchase and manage licenses in bulk for your organization. Learn about batch purchasing, license assignment, and pricing tiers.',
-          fr: 'Achetez et gérez des licences en volume pour votre organisation. Découvrez l\'achat par lots, l\'attribution de licences et les niveaux de tarification.'
+          en: 'Learner seats bought in packs: quoting by class size and duration, assigning a seat to a learner, revoking it.',
+          fr: 'Des sièges apprenant achetés par lots : devis selon la taille de la classe et la durée, attribution d\'un siège à un apprenant, révocation.'
         },
         icon: 'fas fa-id-badge'
       }

@@ -32,52 +32,49 @@
 
     <div class="article-header">
       <h1><i class="fas fa-building"></i> {{ t('help.organizations.overview.title') }}</h1>
-      <p class="article-description">
-        {{ t('help.organizations.overview.intro') }}
-      </p>
+      <p class="article-description">{{ t('help.organizations.overview.intro') }}</p>
     </div>
 
     <div class="article-content">
       <section class="help-section">
-        <h2><i class="fas fa-info-circle"></i> {{ t('help.organizations.overview.whatAre.title') }}</h2>
-        <p>{{ t('help.organizations.overview.whatAre.description') }}</p>
-
-        <div class="benefits-grid">
-          <div class="benefit-card">
-            <i class="fas fa-users-cog"></i>
-            <p>{{ t('help.organizations.overview.whatAre.benefit1') }}</p>
+        <h2><i class="fas fa-layer-group"></i> {{ t('help.organizations.overview.types.title') }}</h2>
+        <p>{{ t('help.organizations.overview.types.description') }}</p>
+        <div class="ocf-help-type-grid">
+          <div class="ocf-help-type-card">
+            <i class="fas fa-user"></i>
+            <h4>{{ t('help.organizations.overview.types.personal.title') }}</h4>
+            <p>{{ t('help.organizations.overview.types.personal.description') }}</p>
           </div>
-          <div class="benefit-card">
-            <i class="fas fa-receipt"></i>
-            <p>{{ t('help.organizations.overview.whatAre.benefit2') }}</p>
-          </div>
-          <div class="benefit-card">
-            <i class="fas fa-object-group"></i>
-            <p>{{ t('help.organizations.overview.whatAre.benefit3') }}</p>
-          </div>
-          <div class="benefit-card">
-            <i class="fas fa-user-shield"></i>
-            <p>{{ t('help.organizations.overview.whatAre.benefit4') }}</p>
+          <div class="ocf-help-type-card">
+            <i class="fas fa-building"></i>
+            <h4>{{ t('help.organizations.overview.types.team.title') }}</h4>
+            <p>{{ t('help.organizations.overview.types.team.description') }}</p>
           </div>
         </div>
+        <HelpScreenshot name="organizations" :caption="t('help.organizations.overview.types.caption')" />
+        <p>{{ t('help.organizations.overview.types.compare') }}</p>
+      </section>
+
+      <section class="help-section info">
+        <h2><i class="fas fa-exchange-alt"></i> {{ t('help.organizations.overview.switcher.title') }}</h2>
+        <p>{{ t('help.organizations.overview.switcher.description') }}</p>
+        <p>{{ t('help.organizations.overview.switcher.how') }}</p>
       </section>
 
       <section class="help-section">
         <h2><i class="fas fa-plus-circle"></i> {{ t('help.organizations.overview.creating.title') }}</h2>
         <p>{{ t('help.organizations.overview.creating.description') }}</p>
-
         <div class="step-card">
           <div class="step-number">1</div>
           <div class="step-content">
             <h4>{{ t('help.organizations.overview.creating.step1.title') }}</h4>
             <p>{{ t('help.organizations.overview.creating.step1.description') }}</p>
-            <router-link v-if="!isPublicHelp" to="/organizations" class="btn btn-primary">
+            <router-link v-if="!isPublicHelp" to="/organizations" class="btn btn-outline">
               <i class="fas fa-building"></i>
-              {{ t('help.organizations.overview.creating.step1.title') }}
+              {{ t('help.organizations.overview.creating.button') }}
             </router-link>
           </div>
         </div>
-
         <div class="step-card">
           <div class="step-number">2</div>
           <div class="step-content">
@@ -85,7 +82,6 @@
             <p>{{ t('help.organizations.overview.creating.step2.description') }}</p>
           </div>
         </div>
-
         <div class="step-card">
           <div class="step-number">3</div>
           <div class="step-content">
@@ -96,151 +92,53 @@
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-users"></i> {{ t('help.organizations.overview.members.title') }}</h2>
+        <h2><i class="fas fa-columns"></i> {{ t('help.organizations.overview.page.title') }}</h2>
+        <p>{{ t('help.organizations.overview.page.description') }}</p>
+        <HelpScreenshot name="organization-detail" :caption="t('help.organizations.overview.page.caption')" />
+        <ul>
+          <li v-html="t('help.organizations.overview.page.overview')"></li>
+          <li v-html="t('help.organizations.overview.page.members')"></li>
+          <li v-html="t('help.organizations.overview.page.groups')"></li>
+          <li v-html="t('help.organizations.overview.page.scenarios')"></li>
+          <li v-html="t('help.organizations.overview.page.sessions')"></li>
+          <li v-html="t('help.organizations.overview.page.subscription')"></li>
+          <li v-html="t('help.organizations.overview.page.settings')"></li>
+        </ul>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-user-tag"></i> {{ t('help.organizations.overview.members.title') }}</h2>
         <p>{{ t('help.organizations.overview.members.description') }}</p>
-
-        <div class="feature-list">
-          <div class="feature-item">
-            <i class="fas fa-envelope"></i>
-            <span>{{ t('help.organizations.overview.members.addMembers') }}</span>
-          </div>
-          <div class="feature-item">
-            <i class="fas fa-user-tag"></i>
-            <span>{{ t('help.organizations.overview.members.assignRoles') }}</span>
-          </div>
-          <div class="feature-item">
-            <i class="fas fa-id-card"></i>
-            <span>{{ t('help.organizations.overview.members.manageLicenses') }}</span>
-          </div>
-          <div class="feature-item">
-            <i class="fas fa-user-minus"></i>
-            <span>{{ t('help.organizations.overview.members.removeMembers') }}</span>
-          </div>
-        </div>
+        <ul>
+          <li v-html="t('help.organizations.overview.members.member')"></li>
+          <li v-html="t('help.organizations.overview.members.teacher')"></li>
+          <li v-html="t('help.organizations.overview.members.manager')"></li>
+          <li v-html="t('help.organizations.overview.members.owner')"></li>
+        </ul>
+        <p>{{ t('help.organizations.overview.members.offboarding') }}</p>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-cog"></i> {{ t('help.organizations.overview.settings.title') }}</h2>
-        <p>{{ t('help.organizations.overview.settings.description') }}</p>
-
-        <div class="settings-grid">
-          <div class="setting-card">
-            <i class="fas fa-sliders-h"></i>
-            <h4>{{ t('help.organizations.overview.settings.general') }}</h4>
-          </div>
-          <div class="setting-card">
-            <i class="fas fa-bell"></i>
-            <h4>{{ t('help.organizations.overview.settings.notifications') }}</h4>
-          </div>
-          <div class="setting-card">
-            <i class="fas fa-shield-alt"></i>
-            <h4>{{ t('help.organizations.overview.settings.security') }}</h4>
-          </div>
-          <div class="setting-card">
-            <i class="fas fa-credit-card"></i>
-            <h4>{{ t('help.organizations.overview.settings.billing') }}</h4>
-          </div>
-        </div>
-      </section>
-
-      <section class="help-section info">
-        <h2><i class="fas fa-lightbulb"></i> {{ t('help.organizations.overview.bestPractices.title') }}</h2>
-        <p>{{ t('help.organizations.overview.bestPractices.description') }}</p>
-
-        <div class="tips-list">
-          <div class="tip-card">
-            <h4><i class="fas fa-user-check"></i> {{ t('help.organizations.overview.bestPractices.tip1.title') }}</h4>
-            <p>{{ t('help.organizations.overview.bestPractices.tip1.description') }}</p>
-          </div>
-          <div class="tip-card">
-            <h4><i class="fas fa-layer-group"></i> {{ t('help.organizations.overview.bestPractices.tip2.title') }}</h4>
-            <p>{{ t('help.organizations.overview.bestPractices.tip2.description') }}</p>
-          </div>
-          <div class="tip-card">
-            <h4><i class="fas fa-clipboard-check"></i> {{ t('help.organizations.overview.bestPractices.tip3.title') }}</h4>
-            <p>{{ t('help.organizations.overview.bestPractices.tip3.description') }}</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="help-section">
-        <h2><i class="fas fa-columns"></i> {{ t('help.organizations.overview.detailTabs.title') }}</h2>
-        <p>{{ t('help.organizations.overview.detailTabs.description') }}</p>
-
-        <div class="tabs-grid">
-          <div class="tab-card">
-            <i class="fas fa-home"></i>
-            <h4>{{ t('help.organizations.overview.detailTabs.overview.title') }}</h4>
-            <p>{{ t('help.organizations.overview.detailTabs.overview.description') }}</p>
-          </div>
-          <div class="tab-card">
-            <i class="fas fa-users"></i>
-            <h4>{{ t('help.organizations.overview.detailTabs.members.title') }}</h4>
-            <p>{{ t('help.organizations.overview.detailTabs.members.description') }}</p>
-          </div>
-          <div class="tab-card">
-            <i class="fas fa-object-group"></i>
-            <h4>{{ t('help.organizations.overview.detailTabs.groups.title') }}</h4>
-            <p>{{ t('help.organizations.overview.detailTabs.groups.description') }}</p>
-          </div>
-          <div class="tab-card">
-            <i class="fas fa-calendar-check"></i>
-            <h4>{{ t('help.organizations.overview.detailTabs.subscription.title') }}</h4>
-            <p>{{ t('help.organizations.overview.detailTabs.subscription.description') }}</p>
-          </div>
-          <div class="tab-card">
-            <i class="fas fa-cog"></i>
-            <h4>{{ t('help.organizations.overview.detailTabs.settings.title') }}</h4>
-            <p>{{ t('help.organizations.overview.detailTabs.settings.description') }}</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="help-section">
-        <h2><i class="fas fa-calendar-check"></i> {{ t('help.organizations.overview.orgSubscription.title') }}</h2>
-        <p>{{ t('help.organizations.overview.orgSubscription.description') }}</p>
-
-        <div class="info-box">
-          <h4><i class="fas fa-info-circle"></i> {{ t('help.organizations.overview.orgSubscription.separate.title') }}</h4>
-          <p>{{ t('help.organizations.overview.orgSubscription.separate.description') }}</p>
-        </div>
-      </section>
-
-      <section class="help-section">
-        <h2><i class="fas fa-sort-amount-up"></i> {{ t('help.organizations.overview.subscriptionPreference.title') }}</h2>
-        <p>{{ t('help.organizations.overview.subscriptionPreference.description') }}</p>
-
-        <div class="info-box">
-          <h4><i class="fas fa-arrow-up"></i> {{ t('help.organizations.overview.subscriptionPreference.priority.title') }}</h4>
-          <p>{{ t('help.organizations.overview.subscriptionPreference.priority.description') }}</p>
-        </div>
-      </section>
-
-      <section class="help-section">
-        <h2><i class="fas fa-file-import"></i> {{ t('help.organizations.overview.bulkImportIntegration.title') }}</h2>
-        <p>{{ t('help.organizations.overview.bulkImportIntegration.description') }}</p>
-
-        <div class="feature-list">
-          <div class="feature-item">
-            <i class="fas fa-mouse-pointer"></i>
-            <span>{{ t('help.organizations.overview.bulkImportIntegration.accessButton') }}</span>
-          </div>
-          <div class="feature-item">
-            <i class="fas fa-users-cog"></i>
-            <span>{{ t('help.organizations.overview.bulkImportIntegration.autoAssign') }}</span>
-          </div>
-        </div>
+        <h2><i class="fas fa-id-card"></i> {{ t('help.organizations.overview.plans.title') }}</h2>
+        <p v-html="t('help.organizations.overview.plans.inherited')"></p>
+        <p v-html="t('help.organizations.overview.plans.dedicated')"></p>
+        <p>{{ t('help.organizations.overview.plans.roles') }}</p>
+        <p>{{ t('help.organizations.overview.plans.seats') }}</p>
       </section>
 
       <section class="help-section">
         <h2><i class="fas fa-question-circle"></i> {{ t('help.navigation.nextSteps') }}</h2>
         <div class="next-steps">
-          <router-link :to="`${helpRoutePrefix}/groups/management`" class="next-step-card">
-            <i class="fas fa-users"></i>
-            <h4>{{ t('help.organizations.overview.nextSteps.groups.title') }}</h4>
-            <p>{{ t('help.organizations.overview.nextSteps.groups.description') }}</p>
+          <router-link :to="`${helpRoutePrefix}/classes/overview`" class="next-step-card">
+            <i class="fas fa-chalkboard-teacher"></i>
+            <h4>{{ t('help.organizations.overview.nextSteps.classes.title') }}</h4>
+            <p>{{ t('help.organizations.overview.nextSteps.classes.description') }}</p>
           </router-link>
-
+          <router-link :to="`${helpRoutePrefix}/organizations/bulk-import`" class="next-step-card">
+            <i class="fas fa-file-import"></i>
+            <h4>{{ t('help.organizations.overview.nextSteps.bulkImport.title') }}</h4>
+            <p>{{ t('help.organizations.overview.nextSteps.bulkImport.description') }}</p>
+          </router-link>
           <router-link :to="`${helpRoutePrefix}/account/roles-and-permissions`" class="next-step-card">
             <i class="fas fa-user-shield"></i>
             <h4>{{ t('help.organizations.overview.nextSteps.roles.title') }}</h4>
@@ -257,11 +155,13 @@ import { onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useHelpTranslations } from '../../../composables/useHelpTranslations'
+import HelpScreenshot from './HelpScreenshot.vue'
 
 const { t } = useI18n()
 const { loadHelpTranslations } = useHelpTranslations()
 const route = useRoute()
 
+// Determine the correct help routes based on current path
 const isPublicHelp = computed(() => route.path.startsWith('/help-public'))
 const helpMainRoute = computed(() => isPublicHelp.value ? '/help-public' : '/help')
 const helpRoutePrefix = computed(() => isPublicHelp.value ? '/help-public' : '/help')
@@ -272,186 +172,41 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.benefits-grid {
+/* Page-specific styles only - common help article styles are in help-article.css */
+
+.ocf-help-type-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
   margin: 20px 0;
 }
 
-.benefit-card {
-  text-align: center;
-  padding: 20px;
-  background: var(--color-gray-50);
-  border-radius: 8px;
-  border: 2px solid var(--color-gray-200);
-}
-
-.benefit-card i {
-  font-size: 2rem;
-  color: var(--color-primary);
-  margin-bottom: 10px;
-}
-
-.benefit-card p {
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
-}
-
-.feature-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 20px 0;
-}
-
-.feature-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 15px;
-  background: var(--color-gray-50);
-  border-radius: 8px;
-  border-left: 4px solid var(--color-primary);
-}
-
-.feature-item i {
-  color: var(--color-primary);
-  font-size: 1.2rem;
-  flex-shrink: 0;
-}
-
-.feature-item span {
-  color: var(--color-text-secondary);
-  font-size: 0.95rem;
-}
-
-.settings-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
-  margin: 20px 0;
-}
-
-.setting-card {
-  text-align: center;
+.ocf-help-type-card {
   padding: 20px;
   background: var(--color-gray-50);
   border: 2px solid var(--color-gray-200);
   border-radius: 8px;
 }
 
-.setting-card i {
-  font-size: 1.5rem;
+.ocf-help-type-card i {
+  font-size: 1.6rem;
   color: var(--color-primary);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
-.setting-card h4 {
-  margin: 0;
-  color: var(--color-text-primary);
-  font-size: 0.9rem;
-}
-
-.tips-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  margin: 20px 0;
-}
-
-.tip-card {
-  padding: 15px;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.tip-card h4 {
+.ocf-help-type-card h4 {
   margin: 0 0 8px 0;
   color: var(--color-text-primary);
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
-.tip-card h4 i {
-  color: var(--color-info);
-}
-
-.tip-card p {
+.ocf-help-type-card p {
   margin: 0;
-  color: var(--color-text-secondary);
+  color: var(--color-gray-600);
   font-size: 0.9rem;
 }
 
-.tabs-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
-  margin: 20px 0;
-}
-
-.tab-card {
-  text-align: center;
-  padding: 20px;
-  background: var(--color-gray-50);
-  border: 2px solid var(--color-gray-200);
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-.tab-card:hover {
-  border-color: var(--color-primary);
-  transform: translateY(-3px);
-}
-
-.tab-card i {
-  font-size: 1.5rem;
-  color: var(--color-primary);
-  margin-bottom: 10px;
-}
-
-.tab-card h4 {
-  margin: 0 0 8px 0;
-  color: var(--color-text-primary);
-  font-size: 0.95rem;
-}
-
-.tab-card p {
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-size: 0.85rem;
-  line-height: 1.4;
-}
-
-.info-box {
-  background: var(--color-info-bg);
-  border: 2px solid var(--color-info);
-  border-radius: 8px;
-  padding: 15px;
-  margin: 20px 0;
-}
-
-.info-box h4 {
-  margin: 0 0 10px 0;
-  color: var(--color-info);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.info-box p {
-  margin: 0;
-  color: var(--color-text-secondary);
-}
-
-/* Responsive */
 @media (max-width: 768px) {
-  .benefits-grid,
-  .settings-grid,
-  .tabs-grid {
+  .ocf-help-type-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -1025,333 +1025,232 @@ export const helpFr = {
 
     organizations: {
       overview: {
-        title: "Vue d'ensemble des Organisations",
-        intro: "Les organisations sont la structure de base pour gérer les équipes, les licences et le contenu. Apprenez à créer et configurer efficacement vos organisations.",
-        whatAre: {
-          title: "Qu'est-ce qu'une Organisation ?",
-          description: "Une organisation est un conteneur logique qui regroupe les utilisateurs, gère les abonnements et contrôle l'accès aux fonctionnalités de la plateforme. Les organisations peuvent représenter des entreprises, des écoles, des départements ou des équipes.",
-          benefit1: "Gestion centralisée des utilisateurs et des licences",
-          benefit2: "Facturation et plans d'abonnement partagés",
-          benefit3: "Attribution de contenu par groupe",
-          benefit4: "Contrôle d'accès basé sur les rôles"
+        title: "Organisations",
+        intro: "Une organisation est l'endroit où un formateur, une école ou un organisme de formation réunit son monde : des membres et leurs rôles, des classes, une bibliothèque de scénarios, et un forfait sous lequel tout le monde travaille. Votre espace personnel en est une aussi — celle qui est venue avec votre compte.",
+        types: {
+          title: "Personnelle ou d'équipe",
+          description: "Chaque compte a une organisation personnelle ; enseigner demande une organisation d'équipe.",
+          personal: {
+            title: "Organisation personnelle",
+            description: "Créée avec votre compte, pour vous seul. Elle porte votre propre forfait (Découverte, Solo, Formateur), vos propres terminaux et scénarios. Elle n'accueille jamais de classe."
+          },
+          team: {
+            title: "Organisation d'équipe",
+            description: "Des membres avec des rôles, des classes, l'importation groupée, une bibliothèque de scénarios, et les sessions terminal de tous les membres au même endroit. Dimensionnée à la création : un nombre maximum de groupes et de membres."
+          },
+          caption: "La page Organisations : l'organisation personnelle à gauche, une organisation d'équipe avec son forfait et ses boutons Importer / Gérer / Voir à droite.",
+          compare: "« Afficher la comparaison » sur la page Organisations met les deux côte à côte."
+        },
+        switcher: {
+          title: "Travailler dans une organisation à la fois",
+          description: "Toute l'application suit l'organisation dans laquelle vous êtes : « Mes classes » liste ses classes, le catalogue de scénarios montre ce qui y est assigné ou partagé, et les tailles de terminal proposées viennent de son forfait.",
+          how: "Pour changer : ouvrez le menu sous votre nom, en haut à droite. La section Organisation montre l'organisation courante et, quand vous appartenez à plusieurs, « Changer d'organisation »."
         },
         creating: {
-          title: "Création et Gestion des Organisations",
-          description: "Découvrez comment configurer votre organisation étape par étape.",
+          title: "Créer une organisation d'équipe",
+          description: "Créer une organisation demande un forfait qui couvre l'enseignement — Formateur, ou un forfait École / Organisme de formation. Avec un autre forfait, le formulaire est refusé avec un message qui renvoie au forfait Formateur.",
           step1: {
-            title: "Créer votre Organisation",
-            description: "Naviguez vers la page Organisations et cliquez sur 'Créer une Organisation'. Fournissez un nom et une description optionnelle."
+            title: "Cliquez sur « Créer une organisation »",
+            description: "Sur la page Organisations — en haut à droite, ou dans le bandeau « Animer une classe ». « Mes classes » propose le même bouton tant que vous êtes dans votre espace personnel."
           },
           step2: {
-            title: "Configurer les Paramètres",
-            description: "Configurez les préférences de votre organisation, notamment les rôles par défaut, les paramètres de notification et les options de personnalisation."
+            title: "Remplissez le formulaire",
+            description: "Un nom (l'identifiant : lettres minuscules, chiffres et tirets), un nom d'affichage, une description, et les limites : groupes maximum et membres maximum."
           },
           step3: {
-            title: "Inviter des Membres",
-            description: "Ajoutez des membres par e-mail ou par import en masse. Attribuez les rôles (Propriétaire, Gestionnaire ou Membre) selon les responsabilités."
-          }
+            title: "Ouvrez-la et faites entrer du monde",
+            description: "« Gérer » sur sa carte ouvre la page de l'organisation. Ajoutez des membres un par un, ou importez une cohorte entière par CSV (guide ci-dessous)."
+          },
+          button: "Ouvrir Organisations"
+        },
+        page: {
+          title: "La page d'une organisation",
+          description: "« Gérer » sur une carte ouvre l'organisation sur sept onglets :",
+          caption: "La page d'une organisation : cinq membres, un groupe, et les onglets d'Aperçu à Paramètres.",
+          overview: "<strong>Aperçu</strong> — l'identité (nom, nom d'affichage, type, statut) et les limites : groupes et membres maximum et actuels.",
+          members: "<strong>Membres</strong> — qui est dans l'organisation et avec quel rôle (ci-dessous).",
+          groups: "<strong>Groupes</strong> — les classes de l'organisation.",
+          scenarios: "<strong>Scénarios</strong> — la bibliothèque de l'organisation : les scénarios créés ou importés ici, disponibles pour toutes les classes.",
+          sessions: "<strong>Sessions des apprenants</strong> — les sessions terminal de tous les membres : apprenant, nom, statut, dates de création et d'expiration. Avec recherche et filtre par statut.",
+          subscription: "<strong>Abonnement</strong> — le forfait sous lequel l'organisation fonctionne (ci-dessous).",
+          settings: "<strong>Paramètres</strong> — la conversion d'une organisation personnelle en organisation d'équipe, le délai de conservation des données, et la suppression (propriétaire seulement)."
         },
         members: {
-          title: "Gestion des Membres",
-          description: "Gérez les membres de votre organisation et leurs niveaux d'accès.",
-          addMembers: "Invitez de nouveaux membres par e-mail ou importez depuis un CSV",
-          assignRoles: "Attribuez les rôles Propriétaire, Gestionnaire ou Membre",
-          manageLicenses: "Allouez des licences aux membres individuels",
-          removeMembers: "Supprimez des membres ou transférez leurs données"
+          title: "Membres et rôles",
+          description: "« Ajouter un membre » dans l'onglet Membres retrouve un compte existant par nom ou e-mail et lui donne un rôle. Les rôles, du moins au plus étendu :",
+          member: "<strong>Membre</strong> — un apprenant. Travaille dans l'organisation, suit les scénarios assignés, ne voit aucune administration.",
+          teacher: "<strong>Formateur</strong> — peut créer et animer des classes : assigner des scénarios, suivre les apprenants en direct, lire les résultats.",
+          manager: "<strong>Gestionnaire</strong> — un formateur qui administre aussi l'organisation : les membres et leurs rôles, les importations groupées, la régénération des mots de passe.",
+          owner: "<strong>Propriétaire</strong> — tout, plus le délai de conservation et la suppression de l'organisation.",
+          offboarding: "Un membre marqué parti lors de l'archivage d'une classe apparaît « Désinscrit » avec la date à laquelle son compte sera effacé. « Réintégrer » annule ; « Effacer maintenant » n'attend pas la date. L'ajouter de nouveau par e-mail le réintègre aussi."
         },
-        settings: {
-          title: "Paramètres de l'Organisation",
-          description: "Configurez votre organisation pour qu'elle corresponde à votre flux de travail.",
-          general: "Paramètres généraux : nom, description et personnalisation",
-          notifications: "Préférences de notification pour les événements de l'organisation",
-          security: "Paramètres de sécurité et politiques d'accès",
-          billing: "Informations de facturation et gestion des abonnements"
-        },
-        bestPractices: {
-          title: "Bonnes Pratiques",
-          description: "Suivez ces recommandations pour une gestion efficace de votre organisation.",
-          tip1: {
-            title: "Commencez par des Rôles Clairs",
-            description: "Définissez qui doit être propriétaire, gestionnaire et membre avant d'inviter des personnes. Cela évite la confusion des permissions par la suite."
-          },
-          tip2: {
-            title: "Utilisez les Groupes pour la Structure",
-            description: "Créez des groupes au sein de votre organisation pour gérer les classes, les équipes ou les départements séparément."
-          },
-          tip3: {
-            title: "Audits Réguliers des Licences",
-            description: "Vérifiez périodiquement les attributions de licences pour vous assurer qu'elles sont allouées aux utilisateurs actifs."
-          }
-        },
-        detailTabs: {
-          title: "Onglets de la page Organisation",
-          description: "La page détaillée d'une organisation est organisée en onglets pour une navigation facile entre les différentes zones de gestion.",
-          overview: {
-            title: "Vue d'ensemble",
-            description: "Un résumé de votre organisation incluant le nombre de membres, les groupes actifs et l'état de l'abonnement."
-          },
-          members: {
-            title: "Membres",
-            description: "Consultez, invitez et gérez tous les membres de l'organisation. Attribuez des rôles et suivez l'activité."
-          },
-          groups: {
-            title: "Groupes",
-            description: "Créez et gérez les groupes au sein de l'organisation. Affectez des membres et du contenu par groupe."
-          },
-          subscription: {
-            title: "Abonnement",
-            description: "Consultez et gérez l'abonnement au niveau de l'organisation, y compris les détails du plan et les indicateurs d'utilisation."
-          },
-          settings: {
-            title: "Paramètres",
-            description: "Configurez les préférences de l'organisation, la personnalisation, les règles de notification et les politiques de sécurité."
-          }
-        },
-        orgSubscription: {
-          title: "Abonnement au niveau de l'organisation",
-          description: "Chaque organisation peut avoir son propre abonnement, distinct des abonnements personnels détenus par les membres individuels.",
-          separate: {
-            title: "Distinct des abonnements personnels",
-            description: "L'abonnement de l'organisation est géré indépendamment dans l'onglet Abonnement de l'organisation. Il couvre tous les membres de l'organisation et est facturé à l'organisation plutôt qu'aux utilisateurs individuels."
-          }
-        },
-        subscriptionPreference: {
-          title: "Priorité d'abonnement",
-          description: "Lorsqu'un utilisateur appartient à une organisation qui dispose de son propre abonnement, le système détermine quel abonnement s'applique en fonction du niveau du plan.",
-          priority: {
-            title: "Le niveau supérieur a la priorité",
-            description: "Si l'abonnement de l'organisation offre un niveau supérieur à l'abonnement personnel de l'utilisateur, l'abonnement de l'organisation prend le dessus. Cela garantit que les membres bénéficient toujours du meilleur plan disponible sans intervention manuelle."
-          }
-        },
-        bulkImportIntegration: {
-          title: "Intégration de l'import en masse",
-          description: "Vous pouvez importer des membres directement depuis la page détaillée de l'organisation sans avoir à naviguer vers un outil séparé.",
-          accessButton: "Un bouton « Import en masse » est disponible sur la page détaillée de l'organisation, préconfiguré pour importer des membres dans l'organisation courante",
-          autoAssign: "Les utilisateurs importés sont automatiquement associés à l'organisation et peuvent être affectés à des groupes pendant l'importation"
+        plans: {
+          title: "Sous quel forfait fonctionne une organisation",
+          inherited: "<strong>Par défaut, une organisation d'équipe n'a pas de forfait à elle</strong> : elle utilise celui de la personne qui y travaille. Un formateur souscrit Formateur à titre personnel, et les organisations qu'il possède suivent — la carte indique « Hérité ». Rien n'est acheté pour l'organisation elle-même.",
+          dedicated: "<strong>Les écoles et les organismes de formation ont un forfait dédié</strong>, mis en place par l'équipe de la plateforme sur devis — la carte indique « Plan dédié ». Les membres travaillent alors sous ce forfait, quel que soit le leur.",
+          roles: "Dans une organisation à forfait dédié, l'équipe de la plateforme peut associer un rôle à un forfait : les apprenants (membres) tournent alors sur un forfait de siège apprenant tandis que les formateurs gardent le forfait complet.",
+          seats: "Des sièges apprenant s'achètent aussi par lots et s'attribuent un par un — voir Licences en volume."
         },
         nextSteps: {
-          groups: {
-            title: "Gestion des Groupes",
-            description: "Apprenez à créer et gérer les groupes au sein de votre organisation"
+          classes: {
+            title: "Qu'est-ce qu'une classe ?",
+            description: "Enseigner au sein de l'organisation"
+          },
+          bulkImport: {
+            title: "Importation groupée",
+            description: "Comptes, groupes et adhésions depuis des fichiers CSV"
           },
           roles: {
-            title: "Rôles et Permissions",
-            description: "Comprenez le système de permissions pour les organisations et les groupes"
+            title: "Rôles et permissions",
+            description: "Ce que chaque rôle peut faire, en détail"
           }
         }
-      }
-    },
+      },
 
-    groups: {
-      management: {
-        title: "Gestion des Groupes",
-        intro: "Les groupes permettent d'organiser les membres au sein d'une organisation en classes, équipes ou départements. Apprenez à créer, configurer et gérer efficacement vos groupes.",
-        overview: {
-          title: "Comprendre les Groupes",
-          description: "Les groupes sont des sous-ensembles d'une organisation qui vous aident à gérer les membres et à attribuer du contenu à un niveau plus fin.",
-          feature1: "Organisez les membres en classes ou équipes",
-          feature2: "Attribuez des cours et l'accès aux terminaux par groupe",
-          feature3: "Gérez les rôles au sein de chaque groupe indépendamment",
-          feature4: "Support des structures hiérarchiques de groupes"
+      groups: {
+        title: "Groupes et hiérarchie",
+        intro: "Une classe est un groupe : même objet, mêmes pages. Le menu Groupes en est la vue à l'échelle de l'organisation, à côté de « Mes classes », qui est la console de celles que vous animez.",
+        classes: {
+          title: "Pour enseigner, passez par « Mes classes »",
+          description: "Créer une classe, ajouter des apprenants, assigner des scénarios, suivre la classe en direct, lire les résultats et archiver se font depuis « Mes classes » et les cinq pages d'une classe. Ces guides sont dans la section Classes.",
+          button: "La section Classes"
         },
-        creating: {
-          title: "Création de Groupes",
-          description: "Suivez ces étapes pour créer un nouveau groupe au sein de votre organisation.",
-          step1: {
-            title: "Naviguer vers les Groupes",
-            description: "Accédez à la page Groupes depuis la navigation principale ou depuis la page détaillée de votre organisation."
-          },
-          step2: {
-            title: "Créer un Nouveau Groupe",
-            description: "Cliquez sur 'Créer un Groupe', entrez un nom et une description, et sélectionnez l'organisation parente."
-          },
-          step3: {
-            title: "Ajouter des Membres",
-            description: "Invitez des membres dans le groupe ou ajoutez des membres existants de l'organisation. Attribuez des rôles spécifiques au groupe."
-          }
+        list: {
+          title: "La page Groupes",
+          description: "Groupes dans le menu liste tous les groupes de l'organisation courante — y compris ceux que vous n'animez pas — sous forme de cartes :",
+          card: "Une carte montre l'état (active, archivée, expirée ou complète), le nombre de membres, l'organisation et le groupe parent. Pour une classe que vous animez, elle montre aussi combien d'apprenants sont connectés.",
+          open: "Cliquer sur une carte ouvre la classe sur sa page En direct.",
+          scope: "La liste suit l'organisation dans laquelle vous êtes ; changez d'organisation pour voir les groupes d'une autre.",
+          access: "La page est ouverte aux rôles Formateur, Gestionnaire et Propriétaire, avec un forfait qui couvre l'enseignement."
         },
         hierarchy: {
-          title: "Hiérarchie des Groupes",
-          description: "Les groupes peuvent être organisés en structure hiérarchique pour les organisations complexes.",
-          parentGroups: "Les groupes parents peuvent contenir des sous-groupes",
-          inheritance: "Les paramètres peuvent être hérités du groupe parent vers les groupes enfants",
-          navigation: "Utilisez l'éditeur de hiérarchie pour une organisation par glisser-déposer",
-          visualization: "Visualisez l'arborescence complète depuis la page de hiérarchie"
+          title: "La hiérarchie des groupes",
+          description: "« Hiérarchie des groupes » dans le même menu dessine l'arbre : organisation, groupes, sous-groupes.",
+          tree: "Dépliez ou repliez tout, cherchez un groupe par son nom, et cochez « Afficher les archivés » pour inclure les classes clôturées.",
+          counts: "Chaque groupe affiche ses membres directs et son total sous-groupes compris.",
+          move: "Glissez un groupe sur un autre pour le déplacer sous ce parent. Les organisations elles-mêmes ne se déplacent pas.",
+          details: "« Voir les détails » ouvre les pages du groupe."
         },
-        roles: {
-          title: "Rôles des Membres du Groupe",
-          description: "Chaque membre d'un groupe a un rôle qui détermine ses permissions au sein de ce groupe.",
-          owner: {
-            title: "Propriétaire du Groupe",
-            description: "Contrôle total sur le groupe, y compris les paramètres, les membres et le contenu"
-          },
-          manager: {
-            title: "Gestionnaire du Groupe",
-            description: "Peut gérer les membres et le contenu mais ne peut pas supprimer le groupe ou modifier les paramètres critiques"
-          },
-          member: {
-            title: "Membre du Groupe",
-            description: "Peut accéder au contenu assigné et participer aux activités du groupe"
-          }
-        },
-        content: {
-          title: "Attribution de Contenu",
-          description: "Attribuez des cours et des ressources aux groupes pour que tous les membres y aient accès.",
-          assignCourses: "Attribuez des cours à un groupe pour tous les membres",
-          terminalAccess: "Configurez les paramètres d'accès aux terminaux par groupe",
-          scheduling: "Planifiez la disponibilité du contenu",
-          tracking: "Suivez la progression et les taux de complétion du groupe"
-        },
-        settings: {
-          title: "Paramètres du Groupe",
-          description: "Configurez votre groupe selon vos besoins.",
-          general: "Nom, description et paramètres de visibilité",
-          enrollment: "Inscription ouverte ou fermée, accès sur invitation uniquement",
-          notifications: "Préférences de notification au niveau du groupe",
-          limits: "Limites de membres et restrictions de contenu"
+        subgroups: {
+          title: "Les sous-groupes",
+          description: "Un sous-groupe se crée depuis la page Réglages d'une classe (« Ajouter un sous-groupe ») ou en choisissant un groupe parent dans le formulaire de classe. C'est une classe à part entière, et ses membres sont aussi listés dans la classe parente, avec son nom en badge."
         },
         nextSteps: {
-          organizations: {
-            title: "Vue d'ensemble des Organisations",
-            description: "Découvrez la structure organisationnelle qui contient vos groupes"
+          overview: {
+            title: "Qu'est-ce qu'une classe ?",
+            description: "La console et les cinq pages d'une classe"
           },
-          roles: {
-            title: "Rôles et Permissions",
-            description: "Explorez en détail le système de permissions pour les organisations et les groupes"
+          settings: {
+            title: "Réglages et archivage",
+            description: "Sous-groupes, limites, clôture d'une classe"
           }
         }
-      }
-    },
+      },
 
-    bulkImport: {
-      overview: {
-        title: "Import en Masse",
-        intro: "Importez plusieurs utilisateurs dans votre organisation en une seule fois à l'aide de fichiers CSV. Ce guide vous accompagne dans le processus d'importation, les exigences de format CSV et les bonnes pratiques.",
-        whatIs: {
-          title: "Qu'est-ce que l'Import en Masse ?",
-          description: "L'import en masse permet aux gestionnaires d'organisation d'ajouter de nombreux utilisateurs simultanément en téléchargeant un fichier CSV. C'est idéal pour l'intégration de classes, de départements ou d'organisations entières.",
-          benefit1: "Importez des dizaines ou des centaines d'utilisateurs à la fois",
-          benefit2: "Création automatique de comptes et attribution de rôles",
-          benefit3: "Validation et rapport d'erreurs avant l'importation",
-          benefit4: "Support de l'attribution de groupes pendant l'importation"
+      bulkImport: {
+        title: "Importation groupée",
+        intro: "Créez les comptes, les classes et les adhésions d'une cohorte entière à partir de fichiers CSV. Rien n'est écrit avant que vous ayez vu ce que l'import va faire.",
+        where: {
+          title: "Où et qui",
+          description: "Depuis la page de l'organisation, « Importation groupée » — ou « Importer » sur la carte de l'organisation. L'import est réservé aux gestionnaires et propriétaires de l'organisation.",
+          caption: "La page d'importation groupée : trois zones de dépôt, puis les options."
         },
-        csvFormat: {
-          title: "Format du Fichier CSV",
-          description: "Votre fichier CSV doit suivre un format spécifique pour une importation réussie.",
-          requiredFields: "Champs obligatoires : email, prénom, nom",
-          optionalFields: "Champs optionnels : rôle, groupe, téléphone",
-          encoding: "Encodage du fichier : UTF-8 recommandé",
-          delimiter: "Délimiteur : virgule (,) ou point-virgule (;)",
-          nameSplit: "Une colonne nom unique est découpée en first_name et last_name avant l'envoi. Ouvrez l'aperçu du fichier des utilisateurs pour choisir l'ordre par défaut (nom d'abord, comme DUPONT Marie, ou prénom d'abord) et, pour chaque ligne, cliquez entre deux mots pour déplacer la coupure ou inverser les deux parties ; un nom d'un seul mot devient le nom de famille.",
-          example: "email,prenom,nom,role\njean{'@'}exemple.com,Jean,Dupont,member\nmarie{'@'}exemple.com,Marie,Martin,manager"
+        files: {
+          title: "Les trois fichiers",
+          description: "« Télécharger des exemples » vous donne un modèle de chacun. Virgule, point-virgule et tabulation sont tous détectés.",
+          users: {
+            title: "CSV des utilisateurs (requis)",
+            description: "Une ligne par personne. Requis : <code>email</code> et <code>name</code> — ou <code>first_name</code> et <code>last_name</code>. Facultatifs : <code>password</code> (généré s'il manque — la personne devra le changer à sa première connexion), <code>role</code> (laissez-le vide), <code>external_id</code> (votre propre identifiant, par exemple un numéro d'étudiant)."
+          },
+          groups: {
+            title: "CSV des groupes (facultatif)",
+            description: "Une ligne par classe à créer : <code>group_name</code> (identifiant), <code>display_name</code>, <code>description</code>, <code>parent_group</code> (pour un sous-groupe), <code>max_members</code>, <code>expires_at</code>, <code>external_id</code>."
+          },
+          memberships: {
+            title: "CSV des adhésions (facultatif)",
+            description: "Qui va où : <code>user_email</code>, <code>group_name</code>, <code>role</code> — <code>member</code> pour un apprenant, <code>teacher</code>, <code>manager</code> ou <code>owner</code> pour l'encadrement."
+          },
+          nameSplit: "Une colonne <code>name</code> unique est découpée en prénom et nom. Ouvrez l'aperçu du fichier des utilisateurs (« Aperçu » sur la zone de dépôt) pour vérifier et ajuster la coupe ligne par ligne."
         },
-        wizard: {
-          title: "Assistant d'Importation",
-          description: "L'assistant d'importation vous guide à travers le processus étape par étape.",
+        options: {
+          title: "Les options",
+          update: "<strong>Mettre à jour les utilisateurs existants si trouvés</strong> — un e-mail déjà connu est mis à jour au lieu d'être ignoré.",
+          verified: "<strong>Marquer les adresses e-mail importées comme vérifiées</strong> — coché par défaut : l'organisation se porte garante des adresses, les apprenants se connectent tout de suite. Décochez pour que chaque apprenant confirme d'abord son adresse par e-mail.",
+          target: "<strong>Groupe cible</strong> — chaque utilisateur importé est ajouté à cette classe, en plus du fichier des adhésions. Le plus simple pour remplir une seule classe."
+        },
+        run: {
+          title: "Valider, puis importer",
           step1: {
-            title: "Télécharger le Fichier",
-            description: "Sélectionnez votre fichier CSV et choisissez le format de délimiteur. Le système affichera un aperçu des premières lignes."
+            title: "« Valider & importer »",
+            description: "Les fichiers sont lus et l'import entier est simulé. Rien n'est encore écrit."
           },
           step2: {
-            title: "Mapper les Colonnes",
-            description: "Associez les colonnes de votre CSV aux champs requis. Le système tente un mapping automatique basé sur les en-têtes de colonnes."
+            title: "Lisez le résumé",
+            description: "Combien d'utilisateurs seront créés, mis à jour ou ignorés, combien de groupes et d'adhésions, puis les avertissements et les erreurs avec leur ligne et leur champ. En cas d'erreur, « Retour », corrigez le fichier, et validez de nouveau."
           },
           step3: {
-            title: "Valider les Données",
-            description: "Examinez les résultats de la validation. Corrigez les erreurs dans votre CSV et re-téléchargez si nécessaire."
+            title: "« Procéder à l'import »",
+            description: "L'import s'exécute ; ne fermez pas la fenêtre. L'écran de résultat donne les compteurs et, si des lignes ont échoué, les erreurs."
           },
           step4: {
-            title: "Confirmer l'Importation",
-            description: "Vérifiez le résumé et confirmez l'importation. Les nouveaux comptes seront créés et les e-mails d'invitation envoyés."
+            title: "Téléchargez les identifiants",
+            description: "Quand des mots de passe ont été générés, l'écran de résultat en propose un CSV. C'est la seule fois où ils s'affichent : téléchargez-le avant de fermer. Plus tard, les mots de passe se régénèrent pour les apprenants sélectionnés depuis la page Apprenants d'une classe — par un gestionnaire ou propriétaire de l'organisation."
           }
         },
-        validation: {
-          title: "Validation et Gestion des Erreurs",
-          description: "Le système valide vos données avant l'importation pour éviter les problèmes.",
-          emailValidation: "Les adresses e-mail sont vérifiées pour le format et les doublons",
-          roleValidation: "Les rôles sont validés par rapport aux options disponibles",
-          groupValidation: "Les noms de groupes sont mis en correspondance avec les groupes existants",
-          errorReport: "Un rapport d'erreurs détaillé est généré pour tout problème trouvé"
-        },
-        tips: {
-          title: "Conseils et Bonnes Pratiques",
-          description: "Suivez ces conseils pour une expérience d'importation fluide.",
-          tip1: {
-            title: "Testez avec de Petits Lots",
-            description: "Commencez avec un petit CSV (5-10 utilisateurs) pour vérifier votre format avant d'importer la liste complète."
+        nextSteps: {
+          classes: {
+            title: "Ajouter des apprenants",
+            description: "Les mêmes étapes vues depuis la classe"
           },
-          tip2: {
-            title: "Préparez vos Groupes d'Abord",
-            description: "Créez tous les groupes avant l'importation pour pouvoir assigner les utilisateurs aux groupes pendant l'import."
+          overview: {
+            title: "Organisations",
+            description: "Membres, rôles et forfaits"
+          }
+        }
+      },
+
+      bulkLicenses: {
+        title: "Licences en volume",
+        intro: "Des sièges apprenant achetés par lots, puis attribués un par un aux personnes qui en ont besoin. Pour les formateurs dont les apprenants ne sont pas couverts par un forfait d'organisation.",
+        what: {
+          title: "Ce qu'est un siège",
+          description: "Un siège donne à un apprenant un forfait à lui pour une période — un nombre de jours, ou un mois — afin qu'il lance des terminaux et des scénarios dans les limites de ce forfait. Les sièges s'achètent par lot ; un lot s'attribue, s'agrandit ou s'annule ensuite.",
+          eligibility: "Acheter des sièges demande un forfait qui le permet (Formateur). Avec un autre forfait, la page indique « Votre plan ne permet pas d'acheter des sièges pour des apprenants »."
+        },
+        purchase: {
+          title: "Acheter un lot",
+          description: "« Acheter des Licences » dans le menu Abonnement, ou « Acheter plus de licences » depuis la page de gestion des licences.",
+          step1: {
+            title: "Décrivez votre classe",
+            description: "Combien d'apprenants, et pour combien de temps : de 1 à 10 jours, ou un mois."
           },
-          tip3: {
-            title: "Vérifiez les Doublons",
-            description: "Supprimez les adresses e-mail en double de votre CSV. Le système signalera les doublons mais ne les importera pas."
-          }
+          step2: {
+            title: "Comparez ce que ça coûte",
+            description: "Chaque produit de siège qui convient est chiffré — total, quantité en sièges-mois ou apprenants-jours, et prix par apprenant. Quand plusieurs s'appliquent, le moins cher est signalé. Choisissez-en un."
+          },
+          step3: {
+            title: "Options, puis confirmation",
+            description: "Liez éventuellement le lot à une classe et saisissez un code promo. Le récapitulatif reprend forfait, quantité et classe ; « Finaliser l'achat » mène au paiement. Votre adresse e-mail doit être vérifiée pour acheter."
+          },
+          after: "Après paiement, vous arrivez sur la gestion des licences pendant que les sièges sont provisionnés — quelques secondes. S'ils tardent, la page le dit ; rien à faire."
         },
-        csvEncoding: {
-          title: "Détection automatique de l'encodage CSV",
-          description: "Le système d'importation détecte automatiquement l'encodage de caractères de votre fichier, vous n'avez donc pas besoin de convertir les fichiers manuellement.",
-          utf8: "Les fichiers UTF-8 sont pris en charge nativement et recommandés pour une compatibilité optimale",
-          windows: "L'encodage Windows-1252 (courant avec les exports Excel) est détecté et géré automatiquement",
-          bomStripping: "Les caractères BOM (Byte Order Mark) sont supprimés automatiquement, évitant les problèmes de caractères cachés dans vos en-têtes"
-        },
-        columnAliases: {
-          title: "Support des alias de colonnes",
-          description: "Les en-têtes de colonnes en français sont reconnus automatiquement lors du mapping, vous pouvez donc utiliser votre langue maternelle dans les exports CSV sans renommage manuel.",
-          examplesTitle: "Alias pris en charge :"
-        },
-        forcePasswordReset: {
-          title: "Réinitialisation forcée du mot de passe",
-          description: "Vous pouvez exiger que les utilisateurs importés changent leur mot de passe à la première connexion pour renforcer la sécurité.",
-          column: "Ajoutez une colonne force_reset à votre CSV avec les valeurs true ou false par utilisateur",
-          automatic: "Lorsqu'un mot de passe est généré automatiquement (aucune colonne password fournie), la réinitialisation forcée est activée automatiquement"
-        },
-        autoGeneratedPasswords: {
-          title: "Mots de passe générés automatiquement",
-          description: "Lorsque votre CSV ne contient pas de colonne mot de passe, le système génère des mots de passe aléatoires robustes pour chaque nouveau compte utilisateur.",
-          secure: "Les mots de passe générés font 16 caractères, combinant lettres, chiffres et caractères spéciaux",
-          downloadable: "Après l'importation, un tableau d'identifiants téléchargeable contenant l'e-mail et le mot de passe temporaire de chaque utilisateur est disponible",
-          warning: {
-            title: "Avertissement de sécurité",
-            description: "Téléchargez et distribuez le tableau d'identifiants rapidement. Pour des raisons de sécurité, les mots de passe générés automatiquement ne peuvent pas être récupérés après avoir quitté la page de résultats d'importation."
-          }
-        },
-        trialPlanAssignment: {
-          title: "Attribution automatique du plan d'essai",
-          description: "Les comptes utilisateurs nouvellement créés se voient automatiquement attribuer le plan d'essai, leur donnant un accès immédiat à la plateforme sans configuration manuelle d'abonnement."
-        },
-        targetGroupDropdown: {
-          title: "Sélection du groupe cible",
-          description: "Un menu déroulant sur la page d'importation vous permet de sélectionner un groupe cible. Tous les utilisateurs du lot d'importation en cours seront automatiquement ajoutés au groupe sélectionné, vous évitant de les affecter un par un après l'importation."
-        },
-        updateExistingUsers: {
-          title: "Mise à jour des utilisateurs existants",
-          description: "Activez l'option « Mettre à jour les utilisateurs existants si trouvés » pour actualiser les informations de profil des utilisateurs déjà présents sur la plateforme (correspondance par adresse e-mail). Lorsque cette option est désactivée, les utilisateurs existants sont ignorés pendant l'importation."
-        },
-        verifyEmails: {
-          title: "Adresses e-mail vérifiées",
-          description: "L'option « Marquer les adresses e-mail importées comme vérifiées », activée par défaut, dispense les comptes importés de l'étape de confirmation d'e-mail car l'organisation se porte garante ; décochez-la pour que chaque apprenant confirme d'abord sa propre adresse."
-        },
-        validationPreview: {
-          title: "Aperçu de la validation",
-          description: "Avant d'exécuter l'importation, une étape de prévisualisation affiche les résultats de validation pour chaque ligne de votre CSV. Vous pouvez examiner les avertissements, erreurs et actions en attente pour savoir exactement ce qui va se passer avant de confirmer."
-        },
-        importProgress: {
-          title: "Progression de l'importation",
-          description: "Une fois l'importation confirmée, un affichage en temps réel montre le résultat pour chaque utilisateur au fur et à mesure du traitement.",
-          created: "Créés : nouveaux comptes ajoutés avec succès à la plateforme",
-          updated: "Mis à jour : utilisateurs existants dont le profil a été actualisé avec les nouvelles données",
-          skipped: "Ignorés : lignes ignorées en raison d'erreurs ou de doublons"
+        manage: {
+          title: "Gérer un lot",
+          description: "« Gérer les Licences » dans le menu Abonnement liste vos lots : forfait, total, attribuées, disponibles, taux d'utilisation, date de renouvellement, statut.",
+          batch: "<strong>Voir les détails</strong> ouvre le lot : ses sièges, filtrables (tous, attribués, disponibles) et cherchables.",
+          assign: "<strong>Attribuer une licence</strong> — cherchez un utilisateur par nom ou e-mail et donnez-lui un siège. C'est immédiat.",
+          revoke: "<strong>Révoquer</strong> — reprend un siège : l'apprenant perd l'accès immédiatement et le siège redevient disponible. Plusieurs peuvent être révoqués d'un coup.",
+          add: "<strong>Ajouter</strong> — agrandit le lot.",
+          delete: "<strong>Supprimer</strong> — retire des sièges disponibles du lot (révoquez d'abord ceux qui sont attribués) ; un avoir au prorata peut suivre. Un lot annulé se supprime définitivement depuis la liste."
         },
         nextSteps: {
           organizations: {
-            title: "Vue d'ensemble des Organisations",
-            description: "Découvrez la structure et la gestion des organisations"
+            title: "Organisations",
+            description: "Quand un forfait d'organisation couvre les apprenants à la place"
           },
-          groups: {
-            title: "Gestion des Groupes",
-            description: "Configurez les groupes avant d'importer les utilisateurs"
+          subscription: {
+            title: "Abonnement et forfaits",
+            description: "Votre propre forfait et ce qu'il permet"
           }
         }
       }
@@ -1489,72 +1388,6 @@ export const helpFr = {
         nextSteps: {
           gettingStarted: "Ce que voit l'apprenant : catalogue, lecteur, historique.",
           classes: "Attribuer des scénarios à une classe et suivre les apprenants en direct."
-        }
-      }
-    },
-
-    bulkLicenses: {
-      overview: {
-        title: "Gestion des Licences en Volume",
-        intro: "Achetez et gérez des licences en volume pour votre organisation. Découvrez l'achat par lots, l'attribution de licences et les niveaux de tarification.",
-        whatIs: {
-          title: "Que sont les Licences en Volume ?",
-          description: "Les licences en volume permettent aux organisations d'acheter plusieurs licences d'abonnement à un tarif réduit et de les distribuer aux membres.",
-          benefit1: "Remises sur les achats en volume",
-          benefit2: "Tableau de bord centralisé de gestion des licences",
-          benefit3: "Attribution et réattribution flexibles",
-          benefit4: "Suivi d'utilisation détaillé et rapports"
-        },
-        purchasing: {
-          title: "Achat de Licences",
-          description: "Suivez ces étapes pour acheter des licences en volume pour votre organisation.",
-          step1: {
-            title: "Choisir un Plan",
-            description: "Sélectionnez le plan d'abonnement pour lequel vous souhaitez acheter des licences. Différents plans offrent différentes fonctionnalités."
-          },
-          step2: {
-            title: "Sélectionner la Quantité",
-            description: "Choisissez le nombre de licences dont vous avez besoin. Les remises de volume s'appliquent automatiquement à certains seuils."
-          },
-          step3: {
-            title: "Finaliser le Paiement",
-            description: "Vérifiez le détail des prix et finalisez l'achat. Les licences sont disponibles immédiatement après le paiement."
-          }
-        },
-        batchManagement: {
-          title: "Gestion des Lots",
-          description: "Gérez vos lots de licences depuis le tableau de bord de gestion des licences.",
-          viewBatches: "Consultez tous les lots de licences actifs et expirés",
-          trackUsage: "Suivez le nombre de licences attribuées vs disponibles",
-          renewBatches: "Renouvelez les lots avant leur expiration",
-          exportReports: "Exportez des rapports d'utilisation à des fins comptables"
-        },
-        assignment: {
-          title: "Attribution des Licences",
-          description: "Attribuez des licences aux membres de l'organisation.",
-          individual: "Attribuez des licences à des utilisateurs individuels depuis la page de détail du lot",
-          group: "Attribuez des licences à tous les membres d'un groupe en une fois",
-          automatic: "Configurez l'attribution automatique pour les nouveaux membres de groupe",
-          revoke: "Révoquez et réattribuez les licences lorsque des membres partent"
-        },
-        pricing: {
-          title: "Tarification",
-          description: "Des tarifs dégressifs sont disponibles pour les achats de licences en volume.",
-          tier1: "1-10 licences : tarif standard",
-          tier2: "11-50 licences : réduction de 10%",
-          tier3: "51-100 licences : réduction de 15%",
-          tier4: "Plus de 100 licences : contactez-nous pour un tarif personnalisé",
-          note: "Les tarifs peuvent varier selon le plan d'abonnement. Contactez le service commercial pour les devis entreprise."
-        },
-        nextSteps: {
-          organizations: {
-            title: "Vue d'ensemble des Organisations",
-            description: "Découvrez les fonctionnalités de gestion des organisations"
-          },
-          billing: {
-            title: "Facturation et Paiements",
-            description: "Comprenez le système de facturation et les options de paiement"
-          }
         }
       }
     }

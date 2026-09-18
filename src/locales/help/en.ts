@@ -1025,333 +1025,232 @@ export const helpEn = {
 
     organizations: {
       overview: {
-        title: "Organizations Overview",
-        intro: "Organizations are the top-level structure for managing teams, licenses, and content. Learn how to create and configure organizations effectively.",
-        whatAre: {
-          title: "What are Organizations?",
-          description: "An organization is a logical container that groups users, manages subscriptions, and controls access to platform features. Organizations can represent companies, schools, departments, or any team.",
-          benefit1: "Centralized user and license management",
-          benefit2: "Shared billing and subscription plans",
-          benefit3: "Group-based content assignment",
-          benefit4: "Role-based access control"
+        title: "Organizations",
+        intro: "An organization is where a trainer, a school or a training organization gathers its people: members and their roles, classes, a scenario library, and one plan everyone works under. Your personal space is one too — the one you got with your account.",
+        types: {
+          title: "Personal or team",
+          description: "Every account has a personal organization; teaching needs a team one.",
+          personal: {
+            title: "Personal organization",
+            description: "Created with your account, for you alone. It carries your own plan (Découverte, Solo, Formateur) and your own terminals and scenarios. It never holds a class."
+          },
+          team: {
+            title: "Team organization",
+            description: "Members with roles, classes, bulk import, a scenario library, and every member's terminal sessions in one place. Sized at creation: a maximum number of groups and of members."
+          },
+          caption: "The Organizations page: the personal organization on the left, a team organization with its plan and its Import / Manage / View buttons on the right.",
+          compare: "\"Show comparison\" on the Organizations page lays the two side by side."
+        },
+        switcher: {
+          title: "Working in one organization at a time",
+          description: "The whole application follows the organization you are in: \"My classes\" lists its classes, the scenario catalogue shows what is assigned or shared there, and the terminal sizes offered come from its plan.",
+          how: "To change: open the menu under your name, top right. The Organization section shows the current one and, when you belong to several, \"Switch organization\"."
         },
         creating: {
-          title: "Creating & Managing Organizations",
-          description: "Learn how to set up your organization step by step.",
+          title: "Creating a team organization",
+          description: "Creating an organization takes a plan that covers teaching — Formateur, or a School / training-organization plan. On another plan, the form is refused with a message pointing to the Formateur plan.",
           step1: {
-            title: "Create Your Organization",
-            description: "Navigate to the Organizations page and click 'Create Organization'. Provide a name and optional description."
+            title: "Click \"Create an organization\"",
+            description: "On the Organizations page — top right, or in the \"Run a classroom\" banner. \"My classes\" offers the same button while you are in your personal space."
           },
           step2: {
-            title: "Configure Settings",
-            description: "Set up your organization's preferences including default roles, notification settings, and branding options."
+            title: "Fill in the form",
+            description: "A name (the identifier: lowercase letters, digits and hyphens), a display name, a description, and the limits: maximum groups and maximum members."
           },
           step3: {
-            title: "Invite Members",
-            description: "Add members by email or bulk import. Assign roles (Owner, Manager, or Member) based on responsibilities."
-          }
+            title: "Open it and bring people in",
+            description: "\"Manage\" on its card opens the organization page. Add members one by one, or import a whole cohort by CSV (guide below)."
+          },
+          button: "Open Organizations"
+        },
+        page: {
+          title: "The organization page",
+          description: "\"Manage\" on a card opens the organization on seven tabs:",
+          caption: "An organization's page: five members, one group, and the tabs from Overview to Settings.",
+          overview: "<strong>Overview</strong> — identity (name, display name, type, status) and the limits: maximum and current groups and members.",
+          members: "<strong>Members</strong> — who is in the organization and with which role (below).",
+          groups: "<strong>Groups</strong> — the classes of the organization.",
+          scenarios: "<strong>Scenarios</strong> — the organization's library: scenarios created or imported here, available to every class.",
+          sessions: "<strong>Learner sessions</strong> — every member's terminal sessions: learner, name, status, created and expiry dates. Searchable, filterable by status.",
+          subscription: "<strong>Subscription</strong> — the plan the organization runs under (below).",
+          settings: "<strong>Settings</strong> — converting a personal organization to a team one, the data retention delay, and deletion (owner only)."
         },
         members: {
-          title: "Member Management",
-          description: "Manage your organization's members and their access levels.",
-          addMembers: "Invite new members via email or import from CSV",
-          assignRoles: "Assign Owner, Manager, or Member roles",
-          manageLicenses: "Allocate licenses to individual members",
-          removeMembers: "Remove members or transfer their data"
+          title: "Members and roles",
+          description: "\"Add member\" on the Members tab finds an existing account by name or email and gives it a role. The roles, from least to most:",
+          member: "<strong>Member</strong> — a learner. Works in the organization, follows assigned scenarios, sees no administration.",
+          teacher: "<strong>Trainer</strong> — may create and run classes: assign scenarios, follow learners live, read results.",
+          manager: "<strong>Manager</strong> — a trainer who also administers the organization: members and their roles, bulk imports, password regeneration.",
+          owner: "<strong>Owner</strong> — everything, plus the retention delay and deleting the organization.",
+          offboarding: "A member marked as left when a class was archived shows as \"Offboarded\" with the date their account will be erased. \"Reinstate\" cancels it; \"Erase now\" does not wait for the date. Adding them again by email reinstates them too."
         },
-        settings: {
-          title: "Organization Settings",
-          description: "Configure your organization to match your workflow.",
-          general: "General settings: name, description, and branding",
-          notifications: "Notification preferences for organization events",
-          security: "Security settings and access policies",
-          billing: "Billing information and subscription management"
-        },
-        bestPractices: {
-          title: "Best Practices",
-          description: "Follow these recommendations for effective organization management.",
-          tip1: {
-            title: "Start with Clear Roles",
-            description: "Define who should be owners, managers, and members before inviting people. This prevents permission confusion later."
-          },
-          tip2: {
-            title: "Use Groups for Structure",
-            description: "Create groups within your organization to manage classes, teams, or departments separately."
-          },
-          tip3: {
-            title: "Regular License Audits",
-            description: "Review license assignments periodically to ensure they're allocated to active users."
-          }
-        },
-        detailTabs: {
-          title: "Organization Detail Tabs",
-          description: "The organization detail page is organized into tabs for easy navigation between different management areas.",
-          overview: {
-            title: "Overview",
-            description: "A summary of your organization including member count, active groups, and subscription status."
-          },
-          members: {
-            title: "Members",
-            description: "View, invite, and manage all organization members. Assign roles and monitor activity."
-          },
-          groups: {
-            title: "Groups",
-            description: "Create and manage groups within the organization. Assign members and content per group."
-          },
-          subscription: {
-            title: "Subscription",
-            description: "View and manage the organization-level subscription, including plan details and usage metrics."
-          },
-          settings: {
-            title: "Settings",
-            description: "Configure organization preferences, branding, notification rules, and security policies."
-          }
-        },
-        orgSubscription: {
-          title: "Organization-Level Subscription",
-          description: "Each organization can have its own subscription, separate from any personal subscriptions held by individual members.",
-          separate: {
-            title: "Separate from Personal Subscriptions",
-            description: "The organization subscription is managed independently on the organization's Subscription tab. It covers all members of the organization and is billed to the organization rather than to individual users."
-          }
-        },
-        subscriptionPreference: {
-          title: "Subscription Preference",
-          description: "When a user belongs to an organization that has its own subscription, the system determines which subscription takes effect based on plan tier.",
-          priority: {
-            title: "Higher Tier Takes Priority",
-            description: "If the organization subscription offers a higher tier than the user's personal subscription, the organization subscription takes precedence. This ensures that members always benefit from the best available plan without manual switching."
-          }
-        },
-        bulkImportIntegration: {
-          title: "Bulk Import Integration",
-          description: "You can import members directly from the organization detail page without navigating to a separate tool.",
-          accessButton: "A \"Bulk Import\" button is available on the organization detail page, pre-configured to import members into the current organization",
-          autoAssign: "Imported users are automatically associated with the organization and can be assigned to groups during import"
+        plans: {
+          title: "Which plan an organization runs under",
+          inherited: "<strong>By default, a team organization holds no plan of its own</strong>: it uses the plan of whoever is working in it. A trainer subscribes to Formateur personally, and the organizations they own follow — the card reads \"Inherited\". Nothing is bought for the organization itself.",
+          dedicated: "<strong>Schools and training organizations get a dedicated plan</strong>, set up by the platform team on a quote — the card reads \"Own plan\". Members then work under that plan whatever they hold personally.",
+          roles: "Within an organization with its own plan, the platform team can map a role to a plan: learners (members) then run on a learner seat plan while trainers keep the full plan.",
+          seats: "Learner seats can also be bought as packs and assigned one by one — see Bulk licenses."
         },
         nextSteps: {
-          groups: {
-            title: "Group Management",
-            description: "Learn how to create and manage groups within your organization"
+          classes: {
+            title: "What a class is",
+            description: "Teaching inside the organization"
+          },
+          bulkImport: {
+            title: "Bulk import",
+            description: "Accounts, groups and memberships from CSV files"
           },
           roles: {
-            title: "Roles & Permissions",
-            description: "Understand the permission system across organizations and groups"
+            title: "Roles & permissions",
+            description: "What each role can do, in detail"
           }
         }
-      }
-    },
+      },
 
-    groups: {
-      management: {
-        title: "Group Management",
-        intro: "Groups allow you to organize members within an organization into classes, teams, or departments. Learn how to create, configure, and manage groups effectively.",
-        overview: {
-          title: "Understanding Groups",
-          description: "Groups are subsets of an organization that help you manage members and assign content at a finer level.",
-          feature1: "Organize members into classes or teams",
-          feature2: "Assign courses and terminal access per group",
-          feature3: "Manage roles within each group independently",
-          feature4: "Support hierarchical group structures"
+      groups: {
+        title: "Groups and hierarchy",
+        intro: "A class is a group: same object, same pages. The Groups menu is the organization-wide view of them, next to \"My classes\", which is the console of the ones you teach.",
+        classes: {
+          title: "For teaching, use \"My classes\"",
+          description: "Creating a class, adding learners, assigning scenarios, following the class live, reading results and archiving are all done from \"My classes\" and the five pages of a class. Those guides are in the Classes section.",
+          button: "The Classes section"
         },
-        creating: {
-          title: "Creating Groups",
-          description: "Follow these steps to create a new group within your organization.",
-          step1: {
-            title: "Navigate to Groups",
-            description: "Go to the Groups page from the main navigation or from your organization detail page."
-          },
-          step2: {
-            title: "Create a New Group",
-            description: "Click 'Create Group', enter a name and description, and select the parent organization."
-          },
-          step3: {
-            title: "Add Members",
-            description: "Invite members to the group or add existing organization members. Assign group-specific roles."
-          }
+        list: {
+          title: "The Groups page",
+          description: "Groups in the menu lists every group of the current organization — including the ones you do not teach — as cards:",
+          card: "A card shows the state (active, archived, expired or full), the member count, the organization and the parent group. For a class you teach, it also shows how many learners are connected.",
+          open: "Clicking a card opens the class on its Live page.",
+          scope: "The list follows the organization you are in; switch organization to see another one's groups.",
+          access: "The page is available to the Trainer, Manager and Owner roles, on a plan that covers teaching."
         },
         hierarchy: {
-          title: "Group Hierarchy",
-          description: "Groups can be organized in a hierarchical structure for complex organizations.",
-          parentGroups: "Parent groups can contain sub-groups",
-          inheritance: "Settings can be inherited from parent to child groups",
-          navigation: "Use the hierarchy editor for drag-and-drop organization",
-          visualization: "View the complete hierarchy tree from the hierarchy page"
+          title: "The group hierarchy",
+          description: "\"Group hierarchy\" in the same menu draws the tree: organization, groups, sub-groups.",
+          tree: "Expand or collapse everything, search a group by name, and tick \"Show archived\" to include closed classes.",
+          counts: "Each group shows its direct members and its total including sub-groups.",
+          move: "Drag a group onto another to move it under that parent. Organizations themselves cannot be moved.",
+          details: "\"View details\" opens the group's pages."
         },
-        roles: {
-          title: "Group Member Roles",
-          description: "Each group member has a role that determines their permissions within that group.",
-          owner: {
-            title: "Group Owner",
-            description: "Full control over the group, including settings, members, and content"
-          },
-          manager: {
-            title: "Group Manager",
-            description: "Can manage members and content but cannot delete the group or change critical settings"
-          },
-          member: {
-            title: "Group Member",
-            description: "Can access assigned content and participate in group activities"
-          }
-        },
-        content: {
-          title: "Content Assignment",
-          description: "Assign courses and resources to groups so all members have access.",
-          assignCourses: "Assign courses to a group for all members",
-          terminalAccess: "Configure terminal access settings per group",
-          scheduling: "Set up schedules for content availability",
-          tracking: "Track group progress and completion rates"
-        },
-        settings: {
-          title: "Group Settings",
-          description: "Configure your group to fit your needs.",
-          general: "Name, description, and visibility settings",
-          enrollment: "Open or closed enrollment, invitation-only access",
-          notifications: "Group-level notification preferences",
-          limits: "Member limits and content restrictions"
+        subgroups: {
+          title: "Sub-groups",
+          description: "A sub-group is created from the Settings page of a class (\"Add sub-group\") or by picking a parent group in the class form. It is a class in its own right, and its members are also listed in the parent class, badged with its name."
         },
         nextSteps: {
-          organizations: {
-            title: "Organizations Overview",
-            description: "Learn about the organizational structure that contains your groups"
+          overview: {
+            title: "What a class is",
+            description: "The console and the five pages of a class"
           },
-          roles: {
-            title: "Roles & Permissions",
-            description: "Deep dive into the permission system for organizations and groups"
+          settings: {
+            title: "Settings and archiving",
+            description: "Sub-groups, limits, closing a class"
           }
         }
-      }
-    },
+      },
 
-    bulkImport: {
-      overview: {
-        title: "Bulk Import",
-        intro: "Import multiple users into your organization at once using CSV files. This guide walks you through the import process, CSV format requirements, and best practices.",
-        whatIs: {
-          title: "What is Bulk Import?",
-          description: "Bulk import allows organization managers to add many users simultaneously by uploading a CSV file. This is ideal for onboarding classes, departments, or entire organizations.",
-          benefit1: "Import dozens or hundreds of users at once",
-          benefit2: "Automatic account creation and role assignment",
-          benefit3: "Validation and error reporting before import",
-          benefit4: "Support for group assignment during import"
+      bulkImport: {
+        title: "Bulk import",
+        intro: "Create the accounts, the classes and the memberships of a whole cohort from CSV files. Nothing is written before you have seen what the import will do.",
+        where: {
+          title: "Where and who",
+          description: "From the organization page, \"Bulk import\" — or \"Import\" on the organization's card. The import is for managers and owners of the organization.",
+          caption: "The bulk import page: three drop zones, then the options."
         },
-        csvFormat: {
-          title: "CSV File Format",
-          description: "Your CSV file must follow a specific format for successful import.",
-          requiredFields: "Required fields: email, first_name, last_name",
-          optionalFields: "Optional fields: role, group, phone",
-          encoding: "File encoding: UTF-8 recommended",
-          delimiter: "Delimiter: comma (,) or semicolon (;)",
-          nameSplit: "A single name column is split into first_name and last_name before upload. Open the preview of the users file to choose the default order (last name first, as in DUPONT Marie, or first name first) and, for any row, click between two words to move the cut or swap the two sides; a name with a single word becomes the last name.",
-          example: "email,first_name,last_name,role\njohn{'@'}example.com,John,Doe,member\njane{'@'}example.com,Jane,Smith,manager"
+        files: {
+          title: "The three files",
+          description: "\"Download examples\" gives you a template of each. Comma, semicolon and tab separators are all detected.",
+          users: {
+            title: "Users CSV (required)",
+            description: "One line per person. Required: <code>email</code> and <code>name</code> — or <code>first_name</code> and <code>last_name</code>. Optional: <code>password</code> (generated when missing — the person must change it at first login), <code>role</code> (leave it empty), <code>external_id</code> (your own identifier, e.g. a student number)."
+          },
+          groups: {
+            title: "Groups CSV (optional)",
+            description: "One line per class to create: <code>group_name</code> (identifier), <code>display_name</code>, <code>description</code>, <code>parent_group</code> (for a sub-group), <code>max_members</code>, <code>expires_at</code>, <code>external_id</code>."
+          },
+          memberships: {
+            title: "Memberships CSV (optional)",
+            description: "Who goes where: <code>user_email</code>, <code>group_name</code>, <code>role</code> — <code>member</code> for a learner, <code>teacher</code>, <code>manager</code> or <code>owner</code> for staff."
+          },
+          nameSplit: "A single <code>name</code> column is split into first and last name. Open the preview of the users file (the eye on the drop zone) to check and adjust the cut for each line."
         },
-        wizard: {
-          title: "Import Wizard",
-          description: "The import wizard guides you through the process step by step.",
+        options: {
+          title: "The options",
+          update: "<strong>Update existing users if found</strong> — an email already known is updated instead of skipped.",
+          verified: "<strong>Mark imported email addresses as verified</strong> — ticked by default: the organization vouches for the addresses, learners log in at once. Untick to make each learner confirm their address by email first.",
+          target: "<strong>Target group</strong> — every imported user is added to this class, on top of the memberships file. The simplest way to fill one class."
+        },
+        run: {
+          title: "Validate, then import",
           step1: {
-            title: "Upload File",
-            description: "Select your CSV file and choose the delimiter format. The system will preview the first rows."
+            title: "\"Validate & Import\"",
+            description: "The files are parsed and the whole import is simulated. Nothing is written yet."
           },
           step2: {
-            title: "Map Columns",
-            description: "Map your CSV columns to the required fields. The system attempts auto-mapping based on column headers."
+            title: "Read the summary",
+            description: "How many users will be created, updated or skipped, how many groups and memberships, then the warnings and the errors with their row and field. On errors, \"Back\", fix the file, and validate again."
           },
           step3: {
-            title: "Validate Data",
-            description: "Review the validation results. Fix any errors in your CSV and re-upload if needed."
+            title: "\"Proceed with import\"",
+            description: "The import runs; do not close the window. The result screen gives the counts and, if some rows failed, the errors."
           },
           step4: {
-            title: "Confirm Import",
-            description: "Review the summary and confirm the import. New accounts will be created and invitation emails sent."
+            title: "Download the credentials",
+            description: "When passwords were generated, the result screen offers a CSV of them. It is the only time they are shown: download it before closing. Later, passwords can be regenerated for selected learners from the Learners page of a class — by a manager or owner of the organization."
           }
         },
-        validation: {
-          title: "Validation & Error Handling",
-          description: "The system validates your data before importing to prevent issues.",
-          emailValidation: "Email addresses are checked for format and duplicates",
-          roleValidation: "Roles are validated against available options",
-          groupValidation: "Group names are matched against existing groups",
-          errorReport: "A detailed error report is generated for any issues found"
-        },
-        tips: {
-          title: "Tips & Best Practices",
-          description: "Follow these tips for a smooth import experience.",
-          tip1: {
-            title: "Test with Small Batches",
-            description: "Start with a small CSV (5-10 users) to verify your format before importing the full list."
+        nextSteps: {
+          classes: {
+            title: "Adding learners",
+            description: "The class-side view of the same steps"
           },
-          tip2: {
-            title: "Prepare Your Groups First",
-            description: "Create all groups before importing so you can assign users to groups during import."
+          overview: {
+            title: "Organizations",
+            description: "Members, roles and plans"
+          }
+        }
+      },
+
+      bulkLicenses: {
+        title: "Bulk licenses",
+        intro: "Learner seats bought in packs, then assigned one by one to the people who need them. For trainers whose learners are not covered by an organization plan.",
+        what: {
+          title: "What a seat is",
+          description: "A seat gives one learner a plan of their own for a period — a number of days, or a month — so they can run terminals and scenarios within that plan's limits. Seats are bought in a batch; a batch is then assigned, added to, or cancelled.",
+          eligibility: "Buying seats requires a plan that allows it (Formateur). On another plan the page says \"Your plan does not allow buying seats for learners\"."
+        },
+        purchase: {
+          title: "Buying a batch",
+          description: "\"Purchase licenses\" in the Subscription menu, or \"Purchase more licenses\" from the license management page.",
+          step1: {
+            title: "Describe your class",
+            description: "How many learners, and for how long: 1 to 10 days, or one month."
           },
-          tip3: {
-            title: "Check for Duplicates",
-            description: "Remove duplicate email addresses from your CSV. The system will flag duplicates but won't import them."
-          }
+          step2: {
+            title: "Compare what it costs",
+            description: "Every seat product that fits is quoted — total, quantity in seat-months or learner-days, and price per learner. When several apply, the cheapest is marked. Pick one."
+          },
+          step3: {
+            title: "Options, then confirm",
+            description: "Optionally link the batch to a class and enter a coupon code. The summary recaps plan, quantity and class; \"Complete purchase\" goes to payment. Your email address must be verified to buy."
+          },
+          after: "After payment you land on license management while the seats are provisioned — a few seconds. If they take longer, the page says so; no action is needed."
         },
-        csvEncoding: {
-          title: "CSV Encoding Auto-Detection",
-          description: "The import system automatically detects your file's character encoding, so you do not need to convert files manually.",
-          utf8: "UTF-8 files are supported natively and recommended for best compatibility",
-          windows: "Windows-1252 encoding (common with Excel exports) is detected and handled automatically",
-          bomStripping: "Byte Order Mark (BOM) characters are stripped automatically, preventing hidden character issues in your headers"
-        },
-        columnAliases: {
-          title: "Column Alias Support",
-          description: "French column headers are recognized automatically during mapping, so you can use your native language in CSV exports without manual renaming.",
-          examplesTitle: "Supported aliases:"
-        },
-        forcePasswordReset: {
-          title: "Force Password Reset",
-          description: "You can require imported users to change their password on first login for enhanced security.",
-          column: "Add a force_reset column to your CSV with values true or false per user",
-          automatic: "When a password is auto-generated (no password column provided), the force reset flag is enabled automatically"
-        },
-        autoGeneratedPasswords: {
-          title: "Auto-Generated Passwords",
-          description: "When your CSV does not include a password column, the system generates strong, random passwords for each new user account.",
-          secure: "Generated passwords are 16 characters long, combining letters, numbers, and special characters",
-          downloadable: "After import, a downloadable credentials table is available containing each user's email and temporary password",
-          warning: {
-            title: "Security Warning",
-            description: "Download and distribute the credentials table promptly. For security reasons, auto-generated passwords cannot be retrieved after you leave the import results page."
-          }
-        },
-        trialPlanAssignment: {
-          title: "Trial Plan Assignment",
-          description: "Newly created user accounts are automatically assigned the trial plan, giving them immediate access to the platform without any manual subscription setup."
-        },
-        targetGroupDropdown: {
-          title: "Target Group Dropdown",
-          description: "A dropdown on the import page lets you select a target group. All users in the current import batch will be automatically added to the selected group, saving you from assigning each one individually after import."
-        },
-        updateExistingUsers: {
-          title: "Update Existing Users",
-          description: "Enable the \"Update existing users if found\" toggle to update the profile information of users who already exist on the platform (matched by email address). When disabled, existing users are skipped during import."
-        },
-        verifyEmails: {
-          title: "Verified Email Addresses",
-          description: "The \"Mark imported email addresses as verified\" option, on by default, lets imported accounts skip the email confirmation step because the organization vouches for them; untick it to let each learner confirm their own address first."
-        },
-        validationPreview: {
-          title: "Validation Preview",
-          description: "Before executing the import, a preview step displays the validation results for every row in your CSV. You can review warnings, errors, and pending actions so you know exactly what will happen before confirming."
-        },
-        importProgress: {
-          title: "Import Progress",
-          description: "Once you confirm the import, a real-time progress display shows the outcome for each user as it is processed.",
-          created: "Created: new accounts successfully added to the platform",
-          updated: "Updated: existing users whose profile was refreshed with new data",
-          skipped: "Skipped: rows that were ignored due to errors or duplicate entries"
+        manage: {
+          title: "Managing a batch",
+          description: "\"Manage licenses\" in the Subscription menu lists your batches: plan, total, assigned, available, utilization, renewal date, status.",
+          batch: "<strong>View details</strong> opens the batch: its seats, filterable (all, assigned only, available only) and searchable.",
+          assign: "<strong>Assign license</strong> — search a user by name or email and give them a seat. It takes effect at once.",
+          revoke: "<strong>Revoke</strong> — takes a seat back: the learner loses access immediately and the seat becomes available again. Several can be revoked at once.",
+          add: "<strong>Add more</strong> — grows the batch.",
+          delete: "<strong>Delete</strong> — removes available seats from the batch (revoke assigned ones first); a prorated credit may follow. A cancelled batch can be deleted permanently from the list."
         },
         nextSteps: {
           organizations: {
-            title: "Organizations Overview",
-            description: "Learn about organization structure and management"
+            title: "Organizations",
+            description: "When an organization plan covers learners instead"
           },
-          groups: {
-            title: "Group Management",
-            description: "Set up groups before importing users"
+          subscription: {
+            title: "Subscription & plans",
+            description: "Your own plan and what it allows"
           }
         }
       }
@@ -1489,72 +1388,6 @@ export const helpEn = {
         nextSteps: {
           gettingStarted: "What the learner sees: catalogue, player, history.",
           classes: "Assign scenarios to a class and follow learners live."
-        }
-      }
-    },
-
-    bulkLicenses: {
-      overview: {
-        title: "Bulk License Management",
-        intro: "Purchase and manage licenses in bulk for your organization. Learn about batch purchasing, license assignment, and pricing tiers.",
-        whatIs: {
-          title: "What are Bulk Licenses?",
-          description: "Bulk licenses allow organizations to purchase multiple subscription licenses at a discounted rate and distribute them to members.",
-          benefit1: "Volume discounts on license purchases",
-          benefit2: "Centralized license management dashboard",
-          benefit3: "Flexible assignment and reassignment",
-          benefit4: "Detailed usage tracking and reporting"
-        },
-        purchasing: {
-          title: "Purchasing Licenses",
-          description: "Follow these steps to purchase licenses in bulk for your organization.",
-          step1: {
-            title: "Choose a Plan",
-            description: "Select the subscription plan you want to purchase licenses for. Different plans offer different features."
-          },
-          step2: {
-            title: "Select Quantity",
-            description: "Choose the number of licenses you need. Volume discounts apply automatically at certain thresholds."
-          },
-          step3: {
-            title: "Complete Payment",
-            description: "Review the pricing breakdown and complete the purchase. Licenses are available immediately after payment."
-          }
-        },
-        batchManagement: {
-          title: "Batch Management",
-          description: "Manage your license batches from the License Management dashboard.",
-          viewBatches: "View all active and expired license batches",
-          trackUsage: "Monitor how many licenses are assigned vs available",
-          renewBatches: "Renew expiring batches before they expire",
-          exportReports: "Export usage reports for accounting purposes"
-        },
-        assignment: {
-          title: "License Assignment",
-          description: "Assign licenses to organization members.",
-          individual: "Assign licenses to individual users from the batch detail page",
-          group: "Assign licenses to all members of a group at once",
-          automatic: "Set up automatic assignment for new group members",
-          revoke: "Revoke and reassign licenses when members leave"
-        },
-        pricing: {
-          title: "Pricing & Tiers",
-          description: "Volume pricing is available for bulk license purchases.",
-          tier1: "1-10 licenses: standard pricing",
-          tier2: "11-50 licenses: 10% discount",
-          tier3: "51-100 licenses: 15% discount",
-          tier4: "100+ licenses: contact us for custom pricing",
-          note: "Pricing may vary by subscription plan. Contact sales for enterprise quotes."
-        },
-        nextSteps: {
-          organizations: {
-            title: "Organizations Overview",
-            description: "Learn about organization management features"
-          },
-          billing: {
-            title: "Billing & Payments",
-            description: "Understand the billing system and payment options"
-          }
         }
       }
     }
