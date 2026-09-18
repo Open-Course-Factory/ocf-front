@@ -25,12 +25,12 @@ export function registerAccountHelp(store: ReturnType<typeof useHelpRegistryStor
   store.registerSection({
     id: 'account',
     title: {
-      en: 'Account Management',
-      fr: 'Gestion du Compte'
+      en: 'Account',
+      fr: 'Compte'
     },
     description: {
-      en: 'Manage your subscription, billing and account settings',
-      fr: 'Gérez votre abonnement, facturation et paramètres de compte'
+      en: 'Subscription, billing, roles, settings and appearance',
+      fr: 'Abonnement, facturation, rôles, paramètres et apparence'
     },
     icon: 'fas fa-user-cog',
     items: [
@@ -38,12 +38,12 @@ export function registerAccountHelp(store: ReturnType<typeof useHelpRegistryStor
         route: 'account/subscription',
         component: () => import('../components/Pages/Help/AccountSubscription.vue'),
         title: {
-          en: 'Subscription & Plans',
-          fr: 'Abonnement et Plans'
+          en: 'Subscription and plans',
+          fr: 'Abonnement et plans'
         },
         description: {
-          en: 'Manage your subscription, understand plan features, and optimize your usage.',
-          fr: 'Gérez votre abonnement, comprenez les fonctionnalités des plans et optimisez votre utilisation.'
+          en: 'The plans, how to subscribe or change plan, and the subscription dashboard.',
+          fr: 'Les formules, comment souscrire ou changer de plan, et le tableau de bord d\'abonnement.'
         },
         icon: 'fas fa-calendar-check'
       },
@@ -51,12 +51,12 @@ export function registerAccountHelp(store: ReturnType<typeof useHelpRegistryStor
         route: 'account/billing',
         component: () => import('../components/Pages/Help/AccountBilling.vue'),
         title: {
-          en: 'Billing & Payments',
-          fr: 'Facturation et Paiements'
+          en: 'Billing and payments',
+          fr: 'Facturation et paiements'
         },
         description: {
-          en: 'Everything you need to know about billing, payments, and financial management of your account.',
-          fr: 'Tout ce que vous devez savoir sur la facturation, les paiements et la gestion financière de votre compte.'
+          en: 'Invoices, billing addresses, payment methods and the Stripe portal.',
+          fr: 'Factures, adresses de facturation, moyens de paiement et portail Stripe.'
         },
         icon: 'fas fa-credit-card'
       },
@@ -64,12 +64,12 @@ export function registerAccountHelp(store: ReturnType<typeof useHelpRegistryStor
         route: 'account/roles-and-permissions',
         component: () => import('../components/Pages/Help/RolesAndPermissions.vue'),
         title: {
-          en: 'Roles & Permissions',
-          fr: 'Rôles et Permissions'
+          en: 'Roles and permissions',
+          fr: 'Rôles et permissions'
         },
         description: {
-          en: 'Understand organization roles and what each role can do.',
-          fr: 'Comprendre les rôles d\'organisation et ce que chaque rôle peut faire.'
+          en: 'Who can do what on the platform, in an organisation and in a class.',
+          fr: 'Qui peut faire quoi sur la plateforme, dans une organisation et dans une classe.'
         },
         icon: 'fas fa-user-shield'
       },
@@ -77,12 +77,12 @@ export function registerAccountHelp(store: ReturnType<typeof useHelpRegistryStor
         route: 'account/settings',
         component: () => import('../components/Pages/Help/SettingsPreferences.vue'),
         title: {
-          en: 'Settings & Preferences',
-          fr: 'Paramètres & Préférences'
+          en: 'Settings and preferences',
+          fr: 'Paramètres et préférences'
         },
         description: {
-          en: 'Configure your account settings to personalize your experience, from language and theme to security and notifications.',
-          fr: 'Configurez les paramètres de votre compte pour personnaliser votre expérience, de la langue et du thème à la sécurité et aux notifications.'
+          en: 'Landing page, language and timezone, notifications, password, account deletion.',
+          fr: 'Page d\'accueil, langue et fuseau horaire, notifications, mot de passe, suppression du compte.'
         },
         icon: 'fas fa-cog'
       },
@@ -90,14 +90,27 @@ export function registerAccountHelp(store: ReturnType<typeof useHelpRegistryStor
         route: 'account/themes',
         component: () => import('../components/Pages/Help/DarkModeThemes.vue'),
         title: {
-          en: 'Dark Mode & Themes',
-          fr: 'Mode sombre & Thèmes'
+          en: 'Dark mode and themes',
+          fr: 'Mode sombre et thèmes'
         },
         description: {
-          en: 'Personalize the visual appearance of the platform with theme selection and display density options.',
-          fr: 'Personnalisez l\'apparence visuelle de la plateforme avec le choix du thème et les options de densité d\'affichage.'
+          en: 'Light, dark or automatic theme, and where to switch.',
+          fr: 'Thème clair, sombre ou automatique, et où le changer.'
         },
         icon: 'fas fa-palette'
+      },
+      {
+        route: 'account/permissions-reference',
+        component: () => import('../components/Pages/Help/PermissionsReference.vue'),
+        title: {
+          en: 'API permissions reference',
+          fr: 'Référence des permissions API'
+        },
+        description: {
+          en: 'For integrators: every API endpoint with its platform role and access rule, generated from the running API.',
+          fr: 'Pour les intégrateurs : chaque endpoint de l\'API avec son rôle de plateforme et sa règle d\'accès, généré depuis l\'API en service.'
+        },
+        icon: 'fas fa-lock'
       }
     ]
   })

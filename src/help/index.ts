@@ -26,7 +26,6 @@ import { registerScenariosHelp } from './scenarios'
 import { registerCoursesHelp } from './courses'
 import { registerOrganizationsHelp } from './organizations'
 import { registerAccountHelp } from './account'
-import { registerPermissionsHelp } from './permissions'
 
 export function registerAllHelp() {
   const store = useHelpRegistryStore()
@@ -36,7 +35,6 @@ export function registerAllHelp() {
   registerCoursesHelp(store)
   registerOrganizationsHelp(store)
   registerAccountHelp(store)
-  registerPermissionsHelp(store)
 }
 
 export function registerHelpRoutes(router: Router) {
