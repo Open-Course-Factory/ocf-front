@@ -79,772 +79,230 @@ export const helpEn = {
 
     terminals: {
       gettingStarted: {
-        title: "Getting Started with Terminals",
-        intro: "Terminals are virtual development environments that allow you to work on your projects directly from your browser. This guide will help you create your first terminal session.",
-
-        overview: {
-          title: "What are Terminals?",
-          description: "Terminals provide you with secure and isolated Linux environments accessible via your browser. Each terminal is a complete development environment with pre-installed tools and the ability to install additional software as needed."
+        title: "Getting started with terminals",
+        intro: "A terminal session is a real Linux machine that runs in your browser. Nothing to install: pick an environment, a size, click Create, and you are at a shell prompt about thirty seconds later.",
+        what: {
+          title: "What you get",
+          description: "Each session is an isolated container with its own disk, its own root account and, if your plan allows it, its own internet access. It lives for a fixed duration shown as a countdown in the session header, then it is stopped and its resources are freed."
         },
-
-        firstSteps: {
-          title: "Creating Your First Terminal",
-          step1: {
-            title: "Access Terminal Creation",
-            description: "Go to the \"Terminal Creation\" page from the main menu. This page allows you to configure your new terminal session."
-          },
-          step2: {
-            title: "Compose Your Environment",
-            description: "Use the session composer to select your environment in three steps: choose a <strong>distribution</strong> (e.g. Ubuntu, Debian), pick a <strong>size</strong> (S / M / L / XL), and enable optional <strong>features</strong> such as Docker or Kubernetes. A recommended size and the available features are pre-selected for you."
-          },
-          step3: {
-            title: "Set Access Parameters",
-            description: "Configure your session: name, duration, and other settings."
-          },
-          step4: {
-            title: "Launch Your Terminal",
-            description: "Once configured, launch your terminal. Initial startup may take a few moments to prepare your environment."
+        open: {
+          title: "Open the session composer",
+          description: "In the left menu, open Terminals and click Create a session. Everything happens on this one page: the environment, the size, the options and the Create button.",
+          button: "Create a session",
+          shot: "The session composer: environment cards, remaining resources, size pills, then Advanced options, My usage and the Create button."
+        },
+        environment: {
+          title: "1. Choose an environment",
+          description: "The cards at the top are the distributions available to you: Alpine, Debian, Ubuntu, GameShell, and any image your organisation provides. Click one to select it. The description under the name says what is inside.",
+          dedicated: "A small server badge in the corner of a card marks an environment that only exists on one server; it behaves exactly like the others."
+        },
+        size: {
+          title: "2. Choose a size",
+          description: "The Resources strip lists the sizes, from XS to XL. Hover a pill to see its vCPU and RAM. A star marks the size recommended for the environment you picked; it is selected for you when you can launch it, otherwise the largest size you can launch is.",
+          budget: "Above the pills, two lines tell you what you can still launch: your remaining vCPU and RAM, and the same figure expressed in sessions, for example \"1 XL or 1 L or 2 M\". The ×n badge on each pill is how many sessions of that size you could start right now. Your plan gives you a shared budget of CPU and RAM, not a fixed number of sessions: a big session uses the budget of several small ones.",
+          locked: "A padlock on a pill means the size is not included in your plan; hover it for the reason. On a personal plan you can still click it to read its specs, and the Unlock more power link takes you to the plans page.",
+          seat: "If you use a seat assigned by your organisation or your class, the sizes your plan does not cover are simply not shown.",
+          useCases: {
+            title: "What each size is for",
+            xs: "XS — light practice, basic command line",
+            s: "S — standard exercises",
+            m: "M — a development environment",
+            l: "L — several services, Docker",
+            xl: "XL — heavy workloads, clusters"
           }
         },
-
-        quickAccess: {
-          title: "Quick Access",
-          mySessions: "View your active sessions on the \"My Sessions\" page",
-          keys: "Manage your SSH keys in \"Terminal Keys\""
+        features: {
+          title: "3. Additional options",
+          description: "Some environments offer extra features once a size is selected, shown as chips under the sizes (for example Docker). Tick the ones you need. A padlocked chip is not available in your plan or needs a bigger size; hover it to know which."
         },
-
-        steps: {
-          accessKeys: {
-            title: "Access your keys",
-            description: "Navigate to <strong>Practical Work > Terminal Access Keys</strong> in the main menu.",
-            button: "View my access keys"
-          },
-          checkStatus: {
-            title: "Check status",
-            description: "If you see \"No terminal key found\" or your key is inactive, use the <strong>\"Regenerate key\"</strong> button to create a new one."
-          },
-          accessCreation: {
-            title: "Access session creation",
-            description: "Click on <strong>Practical Work > Create a Session</strong> in the menu.",
-            button: "Create a session now"
-          },
-          configure: {
-            title: "Compose your environment",
-            item1: "<strong>Distribution:</strong> Choose the Linux distribution shown as cards with brand icons (e.g. Ubuntu, Debian). The system recommends the most common one by default.",
-            item2: "<strong>Size:</strong> Pick S, M, L, or XL using the size pills. Sizes locked by your plan appear greyed out with a lock icon — upgrade your plan to unlock them.",
-            item3: "<strong>Features:</strong> Toggle optional add-ons such as Docker or Kubernetes. Unavailable features are shown as disabled.",
-            item4: "<strong>Terms of use:</strong> Accept the terms (required)",
-            item5: "<strong>Expiration time:</strong> Choose how long your session will remain active (optional)"
-          },
-          launch: {
-            title: "Launch the session",
-            description: "Click on <strong>\"Start a session\"</strong>. Creation may take a few moments while the system prepares your environment."
-          },
-          locate: {
-            title: "Locate your session",
-            description: "In <strong>Practical Work > My Sessions</strong>, you will see your new session with \"active\" status.",
-            button: "View my sessions"
-          },
-          connect: {
-            title: "Connect to the terminal",
-            description: "Click the <strong>\"Open\"</strong> button to access your terminal in a new tab, or use <strong>\"Preview\"</strong> to see it directly in the page."
-          }
+        advanced: {
+          title: "4. Advanced options (optional)",
+          description: "The Advanced options block is folded by default. You can create a session without ever opening it. Inside:",
+          name: "Terminal name — how the session appears in your list. Left empty, it becomes environment-size-date, for example debian-m-260918.",
+          hostname: "Hostname — the name shown in the prompt (root{'@'}hostname). Lowercase letters, digits and hyphens.",
+          exerciseRef: "Exercise reference — a free tag such as \"Lab 3 - Docker basics\", kept with the session and visible in your command history exports.",
+          packages: "Startup packages — a comma-separated list installed when the terminal starts, on top of what the image already has. It needs internet access to be on.",
+          network: "Internet access — On or Off. It is On by default when your plan includes it; without it the terminal cannot download packages or clone repositories. When your plan does not include it the choice is locked on Off.",
+          persistence: "Save my work between sessions — shown only if your plan allows persistent sessions. Discard when done: the container is removed shortly after it stops. Keep my work: the disk is preserved so you can resume the session later."
         },
-
-        multiBackend: {
-          title: "Multi-Server Support",
-          description: "When multiple terminal servers are available, you can choose which server to use for your session. This allows you to select the infrastructure closest to your location or the one best suited to your workload.",
-          selectBackend: {
-            title: "Select a server",
-            description: "On the session creation page, a <strong>server selector</strong> appears when multiple servers are available. Choose the server that best fits your needs."
-          },
-          tip: {
-            title: "Tip",
-            description: "If only one server is configured, the selector is hidden and the default server is used automatically."
-          }
+        create: {
+          title: "5. Create the session",
+          description: "The badge at the top right of the panel reads Ready to launch once an environment and a size are selected. Click Create a session. A progress bar shows the request, then the session view opens.",
+          recording: "The very first time you create a session, a Command recording dialog explains that the commands you type are recorded, that trainers and administrators can read them, and that you can export or delete this history at any time. Do not type passwords or tokens in a terminal. Click I understand: the dialog does not come back."
         },
-
-        machineSizes: {
-          title: "Environment Sizes & Capacity",
-          description: "Your plan includes a capacity for running learning environments. You can split that capacity across any combination of machine sizes, as long as you do not exceed your overall plan limit. The session composer always shows how many sessions of each size you can still launch.",
-          small: {
-            title: "S - Small",
-            description: "Lightweight environment for simple tasks, scripting, and basic development."
-          },
-          medium: {
-            title: "M - Medium",
-            description: "Balanced environment for standard development work and moderate workloads."
-          },
-          large: {
-            title: "L - Large",
-            description: "Powerful environment for resource-intensive tasks, compilation, and multi-service setups."
-          },
-          xlarge: {
-            title: "XL - Extra Large",
-            description: "Maximum resources for heavy workloads, large-scale builds, and production-like environments."
-          },
-          budgetExplain: {
-            title: "How capacity is consumed",
-            description: "When you start a session, the size you pick is reserved from your capacity. Stopping a non-persistent session releases its capacity immediately. Persistent sessions reserve capacity until you delete them. The composer shows the size-count summary (\"3 L OR 6 M OR 12 S\") so you always know what is still launchable."
-          },
-          combinationExample: {
-            title: "Mix and match",
-            description: "Example: a plan with capacity for 2 L sessions can also support 4 M sessions, 8 S sessions, or any mix that fits — like 1 L + 2 M. You decide how to split the capacity between learners or environments."
-          },
-          planTip: {
-            title: "Plan-based availability",
-            description: "Your subscription plan determines the overall capacity and which sizes are unlocked. Sizes that are too large for your plan appear greyed out with a lock icon in the session composer. On an org-managed subscription, unavailable sizes are hidden entirely. To increase your capacity, upgrade your plan."
-          }
+        session: {
+          title: "The session view",
+          description: "This is where you work. The terminal takes the whole width; click in it and type.",
+          shot: "A running session: the recording banner, the header with the connection status, the internet indicator, the remaining time and the Destroy button, then the command history panel.",
+          header: "The header shows the session name, the connection status (Connected, Connecting, Disconnected), a globe when internet access is on, and the time left.",
+          banner: "The blue banner reminds you that commands are recorded; Learn more opens the privacy policy. Got it hides it for good.",
+          stop: "Stop — only on sessions created with Keep my work. It stops the container and keeps its disk; you resume it later from My sessions.",
+          destroy: "Destroy — ends the session for good. The container, its disk and its command history are deleted after a confirmation.",
+          history: "Command history — the panel under the terminal lists what you typed, as it is recorded. It stays readable after the session ends."
         },
-
-        usageQuota: {
-          title: "Usage & Quota Panel",
-          description: "Before creating a session, the usage panel displays your current resource consumption at a glance.",
-          concurrentSessions: {
-            title: "Plan Capacity",
-            description: "Your plan includes a CPU + memory budget; spawn any combination of sizes that fits within it. The panel shows how many additional sessions of each size you can still launch."
-          },
-          maxDuration: {
-            title: "Maximum Session Duration",
-            description: "Displays the longest duration allowed for a single session under your current subscription plan."
-          }
+        expiry: {
+          title: "When time runs out",
+          description: "The countdown in the header turns from blue to orange to red, and a notification warns you three times:",
+          tenMin: "10 minutes left — informational.",
+          fiveMin: "5 minutes left — save your work.",
+          oneMin: "Less than a minute left.",
+          ended: "When the session has expired, the terminal is replaced by a message and the command history stays available below it. Start a new session from Terminals › Create a session."
         },
-
-        advancedOptions: {
-          title: "Advanced Options",
-          description: "When creating a session, you can optionally configure additional parameters for better organization.",
-          terminalName: {
-            title: "Terminal name",
-            description: "Give your session a <strong>custom name</strong> to easily identify it among your active sessions (e.g., \"Lab 3 - Networking\")."
-          },
-          exerciseRef: {
-            title: "Exercise reference",
-            description: "Link your session to a specific <strong>exercise or practical work</strong> for tracking and organizational purposes."
-          }
-        },
-
-        bulkGroupCreation: {
-          title: "Bulk Group Creation",
-          description: "When the groups feature is enabled, trainers can create terminal sessions for all members of a group in a single operation. This is ideal for classroom setups and training sessions.",
-          selectGroup: {
-            title: "Select a group",
-            description: "Choose a <strong>group</strong> from the dropdown list. All members of that group will receive their own terminal session."
-          },
-          confirm: {
-            title: "Confirm bulk creation",
-            description: "Review the number of sessions to be created and click <strong>\"Create sessions\"</strong>. Each group member will receive a dedicated terminal session with the same configuration."
-          },
-          tip: {
-            title: "Availability",
-            description: "This feature requires the groups feature flag to be enabled. Contact your administrator if you do not see this option."
-          }
-        },
-
-        recordingConsent: {
-          title: "Recording Consent",
-          description: "When session recording is enabled by your organization, a consent modal appears after your terminal session starts.",
-          modal: {
-            title: "Consent modal",
-            description: "After the session is created, a <strong>recording consent dialog</strong> appears asking whether you agree to have your session recorded."
-          },
-          choices: {
-            title: "Your choices",
-            description: "You can <strong>accept</strong> recording to allow session capture, or <strong>decline</strong> if you prefer not to be recorded. Your choice is saved for the current session."
-          }
-        },
-
-        expiryWarnings: {
-          title: "Expiry Countdown Warnings",
-          description: "As your session approaches its expiration time, the platform displays notification banners to remind you to save your work.",
-          tenMin: {
-            title: "10 minutes remaining",
-            description: "An informational notification appears, gently reminding you that your session will expire soon."
-          },
-          fiveMin: {
-            title: "5 minutes remaining",
-            description: "A warning notification urges you to save your work and prepare to end your session."
-          },
-          oneMin: {
-            title: "1 minute remaining",
-            description: "A critical alert indicates imminent session termination. Save all work immediately."
-          }
+        nextSteps: {
+          managing: "See your sessions, resume, stop and destroy them, and read your usage.",
+          troubleshooting: "What to do when a session will not start or the terminal stays black.",
+          scenarios: "Guided, step-by-step exercises on top of a terminal."
         }
       },
 
       managingSessions: {
-        title: "Managing Your Terminal Sessions",
-        intro: "Learn how to effectively manage your terminal sessions, synchronize your work, and access your environments from anywhere.",
-
-        quickAccessCard: {
-          title: "Quick access",
-          description: "Navigate to <strong>Practical Work > My Sessions</strong> to see all your sessions.",
-          button: "View my sessions"
+        title: "Managing your sessions",
+        intro: "The My sessions page lists every terminal you own, running or not, and is where you resume, stop, destroy or share one. The My usage panel tells you how much of your plan is in use.",
+        list: {
+          title: "The My sessions page",
+          description: "Open Terminals › My sessions. Running sessions come first under Active sessions; stopped and expired ones are folded under Inactive sessions.",
+          shot: "My sessions: one active session with its name, environment, size, internet indicator, creation date and action buttons; inactive sessions are folded below.",
+          sync: "Sync all asks the terminal server for the real state of every session and updates the list. Use it when a card looks wrong.",
+          newSession: "New session opens the session composer.",
+          hide: "Hide all inactive removes ended sessions from the page; Show hidden brings them back. Hiding is cosmetic: nothing is deleted.",
+          classView: "If you manage a class, the My sessions selector lets you view your learners' sessions. That view is read-only; supervision happens from the class page."
         },
-
-        sessionTypes: {
-          title: "Types of Sessions",
-          personal: {
-            title: "Personal Sessions",
-            description: "Private sessions that only you can access. Perfect for personal development or testing."
-          },
-          shared: {
-            title: "Shared Sessions",
-            description: "Sessions you can share with colleagues or learners. Useful for collaboration or teaching."
-          },
-          temporary: {
-            title: "Temporary Sessions",
-            description: "Sessions with limited duration, automatically deleted after a defined period."
+        card: {
+          title: "What a session card shows",
+          description: "Each card is one session. From left to right:",
+          name: "The name, with a pencil to rename it in place.",
+          meta: "The environment, the size (XS…XL), a globe or a crossed circle for internet access on or off, and the expiry date for a running session.",
+          state: "A state badge: Running, Stopped or Deleted. A stopped persistent session also shows Auto-deletes in … : how long its disk is kept before it is removed for good.",
+          actions: {
+            title: "Action buttons",
+            open: "Screen icon — open the session in the page, with the command history. Available for running and stopped sessions.",
+            popup: "External-link icon — open the terminal alone in a new tab. Running sessions only.",
+            resume: "Play — resume a stopped session, disk and history intact.",
+            stop: "Stop — stop a running session and keep its disk. The button is greyed on an ephemeral session, with a tooltip saying why: there is no disk to keep, use Destroy.",
+            destroy: "Trash — destroy the session after a confirmation. The disk and the command history are lost.",
+            more: "The ⋮ menu of a running session offers Copy link, Copy iframe code (to embed the terminal in a page of yours) and Sync."
           }
         },
-
-        synchronization: {
-          title: "Work Synchronization",
-          description: "Your work is automatically saved in each session. You can access your files and configurations even after disconnecting and reconnecting.",
-          tips: {
-            title: "Synchronization Tips",
-            tip1: "Use version control systems (git) to save your work externally",
-            tip2: "Regularly backup important files to external storage",
-            tip3: "Configure your development environment with dotfiles for easy restoration"
-          }
+        lifecycle: {
+          title: "Ephemeral or persistent",
+          description: "The choice is made when you create the session, in Advanced options › Save my work between sessions, and it decides what Stop means.",
+          ephemeral: "Ephemeral (Discard when done) — the default. The container is removed shortly after the session ends, whether you destroyed it or it expired. Nothing is kept except the command history.",
+          persistent: "Persistent (Keep my work) — needs a plan that allows it. Stop keeps the disk; the card shows Stopped with a countdown, and Resume brings the same machine back with your files. When the countdown reaches zero the session is deleted like any other.",
+          expired: "Both modes have a time limit, with warnings at 10, 5 and 1 minutes. When it is reached, an ephemeral session expires and only its command history remains; a persistent session is auto-stopped, its disk kept, and the card's date reads Auto-stops on rather than Expires on."
         },
-
-        syncMethods: {
-          individual: {
-            title: "Individual synchronization",
-            description: "Click the \"Sync\" button on a session to update its status specifically."
-          },
-          global: {
-            title: "Global synchronization",
-            description: "The \"Sync all\" button updates all your sessions at once."
-          },
-          automatic: {
-            title: "Automatic synchronization",
-            description: "Sessions synchronize automatically every 30 seconds."
-          }
+        usage: {
+          title: "The My usage panel",
+          description: "On the Create a session page, the My usage block (folded, with a badge counting your running sessions) shows what your plan gives you and what is left. The refresh icon reloads it.",
+          plan: "Plan — the name of the plan in effect and where it comes from: personal, or provided by your organisation.",
+          capacity: "Capacity — the total CPU and RAM of the plan, and the maximum duration of a session.",
+          remaining: "Remaining capacity — the same budget expressed in sessions, for example \"≈ 1 XL or 2 L or 4 M\". Every running session, whatever its size, is taken from this one shared budget. If it reads No capacity left, stop or destroy a session to free some.",
+          bars: "CPU and RAM bars — used versus total, and the list of the sessions that count, with their size and state (running or paused).",
+          composer: "The same information appears in short form in the composer itself: the remaining vCPU and RAM line, the \"You can spawn …\" line and the ×n badges on the size pills. If capacity cannot be computed right now, the panel says so rather than showing a wrong number; you can still start a session."
         },
-
-        syncTip: {
-          title: "Tip",
-          description: "If a session appears inactive but still shows as \"active\", use synchronization to get the most recent status."
+        history: {
+          title: "Command history",
+          description: "Everything you type in a terminal is recorded: for security, and so a trainer can follow your work. The Command history panel, under the terminal in the session view, is your copy of it.",
+          filter: "Filter the list, sort newest or oldest first, click a command to paste it back into a running terminal, or copy it to the clipboard.",
+          export: "Export as CSV or Export as JSON downloads the history of the session; the exercise reference you gave in Advanced options is included.",
+          delete: "Delete all removes the recorded commands of the session after a confirmation. This cannot be undone."
         },
-
-        accessMethods: {
-          title: "Terminal access",
-          description: "Several options are available to access your terminal sessions:",
-          newTab: {
-            title: "Open in new tab",
-            description: "The <strong>\"Open\"</strong> button launches your terminal in an optimized new window, ideal for extended work."
-          },
-          preview: {
-            title: "Integrated preview",
-            description: "The <strong>\"Preview\"</strong> displays the terminal directly in the page, convenient for quick checks."
-          },
-          copyLink: {
-            title: "Copy link",
-            description: "Copy the terminal URL to access it later or integrate it into your bookmarks."
-          }
-        },
-
-        iframeIntegration: {
-          title: "Iframe integration",
-          description: "You can embed your terminals in other websites or learning platforms:",
-          step1: {
-            title: "Generate iframe code",
-            description: "Click the <strong>\"iframe\"</strong> button next to an active session to automatically copy the integration code."
-          },
-          step2: {
-            title: "Customize display",
-            description: "The default iframe code uses a size of 100% x 600px. You can modify these dimensions according to your needs."
-          },
-          codeExample: {
-            title: "Iframe code example:"
-          }
-        },
-
-        stopAndCleanup: {
-          title: "Stop and cleanup",
-          description: "Proper management of your sessions allows you to optimize resources:",
-          stopSession: {
-            title: "Stop a session",
-            description: "Use the <strong>\"Stop\"</strong> button to properly terminate an active session when you're done working."
-          },
-          hideSessions: {
-            title: "Hide inactive sessions",
-            description: "The <strong>\"Hide\"</strong> button on expired or stopped sessions removes them from your list for a cleaner display."
-          },
-          warning: {
-            title: "Important",
-            description: "<strong>Always save your work</strong> before stopping a session. Once stopped, you won't be able to recover unsaved files."
-          }
-        },
-
-        monitoring: {
-          title: "Monitoring and optimization",
-          description: "Follow these best practices for optimal use:",
-          practices: {
-            expiration: {
-              title: "Monitor expirations",
-              description: "Regularly check expiration dates to avoid work loss."
-            },
-            backup: {
-              title: "Backup frequently",
-              description: "Download your important files or use Git repositories."
-            },
-            resources: {
-              title: "Manage resources",
-              description: "Only use the number of sessions necessary according to your subscription."
-            },
-            sync: {
-              title: "Synchronize regularly",
-              description: "Use synchronization if you suspect status issues."
-            }
-          }
-        },
-
         nextSteps: {
-          troubleshooting: {
-            title: "Troubleshooting",
-            description: "Solutions to common session management problems"
-          }
-        },
-
-        access: {
-          title: "Access Methods",
-          browser: {
-            title: "Browser Access",
-            description: "Direct access via the web interface. No installation required, works on any device with an internet connection."
-          },
-          ssh: {
-            title: "SSH Access",
-            description: "Connect using your favorite SSH client. Configure your SSH keys in the \"Terminal Keys\" section."
-          },
-          iframe: {
-            title: "Iframe Integration",
-            description: "Embed terminals in your own applications or educational platforms."
-          }
-        },
-
-        dashboardLayout: {
-          title: "Unified Dashboard Layout",
-          description: "The sessions dashboard organizes your terminals into two distinct sections for a clear overview of all your environments.",
-          activeSessions: {
-            title: "Active Sessions",
-            description: "Your running sessions are displayed prominently at the top with a count badge showing the total number of active terminals."
-          },
-          inactiveSessions: {
-            title: "Inactive Sessions",
-            description: "Stopped and expired sessions are grouped in a collapsible section that you can expand or collapse to keep your dashboard clean."
-          }
-        },
-
-        inlineRenaming: {
-          title: "Inline Session Renaming",
-          description: "You can rename your terminal sessions directly from the dashboard without opening any modal or settings page.",
-          howTo: {
-            title: "Rename a session",
-            description: "Click the <strong>pencil icon</strong> next to the session name, type the new name, and press <strong>Enter</strong> to save or <strong>Escape</strong> to cancel."
-          }
-        },
-
-        commandHistory: {
-          title: "Command History",
-          description: "Each terminal session maintains a detailed command history that you can browse, search, and export.",
-          search: {
-            title: "Search & Filter",
-            description: "Use the search bar to filter commands by keyword. Results update in real-time as you type."
-          },
-          sort: {
-            title: "Sort by Time",
-            description: "Commands are listed chronologically. Toggle between newest-first and oldest-first ordering."
-          },
-          export: {
-            title: "Export History",
-            description: "Download your command history in CSV or JSON format for documentation or auditing purposes."
-          },
-          clickToPaste: {
-            title: "Click to Paste",
-            description: "Click any command in the history to instantly paste it into the active terminal, ready for execution."
-          },
-          deleteAll: {
-            title: "Delete All History",
-            description: "The <strong>\"Delete all\"</strong> button clears the entire command history. A confirmation dialog prevents accidental deletion."
-          }
-        },
-
-        moreActions: {
-          title: "More Actions Dropdown",
-          description: "Each session card includes a \"More actions\" dropdown menu with additional operations.",
-          copyUrl: {
-            title: "Copy URL",
-            description: "Copy the direct terminal access URL to your clipboard for quick sharing or bookmarking."
-          },
-          copyIframe: {
-            title: "Copy Iframe Code",
-            description: "Generate and copy the iframe embed code for integrating the terminal into external websites or LMS platforms."
-          },
-          syncSession: {
-            title: "Sync Session",
-            description: "Manually synchronize the session status with the server to get the most up-to-date information."
-          }
-        },
-
-        statusIndicators: {
-          title: "Status Indicators",
-          description: "Each session displays a colored status dot for quick visual identification of its current state.",
-          active: {
-            title: "Active (green)",
-            description: "The session is running and ready to use. You can connect to the terminal immediately."
-          },
-          stopped: {
-            title: "Stopped (gray)",
-            description: "The session has been manually stopped. It can no longer be accessed but may still appear in your list."
-          },
-          expired: {
-            title: "Expired (red)",
-            description: "The session has reached its expiration time and was automatically terminated."
-          }
-        },
-
-        lastSyncTime: {
-          title: "Last Sync Time",
-          description: "A timestamp at the top of the dashboard shows when sessions were last synchronized with the server, helping you know how current the displayed information is.",
-          tip: {
-            title: "Tip",
-            description: "If the sync time seems outdated, click the global sync button to refresh all sessions at once."
-          }
-        },
-
-        expiryWarnings: {
-          title: "Expiry Countdown Warnings",
-          description: "While using the terminal viewer, notification banners appear as your session approaches its expiration time to help you save your work in time.",
-          tenMin: {
-            title: "10 minutes remaining",
-            description: "An informational banner appears at the top of the terminal viewer as a gentle reminder."
-          },
-          fiveMin: {
-            title: "5 minutes remaining",
-            description: "A warning banner prompts you to save your work and wrap up your current tasks."
-          },
-          oneMin: {
-            title: "1 minute remaining",
-            description: "A critical alert signals imminent session termination. Save all work immediately."
-          }
+          gettingStarted: "Create a session: environment, size, options.",
+          troubleshooting: "A session that will not start, a black terminal, a greyed button.",
+          scenarios: "Launch a guided exercise on top of a terminal."
         }
       },
 
       troubleshooting: {
-        title: "Terminal Troubleshooting",
-        intro: "Solutions to common problems and incident resolution guide",
-
-        quickDiagnosis: {
-          title: "Quick Diagnosis",
-          description: "Before looking for a specific solution, perform these basic checks:",
-          checks: {
-            internet: "Stable Internet connection",
-            browser: "Up-to-date browser (Chrome, Firefox, Safari, Edge)",
-            key: "Active terminal access key",
-            session: "Non-expired session",
-            blocker: "No ad/script blockers on the domain"
+        title: "Terminal troubleshooting",
+        intro: "The most common problems, what they mean, and what to do. Each item names the exact message or state you see on screen.",
+        cannotCreate: {
+          title: "The session will not start",
+          budget: {
+            title: "\"You've reached your plan's session limit\"",
+            description: "Your running sessions already use the whole CPU and RAM budget of your plan. The message tells you what you can still launch, if anything. Stop or destroy a session from My sessions, or pick a smaller size. Remember that a persistent session in the Stopped state does not count."
           },
-          actionsTitle: "Quick actions:",
-          syncButton: "Sync my sessions",
-          keyButton: "Check my access key"
-        },
-
-        commonProblems: {
-          connectionIssues: {
-            title: "Connection Problems"
+          locked: {
+            title: "A size or an option shows a padlock",
+            description: "It is not included in your plan, or the environment needs a bigger size. Hover the pill or the chip for the reason. On a personal plan, Unlock more power leads to the plans page; on a seat provided by an organisation, ask the person who manages your class or organisation."
           },
-          cannotCreateSession: {
-            title: "Cannot create a session",
-            causesTitle: "Possible causes:",
-            causes: {
-              cause1: "Missing or inactive terminal access key",
-              cause2: "Simultaneous session limit reached",
-              cause3: "Temporary server problem",
-              cause4: "Usage quota exceeded"
-            },
-            solutionsTitle: "Solutions:",
-            solutions: {
-              step1: {
-                title: "Check your access key:",
-                description: "Go to \"Terminal Access Keys\" and regenerate your key if necessary"
-              },
-              step2: {
-                title: "Close unused sessions:",
-                description: "Stop active sessions you're no longer using"
-              },
-              step3: {
-                title: "Wait and retry:",
-                description: "Wait a few minutes then try creating a new session"
-              }
-            }
+          capacity: {
+            title: "\"Server at capacity\" or \"Tight capacity — launch not guaranteed\"",
+            description: "The terminal server itself is short of resources; it is not about your plan. The capacity badge at the top right of the composer turns orange or red. Try again in a few minutes or choose a smaller size."
           },
-          blackScreen: {
-            title: "Terminal doesn't display or black screen",
-            causesTitle: "Possible causes:",
-            causes: {
-              cause1: "Active content blocker",
-              cause2: "WebSocket blocked by network/firewall",
-              cause3: "Expired or stopped session",
-              cause4: "Browser problem"
-            },
-            solutionsTitle: "Solutions:",
-            solutions: {
-              step1: {
-                title: "Disable blockers:",
-                description: "Whitelist the OCF domain in your extensions"
-              },
-              step2: {
-                title: "Try another browser:",
-                description: "Test with Chrome, Firefox or Edge in private mode"
-              },
-              step3: {
-                title: "Check session status:",
-                description: "Sync the session to confirm it's active"
-              }
-            }
+          offline: {
+            title: "\"Server … is offline\" or \"No environments available\"",
+            description: "The server hosting the environments does not answer. Click Retry in the composer; if the list stays empty, contact your administrator."
           },
-          keyboard: {
-            title: "Keyboard not responding or incorrect characters",
-            causesTitle: "Possible causes:",
-            causes: {
-              cause1: "Incorrect keyboard configuration",
-              cause2: "Conflict with browser shortcuts",
-              cause3: "High network delay",
-              cause4: "Lost focus on terminal"
-            },
-            solutionsTitle: "Solutions:",
-            solutions: {
-              step1: {
-                title: "Click in the terminal:",
-                description: "Make sure focus is on the terminal area"
-              },
-              step2: {
-                title: "Configure keyboard:",
-                description: "Use <code>sudo dpkg-reconfigure keyboard-configuration</code>"
-              },
-              step3: {
-                title: "Reload the page:",
-                description: "Refresh (F5) to restore the connection"
-              }
-            }
+          persistence: {
+            title: "\"Persistent sessions are not available on your current plan\"",
+            description: "Choose Discard when done in Advanced options, or move to a plan that allows persistent sessions."
           }
         },
-
-        performanceProblems: {
-          title: "Performance problems",
-          slowTerminal: {
-            title: "Slow or lagging terminal",
-            tip1: "Close unnecessary tabs/applications",
-            tip2: "Check your Internet connection",
-            tip3: "Reduce the number of connected users",
-            tip4: "Restart your browser"
-          },
-          freezing: {
-            title: "Freezing session",
-            tip1: "Avoid processes consuming a lot of memory",
-            tip2: "Kill blocked processes with <code>Ctrl+C</code>",
-            tip3: "Restart the session if necessary",
-            tip4: "Contact support if the problem persists"
-          },
-          disconnections: {
-            title: "Frequent disconnections",
-            tip1: "Check your network stability",
-            tip2: "Disable VPN if possible",
-            tip3: "Change network (4G/WiFi)",
-            tip4: "Use wired connection if available"
+        blackScreen: {
+          title: "The terminal stays black or says Disconnected",
+          description: "The session exists but the browser cannot keep its connection to it.",
+          steps: {
+            reconnect: "Click Reconnect in the terminal header; if the status goes back to Connected, you are done.",
+            blockers: "Disable ad blockers or privacy extensions for this site: they can cut the WebSocket the terminal relies on.",
+            reload: "Reload the page. Your session is unchanged: it lives on the server, not in the tab.",
+            expired: "Check the countdown. A session past its time shows \"This session has expired\" instead of a prompt; start a new one."
           }
         },
-
-        syncProblems: {
-          title: "Synchronization problems",
-          incorrectStatus: {
-            title: "Incorrect session status",
-            description: "Use the \"Sync\" button to update the status. If the problem persists, wait a few minutes and retry."
-          },
-          inconsistentDates: {
-            title: "Inconsistent expiration dates",
-            description: "Global synchronization (\"Sync all\") usually solves this problem. Also check your system's time zones."
-          },
-          syncErrors: {
-            title: "Synchronization errors",
-            description: "These errors are often temporary. Wait a few minutes and restart synchronization. Contact support if they persist."
-          }
+        keyboard: {
+          title: "Typing does nothing or produces the wrong characters",
+          description: "Click inside the black area first: the terminal only receives keys when it has the focus. If it still ignores you, check that the header reads Connected, and reload the page if it does not."
         },
-
+        shell: {
+          title: "\"The terminal shell could not start\"",
+          description: "The container image lacks the shell the platform expects, or it is not executable. This is an image problem, not yours: report it to your administrator with the environment name."
+        },
+        stopGreyed: {
+          title: "The Stop button is greyed",
+          description: "The session is ephemeral: there is no disk to keep, so Stop makes no sense. Use Destroy (the trash icon) to end it. To be able to stop and resume, create your next session with Keep my work in Advanced options."
+        },
+        packages: {
+          title: "Startup packages are ignored or the field is locked",
+          description: "Installing packages needs internet access. Set Internet access to Allow internet in Advanced options; if that choice is locked, your plan does not include it."
+        },
+        wrongState: {
+          title: "A card shows the wrong state",
+          description: "The list is a cached view. Click Sync all on My sessions, or Sync in the ⋮ menu of the card, to fetch the real state from the terminal server."
+        },
         support: {
-          whenToContact: {
-            title: "When to contact support",
-            description: "Contact our support team in these situations:",
-            critical: {
-              title: "Critical - Immediate contact",
-              item1: "Loss of important unsaved data",
-              item2: "Unauthorized access to your sessions",
-              item3: "Incorrect billing or unexpected charges",
-              item4: "Suspected security problem"
-            },
-            high: {
-              title: "Important - Contact within 24h",
-              item1: "Unable to create sessions for several days",
-              item2: "Persistent errors despite attempted solutions",
-              item3: "Widespread performance problems",
-              item4: "Sharing features not working"
-            },
-            normal: {
-              title: "Normal - General support",
-              item1: "Questions about using features",
-              item2: "Improvement requests or suggestions",
-              item3: "Help optimizing your usage",
-              item4: "Training or guidance"
-            }
-          },
-          infoToInclude: {
-            title: "Information to include in your request:",
-            username: "Your username and email",
-            dateTime: "Date and time of the problem",
-            detailedDescription: "Detailed description of steps taken",
-            browser: "Browser and version used",
-            os: "Operating system (Windows, Mac, Linux)",
-            screenshots: "Error screenshots (if possible)"
-          },
-          contactButton: "Contact Support"
-        },
-
-        prevention: {
-          title: "Prevention tips",
-          description: "Adopt these best practices to avoid problems:",
-          backup: {
-            title: "Backup",
-            tip1: "Regularly backup your important files",
-            tip2: "Use Git to version your code",
-            tip3: "Download critical data locally",
-            tip4: "Document your important configurations"
-          },
-          timeManagement: {
-            title: "Time management",
-            tip1: "Monitor your session expiration dates",
-            tip2: "Extend active sessions before expiration",
-            tip3: "Plan your work according to time limits",
-            tip4: "Stop unused sessions"
-          },
-          security: {
-            title: "Security",
-            tip1: "Never share your access keys",
-            tip2: "Revoke shares as soon as they're no longer needed",
-            tip3: "Regularly check granted access",
-            tip4: "Use strong passwords for your accounts"
-          },
-          maintenance: {
-            title: "Maintenance",
-            tip1: "Keep your browser up to date",
-            tip2: "Clear cache regularly",
-            tip3: "Sync your sessions frequently",
-            tip4: "Monitor your resource usage"
-          }
-        },
-
-        resources: {
-          title: "Additional resources",
-          gettingStarted: {
-            title: "Getting started guide",
-            description: "Back to basics for optimal configuration"
-          },
-          managingSessions: {
-            title: "Managing sessions",
-            description: "Optimize your terminal session usage"
-          }
-        }
-      },
-      sshKeys: {
-        title: "SSH Key Management",
-        intro: "Manage your terminal access keys to connect to terminal sessions securely.",
-        overview: {
-          title: "What are Terminal Access Keys?",
-          description: "Terminal access keys are credentials that authenticate you when connecting to terminal sessions. Each key is unique to your account and grants access to create and join terminal sessions on the platform.",
-          requirement: "You need an active terminal access key to create or connect to any terminal session. Without a key, terminal features will be unavailable."
-        },
-        regenerate: {
-          title: "Creating or Regenerating a Key",
-          description: "You can generate a new terminal access key from the Terminal Access Keys page. If you already have a key, regenerating will replace it.",
-          step1: {
-            title: "Navigate to Terminal Access Keys",
-            description: "Go to the Terminal Access Keys page from the settings menu or the main navigation."
-          },
-          step2: {
-            title: "Click Regenerate Key",
-            description: "Press the \"Regenerate key\" button. A confirmation dialog will appear to verify your intent."
-          },
-          step3: {
-            title: "Confirm the Action",
-            description: "Confirm the regeneration in the modal dialog. Your new key will be generated immediately and become active."
-          },
-          warning: {
-            title: "Important",
-            description: "Regenerating your key will immediately invalidate your previous key. Any sessions authenticated with the old key may be affected. Only regenerate when necessary."
-          }
-        },
-        details: {
-          title: "Key Details",
-          description: "Your terminal access key page displays the following information about your current key.",
-          keyId: {
-            title: "Key ID",
-            description: "A unique identifier for your terminal access key. This is used internally to track and manage your key."
-          },
-          keyName: {
-            title: "Key Name",
-            description: "A descriptive name for your key, usually auto-generated based on your account information."
-          },
-          status: {
-            title: "Status",
-            description: "Indicates whether your key is active or inactive. An active key (shown with a green badge) allows terminal access. An inactive key (shown with a red badge) must be regenerated."
-          }
-        },
-        security: {
-          title: "Security Best Practices",
-          description: "Follow these guidelines to keep your terminal access secure.",
-          keepSecure: {
-            title: "Keep Your Key Secure",
-            description: "Your terminal access key grants access to terminal sessions on your behalf. Treat it like a password and do not expose it unnecessarily."
-          },
-          noShare: {
-            title: "Never Share Your Key",
-            description: "Do not share your terminal access key with others. Each user should have their own key. Sharing keys can lead to unauthorized access and session conflicts."
-          },
-          regenerateIfCompromised: {
-            title: "Regenerate if Compromised",
-            description: "If you suspect your key has been compromised or accessed by someone else, regenerate it immediately to invalidate the old key."
-          }
-        },
-        troubleshooting: {
-          title: "Troubleshooting",
-          description: "Common issues with terminal access keys and how to resolve them.",
-          noKey: {
-            title: "No key found (empty state)",
-            description: "If the page shows \"No terminal key found\", you need to generate your first key. Click the \"Regenerate key\" button to create one. This is normal for new accounts."
-          },
-          inactive: {
-            title: "Key is inactive",
-            description: "An inactive key (red badge) means your key has been deactivated. This can happen due to administrative actions or policy changes. Try regenerating your key. If the issue persists, contact your administrator."
-          },
-          lost: {
-            title: "Lost or forgotten key",
-            description: "If you have lost access to your key or cannot remember it, simply regenerate a new one from the Terminal Access Keys page. The old key will be invalidated and a new one will take its place."
+          title: "Asking for help",
+          description: "If none of this works, use the Feedback button at the bottom right of every page, or contact your trainer or administrator. Give them:",
+          items: {
+            session: "the session ID shown under the terminal (Session: …),",
+            when: "what you did and the exact message on screen,",
+            browser: "your browser and operating system."
           }
         },
         nextSteps: {
-          gettingStarted: {
-            title: "Getting Started with Terminals",
-            description: "Learn how to create and use your first terminal session"
-          },
-          troubleshooting: {
-            title: "Terminal Troubleshooting",
-            description: "Solutions to common terminal problems and issues"
-          },
-          settings: {
-            title: "Settings & Preferences",
-            description: "Configure your account settings and preferences"
-          }
+          gettingStarted: "How a session is created, step by step.",
+          managing: "The My sessions page and the My usage panel."
+        }
+      },
+
+      sshKeys: {
+        title: "SSH keys and terminal access key",
+        intro: "Terminal sessions need no key from you: they open in the browser and your access key is created with your account. This page explains the two key-related settings you may still meet.",
+        terminalKey: {
+          title: "Your terminal access key",
+          description: "The platform identifies you to the terminal server with an access key. It is generated automatically when your account is created (and again, if it is missing, when a trainer launches a scenario for your class). You never have to type it.",
+          page: "Settings › Terminal access keys shows the key's name, status and creation date. Regenerate key replaces it after a confirmation; only do it if an administrator asks you to, or if the page says No terminal key found."
+        },
+        sshKeys: {
+          title: "SSH keys",
+          description: "Settings › SSH keys stores private SSH keys under a name. They are not used to open terminal sessions on the platform. The page only exists when your administrator has enabled the feature.",
+          shot: "The SSH keys settings page, empty, with the Add an SSH key button.",
+          add: "Add an SSH key — give it a name and paste the private key (the text starting with -----BEGIN OPENSSH PRIVATE KEY-----). It is encrypted before being stored; the platform never shows it again.",
+          edit: "The pencil renames a key; you cannot change its content, add a new one instead.",
+          delete: "The trash deletes a key after a confirmation."
+        },
+        nextSteps: {
+          gettingStarted: "Create your first session, no key required.",
+          settings: "The other settings pages: navigation, language, interface, notifications, security."
         }
       }
     },
@@ -1901,419 +1359,136 @@ export const helpEn = {
 
     scenarios: {
       gettingStarted: {
-        title: "Getting Started with Interactive Scenarios",
-        intro: "Interactive scenarios are guided, step-by-step lab exercises that run on real Linux terminals. Follow instructions, execute commands, and get instant feedback on your progress.",
-
-        whatAre: {
-          title: "What are Interactive Scenarios?",
-          description: "Interactive scenarios are guided exercises that walk you through real-world tasks step by step. Each scenario runs on a real Linux terminal — you follow instructions, execute commands, and the system verifies your work automatically. Scenarios cover topics like installing software, configuring services, writing scripts, and more."
+        title: "Getting started with scenarios",
+        intro: "A scenario is a guided exercise: a real Linux machine on one side, instructions on the other, and a Verify button that checks your work step after step. This page follows a scenario from the catalogue to your history.",
+        catalogue: {
+          title: "The Scenarios catalogue",
+          description: "Open Scenarios › Scenarios. Each card is a scenario you can run: the ones assigned to you by your class or organisation, and public ones. The search box filters by title.",
+          shot: "The catalogue: three scenario cards with their difficulty, duration, image and size badges, and a Launch button on each.",
+          card: "A card shows the difficulty (Beginner, Intermediate, Advanced), the estimated duration, the image it runs on and the machine size it needs. Hover a badge for details.",
+          language: "A scenario offered in several languages shows a Language selector above its button. Choose before launching: the machine is built in that language and cannot be rebuilt afterwards.",
+          unavailable: "A greyed card with an Unavailable notice cannot be launched right now, and says why: the size it needs is not in your plan, your running sessions use all your capacity, the server is offline, or no compatible image exists. The notice's second line tells you what would unblock it."
         },
-
-        starting: {
-          title: "Starting a Scenario",
-          description: "Follow these steps to launch your first interactive scenario.",
-          step1: {
-            title: "Open the Scenario Launcher",
-            description: "Navigate to the <strong>Scenarios</strong> section in the menu. You will see a list of scenarios available to you — the list is filtered to the ones assigned to your organization or group.",
-            button: "My Terminal Sessions"
-          },
-          step2: {
-            title: "Browse and Select a Scenario",
-            description: "Browse the available scenarios. Each one displays its <strong>title</strong>, <strong>difficulty badge</strong> (beginner, intermediate, or advanced), and <strong>estimated completion time</strong>. Click <strong>\"Start\"</strong> on the scenario you want to work on."
-          },
-          step3: {
-            title: "Environment Provisioning",
-            description: "The platform automatically provisions the right environment for that scenario — the correct distribution and size are selected for you. A provisioning overlay is shown while your environment is being prepared. You do not need to compose a session manually."
-          },
-          step4: {
-            title: "The Scenario Panel Opens",
-            description: "Once ready, a <strong>panel opens on the right side</strong> of your terminal. This panel contains the instructions for your current step, and the terminal remains fully usable on the left."
-          },
-          tip: {
-            title: "Tip",
-            description: "If you already have a running scenario session, you can resume it directly from the scenario launcher — no need to recreate it."
-          }
+        launch: {
+          title: "Launching",
+          description: "Click Launch. A full-screen overlay follows the three preparation phases: creating your terminal, installing packages and configuring the environment, running the scenario's setup scripts. It usually takes under a minute; Cancel is available if you change your mind.",
+          budget: "A scenario session is a terminal session: it counts against the same CPU and RAM budget as the sessions you create by hand, and appears in My sessions like any other.",
+          existing: "If you already have a run of this scenario in progress, the card says Scenario in progress and its button becomes Resume. A finished run turns the button into Relaunch, next to Review."
         },
-
-        panel: {
-          title: "The Scenario Panel",
-          description: "The scenario panel is your guide throughout the exercise. Here is what you will find in it.",
-          progress: {
-            title: "Step Progress",
-            description: "Progress dots at the bottom of the panel show your advancement. Completed steps appear green, the current step pulses blue, and upcoming steps are gray."
-          },
-          content: {
-            title: "Step Content",
-            description: "Each step's instructions are rendered in rich markdown format, including headings, code blocks, images, and lists. Read the instructions carefully before executing commands."
-          },
-          collapse: {
-            title: "Collapse / Expand",
-            description: "Click the circular toggle button on the left edge of the panel to collapse or expand it. This gives you more terminal space when you need it."
-          },
-          tip: {
-            title: "Tip",
-            description: "The panel remembers your collapse preference across sessions, so it will stay the way you left it next time."
-          }
+        player: {
+          title: "The player",
+          description: "Once ready, you land on the session view in scenario mode: the terminal on the left, the step panel on the right, and a resizable divider between them.",
+          shot: "The player: the briefing at the top, the terminal on the left with its Stop and Destroy buttons, the step panel on the right with Verify and Reset step, and the progress dots at the bottom.",
+          briefing: "The Scenario briefing card at the top is the scenario's introduction. Close it with the button under it; the Scenario briefing toggle in the top bar brings it back.",
+          terminal: "The terminal behaves exactly like a standalone session: recording notice, connection status, remaining time, Stop (persistent sessions only) and Destroy. Under it, Command history, and Flags found when the scenario uses flags.",
+          panel: "The step panel shows the current step's title and instructions. Some commands in the instructions are clickable: a click pastes the command into the terminal. At the bottom, Step n / total and one dot per step show where you are; earlier steps can be reopened to reread them, then Back to current step.",
+          abandon: "Abandon scenario, top right, ends the run for good after a confirmation. The session is kept in your history as Abandoned; you can start a fresh run from the catalogue."
         },
-
-        verifying: {
-          title: "Verifying Your Work",
-          description: "After completing the instructions for a step, you can verify that everything is set up correctly.",
-          click: {
-            title: "Click Verify",
-            description: "Click the <strong>\"Verify\"</strong> button at the bottom of the step instructions. The system will run a verification script on your terminal in the background."
-          },
-          result: {
-            title: "Review the Result",
-            description: "After a few seconds, you will see feedback indicating whether the verification <strong>passed</strong> or <strong>failed</strong>, along with any output from the verification script."
-          },
-          passed: {
-            title: "Passed",
-            description: "A green success message appears with the script output. The scenario automatically advances to the next step after a short animation."
-          },
-          failed: {
-            title: "Failed",
-            description: "A red error message appears explaining what went wrong. Review the output, fix the issue in your terminal, and try verifying again."
-          },
-          tip: {
-            title: "Tip",
-            description: "You can verify as many times as you need — there is no penalty for retrying. Take your time to get each step right."
-          }
+        stepTypes: {
+          title: "The four kinds of step",
+          terminal: "Terminal — do something in the machine, then click Verify. A script checks the result; if it is not right yet, the panel says so and you try again.",
+          info: "Reading — text only, no exercise. Click I've read this, next to move on.",
+          flag: "Flag — the step asks for an answer: a token hidden somewhere in the machine, or a word you work out. Type it in the field and Submit. Validated flags appear in the Flags found panel under the terminal.",
+          quiz: "Quiz — one or more questions: multiple choice, multi-answer, true/false or free text. Answer them all, then Submit answers. Depending on the scenario you see either just your score, or the correct answers with an explanation. You may retake the quiz, then Next step or Finish scenario."
         },
-
-        hints: {
-          title: "Using Hints",
-          description: "Some steps include hints to help you if you get stuck.",
-          show: {
-            title: "Show a Hint",
-            description: "If a step has a hint available, you will see a <strong>\"Show Hint\"</strong> button. Click it to reveal additional guidance displayed in a highlighted box."
-          },
-          hide: {
-            title: "Hide the Hint",
-            description: "Click <strong>\"Hide Hint\"</strong> to close the hint box and return to just the step instructions."
-          }
+        help: {
+          title: "When you are stuck",
+          hints: "Hints, when the step has some, are revealed one level at a time with Show Hint 1, Show Hint 2… The counter reads Hints: used/total. Your trainer can see how many hints you used.",
+          reset: "Reset step rebuilds the machine for the current step only, keeping what earlier steps did. Use it when you have made the step impossible to finish (a deleted file, a broken service). It asks for a confirmation.",
+          preparing: "Between two steps the panel may show Preparing the next step… while it installs what the step needs. If it fails, the panel says so plainly: it is not part of the exercise. Click Restart preparation; if it keeps failing, tell your trainer.",
+          crashTraps: "Some challenge scenarios arm crash traps: a crashed container ends the run and resets your progress, and the session is always ephemeral. The scenario's briefing says so."
         },
-
-        ctf: {
-          title: "CTF Flag Challenges",
-          description: "Some scenarios include Capture The Flag (CTF) style challenges that test your skills in a gamified way.",
-          find: {
-            title: "Find the Flag",
-            description: "Instead of a Verify button, CTF steps display a <strong>flag input field</strong>. Complete the exercise and look for a flag in the format <strong>FLAG{'{'} ...{'}'}</strong> somewhere in the system."
-          },
-          submit: {
-            title: "Submit the Flag",
-            description: "Type or paste the flag you found into the input field and click <strong>\"Submit Flag\"</strong>. A green message confirms a correct flag, while a red message means it is incorrect — you can try again."
-          },
-          unique: {
-            title: "Unique Per Learner",
-            description: "Each learner receives <strong>unique flags</strong> generated specifically for their session. Sharing flags with others will not work, as they are cryptographically bound to each individual learner."
-          },
-          tip: {
-            title: "Tip",
-            description: "Flags are generated uniquely for each learner using cryptographic hashing, so you must find your own. Look carefully in the exercise environment — flags can be hidden in files, command outputs, or service configurations."
-          }
+        endings: {
+          title: "How a run ends",
+          completed: "Completed — after the last step, the panel shows Scenario completed with your results: steps done and time spent. The terminal stays open until it expires or you destroy it.",
+          abandoned: "Abandoned — you clicked Abandon scenario, in the player or in your history.",
+          expired: "Expired — the terminal reached its time limit before the last step. Launch the scenario again to start over."
         },
-
-        codeBlocks: {
-          title: "Code Blocks",
-          description: "Scenario instructions often contain code blocks. These come with convenient action buttons when you hover over them.",
-          copy: {
-            title: "Copy to Clipboard",
-            description: "Hover over a code block and click the copy button (top-right corner) to copy the code to your clipboard."
-          },
-          execute: {
-            title: "Paste into Terminal",
-            description: "For single-line commands, a terminal button appears (bottom-right corner). Click it to paste the command directly into your active terminal."
-          }
+        history: {
+          title: "Your scenario history",
+          description: "Scenarios › Scenario history lists every run, grouped by scenario, with tabs All, Active, Completed and Abandoned. A card shows the progress (steps validated / total), the start date and, when the scenario grades, your grade.",
+          shot: "Scenario history: two runs of the same scenario, one Active with Resume and Abandon, one Abandoned with Review.",
+          resume: "Resume reopens the player of an active run.",
+          review: "Review opens a finished run read-only: the terminal is gone, but the steps and your command history are still there.",
+          abandon: "Abandon ends an active run without opening it. This cannot be undone."
         },
-
-        abandoning: {
-          title: "Abandoning a Scenario",
-          description: "If you need to stop working on a scenario before completing it, you can abandon your current attempt.",
-          click: {
-            title: "Click Abandon",
-            description: "At the top of the session page, to the right of the <strong>\"Back to My Sessions\"</strong> link, click the <strong>\"Abandon Scenario\"</strong> button."
-          },
-          confirm: {
-            title: "Confirm Abandonment",
-            description: "A confirmation dialog will appear. Confirm your choice to mark the session as <strong>abandoned</strong>."
-          },
-          warning: {
-            title: "Warning",
-            description: "You can start a new attempt later, but your current progress will be lost. Make sure you really want to abandon before confirming."
-          }
-        },
-
-        completing: {
-          title: "Completing a Scenario",
-          description: "Once you pass all the steps in a scenario, you have completed it.",
-          finish: {
-            title: "Completion Screen",
-            description: "After passing the final step, a <strong>completion screen with a trophy icon</strong> appears, congratulating you on finishing the scenario."
-          },
-          history: {
-            title: "View Your History",
-            description: "Click <strong>\"View my scenarios\"</strong> to see your scenario history, including completed, active, and abandoned sessions.",
-            button: "My Scenarios"
-          }
-        },
-
         nextSteps: {
-          description: "Continue learning with these related guides."
+          terminals: "How the terminal under a scenario works.",
+          managing: "Where a scenario session appears among your other sessions.",
+          creation: "For trainers: build your own scenarios."
         }
       },
 
       creation: {
-        title: "Creating Interactive Scenarios",
-        intro: "Learn how to build engaging, step-by-step interactive exercises for your learners with real terminal environments, verification scripts, and CTF challenges.",
-
-        overview: {
-          title: "Overview",
-          description: "As a trainer, you can create interactive scenarios that guide learners through real-world exercises. Each scenario consists of ordered steps with instructions, verification scripts, and optional hints. Scenarios run on real Linux containers matching a chosen distribution, giving learners a hands-on experience."
+        title: "Creating scenarios",
+        intro: "As a trainer you build scenarios in the Scenario Editor: a scenario node, steps chained one after the other, and for each step the text the learner reads and the scripts that prepare and check it. This page walks the editor and the import, archive and health tools around it.",
+        access: {
+          title: "Who can open the editor",
+          description: "Scenarios › Scenario Editor is available to managers and owners of an organisation or a class, and to platform administrators. A learner who follows the link is sent back to their sessions.",
+          shot: "The catalogue as a trainer sees it: the scenarios of the organisation, ready to launch, with the language selector on the multilingual one."
         },
-
-        creating: {
-          title: "Creating a Scenario",
-          description: "Follow these steps to create a new interactive scenario.",
-          step1: {
-            title: "Navigate to Scenarios",
-            description: "Go to <strong>Admin > Scenarios</strong> in the administration panel to access the scenario management page.",
-            button: "Go to Scenarios"
-          },
-          step2: {
-            title: "Fill in Scenario Details",
-            description: "Click <strong>\"Create\"</strong> and fill in the scenario details: <strong>title</strong>, <strong>description</strong>, <strong>difficulty level</strong> (beginner, intermediate, or advanced), and <strong>estimated completion time</strong> in minutes."
-          },
-          step3: {
-            title: "Choose the Distribution",
-            description: "Select the <strong>distribution</strong> (Linux image) that learners' environments will use for this scenario. This determines the operating system and pre-installed tools available during the exercise. Launching the scenario automatically provisions the right environment — learners do not need to pick a size or features themselves."
-          },
-          tip: {
-            title: "Tip",
-            description: "Choose a descriptive title — learners see this when picking a scenario from the list. A good title clearly indicates what the exercise covers."
-          }
+        layout: {
+          title: "The editor at a glance",
+          description: "The page has three areas. Left, the Nodes library: drag a node type onto the canvas, or click it to add one at the centre. Centre, the canvas: nodes and the links between them. Right, a foldable list of every scenario and its steps, from which you can drag steps of other scenarios into yours as templates.",
+          header: "The top bar holds the scenario selector, Create New, the language selector when the scenario is multilingual, a node and link counter, Play as learner, Reset layout, Save changes and a ⋮ menu with the export, copy, archive and import actions.",
+          readOnly: "A scenario you may not edit (a platform scenario, or one from another organisation) opens read-only, with a banner. Copy to organization in the ⋮ menu makes an editable copy of it in one of yours."
         },
-
+        scenario: {
+          title: "Create a scenario",
+          description: "Click Create New. The scenario dialog has tabs:",
+          general: "General — name, title, difficulty, estimated time, description, and Where to create: an organisation, one of your classes (the scenario is then assigned to that class automatically), or the platform for administrators.",
+          content: "Content — Markdown texts: the introduction shown before the first step (the briefing), the completion text, the objectives and the prerequisites.",
+          setup: "Setup — the global setup script, run once when the learner's terminal is created, before step 1. Use it to install packages and lay out files.",
+          options: "Options — the machine size the scenario runs at, the container hostname, the OS type, and three switches: Enable CTF flags, Enable crash traps (challenge mode: every flag is deployed at start and a crash resets progress), and Public, which offers the scenario to every user.",
+          languages: "Languages — the language the scenario is written in, and the other languages you offer it in. Ticking a second language turns on the translation editor: a language selector appears in the top bar and in each dialog, with a coverage indicator, and you translate titles and texts language by language. Scripts are shared by all languages.",
+          vocabulary: "Vocabulary — available once the scenario is saved. It names the objects a script refers to (a file, a directory, a service) so that one script works in every language: translate the names here, not the scripts."
+        },
         steps: {
-          title: "Adding Steps",
-          description: "Each scenario is composed of ordered steps. Create and configure them individually.",
-          step1: {
-            title: "Navigate to Scenario Steps",
-            description: "Go to <strong>Admin > Scenario Steps</strong> in the administration panel.",
-            button: "Go to Scenario Steps"
-          },
-          step2: {
-            title: "Create a Step",
-            description: "Create a new step linked to your scenario. Each step has the following fields:",
-            fieldTitle: "<strong>Title</strong> — displayed in the step header, should be concise and descriptive",
-            fieldText: "<strong>Text Content</strong> — markdown instructions shown to the learner (supports headings, code blocks, images, and lists)",
-            fieldHint: "<strong>Hint</strong> — optional markdown text revealed when the learner clicks \"Show Hint\"",
-            fieldVerify: "<strong>Verify Script</strong> — a shell script that exits with code 0 on success (this is the core of the exercise verification)",
-            fieldBackground: "<strong>Background Script</strong> — optional script executed in the background when the step starts",
-            fieldForeground: "<strong>Foreground Script</strong> — optional script executed in the foreground when the step starts",
-            fieldOrder: "<strong>Order</strong> — a number determining the step sequence (0-based, lower numbers come first)"
-          },
-          step3: {
-            title: "Set the Correct Order",
-            description: "Make sure each step has the correct <strong>order value</strong> so that steps are presented to learners in the right sequence. Steps are sorted by their order number (starting from 0)."
-          },
-          tip: {
-            title: "Tip",
-            description: "Write verify scripts that check the actual state of the system — for example, whether a package is installed, a file exists, or a service is running. The exit code (0 for success, non-zero for failure) determines whether the step passes or fails."
-          }
+          title: "Add steps",
+          description: "Drag a step type from the library onto the canvas, or hover a link and click its + to insert a step between two others. Four types exist; the type decides which tabs the step dialog shows.",
+          terminal: "Terminal — the learner works in the machine and clicks Verify. Tabs: Content, Hints, Verify, Background, Foreground, Effects.",
+          info: "Info — text to read, nothing to do. Tabs: Content, Effects.",
+          flag: "Flag — the learner submits an answer. Tabs: Content, Hints, Background, Effects, plus the flag path and level.",
+          quiz: "Quiz — questions. Tabs: Content, Hints, Questions, Effects."
         },
-
-        verifyScripts: {
-          title: "Writing Good Verify Scripts",
-          description: "A verify script is a shell command that returns exit code 0 if the learner has completed the step correctly, and a non-zero exit code otherwise. Here are some common examples.",
-          checkPackage: {
-            title: "Check Package Installed"
-          },
-          checkFile: {
-            title: "Check File Exists"
-          },
-          checkService: {
-            title: "Check Service Running"
-          },
-          checkContent: {
-            title: "Check File Content"
-          },
-          warning: {
-            title: "Important",
-            description: "Verify scripts are never shown to learners. They run server-side on the learner's terminal with a 10-second timeout. Make sure your scripts complete quickly and produce clear output on failure."
-          }
+        stepDialog: {
+          title: "Fill in a step",
+          content: "Content — the title and the instructions, in Markdown. A command tagged with the KillerCoda exec marker — the command in backticks, immediately followed by the word exec in double braces — becomes click-to-paste in the player.",
+          hints: "Hints — the progressive hints, revealed level by level. Separate levels with ### Hint 1, ### Hint 2 headings (or ### Indice 1 in French); a hint text with no heading is a single level.",
+          verify: "Verify — a shell script run in the container when the learner clicks Verify. Exit code 0 validates the step; anything else keeps the learner on it. Print what you check: the output helps them.",
+          background: "Background — a script run in the container when the learner reaches the step, in the background: start a service, plant a file, break something on purpose.",
+          foreground: "Foreground — commands typed into the learner's live shell when they reach the step, as if they had typed them. Keep it short; they see it happen.",
+          flag: "Flag steps — tick Has flag and give a Flag path: when the learner reaches the step, a FLAG token unique to their session, is written to that file in the container, and the step is validated when they submit it. Flag level is a free number kept with the step.",
+          questions: "Questions — for a quiz: add questions, pick a type (multiple choice, multi-answer, true/false, free text), mark the correct options, optionally give points and an explanation. Show feedback after submission switches the quiz from exam mode (score only) to learning mode (answers and explanations shown).",
+          effects: "Effects — an intro effect drawn in the terminal when the learner arrives on the step, and an outro effect once they validate it, each with a short text. Purely visual."
         },
-
-        ctf: {
-          title: "CTF Flag Challenges",
-          description: "Add a gamification layer to your scenarios with Capture The Flag challenges.",
-          enable: {
-            title: "Enable Flags on the Scenario",
-            description: "When creating or editing a scenario, enable the <strong>\"Flags Enabled\"</strong> option to activate CTF mode for this scenario."
-          },
-          markSteps: {
-            title: "Mark Steps as Flag Steps",
-            description: "For individual steps, enable the <strong>\"Has Flag\"</strong> option. Those steps will display a flag input field instead of a Verify button."
-          },
-          unique: {
-            title: "Unique Flags Per Learner",
-            description: "Flags are generated using <strong>HMAC-SHA256</strong> and are unique per learner — it is impossible for learners to share answers. The flag format is <strong>FLAG{'{'} 16-hex-characters {'}'}</strong>."
-          },
-          tip: {
-            title: "Tip",
-            description: "CTF flags add a competitive, gamified element to your exercises. Use them for bonus challenges, security-focused exercises, or competitive training sessions."
-          }
+        chaining: {
+          title: "Chain the steps and save",
+          description: "Steps run in one direction, from the scenario node to the last step. Draw a link from a step's output to the next step's input; a step can lead to only one next step and the chain cannot loop. Steps left unconnected are appended at the end when you save, with a warning naming them. Save changes writes the order; Reset layout only rearranges the canvas.",
+          reorder: "To move a step, delete its links and draw new ones, or drop it on a link: the editor rewires the chain around it."
         },
-
-        challengeMode: {
-          title: "Challenge Mode (Crash Traps)",
-          description: "Challenge mode enables advanced exam-style scenarios where the entire environment is provisioned at once — with password-gated user accounts, sabotaged configurations, and crash traps that destroy the machine on careless actions.",
-          enable: {
-            title: "Enable Challenge Mode",
-            description: "When creating a scenario, enable the <strong>\"Crash Traps\"</strong> option. This activates challenge mode, which changes how the scenario is provisioned."
-          },
-          howItWorks: {
-            title: "How It Works",
-            description: "In challenge mode, the scenario engine works differently from standard step-by-step scenarios:",
-            standard: "<strong>Standard mode</strong>: flags are deployed one at a time as the learner advances through steps. Each step's background script sets up only that step.",
-            challenge: "<strong>Challenge mode</strong>: ALL flags are bundled into a configuration file and pushed to the container at session start. The first step's background script is a full setup script that provisions the entire environment at once — creating users, installing traps, placing all flags."
-          },
-          whyNeeded: {
-            title: "Why a Separate Mode?",
-            description: "Challenge scenarios use <strong>flag-as-password gating</strong>: each level's flag becomes the password for the next Linux account (e.g., finding FLAG_L0 lets you <code>su - level1</code>). This requires ALL flags to exist at container creation time to set all account passwords. Deploying flags one at a time would make it impossible to create the accounts with the right passwords."
-          },
-          setupScript: {
-            title: "The Setup Script",
-            description: "In challenge mode, <strong>step 0's background script</strong> serves as the full provisioning script. It reads <code>/etc/challenge/config.json</code> (automatically pushed by the platform with all generated flags) and sets up the entire environment: user accounts, traps, sabotaged configurations, and flag placements."
-          },
-          crashTraps: {
-            title: "Crash Traps",
-            description: "Crash traps are mechanisms built into the container that <strong>destroy the machine</strong> when the learner performs a careless action (e.g., running <code>sudo</code> without checking aliases, deleting a system file instead of editing it). The learner loses all progress and must start a new session — this is the rogue-lite mechanic that teaches <strong>\"understand before you act\"</strong>."
-          },
-          naming: {
-            title: "Important: Flag File Naming",
-            description: "If your challenge uses LD_PRELOAD or other file-hiding mechanisms, make sure flag filenames do <strong>not</strong> contain the words \"flag\" or \"FLAG\" — hidden files with these patterns become invisible in directory listings. Use neutral names like <code>.the_key</code> or <code>level1_key.txt</code> instead."
-          },
-          tip: {
-            title: "Tip",
-            description: "Challenge mode scenarios are complex to build. Start with the setup script (test it manually in a container), then wrap it as step 0's background script and seed the scenario. The platform handles flag generation, config injection, and terminal user switching automatically."
-          }
+        preview: {
+          title: "Play it as a learner",
+          description: "Play as learner provisions a real terminal (it counts against your own session limit) and opens the player exactly as a learner sees it. Walk through the steps, then destroy the session. Edits made while a run is in progress do not change that run: start a new preview."
         },
-
-        killercoda: {
-          title: "KillerCoda Compatibility",
-          description: "OCF supports the KillerCoda index.json format for scenario import, making it easy to migrate existing content.",
-          layout: "The standard KillerCoda directory layout is supported: index.json for metadata, intro.md and finish.md for introduction and conclusion text, and step directories (step1/, step2/, etc.) containing text.md for instructions and verify.sh for verification scripts.",
-          info: {
-            title: "Note",
-            description: "Git-based import is planned for a future release. For now, you can import scenarios via the admin panel or the CLI seed script."
-          }
+        importExport: {
+          title: "Import and export",
+          description: "Importing happens from the Scenarios tab of an organisation or of a class, not from the editor. Two formats:",
+          killercoda: "Import KillerCoda — a .zip or .tar.gz archive (10 MB max) laid out like a KillerCoda scenario: an index.json, one directory per step with its text and scripts, assets. Hints written with ### Hint n headings become hint levels; an optional extensions.json per step declares the step type and quiz questions.",
+          json: "Import JSON — a .json file (5 MB max) exported from OCF with Export JSON. It must contain a title and steps. Importing a scenario that already exists in the organisation updates it.",
+          export: "Export as JSON and Export as KillerCoda archive, in the editor's ⋮ menu and on the organisation's Scenarios tab, download the scenario in either format: to back it up, move it to another organisation, or edit it in a text editor."
         },
-
-        uploadAdmin: {
-          title: "Importing via Admin Panel",
-          description: "The easiest way to import a KillerCoda-compatible scenario is through the admin panel.",
-          step1: {
-            title: "Prepare your archive",
-            description: "Package your scenario directory as a <strong>.zip</strong> or <strong>.tar.gz</strong> file. The archive must contain an <strong>index.json</strong> file at the root (or one level deep)."
-          },
-          step2: {
-            title: "Open the import modal",
-            description: "Navigate to <strong>Admin > Scenarios</strong> and click the <strong>\"Import KillerCoda\"</strong> button at the top of the page.",
-            button: "Go to Scenarios"
-          },
-          step3: {
-            title: "Upload the archive",
-            description: "Drag and drop your archive file onto the upload area, or click to select it. The file must be under <strong>10 MB</strong>. Click <strong>\"Import\"</strong> to start the upload."
-          },
-          upsert: {
-            title: "Update behavior",
-            description: "If a scenario with the same name already exists, it will be updated with the new content. Active sessions and flag secrets are preserved."
-          }
+        archive: {
+          title: "Archive a scenario",
+          description: "Archive, in the editor's ⋮ menu or on the Scenarios tab, withdraws a scenario without deleting it: it is no longer offered to learners, assignable or launchable, but past results keep it in their history and runs in progress finish normally. Restore brings it back at any time. Delete, on the Scenarios tab, removes it for good."
         },
-
-        seeding: {
-          title: "Seeding & Updating Scenarios (CLI)",
-          description: "Use the seed-scenario.sh script to import or update a scenario from a KillerCoda-compatible directory. This is the fastest way to bulk-load scenario content.",
-          usage: {
-            title: "Usage",
-            description: "Run the script from the <strong>challenges/</strong> directory:",
-            command: "./seed-scenario.sh &lt;scenario-dir&gt; [api-url] [auth-token]",
-            example: "./seed-scenario.sh ./gameshell-basics http://localhost:8080 \"eyJhbGci...\""
-          },
-          token: {
-            title: "Getting an Auth Token",
-            description: "You need a valid JWT token. Get one by logging in via the API:",
-            command: "curl -s -X POST http://localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' -d '{'{'}\"email\":\"your{'@'}email.com\",\"password\":\"yourpassword\"{'}'}' | python3 -c \"import json,sys; print(json.load(sys.stdin)['access_token'])\"",
-            altDescription: "Or copy it from your browser DevTools (Network tab, any API request, Authorization header)."
-          },
-          upsert: {
-            title: "Create or Update",
-            description: "The seed endpoint uses upsert logic: if a scenario with the same name already exists, it updates the content (steps, scripts, text) while preserving the flag secret so active sessions remain valid. If it doesn't exist, a new scenario is created."
-          },
-          envVar: {
-            title: "Tip",
-            description: "Set the <strong>OCF_AUTH_TOKEN</strong> environment variable to avoid passing the token every time: <code>export OCF_AUTH_TOKEN=\"eyJhbGci...\"</code>"
-          }
+        health: {
+          title: "Scenario health",
+          description: "Platform administrators have an Administration › Scenario health page that lists what a scenario promises and cannot keep: a language declared but not offered, a step with no way to pass it. Nothing there is reported to learners; if a scenario of yours behaves oddly, ask your administrator to check it."
         },
-
-        monitoring: {
-          title: "Monitoring Learner Progress",
-          description: "Track how your learners are progressing through your scenarios.",
-          navigate: {
-            title: "View Scenario Sessions",
-            description: "Navigate to <strong>Admin > Scenario Sessions</strong> to see all learner sessions across your scenarios.",
-            button: "Go to Scenario Sessions"
-          },
-          track: {
-            title: "Track Progress Details",
-            description: "For each session, you can see the <strong>scenario name</strong>, the <strong>current step</strong>, the <strong>status</strong> (active, completed, or abandoned), and <strong>timestamps</strong> for when the session started and completed. Step-level details show the number of verification attempts and time spent per step."
-          }
-        },
-
-        archiving: {
-          title: "Retiring a scenario",
-          description: "When a scenario is no longer worth running — superseded by a new edition, or simply out of date — archive it rather than deleting it. Deleting removes its assignments and leaves past results without the scenario they were earned on; archiving keeps every session, grade and flag intact.",
-          effect: {
-            title: "What archiving changes",
-            offered: "The scenario disappears from the learner catalogue and from the assignment picker.",
-            assign: "It can no longer be assigned to a group or an organization, nor started for a whole class.",
-            launch: "It can no longer be launched, previewed, or resumed on a new terminal.",
-            keeps: "Existing assignments stay in place, and every past session keeps its grade, its step progress and its scenario name in the class results."
-          },
-          running: {
-            title: "Sessions already running",
-            description: "A learner working through the scenario at the moment you archive it is left alone and finishes normally. Archiving stops new runs; it never interrupts one in progress."
-          },
-          where: {
-            title: "Where to do it",
-            library: "Organization scenarios: the scenario library tab, next to the export actions.",
-            editor: "Your own scenarios: the scenario editor, in the ⋯ menu beside Reset.",
-            restore: "Archived scenarios stay in those lists behind a \"show archived\" toggle, and Restore puts one back in service at any time."
-          },
-          newEdition: {
-            title: "Publishing a new edition",
-            description: "Duplicate the scenario, edit the copy, then archive the original. Learners get the new edition while the results earned on the old one keep pointing at it."
-          }
-        },
-
-        bestPractices: {
-          title: "Best Practices",
-          description: "Follow these guidelines to create effective and engaging scenarios.",
-          tips: {
-            title: "Recommendations",
-            tip1: "Start with a simple first step to build learner confidence before moving to more complex tasks.",
-            tip2: "Use clear, actionable instructions — tell learners exactly what commands to run and what results to expect.",
-            tip3: "Provide hints for challenging steps so learners can get unstuck without external help.",
-            tip4: "Write verify scripts that check the result, not the method — there are often multiple valid approaches to a task.",
-            tip5: "Set realistic estimated times based on the difficulty level and the number of steps in the scenario.",
-            tip6: "Use introduction text to set context and conclusion text to summarize what was learned in the exercise."
-          }
-        },
-
         nextSteps: {
-          description: "Explore more resources to get the most out of the platform."
+          gettingStarted: "What the learner sees: catalogue, player, history.",
+          classes: "Assign scenarios to a class and follow learners live."
         }
       }
     },

@@ -56,204 +56,228 @@ export interface HelpTranslations {
       gettingStarted: {
         title: string;
         intro: string;
-        overview: {
+        what: {
           title: string;
           description: string;
         };
-        firstSteps: {
+        open: {
           title: string;
-          step1: {
+          description: string;
+          button: string;
+          shot: string;
+        };
+        environment: {
+          title: string;
+          description: string;
+          dedicated: string;
+        };
+        size: {
+          title: string;
+          description: string;
+          budget: string;
+          locked: string;
+          seat: string;
+          useCases: {
             title: string;
-            description: string;
-          };
-          step2: {
-            title: string;
-            description: string;
-          };
-          step3: {
-            title: string;
-            description: string;
-          };
-          step4: {
-            title: string;
-            description: string;
+            xs: string;
+            s: string;
+            m: string;
+            l: string;
+            xl: string;
           };
         };
-        quickAccess: {
+        features: {
           title: string;
-          mySessions: string;
-          keys: string;
+          description: string;
+        };
+        advanced: {
+          title: string;
+          description: string;
+          name: string;
+          hostname: string;
+          exerciseRef: string;
+          packages: string;
+          network: string;
+          persistence: string;
+        };
+        create: {
+          title: string;
+          description: string;
+          recording: string;
+        };
+        session: {
+          title: string;
+          description: string;
+          shot: string;
+          header: string;
+          banner: string;
+          stop: string;
+          destroy: string;
+          history: string;
+        };
+        expiry: {
+          title: string;
+          description: string;
+          tenMin: string;
+          fiveMin: string;
+          oneMin: string;
+          ended: string;
+        };
+        nextSteps: {
+          managing: string;
+          troubleshooting: string;
+          scenarios: string;
         };
       };
+
       managingSessions: {
         title: string;
         intro: string;
-        sessionTypes: {
-          title: string;
-          personal: {
-            title: string;
-            description: string;
-          };
-          shared: {
-            title: string;
-            description: string;
-          };
-          temporary: {
-            title: string;
-            description: string;
-          };
-        };
-        synchronization: {
+        list: {
           title: string;
           description: string;
-          tips: {
+          shot: string;
+          sync: string;
+          newSession: string;
+          hide: string;
+          classView: string;
+        };
+        card: {
+          title: string;
+          description: string;
+          name: string;
+          meta: string;
+          state: string;
+          actions: {
             title: string;
-            tip1: string;
-            tip2: string;
-            tip3: string;
+            open: string;
+            popup: string;
+            resume: string;
+            stop: string;
+            destroy: string;
+            more: string;
           };
         };
-        access: {
+        lifecycle: {
           title: string;
-          browser: {
-            title: string;
-            description: string;
-          };
-          ssh: {
-            title: string;
-            description: string;
-          };
-          iframe: {
-            title: string;
-            description: string;
-          };
+          description: string;
+          ephemeral: string;
+          persistent: string;
+          expired: string;
+        };
+        usage: {
+          title: string;
+          description: string;
+          plan: string;
+          capacity: string;
+          remaining: string;
+          bars: string;
+          composer: string;
+        };
+        history: {
+          title: string;
+          description: string;
+          filter: string;
+          export: string;
+          delete: string;
+        };
+        nextSteps: {
+          gettingStarted: string;
+          troubleshooting: string;
+          scenarios: string;
         };
       };
+
       troubleshooting: {
         title: string;
         intro: string;
-        commonProblems: {
-          connectionIssues: {
+        cannotCreate: {
+          title: string;
+          budget: {
             title: string;
+            description: string;
           };
-          cannotCreateSession: {
+          locked: {
             title: string;
-            causesTitle: string;
-            causes: {
-              cause1: string;
-              cause2: string;
-              cause3: string;
-              cause4: string;
-            };
-            solutionsTitle: string;
-            solutions: {
-              step1: {
-                title: string;
-                description: string;
-              };
-              step2: {
-                title: string;
-                description: string;
-              };
-              step3: {
-                title: string;
-                description: string;
-              };
-            };
+            description: string;
           };
-          blackScreen: {
+          capacity: {
             title: string;
-            causesTitle: string;
-            causes: {
-              cause1: string;
-              cause2: string;
-              cause3: string;
-              cause4: string;
-            };
-            solutionsTitle: string;
-            solutions: {
-              step1: {
-                title: string;
-                description: string;
-              };
-              step2: {
-                title: string;
-                description: string;
-              };
-              step3: {
-                title: string;
-                description: string;
-              };
-            };
+            description: string;
           };
-          keyboard: {
+          offline: {
             title: string;
-            causesTitle: string;
-            causes: {
-              cause1: string;
-              cause2: string;
-              cause3: string;
-              cause4: string;
-            };
-            solutionsTitle: string;
-            solutions: {
-              step1: {
-                title: string;
-                description: string;
-              };
-              step2: {
-                title: string;
-                description: string;
-              };
-              step3: {
-                title: string;
-                description: string;
-              };
-            };
+            description: string;
+          };
+          persistence: {
+            title: string;
+            description: string;
           };
         };
-        prevention: {
+        blackScreen: {
           title: string;
           description: string;
-          backup: {
-            title: string;
-            tip1: string;
-            tip2: string;
-            tip3: string;
-            tip4: string;
-          };
-          timeManagement: {
-            title: string;
-            tip1: string;
-            tip2: string;
-            tip3: string;
-            tip4: string;
-          };
-          security: {
-            title: string;
-            tip1: string;
-            tip2: string;
-            tip3: string;
-            tip4: string;
-          };
-          maintenance: {
-            title: string;
-            tip1: string;
-            tip2: string;
-            tip3: string;
-            tip4: string;
+          steps: {
+            reconnect: string;
+            blockers: string;
+            reload: string;
+            expired: string;
           };
         };
-        resources: {
+        keyboard: {
           title: string;
-          gettingStarted: {
-            title: string;
-            description: string;
+          description: string;
+        };
+        shell: {
+          title: string;
+          description: string;
+        };
+        stopGreyed: {
+          title: string;
+          description: string;
+        };
+        packages: {
+          title: string;
+          description: string;
+        };
+        wrongState: {
+          title: string;
+          description: string;
+        };
+        support: {
+          title: string;
+          description: string;
+          items: {
+            session: string;
+            when: string;
+            browser: string;
           };
-          managingSessions: {
-            title: string;
-            description: string;
-          };
+        };
+        nextSteps: {
+          gettingStarted: string;
+          managing: string;
+        };
+      };
+
+      sshKeys: {
+        title: string;
+        intro: string;
+        terminalKey: {
+          title: string;
+          description: string;
+          page: string;
+        };
+        sshKeys: {
+          title: string;
+          description: string;
+          shot: string;
+          add: string;
+          edit: string;
+          delete: string;
+        };
+        nextSteps: {
+          gettingStarted: string;
+          settings: string;
         };
       };
     };

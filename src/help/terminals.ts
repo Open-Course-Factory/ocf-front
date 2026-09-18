@@ -29,8 +29,8 @@ export function registerTerminalsHelp(store: ReturnType<typeof useHelpRegistrySt
       fr: 'Terminaux'
     },
     description: {
-      en: 'Learn how to create and manage your terminal sessions',
-      fr: 'Apprenez à créer et gérer vos sessions de terminaux'
+      en: 'Real Linux machines in your browser: create, use and manage your sessions',
+      fr: 'De vraies machines Linux dans votre navigateur : créer, utiliser et gérer vos sessions'
     },
     icon: 'fas fa-terminal',
     featureFlag: 'terminal_management',
@@ -43,8 +43,8 @@ export function registerTerminalsHelp(store: ReturnType<typeof useHelpRegistrySt
           fr: 'Premiers Pas'
         },
         description: {
-          en: 'Terminals are virtual development environments that allow you to work on your projects directly from your browser. This guide will help you create your first terminal session.',
-          fr: 'Les terminaux sont des environnements de développement virtuels qui vous permettent de travailler sur vos projets directement depuis votre navigateur. Ce guide vous aidera à créer votre première session terminal.'
+          en: 'Pick an environment, a size and a few options, click Create, and work in a real Linux machine from your browser.',
+          fr: 'Choisissez un environnement, une taille et quelques options, cliquez sur Créer, et travaillez dans une vraie machine Linux depuis votre navigateur.'
         },
         icon: 'fas fa-play-circle'
       },
@@ -56,8 +56,8 @@ export function registerTerminalsHelp(store: ReturnType<typeof useHelpRegistrySt
           fr: 'Gestion des Sessions'
         },
         description: {
-          en: 'Learn how to effectively manage your terminal sessions, synchronize your work, and access your environments from anywhere.',
-          fr: 'Apprenez à gérer efficacement vos sessions terminal, synchroniser votre travail et accéder à vos environnements depuis n\'importe où.'
+          en: 'The My sessions page, ephemeral and persistent sessions, the My usage panel and your command history.',
+          fr: 'La page Mes sessions, sessions éphémères et persistantes, le panneau Mon utilisation et votre historique de commandes.'
         },
         icon: 'fas fa-cogs'
       },
@@ -69,8 +69,8 @@ export function registerTerminalsHelp(store: ReturnType<typeof useHelpRegistrySt
           fr: 'Dépannage'
         },
         description: {
-          en: 'Solutions to common problems and incident resolution guide',
-          fr: 'Solutions aux problèmes courants et guide de résolution des incidents'
+          en: 'A session that will not start, a black terminal, a greyed button: what each message means and what to do',
+          fr: 'Une session qui ne démarre pas, un terminal noir, un bouton grisé : ce que chaque message veut dire et quoi faire'
         },
         icon: 'fas fa-wrench'
       },
@@ -78,12 +78,12 @@ export function registerTerminalsHelp(store: ReturnType<typeof useHelpRegistrySt
         route: 'terminals/ssh-keys',
         component: () => import('../components/Pages/Help/SSHKeyManagement.vue'),
         title: {
-          en: 'SSH Key Management',
-          fr: 'Gestion des clés SSH'
+          en: 'SSH keys and access key',
+          fr: 'Clés SSH et clé d\'accès'
         },
         description: {
-          en: 'Manage your terminal access keys to connect to terminal sessions securely.',
-          fr: 'Gérez vos clés d\'accès terminal pour vous connecter aux sessions de terminal en toute sécurité.'
+          en: 'Your terminal access key is created for you; this page explains it, and the SSH keys settings page.',
+          fr: 'Votre clé d\'accès terminal est créée pour vous ; cette page l\'explique, ainsi que la page Clés SSH des paramètres.'
         },
         icon: 'fas fa-key'
       }

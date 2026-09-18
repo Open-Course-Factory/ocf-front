@@ -32,383 +32,98 @@
 
     <div class="article-header">
       <h1><i class="fas fa-plus-circle"></i> {{ t('help.scenarios.creation.title') }}</h1>
-      <p class="article-description">
-        {{ t('help.scenarios.creation.intro') }}
-      </p>
+      <p class="article-description">{{ t('help.scenarios.creation.intro') }}</p>
     </div>
 
     <div class="article-content">
-      <!-- Overview -->
       <section class="help-section">
-        <h2><i class="fas fa-info-circle"></i> {{ t('help.scenarios.creation.overview.title') }}</h2>
-        <p>{{ t('help.scenarios.creation.overview.description') }}</p>
+        <h2><i class="fas fa-user-lock"></i> {{ t('help.scenarios.creation.access.title') }}</h2>
+        <p>{{ t('help.scenarios.creation.access.description') }}</p>
+        <router-link to="/scenario-editor" class="btn btn-primary">
+          <i class="fas fa-project-diagram"></i>
+          {{ t('help.scenarios.creation.title') }}
+        </router-link>
+        <HelpScreenshot name="scenarios-catalogue" :caption="t('help.scenarios.creation.access.shot')" />
       </section>
 
-      <!-- Creating a Scenario -->
       <section class="help-section">
-        <h2><i class="fas fa-plus-circle"></i> {{ t('help.scenarios.creation.creating.title') }}</h2>
-        <p>{{ t('help.scenarios.creation.creating.description') }}</p>
-
-        <div class="step-card">
-          <div class="step-number">1</div>
-          <div class="step-content">
-            <h4>{{ t('help.scenarios.creation.creating.step1.title') }}</h4>
-            <p v-html="t('help.scenarios.creation.creating.step1.description')"></p>
-            <router-link to="/admin/scenarios" class="btn btn-outline">
-              <i class="fas fa-flag-checkered"></i>
-              {{ t('help.scenarios.creation.creating.step1.button') }}
-            </router-link>
-          </div>
-        </div>
-
-        <div class="step-card">
-          <div class="step-number">2</div>
-          <div class="step-content">
-            <h4>{{ t('help.scenarios.creation.creating.step2.title') }}</h4>
-            <p v-html="t('help.scenarios.creation.creating.step2.description')"></p>
-          </div>
-        </div>
-
-        <div class="step-card">
-          <div class="step-number">3</div>
-          <div class="step-content">
-            <h4>{{ t('help.scenarios.creation.creating.step3.title') }}</h4>
-            <p v-html="t('help.scenarios.creation.creating.step3.description')"></p>
-          </div>
-        </div>
-
-        <div class="tip-box">
-          <h4><i class="fas fa-lightbulb"></i> {{ t('help.scenarios.creation.creating.tip.title') }}</h4>
-          <p>{{ t('help.scenarios.creation.creating.tip.description') }}</p>
-        </div>
+        <h2><i class="fas fa-columns"></i> {{ t('help.scenarios.creation.layout.title') }}</h2>
+        <p>{{ t('help.scenarios.creation.layout.description') }}</p>
+        <p>{{ t('help.scenarios.creation.layout.header') }}</p>
+        <p>{{ t('help.scenarios.creation.layout.readOnly') }}</p>
       </section>
 
-      <!-- Adding Steps -->
       <section class="help-section">
-        <h2><i class="fas fa-list-ol"></i> {{ t('help.scenarios.creation.steps.title') }}</h2>
+        <h2><i class="fas fa-file-alt"></i> {{ t('help.scenarios.creation.scenario.title') }}</h2>
+        <p>{{ t('help.scenarios.creation.scenario.description') }}</p>
+        <ul>
+          <li v-for="key in ['general', 'content', 'setup', 'options', 'languages', 'vocabulary']" :key="key">
+            {{ t(`help.scenarios.creation.scenario.${key}`) }}
+          </li>
+        </ul>
+      </section>
+
+      <section class="help-section">
+        <h2><i class="fas fa-shoe-prints"></i> {{ t('help.scenarios.creation.steps.title') }}</h2>
         <p>{{ t('help.scenarios.creation.steps.description') }}</p>
-
-        <div class="step-card">
-          <div class="step-number">1</div>
-          <div class="step-content">
-            <h4>{{ t('help.scenarios.creation.steps.step1.title') }}</h4>
-            <p v-html="t('help.scenarios.creation.steps.step1.description')"></p>
-            <router-link to="/admin/scenario-steps" class="btn btn-outline">
-              <i class="fas fa-list-ol"></i>
-              {{ t('help.scenarios.creation.steps.step1.button') }}
-            </router-link>
-          </div>
-        </div>
-
-        <div class="step-card">
-          <div class="step-number">2</div>
-          <div class="step-content">
-            <h4>{{ t('help.scenarios.creation.steps.step2.title') }}</h4>
-            <p v-html="t('help.scenarios.creation.steps.step2.description')"></p>
-            <ul>
-              <li v-html="t('help.scenarios.creation.steps.step2.fieldTitle')"></li>
-              <li v-html="t('help.scenarios.creation.steps.step2.fieldText')"></li>
-              <li v-html="t('help.scenarios.creation.steps.step2.fieldHint')"></li>
-              <li v-html="t('help.scenarios.creation.steps.step2.fieldVerify')"></li>
-              <li v-html="t('help.scenarios.creation.steps.step2.fieldBackground')"></li>
-              <li v-html="t('help.scenarios.creation.steps.step2.fieldForeground')"></li>
-              <li v-html="t('help.scenarios.creation.steps.step2.fieldOrder')"></li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="step-card">
-          <div class="step-number">3</div>
-          <div class="step-content">
-            <h4>{{ t('help.scenarios.creation.steps.step3.title') }}</h4>
-            <p v-html="t('help.scenarios.creation.steps.step3.description')"></p>
-          </div>
-        </div>
-
-        <div class="tip-box">
-          <h4><i class="fas fa-lightbulb"></i> {{ t('help.scenarios.creation.steps.tip.title') }}</h4>
-          <p>{{ t('help.scenarios.creation.steps.tip.description') }}</p>
+        <div v-for="(icon, key) in stepTypeIcons" :key="key" class="step-card">
+          <div class="step-number"><i :class="icon"></i></div>
+          <div class="step-content"><p>{{ t(`help.scenarios.creation.steps.${key}`) }}</p></div>
         </div>
       </section>
 
-      <!-- Writing Good Verify Scripts -->
       <section class="help-section">
-        <h2><i class="fas fa-terminal"></i> {{ t('help.scenarios.creation.verifyScripts.title') }}</h2>
-        <p>{{ t('help.scenarios.creation.verifyScripts.description') }}</p>
-
-        <div class="feature-grid">
-          <div class="feature-card">
-            <i class="fas fa-box"></i>
-            <h4>{{ t('help.scenarios.creation.verifyScripts.checkPackage.title') }}</h4>
-            <div class="code-example">
-              <code>dpkg -l nginx | grep -q '^ii'</code>
-            </div>
-          </div>
-          <div class="feature-card">
-            <i class="fas fa-file"></i>
-            <h4>{{ t('help.scenarios.creation.verifyScripts.checkFile.title') }}</h4>
-            <div class="code-example">
-              <code>test -f /etc/nginx/nginx.conf</code>
-            </div>
-          </div>
-          <div class="feature-card">
-            <i class="fas fa-cog"></i>
-            <h4>{{ t('help.scenarios.creation.verifyScripts.checkService.title') }}</h4>
-            <div class="code-example">
-              <code>systemctl is-active --quiet nginx</code>
-            </div>
-          </div>
-          <div class="feature-card">
-            <i class="fas fa-search"></i>
-            <h4>{{ t('help.scenarios.creation.verifyScripts.checkContent.title') }}</h4>
-            <div class="code-example">
-              <code>grep -q 'server_name' /etc/nginx/sites-enabled/default</code>
-            </div>
-          </div>
-        </div>
-
-        <div class="warning-box">
-          <h4><i class="fas fa-exclamation-triangle"></i> {{ t('help.scenarios.creation.verifyScripts.warning.title') }}</h4>
-          <p>{{ t('help.scenarios.creation.verifyScripts.warning.description') }}</p>
-        </div>
+        <h2><i class="fas fa-edit"></i> {{ t('help.scenarios.creation.stepDialog.title') }}</h2>
+        <ul>
+          <li v-for="key in ['content', 'hints', 'verify', 'background', 'foreground', 'flag', 'questions', 'effects']" :key="key">
+            {{ t(`help.scenarios.creation.stepDialog.${key}`) }}
+          </li>
+        </ul>
       </section>
 
-      <!-- CTF Flag Challenges -->
       <section class="help-section">
-        <h2><i class="fas fa-flag"></i> {{ t('help.scenarios.creation.ctf.title') }}</h2>
-        <p>{{ t('help.scenarios.creation.ctf.description') }}</p>
-
-        <div class="step-card">
-          <div class="step-number">1</div>
-          <div class="step-content">
-            <h4>{{ t('help.scenarios.creation.ctf.enable.title') }}</h4>
-            <p v-html="t('help.scenarios.creation.ctf.enable.description')"></p>
-          </div>
-        </div>
-
-        <div class="step-card">
-          <div class="step-number">2</div>
-          <div class="step-content">
-            <h4>{{ t('help.scenarios.creation.ctf.markSteps.title') }}</h4>
-            <p v-html="t('help.scenarios.creation.ctf.markSteps.description')"></p>
-          </div>
-        </div>
-
-        <div class="step-card">
-          <div class="step-number">3</div>
-          <div class="step-content">
-            <h4>{{ t('help.scenarios.creation.ctf.unique.title') }}</h4>
-            <p v-html="t('help.scenarios.creation.ctf.unique.description')"></p>
-          </div>
-        </div>
-
-        <div class="tip-box">
-          <h4><i class="fas fa-lightbulb"></i> {{ t('help.scenarios.creation.ctf.tip.title') }}</h4>
-          <p>{{ t('help.scenarios.creation.ctf.tip.description') }}</p>
-        </div>
+        <h2><i class="fas fa-link"></i> {{ t('help.scenarios.creation.chaining.title') }}</h2>
+        <p>{{ t('help.scenarios.creation.chaining.description') }}</p>
+        <p>{{ t('help.scenarios.creation.chaining.reorder') }}</p>
       </section>
 
-      <!-- KillerCoda Compatibility -->
-      <section class="help-section info">
-        <h2><i class="fas fa-file-import"></i> {{ t('help.scenarios.creation.killercoda.title') }}</h2>
-        <p>{{ t('help.scenarios.creation.killercoda.description') }}</p>
-        <p>{{ t('help.scenarios.creation.killercoda.layout') }}</p>
-
-        <div class="tip-box">
-          <h4><i class="fas fa-info-circle"></i> {{ t('help.scenarios.creation.killercoda.info.title') }}</h4>
-          <p>{{ t('help.scenarios.creation.killercoda.info.description') }}</p>
-        </div>
-      </section>
-
-      <!-- Importing via Admin Panel -->
       <section class="help-section">
-        <h2><i class="fas fa-upload"></i> {{ t('help.scenarios.creation.uploadAdmin.title') }}</h2>
-        <p>{{ t('help.scenarios.creation.uploadAdmin.description') }}</p>
-
-        <div class="step-card">
-          <div class="step-number">1</div>
-          <div class="step-content">
-            <h4>{{ t('help.scenarios.creation.uploadAdmin.step1.title') }}</h4>
-            <p v-html="t('help.scenarios.creation.uploadAdmin.step1.description')"></p>
-          </div>
-        </div>
-
-        <div class="step-card">
-          <div class="step-number">2</div>
-          <div class="step-content">
-            <h4>{{ t('help.scenarios.creation.uploadAdmin.step2.title') }}</h4>
-            <p v-html="t('help.scenarios.creation.uploadAdmin.step2.description')"></p>
-            <router-link to="/admin/scenarios" class="btn btn-outline">
-              <i class="fas fa-flag-checkered"></i>
-              {{ t('help.scenarios.creation.uploadAdmin.step2.button') }}
-            </router-link>
-          </div>
-        </div>
-
-        <div class="step-card">
-          <div class="step-number">3</div>
-          <div class="step-content">
-            <h4>{{ t('help.scenarios.creation.uploadAdmin.step3.title') }}</h4>
-            <p v-html="t('help.scenarios.creation.uploadAdmin.step3.description')"></p>
-          </div>
-        </div>
-
-        <div class="tip-box">
-          <h4><i class="fas fa-lightbulb"></i> {{ t('help.scenarios.creation.uploadAdmin.upsert.title') }}</h4>
-          <p>{{ t('help.scenarios.creation.uploadAdmin.upsert.description') }}</p>
-        </div>
+        <h2><i class="fas fa-play"></i> {{ t('help.scenarios.creation.preview.title') }}</h2>
+        <p>{{ t('help.scenarios.creation.preview.description') }}</p>
       </section>
 
-      <!-- Seeding Scenarios from CLI (admin-only) -->
       <section class="help-section">
-        <h2><i class="fas fa-terminal"></i> {{ t('help.scenarios.creation.seeding.title') }}</h2>
-        <p>{{ t('help.scenarios.creation.seeding.description') }}</p>
-
-        <div class="step-card">
-          <div class="step-number">1</div>
-          <div class="step-content">
-            <h4>{{ t('help.scenarios.creation.seeding.token.title') }}</h4>
-            <p v-html="t('help.scenarios.creation.seeding.token.description')"></p>
-            <div class="code-example">
-              <code>{{ t('help.scenarios.creation.seeding.token.command') }}</code>
-            </div>
-            <p style="margin-top: 10px;">{{ t('help.scenarios.creation.seeding.token.altDescription') }}</p>
-          </div>
-        </div>
-
-        <div class="step-card">
-          <div class="step-number">2</div>
-          <div class="step-content">
-            <h4>{{ t('help.scenarios.creation.seeding.usage.title') }}</h4>
-            <p v-html="t('help.scenarios.creation.seeding.usage.description')"></p>
-            <div class="code-example">
-              <code>{{ t('help.scenarios.creation.seeding.usage.command') }}</code>
-            </div>
-            <p style="margin-top: 10px; font-weight: bold;">Example:</p>
-            <div class="code-example">
-              <code>{{ t('help.scenarios.creation.seeding.usage.example') }}</code>
-            </div>
-          </div>
-        </div>
-
-        <div class="step-card">
-          <div class="step-number">3</div>
-          <div class="step-content">
-            <h4>{{ t('help.scenarios.creation.seeding.upsert.title') }}</h4>
-            <p>{{ t('help.scenarios.creation.seeding.upsert.description') }}</p>
-          </div>
-        </div>
-
-        <div class="tip-box">
-          <h4><i class="fas fa-lightbulb"></i> {{ t('help.scenarios.creation.seeding.envVar.title') }}</h4>
-          <p v-html="t('help.scenarios.creation.seeding.envVar.description')"></p>
-        </div>
+        <h2><i class="fas fa-file-import"></i> {{ t('help.scenarios.creation.importExport.title') }}</h2>
+        <p>{{ t('help.scenarios.creation.importExport.description') }}</p>
+        <ul>
+          <li v-for="key in ['killercoda', 'json', 'export']" :key="key">
+            {{ t(`help.scenarios.creation.importExport.${key}`) }}
+          </li>
+        </ul>
       </section>
 
-      <!-- Monitoring Learner Progress -->
       <section class="help-section">
-        <h2><i class="fas fa-chart-line"></i> {{ t('help.scenarios.creation.monitoring.title') }}</h2>
-        <p>{{ t('help.scenarios.creation.monitoring.description') }}</p>
-
-        <div class="step-card">
-          <div class="step-number">1</div>
-          <div class="step-content">
-            <h4>{{ t('help.scenarios.creation.monitoring.navigate.title') }}</h4>
-            <p v-html="t('help.scenarios.creation.monitoring.navigate.description')"></p>
-            <router-link to="/admin/scenario-sessions" class="btn btn-outline">
-              <i class="fas fa-chart-line"></i>
-              {{ t('help.scenarios.creation.monitoring.navigate.button') }}
-            </router-link>
-          </div>
-        </div>
-
-        <div class="step-card">
-          <div class="step-number">2</div>
-          <div class="step-content">
-            <h4>{{ t('help.scenarios.creation.monitoring.track.title') }}</h4>
-            <p v-html="t('help.scenarios.creation.monitoring.track.description')"></p>
-          </div>
-        </div>
+        <h2><i class="fas fa-box-archive"></i> {{ t('help.scenarios.creation.archive.title') }}</h2>
+        <p>{{ t('help.scenarios.creation.archive.description') }}</p>
       </section>
 
-      <!-- Retiring a scenario -->
       <section class="help-section">
-        <h2><i class="fas fa-box-archive"></i> {{ t('help.scenarios.creation.archiving.title') }}</h2>
-        <p>{{ t('help.scenarios.creation.archiving.description') }}</p>
-
-        <div class="step-card">
-          <div class="step-number"><i class="fas fa-eye-slash"></i></div>
-          <div class="step-content">
-            <h4>{{ t('help.scenarios.creation.archiving.effect.title') }}</h4>
-            <ul>
-              <li>{{ t('help.scenarios.creation.archiving.effect.offered') }}</li>
-              <li>{{ t('help.scenarios.creation.archiving.effect.assign') }}</li>
-              <li>{{ t('help.scenarios.creation.archiving.effect.launch') }}</li>
-              <li>{{ t('help.scenarios.creation.archiving.effect.keeps') }}</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="step-card">
-          <div class="step-number"><i class="fas fa-hourglass-half"></i></div>
-          <div class="step-content">
-            <h4>{{ t('help.scenarios.creation.archiving.running.title') }}</h4>
-            <p>{{ t('help.scenarios.creation.archiving.running.description') }}</p>
-          </div>
-        </div>
-
-        <div class="step-card">
-          <div class="step-number"><i class="fas fa-location-dot"></i></div>
-          <div class="step-content">
-            <h4>{{ t('help.scenarios.creation.archiving.where.title') }}</h4>
-            <ul>
-              <li>{{ t('help.scenarios.creation.archiving.where.library') }}</li>
-              <li>{{ t('help.scenarios.creation.archiving.where.editor') }}</li>
-              <li>{{ t('help.scenarios.creation.archiving.where.restore') }}</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="tip-box">
-          <h4><i class="fas fa-lightbulb"></i> {{ t('help.scenarios.creation.archiving.newEdition.title') }}</h4>
-          <p>{{ t('help.scenarios.creation.archiving.newEdition.description') }}</p>
-        </div>
+        <h2><i class="fas fa-heartbeat"></i> {{ t('help.scenarios.creation.health.title') }}</h2>
+        <p>{{ t('help.scenarios.creation.health.description') }}</p>
       </section>
 
-      <!-- Best Practices -->
-      <section class="help-section">
-        <h2><i class="fas fa-star"></i> {{ t('help.scenarios.creation.bestPractices.title') }}</h2>
-        <p>{{ t('help.scenarios.creation.bestPractices.description') }}</p>
-
-        <div class="tip-box">
-          <h4><i class="fas fa-lightbulb"></i> {{ t('help.scenarios.creation.bestPractices.tips.title') }}</h4>
-          <ul>
-            <li>{{ t('help.scenarios.creation.bestPractices.tips.tip1') }}</li>
-            <li>{{ t('help.scenarios.creation.bestPractices.tips.tip2') }}</li>
-            <li>{{ t('help.scenarios.creation.bestPractices.tips.tip3') }}</li>
-            <li>{{ t('help.scenarios.creation.bestPractices.tips.tip4') }}</li>
-            <li>{{ t('help.scenarios.creation.bestPractices.tips.tip5') }}</li>
-            <li>{{ t('help.scenarios.creation.bestPractices.tips.tip6') }}</li>
-          </ul>
-        </div>
-      </section>
-
-      <!-- Next Steps -->
       <section class="help-section">
         <h2><i class="fas fa-question-circle"></i> {{ t('help.navigation.nextSteps') }}</h2>
-        <p>{{ t('help.scenarios.creation.nextSteps.description') }}</p>
-
         <div class="next-steps">
           <router-link :to="`${helpRoutePrefix}/scenarios/getting-started`" class="next-step-card">
             <i class="fas fa-play-circle"></i>
-            <h4>{{ t('help.sections.scenarios.gettingStarted') }}</h4>
-            <p>{{ t('help.scenarios.gettingStarted.intro') }}</p>
+            <h4>{{ t('help.scenarios.gettingStarted.title') }}</h4>
+            <p>{{ t('help.scenarios.creation.nextSteps.gettingStarted') }}</p>
           </router-link>
-
-          <router-link :to="`${helpRoutePrefix}/courses/structure`" class="next-step-card">
-            <i class="fas fa-sitemap"></i>
-            <h4>{{ t('help.sections.courses.structure') }}</h4>
-            <p>{{ t('help.courses.structure.intro') }}</p>
+          <router-link :to="`${helpRoutePrefix}/groups/management`" class="next-step-card">
+            <i class="fas fa-users"></i>
+            <h4>{{ t('help.groups.management.title') }}</h4>
+            <p>{{ t('help.scenarios.creation.nextSteps.classes') }}</p>
           </router-link>
         </div>
       </section>
@@ -421,6 +136,7 @@ import { onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useHelpTranslations } from '../../../composables/useHelpTranslations'
+import HelpScreenshot from './HelpScreenshot.vue'
 
 const { t } = useI18n()
 const { loadHelpTranslations } = useHelpTranslations()
@@ -431,6 +147,13 @@ const isPublicHelp = computed(() => route.path.startsWith('/help-public'))
 const helpMainRoute = computed(() => isPublicHelp.value ? '/help-public' : '/help')
 const helpRoutePrefix = computed(() => isPublicHelp.value ? '/help-public' : '/help')
 
+const stepTypeIcons = {
+  terminal: 'fas fa-terminal',
+  info: 'fas fa-book-open',
+  flag: 'fas fa-flag',
+  quiz: 'fas fa-question'
+}
+
 onMounted(async () => {
   await loadHelpTranslations()
 })
@@ -438,110 +161,4 @@ onMounted(async () => {
 
 <style scoped>
 /* Page-specific styles only - common help article styles are in help-article.css */
-
-.feature-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
-  margin: 20px 0;
-}
-
-.feature-card {
-  text-align: center;
-  padding: 20px;
-  background: var(--color-gray-50);
-  border-radius: 8px;
-  border: 2px solid var(--color-gray-200);
-}
-
-.feature-card i {
-  font-size: 2rem;
-  color: var(--color-primary);
-  margin-bottom: 15px;
-}
-
-.feature-card h4 {
-  margin: 0 0 10px 0;
-  color: var(--color-text-primary);
-}
-
-.feature-card p {
-  margin: 0;
-  color: var(--color-gray-600);
-  font-size: 0.9rem;
-}
-
-.code-example {
-  background: var(--color-bg-secondary);
-  border: var(--border-width-thin) solid var(--color-border-medium);
-  border-radius: var(--border-radius-md);
-  padding: var(--spacing-sm);
-  margin: var(--spacing-sm) 0 0 0;
-  overflow-x: auto;
-  text-align: left;
-}
-
-.code-example code {
-  color: var(--color-text-primary);
-  font-family: var(--font-family-monospace);
-  font-size: 0.85rem;
-}
-
-.tip-box {
-  background: var(--color-warning-bg);
-  border: 2px solid var(--color-warning);
-  border-radius: 8px;
-  padding: 15px;
-  margin: 20px 0;
-}
-
-.tip-box h4 {
-  margin: 0 0 10px 0;
-  color: var(--color-warning-text);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.tip-box p {
-  margin: 0;
-  color: var(--color-warning-text);
-}
-
-.tip-box ul {
-  margin: 10px 0 0 20px;
-  color: var(--color-warning-text);
-}
-
-.tip-box li {
-  margin-bottom: 6px;
-}
-
-.warning-box {
-  background: var(--color-warning-bg);
-  border: 2px solid var(--color-warning);
-  border-radius: 8px;
-  padding: 15px;
-  margin: 20px 0;
-}
-
-.warning-box h4 {
-  margin: 0 0 10px 0;
-  color: var(--color-warning-text);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.warning-box p {
-  margin: 0;
-  color: var(--color-warning-text);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .feature-grid {
-    grid-template-columns: 1fr;
-  }
-}
 </style>

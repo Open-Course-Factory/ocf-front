@@ -43,8 +43,8 @@ export function registerScenariosHelp(store: ReturnType<typeof useHelpRegistrySt
           fr: 'Premiers pas avec les scénarios'
         },
         description: {
-          en: 'Interactive scenarios are guided, step-by-step lab exercises that run on real Linux terminals. Follow instructions, execute commands, and get instant feedback on your progress.',
-          fr: 'Les scénarios interactifs sont des exercices pratiques guidés, étape par étape, qui s\'exécutent sur de vrais terminaux Linux. Suivez les instructions, exécutez des commandes et obtenez un retour instantané sur votre progression.'
+          en: 'From the catalogue to your history: launch a scenario, follow the steps in the player, verify your work, use hints, and see how a run ends.',
+          fr: 'Du catalogue à votre historique : lancer un scénario, suivre les étapes dans le lecteur, vérifier votre travail, utiliser les indices, et comment une exécution se termine.'
         },
         icon: 'fas fa-play-circle'
       },
@@ -56,8 +56,8 @@ export function registerScenariosHelp(store: ReturnType<typeof useHelpRegistrySt
           fr: 'Création de scénarios'
         },
         description: {
-          en: 'Learn how to build engaging, step-by-step interactive exercises for your learners with real terminal environments, verification scripts, and CTF challenges.',
-          fr: 'Apprenez à concevoir des exercices interactifs engageants, étape par étape, pour vos apprenants avec des environnements terminaux réels, des scripts de vérification et des défis CTF.'
+          en: 'For trainers: the Scenario Editor, the four step types and their scripts, translations, preview, KillerCoda and JSON import, archiving.',
+          fr: 'Pour les formateurs : l\'Éditeur de scénarios, les quatre types d\'étape et leurs scripts, les traductions, l\'aperçu, l\'import KillerCoda et JSON, l\'archivage.'
         },
         icon: 'fas fa-plus-circle'
       }
