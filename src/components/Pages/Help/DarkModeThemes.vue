@@ -32,106 +32,34 @@
 
     <div class="article-header">
       <h1><i class="fas fa-palette"></i> {{ t('help.account.themes.title') }}</h1>
-      <p class="article-description">
-        {{ t('help.account.themes.intro') }}
-      </p>
+      <p class="article-description">{{ t('help.account.themes.intro') }}</p>
     </div>
 
     <div class="article-content">
       <section class="help-section">
-        <h2><i class="fas fa-info-circle"></i> {{ t('help.account.themes.overview.title') }}</h2>
-        <p>
-          {{ t('help.account.themes.overview.description') }}
-        </p>
-      </section>
-
-      <section class="help-section">
         <h2><i class="fas fa-adjust"></i> {{ t('help.account.themes.selection.title') }}</h2>
-        <p>
-          {{ t('help.account.themes.selection.description') }}
-        </p>
-        <div class="theme-options">
-          <div class="theme-card light">
-            <div class="theme-preview light-preview">
-              <i class="fas fa-sun"></i>
-            </div>
-            <h4>{{ t('help.account.themes.selection.light.title') }}</h4>
-            <p>{{ t('help.account.themes.selection.light.description') }}</p>
-          </div>
-          <div class="theme-card dark">
-            <div class="theme-preview dark-preview">
-              <i class="fas fa-moon"></i>
-            </div>
-            <h4>{{ t('help.account.themes.selection.dark.title') }}</h4>
-            <p>{{ t('help.account.themes.selection.dark.description') }}</p>
-          </div>
-          <div class="theme-card auto">
-            <div class="theme-preview auto-preview">
-              <i class="fas fa-magic"></i>
-            </div>
-            <h4>{{ t('help.account.themes.selection.auto.title') }}</h4>
-            <p>{{ t('help.account.themes.selection.auto.description') }}</p>
+        <div class="ocf-theme-grid">
+          <div v-for="(icon, mode) in modeIcons" :key="mode" class="ocf-theme-card">
+            <i :class="icon"></i>
+            <h4>{{ t(`help.account.themes.selection.${mode}.title`) }}</h4>
+            <p>{{ t(`help.account.themes.selection.${mode}.description`) }}</p>
           </div>
         </div>
       </section>
 
       <section class="help-section">
-        <h2><i class="fas fa-compress-alt"></i> {{ t('help.account.themes.compact.title') }}</h2>
-        <p>
-          {{ t('help.account.themes.compact.description') }}
-        </p>
-        <div class="compact-info">
-          <div class="compact-card">
-            <i class="fas fa-expand"></i>
-            <h4>{{ t('help.account.themes.compact.standard.title') }}</h4>
-            <p>{{ t('help.account.themes.compact.standard.description') }}</p>
-          </div>
-          <div class="compact-card">
-            <i class="fas fa-compress"></i>
-            <h4>{{ t('help.account.themes.compact.compact.title') }}</h4>
-            <p>{{ t('help.account.themes.compact.compact.description') }}</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="help-section">
-        <h2><i class="fas fa-sliders-h"></i> {{ t('help.account.themes.whereToChange.title') }}</h2>
-        <p>
-          {{ t('help.account.themes.whereToChange.description') }}
-        </p>
-        <div class="info-box">
-          <i class="fas fa-cog"></i>
-          <p>{{ t('help.account.themes.whereToChange.path') }}</p>
-        </div>
+        <h2><i class="fas fa-map-signs"></i> {{ t('help.account.themes.whereToChange.title') }}</h2>
+        <p>{{ t('help.account.themes.whereToChange.description') }}</p>
+        <p>{{ t('help.account.themes.whereToChange.compact') }}</p>
+        <HelpScreenshot name="settings-ui" :caption="t('help.account.themes.whereToChange.screenshot')" />
+        <router-link to="/settings/ui" class="btn btn-primary">
+          <i class="fas fa-palette"></i>
+          {{ t('help.account.settings.ui.title') }}
+        </router-link>
         <router-link :to="`${helpRoutePrefix}/account/settings`" class="btn btn-outline">
-          <i class="fas fa-cog"></i>
+          <i class="fas fa-book"></i>
           {{ t('help.account.themes.whereToChange.button') }}
         </router-link>
-      </section>
-
-      <section class="help-section">
-        <h2><i class="fas fa-check-circle"></i> {{ t('help.account.themes.consistency.title') }}</h2>
-        <p>
-          {{ t('help.account.themes.consistency.description') }}
-        </p>
-        <div class="consistency-grid">
-          <div class="consistency-item">
-            <i class="fas fa-terminal"></i>
-            <span>{{ t('help.account.themes.consistency.terminal') }}</span>
-          </div>
-          <div class="consistency-item">
-            <i class="fas fa-tachometer-alt"></i>
-            <span>{{ t('help.account.themes.consistency.dashboard') }}</span>
-          </div>
-          <div class="consistency-item">
-            <i class="fas fa-question-circle"></i>
-            <span>{{ t('help.account.themes.consistency.help') }}</span>
-          </div>
-          <div class="consistency-item">
-            <i class="fas fa-graduation-cap"></i>
-            <span>{{ t('help.account.themes.consistency.courses') }}</span>
-          </div>
-        </div>
       </section>
 
       <section class="help-section">
@@ -142,13 +70,11 @@
             <h4>{{ t('help.account.themes.nextSteps.settings.title') }}</h4>
             <p>{{ t('help.account.themes.nextSteps.settings.description') }}</p>
           </router-link>
-
           <router-link :to="`${helpRoutePrefix}/terminals/getting-started`" class="next-step-card">
-            <i class="fas fa-play-circle"></i>
+            <i class="fas fa-terminal"></i>
             <h4>{{ t('help.account.themes.nextSteps.gettingStarted.title') }}</h4>
             <p>{{ t('help.account.themes.nextSteps.gettingStarted.description') }}</p>
           </router-link>
-
           <router-link :to="`${helpRoutePrefix}/account/subscription`" class="next-step-card">
             <i class="fas fa-calendar-check"></i>
             <h4>{{ t('help.account.themes.nextSteps.subscription.title') }}</h4>
@@ -165,10 +91,13 @@ import { onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useHelpTranslations } from '../../../composables/useHelpTranslations'
+import HelpScreenshot from './HelpScreenshot.vue'
 
 const { t } = useI18n()
 const { loadHelpTranslations } = useHelpTranslations()
 const route = useRoute()
+
+const modeIcons = { light: 'fas fa-sun', dark: 'fas fa-moon', auto: 'fas fa-adjust' }
 
 const isPublicHelp = computed(() => route.path.startsWith('/help-public'))
 const helpMainRoute = computed(() => isPublicHelp.value ? '/help-public' : '/help')
@@ -180,222 +109,39 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.theme-options {
+.ocf-theme-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 20px;
-  margin: 25px 0;
-}
-
-.theme-card {
-  text-align: center;
-  padding: 25px;
-  border-radius: 8px;
-  border: 2px solid var(--color-gray-200);
-  transition: all 0.3s ease;
-}
-
-.theme-card:hover {
-  transform: translateY(-5px);
-}
-
-.theme-card.light {
-  background: var(--color-gray-50);
-}
-
-.theme-card.light:hover {
-  border-color: var(--color-warning);
-}
-
-.theme-card.dark {
-  background: var(--color-gray-50);
-}
-
-.theme-card.dark:hover {
-  border-color: var(--color-primary);
-}
-
-.theme-card.auto {
-  background: var(--color-gray-50);
-}
-
-.theme-card.auto:hover {
-  border-color: var(--color-success);
-}
-
-.theme-preview {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 15px;
-  font-size: 2rem;
-}
-
-.light-preview {
-  background: var(--color-warning-bg);
-  color: var(--color-warning);
-}
-
-.dark-preview {
-  background: var(--color-gray-200);
-  color: var(--color-text-primary);
-}
-
-.auto-preview {
-  background: var(--color-success-bg);
-  color: var(--color-success);
-}
-
-.theme-card h4 {
-  margin: 0 0 10px 0;
-  color: var(--color-text-primary);
-}
-
-.theme-card p {
-  margin: 0;
-  color: var(--color-gray-600);
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.compact-info {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-  margin: 25px 0;
-}
-
-.compact-card {
-  text-align: center;
-  padding: 25px;
-  background: var(--color-gray-50);
-  border-radius: 8px;
-  border: 2px solid var(--color-gray-200);
-  transition: all 0.3s ease;
-}
-
-.compact-card:hover {
-  border-color: var(--color-primary);
-  transform: translateY(-5px);
-}
-
-.compact-card i {
-  font-size: 2rem;
-  color: var(--color-primary);
-  margin-bottom: 15px;
-}
-
-.compact-card h4 {
-  margin: 0 0 10px 0;
-  color: var(--color-text-primary);
-}
-
-.compact-card p {
-  margin: 0;
-  color: var(--color-gray-600);
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.info-box {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 15px 20px;
-  background: var(--color-info-bg);
-  border-radius: 8px;
-  border-left: 4px solid var(--color-info);
-  margin: 15px 0;
-}
-
-.info-box i {
-  font-size: 1.3rem;
-  color: var(--color-info);
-  flex-shrink: 0;
-}
-
-.info-box p {
-  margin: 0;
-  color: var(--color-text-secondary);
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  text-decoration: none;
-  border-radius: 6px;
-  transition: all 0.3s ease;
-  border: none;
-  cursor: pointer;
-}
-
-.btn-outline {
-  background: transparent;
-  color: var(--color-primary);
-  border: 2px solid var(--color-primary);
-}
-
-.btn-outline:hover {
-  background: var(--color-primary);
-  color: white;
-}
-
-.consistency-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
   margin: 20px 0;
 }
 
-.consistency-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 15px;
-  background: var(--color-success-bg);
+.ocf-theme-card {
+  text-align: center;
+  padding: 24px;
+  background: var(--color-bg-secondary);
+  border: 2px solid var(--color-border-light);
   border-radius: 8px;
-  border-left: 4px solid var(--color-success);
 }
 
-.consistency-item i {
-  font-size: 1.3rem;
-  color: var(--color-success);
-  flex-shrink: 0;
+.ocf-theme-card i {
+  font-size: 2rem;
+  color: var(--color-primary);
+  margin-bottom: 12px;
 }
 
-.consistency-item span {
+.ocf-theme-card h4 {
+  margin: 0 0 8px 0;
   color: var(--color-text-primary);
-  font-weight: 500;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .theme-options {
-    grid-template-columns: 1fr;
-  }
+.ocf-theme-card p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
 
-  .compact-info {
-    grid-template-columns: 1fr;
-  }
-
-  .consistency-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .info-box {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .next-steps {
-    grid-template-columns: 1fr;
-  }
+.btn + .btn {
+  margin-left: 10px;
 }
 </style>

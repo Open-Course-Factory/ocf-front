@@ -460,115 +460,272 @@ export interface HelpTranslations {
       subscription: {
         title: string;
         intro: string;
+        catalogue: {
+          title: string;
+          description: string;
+          ttc: string;
+          discovery: TitlePriceDescription;
+          solo: TitlePriceDescription;
+          trainer: TitlePriceDescription;
+          school: TitlePriceDescription;
+          screenshot: string;
+        };
+        whereToFind: {
+          title: string;
+          description: string;
+          dashboard: string;
+          plans: string;
+          pricing: string;
+          licenses: string;
+        };
+        subscribe: {
+          title: string;
+          description: string;
+          free: TitleDescription;
+          paid: TitleDescription;
+          emailVerified: string;
+          screenshot: string;
+        };
+        changePlan: {
+          title: string;
+          description: string;
+          upgrade: TitleDescription;
+          fromFree: TitleDescription;
+          toFree: TitleDescription;
+        };
         dashboard: {
           title: string;
           description: string;
-          features: {
-            currentPlan: string;
-            usage: string;
-            renewalDate: string;
-            invoiceHistory: string;
-            planComparison: string;
-          };
+          plan: string;
+          source: string;
+          priority: string;
+          features: string;
+          billing: string;
+          actions: string;
+          screenshot: string;
         };
-        planChanges: {
-          title: string;
-          upgrade: {
-            title: string;
-            description: string;
-          };
-          downgrade: {
-            title: string;
-            description: string;
-          };
-          cancellation: {
-            title: string;
-            description: string;
-          };
-        };
-        billingPortal: {
+        usage: {
           title: string;
           description: string;
-          actions: {
-            action1: string;
-            action2: string;
-            action3: string;
-            action4: string;
-            action5: string;
-          };
+          plan: string;
+          capacity: string;
+          bars: string;
+          sessions: string;
+          refresh: string;
+          orgPanel: string;
         };
-        optimization: {
+        sources: {
           title: string;
-          tips: {
-            tip1: string;
-            tip2: string;
-            tip3: string;
-            tip4: string;
-            tip5: string;
-          };
+          description: string;
+          personal: TitleDescription;
+          organization: TitleDescription;
+          assigned: TitleDescription;
+          assignedNote: string;
+        };
+        cancel: {
+          title: string;
+          description: string;
+          atPeriodEnd: string;
+          immediately: string;
+          reactivate: string;
+          portal: string;
+        };
+        nextSteps: {
+          billing: TitleDescription;
+          organizations: TitleDescription;
+          terminals: TitleDescription;
         };
       };
       billing: {
         title: string;
         intro: string;
-        paymentMethods: {
+        whereToFind: {
           title: string;
           description: string;
-          actions: {
-            add: string;
-            update: string;
-            default: string;
-            remove: string;
-            security: string;
-          };
-        };
-        billingAddress: {
-          title: string;
-          description: string;
-          importance: {
-            importance1: string;
-            importance2: string;
-            importance3: string;
-            importance4: string;
-          };
+          verified: string;
+          assigned: string;
         };
         invoices: {
           title: string;
           description: string;
-          features: {
-            view: string;
-            download: string;
-            details: string;
-            history: string;
-            support: string;
-          };
+          filter: string;
+          refresh: string;
+          details: string;
+          download: string;
+          screenshot: string;
         };
-        billing: {
-          title: string;
-          monthly: {
-            title: string;
-            description: string;
-          };
-          annual: {
-            title: string;
-            description: string;
-          };
-          proration: {
-            title: string;
-            description: string;
-          };
-        };
-        support: {
+        addresses: {
           title: string;
           description: string;
-          contact: {
-            email: string;
-            portal: string;
-            documentation: string;
-            response: string;
-          };
+          fields: string;
+          default: string;
+          edit: string;
+        };
+        paymentMethods: {
+          title: string;
+          description: string;
+          add: string;
+          default: string;
+        };
+        portal: {
+          title: string;
+          description: string;
+          card: string;
+          history: string;
+          invoices: string;
+        };
+        nextSteps: {
+          subscription: TitleDescription;
+          licenses: TitleDescription;
+          settings: TitleDescription;
+        };
+      };
+      rolesAndPermissions: {
+        title: string;
+        intro: string;
+        overviewTitle: string;
+        overviewDescription: string;
+        platformLevel: string;
+        platformLevelDesc: string;
+        organizationLevel: string;
+        organizationLevelDesc: string;
+        groupLevel: string;
+        groupLevelDesc: string;
+        orgRolesTitle: string;
+        orgRolesDescription: string;
+        permission: string;
+        owner: string;
+        manager: string;
+        teacher: string;
+        member: string;
+        viewOrganization: string;
+        useOrgPlan: string;
+        createClasses: string;
+        inviteMembers: string;
+        removeMembers: string;
+        changeRoles: string;
+        promoteToOwner: string;
+        manageBilling: string;
+        editOrgSettings: string;
+        deleteOrganization: string;
+        transferOwnership: string;
+        allowed: string;
+        partial: string;
+        denied: string;
+        cannotPromoteToOwner: string;
+        groupRolesTitle: string;
+        groupRolesDescription: string;
+        groupOwner: string;
+        groupOwnerDesc: string;
+        groupOwnerPerm1: string;
+        groupOwnerPerm2: string;
+        groupOwnerPerm3: string;
+        groupManager: string;
+        groupManagerDesc: string;
+        groupManagerPerm1: string;
+        groupManagerPerm2: string;
+        groupManagerPerm3: string;
+        groupMember: string;
+        groupMemberDesc: string;
+        groupMemberPerm1: string;
+        groupMemberPerm2: string;
+        groupMemberPerm3: string;
+        platformAdminTitle: string;
+        platformAdminNoticeTitle: string;
+        platformAdminNoticeDesc: string;
+        scenariosTitle: string;
+        scenario1Question: string;
+        scenario1Answer: string;
+        scenario2Question: string;
+        scenario2Answer: string;
+        scenario3Question: string;
+        scenario3Answer: string;
+        scenario4Question: string;
+        scenario4Answer: string;
+        reference: {
+          title: string;
+          description: string;
+          button: string;
+        };
+      };
+      settings: {
+        title: string;
+        intro: string;
+        overview: {
+          title: string;
+          description: string;
+          autosave: string;
+        };
+        navigation: {
+          title: string;
+          description: string;
+          defaultPage: TitleDescription;
+        };
+        localization: {
+          title: string;
+          description: string;
+          language: TitleDescription;
+          timezone: TitleDescription;
+          screenshot: string;
+        };
+        ui: {
+          title: string;
+          description: string;
+          theme: TitleDescription;
+          compact: TitleDescription;
+          screenshot: string;
+        };
+        notifications: TitleDescription;
+        security: {
+          title: string;
+          description: string;
+          password: TitleDescription;
+          deleteAccount: TitleDescription;
+        };
+        sshKeys: {
+          title: string;
+          description: string;
+          linkText: string;
+          button: string;
+        };
+        version: TitleDescription;
+        nextSteps: {
+          themes: TitleDescription;
+          sshKeys: TitleDescription;
+          roles: TitleDescription;
+        };
+      };
+      themes: {
+        title: string;
+        intro: string;
+        selection: {
+          title: string;
+          light: TitleDescription;
+          dark: TitleDescription;
+          auto: TitleDescription;
+        };
+        whereToChange: {
+          title: string;
+          description: string;
+          compact: string;
+          button: string;
+          screenshot: string;
+        };
+        nextSteps: {
+          settings: TitleDescription;
+          gettingStarted: TitleDescription;
+          subscription: TitleDescription;
         };
       };
     };
   };
+}
+
+interface TitleDescription {
+  title: string;
+  description: string;
+}
+
+interface TitlePriceDescription extends TitleDescription {
+  price: string;
 }

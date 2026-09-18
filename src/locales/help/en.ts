@@ -1174,729 +1174,392 @@ export const helpEn = {
 
     account: {
       subscription: {
-        title: "Subscription & Plans",
-        intro: "Manage your subscription, understand plan features, and optimize your usage.",
+        title: "Subscription and plans",
+        intro: "What each plan includes, how to subscribe, change plan or cancel, and how to read your subscription dashboard.",
 
-        overview: {
-          title: "Subscription Overview",
-          description: "OCF offers different subscription plans tailored to your learning and teaching needs. Each plan provides access to specific features and usage quotas.",
-          individual: {
-            title: "Individual Plans",
-            description: "Perfect for personal learning and individual projects. Access to terminals, content creation, and basic resources."
+        catalogue: {
+          title: "The plans",
+          description: "Four plans cover every use, from a first look to a whole school. They differ by terminal capacity (the machine sizes you can run at the same time), maximum session length, data persistence and network access.",
+          ttc: "Prices shown in the app and on the Pricing page include VAT. When in doubt, the Pricing page is the reference.",
+          discovery: {
+            title: "Discovery",
+            price: "Free",
+            description: "One ephemeral XS machine, one-hour sessions, 7 days of command history, no network access. No credit card required."
           },
-          educational: {
-            title: "Educational Plans",
-            description: "Designed for teachers and trainers. Advanced collaboration features and class management."
+          solo: {
+            title: "Solo",
+            price: "€11.90 / month, VAT included",
+            description: "To learn and prepare your material: 1 XL or 1 L or 3 M at once, sessions up to 8 h, Internet access, persistent machines (5 GB), 90 days of command history."
           },
-          enterprise: {
-            title: "Enterprise Plans",
-            description: "Solutions for organizations and institutions. Priority support, customization, and advanced integrations."
+          trainer: {
+            title: "Trainer",
+            price: "€19.90 / month, VAT included",
+            description: "To run training sessions: the same machines as Solo, 20 GB of persistence, 365 days of command history, classes and session supervision. Learner seats are bought separately, per day or per month."
+          },
+          school: {
+            title: "Schools and training organisations",
+            price: "On quote",
+            description: "Negotiated capacity and pricing, licenses assigned to your learners by an administrator, invoicing on quote. Contact us from the Pricing page."
+          },
+          screenshot: "The Available plans page, with the active plan marked by the “Current” badge."
+        },
+
+        whereToFind: {
+          title: "Where to find these pages",
+          description: "In the side menu, the Subscription & Licenses section holds:",
+          dashboard: "My subscription — your dashboard: active plan, usage, recent invoices.",
+          plans: "Available plans — the plan grid, to subscribe or change plan.",
+          pricing: "Public pricing — the Pricing page as visitors see it, opened in a new tab.",
+          licenses: "Purchase licenses and Manage licenses — learner seats (Trainer plan)."
+        },
+
+        subscribe: {
+          title: "Subscribing",
+          description: "From Available plans, pick the grid view or the comparison table (capacity, session duration, storage, network, supervision, command history), then click the button on the plan you want.",
+          free: {
+            title: "Discovery plan",
+            description: "It activates immediately, with no payment and no card. You land on your dashboard with the plan active."
+          },
+          paid: {
+            title: "Paid plan",
+            description: "A dialog sums up the plan and its price including VAT, offers an optional coupon code and asks you to tick the waiver of the 14-day right of withdrawal (the service starts right away). You are then sent to Stripe's secure payment page; when it completes you are back in the app with the subscription active. If you cancel on Stripe, you return to a page that offers to retry."
+          },
+          emailVerified: "A paid plan requires a verified email address. If yours is not verified yet, the plan button sends you to the verification step.",
+          screenshot: "The public Pricing page, with the four plans and the VAT-included notice."
+        },
+
+        changePlan: {
+          title: "Changing plan",
+          description: "The button on each card tells you the direction of the change: Upgrade or Downgrade.",
+          upgrade: {
+            title: "From one paid plan to another",
+            description: "A confirmation states that the difference is charged immediately, prorated for the current period. The new plan applies at once, without going through Stripe again."
+          },
+          fromFree: {
+            title: "From Discovery to a paid plan",
+            description: "This is a new subscription: you go through the payment dialog described above, and the free plan is replaced once payment completes."
+          },
+          toFree: {
+            title: "From a paid plan to Discovery",
+            description: "After confirmation, the current subscription is cancelled immediately and the Discovery plan is activated. You are no longer billed."
           }
         },
 
         dashboard: {
-          title: "Subscription Dashboard",
-          description: "The dashboard gives you a complete view of your current subscription and usage.",
-          usage: {
-            title: "Usage Tracking",
-            description: "Monitor your resource consumption: active terminal sessions, storage used, bandwidth, and other important metrics.",
-            button: "View Dashboard"
-          },
-          info: {
-            title: "Subscription Information",
-            description: "Check details of your current plan: renewal date, included features, limits, and available quotas."
-          },
-          alerts: {
-            title: "Alerts and Notifications",
-            description: "Receive alerts when you approach your usage limits or when your subscription requires attention."
-          }
+          title: "The My subscription dashboard",
+          description: "The Your active subscription card shows what is powering your terminals right now:",
+          plan: "The plan name and its type: Personal subscription, Assigned license or Organization.",
+          source: "The source (who pays) and, for an assigned license, the person who provided it.",
+          priority: "The plan priority. If you hold several subscriptions, the one with the highest priority is active; when it expires, the next one takes over automatically.",
+          features: "Key features: capacity expressed in machine sizes (for instance “1 XL or 1 L or 3 M”), session duration, storage, network access.",
+          billing: "The next billing date, or the end-of-access date when a cancellation is scheduled.",
+          actions: "For a paid personal subscription, the Manage subscription (Stripe portal), Change plan, Cancel and Reactivate buttons.",
+          screenshot: "The dashboard of a trainer whose plan is provided by her organisation."
         },
 
-        usageMetrics: {
-          title: "Usage Metrics",
-          description: "Your subscription dashboard displays key usage metrics so you can monitor your consumption at a glance.",
-          activeCourses: {
-            title: "Active Courses",
-            description: "The number of courses currently active on your account. This count reflects courses in progress or published, helping you track your content output."
-          },
-          concurrentTerminals: {
-            title: "Terminal Capacity",
-            description: "Your plan includes a CPU + memory budget shared across active terminal sessions. Spawn any combination of sizes that fits — for example, 2 L sessions, or 4 M sessions, or 8 S sessions. The dashboard shows your current consumption and remaining capacity in real time."
-          },
-          concurrentUsers: {
-            title: "Concurrent Users",
-            description: "The number of users connected at the same time across your sessions. This metric is especially relevant for trainers managing live classes."
-          }
+        usage: {
+          title: "My usage",
+          description: "Below the card, the My usage panel expands to show your consumption in real time:",
+          plan: "The plan that applies and its source (personal, or provided by your organisation).",
+          capacity: "The plan capacity and the remaining capacity, expressed as the machine sizes you can still start (“≈ 1 L or 2 M”).",
+          bars: "Two bars, CPU and RAM: what your active sessions take out of the plan budget.",
+          sessions: "The list of active sessions: name, size, vCPU and memory, state (running or paused) and elapsed time.",
+          refresh: "The panel refreshes every 30 seconds; the refresh button forces an update. When capacity is exhausted, stop a session to start another.",
+          orgPanel: "If you manage an organisation, a second panel shows the usage of all its members: the budget is shared between them."
         },
 
-        subscriptionSource: {
-          title: "Subscription Source",
-          description: "Your subscription can come from two different sources. The dashboard clearly indicates which one is currently active.",
+        sources: {
+          title: "Personal, organisation or assigned license",
+          description: "A subscription can come from three sources. The badge on the card tells you which one is active.",
           personal: {
-            title: "Personal Subscription",
-            description: "A subscription you purchased and manage yourself. You have full control over billing, plan changes, and cancellation."
+            title: "Personal subscription",
+            description: "You subscribed to it and you manage it: billing, plan changes, cancellation."
           },
           organization: {
-            title: "Organization-Assigned Subscription",
-            description: "A subscription assigned to you by an organization administrator. The organization manages billing and plan settings on your behalf."
+            title: "Organisation subscription",
+            description: "Your organisation (school, training organisation, team) holds a plan and you inherit it as a member. The plan applied to each role is configured by the platform administrator together with the organisation."
           },
-          indicator: {
-            title: "Visual Indicator",
-            description: "A badge on your dashboard clearly shows whether your active subscription is personal or assigned by an organization, so there is never any ambiguity."
-          }
+          assigned: {
+            title: "Assigned license",
+            description: "A seat bought by a trainer or an organisation was assigned to you. You can neither modify nor cancel it; the billing section and the Available plans menu are hidden. In the session composer, only the sizes this plan allows are shown."
+          },
+          assignedNote: "With an assigned license you cannot downgrade to a lower plan, but you can subscribe to a higher personal plan — or activate Discovery if you never had a personal subscription."
         },
 
-        multipleSubscriptions: {
-          title: "Multiple Subscriptions",
-          description: "If you have subscriptions from multiple sources (for example, a personal plan and an organization-assigned plan), they are displayed in a stacked view on your dashboard.",
-          stacked: {
-            title: "Stacked Display",
-            description: "When you hold two or more subscriptions from different sources, each one appears as a separate card. The subscription with the highest tier takes priority for determining your available features and quotas."
-          }
-        },
-
-        assignedSubscriptions: {
-          title: "Assigned Subscriptions",
-          description: "When your subscription is assigned by an organization, your experience is streamlined: the billing section is hidden since the organization handles payments directly.",
-          managedByAdmin: "Managed by your organization administrator who controls plan level and renewal",
-          noBilling: "Simplified view without billing details, since the organization handles all payments",
-          sameFeatures: "Access to the same features and quotas as a personal subscription of the same tier",
-          sessionComposerNote: "When creating a session with an org-managed subscription, sizes and features that are not available under your plan are hidden entirely from the session composer — only options you can actually use are shown."
-        },
-
-        freePlan: {
-          title: "Free Plan",
-          description: "The free plan lets you explore the platform and get started without any financial commitment.",
-          noCreditCard: {
-            title: "No Credit Card Required",
-            description: "You can activate the free plan instantly without entering any payment information. Simply create your account and start using the platform right away."
-          }
-        },
-
-        trialPeriod: {
-          title: "Trial Period",
-          description: "When you start a trial of a paid plan, your dashboard displays a countdown so you always know how much time remains before the trial ends.",
-          countdown: "A trial countdown timer is displayed prominently on your subscription dashboard",
-          daysRemaining: "The number of days remaining in your trial is shown clearly, updating daily",
-          upgradeAnytime: "You can upgrade to a paid plan at any time during the trial to keep uninterrupted access"
-        },
-
-        planChange: {
-          title: "Plan Changes",
-          description: "You can modify your subscription at any time as your needs evolve.",
-          step1: {
-            title: "Evaluate Your Needs",
-            description: "Analyze your current usage and identify the features you need to optimize your plan choice."
-          },
-          step2: {
-            title: "Compare Plans",
-            description: "Explore different available options and their benefits. Compare features, quotas, and pricing.",
-            button: "View Available Plans"
-          },
-          step3: {
-            title: "Make the Change",
-            description: "Select your new plan and follow the upgrade or downgrade process according to your needs."
-          },
-          tips: {
-            title: "Important Points to Remember:",
-            upgrade: {
-              title: "Upgrade",
-              description: "Upgrades take effect immediately. Billing is adjusted pro-rata for the current period."
-            },
-            downgrade: {
-              title: "Downgrade",
-              description: "Changes to a lower plan generally take effect at the next billing cycle to avoid data loss."
-            },
-            dataProtection: {
-              title: "Data Protection",
-              description: "Your data and configurations are preserved during plan changes. Only quotas and available features are modified."
-            }
-          }
-        },
-
-        optimization: {
-          title: "Usage Optimization",
-          description: "Maximize the value of your subscription by adopting these best practices:",
-          sessions: {
-            title: "Session Management",
-            description: "Close unused terminal sessions to save your quotas. Use appropriate expiration times for your sessions."
-          },
-          storage: {
-            title: "Efficient Storage",
-            description: "Regularly clean up temporary files and old projects. Use external Git repositories for large projects."
-          },
-          sharing: {
-            title: "Smart Sharing",
-            description: "Share resources with your collaborators to avoid duplication and optimize collective usage."
-          },
-          planning: {
-            title: "Usage Planning",
-            description: "Schedule intensive activities during off-peak hours and monitor your usage peaks."
-          }
-        },
-
-        suspension: {
-          title: "Suspension and Cancellation",
-          description: "You have full control over your subscription, including the ability to temporarily suspend it or cancel it permanently.",
-          pause: {
-            title: "Temporary Suspension",
-            description: "Put your subscription on pause for a set period. Ideal for vacations or planned periods of inactivity.",
-            feature1: "Preservation of all your data",
-            feature2: "Billing stopped during pause",
-            feature3: "Easy resumption when you want",
-            feature4: "Maximum duration according to terms"
-          },
-          cancel: {
-            title: "Permanent Cancellation",
-            description: "Cancel your subscription permanently. All data will be deleted after the grace period.",
-            feature1: "Access maintained until end of paid cycle",
-            feature2: "Grace period to recover data",
-            feature3: "Permanent deletion after expiration",
-            feature4: "Possibility of reactivation with new account"
-          },
-          warning: {
-            title: "Important",
-            description: "<strong>Back up your important data</strong> before any suspension or cancellation. Although we keep your data during a grace period, it is recommended to make local backups of your critical projects."
-          }
-        },
-
-        evolution: {
-          title: "Subscription System Evolution",
-          notice: "<strong>The OCF subscription system is under active development.</strong> New plan options, billing features, and management tools will be regularly added to better meet your needs.",
-          upcoming: {
-            title: "Planned Improvements:",
-            feature1: "Customizable plans with à la carte options",
-            feature2: "Billing based on actual usage",
-            feature3: "Team management and centralized billing",
-            feature4: "Integrations with existing management systems",
-            feature5: "Advanced usage analytics"
-          },
-          documentation: "This documentation will be updated to reflect new features as they are deployed."
-        },
-
-        support: {
-          title: "Support and Assistance",
-          description: "Our support team is here to help you with all your subscription questions:",
-          email: {
-            title: "Email Support",
-            description: "For general questions about your subscription",
-            button: "Contact Support"
-          },
-          billing: {
-            title: "Billing Questions",
-            description: "For payment and billing issues",
-            button: "Billing Support"
-          },
-          optimization: {
-            title: "Optimization Advice",
-            description: "To optimize your usage and choose the right plan",
-            button: "Request Advice"
-          }
+        cancel: {
+          title: "Cancelling and reactivating",
+          description: "The Cancel button on the dashboard opens a confirmation with two options:",
+          atPeriodEnd: "At the end of the paid period — you keep access until the date shown, then the subscription stops. The card shows “Access until”.",
+          immediately: "Immediately — the subscription stops right away.",
+          reactivate: "Until the end of the period is reached, the Reactivate button undoes the cancellation. After a cancellation, the dashboard also offers to reactivate the last subscription, or to activate the Discovery plan.",
+          portal: "The Stripe portal (Manage subscription button) also lets you update your card and review payments; see the Billing page."
         },
 
         nextSteps: {
           billing: {
-            title: "Billing",
-            description: "Manage your payment methods and view your invoices"
+            title: "Billing and payments",
+            description: "Invoices, billing addresses and payment methods"
           },
-          dashboard: {
-            title: "Dashboard",
-            description: "View your current usage and plan details"
+          organizations: {
+            title: "Organisations",
+            description: "How an organisation shares its plan with its members"
           },
-          plans: {
-            title: "Available Plans",
-            description: "Explore and compare all subscription plans"
+          terminals: {
+            title: "Terminal sessions",
+            description: "Compose a session with the sizes your plan allows"
           }
         }
       },
 
       billing: {
-        title: "Billing & Payments",
-        intro: "Everything you need to know about billing, payments, and financial management of your account.",
+        title: "Billing and payments",
+        intro: "Where to find your invoices, enter a billing address and manage your payment methods.",
 
-        system: {
-          title: "Billing System",
-          description: "OCF uses an automated billing system integrated with Stripe to ensure secure payments and transparent management of your subscription.",
-          recurring: {
-            title: "Recurring Billing",
-            description: "Subscriptions are automatically billed according to your chosen cycle (monthly or annual). You receive an invoice before each charge."
-          },
-          secure: {
-            title: "Secure Payments",
-            description: "All payments are processed via Stripe, the global leader in online payment security. Your data is protected."
-          },
-          transparent: {
-            title: "Transparent Billing",
-            description: "All charges are clearly detailed in your invoices. No hidden fees, only what you use and subscribe to."
-          }
-        },
-
-        paymentMethods: {
-          title: "Payment Methods",
-          description: "Manage your credit cards and other payment methods to ensure continuity of your OCF service.",
-          types: {
-            title: "Accepted payment types:",
-            visa: "Visa",
-            mastercard: "Mastercard",
-            amex: "American Express",
-            sepa: "SEPA Transfer"
-          },
-          management: {
-            title: "Managing your methods:",
-            add: {
-              title: "Add a Method",
-              description: "Add a new card or backup payment method",
-              button: "Manage Payments"
-            },
-            default: {
-              title: "Default Method",
-              description: "Set which method to use as priority for your invoices"
-            },
-            update: {
-              title: "Update",
-              description: "Modify information of an expired or changed card"
-            }
-          },
-          security: {
-            title: "Security Tips:",
-            tip1: "Only use secure connections (HTTPS)",
-            tip2: "Regularly check your bank statements",
-            tip3: "Enable payment notifications",
-            tip4: "Remove unused payment methods"
-          }
-        },
-
-        billingAddress: {
-          title: "Billing Addresses",
-          description: "Configure your billing addresses to receive invoices compliant with your country's tax regulations.",
-          importance: {
-            title: "Why it's important:",
-            fiscal: "Tax compliance according to your location",
-            vat: "Correct application of VAT and local taxes",
-            accounting: "Valid invoices for your accounting",
-            regulations: "Compliance with international regulations"
-          },
-          management: {
-            title: "Address Management:",
-            primary: {
-              title: "Primary Address",
-              description: "Your default billing address"
-            },
-            business: {
-              title: "Business Addresses",
-              description: "Corporate addresses for institutional billing"
-            },
-            edit: {
-              title: "Modification",
-              description: "Update in case of relocation or change"
-            },
-            button: "Manage Addresses"
-          }
+        whereToFind: {
+          title: "Where to find these pages",
+          description: "Click your name at the top right: the Billing & Payment section of the menu holds Payment Methods, Billing Addresses and Invoices. Your My subscription dashboard also shows your three most recent invoices.",
+          verified: "The Payment Methods and Billing Addresses pages require a verified email address.",
+          assigned: "If your plan is provided by an organisation or an assigned license, you are not billed: these pages stay reachable but empty."
         },
 
         invoices: {
-          title: "Invoice Consultation",
-          description: "Access all your OCF invoices, download them, and track your payment history for accounting.",
-          features: {
-            history: {
-              title: "Complete History",
-              description: "View all your invoices since the beginning of your subscription. Search by date, amount, or status."
-            },
-            download: {
-              title: "PDF Download",
-              description: "Download your invoices in PDF format for your accounting or tax returns."
-            },
-            details: {
-              title: "Transparent Details",
-              description: "Each invoice clearly details services used, billing periods, and applicable taxes."
-            },
-            button: "View My Invoices"
-          },
-          structure: {
-            title: "Structure of an OCF Invoice:",
-            headerLabel: "Header:",
-            header: "OCF information and your details",
-            periodLabel: "Period:",
-            period: "Service and billing dates",
-            detailLabel: "Detail:",
-            detail: "Services used and rates applied",
-            taxesLabel: "Taxes:",
-            taxes: "VAT and local taxes according to your country",
-            totalLabel: "Total:",
-            total: "Final amount and payment method"
-          }
+          title: "Invoices",
+          description: "The Invoices page lists every invoice issued for your account, synchronised from Stripe.",
+          filter: "Filter by status: all, paid, unpaid, drafts, voided, refunded or partially refunded.",
+          refresh: "The Refresh button resynchronises the list with Stripe.",
+          details: "Each invoice shows its number, amount, date, due date and payment date; an overdue invoice is flagged.",
+          download: "Download opens the invoice PDF; View in Stripe opens the page hosted by Stripe, where you can also pay it if it is pending.",
+          screenshot: "The Invoices page of an account that has not bought anything yet."
         },
 
-        paymentIssues: {
-          title: "Payment Issues",
-          description: "If you encounter difficulties with your payments, here are the steps to quickly resolve problems.",
-          declined: {
-            title: "Payment Declined",
-            causes: {
-              title: "Common Causes:",
-              insufficient: "Insufficient funds in account",
-              expired: "Expired or blocked card",
-              limit: "Payment limit exceeded",
-              incorrect: "Incorrect information"
-            },
-            solutions: {
-              title: "Solutions:",
-              balance: "Check your account balance",
-              update: "Update card information",
-              bank: "Contact your bank if necessary",
-              alternative: "Use an alternative payment method"
-            }
-          },
-          retry: {
-            title: "Retry",
-            description1: "OCF automatically makes several payment attempts over a few days in case of initial failure.",
-            description2: "You receive email notifications to inform you of the situation and allow you to correct the problem."
-          },
-          suspension: {
-            title: "Service Suspension",
-            description1: "In case of repeated payment failures, your service may be temporarily suspended to avoid accumulation of charges.",
-            description2: "Your account and data remain safe during suspension. Service resumes automatically after payment."
-          }
+        addresses: {
+          title: "Billing addresses",
+          description: "A billing address appears on your invoices. You can store several and mark one as default.",
+          fields: "Available fields: company name, SIRET, VAT number, address (two lines), postal code, city, state, country.",
+          default: "The default address carries a badge; the Set as default button switches to another one.",
+          edit: "Add, edit or delete an address with the buttons in the list."
         },
 
-        refunds: {
-          title: "Refunds and Credits",
-          description: "Information on refund conditions and the OCF credit system.",
-          policy: {
-            title: "Refund Policy:",
-            trial: {
-              title: "Trial Period",
-              description: "Full refund possible during the first 7 days of your first subscription (normal usage conditions)."
-            },
-            proration: {
-              title: "Pro-rata Refund",
-              description: "In case of downgrade or cancellation, refund calculated on unused period."
-            },
-            technical: {
-              title: "Technical Problems",
-              description: "Credits or refunds granted in case of prolonged service interruption due to technical problems."
-            }
-          },
-          credits: {
-            title: "Credit System:",
-            description1: "OCF may award credits to your account to compensate for inconveniences or as part of special promotions.",
-            description2: "Credits are automatically applied to your next invoices and appear clearly in your billing history."
-          }
+        paymentMethods: {
+          title: "Payment methods",
+          description: "The Payment Methods page lists your saved cards: brand, last four digits, expiry date, default card and a warning when the expiry is close.",
+          add: "To add or replace a card, the Add a card button opens the Stripe portal; when you come back, the list is resynchronised.",
+          default: "The Set as default button picks the card used for the next charges."
         },
 
-        evolution: {
-          title: "Billing System Evolution",
-          notice: "<strong>The OCF billing system continues to evolve</strong> to offer more flexibility and transparency in managing your payments and subscriptions.",
-          upcoming: {
-            title: "Improvements in Development:",
-            usage: "Detailed billing by actual resource usage",
-            alternatives: "Alternative payment options (crypto, transfers)",
-            group: "Group billing for organizations",
-            alerts: "Advanced consumption and budget alerts",
-            integration: "Integration with enterprise accounting systems",
-            currencies: "Local currencies and optimized international payments"
-          }
+        portal: {
+          title: "The Stripe portal",
+          description: "OCF stores no card data: payments and cards are handled by Stripe. The portal opens from Manage subscription (dashboard) or Add a card (payment methods) and brings you back to the app afterwards. There you can:",
+          card: "update your card;",
+          history: "review your payment history;",
+          invoices: "download your invoices."
         },
 
-        support: {
-          title: "Billing Support",
-          description: "Our support team specializes in quickly resolving billing and payment issues.",
-          email: {
-            title: "Email Support",
-            description: "Response within 24 hours for billing questions",
-            button: "Contact Support"
-          },
-          priority: {
-            title: "Priority Support",
-            description: "Phone assistance for urgent payment issues",
-            note: "Available for enterprise plans"
-          },
-          tips: {
-            title: "For effective support, include:",
-            email: "Your account email address",
-            invoice: "Invoice number concerned",
-            datetime: "Date and time of problem",
-            screenshot: "Screenshot if applicable"
-          }
-        },
-
-        resources: {
-          title: "Useful Resources",
+        nextSteps: {
           subscription: {
-            title: "Subscription Management",
-            description: "Understand and optimize your OCF plan"
+            title: "Subscription and plans",
+            description: "Subscribe, change plan, cancel"
           },
-          paymentMethods: {
-            title: "Payment Methods",
-            description: "Add and manage your cards and accounts"
+          licenses: {
+            title: "Learner licenses",
+            description: "Buy and assign seats to your learners"
           },
-          invoices: {
-            title: "My Invoices",
-            description: "View and download your invoices"
-          },
-          addresses: {
-            title: "Billing Addresses",
-            description: "Configure your billing information"
+          settings: {
+            title: "Settings",
+            description: "Language, theme, account security"
           }
         }
       },
 
       rolesAndPermissions: {
-        title: "Roles & Permissions",
-        intro: "Understand organization roles and what each role can do.",
-        rolesTitle: "Roles and Permissions",
-        rolesSubtitle: "Understanding user roles and access control in the system",
+        title: "Roles and permissions",
+        intro: "Who can do what: the two platform roles, then the roles inside an organisation and inside a class.",
         overviewTitle: "Overview",
-        overviewDescription: "The system uses a three-tier role model to manage access and permissions at different levels.",
-        platformLevel: "Platform Level",
-        platformLevelDesc: "System-wide administrator access with full control",
-        organizationLevel: "Organization Level",
-        organizationLevelDesc: "Manage organizations, members, billing, and subscriptions",
-        groupLevel: "Group Level",
-        groupLevelDesc: "Manage groups (classrooms), courses, and learner access",
-        orgRolesTitle: "Organization Roles",
-        orgRolesDescription: "These roles control access to organization management features:",
-        permission: "Permission",
+        overviewDescription: "Rights are read at three levels. On the platform everyone is a “member”; what makes the difference is your role in each organisation and each class.",
+        platformLevel: "Platform",
+        platformLevelDesc: "Only two roles: member and administrator. Every real user — learners, trainers, organisation managers — is a member. The administrator is the platform operator.",
+        organizationLevel: "Organisation",
+        organizationLevelDesc: "Member, teacher, manager or owner. The role decides who administers the organisation and who may create classes in it.",
+        groupLevel: "Class",
+        groupLevelDesc: "Member (learner), manager (co-trainer) or owner (the class creator).",
+        orgRolesTitle: "Roles in an organisation",
+        orgRolesDescription: "The role is changed from the organisation's Members tab; only an owner can name another owner.",
+        permission: "Action",
         owner: "Owner",
         manager: "Manager",
+        teacher: "Teacher",
         member: "Member",
-        viewOrganization: "View organization",
-        inviteMembers: "Invite members",
+        viewOrganization: "View the organisation and its members",
+        useOrgPlan: "Use the organisation plan in their terminals",
+        createClasses: "Create and run classes",
+        inviteMembers: "Add or import members",
         removeMembers: "Remove members",
-        changeRoles: "Change member roles",
-        promoteToOwner: "Promote members to owner",
-        manageBilling: "Manage billing",
-        manageSubscriptions: "Manage subscriptions",
-        editOrgSettings: "Edit organization settings",
-        deleteOrganization: "Delete organization",
+        changeRoles: "Change members' roles",
+        promoteToOwner: "Name an owner",
+        manageBilling: "Manage the organisation subscription",
+        editOrgSettings: "Edit settings",
+        deleteOrganization: "Delete the organisation",
         transferOwnership: "Transfer ownership",
         allowed: "Allowed",
-        partial: "Partial (with restrictions)",
+        partial: "Partial",
         denied: "Not allowed",
-        cannotPromoteToOwner: "Can change roles to member or manager, but not to owner",
-        groupRolesTitle: "Group Roles",
-        groupRolesDescription: "Groups represent classrooms or teams within an organization:",
+        cannotPromoteToOwner: "Can assign member, teacher or manager, but not owner",
+        groupRolesTitle: "Roles in a class",
+        groupRolesDescription: "A class is a group of the organisation. The trainer who creates it is its owner and can add co-trainers as managers.",
         groupOwner: "Owner",
-        groupOwnerDesc: "The group creator with full control over the group.",
-        groupOwnerPerm1: "Delete the group",
-        groupOwnerPerm2: "Transfer ownership",
-        groupOwnerPerm3: "Assign managers",
+        groupOwnerDesc: "The class creator.",
+        groupOwnerPerm1: "Everything a manager does",
+        groupOwnerPerm2: "Name other owners or managers",
+        groupOwnerPerm3: "Archive or delete the class",
         groupManager: "Manager",
-        groupManagerDesc: "Co-instructors with management permissions.",
-        groupManagerPerm1: "Manage group content and courses",
-        groupManagerPerm2: "Add/remove members",
-        groupManagerPerm3: "View group analytics",
+        groupManagerDesc: "A co-trainer.",
+        groupManagerPerm1: "Assign scenarios and launch sessions for the class",
+        groupManagerPerm2: "Follow learners live and step into their terminal",
+        groupManagerPerm3: "Add or remove learners, read analytics",
         groupMember: "Member",
-        groupMemberDesc: "Learners or participants in the group.",
-        groupMemberPerm1: "Access group content",
-        groupMemberPerm2: "Participate in courses",
-        groupMemberPerm3: "Use assigned resources",
-        platformAdminTitle: "Platform Administrator",
-        platformAdminNoticeTitle: "System-wide access",
-        platformAdminNoticeDesc: "Platform administrators have unrestricted access to all organizations, groups, and features. This role is reserved for system operators and bypasses all organization and group permissions.",
-        scenariosTitle: "Common Scenarios",
-        scenario1Question: "Can a manager delete an organization?",
-        scenario1Answer: "No. Only organization owners can delete organizations to prevent accidental data loss.",
-        scenario2Question: "Can a manager promote someone to owner?",
-        scenario2Answer: "No. Only current owners can promote members to owner status. Managers can only assign member or manager roles.",
-        scenario3Question: "What happens if an organization owner leaves?",
-        scenario3Answer: "The owner should transfer ownership to another member before leaving. If not, contact support to reassign ownership.",
-        scenario4Question: "Can I have multiple roles?",
-        scenario4Answer: "Yes. You can be an owner of one organization, a manager of another, and a member of groups within different organizations."
-      },
-
-      permissionsReference: {
-        title: "API Permissions Reference",
-        intro: "Complete technical reference of all API endpoints and their access control rules.",
-        subtitle: "Auto-generated reference of all API permissions, roles, and access rules",
-        loading: "Loading permissions reference...",
-        error: "Failed to load permissions reference. The API may be unavailable.",
-        retry: "Retry",
-        noData: "No permissions data available.",
-        legendTitle: "Understanding the Reference",
-        legendDescription: "Each API endpoint is protected by two layers: a platform role (member or admin) that controls HTTP-level access, and a fine-grained access rule that enforces business logic.",
-        legendMember: "All authenticated users (learners, teachers, trainers)",
-        legendAdmin: "Platform administrators only",
-        accessRulesTitle: "Access Rule Types",
-        accessSelf: "Self only",
-        accessSelfDesc: "Users can only access their own resources",
-        accessAdminOnly: "Admin only",
-        accessAdminOnlyDesc: "Restricted to platform administrators",
-        accessOwner: "Entity owner",
-        accessOwnerEntity: "Entity owner ({entity})",
-        accessOwnerDesc: "Only the resource owner can perform this action",
-        accessGroup: "Group role",
-        accessGroupRole: "Group role ({role}+)",
-        accessGroupDesc: "Requires a minimum group role (e.g., manager)",
-        accessOrg: "Org role",
-        accessOrgRole: "Org role ({role}+)",
-        accessOrgDesc: "Requires a minimum organization role (e.g., manager)",
-        accessAny: "Any member",
-        accessAnyDesc: "Any authenticated user can access this endpoint",
-        colAction: "Action",
-        colMethod: "Method",
-        colPath: "Path",
-        colRole: "Role",
-        colAccessRule: "Access Rule",
-        entityCrudTitle: "Entity CRUD Permissions",
-        entityCrudDescription: "Access rules for standard Create, Read, Update, Delete operations on each entity. These are enforced by the entity management framework.",
-        entityColumn: "Entity",
-        colCreate: "Create",
-        colRead: "Read",
-        colUpdate: "Update",
-        colDelete: "Delete"
+        groupMemberDesc: "A learner.",
+        groupMemberPerm1: "Launch the scenarios assigned to the class",
+        groupMemberPerm2: "Use the license assigned through the class",
+        groupMemberPerm3: "See their own progress",
+        platformAdminTitle: "Platform administrator",
+        platformAdminNoticeTitle: "Reserved for the operator",
+        platformAdminNoticeDesc: "The administrator bypasses organisation and class roles and sees all data. It is not a role you can assign: a school or training-organisation manager is a member holding the owner role of their organisation. In the interface, elements visible only thanks to this role carry a badge.",
+        scenariosTitle: "Frequent questions",
+        scenario1Question: "Can a manager delete the organisation?",
+        scenario1Answer: "No. Only an owner can delete the organisation or transfer its ownership.",
+        scenario2Question: "Which role should a trainer get?",
+        scenario2Answer: "Teacher is enough to create classes, enrol learners and follow them. Manager adds the administration of the organisation: members, subscription, settings.",
+        scenario3Question: "What happens if the owner leaves the organisation?",
+        scenario3Answer: "They must first transfer ownership to another member. An account cannot be deleted while it owns an organisation or a class.",
+        scenario4Question: "Can I hold several roles?",
+        scenario4Answer: "Yes. You can own one organisation, teach in another and be a learner in a class of a third. The user menu switches the active organisation.",
+        reference: {
+          title: "Technical reference",
+          description: "For integrators, the permissions reference lists every API endpoint with its platform role and its access rule.",
+          button: "Open the permissions reference"
+        }
       },
 
       settings: {
-        title: "Settings & Preferences",
-        intro: "Configure your account settings to personalize your experience, from language and theme to security and notifications.",
+        title: "Settings and preferences",
+        intro: "The Settings pages set your landing page, language, appearance, notifications, password and terminal access keys.",
         overview: {
-          title: "Overview",
-          description: "The Settings page lets you customize your account to suit your workflow. You can access it from the user menu in the top-right corner of the screen.",
-          access: "Click your avatar or username in the top-right corner, then select the setting you want to adjust from the dropdown menu."
+          title: "Reaching the settings",
+          description: "Click your name at the top right, then Settings. A dedicated side menu replaces the usual navigation; the arrow at the top of the menu takes you back to the app.",
+          autosave: "Each setting is saved as soon as you change it; a notification confirms the save."
         },
         navigation: {
-          title: "Navigation Settings",
-          description: "Choose which page loads by default when you log in to the platform.",
+          title: "Navigation",
+          description: "Default landing page: the page opened after login and when you click the OCF logo.",
           defaultPage: {
-            title: "Default Landing Page",
-            description: "Select your preferred starting page after login. You can choose between the terminal sessions page, the courses page, or any other main section of the platform."
+            title: "Available choices",
+            description: "Subscription dashboard, Terminal sessions, My classes or Groups (depending on the features enabled on the platform). Without an explicit choice, a trainer who runs classes in their active organisation lands on My classes; everyone else on Terminal sessions."
           }
         },
         localization: {
           title: "Localization",
-          description: "Adapt the platform to your language and regional preferences.",
+          description: "Interface language and timezone.",
           language: {
-            title: "Language",
-            description: "Switch the interface between French and English. All menus, labels, and help content will be displayed in your selected language."
+            title: "Preferred language",
+            description: "French or English. The change applies immediately to the whole interface, help included. The language selector at the top of the screen does the same."
           },
           timezone: {
             title: "Timezone",
-            description: "Set your timezone so that dates, session times, and scheduled events are displayed in your local time."
-          }
+            description: "Automatic (your browser's) or a fixed zone. It is used to display dates and times: sessions, invoices, history."
+          },
+          screenshot: "The Localization page."
         },
         ui: {
-          title: "UI Settings",
-          description: "Adjust the visual appearance and layout density of the platform.",
+          title: "User interface",
+          description: "The look of the application.",
           theme: {
             title: "Theme",
-            description: "Choose between light mode, dark mode, or automatic mode that follows your operating system preference."
+            description: "Light, Dark or Auto (follows your system). See the Dark mode and themes page."
           },
           compact: {
-            title: "Compact Mode",
-            description: "Toggle compact mode to reduce spacing between elements. This increases information density and is useful for power users who prefer a more condensed interface."
-          }
+            title: "Compact mode",
+            description: "Reduces spacing to fit more content on screen."
+          },
+          screenshot: "The User interface page."
         },
         notifications: {
           title: "Notifications",
-          description: "Control how and when you receive notifications from the platform.",
-          preferences: {
-            title: "Notification Preferences",
-            description: "Configure which notifications you want to receive. You can enable or disable notifications for different types of events such as session updates, group invitations, and system announcements."
-          }
+          description: "Two checkboxes: Email notifications and Desktop notifications (browser notifications)."
         },
         security: {
           title: "Security",
-          description: "Manage your account security by changing your password.",
-          currentPassword: {
-            title: "Current Password",
-            description: "Enter your current password to verify your identity before making changes."
+          description: "The page shows when the password was last changed and lets you set a new one.",
+          password: {
+            title: "Change password",
+            description: "Enter the current password, then the new one twice. Both entries must match and the password must be strong enough."
           },
-          newPassword: {
-            title: "New Password",
-            description: "Choose a strong new password. Use a mix of uppercase letters, lowercase letters, numbers, and special characters."
-          },
-          confirmation: {
-            title: "Confirm Password",
-            description: "Re-enter your new password to confirm it matches. Both fields must be identical to proceed."
+          deleteAccount: {
+            title: "Delete my account",
+            description: "At the bottom of the page, the danger zone permanently deletes your account: terminal sessions, SSH keys, scenario history and memberships are erased; invoices and payment records are anonymised and kept for accounting. You must first transfer ownership of the organisations and classes you own. Deletion asks you to type a confirmation text."
           }
         },
         sshKeys: {
-          title: "SSH Keys",
-          description: "Terminal access keys are managed from a dedicated page in the settings. These keys allow you to connect to terminal sessions.",
-          linkText: "For detailed information about managing your SSH keys, see the dedicated SSH Key Management article.",
-          button: "SSH Key Management Guide"
+          title: "Terminal access keys",
+          description: "The last entry of the menu manages your SSH keys, to connect to sessions from your own terminal.",
+          linkText: "The details are in the SSH keys guide of the Terminals section.",
+          button: "SSH keys guide"
         },
         version: {
-          title: "Application Version",
-          description: "The current version of the application is displayed at the bottom of the settings page. This information can be useful when reporting issues or verifying that you are running the latest version."
+          title: "Application version",
+          description: "The version numbers of the interface, the API and the terminal service are in the user menu, About section. Quote them when reporting a problem."
         },
         nextSteps: {
           themes: {
-            title: "Dark Mode & Themes",
-            description: "Learn more about theme options and visual customization"
+            title: "Dark mode and themes",
+            description: "Pick and switch the theme"
           },
           sshKeys: {
-            title: "SSH Key Management",
-            description: "Manage your terminal access keys"
+            title: "SSH keys",
+            description: "Connect to a session from your own terminal"
           },
           roles: {
-            title: "Roles & Permissions",
-            description: "Understand the role-based access control system"
+            title: "Roles and permissions",
+            description: "Who can do what in an organisation or a class"
           }
         }
       },
       themes: {
-        title: "Dark Mode & Themes",
-        intro: "Personalize the visual appearance of the platform with theme selection and display density options.",
-        overview: {
-          title: "Overview",
-          description: "The platform supports multiple visual themes so you can work in the environment that suits you best. Whether you prefer a bright interface for daytime work or a dark theme for late-night sessions, you can adjust the look and feel across the entire platform."
-        },
+        title: "Dark mode and themes",
+        intro: "The application offers a light theme, a dark theme and an automatic mode. The choice is saved with your account and applies everywhere, terminals included.",
         selection: {
-          title: "Theme Selection",
-          description: "Three theme modes are available to match your visual preference.",
+          title: "The three modes",
           light: {
-            title: "Light Theme",
-            description: "A bright, clean interface with light backgrounds and high contrast text. Ideal for well-lit environments and daytime use."
+            title: "Light",
+            description: "Light backgrounds, dark text. The default theme."
           },
           dark: {
-            title: "Dark Theme",
-            description: "A dark interface that reduces eye strain in low-light conditions. Dark backgrounds with light text for comfortable extended use."
+            title: "Dark",
+            description: "Dark backgrounds, light text: less strain in low light."
           },
           auto: {
-            title: "Auto Mode",
-            description: "Automatically follows your operating system or browser preference. The theme switches between light and dark based on your system settings."
-          }
-        },
-        compact: {
-          title: "Compact Mode",
-          description: "Adjust the spacing and density of the interface elements to show more or less content on screen.",
-          standard: {
-            title: "Standard Layout",
-            description: "Default spacing with comfortable padding between elements. Recommended for most users and provides a relaxed reading experience."
-          },
-          compact: {
-            title: "Compact Layout",
-            description: "Reduced spacing between elements for higher information density. Ideal for power users who want to see more content without scrolling."
+            title: "Auto (System)",
+            description: "Follows the light/dark setting of your operating system or browser, and switches along with it."
           }
         },
         whereToChange: {
-          title: "Where to Change Theme",
-          description: "You can change the theme from the Settings page under the UI Settings section.",
-          path: "Navigate to Settings > UI Settings to find the theme selector and compact mode toggle.",
-          button: "View Settings Guide"
-        },
-        consistency: {
-          title: "Consistent Experience",
-          description: "Your selected theme is applied consistently across all pages of the platform. Every section respects your visual preference for a unified experience.",
-          terminal: "Terminal sessions",
-          dashboard: "Dashboard & metrics",
-          help: "Help & documentation",
-          courses: "Course editor & viewer"
+          title: "Where to change the theme",
+          description: "User menu (your name at the top right) > Settings > User Interface > Theme. The change is immediate and saved.",
+          compact: "The same page offers compact mode, which tightens spacing.",
+          button: "See the settings guide",
+          screenshot: "The User interface page, where the theme is chosen."
         },
         nextSteps: {
           settings: {
-            title: "Settings & Preferences",
-            description: "Explore all available settings and customization options"
+            title: "Settings and preferences",
+            description: "Language, landing page, notifications, security"
           },
           gettingStarted: {
-            title: "Getting Started",
-            description: "Learn how to set up and use your first terminal"
+            title: "Getting started with terminals",
+            description: "Launch your first session"
           },
           subscription: {
-            title: "Subscription & Plans",
-            description: "Review your subscription and available features"
+            title: "Subscription and plans",
+            description: "Your plan and what it allows"
           }
         }
       }

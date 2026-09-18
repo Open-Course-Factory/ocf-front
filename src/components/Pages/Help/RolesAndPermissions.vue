@@ -1,261 +1,140 @@
+<!--
+/*
+ * Open Course Factory - Front
+ * Copyright (C) 2023-2026 Solution Libre
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * Copyright (c) - All Rights Reserved.
+ *
+ * See the LICENSE file for more information.
+ */
+-->
+
 <template>
-  <div class="help-article roles-permissions">
+  <div class="help-article">
     <div class="help-nav">
       <router-link :to="helpMainRoute" class="back-link">
         <i class="fas fa-arrow-left"></i>
         {{ t('help.navigation.backToHelp') }}
       </router-link>
     </div>
-    <div class="help-header">
-      <h1>
-        <i class="fas fa-user-shield"></i>
-        {{ t('help.account.rolesAndPermissions.rolesTitle') }}
-      </h1>
-      <p class="subtitle">{{ t('help.account.rolesAndPermissions.rolesSubtitle') }}</p>
+
+    <div class="article-header">
+      <h1><i class="fas fa-user-shield"></i> {{ t('help.account.rolesAndPermissions.title') }}</h1>
+      <p class="article-description">{{ t('help.account.rolesAndPermissions.intro') }}</p>
     </div>
 
-    <div class="help-content">
-      <!-- Overview Section -->
+    <div class="article-content">
       <section class="help-section">
-        <h2>{{ t('help.account.rolesAndPermissions.overviewTitle') }}</h2>
+        <h2><i class="fas fa-layer-group"></i> {{ t('help.account.rolesAndPermissions.overviewTitle') }}</h2>
         <p>{{ t('help.account.rolesAndPermissions.overviewDescription') }}</p>
 
-        <div class="role-levels">
-          <div class="level-card">
-            <div class="level-icon platform">
-              <i class="fas fa-globe"></i>
+        <div class="ocf-role-levels">
+          <div v-for="level in levels" :key="level.key" class="ocf-level-card">
+            <div class="ocf-level-icon" :class="level.key">
+              <i :class="level.icon"></i>
             </div>
-            <div class="level-content">
-              <h3>{{ t('help.account.rolesAndPermissions.platformLevel') }}</h3>
-              <p>{{ t('help.account.rolesAndPermissions.platformLevelDesc') }}</p>
-            </div>
-          </div>
-
-          <div class="level-card">
-            <div class="level-icon organization">
-              <i class="fas fa-building"></i>
-            </div>
-            <div class="level-content">
-              <h3>{{ t('help.account.rolesAndPermissions.organizationLevel') }}</h3>
-              <p>{{ t('help.account.rolesAndPermissions.organizationLevelDesc') }}</p>
-            </div>
-          </div>
-
-          <div class="level-card">
-            <div class="level-icon group">
-              <i class="fas fa-users-class"></i>
-            </div>
-            <div class="level-content">
-              <h3>{{ t('help.account.rolesAndPermissions.groupLevel') }}</h3>
-              <p>{{ t('help.account.rolesAndPermissions.groupLevelDesc') }}</p>
+            <div>
+              <h3>{{ t(`help.account.rolesAndPermissions.${level.key}Level`) }}</h3>
+              <p>{{ t(`help.account.rolesAndPermissions.${level.key}LevelDesc`) }}</p>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Organization Roles Section -->
       <section class="help-section">
-        <h2>
-          <i class="fas fa-building"></i>
-          {{ t('help.account.rolesAndPermissions.orgRolesTitle') }}
-        </h2>
+        <h2><i class="fas fa-building"></i> {{ t('help.account.rolesAndPermissions.orgRolesTitle') }}</h2>
         <p>{{ t('help.account.rolesAndPermissions.orgRolesDescription') }}</p>
 
-        <div class="permission-matrix">
+        <div class="ocf-permission-matrix">
           <table>
             <thead>
               <tr>
                 <th>{{ t('help.account.rolesAndPermissions.permission') }}</th>
-                <th class="role-col owner-col">
-                  <i class="fas fa-crown"></i>
-                  {{ t('help.account.rolesAndPermissions.owner') }}
-                </th>
-                <th class="role-col manager-col">
-                  <i class="fas fa-user-tie"></i>
-                  {{ t('help.account.rolesAndPermissions.manager') }}
-                </th>
-                <th class="role-col member-col">
-                  <i class="fas fa-user"></i>
-                  {{ t('help.account.rolesAndPermissions.member') }}
+                <th v-for="role in orgRoles" :key="role.key" class="ocf-role-col">
+                  <i :class="role.icon"></i>
+                  {{ t(`help.account.rolesAndPermissions.${role.key}`) }}
                 </th>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td class="permission-name">{{ t('help.account.rolesAndPermissions.viewOrganization') }}</td>
-                <td class="permission-check"><i class="fas fa-check"></i></td>
-                <td class="permission-check"><i class="fas fa-check"></i></td>
-                <td class="permission-check"><i class="fas fa-check"></i></td>
-              </tr>
-              <tr>
-                <td class="permission-name">{{ t('help.account.rolesAndPermissions.inviteMembers') }}</td>
-                <td class="permission-check"><i class="fas fa-check"></i></td>
-                <td class="permission-check"><i class="fas fa-check"></i></td>
-                <td class="permission-cross"><i class="fas fa-times"></i></td>
-              </tr>
-              <tr>
-                <td class="permission-name">{{ t('help.account.rolesAndPermissions.removeMembers') }}</td>
-                <td class="permission-check"><i class="fas fa-check"></i></td>
-                <td class="permission-check"><i class="fas fa-check"></i></td>
-                <td class="permission-cross"><i class="fas fa-times"></i></td>
-              </tr>
-              <tr>
-                <td class="permission-name">{{ t('help.account.rolesAndPermissions.changeRoles') }}</td>
-                <td class="permission-check"><i class="fas fa-check"></i></td>
-                <td class="permission-partial" :title="t('help.account.rolesAndPermissions.cannotPromoteToOwner')">
-                  <i class="fas fa-minus"></i>
+              <tr v-for="row in orgMatrix" :key="row.key">
+                <td class="ocf-permission-name">{{ t(`help.account.rolesAndPermissions.${row.key}`) }}</td>
+                <td
+                  v-for="(mark, index) in row.marks"
+                  :key="index"
+                  :class="`ocf-permission-${mark}`"
+                  :title="mark === 'partial' ? t('help.account.rolesAndPermissions.cannotPromoteToOwner') : undefined"
+                >
+                  <i :class="markIcons[mark]"></i>
                 </td>
-                <td class="permission-cross"><i class="fas fa-times"></i></td>
-              </tr>
-              <tr>
-                <td class="permission-name">{{ t('help.account.rolesAndPermissions.promoteToOwner') }}</td>
-                <td class="permission-check"><i class="fas fa-check"></i></td>
-                <td class="permission-cross"><i class="fas fa-times"></i></td>
-                <td class="permission-cross"><i class="fas fa-times"></i></td>
-              </tr>
-              <tr>
-                <td class="permission-name">{{ t('help.account.rolesAndPermissions.manageBilling') }}</td>
-                <td class="permission-check"><i class="fas fa-check"></i></td>
-                <td class="permission-check"><i class="fas fa-check"></i></td>
-                <td class="permission-cross"><i class="fas fa-times"></i></td>
-              </tr>
-              <tr>
-                <td class="permission-name">{{ t('help.account.rolesAndPermissions.manageSubscriptions') }}</td>
-                <td class="permission-check"><i class="fas fa-check"></i></td>
-                <td class="permission-check"><i class="fas fa-check"></i></td>
-                <td class="permission-cross"><i class="fas fa-times"></i></td>
-              </tr>
-              <tr>
-                <td class="permission-name">{{ t('help.account.rolesAndPermissions.editOrgSettings') }}</td>
-                <td class="permission-check"><i class="fas fa-check"></i></td>
-                <td class="permission-check"><i class="fas fa-check"></i></td>
-                <td class="permission-cross"><i class="fas fa-times"></i></td>
-              </tr>
-              <tr>
-                <td class="permission-name">{{ t('help.account.rolesAndPermissions.deleteOrganization') }}</td>
-                <td class="permission-check"><i class="fas fa-check"></i></td>
-                <td class="permission-cross"><i class="fas fa-times"></i></td>
-                <td class="permission-cross"><i class="fas fa-times"></i></td>
-              </tr>
-              <tr>
-                <td class="permission-name">{{ t('help.account.rolesAndPermissions.transferOwnership') }}</td>
-                <td class="permission-check"><i class="fas fa-check"></i></td>
-                <td class="permission-cross"><i class="fas fa-times"></i></td>
-                <td class="permission-cross"><i class="fas fa-times"></i></td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <div class="legend">
-          <div class="legend-item">
-            <i class="fas fa-check legend-icon check"></i>
-            <span>{{ t('help.account.rolesAndPermissions.allowed') }}</span>
-          </div>
-          <div class="legend-item">
-            <i class="fas fa-minus legend-icon partial"></i>
-            <span>{{ t('help.account.rolesAndPermissions.partial') }}</span>
-          </div>
-          <div class="legend-item">
-            <i class="fas fa-times legend-icon cross"></i>
-            <span>{{ t('help.account.rolesAndPermissions.denied') }}</span>
-          </div>
+        <div class="ocf-legend">
+          <span v-for="(icon, mark) in markIcons" :key="mark" class="ocf-legend-item">
+            <i :class="[icon, `ocf-legend-${mark}`]"></i>
+            {{ t(`help.account.rolesAndPermissions.${legendKeys[mark]}`) }}
+          </span>
         </div>
+        <p>{{ t('help.account.rolesAndPermissions.cannotPromoteToOwner') }}</p>
       </section>
 
-      <!-- Group Roles Section -->
       <section class="help-section">
-        <h2>
-          <i class="fas fa-users-class"></i>
-          {{ t('help.account.rolesAndPermissions.groupRolesTitle') }}
-        </h2>
+        <h2><i class="fas fa-chalkboard-teacher"></i> {{ t('help.account.rolesAndPermissions.groupRolesTitle') }}</h2>
         <p>{{ t('help.account.rolesAndPermissions.groupRolesDescription') }}</p>
 
-        <div class="role-descriptions">
-          <div class="role-desc-card">
-            <div class="role-desc-header owner-header">
-              <i class="fas fa-crown"></i>
-              <h3>{{ t('help.account.rolesAndPermissions.groupOwner') }}</h3>
+        <div class="ocf-role-cards">
+          <div v-for="role in groupRoles" :key="role.key" class="ocf-role-card">
+            <div class="ocf-role-card-header" :class="role.key">
+              <i :class="role.icon"></i>
+              <h3>{{ t(`help.account.rolesAndPermissions.group${role.label}`) }}</h3>
             </div>
-            <p>{{ t('help.account.rolesAndPermissions.groupOwnerDesc') }}</p>
+            <p>{{ t(`help.account.rolesAndPermissions.group${role.label}Desc`) }}</p>
             <ul>
-              <li>{{ t('help.account.rolesAndPermissions.groupOwnerPerm1') }}</li>
-              <li>{{ t('help.account.rolesAndPermissions.groupOwnerPerm2') }}</li>
-              <li>{{ t('help.account.rolesAndPermissions.groupOwnerPerm3') }}</li>
-            </ul>
-          </div>
-
-          <div class="role-desc-card">
-            <div class="role-desc-header manager-header">
-              <i class="fas fa-user-shield"></i>
-              <h3>{{ t('help.account.rolesAndPermissions.groupManager') }}</h3>
-            </div>
-            <p>{{ t('help.account.rolesAndPermissions.groupManagerDesc') }}</p>
-            <ul>
-              <li>{{ t('help.account.rolesAndPermissions.groupManagerPerm1') }}</li>
-              <li>{{ t('help.account.rolesAndPermissions.groupManagerPerm2') }}</li>
-              <li>{{ t('help.account.rolesAndPermissions.groupManagerPerm3') }}</li>
-            </ul>
-          </div>
-
-          <div class="role-desc-card">
-            <div class="role-desc-header member-header">
-              <i class="fas fa-user"></i>
-              <h3>{{ t('help.account.rolesAndPermissions.groupMember') }}</h3>
-            </div>
-            <p>{{ t('help.account.rolesAndPermissions.groupMemberDesc') }}</p>
-            <ul>
-              <li>{{ t('help.account.rolesAndPermissions.groupMemberPerm1') }}</li>
-              <li>{{ t('help.account.rolesAndPermissions.groupMemberPerm2') }}</li>
-              <li>{{ t('help.account.rolesAndPermissions.groupMemberPerm3') }}</li>
+              <li v-for="n in 3" :key="n">{{ t(`help.account.rolesAndPermissions.group${role.label}Perm${n}`) }}</li>
             </ul>
           </div>
         </div>
       </section>
 
-      <!-- Platform Admin Section -->
+      <section class="help-section warning">
+        <h2><i class="fas fa-shield-alt"></i> {{ t('help.account.rolesAndPermissions.platformAdminTitle') }}</h2>
+        <p><strong>{{ t('help.account.rolesAndPermissions.platformAdminNoticeTitle') }}</strong></p>
+        <p>{{ t('help.account.rolesAndPermissions.platformAdminNoticeDesc') }}</p>
+      </section>
+
       <section class="help-section">
-        <h2>
-          <i class="fas fa-user-cog"></i>
-          {{ t('help.account.rolesAndPermissions.platformAdminTitle') }}
-        </h2>
-        <div class="admin-notice">
-          <i class="fas fa-shield-alt"></i>
-          <div>
-            <p><strong>{{ t('help.account.rolesAndPermissions.platformAdminNoticeTitle') }}</strong></p>
-            <p>{{ t('help.account.rolesAndPermissions.platformAdminNoticeDesc') }}</p>
+        <h2><i class="fas fa-question-circle"></i> {{ t('help.account.rolesAndPermissions.scenariosTitle') }}</h2>
+        <div v-for="n in 4" :key="n" class="step-card">
+          <div class="step-number">?</div>
+          <div class="step-content">
+            <h4>{{ t(`help.account.rolesAndPermissions.scenario${n}Question`) }}</h4>
+            <p>{{ t(`help.account.rolesAndPermissions.scenario${n}Answer`) }}</p>
           </div>
         </div>
       </section>
 
-      <!-- Common Scenarios -->
-      <section class="help-section">
-        <h2>
-          <i class="fas fa-question-circle"></i>
-          {{ t('help.account.rolesAndPermissions.scenariosTitle') }}
-        </h2>
-
-        <div class="scenarios">
-          <div class="scenario">
-            <h4>{{ t('help.account.rolesAndPermissions.scenario1Question') }}</h4>
-            <p>{{ t('help.account.rolesAndPermissions.scenario1Answer') }}</p>
-          </div>
-
-          <div class="scenario">
-            <h4>{{ t('help.account.rolesAndPermissions.scenario2Question') }}</h4>
-            <p>{{ t('help.account.rolesAndPermissions.scenario2Answer') }}</p>
-          </div>
-
-          <div class="scenario">
-            <h4>{{ t('help.account.rolesAndPermissions.scenario3Question') }}</h4>
-            <p>{{ t('help.account.rolesAndPermissions.scenario3Answer') }}</p>
-          </div>
-
-          <div class="scenario">
-            <h4>{{ t('help.account.rolesAndPermissions.scenario4Question') }}</h4>
-            <p>{{ t('help.account.rolesAndPermissions.scenario4Answer') }}</p>
-          </div>
-        </div>
+      <section class="help-section info">
+        <h2><i class="fas fa-code"></i> {{ t('help.account.rolesAndPermissions.reference.title') }}</h2>
+        <p>{{ t('help.account.rolesAndPermissions.reference.description') }}</p>
+        <router-link :to="`${helpRoutePrefix}/account/permissions-reference`" class="btn btn-outline">
+          <i class="fas fa-lock"></i>
+          {{ t('help.account.rolesAndPermissions.reference.button') }}
+        </router-link>
       </section>
     </div>
   </div>
@@ -273,6 +152,54 @@ const route = useRoute()
 
 const isPublicHelp = computed(() => route.path.startsWith('/help-public'))
 const helpMainRoute = computed(() => isPublicHelp.value ? '/help-public' : '/help')
+const helpRoutePrefix = computed(() => isPublicHelp.value ? '/help-public' : '/help')
+
+const levels = [
+  { key: 'platform', icon: 'fas fa-globe' },
+  { key: 'organization', icon: 'fas fa-building' },
+  { key: 'group', icon: 'fas fa-chalkboard-teacher' }
+]
+
+// Organization hierarchy: member < teacher < manager < owner (ocf-core auth/access).
+const orgRoles = [
+  { key: 'owner', icon: 'fas fa-crown' },
+  { key: 'manager', icon: 'fas fa-user-tie' },
+  { key: 'teacher', icon: 'fas fa-chalkboard-teacher' },
+  { key: 'member', icon: 'fas fa-user' }
+]
+
+type Mark = 'check' | 'partial' | 'cross'
+const y: Mark = 'check'
+const p: Mark = 'partial'
+const n: Mark = 'cross'
+
+// Column order follows orgRoles: owner, manager, teacher, member.
+const orgMatrix: { key: string; marks: Mark[] }[] = [
+  { key: 'viewOrganization', marks: [y, y, y, y] },
+  { key: 'useOrgPlan', marks: [y, y, y, y] },
+  { key: 'createClasses', marks: [y, y, y, n] },
+  { key: 'inviteMembers', marks: [y, y, n, n] },
+  { key: 'removeMembers', marks: [y, y, n, n] },
+  { key: 'changeRoles', marks: [y, p, n, n] },
+  { key: 'promoteToOwner', marks: [y, n, n, n] },
+  { key: 'manageBilling', marks: [y, y, n, n] },
+  { key: 'editOrgSettings', marks: [y, y, n, n] },
+  { key: 'deleteOrganization', marks: [y, n, n, n] },
+  { key: 'transferOwnership', marks: [y, n, n, n] }
+]
+
+const markIcons: Record<Mark, string> = {
+  check: 'fas fa-check',
+  partial: 'fas fa-minus',
+  cross: 'fas fa-times'
+}
+const legendKeys: Record<Mark, string> = { check: 'allowed', partial: 'partial', cross: 'denied' }
+
+const groupRoles = [
+  { key: 'owner', label: 'Owner', icon: 'fas fa-crown' },
+  { key: 'manager', label: 'Manager', icon: 'fas fa-user-shield' },
+  { key: 'member', label: 'Member', icon: 'fas fa-user' }
+]
 
 onMounted(async () => {
   await loadHelpTranslations()
@@ -280,92 +207,24 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.help-article {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.help-header {
-  text-align: center;
-  margin-bottom: 3rem;
-  padding-bottom: 2rem;
-  border-bottom: 2px solid var(--color-border);
-}
-
-.help-header h1 {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  margin: 0 0 1rem 0;
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: var(--color-text-primary);
-}
-
-.help-header h1 i {
-  color: var(--color-primary);
-  font-size: 2.25rem;
-}
-
-.subtitle {
-  font-size: 1.125rem;
-  color: var(--color-text-secondary);
-  margin: 0;
-}
-
-.help-content {
-  display: flex;
-  flex-direction: column;
-  gap: 3rem;
-}
-
-.help-section h2 {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 0 0 1.5rem 0;
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.help-section h2 i {
-  color: var(--color-primary);
-  font-size: 1.5rem;
-}
-
-.help-section > p {
-  font-size: 1rem;
-  color: var(--color-text-secondary);
-  line-height: 1.6;
-  margin-bottom: 1.5rem;
-}
-
-.role-levels {
+.ocf-role-levels,
+.ocf-role-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1.5rem;
-  margin-top: 2rem;
+  margin: 1.5rem 0;
 }
 
-.level-card {
+.ocf-level-card {
   display: flex;
   gap: 1rem;
   padding: 1.5rem;
   background: var(--color-bg-primary);
   border: 2px solid var(--color-border);
   border-radius: 12px;
-  transition: all 0.3s ease;
 }
 
-.level-card:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.level-icon {
+.ocf-level-icon {
   width: 56px;
   height: 56px;
   border-radius: 12px;
@@ -374,301 +233,152 @@ onMounted(async () => {
   justify-content: center;
   font-size: 1.75rem;
   flex-shrink: 0;
+  background: var(--color-bg-secondary);
+  color: var(--color-primary);
 }
 
-.level-icon.platform {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.15) 100%);
-  color: var(--color-purple);
-}
-
-.level-icon.organization {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(96, 165, 250, 0.15) 100%);
-  color: var(--color-org-personal);
-}
-
-.level-icon.group {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(52, 211, 153, 0.15) 100%);
-  color: var(--color-org-team);
-}
-
-.level-content h3 {
+.ocf-level-card h3 {
   margin: 0 0 0.5rem 0;
   font-size: 1.125rem;
-  font-weight: 600;
   color: var(--color-text-primary);
 }
 
-.level-content p {
+.ocf-level-card p {
   margin: 0;
   font-size: 0.9375rem;
   color: var(--color-text-secondary);
   line-height: 1.5;
 }
 
-.permission-matrix {
+.ocf-permission-matrix {
   overflow-x: auto;
-  margin: 2rem 0;
+  margin: 1.5rem 0 1rem;
 }
 
-.permission-matrix table {
+.ocf-permission-matrix table {
   width: 100%;
   border-collapse: collapse;
   background: var(--color-bg-primary);
-  border-radius: 12px;
-  overflow: hidden;
 }
 
-.permission-matrix thead {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
-  color: white;
-}
-
-.permission-matrix th {
-  padding: 1rem 1.5rem;
+.ocf-permission-matrix th {
+  padding: 0.75rem 1rem;
   text-align: left;
+  background: var(--color-primary);
+  color: var(--color-white);
   font-weight: 600;
-  font-size: 0.9375rem;
 }
 
-.permission-matrix .role-col {
-  text-align: center;
-  min-width: 120px;
+.ocf-permission-matrix th i {
+  margin-right: 0.4rem;
 }
 
-.permission-matrix th i {
-  margin-right: 0.5rem;
-  font-size: 1rem;
+.ocf-role-col {
+  text-align: center !important;
+  min-width: 110px;
 }
 
-.permission-matrix tbody tr {
+.ocf-permission-matrix td {
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--color-border);
-  transition: background 0.2s ease;
-}
-
-.permission-matrix tbody tr:hover {
-  background: var(--color-bg-secondary);
-}
-
-.permission-matrix tbody tr:last-child {
-  border-bottom: none;
-}
-
-.permission-matrix td {
-  padding: 1rem 1.5rem;
   font-size: 0.9375rem;
 }
 
-.permission-name {
-  font-weight: 500;
+.ocf-permission-name {
   color: var(--color-text-primary);
+  font-weight: 500;
 }
 
-.permission-check,
-.permission-cross,
-.permission-partial {
+.ocf-permission-check,
+.ocf-permission-partial,
+.ocf-permission-cross {
   text-align: center;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
 }
 
-.permission-check i {
+.ocf-permission-check i,
+.ocf-legend-check {
   color: var(--color-success);
 }
 
-.permission-cross i {
-  color: var(--color-danger);
-}
-
-.permission-partial i {
+.ocf-permission-partial i,
+.ocf-legend-partial {
   color: var(--color-warning);
 }
 
-.legend {
-  display: flex;
-  gap: 2rem;
-  padding: 1rem 1.5rem;
-  background: var(--color-bg-secondary);
-  border-radius: 8px;
-  margin-top: 1rem;
+.ocf-permission-cross i,
+.ocf-legend-cross {
+  color: var(--color-danger);
 }
 
-.legend-item {
+.ocf-legend {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-bg-secondary);
+  border-radius: 8px;
   font-size: 0.9375rem;
   color: var(--color-text-secondary);
 }
 
-.legend-icon {
-  font-size: 1rem;
+.ocf-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.legend-icon.check {
-  color: var(--color-success);
-}
-
-.legend-icon.cross {
-  color: var(--color-danger);
-}
-
-.legend-icon.partial {
-  color: var(--color-warning);
-}
-
-.role-descriptions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  margin-top: 2rem;
-}
-
-.role-desc-card {
+.ocf-role-card {
   background: var(--color-bg-primary);
   border: 2px solid var(--color-border);
   border-radius: 12px;
   overflow: hidden;
-  transition: all 0.3s ease;
 }
 
-.role-desc-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-}
-
-.role-desc-header {
-  padding: 1.25rem 1.5rem;
+.ocf-role-card-header {
+  padding: 1rem 1.5rem;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: white;
+  color: var(--color-white);
+  background: var(--color-secondary);
 }
 
-.owner-header {
-  background: linear-gradient(135deg, var(--color-warning-amber) 0%, var(--color-warning-amber-light) 100%);
+.ocf-role-card-header.owner {
+  background: var(--color-warning);
 }
 
-.manager-header {
-  background: linear-gradient(135deg, var(--color-org-personal) 0%, var(--color-org-personal-light) 100%);
+.ocf-role-card-header.manager {
+  background: var(--color-primary);
 }
 
-.member-header {
-  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-gray-500) 100%);
-}
-
-.role-desc-header h3 {
+.ocf-role-card-header h3 {
   margin: 0;
   font-size: 1.125rem;
-  font-weight: 600;
 }
 
-.role-desc-header i {
-  font-size: 1.25rem;
-}
-
-.role-desc-card p {
-  padding: 1rem 1.5rem 0.5rem 1.5rem;
+.ocf-role-card p {
+  padding: 1rem 1.5rem 0;
   margin: 0;
-  font-size: 0.9375rem;
   color: var(--color-text-secondary);
-  line-height: 1.5;
 }
 
-.role-desc-card ul {
+.ocf-role-card ul {
   padding: 0.5rem 1.5rem 1.5rem 3rem;
   margin: 0;
-  list-style: disc;
-}
-
-.role-desc-card li {
-  font-size: 0.875rem;
   color: var(--color-text-secondary);
-  line-height: 1.6;
-  margin-bottom: 0.5rem;
 }
 
-.admin-notice {
-  display: flex;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(220, 38, 38, 0.08) 100%);
-  border: 2px solid rgba(239, 68, 68, 0.2);
-  border-radius: 12px;
-  margin-top: 1.5rem;
+.ocf-role-card li {
+  font-size: 0.9rem;
+  margin-bottom: 0.4rem;
 }
 
-.admin-notice i {
-  font-size: 2.5rem;
-  color: var(--color-danger);
-  flex-shrink: 0;
-}
-
-.admin-notice p {
-  margin: 0;
-  font-size: 0.9375rem;
-  color: var(--color-text-secondary);
-  line-height: 1.5;
-}
-
-.admin-notice strong {
-  color: var(--color-danger);
-  font-weight: 600;
-  font-size: 1rem;
-}
-
-.scenarios {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  margin-top: 1.5rem;
-}
-
-.scenario {
-  padding: 1.5rem;
-  background: var(--color-bg-primary);
-  border-left: 4px solid var(--color-primary);
-  border-radius: 8px;
-}
-
-.scenario h4 {
-  margin: 0 0 0.75rem 0;
-  font-size: 1.0625rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.scenario p {
-  margin: 0;
-  font-size: 0.9375rem;
-  color: var(--color-text-secondary);
-  line-height: 1.6;
-}
-
-/* Responsive */
 @media (max-width: 768px) {
-  .help-article {
-    padding: 1rem;
-  }
-
-  .help-header h1 {
-    font-size: 2rem;
-  }
-
-  .help-section h2 {
-    font-size: 1.5rem;
-  }
-
-  .permission-matrix {
-    font-size: 0.875rem;
-  }
-
-  .permission-matrix th,
-  .permission-matrix td {
-    padding: 0.75rem 1rem;
-  }
-
-  .legend {
-    flex-direction: column;
-    gap: 0.75rem;
+  .ocf-permission-matrix th,
+  .ocf-permission-matrix td {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.85rem;
   }
 }
 </style>

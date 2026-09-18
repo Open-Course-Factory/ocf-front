@@ -1174,729 +1174,392 @@ export const helpFr = {
 
     account: {
       subscription: {
-        title: "Abonnement et Plans",
-        intro: "Gérez votre abonnement, comprenez les fonctionnalités des plans et optimisez votre utilisation.",
+        title: "Abonnement et plans",
+        intro: "Ce que contient chaque formule, comment souscrire, changer de plan ou résilier, et comment lire votre tableau de bord d'abonnement.",
 
-        overview: {
-          title: "Vue d'ensemble des abonnements",
-          description: "OCF propose différents plans d'abonnement adaptés à vos besoins d'apprentissage et d'enseignement. Chaque plan offre un accès à des fonctionnalités spécifiques et des quotas d'utilisation.",
-          individual: {
-            title: "Plans individuels",
-            description: "Parfaits pour l'apprentissage personnel et les projets individuels. Accès aux terminaux, création de contenu et ressources de base."
+        catalogue: {
+          title: "Les formules",
+          description: "Quatre formules couvrent les usages, de la découverte à l'établissement. Elles se distinguent par la capacité de terminal (les tailles de machine que vous pouvez lancer en même temps), la durée maximale d'une session, la persistance des données et l'accès réseau.",
+          ttc: "Les prix affichés dans l'application et sur la page Tarifs sont TTC. En cas de doute, la page Tarifs fait foi.",
+          discovery: {
+            title: "Découverte",
+            price: "Gratuit",
+            description: "Une machine XS éphémère, sessions d'une heure, historique des commandes 7 jours, sans accès réseau. Aucune carte bancaire n'est demandée."
           },
-          educational: {
-            title: "Plans éducatifs",
-            description: "Conçus pour les enseignants et formateurs. Fonctionnalités avancées de collaboration et gestion de classes."
+          solo: {
+            title: "Solo",
+            price: "11,90 € TTC / mois",
+            description: "Pour apprendre et préparer ses supports : 1 XL ou 1 L ou 3 M en simultané, sessions jusqu'à 8 h, accès Internet, machines persistantes (5 Go), historique 90 jours."
           },
-          enterprise: {
-            title: "Plans entreprise",
-            description: "Solutions pour les organisations et institutions. Support prioritaire, personnalisation et intégrations avancées."
+          trainer: {
+            title: "Formateur",
+            price: "19,90 € TTC / mois",
+            description: "Pour animer des formations : mêmes machines que Solo, 20 Go de persistance, historique 365 jours, classes et supervision des sessions. Les sièges apprenants s'achètent séparément, à la journée ou au mois."
+          },
+          school: {
+            title: "Écoles et organismes de formation",
+            price: "Sur devis",
+            description: "Capacité et tarifs négociés, licences attribuées administrativement à vos apprenants, facturation sur devis. Contactez-nous depuis la page Tarifs."
+          },
+          screenshot: "La page Plans disponibles, avec le plan actif signalé par le badge « Actuel »."
+        },
+
+        whereToFind: {
+          title: "Où trouver ces pages",
+          description: "Dans le menu latéral, la rubrique Abonnement & Licences regroupe :",
+          dashboard: "Mon abonnement — votre tableau de bord : plan actif, utilisation, factures récentes.",
+          plans: "Plans disponibles — la grille des formules pour souscrire ou changer de plan.",
+          pricing: "Tarifs publics — la page Tarifs telle que la voient les visiteurs, ouverte dans un nouvel onglet.",
+          licenses: "Acheter des licences et Gérer les licences — les sièges apprenants (formule Formateur)."
+        },
+
+        subscribe: {
+          title: "Souscrire",
+          description: "Depuis Plans disponibles, choisissez la vue grille ou le tableau comparatif (capacité, durée de session, stockage, réseau, supervision, historique des commandes), puis cliquez sur le bouton du plan voulu.",
+          free: {
+            title: "Plan Découverte",
+            description: "Il s'active immédiatement, sans paiement ni carte bancaire. Vous arrivez sur votre tableau de bord avec le plan actif."
+          },
+          paid: {
+            title: "Plan payant",
+            description: "Une fenêtre récapitule le plan et son prix TTC, propose un code promo facultatif et vous demande de cocher la renonciation au délai de rétractation de 14 jours (le service démarre tout de suite). Vous êtes ensuite redirigé vers la page de paiement sécurisée Stripe ; à la fin, vous revenez dans l'application avec l'abonnement actif. Si vous annulez sur Stripe, vous revenez sur une page qui propose de réessayer."
+          },
+          emailVerified: "Un plan payant exige une adresse e-mail vérifiée. Si ce n'est pas encore fait, le bouton du plan vous renvoie vers la vérification.",
+          screenshot: "La page Tarifs, publique, avec les quatre formules et la mention des prix TTC."
+        },
+
+        changePlan: {
+          title: "Changer de plan",
+          description: "Le bouton de chaque carte indique le sens du changement : Passer au plan supérieur ou Rétrograder.",
+          upgrade: {
+            title: "D'un plan payant à un autre",
+            description: "Une confirmation précise que la différence est facturée immédiatement au prorata de la période en cours. Le nouveau plan s'applique aussitôt, sans repasser par Stripe."
+          },
+          fromFree: {
+            title: "De Découverte à un plan payant",
+            description: "C'est une nouvelle souscription : vous passez par la fenêtre de paiement décrite ci-dessus, et le plan gratuit est remplacé une fois le paiement effectué."
+          },
+          toFree: {
+            title: "D'un plan payant à Découverte",
+            description: "Après confirmation, l'abonnement en cours est résilié immédiatement puis le plan Découverte est activé. Vous n'êtes plus facturé."
           }
         },
 
         dashboard: {
-          title: "Tableau de bord abonnement",
-          description: "Le tableau de bord vous donne une vue complète de votre abonnement actuel et de votre utilisation.",
-          usage: {
-            title: "Suivi de l'utilisation",
-            description: "Surveillez votre consommation de ressources : sessions terminal actives, stockage utilisé, bande passante et autres métriques importantes.",
-            button: "Voir le tableau de bord"
-          },
-          info: {
-            title: "Informations d'abonnement",
-            description: "Consultez les détails de votre plan actuel : date de renouvellement, fonctionnalités incluses, limites et quotas disponibles."
-          },
-          alerts: {
-            title: "Alertes et notifications",
-            description: "Recevez des alertes lorsque vous approchez de vos limites d'utilisation ou lorsque votre abonnement nécessite une attention."
-          }
+          title: "Le tableau de bord Mon abonnement",
+          description: "La carte Votre abonnement actif indique ce qui alimente vos terminaux en ce moment :",
+          plan: "Le nom du plan et son type : Abonnement personnel, Licence attribuée ou Organisation.",
+          source: "La source (qui paie) et, pour une licence attribuée, la personne qui vous l'a fournie.",
+          priority: "La priorité du plan. Si vous cumulez plusieurs abonnements, celui de priorité la plus élevée est actif ; s'il expire, le suivant prend automatiquement le relais.",
+          features: "Les fonctionnalités clés : capacité exprimée en tailles de machines (par exemple « 1 XL ou 1 L ou 3 M »), durée de session, stockage, accès réseau.",
+          billing: "La date de prochaine facturation, ou la date de fin d'accès si une résiliation est programmée.",
+          actions: "Pour un abonnement personnel payant, les boutons Gérer l'abonnement (portail Stripe), Changer de plan, Annuler ou Réactiver.",
+          screenshot: "Le tableau de bord d'une formatrice dont le plan est fourni par son organisation."
         },
 
-        usageMetrics: {
-          title: "Indicateurs d'utilisation",
-          description: "Le tableau de bord de votre abonnement affiche les indicateurs clés d'utilisation pour suivre votre consommation en un coup d'oeil.",
-          activeCourses: {
-            title: "Cours actifs",
-            description: "Le nombre de cours actuellement actifs sur votre compte. Ce compteur reflète les cours en cours ou publiés, vous permettant de suivre votre production de contenu."
-          },
-          concurrentTerminals: {
-            title: "Capacité Terminal",
-            description: "Votre forfait comprend un budget CPU + mémoire partagé entre les sessions terminal actives. Lancez n'importe quelle combinaison de tailles qui rentre dedans — par exemple, 2 sessions L, ou 4 sessions M, ou 8 sessions S. Le tableau de bord affiche votre consommation actuelle et votre capacité restante en temps réel."
-          },
-          concurrentUsers: {
-            title: "Utilisateurs simultanés",
-            description: "Le nombre d'utilisateurs connectés en même temps sur l'ensemble de vos sessions. Cet indicateur est particulièrement pertinent pour les formateurs gérant des classes en direct."
-          }
+        usage: {
+          title: "Mon utilisation",
+          description: "Sous la carte, le panneau Mon utilisation se déplie pour montrer votre consommation en temps réel :",
+          plan: "Le plan qui s'applique et sa source (personnel, ou fourni par votre organisation).",
+          capacity: "La capacité du plan et la capacité restante, exprimées en tailles de machines encore lançables (« ≈ 1 L ou 2 M »).",
+          bars: "Deux barres CPU et RAM : ce qu'occupent vos sessions actives sur le budget du plan.",
+          sessions: "La liste des sessions actives : nom, taille, vCPU et mémoire, état (en cours ou en pause) et temps écoulé.",
+          refresh: "Le panneau se rafraîchit toutes les 30 secondes ; le bouton de rafraîchissement force une mise à jour. Quand la capacité est épuisée, arrêtez une session pour pouvoir en lancer une autre.",
+          orgPanel: "Si vous gérez une organisation, un second panneau montre l'utilisation de l'ensemble de ses membres : le budget est partagé entre eux."
         },
 
-        subscriptionSource: {
-          title: "Source de l'abonnement",
-          description: "Votre abonnement peut provenir de deux sources différentes. Le tableau de bord indique clairement laquelle est actuellement active.",
+        sources: {
+          title: "Personnel, organisation ou licence attribuée",
+          description: "Un abonnement peut venir de trois sources. Le badge de la carte vous dit laquelle est active.",
           personal: {
             title: "Abonnement personnel",
-            description: "Un abonnement que vous avez souscrit et que vous gérez vous-même. Vous avez le contrôle total sur la facturation, les changements de plan et l'annulation."
+            description: "Vous l'avez souscrit et vous le gérez : facturation, changement de plan, résiliation."
           },
           organization: {
-            title: "Abonnement attribué par une organisation",
-            description: "Un abonnement qui vous a été attribué par un administrateur d'organisation. L'organisation gère la facturation et les paramètres du plan en votre nom."
+            title: "Abonnement de l'organisation",
+            description: "Votre organisation (école, organisme de formation, équipe) détient un plan et vous en héritez en tant que membre. Le plan appliqué à chaque rôle est configuré par l'administrateur de la plateforme avec l'organisation."
           },
-          indicator: {
-            title: "Indicateur visuel",
-            description: "Un badge sur votre tableau de bord indique clairement si votre abonnement actif est personnel ou attribué par une organisation, pour lever toute ambiguïté."
-          }
+          assigned: {
+            title: "Licence attribuée",
+            description: "Un siège acheté par un formateur ou une organisation vous a été attribué. Vous ne pouvez ni le modifier ni le résilier ; la section facturation et le menu Plans disponibles sont masqués. Dans le compositeur de session, seules les tailles permises par ce plan apparaissent."
+          },
+          assignedNote: "Avec une licence attribuée, vous ne pouvez pas rétrograder vers un plan inférieur, mais vous pouvez souscrire un abonnement personnel plus élevé — ou activer Découverte si vous n'avez jamais eu d'abonnement personnel."
         },
 
-        multipleSubscriptions: {
-          title: "Abonnements multiples",
-          description: "Si vous disposez d'abonnements provenant de plusieurs sources (par exemple, un plan personnel et un plan attribué par une organisation), ils sont affichés sous forme empilée sur votre tableau de bord.",
-          stacked: {
-            title: "Affichage empilé",
-            description: "Lorsque vous détenez deux abonnements ou plus provenant de sources différentes, chacun apparaît sous forme de carte distincte. L'abonnement de niveau le plus élevé a la priorité pour déterminer vos fonctionnalités et quotas disponibles."
-          }
-        },
-
-        assignedSubscriptions: {
-          title: "Abonnements attribués",
-          description: "Lorsque votre abonnement est attribué par une organisation, votre expérience est simplifiée : la section facturation est masquée puisque l'organisation gère directement les paiements.",
-          managedByAdmin: "Géré par l'administrateur de votre organisation qui contrôle le niveau du plan et le renouvellement",
-          noBilling: "Vue simplifiée sans détails de facturation, l'organisation prenant en charge tous les paiements",
-          sameFeatures: "Accès aux mêmes fonctionnalités et quotas qu'un abonnement personnel du même niveau",
-          sessionComposerNote: "Lors de la création d'une session avec un abonnement géré par l'organisation, les tailles et fonctionnalités non disponibles dans votre plan sont entièrement masquées dans le compositeur de session — seules les options accessibles vous sont présentées."
-        },
-
-        freePlan: {
-          title: "Plan gratuit",
-          description: "Le plan gratuit vous permet d'explorer la plateforme et de démarrer sans aucun engagement financier.",
-          noCreditCard: {
-            title: "Aucune carte bancaire requise",
-            description: "Vous pouvez activer le plan gratuit instantanément sans saisir aucune information de paiement. Créez simplement votre compte et commencez à utiliser la plateforme immédiatement."
-          }
-        },
-
-        trialPeriod: {
-          title: "Période d'essai",
-          description: "Lorsque vous démarrez l'essai d'un plan payant, votre tableau de bord affiche un compte à rebours pour que vous sachiez toujours combien de temps il reste avant la fin de l'essai.",
-          countdown: "Un compteur de compte à rebours d'essai est affiché de manière visible sur votre tableau de bord d'abonnement",
-          daysRemaining: "Le nombre de jours restants dans votre essai est affiché clairement, avec une mise à jour quotidienne",
-          upgradeAnytime: "Vous pouvez passer à un plan payant à tout moment pendant l'essai pour conserver un accès ininterrompu"
-        },
-
-        planChange: {
-          title: "Changement de plan",
-          description: "Vous pouvez modifier votre abonnement à tout moment selon l'évolution de vos besoins.",
-          step1: {
-            title: "Évaluer vos besoins",
-            description: "Analysez votre utilisation actuelle et identifiez les fonctionnalités dont vous avez besoin pour optimiser votre choix de plan."
-          },
-          step2: {
-            title: "Comparer les plans",
-            description: "Explorez les différentes options disponibles et leurs avantages. Comparez les fonctionnalités, quotas et tarifs.",
-            button: "Voir les plans disponibles"
-          },
-          step3: {
-            title: "Effectuer le changement",
-            description: "Sélectionnez votre nouveau plan et suivez le processus de mise à niveau ou de rétrogradation selon vos besoins."
-          },
-          tips: {
-            title: "Points importants à retenir :",
-            upgrade: {
-              title: "Mise à niveau",
-              description: "Les améliorations prennent effet immédiatement. La facturation est ajustée au prorata pour la période en cours."
-            },
-            downgrade: {
-              title: "Rétrogradation",
-              description: "Les changements vers un plan inférieur prennent généralement effet au prochain cycle de facturation pour éviter la perte de données."
-            },
-            dataProtection: {
-              title: "Protection des données",
-              description: "Vos données et configurations sont préservées lors des changements de plan. Seuls les quotas et fonctionnalités disponibles sont modifiés."
-            }
-          }
-        },
-
-        optimization: {
-          title: "Optimisation de l'utilisation",
-          description: "Maximisez la valeur de votre abonnement en adoptant ces bonnes pratiques :",
-          sessions: {
-            title: "Gestion des sessions",
-            description: "Fermez les sessions terminal inutilisées pour économiser vos quotas. Utilisez des durées d'expiration appropriées pour vos sessions."
-          },
-          storage: {
-            title: "Stockage efficace",
-            description: "Nettoyez régulièrement les fichiers temporaires et anciens projets. Utilisez des dépôts Git externes pour les gros projets."
-          },
-          sharing: {
-            title: "Partage intelligent",
-            description: "Partagez les ressources avec vos collaborateurs pour éviter la duplication et optimiser l'utilisation collective."
-          },
-          planning: {
-            title: "Planification d'usage",
-            description: "Planifiez vos activités intensives pendant les heures creuses et surveillez vos pics d'utilisation."
-          }
-        },
-
-        suspension: {
-          title: "Suspension et annulation",
-          description: "Vous avez le contrôle total sur votre abonnement, y compris la possibilité de le suspendre temporairement ou de l'annuler définitivement.",
-          pause: {
-            title: "Suspension temporaire",
-            description: "Mettez votre abonnement en pause pendant une période déterminée. Idéal pour les vacances ou les périodes d'inactivité prévues.",
-            feature1: "Conservation de toutes vos données",
-            feature2: "Arrêt de la facturation pendant la pause",
-            feature3: "Reprise facile quand vous le souhaitez",
-            feature4: "Durée maximale selon les conditions"
-          },
-          cancel: {
-            title: "Annulation définitive",
-            description: "Annulez votre abonnement de manière permanente. Toutes les données seront supprimées après la période de grâce.",
-            feature1: "Accès maintenu jusqu'à la fin du cycle payé",
-            feature2: "Période de grâce pour récupérer les données",
-            feature3: "Suppression définitive après expiration",
-            feature4: "Possibilité de réactivation avec nouveau compte"
-          },
-          warning: {
-            title: "Important",
-            description: "<strong>Sauvegardez vos données importantes</strong> avant toute suspension ou annulation. Bien que nous conservions vos données pendant une période de grâce, il est recommandé de faire des sauvegardes locales de vos projets critiques."
-          }
-        },
-
-        evolution: {
-          title: "Évolution du système d'abonnement",
-          notice: "<strong>Le système d'abonnement OCF est en développement actif.</strong> De nouvelles options de plans, fonctionnalités de facturation et outils de gestion seront régulièrement ajoutés pour mieux répondre à vos besoins.",
-          upcoming: {
-            title: "Améliorations prévues :",
-            feature1: "Plans personnalisables avec options à la carte",
-            feature2: "Facturation basée sur l'utilisation réelle",
-            feature3: "Gestion d'équipe et facturation centralisée",
-            feature4: "Intégrations avec systèmes de gestion existants",
-            feature5: "Analytics avancés d'utilisation"
-          },
-          documentation: "Cette documentation sera mise à jour pour refléter les nouvelles fonctionnalités au fur et à mesure de leur déploiement."
-        },
-
-        support: {
-          title: "Support et assistance",
-          description: "Notre équipe support est là pour vous aider avec toutes vos questions d'abonnement :",
-          email: {
-            title: "Support par email",
-            description: "Pour les questions générales sur votre abonnement",
-            button: "Contacter le support"
-          },
-          billing: {
-            title: "Questions de facturation",
-            description: "Pour les problèmes de paiement et facturation",
-            button: "Support facturation"
-          },
-          optimization: {
-            title: "Conseils d'optimisation",
-            description: "Pour optimiser votre utilisation et choisir le bon plan",
-            button: "Demander conseil"
-          }
+        cancel: {
+          title: "Résilier et réactiver",
+          description: "Le bouton Annuler du tableau de bord ouvre une confirmation avec deux options :",
+          atPeriodEnd: "À la fin de la période payée — vous gardez l'accès jusqu'à la date indiquée, puis l'abonnement s'arrête. La carte affiche « Accès jusqu'au ».",
+          immediately: "Immédiatement — l'abonnement s'arrête tout de suite.",
+          reactivate: "Tant que la fin de période n'est pas atteinte, le bouton Réactiver annule la résiliation. Après une résiliation, le tableau de bord propose aussi de réactiver le dernier abonnement, ou d'activer le plan Découverte.",
+          portal: "Le portail Stripe (bouton Gérer l'abonnement) permet aussi de mettre à jour la carte bancaire et de consulter les paiements ; voir la page Facturation."
         },
 
         nextSteps: {
           billing: {
-            title: "Facturation",
-            description: "Gérer vos méthodes de paiement et consulter vos factures"
+            title: "Facturation et paiements",
+            description: "Factures, adresses de facturation et moyens de paiement"
           },
-          dashboard: {
-            title: "Tableau de bord",
-            description: "Consulter votre utilisation actuelle et les détails de votre plan"
+          organizations: {
+            title: "Organisations",
+            description: "Comment une organisation partage son plan avec ses membres"
           },
-          plans: {
-            title: "Plans disponibles",
-            description: "Explorer et comparer tous les plans d'abonnement"
+          terminals: {
+            title: "Sessions de terminal",
+            description: "Composer une session avec les tailles permises par votre plan"
           }
         }
       },
 
       billing: {
-        title: "Facturation et Paiements",
-        intro: "Tout ce que vous devez savoir sur la facturation, les paiements et la gestion financière de votre compte.",
+        title: "Facturation et paiements",
+        intro: "Où retrouver vos factures, renseigner une adresse de facturation et gérer vos moyens de paiement.",
 
-        system: {
-          title: "Système de facturation",
-          description: "OCF utilise un système de facturation automatisé intégré avec Stripe pour garantir des paiements sécurisés et une gestion transparente de votre abonnement.",
-          recurring: {
-            title: "Facturation récurrente",
-            description: "Les abonnements sont facturés automatiquement selon votre cycle choisi (mensuel ou annuel). Vous recevez une facture avant chaque prélèvement."
-          },
-          secure: {
-            title: "Paiements sécurisés",
-            description: "Tous les paiements sont traités via Stripe, leader mondial de la sécurité des paiements en ligne. Vos données sont protégées."
-          },
-          transparent: {
-            title: "Facturation transparente",
-            description: "Toutes les charges sont clairement détaillées dans vos factures. Pas de frais cachés, seulement ce que vous utilisez et souscrivez."
-          }
-        },
-
-        paymentMethods: {
-          title: "Méthodes de paiement",
-          description: "Gérez vos cartes de crédit et autres méthodes de paiement pour assurer la continuité de votre service OCF.",
-          types: {
-            title: "Types de paiement acceptés :",
-            visa: "Visa",
-            mastercard: "Mastercard",
-            amex: "American Express",
-            sepa: "Virement SEPA"
-          },
-          management: {
-            title: "Gestion de vos méthodes :",
-            add: {
-              title: "Ajouter une méthode",
-              description: "Ajoutez une nouvelle carte ou méthode de paiement de secours",
-              button: "Gérer les paiements"
-            },
-            default: {
-              title: "Méthode par défaut",
-              description: "Définissez quelle méthode utiliser en priorité pour vos factures"
-            },
-            update: {
-              title: "Mise à jour",
-              description: "Modifiez les informations d'une carte expirée ou changée"
-            }
-          },
-          security: {
-            title: "Conseils de sécurité :",
-            tip1: "Utilisez uniquement des connexions sécurisées (HTTPS)",
-            tip2: "Vérifiez régulièrement vos relevés bancaires",
-            tip3: "Activez les notifications de paiement",
-            tip4: "Supprimez les méthodes de paiement inutilisées"
-          }
-        },
-
-        billingAddress: {
-          title: "Adresses de facturation",
-          description: "Configurez vos adresses de facturation pour recevoir des factures conformes aux réglementations fiscales de votre pays.",
-          importance: {
-            title: "Pourquoi c'est important :",
-            fiscal: "Conformité fiscale selon votre localisation",
-            vat: "Application correcte de la TVA et taxes locales",
-            accounting: "Factures valides pour votre comptabilité",
-            regulations: "Respect des réglementations internationales"
-          },
-          management: {
-            title: "Gestion des adresses :",
-            primary: {
-              title: "Adresse principale",
-              description: "Votre adresse de facturation par défaut"
-            },
-            business: {
-              title: "Adresses professionnelles",
-              description: "Adresses d'entreprise pour facturation institutionnelle"
-            },
-            edit: {
-              title: "Modification",
-              description: "Mise à jour en cas de déménagement ou changement"
-            },
-            button: "Gérer les adresses"
-          }
+        whereToFind: {
+          title: "Où trouver ces pages",
+          description: "Cliquez sur votre nom en haut à droite : la section Facturation et Paiement du menu contient Moyens de paiement, Adresses de facturation et Factures. Votre tableau de bord Mon abonnement affiche aussi vos trois factures les plus récentes.",
+          verified: "Les pages Moyens de paiement et Adresses de facturation exigent une adresse e-mail vérifiée.",
+          assigned: "Si votre plan vous est fourni par une organisation ou une licence attribuée, vous n'êtes pas facturé : ces pages restent accessibles mais vides."
         },
 
         invoices: {
-          title: "Consultation des factures",
-          description: "Accédez à toutes vos factures OCF, téléchargez-les et suivez l'historique de vos paiements pour votre comptabilité.",
-          features: {
-            history: {
-              title: "Historique complet",
-              description: "Consultez toutes vos factures depuis le début de votre abonnement. Recherchez par date, montant ou statut."
-            },
-            download: {
-              title: "Téléchargement PDF",
-              description: "Téléchargez vos factures au format PDF pour votre comptabilité ou vos déclarations fiscales."
-            },
-            details: {
-              title: "Détails transparents",
-              description: "Chaque facture détaille clairement les services utilisés, les périodes de facturation et les taxes applicables."
-            },
-            button: "Consulter mes factures"
-          },
-          structure: {
-            title: "Structure d'une facture OCF :",
-            headerLabel: "En-tête :",
-            header: "Informations OCF et vos coordonnées",
-            periodLabel: "Période :",
-            period: "Dates de service et de facturation",
-            detailLabel: "Détail :",
-            detail: "Services utilisés et tarifs appliqués",
-            taxesLabel: "Taxes :",
-            taxes: "TVA et taxes locales selon votre pays",
-            totalLabel: "Total :",
-            total: "Montant final et méthode de paiement"
-          }
+          title: "Factures",
+          description: "La page Factures liste toutes les factures émises pour votre compte, synchronisées depuis Stripe.",
+          filter: "Filtrez par statut : toutes, payées, non payées, brouillons, annulées, remboursées ou partiellement remboursées.",
+          refresh: "Le bouton Actualiser resynchronise la liste avec Stripe.",
+          details: "Chaque facture affiche son numéro, son montant, sa date, son échéance et sa date de paiement ; une facture en retard est signalée.",
+          download: "Télécharger ouvre le PDF de la facture ; Voir dans Stripe ouvre la page hébergée par Stripe, où vous pouvez aussi la régler si elle est en attente.",
+          screenshot: "La page Factures d'un compte qui n'a encore rien acheté."
         },
 
-        paymentIssues: {
-          title: "Problèmes de paiement",
-          description: "Si vous rencontrez des difficultés avec vos paiements, voici les étapes à suivre pour résoudre rapidement les problèmes.",
-          declined: {
-            title: "Paiement refusé",
-            causes: {
-              title: "Causes courantes :",
-              insufficient: "Fonds insuffisants sur le compte",
-              expired: "Carte expirée ou bloquée",
-              limit: "Limite de paiement dépassée",
-              incorrect: "Informations incorrectes"
-            },
-            solutions: {
-              title: "Solutions :",
-              balance: "Vérifiez le solde de votre compte",
-              update: "Mettez à jour les informations de carte",
-              bank: "Contactez votre banque si nécessaire",
-              alternative: "Utilisez une méthode de paiement alternative"
-            }
-          },
-          retry: {
-            title: "Nouvelle tentative",
-            description1: "OCF effectue automatiquement plusieurs tentatives de paiement sur quelques jours en cas d'échec initial.",
-            description2: "Vous recevez des notifications par email pour vous informer de la situation et vous permettre de corriger le problème."
-          },
-          suspension: {
-            title: "Suspension du service",
-            description1: "En cas d'échec répété des paiements, votre service peut être temporairement suspendu pour éviter l'accumulation de frais.",
-            description2: "Votre compte et vos données restent saufs pendant la suspension. Le service reprend automatiquement après règlement."
-          }
+        addresses: {
+          title: "Adresses de facturation",
+          description: "Une adresse de facturation figure sur vos factures. Vous pouvez en enregistrer plusieurs et en désigner une par défaut.",
+          fields: "Champs disponibles : raison sociale, SIRET, numéro de TVA, adresse (deux lignes), code postal, ville, région, pays.",
+          default: "L'adresse par défaut porte un badge ; le bouton Définir par défaut bascule sur une autre.",
+          edit: "Ajoutez, modifiez ou supprimez une adresse avec les boutons de la liste."
         },
 
-        refunds: {
-          title: "Remboursements et crédits",
-          description: "Informations sur les conditions de remboursement et le système de crédits OCF.",
-          policy: {
-            title: "Politique de remboursement :",
-            trial: {
-              title: "Période d'essai",
-              description: "Remboursement intégral possible pendant les 7 premiers jours de votre première souscription (conditions d'utilisation normale)."
-            },
-            proration: {
-              title: "Remboursement au prorata",
-              description: "En cas de rétrogradation ou d'annulation, remboursement calculé sur la période non utilisée."
-            },
-            technical: {
-              title: "Problèmes techniques",
-              description: "Crédits ou remboursements accordés en cas d'interruption prolongée du service due à des problèmes techniques."
-            }
-          },
-          credits: {
-            title: "Système de crédits :",
-            description1: "OCF peut attribuer des crédits à votre compte pour compenser des désagréments ou dans le cadre de promotions spéciales.",
-            description2: "Les crédits sont automatiquement appliqués à vos prochaines factures et apparaissent clairement dans votre historique de facturation."
-          }
+        paymentMethods: {
+          title: "Moyens de paiement",
+          description: "La page Moyens de paiement liste vos cartes bancaires enregistrées : marque, quatre derniers chiffres, date d'expiration, carte par défaut et alerte quand l'expiration approche.",
+          add: "Pour ajouter ou remplacer une carte, le bouton Ajouter une carte ouvre le portail Stripe ; à votre retour, la liste est resynchronisée.",
+          default: "Le bouton Définir par défaut choisit la carte utilisée pour les prochains prélèvements."
         },
 
-        evolution: {
-          title: "Évolution du système de facturation",
-          notice: "<strong>Le système de facturation OCF continue d'évoluer</strong> pour offrir plus de flexibilité et de transparence dans la gestion de vos paiements et abonnements.",
-          upcoming: {
-            title: "Améliorations en développement :",
-            usage: "Facturation détaillée par usage réel des ressources",
-            alternatives: "Options de paiement alternatives (crypto, virements)",
-            group: "Facturation groupée pour les organisations",
-            alerts: "Alertes avancées de consommation et budget",
-            integration: "Intégration avec systèmes comptables d'entreprise",
-            currencies: "Devises locales et paiements internationaux optimisés"
-          }
+        portal: {
+          title: "Le portail Stripe",
+          description: "OCF ne stocke aucune donnée de carte : les paiements et les cartes sont gérés par Stripe. Le portail s'ouvre depuis Gérer l'abonnement (tableau de bord) ou Ajouter une carte (moyens de paiement) et vous ramène ensuite dans l'application. Vous pouvez y :",
+          card: "mettre à jour votre carte bancaire ;",
+          history: "consulter l'historique des paiements ;",
+          invoices: "télécharger vos factures."
         },
 
-        support: {
-          title: "Support facturation",
-          description: "Notre équipe support est spécialisée dans la résolution rapide des problèmes de facturation et de paiement.",
-          email: {
-            title: "Email support",
-            description: "Réponse sous 24h pour les questions de facturation",
-            button: "Contacter le support"
-          },
-          priority: {
-            title: "Support prioritaire",
-            description: "Assistance téléphonique pour les problèmes urgents de paiement",
-            note: "Disponible pour les plans entreprise"
-          },
-          tips: {
-            title: "Pour un support efficace, incluez :",
-            email: "Votre adresse email de compte",
-            invoice: "Numéro de facture concernée",
-            datetime: "Date et heure du problème",
-            screenshot: "Capture d'écran si applicable"
-          }
-        },
-
-        resources: {
-          title: "Ressources utiles",
+        nextSteps: {
           subscription: {
-            title: "Gestion d'abonnement",
-            description: "Comprendre et optimiser votre plan OCF"
+            title: "Abonnement et plans",
+            description: "Souscrire, changer de plan, résilier"
           },
-          paymentMethods: {
-            title: "Méthodes de paiement",
-            description: "Ajouter et gérer vos cartes et comptes"
+          licenses: {
+            title: "Licences apprenants",
+            description: "Acheter et attribuer des sièges à vos apprenants"
           },
-          invoices: {
-            title: "Mes factures",
-            description: "Consulter et télécharger vos factures"
-          },
-          addresses: {
-            title: "Adresses de facturation",
-            description: "Configurer vos informations de facturation"
+          settings: {
+            title: "Paramètres",
+            description: "Langue, thème, sécurité du compte"
           }
         }
       },
 
       rolesAndPermissions: {
-        title: "Rôles et Permissions",
-        intro: "Comprendre les rôles d'organisation et ce que chaque rôle peut faire.",
-        rolesTitle: "Rôles et permissions",
-        rolesSubtitle: "Comprendre les rôles utilisateur et le contrôle d'accès dans le système",
+        title: "Rôles et permissions",
+        intro: "Qui peut faire quoi : les deux rôles de plateforme, puis les rôles dans une organisation et dans une classe.",
         overviewTitle: "Vue d'ensemble",
-        overviewDescription: "Le système utilise un modèle de rôles à trois niveaux pour gérer l'accès et les permissions à différents niveaux.",
-        platformLevel: "Niveau plateforme",
-        platformLevelDesc: "Accès administrateur système avec contrôle total",
-        organizationLevel: "Niveau organisation",
-        organizationLevelDesc: "Gérer les organisations, membres, facturation et abonnements",
-        groupLevel: "Niveau groupe",
-        groupLevelDesc: "Gérer les groupes (classes), cours et accès des apprenants",
-        orgRolesTitle: "Rôles d'organisation",
-        orgRolesDescription: "Ces rôles contrôlent l'accès aux fonctionnalités de gestion d'organisation :",
-        permission: "Permission",
+        overviewDescription: "Les droits se lisent à trois niveaux. Sur la plateforme, tout le monde est « membre » ; ce sont vos rôles dans chaque organisation et chaque classe qui font la différence.",
+        platformLevel: "Plateforme",
+        platformLevelDesc: "Deux rôles seulement : membre et administrateur. Tous les utilisateurs réels — apprenants, formateurs, gestionnaires d'organisation — sont membres. L'administrateur est l'opérateur de la plateforme.",
+        organizationLevel: "Organisation",
+        organizationLevelDesc: "Membre, formateur, gestionnaire ou propriétaire. Le rôle décide qui administre l'organisation et qui peut y créer des classes.",
+        groupLevel: "Classe",
+        groupLevelDesc: "Membre (apprenant), gestionnaire (co-formateur) ou propriétaire (créateur de la classe).",
+        orgRolesTitle: "Rôles dans une organisation",
+        orgRolesDescription: "Le rôle se change depuis l'onglet Membres de l'organisation ; seul un propriétaire peut nommer un autre propriétaire.",
+        permission: "Action",
         owner: "Propriétaire",
         manager: "Gestionnaire",
+        teacher: "Formateur",
         member: "Membre",
-        viewOrganization: "Voir l'organisation",
-        inviteMembers: "Inviter des membres",
+        viewOrganization: "Voir l'organisation et ses membres",
+        useOrgPlan: "Utiliser le plan de l'organisation dans ses terminaux",
+        createClasses: "Créer et animer des classes",
+        inviteMembers: "Ajouter ou importer des membres",
         removeMembers: "Retirer des membres",
-        changeRoles: "Changer les rôles des membres",
-        promoteToOwner: "Promouvoir des membres en propriétaires",
-        manageBilling: "Gérer la facturation",
-        manageSubscriptions: "Gérer les abonnements",
+        changeRoles: "Changer le rôle des membres",
+        promoteToOwner: "Nommer un propriétaire",
+        manageBilling: "Gérer l'abonnement de l'organisation",
         editOrgSettings: "Modifier les paramètres",
         deleteOrganization: "Supprimer l'organisation",
         transferOwnership: "Transférer la propriété",
         allowed: "Autorisé",
-        partial: "Partiel (avec restrictions)",
+        partial: "Partiel",
         denied: "Non autorisé",
-        cannotPromoteToOwner: "Peut changer les rôles en membre ou gestionnaire, mais pas en propriétaire",
-        groupRolesTitle: "Rôles de groupe",
-        groupRolesDescription: "Les groupes représentent des classes ou équipes au sein d'une organisation :",
+        cannotPromoteToOwner: "Peut attribuer membre, formateur ou gestionnaire, mais pas propriétaire",
+        groupRolesTitle: "Rôles dans une classe",
+        groupRolesDescription: "Une classe est un groupe de l'organisation. Le formateur qui la crée en est propriétaire ; il peut y ajouter des co-formateurs comme gestionnaires.",
         groupOwner: "Propriétaire",
-        groupOwnerDesc: "Le créateur du groupe avec contrôle total.",
-        groupOwnerPerm1: "Supprimer le groupe",
-        groupOwnerPerm2: "Transférer la propriété",
-        groupOwnerPerm3: "Assigner des gestionnaires",
+        groupOwnerDesc: "Le créateur de la classe.",
+        groupOwnerPerm1: "Tout ce que fait un gestionnaire",
+        groupOwnerPerm2: "Nommer d'autres propriétaires ou gestionnaires",
+        groupOwnerPerm3: "Archiver ou supprimer la classe",
         groupManager: "Gestionnaire",
-        groupManagerDesc: "Co-instructeurs avec permissions de gestion.",
-        groupManagerPerm1: "Gérer le contenu et les cours du groupe",
-        groupManagerPerm2: "Ajouter/retirer des membres",
-        groupManagerPerm3: "Voir les analyses du groupe",
+        groupManagerDesc: "Un co-formateur.",
+        groupManagerPerm1: "Assigner des scénarios et lancer des sessions pour la classe",
+        groupManagerPerm2: "Suivre les apprenants en direct et intervenir dans leur terminal",
+        groupManagerPerm3: "Ajouter ou retirer des apprenants, lire les analyses",
         groupMember: "Membre",
-        groupMemberDesc: "Apprenants ou participants du groupe.",
-        groupMemberPerm1: "Accéder au contenu du groupe",
-        groupMemberPerm2: "Participer aux cours",
-        groupMemberPerm3: "Utiliser les ressources assignées",
-        platformAdminTitle: "Administrateur plateforme",
-        platformAdminNoticeTitle: "Accès système complet",
-        platformAdminNoticeDesc: "Les administrateurs plateforme ont un accès illimité à toutes les organisations, groupes et fonctionnalités. Ce rôle est réservé aux opérateurs système et contourne toutes les permissions d'organisation et de groupe.",
-        scenariosTitle: "Scénarios courants",
-        scenario1Question: "Un gestionnaire peut-il supprimer une organisation ?",
-        scenario1Answer: "Non. Seuls les propriétaires d'organisation peuvent supprimer des organisations pour éviter la perte accidentelle de données.",
-        scenario2Question: "Un gestionnaire peut-il promouvoir quelqu'un en propriétaire ?",
-        scenario2Answer: "Non. Seuls les propriétaires actuels peuvent promouvoir des membres au statut de propriétaire. Les gestionnaires ne peuvent assigner que les rôles de membre ou gestionnaire.",
-        scenario3Question: "Que se passe-t-il si le propriétaire d'une organisation part ?",
-        scenario3Answer: "Le propriétaire devrait transférer la propriété à un autre membre avant de partir. Sinon, contactez le support pour réassigner la propriété.",
-        scenario4Question: "Puis-je avoir plusieurs rôles ?",
-        scenario4Answer: "Oui. Vous pouvez être propriétaire d'une organisation, gestionnaire d'une autre, et membre de groupes dans différentes organisations."
-      },
-
-      permissionsReference: {
-        title: "Référence des permissions API",
-        intro: "Référence technique complète de tous les endpoints API et de leurs règles de contrôle d'accès.",
-        subtitle: "Référence auto-générée de toutes les permissions API, rôles et règles d'accès",
-        loading: "Chargement de la référence des permissions...",
-        error: "Impossible de charger la référence des permissions. L'API est peut-être indisponible.",
-        retry: "Réessayer",
-        noData: "Aucune donnée de permissions disponible.",
-        legendTitle: "Comprendre la référence",
-        legendDescription: "Chaque endpoint API est protégé par deux couches : un rôle plateforme (member ou admin) qui contrôle l'accès HTTP, et une règle d'accès fine qui applique la logique métier.",
-        legendMember: "Tous les utilisateurs authentifiés (apprenants, enseignants, formateurs)",
-        legendAdmin: "Administrateurs de la plateforme uniquement",
-        accessRulesTitle: "Types de règles d'accès",
-        accessSelf: "Soi uniquement",
-        accessSelfDesc: "Les utilisateurs ne peuvent accéder qu'à leurs propres ressources",
-        accessAdminOnly: "Admin uniquement",
-        accessAdminOnlyDesc: "Réservé aux administrateurs de la plateforme",
-        accessOwner: "Propriétaire",
-        accessOwnerEntity: "Propriétaire ({entity})",
-        accessOwnerDesc: "Seul le propriétaire de la ressource peut effectuer cette action",
-        accessGroup: "Rôle de groupe",
-        accessGroupRole: "Rôle de groupe ({role}+)",
-        accessGroupDesc: "Nécessite un rôle de groupe minimum (ex. gestionnaire)",
-        accessOrg: "Rôle d'organisation",
-        accessOrgRole: "Rôle d'organisation ({role}+)",
-        accessOrgDesc: "Nécessite un rôle d'organisation minimum (ex. gestionnaire)",
-        accessAny: "Tout membre",
-        accessAnyDesc: "Tout utilisateur authentifié peut accéder à cet endpoint",
-        colAction: "Action",
-        colMethod: "Méthode",
-        colPath: "Chemin",
-        colRole: "Rôle",
-        colAccessRule: "Règle d'accès",
-        entityCrudTitle: "Permissions CRUD des entités",
-        entityCrudDescription: "Règles d'accès pour les opérations standard Créer, Lire, Modifier, Supprimer sur chaque entité. Appliquées par le framework de gestion d'entités.",
-        entityColumn: "Entité",
-        colCreate: "Créer",
-        colRead: "Lire",
-        colUpdate: "Modifier",
-        colDelete: "Supprimer"
+        groupMemberDesc: "Un apprenant.",
+        groupMemberPerm1: "Lancer les scénarios assignés à la classe",
+        groupMemberPerm2: "Utiliser la licence attribuée par la classe",
+        groupMemberPerm3: "Voir sa propre progression",
+        platformAdminTitle: "Administrateur de la plateforme",
+        platformAdminNoticeTitle: "Réservé à l'opérateur",
+        platformAdminNoticeDesc: "L'administrateur passe outre les rôles d'organisation et de classe et voit toutes les données. Ce n'est pas un rôle que vous pouvez attribuer : un gestionnaire d'école ou d'organisme est un membre avec le rôle propriétaire de son organisation. Dans l'interface, les éléments visibles uniquement grâce à ce rôle portent un badge.",
+        scenariosTitle: "Questions fréquentes",
+        scenario1Question: "Un gestionnaire peut-il supprimer l'organisation ?",
+        scenario1Answer: "Non. Seul un propriétaire peut supprimer l'organisation ou en transférer la propriété.",
+        scenario2Question: "Quel rôle donner à un formateur ?",
+        scenario2Answer: "Formateur suffit pour créer des classes, y inscrire des apprenants et les suivre. Gestionnaire ajoute l'administration de l'organisation : membres, abonnement, paramètres.",
+        scenario3Question: "Que se passe-t-il si le propriétaire quitte l'organisation ?",
+        scenario3Answer: "Il doit d'abord transférer la propriété à un autre membre. Un compte ne peut d'ailleurs pas être supprimé tant qu'il possède une organisation ou une classe.",
+        scenario4Question: "Puis-je cumuler des rôles ?",
+        scenario4Answer: "Oui. Vous pouvez être propriétaire d'une organisation, formateur dans une autre, et apprenant dans une classe d'une troisième. Le menu utilisateur permet de changer d'organisation active.",
+        reference: {
+          title: "Référence technique",
+          description: "Pour les intégrateurs, la référence des permissions liste chaque endpoint de l'API avec son rôle de plateforme et sa règle d'accès.",
+          button: "Ouvrir la référence des permissions"
+        }
       },
 
       settings: {
-        title: "Paramètres & Préférences",
-        intro: "Configurez les paramètres de votre compte pour personnaliser votre expérience, de la langue et du thème à la sécurité et aux notifications.",
+        title: "Paramètres et préférences",
+        intro: "Les pages Paramètres règlent votre page d'accueil, votre langue, l'apparence, les notifications, votre mot de passe et vos clés d'accès terminal.",
         overview: {
-          title: "Vue d'ensemble",
-          description: "La page Paramètres vous permet de personnaliser votre compte selon votre façon de travailler. Vous pouvez y accéder depuis le menu utilisateur dans le coin supérieur droit de l'écran.",
-          access: "Cliquez sur votre avatar ou votre nom d'utilisateur dans le coin supérieur droit, puis sélectionnez le paramètre que vous souhaitez ajuster dans le menu déroulant."
+          title: "Accéder aux paramètres",
+          description: "Cliquez sur votre nom en haut à droite, puis sur Paramètres. Un menu latéral dédié remplace la navigation habituelle ; la flèche en haut du menu ramène à l'application.",
+          autosave: "Chaque réglage est enregistré dès que vous le changez ; une notification confirme l'enregistrement."
         },
         navigation: {
-          title: "Paramètres de navigation",
-          description: "Choisissez quelle page s'affiche par défaut lorsque vous vous connectez à la plateforme.",
+          title: "Navigation",
+          description: "Page d'accueil par défaut : la page ouverte après connexion et quand vous cliquez sur le logo OCF.",
           defaultPage: {
-            title: "Page d'accueil par défaut",
-            description: "Sélectionnez votre page de démarrage préférée après la connexion. Vous pouvez choisir entre la page des sessions de terminal, la page des cours ou toute autre section principale de la plateforme."
+            title: "Choix proposés",
+            description: "Tableau de bord d'abonnement, Sessions de terminal, Mes classes ou Groupes (selon les fonctionnalités ouvertes sur la plateforme). Sans choix explicite, un formateur qui gère des classes dans son organisation active arrive sur Mes classes ; les autres sur Sessions de terminal."
           }
         },
         localization: {
           title: "Localisation",
-          description: "Adaptez la plateforme à votre langue et vos préférences régionales.",
+          description: "Langue de l'interface et fuseau horaire.",
           language: {
-            title: "Langue",
-            description: "Basculez l'interface entre le français et l'anglais. Tous les menus, libellés et contenus d'aide seront affichés dans la langue sélectionnée."
+            title: "Langue préférée",
+            description: "Français ou anglais. Le changement s'applique immédiatement à toute l'interface, aide comprise. Le sélecteur de langue en haut de l'écran fait la même chose."
           },
           timezone: {
             title: "Fuseau horaire",
-            description: "Définissez votre fuseau horaire afin que les dates, heures de session et événements planifiés soient affichés dans votre heure locale."
-          }
+            description: "Automatique (celui de votre navigateur) ou un fuseau fixe. Il sert à afficher les dates et heures : sessions, factures, historique."
+          },
+          screenshot: "La page Localisation."
         },
         ui: {
-          title: "Paramètres d'interface",
-          description: "Ajustez l'apparence visuelle et la densité de la mise en page de la plateforme.",
+          title: "Interface utilisateur",
+          description: "Apparence de l'application.",
           theme: {
             title: "Thème",
-            description: "Choisissez entre le mode clair, le mode sombre ou le mode automatique qui suit la préférence de votre système d'exploitation."
+            description: "Clair, Sombre ou Auto (suit votre système). Voir la page Mode sombre et thèmes."
           },
           compact: {
             title: "Mode compact",
-            description: "Activez le mode compact pour réduire l'espacement entre les éléments. Cela augmente la densité d'information et convient aux utilisateurs avancés qui préfèrent une interface plus condensée."
-          }
+            description: "Réduit les espacements pour afficher plus de contenu à l'écran."
+          },
+          screenshot: "La page Interface utilisateur."
         },
         notifications: {
           title: "Notifications",
-          description: "Contrôlez comment et quand vous recevez des notifications de la plateforme.",
-          preferences: {
-            title: "Préférences de notification",
-            description: "Configurez les notifications que vous souhaitez recevoir. Vous pouvez activer ou désactiver les notifications pour différents types d'événements comme les mises à jour de session, les invitations de groupe et les annonces système."
-          }
+          description: "Deux cases à cocher : Notifications par e-mail et Notifications bureau (notifications du navigateur)."
         },
         security: {
           title: "Sécurité",
-          description: "Gérez la sécurité de votre compte en changeant votre mot de passe.",
-          currentPassword: {
-            title: "Mot de passe actuel",
-            description: "Entrez votre mot de passe actuel pour vérifier votre identité avant de procéder aux modifications."
+          description: "La page affiche la date du dernier changement de mot de passe et permet d'en définir un nouveau.",
+          password: {
+            title: "Changer le mot de passe",
+            description: "Saisissez le mot de passe actuel, puis le nouveau deux fois. Les deux saisies doivent être identiques et le mot de passe suffisamment robuste."
           },
-          newPassword: {
-            title: "Nouveau mot de passe",
-            description: "Choisissez un nouveau mot de passe robuste. Utilisez un mélange de lettres majuscules, minuscules, chiffres et caractères spéciaux."
-          },
-          confirmation: {
-            title: "Confirmer le mot de passe",
-            description: "Saisissez à nouveau votre nouveau mot de passe pour confirmer qu'il correspond. Les deux champs doivent être identiques pour continuer."
+          deleteAccount: {
+            title: "Supprimer mon compte",
+            description: "En bas de la page, la zone de danger supprime définitivement votre compte : sessions de terminal, clés SSH, historique des scénarios et appartenances sont effacés ; les factures et paiements sont anonymisés et conservés pour la comptabilité. Vous devez d'abord transférer la propriété des organisations et classes que vous possédez. La suppression demande de recopier un texte de confirmation."
           }
         },
         sshKeys: {
-          title: "Clés SSH",
-          description: "Les clés d'accès terminal sont gérées depuis une page dédiée dans les paramètres. Ces clés vous permettent de vous connecter aux sessions de terminal.",
-          linkText: "Pour des informations détaillées sur la gestion de vos clés SSH, consultez l'article dédié à la gestion des clés SSH.",
-          button: "Guide de gestion des clés SSH"
+          title: "Clés d'accès terminal",
+          description: "La dernière entrée du menu gère vos clés SSH pour vous connecter aux sessions depuis votre propre terminal.",
+          linkText: "Le détail est dans le guide des clés SSH de la rubrique Terminaux.",
+          button: "Guide des clés SSH"
         },
         version: {
           title: "Version de l'application",
-          description: "La version actuelle de l'application est affichée en bas de la page des paramètres. Cette information peut être utile pour signaler des problèmes ou vérifier que vous utilisez la dernière version."
+          description: "Les numéros de version de l'interface, de l'API et du service de terminaux figurent dans le menu utilisateur, section À propos. Indiquez-les quand vous signalez un problème."
         },
         nextSteps: {
           themes: {
-            title: "Mode sombre & Thèmes",
-            description: "En savoir plus sur les options de thème et la personnalisation visuelle"
+            title: "Mode sombre et thèmes",
+            description: "Choisir et changer le thème"
           },
           sshKeys: {
-            title: "Gestion des clés SSH",
-            description: "Gérez vos clés d'accès terminal"
+            title: "Clés SSH",
+            description: "Se connecter à une session depuis son propre terminal"
           },
           roles: {
-            title: "Rôles & Permissions",
-            description: "Comprendre le système de contrôle d'accès basé sur les rôles"
+            title: "Rôles et permissions",
+            description: "Qui peut faire quoi dans une organisation ou une classe"
           }
         }
       },
       themes: {
-        title: "Mode sombre & Thèmes",
-        intro: "Personnalisez l'apparence visuelle de la plateforme avec le choix du thème et les options de densité d'affichage.",
-        overview: {
-          title: "Vue d'ensemble",
-          description: "La plateforme prend en charge plusieurs thèmes visuels afin que vous puissiez travailler dans l'environnement qui vous convient le mieux. Que vous préfériez une interface lumineuse pour travailler en journée ou un thème sombre pour les sessions nocturnes, vous pouvez ajuster l'apparence sur l'ensemble de la plateforme."
-        },
+        title: "Mode sombre et thèmes",
+        intro: "L'application propose un thème clair, un thème sombre et un mode automatique. Le choix est enregistré avec votre compte et s'applique partout, terminaux compris.",
         selection: {
-          title: "Choix du thème",
-          description: "Trois modes de thème sont disponibles pour correspondre à votre préférence visuelle.",
+          title: "Les trois modes",
           light: {
-            title: "Thème clair",
-            description: "Une interface lumineuse et épurée avec des arrière-plans clairs et un texte à fort contraste. Idéal pour les environnements bien éclairés et une utilisation de jour."
+            title: "Clair",
+            description: "Fonds clairs, texte sombre. Le thème par défaut."
           },
           dark: {
-            title: "Thème sombre",
-            description: "Une interface sombre qui réduit la fatigue oculaire en conditions de faible luminosité. Des arrière-plans foncés avec du texte clair pour une utilisation prolongée confortable."
+            title: "Sombre",
+            description: "Fonds sombres, texte clair : moins de fatigue en faible luminosité."
           },
           auto: {
-            title: "Mode automatique",
-            description: "Suit automatiquement la préférence de votre système d'exploitation ou de votre navigateur. Le thème bascule entre clair et sombre selon vos paramètres système."
-          }
-        },
-        compact: {
-          title: "Mode compact",
-          description: "Ajustez l'espacement et la densité des éléments de l'interface pour afficher plus ou moins de contenu à l'écran.",
-          standard: {
-            title: "Mise en page standard",
-            description: "Espacement par défaut avec un rembourrage confortable entre les éléments. Recommandé pour la plupart des utilisateurs et offrant une expérience de lecture détendue."
-          },
-          compact: {
-            title: "Mise en page compacte",
-            description: "Espacement réduit entre les éléments pour une plus grande densité d'information. Idéal pour les utilisateurs avancés qui souhaitent voir plus de contenu sans faire défiler."
+            title: "Auto (Système)",
+            description: "Suit le réglage clair/sombre de votre système d'exploitation ou de votre navigateur, et bascule avec lui."
           }
         },
         whereToChange: {
           title: "Où changer le thème",
-          description: "Vous pouvez changer le thème depuis la page Paramètres dans la section Paramètres d'interface.",
-          path: "Naviguez vers Paramètres > Paramètres d'interface pour trouver le sélecteur de thème et le bouton du mode compact.",
-          button: "Voir le guide des paramètres"
-        },
-        consistency: {
-          title: "Expérience cohérente",
-          description: "Le thème sélectionné est appliqué de manière cohérente sur toutes les pages de la plateforme. Chaque section respecte votre préférence visuelle pour une expérience unifiée.",
-          terminal: "Sessions de terminal",
-          dashboard: "Tableau de bord & métriques",
-          help: "Aide & documentation",
-          courses: "Éditeur & visionneuse de cours"
+          description: "Menu utilisateur (votre nom en haut à droite) > Paramètres > Interface utilisateur > Thème. Le changement est immédiat et enregistré.",
+          compact: "La même page propose le mode compact, qui resserre les espacements.",
+          button: "Voir le guide des paramètres",
+          screenshot: "La page Interface utilisateur, où se choisit le thème."
         },
         nextSteps: {
           settings: {
-            title: "Paramètres & Préférences",
-            description: "Explorez tous les paramètres et options de personnalisation disponibles"
+            title: "Paramètres et préférences",
+            description: "Langue, page d'accueil, notifications, sécurité"
           },
           gettingStarted: {
-            title: "Premiers pas",
-            description: "Apprenez à configurer et utiliser votre premier terminal"
+            title: "Premiers pas avec les terminaux",
+            description: "Lancer votre première session"
           },
           subscription: {
-            title: "Abonnement & Plans",
-            description: "Consultez votre abonnement et les fonctionnalités disponibles"
+            title: "Abonnement et plans",
+            description: "Votre plan et ce qu'il permet"
           }
         }
       }
