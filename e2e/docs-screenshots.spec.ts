@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Browser, type Page } from '@playwright/test';
+import { execFileSync } from 'node:child_process';
 import { login } from './helpers/auth';
 import { waitForLiveTerminal, typeInTerminal } from './helpers/xterm';
 import { apiLogin } from './helpers/paymentApi';
@@ -56,6 +57,27 @@ const SCREENS: Screen[] = [
   { name: 'register', path: '/register', as: 'public' },
 
   // Trainer — day-to-day
+  // The class first: its terminals go quiet a couple of minutes after the warm-up.
+  { name: 'my-classes', path: '/my-classes', as: 'trainer' },
+  { name: 'class-live', path: (f) => `/classes/${f.classId}/live`, as: 'trainer', fullPage: true },
+  { name: 'class-wall', path: (f) => `/classes/${f.classId}/live?view=wall`, as: 'trainer', settle: 4_000, fullPage: true },
+  { name: 'class-members', path: (f) => `/classes/${f.classId}/members`, as: 'trainer' },
+  { name: 'class-scenarios', path: (f) => `/classes/${f.classId}/scenarios`, as: 'trainer' },
+  {
+    name: 'class-analytics',
+    path: (f) => `/classes/${f.classId}/analytics`,
+    as: 'trainer',
+    settle: 2_500,
+    // The per-scenario analytics calls occasionally fail on a busy dev stack; the page offers a retry.
+    prepare: async (page) => {
+      const retry = page.getByRole('button', { name: /réessayer|retry/i });
+      if (await retry.isVisible().catch(() => false)) {
+        await retry.click();
+        await page.waitForTimeout(2_500);
+      }
+    },
+  },
+  { name: 'class-settings', path: (f) => `/classes/${f.classId}/settings`, as: 'trainer' },
   { name: 'terminal-sessions', path: '/terminal-sessions', as: 'trainer' },
   { name: 'terminal-creation', path: '/terminal-creation', as: 'trainer', fullPage: true },
   {
@@ -123,26 +145,6 @@ const SCREENS: Screen[] = [
   },
   { name: 'scenarios-catalogue', path: '/scenarios', as: 'trainer', fullPage: true },
   { name: 'my-scenarios', path: '/my-scenarios', as: 'trainer' },
-  { name: 'my-classes', path: '/my-classes', as: 'trainer' },
-  { name: 'class-live', path: (f) => `/classes/${f.classId}/live`, as: 'trainer', fullPage: true },
-  { name: 'class-wall', path: (f) => `/classes/${f.classId}/live?view=wall`, as: 'trainer', settle: 4_000, fullPage: true },
-  { name: 'class-members', path: (f) => `/classes/${f.classId}/members`, as: 'trainer' },
-  { name: 'class-scenarios', path: (f) => `/classes/${f.classId}/scenarios`, as: 'trainer' },
-  {
-    name: 'class-analytics',
-    path: (f) => `/classes/${f.classId}/analytics`,
-    as: 'trainer',
-    settle: 2_500,
-    // The per-scenario analytics calls occasionally fail on a busy dev stack; the page offers a retry.
-    prepare: async (page) => {
-      const retry = page.getByRole('button', { name: /réessayer|retry/i });
-      if (await retry.isVisible().catch(() => false)) {
-        await retry.click();
-        await page.waitForTimeout(2_500);
-      }
-    },
-  },
-  { name: 'class-settings', path: (f) => `/classes/${f.classId}/settings`, as: 'trainer' },
   { name: 'organizations', path: '/organizations', as: 'trainer' },
   { name: 'organization-detail', path: (f) => `/organizations/${f.orgId}`, as: 'trainer', fullPage: true },
   { name: 'organization-members', path: (f) => `/organizations/${f.orgId}?tab=members`, as: 'trainer', fullPage: true },
@@ -226,6 +228,27 @@ async function setPreferences(email: string, password: string, locale: Locale): 
   await session.api.dispose();
 }
 
+/**
+ * tt-backend leaves one `su -l adventurer` shell behind per console attach and
+ * never reaps it; after a dozen page loads the XS container can no longer fork
+ * and every Verify fails. Until that is fixed, start the warm-up from a clean
+ * container. Best effort: without incus on this machine, nothing happens.
+ */
+function clearStaleShells(terminalId: string): void {
+  try {
+    const names = execFileSync('incus', ['list', '-c', 'n', '--format', 'csv'], { encoding: 'utf-8' });
+    const container = names.split('\n').find((n) => n.endsWith(terminalId));
+    if (!container) return;
+    // Killing the current shell makes the console hub open a fresh one later, and the
+    // wall would then show an empty prompt — so only intervene when the pile is real.
+    const count = Number(execFileSync('incus', ['exec', container, '--', 'sh', '-c', 'pgrep -fc "su -l adventurer" || true'], { encoding: 'utf-8' }));
+    if (count <= 4) return;
+    execFileSync('incus', ['exec', container, '--', 'sh', '-c', 'pkill -f "su -l adventurer"; pkill -u adventurer bash; true']);
+  } catch {
+    /* no incus here, or the container is gone — the warm-up will say so on its own */
+  }
+}
+
 /** "My usage" is collapsed on some pages and open on others; end up open either way. */
 async function expandUsagePanel(page: Page): Promise<void> {
   const limits = page.locator('[data-testid="usage-limits"]');
@@ -301,13 +324,13 @@ test.beforeAll(async () => {
  * through the first GameShell steps the way a learner does — in the player,
  * typing in the real terminal, pressing Verify, opening a hint — so the live
  * view has positions and hint counts, and the wall has output in its tiles.
- * Idempotent: a learner already past step 0 is left alone.
+ * Runs before every trainer pass, resuming from wherever each learner is.
  */
-test('warm up two learners', async ({ browser }) => {
-  test.setTimeout(240_000);
+async function warmUpLearners(browser: Browser): Promise<void> {
   for (const [index, learner] of LEARNERS.slice(0, 2).entries()) {
     const terminalId = fixture.learnerTerminalIds[index];
     if (!terminalId) continue;
+    clearStaleShells(terminalId);
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page = await context.newPage();
     await login(page, learner.email, DOCS_PASSWORD);
@@ -349,19 +372,25 @@ test('warm up two learners', async ({ browser }) => {
       await page.getByTestId('scenario-verify-btn').click();
       await page.waitForTimeout(4_000);
     }
-    // Leave the screen the way a learner would: a clean prompt with a look around.
+    // Leave the screen the way a learner would: a look around, in a few commands
+    // that stay on the wall tile (about eight lines are visible there).
     await typeInTerminal(page, 'clear');
-    await typeInTerminal(page, 'ls');
     await typeInTerminal(page, 'pwd');
-    await page.waitForTimeout(800);
+    await typeInTerminal(page, 'ls');
+    await typeInTerminal(page, index === 0 ? 'ls -l Castle' : 'ls -a');
+    await typeInTerminal(page, index === 0 ? 'cat .gsh_pwd' : 'whoami');
+    await page.waitForTimeout(1_000);
     await context.close();
   }
-});
+}
 
 for (const locale of LOCALES) {
   for (const [persona, screens] of byPersona) {
     test(`${locale} — ${persona} (${screens.length} screens)`, async ({ browser }) => {
-      test.setTimeout(60_000 + screens.length * 30_000);
+      test.setTimeout(60_000 + screens.length * 30_000 + (persona === 'trainer' ? 240_000 : 0));
+      // The learners' terminals go quiet a few minutes after they disconnect, so
+      // the class is warmed up right before the trainer looks at it.
+      if (persona === 'trainer') await warmUpLearners(browser);
 
       const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale });
       // Both preferences are read from localStorage at boot; seeding them here
