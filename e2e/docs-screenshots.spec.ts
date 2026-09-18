@@ -9,7 +9,7 @@ import { DOCS_PASSWORD, LEARNERS, TRAINER, ensureDocsFixture, type DocsFixture }
  *
  * Not a test of the product — a camera pointed at it. One run writes every
  * screenshot the help pages and the pitch deck embed, in both locales, from
- * the "Lycée Iris" fixture, so a UI change is followed by
+ * the "Université Labinux" fixture, so a UI change is followed by
  * `npm run docs:screenshots` and a commit rather than by an afternoon of
  * manual captures.
  *
@@ -59,6 +59,34 @@ const SCREENS: Screen[] = [
   { name: 'terminal-sessions', path: '/terminal-sessions', as: 'trainer' },
   { name: 'terminal-creation', path: '/terminal-creation', as: 'trainer', fullPage: true },
   {
+    // The session was started with the network feature, so the chip is unlocked;
+    // exposing a port here is exactly what a learner does to show a web app.
+    name: 'terminal-exposed-port',
+    path: (f) => f.trainerTerminalId && `/terminal-session/${f.trainerTerminalId}`,
+    as: 'trainer',
+    prepare: async (page) => {
+      await acknowledgeRecordingNotice(page);
+      await waitForLiveTerminal(page, 30_000)
+        .then(() => typeInTerminal(page, 'clear && perl -MIO::Socket::INET -e \'$s=IO::Socket::INET->new(LocalPort=>8080,Listen=>5,Reuse=>1);while($c=$s->accept){print $c "HTTP/1.0 200 OK\\r\\nContent-Type: text/html\\r\\n\\r\\n<h1>Hello from my session</h1>";close $c}\' &'))
+        .then(() => typeInTerminal(page, 'clear'))
+        .catch(() => {});
+      await page.getByTestId('exposed-ports-chip').click();
+      const input = page.locator('#exposed-port-input');
+      if (await input.isVisible().catch(() => false)) {
+        const entries = page.locator('.exposed-port-entry');
+        if ((await entries.count()) === 0) {
+          await input.fill('8080');
+          await page.locator('.ports-form button[type="submit"]').click();
+          await entries.first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
+          // The success toast sits over the header; let it go before the shot.
+          await page.locator('.el-notification').waitFor({ state: 'hidden', timeout: 8_000 }).catch(() => {});
+        }
+      }
+      await acknowledgeRecordingNotice(page);
+      await page.waitForTimeout(500);
+    },
+  },
+  {
     name: 'terminal-session',
     path: (f) => f.trainerTerminalId && `/terminal-session/${f.trainerTerminalId}`,
     as: 'trainer',
@@ -74,6 +102,7 @@ const SCREENS: Screen[] = [
   { name: 'my-scenarios', path: '/my-scenarios', as: 'trainer' },
   { name: 'my-classes', path: '/my-classes', as: 'trainer' },
   { name: 'class-live', path: (f) => `/classes/${f.classId}/live`, as: 'trainer' },
+  { name: 'class-wall', path: (f) => `/classes/${f.classId}/live?view=wall`, as: 'trainer', settle: 4_000, fullPage: true },
   { name: 'class-members', path: (f) => `/classes/${f.classId}/members`, as: 'trainer' },
   { name: 'class-scenarios', path: (f) => `/classes/${f.classId}/scenarios`, as: 'trainer' },
   { name: 'class-analytics', path: (f) => `/classes/${f.classId}/analytics`, as: 'trainer' },
@@ -130,6 +159,8 @@ const SCREENS: Screen[] = [
  */
 async function setPreferences(email: string, password: string, locale: Locale): Promise<void> {
   const session = await apiLogin(email, password);
+  // An imported account has no settings row until something reads them; GET creates the defaults.
+  await session.api.get(`${API_BASE}/users/me/settings`, { headers: { Authorization: `Bearer ${session.token}` } });
   const res = await session.api.patch(`${API_BASE}/users/me/settings`, {
     headers: { Authorization: `Bearer ${session.token}` },
     data: { preferred_language: locale, theme: 'light' },
@@ -161,7 +192,7 @@ async function prepareFullPage(page: Page): Promise<void> {
 
 /** The recording notice is acknowledged once per account; a documentation shot shows the terminal, not the notice. */
 async function acknowledgeRecordingNotice(page: Page): Promise<void> {
-  await page.getByRole('button', { name: /got it|compris/i }).first().click({ timeout: 2_000 }).catch(() => {});
+  await page.locator('.recording-notice-dismiss').first().click({ timeout: 3_000 }).catch(() => {});
 }
 
 // One filter for both: `SHOT=class-live npm run docs:screenshots` retakes one screen.

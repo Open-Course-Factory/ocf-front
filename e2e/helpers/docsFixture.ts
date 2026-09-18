@@ -4,7 +4,7 @@ import { createGroupAssignment, findTeacherGroup, getMyScenarioSessions, getUser
 import { verifyEmailViaToken } from './freshUsers';
 
 /**
- * The "Lycée Iris" fixture behind the documentation screenshots.
+ * The "Université Labinux" fixture behind the documentation screenshots.
  *
  * Screenshots must show a plausible school, not `shared-test-org` and
  * `e2e-roundtrip-msi999o2`. This builds one through the same API calls the
@@ -23,7 +23,7 @@ const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || 'test';
 export const DOCS_PASSWORD = 'OcfDocs2026!';
 
 export const TRAINER = {
-  email: 'claire.martin@lycee-iris.example',
+  email: 'claire.martin@universite-labinux.example',
   userName: 'claire.martin',
   firstName: 'Claire',
   lastName: 'Martin',
@@ -31,15 +31,26 @@ export const TRAINER = {
 };
 
 export const LEARNERS = [
-  { email: 'karim.benali@lycee-iris.example', firstName: 'Karim', lastName: 'Benali' },
-  { email: 'lea.dupont@lycee-iris.example', firstName: 'Léa', lastName: 'Dupont' },
-  { email: 'mehdi.haddad@lycee-iris.example', firstName: 'Mehdi', lastName: 'Haddad' },
-  { email: 'sofia.rossi@lycee-iris.example', firstName: 'Sofia', lastName: 'Rossi' },
+  { email: 'karim.benali@universite-labinux.example', firstName: 'Karim', lastName: 'Benali' },
+  { email: 'lea.dupont@universite-labinux.example', firstName: 'Léa', lastName: 'Dupont' },
+  { email: 'mehdi.haddad@universite-labinux.example', firstName: 'Mehdi', lastName: 'Haddad' },
+  { email: 'sofia.rossi@universite-labinux.example', firstName: 'Sofia', lastName: 'Rossi' },
+  { email: 'thomas.nguyen@universite-labinux.example', firstName: 'Thomas', lastName: 'Nguyen' },
+  { email: 'ines.moreau@universite-labinux.example', firstName: 'Inès', lastName: 'Moreau' },
+  { email: 'lucas.petit@universite-labinux.example', firstName: 'Lucas', lastName: 'Petit' },
+  { email: 'amina.diallo@universite-labinux.example', firstName: 'Amina', lastName: 'Diallo' },
+  { email: 'hugo.lambert@universite-labinux.example', firstName: 'Hugo', lastName: 'Lambert' },
+  { email: 'chloe.garcia@universite-labinux.example', firstName: 'Chloé', lastName: 'Garcia' },
+  { email: 'yanis.bouchard@universite-labinux.example', firstName: 'Yanis', lastName: 'Bouchard' },
+  { email: 'emma.fontaine@universite-labinux.example', firstName: 'Emma', lastName: 'Fontaine' },
 ];
+/** Enough live sessions to fill the class wall; the last two learners stay "not started" on purpose. */
+const LIVE_LEARNERS = 10;
 
-export const ORG = { name: 'lycee-iris', displayName: 'Lycée Iris', description: 'Lycée polyvalent — filière SIO' };
-export const CLASS = { name: 'BTS SIO 2A', description: 'Deuxième année — option SISR' };
-const TRAINER_PLAN = 'Formateur';
+export const ORG = { name: 'universite-labinux', displayName: 'Université Labinux', description: 'Université — département informatique' };
+export const CLASS = { name: 'L3 Informatique — Groupe A', description: 'Licence 3 — groupe de TP A' };
+const TRAINER_PLAN = 'Formateur'; // personal plan: what lets her create a team organisation
+const ORG_PLAN = 'École / OF (sur devis)'; // a lycée is on the school offer; its budget carries ten live learners
 const ASSIGNED_SCENARIOS = ['gameshell-basics-unix-shell-adventure', 'linux-rogue-lite'];
 
 function auth(session: ApiSession) {
@@ -109,7 +120,7 @@ async function ensureOrg(admin: ApiSession, trainer: ApiSession, planId: string)
 /** The class and its roster arrive together, the way a school's CSV export does. */
 async function ensureClass(trainer: ApiSession, orgId: string): Promise<string> {
   const existing = await findTeacherGroup(trainer, new RegExp(`^${CLASS.name}$`));
-  if (existing) return existing.group_id;
+  if (existing && existing.learner_count >= LEARNERS.length) return existing.group_id;
 
   const csv = (header: string, lines: string[]) => Buffer.from([header, ...lines].join('\n'));
   const file = (name: string, buffer: Buffer) => ({ name, mimeType: 'text/csv', buffer });
@@ -159,7 +170,7 @@ async function ensureAssignments(trainer: ApiSession, groupId: string): Promise<
 }
 
 /**
- * Two learners in the middle of the GameShell scenario, so the class page has
+ * Ten learners in the middle of the GameShell scenario, so the class page has
  * something live to show and the player screenshot is a real container, not an
  * empty frame. Sessions are reused while open and relaunched once they expire.
  * A host that refuses the launch (capacity, no Incus) leaves the id undefined
@@ -167,7 +178,7 @@ async function ensureAssignments(trainer: ApiSession, groupId: string): Promise<
  */
 async function ensureLearnerSessions(orgId: string): Promise<string | undefined> {
   let firstTerminal: string | undefined;
-  for (const learner of LEARNERS.slice(0, 2)) {
+  for (const learner of LEARNERS.slice(0, LIVE_LEARNERS)) {
     const session = await apiLogin(learner.email, DOCS_PASSWORD);
     const scenario = rows(await getJson(session, '/scenarios')).find((s) => s.name === LIVE_SCENARIO);
     if (!scenario) return undefined;
@@ -231,12 +242,16 @@ export interface DocsFixture {
 
 export async function ensureDocsFixture(): Promise<DocsFixture> {
   const admin = await apiLogin(ADMIN_EMAIL, ADMIN_PASSWORD);
-  const plan = (await getCatalogPlans(admin)).find((p) => p.name === TRAINER_PLAN);
-  if (!plan) throw new Error(`no "${TRAINER_PLAN}" plan in the catalogue — is the database seeded?`);
+  const plans = await getCatalogPlans(admin);
+  const planId = (name: string) => {
+    const plan = plans.find((p) => p.name === name);
+    if (!plan) throw new Error(`no "${name}" plan in the catalogue — is the database seeded?`);
+    return plan.id;
+  };
 
   const trainer = await ensureTrainer();
-  await ensureTrainerPlan(admin, trainer, plan.id);
-  const orgId = await ensureOrg(admin, trainer, plan.id);
+  await ensureTrainerPlan(admin, trainer, planId(TRAINER_PLAN));
+  const orgId = await ensureOrg(admin, trainer, planId(ORG_PLAN));
   const classId = await ensureClass(trainer, orgId);
   await ensureAssignments(trainer, classId);
   const learnerTerminalId = await ensureLearnerSessions(orgId);
