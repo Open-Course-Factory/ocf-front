@@ -24,10 +24,10 @@
 <template>
   <div class="help-page">
     <div class="back-button">
-      <router-link :to="backRoute" class="btn-back">
+      <a href="#" class="btn-back" @click.prevent="goBack">
         <i class="fas fa-arrow-left"></i>
         {{ backButtonText }}
-      </router-link>
+      </a>
     </div>
     <div class="help-header">
       <div class="header-content">
@@ -103,11 +103,13 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
 import { SUPPORT_EMAIL } from '../../config/contact'
 import { useLocale } from '../../composables/useLocale'
 import { useHelpRegistryStore } from '../../stores/helpRegistry'
+import { resolveLandingPage } from '../../composables/useLandingPage'
+import { useUserSettingsStore } from '../../stores/userSettings'
 
 const { t } = useTranslations({
   en: {
@@ -137,6 +139,7 @@ const { t } = useTranslations({
 })
 const { currentLocale, supportedLocales, setLocale, getLocaleInfo } = useLocale()
 const route = useRoute()
+const router = useRouter()
 const helpStore = useHelpRegistryStore()
 
 const loc = (text: { en: string; fr: string }) => text[currentLocale.value as 'en' | 'fr'] || text.en
@@ -147,9 +150,22 @@ const expandedSections = ref(new Set<string>())
 const isPublicHelp = computed(() => route.path.startsWith('/help-public'))
 const routePrefix = computed(() => isPublicHelp.value ? '/help-public' : '/help')
 
-// Back button configuration
-const backRoute = computed(() => isPublicHelp.value ? '/' : '/courses')
+// Back button: the public hub returns to the landing page, the in-app hub to
+// the user's own home page (same resolution as the OCF logo, see useLandingPage).
 const backButtonText = computed(() => isPublicHelp.value ? t('help.backToHome') : t('help.backToApp'))
+
+async function goBack() {
+  if (isPublicHelp.value) {
+    router.push('/')
+    return
+  }
+  try {
+    await useUserSettingsStore().loadSettings()
+    router.push(await resolveLandingPage())
+  } catch {
+    router.push('/subscription-dashboard')
+  }
+}
 
 const helpSections = computed(() => helpStore.filteredSections.map(section => ({
   id: section.id,
