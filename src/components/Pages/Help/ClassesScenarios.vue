@@ -191,7 +191,7 @@ const { t } = useTranslations({
           p1: 'On their side, the learner opens Scenarios in the menu. Assigned scenarios sit in their catalogue among the public ones:',
           caption: 'A learner\'s scenario catalogue: scenarios to launch, and one already started with a "Resume" button.',
           window: 'An assigned scenario is visible from its start date to its deadline. Outside that window it leaves the catalogue.',
-          context: 'The learner has to be working in the class\'s organization: a scenario assigned in "Lycée Iris" is not listed while they are in their personal space.',
+          context: 'The learner has to be working in the class\'s organization: a scenario assigned in "Université Labinux" is not listed while they are in their personal space.',
           resume: '"Launch" builds the environment; "Resume" reopens a session already started. A scenario started for the class by the trainer is already in "Resume" state.'
         },
         import: {
@@ -251,7 +251,7 @@ const { t } = useTranslations({
           p1: 'De son côté, l\'apprenant ouvre Scénarios dans le menu. Les scénarios assignés figurent dans son catalogue parmi les scénarios publics :',
           caption: 'Le catalogue de scénarios d\'un apprenant : des scénarios à lancer, et un déjà commencé avec un bouton « Reprendre ».',
           window: 'Un scénario assigné est visible de sa date de début à sa date limite. Hors de cette fenêtre, il quitte le catalogue.',
-          context: 'L\'apprenant doit travailler dans l\'organisation de la classe : un scénario assigné dans « Lycée Iris » n\'est pas listé tant qu\'il est dans son espace personnel.',
+          context: 'L\'apprenant doit travailler dans l\'organisation de la classe : un scénario assigné dans « Université Labinux » n\'est pas listé tant qu\'il est dans son espace personnel.',
           resume: '« Lancer » construit l\'environnement ; « Reprendre » rouvre une session déjà commencée. Un scénario lancé pour la classe par le formateur est déjà en état « Reprendre ».'
         },
         import: {

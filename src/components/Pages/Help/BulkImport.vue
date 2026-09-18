@@ -51,7 +51,7 @@
           <div class="step-content">
             <h4>{{ t('help.organizations.bulkImport.files.users.title') }}</h4>
             <p v-html="t('help.organizations.bulkImport.files.users.description')"></p>
-            <div class="code-example"><code>email,name<br>marie.dupont@lycee.example,DUPONT Marie<br>jean.martin@lycee.example,MARTIN Jean</code></div>
+            <div class="code-example"><code>email,name<br>marie.dupont@univ-labinux.example,DUPONT Marie<br>jean.martin@univ-labinux.example,MARTIN Jean</code></div>
           </div>
         </div>
 
@@ -60,7 +60,7 @@
           <div class="step-content">
             <h4>{{ t('help.organizations.bulkImport.files.groups.title') }}</h4>
             <p v-html="t('help.organizations.bulkImport.files.groups.description')"></p>
-            <div class="code-example"><code>group_name,display_name,description,parent_group,max_members,expires_at,external_id<br>bts-sio-2a,BTS SIO 2A,Deuxième année — option SISR,,50,2027-06-30T23:59:59Z,sio2a</code></div>
+            <div class="code-example"><code>group_name,display_name,description,parent_group,max_members,expires_at,external_id<br>l3-info-a,L3 Informatique — Groupe A,Troisième année — groupe A,,50,2027-06-30T23:59:59Z,l3a</code></div>
           </div>
         </div>
 
@@ -69,7 +69,7 @@
           <div class="step-content">
             <h4>{{ t('help.organizations.bulkImport.files.memberships.title') }}</h4>
             <p v-html="t('help.organizations.bulkImport.files.memberships.description')"></p>
-            <div class="code-example"><code>user_email,group_name,role<br>marie.dupont@lycee.example,bts-sio-2a,member<br>claire.martin@lycee.example,bts-sio-2a,teacher</code></div>
+            <div class="code-example"><code>user_email,group_name,role<br>marie.dupont@univ-labinux.example,l3-info-a,member<br>claire.martin@univ-labinux.example,l3-info-a,teacher</code></div>
           </div>
         </div>
 

@@ -88,7 +88,7 @@
           <div class="step-content">
             <h4>{{ t('helpClasses.members.csv.step1.title') }}</h4>
             <p v-html="t('helpClasses.members.csv.step1.description')"></p>
-            <div class="code-example"><code>email,name<br>marie.dupont@lycee.example,DUPONT Marie<br>jean.martin@lycee.example,MARTIN Jean</code></div>
+            <div class="code-example"><code>email,name<br>marie.dupont@univ-labinux.example,DUPONT Marie<br>jean.martin@univ-labinux.example,MARTIN Jean</code></div>
           </div>
         </div>
         <div class="step-card">
