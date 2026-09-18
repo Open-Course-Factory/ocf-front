@@ -23,6 +23,7 @@ import type { Router } from 'vue-router'
 import { useHelpRegistryStore } from '../stores/helpRegistry'
 import { registerTerminalsHelp } from './terminals'
 import { registerScenariosHelp } from './scenarios'
+import { registerClassesHelp } from './classes'
 import { registerCoursesHelp } from './courses'
 import { registerOrganizationsHelp } from './organizations'
 import { registerAccountHelp } from './account'
@@ -32,6 +33,7 @@ export function registerAllHelp() {
   store.clearSections() // Idempotent: clear before re-registering (needed for Vite HMR)
   registerTerminalsHelp(store)
   registerScenariosHelp(store)
+  registerClassesHelp(store)
   registerCoursesHelp(store)
   registerOrganizationsHelp(store)
   registerAccountHelp(store)
