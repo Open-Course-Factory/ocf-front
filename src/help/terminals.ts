@@ -86,6 +86,19 @@ export function registerTerminalsHelp(store: ReturnType<typeof useHelpRegistrySt
           fr: 'Votre clé d\'accès terminal est créée pour vous ; cette page l\'explique, ainsi que la page Clés SSH des paramètres.'
         },
         icon: 'fas fa-key'
+      },
+      {
+        route: 'terminals/exposed-ports',
+        component: () => import('../components/Pages/Help/TerminalExposedPorts.vue'),
+        title: {
+          en: 'Public URL for a port',
+          fr: 'URL publique pour un port'
+        },
+        description: {
+          en: 'Publish a web page, an API or a dashboard running in your session at a public URL for an hour.',
+          fr: 'Publier une page web, une API ou un tableau de bord qui tourne dans votre session sur une URL publique, pendant une heure.'
+        },
+        icon: 'fas fa-plug'
       }
     ]
   })

@@ -134,7 +134,7 @@ export const helpFr = {
           title: "La vue de session",
           description: "C'est ici que vous travaillez. Le terminal occupe toute la largeur ; cliquez dedans et tapez.",
           shot: "Une session en cours : le bandeau d'enregistrement, l'en-tête avec l'état de connexion, l'indicateur internet, le temps restant et le bouton Détruire, puis le panneau Historique des commandes.",
-          header: "L'en-tête affiche le nom de la session, l'état de connexion (Connecté, Connexion…, Déconnecté), un globe quand l'accès internet est activé, et le temps restant.",
+          header: "L'en-tête affiche le nom de la session, l'état de connexion (Connecté, Connexion…, Déconnecté), un globe quand l'accès internet est activé, une puce Ports sur les sessions avec accès internet (voir la page URL publique pour un port), et le temps restant.",
           banner: "Le bandeau bleu rappelle que les commandes sont enregistrées ; En savoir plus ouvre la politique de confidentialité. Compris le masque définitivement.",
           stop: "Arrêter — seulement sur les sessions créées avec Conserver mon travail. Le conteneur s'arrête et son disque est gardé ; vous reprenez plus tard depuis Mes sessions.",
           destroy: "Détruire — termine la session pour de bon. Le conteneur, son disque et son historique de commandes sont supprimés après confirmation.",

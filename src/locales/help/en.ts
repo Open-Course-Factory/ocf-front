@@ -134,7 +134,7 @@ export const helpEn = {
           title: "The session view",
           description: "This is where you work. The terminal takes the whole width; click in it and type.",
           shot: "A running session: the recording banner, the header with the connection status, the internet indicator, the remaining time and the Destroy button, then the command history panel.",
-          header: "The header shows the session name, the connection status (Connected, Connecting, Disconnected), a globe when internet access is on, and the time left.",
+          header: "The header shows the session name, the connection status (Connected, Connecting, Disconnected), a globe when internet access is on, a Ports chip on sessions with internet access (see the Public URL for a port page), and the time left.",
           banner: "The blue banner reminds you that commands are recorded; Learn more opens the privacy policy. Got it hides it for good.",
           stop: "Stop — only on sessions created with Keep my work. It stops the container and keeps its disk; you resume it later from My sessions.",
           destroy: "Destroy — ends the session for good. The container, its disk and its command history are deleted after a confirmation.",
