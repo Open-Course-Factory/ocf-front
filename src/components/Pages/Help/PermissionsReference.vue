@@ -255,7 +255,7 @@ import { useTranslations } from '../../../composables/useTranslations'
 const { t } = useTranslations({
   en: {
     help: {
-      navigation: { backToHelp: '← Back to Help Center' },
+      navigation: { backToHelp: 'Back to Help Center' },
       account: {
         permissionsReference: {
           title: 'API Permissions Reference',
@@ -302,7 +302,7 @@ const { t } = useTranslations({
   },
   fr: {
     help: {
-      navigation: { backToHelp: '← Retour au Centre d\'Aide' },
+      navigation: { backToHelp: 'Retour au Centre d\'Aide' },
       account: {
         permissionsReference: {
           title: 'Référence des permissions API',
