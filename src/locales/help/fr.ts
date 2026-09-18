@@ -73,7 +73,7 @@ export const helpFr = {
     },
 
     navigation: {
-      backToHelp: "← Retour au Centre d'Aide",
+      backToHelp: "Retour au Centre d'Aide",
       nextSteps: "Prochaines Étapes"
     },
 
