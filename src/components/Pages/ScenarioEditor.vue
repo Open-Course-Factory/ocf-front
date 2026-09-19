@@ -222,16 +222,15 @@
       @confirm="handleCopyToOrg"
     >
       <div class="form-group">
-        <label for="copy-target-org">{{ t('scenarioEditor.selectTargetOrg') }}</label>
-        <select id="copy-target-org" v-model="copyTargetOrgId" class="form-control">
+        <label for="copy-target">{{ t('scenarioEditor.selectTargetOrg') }}</label>
+        <select id="copy-target" v-model="copyTargetKey" class="form-control">
           <option :value="null" disabled>{{ t('scenarioEditor.selectTargetOrg') }}</option>
-          <option
-            v-for="org in copyTargetOrgs"
-            :key="org.id"
-            :value="org.id"
-          >
-            {{ org.display_name || org.name }}
-          </option>
+          <optgroup v-if="copyTargetOrgs.length" :label="t('scenarioEditor.scopeOrganizations')">
+            <option v-for="s in copyTargetOrgs" :key="`org:${s.id}`" :value="`org:${s.id}`">{{ s.name }}</option>
+          </optgroup>
+          <optgroup v-if="groupScopes.length" :label="t('scenarioEditor.scopeGroups')">
+            <option v-for="s in groupScopes" :key="`group:${s.id}`" :value="`group:${s.id}`">{{ s.name }}</option>
+          </optgroup>
         </select>
       </div>
     </BaseModal>
@@ -464,7 +463,7 @@ const stepSaveError = ref('')
 // Copy to org state
 const showCopyModal = ref(false)
 const showArchiveModal = ref(false)
-const copyTargetOrgId = ref<string | null>(null)
+const copyTargetKey = ref<string | null>(null)
 const isCopying = ref(false)
 
 // Insert-on-edge picker state (hover-+ click → pick a step type → insert)
@@ -500,18 +499,17 @@ const getScenarioOrgName = (scenario: any): string | null => {
 // controls that 403, class managers were shown read-only on their own labs.
 const canEditScenario = computed(() => !!currentScenario.value?.can_manage)
 
-const canCopyToOrg = computed(() => {
-  return selectedScenarioId.value &&
-    currentScenario.value &&
-    organizationsStore.userOrganizations.length > 1
-})
+// Copy targets are the create scopes minus the scenario's own organisation:
+// an org manager copies into another org they manage, a teacher copies a
+// public catalogue scenario into their class (POST /groups/:id/scenarios/:id/duplicate).
+const copyTargetOrgs = computed(() =>
+  orgScopes.value.filter(o => o.id !== currentScenario.value?.organization_id)
+)
 
-const copyTargetOrgs = computed(() => {
-  if (!currentScenario.value) return []
-  return organizationsStore.userOrganizations.filter(
-    org => org.id !== currentScenario.value?.organization_id
-  )
-})
+const canCopyToOrg = computed(() =>
+  !!selectedScenarioId.value && !!currentScenario.value &&
+  copyTargetOrgs.value.length + groupScopes.value.length > 0
+)
 
 // Scope picker for creating new scenarios.
 // A scope describes where the new scenario lives. Endpoints are selected accordingly:
@@ -1555,21 +1553,23 @@ const handleSaveStep = async (formData: any) => {
 
 // Copy to org handlers
 const openCopyModal = () => {
-  copyTargetOrgId.value = null
+  copyTargetKey.value = null
   showCopyModal.value = true
 }
 
 const closeCopyModal = () => {
   showCopyModal.value = false
-  copyTargetOrgId.value = null
+  copyTargetKey.value = null
 }
 
 const handleCopyToOrg = async () => {
-  if (!copyTargetOrgId.value || !currentScenario.value?.id) return
+  const target = parseScopeKey(copyTargetKey.value)
+  if (!target || target.kind === 'platform' || !currentScenario.value?.id) return
 
   isCopying.value = true
   try {
-    await axios.post(`/organizations/${copyTargetOrgId.value}/scenarios/${currentScenario.value.id}/duplicate`)
+    const base = target.kind === 'org' ? `/organizations/${target.id}` : `/groups/${target.id}`
+    await axios.post(`${base}/scenarios/${currentScenario.value.id}/duplicate`)
     notification.showSuccess(t('scenarioEditor.copySuccess'))
     // Reload scenarios to show the new duplicate
     await scenariosStore.loadEntitiesIncludingArchived('/scenarios?include=steps')

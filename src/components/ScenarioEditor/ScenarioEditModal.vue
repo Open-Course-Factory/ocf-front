@@ -480,7 +480,9 @@
         <span class="form-hint">{{ t('scenarioEditor.portExposureAllowedHint') }}</span>
       </div>
 
-      <div class="form-group checkbox-group">
+      <!-- Public is a platform notion: an organisation's scenario never leaves
+           the organisation, and the API refuses the flag on it. -->
+      <div v-if="isPlatformScenario" class="form-group checkbox-group">
         <label class="checkbox-label" for="scenario-is-public">
           <input id="scenario-is-public" type="checkbox" v-model="model.is_public" />
           {{ t('scenarioEditor.isPublic') }}
@@ -736,6 +738,10 @@ const tabs = computed(() =>
   model.value.isNew
     ? allTabs.value.filter(tab => tab.key === 'general' || tab.key === 'content')
     : allTabs.value
+)
+
+const isPlatformScenario = computed(() =>
+  model.value.isNew ? model.value._scopeKey === 'platform:*' : !model.value.organization_id
 )
 
 // Reset to the first tab whenever the modal opens.
