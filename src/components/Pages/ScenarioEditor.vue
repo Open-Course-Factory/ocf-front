@@ -494,15 +494,11 @@ const getScenarioOrgName = (scenario: any): string | null => {
 }
 
 // Permission: can the current user edit the loaded scenario?
-// Admin can edit anything. Non-admin can only edit scenarios in their orgs.
-// Platform scenarios (no org) are admin-only.
-const canEditScenario = computed(() => {
-  if (!currentScenario.value) return false
-  if (isAdmin.value) return true
-  const scenarioOrgId = currentScenario.value.organization_id
-  if (!scenarioOrgId) return false // platform scenario = admin only
-  return organizationsStore.userOrganizations.some(org => org.id === scenarioOrgId)
-})
+// `can_manage` is the backend's own CanManageScenario verdict (creator, org
+// manager, manager of an assigned class, admin). Guessing it here from
+// memberships disagreed with the hooks in both directions: org members got
+// controls that 403, class managers were shown read-only on their own labs.
+const canEditScenario = computed(() => !!currentScenario.value?.can_manage)
 
 const canCopyToOrg = computed(() => {
   return selectedScenarioId.value &&
