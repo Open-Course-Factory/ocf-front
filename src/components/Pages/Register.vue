@@ -3,8 +3,7 @@
     <div class="register-form">
       <div class="auth-brand">
         <router-link to="/">
-          <i class="fas fa-book"></i>
-          <span>OCF</span>
+          <InstanceBrand />
         </router-link>
       </div>
       <h2>{{ t('register.title') }}</h2>
@@ -209,6 +208,7 @@
 </template>
 
 <script setup lang="ts">
+import InstanceBrand from '../Common/InstanceBrand.vue'
 import { ref, computed, reactive, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';

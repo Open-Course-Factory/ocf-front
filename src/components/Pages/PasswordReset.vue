@@ -3,8 +3,7 @@
     <div class="password-reset-form">
       <div class="auth-brand">
         <router-link to="/">
-          <i class="fas fa-book"></i>
-          <span>OCF</span>
+          <InstanceBrand />
         </router-link>
       </div>
       <!-- Étape 1: Demande de reset -->
@@ -204,6 +203,7 @@
 </template>
 
 <script setup lang="ts">
+import InstanceBrand from '../Common/InstanceBrand.vue'
 import { ref, computed, reactive, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';

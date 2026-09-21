@@ -29,8 +29,7 @@
       </button>
       <h1 class="app-title">
         <a href="#" @click.prevent="navigateToHome">
-          <i class="fas fa-book"></i>
-          <span>OCF</span>
+          <InstanceBrand />
           <BetaBadge size="medium" />
         </a>
       </h1>
@@ -174,6 +173,7 @@
 </template>
 
 <script setup lang="ts">
+import InstanceBrand from '../Common/InstanceBrand.vue'
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTranslations } from '../../composables/useTranslations';

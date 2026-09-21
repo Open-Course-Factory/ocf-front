@@ -23,12 +23,14 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { useBrandingStore } from './stores/branding'
 import { useRoute } from 'vue-router'
 import { useTheme } from './composables/useTheme'
 import { useUserSettingsStore } from './stores/userSettings'
 import { useCurrentUserStore } from './stores/currentUser'
 
 const route = useRoute()
+const brandingStore = useBrandingStore()
 const { initTheme, setTheme } = useTheme()
 const settingsStore = useUserSettingsStore()
 const currentUserStore = useCurrentUserStore()
@@ -43,6 +45,8 @@ function applyCompactMode(enabled: boolean) {
 }
 
 onMounted(async () => {
+  // Public identity is independent of authentication and personal light/dark mode.
+  void brandingStore.load().catch(() => console.warn('Unable to load instance branding'))
   // Don't load settings on public pages (login, register, password reset, etc.)
   const publicPages = ['Login', 'Register', 'PasswordReset', 'ForgotPassword', 'ResetPassword', 'VerifyEmail', 'LandingPage', 'Legal', 'HelpPublic']
   const isPublicPage = publicPages.includes(route.name as string) || route.name?.toString().startsWith('HelpPublic')

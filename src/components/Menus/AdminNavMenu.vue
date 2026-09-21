@@ -74,6 +74,7 @@ const { t } = useTranslations({
       items: {
         distributionCatalog: 'Terminal Distributions',
         platformSettings: 'Platform Settings',
+        branding: 'Platform identity',
         subscriptionPlans: 'Subscription Plans',
         allInvoices: 'All Invoices',
         invoiceCleanup: 'Invoice Cleanup',
@@ -111,6 +112,7 @@ const { t } = useTranslations({
       items: {
         distributionCatalog: 'Distributions des terminaux',
         platformSettings: 'Paramètres de la plateforme',
+        branding: 'Identité de la plateforme',
         subscriptionPlans: 'Plans d\'Abonnement',
         allInvoices: 'Toutes les Factures',
         invoiceCleanup: 'Nettoyage des Factures',
@@ -204,6 +206,11 @@ const adminCategories = computed<MenuCategory[]>(() => [
         route: '/admin/distribution-catalog',
         label: t('admin.items.distributionCatalog'),
         icon: 'fas fa-layer-group'
+      },
+      {
+        route: '/admin/branding',
+        label: t('admin.items.branding'),
+        icon: 'fas fa-palette'
       },
       {
         route: '/admin/platform-settings',

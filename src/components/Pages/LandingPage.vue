@@ -215,7 +215,7 @@
       <div class="container">
         <div class="footer-content">
           <div class="footer-brand">
-            <h3>Open Course Factory</h3>
+            <h3><InstanceBrand /></h3>
             <p>{{ t('landing.footer.description') }}</p>
             <p class="footer-contact">
               <i class="fas fa-envelope" aria-hidden="true"></i>
@@ -264,6 +264,7 @@
 </template>
 
 <script setup lang="ts">
+import InstanceBrand from '../Common/InstanceBrand.vue'
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { SUPPORT_EMAIL } from '../../config/contact'
