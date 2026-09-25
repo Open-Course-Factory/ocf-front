@@ -1355,7 +1355,7 @@ export const helpFr = {
           content: "Contenu — le titre et les consignes, en Markdown. Une commande marquée avec le marqueur exec de KillerCoda — la commande entre accents graves, immédiatement suivie du mot exec entre doubles accolades — devient cliquable dans le lecteur.",
           hints: "Indices — les indices progressifs, révélés niveau par niveau. Séparez les niveaux par des titres ### Indice 1, ### Indice 2 (ou ### Hint 1 en anglais) ; un texte d'indice sans titre est un niveau unique.",
           verify: "Vérification — un script shell exécuté dans le conteneur quand l'apprenant clique sur Vérifier. Le code de sortie 0 valide l'étape ; tout autre code le laisse dessus. Affichez ce que vous vérifiez : la sortie l'aide.",
-          background: "Arrière-plan — un script exécuté dans le conteneur quand l'apprenant arrive sur l'étape, en arrière-plan : démarrer un service, déposer un fichier, casser quelque chose exprès.",
+          background: "Arrière-plan — un script exécuté dans le conteneur quand l'apprenant arrive sur l'étape, en arrière-plan : démarrer un service, déposer un fichier, casser quelque chose exprès. Il est relancé si la machine de l'apprenant est reconstruite : voir Des scripts de préparation qui résistent à une reconstruction, plus bas.",
           foreground: "Premier plan — des commandes tapées dans le shell de l'apprenant quand il arrive sur l'étape, comme s'il les avait tapées. Restez court : il les voit défiler.",
           flag: "Étapes Flag — cochez A un drapeau et donnez un Chemin du drapeau : quand l'apprenant arrive sur l'étape, un jeton FLAG unique à sa session est écrit dans ce fichier du conteneur, et l'étape est validée quand il le soumet. Le niveau du drapeau est un nombre libre conservé avec l'étape.",
           questions: "Questions — pour un quiz : ajoutez des questions, choisissez un type (choix multiple, réponses multiples, vrai/faux, texte libre), marquez les bonnes options, donnez éventuellement des points et une explication. Afficher le retour après envoi fait passer le quiz du mode examen (score seul) au mode apprentissage (réponses et explications affichées).",
@@ -1369,12 +1369,16 @@ export const helpFr = {
             description: "À l'étape 1, l'apprenant a écrit /srv/app/app.conf. L'étape 2 en a besoin : ne le créez que s'il manque."
           },
           validAnswer: {
-            title: "Accepter la bonne réponse de l'apprenant, même si elle diffère de la vôtre",
-            description: "L'étape 1 demandait un port. port=9090 vaut bien votre 8080. Vérifiez qu'un port valide est défini, pas qu'il est identique au vôtre : n'ajoutez votre valeur que si aucun port valide n'est défini, et gardez tout le reste du fichier."
+            title: "Accepter une autre bonne réponse",
+            description: "L'étape 1 demandait un port. port=9090 vaut bien votre 8080. Vérifiez qu'un port valide est défini, pas qu'il est identique au vôtre : n'ajoutez votre valeur que si aucun port valide n'est défini, et gardez tout le reste du fichier. Le script de vérification de l'étape 1 doit accepter les mêmes écritures (espaces autour du =, espaces en fin de ligne)."
           },
           service: {
-            title: "Installer et démarrer, seulement si nécessaire",
-            description: "Testez avant d'agir : sautez l'installation si le paquet est déjà là, et ne démarrez le service que s'il ne tourne pas."
+            title: "Installer et démarrer, seulement si nécessaire (Debian/Ubuntu)",
+            description: "Testez avant d'agir : sautez l'installation si le paquet est déjà là, et ne démarrez le service que s'il ne tourne pas. Rafraîchissez d'abord la liste des paquets : elle est vide sur une image neuve."
+          },
+          brokenOnPurpose: {
+            title: "Les étapes qui cassent quelque chose exprès",
+            description: "Une étape qui casse quelque chose pour que l'apprenant le répare est elle aussi rejouée lors d'une reconstruction : elle recasse ce qu'il avait réparé. Si l'étape suivante compte sur cette réparation, son script de préparation doit la refaire quand c'est encore cassé."
           }
         },
         chaining: {

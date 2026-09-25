@@ -250,7 +250,7 @@ import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useScenarioEditorAccess } from '../../composables/useScenarioEditorAccess'
 import { useNotification } from '../../composables/useNotification'
-import { useScenarioGraph, STEP_NODE_TYPES } from '../../composables/useScenarioGraph'
+import { useScenarioGraph, STEP_NODE_TYPES, isFirstStepNode } from '../../composables/useScenarioGraph'
 import { useResizablePanel } from '../../composables/useResizablePanel'
 import NodeLibraryPanel from '../GraphEditor/NodeLibraryPanel.vue'
 import type { NodeTypeDefinition } from '../GraphEditor/NodeLibraryPanel.vue'
@@ -453,17 +453,8 @@ const editingScenario = ref<any>({})
 const editingStep = ref<any>(null)
 const editingStepIsNew = ref(false)
 const editingStepNodeId = ref<string | null>(null)
-
-/** The node chained just before `nodeId` on the canvas, if any. */
-function previousNode(nodeId: string | null) {
-  const incomingEdge = edges.value.find(e => e.target === nodeId)
-  return incomingEdge ? nodes.value.find(n => n.id === incomingEdge.source) : undefined
-}
-
-// Read from the chain rather than `order`, which is absent on a step just
-// dropped on the canvas and stale after a reorder until the editor saves.
 const editingStepIsFirst = computed(
-  () => previousNode(editingStepNodeId.value)?.data?.entityType === 'scenario'
+  () => isFirstStepNode(editingStepNodeId.value, nodes.value, edges.value)
 )
 const deletingNode = ref<any>(null)
 const isSaving = ref(false)
@@ -1506,10 +1497,13 @@ const handleSaveStep = async (formData: any) => {
     if (editingStepIsNew.value) {
       // New step: find parent scenario from edges
       if (editingStepNodeId.value) {
-        const sourceNode = previousNode(editingStepNodeId.value)
-        if (sourceNode?.data?.entityId) {
-          if (sourceNode.data.entityType === 'scenario') {
-            stepData.scenario_id = sourceNode.data.entityId
+        const incomingEdge = edges.value.find(e => e.target === editingStepNodeId.value)
+        if (incomingEdge) {
+          const sourceNode = nodes.value.find(n => n.id === incomingEdge.source)
+          if (sourceNode?.data?.entityId) {
+            if (sourceNode.data.entityType === 'scenario') {
+              stepData.scenario_id = sourceNode.data.entityId
+            }
           }
         }
         // Fallback: use current scenario

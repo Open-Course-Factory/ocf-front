@@ -198,10 +198,16 @@
               class="form-control textarea-full script-textarea"
               rows="14"
               :placeholder="t('stepEdit.backgroundScriptPlaceholder')"
+              :aria-describedby="isFirstStep ? 'step-setup-guidance' : 'step-setup-guidance step-setup-reminder'"
             ></textarea>
-            <p class="form-hint" data-testid="step-setup-guidance">{{ t('stepEdit.backgroundScriptGuidance') }}</p>
-            <p v-if="!isFirstStep" class="ocf-effects-note ocf-setup-reminder" data-testid="step-setup-earlier-step-reminder">
-              <i class="fas fa-info-circle"></i>
+            <p id="step-setup-guidance" class="form-hint" data-testid="step-setup-guidance">{{ t('stepEdit.backgroundScriptGuidance') }}</p>
+            <p
+              v-if="!isFirstStep"
+              id="step-setup-reminder"
+              class="ocf-effects-note ocf-setup-reminder"
+              data-testid="step-setup-earlier-step-reminder"
+            >
+              <i class="fas fa-info-circle" aria-hidden="true"></i>
               {{ t('stepEdit.backgroundScriptEarlierStep') }}
             </p>
           </div>
@@ -716,8 +722,8 @@ const { t } = useTranslations({
       verifyScript: 'Verify Script',
       verifyScriptPlaceholder: '#!/bin/bash\n# Script to verify step completion...',
       backgroundScript: 'Background Script',
-      backgroundScriptPlaceholder: '#!/bin/bash\n# Make sure this step can be played, even on a rebuilt machine.\n# Create what\'s missing; never overwrite the learner\'s work.\n[ -f /etc/app.conf ] {\'|\'}{\'|\'} echo "port=8080" > /etc/app.conf',
-      backgroundScriptGuidance: 'Runs before the step starts, and again whenever the learner\'s machine is rebuilt (scenario setup, then steps 1 to N in order). Make sure everything this step needs is there: create what\'s missing, never overwrite what exists — the learner\'s valid answer may differ from yours. Running it twice must be harmless.',
+      backgroundScriptPlaceholder: '#!/bin/bash\n# Make sure this step can be played, even on a rebuilt machine.\n# Create what\'s missing; never overwrite the learner\'s work.\nmkdir -p /srv/app\n[ -f /srv/app/app.conf ] {\'|\'}{\'|\'} echo "port=8080" > /srv/app/app.conf',
+      backgroundScriptGuidance: 'Runs before the step starts, and again, in order, if the learner\'s machine is rebuilt. Create what\'s missing, never overwrite what exists — running it twice must be harmless.',
       backgroundScriptEarlierStep: 'Does this step rely on something the learner did in an earlier step? Recreate it here if it\'s missing.',
       foregroundScript: 'Foreground Script',
       foregroundScriptPlaceholder: '#!/bin/bash\n# Script to run in the foreground...',
@@ -826,8 +832,8 @@ const { t } = useTranslations({
       verifyScript: 'Script de vérification',
       verifyScriptPlaceholder: '#!/bin/bash\n# Script pour vérifier la complétion de l’étape...',
       backgroundScript: 'Script d’arrière-plan',
-      backgroundScriptPlaceholder: '#!/bin/bash\n# L\'étape doit rester jouable, même sur une machine reconstruite.\n# Créer ce qui manque, sans jamais écraser le travail de l\'apprenant.\n[ -f /etc/app.conf ] {\'|\'}{\'|\'} echo "port=8080" > /etc/app.conf',
-      backgroundScriptGuidance: "S'exécute avant le début de l'étape, puis de nouveau chaque fois que la machine de l'apprenant est reconstruite (script du scénario, puis étapes 1 à N dans l'ordre). Vérifiez que tout ce dont l'étape a besoin est en place : créez ce qui manque, sans jamais écraser l'existant — la réponse de l'apprenant peut être juste sans être identique à la vôtre. Le relancer une seconde fois ne doit rien casser.",
+      backgroundScriptPlaceholder: '#!/bin/bash\n# L\'étape doit rester jouable, même sur une machine reconstruite.\n# Créer ce qui manque, sans jamais écraser le travail de l\'apprenant.\nmkdir -p /srv/app\n[ -f /srv/app/app.conf ] {\'|\'}{\'|\'} echo "port=8080" > /srv/app/app.conf',
+      backgroundScriptGuidance: "S'exécute avant le début de l'étape, puis de nouveau, dans l'ordre, si la machine de l'apprenant est reconstruite. Créez ce qui manque sans jamais écraser l'existant — le lancer deux fois ne doit rien casser.",
       backgroundScriptEarlierStep: "Cette étape s'appuie sur ce que l'apprenant a fait à une étape précédente ? Recréez-le ici s'il manque.",
       foregroundScript: 'Script de premier plan',
       foregroundScriptPlaceholder: '#!/bin/bash\n# Script à exécuter en premier plan...',

@@ -33,6 +33,15 @@ function isStepType(type: string): boolean {
   return (STEP_NODE_TYPES as readonly string[]).includes(type)
 }
 
+// A step is first when the scenario links straight to it. Read from the chain
+// rather than `order`, which is absent on a step just dropped on the canvas
+// and stale after a reorder until the editor saves.
+export function isFirstStepNode(nodeId: string | null, nodes: any[], edges: any[]): boolean {
+  const incomingEdge = edges.find(e => e.target === nodeId)
+  const source = incomingEdge && nodes.find(n => n.id === incomingEdge.source)
+  return source?.data?.entityType === 'scenario'
+}
+
 // Deserialize a question's `options` field. The backend stores `options` as a
 // JSON string (TEXT column); the frontend QuestionData expects `options: string[]`.
 // Tolerates payloads that already arrive as arrays (e.g. demo mode) or invalid JSON.
