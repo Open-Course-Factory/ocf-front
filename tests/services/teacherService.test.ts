@@ -373,3 +373,25 @@ describe('teacherService.bulkStartScenario', () => {
     expect(mockedAxios.post.mock.calls[0][1]).toEqual({})
   })
 })
+
+describe('teacherService.setAssignmentActive', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('PATCHes is_active=false to hide the scenario from learners', async () => {
+    mockedAxios.patch.mockResolvedValueOnce({ data: null })
+
+    await teacherService.setAssignmentActive('assign-1', false)
+
+    expect(mockedAxios.patch).toHaveBeenCalledWith('/scenario-assignments/assign-1', { is_active: false })
+  })
+
+  it('PATCHes is_active=true to show it again', async () => {
+    mockedAxios.patch.mockResolvedValueOnce({ data: null })
+
+    await teacherService.setAssignmentActive('assign-1', true)
+
+    expect(mockedAxios.patch).toHaveBeenCalledWith('/scenario-assignments/assign-1', { is_active: true })
+  })
+})

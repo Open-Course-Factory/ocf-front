@@ -62,6 +62,9 @@ const { t } = useTranslations({
       bulkStartError: 'Failed to start sessions',
       resetSuccess: '{count} sessions reset',
       resetError: 'Failed to reset sessions',
+      nowVisible: 'Scenario visible to learners',
+      nowHidden: 'Scenario hidden from learners',
+      visibilityError: 'Failed to change the scenario visibility',
       completedAt: 'Completed',
       stepOrder: 'Step',
       stepTitle: 'Title',
@@ -102,6 +105,9 @@ const { t } = useTranslations({
       bulkStartError: 'Échec du démarrage des sessions',
       resetSuccess: '{count} sessions réinitialisées',
       resetError: 'Échec de la réinitialisation',
+      nowVisible: 'Scénario visible par les apprenants',
+      nowHidden: 'Scénario masqué aux apprenants',
+      visibilityError: 'Échec du changement de visibilité du scénario',
       completedAt: 'Fin',
       stepOrder: 'Étape',
       stepTitle: 'Titre',
@@ -132,7 +138,7 @@ const { t } = useTranslations({
   }
 })
 
-const { showError: notifyError } = useNotification()
+const { showError: notifyError, showSuccess: notifySuccess } = useNotification()
 const backendsStore = useTerminalBackendsStore()
 
 // ScenarioResultItem, SessionStepDetail and SessionDetailResponse are imported
@@ -146,6 +152,7 @@ const isLoading = ref(false)
 const progressByScenario = ref<Map<string, AssignmentProgress>>(new Map())
 const showAssignModal = ref(false)
 const bulkStartingId = ref<string | null>(null)
+const togglingVisibilityId = ref<string | null>(null)
 const showResultModal = ref(false)
 const resultMessage = ref('')
 const resultNoKeyUsers = ref<NoKeyUser[]>([])
@@ -286,6 +293,22 @@ async function confirmRemove() {
     loadProgress()
   } catch (err: any) {
     notifyError(err.response?.data?.error_message || t('groupScenarios.removeError'))
+  }
+}
+
+// Show / hide an assigned scenario for learners (no confirmation: it is
+// instantly reversible and keeps every session and result).
+async function handleToggleVisibility(assignment: ScenarioAssignment) {
+  const nextActive = !assignment.is_active
+  togglingVisibilityId.value = assignment.id
+  try {
+    await teacherService.setAssignmentActive(assignment.id, nextActive)
+    assignment.is_active = nextActive
+    notifySuccess(nextActive ? t('groupScenarios.nowVisible') : t('groupScenarios.nowHidden'))
+  } catch (err: any) {
+    notifyError(err.response?.data?.error_message || t('groupScenarios.visibilityError'))
+  } finally {
+    togglingVisibilityId.value = null
   }
 }
 
@@ -475,7 +498,9 @@ onMounted(() => {
         :progress="progressByScenario.get(assignment.scenario_id) ?? null"
         :can-edit-group="canEditGroup"
         :bulk-starting="bulkStartingId === assignment.id"
+        :toggling-visibility="togglingVisibilityId === assignment.id"
         @view-results="handleViewResults(assignment)"
+        @toggle-visibility="handleToggleVisibility(assignment)"
         @bulk-start="handleBulkStart(assignment)"
         @reset="handleReset(assignment)"
         @remove="handleRemove(assignment)"

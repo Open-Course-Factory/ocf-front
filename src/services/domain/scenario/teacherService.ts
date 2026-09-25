@@ -359,6 +359,13 @@ export const teacherService = {
     await axios.delete(`/scenario-assignments/${assignmentId}`)
   },
 
+  // Show or hide an assigned scenario for learners. An inactive assignment is
+  // left out of the learner's scenario list and cannot be launched; the
+  // teacher still sees it (and its results) in the group.
+  async setAssignmentActive(assignmentId: string, isActive: boolean): Promise<void> {
+    await axios.patch(`/scenario-assignments/${assignmentId}`, { is_active: isActive })
+  },
+
   // --- Teacher dashboard operations ---
 
   async getScenarioResults(groupId: string, scenarioId: string): Promise<ScenarioResultItem[]> {

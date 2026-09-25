@@ -214,11 +214,53 @@ describe('AssignmentCard', () => {
     })
   })
 
+  describe('visibility for learners', () => {
+    it('shows an eye badge, no dimming and a "hide" toggle when the assignment is active', () => {
+      const wrapper = mountCard()
+      expect(wrapper.find('[data-test="visibility-badge"] i.fa-eye').exists()).toBe(true)
+      expect(wrapper.classes()).not.toContain('assignment-card--hidden')
+
+      const toggle = wrapper.find('[data-test="action-toggle-visibility"]')
+      expect(toggle.exists()).toBe(true)
+      expect(toggle.attributes('aria-pressed')).toBe('false')
+      expect(toggle.find('i.fa-eye-slash').exists()).toBe(true)
+    })
+
+    it('dims the card, shows an eye-slash badge and a "show" toggle when hidden', () => {
+      const wrapper = mountCard({ assignment: { ...assignment, is_active: false } })
+      expect(wrapper.find('[data-test="visibility-badge"] i.fa-eye-slash').exists()).toBe(true)
+      expect(wrapper.classes()).toContain('assignment-card--hidden')
+
+      const toggle = wrapper.find('[data-test="action-toggle-visibility"]')
+      expect(toggle.attributes('aria-pressed')).toBe('true')
+      expect(toggle.find('i.fa-eye').exists()).toBe(true)
+    })
+
+    it('emits toggle-visibility once on click', async () => {
+      const wrapper = mountCard()
+      await wrapper.find('[data-test="action-toggle-visibility"]').trigger('click')
+      expect(wrapper.emitted('toggle-visibility')!.length).toBe(1)
+    })
+
+    it('shows a spinner and disables the toggle while the change is saved', () => {
+      const wrapper = mountCard({ togglingVisibility: true })
+      const toggle = wrapper.find('[data-test="action-toggle-visibility"]')
+      expect(toggle.attributes('disabled')).toBeDefined()
+      expect(toggle.find('i.fa-spinner.fa-spin').exists()).toBe(true)
+    })
+  })
+
   describe('permissions', () => {
     it('renders no actions when canEditGroup is false', () => {
       const wrapper = mountCard({ canEditGroup: false })
       expect(wrapper.find('.btn-primary').exists()).toBe(false)
       expect(wrapper.find('.btn-icon').exists()).toBe(false)
+      expect(wrapper.find('[data-test="action-toggle-visibility"]').exists()).toBe(false)
+    })
+
+    it('still tells a read-only viewer whether the scenario is hidden', () => {
+      const wrapper = mountCard({ canEditGroup: false, assignment: { ...assignment, is_active: false } })
+      expect(wrapper.find('[data-test="visibility-badge"]').exists()).toBe(true)
     })
   })
 })

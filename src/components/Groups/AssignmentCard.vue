@@ -22,7 +22,7 @@
 -->
 
 <template>
-  <div class="card assignment-card">
+  <div class="card assignment-card" :class="{ 'assignment-card--hidden': !assignment.is_active }">
     <div class="assignment-card-body">
     <div class="assignment-info">
       <div class="assignment-title">
@@ -47,8 +47,13 @@
           <i class="fas fa-calendar"></i>
           {{ assignment.deadline ? formatDate(assignment.deadline) : t('groupScenarios.noDeadline') }}
         </span>
-        <span class="badge" :class="assignment.is_active ? 'badge-success' : 'badge-secondary'">
-          {{ assignment.is_active ? t('groupScenarios.active') : t('groupScenarios.inactive') }}
+        <span
+          class="badge visibility-badge"
+          :class="assignment.is_active ? 'badge-success' : 'badge-secondary'"
+          data-test="visibility-badge"
+        >
+          <i :class="assignment.is_active ? 'fas fa-eye' : 'fas fa-eye-slash'"></i>
+          {{ assignment.is_active ? t('groupScenarios.visible') : t('groupScenarios.hidden') }}
         </span>
       </div>
 
@@ -70,6 +75,22 @@
     </div>
 
     <div v-if="canEditGroup" class="assignment-actions">
+      <button
+        class="btn btn-secondary btn-sm btn-toggle-visibility"
+        data-test="action-toggle-visibility"
+        :aria-pressed="!assignment.is_active"
+        :disabled="togglingVisibility"
+        :title="assignment.is_active ? t('groupScenarios.hideHint') : t('groupScenarios.showHint')"
+        @click="$emit('toggle-visibility')"
+      >
+        <i
+          :class="togglingVisibility
+            ? 'fas fa-spinner fa-spin'
+            : (assignment.is_active ? 'fas fa-eye-slash' : 'fas fa-eye')"
+        ></i>
+        {{ assignment.is_active ? t('groupScenarios.hideFromLearners') : t('groupScenarios.showToLearners') }}
+      </button>
+
       <button class="btn btn-primary btn-sm btn-view-results" @click="$emit('view-results')">
         <i class="fas fa-chart-bar"></i>
         {{ t('groupScenarios.viewResults') }}
@@ -137,6 +158,7 @@ const props = defineProps<{
   progress: AssignmentProgress | null
   canEditGroup: boolean
   bulkStarting: boolean
+  togglingVisibility?: boolean
 }>()
 
 defineEmits<{
@@ -146,6 +168,7 @@ defineEmits<{
   remove: []
   'export-json': []
   'export-archive': []
+  'toggle-visibility': []
 }>()
 
 const { t } = useTranslations({
@@ -158,8 +181,12 @@ const { t } = useTranslations({
       removeAssignment: 'Remove',
       exportJson: 'Export JSON',
       exportKillercoda: 'Export KillerCoda',
-      active: 'Active',
-      inactive: 'Inactive',
+      visible: 'Visible',
+      hidden: 'Hidden',
+      hideFromLearners: 'Hide from learners',
+      showToLearners: 'Show to learners',
+      hideHint: 'Learners will no longer see or launch this scenario. Their progress is kept.',
+      showHint: 'Learners will see this scenario again (within its start date and deadline).',
       noStartDate: 'No start date',
       noDeadline: 'No deadline',
       orgScenario: 'Org',
@@ -180,8 +207,12 @@ const { t } = useTranslations({
       removeAssignment: 'Supprimer',
       exportJson: 'Exporter JSON',
       exportKillercoda: 'Exporter KillerCoda',
-      active: 'Actif',
-      inactive: 'Inactif',
+      visible: 'Visible',
+      hidden: 'Masqué',
+      hideFromLearners: 'Masquer aux apprenants',
+      showToLearners: 'Rendre visible',
+      hideHint: 'Les apprenants ne verront plus ce scénario et ne pourront plus le lancer. Leur progression est conservée.',
+      showHint: 'Les apprenants verront de nouveau ce scénario (dans la limite de ses dates de début et de fin).',
       noStartDate: 'Pas de date de début',
       noDeadline: 'Pas de date limite',
       orgScenario: 'Org',
@@ -345,11 +376,24 @@ function translateDifficulty(difficulty: string): string {
   flex-shrink: 0;
 }
 
-.btn-view-results {
+.btn-view-results,
+.btn-toggle-visibility {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
   white-space: nowrap;
+}
+
+.visibility-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Hidden from learners: dim the info block so the teacher spots it at a
+   glance; the actions stay at full strength (the teacher can still act). */
+.assignment-card--hidden .assignment-info {
+  opacity: 0.6;
 }
 
 /* Narrow CARD width (e.g. the sub-768px group-detail content area): stack the
