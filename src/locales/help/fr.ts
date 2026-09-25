@@ -1378,7 +1378,7 @@ export const helpFr = {
           },
           brokenOnPurpose: {
             title: "Les étapes qui cassent quelque chose exprès",
-            description: "Une étape qui casse quelque chose pour que l'apprenant le répare est elle aussi rejouée lors d'une reconstruction : elle recasse ce qu'il avait réparé. Si l'étape suivante compte sur cette réparation, son script de préparation doit la refaire quand c'est encore cassé."
+            description: "Une étape qui casse quelque chose pour que l'apprenant le répare est elle aussi rejouée lors d'une reconstruction : elle recasse ce qu'il avait réparé. Si une étape ultérieure compte sur cette réparation, le script de préparation de l'étape qui suit celle qui casse doit la refaire quand c'est encore cassé. Testez le symptôme, pas votre propre correctif : vérifiez que le service répond, pas que votre ligne de configuration exacte est présente — la réparation de l'apprenant peut être juste tout en différant de la vôtre."
           }
         },
         chaining: {

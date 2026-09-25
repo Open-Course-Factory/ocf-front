@@ -1378,7 +1378,7 @@ export const helpEn = {
           },
           brokenOnPurpose: {
             title: "Steps that break something on purpose",
-            description: "A step that breaks something for the learner to repair is replayed on a rebuild too, and breaks it again. If the next step relies on the repair, its setup script must redo the repair when the thing is still broken."
+            description: "A step that breaks something for the learner to repair is replayed on a rebuild too, and breaks it again. If a later step relies on the repair, the setup script of the step right after the breaking one must redo it when the thing is still broken. Test the symptom, not your own fix: check that the service answers, not that your exact config line is there — the learner's valid repair may differ from yours."
           }
         },
         chaining: {
