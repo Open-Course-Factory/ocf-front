@@ -169,9 +169,9 @@ const stepTypeIcons = {
 const setupScriptExamples = {
   earlierFile: `mkdir -p /srv/app
 [ -f /srv/app/app.conf ] || echo "port=8080" > /srv/app/app.conf`,
-  validAnswer: `if ! grep -Eq '^port=[0-9]+$' /srv/app/app.conf 2>/dev/null; then
-  echo "port=8080" > /srv/app/app.conf
-fi`,
+  validAnswer: `mkdir -p /srv/app
+touch /srv/app/app.conf
+grep -Eq '^port=[0-9]+$' /srv/app/app.conf || echo "port=8080" >> /srv/app/app.conf`,
   service: `command -v nginx >/dev/null || apt-get install -y nginx
 systemctl is-active --quiet nginx || systemctl start nginx`
 }

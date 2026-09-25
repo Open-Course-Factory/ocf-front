@@ -1370,7 +1370,7 @@ export const helpEn = {
           },
           validAnswer: {
             title: "Accept the learner's own valid answer",
-            description: "Step 1 asked for a port. port=9090 is as valid as your 8080. Check that a valid port is set, not that it matches yours, and write your value only when there is none."
+            description: "Step 1 asked for a port. port=9090 is as valid as your 8080. Check that a valid port is set, not that it matches yours: add your value only when no valid port is set, and keep everything else in the file."
           },
           service: {
             title: "Install and start, only if needed",
