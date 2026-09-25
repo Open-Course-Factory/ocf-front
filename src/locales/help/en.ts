@@ -1361,6 +1361,22 @@ export const helpEn = {
           questions: "Questions — for a quiz: add questions, pick a type (multiple choice, multi-answer, true/false, free text), mark the correct options, optionally give points and an explanation. Show feedback after submission switches the quiz from exam mode (score only) to learning mode (answers and explanations shown).",
           effects: "Effects — an intro effect drawn in the terminal when the learner arrives on the step, and an outro effect once they validate it, each with a short text. Purely visual."
         },
+        setupScripts: {
+          title: "Setup scripts that survive a rebuild",
+          description: "A step's Background script runs before the step starts. If the learner's machine has to be rebuilt — the container was lost, for instance — the scenario setup runs again, then each step's Background script, steps 1 to N, in order. So each script must make sure everything its step needs is there, including what the learner built in earlier steps: create what's missing, never overwrite what exists. Running it twice must be harmless.",
+          earlierFile: {
+            title: "Recreate what an earlier step produced",
+            description: "Step 1 had the learner write /srv/app/app.conf. Step 2 needs it: create it only if it is missing."
+          },
+          validAnswer: {
+            title: "Accept the learner's own valid answer",
+            description: "Step 1 asked for a port. port=9090 is as valid as your 8080. Check that a valid port is set, not that it matches yours, and write your value only when there is none."
+          },
+          service: {
+            title: "Install and start, only if needed",
+            description: "Test before acting: skip the install when the package is already there, and start the service only when it is not running."
+          }
+        },
         chaining: {
           title: "Chain the steps and save",
           description: "Steps run in one direction, from the scenario node to the last step. Draw a link from a step's output to the next step's input; a step can lead to only one next step and the chain cannot loop. Steps left unconnected are appended at the end when you save, with a warning naming them. Save changes writes the order; Reset layout only rearranges the canvas.",

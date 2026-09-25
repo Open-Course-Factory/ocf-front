@@ -1361,6 +1361,22 @@ export const helpFr = {
           questions: "Questions — pour un quiz : ajoutez des questions, choisissez un type (choix multiple, réponses multiples, vrai/faux, texte libre), marquez les bonnes options, donnez éventuellement des points et une explication. Afficher le retour après envoi fait passer le quiz du mode examen (score seul) au mode apprentissage (réponses et explications affichées).",
           effects: "Effets — un effet d'intro dessiné dans le terminal quand l'apprenant arrive sur l'étape, et un effet de sortie une fois qu'il la valide, chacun avec un court texte. Purement visuel."
         },
+        setupScripts: {
+          title: "Des scripts de préparation qui résistent à une reconstruction",
+          description: "Le script d'arrière-plan d'une étape s'exécute avant qu'elle commence. Si la machine de l'apprenant doit être reconstruite — conteneur perdu, par exemple —, la préparation du scénario est relancée, puis le script d'arrière-plan de chaque étape, de 1 à N, dans l'ordre. Chaque script doit donc garantir que tout ce dont son étape a besoin est en place, y compris ce que l'apprenant a construit aux étapes précédentes : créez ce qui manque, n'écrasez jamais l'existant. Le lancer deux fois ne doit rien casser.",
+          earlierFile: {
+            title: "Recréer ce qu'une étape précédente a produit",
+            description: "À l'étape 1, l'apprenant a écrit /srv/app/app.conf. L'étape 2 en a besoin : ne le créez que s'il manque."
+          },
+          validAnswer: {
+            title: "Accepter la bonne réponse de l'apprenant, même si elle diffère de la vôtre",
+            description: "L'étape 1 demandait un port. port=9090 vaut bien votre 8080. Vérifiez qu'un port valide est défini, pas qu'il est identique au vôtre, et n'écrivez votre valeur que s'il n'y en a aucune."
+          },
+          service: {
+            title: "Installer et démarrer, seulement si nécessaire",
+            description: "Testez avant d'agir : sautez l'installation si le paquet est déjà là, et ne démarrez le service que s'il ne tourne pas."
+          }
+        },
         chaining: {
           title: "Enchaîner les étapes et enregistrer",
           description: "Les étapes se déroulent dans un seul sens, du nœud scénario à la dernière étape. Tracez un lien de la sortie d'une étape vers l'entrée de la suivante ; une étape ne peut mener qu'à une seule suivante et la chaîne ne peut pas boucler. Les étapes laissées sans lien sont ajoutées à la fin à l'enregistrement, avec un avertissement qui les nomme. Enregistrer écrit l'ordre ; Réinitialiser ne fait que réarranger le canevas.",

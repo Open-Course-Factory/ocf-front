@@ -82,6 +82,16 @@
       </section>
 
       <section class="help-section">
+        <h2><i class="fas fa-redo"></i> {{ t('help.scenarios.creation.setupScripts.title') }}</h2>
+        <p>{{ t('help.scenarios.creation.setupScripts.description') }}</p>
+        <template v-for="(snippet, key) in setupScriptExamples" :key="key">
+          <h3>{{ t(`help.scenarios.creation.setupScripts.${key}.title`) }}</h3>
+          <p>{{ t(`help.scenarios.creation.setupScripts.${key}.description`) }}</p>
+          <pre class="code-example"><code>{{ snippet }}</code></pre>
+        </template>
+      </section>
+
+      <section class="help-section">
         <h2><i class="fas fa-link"></i> {{ t('help.scenarios.creation.chaining.title') }}</h2>
         <p>{{ t('help.scenarios.creation.chaining.description') }}</p>
         <p>{{ t('help.scenarios.creation.chaining.reorder') }}</p>
@@ -152,6 +162,18 @@ const stepTypeIcons = {
   info: 'fas fa-book-open',
   flag: 'fas fa-flag',
   quiz: 'fas fa-question'
+}
+
+// Shell is the same in every language, so the snippets stay out of the
+// translations (vue-i18n would also read `|` and `{` as syntax).
+const setupScriptExamples = {
+  earlierFile: `mkdir -p /srv/app
+[ -f /srv/app/app.conf ] || echo "port=8080" > /srv/app/app.conf`,
+  validAnswer: `if ! grep -Eq '^port=[0-9]+$' /srv/app/app.conf 2>/dev/null; then
+  echo "port=8080" > /srv/app/app.conf
+fi`,
+  service: `command -v nginx >/dev/null || apt-get install -y nginx
+systemctl is-active --quiet nginx || systemctl start nginx`
 }
 
 onMounted(async () => {
