@@ -1370,7 +1370,7 @@ export const helpFr = {
           },
           validAnswer: {
             title: "Accepter la bonne réponse de l'apprenant, même si elle diffère de la vôtre",
-            description: "L'étape 1 demandait un port. port=9090 vaut bien votre 8080. Vérifiez qu'un port valide est défini, pas qu'il est identique au vôtre, et n'écrivez votre valeur que s'il n'y en a aucune."
+            description: "L'étape 1 demandait un port. port=9090 vaut bien votre 8080. Vérifiez qu'un port valide est défini, pas qu'il est identique au vôtre : n'ajoutez votre valeur que si aucun port valide n'est défini, et gardez tout le reste du fichier."
           },
           service: {
             title: "Installer et démarrer, seulement si nécessaire",
