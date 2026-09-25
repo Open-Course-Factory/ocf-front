@@ -89,6 +89,8 @@
           <p>{{ t(`help.scenarios.creation.setupScripts.${key}.description`) }}</p>
           <pre class="code-example"><code>{{ snippet }}</code></pre>
         </template>
+        <h3>{{ t('help.scenarios.creation.setupScripts.brokenOnPurpose.title') }}</h3>
+        <p>{{ t('help.scenarios.creation.setupScripts.brokenOnPurpose.description') }}</p>
       </section>
 
       <section class="help-section">
@@ -171,8 +173,8 @@ const setupScriptExamples = {
 [ -f /srv/app/app.conf ] || echo "port=8080" > /srv/app/app.conf`,
   validAnswer: `mkdir -p /srv/app
 touch /srv/app/app.conf
-grep -Eq '^port=[0-9]+$' /srv/app/app.conf || echo "port=8080" >> /srv/app/app.conf`,
-  service: `command -v nginx >/dev/null || apt-get install -y nginx
+grep -Eq '^[[:space:]]*port[[:space:]]*=[[:space:]]*[0-9]+' /srv/app/app.conf || echo "port=8080" >> /srv/app/app.conf`,
+  service: `command -v nginx >/dev/null || { apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq nginx; }
 systemctl is-active --quiet nginx || systemctl start nginx`
 }
 

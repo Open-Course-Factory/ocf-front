@@ -1355,7 +1355,7 @@ export const helpEn = {
           content: "Content — the title and the instructions, in Markdown. A command tagged with the KillerCoda exec marker — the command in backticks, immediately followed by the word exec in double braces — becomes click-to-paste in the player.",
           hints: "Hints — the progressive hints, revealed level by level. Separate levels with ### Hint 1, ### Hint 2 headings (or ### Indice 1 in French); a hint text with no heading is a single level.",
           verify: "Verify — a shell script run in the container when the learner clicks Verify. Exit code 0 validates the step; anything else keeps the learner on it. Print what you check: the output helps them.",
-          background: "Background — a script run in the container when the learner reaches the step, in the background: start a service, plant a file, break something on purpose.",
+          background: "Background — a script run in the container when the learner reaches the step, in the background: start a service, plant a file, break something on purpose. It runs again if the learner's machine is rebuilt: see Setup scripts that survive a rebuild, below.",
           foreground: "Foreground — commands typed into the learner's live shell when they reach the step, as if they had typed them. Keep it short; they see it happen.",
           flag: "Flag steps — tick Has flag and give a Flag path: when the learner reaches the step, a FLAG token unique to their session, is written to that file in the container, and the step is validated when they submit it. Flag level is a free number kept with the step.",
           questions: "Questions — for a quiz: add questions, pick a type (multiple choice, multi-answer, true/false, free text), mark the correct options, optionally give points and an explanation. Show feedback after submission switches the quiz from exam mode (score only) to learning mode (answers and explanations shown).",
@@ -1370,11 +1370,15 @@ export const helpEn = {
           },
           validAnswer: {
             title: "Accept the learner's own valid answer",
-            description: "Step 1 asked for a port. port=9090 is as valid as your 8080. Check that a valid port is set, not that it matches yours: add your value only when no valid port is set, and keep everything else in the file."
+            description: "Step 1 asked for a port. port=9090 is as valid as your 8080. Check that a valid port is set, not that it matches yours: add your value only when no valid port is set, and keep everything else in the file. Step 1's verify script should accept the same forms (spaces around =, trailing spaces)."
           },
           service: {
-            title: "Install and start, only if needed",
-            description: "Test before acting: skip the install when the package is already there, and start the service only when it is not running."
+            title: "Install and start, only if needed (Debian/Ubuntu)",
+            description: "Test before acting: skip the install when the package is already there, and start the service only when it is not running. Refresh the package lists first: they are empty on a fresh image."
+          },
+          brokenOnPurpose: {
+            title: "Steps that break something on purpose",
+            description: "A step that breaks something for the learner to repair is replayed on a rebuild too, and breaks it again. If the next step relies on the repair, its setup script must redo the repair when the thing is still broken."
           }
         },
         chaining: {
