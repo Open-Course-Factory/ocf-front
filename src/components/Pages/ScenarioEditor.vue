@@ -148,6 +148,7 @@
       :visible="showStepEditModal"
       :step-data="editingStep"
       :is-new="editingStepIsNew"
+      :is-first-step="editingStepIsFirst"
       :is-saving="isSavingStep"
       :error-message="stepSaveError"
       :locale="editingLocale"
@@ -452,6 +453,18 @@ const editingScenario = ref<any>({})
 const editingStep = ref<any>(null)
 const editingStepIsNew = ref(false)
 const editingStepNodeId = ref<string | null>(null)
+
+/** The node chained just before `nodeId` on the canvas, if any. */
+function previousNode(nodeId: string | null) {
+  const incomingEdge = edges.value.find(e => e.target === nodeId)
+  return incomingEdge ? nodes.value.find(n => n.id === incomingEdge.source) : undefined
+}
+
+// Read from the chain rather than `order`, which is absent on a step just
+// dropped on the canvas and stale after a reorder until the editor saves.
+const editingStepIsFirst = computed(
+  () => previousNode(editingStepNodeId.value)?.data?.entityType === 'scenario'
+)
 const deletingNode = ref<any>(null)
 const isSaving = ref(false)
 const modalError = ref('')
@@ -1493,13 +1506,10 @@ const handleSaveStep = async (formData: any) => {
     if (editingStepIsNew.value) {
       // New step: find parent scenario from edges
       if (editingStepNodeId.value) {
-        const incomingEdge = edges.value.find(e => e.target === editingStepNodeId.value)
-        if (incomingEdge) {
-          const sourceNode = nodes.value.find(n => n.id === incomingEdge.source)
-          if (sourceNode?.data?.entityId) {
-            if (sourceNode.data.entityType === 'scenario') {
-              stepData.scenario_id = sourceNode.data.entityId
-            }
+        const sourceNode = previousNode(editingStepNodeId.value)
+        if (sourceNode?.data?.entityId) {
+          if (sourceNode.data.entityType === 'scenario') {
+            stepData.scenario_id = sourceNode.data.entityId
           }
         }
         // Fallback: use current scenario

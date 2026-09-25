@@ -199,6 +199,11 @@
               rows="14"
               :placeholder="t('stepEdit.backgroundScriptPlaceholder')"
             ></textarea>
+            <p class="form-hint" data-testid="step-setup-guidance">{{ t('stepEdit.backgroundScriptGuidance') }}</p>
+            <p v-if="!isFirstStep" class="ocf-effects-note ocf-setup-reminder" data-testid="step-setup-earlier-step-reminder">
+              <i class="fas fa-info-circle"></i>
+              {{ t('stepEdit.backgroundScriptEarlierStep') }}
+            </p>
           </div>
         </div>
 
@@ -711,7 +716,9 @@ const { t } = useTranslations({
       verifyScript: 'Verify Script',
       verifyScriptPlaceholder: '#!/bin/bash\n# Script to verify step completion...',
       backgroundScript: 'Background Script',
-      backgroundScriptPlaceholder: '#!/bin/bash\n# Script to run in the background...',
+      backgroundScriptPlaceholder: '#!/bin/bash\n# Make sure this step can be played, even on a rebuilt machine.\n# Create what\'s missing; never overwrite the learner\'s work.\n[ -f /etc/app.conf ] {\'|\'}{\'|\'} echo "port=8080" > /etc/app.conf',
+      backgroundScriptGuidance: 'Runs before the step starts, and again whenever the learner\'s machine is rebuilt (scenario setup, then steps 1 to N in order). Make sure everything this step needs is there: create what\'s missing, never overwrite what exists — the learner\'s valid answer may differ from yours. Running it twice must be harmless.',
+      backgroundScriptEarlierStep: 'Does this step rely on something the learner did in an earlier step? Recreate it here if it\'s missing.',
       foregroundScript: 'Foreground Script',
       foregroundScriptPlaceholder: '#!/bin/bash\n# Script to run in the foreground...',
       hasFlag: 'Has Flag',
@@ -819,7 +826,9 @@ const { t } = useTranslations({
       verifyScript: 'Script de vérification',
       verifyScriptPlaceholder: '#!/bin/bash\n# Script pour vérifier la complétion de l’étape...',
       backgroundScript: 'Script d’arrière-plan',
-      backgroundScriptPlaceholder: '#!/bin/bash\n# Script à exécuter en arrière-plan...',
+      backgroundScriptPlaceholder: '#!/bin/bash\n# L’étape doit rester jouable, même sur une machine reconstruite.\n# Créer ce qui manque, sans jamais écraser le travail de l’apprenant.\n[ -f /etc/app.conf ] {\'|\'}{\'|\'} echo "port=8080" > /etc/app.conf',
+      backgroundScriptGuidance: 'S’exécute avant le début de l’étape, puis de nouveau chaque fois que la machine de l’apprenant est reconstruite (script du scénario, puis étapes 1 à N dans l’ordre). Vérifiez que tout ce dont l’étape a besoin est en place : créez ce qui manque, sans jamais écraser l’existant — la réponse de l’apprenant peut être juste sans être identique à la vôtre. Le relancer une seconde fois ne doit rien casser.',
+      backgroundScriptEarlierStep: 'Cette étape s’appuie sur ce que l’apprenant a fait à une étape précédente ? Recréez-le ici s’il manque.',
       foregroundScript: 'Script de premier plan',
       foregroundScriptPlaceholder: '#!/bin/bash\n# Script à exécuter en premier plan...',
       hasFlag: 'A un drapeau',
@@ -928,6 +937,11 @@ interface Props {
   defaultLocaleLabel?: string
   /** Every language this scenario is offered in, the default included. */
   locales?: string[]
+  /**
+   * Whether this step comes first in the chain. The editor reads it from the
+   * canvas: `order` is missing on a new step and stale after a reorder.
+   */
+  isFirstStep?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -941,7 +955,8 @@ const props = withDefaults(defineProps<Props>(), {
   stepState: '',
   localeLabel: '',
   defaultLocaleLabel: '',
-  locales: () => []
+  locales: () => [],
+  isFirstStep: false
 })
 
 const emit = defineEmits<{
@@ -2303,5 +2318,10 @@ const handleSaveTranslation = () => {
   margin-top: 0.15em;
   color: var(--color-info);
   flex-shrink: 0;
+}
+
+/* Same callout under the setup script field; the form-group gap spaces it. */
+.ocf-setup-reminder {
+  margin: 0;
 }
 </style>
