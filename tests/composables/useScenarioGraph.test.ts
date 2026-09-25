@@ -17,6 +17,7 @@
  *     onInvalidConnection on a bad drop); patches scenario_id for a valid
  *     scenario → existing-step connection.
  *   - syncOrderFromEdges: renumbers steps along the visual chain.
+ *   - isFirstStepNode: a step is first when the scenario links straight to it.
  *
  * The composable has no lifecycle hooks, so it's exercised by calling it
  * directly with a plain ref. axios is mocked (handleEdgeConnect /
@@ -33,7 +34,7 @@ vi.mock('axios', () => ({
   }
 }))
 
-import { useScenarioGraph } from '../../src/composables/useScenarioGraph'
+import { useScenarioGraph, isFirstStepNode } from '../../src/composables/useScenarioGraph'
 
 function scenarioNode(id = 'scenario-1', entityId = 's1') {
   return { id, type: 'scenario', position: { x: 0, y: 0 }, data: { entityType: 'scenario', entityId, isNew: false } }
@@ -427,5 +428,39 @@ describe('useScenarioGraph — step position is derived from chain order', () =>
     const scenario = saved.find((p: any) => p.id === 'scenario-1')
     expect(step.position).toEqual({ y: 250 })
     expect(scenario.position).toEqual({ x: 10, y: 20 })
+  })
+})
+
+// The step editor reminds authors that a step's setup must recreate what
+// earlier steps produced — on every step but the first. `order` cannot tell
+// which step is first: it is absent on a step just dropped on the canvas and
+// stale after a reorder until the editor saves. The chain can.
+describe('useScenarioGraph — isFirstStepNode', () => {
+  it('is true for the step the scenario links to, false for the one after it', () => {
+    const nodes = [scenarioNode(), stepNode('step-a', 'terminal', 'a'), stepNode('step-b', 'terminal', 'b')]
+    const edges = [edge('e1', 'scenario-1', 'step-a'), edge('e2', 'step-a', 'step-b')]
+
+    expect(isFirstStepNode('step-a', nodes, edges)).toBe(true)
+    expect(isFirstStepNode('step-b', nodes, edges)).toBe(false)
+  })
+
+  it('is false for a step left off the chain', () => {
+    const nodes = [scenarioNode(), stepNode('step-a', 'terminal', 'a'), stepNode('loose', 'terminal')]
+    const edges = [edge('e1', 'scenario-1', 'step-a')]
+
+    expect(isFirstStepNode('loose', nodes, edges)).toBe(false)
+  })
+
+  it('moves to a step inserted on the scenario → first-step link', () => {
+    const g = makeGraph()
+    g.nodes.value = [scenarioNode(), stepNode('step-a', 'terminal', 'a')]
+    g.edges.value = [edge('e1', 'scenario-1', 'step-a')]
+
+    const inserted = stepNode('terminal-new-1', 'terminal')
+    g.nodes.value = [...g.nodes.value, inserted]
+    g.insertNodeOnEdge({ node: inserted, edgeId: 'e1', source: 'scenario-1', target: 'step-a' })
+
+    expect(isFirstStepNode('terminal-new-1', g.nodes.value, g.edges.value)).toBe(true)
+    expect(isFirstStepNode('step-a', g.nodes.value, g.edges.value)).toBe(false)
   })
 })
