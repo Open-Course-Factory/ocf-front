@@ -159,6 +159,10 @@ export function useScenarioEditorI18n() {
       previewConfirmAction: 'Start preview',
       previewStarting: 'Starting preview...',
       previewError: 'Failed to start preview',
+      previewFromStepConfirmBody: "Builds a fresh machine as a learner resuming at this step would get it: setup, then every step's setup script up to this one. Nothing the learner would have typed is replayed.",
+      previewErrorUnknownStep: 'This step is not saved in the scenario yet. Save the scenario, then try again.',
+      previewErrorForbidden: 'You cannot preview this scenario: you are not allowed to, or your plan does not include terminals.',
+      previewErrorSessionExists: 'You already have a run of this scenario in progress, outside preview. Finish or abandon it, then try again.',
       // Insert-on-edge (drop-on-edge / hover-+)
       insertStep: 'Insert step',
       insertStepHere: 'Insert a step here',
@@ -311,6 +315,10 @@ export function useScenarioEditorI18n() {
       previewConfirmAction: 'Démarrer la prévisualisation',
       previewStarting: 'Démarrage...',
       previewError: 'Échec du démarrage de la prévisualisation',
+      previewFromStepConfirmBody: "Construit une machine neuve, telle que l'aurait un apprenant qui reprend à cette étape : la préparation, puis le script de préparation de chaque étape jusqu'à celle-ci. Rien de ce que l'apprenant aurait tapé n'est rejoué.",
+      previewErrorUnknownStep: "Cette étape n'est pas encore enregistrée dans le scénario. Enregistrez le scénario, puis réessayez.",
+      previewErrorForbidden: "Vous ne pouvez pas prévisualiser ce scénario : vous n'en avez pas le droit, ou votre abonnement n'inclut pas de terminaux.",
+      previewErrorSessionExists: 'Vous avez déjà une partie de ce scénario en cours, hors prévisualisation. Terminez-la ou abandonnez-la, puis réessayez.',
       // Insertion sur une arête (drop-on-edge / survol-+)
       insertStep: 'Insérer une étape',
       insertStepHere: 'Insérer une étape ici',

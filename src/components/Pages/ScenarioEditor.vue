@@ -157,8 +157,10 @@
       :locale-label="localeLabel(editingLocale)"
       :default-locale-label="localeLabel(scenarioDefaultLocale)"
       :locales="scenarioLocales"
+      :can-test-from-step="canPreviewScenario"
       @close="closeStepEditModal"
       @save="handleSaveStep"
+      @test-from-step="openPreviewConfirm"
       @save-translation="handleSaveStepTranslation"
       @update:locale="handleEditingLocaleChange"
     />
@@ -206,7 +208,7 @@
       @close="closePreviewConfirm"
       @confirm="handleConfirmPreview"
     >
-      <p>{{ t('scenarioEditor.previewConfirmBody') }}</p>
+      <p>{{ previewFromStepOrder === null ? t('scenarioEditor.previewConfirmBody') : t('scenarioEditor.previewFromStepConfirmBody') }}</p>
     </BaseModal>
 
     <!-- Copy to Org Modal -->
@@ -475,6 +477,8 @@ const pendingInsertEdge = ref<{ edgeId: string; source: string; target: string; 
 // "Play as learner" preview state
 const showPreviewConfirmModal = ref(false)
 const isPreviewLoading = ref(false)
+// The step a "Test from this step" preview starts at; null previews the whole scenario.
+const previewFromStepOrder = ref<number | null>(null)
 
 // Scenario must have at least one step node to be previewable
 const hasSteps = computed(() =>
@@ -809,14 +813,16 @@ const handleExportKillerCoda = async () => {
 // The backend POST /scenarios/:id/preview bypasses the assignment check and
 // provisions a real terminal, so the trainer experiences the scenario exactly
 // as a learner would.
-const openPreviewConfirm = () => {
+const openPreviewConfirm = (fromStepOrder: number | null = null) => {
   if (!canPreviewScenario.value) return
+  previewFromStepOrder.value = fromStepOrder
   showPreviewConfirmModal.value = true
 }
 
 const closePreviewConfirm = () => {
   if (isPreviewLoading.value) return
   showPreviewConfirmModal.value = false
+  previewFromStepOrder.value = null
 }
 
 const handleConfirmPreview = async () => {
@@ -825,7 +831,8 @@ const handleConfirmPreview = async () => {
   try {
     const orgId = currentScenario.value?.organization_id || undefined
     const result = await scenarioSessionService.previewScenario(selectedScenarioId.value, {
-      organization_id: orgId
+      organization_id: orgId,
+      from_step_order: previewFromStepOrder.value ?? undefined
     })
     // Same tab, same route the launcher uses: a noopener tab would not
     // inherit a sessionStorage JWT and would land on the login screen. The
@@ -841,11 +848,19 @@ const handleConfirmPreview = async () => {
       query: { returnTo }
     })
   } catch (err: any) {
-    const msg = err?.response?.data?.error_message
-      || err?.response?.data?.message
-      || err?.message
-      || t('scenarioEditor.previewError')
-    notification.showError(msg)
+    // Refusals the author can act on get a message in their language; anything
+    // else keeps the backend's explanation.
+    const status = err?.response?.status
+    const data = err?.response?.data
+    if (status === 400 && previewFromStepOrder.value !== null) {
+      notification.showError(t('scenarioEditor.previewErrorUnknownStep'))
+    } else if (status === 403) {
+      notification.showError(t('scenarioEditor.previewErrorForbidden'))
+    } else if (status === 409 && data?.reason === 'session_exists') {
+      notification.showError(t('scenarioEditor.previewErrorSessionExists'))
+    } else {
+      notification.showError(data?.error_message || data?.message || err?.message || t('scenarioEditor.previewError'))
+    }
   } finally {
     isPreviewLoading.value = false
   }

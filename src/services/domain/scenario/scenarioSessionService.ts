@@ -222,7 +222,7 @@ export const scenarioSessionService = {
     return response.data
   },
 
-  async previewScenario(scenarioId: string, options?: { backend?: string; organization_id?: string }): Promise<{
+  async previewScenario(scenarioId: string, options?: { backend?: string; organization_id?: string; from_step_order?: number }): Promise<{
     scenario_session_id: string
     terminal_session_id: string
     status: string

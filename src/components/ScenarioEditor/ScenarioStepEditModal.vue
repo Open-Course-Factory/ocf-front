@@ -635,6 +635,16 @@
     </div>
 
     <template #footer>
+      <!-- Only a step the backend knows has an order to start from. -->
+      <button
+        v-if="canTestFromStep && !isNew && stepData?.entityId"
+        class="btn btn-outline-primary ocf-test-from-step"
+        data-testid="step-edit-test-from-step"
+        @click="emit('test-from-step', stepData.order)"
+      >
+        <i class="fas fa-play" aria-hidden="true"></i>
+        {{ t('stepEdit.testFromStep') }}
+      </button>
       <button class="btn btn-secondary" @click="emit('close')">
         {{ t('stepEdit.cancel') }}
       </button>
@@ -738,6 +748,7 @@ const { t } = useTranslations({
       outroTextPlaceholder: 'Flag captured',
       tabQuestions: 'Questions',
       saveTranslation: 'Save translation',
+      testFromStep: 'Test from this step',
       editingIn: 'Editing in',
       originalTag: 'original',
       alsoOfferedIn: 'This scenario is also offered in',
@@ -846,6 +857,7 @@ const { t } = useTranslations({
       outroTextPlaceholder: 'Drapeau capturé',
       tabQuestions: 'Questions',
       saveTranslation: 'Enregistrer la traduction',
+      testFromStep: 'Tester depuis cette étape',
       editingIn: 'Édition en',
       originalTag: 'original',
       alsoOfferedIn: 'Ce scénario est aussi proposé en',
@@ -928,6 +940,8 @@ interface Props {
   defaultLocaleLabel?: string
   /** Every language this scenario is offered in, the default included. */
   locales?: string[]
+  /** Offer to preview the scenario from this step (the editor launches it). */
+  canTestFromStep?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -941,7 +955,8 @@ const props = withDefaults(defineProps<Props>(), {
   stepState: '',
   localeLabel: '',
   defaultLocaleLabel: '',
-  locales: () => []
+  locales: () => [],
+  canTestFromStep: false
 })
 
 const emit = defineEmits<{
@@ -949,6 +964,7 @@ const emit = defineEmits<{
   (e: 'save', data: any): void
   (e: 'save-translation', data: any): void
   (e: 'update:locale', locale: string): void
+  (e: 'test-from-step', order: number): void
 }>()
 
 /**
@@ -1457,6 +1473,11 @@ const handleSaveTranslation = () => {
 </script>
 
 <style scoped>
+/* The footer is a right-aligned flex row: keep this action apart, on the left. */
+.ocf-test-from-step {
+  margin-right: auto;
+}
+
 .ocf-step-locale {
   display: flex;
   align-items: center;
