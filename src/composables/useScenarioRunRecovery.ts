@@ -28,6 +28,7 @@ export function useScenarioRunRecovery() {
         retry: 'Your environment could not be rebuilt right now. Please try again in a moment.',
         notInPlan: 'Your plan no longer covers this machine. Ask your trainer.',
         cannotResume: 'This run can no longer be resumed. Abandon it to clear it from your list.',
+        cannotLaunch: 'This scenario can\'t be launched for you any more. Ask your trainer.',
         budgetResume: 'Your plan\'s machines are all in use right now. Stop another terminal or try again in a moment — your progress is kept.',
         budgetLaunch: 'Your plan\'s machines are all in use right now. Stop another terminal or try again in a moment.',
         alreadyRunning: 'You are already running this scenario. Resume it from its card.',
@@ -45,6 +46,7 @@ export function useScenarioRunRecovery() {
         retry: 'Votre environnement n\'a pas pu être reconstruit pour le moment. Réessayez dans un instant.',
         notInPlan: 'Votre offre ne couvre plus cette machine. Demandez à votre formateur.',
         cannotResume: 'Cette session ne peut plus être reprise. Abandonnez-la pour la retirer de votre liste.',
+        cannotLaunch: 'Ce scénario ne peut plus être lancé pour vous. Demandez à votre formateur.',
         budgetResume: 'Les machines de votre offre sont toutes utilisées pour le moment. Arrêtez un autre terminal ou réessayez dans un instant — votre progression est conservée.',
         budgetLaunch: 'Les machines de votre offre sont toutes utilisées pour le moment. Arrêtez un autre terminal ou réessayez dans un instant.',
         alreadyRunning: 'Vous avez déjà un scénario en cours. Reprenez-le depuis sa carte.',
@@ -65,18 +67,21 @@ export function useScenarioRunRecovery() {
     const data = err?.response?.data || {}
     // The org budget is shared by the class: a miss is transient.
     if (data.source === 'budget') return t(action === 'resume' ? 'runRecovery.budgetResume' : 'runRecovery.budgetLaunch')
+    if (data.reason === 'not_in_plan') return t('runRecovery.notInPlan')
     if (action === 'launch') {
       if (data.reason === 'session_exists') return t('runRecovery.alreadyRunning')
       if (err?.message === 'SETUP_FAILED') return t('runRecovery.setupFailed')
       if (err?.message === 'SETUP_TIMEOUT') return t('runRecovery.setupTimeout')
-      return t('runRecovery.launchError')
+    } else if (data.reason === 'run_over') {
+      return t('runRecovery.runOver')
     }
-    if (data.reason === 'run_over') return t('runRecovery.runOver')
-    if (data.reason === 'not_in_plan') return t('runRecovery.notInPlan')
-    // No access any more, the scenario archived, or no environment for it:
-    // a launch is refused as well, so only Abandon clears the card.
-    if (!data.reason && (status === 403 || status === 409)) return t('runRecovery.cannotResume')
-    return t('runRecovery.retry')
+    // No access (or no longer a member of the org), the scenario archived, or
+    // no environment for it: a retry cannot change it. For a run, a launch is
+    // refused as well, so only Abandon clears the card.
+    if (!data.reason && (status === 403 || status === 409)) {
+      return t(action === 'resume' ? 'runRecovery.cannotResume' : 'runRecovery.cannotLaunch')
+    }
+    return t(action === 'resume' ? 'runRecovery.retry' : 'runRecovery.launchError')
   }
 
   // A resume already under way (a double click, a second tab) is not an error:
