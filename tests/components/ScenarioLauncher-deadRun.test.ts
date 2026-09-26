@@ -16,14 +16,17 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 
+const routerPushMock = vi.fn()
 vi.mock('vue-router', () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: routerPushMock }),
 }))
 
+const showErrorMock = vi.fn()
+const showConfirmMock = vi.fn().mockResolvedValue(true)
 vi.mock('../../src/composables/useNotification', () => ({
   useNotification: () => ({
-    showError: vi.fn(),
-    showConfirm: vi.fn().mockResolvedValue(true),
+    showError: (...args: any[]) => showErrorMock(...args),
+    showConfirm: (...args: any[]) => showConfirmMock(...args),
     showSuccess: vi.fn(),
     showInfo: vi.fn(),
     showWarning: vi.fn(),
@@ -35,14 +38,19 @@ vi.mock('../../src/composables/useNotification', () => ({
 
 const listScenariosMock = vi.fn()
 const getMySessionsMock = vi.fn()
+const launchScenarioMock = vi.fn()
+const abandonSessionMock = vi.fn().mockResolvedValue(undefined)
+const resumeSessionMock = vi.fn()
+const pollProvisioningStatusMock = vi.fn().mockResolvedValue(undefined)
 vi.mock('../../src/services/domain/scenario', () => ({
   scenarioSessionService: {
     listScenarios: (...args: any[]) => listScenariosMock(...args),
     getMyScenarioSessions: (...args: any[]) => getMySessionsMock(...args),
-    launchScenario: vi.fn(),
-    abandonSession: vi.fn().mockResolvedValue(undefined),
+    launchScenario: (...args: any[]) => launchScenarioMock(...args),
+    abandonSession: (...args: any[]) => abandonSessionMock(...args),
+    resumeSession: (...args: any[]) => resumeSessionMock(...args),
   },
-  pollProvisioningStatus: vi.fn().mockResolvedValue(undefined),
+  pollProvisioningStatus: (...args: any[]) => pollProvisioningStatusMock(...args),
 }))
 
 vi.mock('../../src/services/domain/terminal/terminalService', () => ({
@@ -156,7 +164,7 @@ describe('ScenarioLauncher — a run whose terminal is gone', () => {
 
 // The card as GET /scenario-sessions/available returns it for a scenario the
 // learner already has a run of: blocked with session_exists, naming the run.
-function cardWithRun(resumeMode: 'live' | 'paused') {
+function cardWithRun(resumeMode: 'live' | 'paused' | 'rebuild') {
   return {
     id: 'sc1',
     name: 'GameShell',
@@ -173,7 +181,7 @@ function cardWithRun(resumeMode: 'live' | 'paused') {
 // carries no step, so this is where "resume at step N" comes from. With three
 // steps done, the learner is back at step 4 — current_step 4 agrees whether
 // step orders are 0- or 1-based here.
-function myRun(resumeMode: 'live' | 'paused') {
+function myRun(resumeMode: 'live' | 'paused' | 'rebuild') {
   return {
     id: 'sess-1',
     scenario_id: 'sc1',
@@ -253,5 +261,182 @@ describe('paused run', () => {
     expect(wrapper.find('[data-testid="scenario-paused-badge"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="scenario-resume-btn"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="scenario-card"]').text()).toContain('Scenario in progress')
+  })
+})
+
+/**
+ * A run whose container is gone but which is not over: rebuild and resume.
+ *
+ * ocf-core keeps a normal run open when its container disappears (TTL, a
+ * deleted terminal, a non-persistent plan) and reports it as
+ * `resume_mode: 'rebuild'`. Launching again is refused with session_exists,
+ * so the card must offer the two ways forward: Rebuild & resume — POST
+ * /scenario-sessions/:id/resume builds a new machine at the learner's step,
+ * which can take longer than a launch, so the wait follows the deadline the
+ * backend returns — and Start over, which abandons the run and launches a
+ * fresh one. Paused runs get Start over too: their Resume is kept.
+ *
+ * A resume the backend refuses is explained in the learner's words — each
+ * refusal says what to do next — never a generic failure.
+ */
+describe('run to rebuild', () => {
+  const REBUILDING = {
+    terminal_session_id: 'term-new',
+    scenario_session_id: 'sess-1',
+    status: 'provisioning',
+    provisioning_phase: 'replay',
+    provisioning_timeout_seconds: 900,
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    listScenariosMock.mockResolvedValue([cardWithRun('rebuild')])
+    getMySessionsMock.mockResolvedValue([myRun('rebuild')])
+    showConfirmMock.mockResolvedValue(true)
+    abandonSessionMock.mockResolvedValue(undefined)
+    pollProvisioningStatusMock.mockResolvedValue(undefined)
+  })
+
+  async function mountAndClick(testid: string, locale: 'en' | 'fr' = 'en') {
+    const wrapper = mountLauncher(locale)
+    await flushPromises()
+    const button = wrapper.find(`[data-testid="${testid}"]`)
+    expect(button.exists()).toBe(true)
+    await button.trigger('click')
+    await flushPromises()
+    return wrapper
+  }
+
+  it('says the environment is lost and names the step it resumes at', async () => {
+    const wrapper = mountLauncher()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="scenario-card"]').text())
+      .toContain('Environment lost — rebuild and resume at step 4')
+  })
+
+  it('offers Rebuild & resume and Start over, not a Resume into the gone terminal', async () => {
+    const wrapper = mountLauncher()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="scenario-rebuild-btn"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="scenario-start-over-btn"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="scenario-resume-btn"]').exists()).toBe(false)
+  })
+
+  it('rebuilds, waits within the returned deadline, then opens the new terminal', async () => {
+    resumeSessionMock.mockResolvedValue(REBUILDING)
+
+    await mountAndClick('scenario-rebuild-btn')
+
+    expect(resumeSessionMock).toHaveBeenCalledWith('sess-1')
+    expect(pollProvisioningStatusMock).toHaveBeenCalledWith(
+      'sess-1',
+      expect.any(Function),
+      expect.anything(),
+      expect.objectContaining({ deadlineSeconds: 900 })
+    )
+    expect(routerPushMock).toHaveBeenCalledWith({ name: 'TerminalSessionView', params: { sessionId: 'term-new' } })
+    expect(showErrorMock).not.toHaveBeenCalled()
+  })
+
+  it('goes straight to the terminal when the run turned out to be live', async () => {
+    resumeSessionMock.mockResolvedValue({ terminal_session_id: 'term-1', scenario_session_id: 'sess-1', status: 'active' })
+
+    await mountAndClick('scenario-rebuild-btn')
+
+    expect(pollProvisioningStatusMock).not.toHaveBeenCalled()
+    expect(routerPushMock).toHaveBeenCalledWith({ name: 'TerminalSessionView', params: { sessionId: 'term-1' } })
+  })
+
+  it('Start over abandons the run, then launches a fresh one', async () => {
+    launchScenarioMock.mockResolvedValue({ terminal_session_id: 'term-fresh', scenario_session_id: 'sess-2', status: 'active' })
+
+    await mountAndClick('scenario-start-over-btn')
+
+    expect(showConfirmMock).toHaveBeenCalled()
+    expect(abandonSessionMock).toHaveBeenCalledWith('sess-1')
+    expect(launchScenarioMock).toHaveBeenCalledWith('sc1', expect.anything())
+    expect(abandonSessionMock.mock.invocationCallOrder[0])
+      .toBeLessThan(launchScenarioMock.mock.invocationCallOrder[0])
+    expect(routerPushMock).toHaveBeenCalledWith({ name: 'TerminalSessionView', params: { sessionId: 'term-fresh' } })
+  })
+
+  it('Start over does nothing when the learner cancels', async () => {
+    showConfirmMock.mockResolvedValue(false)
+
+    await mountAndClick('scenario-start-over-btn')
+
+    expect(abandonSessionMock).not.toHaveBeenCalled()
+    expect(launchScenarioMock).not.toHaveBeenCalled()
+  })
+
+  it('offers Start over beside Resume on a paused run', async () => {
+    listScenariosMock.mockResolvedValue([cardWithRun('paused')])
+    getMySessionsMock.mockResolvedValue([myRun('paused')])
+    launchScenarioMock.mockResolvedValue({ terminal_session_id: 'term-fresh', scenario_session_id: 'sess-2', status: 'active' })
+
+    const wrapper = await mountAndClick('scenario-start-over-btn')
+
+    expect(wrapper.find('[data-testid="scenario-resume-btn"]').exists()).toBe(true)
+    expect(abandonSessionMock).toHaveBeenCalledWith('sess-1')
+    expect(launchScenarioMock).toHaveBeenCalledWith('sc1', expect.anything())
+  })
+
+  // Refusals of POST /scenario-sessions/:id/resume, as ocf-core answers them
+  // (scenarioLaunchController.ResumeScenario on feat/scenario-resume-by-rebuild).
+  const refusal = (status: number, data: Record<string, unknown>) => ({ response: { status, data } })
+
+  it.each([
+    ['the run is over', refusal(409, { reason: 'run_over', error_message: 'This run is over and cannot be resumed.' }),
+      [/this run is over/i, /start over/i]],
+    ['a resume could not be settled', refusal(503, { reason: 'resume_retry', error_message: 'Your environment could not be resumed right now. Please try again.' }),
+      [/try again/i]],
+    ['the plan no longer allows the machine', refusal(403, { reason: 'not_in_plan', error_message: 'Your plan does not cover the machine this scenario needs.' }),
+      [/plan no longer allows this machine/i, /start over or ask your trainer/i]],
+    ['the scenario was archived', refusal(409, { error_message: 'scenario is archived' }),
+      [/can.t be rebuilt/i, /start over or abandon/i]],
+    ['the learner lost access', refusal(403, { error_message: 'No access to this scenario' }),
+      [/can.t be rebuilt/i, /start over or abandon/i]],
+  ])('explains a refusal when %s', async (_label, err, expected) => {
+    resumeSessionMock.mockRejectedValue(err)
+
+    await mountAndClick('scenario-rebuild-btn')
+
+    expect(showErrorMock).toHaveBeenCalledTimes(1)
+    const message = String(showErrorMock.mock.calls[0][0])
+    for (const pattern of expected as RegExp[]) expect(message).toMatch(pattern)
+    // Nothing is opened on a refusal.
+    expect(routerPushMock).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['run_over', refusal(409, { reason: 'run_over', error_message: 'This run is over and cannot be resumed.' })],
+    ['resume_retry', refusal(503, { reason: 'resume_retry', error_message: 'Your environment could not be resumed right now. Please try again.' })],
+    ['not_in_plan', refusal(403, { reason: 'not_in_plan', error_message: 'Your plan does not cover the machine this scenario needs.' })],
+    ['archived', refusal(409, { error_message: 'scenario is archived' })],
+    ['no access', refusal(403, { error_message: 'No access to this scenario' })],
+  ])('explains the %s refusal in French, not in the backend\'s English', async (_label, err) => {
+    resumeSessionMock.mockRejectedValue(err)
+
+    await mountAndClick('scenario-rebuild-btn', 'en')
+    const english = String(showErrorMock.mock.calls[0][0])
+    showErrorMock.mockClear()
+
+    await mountAndClick('scenario-rebuild-btn', 'fr')
+    const french = String(showErrorMock.mock.calls[0][0])
+
+    expect(french).not.toBe(english)
+    expect(french).not.toBe((err as any).response.data.error_message)
+  })
+
+  it('reloads the card when another resume of the run is already under way', async () => {
+    resumeSessionMock.mockRejectedValue(refusal(409, { reason: 'resume_in_progress', error_message: 'This run is already being resumed.' }))
+
+    await mountAndClick('scenario-rebuild-btn')
+
+    // A double click, or a second tab: not an error — the card catches up.
+    expect(showErrorMock).not.toHaveBeenCalled()
+    expect(listScenariosMock.mock.calls.length).toBeGreaterThan(1)
   })
 })

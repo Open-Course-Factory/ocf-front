@@ -22,6 +22,7 @@ import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import {
   isPausedRun,
+  isRebuildRun,
   isEndedRun,
   resumeStep,
   useScenarioRunLabel
@@ -124,5 +125,46 @@ describe('useScenarioRunLabel', () => {
     expect(label(run({ resumable: true, resume_mode: 'live' }))).toBe('')
     expect(label(run({ status: 'completed', resumable: false }))).toBe('')
     expect(label(run({ status: 'abandoned', resumable: false }))).toBe('')
+  })
+})
+
+/**
+ * A run whose container is gone, but which is not over: ocf-core rebuilds its
+ * environment at the step the learner left (`resume_mode: 'rebuild'`). It is
+ * resumable, so it is neither paused nor ended, and it says what resuming
+ * will do — rebuild, then go on at step N.
+ */
+describe('a run to rebuild', () => {
+  const rebuild = { resumable: true, resume_mode: 'rebuild' }
+
+  it('is recognised as one', () => {
+    expect(isRebuildRun(run(rebuild))).toBe(true)
+  })
+
+  it('is not a paused, live or non-resumable run', () => {
+    expect(isRebuildRun(run({ resumable: true, resume_mode: 'paused' }))).toBe(false)
+    expect(isRebuildRun(run({ resumable: true, resume_mode: 'live' }))).toBe(false)
+    expect(isRebuildRun(run({ resumable: false, resume_mode: 'rebuild' }))).toBe(false)
+  })
+
+  it('is not paused and not ended: it can be resumed', () => {
+    expect(isPausedRun(run(rebuild))).toBe(false)
+    expect(isEndedRun(run(rebuild))).toBe(false)
+  })
+
+  it('says the environment is lost and names the step it resumes at', () => {
+    expect(labelIn('en')(run({ ...rebuild, completed_steps: 3 })))
+      .toBe('Environment lost — rebuild and resume at step 4')
+    expect(labelIn('fr')(run({ ...rebuild, completed_steps: 3 })))
+      .toBe('Environnement perdu — le reconstruire et reprendre à l\'étape 4')
+  })
+
+  it('says the same without a step when there is none to name', () => {
+    const en = labelIn('en')(run(rebuild))
+    const fr = labelIn('fr')(run(rebuild))
+    expect(en).toMatch(/^Environment lost — rebuild and resume/)
+    expect(en).not.toMatch(/step|NaN|null/)
+    expect(fr).toMatch(/^Environnement perdu — le reconstruire et reprendre/)
+    expect(fr).not.toMatch(/étape|NaN|null/)
   })
 })

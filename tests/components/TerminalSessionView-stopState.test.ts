@@ -39,9 +39,10 @@ vi.mock('axios', () => ({
 }))
 
 const mockRouterPush = vi.fn()
+const mockRouterReplace = vi.fn()
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { sessionId: 'sess-test' }, query: {} }),
-  useRouter: () => ({ push: mockRouterPush }),
+  useRouter: () => ({ push: mockRouterPush, replace: mockRouterReplace }),
   createRouter: vi.fn(),
   createWebHistory: vi.fn()
 }))
@@ -63,10 +64,12 @@ vi.mock('../../src/composables/useNotification', () => ({
 
 // Scenario service: no linked scenario unless a test links one
 const mockGetSessionByTerminal = vi.fn().mockResolvedValue(null)
+const mockResumeScenarioSession = vi.fn()
 vi.mock('../../src/services/domain/scenario', () => ({
   scenarioSessionService: {
     getSessionByTerminal: (...args: any[]) => mockGetSessionByTerminal(...args),
-    abandonSession: vi.fn().mockResolvedValue(undefined)
+    abandonSession: vi.fn().mockResolvedValue(undefined),
+    resumeSession: (...args: any[]) => mockResumeScenarioSession(...args)
   }
 }))
 
@@ -620,6 +623,108 @@ describe('TerminalSessionView — a run found by the scenario sync mid-setup', (
 
     expect(mockGetSessionByTerminal.mock.calls.length).toBeGreaterThan(found)
     expect(wrapper.find('.tv-stub').attributes('data-can-stop')).not.toBe('false')
+    wrapper.unmount()
+  })
+})
+
+/**
+ * A scenario run whose terminal is gone, but which is not over.
+ *
+ * ocf-core keeps a normal run open when its container disappears — the
+ * terminal was deleted, or expired on a non-persistent plan — and reports it
+ * with `resume_mode: 'rebuild'`. The session view must not settle on the
+ * "session expired" end: it lays a rebuild banner over the dead console, in
+ * the same slot as the paused banner, so nothing on the page moves. Its button
+ * resumes the run — a new terminal is built at the learner's step — and the
+ * page moves to that terminal with router.replace (the old one is gone, Back
+ * must not lead to it), where the page's own pollers take over.
+ */
+describe('TerminalSessionView — a scenario run to rebuild', () => {
+  const pastExpiry = () => new Date(Date.now() - 60 * 60 * 1000).toISOString()
+
+  function terminalGone() {
+    mockAxiosGet.mockResolvedValue({
+      data: [{ session_id: 'sess-test', state: 'deleted', expires_at: pastExpiry(), name: 'GameShell run' }]
+    })
+  }
+
+  const rebuildRun = { id: 'scen-1', status: 'active', resume_mode: 'rebuild' }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    terminalGone()
+    mockGetSessionByTerminal.mockResolvedValue(rebuildRun)
+  })
+
+  it('lays the rebuild banner over the dead console, not in the page flow', async () => {
+    const wrapper = mountScenarioView()
+    await flushPromises()
+
+    const cta = wrapper.find('[data-testid="rebuild-session-cta"]')
+    expect(cta.exists()).toBe(true)
+    // The console-overlay slot: absolutely positioned over the console, so
+    // showing it shifts nothing.
+    expect(cta.element.closest('.ocf-console-overlay')).not.toBeNull()
+    // The dead console underneath leaves the tab order.
+    expect(wrapper.find('.tv-stub').element.closest('[inert]')).not.toBeNull()
+    // Not the paused banner: there is no terminal to start again.
+    expect(wrapper.find('[data-testid="resume-session-cta"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('rebuilds the run and moves to its new terminal', async () => {
+    mockResumeScenarioSession.mockResolvedValue({
+      terminal_session_id: 'term-new',
+      scenario_session_id: 'scen-1',
+      status: 'provisioning',
+      provisioning_phase: 'replay',
+      provisioning_timeout_seconds: 900
+    })
+
+    const wrapper = mountScenarioView()
+    await flushPromises()
+    await wrapper.find('[data-testid="rebuild-session-cta"]').trigger('click')
+    await flushPromises()
+
+    expect(mockResumeScenarioSession).toHaveBeenCalledWith('scen-1')
+    expect(mockRouterReplace).toHaveBeenCalledWith({ name: 'TerminalSessionView', params: { sessionId: 'term-new' } })
+    expect(mockRouterPush).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('explains a refused rebuild instead of a generic failure', async () => {
+    mockResumeScenarioSession.mockRejectedValue({
+      response: { status: 409, data: { reason: 'run_over', error_message: 'This run is over and cannot be resumed.' } }
+    })
+
+    const wrapper = mountScenarioView()
+    await flushPromises()
+    await wrapper.find('[data-testid="rebuild-session-cta"]').trigger('click')
+    await flushPromises()
+
+    expect(mockShowError).toHaveBeenCalledTimes(1)
+    expect(String(mockShowError.mock.calls[0][0])).toMatch(/start over/i)
+    expect(mockRouterReplace).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('offers no rebuild for a run that cannot be resumed (crash traps, preview)', async () => {
+    mockGetSessionByTerminal.mockResolvedValue({ id: 'scen-1', status: 'active' })
+
+    const wrapper = mountScenarioView()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="rebuild-session-cta"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('offers no rebuild while the terminal is still running', async () => {
+    userSessionsReturn('running')
+
+    const wrapper = mountScenarioView()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="rebuild-session-cta"]').exists()).toBe(false)
     wrapper.unmount()
   })
 })
