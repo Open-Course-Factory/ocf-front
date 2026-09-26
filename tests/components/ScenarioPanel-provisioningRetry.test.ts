@@ -54,9 +54,9 @@ const STEP = {
   hints_revealed: 0
 }
 
-function mountPanel() {
+function mountPanel(options: { props?: Record<string, unknown>; realVerify?: boolean } = {}) {
   return mount(ScenarioPanel, {
-    props: { scenarioSessionId: 'scen-1', isActive: true },
+    props: { scenarioSessionId: 'scen-1', isActive: true, ...options.props },
     global: {
       plugins: [createI18n({
         legacy: false,
@@ -72,7 +72,7 @@ function mountPanel() {
         ScenarioQuizPanel: true,
         ScenarioHintPanel: true,
         ProvisioningPhaseList: true,
-        ScenarioVerifyResult: {
+        ScenarioVerifyResult: options.realVerify ? false : {
           name: 'ScenarioVerifyResult',
           emits: ['verify'],
           template: '<button class="verify-stub" @click="$emit(\'verify\')"></button>'
@@ -141,6 +141,54 @@ describe('ScenarioPanel — retrying a failed step setup', () => {
     await flushPromises()
 
     expect(wrapper.emitted('session-status')?.at(-1)).toEqual(['provisioning'])
+    wrapper.unmount()
+  })
+})
+
+/**
+ * While the page reports the run `provisioning` — a launch still running its
+ * setup, a rebuild replaying it — ocf-core refuses verify and submit with 409.
+ * The panel must not offer a Verify the backend will refuse.
+ */
+describe('ScenarioPanel — while the run is being set up', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    mockGetCurrentStep.mockResolvedValue(STEP)
+    mockGetSessionInfo.mockResolvedValue({ status: 'provisioning' })
+  })
+
+  // Verify is absent or disabled — either way, not offered.
+  function verifyOffered(wrapper: ReturnType<typeof mountPanel>, testid: string) {
+    const button = wrapper.find(`[data-testid="${testid}"]`)
+    return button.exists() && button.attributes('disabled') === undefined
+  }
+
+  it('does not offer Verify on a terminal step', async () => {
+    const wrapper = mountPanel({ props: { sessionStatus: 'provisioning' }, realVerify: true })
+    await flushPromises()
+
+    expect(verifyOffered(wrapper, 'scenario-verify-btn')).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('does not offer to acknowledge an info step', async () => {
+    mockGetCurrentStep.mockResolvedValue({ ...STEP, step_type: 'info' })
+
+    const wrapper = mountPanel({ props: { sessionStatus: 'provisioning' }, realVerify: true })
+    await flushPromises()
+
+    expect(verifyOffered(wrapper, 'scenario-info-ack')).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('offers Verify again once the run is active', async () => {
+    mockGetSessionInfo.mockResolvedValue({ status: 'active' })
+
+    const wrapper = mountPanel({ props: { sessionStatus: 'active' }, realVerify: true })
+    await flushPromises()
+
+    expect(verifyOffered(wrapper, 'scenario-verify-btn')).toBe(true)
     wrapper.unmount()
   })
 })

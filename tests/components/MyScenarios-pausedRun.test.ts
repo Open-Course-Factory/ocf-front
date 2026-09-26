@@ -453,6 +453,31 @@ describe('MyScenarios — a run to rebuild', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/subscription-dashboard')
   })
 
+  // Start over has already abandoned the run when the launch is refused: a
+  // cause that a retry cannot change is named — in launch words, since there
+  // is no run left — never "try again".
+  it.each([
+    ['the plan no longer covers the machine',
+      refusal(403, { reason: 'not_in_plan', error_message: 'Your plan does not cover the machine this scenario needs.' }),
+      [/plan no longer covers this machine/i, /ask your trainer/i]],
+    ['the learner is no longer a member of the organization',
+      refusal(403, { error_message: 'You are not a member of the requested organization' }), [/ask your trainer/i]],
+    ['the scenario was archived',
+      refusal(409, { error_message: 'scenario is archived' }), [/ask your trainer/i]],
+  ])('explains the launch after Start over refused because %s', async (_label, err, expected) => {
+    launchScenarioMock.mockRejectedValue(err)
+
+    await mountAndClick('scenario-start-over-btn')
+
+    expect(abandonSessionMock).toHaveBeenCalledWith('sess-1')
+    expect(showErrorMock).toHaveBeenCalledTimes(1)
+    const message = String(showErrorMock.mock.calls[0][0])
+    for (const pattern of expected as RegExp[]) expect(message).toMatch(pattern)
+    expect(message).not.toMatch(/try again|abandon|rebuil/i)
+    expect(message).not.toContain((err as any).response.data.error_message)
+    expect(routerPushMock).not.toHaveBeenCalled()
+  })
+
   it('offers Start over on a paused run too, beside its Resume', async () => {
     getMySessionsMock.mockResolvedValue([{ ...BASE_RUN, resumable: true, resume_mode: 'paused' }])
 
