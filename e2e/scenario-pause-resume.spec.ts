@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { login } from './helpers/auth';
 import { dismissVerificationBanner, navigateViaMenuCategory } from './helpers/ui';
 import {
@@ -88,7 +88,9 @@ test.afterAll(async () => {
   await learner?.api.dispose();
 });
 
-test('learner pauses a scenario run and resumes it at the same step', async ({ page }) => {
+// Preconditions of both tests: the fixture was imported, and the learner's
+// plan can launch it.
+function requireLaunchableFixture() {
   test.skip(!admin, 'no platform admin to import the fixture — set E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD');
   // A plan that cannot fit the machine is a broken fixture, not missing
   // infrastructure: fail on it. Only a missing image/backend skips.
@@ -100,9 +102,12 @@ test('learner pauses a scenario run and resumes it at the same step', async ({ p
     !launchable,
     `fixture not launchable (${blockReason}) — Tier B needs a live tt-backend + Incus with an apk distribution`
   );
-  // Two terminal starts (launch + resume) plus step transitions.
-  test.setTimeout(480_000);
+}
 
+// Launches the fixture from its card, passes step 1, reads the flag of step 2
+// in the real xterm, then pauses the run with Stop. Returns the flag and the
+// paused terminal.
+async function launchAndPauseAtFlagStep(page: Page): Promise<{ flagBefore: string; terminalId: string }> {
   await login(page, LEARNER_EMAIL, PASSWORD);
   await dismissVerificationBanner(page);
   await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
@@ -152,28 +157,26 @@ test('learner pauses a scenario run and resumes it at the same step', async ({ p
   await stopButton.click();
   await expect(page.getByTestId('resume-session-cta')).toBeVisible({ timeout: 60_000 });
 
-  // The run is still open, and says so: paused, from the launcher.
+  return { flagBefore, terminalId };
+}
+
+// Waits until ocf-core reports the learner's run of the fixture as open, and
+// resumable the given way.
+async function expectRunResumeMode(resumeMode: 'paused' | 'rebuild') {
   await expect
     .poll(
       async () => {
         const sessions = await getMyScenarioSessions(learner);
-        const s = sessions.find((x) => x.scenario_id === scenarioId);
+        const s = sessions.find((x) => x.scenario_id === scenarioId && x.status === 'active');
         return s && { status: s.status, resume_mode: s.resume_mode };
       },
       { timeout: 30_000 }
     )
-    .toEqual({ status: 'active', resume_mode: 'paused' });
+    .toEqual({ status: 'active', resume_mode: resumeMode });
+}
 
-  await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
-  const pausedCard = page.getByTestId('scenario-card').filter({ hasText: FIXTURE_TITLE });
-  await expect(pausedCard.getByTestId('scenario-paused-badge')).toBeVisible({ timeout: 15_000 });
-
-  // Resume from the card, then restart the terminal from the paused banner.
-  await pausedCard.getByTestId('scenario-resume-btn').click();
-  await page.waitForURL(/\/terminal-session\//, { timeout: 30_000 });
-  await page.getByTestId('resume-session-cta').click();
-
-  // Same step, same container, same flag.
+// Same step, same flag: submitting what the learner read before moves on.
+async function submitFlagAndFinish(page: Page, flagBefore: string) {
   await expect(page.getByTestId('scenario-step-title')).toHaveText('Capture the flag', {
     timeout: 120_000,
   });
@@ -186,4 +189,66 @@ test('learner pauses a scenario run and resumes it at the same step', async ({ p
   await expect(page.getByTestId('scenario-step-title')).toHaveText('All done', {
     timeout: 30_000,
   });
+}
+
+test('learner pauses a scenario run and resumes it at the same step', async ({ page }) => {
+  requireLaunchableFixture();
+  // Two terminal starts (launch + resume) plus step transitions.
+  test.setTimeout(480_000);
+
+  const { flagBefore } = await launchAndPauseAtFlagStep(page);
+
+  // The run is still open, and says so: paused, from the launcher.
+  await expectRunResumeMode('paused');
+
+  await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
+  const pausedCard = page.getByTestId('scenario-card').filter({ hasText: FIXTURE_TITLE });
+  await expect(pausedCard.getByTestId('scenario-paused-badge')).toBeVisible({ timeout: 15_000 });
+
+  // Resume from the card, then restart the terminal from the paused banner.
+  await pausedCard.getByTestId('scenario-resume-btn').click();
+  await page.waitForURL(/\/terminal-session\//, { timeout: 30_000 });
+  await page.getByTestId('resume-session-cta').click();
+
+  // Same container: the disk kept the flag.
+  await submitFlagAndFinish(page, flagBefore);
+});
+
+// ---------------------------------------------------------------------------
+// Rebuild and resume. The learner deletes the paused terminal: the container
+// is gone, but the run is not over. The card offers Rebuild & resume, which
+// builds a NEW terminal at step 2 — the scenario setup and the background of
+// every step up to 2 replayed, the flag re-planted from the stored value — so
+// the flag read before the delete is still the one accepted.
+// ---------------------------------------------------------------------------
+test('learner deletes a paused run\'s terminal, rebuilds it and resumes at the same step', async ({ page }) => {
+  requireLaunchableFixture();
+  // Launch, rebuild (a new terminal plus the replay) and step transitions.
+  test.setTimeout(600_000);
+  // The previous test leaves its run open on the last step.
+  await cleanupScenarioSession(learner, scenarioId!);
+
+  const { flagBefore, terminalId } = await launchAndPauseAtFlagStep(page);
+
+  // Delete the paused terminal from its banner.
+  await page.getByTestId('delete-session-cta').click();
+  await page.getByTestId('confirm-delete-cta').click();
+  await page.waitForURL((url) => !url.pathname.includes(terminalId), { timeout: 30_000 });
+
+  // The run is still open: its container is gone, so it is rebuilt.
+  await expectRunResumeMode('rebuild');
+
+  await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
+  const card = page.getByTestId('scenario-card').filter({ hasText: FIXTURE_TITLE });
+  await expect(card).toContainText(/Environment lost|Environnement perdu/, { timeout: 15_000 });
+  await card.getByTestId('scenario-rebuild-btn').click();
+
+  // A new terminal, not the deleted one.
+  await page.waitForURL(
+    (url) => url.pathname.includes('/terminal-session/') && !url.pathname.includes(terminalId),
+    { timeout: 300_000 }
+  );
+
+  // Same step, and the same flag re-planted on the new machine.
+  await submitFlagAndFinish(page, flagBefore);
 });
