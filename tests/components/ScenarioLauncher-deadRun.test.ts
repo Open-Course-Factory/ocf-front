@@ -270,14 +270,19 @@ describe('paused run', () => {
  * ocf-core keeps a normal run open when its container disappears (TTL, a
  * deleted terminal, a non-persistent plan) and reports it as
  * `resume_mode: 'rebuild'`. Launching again is refused with session_exists,
- * so the card must offer the two ways forward: Rebuild & resume — POST
- * /scenario-sessions/:id/resume builds a new machine at the learner's step,
- * which can take longer than a launch, so the wait follows the deadline the
- * backend returns — and Start over, which abandons the run and launches a
- * fresh one. Paused runs get Start over too: their Resume is kept.
+ * so the card must offer the two ways forward: Rebuild and resume — POST
+ * /scenario-sessions/:id/resume builds a new machine at the learner's step —
+ * and Start over, which abandons the run and launches a fresh one. Paused runs
+ * get Start over too: their Resume is kept.
  *
- * A resume the backend refuses is explained in the learner's words — each
- * refusal says what to do next — never a generic failure.
+ * The card does not wait for the rebuild: it opens the new terminal as soon as
+ * the resume answers, and the session view shows the replay (and reports a
+ * replay that fails) in one place for every entry point.
+ *
+ * A resume the backend refuses is explained in the learner's words, by cause,
+ * and never sends the learner to an action that would be refused too: Start
+ * over only when a launch can succeed, and never Start over or Abandon for a
+ * budget miss, which is transient — the org budget is shared by the class.
  */
 describe('run to rebuild', () => {
   const REBUILDING = {
@@ -307,35 +312,41 @@ describe('run to rebuild', () => {
     return wrapper
   }
 
-  it('says the environment is lost and names the step it resumes at', async () => {
+  it('says the environment is lost, the progress kept, and at which step', async () => {
     const wrapper = mountLauncher()
     await flushPromises()
 
     expect(wrapper.find('[data-testid="scenario-card"]').text())
-      .toContain('Environment lost — rebuild and resume at step 4')
+      .toContain('Environment lost — progress kept (step 4)')
   })
 
-  it('offers Rebuild & resume and Start over, not a Resume into the gone terminal', async () => {
+  it('offers Rebuild and resume and Start over, not a Resume into the gone terminal', async () => {
     const wrapper = mountLauncher()
     await flushPromises()
 
-    expect(wrapper.find('[data-testid="scenario-rebuild-btn"]').exists()).toBe(true)
+    const rebuild = wrapper.find('[data-testid="scenario-rebuild-btn"]')
+    expect(rebuild.exists()).toBe(true)
+    // One spelling everywhere, the session view's banner included.
+    expect(rebuild.text()).toBe('Rebuild and resume')
     expect(wrapper.find('[data-testid="scenario-start-over-btn"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="scenario-resume-btn"]').exists()).toBe(false)
   })
 
-  it('rebuilds, waits within the returned deadline, then opens the new terminal', async () => {
+  it('names the button the same way in French', async () => {
+    const wrapper = mountLauncher('fr')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="scenario-rebuild-btn"]').text()).toBe('Reconstruire et reprendre')
+  })
+
+  it('opens the new terminal as soon as the resume answers, without waiting for the replay', async () => {
     resumeSessionMock.mockResolvedValue(REBUILDING)
 
     await mountAndClick('scenario-rebuild-btn')
 
     expect(resumeSessionMock).toHaveBeenCalledWith('sess-1')
-    expect(pollProvisioningStatusMock).toHaveBeenCalledWith(
-      'sess-1',
-      expect.any(Function),
-      expect.anything(),
-      expect.objectContaining({ deadlineSeconds: 900 })
-    )
+    // The session view shows the replay and reports its failure.
+    expect(pollProvisioningStatusMock).not.toHaveBeenCalled()
     expect(routerPushMock).toHaveBeenCalledWith({ name: 'TerminalSessionView', params: { sessionId: 'term-new' } })
     expect(showErrorMock).not.toHaveBeenCalled()
   })
@@ -387,18 +398,36 @@ describe('run to rebuild', () => {
   // (scenarioLaunchController.ResumeScenario on feat/scenario-resume-by-rebuild).
   const refusal = (status: number, data: Record<string, unknown>) => ({ response: { status, data } })
 
+  const RUN_OVER = refusal(409, { reason: 'run_over', error_message: 'This run is over and cannot be resumed.' })
+  const RETRY = refusal(503, { reason: 'resume_retry', error_message: 'Your environment could not be resumed right now. Please try again.' })
+  const NOT_IN_PLAN = refusal(403, { reason: 'not_in_plan', error_message: 'Your plan does not cover the machine this scenario needs.' })
+  const ARCHIVED = refusal(409, { error_message: 'scenario is archived' })
+  const NO_ACCESS = refusal(403, { error_message: 'No access to this scenario' })
+  const NO_ENVIRONMENT = refusal(409, { error_message: 'No compatible environment available for this scenario' })
+  // httperrors.WriteBudgetRejection: the org budget is shared by the class,
+  // so this is the ordinary transient case.
+  const BUDGET = refusal(403, { source: 'budget', reason: 'budget_exhausted', error_code: 403, error_message: 'Resource budget exhausted' })
+  const DUNNING = refusal(402, { error_code: 'subscription_past_due', source: 'dunning', error_message: 'Your subscription payment is overdue.' })
+  const CAPACITY = refusal(503, { error_message: 'Server at capacity. Please try again later.' })
+  const SERVER_ERROR = refusal(500, { error_message: 'Failed to resume the scenario run' })
+
   it.each([
-    ['the run is over', refusal(409, { reason: 'run_over', error_message: 'This run is over and cannot be resumed.' }),
-      [/this run is over/i, /start over/i]],
-    ['a resume could not be settled', refusal(503, { reason: 'resume_retry', error_message: 'Your environment could not be resumed right now. Please try again.' }),
-      [/try again/i]],
-    ['the plan no longer allows the machine', refusal(403, { reason: 'not_in_plan', error_message: 'Your plan does not cover the machine this scenario needs.' }),
-      [/plan no longer allows this machine/i, /start over or ask your trainer/i]],
-    ['the scenario was archived', refusal(409, { error_message: 'scenario is archived' }),
-      [/can.t be rebuilt/i, /start over or abandon/i]],
-    ['the learner lost access', refusal(403, { error_message: 'No access to this scenario' }),
-      [/can.t be rebuilt/i, /start over or abandon/i]],
-  ])('explains a refusal when %s', async (_label, err, expected) => {
+    ['the run is over', RUN_OVER, [/this run is over/i, /start over/i], []],
+    ['a resume could not be settled', RETRY, [/try again/i], []],
+    // Start over launches the same machine on the same plan: refused too.
+    ['the plan no longer covers the machine', NOT_IN_PLAN,
+      [/plan no longer covers this machine/i, /ask your trainer/i], [/start over/i]],
+    // A launch is refused for these too: only Abandon clears the card.
+    ['the scenario was archived', ARCHIVED, [/can no longer be resumed/i, /abandon it/i], [/start over/i]],
+    ['the learner lost access', NO_ACCESS, [/can no longer be resumed/i, /abandon it/i], [/start over/i]],
+    ['the catalogue has no environment for it any more', NO_ENVIRONMENT,
+      [/can no longer be resumed/i, /abandon it/i], [/start over/i]],
+    // Transient: never send the learner to destroy their progress.
+    ['the plan\'s machines are all in use', BUDGET,
+      [/machines are all in use right now/i, /progress is kept/i], [/start over/i, /abandon/i, /rebuil/i]],
+    ['the terminal service is at capacity', CAPACITY, [/try again/i], [/Server at capacity/]],
+    ['the server failed', SERVER_ERROR, [/try again/i], [/Failed to resume/]],
+  ])('explains a refusal when %s', async (_label, err, expected, forbidden) => {
     resumeSessionMock.mockRejectedValue(err)
 
     await mountAndClick('scenario-rebuild-btn')
@@ -406,16 +435,20 @@ describe('run to rebuild', () => {
     expect(showErrorMock).toHaveBeenCalledTimes(1)
     const message = String(showErrorMock.mock.calls[0][0])
     for (const pattern of expected as RegExp[]) expect(message).toMatch(pattern)
+    for (const pattern of forbidden as RegExp[]) expect(message).not.toMatch(pattern)
     // Nothing is opened on a refusal.
     expect(routerPushMock).not.toHaveBeenCalled()
   })
 
   it.each([
-    ['run_over', refusal(409, { reason: 'run_over', error_message: 'This run is over and cannot be resumed.' })],
-    ['resume_retry', refusal(503, { reason: 'resume_retry', error_message: 'Your environment could not be resumed right now. Please try again.' })],
-    ['not_in_plan', refusal(403, { reason: 'not_in_plan', error_message: 'Your plan does not cover the machine this scenario needs.' })],
-    ['archived', refusal(409, { error_message: 'scenario is archived' })],
-    ['no access', refusal(403, { error_message: 'No access to this scenario' })],
+    ['run_over', RUN_OVER],
+    ['resume_retry', RETRY],
+    ['not_in_plan', NOT_IN_PLAN],
+    ['archived', ARCHIVED],
+    ['no access', NO_ACCESS],
+    ['budget', BUDGET],
+    ['capacity', CAPACITY],
+    ['server error', SERVER_ERROR],
   ])('explains the %s refusal in French, not in the backend\'s English', async (_label, err) => {
     resumeSessionMock.mockRejectedValue(err)
 
@@ -427,7 +460,50 @@ describe('run to rebuild', () => {
     const french = String(showErrorMock.mock.calls[0][0])
 
     expect(french).not.toBe(english)
-    expect(french).not.toBe((err as any).response.data.error_message)
+    expect(french).not.toContain((err as any).response.data.error_message)
+  })
+
+  it('offers the subscription dashboard when a rebuild is refused for an overdue payment', async () => {
+    resumeSessionMock.mockRejectedValue(DUNNING)
+
+    await mountAndClick('scenario-rebuild-btn')
+
+    // The dunning treatment the launch already gets (useDunningRejection).
+    expect(showConfirmMock).toHaveBeenCalledWith(
+      expect.stringMatching(/past due/i),
+      expect.stringMatching(/Payment issue/i),
+      expect.anything()
+    )
+    expect(showErrorMock).not.toHaveBeenCalled()
+    expect(routerPushMock).toHaveBeenCalledWith('/subscription-dashboard')
+  })
+
+  it('explains a budget refusal of the new launch after Start over', async () => {
+    launchScenarioMock.mockRejectedValue(BUDGET)
+
+    await mountAndClick('scenario-start-over-btn')
+
+    expect(abandonSessionMock).toHaveBeenCalledWith('sess-1')
+    expect(showErrorMock).toHaveBeenCalledTimes(1)
+    const message = String(showErrorMock.mock.calls[0][0])
+    expect(message).toMatch(/budget|in use/i)
+    // Launch words, not resume words: the run it would name is abandoned.
+    expect(message).not.toMatch(/rebuil|abandon it/i)
+    expect(routerPushMock).not.toHaveBeenCalled()
+  })
+
+  it('offers the subscription dashboard when the new launch after Start over is refused for an overdue payment', async () => {
+    launchScenarioMock.mockRejectedValue(DUNNING)
+
+    await mountAndClick('scenario-start-over-btn')
+
+    expect(showConfirmMock).toHaveBeenCalledWith(
+      expect.stringMatching(/past due/i),
+      expect.stringMatching(/Payment issue/i),
+      expect.anything()
+    )
+    expect(showErrorMock).not.toHaveBeenCalled()
+    expect(routerPushMock).toHaveBeenCalledWith('/subscription-dashboard')
   })
 
   it('reloads the card when another resume of the run is already under way', async () => {

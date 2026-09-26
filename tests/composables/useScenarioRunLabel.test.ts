@@ -131,8 +131,8 @@ describe('useScenarioRunLabel', () => {
 /**
  * A run whose container is gone, but which is not over: ocf-core rebuilds its
  * environment at the step the learner left (`resume_mode: 'rebuild'`). It is
- * resumable, so it is neither paused nor ended, and it says what resuming
- * will do — rebuild, then go on at step N.
+ * resumable, so it is neither paused nor ended, and its label says what
+ * became of it — the machine is gone, the progress is kept at step N.
  */
 describe('a run to rebuild', () => {
   const rebuild = { resumable: true, resume_mode: 'rebuild' }
@@ -152,19 +152,17 @@ describe('a run to rebuild', () => {
     expect(isEndedRun(run(rebuild))).toBe(false)
   })
 
-  it('says the environment is lost and names the step it resumes at', () => {
+  // A status, not an instruction: the button beside it already says what to
+  // do, and "lost" alone reads as "my work is lost" — the progress is kept.
+  it('says the environment is lost, the progress kept, and at which step', () => {
     expect(labelIn('en')(run({ ...rebuild, completed_steps: 3 })))
-      .toBe('Environment lost — rebuild and resume at step 4')
+      .toBe('Environment lost — progress kept (step 4)')
     expect(labelIn('fr')(run({ ...rebuild, completed_steps: 3 })))
-      .toBe('Environnement perdu — le reconstruire et reprendre à l\'étape 4')
+      .toBe('Environnement perdu — progression conservée (étape 4)')
   })
 
   it('says the same without a step when there is none to name', () => {
-    const en = labelIn('en')(run(rebuild))
-    const fr = labelIn('fr')(run(rebuild))
-    expect(en).toMatch(/^Environment lost — rebuild and resume/)
-    expect(en).not.toMatch(/step|NaN|null/)
-    expect(fr).toMatch(/^Environnement perdu — le reconstruire et reprendre/)
-    expect(fr).not.toMatch(/étape|NaN|null/)
+    expect(labelIn('en')(run(rebuild))).toBe('Environment lost — progress kept')
+    expect(labelIn('fr')(run(rebuild))).toBe('Environnement perdu — progression conservée')
   })
 })
