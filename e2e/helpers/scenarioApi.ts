@@ -82,44 +82,22 @@ export interface SeedScenario {
   steps: SeedStep[];
 }
 
-/** Import a fixture scenario into an org; returns the created scenario. */
+/**
+ * Import a fixture scenario; returns the created scenario.
+ *
+ * `orgId` null imports into the PLATFORM catalogue (admin only). Public is a
+ * platform notion since ocf-core 0.61.2: ocf-core clears `is_public` on any
+ * org scenario, so an org import is invisible to a learner outside that org
+ * unless it is assigned. A spec that needs "any learner can launch this"
+ * passes null, and tears down with deleteScenarioById.
+ */
 export async function importScenario(
   session: ApiSession,
-  orgId: string,
+  orgId: string | null,
   seed: SeedScenario
 ): Promise<{ id: string; name: string; title: string }> {
-  const response = await session.api.post(
-    `${API_BASE}/organizations/${orgId}/scenarios/import-json`,
-    {
-      headers: authHeaders(session),
-      data: {
-        difficulty: 'beginner',
-        estimated_time: '10m',
-        instance_type: 'xs',
-        os_type: 'apk',
-        ...seed,
-      },
-    }
-  );
-  if (!response.ok()) {
-    throw new Error(`import-json failed: ${response.status()} ${await response.text()}`);
-  }
-  return response.json();
-}
-
-/**
- * Import a fixture into the PLATFORM catalogue (no organization), as an admin.
- *
- * Public is a platform notion since ocf-core 0.61.2: ocf-core clears
- * `is_public` on any org scenario, so an org import is invisible to a learner
- * outside that org unless it is assigned. A spec that needs "any learner can
- * launch this" imports here, and tears down with deleteScenarioById.
- */
-export async function importPlatformScenario(
-  session: ApiSession,
-  seed: SeedScenario
-): Promise<{ id: string; name: string; title: string }> {
-  const response = await session.api.post(`${API_BASE}/scenarios/import-json`, {
+  const path = orgId ? `/organizations/${orgId}/scenarios/import-json` : '/scenarios/import-json';
+  const response = await session.api.post(`${API_BASE}${path}`, {
     headers: authHeaders(session),
     data: {
       difficulty: 'beginner',
@@ -130,7 +108,7 @@ export async function importPlatformScenario(
     },
   });
   if (!response.ok()) {
-    throw new Error(`platform import-json failed: ${response.status()} ${await response.text()}`);
+    throw new Error(`import-json failed: ${response.status()} ${await response.text()}`);
   }
   return response.json();
 }
