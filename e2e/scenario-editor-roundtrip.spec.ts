@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { login, loginFresh } from './helpers/auth';
+import { login, loginFresh, switchToOrg } from './helpers/auth';
 import { dismissVerificationBanner, navigateViaMenuCategory } from './helpers/ui';
 import { dropStepNode, fillStepModalAndSave, saveStepModal } from './helpers/scenarioEditor';
 import {
@@ -9,6 +9,7 @@ import {
   getMyScenarioSessions,
   deleteScenarioById,
   cleanupScenarioSession,
+  organizationDisplayName,
   type ApiSession,
 } from './helpers/scenarioApi';
 
@@ -55,6 +56,7 @@ let author: ApiSession;
 let learner: ApiSession;
 let groupId: string | null = null;
 let orgId = '';
+let orgName = '';
 let scenarioId: string | null = null;
 
 test.describe.configure({ mode: 'serial' });
@@ -87,6 +89,7 @@ test.beforeAll(async () => {
   const group = await findTeacherGroup(author, /test class/i, 1);
   groupId = group?.group_id ?? null;
   orgId = group?.organization_id ?? '';
+  if (orgId) orgName = await organizationDisplayName(author, orgId);
 });
 
 test.afterAll(async () => {
@@ -162,6 +165,9 @@ test('the learner plays the authored scenario through to completion', async ({ p
 
   await login(page, LEARNER_EMAIL, PASSWORD);
   await dismissVerificationBanner(page);
+  // The launcher lists what the CURRENT organization assigns, and a learner in
+  // several team orgs lands in the first one — not necessarily the class's.
+  await switchToOrg(page, orgName);
   await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
 
   const card = page.getByTestId('scenario-card').filter({ hasText: SCENARIO_TITLE });
