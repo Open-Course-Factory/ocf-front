@@ -111,7 +111,7 @@
             :show-stop-button="true"
             :is-stopping="isStopping"
             :can-stop="!isScenarioProvisioning"
-            :show-destroy-button="true"
+            :show-destroy-button="isPersistent"
             :is-destroying="isDeleting"
             @stop="stopSession"
             @destroy="askDelete"
@@ -241,7 +241,7 @@
     <BaseModal
       :visible="showDeleteConfirm"
       :title="t(confirmingStop ? 'sessionView.stopConfirmTitle' : 'sessionView.deleteConfirmTitle')"
-      title-icon="fas fa-trash"
+      :title-icon="confirmingStop ? 'fas fa-stop' : 'fas fa-trash'"
       size="small"
       @close="cancelDelete"
     >
@@ -254,8 +254,8 @@
           :disabled="isDeleting"
           @click="deleteSession"
         >
-          <i class="fas" :class="isDeleting ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
-          {{ t('sessionView.deleteConfirmCta') }}
+          <i class="fas" :class="isDeleting ? 'fa-spinner fa-spin' : confirmingStop ? 'fa-stop' : 'fa-trash'"></i>
+          {{ t(confirmingStop ? 'sessionView.stopConfirmCta' : 'sessionView.deleteConfirmCta') }}
         </button>
         <button
           class="btn btn-secondary"
@@ -347,11 +347,12 @@ const { t } = useTranslations({
       deleteFailed: 'Delete failed',
       deleteConfirmTitle: 'Delete this session?',
       deleteConfirmBody: 'The container disk and command history will be permanently lost.',
-      deleteConfirmBodyRebuild: 'Your environment will be deleted. Your progress is kept: your environment will be rebuilt at this step when you resume. To end the run, abandon it.',
-      deleteConfirmBodyCrashTraps: 'Deleting ends this run. It cannot be resumed.',
+      deleteConfirmBodyRebuild: 'Your environment will be deleted. Your progress is kept, but files you created are not: your environment will be rebuilt at this step when you resume. To end the run, abandon it.',
+      deleteConfirmBodyEnds: 'Deleting ends this run. It cannot be resumed.',
       stopConfirmTitle: 'Stop this session?',
-      stopConfirmBodyRebuild: 'Your environment will be deleted. Your progress is kept: when you resume, your environment will be rebuilt at this step.',
-      stopConfirmBodyCrashTraps: 'Stopping ends this run. It cannot be resumed.',
+      stopConfirmBodyRebuild: 'Your environment will be deleted. Your progress is kept, but files you created are not: when you resume, your environment will be rebuilt at this step.',
+      stopConfirmBodyEnds: 'Stopping ends this run. It cannot be resumed.',
+      stopConfirmCta: 'Stop',
       deleteConfirmCta: 'Delete',
       cancelCta: 'Cancel'
     }
@@ -393,11 +394,12 @@ const { t } = useTranslations({
       deleteFailed: 'Échec de la suppression',
       deleteConfirmTitle: 'Supprimer cette session ?',
       deleteConfirmBody: 'Le disque du conteneur et l\'historique des commandes seront perdus définitivement.',
-      deleteConfirmBodyRebuild: 'Votre environnement sera supprimé. Votre progression est conservée : votre environnement sera reconstruit à cette étape quand vous reprendrez. Pour terminer le parcours, abandonnez-le.',
-      deleteConfirmBodyCrashTraps: 'La suppression met fin à ce parcours. Il ne pourra pas être repris.',
+      deleteConfirmBodyRebuild: 'Votre environnement sera supprimé. Votre progression est conservée, pas les fichiers que vous avez créés : votre environnement sera reconstruit à cette étape quand vous reprendrez. Pour mettre fin à la session, abandonnez-la.',
+      deleteConfirmBodyEnds: 'La suppression met fin à cette session. Elle ne pourra pas être reprise.',
       stopConfirmTitle: 'Arrêter cette session ?',
-      stopConfirmBodyRebuild: 'Votre environnement sera supprimé. Votre progression est conservée : quand vous reprendrez, votre environnement sera reconstruit à cette étape.',
-      stopConfirmBodyCrashTraps: 'L\'arrêt met fin à ce parcours. Il ne pourra pas être repris.',
+      stopConfirmBodyRebuild: 'Votre environnement sera supprimé. Votre progression est conservée, pas les fichiers que vous avez créés : quand vous reprendrez, votre environnement sera reconstruit à cette étape.',
+      stopConfirmBodyEnds: 'L\'arrêt met fin à cette session. Elle ne pourra pas être reprise.',
+      stopConfirmCta: 'Arrêter',
       deleteConfirmCta: 'Supprimer',
       cancelCta: 'Annuler'
     }
@@ -628,6 +630,10 @@ const showsPausedBanner = computed(() => terminalEndReason.value === 'stopped' &
 // The terminal is gone but the run is not over: ocf-core rebuilds it on a new
 // terminal at the learner's step.
 const scenarioResumeMode = ref<ScenarioSessionInfo['resume_mode']>()
+// A crash-trap run is its container, and a preview is never rebuilt: taking
+// the terminal away ends either run.
+const scenarioIsPreview = ref(false)
+const runEndsHere = computed(() => !!scenarioBriefing.value?.crash_traps || scenarioIsPreview.value)
 const showsRebuildBanner = computed(() => effectiveState.value === 'deleted' && scenarioResumeMode.value === 'rebuild')
 const scenarioProvisioningPhase = ref('')
 const showsBuild = computed(() => scenarioSessionStatus.value === 'provisioning' && !!scenarioProvisioningPhase.value)
@@ -670,9 +676,9 @@ watch(consoleBanner, async (banner) => {
 const isScenarioProvisioning = computed(() => scenarioSessionStatus.value === 'provisioning')
 
 // A non-persistent terminal cannot pause: tt-backend's /stop keeps its
-// container (ocf-core #529). On a scenario run Stop deletes the terminal
+// container (ocf-core #529). On a scenario run Stop takes the terminal away
 // instead, behind the delete confirm: the run is rebuilt at its step on
-// resume, or ends if it has crash traps.
+// resume, or ends here.
 const confirmingStop = ref(false)
 
 async function stopSession() {
@@ -757,8 +763,10 @@ async function resumeSession() {
 // What deleting does to the run: none linked, rebuilt on resume, or ended.
 const deleteConfirmBody = computed(() => {
   if (!scenarioSessionId.value) return t('sessionView.deleteConfirmBody')
-  const outcome = scenarioBriefing.value?.crash_traps ? 'CrashTraps' : 'Rebuild'
-  return t(`sessionView.${confirmingStop.value ? 'stop' : 'delete'}ConfirmBody${outcome}`)
+  if (confirmingStop.value) {
+    return t(runEndsHere.value ? 'sessionView.stopConfirmBodyEnds' : 'sessionView.stopConfirmBodyRebuild')
+  }
+  return t(runEndsHere.value ? 'sessionView.deleteConfirmBodyEnds' : 'sessionView.deleteConfirmBodyRebuild')
 })
 
 function askDelete(stop = false) {
@@ -775,25 +783,26 @@ async function deleteSession() {
   if (!sessionInfo.value || isDeleting.value) return
   isDeleting.value = true
   try {
-    // A crash-trap run ends before its terminal goes, as ocf-core's EndCrashTrapRun does.
-    if (confirmingStop.value && scenarioBriefing.value?.crash_traps) {
+    // The abandon endpoint deletes the run's terminal itself.
+    if (confirmingStop.value && runEndsHere.value) {
       await scenarioSessionService.abandonSession(scenarioSessionId.value!)
+    } else {
+      await terminalService.deleteSession(sessionInfo.value.session_id)
     }
-    await terminalService.deleteSession(sessionInfo.value.session_id)
     showDeleteConfirm.value = false
     if (!confirmingStop.value) {
       router.push(backTarget.value)
       return
     }
-    // Stay on the run: loadSession finds the terminal deleted and reads the run
-    // again, which offers the rebuild or shows it ended.
-    await loadSession()
+    // Stay on the run: the silent refresh finds the terminal deleted and reads
+    // the run again, which offers the rebuild or shows it ended.
+    await refreshSessionInfo()
     timeRemaining.value = 0
     stopExpirationTimer()
   } catch (err: any) {
     console.error('Error deleting session:', err)
     showErrorNotification(
-      err.response?.data?.error_message || err.message || t('sessionView.deleteFailed')
+      err.response?.data?.error_message || err.message || t(confirmingStop.value ? 'sessionView.stopError' : 'sessionView.deleteFailed')
     )
   } finally {
     isDeleting.value = false
@@ -885,6 +894,7 @@ async function detectScenarioSession() {
       scenarioSessionStatus.value = scenarioSession.status
       scenarioProvisioningPhase.value = panelReportsStatus ? '' : scenarioSession.provisioning_phase || ''
       scenarioResumeMode.value = scenarioSession.resume_mode
+      scenarioIsPreview.value = !!scenarioSession.is_preview
       terminalHadScenario.value = true
     }
     if (replayFailed) await refreshSessionInfo()
