@@ -25,7 +25,7 @@
         </div>
         <h3>{{ t('provisioning.title') }}</h3>
         <p class="provisioning-detail">{{ t('provisioning.detail') }}</p>
-        <ProvisioningPhaseList :phase="phase" />
+        <ProvisioningPhaseList :phase="phase" :phases="phase === 'replay' ? REBUILD_PHASES : undefined" />
         <button
           v-if="cancellable"
           class="btn btn-cancel"
@@ -66,7 +66,7 @@ import ProvisioningPhaseList from './ProvisioningPhaseList.vue'
 
 interface Props {
   ready?: boolean
-  phase?: string // 'terminal_creation' (client-side only) | 'setup_script' | 'step_setup' (from backend) | ''
+  phase?: string // 'terminal_creation' (client-side only) | 'setup_script' | 'step_setup' | 'replay' (from backend) | ''
   cancellable?: boolean
 }
 
@@ -81,6 +81,10 @@ withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<Emits>()
+
+// A run rebuilt on a new terminal replays its setup up to the learner's step
+// instead of the launch's setup_script / step_setup sequence.
+const REBUILD_PHASES = ['terminal_creation', 'replay']
 const isCancelling = ref(false)
 
 function handleCancel() {

@@ -159,16 +159,40 @@
             </select>
           </label>
 
-          <!-- Live run: resume -->
-          <router-link
-            v-if="canResume(scenario) && getExistingSession(scenario)?.terminal_session_id"
-            :to="{ name: 'TerminalSessionView', params: { sessionId: getExistingSession(scenario).terminal_session_id } }"
-            class="btn btn-primary launch-btn"
-            data-testid="scenario-resume-btn"
-          >
-            <i class="fas fa-play"></i>
-            {{ t('launcher.resume') }}
-          </router-link>
+          <!-- A run to go back to: resume it — rebuilding its environment when
+               the container is gone — or, when it is paused or lost, start
+               over. -->
+          <div v-if="canResume(scenario)" class="card-actions-row">
+            <button
+              v-if="isRebuild(scenario)"
+              class="btn btn-primary launch-btn"
+              data-testid="scenario-rebuild-btn"
+              :disabled="isLaunching"
+              @click="handleRebuild(scenario)"
+            >
+              <i :class="isLaunching && launchingScenarioId === scenario.id ? 'fas fa-spinner fa-spin' : 'fas fa-play'"></i>
+              {{ t('launcher.rebuild') }}
+            </button>
+            <router-link
+              v-else-if="getExistingSession(scenario).terminal_session_id"
+              :to="{ name: 'TerminalSessionView', params: { sessionId: getExistingSession(scenario).terminal_session_id } }"
+              class="btn btn-primary launch-btn"
+              data-testid="scenario-resume-btn"
+            >
+              <i class="fas fa-play"></i>
+              {{ t('launcher.resume') }}
+            </router-link>
+            <button
+              v-if="isPaused(scenario) || isRebuild(scenario)"
+              class="btn btn-secondary launch-btn"
+              data-testid="scenario-start-over-btn"
+              :disabled="isLaunching"
+              @click="startOver(getExistingSession(scenario).id, () => handleLaunchScenario(scenario))"
+            >
+              <i class="fas fa-redo"></i>
+              {{ t('launcher.startOver') }}
+            </button>
+          </div>
           <!-- A past run: review it, and start another. The relaunch button is
                disabled rather than removed when something blocks it — a button
                that disappears leaves the card with no way forward and moves
@@ -235,7 +259,8 @@ import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { useDunningRejection } from '../../composables/useDunningRejection'
-import { useScenarioRunLabel, isPausedRun } from '../../composables/useScenarioRunLabel'
+import { useScenarioRunLabel, isPausedRun, isRebuildRun } from '../../composables/useScenarioRunLabel'
+import { useScenarioRunRecovery } from '../../composables/useScenarioRunRecovery'
 import AdminBadge from '../Common/AdminBadge.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
 import { isAssignedSubscription } from '../../utils/subscriptionHelpers'
@@ -246,6 +271,7 @@ const router = useRouter()
 const { showError, showConfirm } = useNotification()
 const { isDunningRejection, getDunningCopy } = useDunningRejection()
 const runLabel = useScenarioRunLabel()
+const { rebuild, startOver } = useScenarioRunRecovery()
 const organizationsStore = useOrganizationsStore()
 const subscriptionsStore = useSubscriptionsStore()
 const currentOrgId = computed(() => organizationsStore.currentOrganization?.id || '')
@@ -262,6 +288,8 @@ const { t } = useTranslations({
       retry: 'Retry',
       launch: 'Launch',
       resume: 'Resume',
+      rebuild: 'Rebuild & resume',
+      startOver: 'Start over',
       review: 'Review',
       relaunch: 'Relaunch',
       unavailable: 'Unavailable',
@@ -308,6 +336,8 @@ const { t } = useTranslations({
       retry: 'Réessayer',
       launch: 'Lancer',
       resume: 'Reprendre',
+      rebuild: 'Reconstruire et reprendre',
+      startOver: 'Recommencer',
       review: 'Revoir',
       relaunch: 'Relancer',
       unavailable: 'Indisponible',
@@ -546,8 +576,14 @@ function isPaused(scenario: AvailableScenario): boolean {
   return !!session && isPausedRun(session)
 }
 
+function isRebuild(scenario: AvailableScenario): boolean {
+  const session = getExistingSession(scenario)
+  return !!session && isRebuildRun(session)
+}
+
 function existingSessionIcon(scenario: any): string {
   if (isPaused(scenario)) return 'fas fa-pause-circle'
+  if (isRebuild(scenario)) return 'fas fa-exclamation-circle'
   return canResume(scenario) ? 'fas fa-play-circle' : 'fas fa-check-circle'
 }
 
@@ -739,6 +775,31 @@ async function handleLaunchScenario(scenario: any) {
     isLaunching.value = false
     launchingScenarioId.value = ''
     provisioningAbortController.value = null
+  }
+}
+
+// Builds the run's environment again at the learner's step, behind the same
+// overlay as a launch — but not cancellable: cancelling there abandons the run.
+async function handleRebuild(scenario: any) {
+  isLaunching.value = true
+  launchingScenarioId.value = scenario.id
+  provisioningMessage.value = t('launcher.provisioningDetail')
+  provisioningPhase.value = 'terminal_creation'
+  try {
+    const terminalId = await rebuild(getExistingSession(scenario).id, {
+      wait: true,
+      onPhaseChange: (phase) => { provisioningPhase.value = phase }
+    })
+    if (terminalId) {
+      router.push({ name: 'TerminalSessionView', params: { sessionId: terminalId } })
+    } else {
+      await loadScenarios()
+    }
+  } finally {
+    provisioningMessage.value = ''
+    provisioningPhase.value = ''
+    isLaunching.value = false
+    launchingScenarioId.value = ''
   }
 }
 

@@ -133,6 +133,17 @@
                 @delete="askDelete"
               />
             </template>
+            <!-- A run whose terminal is gone but which is not over: the same
+                 slot, and Resume builds it a new terminal at the step. -->
+            <template v-else-if="showsRebuildBanner" #console-overlay>
+              <SessionPausedBanner
+                ref="pausedOverlayBannerRef"
+                scenario
+                rebuild
+                :is-resuming="isResuming"
+                @resume="rebuildRun"
+              />
+            </template>
           </TerminalSessionPanel>
         </div>
         <div v-show="!scenarioPanelCollapsed" class="panel-resize-handle" @mousedown.prevent="startPanelResize">
@@ -261,13 +272,14 @@ import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { renderKillercodaMarkdown, loadScenarioImages } from '../../utils/killercodaMarkdown'
 import { scenarioSessionService } from '../../services/domain/scenario'
-import type { ScenarioInfo } from '../../services/domain/scenario'
+import type { ScenarioInfo, ScenarioSessionInfo } from '../../services/domain/scenario'
 import { terminalService } from '../../services/domain/terminal/terminalService'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { useScrollFade } from '../../composables/useScrollFade'
 import { useEndStateConfig, type EndStateReason } from '../../composables/useEndStateConfig'
 import { useLimitReachedMessage } from '../../composables/useLimitReachedMessage'
+import { useScenarioRunRecovery } from '../../composables/useScenarioRunRecovery'
 import { useDunningRejection } from '../../composables/useDunningRejection'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
 import SessionPausedBanner from '../Terminal/SessionPausedBanner.vue'
@@ -594,10 +606,39 @@ const activeEndBanner = computed(() => {
 // For a scenario run the run itself stays open: it is paused, not over.
 const showsPausedBanner = computed(() => terminalEndReason.value === 'stopped' && isPersistent.value)
 
+// The terminal is gone but the run is not over: ocf-core rebuilds it on a new
+// terminal at the learner's step.
+const scenarioResumeMode = ref<ScenarioSessionInfo['resume_mode']>()
+const showsRebuildBanner = computed(() => effectiveState.value === 'deleted' && scenarioResumeMode.value === 'rebuild')
+const { rebuild } = useScenarioRunRecovery()
+
+// A terminal that goes while the page is open (TTL, deleted elsewhere) leaves
+// the run's resume mode as it was read on load: read it again.
+watch(effectiveState, (state, previous) => {
+  if (state === 'deleted' && previous && scenarioSessionId.value) detectScenarioSession()
+})
+
+// The old terminal is gone: replace it in history, so Back does not lead to
+// it. The new terminal's page waits for the rebuild with its own pollers.
+async function rebuildRun() {
+  if (isResuming.value || !scenarioSessionId.value) return
+  isResuming.value = true
+  try {
+    const terminalId = await rebuild(scenarioSessionId.value)
+    if (terminalId) {
+      router.replace({ name: 'TerminalSessionView', params: { sessionId: terminalId } })
+    } else {
+      await detectScenarioSession()
+    }
+  } finally {
+    isResuming.value = false
+  }
+}
+
 // The overlay covers the console the learner was typing in: move focus to
 // Resume, or it stays in a terminal that no longer answers.
 const pausedOverlayBannerRef = ref<InstanceType<typeof SessionPausedBanner> | null>(null)
-watch(showsPausedBanner, async (shown) => {
+watch(() => showsPausedBanner.value || showsRebuildBanner.value, async (shown) => {
   if (!shown) return
   await nextTick()
   pausedOverlayBannerRef.value?.focusResume()
@@ -778,6 +819,7 @@ async function detectScenarioSession() {
     if (scenarioSession) {
       scenarioSessionId.value = scenarioSession.id
       scenarioSessionStatus.value = scenarioSession.status
+      scenarioResumeMode.value = scenarioSession.resume_mode
       terminalHadScenario.value = true
       if (scenarioSession.status === 'provisioning') scheduleProvisioningRecheck()
     }

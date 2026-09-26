@@ -50,14 +50,16 @@ const { t } = useTranslations({
     provisioningPhases: {
       terminal_creation: 'Creating your terminal...',
       setup_script: 'Installing packages and configuring environment...',
-      step_setup: 'Running scenario setup scripts...'
+      step_setup: 'Running scenario setup scripts...',
+      replay: 'Rebuilding your environment up to your step...'
     }
   },
   fr: {
     provisioningPhases: {
       terminal_creation: 'Création de votre terminal...',
       setup_script: 'Installation des paquets et configuration de l\'environnement...',
-      step_setup: 'Exécution des scripts de configuration du scénario...'
+      step_setup: 'Exécution des scripts de configuration du scénario...',
+      replay: 'Reconstruction de votre environnement jusqu\'à votre étape...'
     }
   }
 })
